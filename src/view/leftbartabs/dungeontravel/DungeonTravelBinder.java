@@ -5,7 +5,6 @@ import java.util.Objects;
 import javafx.scene.Node;
 import shell.api.ShellBinding;
 import shell.api.ShellControls;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.dungeon.DungeonTravelRuntimeApplicationService;
 import src.domain.dungeon.published.DungeonMapCatalogModel;
@@ -18,16 +17,21 @@ import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 
 final class DungeonTravelBinder {
 
-    private final ShellRuntimeContext runtimeContext;
+    private final DungeonTravelRuntimeApplicationService travel;
+    private final DungeonMapCatalogModel mapCatalogModel;
+    private final TravelDungeonModel travelModel;
 
-    DungeonTravelBinder(ShellRuntimeContext runtimeContext) {
-        this.runtimeContext = Objects.requireNonNull(runtimeContext, "runtimeContext");
+    DungeonTravelBinder(
+            DungeonTravelRuntimeApplicationService travel,
+            DungeonMapCatalogModel mapCatalogModel,
+            TravelDungeonModel travelModel
+    ) {
+        this.travel = Objects.requireNonNull(travel, "travel");
+        this.mapCatalogModel = Objects.requireNonNull(mapCatalogModel, "mapCatalogModel");
+        this.travelModel = Objects.requireNonNull(travelModel, "travelModel");
     }
 
     ShellBinding bind() {
-        DungeonTravelRuntimeApplicationService travel = runtimeContext.services().require(DungeonTravelRuntimeApplicationService.class);
-        DungeonMapCatalogModel mapCatalogModel = runtimeContext.services().require(DungeonMapCatalogModel.class);
-        TravelDungeonModel travelModel = runtimeContext.services().require(TravelDungeonModel.class);
         DungeonTravelContributionModel contributionModel = new DungeonTravelContributionModel();
         DungeonTravelControlsContentModel controlsContentModel = new DungeonTravelControlsContentModel();
         CatalogCrudControlsContentModel mapCatalogContentModel = new CatalogCrudControlsContentModel();

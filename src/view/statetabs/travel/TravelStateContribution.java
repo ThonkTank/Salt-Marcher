@@ -1,14 +1,20 @@
 package src.view.statetabs.travel;
 
+import org.jspecify.annotations.Nullable;
 import shell.api.ContributionKey;
 import shell.api.ShellBinding;
 import shell.api.ShellContribution;
 import shell.api.ShellContributionSpec;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellStateTabSpec;
 import src.domain.hex.published.HexTravelModel;
 
 public final class TravelStateContribution implements ShellContribution {
+
+    private final @Nullable HexTravelModel hexTravelModel;
+
+    public TravelStateContribution(@Nullable HexTravelModel hexTravelModel) {
+        this.hexTravelModel = hexTravelModel;
+    }
 
     @Override
     public ShellContributionSpec registrationSpec() {
@@ -16,14 +22,14 @@ public final class TravelStateContribution implements ShellContribution {
     }
 
     @Override
-    public ShellBinding bind(ShellRuntimeContext runtimeContext) {
+    public ShellBinding bind() {
         TravelStateViewModel viewModel = new TravelStateViewModel();
         TravelStateView state = new TravelStateView();
         state.bind(viewModel);
-        runtimeContext.services().find(HexTravelModel.class).ifPresent(hexTravelModel -> {
+        if (hexTravelModel != null) {
             hexTravelModel.subscribe(viewModel::applyHexTravelSnapshot);
             viewModel.applyHexTravelSnapshot(hexTravelModel.current());
-        });
+        }
         return ShellBinding.state("Reise", state);
     }
 }

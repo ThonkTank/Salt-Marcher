@@ -9,7 +9,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Objects;
-import shell.api.ServiceRegistry;
+import src.data.encountertable.query.SqliteEncounterTableCatalogAdapter;
 import src.data.encountertable.model.EncounterTablePersistenceSchema;
 import src.domain.encountertable.published.EncounterTableCandidate;
 import src.domain.encountertable.published.EncounterTableCandidatesModel;
@@ -84,14 +84,12 @@ public final class EncounterTableReadbackTest {
     }
 
     private static TestRuntime runtime() {
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        new src.data.encountertable.EncounterTableServiceContribution().register(builder);
-        new EncounterTableServiceContribution().register(builder);
-        ServiceRegistry services = builder.build();
+        EncounterTableServiceAssembly.Component services = EncounterTableServiceAssembly.create(
+                new SqliteEncounterTableCatalogAdapter());
         return new TestRuntime(
-                services.require(EncounterTableApplicationService.class),
-                services.require(EncounterTableCatalogModel.class),
-                services.require(EncounterTableCandidatesModel.class));
+                services.application(),
+                services.catalog(),
+                services.candidates());
     }
 
     private static Path databasePath() throws Exception {

@@ -10,10 +10,14 @@ import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-import shell.api.ServiceRegistry;
+import src.data.encounter.repository.SqliteEncounterPlanRepository;
+import src.data.party.repository.SqlitePartyRosterRepository;
+import src.data.worldplanner.repository.SqliteWorldPlannerRepository;
 import src.domain.creatures.model.catalog.CreatureCatalogData;
 import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
+import src.domain.creatures.CreaturesServiceAssembly;
 import src.domain.encounter.EncounterApplicationService;
+import src.domain.encounter.EncounterServiceAssembly;
 import src.domain.encounter.model.generation.EncounterCandidateProfile;
 import src.domain.encounter.model.generation.EncounterCreatureFacts;
 import src.domain.encounter.model.generation.EncounterDifficultyIntent;
@@ -30,12 +34,16 @@ import src.domain.encounter.published.UpdateEncounterBuilderInputsCommand;
 import src.domain.encountertable.model.catalog.EncounterTableCandidateData;
 import src.domain.encountertable.model.catalog.EncounterTableSummaryData;
 import src.domain.encountertable.model.catalog.port.EncounterTableCatalogPort;
+import src.domain.encountertable.EncounterTableServiceAssembly;
 import src.domain.party.PartyApplicationService;
+import src.domain.party.PartyServiceAssembly;
 import src.domain.party.published.CalculateAdventuringDayCommand;
 import src.domain.party.published.CharacterDraft;
 import src.domain.party.published.CreateCharacterCommand;
 import src.domain.party.published.MembershipState;
 import src.domain.worldplanner.WorldPlannerApplicationService;
+import src.domain.worldplanner.WorldPlannerReferenceAssembly;
+import src.domain.worldplanner.WorldPlannerServiceAssembly;
 import src.domain.worldplanner.published.AddWorldFactionNpcCommand;
 import src.domain.worldplanner.published.AddWorldLocationEncounterTableCommand;
 import src.domain.worldplanner.published.AddWorldLocationFactionCommand;
@@ -87,6 +95,12 @@ public final class WorldPlannerEncounterTest {
     @Order(5)
     void WORLD_PLANNER_ENCOUNTER_005() {
         assertWorldNpcIdentitySurvivesCombatResults(runtime);
+    }
+
+    @Test
+    @Order(6)
+    void WORLD_PLANNER_ENCOUNTER_006() {
+        assertMissingReferencesAreRejectedByProductionAdapter(runtime);
     }
 
     private static void assertLocationLimitsTablesAndFactionStock(TestRuntime runtime) {
@@ -189,6 +203,18 @@ public final class WorldPlannerEncounterTest {
                 .orElseThrow(() -> new AssertionError("result world npc id missing"));
         assertEquals(101L, result.creatureId(), "result world npc expected statblock id");
         assertEquals(true, result.defeatedByDefault(), "world npc result defeated");
+    }
+
+    private static void assertMissingReferencesAreRejectedByProductionAdapter(TestRuntime runtime) {
+        WorldPlannerApplicationService worlds = runtime.components.worldApplication();
+        WorldPlannerSnapshot before = runtime.components.worldSnapshot().current();
+
+        worlds.createNpc(new CreateWorldNpcCommand("Missing Creature", 999L, "", "", "", ""));
+        worlds.createFaction(new CreateWorldFactionCommand("Missing Table", "", 999L));
+
+        WorldPlannerSnapshot after = runtime.components.worldSnapshot().current();
+        assertEquals(before.npcs().size(), after.npcs().size(), "missing creature reference rejected");
+        assertEquals(before.factions().size(), after.factions().size(), "missing table reference rejected");
     }
 
     private static EncounterBuilderInputs inputs(List<Long> tableIds, List<Long> factionIds, long locationId) {
@@ -298,16 +324,25 @@ public final class WorldPlannerEncounterTest {
 
     private static final class TestRuntime {
 
-        private final FixtureCreatureCatalogPort creatures = new FixtureCreatureCatalogPort();
-        private final RecordingEncounterTableCatalogPort encounterTables = new RecordingEncounterTableCatalogPort();
+        private final RecordingEncounterTableCatalogPort encounterTables;
+        private final Components components;
         private final SeedIds seedIds;
 
-        private TestRuntime(SeedIds seedIds) {
+        private TestRuntime(
+                RecordingEncounterTableCatalogPort encounterTables,
+                Components components,
+                SeedIds seedIds
+        ) {
+            this.encounterTables = Objects.requireNonNull(encounterTables, "encounterTables");
+            this.components = Objects.requireNonNull(components, "components");
             this.seedIds = Objects.requireNonNull(seedIds, "seedIds");
         }
 
         static TestRuntime create() {
-            return new TestRuntime(seedProductionState());
+            FixtureCreatureCatalogPort creatures = new FixtureCreatureCatalogPort();
+            RecordingEncounterTableCatalogPort encounterTables = new RecordingEncounterTableCatalogPort();
+            Components components = components(creatures, encounterTables);
+            return new TestRuntime(encounterTables, components, seedProductionState(components));
         }
 
         SeedIds seedIds() {
@@ -315,34 +350,47 @@ public final class WorldPlannerEncounterTest {
         }
 
         EncounterRoute encounterRoute() {
-            ServiceRegistry registry = registry();
+            CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(components.creaturePort());
+            EncounterTableServiceAssembly.Component tables =
+                    EncounterTableServiceAssembly.create(components.tablePort());
+            EncounterServiceAssembly.Component encounter = EncounterServiceAssembly.create(
+                    creatures.application(),
+                    creatures.detail(),
+                    creatures.encounterCandidates(),
+                    tables.application(),
+                    tables.candidates(),
+                    components.worldSnapshot(),
+                    components.party().application(),
+                    components.party().activeParty(),
+                    components.party().activeComposition(),
+                    components.party().adventuringDaySummary(),
+                    components.party().mutation(),
+                    new SqliteEncounterPlanRepository());
             return new EncounterRoute(
-                    registry.require(EncounterApplicationService.class),
-                    registry.require(EncounterStateModel.class),
+                    encounter.application(),
+                    encounter.state(),
                     encounterTables);
         }
 
-        private ServiceRegistry registry() {
-            ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-            builder.register(CreatureCatalogPort.class, creatures);
-            builder.register(EncounterTableCatalogPort.class, encounterTables);
-            new src.data.worldplanner.WorldPlannerServiceContribution().register(builder);
-            new src.data.party.PartyServiceContribution().register(builder);
-            new src.data.encounter.EncounterServiceContribution().register(builder);
-            new src.domain.creatures.CreaturesServiceContribution().register(builder);
-            new src.domain.encountertable.EncounterTableServiceContribution().register(builder);
-            new src.domain.party.PartyServiceContribution().register(builder);
-            new src.domain.worldplanner.WorldPlannerServiceContribution().register(builder);
-            new src.domain.encounter.EncounterServiceContribution().register(builder);
-            return builder.build();
+        private static Components components(
+                CreatureCatalogPort creaturePort,
+                EncounterTableCatalogPort tablePort
+        ) {
+            PartyServiceAssembly.Component party = PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+            CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(creaturePort);
+            EncounterTableServiceAssembly.Component tables = EncounterTableServiceAssembly.create(tablePort);
+            WorldPlannerServiceAssembly worldAssembly = new WorldPlannerServiceAssembly(
+                    new SqliteWorldPlannerRepository(),
+                    WorldPlannerReferenceAssembly.catalogReferences(creatures.references(), tables.references()));
+            WorldPlannerApplicationService worldApplication = worldAssembly.createApplicationService();
+            WorldPlannerSnapshotModel worldSnapshot = worldAssembly.snapshotModel();
+            return new Components(creaturePort, tablePort, party, worldApplication, worldSnapshot);
         }
 
-        private static SeedIds seedProductionState() {
-            TestRuntime runtime = new TestRuntime(new SeedIds(0L, 0L));
-            ServiceRegistry registry = runtime.registry();
-            seedParty(registry.require(PartyApplicationService.class));
-            WorldPlannerApplicationService worlds = registry.require(WorldPlannerApplicationService.class);
-            WorldPlannerSnapshotModel snapshots = registry.require(WorldPlannerSnapshotModel.class);
+        private static SeedIds seedProductionState(Components components) {
+            seedParty(components.party().application());
+            WorldPlannerApplicationService worlds = components.worldApplication();
+            WorldPlannerSnapshotModel snapshots = components.worldSnapshot();
 
             worlds.createNpc(new CreateWorldNpcCommand(
                     "Captain Vale",
@@ -403,6 +451,15 @@ public final class WorldPlannerEncounterTest {
                     .orElseThrow(() -> new AssertionError(name + " seed location missing"))
                     .locationId();
         }
+    }
+
+    private record Components(
+            CreatureCatalogPort creaturePort,
+            EncounterTableCatalogPort tablePort,
+            PartyServiceAssembly.Component party,
+            WorldPlannerApplicationService worldApplication,
+            WorldPlannerSnapshotModel worldSnapshot
+    ) {
     }
 
     private static final class FixtureCreatureCatalogPort implements CreatureCatalogPort {

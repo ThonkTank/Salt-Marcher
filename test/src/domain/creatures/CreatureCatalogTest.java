@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import shell.api.ServiceRegistry;
 import src.domain.creatures.model.catalog.CreatureCatalogData;
 import src.domain.creatures.model.catalog.CreatureCatalogData.CatalogPageData;
 import src.domain.creatures.model.catalog.CreatureCatalogData.CatalogRowData;
@@ -135,17 +134,14 @@ public final class CreatureCatalogTest {
 
     private static TestRuntime runtime() {
         MutableCreatureCatalogPort port = new MutableCreatureCatalogPort();
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        builder.register(CreatureCatalogPort.class, port);
-        new CreaturesServiceContribution().register(builder);
-        ServiceRegistry services = builder.build();
+        CreaturesServiceAssembly.Component services = CreaturesServiceAssembly.create(port);
         return new TestRuntime(
                 port,
-                services.require(CreaturesApplicationService.class),
-                services.require(CreatureCatalogModel.class),
-                services.require(CreatureDetailModel.class),
-                services.require(CreatureFilterOptionsModel.class),
-                services.require(CreatureEncounterCandidatesModel.class));
+                services.application(),
+                services.catalog(),
+                services.detail(),
+                services.filterOptions(),
+                services.encounterCandidates());
     }
 
     private static TestRuntime runtimeWithAshImp() {

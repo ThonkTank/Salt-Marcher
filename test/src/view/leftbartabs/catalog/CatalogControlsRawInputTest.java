@@ -20,9 +20,7 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
-import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.creatures.model.catalog.CreatureCatalogData;
 import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
@@ -249,9 +247,8 @@ public final class CatalogControlsRawInputTest {
 
     private static void assertProductionRoutePublishesSearchAndBuilderInputs() {
         CapturingCreatureCatalogPort creatureCatalog = new CapturingCreatureCatalogPort();
-        ServiceRegistry registry = productionCatalogServices(creatureCatalog);
-        ShellBinding binding = new CatalogContribution().bind(
-                new ShellRuntimeContext(EmptyInspectorSink.INSTANCE, registry));
+        CatalogTestRuntime runtime = productionCatalogServices(creatureCatalog);
+        ShellBinding binding = runtime.contribution(EmptyInspectorSink.INSTANCE).bind();
         Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
         Stage stage = new Stage();
         stage.setScene(new Scene(controls, 760.0, 520.0));
@@ -267,23 +264,14 @@ public final class CatalogControlsRawInputTest {
         layoutOpenWindows();
         popupDescendant(CheckBox.class, "Undead").fire();
         layoutOpenWindows();
-        EncounterBuilderInputsModel builderInputs = registry.require(EncounterBuilderInputsModel.class);
+        EncounterBuilderInputsModel builderInputs = runtime.builderInputs();
         assertEquals(List.of("Undead"), builderInputs.current().creatureTypes(),
                 "CatalogContribution production route forwards selected type into Encounter builder inputs");
         stage.close();
     }
 
-    private static ServiceRegistry productionCatalogServices(CapturingCreatureCatalogPort creatureCatalog) {
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        builder.register(CreatureCatalogPort.class, creatureCatalog);
-        builder.register(EncounterTableCatalogPort.class, new EmptyEncounterTableCatalogPort());
-        new src.data.encounter.EncounterServiceContribution().register(builder);
-        new src.data.party.PartyServiceContribution().register(builder);
-        new src.domain.creatures.CreaturesServiceContribution().register(builder);
-        new src.domain.encountertable.EncounterTableServiceContribution().register(builder);
-        new src.domain.party.PartyServiceContribution().register(builder);
-        new src.domain.encounter.EncounterServiceContribution().register(builder);
-        return builder.build();
+    private static CatalogTestRuntime productionCatalogServices(CapturingCreatureCatalogPort creatureCatalog) {
+        return CatalogTestRuntime.create(creatureCatalog, new EmptyEncounterTableCatalogPort(), null);
     }
 
     private void applySelectedProjection() {

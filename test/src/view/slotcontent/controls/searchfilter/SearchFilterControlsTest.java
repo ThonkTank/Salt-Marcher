@@ -17,11 +17,11 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
-import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
+import src.data.worldplanner.repository.SqliteWorldPlannerRepository;
 import src.domain.worldplanner.WorldPlannerApplicationService;
+import src.domain.worldplanner.WorldPlannerServiceAssembly;
 import src.domain.worldplanner.model.world.port.WorldPlannerReferencePort;
 import src.domain.worldplanner.published.CreateWorldNpcCommand;
 import src.view.leftbartabs.worldplanner.WorldPlannerContribution;
@@ -150,9 +150,15 @@ public final class SearchFilterControlsTest {
     }
 
     private static void assertWorldPlannerProductionRoute() {
-        ServiceRegistry services = worldPlannerServices();
-        ShellBinding binding = new WorldPlannerContribution().bind(
-                new ShellRuntimeContext(EmptyInspectorSink.INSTANCE, services));
+        WorldPlannerServiceAssembly services = worldPlannerServices();
+        WorldPlannerApplicationService application = services.createApplicationService();
+        ShellBinding binding = new WorldPlannerContribution(
+                application,
+                null,
+                services.snapshotModel(),
+                null,
+                null,
+                EmptyInspectorSink.INSTANCE).bind();
         Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
         Parent main = slot(binding, ShellSlot.COCKPIT_MAIN, Parent.class);
         Stage stage = new Stage();
@@ -160,7 +166,7 @@ public final class SearchFilterControlsTest {
         stage.show();
         layoutOpenWindows();
 
-        services.require(WorldPlannerApplicationService.class).createNpc(new CreateWorldNpcCommand(
+        application.createNpc(new CreateWorldNpcCommand(
                 "Captain Vale",
                 101L,
                 "scarred",
@@ -181,12 +187,10 @@ public final class SearchFilterControlsTest {
         stage.close();
     }
 
-    private static ServiceRegistry worldPlannerServices() {
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        builder.register(WorldPlannerReferencePort.class, new PositiveReferencePort());
-        new src.data.worldplanner.WorldPlannerServiceContribution().register(builder);
-        new src.domain.worldplanner.WorldPlannerServiceContribution().register(builder);
-        return builder.build();
+    private static WorldPlannerServiceAssembly worldPlannerServices() {
+        return new WorldPlannerServiceAssembly(
+                new SqliteWorldPlannerRepository(),
+                new PositiveReferencePort());
     }
 
     private static SearchFilterControlsContentModel.Projection projection(

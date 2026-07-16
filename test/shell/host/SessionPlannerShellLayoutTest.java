@@ -25,7 +25,6 @@ import shell.api.InspectorSink;
 import shell.api.ShellContributionSpec;
 import shell.api.ShellSlot;
 import shell.api.ShellLeftBarTabSpec;
-import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
 import shell.api.ShellLeftBarTabMode;
 import src.view.leftbartabs.catalog.CatalogContribution;
@@ -38,6 +37,21 @@ import src.view.leftbartabs.sessionplanner.SessionPlannerContribution;
 import src.view.leftbartabs.sessionplanner.SessionPlannerControlsView;
 import src.view.leftbartabs.sessionplanner.SessionPlannerTimelineMainView;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsView;
+import src.data.creatures.query.SqliteCreatureCatalogQueryAdapter;
+import src.data.dungeon.repository.SqliteDungeonMapRepository;
+import src.data.encounter.repository.SqliteEncounterPlanRepository;
+import src.data.encountertable.query.SqliteEncounterTableCatalogAdapter;
+import src.data.hex.repository.SqliteHexMapRepository;
+import src.data.party.repository.SqlitePartyRosterRepository;
+import src.data.sessionplanner.repository.SqliteSessionPlanRepository;
+import src.domain.creatures.CreaturesServiceAssembly;
+import src.domain.dungeon.DungeonServiceAssembly;
+import src.domain.encounter.EncounterServiceAssembly;
+import src.domain.encountertable.EncounterTableServiceAssembly;
+import src.domain.hex.HexServiceAssembly;
+import src.domain.party.PartyServiceAssembly;
+import src.domain.sessionplanner.SessionPlannerServiceAssembly;
+import src.features.dungeon.runtime.DungeonEditorRuntimeDependencies;
 
 @org.junit.jupiter.api.Tag("ui")
 public final class SessionPlannerShellLayoutTest {
@@ -62,8 +76,8 @@ public final class SessionPlannerShellLayoutTest {
 
     private static void runTest() {
         ShellWorkspacePane workspace = new ShellWorkspacePane();
-        ShellBinding binding = new SessionPlannerContribution().bind(
-                new shell.api.ShellRuntimeContext(EmptyInspectorSink.INSTANCE, services()));
+        LayoutServices services = services();
+        ShellBinding binding = sessionPlanner(services).bind();
         workspace.showTab(ShellSlotContent.from(binding), ShellLeftBarTabMode.RUNTIME);
 
         Stage stage = new Stage();
@@ -128,27 +142,27 @@ public final class SessionPlannerShellLayoutTest {
         ShellNavigationSidebar sidebar = new ShellNavigationSidebar();
         registerSidebarTab(
                 sidebar,
-                new DungeonTravelContribution().registrationSpec(),
+                dungeonTravel(services).registrationSpec(),
                 "Dungeon-Reise",
                 "/view/leftbartabs/dungeontravel/navigation-icon.svg");
         registerSidebarTab(
                 sidebar,
-                new SessionPlannerContribution().registrationSpec(),
+                sessionPlanner(services).registrationSpec(),
                 "Session Planner",
                 "/view/leftbartabs/sessionplanner/navigation-icon.svg");
         registerSidebarTab(
                 sidebar,
-                new CatalogContribution().registrationSpec(),
+                catalog(services).registrationSpec(),
                 "Encounter-Planer",
                 "/view/leftbartabs/catalog/navigation-icon.svg");
         registerSidebarTab(
                 sidebar,
-                new DungeonEditorContribution().registrationSpec(),
+                dungeonEditor(services).registrationSpec(),
                 "Dungeon-Editor",
                 "/view/leftbartabs/dungeoneditor/navigation-icon.svg");
         registerSidebarTab(
                 sidebar,
-                new HexMapContribution().registrationSpec(),
+                hexMap(services).registrationSpec(),
                 "Hex-Karte",
                 "/view/leftbartabs/hexmap/navigation-icon.svg");
         layout(sidebar);
@@ -184,27 +198,32 @@ public final class SessionPlannerShellLayoutTest {
         assertHexMapShellLayout();
     }
 
-    private static ServiceRegistry services() {
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        new src.data.creatures.CreaturesServiceContribution().register(builder);
-        new src.data.encounter.EncounterServiceContribution().register(builder);
-        new src.data.encountertable.EncounterTableServiceContribution().register(builder);
-        new src.data.hex.HexServiceContribution().register(builder);
-        new src.data.party.PartyServiceContribution().register(builder);
-        new src.data.sessionplanner.SessionPlannerServiceContribution().register(builder);
-        new src.domain.creatures.CreaturesServiceContribution().register(builder);
-        new src.domain.encountertable.EncounterTableServiceContribution().register(builder);
-        new src.domain.party.PartyServiceContribution().register(builder);
-        new src.domain.encounter.EncounterServiceContribution().register(builder);
-        new src.domain.hex.HexServiceContribution().register(builder);
-        new src.domain.sessionplanner.SessionPlannerServiceContribution().register(builder);
-        return builder.build();
+    private static LayoutServices services() {
+        PartyServiceAssembly.Component party = PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+        CreaturesServiceAssembly.Component creatures =
+                CreaturesServiceAssembly.create(new SqliteCreatureCatalogQueryAdapter());
+        EncounterTableServiceAssembly.Component tables =
+                EncounterTableServiceAssembly.create(new SqliteEncounterTableCatalogAdapter());
+        EncounterServiceAssembly.Component encounter = EncounterServiceAssembly.create(
+                creatures.application(), creatures.detail(), creatures.encounterCandidates(),
+                tables.application(), tables.candidates(), null,
+                party.application(), party.activeParty(), party.activeComposition(),
+                party.adventuringDaySummary(), party.mutation(), new SqliteEncounterPlanRepository());
+        SessionPlannerServiceAssembly session = new SessionPlannerServiceAssembly(
+                new SqliteSessionPlanRepository(), party.application(), party.activeParty(),
+                party.adventuringDayCalculation(), encounter.application(), encounter.savedPlans(),
+                encounter.planBudget(), null);
+        HexServiceAssembly hex = new HexServiceAssembly(
+                new SqliteHexMapRepository(), party.travelPositions(), party.application());
+        DungeonServiceAssembly.Component dungeon = DungeonServiceAssembly.create(
+                new SqliteDungeonMapRepository(), party.activeParty(), party.travelPositions(),
+                party.application(), party.mutation());
+        return new LayoutServices(party, creatures, tables, encounter, session, hex, dungeon);
     }
 
     private static void assertHexMapShellLayout() {
         ShellWorkspacePane workspace = new ShellWorkspacePane();
-        ShellBinding binding = new HexMapContribution().bind(
-                new shell.api.ShellRuntimeContext(EmptyInspectorSink.INSTANCE, services()));
+        ShellBinding binding = hexMap(services()).bind();
         workspace.showTab(ShellSlotContent.from(binding), ShellLeftBarTabMode.RUNTIME);
         Stage stage = new Stage();
         stage.setScene(new Scene(workspace, 1_120.0, 620.0));
@@ -240,6 +259,52 @@ public final class SessionPlannerShellLayoutTest {
         assertTrue(main.getHeight() > 0.0, "Hex main map receives visible shell main area");
         assertTrue(main.getWidth() > 0.0, "Hex main map receives visible shell main width");
         stage.close();
+    }
+
+    private static SessionPlannerContribution sessionPlanner(LayoutServices services) {
+        return new SessionPlannerContribution(
+                services.session().application(), services.session().currentSessionModel(),
+                services.session().catalogModel(), services.session().participantsModel(),
+                services.session().sceneTimelineModel(), services.session().statePanelModel());
+    }
+
+    private static HexMapContribution hexMap(LayoutServices services) {
+        return new HexMapContribution(
+                services.hex().editorApplication(), services.hex().travelApplication(),
+                services.hex().editorModel(), services.hex().travelModel());
+    }
+
+    private static DungeonTravelContribution dungeonTravel(LayoutServices services) {
+        return new DungeonTravelContribution(
+                services.dungeon().travel(), services.dungeon().mapCatalog(), services.dungeon().travelModel());
+    }
+
+    private static DungeonEditorContribution dungeonEditor(LayoutServices services) {
+        return new DungeonEditorContribution(new DungeonEditorRuntimeDependencies(
+                new DungeonEditorRuntimeDependencies.CompatibilityReadbackModels(
+                        services.dungeon().editorControls(), services.dungeon().editorMapSurface(),
+                        services.dungeon().editorState()),
+                services.dungeon().editor()));
+    }
+
+    private static CatalogContribution catalog(LayoutServices services) {
+        return new CatalogContribution(
+                services.creatures().application(), services.tables().application(),
+                services.encounter().application(), services.encounter().builderInputs(),
+                services.creatures().filterOptions(), services.creatures().catalog(),
+                services.creatures().detail(), services.tables().catalog(),
+                services.encounter().tuningPreview(), null, EmptyInspectorSink.INSTANCE);
+    }
+
+    private record LayoutServices(
+            PartyServiceAssembly.Component party,
+            CreaturesServiceAssembly.Component creatures,
+            EncounterTableServiceAssembly.Component tables,
+            EncounterServiceAssembly.Component encounter,
+            SessionPlannerServiceAssembly session,
+            HexServiceAssembly hex,
+            DungeonServiceAssembly.Component dungeon
+    ) {
     }
 
     private static <T extends Node> T descendant(Parent parent, Class<T> type) {

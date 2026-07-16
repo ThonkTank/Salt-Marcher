@@ -5,8 +5,8 @@ import java.util.Objects;
 import javafx.scene.Node;
 import shell.api.ShellBinding;
 import shell.api.ShellControls;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
+import src.features.dungeon.runtime.DungeonEditorRuntimeDependencies;
 import src.features.dungeon.shell.DungeonEditorFeatureShellBinding;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsView;
@@ -15,14 +15,14 @@ import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 
 final class DungeonEditorBinder {
 
-    private final ShellRuntimeContext runtimeContext;
+    private final DungeonEditorRuntimeDependencies dependencies;
 
-    DungeonEditorBinder(ShellRuntimeContext runtimeContext) {
-        this.runtimeContext = Objects.requireNonNull(runtimeContext, "runtimeContext");
+    DungeonEditorBinder(DungeonEditorRuntimeDependencies dependencies) {
+        this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
     }
 
     ShellBinding bind() {
-        DungeonEditorFeatureShellBinding featureShell = new DungeonEditorFeatureShellBinding(runtimeContext);
+        DungeonEditorFeatureShellBinding featureShell = new DungeonEditorFeatureShellBinding(dependencies);
         DungeonEditorControlsPanelModel controlsPanelModel = new DungeonEditorControlsPanelModel();
         CatalogCrudControlsContentModel mapCatalogContentModel = new CatalogCrudControlsContentModel();
         DungeonEditorStatePanelModel statePanelModel = new DungeonEditorStatePanelModel();

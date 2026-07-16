@@ -1,7 +1,9 @@
 package src.view.leftbartabs.catalog;
 
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import shell.api.ContributionKey;
+import shell.api.InspectorSink;
 import shell.api.NavigationGraphicResource;
 import shell.api.NavigationGroupSpec;
 import shell.api.ShellBinding;
@@ -9,7 +11,6 @@ import shell.api.ShellContribution;
 import shell.api.ShellContributionSpec;
 import shell.api.ShellLeftBarTabMode;
 import shell.api.ShellLeftBarTabSpec;
-import shell.api.ShellRuntimeContext;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.creatures.published.CreatureCatalogModel;
 import src.domain.creatures.published.CreatureDetailModel;
@@ -24,6 +25,44 @@ import src.view.slotcontent.details.creature.CreatureDetailsView;
 
 public final class CatalogContribution implements ShellContribution {
 
+    private final CreaturesApplicationService creatures;
+    private final EncounterTableApplicationService encounterTables;
+    private final EncounterApplicationService encounters;
+    private final EncounterBuilderInputsModel builderInputs;
+    private final CreatureFilterOptionsModel filterOptions;
+    private final CreatureCatalogModel catalog;
+    private final CreatureDetailModel detail;
+    private final EncounterTableCatalogModel encounterTableCatalog;
+    private final EncounterTuningPreviewModel tuningPreview;
+    private final @Nullable WorldPlannerSnapshotModel worldPlanner;
+    private final InspectorSink inspector;
+
+    public CatalogContribution(
+            CreaturesApplicationService creatures,
+            EncounterTableApplicationService encounterTables,
+            EncounterApplicationService encounters,
+            EncounterBuilderInputsModel builderInputs,
+            CreatureFilterOptionsModel filterOptions,
+            CreatureCatalogModel catalog,
+            CreatureDetailModel detail,
+            EncounterTableCatalogModel encounterTableCatalog,
+            EncounterTuningPreviewModel tuningPreview,
+            @Nullable WorldPlannerSnapshotModel worldPlanner,
+            InspectorSink inspector
+    ) {
+        this.creatures = Objects.requireNonNull(creatures, "creatures");
+        this.encounterTables = Objects.requireNonNull(encounterTables, "encounterTables");
+        this.encounters = Objects.requireNonNull(encounters, "encounters");
+        this.builderInputs = Objects.requireNonNull(builderInputs, "builderInputs");
+        this.filterOptions = Objects.requireNonNull(filterOptions, "filterOptions");
+        this.catalog = Objects.requireNonNull(catalog, "catalog");
+        this.detail = Objects.requireNonNull(detail, "detail");
+        this.encounterTableCatalog = Objects.requireNonNull(encounterTableCatalog, "encounterTableCatalog");
+        this.tuningPreview = Objects.requireNonNull(tuningPreview, "tuningPreview");
+        this.worldPlanner = worldPlanner;
+        this.inspector = Objects.requireNonNull(inspector, "inspector");
+    }
+
     @Override
     public ShellContributionSpec registrationSpec() {
         return new ShellLeftBarTabSpec(
@@ -36,20 +75,7 @@ public final class CatalogContribution implements ShellContribution {
     }
 
     @Override
-    public ShellBinding bind(ShellRuntimeContext runtimeContext) {
-        ShellRuntimeContext safeRuntimeContext = Objects.requireNonNull(runtimeContext, "runtimeContext");
-        var services = safeRuntimeContext.services();
-        var creatures = services.require(CreaturesApplicationService.class);
-        var encounterTables = services.require(EncounterTableApplicationService.class);
-        var encounters = services.require(EncounterApplicationService.class);
-        var builderInputs = services.require(EncounterBuilderInputsModel.class);
-        var filterOptions = services.require(CreatureFilterOptionsModel.class);
-        var catalog = services.require(CreatureCatalogModel.class);
-        var detail = services.require(CreatureDetailModel.class);
-        var encounterTableCatalog = services.require(EncounterTableCatalogModel.class);
-        var tuningPreview = services.require(EncounterTuningPreviewModel.class);
-        var worldPlanner = services.find(WorldPlannerSnapshotModel.class).orElse(null);
-
+    public ShellBinding bind() {
         CatalogViewModel viewModel = new CatalogViewModel(creatures, encounterTables, encounters);
         CatalogControlsView controls = new CatalogControlsView();
         CatalogMainView main = new CatalogMainView();
@@ -62,7 +88,7 @@ public final class CatalogContribution implements ShellContribution {
             if (after == null || after.longValue() <= 0L) {
                 return;
             }
-            CreatureDetailsView.openInspector(safeRuntimeContext.inspector(), detail, after.longValue());
+            CreatureDetailsView.openInspector(inspector, detail, after.longValue());
             viewModel.setCreatureDetailSelection(0L);
         });
 

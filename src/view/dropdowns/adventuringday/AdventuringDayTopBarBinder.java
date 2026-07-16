@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.Objects;
 import javafx.scene.Node;
 import shell.api.ShellBinding;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.AdventuringDayCalculationModel;
@@ -17,17 +16,21 @@ import src.view.slotcontent.topbar.dropdown.DropdownPopupView;
 
 final class AdventuringDayTopBarBinder {
 
-    private final ShellRuntimeContext runtimeContext;
+    private final AdventuringDaySummaryModel summaryModel;
+    private final AdventuringDayCalculationModel calculationModel;
+    private final PartyApplicationService party;
 
-    AdventuringDayTopBarBinder(ShellRuntimeContext runtimeContext) {
-        this.runtimeContext = Objects.requireNonNull(runtimeContext, "runtimeContext");
+    AdventuringDayTopBarBinder(
+            AdventuringDaySummaryModel summaryModel,
+            AdventuringDayCalculationModel calculationModel,
+            PartyApplicationService party
+    ) {
+        this.summaryModel = Objects.requireNonNull(summaryModel, "summaryModel");
+        this.calculationModel = Objects.requireNonNull(calculationModel, "calculationModel");
+        this.party = Objects.requireNonNull(party, "party");
     }
 
     ShellBinding bind() {
-        AdventuringDaySummaryModel summaryModel = runtimeContext.services().require(AdventuringDaySummaryModel.class);
-        AdventuringDayCalculationModel calculationModel =
-                runtimeContext.services().require(AdventuringDayCalculationModel.class);
-        PartyApplicationService party = runtimeContext.services().require(PartyApplicationService.class);
         AdventuringDayTopBarContributionModel presentationModel = new AdventuringDayTopBarContributionModel();
         AdventuringDayTopBarContentModel panelContentModel = presentationModel.contentModel();
         DropdownPopupContentModel popupContentModel = new DropdownPopupContentModel();

@@ -24,10 +24,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
-import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
+import src.data.party.repository.SqlitePartyRosterRepository;
+import src.data.sessionplanner.repository.SqliteSessionPlanRepository;
+import src.data.worldplanner.repository.SqliteWorldPlannerRepository;
 import src.data.sessionplanner.mapper.SessionPlanMapper;
 import src.data.sessionplanner.model.SessionEncounterRecord;
 import src.data.sessionplanner.model.SessionLootPlaceholderRecord;
@@ -44,11 +45,13 @@ import src.domain.encounter.published.SavedEncounterPlanListResult;
 import src.domain.encounter.published.SavedEncounterPlanStatus;
 import src.domain.encounter.published.SavedEncounterPlanSummary;
 import src.domain.party.PartyApplicationService;
+import src.domain.party.PartyServiceAssembly;
 import src.domain.party.published.CharacterDraft;
 import src.domain.party.published.CreateCharacterCommand;
 import src.domain.party.published.MembershipState;
 import src.domain.sessionplanner.model.session.EncounterDays;
 import src.domain.sessionplanner.model.session.SessionPlan;
+import src.domain.sessionplanner.SessionPlannerServiceAssembly;
 import src.domain.sessionplanner.published.SessionPlannerCatalogModel;
 import src.domain.sessionplanner.published.SessionPlannerCatalogSnapshot;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
@@ -58,6 +61,8 @@ import src.domain.sessionplanner.published.SessionPlannerSceneTimelineProjection
 import src.domain.sessionplanner.published.SessionPlannerParticipantsProjection;
 import src.domain.sessionplanner.published.SessionPlannerSessionSnapshot;
 import src.domain.worldplanner.WorldPlannerApplicationService;
+import src.domain.worldplanner.WorldPlannerServiceAssembly;
+import src.domain.worldplanner.model.world.port.WorldPlannerReferencePort;
 import src.domain.worldplanner.published.CreateWorldLocationCommand;
 import src.domain.worldplanner.published.WorldLocationSummary;
 import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
@@ -85,18 +90,20 @@ public final class SessionPlannerCatalogTest {
     }
 
     private static void runTest() {
-        ServiceRegistry services = services();
+        SessionPlannerTestServices services = services();
         long locationId = seedLocation(services);
-        ShellRuntimeContext context = new ShellRuntimeContext(EmptyInspectorSink.INSTANCE, services);
-        ShellBinding binding = new SessionPlannerContribution().bind(context);
+        SessionPlannerServiceAssembly planner = services.planner();
+        ShellBinding binding = new SessionPlannerContribution(
+                planner.application(), planner.currentSessionModel(), planner.catalogModel(),
+                planner.participantsModel(), planner.sceneTimelineModel(), planner.statePanelModel()).bind();
         Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
         Parent main = slot(binding, ShellSlot.COCKPIT_MAIN, Parent.class);
         Parent state = slot(binding, ShellSlot.COCKPIT_STATE, Parent.class);
-        SessionPlannerCatalogModel catalog = services.require(SessionPlannerCatalogModel.class);
-        SessionPlannerCurrentSessionModel current = services.require(SessionPlannerCurrentSessionModel.class);
+        SessionPlannerCatalogModel catalog = planner.catalogModel();
+        SessionPlannerCurrentSessionModel current = planner.currentSessionModel();
         src.domain.sessionplanner.published.SessionPlannerSceneTimelineModel sceneTimeline =
-                services.require(src.domain.sessionplanner.published.SessionPlannerSceneTimelineModel.class);
-        SessionPlannerParticipantsModel participants = services.require(SessionPlannerParticipantsModel.class);
+                planner.sceneTimelineModel();
+        SessionPlannerParticipantsModel participants = planner.participantsModel();
 
         Stage stage = new Stage();
         HBox root = new HBox(controls, main, state);
@@ -361,7 +368,7 @@ public final class SessionPlannerCatalogTest {
     }
 
     private static void assertProductionRouteTimelineInteractions(
-            ServiceRegistry services,
+            SessionPlannerTestServices services,
             Parent controls,
             Parent main,
             SessionPlannerCurrentSessionModel current,
@@ -474,8 +481,8 @@ public final class SessionPlannerCatalogTest {
                 "scene remove through linked scene card removes one scene");
     }
 
-    private static void seedActiveParty(ServiceRegistry services) {
-        PartyApplicationService party = services.require(PartyApplicationService.class);
+    private static void seedActiveParty(SessionPlannerTestServices services) {
+        PartyApplicationService party = services.party().application();
         party.createCharacter(new CreateCharacterCommand(
                 new CharacterDraft("Cora", "Mira", 4, 13, 15),
                 MembershipState.ACTIVE));
@@ -484,9 +491,9 @@ public final class SessionPlannerCatalogTest {
                 MembershipState.ACTIVE));
     }
 
-    private static long seedLocation(ServiceRegistry services) {
-        WorldPlannerApplicationService worldPlanner = services.require(WorldPlannerApplicationService.class);
-        WorldPlannerSnapshotModel snapshots = services.require(WorldPlannerSnapshotModel.class);
+    private static long seedLocation(SessionPlannerTestServices services) {
+        WorldPlannerApplicationService worldPlanner = services.worldApplication();
+        WorldPlannerSnapshotModel snapshots = services.world().snapshotModel();
         worldPlanner.createLocation(new CreateWorldLocationCommand("Old Gate", ""));
         return snapshots.current().locations().stream()
                 .filter(location -> "Old Gate".equals(location.displayName()))
@@ -581,38 +588,51 @@ public final class SessionPlannerCatalogTest {
         assertEquals(Integer.valueOf(expected), Integer.valueOf(snapshot.sessions().size()), message);
     }
 
-    private static ServiceRegistry services() {
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        new src.data.creatures.CreaturesServiceContribution().register(builder);
-        new src.data.encountertable.EncounterTableServiceContribution().register(builder);
-        new src.data.party.PartyServiceContribution().register(builder);
-        new src.data.sessionplanner.SessionPlannerServiceContribution().register(builder);
-        new src.data.worldplanner.WorldPlannerServiceContribution().register(builder);
-        new src.domain.creatures.CreaturesServiceContribution().register(builder);
-        new src.domain.encountertable.EncounterTableServiceContribution().register(builder);
-        registerEncounterFixture(builder);
-        new src.domain.party.PartyServiceContribution().register(builder);
-        new src.domain.worldplanner.WorldPlannerServiceContribution().register(builder);
-        new src.domain.sessionplanner.SessionPlannerServiceContribution().register(builder);
-        return builder.build();
-    }
-
-    private static void registerEncounterFixture(ServiceRegistry.Builder builder) {
-        builder.register(SavedEncounterPlanListModel.class, new SavedEncounterPlanListModel(
+    private static SessionPlannerTestServices services() {
+        PartyServiceAssembly.Component party =
+                PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+        WorldPlannerServiceAssembly world = new WorldPlannerServiceAssembly(
+                new SqliteWorldPlannerRepository(), new PositiveReferencePort());
+        WorldPlannerApplicationService worldApplication = world.createApplicationService();
+        SavedEncounterPlanListModel savedPlans = new SavedEncounterPlanListModel(
                 SessionPlannerCatalogTest::savedEncounterPlans,
                 listener -> {
                     listener.accept(savedEncounterPlans());
                     return () -> {
                     };
-                }));
-        builder.register(EncounterPlanBudgetModel.class, new EncounterPlanBudgetModel(
+                });
+        EncounterPlanBudgetModel planBudget = new EncounterPlanBudgetModel(
                 SessionPlannerCatalogTest::encounterPlanBudget,
                 listener -> {
                     listener.accept(encounterPlanBudget());
                     return () -> {
                     };
-                }));
-        builder.register(EncounterApplicationService.class, noopEncounterApplicationService());
+                });
+        SessionPlannerServiceAssembly planner = new SessionPlannerServiceAssembly(
+                new SqliteSessionPlanRepository(), party.application(), party.activeParty(),
+                party.adventuringDayCalculation(), noopEncounterApplicationService(), savedPlans,
+                planBudget, world.snapshotModel());
+        return new SessionPlannerTestServices(party, world, worldApplication, planner);
+    }
+
+    private record SessionPlannerTestServices(
+            PartyServiceAssembly.Component party,
+            WorldPlannerServiceAssembly world,
+            WorldPlannerApplicationService worldApplication,
+            SessionPlannerServiceAssembly planner
+    ) {
+    }
+
+    private static final class PositiveReferencePort implements WorldPlannerReferencePort {
+        @Override
+        public boolean creatureStatblockExists(long id) {
+            return id > 0L;
+        }
+
+        @Override
+        public boolean encounterTableExists(long id) {
+            return id > 0L;
+        }
     }
 
     private static SavedEncounterPlanListResult savedEncounterPlans() {

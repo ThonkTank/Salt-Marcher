@@ -3,8 +3,7 @@ package src.view.leftbartabs.dungeoneditor;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import shell.api.ServiceRegistry;
-import src.domain.dungeon.DungeonServiceContribution;
+import src.domain.dungeon.DungeonServiceAssembly;
 import src.domain.dungeon.DungeonTravelRuntimeApplicationService;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
@@ -55,7 +54,7 @@ import src.domain.dungeon.published.TravelDungeonAction;
 import src.domain.dungeon.published.TravelDungeonModel;
 import src.domain.dungeon.published.TravelDungeonSnapshot;
 import src.domain.party.PartyApplicationService;
-import src.domain.party.PartyServiceContribution;
+import src.domain.party.PartyServiceAssembly;
 import src.domain.party.model.roster.PartyRoster;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 import src.domain.party.published.CharacterDraft;
@@ -235,11 +234,11 @@ final class DungeonRuntimeProjectionInvariantScenarios {
                 transitionPosition.tile(),
                 TravelHeading.SOUTH);
 
-        ServiceRegistry registry = travelRegistry(repository);
-        movePartyTokenToTravelPosition(registry.require(PartyApplicationService.class), position);
-        DungeonTravelRuntimeApplicationService travel = registry.require(DungeonTravelRuntimeApplicationService.class);
-        TravelDungeonModel travelModel = registry.require(TravelDungeonModel.class);
-        PartyTravelPositionsModel partyPositions = registry.require(PartyTravelPositionsModel.class);
+        TravelRuntimeFixture services = travelServices(repository);
+        movePartyTokenToTravelPosition(services.party().application(), position);
+        DungeonTravelRuntimeApplicationService travel = services.dungeon().travel();
+        TravelDungeonModel travelModel = services.dungeon().travelModel();
+        PartyTravelPositionsModel partyPositions = services.party().travelPositions();
 
         travel.refresh();
         TravelDungeonSnapshot beforeSnapshot = travelModel.current();
@@ -434,12 +433,12 @@ final class DungeonRuntimeProjectionInvariantScenarios {
                 0L,
                 null);
         DungeonMapRepository repository = repositoryOf(firstMap, selectedMap);
-        ServiceRegistry registry = travelRegistry(repository);
-        DungeonTravelRuntimeApplicationService travel = registry.require(DungeonTravelRuntimeApplicationService.class);
+        TravelRuntimeFixture services = travelServices(repository);
+        DungeonTravelRuntimeApplicationService travel = services.dungeon().travel();
 
         travel.selectMap(selectedMapId);
 
-        TravelDungeonSnapshot snapshot = registry.require(TravelDungeonModel.class).current();
+        TravelDungeonSnapshot snapshot = services.dungeon().travelModel().current();
         DungeonTravelPosition position = snapshot.travelSurface() == null ? null : snapshot.travelSurface().position();
         assertTrue(position != null,
                 "selected-map bootstrap must use the authored transition entry even when (0,0,0) is a valid cell");
@@ -649,13 +648,22 @@ final class DungeonRuntimeProjectionInvariantScenarios {
                 .orElse(DungeonMapAuthoring.empty(new DungeonMapIdentity(1L), "Dungeon Map"));
     }
 
-    private static ServiceRegistry travelRegistry(DungeonMapRepository repository) {
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        builder.register(DungeonMapRepository.class, repository);
-        builder.register(PartyRosterRepository.class, new InMemoryPartyRosterRepository());
-        new PartyServiceContribution().register(builder);
-        new DungeonServiceContribution().register(builder);
-        return builder.build();
+    private static TravelRuntimeFixture travelServices(DungeonMapRepository repository) {
+        PartyServiceAssembly.Component party =
+                PartyServiceAssembly.create(new InMemoryPartyRosterRepository());
+        DungeonServiceAssembly.Component dungeon = DungeonServiceAssembly.create(
+                repository,
+                party.activeParty(),
+                party.travelPositions(),
+                party.application(),
+                party.mutation());
+        return new TravelRuntimeFixture(dungeon, party);
+    }
+
+    private record TravelRuntimeFixture(
+            DungeonServiceAssembly.Component dungeon,
+            PartyServiceAssembly.Component party
+    ) {
     }
 
     private static void movePartyTokenToTravelPosition(

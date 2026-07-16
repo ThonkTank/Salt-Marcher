@@ -6,18 +6,18 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
-import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.data.dungeon.repository.SqliteDungeonMapRepository;
-import src.domain.dungeon.DungeonServiceContribution;
+import src.data.party.repository.SqlitePartyRosterRepository;
+import src.domain.dungeon.DungeonServiceAssembly;
 import src.domain.dungeon.DungeonTravelRuntimeApplicationService;
-import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.dungeon.published.DungeonTravelLocationKind;
+import src.domain.dungeon.published.DungeonMapCatalogModel;
 import src.domain.dungeon.published.TravelDungeonModel;
 import src.domain.dungeon.published.TravelDungeonSnapshot;
 import src.domain.party.PartyApplicationService;
+import src.domain.party.PartyServiceAssembly;
 import src.domain.party.published.CharacterDraft;
 import src.domain.party.published.CreateCharacterCommand;
 import src.domain.party.published.MembershipState;
@@ -108,8 +108,7 @@ public final class DungeonTravelProjectionLevelTest {
             DungeonEditorTestSupport.click(
                     DungeonEditorTestSupport.button(fixture.binding().controlsRoot(), "-"));
 
-            fixture.runtime().context().services().require(DungeonTravelRuntimeApplicationService.class)
-                    .performAction(-1);
+            fixture.runtime().travel().performAction(-1);
             TravelDungeonSnapshot invalidActionSnapshot = fixture.travelModel().current();
             DungeonEditorTestSupport.assertTrue(
                     invalidActionSnapshot.workspaceState() != null
@@ -141,12 +140,11 @@ public final class DungeonTravelProjectionLevelTest {
         long transitionId = runtime.database().transitionIdByDescription(mapId, "Initial transition.");
         movePartyTokenToMap(runtime.party(), mapId);
         PartyTravelPositionsResult partyPositionsBefore = runtime.partyPositions().current();
-        runtime.context().services().require(DungeonTravelRuntimeApplicationService.class)
-                .refresh();
+        runtime.travel().refresh();
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
 
         TestBinding binding = bindTest(runtime);
-        TravelDungeonModel travelModel = runtime.context().services().require(TravelDungeonModel.class);
+        TravelDungeonModel travelModel = runtime.travelModel();
         return new ProjectionLevelFixture(
                 runtime,
                 mapId,
@@ -165,13 +163,12 @@ public final class DungeonTravelProjectionLevelTest {
         long sourceTransitionId = runtime.database().transitionIdByDescription(sourceMapId, "Source transition.");
         long targetTransitionId = runtime.database().transitionIdByDescription(targetMapId, "Target transition.");
         movePartyTokenToTransition(runtime.party(), sourceMapId, sourceTransitionId, 5, 2, 0);
-        runtime.context().services().require(DungeonTravelRuntimeApplicationService.class)
-                .refresh();
+        runtime.travel().refresh();
         long sourceGeometryRowsBefore = runtime.database().countAuthoredGeometryRows(sourceMapId);
         long targetGeometryRowsBefore = runtime.database().countAuthoredGeometryRows(targetMapId);
 
         TestBinding binding = bindTest(runtime);
-        TravelDungeonModel travelModel = runtime.context().services().require(TravelDungeonModel.class);
+        TravelDungeonModel travelModel = runtime.travelModel();
         String linkedActionLabel = transitionActionLabel(
                 sourceTransitionId,
                 "Dungeon " + targetMapId + " / Übergang " + targetTransitionId);
@@ -218,13 +215,11 @@ public final class DungeonTravelProjectionLevelTest {
         long blockedTransitionId =
                 blockedRuntime.database().transitionIdByDescription(blockedMapId, "Unlinked transition.");
         movePartyTokenToTransition(blockedRuntime.party(), blockedMapId, blockedTransitionId, 5, 2, 0);
-        blockedRuntime.context().services().require(DungeonTravelRuntimeApplicationService.class)
-                .refresh();
+        blockedRuntime.travel().refresh();
         PartyTravelPositionsResult blockedPartyBefore = blockedRuntime.partyPositions().current();
         long blockedGeometryRowsBefore = blockedRuntime.database().countAuthoredGeometryRows(blockedMapId);
         TestBinding blockedBinding = bindTest(blockedRuntime);
-        TravelDungeonModel blockedTravelModel =
-                blockedRuntime.context().services().require(TravelDungeonModel.class);
+        TravelDungeonModel blockedTravelModel = blockedRuntime.travelModel();
         String blockedActionLabel = transitionActionLabel(blockedTransitionId, "Kein Ziel verknuepft");
 
         DungeonEditorTestSupport.assertTrue(
@@ -248,7 +243,8 @@ public final class DungeonTravelProjectionLevelTest {
     }
 
     private static TestBinding bindTest(TestRuntime runtime) {
-        ShellBinding shellBinding = new DungeonTravelContribution().bind(runtime.context());
+        ShellBinding shellBinding = new DungeonTravelContribution(
+                runtime.travel(), runtime.mapCatalog(), runtime.travelModel()).bind();
         Parent controlsRoot = DungeonEditorTestSupport.slot(shellBinding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
         DungeonMapView mapView = DungeonEditorTestSupport.slot(shellBinding, ShellSlot.COCKPIT_MAIN, DungeonMapView.class);
         Parent stateRoot = DungeonEditorTestSupport.slot(shellBinding, ShellSlot.COCKPIT_STATE, Parent.class);
@@ -430,7 +426,9 @@ public final class DungeonTravelProjectionLevelTest {
     }
 
     private record TestRuntime(
-            ShellRuntimeContext context,
+            DungeonTravelRuntimeApplicationService travel,
+            DungeonMapCatalogModel mapCatalog,
+            TravelDungeonModel travelModel,
             PartyApplicationService party,
             PartyTravelPositionsModel partyPositions,
             DungeonEditorTestPersistence.DatabaseAssertions database
@@ -440,16 +438,20 @@ public final class DungeonTravelProjectionLevelTest {
                     new DungeonEditorTestPersistence.DatabaseAssertions();
             database.clearDungeonData();
             database.clearPartyData();
-            ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-            builder.register(DungeonMapRepository.class, new SqliteDungeonMapRepository());
-            new src.data.party.PartyServiceContribution().register(builder);
-            new src.domain.party.PartyServiceContribution().register(builder);
-            new DungeonServiceContribution().register(builder);
-            ServiceRegistry registry = builder.build();
+            PartyServiceAssembly.Component party =
+                    PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+            DungeonServiceAssembly.Component dungeon = DungeonServiceAssembly.create(
+                    new SqliteDungeonMapRepository(),
+                    party.activeParty(),
+                    party.travelPositions(),
+                    party.application(),
+                    party.mutation());
             return new TestRuntime(
-                    new ShellRuntimeContext(DungeonEditorTestPersistence.EmptyInspectorSink.INSTANCE, registry),
-                    registry.require(PartyApplicationService.class),
-                    registry.require(PartyTravelPositionsModel.class),
+                    dungeon.travel(),
+                    dungeon.mapCatalog(),
+                    dungeon.travelModel(),
+                    party.application(),
+                    party.travelPositions(),
                     database);
         }
     }

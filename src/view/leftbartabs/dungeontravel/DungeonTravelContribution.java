@@ -7,11 +7,27 @@ import shell.api.NavigationGroupSpec;
 import shell.api.ShellBinding;
 import shell.api.ShellContribution;
 import shell.api.ShellContributionSpec;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellLeftBarTabMode;
 import shell.api.ShellLeftBarTabSpec;
+import src.domain.dungeon.DungeonTravelRuntimeApplicationService;
+import src.domain.dungeon.published.DungeonMapCatalogModel;
+import src.domain.dungeon.published.TravelDungeonModel;
 
 public final class DungeonTravelContribution implements ShellContribution {
+
+    private final DungeonTravelRuntimeApplicationService travel;
+    private final DungeonMapCatalogModel mapCatalogModel;
+    private final TravelDungeonModel travelModel;
+
+    public DungeonTravelContribution(
+            DungeonTravelRuntimeApplicationService travel,
+            DungeonMapCatalogModel mapCatalogModel,
+            TravelDungeonModel travelModel
+    ) {
+        this.travel = Objects.requireNonNull(travel, "travel");
+        this.mapCatalogModel = Objects.requireNonNull(mapCatalogModel, "mapCatalogModel");
+        this.travelModel = Objects.requireNonNull(travelModel, "travelModel");
+    }
 
     @Override
     public ShellContributionSpec registrationSpec() {
@@ -25,7 +41,7 @@ public final class DungeonTravelContribution implements ShellContribution {
     }
 
     @Override
-    public ShellBinding bind(ShellRuntimeContext runtimeContext) {
-        return new DungeonTravelBinder(Objects.requireNonNull(runtimeContext, "runtimeContext")).bind();
+    public ShellBinding bind() {
+        return new DungeonTravelBinder(travel, mapCatalogModel, travelModel).bind();
     }
 }

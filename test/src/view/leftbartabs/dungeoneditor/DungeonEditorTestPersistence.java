@@ -18,7 +18,7 @@ import java.util.Set;
 import src.data.dungeon.model.DungeonPersistenceSchema;
 import src.data.dungeon.repository.SqliteDungeonMapRepository;
 import src.data.party.model.PartyPersistenceSchema;
-import src.domain.dungeon.DungeonServiceContribution;
+import src.domain.dungeon.DungeonServiceAssembly;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
@@ -27,10 +27,10 @@ import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorStateModel;
-import shell.api.InspectorEntrySpec;
-import shell.api.InspectorSink;
-import shell.api.ServiceRegistry;
-import shell.api.ShellRuntimeContext;
+import src.domain.party.PartyServiceAssembly;
+import src.domain.party.model.roster.PartyRoster;
+import src.domain.party.model.roster.repository.PartyRosterRepository;
+import src.features.dungeon.runtime.DungeonEditorRuntimeDependencies;
 
 class DungeonEditorTestPersistence {
 
@@ -50,7 +50,7 @@ class DungeonEditorTestPersistence {
     }
 
     record TestRuntime(
-            ShellRuntimeContext context,
+            DungeonEditorRuntimeDependencies editorDependencies,
             DungeonEditorControlsModel controlsModel,
             DungeonEditorMapSurfaceModel mapSurfaceModel,
             DungeonEditorStateModel stateModel,
@@ -59,33 +59,47 @@ class DungeonEditorTestPersistence {
         static TestRuntime create() {
             DatabaseAssertions database = new DatabaseAssertions();
             database.clearDungeonData();
-            ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-            builder.register(DungeonMapRepository.class, new SqliteDungeonMapRepository());
-            new DungeonServiceContribution().register(builder);
-            ServiceRegistry registry = builder.build();
+            DungeonServiceAssembly.Component dungeon =
+                    createDungeonServices(new SqliteDungeonMapRepository());
             return new TestRuntime(
-                    new ShellRuntimeContext(EmptyInspectorSink.INSTANCE, registry),
-                    registry.require(DungeonEditorControlsModel.class),
-                    registry.require(DungeonEditorMapSurfaceModel.class),
-                    registry.require(DungeonEditorStateModel.class),
+                    DungeonEditorTestPersistence.editorDependencies(dungeon),
+                    dungeon.editorControls(),
+                    dungeon.editorMapSurface(),
+                    dungeon.editorState(),
                     database);
         }
     }
 
-    enum EmptyInspectorSink implements InspectorSink {
-        INSTANCE;
+    static DungeonServiceAssembly.Component createDungeonServices(DungeonMapRepository repository) {
+        PartyServiceAssembly.Component party = PartyServiceAssembly.create(new EmptyPartyRosterRepository());
+        return DungeonServiceAssembly.create(
+                repository,
+                party.activeParty(),
+                party.travelPositions(),
+                party.application(),
+                party.mutation());
+    }
+
+    static DungeonEditorRuntimeDependencies editorDependencies(DungeonServiceAssembly.Component dungeon) {
+        return new DungeonEditorRuntimeDependencies(
+                new DungeonEditorRuntimeDependencies.CompatibilityReadbackModels(
+                        dungeon.editorControls(),
+                        dungeon.editorMapSurface(),
+                        dungeon.editorState()),
+                dungeon.editor());
+    }
+
+    private static final class EmptyPartyRosterRepository implements PartyRosterRepository {
+        private PartyRoster roster = new PartyRoster(1L, List.of());
 
         @Override
-        public void push(InspectorEntrySpec entry) {
+        public PartyRoster load() {
+            return roster;
         }
 
         @Override
-        public void clear() {
-        }
-
-        @Override
-        public boolean isShowing(Object entryKey) {
-            return false;
+        public void save(PartyRoster roster) {
+            this.roster = Objects.requireNonNull(roster, "roster");
         }
     }
 

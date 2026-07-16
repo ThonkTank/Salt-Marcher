@@ -4,14 +4,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.Pane;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
+import shell.api.ContributionKey;
 import shell.host.AppShell;
 import src.data.persistencecore.sqlite.SmokeStartupSqliteConnectionFactory;
 
@@ -37,30 +41,67 @@ public final class SmokeStartupTest {
         new Scene(shell, 1150, 700);
         shell.applyCss();
         shell.layout();
-        require(!shell.lookupAll(".nav-btn").isEmpty(), "Expected composed navigation entries.");
+        List<ToggleButton> navigation = navigationButtons(shell);
         require(
-                shell.lookup(".title-large") instanceof Label title && !title.getText().isBlank(),
-                "Expected startup navigation to expose a titled workspace.");
+                navigation.stream().map(Node::getAccessibleText).toList().equals(List.of(
+                        "Session Planner",
+                        "World Planner",
+                        "Dungeon-Editor",
+                        "Dungeon-Reise",
+                        "Hex-Karte",
+                        "Encounter-Planer")),
+                "Expected exact explicit navigation manifest in shell order.");
         require(
-                shell.lookup(".toolbar") instanceof Pane toolbar && toolbar.getChildren().size() > 2,
-                "Expected at least one composed top-bar contribution.");
-        require(hasReachableStateTabs(shell), "Expected composed state-tab entries on a navigable workspace.");
+                shell.lookup(".title-large") instanceof Label title && "Dungeon-Editor".equals(title.getText()),
+                "Expected Dungeon-Editor as explicit default landing.");
+        require(
+                navigation.stream().filter(ToggleButton::isSelected).map(Node::getAccessibleText).toList()
+                        .equals(List.of("Dungeon-Editor")),
+                "Expected only the default landing navigation entry to be selected.");
+        require(
+                shell.lookup(".toolbar") instanceof Pane toolbar && toolbar.getChildren().size() == 4,
+                "Expected title, spacer, and exactly two explicit top-bar contributions.");
+        List<String> topBarTooltips = shell.lookupAll(".toolbar .button").stream()
+                .filter(Button.class::isInstance)
+                .map(Button.class::cast)
+                .map(Button::getTooltip)
+                .filter(java.util.Objects::nonNull)
+                .map(javafx.scene.control.Tooltip::getText)
+                .sorted()
+                .toList();
+        require(topBarTooltips.equals(List.of(
+                        "Adventuring-Day-Rechner öffnen",
+                        "Party-Panel öffnen (Alt+P)")),
+                "Expected distinct Adventuring Day and Party top-bar surfaces, but was " + topBarTooltips + ".");
+        assertStateTabManifest(shell, navigation);
         openTempSqliteConnection();
         require(Instant.now().isBefore(deadline), "Smoke startup exceeded timeout.");
     }
 
-    private static boolean hasReachableStateTabs(AppShell shell) {
-        for (Node node : shell.lookupAll(".nav-btn")) {
-            if (node instanceof ToggleButton button) {
-                button.fire();
-                shell.applyCss();
-                shell.layout();
-                if (!shell.lookupAll(".scene-tab").isEmpty()) {
-                    return true;
-                }
-            }
-        }
-        return false;
+    private static List<ToggleButton> navigationButtons(AppShell shell) {
+        require(shell.lookup(".nav-sidebar") instanceof Pane, "Expected public navigation sidebar surface.");
+        Pane sidebar = (Pane) shell.lookup(".nav-sidebar");
+        return sidebar.getChildrenUnmodifiable().stream()
+                .filter(ToggleButton.class::isInstance)
+                .map(ToggleButton.class::cast)
+                .toList();
+    }
+
+    private static void assertStateTabManifest(AppShell shell, List<ToggleButton> navigation) {
+        require(navigation.stream().anyMatch(button -> "Encounter-Planer".equals(button.getAccessibleText())),
+                "Encounter-Planer navigation entry missing.");
+        shell.navigateTo(new ContributionKey("catalog"));
+        shell.applyCss();
+        shell.layout();
+        List<String> stateTabs = shell.lookupAll(".scene-tab").stream()
+                .filter(ToggleButton.class::isInstance)
+                .map(ToggleButton.class::cast)
+                .sorted(Comparator.comparingDouble(button ->
+                        button.localToScene(button.getBoundsInLocal()).getMinX()))
+                .map(ToggleButton::getText)
+                .toList();
+        require(stateTabs.equals(List.of("Encounter", "Reise")),
+                "Expected exact explicit state-tab manifest in shell order, but was " + stateTabs + ".");
     }
 
     private static void openTempSqliteConnection() throws Exception {

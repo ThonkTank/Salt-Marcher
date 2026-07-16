@@ -34,7 +34,7 @@ surface.
 
 ## Project Map
 
-- `bootstrap/`: app startup and contribution discovery
+- `bootstrap/`: explicit application startup and composition
 - `shell/`: generic shell API and host runtime
 - `src/features/`: feature-runtime implementations for migrated surfaces
 - `src/domain/`: domain models, use cases, published state, and ports

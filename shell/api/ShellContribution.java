@@ -7,5 +7,5 @@ public interface ShellContribution {
 
     ShellContributionSpec registrationSpec();
 
-    ShellBinding bind(ShellRuntimeContext runtimeContext);
+    ShellBinding bind();
 }

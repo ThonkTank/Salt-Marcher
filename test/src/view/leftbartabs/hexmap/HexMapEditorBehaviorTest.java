@@ -36,10 +36,11 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
-import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
+import src.data.hex.repository.SqliteHexMapRepository;
+import src.data.party.repository.SqlitePartyRosterRepository;
+import src.domain.hex.HexServiceAssembly;
 import src.data.hex.model.HexPersistenceSchema;
 import src.domain.hex.HexEditorApplicationService;
 import src.domain.hex.HexTravelApplicationService;
@@ -62,6 +63,7 @@ import src.domain.hex.published.SelectHexTileCommand;
 import src.domain.hex.published.SetHexEditorToolCommand;
 import src.domain.hex.published.UpdateHexMapCommand;
 import src.domain.party.PartyApplicationService;
+import src.domain.party.PartyServiceAssembly;
 import src.domain.party.published.CharacterDraft;
 import src.domain.party.published.CreateCharacterCommand;
 import src.domain.party.published.MembershipState;
@@ -784,10 +786,7 @@ public final class HexMapEditorBehaviorTest {
             throw new IllegalStateException("HEX-EDITOR-010 expected fresh Hex editor model before binder activation.");
         }
         List<String> events = new ArrayList<>();
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        builder.register(HexEditorApplicationService.class, runtime.editor());
-        builder.register(HexTravelApplicationService.class, runtime.hexTravel());
-        builder.register(HexEditorModel.class, new HexEditorModel(
+        HexEditorModel editorModel = new HexEditorModel(
                 () -> {
                     events.add("editor.current");
                     return runtime.model().current();
@@ -795,8 +794,8 @@ public final class HexMapEditorBehaviorTest {
                 listener -> {
                     events.add("editor.subscribe");
                     return runtime.model().subscribe(listener);
-                }));
-        builder.register(HexTravelModel.class, new HexTravelModel(
+                });
+        HexTravelModel travelModel = new HexTravelModel(
                 () -> {
                     events.add("travel.current");
                     return runtime.travel().current();
@@ -804,10 +803,10 @@ public final class HexMapEditorBehaviorTest {
                 listener -> {
                     events.add("travel.subscribe");
                     return runtime.travel().subscribe(listener);
-                }));
-        ShellRuntimeContext context = new ShellRuntimeContext(NoopInspectorSink.INSTANCE, builder.build());
+                });
 
-        ShellBinding binding = new HexMapBinder(context).bind();
+        ShellBinding binding = new HexMapBinder(
+                runtime.editor(), runtime.hexTravel(), editorModel, travelModel).bind();
 
         assertEquals(List.of(
                 "editor.subscribe",
@@ -1010,7 +1009,7 @@ public final class HexMapEditorBehaviorTest {
 
     private static void assertShellBoundContributionRoute() {
         RuntimeSurface runtime = RuntimeSurface.create();
-        ShellBinding binding = new HexMapContribution().bind(runtime.shellContext());
+        ShellBinding binding = runtime.contribution().bind();
         Parent controlsRoot = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
         HexMapMainView mainView = slot(binding, ShellSlot.COCKPIT_MAIN, HexMapMainView.class);
         HexMapStateView stateView = slot(binding, ShellSlot.COCKPIT_STATE, HexMapStateView.class);
@@ -1094,7 +1093,7 @@ public final class HexMapEditorBehaviorTest {
                     "HEX-EDITOR-012 shell-bound travel preserves party token characters");
 
             RuntimeSurface reloadedRuntime = RuntimeSurface.create();
-            ShellBinding reloadBinding = new HexMapContribution().bind(reloadedRuntime.shellContext());
+            ShellBinding reloadBinding = reloadedRuntime.contribution().bind();
             slot(reloadBinding, ShellSlot.COCKPIT_MAIN, HexMapMainView.class);
             HexEditorSnapshot reloaded = reloadedRuntime.current();
             assertEquals(SHELL_BOUND_UPDATED_NAME, selectedMap(reloaded).displayName(),
@@ -1690,7 +1689,6 @@ public final class HexMapEditorBehaviorTest {
     }
 
     private record RuntimeSurface(
-            ServiceRegistry services,
             HexEditorApplicationService editor,
             HexEditorModel model,
             HexTravelModel travel,
@@ -1700,25 +1698,22 @@ public final class HexMapEditorBehaviorTest {
             DatabaseAssertions database
     ) {
         static RuntimeSurface create() {
-            ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-            new src.data.hex.HexServiceContribution().register(builder);
-            new src.data.party.PartyServiceContribution().register(builder);
-            new src.domain.party.PartyServiceContribution().register(builder);
-            new src.domain.hex.HexServiceContribution().register(builder);
-            ServiceRegistry registry = builder.build();
+            PartyServiceAssembly.Component party =
+                    PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+            HexServiceAssembly hex = new HexServiceAssembly(
+                    new SqliteHexMapRepository(), party.travelPositions(), party.application());
             return new RuntimeSurface(
-                    registry,
-                    registry.require(HexEditorApplicationService.class),
-                    registry.require(HexEditorModel.class),
-                    registry.require(HexTravelModel.class),
-                    registry.require(HexTravelApplicationService.class),
-                    registry.require(PartyApplicationService.class),
-                    registry.require(PartySnapshotModel.class),
+                    hex.editorApplication(),
+                    hex.editorModel(),
+                    hex.travelModel(),
+                    hex.travelApplication(),
+                    party.application(),
+                    party.snapshot(),
                     new DatabaseAssertions());
         }
 
-        ShellRuntimeContext shellContext() {
-            return new ShellRuntimeContext(NoopInspectorSink.INSTANCE, services);
+        HexMapContribution contribution() {
+            return new HexMapContribution(editor, hexTravel, model, travel);
         }
 
         HexEditorSnapshot current() {
