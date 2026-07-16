@@ -95,8 +95,36 @@ public record GenerationResult(
             String container,
             String rarity,
             boolean cursed,
-            String text
+            String text,
+            String baseLootItemId,
+            String magicSource,
+            String curseId
     ) {
+        public LootLine {
+            role = role == null ? "" : role;
+            item = item == null ? "" : item;
+            container = container == null ? "none" : container;
+            rarity = rarity == null ? "" : rarity;
+            text = text == null ? "" : text;
+            baseLootItemId = baseLootItemId == null ? "" : baseLootItemId;
+            magicSource = magicSource == null ? "" : magicSource;
+            curseId = curseId == null ? "" : curseId;
+        }
+
+        public LootLine(
+                int lineId,
+                String role,
+                String item,
+                int quantity,
+                long unitCp,
+                long actualCp,
+                String container,
+                String rarity,
+                boolean cursed,
+                String text
+        ) {
+            this(lineId, role, item, quantity, unitCp, actualCp, container, rarity, cursed, text, "", "", "");
+        }
     }
 
     public record RewardSummary(long normalActualCp, long overstockActualCp, int magicCount, List<String> rarities) {

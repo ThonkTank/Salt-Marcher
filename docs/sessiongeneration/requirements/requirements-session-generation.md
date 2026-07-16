@@ -24,7 +24,9 @@ optional Encounter count, and explicit seed.
 
 ## Required Behavior
 
-- The initial ruleset MUST be `sheet-v1` and preserve its observed quirks.
+- The initial ruleset MUST be `sheet-v1` and execute the workbook formulas,
+  including Top-4 Cartesian Encounter candidates, even when an exported XLSX
+  cached value predates its array formula.
 - Identical request and reference-data hash MUST produce identical content.
 - Generation MUST use session-local participants, not mutate Party membership,
   and reject a session without resolvable participant levels.
@@ -45,7 +47,15 @@ optional Encounter count, and explicit seed.
 ## Acceptance
 
 - Seed `179974`, levels `{3:2, 4:2}`, share `0.6`, and three Encounters produce
-  targets `680/1000/1800` and selected XP `700/1000/1875`.
+  targets `680/1000/1800`, candidate counts `86/128/443`, and selected XP
+  `700/1000/1800` after formula recalculation. The stale workbook cache instead
+  contains `700/1000/1875` and is retained only as source evidence.
+- Enspelled resolution, ranged Spell decisions, all nine coin profiles, Useful
+  variants, cumulative Packing, complete Magic distribution, and separate
+  normal/Overstock Magic summaries each have an executable acceptance case.
+- Hard audits reject missing candidates, invalid slot or ID structure,
+  unresolved draws, overfit lines, invalid Packing, and budget deviations above
+  the documented tolerance.
 - The reference import proves all table counts and the source content hash.
 - Preview causes no Session or Encounter write.
 - Apply is retry-safe and produces no duplicate generated Encounter plans.
@@ -56,3 +66,6 @@ optional Encounter count, and explicit seed.
 - `resources/sessiongeneration/sheet-v1/manifest.json`
 - `docs/sessionplanner/requirements/requirements-session-planner.md`
 - `docs/encounter/domain/domain-encounter.md`
+- `/home/aaron/Schreibtisch/projects/references/saltmarcher/session-generation/encounter-loot-generation-design.md`
+- `/home/aaron/Schreibtisch/projects/references/.tools/markdown/saltmarcher-encounter-loot-generation-design-2026-07-16.md`
+- `https://docs.google.com/spreadsheets/d/106AZXUTiRqKQ3bvh7FILYkZoHX1S_rAHZ4EcH7u2ino`

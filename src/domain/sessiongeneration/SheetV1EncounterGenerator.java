@@ -27,7 +27,7 @@ final class SheetV1EncounterGenerator {
         crById = loadChallengeRatings(catalog);
     }
 
-    List<EncounterPlan> generate(GenerationRequest request, SessionContext context) {
+    EncounterOutput generate(GenerationRequest request, SessionContext context) {
         int count = encounterCount(request);
         List<Integer> targets = targets(request, context.sessionXpTarget(), count);
         int partyLevel = Math.max(1, Math.min(20, context.averageLevel().setScale(0, RoundingMode.HALF_UP).intValue()));
@@ -37,7 +37,12 @@ final class SheetV1EncounterGenerator {
         for (int index = 0; index < targets.size(); index++) {
             selected.add(select(request.seed(), index + 1, targets.get(index), patterns, blocksByRole));
         }
-        return rankBossiness(request, selected);
+        return new EncounterOutput(
+                rankBossiness(request, selected),
+                count,
+                selected.stream().map(value -> new EncounterAudit(
+                        value.encounterNumber(), value.candidateCount(), value.fitCandidateCount(), value.selectedFit()))
+                        .toList());
     }
 
     private int encounterCount(GenerationRequest request) {
@@ -93,7 +98,7 @@ final class SheetV1EncounterGenerator {
                 List<Block> best = blocksByRole.getOrDefault(role, List.of()).stream()
                         .filter(block -> block.adjustedXp() <= target * 1.05d)
                         .sorted(Comparator.comparingDouble(block -> Math.abs(block.adjustedXp() - target / (double) pattern.roles().size())))
-                        .limit(1)
+                        .limit(4)
                         .toList();
                 if (best.isEmpty()) {
                     complete = false;
@@ -114,10 +119,13 @@ final class SheetV1EncounterGenerator {
                 .toList();
         List<Candidate> pool = (fit.isEmpty() ? candidates : fit).stream().limit(3).toList();
         if (pool.isEmpty()) {
-            return new Selected(encounterNumber, target, null);
+            return new Selected(encounterNumber, target, null, candidates.size(), fit.size(), false);
         }
         int pick = (int) Math.floorMod(seed + encounterNumber * 719L, pool.size());
-        return new Selected(encounterNumber, target, pool.get(pick));
+        Candidate selected = pool.get(pick);
+        return new Selected(
+                encounterNumber, target, selected, candidates.size(), fit.size(),
+                Math.abs(selected.adjustedXp() - target) <= target * FIT);
     }
 
     private static void combine(
@@ -290,6 +298,24 @@ final class SheetV1EncounterGenerator {
         }
     }
 
-    private record Selected(int encounterNumber, int target, Candidate candidate) {
+    record EncounterOutput(List<EncounterPlan> plans, int targetCount, List<EncounterAudit> audits) {
+    }
+
+    record EncounterAudit(
+            int encounterNumber,
+            int candidateCount,
+            int fitCandidateCount,
+            boolean selectedFit
+    ) {
+    }
+
+    private record Selected(
+            int encounterNumber,
+            int target,
+            Candidate candidate,
+            int candidateCount,
+            int fitCandidateCount,
+            boolean selectedFit
+    ) {
     }
 }

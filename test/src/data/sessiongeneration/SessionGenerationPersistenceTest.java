@@ -2,6 +2,7 @@ package src.data.sessiongeneration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -13,13 +14,27 @@ import src.domain.sessiongeneration.SheetV1GenerationEngine;
 class SessionGenerationPersistenceTest {
 
     @Test
-    void binaryCodecRoundTripsTheCompleteGoldenMasterResult() {
+    void binaryCodecRoundTripsTheCompleteFormulaMasterResult() {
         GenerationResultBinaryCodec codec = new GenerationResultBinaryCodec();
         GenerationResult generated = engine().generate(request(), 91L);
 
         GenerationResult decoded = codec.decode(codec.encode(generated));
 
         assertEquals(generated, decoded);
+    }
+
+    @Test
+    void binaryCodecStillReadsVersionOneWithoutStructuredMagicMetadata() {
+        GenerationResultBinaryCodec codec = new GenerationResultBinaryCodec();
+        GenerationResult generated = engine().generate(request(), 92L);
+
+        GenerationResult decoded = codec.decode(codec.encodeVersion1(generated));
+
+        assertEquals(generated.encounters(), decoded.encounters());
+        assertEquals(generated.formattedText(), decoded.formattedText());
+        assertTrue(decoded.treasures().stream().flatMap(treasure -> treasure.loot().stream())
+                .allMatch(line -> line.baseLootItemId().isBlank()
+                        && line.magicSource().isBlank() && line.curseId().isBlank()));
     }
 
     @Test

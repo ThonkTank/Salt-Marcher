@@ -50,7 +50,7 @@ public final class SqliteSessionGenerationRepository implements SessionGeneratio
     public GenerationResult save(GenerationResult result) {
         Objects.requireNonNull(result, "result");
         String sql = "INSERT INTO " + TABLE
-                + " (generation_id, payload_version, data_content_hash, payload) VALUES (?, 1, ?, ?)";
+                + " (generation_id, payload_version, data_content_hash, payload) VALUES (?, 2, ?, ?)";
         try (Connection connection = openReadyConnection();
                 PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, result.generationId());

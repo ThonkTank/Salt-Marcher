@@ -10,9 +10,16 @@ Source of Truth: Session-generation API, compatibility, and persistence semantic
 `SessionGenerationApplicationService.generate(GenerationRequest)` returns a
 complete immutable `GenerationResult`; `load(generationId)` resolves a result
 from the local SQLite store across restarts. Consumers MUST treat result
-collections as ordered. Stored payload version `1` is append-only: an existing
-generation ID cannot be overwritten, and an unsupported payload version fails
-explicitly instead of being guessed or silently regenerated.
+collections as ordered. New results use stored payload version `2`; readers
+MUST continue to accept version `1`, whose Loot lines have no structured Magic
+metadata. An existing generation ID cannot be overwritten, and an unsupported
+payload version fails explicitly instead of being guessed or silently
+regenerated.
+
+Each version-2 Loot line carries optional `baseLootItemId`, `magicSource`, and
+`curseId`. `magicSource` is empty for non-Magic Loot and otherwise `curated` or
+`enspelled`. A resolved Enspelled line MUST retain its concrete base Loot item
+ID; a cursed line MUST retain its selected Curse ID.
 
 Required request fields are player levels, fraction, seed, ruleset, and locale.
 Encounter count is optional and otherwise derived by `sheet-v1`. Levels outside
@@ -52,3 +59,8 @@ maintenance input, not a runtime dependency.
 
 JUnit proves import counts, Golden Master, determinism, replacement invariants,
 and existing Session Planner behavior. `./gradlew check` is merge-blocking.
+
+## References
+
+- `/home/aaron/Schreibtisch/projects/references/saltmarcher/session-generation/encounter-loot-generation-design.md`
+- `/home/aaron/Schreibtisch/projects/references/.tools/markdown/saltmarcher-encounter-loot-generation-design-2026-07-16.md`

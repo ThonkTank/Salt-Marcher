@@ -25,18 +25,26 @@ import src.domain.sessiongeneration.GenerationResult.TreasureResult;
 final class GenerationResultBinaryCodec {
 
     private static final int MAGIC = 0x534D4731;
-    private static final int VERSION = 1;
+    private static final int VERSION = 2;
 
     byte[] encode(GenerationResult result) {
+        return encode(result, VERSION);
+    }
+
+    byte[] encodeVersion1(GenerationResult result) {
+        return encode(result, 1);
+    }
+
+    private byte[] encode(GenerationResult result, int version) {
         try (ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                 DataOutputStream output = new DataOutputStream(bytes)) {
             output.writeInt(MAGIC);
-            output.writeInt(VERSION);
+            output.writeInt(version);
             output.writeLong(result.generationId());
             writeRequest(output, result.request());
             writeSession(output, result.session());
             writeEncounters(output, result.encounters());
-            writeTreasures(output, result.treasures());
+            writeTreasures(output, result.treasures(), version);
             writeSummary(output, result.summary());
             writeString(output, result.formattedText());
             writeAudits(output, result.audits());
@@ -50,14 +58,17 @@ final class GenerationResultBinaryCodec {
 
     GenerationResult decode(byte[] payload) {
         try (DataInputStream input = new DataInputStream(new ByteArrayInputStream(payload))) {
-            if (input.readInt() != MAGIC || input.readInt() != VERSION) {
+            if (input.readInt() != MAGIC) {
                 throw new IllegalStateException("Unsupported generation result payload.");
             }
+            int version = input.readInt();
+            if (version < 1 || version > VERSION) throw new IllegalStateException(
+                    "Unsupported generation result payload version: " + version);
             long id = input.readLong();
             GenerationRequest request = readRequest(input);
             SessionContext session = readSession(input);
             List<EncounterPlan> encounters = readList(input, this::readEncounter);
-            List<TreasureResult> treasures = readList(input, this::readTreasure);
+            List<TreasureResult> treasures = readList(input, stream -> readTreasure(stream, version));
             RewardSummary summary = readSummary(input);
             String formattedText = readString(input);
             List<AuditResult> audits = readList(input, stream -> new AuditResult(
@@ -161,7 +172,11 @@ final class GenerationResultBinaryCodec {
                 input.readDouble(), input.readInt(), readString(input));
     }
 
-    private static void writeTreasures(DataOutputStream output, List<TreasureResult> treasures) throws IOException {
+    private static void writeTreasures(
+            DataOutputStream output,
+            List<TreasureResult> treasures,
+            int version
+    ) throws IOException {
         output.writeInt(treasures.size());
         for (TreasureResult treasure : treasures) {
             output.writeInt(treasure.treasureId());
@@ -173,11 +188,11 @@ final class GenerationResultBinaryCodec {
             output.writeLong(treasure.targetCp());
             output.writeLong(treasure.actualCp());
             output.writeInt(treasure.loot().size());
-            for (LootLine line : treasure.loot()) writeLootLine(output, line);
+            for (LootLine line : treasure.loot()) writeLootLine(output, line, version);
         }
     }
 
-    private TreasureResult readTreasure(DataInputStream input) throws IOException {
+    private TreasureResult readTreasure(DataInputStream input, int version) throws IOException {
         int id = input.readInt();
         String stock = readString(input);
         String channel = readString(input);
@@ -185,11 +200,11 @@ final class GenerationResultBinaryCodec {
         String theme = readString(input);
         long target = input.readLong();
         long actual = input.readLong();
-        List<LootLine> loot = readList(input, this::readLootLine);
+        List<LootLine> loot = readList(input, stream -> readLootLine(stream, version));
         return new TreasureResult(id, stock, channel, anchor, theme, target, actual, loot);
     }
 
-    private static void writeLootLine(DataOutputStream output, LootLine line) throws IOException {
+    private static void writeLootLine(DataOutputStream output, LootLine line, int version) throws IOException {
         output.writeInt(line.lineId());
         writeString(output, line.role());
         writeString(output, line.item());
@@ -200,12 +215,30 @@ final class GenerationResultBinaryCodec {
         writeString(output, line.rarity());
         output.writeBoolean(line.cursed());
         writeString(output, line.text());
+        if (version >= 2) {
+            writeString(output, line.baseLootItemId());
+            writeString(output, line.magicSource());
+            writeString(output, line.curseId());
+        }
     }
 
-    private LootLine readLootLine(DataInputStream input) throws IOException {
+    private LootLine readLootLine(DataInputStream input, int version) throws IOException {
+        int lineId = input.readInt();
+        String role = readString(input);
+        String item = readString(input);
+        int quantity = input.readInt();
+        long unitCp = input.readLong();
+        long actualCp = input.readLong();
+        String container = readString(input);
+        String rarity = readString(input);
+        boolean cursed = input.readBoolean();
+        String text = readString(input);
+        String baseItemId = version >= 2 ? readString(input) : "";
+        String magicSource = version >= 2 ? readString(input) : "";
+        String curseId = version >= 2 ? readString(input) : "";
         return new LootLine(
-                input.readInt(), readString(input), readString(input), input.readInt(), input.readLong(),
-                input.readLong(), readString(input), readString(input), input.readBoolean(), readString(input));
+                lineId, role, item, quantity, unitCp, actualCp, container, rarity, cursed, text,
+                baseItemId, magicSource, curseId);
     }
 
     private static void writeSummary(DataOutputStream output, RewardSummary summary) throws IOException {
