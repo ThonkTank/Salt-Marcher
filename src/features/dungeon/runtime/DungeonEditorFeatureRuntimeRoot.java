@@ -23,14 +23,15 @@ public final class DungeonEditorFeatureRuntimeRoot
         DungeonEditorRuntimeDependencies.CompatibilityReadbackModels readback =
                 safeDependencies.compatibilityReadbackModels();
         DungeonEditorMainViewInteractionState interactionState = new DungeonEditorMainViewInteractionState();
-        DungeonEditorRuntimeContext.Startup startup =
+        DungeonEditorRuntimeContext context =
                 DungeonEditorRuntimeContext.create(safeDependencies, interactionState);
         return new DungeonEditorFeatureRuntimeRoot(
                 readback.controlsModel(),
                 readback.mapSurfaceModel(),
                 readback.stateModel(),
                 interactionState,
-                startup.context());
+                context,
+                safeDependencies.executionLane());
     }
 
     private DungeonEditorFeatureRuntimeRoot(
@@ -38,7 +39,8 @@ public final class DungeonEditorFeatureRuntimeRoot
             src.domain.dungeon.published.DungeonEditorMapSurfaceModel mapSurfaceModel,
             src.domain.dungeon.published.DungeonEditorStateModel stateModel,
             DungeonEditorMainViewInteractionState interactionState,
-            DungeonEditorRuntimeContext context
+            DungeonEditorRuntimeContext context,
+            platform.execution.ExecutionLane executionLane
     ) {
         src.domain.dungeon.published.DungeonEditorControlsModel safeControlsModel =
                 Objects.requireNonNull(controlsModel, "controlsModel");
@@ -49,12 +51,15 @@ public final class DungeonEditorFeatureRuntimeRoot
         DungeonEditorMainViewInteractionState safeInteractionState =
                 Objects.requireNonNull(interactionState, "interactionState");
         DungeonEditorRuntimeContext safeContext = Objects.requireNonNull(context, "context");
+        platform.execution.ExecutionLane safeExecutionLane =
+                Objects.requireNonNull(executionLane, "executionLane");
         DungeonEditorRuntimeDraftSession draftSession = new DungeonEditorRuntimeDraftSession();
         framePublisher = new DungeonEditorRuntimeFramePublisher(
                 safeControlsModel,
                 safeMapSurfaceModel,
                 safeStateModel,
-                draftSession);
+                draftSession,
+                safeExecutionLane);
         DungeonEditorStairDraftRuntimeOperation stairDraftOperation =
                 new DungeonEditorStairDraftRuntimeOperation(safeContext);
         DungeonEditorSelectedHandleRuntimeOperation selectedHandleOperation =
@@ -68,7 +73,8 @@ public final class DungeonEditorFeatureRuntimeRoot
                 draftSession,
                 framePublisher,
                 stairDraftOperation,
-                selectedHandleOperation);
+                selectedHandleOperation,
+                safeExecutionLane);
         pointerWorkflow = new DungeonEditorPointerWorkflow(
                 new DungeonEditorPointerWorkflow.RuntimeFamilies(
                         new DungeonEditorRoomPaintRuntimeOperation(safeContext),
@@ -82,6 +88,7 @@ public final class DungeonEditorFeatureRuntimeRoot
                         selectedHandleOperation),
                 commands);
         commands.bindPointerOperations(pointerWorkflow);
+        commands.apply(safeContext::publishCurrent);
     }
 
     public DungeonEditorRuntimeOperations operations() {

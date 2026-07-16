@@ -3,6 +3,9 @@ package src.domain.hex;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import platform.diagnostics.DiagnosticId;
+import platform.diagnostics.Diagnostics;
+import platform.execution.ExecutionLane;
 import src.domain.hex.model.map.HexCoordinate;
 import src.domain.hex.model.map.HexMapIdentity;
 import src.domain.hex.model.map.HexMapSummary;
@@ -21,49 +24,71 @@ public final class HexTravelApplicationService {
 
     private static final long FIRST_PERSISTED_MAP_ID = 1L;
     private static final String NO_HEX_TRAVEL_SELECTED = "Keine Hex-Reiseposition ausgewaehlt.";
+    private static final String STORAGE_FAILURE_TEXT = "Hex-Reise konnte nicht geladen werden.";
+    private static final DiagnosticId STORAGE_FAILURE = new DiagnosticId("hex.storage-failure");
 
     private final HexMapRepository repository;
     private final PartyApplicationService party;
     private final HexTravelModel model;
+    private final ExecutionLane executionLane;
+    private final Diagnostics diagnostics;
 
     HexTravelApplicationService(
             HexMapRepository repository,
             PartyApplicationService party,
-            HexTravelModel model
+            HexTravelModel model,
+            ExecutionLane executionLane,
+            Diagnostics diagnostics
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.party = Objects.requireNonNull(party, "party");
         this.model = Objects.requireNonNull(model, "model");
+        this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
+        this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
     public void movePartyToken(MoveHexPartyTokenCommand command) {
         if (command == null) {
             return;
         }
-        movePartyToken(
+        executionLane.execute(() -> movePartyToken(
                 command.mapId(),
                 command.q(),
                 command.r(),
-                command.partyTokenCharacterIds());
+                command.partyTokenCharacterIds()));
     }
 
     void acceptPartyTravelPosition(PartyTravelPositionsResult result) {
-        model.publish(toSnapshot(projectTravel(result)));
+        executionLane.execute(() -> publishTravelPosition(result));
+    }
+
+    private void publishTravelPosition(PartyTravelPositionsResult result) {
+        try {
+            model.publish(toSnapshot(projectTravel(result)));
+        } catch (IllegalStateException exception) {
+            diagnostics.failure(STORAGE_FAILURE, exception.getClass());
+            model.publish(HexTravelSnapshot.empty(STORAGE_FAILURE_TEXT));
+        }
     }
 
     private void movePartyToken(long mapId, int q, int r, List<Long> characterIds) {
-        if (mapId < FIRST_PERSISTED_MAP_ID || characterIds == null || characterIds.isEmpty()) {
-            return;
+        try {
+            if (mapId < FIRST_PERSISTED_MAP_ID || characterIds == null || characterIds.isEmpty()) {
+                return;
+            }
+            HexCoordinate coordinate = new HexCoordinate(q, r);
+            Optional<HexMapSummary> summary = repository.loadSummaryById(new HexMapIdentity(mapId));
+            if (summary.isEmpty() || !coordinate.insideRadius(summary.get().radius())) {
+                return;
+            }
+            party.moveCharacters(new MovePartyCharactersCommand(
+                    characterIds,
+                    new PartyOverworldTravelLocationSnapshot(mapId, coordinate.stableTileId()),
+                    true));
+        } catch (IllegalStateException exception) {
+            diagnostics.failure(STORAGE_FAILURE, exception.getClass());
+            model.publish(HexTravelSnapshot.empty(STORAGE_FAILURE_TEXT));
         }
-        HexCoordinate coordinate = new HexCoordinate(q, r);
-        Optional<HexMapSummary> summary = repository.loadSummaryById(new HexMapIdentity(mapId));
-        if (summary.isEmpty() || !coordinate.insideRadius(summary.get().radius())) {
-            return;
-        }
-        party.moveCharacters(new MovePartyCharactersCommand(
-                characterIds,
-                new PartyOverworldTravelLocationSnapshot(mapId, coordinate.stableTileId()),
-                true));
     }
 
     private HexTravelPositionState projectTravel(PartyTravelPositionsResult result) {

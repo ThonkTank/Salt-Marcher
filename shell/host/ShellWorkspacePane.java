@@ -15,6 +15,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.NoopDiagnostics;
 import shell.api.ContributionKey;
 import shell.api.ShellLeftBarTabMode;
 
@@ -30,7 +32,7 @@ final class ShellWorkspacePane extends SplitPane {
     private final StackPane mainPanel = new StackPane();
     private final StackPane detailsContainer = new StackPane();
     private final StackPane stateContainer = new StackPane();
-    private final InspectorPane inspectorPane = new InspectorPane();
+    private final InspectorPane inspectorPane;
     private final StateTabPane stateTabPane = new StateTabPane();
     private final Node editorStatePlaceholder = createPlaceholderPane("Status", "Kein lokaler Zustand");
     private final Node emptyStateTabPlaceholder = createPlaceholderPane("Status", "Keine State-Tabs registriert");
@@ -42,6 +44,11 @@ final class ShellWorkspacePane extends SplitPane {
     private @Nullable ShellSlotContent activeSlotContent;
 
     ShellWorkspacePane() {
+        this(NoopDiagnostics.INSTANCE);
+    }
+
+    ShellWorkspacePane(Diagnostics diagnostics) {
+        inspectorPane = new InspectorPane(Objects.requireNonNull(diagnostics, "diagnostics"));
         controlsPanel.getStyleClass().add("control-panel");
         controlsPanel.setPrefWidth(240);
         controlsPanel.setMinWidth(200);

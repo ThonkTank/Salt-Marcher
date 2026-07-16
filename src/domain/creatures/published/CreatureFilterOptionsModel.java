@@ -4,6 +4,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import platform.ui.UiDispatcher;
 import src.domain.shared.published.PublishedState;
 
 public final class CreatureFilterOptionsModel {
@@ -14,6 +15,10 @@ public final class CreatureFilterOptionsModel {
 
     public CreatureFilterOptionsModel() {
         this(new PublishedState<>(emptyResult()));
+    }
+
+    public CreatureFilterOptionsModel(UiDispatcher dispatcher) {
+        this(new PublishedState<>(emptyResult(), dispatcher));
     }
 
     private CreatureFilterOptionsModel(PublishedState<CreatureFilterOptionsResult> store) {

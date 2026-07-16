@@ -4,6 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
+import platform.diagnostics.DiagnosticId;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.NoopDiagnostics;
+import platform.execution.DirectExecutionLane;
+import platform.execution.ExecutionLane;
 import src.domain.worldplanner.model.world.WorldFaction;
 import src.domain.worldplanner.model.world.WorldFactionInventoryLimit;
 import src.domain.worldplanner.model.world.WorldLocation;
@@ -31,29 +36,51 @@ public final class WorldPlannerApplicationService {
     private static final String LOAD_FAILURE = "World Planner konnte nicht geladen werden.";
     private static final String SAVE_FAILURE = "World Planner konnte nicht gespeichert werden.";
     private static final String REFERENCE_FAILURE = "World Planner Referenzen konnten nicht geladen werden.";
+    private static final DiagnosticId LOAD_DIAGNOSTIC = new DiagnosticId("worldplanner.load.storage-failure");
+    private static final DiagnosticId SAVE_DIAGNOSTIC = new DiagnosticId("worldplanner.save.storage-failure");
+    private static final DiagnosticId REFERENCE_DIAGNOSTIC = new DiagnosticId("worldplanner.reference.failure");
 
     private final WorldPlannerRepository repository;
     private final WorldPlannerReferencePort referenceValidator;
     private final WorldPlannerSnapshotModel snapshotModel;
+    private final ExecutionLane executionLane;
+    private final Diagnostics diagnostics;
 
     WorldPlannerApplicationService(
             WorldPlannerRepository repository,
             WorldPlannerReferencePort referenceValidator,
             WorldPlannerSnapshotModel snapshotModel
     ) {
+        this(
+                repository,
+                referenceValidator,
+                snapshotModel,
+                DirectExecutionLane.INSTANCE,
+                NoopDiagnostics.INSTANCE);
+    }
+
+    public WorldPlannerApplicationService(
+            WorldPlannerRepository repository,
+            WorldPlannerReferencePort referenceValidator,
+            WorldPlannerSnapshotModel snapshotModel,
+            ExecutionLane executionLane,
+            Diagnostics diagnostics
+    ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.referenceValidator = Objects.requireNonNull(referenceValidator, "referenceValidator");
         this.snapshotModel = Objects.requireNonNull(snapshotModel, "snapshotModel");
+        this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
+        this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
     public void refresh(RefreshWorldPlannerCommand command) {
         Objects.requireNonNull(command, COMMAND_PARAMETER);
-        runIgnoringStorageFailure(this::load);
+        execute(this::load);
     }
 
     public void createNpc(CreateWorldNpcCommand command) {
         Objects.requireNonNull(command, COMMAND_PARAMETER);
-        runIgnoringStorageFailure(() -> {
+        execute(() -> {
             WorldPlannerState state = load();
             long statblockId = command.creatureStatblockId();
             if (!WorldPlannerIds.isPositive(statblockId)
@@ -88,7 +115,7 @@ public final class WorldPlannerApplicationService {
 
     public void updateNpcNotes(UpdateWorldNpcNotesCommand command) {
         Objects.requireNonNull(command, COMMAND_PARAMETER);
-        runIgnoringStorageFailure(() -> {
+        execute(() -> {
             WorldPlannerState state = load();
             WorldNpc npc = state.npc(command.npcId());
             if (npc == null) {
@@ -106,7 +133,7 @@ public final class WorldPlannerApplicationService {
 
     public void setNpcLifecycleStatus(SetWorldNpcLifecycleStatusCommand command) {
         Objects.requireNonNull(command, COMMAND_PARAMETER);
-        runIgnoringStorageFailure(() -> {
+        execute(() -> {
             WorldPlannerState state = load();
             if (command.status() == null) {
                 save(state.withStatus("NPC Status nicht gefunden."));
@@ -136,7 +163,7 @@ public final class WorldPlannerApplicationService {
 
     public void createFaction(CreateWorldFactionCommand command) {
         Objects.requireNonNull(command, COMMAND_PARAMETER);
-        runIgnoringStorageFailure(() -> {
+        execute(() -> {
             WorldPlannerState state = load();
             long tableId = command.primaryEncounterTableId();
             if (!WorldPlannerIds.isPositive(tableId)
@@ -164,7 +191,7 @@ public final class WorldPlannerApplicationService {
 
     public void addFactionNpc(AddWorldFactionNpcCommand command) {
         Objects.requireNonNull(command, COMMAND_PARAMETER);
-        runIgnoringStorageFailure(() -> {
+        execute(() -> {
             WorldPlannerState state = load();
             WorldFaction faction = state.faction(command.factionId());
             if (faction == null || state.npc(command.npcId()) == null) {
@@ -181,7 +208,7 @@ public final class WorldPlannerApplicationService {
 
     public void setFactionInventoryLimit(SetWorldFactionInventoryLimitCommand command) {
         Objects.requireNonNull(command, COMMAND_PARAMETER);
-        runIgnoringStorageFailure(() -> {
+        execute(() -> {
             WorldPlannerState state = load();
             WorldFaction faction = state.faction(command.factionId());
             long statblockId = command.creatureStatblockId();
@@ -203,7 +230,7 @@ public final class WorldPlannerApplicationService {
 
     public void createLocation(CreateWorldLocationCommand command) {
         Objects.requireNonNull(command, COMMAND_PARAMETER);
-        runIgnoringStorageFailure(() -> {
+        execute(() -> {
             WorldPlannerState state = load();
             WorldLocation location =
                     new WorldLocation(state.nextLocationId(), command.displayName(), command.notes(), List.of(), List.of());
@@ -220,7 +247,7 @@ public final class WorldPlannerApplicationService {
 
     public void addLocationFaction(AddWorldLocationFactionCommand command) {
         Objects.requireNonNull(command, COMMAND_PARAMETER);
-        runIgnoringStorageFailure(() -> {
+        execute(() -> {
             WorldPlannerState state = load();
             WorldLocation location = state.location(command.locationId());
             if (location == null || state.faction(command.factionId()) == null) {
@@ -237,7 +264,7 @@ public final class WorldPlannerApplicationService {
 
     public void addLocationEncounterTable(AddWorldLocationEncounterTableCommand command) {
         Objects.requireNonNull(command, COMMAND_PARAMETER);
-        runIgnoringStorageFailure(() -> {
+        execute(() -> {
             WorldPlannerState state = load();
             WorldLocation location = state.location(command.locationId());
             long tableId = command.encounterTableId();
@@ -261,6 +288,7 @@ public final class WorldPlannerApplicationService {
             snapshotModel.publish(WorldPlannerSnapshotProjection.from(state));
             return state;
         } catch (IllegalStateException exception) {
+            diagnostics.failure(LOAD_DIAGNOSTIC, exception.getClass());
             snapshotModel.publishStorageError(LOAD_FAILURE);
             throw exception;
         }
@@ -270,6 +298,7 @@ public final class WorldPlannerApplicationService {
         try {
             snapshotModel.publish(WorldPlannerSnapshotProjection.from(repository.save(state)));
         } catch (IllegalStateException exception) {
+            diagnostics.failure(SAVE_DIAGNOSTIC, exception.getClass());
             snapshotModel.publishStorageError(SAVE_FAILURE);
             throw exception;
         }
@@ -278,23 +307,24 @@ public final class WorldPlannerApplicationService {
     private boolean referenceExists(BooleanSupplier lookup) {
         try {
             return lookup.getAsBoolean();
+        } catch (WorldPlannerReferenceAssembly.ReferenceProviderUnavailableException exception) {
+            snapshotModel.publishStorageError(REFERENCE_FAILURE);
+            throw exception;
         } catch (IllegalStateException exception) {
+            diagnostics.failure(REFERENCE_DIAGNOSTIC, exception.getClass());
             snapshotModel.publishStorageError(REFERENCE_FAILURE);
             throw exception;
         }
     }
 
-    private static void ignoreStorageFailure(IllegalStateException exception) {
-        System.getLogger(WorldPlannerApplicationService.class.getName())
-                .log(System.Logger.Level.DEBUG, "World Planner storage failure", exception);
-    }
-
-    private static void runIgnoringStorageFailure(StorageAction action) {
-        try {
-            action.execute();
-        } catch (IllegalStateException exception) {
-            ignoreStorageFailure(exception);
-        }
+    private void execute(StorageAction action) {
+        executionLane.execute(() -> {
+            try {
+                action.execute();
+            } catch (IllegalStateException exception) {
+                // The terminal load, save, or reference boundary already published and diagnosed the failure.
+            }
+        });
     }
 
     private static WorldPlannerState replaceNpc(WorldPlannerState state, WorldNpc replacement, String statusText) {

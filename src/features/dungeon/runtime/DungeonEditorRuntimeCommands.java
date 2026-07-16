@@ -3,6 +3,7 @@ package src.features.dungeon.runtime;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import platform.execution.ExecutionLane;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorPreview;
@@ -26,6 +27,7 @@ final class DungeonEditorRuntimeCommands
     private final DungeonEditorRuntimeFramePublisher framePublisher;
     private final DungeonEditorStairDraftRuntimeOperation stairDraftOperation;
     private final DungeonEditorSelectedHandleRuntimeOperation selectedHandleOperation;
+    private final ExecutionLane executionLane;
     private DungeonEditorPointerInteractionOperations pointerOperations;
 
     DungeonEditorRuntimeCommands(
@@ -37,7 +39,8 @@ final class DungeonEditorRuntimeCommands
             DungeonEditorRuntimeDraftSession draftSession,
             DungeonEditorRuntimeFramePublisher framePublisher,
             DungeonEditorStairDraftRuntimeOperation stairDraftOperation,
-            DungeonEditorSelectedHandleRuntimeOperation selectedHandleOperation
+            DungeonEditorSelectedHandleRuntimeOperation selectedHandleOperation,
+            ExecutionLane executionLane
     ) {
         this.context = Objects.requireNonNull(context, "context");
         this.controlsModel = Objects.requireNonNull(controlsModel, "controlsModel");
@@ -48,6 +51,7 @@ final class DungeonEditorRuntimeCommands
         this.framePublisher = Objects.requireNonNull(framePublisher, "framePublisher");
         this.stairDraftOperation = Objects.requireNonNull(stairDraftOperation, "stairDraftOperation");
         this.selectedHandleOperation = Objects.requireNonNull(selectedHandleOperation, "selectedHandleOperation");
+        this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
     }
 
     void bindPointerOperations(DungeonEditorPointerInteractionOperations pointerOperations) {
@@ -56,18 +60,22 @@ final class DungeonEditorRuntimeCommands
 
     @Override
     public void selectMap(long mapIdValue) {
-        interactionState.clear();
-        draftSession.clearInlineLabelEditSession();
-        framePublisher.markDraftSessionChanged();
-        stairDraftOperation.clear();
-        apply(() -> context.selectMap(mapIdValue));
+        execute(() -> {
+            interactionState.clear();
+            draftSession.clearInlineLabelEditSession();
+            framePublisher.markDraftSessionChanged();
+            stairDraftOperation.clear();
+            applyInExecutionLane(() -> context.selectMap(mapIdValue));
+        });
     }
 
     @Override
     public void createMap(String mapName) {
-        interactionState.clear();
-        stairDraftOperation.clear();
-        apply(() -> context.createMap(mapName));
+        execute(() -> {
+            interactionState.clear();
+            stairDraftOperation.clear();
+            applyInExecutionLane(() -> context.createMap(mapName));
+        });
     }
 
     @Override
@@ -77,38 +85,46 @@ final class DungeonEditorRuntimeCommands
 
     @Override
     public void deleteMap(long mapIdValue) {
-        interactionState.clear();
-        stairDraftOperation.clear();
-        apply(() -> context.deleteMap(mapIdValue));
+        execute(() -> {
+            interactionState.clear();
+            stairDraftOperation.clear();
+            applyInExecutionLane(() -> context.deleteMap(mapIdValue));
+        });
     }
 
     @Override
     public void setViewMode(DungeonEditorViewMode viewMode) {
-        clearActiveInteraction();
-        stairDraftOperation.clear();
-        apply(() -> context.setViewMode(viewMode));
+        execute(() -> {
+            clearActiveInteraction();
+            stairDraftOperation.clear();
+            applyInExecutionLane(() -> context.setViewMode(viewMode));
+        });
     }
 
     @Override
     public void setTool(DungeonEditorTool tool) {
-        clearActiveInteraction();
-        stairDraftOperation.clear();
-        if (activePublishedMapInteraction()) {
-            apply(() -> context.setToolAndPublishSnapshot(tool));
-            return;
-        }
-        apply(() -> context.setTool(tool));
+        execute(() -> {
+            clearActiveInteraction();
+            stairDraftOperation.clear();
+            if (activePublishedMapInteraction()) {
+                applyInExecutionLane(() -> context.setToolAndPublishSnapshot(tool));
+                return;
+            }
+            applyInExecutionLane(() -> context.setTool(tool));
+        });
     }
 
     @Override
     public void cancelActivePreviewSession() {
-        clearActiveInteraction();
-        stairDraftOperation.clear();
-        if (!activePublishedMapInteraction()) {
-            apply(() -> context.setTool(DungeonEditorTool.SELECT));
-            return;
-        }
-        apply(context::cancelActivePreviewSession);
+        execute(() -> {
+            clearActiveInteraction();
+            stairDraftOperation.clear();
+            if (!activePublishedMapInteraction()) {
+                applyInExecutionLane(() -> context.setTool(DungeonEditorTool.SELECT));
+                return;
+            }
+            applyInExecutionLane(context::cancelActivePreviewSession);
+        });
     }
 
     @Override
@@ -132,20 +148,26 @@ final class DungeonEditorRuntimeCommands
 
     @Override
     public void updateStatePanelRoomNarrationDraft(RoomNarrationDraftInput input) {
-        draftSession.updateRoomNarrationDraft(currentSelectedMapIdValue(), input);
-        framePublisher.publishDraftSessionChanged();
+        execute(() -> {
+            draftSession.updateRoomNarrationDraft(currentSelectedMapIdValue(), input);
+            framePublisher.publishDraftSessionChanged();
+        });
     }
 
     @Override
     public void updateStatePanelLabelNameDraft(DungeonEditorRuntimeLabelTarget target, String name) {
-        draftSession.updateLabelNameDraft(currentSelectedMapIdValue(), target, name);
-        framePublisher.publishDraftSessionChanged();
+        execute(() -> {
+            draftSession.updateLabelNameDraft(currentSelectedMapIdValue(), target, name);
+            framePublisher.publishDraftSessionChanged();
+        });
     }
 
     @Override
     public void updateStatePanelCorridorPointDraft(String q, String r) {
-        draftSession.updateCorridorPointDraft(currentSelectedMapIdValue(), currentStateSelection(), q, r);
-        framePublisher.publishDraftSessionChanged();
+        execute(() -> {
+            draftSession.updateCorridorPointDraft(currentSelectedMapIdValue(), currentStateSelection(), q, r);
+            framePublisher.publishDraftSessionChanged();
+        });
     }
 
     @Override
@@ -160,68 +182,89 @@ final class DungeonEditorRuntimeCommands
 
     @Override
     public void updateStatePanelTransitionDescriptionDraft(long transitionId, String description) {
-        draftSession.updateTransitionDescriptionDraft(currentSelectedMapIdValue(), transitionId, description);
-        framePublisher.publishDraftSessionChanged();
+        execute(() -> {
+            draftSession.updateTransitionDescriptionDraft(currentSelectedMapIdValue(), transitionId, description);
+            framePublisher.publishDraftSessionChanged();
+        });
     }
 
     @Override
     public void updateStatePanelTransitionDestinationDraft(TransitionDestinationDraftInput input) {
-        draftSession.updateTransitionDestinationDraft(
-                currentSelectedMapIdValue(),
-                controlsModel.current(),
-                stateModel.current(),
-                input);
-        framePublisher.publishDraftSessionChanged();
+        execute(() -> {
+            draftSession.updateTransitionDestinationDraft(
+                    currentSelectedMapIdValue(),
+                    controlsModel.current(),
+                    stateModel.current(),
+                    input);
+            framePublisher.publishDraftSessionChanged();
+        });
     }
 
     @Override
     public void updateStatePanelStairGeometryDraft(StairGeometryDraftInput input) {
-        draftSession.updateStairGeometryDraft(currentSelectedMapIdValue(), input);
-        framePublisher.publishDraftSessionChanged();
+        execute(() -> {
+            draftSession.updateStairGeometryDraft(currentSelectedMapIdValue(), input);
+            framePublisher.publishDraftSessionChanged();
+        });
     }
 
     @Override
     public void beginInlineLabelEdit(DungeonEditorInlineLabelEditSession session) {
-        draftSession.beginInlineLabelEdit(session);
-        framePublisher.publishDraftSessionChanged();
+        execute(() -> {
+            draftSession.beginInlineLabelEdit(session);
+            framePublisher.publishDraftSessionChanged();
+        });
     }
 
     @Override
     public void updateInlineLabelEditDraft(String text) {
-        draftSession.updateInlineLabelEditDraft(text);
-        framePublisher.publishDraftSessionChanged();
+        execute(() -> {
+            draftSession.updateInlineLabelEditDraft(text);
+            framePublisher.publishDraftSessionChanged();
+        });
     }
 
     @Override
     public void cancelInlineLabelEdit() {
-        draftSession.clearInlineLabelEditSession();
-        framePublisher.publishDraftSessionChanged();
+        execute(() -> {
+            draftSession.clearInlineLabelEditSession();
+            framePublisher.publishDraftSessionChanged();
+        });
     }
 
     @Override
     public void commitInlineLabelEdit(String text) {
-        DungeonEditorInlineLabelEditSession editSession = draftSession.takeInlineLabelEditSession();
-        framePublisher.publishDraftSessionChanged();
-        if (!editSession.active() || !editSession.target().present() || text == null || text.isBlank()) {
-            return;
-        }
-        saveLabelName(editSession.target(), text);
+        execute(() -> {
+            DungeonEditorInlineLabelEditSession editSession = draftSession.takeInlineLabelEditSession();
+            framePublisher.publishDraftSessionChanged();
+            if (!editSession.active() || !editSession.target().present() || text == null || text.isBlank()) {
+                return;
+            }
+            saveLabelNameInExecutionLane(editSession.target(), text);
+        });
     }
 
     @Override
     public void saveRoomNarration(RoomNarration narration) {
-        long roomId = narration == null ? 0L : narration.roomId();
-        draftSession.clearRoomNarrationDraft(currentSelectedMapIdValue(), roomId);
-        framePublisher.markDraftSessionChanged();
-        apply(() -> context.saveRoomNarration(narration));
+        execute(() -> {
+            long roomId = narration == null ? 0L : narration.roomId();
+            draftSession.clearRoomNarrationDraft(currentSelectedMapIdValue(), roomId);
+            framePublisher.markDraftSessionChanged();
+            applyInExecutionLane(() -> context.saveRoomNarration(narration));
+        });
     }
 
     @Override
     public void saveLabelName(DungeonEditorRuntimeLabelTarget target, String name) {
         DungeonEditorRuntimeLabelTarget safeTarget = DungeonEditorRuntimeLabelTarget.orEmpty(target);
+        execute(() -> saveLabelNameInExecutionLane(safeTarget, name));
+    }
+
+    private void saveLabelNameInExecutionLane(DungeonEditorRuntimeLabelTarget target, String name) {
+        DungeonEditorRuntimeLabelTarget safeTarget = DungeonEditorRuntimeLabelTarget.orEmpty(target);
         draftSession.clearLabelNameDraft(currentSelectedMapIdValue(), safeTarget);
         framePublisher.markDraftSessionChanged();
-        apply(() -> context.saveLabelName(safeTarget, name));
+        applyInExecutionLane(() -> context.saveLabelName(safeTarget, name));
     }
 
     @Override
@@ -229,20 +272,24 @@ final class DungeonEditorRuntimeCommands
         TransitionDestinationDraftInput safeInput = input == null
                 ? TransitionDestinationDraftInput.unlinkedEntrance()
                 : input;
-        long selectedMapIdValue = currentSelectedMapIdValue();
-        apply(
-                () -> context.saveTransitionLink(sourceTransitionId, safeInput),
-                result -> clearTransitionDestinationDraftWhenCommitted(
-                        selectedMapIdValue,
-                        sourceTransitionId,
-                        result));
+        execute(() -> {
+            long selectedMapIdValue = currentSelectedMapIdValue();
+            applyInExecutionLane(
+                    () -> context.saveTransitionLink(sourceTransitionId, safeInput),
+                    result -> clearTransitionDestinationDraftWhenCommitted(
+                            selectedMapIdValue,
+                            sourceTransitionId,
+                            result));
+        });
     }
 
     @Override
     public void saveTransitionDescription(long transitionId, String description) {
-        draftSession.clearTransitionDescriptionDraft(currentSelectedMapIdValue(), transitionId);
-        framePublisher.markDraftSessionChanged();
-        apply(() -> context.saveTransitionDescription(transitionId, description));
+        execute(() -> {
+            draftSession.clearTransitionDescriptionDraft(currentSelectedMapIdValue(), transitionId);
+            framePublisher.markDraftSessionChanged();
+            applyInExecutionLane(() -> context.saveTransitionDescription(transitionId, description));
+        });
     }
 
     @Override
@@ -251,9 +298,11 @@ final class DungeonEditorRuntimeCommands
         if (!safeInput.completeForSave()) {
             return;
         }
-        draftSession.clearStairGeometryDraft(currentSelectedMapIdValue(), safeInput.stairId());
-        framePublisher.markDraftSessionChanged();
-        apply(() -> context.saveStairGeometry(safeInput));
+        execute(() -> {
+            draftSession.clearStairGeometryDraft(currentSelectedMapIdValue(), safeInput.stairId());
+            framePublisher.markDraftSessionChanged();
+            applyInExecutionLane(() -> context.saveStairGeometry(safeInput));
+        });
     }
 
     void apply(Supplier<DungeonEditorRuntimeContext.Result> action) {
@@ -264,16 +313,40 @@ final class DungeonEditorRuntimeCommands
             Supplier<DungeonEditorRuntimeContext.Result> action,
             Consumer<DungeonEditorRuntimeContext.Result> beforePublish
     ) {
+        Supplier<DungeonEditorRuntimeContext.Result> safeAction = Objects.requireNonNull(action, "action");
         Consumer<DungeonEditorRuntimeContext.Result> safeBeforePublish =
                 Objects.requireNonNull(beforePublish, "beforePublish");
+        execute(() -> applyOnLane(safeAction, safeBeforePublish));
+    }
+
+    void applyInExecutionLane(Supplier<DungeonEditorRuntimeContext.Result> action) {
+        applyInExecutionLane(action, ignored -> { });
+    }
+
+    private void applyInExecutionLane(
+            Supplier<DungeonEditorRuntimeContext.Result> action,
+            Consumer<DungeonEditorRuntimeContext.Result> beforePublish
+    ) {
+        applyOnLane(
+                Objects.requireNonNull(action, "action"),
+                Objects.requireNonNull(beforePublish, "beforePublish"));
+    }
+
+    void execute(Runnable command) {
+        executionLane.execute(Objects.requireNonNull(command, "command"));
+    }
+
+    private void applyOnLane(
+            Supplier<DungeonEditorRuntimeContext.Result> action,
+            Consumer<DungeonEditorRuntimeContext.Result> beforePublish
+    ) {
         DungeonEditorRuntimeFramePublisher.StateModelFrameDeferral<DungeonEditorRuntimeContext.Result> result =
-                framePublisher.deferStateModelFramePublication(
-                        Objects.requireNonNull(action, "action"));
+                framePublisher.deferStateModelFramePublication(action);
         DungeonEditorRuntimeContext.Result operationResult = result.result() == null
                 ? DungeonEditorRuntimeContext.Result.none()
                 : result.result();
         if (operationResult.shouldPublish(result.stateModelFrameSuppressed())) {
-            safeBeforePublish.accept(operationResult);
+            beforePublish.accept(operationResult);
             framePublisher.publishCurrentToSubscribers();
         }
     }

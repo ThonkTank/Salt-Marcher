@@ -764,12 +764,12 @@ public final class HexMapEditorBehaviorTest {
         try {
             consumeMapSave(runtime, viewModel, requiredMapSave(emitted, "HEX-EDITOR-013 expected map save state event."));
             HexEditorSnapshot failed = runtime.current();
-            assertContains(failed.failureText(), "Failed to save Hex map to SQLite",
+            assertContains(failed.failureText(), "Hex-Daten konnten nicht geladen oder gespeichert werden.",
                     "HEX-EDITOR-013 save failure published through snapshot");
             assertEquals(persistedName, runtime.database().mapName(mapId),
                     "HEX-EDITOR-013 failed save leaves persisted map name unchanged");
             viewModel.applySnapshot(failed);
-            assertVisibleLabelContains(view, "Failed to save Hex map to SQLite",
+            assertVisibleLabelContains(view, "Hex-Daten konnten nicht geladen oder gespeichert werden.",
                     "HEX-EDITOR-013 save failure visible in state pane");
         } finally {
             runtime.database().dropFailingMapUpdateTrigger();

@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import platform.ui.UiDispatcher;
 import src.domain.shared.published.PublishedState;
 
 public final class PartySnapshotModel {
@@ -15,6 +16,10 @@ public final class PartySnapshotModel {
 
     public PartySnapshotModel() {
         this(new PublishedState<>(emptyResult()));
+    }
+
+    public PartySnapshotModel(UiDispatcher dispatcher) {
+        this(new PublishedState<>(emptyResult(), dispatcher));
     }
 
     private PartySnapshotModel(PublishedState<PartySnapshotResult> store) {

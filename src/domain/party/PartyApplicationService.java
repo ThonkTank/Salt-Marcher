@@ -5,6 +5,9 @@ import static src.domain.party.published.PartyDungeonTravelLocationKind.TRANSITI
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import platform.diagnostics.DiagnosticId;
+import platform.diagnostics.Diagnostics;
+import platform.execution.ExecutionLane;
 import src.domain.party.model.roster.PartyCharacterDraft;
 import src.domain.party.model.roster.PartyDungeonTravelLocationKind;
 import src.domain.party.model.roster.PartyMembership;
@@ -16,11 +19,8 @@ import src.domain.party.model.roster.PartyTravelLocation;
 import src.domain.party.model.roster.helper.AdventuringDayProgressCalculationHelper;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 import src.domain.party.published.ActivePartyCompositionModel;
-import src.domain.party.published.ActivePartyCompositionResult;
 import src.domain.party.published.ActivePartyModel;
-import src.domain.party.published.ActivePartyResult;
 import src.domain.party.published.AdjustPartyXpCommand;
-import src.domain.party.published.AdventuringDayResult;
 import src.domain.party.published.AdventuringDayCalculationModel;
 import src.domain.party.published.AdventuringDaySummaryModel;
 import src.domain.party.published.AwardPartyXpCommand;
@@ -33,10 +33,8 @@ import src.domain.party.published.PartyDungeonTravelLocationSnapshot;
 import src.domain.party.published.PartyMutationModel;
 import src.domain.party.published.PartyOverworldTravelLocationSnapshot;
 import src.domain.party.published.PartySnapshotModel;
-import src.domain.party.published.PartySnapshotResult;
 import src.domain.party.published.PartyTravelLocationSnapshot;
 import src.domain.party.published.PartyTravelPositionsModel;
-import src.domain.party.published.PartyTravelPositionsResult;
 import src.domain.party.published.PartyTravelTile;
 import src.domain.party.published.PerformPartyRestCommand;
 import src.domain.party.published.RestType;
@@ -48,6 +46,8 @@ import src.domain.party.published.UpdateCharacterCommand;
  */
 public final class PartyApplicationService {
 
+    private static final DiagnosticId STORAGE_FAILURE = new DiagnosticId("party.storage-failure");
+
     private final PartyRosterRepository repository;
     private final PartySnapshotModel partySnapshotModel;
     private final ActivePartyModel activePartyModel;
@@ -56,6 +56,8 @@ public final class PartyApplicationService {
     private final PartyTravelPositionsModel partyTravelPositionsModel;
     private final PartyMutationModel partyMutationModel;
     private final AdventuringDayCalculationModel adventuringDayCalculationModel;
+    private final ExecutionLane executionLane;
+    private final Diagnostics diagnostics;
     private final AdventuringDayProgressCalculationHelper adventuringDayProgress =
             new AdventuringDayProgressCalculationHelper();
 
@@ -67,7 +69,9 @@ public final class PartyApplicationService {
             AdventuringDaySummaryModel adventuringDaySummaryModel,
             PartyTravelPositionsModel partyTravelPositionsModel,
             PartyMutationModel partyMutationModel,
-            AdventuringDayCalculationModel adventuringDayCalculationModel
+            AdventuringDayCalculationModel adventuringDayCalculationModel,
+            ExecutionLane executionLane,
+            Diagnostics diagnostics
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.partySnapshotModel = Objects.requireNonNull(partySnapshotModel, "partySnapshotModel");
@@ -80,69 +84,76 @@ public final class PartyApplicationService {
         this.partyMutationModel = Objects.requireNonNull(partyMutationModel, "partyMutationModel");
         this.adventuringDayCalculationModel =
                 Objects.requireNonNull(adventuringDayCalculationModel, "adventuringDayCalculationModel");
+        this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
+        this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
     void refreshPublishedState() {
-        replaceRepositoryBackedState();
+        executionLane.execute(this::publishRepositoryBackedStateFromRepository);
     }
 
     public void createCharacter(CreateCharacterCommand command) {
-        runRosterMutation(roster -> roster.createCharacter(
+        executionLane.execute(() -> runRosterMutation(roster -> roster.createCharacter(
                 new PartyCharacterDraft(
                         command == null ? null : command.createDraftName(),
                         command == null ? null : command.createDraftPlayerName(),
                         command == null ? 0 : command.createDraftLevel(),
                         command == null ? 0 : command.createDraftPassivePerception(),
                         command == null ? 0 : command.createDraftArmorClass()),
-                command == null ? PartyMembership.RESERVE : membership(command.membership())));
+                command == null ? PartyMembership.RESERVE : membership(command.membership()))));
     }
 
     public void updateCharacter(UpdateCharacterCommand command) {
-        runRosterMutation(roster -> roster.updateCharacter(
+        executionLane.execute(() -> runRosterMutation(roster -> roster.updateCharacter(
                 command == null ? 0L : command.id(),
                 new PartyCharacterDraft(
                         command == null ? null : command.updateDraftName(),
                         command == null ? null : command.updateDraftPlayerName(),
                         command == null ? 0 : command.updateDraftLevel(),
                         command == null ? 0 : command.updateDraftPassivePerception(),
-                        command == null ? 0 : command.updateDraftArmorClass())));
+                        command == null ? 0 : command.updateDraftArmorClass()))));
     }
 
     public void deleteCharacter(DeleteCharacterCommand command) {
-        runRosterMutation(roster -> roster.deleteCharacter(command == null ? 0L : command.id()));
+        executionLane.execute(() -> runRosterMutation(
+                roster -> roster.deleteCharacter(command == null ? 0L : command.id())));
     }
 
     public void setMembership(SetPartyMembershipCommand command) {
-        runRosterMutation(roster -> roster.setMembership(
+        executionLane.execute(() -> runRosterMutation(roster -> roster.setMembership(
                 command == null ? 0L : command.id(),
-                command == null ? PartyMembership.RESERVE : membership(command.membership())));
+                command == null ? PartyMembership.RESERVE : membership(command.membership()))));
     }
 
     public void awardXp(AwardPartyXpCommand command) {
-        runRosterMutation(roster -> roster.adjustXp(
+        executionLane.execute(() -> runRosterMutation(roster -> roster.adjustXp(
                 command == null ? List.of() : command.ids(),
-                command == null ? 0 : Math.max(0, command.xpPerCharacter())));
+                command == null ? 0 : Math.max(0, command.xpPerCharacter()))));
     }
 
     public void adjustXp(AdjustPartyXpCommand command) {
-        runRosterMutation(roster -> roster.adjustXp(
+        executionLane.execute(() -> runRosterMutation(roster -> roster.adjustXp(
                 command == null ? List.of() : command.ids(),
-                command == null ? 0 : command.xpDelta()));
+                command == null ? 0 : command.xpDelta())));
     }
 
     public void performRest(PerformPartyRestCommand command) {
-        runRosterMutation(roster -> roster.performRest(
-                command == null ? PartyRestType.SHORT_REST : restType(command.restType())));
+        executionLane.execute(() -> runRosterMutation(roster -> roster.performRest(
+                command == null ? PartyRestType.SHORT_REST : restType(command.restType()))));
     }
 
     public void moveCharacters(MovePartyCharactersCommand command) {
-        runRosterMutation(roster -> roster.moveCharacters(
+        executionLane.execute(() -> runRosterMutation(roster -> roster.moveCharacters(
                 command == null ? List.of() : command.characterIds(),
                 travelLocation(command == null ? null : command.target()),
-                command == null || command.attachToPartyToken()));
+                command == null || command.attachToPartyToken())));
     }
 
     public void calculateAdventuringDay(CalculateAdventuringDayCommand command) {
+        executionLane.execute(() -> calculateAdventuringDayOnLane(command));
+    }
+
+    private void calculateAdventuringDayOnLane(CalculateAdventuringDayCommand command) {
         try {
             adventuringDayCalculationModel.publish(PartyPublishedProjection.adventuringDayCalculationResult(
                     command == null ? List.of() : command.levels(),
@@ -161,67 +172,33 @@ public final class PartyApplicationService {
             PartyRosterMutation mutation = action.apply(repository.load());
             if (mutation.successful()) {
                 repository.save(mutation.roster());
-                publishRepositoryBackedState();
+                publishRepositoryBackedState(mutation.roster());
             }
             partyMutationModel.publish(PartyPublishedProjection.mutationResult(mutation.status()));
         } catch (IllegalStateException exception) {
+            diagnostics.failure(STORAGE_FAILURE, exception.getClass());
             partyMutationModel.publish(PartyPublishedProjection.storageErrorMutationResult());
         }
     }
 
-    private void publishRepositoryBackedState() {
-        partySnapshotModel.publish(snapshotResult());
-        activePartyModel.publish(activePartyResult());
-        activePartyCompositionModel.publish(activePartyCompositionResult());
-        adventuringDaySummaryModel.publish(adventuringDaySummaryResult());
-        partyTravelPositionsModel.publish(partyTravelPositionsResult());
+    private void publishRepositoryBackedState(PartyRoster roster) {
+        partySnapshotModel.publish(PartyPublishedProjection.snapshotResult(roster));
+        activePartyModel.publish(PartyPublishedProjection.activePartyResult(roster));
+        activePartyCompositionModel.publish(PartyPublishedProjection.activePartyCompositionResult(roster));
+        adventuringDaySummaryModel.publish(PartyPublishedProjection.adventuringDaySummaryResult(roster));
+        partyTravelPositionsModel.publish(PartyPublishedProjection.partyTravelPositionsResult(roster));
     }
 
-    private void replaceRepositoryBackedState() {
-        partySnapshotModel.replace(snapshotResult());
-        activePartyModel.replace(activePartyResult());
-        activePartyCompositionModel.replace(activePartyCompositionResult());
-        adventuringDaySummaryModel.replace(adventuringDaySummaryResult());
-        partyTravelPositionsModel.replace(partyTravelPositionsResult());
-    }
-
-    private PartySnapshotResult snapshotResult() {
+    private void publishRepositoryBackedStateFromRepository() {
         try {
-            return PartyPublishedProjection.snapshotResult(repository.load());
+            publishRepositoryBackedState(repository.load());
         } catch (IllegalStateException exception) {
-            return PartyPublishedProjection.failedSnapshotResult();
-        }
-    }
-
-    private ActivePartyResult activePartyResult() {
-        try {
-            return PartyPublishedProjection.activePartyResult(repository.load());
-        } catch (IllegalStateException exception) {
-            return PartyPublishedProjection.failedActivePartyResult();
-        }
-    }
-
-    private ActivePartyCompositionResult activePartyCompositionResult() {
-        try {
-            return PartyPublishedProjection.activePartyCompositionResult(repository.load());
-        } catch (IllegalStateException exception) {
-            return PartyPublishedProjection.failedActivePartyCompositionResult();
-        }
-    }
-
-    private AdventuringDayResult adventuringDaySummaryResult() {
-        try {
-            return PartyPublishedProjection.adventuringDaySummaryResult(repository.load());
-        } catch (IllegalStateException exception) {
-            return PartyPublishedProjection.failedAdventuringDaySummaryResult();
-        }
-    }
-
-    private PartyTravelPositionsResult partyTravelPositionsResult() {
-        try {
-            return PartyPublishedProjection.partyTravelPositionsResult(repository.load());
-        } catch (IllegalStateException exception) {
-            return PartyPublishedProjection.failedPartyTravelPositionsResult();
+            diagnostics.failure(STORAGE_FAILURE, exception.getClass());
+            partySnapshotModel.publish(PartyPublishedProjection.failedSnapshotResult());
+            activePartyModel.publish(PartyPublishedProjection.failedActivePartyResult());
+            activePartyCompositionModel.publish(PartyPublishedProjection.failedActivePartyCompositionResult());
+            adventuringDaySummaryModel.publish(PartyPublishedProjection.failedAdventuringDaySummaryResult());
+            partyTravelPositionsModel.publish(PartyPublishedProjection.failedPartyTravelPositionsResult());
         }
     }
 

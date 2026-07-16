@@ -36,12 +36,12 @@ final class SessionPlannerForeignFacts {
     private static final long NO_LOCATION_ID = 0L;
 
     private final PartyApplicationService party;
+    private final ActivePartyModel activeParty;
+    private final AdventuringDayCalculationModel adventuringDay;
     private final EncounterApplicationService encounters;
+    private final SavedEncounterPlanListModel savedPlans;
+    private final EncounterPlanBudgetModel planBudget;
     private final @Nullable WorldPlannerSnapshotModel worldPlanner;
-    private SessionActivePartyMembersFact currentActivePartyMembers;
-    private SessionAdventuringDayBudgetFact currentAdventuringDayFact;
-    private SessionEncounterPlanListFact currentEncounterPlans;
-    private EncounterPlanBudgetResult currentPlanBudget;
 
     SessionPlannerForeignFacts(
             PartyApplicationService party,
@@ -53,39 +53,30 @@ final class SessionPlannerForeignFacts {
             @Nullable WorldPlannerSnapshotModel worldPlanner
     ) {
         this.party = Objects.requireNonNull(party, "party");
+        activeParty = Objects.requireNonNull(activePartyModel, "activePartyModel");
+        adventuringDay = Objects.requireNonNull(adventuringDayCalculationModel, "adventuringDayCalculationModel");
         this.encounters = Objects.requireNonNull(encounters, "encounters");
+        savedPlans = Objects.requireNonNull(savedPlansModel, "savedPlansModel");
+        planBudget = Objects.requireNonNull(planBudgetModel, "planBudgetModel");
         this.worldPlanner = worldPlanner;
-        ActivePartyModel activeParty = Objects.requireNonNull(activePartyModel, "activePartyModel");
-        AdventuringDayCalculationModel adventuringDay =
-                Objects.requireNonNull(adventuringDayCalculationModel, "adventuringDayCalculationModel");
-        SavedEncounterPlanListModel savedPlans = Objects.requireNonNull(savedPlansModel, "savedPlansModel");
-        EncounterPlanBudgetModel planBudget = Objects.requireNonNull(planBudgetModel, "planBudgetModel");
-        currentActivePartyMembers = toActivePartyMembersFact(activeParty.current());
-        currentAdventuringDayFact = toAdventuringDayFact(adventuringDay.current());
-        currentEncounterPlans = toEncounterPlanListFact(savedPlans.current());
-        currentPlanBudget = planBudget.current();
-        activeParty.subscribe(result -> currentActivePartyMembers = toActivePartyMembersFact(result));
-        adventuringDay.subscribe(result -> currentAdventuringDayFact = toAdventuringDayFact(result));
-        savedPlans.subscribe(result -> currentEncounterPlans = toEncounterPlanListFact(result));
-        planBudget.subscribe(result -> currentPlanBudget = result);
     }
 
     SessionActivePartyMembersFact activePartyMembers() {
-        return currentActivePartyMembers;
+        return toActivePartyMembersFact(activeParty.current());
     }
 
     SessionAdventuringDayBudgetFact calculateAdventuringDay(List<Integer> levels, int plannedEncounterXp) {
         party.calculateAdventuringDay(new CalculateAdventuringDayCommand(levels, plannedEncounterXp));
-        return currentAdventuringDayFact;
+        return toAdventuringDayFact(adventuringDay.current());
     }
 
     SessionEncounterPlanListFact encounterPlans() {
-        return currentEncounterPlans;
+        return toEncounterPlanListFact(savedPlans.current());
     }
 
     SessionEncounterPlanFact loadEncounterPlan(long encounterPlanId) {
         encounters.refreshPlanBudget(new RefreshEncounterPlanBudgetCommand(encounterPlanId));
-        return encounterPlan(encounterPlanId);
+        return encounterPlan(encounterPlanId, planBudget.current());
     }
 
     List<SessionLocationReference> availableLocations() {
@@ -108,8 +99,10 @@ final class SessionPlannerForeignFacts {
         }
     }
 
-    private SessionEncounterPlanFact encounterPlan(long encounterPlanId) {
-        EncounterPlanBudgetResult result = currentPlanBudget;
+    private static SessionEncounterPlanFact encounterPlan(
+            long encounterPlanId,
+            EncounterPlanBudgetResult result
+    ) {
         if (result == null || result.status() != EncounterPlanBudgetStatus.SUCCESS || result.summary() == null) {
             String message = result == null || result.message().isBlank()
                     ? "Encounter-Plan konnte nicht geladen werden."

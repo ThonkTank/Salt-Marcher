@@ -2,6 +2,11 @@ package src.domain.encountertable;
 
 import java.util.List;
 import java.util.Objects;
+import platform.diagnostics.DiagnosticId;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.NoopDiagnostics;
+import platform.execution.DirectExecutionLane;
+import platform.execution.ExecutionLane;
 import src.domain.encountertable.model.catalog.port.EncounterTableCatalogPort;
 import src.domain.encountertable.published.EncounterTableCandidatesModel;
 import src.domain.encountertable.published.EncounterTableCandidatesResult;
@@ -13,32 +18,65 @@ import src.domain.encountertable.published.RefreshEncounterTableCandidatesComman
 
 public final class EncounterTableApplicationService {
 
+    private static final DiagnosticId CATALOG_FAILURE =
+            new DiagnosticId("encountertable.catalog.storage-failure");
+    private static final DiagnosticId CANDIDATES_FAILURE =
+            new DiagnosticId("encountertable.candidates.storage-failure");
+
     private final EncounterTableCatalogPort catalog;
     private final EncounterTableCatalogModel catalogModel;
     private final EncounterTableCandidatesModel candidatesModel;
+    private final ExecutionLane executionLane;
+    private final Diagnostics diagnostics;
 
     public EncounterTableApplicationService(
             EncounterTableCatalogPort catalog,
             EncounterTableCatalogModel catalogModel,
             EncounterTableCandidatesModel candidatesModel
     ) {
+        this(
+                catalog,
+                catalogModel,
+                candidatesModel,
+                DirectExecutionLane.INSTANCE,
+                NoopDiagnostics.INSTANCE);
+    }
+
+    public EncounterTableApplicationService(
+            EncounterTableCatalogPort catalog,
+            EncounterTableCatalogModel catalogModel,
+            EncounterTableCandidatesModel candidatesModel,
+            ExecutionLane executionLane,
+            Diagnostics diagnostics
+    ) {
         this.catalog = Objects.requireNonNull(catalog, "catalog");
         this.catalogModel = Objects.requireNonNull(catalogModel, "catalogModel");
         this.candidatesModel = Objects.requireNonNull(candidatesModel, "candidatesModel");
+        this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
+        this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
     public void refreshCatalog(RefreshEncounterTableCatalogCommand command) {
         Objects.requireNonNull(command, "command");
+        executionLane.execute(this::refreshCatalogInLane);
+    }
+
+    private void refreshCatalogInLane() {
         try {
             catalogModel.publish(new EncounterTableCatalogResult(
                     EncounterTableReadStatus.SUCCESS,
                     EncounterTableCatalogProjection.summaries(catalog.loadSummaries())));
         } catch (IllegalStateException exception) {
+            diagnostics.failure(CATALOG_FAILURE, exception.getClass());
             catalogModel.publish(new EncounterTableCatalogResult(EncounterTableReadStatus.STORAGE_ERROR, List.of()));
         }
     }
 
     public void refreshCandidates(RefreshEncounterTableCandidatesCommand command) {
+        executionLane.execute(() -> refreshCandidatesInLane(command));
+    }
+
+    private void refreshCandidatesInLane(RefreshEncounterTableCandidatesCommand command) {
         try {
             if (command == null) {
                 publishStorageError();
@@ -50,6 +88,7 @@ public final class EncounterTableApplicationService {
                             command.tableIds(),
                             normalizedMaximumXp(command.maximumXp())))));
         } catch (IllegalStateException exception) {
+            diagnostics.failure(CANDIDATES_FAILURE, exception.getClass());
             publishStorageError();
         }
     }

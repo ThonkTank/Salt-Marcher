@@ -1,6 +1,12 @@
 package src.domain.hex;
 
 import java.util.Objects;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.NoopDiagnostics;
+import platform.execution.DirectExecutionLane;
+import platform.execution.ExecutionLane;
+import platform.ui.DirectUiDispatcher;
+import platform.ui.UiDispatcher;
 import src.domain.hex.model.map.HexEditorWorkspace;
 import src.domain.hex.model.map.repository.HexMapRepository;
 import src.domain.hex.published.HexEditorModel;
@@ -12,23 +18,49 @@ public final class HexServiceAssembly {
 
     private final HexEditorApplicationService editorApplicationService;
     private final HexTravelApplicationService travelApplicationService;
-    private final HexEditorModel editorModel = new HexEditorModel();
-    private final HexTravelModel travelModel = new HexTravelModel();
+    private final HexEditorModel editorModel;
+    private final HexTravelModel travelModel;
 
     public HexServiceAssembly(
             HexMapRepository repository,
             PartyTravelPositionsModel partyTravelPositions,
             PartyApplicationService partyApplicationService
     ) {
+        this(
+                repository,
+                partyTravelPositions,
+                partyApplicationService,
+                DirectExecutionLane.INSTANCE,
+                DirectUiDispatcher.INSTANCE,
+                NoopDiagnostics.INSTANCE);
+    }
+
+    public HexServiceAssembly(
+            HexMapRepository repository,
+            PartyTravelPositionsModel partyTravelPositions,
+            PartyApplicationService partyApplicationService,
+            ExecutionLane executionLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics
+    ) {
         HexMapRepository safeRepository = Objects.requireNonNull(repository, "repository");
+        ExecutionLane lane = Objects.requireNonNull(executionLane, "executionLane");
+        UiDispatcher dispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
+        Diagnostics safeDiagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
+        editorModel = new HexEditorModel(dispatcher);
+        travelModel = new HexTravelModel(dispatcher);
         editorApplicationService = new HexEditorApplicationService(
                 safeRepository,
                 new HexEditorWorkspace(),
-                editorModel);
+                editorModel,
+                lane,
+                safeDiagnostics);
         travelApplicationService = new HexTravelApplicationService(
                 safeRepository,
                 Objects.requireNonNull(partyApplicationService, "partyApplicationService"),
-                travelModel);
+                travelModel,
+                lane,
+                safeDiagnostics);
         registerTravelReadback(Objects.requireNonNull(partyTravelPositions, "partyTravelPositions"));
     }
 

@@ -2,6 +2,12 @@ package src.domain.sessionplanner;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.NoopDiagnostics;
+import platform.execution.DirectExecutionLane;
+import platform.execution.ExecutionLane;
+import platform.ui.DirectUiDispatcher;
+import platform.ui.UiDispatcher;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.EncounterPlanBudgetModel;
 import src.domain.encounter.published.SavedEncounterPlanListModel;
@@ -30,15 +36,42 @@ public final class SessionPlannerServiceAssembly {
             EncounterPlanBudgetModel planBudget,
             @Nullable WorldPlannerSnapshotModel worldPlanner
     ) {
+        this(repository, party, activeParty, dayCalculation, encounters, savedPlans, planBudget, worldPlanner,
+                DirectExecutionLane.INSTANCE, DirectUiDispatcher.INSTANCE, NoopDiagnostics.INSTANCE);
+    }
+
+    public SessionPlannerServiceAssembly(
+            SessionPlanRepository repository,
+            PartyApplicationService party,
+            ActivePartyModel activeParty,
+            AdventuringDayCalculationModel dayCalculation,
+            EncounterApplicationService encounters,
+            SavedEncounterPlanListModel savedPlans,
+            EncounterPlanBudgetModel planBudget,
+            @Nullable WorldPlannerSnapshotModel worldPlanner,
+            ExecutionLane executionLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics
+    ) {
         SessionPlanRepository safeRepository = Objects.requireNonNull(repository, "repository");
         SessionPlannerForeignFacts facts = new SessionPlannerForeignFacts(
                 party, activeParty, dayCalculation, encounters, savedPlans, planBudget, worldPlanner);
         SessionPlannerPublishedState publishedState =
-                new SessionPlannerPublishedState(safeRepository, facts, new SessionPlannerProjection());
-        facts.subscribeLocationRefresh(publishedState::publishLoadedCurrentSession);
+                new SessionPlannerPublishedState(
+                        safeRepository,
+                        facts,
+                        new SessionPlannerProjection(),
+                        Objects.requireNonNull(uiDispatcher, "uiDispatcher"));
+        SessionPlannerApplicationService application = new SessionPlannerApplicationService(
+                safeRepository,
+                facts,
+                publishedState,
+                Objects.requireNonNull(executionLane, "executionLane"),
+                Objects.requireNonNull(diagnostics, "diagnostics"));
+        facts.subscribeLocationRefresh(application::refreshForeignFacts);
         runtime = new Runtime(
                 publishedState,
-                new SessionPlannerApplicationService(safeRepository, facts, publishedState));
+                application);
     }
 
     public SessionPlannerApplicationService application() {

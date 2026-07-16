@@ -4,6 +4,12 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.SystemLoggerDiagnostics;
+import platform.execution.ExecutionLane;
+import platform.execution.SerialExecutionLane;
+import platform.ui.JavaFxUiDispatcher;
+import platform.ui.UiDispatcher;
 import shell.api.ShellBinding;
 import shell.api.ShellContribution;
 import shell.api.ShellContributionSpec;
@@ -45,10 +51,28 @@ import src.view.statetabs.encounter.EncounterStateContribution;
 import src.view.statetabs.travel.TravelStateContribution;
 
 /** Explicit production composition root. */
-public final class AppBootstrap {
+public final class AppBootstrap implements AutoCloseable {
+
+    private final Diagnostics diagnostics;
+    private final ExecutionLane executionLane;
+    private final UiDispatcher uiDispatcher;
+
+    public AppBootstrap() {
+        this(new SystemLoggerDiagnostics());
+    }
+
+    private AppBootstrap(Diagnostics diagnostics) {
+        this(diagnostics, new SerialExecutionLane(diagnostics), new JavaFxUiDispatcher());
+    }
+
+    AppBootstrap(Diagnostics diagnostics, ExecutionLane executionLane, UiDispatcher uiDispatcher) {
+        this.diagnostics = java.util.Objects.requireNonNull(diagnostics, "diagnostics");
+        this.executionLane = java.util.Objects.requireNonNull(executionLane, "executionLane");
+        this.uiDispatcher = java.util.Objects.requireNonNull(uiDispatcher, "uiDispatcher");
+    }
 
     public AppShell createShell() {
-        AppShell shell = new AppShell();
+        AppShell shell = new AppShell(diagnostics);
         Components components = createComponents();
         List<ResolvedContribution> contributions = bindContributions(shell, components);
         contributions.stream()
@@ -64,14 +88,20 @@ public final class AppBootstrap {
     private Components createComponents() {
         CreatureCatalogPort creatureCatalog = new SqliteCreatureCatalogQueryAdapter();
         EncounterTableCatalogPort encounterTableCatalog = new SqliteEncounterTableCatalogAdapter();
-        CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(creatureCatalog);
+        CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(
+                creatureCatalog, executionLane, uiDispatcher, diagnostics);
         EncounterTableServiceAssembly.Component encounterTables =
-                EncounterTableServiceAssembly.create(encounterTableCatalog);
-        PartyServiceAssembly.Component party = PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+                EncounterTableServiceAssembly.create(
+                        encounterTableCatalog, executionLane, uiDispatcher, diagnostics);
+        PartyServiceAssembly.Component party = PartyServiceAssembly.create(
+                new SqlitePartyRosterRepository(), executionLane, uiDispatcher, diagnostics);
 
         WorldPlannerServiceAssembly worldAssembly = new WorldPlannerServiceAssembly(
                 new SqliteWorldPlannerRepository(),
-                WorldPlannerReferenceAssembly.catalogReferences(creatures.references(), encounterTables.references()));
+                WorldPlannerReferenceAssembly.catalogReferences(creatures.references(), encounterTables.references()),
+                executionLane,
+                uiDispatcher,
+                diagnostics);
         WorldPlannerApplicationService worldApplication = worldAssembly.createApplicationService();
         WorldPlannerSnapshotModel worldSnapshot = worldAssembly.snapshotModel();
 
@@ -87,16 +117,23 @@ public final class AppBootstrap {
                 party.activeComposition(),
                 party.adventuringDaySummary(),
                 party.mutation(),
-                new SqliteEncounterPlanRepository());
+                new SqliteEncounterPlanRepository(),
+                executionLane,
+                uiDispatcher,
+                diagnostics);
 
         DungeonServiceAssembly.Component dungeon = DungeonServiceAssembly.create(
                 new SqliteDungeonMapRepository(),
                 party.activeParty(),
                 party.travelPositions(),
                 party.application(),
-                party.mutation());
+                party.mutation(),
+                executionLane,
+                uiDispatcher,
+                diagnostics);
         HexServiceAssembly hex = new HexServiceAssembly(
-                new SqliteHexMapRepository(), party.travelPositions(), party.application());
+                new SqliteHexMapRepository(), party.travelPositions(), party.application(),
+                executionLane, uiDispatcher, diagnostics);
         SessionPlannerServiceAssembly session = new SessionPlannerServiceAssembly(
                 new SqliteSessionPlanRepository(),
                 party.application(),
@@ -105,7 +142,10 @@ public final class AppBootstrap {
                 encounter.application(),
                 encounter.savedPlans(),
                 encounter.planBudget(),
-                worldSnapshot);
+                worldSnapshot,
+                executionLane,
+                uiDispatcher,
+                diagnostics);
         return new Components(
                 creatures, encounterTables, party, worldApplication, worldSnapshot,
                 encounter, dungeon, hex, session);
@@ -123,7 +163,9 @@ public final class AppBootstrap {
         DungeonEditorRuntimeDependencies dungeonEditorDependencies = new DungeonEditorRuntimeDependencies(
                 new DungeonEditorRuntimeDependencies.CompatibilityReadbackModels(
                         dungeon.editorControls(), dungeon.editorMapSurface(), dungeon.editorState()),
-                dungeon.editor());
+                dungeon.editor(),
+                executionLane,
+                uiDispatcher);
 
         List<ShellContribution> manifest = List.of(
                 new AdventuringDayTopBarContribution(
@@ -210,6 +252,11 @@ public final class AppBootstrap {
     }
 
     private record ResolvedContribution(ShellContributionSpec spec, ShellBinding binding) {
+    }
+
+    @Override
+    public void close() {
+        executionLane.close();
     }
 
 }

@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import platform.ui.UiDispatcher;
 import src.domain.shared.published.PublishedState;
 
 public final class AdventuringDaySummaryModel {
@@ -15,6 +16,10 @@ public final class AdventuringDaySummaryModel {
 
     public AdventuringDaySummaryModel() {
         this(new PublishedState<>(emptyResult()));
+    }
+
+    public AdventuringDaySummaryModel(UiDispatcher dispatcher) {
+        this(new PublishedState<>(emptyResult(), dispatcher));
     }
 
     private AdventuringDaySummaryModel(PublishedState<AdventuringDayResult> store) {

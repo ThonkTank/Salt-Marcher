@@ -1,5 +1,6 @@
 package src.domain.encounter;
 
+import platform.ui.UiDispatcher;
 import src.domain.encounter.model.plan.EncounterPlanBudgetLoadResult;
 import src.domain.encounter.model.plan.SavedEncounterPlansLoadResult;
 import src.domain.encounter.model.session.EncounterSession;
@@ -22,25 +23,29 @@ final class EncounterPublishedState {
     private static final String PLAN_STORAGE_NOT_REGISTERED = "Encounter plan storage is not registered.";
     private static final String PLAN_BUDGET_NOT_REGISTERED = "Encounter plan budget service is not registered.";
 
-    private final PublishedState<EncounterStateSnapshot> state =
-            new PublishedState<>(EncounterStateSnapshot.empty(SESSION_NOT_REGISTERED));
-    private final PublishedState<EncounterBuilderInputs> builderInputs =
-            new PublishedState<>(EncounterBuilderInputs.empty());
-    private final PublishedState<EncounterTuningPreviewResult> tuningPreview =
-            new PublishedState<>(EncounterProjection.emptyTuningPreview());
-    private final PublishedState<SavedEncounterPlanListResult> savedPlans =
-            new PublishedState<>(EncounterProjection.emptySavedPlans());
-    private final PublishedState<EncounterPlanBudgetResult> planBudget =
-            new PublishedState<>(EncounterProjection.emptyPlanBudget());
-    private final EncounterStateModel stateModel = new EncounterStateModel(state::current, state::subscribe);
-    private final EncounterBuilderInputsModel builderInputsModel =
-            new EncounterBuilderInputsModel(builderInputs::current, builderInputs::subscribe);
-    private final EncounterTuningPreviewModel tuningPreviewModel =
-            new EncounterTuningPreviewModel(tuningPreview::current, tuningPreview::subscribe);
-    private final SavedEncounterPlanListModel savedPlansModel =
-            new SavedEncounterPlanListModel(savedPlans::current, savedPlans::subscribe);
-    private final EncounterPlanBudgetModel planBudgetModel =
-            new EncounterPlanBudgetModel(planBudget::current, planBudget::subscribe);
+    private final PublishedState<EncounterStateSnapshot> state;
+    private final PublishedState<EncounterBuilderInputs> builderInputs;
+    private final PublishedState<EncounterTuningPreviewResult> tuningPreview;
+    private final PublishedState<SavedEncounterPlanListResult> savedPlans;
+    private final PublishedState<EncounterPlanBudgetResult> planBudget;
+    private final EncounterStateModel stateModel;
+    private final EncounterBuilderInputsModel builderInputsModel;
+    private final EncounterTuningPreviewModel tuningPreviewModel;
+    private final SavedEncounterPlanListModel savedPlansModel;
+    private final EncounterPlanBudgetModel planBudgetModel;
+
+    EncounterPublishedState(UiDispatcher dispatcher) {
+        state = new PublishedState<>(EncounterStateSnapshot.empty(SESSION_NOT_REGISTERED), dispatcher);
+        builderInputs = new PublishedState<>(EncounterBuilderInputs.empty(), dispatcher);
+        tuningPreview = new PublishedState<>(EncounterProjection.emptyTuningPreview(), dispatcher);
+        savedPlans = new PublishedState<>(EncounterProjection.emptySavedPlans(), dispatcher);
+        planBudget = new PublishedState<>(EncounterProjection.emptyPlanBudget(), dispatcher);
+        stateModel = new EncounterStateModel(state::current, state::subscribe);
+        builderInputsModel = new EncounterBuilderInputsModel(builderInputs::current, builderInputs::subscribe);
+        tuningPreviewModel = new EncounterTuningPreviewModel(tuningPreview::current, tuningPreview::subscribe);
+        savedPlansModel = new SavedEncounterPlanListModel(savedPlans::current, savedPlans::subscribe);
+        planBudgetModel = new EncounterPlanBudgetModel(planBudget::current, planBudget::subscribe);
+    }
 
     EncounterStateModel stateModel() {
         return stateModel;

@@ -1,5 +1,12 @@
 package src.domain.dungeon;
 
+import java.util.Objects;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.NoopDiagnostics;
+import platform.execution.DirectExecutionLane;
+import platform.execution.ExecutionLane;
+import platform.ui.DirectUiDispatcher;
+import platform.ui.UiDispatcher;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.dungeon.published.TravelDungeonModel;
 import src.domain.party.PartyApplicationService;
@@ -15,10 +22,35 @@ public final class DungeonServiceAssembly {
             PartyApplicationService party,
             PartyMutationModel partyMutation
     ) {
-        DungeonEditorPublishedState editorPublishedState = new DungeonEditorPublishedState();
-        DungeonAuthoredPublishedState authoredPublishedState = new DungeonAuthoredPublishedState();
+        return create(
+                repository,
+                activeParty,
+                partyTravelPositions,
+                party,
+                partyMutation,
+                DirectExecutionLane.INSTANCE,
+                DirectUiDispatcher.INSTANCE,
+                NoopDiagnostics.INSTANCE);
+    }
+
+    public static Component create(
+            DungeonMapRepository repository,
+            ActivePartyModel activeParty,
+            PartyTravelPositionsModel partyTravelPositions,
+            PartyApplicationService party,
+            PartyMutationModel partyMutation,
+            ExecutionLane executionLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics
+    ) {
+        ExecutionLane lane = Objects.requireNonNull(executionLane, "executionLane");
+        UiDispatcher dispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
+        Objects.requireNonNull(diagnostics, "diagnostics");
+        DungeonEditorPublishedState editorPublishedState = new DungeonEditorPublishedState(dispatcher);
+        DungeonAuthoredPublishedState authoredPublishedState = new DungeonAuthoredPublishedState(dispatcher);
         DungeonAuthoredApplicationService authoredMaps =
-                new DungeonAuthoredApplicationService(repository, authoredPublishedState);
+                new DungeonAuthoredApplicationService(
+                        Objects.requireNonNull(repository, "repository"), authoredPublishedState);
         DungeonEditorRuntimeApplicationService editor =
                 new DungeonEditorRuntimeApplicationService(authoredMaps, editorPublishedState);
         DungeonTravelPartyGateway partyGateway = new DungeonTravelPartyGateway(
@@ -27,11 +59,11 @@ public final class DungeonServiceAssembly {
                 new DungeonTravelSurfaceLoader(authoredMaps, partyGateway);
         DungeonTravelNavigator navigator =
                 new DungeonTravelNavigator(authoredMaps, partyGateway, surfaceLoader);
-        DungeonTravelPublishedState publishedState = new DungeonTravelPublishedState();
+        DungeonTravelPublishedState publishedState = new DungeonTravelPublishedState(dispatcher);
         return new Component(
                 authoredMaps,
                 editor,
-                new DungeonTravelRuntimeApplicationService(surfaceLoader, navigator, publishedState),
+                new DungeonTravelRuntimeApplicationService(surfaceLoader, navigator, publishedState, lane),
                 authoredPublishedState.authoredReadModel(),
                 authoredPublishedState.authoredMutationModel(),
                 authoredPublishedState.mapCatalogModel(),

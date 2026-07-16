@@ -6,17 +6,28 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import platform.ui.UiDispatcher;
+import src.domain.shared.published.PublishedState;
 
 public final class HexTravelModel {
 
     private final Supplier<HexTravelSnapshot> currentSupplier;
     private final Function<Consumer<HexTravelSnapshot>, Runnable> subscribeAction;
     private final List<Consumer<HexTravelSnapshot>> listeners = new ArrayList<>();
-    private HexTravelSnapshot current = HexTravelSnapshot.empty("Keine Hex-Reiseposition ausgewaehlt.");
+    private HexTravelSnapshot current = emptySnapshot();
+    private PublishedState<HexTravelSnapshot> statefulStore;
 
     public HexTravelModel() {
-        currentSupplier = this::localCurrent;
-        subscribeAction = this::localSubscribe;
+        this(new PublishedState<>(emptySnapshot()));
+    }
+
+    public HexTravelModel(UiDispatcher dispatcher) {
+        this(new PublishedState<>(emptySnapshot(), dispatcher));
+    }
+
+    private HexTravelModel(PublishedState<HexTravelSnapshot> store) {
+        this(store::current, store::subscribe);
+        statefulStore = store;
     }
 
     public HexTravelModel(
@@ -38,6 +49,10 @@ public final class HexTravelModel {
     }
 
     public void publish(HexTravelSnapshot snapshot) {
+        if (statefulStore != null) {
+            statefulStore.publish(snapshot == null ? emptySnapshot() : snapshot);
+            return;
+        }
         current = snapshot == null
                 ? HexTravelSnapshot.empty("Keine Hex-Reiseposition ausgewaehlt.")
                 : snapshot;
@@ -55,5 +70,9 @@ public final class HexTravelModel {
         listeners.add(safeListener);
         safeListener.accept(current);
         return () -> listeners.remove(safeListener);
+    }
+
+    private static HexTravelSnapshot emptySnapshot() {
+        return HexTravelSnapshot.empty("Keine Hex-Reiseposition ausgewaehlt.");
     }
 }

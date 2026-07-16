@@ -3,11 +3,15 @@ package src.features.dungeon.runtime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import platform.execution.ExecutionLane;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorStateModel;
+import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 
 final class DungeonEditorRuntimeFramePublisher {
     private static final long MIN_DRAFT_SESSION_REVISION = 0L;
@@ -16,9 +20,12 @@ final class DungeonEditorRuntimeFramePublisher {
     private final DungeonEditorMapSurfaceModel mapSurfaceModel;
     private final DungeonEditorStateModel stateModel;
     private final DungeonEditorRuntimeDraftSession draftSession;
+    private final ExecutionLane executionLane;
     private final DungeonEditorRuntimeFrameFactsAssembler frameFactsAssembler =
             new DungeonEditorRuntimeFrameFactsAssembler();
     private final List<Consumer<DungeonEditorRenderFrame>> subscribers = new ArrayList<>();
+    private volatile DungeonEditorRenderFrame latestFrame;
+    private DungeonEditorStateSnapshot lastPublishedState;
     private long runtimeFramePublicationCount;
     private long draftSessionRevision;
     private int stateModelFrameDeferralDepth;
@@ -28,30 +35,48 @@ final class DungeonEditorRuntimeFramePublisher {
             DungeonEditorControlsModel controlsModel,
             DungeonEditorMapSurfaceModel mapSurfaceModel,
             DungeonEditorStateModel stateModel,
-            DungeonEditorRuntimeDraftSession draftSession
+            DungeonEditorRuntimeDraftSession draftSession,
+            ExecutionLane executionLane
     ) {
         this.controlsModel = Objects.requireNonNull(controlsModel, "controlsModel");
         this.mapSurfaceModel = Objects.requireNonNull(mapSurfaceModel, "mapSurfaceModel");
         this.stateModel = Objects.requireNonNull(stateModel, "stateModel");
         this.draftSession = Objects.requireNonNull(draftSession, "draftSession");
-        this.stateModel.subscribe(ignored -> publishStateModelFrame());
+        this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
+        latestFrame = assembleCurrentFrame();
+        lastPublishedState = this.stateModel.current();
+        this.stateModel.subscribe(ignored -> executeIfOpen(this::publishStateModelFrame));
     }
 
     Runnable subscribe(Consumer<DungeonEditorRenderFrame> subscriber) {
         Consumer<DungeonEditorRenderFrame> safeSubscriber =
                 Objects.requireNonNull(subscriber, "subscriber");
-        subscribers.add(safeSubscriber);
-        return () -> subscribers.remove(safeSubscriber);
+        AtomicBoolean active = new AtomicBoolean(true);
+        DungeonEditorRenderFrame frameAtRequest = latestFrame;
+        executeIfOpen(() -> {
+            if (active.get()) {
+                subscribers.add(safeSubscriber);
+                if (latestFrame != frameAtRequest) {
+                    safeSubscriber.accept(latestFrame);
+                }
+            }
+        });
+        return () -> {
+            if (active.compareAndSet(true, false)) {
+                executeIfOpen(() -> subscribers.remove(safeSubscriber));
+            }
+        };
     }
 
     /*
-     * This runtime channel is caller-affine: subscriber callbacks run
-     * synchronously on the caller of publishCurrentToSubscribers().
-     * Thread-bound consumers must route delivery at their own seam.
+     * This runtime channel is execution-lane-affine. Thread-bound consumers
+     * receive only the completed immutable frame and route it at their seam.
      */
     void publishCurrentToSubscribers() {
         runtimeFramePublicationCount++;
-        DungeonEditorRenderFrame frame = currentFrame();
+        DungeonEditorRenderFrame frame = assembleCurrentFrame();
+        latestFrame = frame;
+        lastPublishedState = stateModel.current();
         for (Consumer<DungeonEditorRenderFrame> subscriber : List.copyOf(subscribers)) {
             subscriber.accept(frame);
         }
@@ -85,6 +110,9 @@ final class DungeonEditorRuntimeFramePublisher {
     }
 
     private void publishStateModelFrame() {
+        if (Objects.equals(lastPublishedState, stateModel.current())) {
+            return;
+        }
         if (stateModelFrameDeferralDepth > 0) {
             stateModelFrameSuppressedDuringDeferral = true;
             return;
@@ -93,6 +121,10 @@ final class DungeonEditorRuntimeFramePublisher {
     }
 
     DungeonEditorRenderFrame currentFrame() {
+        return latestFrame;
+    }
+
+    private DungeonEditorRenderFrame assembleCurrentFrame() {
         DungeonEditorRuntimeReadbackFrameInputs readbackInputs =
                 DungeonEditorRuntimeReadbackFrameInputs.from(controlsModel, mapSurfaceModel, stateModel);
         verifyCurrentDraftSessionRevision();
@@ -107,6 +139,14 @@ final class DungeonEditorRuntimeFramePublisher {
                         drafts),
                 drafts.inlineLabelEditSession(),
                 frameFactsAssembler.measurementSnapshot(runtimeFramePublicationCount));
+    }
+
+    private void executeIfOpen(Runnable work) {
+        try {
+            executionLane.execute(work);
+        } catch (RejectedExecutionException ignored) {
+            // A queued JavaFX model callback may arrive after application shutdown closed the lane.
+        }
     }
 
     private void verifyCurrentDraftSessionRevision() {

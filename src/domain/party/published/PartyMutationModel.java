@@ -4,6 +4,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import platform.ui.UiDispatcher;
 import src.domain.shared.published.PublishedState;
 
 public final class PartyMutationModel {
@@ -14,6 +15,10 @@ public final class PartyMutationModel {
 
     public PartyMutationModel() {
         this(new PublishedState<>(emptyResult()));
+    }
+
+    public PartyMutationModel(UiDispatcher dispatcher) {
+        this(new PublishedState<>(emptyResult(), dispatcher));
     }
 
     private PartyMutationModel(PublishedState<MutationResult> store) {

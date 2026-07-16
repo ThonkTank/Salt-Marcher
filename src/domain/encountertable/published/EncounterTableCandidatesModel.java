@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import platform.ui.UiDispatcher;
 import src.domain.shared.published.PublishedState;
 
 public final class EncounterTableCandidatesModel {
@@ -15,6 +16,10 @@ public final class EncounterTableCandidatesModel {
 
     public EncounterTableCandidatesModel() {
         this(new PublishedState<>(emptyResult()));
+    }
+
+    public EncounterTableCandidatesModel(UiDispatcher dispatcher) {
+        this(new PublishedState<>(emptyResult(), dispatcher));
     }
 
     private EncounterTableCandidatesModel(PublishedState<EncounterTableCandidatesResult> store) {

@@ -1,6 +1,12 @@
 package src.domain.party;
 
 import java.util.Objects;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.NoopDiagnostics;
+import platform.execution.DirectExecutionLane;
+import platform.execution.ExecutionLane;
+import platform.ui.DirectUiDispatcher;
+import platform.ui.UiDispatcher;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 import src.domain.party.published.ActivePartyCompositionModel;
 import src.domain.party.published.ActivePartyModel;
@@ -16,13 +22,27 @@ public final class PartyServiceAssembly {
     }
 
     public static Component create(PartyRosterRepository repository) {
-        PartySnapshotModel snapshot = new PartySnapshotModel();
-        ActivePartyModel activeParty = new ActivePartyModel();
-        ActivePartyCompositionModel activeComposition = new ActivePartyCompositionModel();
-        AdventuringDaySummaryModel daySummary = new AdventuringDaySummaryModel();
-        PartyTravelPositionsModel travelPositions = new PartyTravelPositionsModel();
-        PartyMutationModel mutation = new PartyMutationModel();
-        AdventuringDayCalculationModel dayCalculation = new AdventuringDayCalculationModel();
+        return create(
+                repository,
+                DirectExecutionLane.INSTANCE,
+                DirectUiDispatcher.INSTANCE,
+                NoopDiagnostics.INSTANCE);
+    }
+
+    public static Component create(
+            PartyRosterRepository repository,
+            ExecutionLane executionLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics
+    ) {
+        UiDispatcher dispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
+        PartySnapshotModel snapshot = new PartySnapshotModel(dispatcher);
+        ActivePartyModel activeParty = new ActivePartyModel(dispatcher);
+        ActivePartyCompositionModel activeComposition = new ActivePartyCompositionModel(dispatcher);
+        AdventuringDaySummaryModel daySummary = new AdventuringDaySummaryModel(dispatcher);
+        PartyTravelPositionsModel travelPositions = new PartyTravelPositionsModel(dispatcher);
+        PartyMutationModel mutation = new PartyMutationModel(dispatcher);
+        AdventuringDayCalculationModel dayCalculation = new AdventuringDayCalculationModel(dispatcher);
         PartyApplicationService application = new PartyApplicationService(
                 Objects.requireNonNull(repository, "repository"),
                 snapshot,
@@ -31,7 +51,9 @@ public final class PartyServiceAssembly {
                 daySummary,
                 travelPositions,
                 mutation,
-                dayCalculation);
+                dayCalculation,
+                Objects.requireNonNull(executionLane, "executionLane"),
+                Objects.requireNonNull(diagnostics, "diagnostics"));
         application.refreshPublishedState();
         return new Component(application, snapshot, activeParty, activeComposition, daySummary,
                 travelPositions, mutation, dayCalculation);

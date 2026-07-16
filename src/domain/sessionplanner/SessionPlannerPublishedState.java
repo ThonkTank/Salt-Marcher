@@ -2,6 +2,7 @@ package src.domain.sessionplanner;
 
 import java.util.Objects;
 import java.util.Optional;
+import platform.ui.UiDispatcher;
 import src.domain.sessionplanner.model.session.SessionPlan;
 import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
 import src.domain.sessionplanner.published.SessionPlannerCatalogModel;
@@ -23,36 +24,39 @@ final class SessionPlannerPublishedState {
     private final SessionPlanRepository repository;
     private final SessionPlannerForeignFacts facts;
     private final SessionPlannerProjection projection;
-    private final PublishedState<SessionPlannerSessionSnapshot> sessions =
-            new PublishedState<>(SessionPlannerSessionSnapshot.empty("Session ist noch nicht geladen."));
-    private final PublishedState<SessionPlannerCatalogSnapshot> catalog =
-            new PublishedState<>(SessionPlannerCatalogSnapshot.empty());
-    private final PublishedState<SessionPlannerParticipantsProjection> participants =
-            new PublishedState<>(SessionPlannerParticipantsProjection.empty());
-    private final PublishedState<SessionPlannerSceneTimelineProjection> sceneTimeline =
-            new PublishedState<>(SessionPlannerSceneTimelineProjection.empty());
-    private final PublishedState<SessionPlannerStatePanelProjection> statePanel =
-            new PublishedState<>(SessionPlannerStatePanelProjection.empty());
-    private final SessionPlannerCurrentSessionModel currentSessionModel =
-            new SessionPlannerCurrentSessionModel(this::currentSession, sessions::subscribe);
-    private final SessionPlannerCatalogModel catalogModel =
-            new SessionPlannerCatalogModel(this::currentCatalog, catalog::subscribe);
-    private final SessionPlannerParticipantsModel participantsModel =
-            new SessionPlannerParticipantsModel(this::currentParticipants, participants::subscribe);
-    private final SessionPlannerSceneTimelineModel sceneTimelineModel =
-            new SessionPlannerSceneTimelineModel(this::currentSceneTimeline, sceneTimeline::subscribe);
-    private final SessionPlannerStatePanelModel statePanelModel =
-            new SessionPlannerStatePanelModel(this::currentStatePanel, statePanel::subscribe);
+    private final PublishedState<SessionPlannerSessionSnapshot> sessions;
+    private final PublishedState<SessionPlannerCatalogSnapshot> catalog;
+    private final PublishedState<SessionPlannerParticipantsProjection> participants;
+    private final PublishedState<SessionPlannerSceneTimelineProjection> sceneTimeline;
+    private final PublishedState<SessionPlannerStatePanelProjection> statePanel;
+    private final SessionPlannerCurrentSessionModel currentSessionModel;
+    private final SessionPlannerCatalogModel catalogModel;
+    private final SessionPlannerParticipantsModel participantsModel;
+    private final SessionPlannerSceneTimelineModel sceneTimelineModel;
+    private final SessionPlannerStatePanelModel statePanelModel;
     private boolean loaded;
 
     SessionPlannerPublishedState(
             SessionPlanRepository repository,
             SessionPlannerForeignFacts facts,
-            SessionPlannerProjection projection
+            SessionPlannerProjection projection,
+            UiDispatcher dispatcher
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.facts = Objects.requireNonNull(facts, "facts");
         this.projection = Objects.requireNonNull(projection, "projection");
+        UiDispatcher uiDispatcher = Objects.requireNonNull(dispatcher, "dispatcher");
+        sessions = new PublishedState<>(
+                SessionPlannerSessionSnapshot.empty("Session ist noch nicht geladen."), uiDispatcher);
+        catalog = new PublishedState<>(SessionPlannerCatalogSnapshot.empty(), uiDispatcher);
+        participants = new PublishedState<>(SessionPlannerParticipantsProjection.empty(), uiDispatcher);
+        sceneTimeline = new PublishedState<>(SessionPlannerSceneTimelineProjection.empty(), uiDispatcher);
+        statePanel = new PublishedState<>(SessionPlannerStatePanelProjection.empty(), uiDispatcher);
+        currentSessionModel = new SessionPlannerCurrentSessionModel(sessions::current, sessions::subscribe);
+        catalogModel = new SessionPlannerCatalogModel(catalog::current, catalog::subscribe);
+        participantsModel = new SessionPlannerParticipantsModel(participants::current, participants::subscribe);
+        sceneTimelineModel = new SessionPlannerSceneTimelineModel(sceneTimeline::current, sceneTimeline::subscribe);
+        statePanelModel = new SessionPlannerStatePanelModel(statePanel::current, statePanel::subscribe);
     }
 
     SessionPlannerCurrentSessionModel currentSessionModel() {
@@ -78,6 +82,14 @@ final class SessionPlannerPublishedState {
     void publishCurrentSession(SessionPlan sessionPlan) {
         SessionPlan safeSession = Objects.requireNonNull(sessionPlan, "sessionPlan");
         publishCatalog(safeSession.sessionId(), safeSession.statusText());
+        publishSessionProjections(safeSession);
+    }
+
+    void publishCurrentSessionWithoutCatalogRefresh(SessionPlan sessionPlan) {
+        publishSessionProjections(Objects.requireNonNull(sessionPlan, "sessionPlan"));
+    }
+
+    private void publishSessionProjections(SessionPlan safeSession) {
         sessions.publish(projection.session(safeSession, facts));
         participants.publish(projection.participants(safeSession, facts));
         sceneTimeline.publish(projection.sceneTimeline(safeSession, facts));
@@ -93,32 +105,7 @@ final class SessionPlannerPublishedState {
         currentSession.ifPresent(this::publishCurrentSession);
     }
 
-    private SessionPlannerSessionSnapshot currentSession() {
-        loadPublishedState();
-        return sessions.current();
-    }
-
-    private SessionPlannerCatalogSnapshot currentCatalog() {
-        loadPublishedState();
-        return catalog.current();
-    }
-
-    private SessionPlannerParticipantsProjection currentParticipants() {
-        loadPublishedState();
-        return participants.current();
-    }
-
-    private SessionPlannerSceneTimelineProjection currentSceneTimeline() {
-        loadPublishedState();
-        return sceneTimeline.current();
-    }
-
-    private SessionPlannerStatePanelProjection currentStatePanel() {
-        loadPublishedState();
-        return statePanel.current();
-    }
-
-    private void loadPublishedState() {
+    void initialize() {
         if (loaded) {
             return;
         }

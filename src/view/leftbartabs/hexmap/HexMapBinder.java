@@ -201,8 +201,10 @@ final class HexMapBinder {
             return true;
         }
         if (!event.reloadItemId().isBlank()) {
-            editor.loadEditor(new LoadHexEditorCommand());
-            selectMap(editor, parseId(event.reloadItemId()));
+            long mapId = parseId(event.reloadItemId());
+            if (mapId > UNRESOLVED_ID) {
+                editor.reloadAndSelectMap(new LoadHexEditorCommand(), new SelectHexMapCommand(mapId));
+            }
             return true;
         }
         if (!event.openItemId().isBlank()) {

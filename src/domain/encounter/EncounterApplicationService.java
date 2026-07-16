@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Map;
+import platform.execution.DirectExecutionLane;
+import platform.execution.ExecutionLane;
 import src.domain.encounter.model.generation.EncounterGenerationInputs;
 import src.domain.encounter.model.generation.EncounterCreatureFilters;
 import src.domain.encounter.model.generation.EncounterRequestedDifficulty;
@@ -51,29 +53,37 @@ public final class EncounterApplicationService {
             Map.entry(Integer.valueOf(21), EncounterSessionCommand.Action.MUTATE_HP));
 
     private final CommandActions commands;
+    private final ExecutionLane executionLane;
 
     EncounterApplicationService(
             EncounterSessionRuntimeAccess runtimeAccess,
             EncounterPlanGateway plans,
-            EncounterPublishedState publishedState
+            EncounterPublishedState publishedState,
+            ExecutionLane executionLane
     ) {
-        this(RuntimeCommandActions.create(runtimeAccess, plans, publishedState));
+        this(RuntimeCommandActions.create(runtimeAccess, plans, publishedState), executionLane);
     }
 
     EncounterApplicationService(CommandActions commands) {
+        this(commands, DirectExecutionLane.INSTANCE);
+    }
+
+    EncounterApplicationService(CommandActions commands, ExecutionLane executionLane) {
         this.commands = Objects.requireNonNull(commands, "commands");
+        this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
+        this.executionLane.execute(commands::initialize);
     }
 
     public void applyState(ApplyEncounterStateCommand command) {
-        commands.applyState(command);
+        executionLane.execute(() -> commands.applyState(command));
     }
 
     public void updateBuilderInputs(UpdateEncounterBuilderInputsCommand command) {
-        commands.updateBuilderInputs(command);
+        executionLane.execute(() -> commands.updateBuilderInputs(command));
     }
 
     public void refreshPlanBudget(RefreshEncounterPlanBudgetCommand command) {
-        commands.refreshPlanBudget(command);
+        executionLane.execute(() -> commands.refreshPlanBudget(command));
     }
 
     private static EncounterSessionCommand toSessionCommand(ApplyEncounterStateCommand command) {
@@ -147,6 +157,9 @@ public final class EncounterApplicationService {
 
     interface CommandActions {
 
+        default void initialize() {
+        }
+
         void applyState(ApplyEncounterStateCommand command);
 
         void updateBuilderInputs(UpdateEncounterBuilderInputsCommand command);
@@ -176,12 +189,11 @@ public final class EncounterApplicationService {
                 EncounterPlanGateway plans,
                 EncounterPublishedState publishedState
         ) {
-            RuntimeCommandActions actions = new RuntimeCommandActions(runtimeAccess, plans, publishedState);
-            actions.initialize();
-            return actions;
+            return new RuntimeCommandActions(runtimeAccess, plans, publishedState);
         }
 
-        private void initialize() {
+        @Override
+        public void initialize() {
             session.apply(EncounterSessionCommand.refresh(), runtimeAccess);
             publishCurrentSession();
             publishSavedPlans();
