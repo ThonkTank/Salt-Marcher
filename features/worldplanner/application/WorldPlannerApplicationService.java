@@ -28,7 +28,6 @@ import features.worldplanner.api.RefreshWorldPlannerCommand;
 import features.worldplanner.api.SetWorldFactionInventoryLimitCommand;
 import features.worldplanner.api.SetWorldNpcLifecycleStatusCommand;
 import features.worldplanner.api.UpdateWorldNpcNotesCommand;
-import features.worldplanner.api.WorldPlannerSnapshotModel;
 
 public final class WorldPlannerApplicationService implements features.worldplanner.api.WorldPlannerApi {
 
@@ -42,19 +41,19 @@ public final class WorldPlannerApplicationService implements features.worldplann
 
     private final WorldPlannerRepository repository;
     private final WorldPlannerReferencePort referenceValidator;
-    private final WorldPlannerSnapshotModel snapshotModel;
+    private final WorldPlannerPublishedState publishedState;
     private final ExecutionLane executionLane;
     private final Diagnostics diagnostics;
 
     WorldPlannerApplicationService(
             WorldPlannerRepository repository,
             WorldPlannerReferencePort referenceValidator,
-            WorldPlannerSnapshotModel snapshotModel
+            WorldPlannerPublishedState publishedState
     ) {
         this(
                 repository,
                 referenceValidator,
-                snapshotModel,
+                publishedState,
                 DirectExecutionLane.INSTANCE,
                 NoopDiagnostics.INSTANCE);
     }
@@ -62,13 +61,13 @@ public final class WorldPlannerApplicationService implements features.worldplann
     public WorldPlannerApplicationService(
             WorldPlannerRepository repository,
             WorldPlannerReferencePort referenceValidator,
-            WorldPlannerSnapshotModel snapshotModel,
+            WorldPlannerPublishedState publishedState,
             ExecutionLane executionLane,
             Diagnostics diagnostics
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.referenceValidator = Objects.requireNonNull(referenceValidator, "referenceValidator");
-        this.snapshotModel = Objects.requireNonNull(snapshotModel, "snapshotModel");
+        this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
@@ -285,21 +284,21 @@ public final class WorldPlannerApplicationService implements features.worldplann
     private WorldPlannerState load() {
         try {
             WorldPlannerState state = repository.load();
-            snapshotModel.publish(WorldPlannerSnapshotProjection.from(state));
+            publishedState.publish(WorldPlannerSnapshotProjection.from(state));
             return state;
         } catch (IllegalStateException exception) {
             diagnostics.failure(LOAD_DIAGNOSTIC, exception.getClass());
-            snapshotModel.publishStorageError(LOAD_FAILURE);
+            publishedState.publishStorageError(LOAD_FAILURE);
             throw exception;
         }
     }
 
     private void save(WorldPlannerState state) {
         try {
-            snapshotModel.publish(WorldPlannerSnapshotProjection.from(repository.save(state)));
+            publishedState.publish(WorldPlannerSnapshotProjection.from(repository.save(state)));
         } catch (IllegalStateException exception) {
             diagnostics.failure(SAVE_DIAGNOSTIC, exception.getClass());
-            snapshotModel.publishStorageError(SAVE_FAILURE);
+            publishedState.publishStorageError(SAVE_FAILURE);
             throw exception;
         }
     }
@@ -308,11 +307,11 @@ public final class WorldPlannerApplicationService implements features.worldplann
         try {
             return lookup.getAsBoolean();
         } catch (ReferenceProviderUnavailableException exception) {
-            snapshotModel.publishStorageError(REFERENCE_FAILURE);
+            publishedState.publishStorageError(REFERENCE_FAILURE);
             throw exception;
         } catch (IllegalStateException exception) {
             diagnostics.failure(REFERENCE_DIAGNOSTIC, exception.getClass());
-            snapshotModel.publishStorageError(REFERENCE_FAILURE);
+            publishedState.publishStorageError(REFERENCE_FAILURE);
             throw exception;
         }
     }

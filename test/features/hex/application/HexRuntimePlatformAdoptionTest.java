@@ -13,16 +13,19 @@ import org.junit.jupiter.api.Test;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
 import platform.execution.ExecutionLane;
+import platform.ui.DirectUiDispatcher;
 import platform.ui.UiDispatcher;
 import features.hex.domain.map.HexCoordinate;
-import features.hex.domain.map.HexEditorWorkspace;
+import features.hex.application.HexEditorWorkspace;
 import features.hex.domain.map.HexMap;
 import features.hex.domain.map.HexMapIdentity;
 import features.hex.domain.map.HexMapSummary;
 import features.hex.domain.map.HexMarker;
-import features.hex.domain.map.HexTerrain;
+import features.hex.api.HexTerrain;
 import features.hex.domain.map.repository.HexMapRepository;
 import features.hex.api.HexEditorModel;
+import features.hex.api.HexEditorMode;
+import features.hex.api.HexMarkerKind;
 import features.hex.api.LoadHexEditorCommand;
 import features.hex.api.PaintHexTerrainCommand;
 import features.hex.api.SaveHexMarkerCommand;
@@ -37,8 +40,9 @@ final class HexRuntimePlatformAdoptionTest {
         QueuedLane lane = new QueuedLane();
         QueuedDispatcher dispatcher = new QueuedDispatcher();
         RecordingRepository repository = new RecordingRepository();
-        HexEditorModel model = new HexEditorModel(dispatcher);
-        HexEditorApplicationService service = service(repository, model, lane, new RecordingDiagnostics());
+        EditorStateHarness editorState = editorState(dispatcher);
+        HexEditorModel model = editorState.model();
+        HexEditorApplicationService service = service(repository, editorState, lane, new RecordingDiagnostics());
         List<String> deliveredStatuses = new ArrayList<>();
         model.subscribe(snapshot -> deliveredStatuses.add(snapshot.statusText()));
 
@@ -58,7 +62,7 @@ final class HexRuntimePlatformAdoptionTest {
         RecordingRepository repository = new RecordingRepository();
         HexEditorApplicationService service = service(
                 repository,
-                new HexEditorModel(),
+                editorState(),
                 lane,
                 new RecordingDiagnostics());
 
@@ -76,8 +80,9 @@ final class HexRuntimePlatformAdoptionTest {
         RecordingRepository repository = new RecordingRepository();
         repository.failure = new IllegalStateException("authored secret payload");
         RecordingDiagnostics diagnostics = new RecordingDiagnostics();
-        HexEditorModel model = new HexEditorModel();
-        HexEditorApplicationService service = service(repository, model, lane, diagnostics);
+        EditorStateHarness editorState = editorState();
+        HexEditorModel model = editorState.model();
+        HexEditorApplicationService service = service(repository, editorState, lane, diagnostics);
 
         service.loadEditor(new LoadHexEditorCommand());
         lane.runNext();
@@ -91,33 +96,35 @@ final class HexRuntimePlatformAdoptionTest {
     @Test
     void immediateToolIntentDoesNotEnterThePersistenceLaneOrMutateLaneOwnedWorkspace() {
         QueuedLane lane = new QueuedLane();
-        HexEditorModel model = new HexEditorModel();
+        EditorStateHarness editorState = editorState();
+        HexEditorModel model = editorState.model();
         HexEditorWorkspace workspace = new HexEditorWorkspace();
         HexEditorApplicationService service = new HexEditorApplicationService(
-                new RecordingRepository(), workspace, model, lane, new RecordingDiagnostics());
+                new RecordingRepository(), workspace, editorState.publisher(), lane, new RecordingDiagnostics());
 
-        service.setActiveTool(new SetHexEditorToolCommand("PAINT_TERRAIN", "WATER"));
+        service.setActiveTool(new SetHexEditorToolCommand(HexEditorMode.PAINT_TERRAIN, HexTerrain.WATER));
 
         assertEquals(0, lane.size());
-        assertEquals("PAINT_TERRAIN", model.current().activeTool());
-        assertEquals("WATER", model.current().activeTerrain());
-        assertEquals("SELECT", workspace.state().activeMode().name());
-        assertEquals("GRASSLAND", workspace.state().activeTerrain().name());
+        assertEquals(HexEditorMode.PAINT_TERRAIN, model.current().activeTool());
+        assertEquals(HexTerrain.WATER, model.current().activeTerrain());
+        assertEquals(HexEditorMode.SELECT, workspace.state().activeMode());
+        assertEquals(HexTerrain.GRASSLAND, workspace.state().activeTerrain());
     }
 
     @Test
     void queuedTileSelectionCannotOverwriteNewerImmediateMarkerToolDraft() {
         QueuedLane lane = new QueuedLane();
-        HexEditorModel model = new HexEditorModel();
+        EditorStateHarness editorState = editorState();
+        HexEditorModel model = editorState.model();
         HexEditorApplicationService service = service(
-                new RecordingRepository(), model, lane, new RecordingDiagnostics());
+                new RecordingRepository(), editorState, lane, new RecordingDiagnostics());
 
         service.selectTile(new SelectHexTileCommand(1L, 0, 0));
-        service.setActiveTool(new SetHexEditorToolCommand("PLACE_MARKER", "WATER"));
+        service.setActiveTool(new SetHexEditorToolCommand(HexEditorMode.PLACE_MARKER, HexTerrain.WATER));
         lane.runNext();
 
-        assertEquals("PLACE_MARKER", model.current().activeTool());
-        assertEquals("WATER", model.current().activeTerrain());
+        assertEquals(HexEditorMode.PLACE_MARKER, model.current().activeTool());
+        assertEquals(HexTerrain.WATER, model.current().activeTerrain());
         assertEquals(0, model.current().selectedTile().orElseThrow().q());
         assertEquals(0, model.current().selectedTile().orElseThrow().r());
     }
@@ -125,17 +132,18 @@ final class HexRuntimePlatformAdoptionTest {
     @Test
     void queuedPaintCompletionCannotOverwriteNewerImmediateMarkerToolIntent() {
         QueuedLane lane = new QueuedLane();
-        HexEditorModel model = new HexEditorModel();
+        EditorStateHarness editorState = editorState();
+        HexEditorModel model = editorState.model();
         HexEditorApplicationService service = service(
-                new RecordingRepository(), model, lane, new RecordingDiagnostics());
+                new RecordingRepository(), editorState, lane, new RecordingDiagnostics());
 
-        service.paintTerrain(new PaintHexTerrainCommand(1L, 0, 0, "WATER"));
-        service.setActiveTool(new SetHexEditorToolCommand("PLACE_MARKER", "FOREST"));
+        service.paintTerrain(new PaintHexTerrainCommand(1L, 0, 0, HexTerrain.WATER));
+        service.setActiveTool(new SetHexEditorToolCommand(HexEditorMode.PLACE_MARKER, HexTerrain.FOREST));
         lane.runNext();
 
-        assertEquals("PLACE_MARKER", model.current().activeTool());
-        assertEquals("FOREST", model.current().activeTerrain());
-        assertEquals("WATER", model.current().tiles().stream()
+        assertEquals(HexEditorMode.PLACE_MARKER, model.current().activeTool());
+        assertEquals(HexTerrain.FOREST, model.current().activeTerrain());
+        assertEquals(HexTerrain.WATER, model.current().tiles().stream()
                 .filter(tile -> tile.q() == 0 && tile.r() == 0)
                 .findFirst()
                 .orElseThrow()
@@ -145,17 +153,18 @@ final class HexRuntimePlatformAdoptionTest {
     @Test
     void queuedMarkerCompletionCannotOverwriteNewerImmediateMoveToolIntent() {
         QueuedLane lane = new QueuedLane();
-        HexEditorModel model = new HexEditorModel();
+        EditorStateHarness editorState = editorState();
+        HexEditorModel model = editorState.model();
         HexEditorApplicationService service = service(
-                new RecordingRepository(), model, lane, new RecordingDiagnostics());
+                new RecordingRepository(), editorState, lane, new RecordingDiagnostics());
 
         service.saveMarker(new SaveHexMarkerCommand(
-                1L, 0L, 0, 0, "Harbor", "LANDMARK", "Safe anchorage"));
-        service.setActiveTool(new SetHexEditorToolCommand("MOVE_PARTY", "DESERT"));
+                1L, 0L, 0, 0, "Harbor", HexMarkerKind.LANDMARK, "Safe anchorage"));
+        service.setActiveTool(new SetHexEditorToolCommand(HexEditorMode.MOVE_PARTY, HexTerrain.DESERT));
         lane.runNext();
 
-        assertEquals("MOVE_PARTY", model.current().activeTool());
-        assertEquals("DESERT", model.current().activeTerrain());
+        assertEquals(HexEditorMode.MOVE_PARTY, model.current().activeTool());
+        assertEquals(HexTerrain.DESERT, model.current().activeTerrain());
         assertEquals("Harbor", model.current().tiles().stream()
                 .filter(tile -> tile.q() == 0 && tile.r() == 0)
                 .findFirst()
@@ -167,12 +176,24 @@ final class HexRuntimePlatformAdoptionTest {
 
     private static HexEditorApplicationService service(
             HexMapRepository repository,
-            HexEditorModel model,
+            EditorStateHarness editorState,
             ExecutionLane lane,
             Diagnostics diagnostics
     ) {
         return new HexEditorApplicationService(
-                repository, new HexEditorWorkspace(), model, lane, diagnostics);
+                repository, new HexEditorWorkspace(), editorState.publisher(), lane, diagnostics);
+    }
+
+    private static EditorStateHarness editorState() {
+        return editorState(DirectUiDispatcher.INSTANCE);
+    }
+
+    private static EditorStateHarness editorState(UiDispatcher dispatcher) {
+        HexEditorPublishedState publisher = new HexEditorPublishedState(dispatcher);
+        return new EditorStateHarness(publisher, publisher.model());
+    }
+
+    private record EditorStateHarness(HexEditorPublishedState publisher, HexEditorModel model) {
     }
 
     private static final class QueuedLane implements ExecutionLane {
@@ -257,7 +278,11 @@ final class HexRuntimePlatformAdoptionTest {
         }
 
         @Override
-        public HexMap saveTerrain(HexMapIdentity mapId, HexCoordinate coordinate, HexTerrain terrain) {
+        public HexMap saveTerrain(
+                HexMapIdentity mapId,
+                HexCoordinate coordinate,
+                features.hex.domain.map.HexTerrain terrain
+        ) {
             return map.paintTerrain(coordinate, terrain);
         }
 

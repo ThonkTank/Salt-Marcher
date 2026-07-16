@@ -46,26 +46,27 @@ auto-commit itself, and MUST update only schema and stored truth owned by its
 feature. A failure rolls back schema, data, platform version, and feature
 version together.
 
-The R3 compatibility floor is the pre-ledger database at platform and feature
-version `0`. The existing feature readiness migrations are adopted as each
-feature's version `1` migration. Later schema changes add a new ordered step;
-they MUST NOT rewrite the meaning of an already recorded version.
+The compatibility floor is an existing pre-ledger database at platform and
+feature version `0`. The initial feature readiness migrations are recorded as
+each feature's version `1` migration. Later schema changes add a new ordered
+step; they MUST NOT rewrite the meaning of an already recorded version.
 
 ## Integrity, Backup, And Recovery
 
-Before the first R3 lifecycle mutation of an existing healthy database, the
-platform MUST run full `integrity_check` and `foreign_key_check`, then create a
+Before the lifecycle first mutates an existing healthy database, the platform
+MUST run full `integrity_check` and `foreign_key_check`, then create a
 WAL-consistent SQLite snapshot with `VACUUM INTO`. The local backup name embeds
 the compatible platform version as `game.db.backup-vN.sqlite`. A replacement
 backup is accepted only after the same integrity checks succeed.
 
 If the primary is physically corrupt, the lifecycle MAY restore the highest
 verified backup whose platform version is not newer than the application. It
-MUST first preserve the corrupt primary and its WAL/SHM sidecars under a local
-quarantine name, MUST verify the recovered primary, and MUST leave the backup
-intact. If no verified compatible backup exists, recovery fails closed and the
-primary remains byte-for-byte untouched. An unknown newer version is not
-corruption and MUST never trigger recovery.
+MUST first preserve the corrupt primary and its active WAL/SHM or rollback-
+journal sidecars under a local quarantine name, MUST verify the recovered
+primary, and MUST leave the backup intact. If no verified compatible backup
+exists, recovery fails closed and the complete database family remains byte-
+for-byte untouched. An unknown newer version is not corruption and MUST never
+trigger recovery.
 
 After pending migrations, integrity and foreign-key checks MUST pass before
 commit. Logical feature-row validation and feature-specific error statuses

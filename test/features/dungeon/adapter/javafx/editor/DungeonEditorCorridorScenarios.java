@@ -13,7 +13,7 @@ import features.dungeon.api.DungeonEditorMapSurfaceModel;
 import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateSnapshot;
-import features.dungeon.api.DungeonEditorTopologyElementRef;
+import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonMapSummary;
@@ -182,7 +182,7 @@ final class DungeonEditorCorridorScenarios {
         Set<Long> existingCorridorIds = runtime.database().corridorIdsForMap(mapId);
         assertEquals(1L, existingCorridorIds.size(), "DE-STATE-004 fixture starts with one authored corridor");
         long existingCorridorId = existingCorridorIds.iterator().next();
-        DungeonEditorTopologyElementRef corridorRef =
+        DungeonTopologyElementRef corridorRef =
                 corridorAreaById(runtime.mapSurfaceModel().current(), existingCorridorId, "DE-STATE-004")
                         .topologyRef();
         List<String> anchorRowsBefore = runtime.database().corridorAnchorState(mapId);
@@ -316,7 +316,7 @@ final class DungeonEditorCorridorScenarios {
         createMapThroughControls(controls, runtime, "Corridor Network Host Move Reload Hop");
         selectMap(controls, "Corridor Network Host Move Map");
         long dependentCorridorId = createDependentCorridorFromExistingAnchor(runtime, binding, controls, mapView, mapId);
-        DungeonEditorTopologyElementRef anchorRef =
+        DungeonTopologyElementRef anchorRef =
                 editorTopologyRef(firstCorridorAnchorHandle(
                         runtime.mapSurfaceModel().current(),
                         "DE-COR-NET dependent").ref().topologyRef());
@@ -717,7 +717,7 @@ final class DungeonEditorCorridorScenarios {
         selectMap(controls, "Corridor Point Delete Map");
         var anchorHandle = firstCorridorAnchorHandle(runtime.mapSurfaceModel().current(), "DE-COR-006");
         long corridorId = anchorHandle.ref().corridorId();
-        DungeonEditorTopologyElementRef anchorRef = editorTopologyRef(anchorHandle.ref().topologyRef());
+        DungeonTopologyElementRef anchorRef = editorTopologyRef(anchorHandle.ref().topologyRef());
         Point2D anchorCenter = new Point2D(anchorHandle.markerQ() + 0.05, anchorHandle.markerR() + 0.05);
         assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.CELL,
                 runtimePointerTarget(binding.mapContentModel(), anchorCenter.getX(), anchorCenter.getY())
@@ -777,8 +777,8 @@ final class DungeonEditorCorridorScenarios {
         selectMap(controls, "Corridor Door Delete Map");
         var doorHandle = firstDoorHandleAt(runtime.mapSurfaceModel().current(), 4, 2, 0, "DE-COR-007 D1");
         long corridorId = doorHandle.ref().corridorId();
-        DungeonEditorTopologyElementRef doorRef = editorTopologyRef(doorHandle.ref().topologyRef());
-        DungeonEditorTopologyElementRef anchorRef =
+        DungeonTopologyElementRef doorRef = editorTopologyRef(doorHandle.ref().topologyRef());
+        DungeonTopologyElementRef anchorRef =
                 editorTopologyRef(firstCorridorAnchorHandle(runtime.mapSurfaceModel().current(), "DE-COR-007")
                         .ref().topologyRef());
         Point2D doorCenter = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
@@ -830,7 +830,7 @@ final class DungeonEditorCorridorScenarios {
         selectMap(controls, "Corridor Generic Anchor Map");
         Set<Long> corridorIdsBefore = runtime.database().corridorIdsForMap(mapId);
         List<String> anchorRowsBefore = runtime.database().corridorAnchorState(mapId);
-        DungeonEditorTopologyElementRef anchorRef =
+        DungeonTopologyElementRef anchorRef =
                 editorTopologyRef(firstCorridorAnchorHandle(
                         runtime.mapSurfaceModel().current(),
                         "DE-COR-013 existing-anchor").ref().topologyRef());
@@ -1147,8 +1147,8 @@ final class DungeonEditorCorridorScenarios {
                 newCorridorId,
                 cellRect(4, 2, 7, 2, 0),
                 "DE-COR-013 generic-room");
-        DungeonEditorTopologyElementRef materializedDoor =
-                new DungeonEditorTopologyElementRef("DOOR", materializedDoorRef);
+        DungeonTopologyElementRef materializedDoor =
+                new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.DOOR, materializedDoorRef);
         assertTrue(runtime.mapSurfaceModel().current().surface().map().boundaries().stream()
                         .anyMatch(boundary -> "door".equalsIgnoreCase(boundary.kind())
                                 && boundary.topologyRef().equals(materializedDoor)),

@@ -123,7 +123,9 @@ final class DungeonEditorCellFeaturePointerTargets {
     private static DungeonEditorRuntimePointerTarget.ElementKind areaRuntimeElementKind(
             DungeonEditorMapSnapshot.Area area
     ) {
-        return DungeonEditorRuntimePointerTargetCompatibility.legacyElementKind(areaElementKind(area));
+        return "CORRIDOR".equalsIgnoreCase(areaElementKind(area))
+                ? DungeonEditorRuntimePointerTarget.ElementKind.CORRIDOR
+                : DungeonEditorRuntimePointerTarget.ElementKind.ROOM;
     }
 
     private static String featureCellKind(String kind) {
@@ -131,9 +133,9 @@ final class DungeonEditorCellFeaturePointerTargets {
     }
 
     private static DungeonEditorRuntimePointerTarget.TopologyKind topologyKind(
-            features.dungeon.api.DungeonEditorTopologyElementRef topologyRef
+            features.dungeon.api.DungeonTopologyElementRef topologyRef
     ) {
-        return DungeonEditorRuntimePointerTargetCompatibility.legacyTopologyKind(
-                DungeonEditorTopologyHitRefs.topologyKind(topologyRef));
+        return DungeonEditorRuntimePointerTarget.TopologyKind.fromPublished(
+                topologyRef == null ? null : topologyRef.kind());
     }
 }

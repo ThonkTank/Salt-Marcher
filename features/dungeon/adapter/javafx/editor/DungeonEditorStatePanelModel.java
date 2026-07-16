@@ -7,7 +7,7 @@ import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.api.DungeonEditorPreview;
-import features.dungeon.api.DungeonEditorTopologyElementRef;
+import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts;
 import features.dungeon.application.editor.DungeonEditorStatePanelCorridorPointDrafts;
@@ -496,7 +496,7 @@ final class DungeonEditorStatePanelModel {
         }
         String selectionLabel = inspector != null && !inspector.title().isBlank()
                 ? inspector.title()
-                : selection.kind();
+                : selection.kind().name();
         return "Auswahl: " + selectionLabel + " (" + selection.kind() + " " + selection.id() + ")";
     }
 
@@ -551,36 +551,34 @@ final class DungeonEditorStatePanelModel {
         return deleteMode ? "Raum löschen" : "Raum malen";
     }
 
-    private record SelectionData(String kind, long id) {
+    private record SelectionData(features.dungeon.api.DungeonTopologyElementKind kind, long id) {
         SelectionData {
-            kind = kind == null ? "EMPTY" : kind;
+            kind = kind == null ? features.dungeon.api.DungeonTopologyElementKind.EMPTY : kind;
             id = Math.max(0L, id);
         }
 
-        private static SelectionData from(DungeonEditorTopologyElementRef topologyRef) {
-            DungeonEditorTopologyElementRef safeTopologyRef = topologyRef == null
-                    ? DungeonEditorTopologyElementRef.empty()
+        private static SelectionData from(DungeonTopologyElementRef topologyRef) {
+            DungeonTopologyElementRef safeTopologyRef = topologyRef == null
+                    ? DungeonTopologyElementRef.empty()
                     : topologyRef;
             return new SelectionData(safeTopologyRef.kind(), safeTopologyRef.id());
         }
 
         private boolean isEmpty() {
-            return "EMPTY".equals(kind);
+            return kind == features.dungeon.api.DungeonTopologyElementKind.EMPTY;
         }
     }
     }
 
     private static final class StairGeometryPanel {
-    private static final String STAIR_KIND = "STAIR";
-
     DungeonEditorStatePanelModel.@Nullable StairGeometryProjection stairGeometryProjection(
             DungeonEditorPreparedFrameFacts.StatePanelFrame frame
     ) {
         DungeonEditorPreparedFrameFacts.StatePanelFrame safeFrame = frame == null
                 ? DungeonEditorPreparedFrameFacts.StatePanelFrame.empty()
                 : frame;
-        DungeonEditorTopologyElementRef topologyRef = safeFrame.selectionTopologyRef() == null
-                ? DungeonEditorTopologyElementRef.empty()
+        DungeonTopologyElementRef topologyRef = safeFrame.selectionTopologyRef() == null
+                ? DungeonTopologyElementRef.empty()
                 : safeFrame.selectionTopologyRef();
         DungeonInspectorSnapshot inspector = safeFrame.inspector();
         long stairId = selectedStairId(topologyRef);
@@ -602,11 +600,13 @@ final class DungeonEditorStatePanelModel {
                 draft.dimension2());
     }
 
-    private static long selectedStairId(DungeonEditorTopologyElementRef topologyRef) {
-        DungeonEditorTopologyElementRef safeTopologyRef = topologyRef == null
-                ? DungeonEditorTopologyElementRef.empty()
+    private static long selectedStairId(DungeonTopologyElementRef topologyRef) {
+        DungeonTopologyElementRef safeTopologyRef = topologyRef == null
+                ? DungeonTopologyElementRef.empty()
                 : topologyRef;
-        return STAIR_KIND.equals(safeTopologyRef.kind()) ? safeTopologyRef.id() : 0L;
+        return safeTopologyRef.kind() == features.dungeon.api.DungeonTopologyElementKind.STAIR
+                ? safeTopologyRef.id()
+                : 0L;
     }
 
     private static StairGeometryFacts currentStairGeometryFacts(
@@ -679,11 +679,12 @@ final class DungeonEditorStatePanelModel {
             DungeonEditorPreparedFrameFacts.StatePanelFrame frame
     ) {
         DungeonEditorPreparedFrameFacts.StatePanelFrame safeFrame = safeFrame(frame);
-        DungeonEditorTopologyElementRef topologyRef = safeTopologyRef(safeFrame.selectionTopologyRef());
+        DungeonTopologyElementRef topologyRef = safeTopologyRef(safeFrame.selectionTopologyRef());
         DungeonInspectorSnapshot inspector = safeFrame.inspector();
         DungeonEditorStatePanelTransitionDescriptionDrafts.Draft runtimeDraft =
                 safeTransitionDescriptionDraft(safeFrame.transitionDescriptionDraft());
-        if (!runtimeDraft.targetPresent() || !"TRANSITION".equals(topologyRef.kind())
+        if (!runtimeDraft.targetPresent()
+                || topologyRef.kind() != features.dungeon.api.DungeonTopologyElementKind.TRANSITION
                 || topologyRef.id() != runtimeDraft.transitionId()) {
             return null;
         }
@@ -707,7 +708,7 @@ final class DungeonEditorStatePanelModel {
         if (safeFrame.selectedMapIdValue() <= NO_SELECTED_MAP_ID) {
             return null;
         }
-        DungeonEditorTopologyElementRef topologyRef = safeTopologyRef(safeFrame.selectionTopologyRef());
+        DungeonTopologyElementRef topologyRef = safeTopologyRef(safeFrame.selectionTopologyRef());
         long selectedTransitionId = selectedTransitionId(topologyRef);
         if (!TRANSITION_CREATE_TOOL.equals(safeFrame.selectedToolKey()) && selectedTransitionId <= NO_TRANSITION_ID) {
             return null;
@@ -806,8 +807,8 @@ final class DungeonEditorStatePanelModel {
         return frame == null ? DungeonEditorPreparedFrameFacts.StatePanelFrame.empty() : frame;
     }
 
-    private static DungeonEditorTopologyElementRef safeTopologyRef(DungeonEditorTopologyElementRef topologyRef) {
-        return topologyRef == null ? DungeonEditorTopologyElementRef.empty() : topologyRef;
+    private static DungeonTopologyElementRef safeTopologyRef(DungeonTopologyElementRef topologyRef) {
+        return topologyRef == null ? DungeonTopologyElementRef.empty() : topologyRef;
     }
 
     private static DungeonEditorStatePanelTransitionDescriptionDrafts.Draft safeTransitionDescriptionDraft(
@@ -822,9 +823,11 @@ final class DungeonEditorStatePanelModel {
         return draft == null ? DungeonEditorStatePanelTransitionDestinationDrafts.Draft.empty() : draft;
     }
 
-    private static long selectedTransitionId(DungeonEditorTopologyElementRef topologyRef) {
-        DungeonEditorTopologyElementRef safeTopologyRef = safeTopologyRef(topologyRef);
-        return "TRANSITION".equals(safeTopologyRef.kind()) ? safeTopologyRef.id() : 0L;
+    private static long selectedTransitionId(DungeonTopologyElementRef topologyRef) {
+        DungeonTopologyElementRef safeTopologyRef = safeTopologyRef(topologyRef);
+        return safeTopologyRef.kind() == features.dungeon.api.DungeonTopologyElementKind.TRANSITION
+                ? safeTopologyRef.id()
+                : 0L;
     }
 
     private static int destinationTypeOptionIndex(String key) {

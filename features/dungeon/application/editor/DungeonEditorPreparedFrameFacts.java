@@ -14,7 +14,7 @@ import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonEditorSurface;
 import features.dungeon.api.DungeonEditorTool;
-import features.dungeon.api.DungeonEditorTopologyElementRef;
+import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonOverlaySettings;
@@ -482,7 +482,7 @@ public record DungeonEditorPreparedFrameFacts(
             long clusterId,
             String label,
             List<DungeonCellRef> cells,
-            DungeonEditorTopologyElementRef topologyRef,
+            DungeonTopologyElementRef topologyRef,
             boolean destructive
     ) {
         public PreviewAreaDiffFrame {
@@ -505,7 +505,7 @@ public record DungeonEditorPreparedFrameFacts(
             long id,
             String label,
             DungeonEdgeRef edge,
-            DungeonEditorTopologyElementRef topologyRef,
+            DungeonTopologyElementRef topologyRef,
             boolean destructive
     ) {
         public PreviewBoundaryDiffFrame {
@@ -541,7 +541,7 @@ public record DungeonEditorPreparedFrameFacts(
             List<DungeonCellRef> cells,
             String description,
             String destinationLabel,
-            DungeonEditorTopologyElementRef topologyRef,
+            DungeonTopologyElementRef topologyRef,
             DungeonEdgeRef anchorEdge,
             boolean destructive
     ) {
@@ -573,14 +573,28 @@ public record DungeonEditorPreparedFrameFacts(
         return Math.max(1L, id);
     }
 
-    private static DungeonEditorTopologyElementRef normalizedTopologyRef(
-            DungeonEditorTopologyElementRef topologyRef,
+    private static DungeonTopologyElementRef normalizedTopologyRef(
+            DungeonTopologyElementRef topologyRef,
             String kind,
             long id
     ) {
         return topologyRef == null
-                ? new DungeonEditorTopologyElementRef(kind.toUpperCase(Locale.ROOT), id)
+                ? new DungeonTopologyElementRef(topologyKind(kind), id)
                 : topologyRef;
+    }
+
+    private static features.dungeon.api.DungeonTopologyElementKind topologyKind(String kind) {
+        return switch (kind == null ? "" : kind.trim().toUpperCase(Locale.ROOT)) {
+            case "ROOM" -> features.dungeon.api.DungeonTopologyElementKind.ROOM;
+            case "CORRIDOR" -> features.dungeon.api.DungeonTopologyElementKind.CORRIDOR;
+            case "CORRIDOR_ANCHOR" -> features.dungeon.api.DungeonTopologyElementKind.CORRIDOR_ANCHOR;
+            case "DOOR" -> features.dungeon.api.DungeonTopologyElementKind.DOOR;
+            case "WALL" -> features.dungeon.api.DungeonTopologyElementKind.WALL;
+            case "STAIR" -> features.dungeon.api.DungeonTopologyElementKind.STAIR;
+            case "TRANSITION" -> features.dungeon.api.DungeonTopologyElementKind.TRANSITION;
+            case "FEATURE_MARKER" -> features.dungeon.api.DungeonTopologyElementKind.FEATURE_MARKER;
+            default -> features.dungeon.api.DungeonTopologyElementKind.EMPTY;
+        };
     }
 
     private static DungeonEdgeRef emptyEdge() {
@@ -884,7 +898,7 @@ public record DungeonEditorPreparedFrameFacts(
             int projectionLevel,
             String overlayLabel,
             DungeonInspectorSnapshot inspector,
-            DungeonEditorTopologyElementRef selectionTopologyRef,
+            DungeonTopologyElementRef selectionTopologyRef,
             long selectedTransitionId,
             DungeonEditorPreview preview,
             DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts roomNarrationDrafts,
@@ -907,7 +921,7 @@ public record DungeonEditorPreparedFrameFacts(
                     : viewModeLabel;
             overlayLabel = overlayLabel == null ? "" : overlayLabel;
             selectionTopologyRef = selectionTopologyRef == null
-                    ? DungeonEditorTopologyElementRef.empty()
+                    ? DungeonTopologyElementRef.empty()
                     : selectionTopologyRef;
             selectedTransitionId = Math.max(0L, selectedTransitionId);
             preview = preview == null ? DungeonEditorPreview.none() : preview;
@@ -945,7 +959,7 @@ public record DungeonEditorPreparedFrameFacts(
                     0,
                     "",
                     null,
-                    DungeonEditorTopologyElementRef.empty(),
+                    DungeonTopologyElementRef.empty(),
                     0L,
                     DungeonEditorPreview.none(),
                     DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts.empty(),
@@ -958,10 +972,12 @@ public record DungeonEditorPreparedFrameFacts(
         }
 
         static long selectedTransitionId(DungeonEditorStateSnapshot.Selection selection) {
-            DungeonEditorTopologyElementRef topologyRef = selection == null
-                    ? DungeonEditorTopologyElementRef.empty()
+            DungeonTopologyElementRef topologyRef = selection == null
+                    ? DungeonTopologyElementRef.empty()
                     : selection.topologyRef();
-            return "TRANSITION".equals(topologyRef.kind()) ? topologyRef.id() : 0L;
+            return topologyRef.kind() == features.dungeon.api.DungeonTopologyElementKind.TRANSITION
+                    ? topologyRef.id()
+                    : 0L;
         }
 
         static TransitionDestination transitionDestinationFor(

@@ -13,13 +13,15 @@ import features.hex.adapter.javafx.hexmap.HexMapContribution;
 import features.hex.adapter.javafx.travel.TravelStateContribution;
 import features.hex.adapter.sqlite.repository.SqliteHexMapRepository;
 import features.hex.api.HexEditorApi;
-import features.hex.domain.map.HexEditorWorkspace;
+import features.hex.application.HexEditorWorkspace;
 import features.hex.domain.map.repository.HexMapRepository;
 import features.hex.api.HexEditorModel;
 import features.hex.api.HexTravelApi;
 import features.hex.api.HexTravelModel;
 import features.hex.application.HexEditorApplicationService;
+import features.hex.application.HexEditorPublishedState;
 import features.hex.application.HexTravelApplicationService;
+import features.hex.application.HexTravelPublishedState;
 import features.party.api.PartyApi;
 import features.party.api.PartyTravelPositionsModel;
 
@@ -74,18 +76,20 @@ public final class HexServiceAssembly {
         ExecutionLane lane = Objects.requireNonNull(executionLane, "executionLane");
         UiDispatcher dispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
         Diagnostics safeDiagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
-        editorModel = new HexEditorModel(dispatcher);
-        travelModel = new HexTravelModel(dispatcher);
+        HexEditorPublishedState editorState = new HexEditorPublishedState(dispatcher);
+        editorModel = editorState.model();
+        HexTravelPublishedState travelState = new HexTravelPublishedState(dispatcher);
+        travelModel = travelState.model();
         editorApplicationService = new HexEditorApplicationService(
                 safeRepository,
                 new HexEditorWorkspace(),
-                editorModel,
+                editorState,
                 lane,
                 safeDiagnostics);
         travelApplicationService = new HexTravelApplicationService(
                 safeRepository,
                 Objects.requireNonNull(partyApplicationService, "partyApplicationService"),
-                travelModel,
+                travelState,
                 lane,
                 safeDiagnostics);
         registerTravelReadback(Objects.requireNonNull(partyTravelPositions, "partyTravelPositions"));

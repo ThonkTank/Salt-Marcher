@@ -26,7 +26,17 @@ final class DungeonEditorMainViewInteractionValues {
     }
 
     static DungeonTopologyElementKind toTopologyKind(@Nullable String kind) {
-        return DungeonEditorRuntimePointerTargetCompatibility.legacyDomainTopologyKind(kind);
+        return switch (kind == null ? "" : kind.trim().toUpperCase(java.util.Locale.ROOT)) {
+            case "ROOM" -> DungeonTopologyElementKind.ROOM;
+            case "CORRIDOR" -> DungeonTopologyElementKind.CORRIDOR;
+            case "CORRIDOR_ANCHOR" -> DungeonTopologyElementKind.CORRIDOR_ANCHOR;
+            case "DOOR" -> DungeonTopologyElementKind.DOOR;
+            case "WALL" -> DungeonTopologyElementKind.WALL;
+            case "STAIR" -> DungeonTopologyElementKind.STAIR;
+            case "TRANSITION" -> DungeonTopologyElementKind.TRANSITION;
+            case "FEATURE_MARKER" -> DungeonTopologyElementKind.FEATURE_MARKER;
+            default -> DungeonTopologyElementKind.EMPTY;
+        };
     }
 
     static DungeonEditorRuntimePointerTarget.TopologyKind topologyKind(
@@ -112,7 +122,8 @@ final class DungeonEditorMainViewInteractionValues {
         ROOM,
         CORRIDOR,
         STAIR,
-        TRANSITION
+        TRANSITION,
+        FEATURE_MARKER
     }
 
     static DungeonEditorWorkspaceValues.HandleRef clusterLabelHandleRef(

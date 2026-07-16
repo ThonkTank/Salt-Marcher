@@ -1616,13 +1616,11 @@ public final class DungeonAuthoredApplicationService {
                     new DungeonEditorWorkspaceValues.Inspector(
                             inspector.title(),
                             inspector.description(),
-                            inspector.facts(),
                             statePanel.workspaceFacts(),
                             rooms.stream().map(RoomNarrationPublication::workspaceCard).toList()),
                     new DungeonAuthoredPublication.Inspector(
                             inspector.title(),
                             inspector.description(),
-                            inspector.facts(),
                             statePanel.publishedFacts(),
                             rooms.stream().map(RoomNarrationPublication::publishedCard).toList()));
         }

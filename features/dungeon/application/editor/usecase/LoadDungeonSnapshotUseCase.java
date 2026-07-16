@@ -39,16 +39,14 @@ public final class LoadDungeonSnapshotUseCase {
     public record InspectorSnapshotData(
             String title,
             String description,
-            List<String> facts,
             StatePanelFacts statePanelFacts,
             List<RoomNarrationData> roomNarrations
     ) {
-        public InspectorSnapshotData(String title, String description, List<String> facts) {
-            this(title, description, facts, StatePanelFacts.empty(), List.of());
+        public InspectorSnapshotData(String title, String description) {
+            this(title, description, StatePanelFacts.empty(), List.of());
         }
 
         public InspectorSnapshotData {
-            facts = facts == null ? List.of() : List.copyOf(facts);
             statePanelFacts = statePanelFacts == null ? StatePanelFacts.empty() : statePanelFacts;
             roomNarrations = roomNarrations == null ? List.of() : List.copyOf(roomNarrations);
         }

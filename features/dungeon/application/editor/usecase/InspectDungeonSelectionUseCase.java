@@ -48,7 +48,6 @@ public final class InspectDungeonSelectionUseCase {
             return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
                     clusterName(dungeonMap, clusterId),
                     narrationDescription(narrations),
-                    factsSnapshot.facts(),
                     factsSnapshot.statePanelFacts(),
                     narrations);
         }
@@ -56,14 +55,12 @@ public final class InspectDungeonSelectionUseCase {
             return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
                     narrationTitle(narrations),
                     narrationDescription(narrations),
-                    factsSnapshot.facts(),
                     factsSnapshot.statePanelFacts(),
                     narrations);
         }
         return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
                 factsSnapshot.title(),
                 factsSnapshot.description(),
-                factsSnapshot.facts(),
                 factsSnapshot.statePanelFacts(),
                 narrations);
     }

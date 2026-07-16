@@ -493,20 +493,17 @@ public final class DungeonEditorWorkspaceValues {
     public static final class Inspector {
         private final String title;
         private final String summary;
-        private final List<String> facts;
         private final InspectorStatePanelState statePanelFacts;
         private final List<RoomNarrationCard> roomNarrations;
 
         public Inspector(
                 String title,
                 String summary,
-                List<String> facts,
                 InspectorStatePanelState statePanelFacts,
                 List<RoomNarrationCard> roomNarrations
         ) {
             this.title = title == null || title.isBlank() ? "Dungeon" : title;
             this.summary = summary == null ? "" : summary;
-            this.facts = facts == null ? List.of() : List.copyOf(facts);
             this.statePanelFacts = statePanelFacts == null ? InspectorStatePanelState.empty() : statePanelFacts;
             this.roomNarrations = roomNarrations == null ? List.of() : List.copyOf(roomNarrations);
         }
@@ -517,10 +514,6 @@ public final class DungeonEditorWorkspaceValues {
 
         public String summary() {
             return summary;
-        }
-
-        public List<String> facts() {
-            return List.copyOf(facts);
         }
 
         public InspectorStatePanelState statePanelFacts() {
@@ -541,20 +534,19 @@ public final class DungeonEditorWorkspaceValues {
             }
             return Objects.equals(title, that.title)
                     && Objects.equals(summary, that.summary)
-                    && Objects.equals(facts, that.facts)
                     && Objects.equals(statePanelFacts, that.statePanelFacts)
                     && Objects.equals(roomNarrations, that.roomNarrations);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(title, summary, facts, statePanelFacts, roomNarrations);
+            return Objects.hash(title, summary, statePanelFacts, roomNarrations);
         }
 
         @Override
         public String toString() {
-            return "Inspector[title=%s, summary=%s, facts=%s, statePanelFacts=%s, roomNarrations=%s]"
-                    .formatted(title, summary, facts, statePanelFacts, roomNarrations);
+            return "Inspector[title=%s, summary=%s, statePanelFacts=%s, roomNarrations=%s]"
+                    .formatted(title, summary, statePanelFacts, roomNarrations);
         }
     }
 

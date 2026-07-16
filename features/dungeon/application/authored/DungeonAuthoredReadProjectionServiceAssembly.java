@@ -36,7 +36,6 @@ final class DungeonAuthoredReadProjectionServiceAssembly {
         return new features.dungeon.api.DungeonInspectorSnapshot(
                 inspector.title(),
                 inspector.description(),
-                inspector.facts(),
                 statePanelFacts(inspector.statePanelFacts()),
                 roomNarrations(inspector));
     }

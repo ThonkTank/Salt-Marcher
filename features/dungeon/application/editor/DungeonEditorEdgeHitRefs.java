@@ -2,7 +2,7 @@ package features.dungeon.application.editor;
 
 import features.dungeon.api.DungeonEdgeRef;
 import features.dungeon.api.DungeonEditorMapHitRef;
-import features.dungeon.api.DungeonEditorTopologyElementRef;
+import features.dungeon.api.DungeonTopologyElementRef;
 
 public final class DungeonEditorEdgeHitRefs {
     private DungeonEditorEdgeHitRefs() {
@@ -11,7 +11,7 @@ public final class DungeonEditorEdgeHitRefs {
     public static DungeonEditorMapHitRef edge(
             String kind,
             long ownerId,
-            DungeonEditorTopologyElementRef topologyRef,
+            DungeonTopologyElementRef topologyRef,
             DungeonEdgeRef edge
     ) {
         return edge(

@@ -16,7 +16,7 @@ import features.dungeon.api.DungeonEditorMapSurfaceModel;
 import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateSnapshot;
-import features.dungeon.api.DungeonEditorTopologyElementRef;
+import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
 import features.dungeon.api.DungeonInspectorSnapshot;
@@ -218,7 +218,7 @@ final class DungeonEditorRoomWallDoorScenarios {
         List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
         List<String> boundaryRowsBefore = runtime.database().roomBoundaryEdgeState(mapId);
         var roomArea = roomAreaByLabel(runtime.mapSurfaceModel().current(), "R1", "DE-SEL-007");
-        DungeonEditorTopologyElementRef roomRef = roomArea.topologyRef();
+        DungeonTopologyElementRef roomRef = roomArea.topologyRef();
         click(button(controls, "Auswahl"));
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         Point2D northWallMidpoint = boundaryMidpointNear(binding.mapContentModel(), "WALL", 2.5, 1.0);
@@ -349,7 +349,7 @@ final class DungeonEditorRoomWallDoorScenarios {
         List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
         List<String> boundaryRowsBefore = runtime.database().roomBoundaryEdgeState(mapId);
         var roomArea = roomAreaByLabel(runtime.mapSurfaceModel().current(), "R1", "DE-SEL-011");
-        DungeonEditorTopologyElementRef roomRef = roomArea.topologyRef();
+        DungeonTopologyElementRef roomRef = roomArea.topologyRef();
         click(button(controls, "Auswahl"));
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         Point2D northWallMidpoint = boundaryMidpointNear(binding.mapContentModel(), "WALL", 2.5, 1.0);
@@ -618,7 +618,7 @@ final class DungeonEditorRoomWallDoorScenarios {
         click(button(controls, "Auswahl"));
         RoomClusterIds roomIds = runtime.database().roomByName(mapId, "R1");
         var roomArea = roomAreaByLabel(runtime.mapSurfaceModel().current(), "R1", "DE-SEL-008");
-        DungeonEditorTopologyElementRef roomRef = roomArea.topologyRef();
+        DungeonTopologyElementRef roomRef = roomArea.topologyRef();
         selectClusterForHandles(binding, runtime.mapSurfaceModel().current(), roomIds.clusterId(), "DE-SEL-008");
         var cornerHandle = firstClusterCornerHandleAt(runtime.mapSurfaceModel().current(), 4, 4, 0, "DE-SEL-008");
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
@@ -732,7 +732,7 @@ final class DungeonEditorRoomWallDoorScenarios {
         click(button(controls, "Auswahl"));
         RoomClusterIds roomIds = runtime.database().roomByName(mapId, "R1");
         var roomArea = roomAreaByLabel(runtime.mapSurfaceModel().current(), "R1", "DE-SEL-012");
-        DungeonEditorTopologyElementRef roomRef = roomArea.topologyRef();
+        DungeonTopologyElementRef roomRef = roomArea.topologyRef();
         selectClusterForHandles(binding, runtime.mapSurfaceModel().current(), roomIds.clusterId(), "DE-SEL-012");
         var cornerHandle = firstClusterCornerHandleAt(runtime.mapSurfaceModel().current(), 4, 4, 0, "DE-SEL-012");
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
@@ -931,7 +931,7 @@ final class DungeonEditorRoomWallDoorScenarios {
 
         DungeonEditorMapSurfaceSnapshot loadedSurface = runtime.mapSurfaceModel().current();
         var roomArea = roomAreaByLabel(loadedSurface, "R1", "DE-SEL-009");
-        DungeonEditorTopologyElementRef roomRef = roomArea.topologyRef();
+        DungeonTopologyElementRef roomRef = roomArea.topologyRef();
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         DungeonEditorHandleSnapshot clusterLabel = loadedSurface.surface().map().editorHandles().stream()
                 .filter(handle -> handle.ref().kind() == DungeonEditorHandleKind.CLUSTER_LABEL)
@@ -1146,7 +1146,7 @@ final class DungeonEditorRoomWallDoorScenarios {
         assertEquals(initialCells, surfaceCellSet(loadedSurface),
                 "DE-SEL-010 reload keeps the UI-created room cells");
         var roomArea = roomAreaByCells(loadedSurface, initialCells, "DE-SEL-010 reloaded room");
-        DungeonEditorTopologyElementRef roomRef = roomArea.topologyRef();
+        DungeonTopologyElementRef roomRef = roomArea.topologyRef();
         assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(initialCells),
                 "DE-SEL-010 reload render shows the UI-created room cells");
         assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 2.5, 1.0),
@@ -1343,7 +1343,7 @@ final class DungeonEditorRoomWallDoorScenarios {
                 .filter(boundary -> boundary.edge().from().q() == 4 && boundary.edge().from().r() == 2)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("DE-DOOR-001 live door boundary not published."));
-        assertEquals("DOOR", liveDoorBoundary.topologyRef().kind(),
+        assertEquals(features.dungeon.api.DungeonTopologyElementKind.DOOR, liveDoorBoundary.topologyRef().kind(),
                 "DE-DOOR-001 live published door topology kind");
         assertTrue(renderHasBoundaryPrimitive(binding.mapContentModel(), liveDoorBoundary.topologyRef()),
                 "DE-DOOR-001 live render scene contains the door boundary primitive");
@@ -1356,7 +1356,7 @@ final class DungeonEditorRoomWallDoorScenarios {
                 .filter(boundary -> boundary.edge().from().q() == 4 && boundary.edge().from().r() == 2)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("DE-DOOR-001 reloaded door boundary not published."));
-        assertEquals("DOOR", doorBoundary.topologyRef().kind(),
+        assertEquals(features.dungeon.api.DungeonTopologyElementKind.DOOR, doorBoundary.topologyRef().kind(),
                 "DE-DOOR-001 reloaded published door topology kind");
         assertTrue(renderHasBoundaryPrimitive(binding.mapContentModel(), doorBoundary.topologyRef()),
                 "DE-DOOR-001 reloaded render scene contains the door boundary primitive");

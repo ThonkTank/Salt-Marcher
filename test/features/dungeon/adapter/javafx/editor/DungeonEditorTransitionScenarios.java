@@ -12,7 +12,7 @@ import features.dungeon.api.DungeonEditorMapSurfaceModel;
 import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateSnapshot;
-import features.dungeon.api.DungeonEditorTopologyElementRef;
+import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonMapSummary;
@@ -78,7 +78,7 @@ final class DungeonEditorTransitionScenarios {
         selectMap(controls, "Transition Description Map");
         click(button(controls, "Auswahl"));
 
-        DungeonEditorTopologyElementRef transitionRef = new DungeonEditorTopologyElementRef("TRANSITION", transitionId);
+        DungeonTopologyElementRef transitionRef = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.TRANSITION, transitionId);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         Point2D transitionCenter = glyphCenterForRef(binding.mapContentModel(), transitionRef);
         fireMapMousePressed(
@@ -176,8 +176,8 @@ final class DungeonEditorTransitionScenarios {
         selectMap(controls, "Transition Link Source Map");
         click(button(controls, "Auswahl"));
 
-        DungeonEditorTopologyElementRef sourceRef =
-                new DungeonEditorTopologyElementRef("TRANSITION", sourceTransitionId);
+        DungeonTopologyElementRef sourceRef =
+                new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.TRANSITION, sourceTransitionId);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         Point2D sourceCenter = glyphCenterForRef(binding.mapContentModel(), sourceRef);
         fireMapMousePressed(
@@ -303,8 +303,8 @@ final class DungeonEditorTransitionScenarios {
                 "DE-TRN-003 reloaded entrance link");
 
         selectMap(controls, "Transition Link Target Map");
-        DungeonEditorTopologyElementRef targetRef =
-                new DungeonEditorTopologyElementRef("TRANSITION", targetTransitionId);
+        DungeonTopologyElementRef targetRef =
+                new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.TRANSITION, targetTransitionId);
         assertTransitionCreatedInSnapshot(
                 runtime.mapSurfaceModel().current(),
                 binding.mapContentModel(),
@@ -498,8 +498,8 @@ final class DungeonEditorTransitionScenarios {
                                 && row.contains("|target_dungeon_map_id=<null>")
                                 && row.contains("|target_transition_id=<null>")),
                 "DE-TRN-001 persists unlinked transition placeholder: " + unlinkedRowsAfterCreate);
-        DungeonEditorTopologyElementRef unlinkedTransitionRef =
-                new DungeonEditorTopologyElementRef("TRANSITION", unlinkedTransitionId);
+        DungeonTopologyElementRef unlinkedTransitionRef =
+                new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.TRANSITION, unlinkedTransitionId);
         assertTransitionCreatedInSnapshot(
                 runtime.mapSurfaceModel().current(),
                 binding.mapContentModel(),
@@ -626,7 +626,7 @@ final class DungeonEditorTransitionScenarios {
                 "DE-TRN-001 persists transition cell and overworld destination: " + stableRowsAfter);
         assertEquals(1L, runtime.database().countTransitionTopologyElementById(mapId, transitionId),
                 "DE-TRN-001 persists stable transition topology ref");
-        DungeonEditorTopologyElementRef transitionRef = new DungeonEditorTopologyElementRef("TRANSITION", transitionId);
+        DungeonTopologyElementRef transitionRef = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.TRANSITION, transitionId);
         assertTransitionCreatedInSnapshot(
                 runtime.mapSurfaceModel().current(),
                 binding.mapContentModel(),
@@ -708,7 +708,7 @@ final class DungeonEditorTransitionScenarios {
                         "dungeon_transitions|transition_id=" + transitionId) && row.contains("|anchor_type=CELL")),
                 "DE-TRN-005 wall-boundary click does not fall back to a CELL transition row");
 
-        DungeonEditorTopologyElementRef transitionRef = new DungeonEditorTopologyElementRef("TRANSITION", transitionId);
+        DungeonTopologyElementRef transitionRef = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.TRANSITION, transitionId);
         DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
         assertTrue(committedSurface.surface().map().features().stream()
                         .filter(feature -> "TRANSITION".equals(feature.kind()))
@@ -811,7 +811,7 @@ final class DungeonEditorTransitionScenarios {
         createMapThroughControls(controls, runtime, "Transition Anchor Roundtrip Reload Hop");
         selectMap(controls, "Transition Anchor Roundtrip Map");
         click(button(controls, "Auswahl"));
-        DungeonEditorTopologyElementRef cellRef = new DungeonEditorTopologyElementRef("TRANSITION", cellTransitionId);
+        DungeonTopologyElementRef cellRef = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.TRANSITION, cellTransitionId);
         Point2D cellCenter = glyphCenterForRef(binding.mapContentModel(), cellRef);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         fireMapMousePressed(
@@ -861,7 +861,7 @@ final class DungeonEditorTransitionScenarios {
         assertTrue(runtime.mapSurfaceModel().current().surface().map().features().stream().noneMatch(feature ->
                         feature.id() == noneTransitionId && "TRANSITION".equals(feature.kind())),
                 "DE-TRN-001 NONE anchor does not publish a placed transition marker");
-        DungeonEditorTopologyElementRef edgeRef = new DungeonEditorTopologyElementRef("TRANSITION", edgeTransitionId);
+        DungeonTopologyElementRef edgeRef = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.TRANSITION, edgeTransitionId);
         DungeonEditorMapSurfaceSnapshot resavedSurface = runtime.mapSurfaceModel().current();
         assertTrue(resavedSurface.surface().map().features().stream()
                         .filter(feature -> "TRANSITION".equals(feature.kind()))
@@ -1002,7 +1002,7 @@ final class DungeonEditorTransitionScenarios {
         createMapThroughControls(controls, runtime, "Transition Delete Reload Hop");
         selectMap(controls, "Transition Delete Map");
 
-        DungeonEditorTopologyElementRef transitionRef = new DungeonEditorTopologyElementRef("TRANSITION", transitionId);
+        DungeonTopologyElementRef transitionRef = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.TRANSITION, transitionId);
         Point2D transitionCenter = glyphCenterForRef(binding.mapContentModel(), transitionRef);
         assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.MARKER,
                 runtimePointerTarget(binding.mapContentModel(), transitionCenter.getX(), transitionCenter.getY())
@@ -1108,7 +1108,7 @@ final class DungeonEditorTransitionScenarios {
         createMapThroughControls(controls, runtime, mapName + " Reload Hop");
         selectMap(controls, mapName);
         long transitionId = runtime.database().transitionIdByDescription(mapId, selectedDescription);
-        DungeonEditorTopologyElementRef transitionRef = new DungeonEditorTopologyElementRef("TRANSITION", transitionId);
+        DungeonTopologyElementRef transitionRef = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.TRANSITION, transitionId);
         Point2D transitionCenter = glyphCenterForRef(binding.mapContentModel(), transitionRef);
         List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
         DungeonEditorMapSurfaceSnapshot surfaceBefore = runtime.mapSurfaceModel().current();
@@ -1146,7 +1146,7 @@ final class DungeonEditorTransitionScenarios {
 
     private static void assertCompactTransitionGlyph(
             DungeonMapContentModel mapContentModel,
-            DungeonEditorTopologyElementRef ref,
+            DungeonTopologyElementRef ref,
             String scenario
     ) {
         DungeonMapContentModel.GlyphPrimitive glyph = glyphPrimitiveForRef(mapContentModel, ref);
@@ -1167,7 +1167,7 @@ final class DungeonEditorTransitionScenarios {
 
     private static void assertEdgeTransitionGlyph(
             DungeonMapContentModel mapContentModel,
-            DungeonEditorTopologyElementRef ref,
+            DungeonTopologyElementRef ref,
             String scenario
     ) {
         DungeonMapContentModel.GlyphPrimitive glyph = glyphPrimitiveForRef(mapContentModel, ref);
@@ -1180,7 +1180,7 @@ final class DungeonEditorTransitionScenarios {
 
     private static DungeonMapContentModel.GlyphPrimitive glyphPrimitiveForRef(
             DungeonMapContentModel mapContentModel,
-            DungeonEditorTopologyElementRef ref
+            DungeonTopologyElementRef ref
     ) {
         String selectionRef = ref.kind() + ":" + ref.id();
         return mapContentModel.canvasStateProperty().get().renderScene().glyphs().stream()

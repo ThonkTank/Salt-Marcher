@@ -6,9 +6,8 @@ public final class SessionPlannerPersistenceSchema {
     public static final String SESSION_PLANS_TABLE = "session_planner_sessions";
     public static final String CURRENT_SESSION_TABLE = "session_planner_current_session";
     public static final String SESSION_PARTICIPANTS_TABLE = "session_planner_participants";
-    // LEGACY_REMOVE_ON_TOUCH: table and column names retain encounter wording
-    // during the scene migration; remove when a schema migration can rename the
-    // compatibility storage surface without losing existing session plans.
+    // Persisted compatibility identifiers retain encounter wording. Rename
+    // them only through an explicit data-safe schema migration.
     public static final String SESSION_ENCOUNTERS_TABLE = "session_planner_encounters";
     public static final String SESSION_RESTS_TABLE = "session_planner_rests";
     public static final String SESSION_LOOT_PLACEHOLDERS_TABLE = "session_planner_loot_placeholders";

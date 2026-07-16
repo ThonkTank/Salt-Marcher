@@ -12,8 +12,8 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import features.hex.domain.map.HexEditorMode;
-import features.hex.domain.map.HexTerrain;
+import features.hex.api.HexEditorMode;
+import features.hex.api.HexTerrain;
 
 public final class HexMapMainView extends ScrollPane {
 

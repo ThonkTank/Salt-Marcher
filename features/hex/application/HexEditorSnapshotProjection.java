@@ -7,12 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import features.hex.domain.map.HexCoordinate;
-import features.hex.domain.map.HexEditorMode;
-import features.hex.domain.map.HexEditorState;
+import features.hex.application.HexEditorState;
 import features.hex.domain.map.HexMap;
 import features.hex.domain.map.HexMapSummary;
 import features.hex.domain.map.HexMarker;
-import features.hex.domain.map.HexTerrain;
 import features.hex.api.HexEditorSnapshot;
 import features.hex.api.HexMapId;
 import features.hex.api.HexMarkerId;
@@ -30,8 +28,8 @@ final class HexEditorSnapshotProjection {
                     Optional.empty(),
                     List.of(),
                     Optional.empty(),
-                    tool(state.activeMode()),
-                    terrain(state.activeTerrain()),
+                    state.activeMode(),
+                    state.activeTerrain(),
                     state.statusText(),
                     state.failureText(),
                     state.warningText());
@@ -45,8 +43,8 @@ final class HexEditorSnapshotProjection {
                 Optional.of(mapSnapshot(map, coordinates.size())),
                 tiles(map, state.selectedTile(), coordinates, markersByCoordinate),
                 selectedTile(map, state.selectedTile(), markersByCoordinate),
-                tool(state.activeMode()),
-                terrain(state.activeTerrain()),
+                state.activeMode(),
+                state.activeTerrain(),
                 state.statusText(),
                 state.failureText(),
                 state.warningText());
@@ -77,7 +75,7 @@ final class HexEditorSnapshotProjection {
                 .map(coordinate -> new HexEditorSnapshot.TileSnapshot(
                         coordinate.q(),
                         coordinate.r(),
-                        terrain(map.terrainAt(coordinate)),
+                        HexApiTypeMapper.publishedTerrain(map.terrainAt(coordinate)),
                         selectedTile.map(coordinate::equals).orElse(false),
                         markersByCoordinate.getOrDefault(coordinate, List.of())))
                 .toList();
@@ -95,7 +93,7 @@ final class HexEditorSnapshotProjection {
         return Optional.of(new HexEditorSnapshot.TileDetails(
                 coordinate.q(),
                 coordinate.r(),
-                terrain(map.terrainAt(coordinate)),
+                HexApiTypeMapper.publishedTerrain(map.terrainAt(coordinate)),
                 "",
                 "",
                 "",
@@ -125,15 +123,7 @@ final class HexEditorSnapshotProjection {
                 marker.coordinate().q(),
                 marker.coordinate().r(),
                 marker.name(),
-                marker.type().name(),
+                HexApiTypeMapper.publishedMarkerKind(marker.type()),
                 marker.note());
-    }
-
-    private static String tool(HexEditorMode mode) {
-        return mode == null ? HexEditorMode.defaultMode().name() : mode.name();
-    }
-
-    private static String terrain(HexTerrain terrain) {
-        return terrain == null ? HexTerrain.defaultTerrain().name() : terrain.name();
     }
 }

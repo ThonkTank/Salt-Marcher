@@ -42,21 +42,14 @@ final class DungeonAuthoredPublication {
     record Inspector(
             String title,
             String description,
-            List<String> facts,
             StatePanelFacts statePanelFacts,
             List<RoomNarration> roomNarrations
     ) {
         Inspector {
             title = title == null ? "" : title;
             description = description == null ? "" : description;
-            facts = facts == null ? List.of() : List.copyOf(facts);
             statePanelFacts = statePanelFacts == null ? StatePanelFacts.empty() : statePanelFacts;
             roomNarrations = roomNarrations == null ? List.of() : List.copyOf(roomNarrations);
-        }
-
-        @Override
-        public List<String> facts() {
-            return List.copyOf(facts);
         }
 
         @Override

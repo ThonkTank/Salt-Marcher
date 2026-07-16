@@ -13,6 +13,7 @@ import features.encountertable.adapter.sqlite.query.SqliteEncounterTableCatalogA
 import features.encountertable.api.EncounterTableApi;
 import features.encountertable.application.EncounterTableApplicationService;
 import features.encountertable.application.EncounterTableCatalogProjection;
+import features.encountertable.application.EncounterTablePublishedState;
 import features.encountertable.domain.catalog.port.EncounterTableCatalogPort;
 import features.encountertable.api.EncounterTableCandidatesModel;
 import features.encountertable.api.EncounterTableCatalogModel;
@@ -59,8 +60,9 @@ public final class EncounterTableServiceAssembly {
         ExecutionLane safeExecutionLane = Objects.requireNonNull(executionLane, "executionLane");
         UiDispatcher safeUiDispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
         Diagnostics safeDiagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
-        EncounterTableCatalogModel catalog = new EncounterTableCatalogModel(safeUiDispatcher);
-        EncounterTableCandidatesModel candidates = new EncounterTableCandidatesModel(safeUiDispatcher);
+        EncounterTablePublishedState publishedState = new EncounterTablePublishedState(safeUiDispatcher);
+        EncounterTableCatalogModel catalog = publishedState.catalogModel();
+        EncounterTableCandidatesModel candidates = publishedState.candidatesModel();
         EncounterTableReferenceApi references = () -> {
             try {
                 return new EncounterTableCatalogResult(
@@ -74,8 +76,7 @@ public final class EncounterTableServiceAssembly {
         return new Component(
                 new EncounterTableApplicationService(
                         safeCatalogPort,
-                        catalog,
-                        candidates,
+                        publishedState,
                         safeExecutionLane,
                         safeDiagnostics),
                 references,

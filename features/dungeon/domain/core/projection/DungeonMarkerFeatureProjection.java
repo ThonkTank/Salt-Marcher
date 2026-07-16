@@ -20,28 +20,11 @@ final class DungeonMarkerFeatureProjection {
                     marker.markerId(),
                     marker.label(),
                     List.of(marker.anchor()),
-                    markerDescription(marker),
+                    marker.description(),
                     "",
-                    markerFacts(marker),
-                    marker.topologyRef()));
+                    DungeonFeatureFacts.StatePanelFacts.empty(),
+                    marker.topologyRef(),
+                    null));
         }
-    }
-
-    private static String markerDescription(FeatureMarker marker) {
-        if (marker == null) {
-            return "";
-        }
-        String markerFacts = "markerCategory: " + marker.kind().name()
-                + " | topologyRef: " + marker.topologyRef().kind().name() + " " + marker.topologyRef().id();
-        return marker.description().isBlank() ? markerFacts : marker.description() + " | " + markerFacts;
-    }
-
-    private static List<String> markerFacts(FeatureMarker marker) {
-        if (marker == null) {
-            return List.of();
-        }
-        return List.of(
-                "markerCategory: " + marker.kind().name(),
-                "topologyRef: " + marker.topologyRef().kind().name() + " " + marker.topologyRef().id());
     }
 }

@@ -1,6 +1,5 @@
 package features.dungeon.domain.core.projection;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.Cell;
@@ -36,7 +35,6 @@ final class DungeonTransitionFeatureProjection {
                     transitionCells(transition),
                     transitionDescription(transition),
                     destinationLabel(destination),
-                    transitionFacts(destination),
                     DungeonFeatureFacts.StatePanelFacts.transition(destination),
                     transitionTopologyRef(transition),
                     transitionAnchorEdge(transition)));
@@ -55,31 +53,11 @@ final class DungeonTransitionFeatureProjection {
         return destination == null ? "" : destination.label();
     }
 
-    private static List<String> transitionFacts(TransitionDestination destination) {
-        if (destination == null) {
-            return List.of();
-        }
-        List<String> facts = new ArrayList<>();
-        facts.add("destinationType: " + destination.type().name());
-        facts.add("destinationMapId: " + destination.mapId());
-        appendDestinationDetailFacts(facts, destination);
-        return List.copyOf(facts);
-    }
-
     private static List<Cell> transitionCells(Transition transition) {
         if (transition == null || transition.anchor().isEdge() || transition.anchorCell() == null) {
             return List.of();
         }
         return List.of(transition.anchorCell());
-    }
-
-    private static void appendDestinationDetailFacts(List<String> facts, TransitionDestination destination) {
-        if (destination.isOverworldTile()) {
-            facts.add("destinationTileId: " + destination.tileId());
-        }
-        if (destination.transitionId() != null) {
-            facts.add("destinationTransitionId: " + destination.transitionId());
-        }
     }
 
     private static DungeonTopologyRef transitionTopologyRef(Transition transition) {

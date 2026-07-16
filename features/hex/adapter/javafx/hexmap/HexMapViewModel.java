@@ -4,9 +4,9 @@ import java.util.Comparator;
 import java.util.List;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
-import features.hex.domain.map.HexEditorMode;
-import features.hex.domain.map.HexMarkerKind;
-import features.hex.domain.map.HexTerrain;
+import features.hex.api.HexEditorMode;
+import features.hex.api.HexMarkerKind;
+import features.hex.api.HexTerrain;
 import features.hex.api.HexEditorSnapshot;
 import features.hex.api.HexTravelSnapshot;
 import platform.ui.catalogcrud.CatalogCrudControlsContentModel;
@@ -151,18 +151,18 @@ final class HexMapViewModel {
 
         ControlsProjection {
             tools = tools == null ? List.of() : List.copyOf(tools);
-            activeTool = activeTool == null ? HexMapVocabulary.tool("") : activeTool;
+            activeTool = activeTool == null ? HexMapVocabulary.DEFAULT_TOOL : activeTool;
             terrains = terrains == null ? List.of() : List.copyOf(terrains);
-            activeTerrain = activeTerrain == null ? HexMapVocabulary.terrain("") : activeTerrain;
+            activeTerrain = activeTerrain == null ? HexMapVocabulary.DEFAULT_TERRAIN : activeTerrain;
         }
 
         static ControlsProjection initial() {
             return new ControlsProjection(
                     false,
                     HexMapVocabulary.TOOL_OPTIONS,
-                    HexMapVocabulary.tool(""),
+                    HexMapVocabulary.DEFAULT_TOOL,
                     HexMapVocabulary.TERRAIN_OPTIONS,
-                    HexMapVocabulary.terrain(""));
+                    HexMapVocabulary.DEFAULT_TERRAIN);
         }
 
         static ControlsProjection from(HexEditorSnapshot snapshot) {
@@ -198,11 +198,11 @@ final class HexMapViewModel {
         }
 
         HexTerrain terrain(int optionIndex) {
-            return HexMapVocabulary.optionValue(terrains, optionIndex, HexMapVocabulary.terrain(""));
+            return HexMapVocabulary.optionValue(terrains, optionIndex, HexMapVocabulary.DEFAULT_TERRAIN);
         }
 
         HexEditorMode tool(int optionIndex) {
-            return HexMapVocabulary.optionValue(tools, optionIndex, HexMapVocabulary.tool(""));
+            return HexMapVocabulary.optionValue(tools, optionIndex, HexMapVocabulary.DEFAULT_TOOL);
         }
 
         boolean toolChanged(HexEditorMode tool, HexTerrain terrain) {
@@ -230,9 +230,9 @@ final class HexMapViewModel {
             subtitle = safeText(subtitle);
             status = safeText(status);
             emptyText = safeText(emptyText);
-            activeTool = activeTool == null ? HexMapVocabulary.tool("") : activeTool;
+            activeTool = activeTool == null ? HexMapVocabulary.DEFAULT_TOOL : activeTool;
             activeToolLabel = safeText(activeToolLabel);
-            activeTerrain = activeTerrain == null ? HexMapVocabulary.terrain("") : activeTerrain;
+            activeTerrain = activeTerrain == null ? HexMapVocabulary.DEFAULT_TERRAIN : activeTerrain;
             activeTerrainLabel = safeText(activeTerrainLabel);
             partyToken = partyToken == null ? PartyTokenItem.none() : partyToken;
         }
@@ -246,10 +246,10 @@ final class HexMapViewModel {
                     false,
                     0L,
                     0,
-                    HexMapVocabulary.tool(""),
-                    HexMapVocabulary.label(HexMapVocabulary.tool("")),
-                    HexMapVocabulary.terrain(""),
-                    HexMapVocabulary.label(HexMapVocabulary.terrain("")),
+                    HexMapVocabulary.DEFAULT_TOOL,
+                    HexMapVocabulary.label(HexMapVocabulary.DEFAULT_TOOL),
+                    HexMapVocabulary.DEFAULT_TERRAIN,
+                    HexMapVocabulary.label(HexMapVocabulary.DEFAULT_TERRAIN),
                     PartyTokenItem.none());
         }
 
@@ -377,7 +377,7 @@ final class HexMapViewModel {
     ) {
 
         TileItem {
-            terrain = terrain == null ? HexMapVocabulary.terrain("") : terrain;
+            terrain = terrain == null ? HexMapVocabulary.DEFAULT_TERRAIN : terrain;
             terrainLabel = safeText(terrainLabel);
             markerText = safeText(markerText);
             xPoints = xPoints == null ? new double[0] : xPoints.clone();
@@ -576,7 +576,7 @@ final class HexMapViewModel {
                                     0L,
                                     "Neuer Marker",
                                     "",
-                                    HexMapVocabulary.markerKind(""),
+                                    HexMapVocabulary.DEFAULT_MARKER_TYPE,
                                     "")),
                             markers.stream().map(MarkerSelectorItem::from))
                     .toList();
@@ -613,14 +613,14 @@ final class HexMapViewModel {
         }
 
         int markerTypeOptionIndex(HexMarkerKind kind) {
-            return HexMapVocabulary.optionIndex(markerTypes, kind == null ? HexMapVocabulary.markerKind("") : kind);
+            return HexMapVocabulary.optionIndex(markerTypes, kind == null ? HexMapVocabulary.DEFAULT_MARKER_TYPE : kind);
         }
 
         HexMarkerKind markerType(int optionIndex) {
             return HexMapVocabulary.optionValue(
                     markerTypes,
                     optionIndex,
-                    HexMapVocabulary.markerKind(""));
+                    HexMapVocabulary.DEFAULT_MARKER_TYPE);
         }
 
         private static StateProjection withoutTile(
@@ -706,7 +706,7 @@ final class HexMapViewModel {
             markerId = Math.max(0L, markerId);
             label = safeText(label);
             name = safeText(name);
-            type = type == null ? HexMapVocabulary.markerKind("") : type;
+            type = type == null ? HexMapVocabulary.DEFAULT_MARKER_TYPE : type;
             note = safeText(note);
         }
 
@@ -730,7 +730,7 @@ final class HexMapViewModel {
         MarkerItem {
             markerId = Math.max(0L, markerId);
             name = safeText(name);
-            type = type == null ? HexMapVocabulary.markerKind("") : type;
+            type = type == null ? HexMapVocabulary.DEFAULT_MARKER_TYPE : type;
             typeLabel = safeText(typeLabel);
             note = safeText(note);
         }
@@ -753,7 +753,7 @@ final class HexMapViewModel {
         private int draftR;
         private long markerId;
         private String markerName = "";
-        private HexMarkerKind markerType = HexMapVocabulary.markerKind("");
+        private HexMarkerKind markerType = HexMapVocabulary.DEFAULT_MARKER_TYPE;
         private String markerNote = "";
 
         void sync(StateProjection projection) {
@@ -779,7 +779,7 @@ final class HexMapViewModel {
             syncContext(projection);
             markerId = Math.max(0L, nextMarkerId);
             markerName = safeText(name);
-            markerType = type == null ? HexMapVocabulary.markerKind("") : type;
+            markerType = type == null ? HexMapVocabulary.DEFAULT_MARKER_TYPE : type;
             markerNote = safeText(note);
         }
 
@@ -817,7 +817,7 @@ final class HexMapViewModel {
         private void setDefault() {
             markerId = 0L;
             markerName = "";
-            markerType = HexMapVocabulary.markerKind("");
+            markerType = HexMapVocabulary.DEFAULT_MARKER_TYPE;
             markerNote = "";
         }
     }

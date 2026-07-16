@@ -5,7 +5,6 @@ import java.util.Locale;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.api.DungeonEdgeRef;
 import features.dungeon.api.DungeonEditorMapSnapshot;
-import features.dungeon.api.DungeonEditorTopologyElementRef;
 import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreparedLabelKind;
 import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreparedTopologyKind;
@@ -78,14 +77,6 @@ final class DungeonMapRenderElementFactory {
         }
         int count = Math.max(1, cells == null ? 0 : cells.size());
         return new RenderCellCenter(q / count, r / count);
-    }
-
-    static DungeonMapRenderState.TopologyRef topologyRef(
-            DungeonEditorTopologyElementRef ref
-    ) {
-        return ref == null
-                ? DungeonMapRenderState.TopologyRef.empty()
-                : new DungeonMapRenderState.TopologyRef(topologyKind(ref.kind()), ref.id());
     }
 
     static DungeonMapRenderState.TopologyRef topologyRef(DungeonTopologyElementRef ref) {

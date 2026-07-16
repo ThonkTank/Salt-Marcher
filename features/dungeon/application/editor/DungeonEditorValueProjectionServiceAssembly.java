@@ -64,10 +64,10 @@ final class DungeonEditorValueProjectionServiceAssembly {
                 : edges.stream().map(DungeonEditorValueProjectionServiceAssembly::edge).toList();
     }
 
-    static features.dungeon.api.DungeonEditorTopologyElementRef topologyRef(@Nullable DungeonTopologyRef ref) {
+    static features.dungeon.api.DungeonTopologyElementRef topologyRef(@Nullable DungeonTopologyRef ref) {
         return ref == null
-                ? features.dungeon.api.DungeonEditorTopologyElementRef.empty()
-                : new features.dungeon.api.DungeonEditorTopologyElementRef(ref.kind().name(), ref.id());
+                ? features.dungeon.api.DungeonTopologyElementRef.empty()
+                : new features.dungeon.api.DungeonTopologyElementRef(publishedKind(ref.kind()), ref.id());
     }
 
     static List<features.dungeon.api.DungeonCellRef> cells(
@@ -104,7 +104,37 @@ final class DungeonEditorValueProjectionServiceAssembly {
         return ref == null
                 ? features.dungeon.api.DungeonTopologyElementRef.empty()
                 : new features.dungeon.api.DungeonTopologyElementRef(
-                        features.dungeon.api.DungeonTopologyElementKind.valueOf(ref.kind().name()),
+                        publishedKind(ref.kind()),
                         ref.id());
+    }
+
+    private static features.dungeon.api.DungeonTopologyElementKind publishedKind(
+            features.dungeon.domain.core.graph.DungeonTopologyElementKind kind
+    ) {
+        if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.ROOM) {
+            return features.dungeon.api.DungeonTopologyElementKind.ROOM;
+        }
+        if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.CORRIDOR) {
+            return features.dungeon.api.DungeonTopologyElementKind.CORRIDOR;
+        }
+        if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.CORRIDOR_ANCHOR) {
+            return features.dungeon.api.DungeonTopologyElementKind.CORRIDOR_ANCHOR;
+        }
+        if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.DOOR) {
+            return features.dungeon.api.DungeonTopologyElementKind.DOOR;
+        }
+        if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.WALL) {
+            return features.dungeon.api.DungeonTopologyElementKind.WALL;
+        }
+        if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.STAIR) {
+            return features.dungeon.api.DungeonTopologyElementKind.STAIR;
+        }
+        if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.TRANSITION) {
+            return features.dungeon.api.DungeonTopologyElementKind.TRANSITION;
+        }
+        if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.FEATURE_MARKER) {
+            return features.dungeon.api.DungeonTopologyElementKind.FEATURE_MARKER;
+        }
+        return features.dungeon.api.DungeonTopologyElementKind.EMPTY;
     }
 }

@@ -2,7 +2,7 @@ package features.dungeon.application.editor;
 
 import features.dungeon.api.DungeonCellRef;
 import features.dungeon.api.DungeonEditorMapHitRef;
-import features.dungeon.api.DungeonEditorTopologyElementRef;
+import features.dungeon.api.DungeonTopologyElementRef;
 
 public final class DungeonEditorCellHitRefs {
     private DungeonEditorCellHitRefs() {
@@ -27,7 +27,7 @@ public final class DungeonEditorCellHitRefs {
             String elementKind,
             long ownerId,
             long clusterId,
-            DungeonEditorTopologyElementRef topologyRef,
+            DungeonTopologyElementRef topologyRef,
             DungeonCellRef cell
     ) {
         if (cell == null) {

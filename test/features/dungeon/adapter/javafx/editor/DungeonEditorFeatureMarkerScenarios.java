@@ -9,7 +9,8 @@ import javafx.scene.input.MouseButton;
 import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorMapSnapshot;
 import features.dungeon.api.DungeonEditorStateSnapshot;
-import features.dungeon.api.DungeonEditorTopologyElementRef;
+import features.dungeon.api.DungeonInspectorSnapshot;
+import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
 import features.dungeon.adapter.javafx.map.DungeonMapView;
@@ -117,6 +118,8 @@ final class DungeonEditorFeatureMarkerScenarios {
                 "DE-FEATURE-003 persists one dungeon_feature_markers row for the created POI");
         assertEquals(1L, runtime.database().countFeatureMarkerTopologyElementById(mapId, markerId),
                 "DE-FEATURE-003 persists one stable FEATURE_MARKER topology ref");
+        String authoredDescription = "Verborgener Altar am alten Pilgerweg.";
+        runtime.database().updateFeatureMarkerDescription(mapId, markerId, authoredDescription);
         List<String> stableRowsAfterCreate = runtime.database().featureMarkerStableState(mapId);
         assertTrue(stableRowsAfterCreate.stream().anyMatch(row -> row.startsWith(
                         "dungeon_feature_markers|feature_marker_id=" + markerId)
@@ -127,7 +130,7 @@ final class DungeonEditorFeatureMarkerScenarios {
                         && row.contains("|level_z=0")),
                 "DE-FEATURE-003 persists POI kind and cell coordinates: " + stableRowsAfterCreate);
 
-        DungeonEditorTopologyElementRef markerRef = new DungeonEditorTopologyElementRef("FEATURE_MARKER", markerId);
+        DungeonTopologyElementRef markerRef = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.FEATURE_MARKER, markerId);
         DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
         assertFeatureMarkerCreatedInSnapshot(
                 committedSurface,
@@ -162,8 +165,8 @@ final class DungeonEditorFeatureMarkerScenarios {
                 "DE-FEATURE-004 create publishes a feature-marker inspector");
         assertEquals("POI " + markerId, selectedState.inspector().title(),
                 "DE-FEATURE-004 inspector title uses the marker label");
-        assertTrue(selectedState.inspector().facts().contains("ref: FEATURE_MARKER " + markerId),
-                "DE-FEATURE-004 inspector facts expose the stable marker topology ref");
+        assertEquals(DungeonInspectorSnapshot.StatePanelFacts.empty(), selectedState.inspector().statePanelFacts(),
+                "DE-FEATURE-004 marker inspector publishes no unrelated stair or transition panel state");
 
         selectMap(controls, "Feature POI Reload Hop");
         selectMap(controls, "Feature POI Create Map");
@@ -178,6 +181,24 @@ final class DungeonEditorFeatureMarkerScenarios {
                 2,
                 0,
                 "DE-FEATURE-006 reload");
+        click(button(controls, "Auswahl"));
+        Point2D markerCenter = glyphCenterForRef(binding.mapContentModel(), markerRef);
+        fireMapMousePressed(
+                mapView,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(markerCenter.getX()),
+                viewport.sceneToScreenY(markerCenter.getY()),
+                false);
+        DungeonEditorStateSnapshot reloadedSelection = runtime.stateModel().current();
+        assertEquals(markerRef, reloadedSelection.selection().topologyRef(),
+                "DE-FEATURE-006 production selection publishes the typed marker topology ref");
+        assertTrue(reloadedSelection.inspector() != null,
+                "DE-FEATURE-006 production selection publishes the marker inspector");
+        assertEquals(authoredDescription, reloadedSelection.inspector().summary(),
+                "DE-FEATURE-006 inspector summary is only the authored marker description");
+        assertEquals(DungeonInspectorSnapshot.StatePanelFacts.empty(),
+                reloadedSelection.inspector().statePanelFacts(),
+                "DE-FEATURE-006 marker inspector keeps unrelated typed state-panel facts empty");
 
 
 
@@ -309,8 +330,8 @@ final class DungeonEditorFeatureMarkerScenarios {
                 "DE-FEATURE-007 secondary delete removes the targeted topology ref");
         assertEquals(1L, runtime.database().countFeatureMarkerById(mapId, rightPoiId),
                 "DE-FEATURE-007 secondary delete keeps right POI marker row");
-        DungeonEditorTopologyElementRef deletedRef =
-                new DungeonEditorTopologyElementRef("FEATURE_MARKER", deletedPoiId);
+        DungeonTopologyElementRef deletedRef =
+                new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.FEATURE_MARKER, deletedPoiId);
         Point2D deletedCenter = new Point2D(9.5, 2.5);
         assertFeatureMarkerAbsentFromSnapshotAndRender(
                 runtime.mapSurfaceModel().current(),

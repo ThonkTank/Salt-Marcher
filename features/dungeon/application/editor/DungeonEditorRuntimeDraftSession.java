@@ -214,14 +214,18 @@ final class DungeonEditorRuntimeDraftSession {
         var topologyRef = selection == null
                 ? DungeonEditorStateSnapshot.Selection.empty().topologyRef()
                 : selection.topologyRef();
-        return "TRANSITION".equals(topologyRef.kind()) ? topologyRef.id() : 0L;
+        return topologyRef.kind() == features.dungeon.api.DungeonTopologyElementKind.TRANSITION
+                ? topologyRef.id()
+                : 0L;
     }
 
     private static long selectedStairId(DungeonEditorStateSnapshot.Selection selection) {
         var topologyRef = selection == null
                 ? DungeonEditorStateSnapshot.Selection.empty().topologyRef()
                 : selection.topologyRef();
-        return "STAIR".equals(topologyRef.kind()) ? topologyRef.id() : 0L;
+        return topologyRef.kind() == features.dungeon.api.DungeonTopologyElementKind.STAIR
+                ? topologyRef.id()
+                : 0L;
     }
 
     private static DungeonEditorRuntimeLabelTarget labelNameTarget(DungeonEditorStateSnapshot.Selection selection) {
@@ -232,7 +236,7 @@ final class DungeonEditorRuntimeDraftSession {
             return DungeonEditorRuntimeLabelTarget.cluster(safeSelection.clusterId());
         }
         var topologyRef = safeSelection.topologyRef();
-        return "ROOM".equals(topologyRef.kind())
+        return topologyRef.kind() == features.dungeon.api.DungeonTopologyElementKind.ROOM
                 ? DungeonEditorRuntimeLabelTarget.room(topologyRef.id())
                 : DungeonEditorRuntimeLabelTarget.empty();
     }
@@ -246,7 +250,8 @@ final class DungeonEditorRuntimeDraftSession {
     }
 
     private static boolean clusterOnlySelection(DungeonEditorStateSnapshot.Selection selection) {
-        return selection.clusterSelection() && !"ROOM".equals(selection.topologyRef().kind());
+        return selection.clusterSelection()
+                && selection.topologyRef().kind() != features.dungeon.api.DungeonTopologyElementKind.ROOM;
     }
 
 }

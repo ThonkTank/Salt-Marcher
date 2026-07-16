@@ -13,7 +13,7 @@ import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonEditorSurface;
 import features.dungeon.api.DungeonEditorTool;
-import features.dungeon.api.DungeonEditorTopologyElementRef;
+import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonEditorMapSnapshot;
 import features.dungeon.api.DungeonOverlaySettings;
@@ -81,7 +81,7 @@ final class DungeonEditorSelectionScenarios {
                 .filter(area -> "R1".equals(area.label()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("F1_SINGLE_ROOM R1 area not loaded."));
-        DungeonEditorTopologyElementRef roomRef = roomArea.topologyRef();
+        DungeonTopologyElementRef roomRef = roomArea.topologyRef();
         long roomClusterId = roomArea.clusterId();
         double roomFloorQ = 1.5;
         double roomFloorR = 1.5;
@@ -157,10 +157,8 @@ final class DungeonEditorSelectionScenarios {
         assertEquals(DungeonEditorPreview.none(), selectedSurface.preview(),
                 "DE-SEL-001 room floor click keeps preview empty");
         assertTrue(selectedState.inspector() != null, "DE-SEL-001 inspector is published for the selected room");
-        assertTrue(
-                selectedState.inspector().title().contains("R1") || selectedState.inspector().facts().stream()
-                        .anyMatch(fact -> fact.contains("R1") || fact.contains(String.valueOf(roomRef.id()))),
-                "DE-SEL-001 inspector identifies the selected room");
+        assertEquals("Authoriertes Dungeon-Areal.", selectedState.inspector().summary(),
+                "DE-SEL-001 inspector identifies the selected room as authored area state");
         assertTrue(renderHasSelectedSurfacePrimitive(binding.mapContentModel(), roomRef),
                 "DE-SEL-001 render scene highlights the selected room surface");
         assertCanvasPaintedAtScene(mapView, roomFloorQ, roomFloorR,
@@ -290,7 +288,7 @@ final class DungeonEditorSelectionScenarios {
                 .filter(handle -> "STAIR_ANCHOR".equals(handle.ref().kind().name()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("F7_STAIR_ANCHOR stair handle not loaded."));
-        DungeonEditorTopologyElementRef stairRef = stairFeature.topologyRef();
+        DungeonTopologyElementRef stairRef = stairFeature.topologyRef();
         assertEquals(stairRef, editorTopologyRef(stairHandle.ref().topologyRef()),
                 "DE-SEL-003 stair feature and handle share topology ref");
         assertTrue(runtime.mapSurfaceModel().current().surface().map().features().stream()
@@ -371,7 +369,7 @@ final class DungeonEditorSelectionScenarios {
                 .filter(handle -> "CORRIDOR_ANCHOR".equals(handle.ref().kind().name()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("F5_CORRIDOR_WITH_ANCHOR anchor handle not loaded."));
-        DungeonEditorTopologyElementRef corridorRef = runtime.mapSurfaceModel().current().surface().map().areas().stream()
+        DungeonTopologyElementRef corridorRef = runtime.mapSurfaceModel().current().surface().map().areas().stream()
                 .filter(area -> "CORRIDOR".equals(area.kind()))
                 .map(DungeonEditorMapSnapshot.Area::topologyRef)
                 .findFirst()
@@ -549,7 +547,7 @@ final class DungeonEditorSelectionScenarios {
                 .filter(handle -> "CORRIDOR_ANCHOR".equals(handle.ref().kind().name()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("F5_CORRIDOR_WITH_ANCHOR anchor not loaded."));
-        DungeonEditorTopologyElementRef corridorRef = runtime.mapSurfaceModel().current().surface().map().areas().stream()
+        DungeonTopologyElementRef corridorRef = runtime.mapSurfaceModel().current().surface().map().areas().stream()
                 .filter(area -> "CORRIDOR".equals(area.kind()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("F5_CORRIDOR_WITH_ANCHOR corridor area not loaded."))
@@ -589,7 +587,7 @@ final class DungeonEditorSelectionScenarios {
         createMapThroughControls(controls, runtime, "Tool Switch Selection Clear Reload Hop");
         selectMap(controls, "Tool Switch Selection Clear Map");
         long transitionId = runtime.database().transitionIdByDescription(mapId, "Initial transition.");
-        DungeonEditorTopologyElementRef transitionRef = new DungeonEditorTopologyElementRef("TRANSITION", transitionId);
+        DungeonTopologyElementRef transitionRef = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.TRANSITION, transitionId);
 
         click(button(controls, "Auswahl"));
         Point2D transitionCenter = glyphCenterForRef(binding.mapContentModel(), transitionRef);
@@ -683,7 +681,7 @@ final class DungeonEditorSelectionScenarios {
             DungeonMapContentModel mapContentModel,
             DungeonMapView mapView,
             DungeonMapContentModel.Viewport viewport,
-            DungeonEditorTopologyElementRef ref,
+            DungeonTopologyElementRef ref,
             double sceneX,
             double sceneY,
             String message
@@ -706,7 +704,7 @@ final class DungeonEditorSelectionScenarios {
             DungeonMapContentModel mapContentModel,
             DungeonMapView mapView,
             DungeonMapContentModel.Viewport viewport,
-            DungeonEditorTopologyElementRef ref,
+            DungeonTopologyElementRef ref,
             String message
     ) {
         String selectionRef = selectionRef(ref);
@@ -765,7 +763,7 @@ final class DungeonEditorSelectionScenarios {
             DungeonMapContentModel mapContentModel,
             DungeonMapView mapView,
             DungeonMapContentModel.Viewport viewport,
-            DungeonEditorTopologyElementRef ref,
+            DungeonTopologyElementRef ref,
             double sceneX,
             double sceneY,
             String message
@@ -788,7 +786,7 @@ final class DungeonEditorSelectionScenarios {
             DungeonMapContentModel mapContentModel,
             DungeonMapView mapView,
             DungeonMapContentModel.Viewport viewport,
-            DungeonEditorTopologyElementRef ref,
+            DungeonTopologyElementRef ref,
             double sceneX,
             double sceneY,
             String message
@@ -890,7 +888,7 @@ final class DungeonEditorSelectionScenarios {
             DungeonMapContentModel mapContentModel,
             DungeonMapView mapView,
             DungeonMapContentModel.Viewport viewport,
-            DungeonEditorTopologyElementRef roomRef,
+            DungeonTopologyElementRef roomRef,
             String message
     ) {
         Point2D labelCenter = labelCenterForRef(mapContentModel, roomRef);
@@ -914,7 +912,7 @@ final class DungeonEditorSelectionScenarios {
 
     private static void assertHoverStylesOnlySyntheticBoundaryEdge(String message) {
         DungeonMapContentModel mapContentModel = new DungeonMapContentModel("Boundary Exactness", true);
-        DungeonEditorTopologyElementRef wallRef = new DungeonEditorTopologyElementRef("WALL", 7001L);
+        DungeonTopologyElementRef wallRef = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.WALL, 7001L);
         DungeonEdgeRef firstEdge = new DungeonEdgeRef(
                 new DungeonCellRef(0, 0, 0),
                 new DungeonCellRef(1, 0, 0));
@@ -1023,13 +1021,13 @@ final class DungeonEditorSelectionScenarios {
                 DungeonEditorTool.SELECT);
     }
 
-    private static String selectionRef(DungeonEditorTopologyElementRef ref) {
+    private static String selectionRef(DungeonTopologyElementRef ref) {
         return ref.kind() + ":" + ref.id();
     }
 
     private static DungeonMapContentModel.TextPrimitive textPrimitiveForRef(
             DungeonMapContentModel mapContentModel,
-            DungeonEditorTopologyElementRef ref
+            DungeonTopologyElementRef ref
     ) {
         String selectionRef = selectionRef(ref);
         return mapContentModel.canvasStateProperty().get().renderScene().texts().stream()

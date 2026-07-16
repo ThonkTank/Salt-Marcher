@@ -15,7 +15,7 @@ import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorHandleSnapshot;
 import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorMapSnapshot;
-import features.dungeon.api.DungeonEditorTopologyElementRef;
+import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.adapter.javafx.editor.DungeonEditorFeatureShellBinding;
 import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
@@ -1414,14 +1414,14 @@ final class DungeonEditorClusterLabelHandleScenarios {
         clickMap(binding.mapView(), binding.mapContentModel(), q, r);
         DungeonEditorStateSnapshot.Selection stateSelection = runtime.stateModel().current().selection();
         DungeonEditorStateSnapshot.Selection surfaceSelection = runtime.mapSurfaceModel().current().selection();
-        assertEquals("ROOM", stateSelection.topologyRef().kind(),
+        assertEquals(features.dungeon.api.DungeonTopologyElementKind.ROOM, stateSelection.topologyRef().kind(),
                 message + " state model room floor selection topology kind");
         assertTrue(stateSelection.clusterId() > 0L, message + " state model room floor selection keeps cluster id");
         assertTrue(!stateSelection.clusterSelection(),
                 message + " state model room floor selection stays out of cluster mode");
         assertEquals(null, stateSelection.handleRef(),
                 message + " state model room floor selection does not fake a cluster-label handle");
-        assertEquals("ROOM", surfaceSelection.topologyRef().kind(),
+        assertEquals(features.dungeon.api.DungeonTopologyElementKind.ROOM, surfaceSelection.topologyRef().kind(),
                 message + " map surface room floor selection topology kind");
         assertTrue(surfaceSelection.clusterId() > 0L, message + " map surface room floor selection keeps cluster id");
         assertTrue(!surfaceSelection.clusterSelection(),
@@ -1799,7 +1799,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
 
         DungeonEditorStateSnapshot.Selection selectedRoom = runtime.stateModel().current().selection();
         DungeonEditorStateSnapshot.Selection selectedSurfaceRoom = runtime.mapSurfaceModel().current().selection();
-        assertEquals("ROOM", selectedRoom.topologyRef().kind(),
+        assertEquals(features.dungeon.api.DungeonTopologyElementKind.ROOM, selectedRoom.topologyRef().kind(),
                 "DE-LABEL-007 state model room label point passes through to room floor topology");
         assertEquals(roomIds.roomId(), selectedRoom.topologyRef().id(),
                 "DE-LABEL-007 state model room label point passes through to room floor id");
@@ -1809,7 +1809,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 "DE-LABEL-007 state model room label point does not select cluster-name target");
         assertEquals(null, selectedRoom.handleRef(),
                 "DE-LABEL-007 state model room label point does not publish a draggable cluster-label handle");
-        assertEquals("ROOM", selectedSurfaceRoom.topologyRef().kind(),
+        assertEquals(features.dungeon.api.DungeonTopologyElementKind.ROOM, selectedSurfaceRoom.topologyRef().kind(),
                 "DE-LABEL-007 map surface room label point passes through to room floor topology");
         assertEquals(roomIds.roomId(), selectedSurfaceRoom.topologyRef().id(),
                 "DE-LABEL-007 map surface room label point passes through to room floor id");
@@ -2434,7 +2434,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
 
     private static DungeonMapContentModel.PaintStyle surfaceStyleForSelectionRef(
             DungeonMapContentModel mapContentModel,
-            DungeonEditorTopologyElementRef ref,
+            DungeonTopologyElementRef ref,
             String message
     ) {
         String selectionRef = ref.kind() + ":" + ref.id();

@@ -8,9 +8,7 @@ import platform.diagnostics.NoopDiagnostics;
 import platform.execution.DirectExecutionLane;
 import platform.execution.ExecutionLane;
 import features.encountertable.domain.catalog.port.EncounterTableCatalogPort;
-import features.encountertable.api.EncounterTableCandidatesModel;
 import features.encountertable.api.EncounterTableCandidatesResult;
-import features.encountertable.api.EncounterTableCatalogModel;
 import features.encountertable.api.EncounterTableCatalogResult;
 import features.encountertable.api.EncounterTableReadStatus;
 import features.encountertable.api.RefreshEncounterTableCatalogCommand;
@@ -24,34 +22,29 @@ public final class EncounterTableApplicationService implements features.encounte
             new DiagnosticId("encountertable.candidates.storage-failure");
 
     private final EncounterTableCatalogPort catalog;
-    private final EncounterTableCatalogModel catalogModel;
-    private final EncounterTableCandidatesModel candidatesModel;
+    private final EncounterTablePublishedState publishedState;
     private final ExecutionLane executionLane;
     private final Diagnostics diagnostics;
 
     public EncounterTableApplicationService(
             EncounterTableCatalogPort catalog,
-            EncounterTableCatalogModel catalogModel,
-            EncounterTableCandidatesModel candidatesModel
+            EncounterTablePublishedState publishedState
     ) {
         this(
                 catalog,
-                catalogModel,
-                candidatesModel,
+                publishedState,
                 DirectExecutionLane.INSTANCE,
                 NoopDiagnostics.INSTANCE);
     }
 
     public EncounterTableApplicationService(
             EncounterTableCatalogPort catalog,
-            EncounterTableCatalogModel catalogModel,
-            EncounterTableCandidatesModel candidatesModel,
+            EncounterTablePublishedState publishedState,
             ExecutionLane executionLane,
             Diagnostics diagnostics
     ) {
         this.catalog = Objects.requireNonNull(catalog, "catalog");
-        this.catalogModel = Objects.requireNonNull(catalogModel, "catalogModel");
-        this.candidatesModel = Objects.requireNonNull(candidatesModel, "candidatesModel");
+        this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
@@ -63,12 +56,13 @@ public final class EncounterTableApplicationService implements features.encounte
 
     private void refreshCatalogInLane() {
         try {
-            catalogModel.publish(new EncounterTableCatalogResult(
+            publishedState.publishCatalog(new EncounterTableCatalogResult(
                     EncounterTableReadStatus.SUCCESS,
                     EncounterTableCatalogProjection.summaries(catalog.loadSummaries())));
         } catch (IllegalStateException exception) {
             diagnostics.failure(CATALOG_FAILURE, exception.getClass());
-            catalogModel.publish(new EncounterTableCatalogResult(EncounterTableReadStatus.STORAGE_ERROR, List.of()));
+            publishedState.publishCatalog(
+                    new EncounterTableCatalogResult(EncounterTableReadStatus.STORAGE_ERROR, List.of()));
         }
     }
 
@@ -82,7 +76,7 @@ public final class EncounterTableApplicationService implements features.encounte
                 publishStorageError();
                 return;
             }
-            candidatesModel.publish(new EncounterTableCandidatesResult(
+            publishedState.publishCandidates(new EncounterTableCandidatesResult(
                     EncounterTableReadStatus.SUCCESS,
                     EncounterTableCatalogProjection.candidates(catalog.loadGenerationCandidates(
                             command.tableIds(),
@@ -94,7 +88,8 @@ public final class EncounterTableApplicationService implements features.encounte
     }
 
     private void publishStorageError() {
-        candidatesModel.publish(new EncounterTableCandidatesResult(EncounterTableReadStatus.STORAGE_ERROR, List.of()));
+        publishedState.publishCandidates(
+                new EncounterTableCandidatesResult(EncounterTableReadStatus.STORAGE_ERROR, List.of()));
     }
 
     private static int normalizedMaximumXp(int maximumXp) {

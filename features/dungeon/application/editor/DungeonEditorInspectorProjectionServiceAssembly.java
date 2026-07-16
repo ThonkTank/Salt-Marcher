@@ -17,7 +17,6 @@ final class DungeonEditorInspectorProjectionServiceAssembly {
         return new features.dungeon.api.DungeonInspectorSnapshot(
                 inspector.title(),
                 inspector.summary(),
-                inspector.facts(),
                 statePanelFacts(inspector.statePanelFacts()),
                 cards(inspector.roomNarrations()));
     }

@@ -23,6 +23,7 @@ import features.worldplanner.domain.world.port.WorldPlannerReferencePort;
 import features.worldplanner.domain.world.repository.WorldPlannerRepository;
 import features.worldplanner.api.WorldPlannerSnapshotModel;
 import features.worldplanner.application.WorldPlannerApplicationService;
+import features.worldplanner.application.WorldPlannerPublishedState;
 import features.worldplanner.application.WorldPlannerSnapshotProjection;
 
 public final class WorldPlannerServiceAssembly {
@@ -32,7 +33,7 @@ public final class WorldPlannerServiceAssembly {
 
     private final WorldPlannerRepository repository;
     private final WorldPlannerReferencePort referenceValidator;
-    private final WorldPlannerSnapshotModel snapshotModel;
+    private final WorldPlannerPublishedState publishedState;
     private final ExecutionLane executionLane;
     private final Diagnostics diagnostics;
     private boolean initialSnapshotScheduled;
@@ -77,7 +78,7 @@ public final class WorldPlannerServiceAssembly {
         this.referenceValidator = Objects.requireNonNull(referenceValidator, "referenceValidator");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
-        snapshotModel = new WorldPlannerSnapshotModel(Objects.requireNonNull(uiDispatcher, "uiDispatcher"));
+        publishedState = new WorldPlannerPublishedState(Objects.requireNonNull(uiDispatcher, "uiDispatcher"));
     }
 
     public WorldPlannerApplicationService createApplicationService() {
@@ -85,14 +86,14 @@ public final class WorldPlannerServiceAssembly {
         return new WorldPlannerApplicationService(
                 repository,
                 referenceValidator,
-                snapshotModel,
+                publishedState,
                 executionLane,
                 diagnostics);
     }
 
     public WorldPlannerSnapshotModel snapshotModel() {
         scheduleInitialSnapshot();
-        return snapshotModel;
+        return publishedState.snapshotModel();
     }
 
     private synchronized void scheduleInitialSnapshot() {
@@ -105,10 +106,10 @@ public final class WorldPlannerServiceAssembly {
 
     private void publishInitialSnapshot() {
         try {
-            snapshotModel.publish(WorldPlannerSnapshotProjection.from(repository.load()));
+            publishedState.publish(WorldPlannerSnapshotProjection.from(repository.load()));
         } catch (IllegalStateException exception) {
             diagnostics.failure(LOAD_DIAGNOSTIC, exception.getClass());
-            snapshotModel.publishStorageError(LOAD_FAILURE);
+            publishedState.publishStorageError(LOAD_FAILURE);
         }
     }
 

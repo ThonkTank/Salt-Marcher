@@ -1174,6 +1174,20 @@ class DungeonEditorTestPersistence {
             }
         }
 
+        void updateFeatureMarkerDescription(long mapId, long markerId, String description) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(
+                         "UPDATE dungeon_feature_markers SET description=?"
+                                 + " WHERE dungeon_map_id=? AND feature_marker_id=?")) {
+                bind(statement, description, mapId, markerId);
+                if (statement.executeUpdate() != 1) {
+                    throw new SQLException("Expected exactly one feature marker description update.");
+                }
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to update feature marker description.", exception);
+            }
+        }
+
         long countFeatureMarkerById(long mapId, long markerId) {
             return count(
                     "SELECT COUNT(*) FROM dungeon_feature_markers"

@@ -11,7 +11,6 @@ import features.hex.domain.map.HexMapIdentity;
 import features.hex.domain.map.HexMapSummary;
 import features.hex.domain.map.HexTravelPositionState;
 import features.hex.domain.map.repository.HexMapRepository;
-import features.hex.api.HexTravelModel;
 import features.hex.api.HexTravelSnapshot;
 import features.hex.api.MoveHexPartyTokenCommand;
 import features.party.api.PartyApi;
@@ -29,20 +28,20 @@ public final class HexTravelApplicationService implements features.hex.api.HexTr
 
     private final HexMapRepository repository;
     private final PartyApi party;
-    private final HexTravelModel model;
+    private final HexTravelPublishedState publishedState;
     private final ExecutionLane executionLane;
     private final Diagnostics diagnostics;
 
     public HexTravelApplicationService(
             HexMapRepository repository,
             PartyApi party,
-            HexTravelModel model,
+            HexTravelPublishedState publishedState,
             ExecutionLane executionLane,
             Diagnostics diagnostics
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.party = Objects.requireNonNull(party, "party");
-        this.model = Objects.requireNonNull(model, "model");
+        this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
@@ -64,10 +63,10 @@ public final class HexTravelApplicationService implements features.hex.api.HexTr
 
     private void publishTravelPosition(PartyTravelPositionsResult result) {
         try {
-            model.publish(toSnapshot(projectTravel(result)));
+            publishedState.publish(toSnapshot(projectTravel(result)));
         } catch (IllegalStateException exception) {
             diagnostics.failure(STORAGE_FAILURE, exception.getClass());
-            model.publish(HexTravelSnapshot.empty(STORAGE_FAILURE_TEXT));
+            publishedState.publish(HexTravelSnapshot.empty(STORAGE_FAILURE_TEXT));
         }
     }
 
@@ -87,7 +86,7 @@ public final class HexTravelApplicationService implements features.hex.api.HexTr
                     true));
         } catch (IllegalStateException exception) {
             diagnostics.failure(STORAGE_FAILURE, exception.getClass());
-            model.publish(HexTravelSnapshot.empty(STORAGE_FAILURE_TEXT));
+            publishedState.publish(HexTravelSnapshot.empty(STORAGE_FAILURE_TEXT));
         }
     }
 

@@ -13,8 +13,8 @@ Java roots; feature collaboration uses provider APIs; explicit composition,
 versioned SQLite recovery, local diagnostics, green CI, independent review, and
 owner acceptance are complete; this file is deleted.
 
-Current tree: `codex/greenfield-r4-vertical-packages` contains the complete R4
-Vertical Packages candidate, based on merged R3 commit `93e44bf49`.
+Current tree: `codex/greenfield-r5-final-qualification` is the final R5 cleanup
+and qualification slice, based on merged R4 commit `c49d82178`.
 
 Completed: R0 Rule Cutover merged by PR #471. R1 Explicit Composition merged
 by PR #473 with required CI green; discovery, service location, and service
@@ -24,7 +24,10 @@ application-owned execution lane, explicit UI dispatch, revisioned state, and
 payload-free local diagnostics are active in production. R3 SQLite Lifecycle
 merged by PR #477 with required CI green; one application-owned database now
 owns connection configuration, versioned feature migrations, integrity,
-verified local backup, and physical-corruption recovery.
+verified local backup, and physical-corruption recovery. R4 Vertical Packages
+merged by PR #479 with required CI green; all production Java now lives under
+`app`, `shell`, `platform`, or vertical `features`, and `app` composes only
+feature roots and APIs.
 
 R3 scope: move shared database path, connection configuration, integrity,
 local versioned backup, and tested recovery behind `platform.persistence` and
@@ -65,6 +68,54 @@ feature-role, and adapter-role cycles remain enforced. One real
 Encounter/World Planner feature cycle was removed through an app-wired typed
 callback.
 
+R4 publication: PR #479 required CI passed in 1m 53s and merged as
+`c49d82178`.
+
+R5 scope: remove active obsolete source-shape references and other migration
+residue, qualify the whole target system, run the one independent holistic
+review over R0-R5, fix only material supported findings, prove the installed
+desktop application, publish and merge the final slice, then retire this
+temporary delivery owner after owner acceptance.
+
+R5 holistic review found four material endpoint gaps: mutable publication
+escaped through provider read models, Hex and Dungeon APIs retained string or
+duplicate boundary carriers, Dungeon inspector proof retained free-form debug
+facts, and SQLite preflight/recovery could mutate or partially move a database
+family before safe completion. The R5 candidate now keeps publishers inside
+their features, uses typed API values and one Dungeon topology reference,
+removes inspector compatibility facts, validates an isolated SQLite family,
+and rolls back every completed quarantine/restore move. Durable owner and
+agent-skill text no longer presents migration-stage rules as current truth.
+
+The final panel additionally found a racy preflight snapshot, incomplete
+rollback-journal and backup-version handling, and a relocated Dungeon inspector
+debug carrier. The corrected candidate now creates its backup through a
+read-only SQLite snapshot, treats rollback journals as database-family state,
+validates stored backup versions, publishes only authored inspector summaries,
+and proves the typed feature-marker selection route.
+
+Affected-risk revalidation accepted the Dungeon inspector/selection repair and
+identified one final SQLite crash case. A valid primary with a hot rollback
+journal is now copied under an exclusive OS lock and recovered only in an
+isolated writable family before its read-only snapshot is accepted; an active
+writer fails closed without a backup.
+
+The strengthened Hot-Journal fixture now proves SQLite's journal magic and an
+uncommitted page spill in the primary before isolated recovery; the original
+family remains byte-identical while the verified backup contains only committed
+truth.
+
+Final R5 proof: all 16 SQLite lifecycle regressions and the feature-marker
+production route passed; two consecutive warm
+`./gradlew check --rerun-tasks --console=plain` runs passed in 4m 11s and 3m
+40s; the following no-change `./gradlew check --console=plain` passed in 3s.
+Branch-protection readback names exactly `check` as required status context.
+
+Final review: the direct Main panel accepted the target architecture, typed
+boundaries, state ownership, Dungeon inspector/selection route, governance,
+and the strengthened SQLite recovery proof with no remaining code blocker.
+`./gradlew installDesktopApp --console=plain` then passed in 16s.
+
 R2 proof: after two direct review passes, all supported R2 state ownership,
 ordering, startup-I/O, shutdown-drain, and failure-publication findings were
 repaired with deterministic regressions. The final integrated regression set
@@ -78,6 +129,5 @@ fixes; complete R3 through R5 first, then run one independent direct review
 panel over the fully migrated system before final installation and owner
 acceptance.
 
-Next action: publish the proven R4 candidate, require green PR CI, merge it,
-sync `main`, and execute R5 final cleanup and whole-system qualification before
-the one holistic migration review.
+Next action: publish and merge R5 through required green CI, then obtain owner
+acceptance and delete this temporary delivery owner.

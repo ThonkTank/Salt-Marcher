@@ -49,13 +49,7 @@ public final class PartyApplicationService implements features.party.api.PartyAp
     private static final DiagnosticId STORAGE_FAILURE = new DiagnosticId("party.storage-failure");
 
     private final PartyRosterRepository repository;
-    private final PartySnapshotModel partySnapshotModel;
-    private final ActivePartyModel activePartyModel;
-    private final ActivePartyCompositionModel activePartyCompositionModel;
-    private final AdventuringDaySummaryModel adventuringDaySummaryModel;
-    private final PartyTravelPositionsModel partyTravelPositionsModel;
-    private final PartyMutationModel partyMutationModel;
-    private final AdventuringDayCalculationModel adventuringDayCalculationModel;
+    private final PartyPublishedState publishedState;
     private final ExecutionLane executionLane;
     private final Diagnostics diagnostics;
     private final AdventuringDayProgressCalculationHelper adventuringDayProgress =
@@ -63,27 +57,12 @@ public final class PartyApplicationService implements features.party.api.PartyAp
 
     public PartyApplicationService(
             PartyRosterRepository repository,
-            PartySnapshotModel partySnapshotModel,
-            ActivePartyModel activePartyModel,
-            ActivePartyCompositionModel activePartyCompositionModel,
-            AdventuringDaySummaryModel adventuringDaySummaryModel,
-            PartyTravelPositionsModel partyTravelPositionsModel,
-            PartyMutationModel partyMutationModel,
-            AdventuringDayCalculationModel adventuringDayCalculationModel,
+            PartyPublishedState publishedState,
             ExecutionLane executionLane,
             Diagnostics diagnostics
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
-        this.partySnapshotModel = Objects.requireNonNull(partySnapshotModel, "partySnapshotModel");
-        this.activePartyModel = Objects.requireNonNull(activePartyModel, "activePartyModel");
-        this.activePartyCompositionModel =
-                Objects.requireNonNull(activePartyCompositionModel, "activePartyCompositionModel");
-        this.adventuringDaySummaryModel =
-                Objects.requireNonNull(adventuringDaySummaryModel, "adventuringDaySummaryModel");
-        this.partyTravelPositionsModel = Objects.requireNonNull(partyTravelPositionsModel, "partyTravelPositionsModel");
-        this.partyMutationModel = Objects.requireNonNull(partyMutationModel, "partyMutationModel");
-        this.adventuringDayCalculationModel =
-                Objects.requireNonNull(adventuringDayCalculationModel, "adventuringDayCalculationModel");
+        this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
@@ -155,12 +134,12 @@ public final class PartyApplicationService implements features.party.api.PartyAp
 
     private void calculateAdventuringDayOnLane(CalculateAdventuringDayCommand command) {
         try {
-            adventuringDayCalculationModel.publish(PartyPublishedProjection.adventuringDayCalculationResult(
+            publishedState.publishAdventuringDayCalculation(PartyPublishedProjection.adventuringDayCalculationResult(
                     command == null ? List.of() : command.levels(),
                     command == null ? 0 : command.totalGroupXp(),
                     adventuringDayProgress));
         } catch (IllegalStateException exception) {
-            adventuringDayCalculationModel.publish(PartyPublishedProjection.adventuringDayCalculationResult(
+            publishedState.publishAdventuringDayCalculation(PartyPublishedProjection.adventuringDayCalculationResult(
                     List.of(),
                     0,
                     adventuringDayProgress));
@@ -174,19 +153,15 @@ public final class PartyApplicationService implements features.party.api.PartyAp
                 repository.save(mutation.roster());
                 publishRepositoryBackedState(mutation.roster());
             }
-            partyMutationModel.publish(PartyPublishedProjection.mutationResult(mutation.status()));
+            publishedState.publishMutation(PartyPublishedProjection.mutationResult(mutation.status()));
         } catch (IllegalStateException exception) {
             diagnostics.failure(STORAGE_FAILURE, exception.getClass());
-            partyMutationModel.publish(PartyPublishedProjection.storageErrorMutationResult());
+            publishedState.publishMutation(PartyPublishedProjection.storageErrorMutationResult());
         }
     }
 
     private void publishRepositoryBackedState(PartyRoster roster) {
-        partySnapshotModel.publish(PartyPublishedProjection.snapshotResult(roster));
-        activePartyModel.publish(PartyPublishedProjection.activePartyResult(roster));
-        activePartyCompositionModel.publish(PartyPublishedProjection.activePartyCompositionResult(roster));
-        adventuringDaySummaryModel.publish(PartyPublishedProjection.adventuringDaySummaryResult(roster));
-        partyTravelPositionsModel.publish(PartyPublishedProjection.partyTravelPositionsResult(roster));
+        publishedState.publishRoster(roster);
     }
 
     private void publishRepositoryBackedStateFromRepository() {
@@ -194,11 +169,7 @@ public final class PartyApplicationService implements features.party.api.PartyAp
             publishRepositoryBackedState(repository.load());
         } catch (IllegalStateException exception) {
             diagnostics.failure(STORAGE_FAILURE, exception.getClass());
-            partySnapshotModel.publish(PartyPublishedProjection.failedSnapshotResult());
-            activePartyModel.publish(PartyPublishedProjection.failedActivePartyResult());
-            activePartyCompositionModel.publish(PartyPublishedProjection.failedActivePartyCompositionResult());
-            adventuringDaySummaryModel.publish(PartyPublishedProjection.failedAdventuringDaySummaryResult());
-            partyTravelPositionsModel.publish(PartyPublishedProjection.failedPartyTravelPositionsResult());
+            publishedState.publishRosterStorageFailure();
         }
     }
 
@@ -246,37 +217,37 @@ public final class PartyApplicationService implements features.party.api.PartyAp
 
     @Override
     public PartySnapshotModel snapshot() {
-        return partySnapshotModel;
+        return publishedState.snapshotModel();
     }
 
     @Override
     public ActivePartyModel activeParty() {
-        return activePartyModel;
+        return publishedState.activePartyModel();
     }
 
     @Override
     public ActivePartyCompositionModel activeComposition() {
-        return activePartyCompositionModel;
+        return publishedState.activeCompositionModel();
     }
 
     @Override
     public AdventuringDaySummaryModel adventuringDaySummary() {
-        return adventuringDaySummaryModel;
+        return publishedState.adventuringDaySummaryModel();
     }
 
     @Override
     public PartyTravelPositionsModel travelPositions() {
-        return partyTravelPositionsModel;
+        return publishedState.travelPositionsModel();
     }
 
     @Override
     public PartyMutationModel mutation() {
-        return partyMutationModel;
+        return publishedState.mutationModel();
     }
 
     @Override
     public AdventuringDayCalculationModel adventuringDayCalculation() {
-        return adventuringDayCalculationModel;
+        return publishedState.adventuringDayCalculationModel();
     }
 
     @FunctionalInterface
