@@ -119,15 +119,15 @@ public final class SessionPlannerShellLayoutTest {
                 "planner main keeps vertical scrolling available");
         assertTrue(plannerMain.isFitToWidth(), "planner main scroll content fits available width");
         assertTrue(descendants(plannerMain).stream()
-                        .filter(Parent.class::isInstance)
-                        .map(Parent.class::cast)
-                        .anyMatch(node -> node.getStyleClass().contains("session-planner-setup-strip")),
-                "planner main renders the compact setup strip in the main slot");
-        assertTrue(descendants(plannerMain).stream()
+                        .filter(javafx.scene.control.Button.class::isInstance)
+                        .map(javafx.scene.control.Button.class::cast)
+                        .anyMatch(button -> "Szene hinzufuegen".equals(button.getText())),
+                "planner main renders the scene board in the main slot");
+        assertTrue(descendants(plannerControls).stream()
                         .filter(Label.class::isInstance)
                         .map(Label.class::cast)
-                        .anyMatch(label -> "0 / ca. 0 Szenen".equals(label.getText())),
-                "planner main setup strip renders the compact scene target");
+                        .anyMatch(label -> "Session-Setup".equals(label.getText())),
+                "planner controls host the session setup section");
 
         ScrollPane stateScroll = descendants(workspace).stream()
                 .filter(ScrollPane.class::isInstance)

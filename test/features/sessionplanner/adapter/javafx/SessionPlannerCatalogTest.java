@@ -1,7 +1,6 @@
 package features.sessionplanner.adapter.javafx;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -61,7 +60,6 @@ import features.sessionplanner.api.SessionPlannerCurrentSessionModel;
 import features.sessionplanner.api.SessionPlannerParticipantsModel;
 import features.sessionplanner.api.SessionPlannerRestKind;
 import features.sessionplanner.api.SessionPlannerSceneTimelineProjection;
-import features.sessionplanner.api.SessionPlannerParticipantsProjection;
 import features.sessionplanner.api.SessionPlannerSessionSnapshot;
 import features.sessionplanner.api.SessionGenerationPreviewModel;
 import features.sessionplanner.api.SessionGenerationPreviewSnapshot;
@@ -195,13 +193,13 @@ public final class SessionPlannerCatalogTest {
         stage.show();
         layout(root);
 
-        assertMainUsesCompactSceneSetup(main);
+        assertSetupLivesInControls(controls);
         assertSceneLootTargetsSceneCards();
         assertCatalogSize(catalog.current(), 0, "initial catalog is empty");
         assertTrue(!hasLabel(main, "Session #0"), "initial main does not show default Session #0");
-        assertTrue(button(main, "Setzen").isDisabled(), "initial main disables session mutation");
-        encounterDaysField(main).setText("2");
-        button(main, "Setzen").fire();
+        assertTrue(button(controls, "Setzen").isDisabled(), "initial setup disables session mutation");
+        encounterDaysField(controls).setText("2");
+        button(controls, "Setzen").fire();
         assertCatalogSize(catalog.current(), 0, "session-bound action before create does not seed a session");
 
         createSession(controls, "Alpha");
@@ -212,10 +210,9 @@ public final class SessionPlannerCatalogTest {
         assertEquals(alphaId, afterAlpha.selectedSessionId(), "create selects new session");
         assertEquals("Alpha", current.current().session().displayName(), "current session display name after create");
 
-        encounterDaysField(main).setText("2");
-        button(main, "Setzen").fire();
+        encounterDaysField(controls).setText("2");
+        button(controls, "Setzen").fire();
         assertEquals("2", current.current().session().encounterDaysText(), "session content mutation before rename");
-        assertTrue(hasLabel(main, "0 / ca. 16 Szenen"), "main setup shows encounter-day scene target");
 
         button(main, "Szene hinzufuegen").fire();
         layout(main);
@@ -224,7 +221,8 @@ public final class SessionPlannerCatalogTest {
         assertEquals(Long.valueOf(0L),
                 Long.valueOf(sceneTimeline.current().sessionScenes().getFirst().linkedEncounterPlanId()),
                 "added scene has no linked encounter plan");
-        assertTrue(hasLabel(main, "Keine Begegnung verknuepft."), "blank scene shows no false encounter data");
+        expandScene(main, 0);
+        assertTrue(hasLabel(main, "Keine Begegnung verknuepft."), "expanded blank scene shows no false encounter data");
         button(main, "X").fire();
         layout(main);
         assertEquals(Integer.valueOf(0), Integer.valueOf(sceneTimeline.current().sessionScenes().size()),
@@ -308,13 +306,28 @@ public final class SessionPlannerCatalogTest {
         layout(controls);
     }
 
-    private static void assertMainUsesCompactSceneSetup(Parent main) {
-        long selectorCount = descendants(main).stream()
+    private static void assertSetupLivesInControls(Parent controls) {
+        long selectorCount = descendants(controls).stream()
                 .filter(ComboBox.class::isInstance)
                 .count();
-        assertTrue(selectorCount >= 1L, "main exposes compact party selector");
-        assertTrue(button(main, "Hinzufuegen").isDisabled(), "compact party add button starts disabled");
-        assertTrue(hasLabel(main, "0 / ca. 0 Szenen"), "main exposes compact scene target");
+        assertTrue(selectorCount >= 1L, "controls expose the party selector alongside the catalog selector");
+        assertTrue(button(controls, "Hinzufuegen").isDisabled(), "party add button starts disabled");
+        assertTrue(hasLabel(controls, "Session-Setup"), "controls expose the session setup section");
+    }
+
+    private static void expandScene(Parent main, int index) {
+        List<Button> toggles = descendants(main).stream()
+                .filter(Button.class::isInstance)
+                .map(Button.class::cast)
+                .filter(button -> button.getStyleClass().contains("session-planner-scene-toggle"))
+                .toList();
+        if (index >= toggles.size()) {
+            throw new AssertionError("Scene toggle not found at index " + index);
+        }
+        if ("▶".equals(toggles.get(index).getText())) {
+            toggles.get(index).fire();
+        }
+        layout(main);
     }
 
     private static void assertSceneLootTargetsSceneCards() {
@@ -372,73 +385,9 @@ public final class SessionPlannerCatalogTest {
         assertEquals(Integer.valueOf(2),
                 Integer.valueOf(viewModel.timelineProjectionProperty().get().locationOptions().size()),
                 "timeline model exposes World Planner locations for scene selection");
-        viewModel.updateSceneDraft(1L, "Bridge Alarm", "ring the bell", 9L);
-        viewModel.applySceneTimeline(projection);
-        assertEquals("Bridge Alarm", viewModel.timelineProjectionProperty().get().scenes().getFirst().sceneTitle(),
-                "timeline model keeps unsaved scene title draft across readback");
-        assertEquals("ring the bell", viewModel.timelineProjectionProperty().get().scenes().getFirst().sceneNotes(),
-                "timeline model keeps unsaved scene notes draft across readback");
-        assertEquals(Long.valueOf(9L),
-                Long.valueOf(viewModel.timelineProjectionProperty().get().scenes().getFirst().locationId()),
-                "timeline model keeps unsaved scene location draft across readback");
-        assertSceneDraftsAreSessionScoped(projection);
-
-        SessionPlannerTimelineMainView view = new SessionPlannerTimelineMainView();
-        List<SessionPlannerViewModel.TimelineInput> events = new ArrayList<>();
-        view.onTimelineInput(events::add);
-        view.bind(viewModel);
-        Stage stage = new Stage();
-        stage.setScene(new Scene(view, 520.0, 420.0));
-        stage.show();
-        layout(view);
-        assertTrue(hasLabel(view, "Cache"), "timeline view renders encounter loot");
-        assertTrue(hasLabel(view, "Location #9"), "timeline view renders scene location draft");
-        textField(view, "Szenentitel").setText("Bridge Alarm Final");
-        textArea(view, "Szenennotizen").setText("ring twice");
-        selectComboBoxItem(view, "#10 | Moonwell");
-        assertTrue(events.stream().anyMatch(event -> event.widgetToken() > 0L && event.sceneToken() == 1L),
-                "scene draft edits publish a technical widget token");
-        events.clear();
-        button(view, "Szene speichern").fire();
-        List<SessionPlannerViewModel.TimelineInput> saveEvents = events.stream()
-                .filter(event -> event.widgetToken() > 0L && event.sceneToken() == 1L)
-                .toList();
-        assertEquals(Integer.valueOf(1), Integer.valueOf(saveEvents.size()), "scene save publishes one save event");
-        assertEquals(Long.valueOf(1L), Long.valueOf(saveEvents.getFirst().sceneToken()),
-                "scene save targets the scene card");
-        assertEquals("Bridge Alarm Final", saveEvents.getFirst().sceneTitleText(), "scene save carries title");
-        assertEquals("ring twice", saveEvents.getFirst().sceneNotesText(), "scene save carries notes");
-        assertEquals(Long.valueOf(10L), Long.valueOf(saveEvents.getFirst().locationId()),
-                "scene save carries location id");
-        events.clear();
-        button(view, "Loot-Platzhalter").fire();
-        assertEquals(Integer.valueOf(1), Integer.valueOf(events.size()), "loot add button publishes one event");
-        assertTrue(events.getFirst().widgetToken() > 0L, "loot add event carries a technical widget token");
-        assertEquals(Long.valueOf(1L), Long.valueOf(events.getFirst().sceneToken()),
-                "loot add event targets the scene card");
-        stage.hide();
-    }
-
-    private static void assertSceneDraftsAreSessionScoped(SessionPlannerSceneTimelineProjection projection) {
-        SessionPlannerViewModel viewModel = new SessionPlannerViewModel();
-        viewModel.applySetup(SessionPlannerViewModel.SetupState.from(
-                sessionSnapshot(11L, "Alpha"),
-                SessionPlannerParticipantsProjection.empty()));
-        viewModel.updateSceneDraft(1L, "Alpha Draft", "alpha notes", 10L);
-        viewModel.applySceneTimeline(projection);
-        assertEquals("Alpha Draft", viewModel.timelineProjectionProperty().get().scenes().getFirst().sceneTitle(),
-                "timeline model applies scene drafts inside the active session");
-        viewModel.applySetup(SessionPlannerViewModel.SetupState.from(
-                sessionSnapshot(12L, "Beta"),
-                SessionPlannerParticipantsProjection.empty()));
-        viewModel.applySceneTimeline(projection);
-        assertEquals("Gate Watch", viewModel.timelineProjectionProperty().get().scenes().getFirst().sceneTitle(),
-                "timeline model does not leak scene drafts across sessions with the same scene token");
-        assertEquals("guards count torches", viewModel.timelineProjectionProperty().get().scenes().getFirst().sceneNotes(),
-                "timeline model restores persisted scene notes after session switch");
-        assertEquals(Long.valueOf(7L),
-                Long.valueOf(viewModel.timelineProjectionProperty().get().scenes().getFirst().locationId()),
-                "timeline model restores persisted scene location after session switch");
+        assertEquals("Gate Watch",
+                viewModel.timelineProjectionProperty().get().scenes().getFirst().sceneTitle(),
+                "timeline model exposes the persisted scene title directly without a draft layer");
     }
 
     private static void assertLegacyLootLoadsIntoFirstEncounter() {
@@ -463,23 +412,23 @@ public final class SessionPlannerCatalogTest {
             long locationId
     ) {
         seedActiveParty(services);
-        encounterDaysField(main).setText("1");
-        button(main, "Setzen").fire();
-        layout(main);
-        comboBoxContaining(main, "Cora - Level 4");
+        encounterDaysField(controls).setText("1");
+        button(controls, "Setzen").fire();
+        layout(controls);
+        comboBoxContaining(controls, "Cora - Level 4");
 
-        comboBoxByPrompt(main, "Spieler").getSelectionModel().selectFirst();
-        button(main, "Hinzufuegen").fire();
-        layout(main);
+        comboBoxByPrompt(controls, "Spieler").getSelectionModel().selectFirst();
+        button(controls, "Hinzufuegen").fire();
+        layout(controls);
         assertEquals(Integer.valueOf(1), Integer.valueOf(participants.current().participants().size()),
-                "participant add through setup strip publishes one participant");
+                "participant add through setup section publishes one participant");
         assertEquals("Cora", participants.current().participants().getFirst().name(),
-                "participant add through setup strip resolves active party member");
-        assertTrue(hasLabel(main, "Cora"), "participant add renders selected player");
-        button(main, "X").fire();
-        layout(main);
+                "participant add through setup section resolves active party member");
+        assertTrue(hasLabel(controls, "Cora"), "participant add renders selected player in controls");
+        button(controls, "X").fire();
+        layout(controls);
         assertEquals(Integer.valueOf(0), Integer.valueOf(participants.current().participants().size()),
-                "participant remove through setup strip publishes empty participants");
+                "participant remove through setup section publishes empty participants");
 
         button(controls, "An Session anhaengen").fire();
         layout(main);
@@ -491,7 +440,8 @@ public final class SessionPlannerCatalogTest {
         assertEquals(Long.valueOf(SAVED_ENCOUNTER_PLAN_ID),
                 Long.valueOf(afterAttach.sessionScenes().getFirst().linkedEncounterPlanId()),
                 "saved encounter attach publishes linked plan id");
-        assertTrue(hasLabel(main, "Ash Gate Ambush"), "saved encounter attach renders linked plan name");
+        expandScene(main, 0);
+        assertTrue(hasLabel(main, "Ash Gate Ambush"), "expanded scene card renders linked plan name");
 
         long firstScene = afterAttach.sessionScenes().get(0).sceneToken();
         long secondScene = afterAttach.sessionScenes().get(1).sceneToken();
@@ -507,8 +457,9 @@ public final class SessionPlannerCatalogTest {
                 "scene save through card stores notes");
         assertEquals(Long.valueOf(locationId), Long.valueOf(afterSave.sessionScenes().getFirst().locationId()),
                 "scene save through card stores location id");
-        assertTrue(hasLabel(main, "Old Gate"), "scene save renders saved location label");
+        assertTrue(hasLabel(main, "Old Gate"), "scene header renders saved location label");
 
+        expandScene(main, 0);
         buttons(main, "Loot-Platzhalter").getFirst().fire();
         layout(main);
         assertEquals(Integer.valueOf(1),
@@ -532,24 +483,24 @@ public final class SessionPlannerCatalogTest {
                         .budgetPercentage().stripTrailingZeros().toPlainString(),
                 "allocation decrease through scene card restores first scene");
 
-        button(main, "Auswaehlen").fire();
-        layout(main);
+        expandScene(main, 1);
         assertEquals(Long.valueOf(secondScene), Long.valueOf(current.current().session().selectedEncounterId()),
-                "scene select through card updates current selected scene");
+                "expanding a scene card selects it as the current scene");
         assertTrue(sceneTimeline.current().sessionScenes().stream()
                         .anyMatch(scene -> scene.sceneToken() == secondScene && scene.selected()),
-                "scene select through card publishes selected scene");
+                "expanding a scene card publishes the selected scene");
 
         button(main, "Kurze Rast").fire();
         layout(main);
         assertEquals(SessionPlannerRestKind.SHORT_REST, sceneTimeline.current().restGaps().getFirst().restKind(),
-                "rest set through gap card publishes short rest");
-        assertTrue(hasLabel(main, "Kurze Rast"), "rest set through gap card renders short rest");
+                "rest set through gap separator publishes short rest");
+        assertTrue(hasLabelContaining(main, "Kurze Rast"), "rest set through gap separator renders short rest");
         button(main, "Leeren").fire();
         layout(main);
         assertEquals(SessionPlannerRestKind.NONE, sceneTimeline.current().restGaps().getFirst().restKind(),
-                "rest clear through gap card publishes no rest");
+                "rest clear through gap separator publishes no rest");
 
+        expandScene(main, 0);
         enabledButtons(main, "Runter").getFirst().fire();
         layout(main);
         assertEquals(Long.valueOf(secondScene),
@@ -573,9 +524,9 @@ public final class SessionPlannerCatalogTest {
             SessionPlannerParticipantsModel participants,
             features.sessionplanner.api.SessionPlannerSceneTimelineModel sceneTimeline
     ) {
-        comboBoxByPrompt(main, "Spieler").getSelectionModel().selectFirst();
-        button(main, "Hinzufuegen").fire();
-        layout(main);
+        comboBoxByPrompt(controls, "Spieler").getSelectionModel().selectFirst();
+        button(controls, "Hinzufuegen").fire();
+        layout(controls);
         assertEquals(Integer.valueOf(1), Integer.valueOf(participants.current().participants().size()),
                 "generation route has one resolved session participant");
         int scenesBeforePreview = sceneTimeline.current().sessionScenes().size();
@@ -619,6 +570,7 @@ public final class SessionPlannerCatalogTest {
         assertEquals(Long.valueOf(901L),
                 Long.valueOf(sceneTimeline.current().sessionScenes().getFirst().linkedEncounterPlanId()),
                 "confirmed Apply attaches imported Encounter plan");
+        expandScene(main, 0);
         assertTrue(hasLabel(main, "ENCOUNTER · Generated cache"),
                 "applied generated reward reopens through the normal timeline projection");
     }
@@ -642,23 +594,6 @@ public final class SessionPlannerCatalogTest {
                 .findFirst()
                 .map(WorldLocationSummary::locationId)
                 .orElseThrow(() -> new AssertionError("World Planner location fixture not published."));
-    }
-
-    private static SessionPlannerSessionSnapshot sessionSnapshot(long sessionId, String displayName) {
-        return new SessionPlannerSessionSnapshot(
-                new SessionPlannerSessionSnapshot.SessionState(
-                        sessionId,
-                        displayName,
-                        BigDecimal.ONE,
-                        "1",
-                        0L,
-                        false),
-                SessionPlannerSessionSnapshot.XpBudgetState.empty(),
-                SessionPlannerSessionSnapshot.RestAdviceState.empty(),
-                SessionPlannerSessionSnapshot.GoldBudgetState.placeholder(0),
-                List.of(),
-                List.of(),
-                "");
     }
 
     private static TextField encounterDaysField(Parent controls) {

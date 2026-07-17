@@ -1459,6 +1459,8 @@
     -fx-background-radius: 8;
     -fx-border-color: -sm-border-subtle;
     -fx-border-radius: 8;
+    -fx-padding: 10;
+    -fx-spacing: 6;
 }
 .session-generation-panel {
     -fx-padding: 10;
@@ -1502,6 +1504,16 @@
     -fx-background-radius: 8;
     -fx-border-color: -sm-border-subtle;
     -fx-border-radius: 8;
+    -fx-padding: 8 10 8 10;
+}
+.session-planner-encounter-header {
+    -fx-cursor: hand;
+    -fx-padding: 2 0 2 0;
+}
+.session-planner-rest-separator {
+    -fx-padding: 3 10 3 10;
+    -fx-background-color: rgba(255, 255, 255, 0.02);
+    -fx-background-radius: 6;
 }
 .session-planner-gap-card {
     -fx-background-color: rgba(255, 255, 255, 0.04);
