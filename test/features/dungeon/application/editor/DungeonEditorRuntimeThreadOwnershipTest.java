@@ -21,11 +21,47 @@ import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
+import features.dungeon.api.editor.DungeonEditorApi;
+import features.dungeon.api.editor.DungeonEditorIntent;
+import features.dungeon.api.editor.DungeonEditorState;
 import features.party.PartyServiceAssembly;
 import features.party.domain.roster.PartyRoster;
 import features.party.domain.roster.repository.PartyRosterRepository;
 
 final class DungeonEditorRuntimeThreadOwnershipTest {
+
+    @Test
+    void editorApiPublishesOneAtomicStateAndDispatchesThroughTheRuntimeOwner() {
+        InMemoryDungeonRepository repository = new InMemoryDungeonRepository();
+        repository.seed(1L, "Only");
+        DungeonEditorFeatureRuntimeRoot runtime = createRuntimeDirect(repository);
+        QueuedUiDispatcher dispatcher = new QueuedUiDispatcher();
+        DungeonEditorApi api = new DungeonEditorApiFacade(runtime, dispatcher);
+        List<DungeonEditorState> delivered = new ArrayList<>();
+        api.subscribe(delivered::add);
+
+        api.dispatch(new DungeonEditorIntent.CreateMap("Second"));
+
+        DungeonEditorState current = api.current();
+        assertEquals(2, repository.size());
+        assertEquals(2, current.catalog().size());
+        assertEquals("Second", current.selectedWindow().mapName());
+        assertTrue(current.publicationRevision() > 0L);
+        assertTrue(delivered.isEmpty(), "API publications must cross the supplied UI dispatcher");
+
+        dispatcher.runAll();
+
+        assertEquals(1, delivered.size());
+        DungeonEditorState published = delivered.getFirst();
+        assertEquals(current.publicationRevision(), published.publicationRevision());
+        assertEquals(current.catalog(), published.catalog());
+        assertEquals(current.selectedMapId(), published.selectedMapId());
+        assertEquals(current.selectedWindow(), published.selectedWindow());
+        assertEquals(current.selection(), published.selection());
+        assertEquals(current.preview(), published.preview());
+        assertEquals(current.inspector(), published.inspector());
+        assertEquals(current.commandStatus(), published.commandStatus());
+    }
 
     @Test
     void constructionDefersInitialReadbackAndDeliversTheCompletedOwnerFrame() {
@@ -285,6 +321,10 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
         void seed(long mapId, String name) {
             DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(mapId), name);
             maps.put(mapId, map);
+        }
+
+        int size() {
+            return maps.size();
         }
 
         @Override

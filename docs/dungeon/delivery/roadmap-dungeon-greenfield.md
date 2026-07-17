@@ -95,6 +95,20 @@ M0 Target Lock And Baseline
 M5 and M6 may proceed in parallel only after M4 provides the shared window-read
 and commit boundaries. M7 starts only after both are complete.
 
+## Current Migration State
+
+- Current foundation: M0 is complete on `main` through PR #489.
+- This slice: M1 slice 1 publishes `DungeonEditorApi.current/subscribe/dispatch`,
+  exposes it from `DungeonFeature.Component`, and adapts the existing runtime
+  into one immutable editor-state publication without creating a second
+  runtime owner.
+- Next step after this slice merges: M1 slice 2 moves controls and state-pane
+  consumers from direct application operations and compatibility readbacks to
+  the Editor API.
+- Remaining M1 boundary: map scene, hit translation, and pointer dispatch stay
+  on their current route until slice 3; the JavaFX-to-Application debt ledger
+  must not grow meanwhile.
+
 ## M0: Target Lock And Baseline
 
 ### Goal

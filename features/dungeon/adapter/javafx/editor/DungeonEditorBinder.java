@@ -6,6 +6,7 @@ import javafx.scene.Node;
 import shell.api.ShellBinding;
 import shell.api.ShellControls;
 import shell.api.ShellSlot;
+import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
 import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
 import features.dungeon.adapter.javafx.editor.DungeonEditorFeatureShellBinding;
 import platform.ui.catalogcrud.CatalogCrudControlsContentModel;
@@ -15,14 +16,26 @@ import features.dungeon.adapter.javafx.map.DungeonMapView;
 
 final class DungeonEditorBinder {
 
-    private final DungeonEditorRuntimeDependencies dependencies;
+    private final DungeonEditorFeatureRuntimeRoot runtimeRoot;
+    private final platform.ui.UiDispatcher uiDispatcher;
 
     DungeonEditorBinder(DungeonEditorRuntimeDependencies dependencies) {
-        this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
+        DungeonEditorRuntimeDependencies safeDependencies = Objects.requireNonNull(dependencies, "dependencies");
+        this.runtimeRoot = DungeonEditorFeatureRuntimeRoot.create(safeDependencies);
+        this.uiDispatcher = safeDependencies.uiDispatcher();
+    }
+
+    DungeonEditorBinder(
+            DungeonEditorFeatureRuntimeRoot runtimeRoot,
+            platform.ui.UiDispatcher uiDispatcher
+    ) {
+        this.runtimeRoot = Objects.requireNonNull(runtimeRoot, "runtimeRoot");
+        this.uiDispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
     }
 
     ShellBinding bind() {
-        DungeonEditorFeatureShellBinding featureShell = new DungeonEditorFeatureShellBinding(dependencies);
+        DungeonEditorFeatureShellBinding featureShell =
+                new DungeonEditorFeatureShellBinding(runtimeRoot, uiDispatcher);
         DungeonEditorControlsPanelModel controlsPanelModel = new DungeonEditorControlsPanelModel();
         CatalogCrudControlsContentModel mapCatalogContentModel = new CatalogCrudControlsContentModel();
         DungeonEditorStatePanelModel statePanelModel = new DungeonEditorStatePanelModel();
