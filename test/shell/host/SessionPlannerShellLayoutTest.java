@@ -285,9 +285,8 @@ public final class SessionPlannerShellLayoutTest {
 
     private static DungeonEditorContribution dungeonEditor(LayoutServices services) {
         DungeonEditorRuntimeDependencies dependencies = new DungeonEditorRuntimeDependencies(
-                new DungeonEditorRuntimeDependencies.CompatibilityReadbackModels(
-                        services.dungeon().editorControls(), services.dungeon().editorMapSurface(),
-                        services.dungeon().editorState()),
+                services.dungeon().editorControls(), services.dungeon().editorMapSurface(),
+                services.dungeon().editorState(),
                 services.dungeon().editor());
         DungeonEditorFeatureRuntimeRoot root = DungeonEditorFeatureRuntimeRoot.create(dependencies);
         return new DungeonEditorContribution(new DungeonEditorApiFacade(root, dependencies.uiDispatcher()));

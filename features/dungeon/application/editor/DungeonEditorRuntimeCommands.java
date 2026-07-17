@@ -24,7 +24,7 @@ final class DungeonEditorRuntimeCommands
     private final DungeonEditorStateModel stateModel;
     private final DungeonEditorMainViewInteractionState interactionState;
     private final DungeonEditorRuntimeDraftSession draftSession;
-    private final DungeonEditorRuntimeFramePublisher framePublisher;
+    private final DungeonEditorStatePublisher statePublisher;
     private final DungeonEditorStairDraftRuntimeOperation stairDraftOperation;
     private final DungeonEditorSelectedHandleRuntimeOperation selectedHandleOperation;
     private final ExecutionLane executionLane;
@@ -37,7 +37,7 @@ final class DungeonEditorRuntimeCommands
             DungeonEditorStateModel stateModel,
             DungeonEditorMainViewInteractionState interactionState,
             DungeonEditorRuntimeDraftSession draftSession,
-            DungeonEditorRuntimeFramePublisher framePublisher,
+            DungeonEditorStatePublisher statePublisher,
             DungeonEditorStairDraftRuntimeOperation stairDraftOperation,
             DungeonEditorSelectedHandleRuntimeOperation selectedHandleOperation,
             ExecutionLane executionLane
@@ -48,7 +48,7 @@ final class DungeonEditorRuntimeCommands
         this.stateModel = Objects.requireNonNull(stateModel, "stateModel");
         this.interactionState = Objects.requireNonNull(interactionState, "interactionState");
         this.draftSession = Objects.requireNonNull(draftSession, "draftSession");
-        this.framePublisher = Objects.requireNonNull(framePublisher, "framePublisher");
+        this.statePublisher = Objects.requireNonNull(statePublisher, "statePublisher");
         this.stairDraftOperation = Objects.requireNonNull(stairDraftOperation, "stairDraftOperation");
         this.selectedHandleOperation = Objects.requireNonNull(selectedHandleOperation, "selectedHandleOperation");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
@@ -63,7 +63,7 @@ final class DungeonEditorRuntimeCommands
         execute(() -> {
             interactionState.clear();
             draftSession.clearInlineLabelEditSession();
-            framePublisher.markDraftSessionChanged();
+            statePublisher.markDraftSessionChanged();
             stairDraftOperation.clear();
             applyInExecutionLane(() -> context.selectMap(mapIdValue));
         });
@@ -166,7 +166,7 @@ final class DungeonEditorRuntimeCommands
     public void updateStatePanelRoomNarrationDraft(RoomNarrationDraftInput input) {
         execute(() -> {
             draftSession.updateRoomNarrationDraft(currentSelectedMapIdValue(), input);
-            framePublisher.publishDraftSessionChanged();
+            statePublisher.publishDraftSessionChanged();
         });
     }
 
@@ -174,7 +174,7 @@ final class DungeonEditorRuntimeCommands
     public void updateStatePanelLabelNameDraft(DungeonEditorRuntimeLabelTarget target, String name) {
         execute(() -> {
             draftSession.updateLabelNameDraft(currentSelectedMapIdValue(), target, name);
-            framePublisher.publishDraftSessionChanged();
+            statePublisher.publishDraftSessionChanged();
         });
     }
 
@@ -182,7 +182,7 @@ final class DungeonEditorRuntimeCommands
     public void updateStatePanelCorridorPointDraft(String q, String r) {
         execute(() -> {
             draftSession.updateCorridorPointDraft(currentSelectedMapIdValue(), currentStateSelection(), q, r);
-            framePublisher.publishDraftSessionChanged();
+            statePublisher.publishDraftSessionChanged();
         });
     }
 
@@ -200,7 +200,7 @@ final class DungeonEditorRuntimeCommands
     public void updateStatePanelTransitionDescriptionDraft(long transitionId, String description) {
         execute(() -> {
             draftSession.updateTransitionDescriptionDraft(currentSelectedMapIdValue(), transitionId, description);
-            framePublisher.publishDraftSessionChanged();
+            statePublisher.publishDraftSessionChanged();
         });
     }
 
@@ -212,7 +212,7 @@ final class DungeonEditorRuntimeCommands
                     controlsModel.current(),
                     stateModel.current(),
                     input);
-            framePublisher.publishDraftSessionChanged();
+            statePublisher.publishDraftSessionChanged();
         });
     }
 
@@ -220,7 +220,7 @@ final class DungeonEditorRuntimeCommands
     public void updateStatePanelStairGeometryDraft(StairGeometryDraftInput input) {
         execute(() -> {
             draftSession.updateStairGeometryDraft(currentSelectedMapIdValue(), input);
-            framePublisher.publishDraftSessionChanged();
+            statePublisher.publishDraftSessionChanged();
         });
     }
 
@@ -228,7 +228,7 @@ final class DungeonEditorRuntimeCommands
     public void beginInlineLabelEdit(DungeonEditorInlineLabelEditSession session) {
         execute(() -> {
             draftSession.beginInlineLabelEdit(session);
-            framePublisher.publishDraftSessionChanged();
+            statePublisher.publishDraftSessionChanged();
         });
     }
 
@@ -236,7 +236,7 @@ final class DungeonEditorRuntimeCommands
     public void updateInlineLabelEditDraft(String text) {
         execute(() -> {
             draftSession.updateInlineLabelEditDraft(text);
-            framePublisher.publishDraftSessionChanged();
+            statePublisher.publishDraftSessionChanged();
         });
     }
 
@@ -244,7 +244,7 @@ final class DungeonEditorRuntimeCommands
     public void cancelInlineLabelEdit() {
         execute(() -> {
             draftSession.clearInlineLabelEditSession();
-            framePublisher.publishDraftSessionChanged();
+            statePublisher.publishDraftSessionChanged();
         });
     }
 
@@ -252,7 +252,7 @@ final class DungeonEditorRuntimeCommands
     public void commitInlineLabelEdit(String text) {
         execute(() -> {
             DungeonEditorInlineLabelEditSession editSession = draftSession.takeInlineLabelEditSession();
-            framePublisher.publishDraftSessionChanged();
+            statePublisher.publishDraftSessionChanged();
             if (!editSession.active() || !editSession.target().present() || text == null || text.isBlank()) {
                 return;
             }
@@ -265,7 +265,7 @@ final class DungeonEditorRuntimeCommands
         execute(() -> {
             long roomId = narration == null ? 0L : narration.roomId();
             draftSession.clearRoomNarrationDraft(currentSelectedMapIdValue(), roomId);
-            framePublisher.markDraftSessionChanged();
+            statePublisher.markDraftSessionChanged();
             applyInExecutionLane(() -> context.saveRoomNarration(narration));
         });
     }
@@ -279,7 +279,7 @@ final class DungeonEditorRuntimeCommands
     private void saveLabelNameInExecutionLane(DungeonEditorRuntimeLabelTarget target, String name) {
         DungeonEditorRuntimeLabelTarget safeTarget = DungeonEditorRuntimeLabelTarget.orEmpty(target);
         draftSession.clearLabelNameDraft(currentSelectedMapIdValue(), safeTarget);
-        framePublisher.markDraftSessionChanged();
+        statePublisher.markDraftSessionChanged();
         applyInExecutionLane(() -> context.saveLabelName(safeTarget, name));
     }
 
@@ -303,7 +303,7 @@ final class DungeonEditorRuntimeCommands
     public void saveTransitionDescription(long transitionId, String description) {
         execute(() -> {
             draftSession.clearTransitionDescriptionDraft(currentSelectedMapIdValue(), transitionId);
-            framePublisher.markDraftSessionChanged();
+            statePublisher.markDraftSessionChanged();
             applyInExecutionLane(() -> context.saveTransitionDescription(transitionId, description));
         });
     }
@@ -316,7 +316,7 @@ final class DungeonEditorRuntimeCommands
         }
         execute(() -> {
             draftSession.clearStairGeometryDraft(currentSelectedMapIdValue(), safeInput.stairId());
-            framePublisher.markDraftSessionChanged();
+            statePublisher.markDraftSessionChanged();
             applyInExecutionLane(() -> context.saveStairGeometry(safeInput));
         });
     }
@@ -356,14 +356,19 @@ final class DungeonEditorRuntimeCommands
             Supplier<DungeonEditorRuntimeContext.Result> action,
             Consumer<DungeonEditorRuntimeContext.Result> beforePublish
     ) {
-        DungeonEditorRuntimeFramePublisher.StateModelFrameDeferral<DungeonEditorRuntimeContext.Result> result =
-                framePublisher.deferStateModelFramePublication(action);
-        DungeonEditorRuntimeContext.Result operationResult = result.result() == null
+        var controlsBefore = controlsModel.current();
+        var mapSurfaceBefore = mapSurfaceModel.current();
+        var stateBefore = stateModel.current();
+        DungeonEditorRuntimeContext.Result result = action.get();
+        DungeonEditorRuntimeContext.Result operationResult = result == null
                 ? DungeonEditorRuntimeContext.Result.none()
-                : result.result();
-        if (operationResult.shouldPublish(result.stateModelFrameSuppressed())) {
+                : result;
+        boolean ownerReadbackChanged = !Objects.equals(controlsBefore, controlsModel.current())
+                || !Objects.equals(mapSurfaceBefore, mapSurfaceModel.current())
+                || !Objects.equals(stateBefore, stateModel.current());
+        if (operationResult.shouldPublish(ownerReadbackChanged)) {
             beforePublish.accept(operationResult);
-            framePublisher.publishCurrentToSubscribers();
+            statePublisher.publishCurrentToSubscribers();
         }
     }
 
@@ -373,7 +378,7 @@ final class DungeonEditorRuntimeCommands
             pointerOperations.clearPointerSession();
         }
         draftSession.clearInlineLabelEditSession();
-        framePublisher.markDraftSessionChanged();
+        statePublisher.markDraftSessionChanged();
     }
 
     private boolean activePublishedMapInteraction() {
@@ -399,7 +404,7 @@ final class DungeonEditorRuntimeCommands
     ) {
         if (transitionLinkCommitted(sourceTransitionId, result)) {
             draftSession.clearTransitionDestinationDraft(selectedMapIdValue, sourceTransitionId);
-            framePublisher.markDraftSessionChanged();
+            statePublisher.markDraftSessionChanged();
         }
     }
 

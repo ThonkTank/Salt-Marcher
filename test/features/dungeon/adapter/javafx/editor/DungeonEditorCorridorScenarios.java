@@ -19,7 +19,6 @@ import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonMapSummary;
 import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.api.DungeonTopologyElementRef;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreviewRenderDiffFrame;
 import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
 import features.dungeon.adapter.javafx.map.DungeonMapView;
@@ -1242,7 +1241,7 @@ final class DungeonEditorCorridorScenarios {
         addedPreviewCells.removeAll(committedCells);
         assertEquals(expectedAddedPreviewCells, addedPreviewCells,
                 message + " preview map adds exactly the candidate corridor route cells");
-        PreviewRenderDiffFrame previewRenderDiff = PreviewRenderDiffFrame.from(snapshot);
+        PreviewDiff previewRenderDiff = PreviewDiff.from(snapshot);
         assertTrue(!previewRenderDiff.isEmpty(),
                 message + " publishes runtime-prepared preview diff facts");
         boolean structuredRoutePublished = previewRenderDiff.changedAreas().stream()

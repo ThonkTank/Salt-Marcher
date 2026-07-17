@@ -1,17 +1,14 @@
 package features.dungeon.application.editor;
 
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import features.dungeon.api.DungeonEditorHandleRef;
 import features.dungeon.api.DungeonEditorHandleSnapshot;
 import features.dungeon.api.DungeonEditorMapSnapshot;
 import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateSnapshot;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreviewHandleDiffFrame;
 
 final class DungeonEditorHandlePointerTargets {
     private DungeonEditorHandlePointerTargets() {
@@ -34,38 +31,6 @@ final class DungeonEditorHandlePointerTargets {
             String hitRef = DungeonEditorMarkerHitRefs.marker(ref, handle.cell()).value();
             if (!hitRef.isBlank()) {
                 targets.put(hitRef, DungeonEditorRuntimePointerTarget.handle(ref));
-            }
-        }
-    }
-
-    static List<String> previewHandleHitRefs(
-            DungeonEditorMapSurfaceSnapshot snapshot,
-            DungeonEditorStateSnapshot.Selection selection
-    ) {
-        var previewDiff = DungeonEditorPreviewRenderDiffAssembler.from(snapshot);
-        if (previewDiff.isEmpty()) {
-            return List.of();
-        }
-        Set<String> hitRefs = new LinkedHashSet<>();
-        addPreviewHandleHitRefs(hitRefs, previewDiff.changedHandles(), selection, snapshot);
-        addPreviewHandleHitRefs(hitRefs, previewDiff.removedHandles(), selection, snapshot);
-        return List.copyOf(hitRefs);
-    }
-
-    private static void addPreviewHandleHitRefs(
-            Set<String> hitRefs,
-            List<PreviewHandleDiffFrame> handles,
-            DungeonEditorStateSnapshot.Selection selection,
-            DungeonEditorMapSurfaceSnapshot snapshot
-    ) {
-        for (PreviewHandleDiffFrame handle : handles) {
-            if (!visibleCanvasHandle(handle.ref(), selection)
-                    || !DungeonEditorProjectionLevelInclusion.includes(snapshot, handle.cell().level())) {
-                continue;
-            }
-            String hitRef = DungeonEditorMarkerHitRefs.marker(handle.ref(), handle.cell()).value();
-            if (!hitRef.isBlank()) {
-                hitRefs.add(hitRef);
             }
         }
     }

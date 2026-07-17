@@ -6,29 +6,26 @@ import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonEditorViewMode;
 
 public final class DungeonEditorFeatureRuntimeRoot
-        implements DungeonEditorRuntimeOperations,
-                DungeonEditorMapCatalogOperations,
+        implements DungeonEditorMapCatalogOperations,
                 DungeonEditorControlOperations,
                 DungeonEditorPointerInteractionOperations,
                 DungeonEditorStatePanelDraftOperations,
                 DungeonEditorInlineLabelOperations,
                 DungeonEditorTransitionStairOperations {
-    private final DungeonEditorRuntimeFramePublisher framePublisher;
+    private final DungeonEditorStatePublisher statePublisher;
     private final DungeonEditorRuntimeCommands commands;
     private final DungeonEditorPointerWorkflow pointerWorkflow;
 
     public static DungeonEditorFeatureRuntimeRoot create(DungeonEditorRuntimeDependencies dependencies) {
         DungeonEditorRuntimeDependencies safeDependencies =
                 Objects.requireNonNull(dependencies, "dependencies");
-        DungeonEditorRuntimeDependencies.CompatibilityReadbackModels readback =
-                safeDependencies.compatibilityReadbackModels();
         DungeonEditorMainViewInteractionState interactionState = new DungeonEditorMainViewInteractionState();
         DungeonEditorRuntimeContext context =
                 DungeonEditorRuntimeContext.create(safeDependencies, interactionState);
         return new DungeonEditorFeatureRuntimeRoot(
-                readback.controlsModel(),
-                readback.mapSurfaceModel(),
-                readback.stateModel(),
+                safeDependencies.controlsModel(),
+                safeDependencies.mapSurfaceModel(),
+                safeDependencies.stateModel(),
                 interactionState,
                 context,
                 safeDependencies.executionLane());
@@ -54,7 +51,7 @@ public final class DungeonEditorFeatureRuntimeRoot
         platform.execution.ExecutionLane safeExecutionLane =
                 Objects.requireNonNull(executionLane, "executionLane");
         DungeonEditorRuntimeDraftSession draftSession = new DungeonEditorRuntimeDraftSession();
-        framePublisher = new DungeonEditorRuntimeFramePublisher(
+        statePublisher = new DungeonEditorStatePublisher(
                 safeControlsModel,
                 safeMapSurfaceModel,
                 safeStateModel,
@@ -71,7 +68,7 @@ public final class DungeonEditorFeatureRuntimeRoot
                 safeStateModel,
                 safeInteractionState,
                 draftSession,
-                framePublisher,
+                statePublisher,
                 stairDraftOperation,
                 selectedHandleOperation,
                 safeExecutionLane);
@@ -92,46 +89,12 @@ public final class DungeonEditorFeatureRuntimeRoot
         commands.apply(safeContext::publishCurrent);
     }
 
-    public DungeonEditorRuntimeOperations operations() {
-        return this;
+    public features.dungeon.api.editor.DungeonEditorState currentState() {
+        return statePublisher.currentState();
     }
 
-    @Override
-    public DungeonEditorMapCatalogOperations catalog() {
-        return this;
-    }
-
-    @Override
-    public DungeonEditorControlOperations controls() {
-        return this;
-    }
-
-    @Override
-    public DungeonEditorPointerInteractionOperations pointer() {
-        return this;
-    }
-
-    @Override
-    public DungeonEditorStatePanelDraftOperations statePanelDrafts() {
-        return this;
-    }
-
-    @Override
-    public DungeonEditorInlineLabelOperations inlineLabels() {
-        return this;
-    }
-
-    @Override
-    public DungeonEditorTransitionStairOperations transitionStairs() {
-        return this;
-    }
-
-    public DungeonEditorRenderFrame currentFrame() {
-        return framePublisher.currentFrame();
-    }
-
-    public Runnable subscribe(Consumer<DungeonEditorRenderFrame> subscriber) {
-        return framePublisher.subscribe(subscriber);
+    public Runnable subscribe(Consumer<features.dungeon.api.editor.DungeonEditorState> subscriber) {
+        return statePublisher.subscribe(subscriber);
     }
 
     @Override

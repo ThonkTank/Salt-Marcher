@@ -23,7 +23,6 @@ import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonMapSummary;
 import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.api.DungeonTopologyElementRef;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreviewRenderDiffFrame;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
 import features.dungeon.adapter.javafx.map.DungeonMapView;
 import javafx.event.ActionEvent;
@@ -545,7 +544,7 @@ final class DungeonEditorRoomWallDoorScenarios {
                         new Cell(11, 9, 0),
                         new Cell(12, 9, 0)),
                 "DE-WALLRUN-DOOR-001 preview map moves the embedded door with the wall run");
-        PreviewRenderDiffFrame previewRenderDiff = PreviewRenderDiffFrame.from(previewSurface);
+        PreviewDiff previewRenderDiff = PreviewDiff.from(previewSurface);
         assertTrue(previewRenderDiff.changedBoundaries().stream()
                         .anyMatch(boundary -> "door".equalsIgnoreCase(boundary.kind())
                                 && sameEdge(boundary.edge(), new Cell(11, 9, 0), new Cell(12, 9, 0))),
@@ -1647,7 +1646,7 @@ final class DungeonEditorRoomWallDoorScenarios {
                 "DE-PREVIEW-001 publishes a preview map before release");
         assertEquals(cellRect(1, 1, 3, 3, 0), mapSnapshotCellSet(previewSurface.surface().previewMap()),
                 "DE-PREVIEW-001 preview map contains the painted room cells");
-        PreviewRenderDiffFrame previewRenderDiff = PreviewRenderDiffFrame.from(previewSurface);
+        PreviewDiff previewRenderDiff = PreviewDiff.from(previewSurface);
         assertEquals(1L, (long) previewRenderDiff.changedAreas().size(),
                 "DE-PREVIEW-001 structured preview diff publishes one changed room area");
         assertEquals(cellRect(1, 1, 3, 3, 0),

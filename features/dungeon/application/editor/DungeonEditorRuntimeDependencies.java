@@ -11,37 +11,31 @@ import features.dungeon.api.DungeonEditorMapSurfaceModel;
 import features.dungeon.api.DungeonEditorStateModel;
 
 public record DungeonEditorRuntimeDependencies(
-        CompatibilityReadbackModels compatibilityReadbackModels,
+        DungeonEditorControlsModel controlsModel,
+        DungeonEditorMapSurfaceModel mapSurfaceModel,
+        DungeonEditorStateModel stateModel,
         DungeonEditorRuntimeApplicationService editorRuntimeApplicationService,
         ExecutionLane executionLane,
         UiDispatcher uiDispatcher
 ) {
     public DungeonEditorRuntimeDependencies(
-            CompatibilityReadbackModels compatibilityReadbackModels,
+            DungeonEditorControlsModel controlsModel,
+            DungeonEditorMapSurfaceModel mapSurfaceModel,
+            DungeonEditorStateModel stateModel,
             DungeonEditorRuntimeApplicationService editorRuntimeApplicationService
     ) {
-        this(compatibilityReadbackModels, editorRuntimeApplicationService,
+        this(controlsModel, mapSurfaceModel, stateModel, editorRuntimeApplicationService,
                 DirectExecutionLane.INSTANCE, DirectUiDispatcher.INSTANCE);
     }
 
     public DungeonEditorRuntimeDependencies {
-        compatibilityReadbackModels =
-                Objects.requireNonNull(compatibilityReadbackModels, "compatibilityReadbackModels");
+        controlsModel = Objects.requireNonNull(controlsModel, "controlsModel");
+        mapSurfaceModel = Objects.requireNonNull(mapSurfaceModel, "mapSurfaceModel");
+        stateModel = Objects.requireNonNull(stateModel, "stateModel");
         editorRuntimeApplicationService =
                 Objects.requireNonNull(editorRuntimeApplicationService, "editorRuntimeApplicationService");
         executionLane = Objects.requireNonNull(executionLane, "executionLane");
         uiDispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
     }
 
-    public record CompatibilityReadbackModels(
-            DungeonEditorControlsModel controlsModel,
-            DungeonEditorMapSurfaceModel mapSurfaceModel,
-            DungeonEditorStateModel stateModel
-    ) {
-        public CompatibilityReadbackModels {
-            controlsModel = Objects.requireNonNull(controlsModel, "controlsModel");
-            mapSurfaceModel = Objects.requireNonNull(mapSurfaceModel, "mapSurfaceModel");
-            stateModel = Objects.requireNonNull(stateModel, "stateModel");
-        }
-    }
 }

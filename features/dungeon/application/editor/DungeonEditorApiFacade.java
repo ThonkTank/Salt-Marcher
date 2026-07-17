@@ -1,14 +1,10 @@
 package features.dungeon.application.editor;
 
 import features.dungeon.api.DungeonMapId;
-import features.dungeon.api.DungeonMapSummary;
 import features.dungeon.api.editor.DungeonEditorApi;
-import features.dungeon.api.editor.DungeonEditorDraftState;
 import features.dungeon.api.editor.DungeonEditorIntent;
 import features.dungeon.api.editor.DungeonEditorPointerInput;
 import features.dungeon.api.editor.DungeonEditorState;
-import features.dungeon.api.editor.DungeonEditorToolFamily;
-import features.dungeon.api.editor.DungeonEditorToolSelection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,7 +27,7 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
 
     @Override
     public DungeonEditorState current() {
-        return stateFrom(runtimeRoot.currentFrame());
+        return runtimeRoot.currentState();
     }
 
     @Override
@@ -258,146 +254,6 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
                 settings.selectedLevels());
     }
 
-    private static DungeonEditorState stateFrom(DungeonEditorRenderFrame frame) {
-        DungeonEditorRenderFrame safeFrame = frame == null ? DungeonEditorRenderFrame.empty() : frame;
-        DungeonEditorPreparedFrameFacts facts = safeFrame.preparedFacts();
-        DungeonEditorPreparedFrameFacts.MapSurfaceFrame mapSurface = facts.mapSurfaceFrame();
-        DungeonEditorPreparedFrameFacts.StatePanelFrame statePanel = facts.statePanelFrame();
-        DungeonMapId selectedMapId = facts.selectedMapIdValue() > 0L
-                ? new DungeonMapId(facts.selectedMapIdValue())
-                : null;
-        List<DungeonMapSummary> catalog = facts.mapEntries().stream()
-                .filter(entry -> entry.mapIdValue() > 0L)
-                .map(entry -> new DungeonMapSummary(
-                        new DungeonMapId(entry.mapIdValue()),
-                        entry.mapName(),
-                        entry.revision()))
-                .toList();
-        return new DungeonEditorState(
-                safeFrame.measurement().runtimeFramePublicationCount(),
-                0L,
-                catalog,
-                selectedMapId,
-                mapSurface.surface(),
-                mapSurface.viewMode(),
-                mapSurface.selectedTool(),
-                toolSelectionFrom(mapSurface.selectedTool()),
-                mapSurface.overlaySettings(),
-                mapSurface.projectionLevel(),
-                facts.reachableLevels(),
-                mapSurface.selection(),
-                draftFrom(statePanel, safeFrame.inlineLabelEditSession()),
-                mapSurface.preview(),
-                statePanel.inspector(),
-                new DungeonEditorState.CommandStatus(facts.busy(), facts.statusText()));
-    }
-
-    private static DungeonEditorToolSelection toolSelectionFrom(features.dungeon.api.DungeonEditorTool tool) {
-        features.dungeon.api.DungeonEditorTool safeTool = tool == null
-                ? features.dungeon.api.DungeonEditorTool.SELECT
-                : tool;
-        String key = safeTool.name();
-        DungeonEditorToolFamily family;
-        if (key.startsWith("ROOM_")) {
-            family = DungeonEditorToolFamily.ROOM;
-        } else if (key.startsWith("WALL_")) {
-            family = DungeonEditorToolFamily.WALL;
-        } else if (key.startsWith("DOOR_")) {
-            family = DungeonEditorToolFamily.DOOR;
-        } else if (key.startsWith("CORRIDOR_")) {
-            family = DungeonEditorToolFamily.CORRIDOR;
-        } else if (key.startsWith("FEATURE_")) {
-            family = DungeonEditorToolFamily.FEATURE;
-        } else if (key.startsWith("STAIR_")) {
-            family = DungeonEditorToolFamily.STAIR;
-        } else if (key.startsWith("TRANSITION_")) {
-            family = DungeonEditorToolFamily.TRANSITION;
-        } else {
-            family = DungeonEditorToolFamily.SELECT;
-        }
-        return new DungeonEditorToolSelection(family, key);
-    }
-
-    private static DungeonEditorDraftState draftFrom(
-            DungeonEditorPreparedFrameFacts.StatePanelFrame statePanel,
-            DungeonEditorInlineLabelEditSession inlineLabel
-    ) {
-        DungeonEditorPreparedFrameFacts.StatePanelFrame safeStatePanel = statePanel == null
-                ? DungeonEditorPreparedFrameFacts.StatePanelFrame.empty()
-                : statePanel;
-        DungeonEditorInlineLabelEditSession safeInlineLabel = inlineLabel == null
-                ? DungeonEditorInlineLabelEditSession.inactive()
-                : inlineLabel;
-        var label = safeStatePanel.labelNameDraft();
-        var labelTarget = label.target();
-        var corridor = safeStatePanel.corridorPointDraft();
-        var transitionDescription = safeStatePanel.transitionDescriptionDraft();
-        var transitionDestination = safeStatePanel.transitionDestinationDraft();
-        var stair = safeStatePanel.stairGeometryDraft();
-        return new DungeonEditorDraftState(
-                safeStatePanel.roomNarrationDrafts().rooms().stream()
-                        .map(room -> new DungeonEditorDraftState.RoomNarrationDraft(
-                                room.roomId(),
-                                room.visualPresent(),
-                                room.visualDescription(),
-                                room.exits().stream()
-                                        .map(exit -> new DungeonEditorDraftState.ExitNarrationDraft(
-                                                exit.label(),
-                                                exit.q(),
-                                                exit.r(),
-                                                exit.level(),
-                                                exit.direction(),
-                                                exit.description(),
-                                                exit.present()))
-                                        .toList()))
-                        .toList(),
-                new DungeonEditorDraftState.LabelNameDraft(
-                        labelTarget.kind().name(),
-                        labelTarget.targetId(),
-                        label.label(),
-                        label.fallbackName(),
-                        label.name(),
-                        label.present()),
-                new DungeonEditorDraftState.CorridorPointDraft(
-                        corridor.targetPresent(),
-                        corridor.present(),
-                        corridor.label(),
-                        corridor.q(),
-                        corridor.r(),
-                        corridor.level()),
-                new DungeonEditorDraftState.TransitionDescriptionDraft(
-                        transitionDescription.transitionId(),
-                        transitionDescription.description(),
-                        transitionDescription.present()),
-                new DungeonEditorDraftState.TransitionDestinationDraft(
-                        transitionDestination.targetPresent(),
-                        transitionDestination.sourceTransitionId(),
-                        transitionDestination.destinationTypeKey(),
-                        transitionDestination.mapId(),
-                        transitionDestination.tileId(),
-                        transitionDestination.transitionId(),
-                        transitionDestination.bidirectional(),
-                        transitionDestination.present()),
-                new DungeonEditorDraftState.StairGeometryDraft(
-                        stair.targetPresent(),
-                        stair.stairId(),
-                        stair.shapeName(),
-                        stair.directionName(),
-                        stair.dimension1(),
-                        stair.dimension2(),
-                        stair.present()),
-                new DungeonEditorDraftState.InlineLabelDraft(
-                        safeInlineLabel.active(),
-                        safeInlineLabel.target().kind().name(),
-                        safeInlineLabel.target().targetId(),
-                        safeInlineLabel.labelKind(),
-                        safeInlineLabel.ownerId(),
-                        safeInlineLabel.clusterId(),
-                        safeInlineLabel.topologyKind(),
-                        safeInlineLabel.topologyId(),
-                        safeInlineLabel.draftText()));
-    }
-
     static final class StateDelivery {
         private final Consumer<DungeonEditorState> subscriber;
         private final UiDispatcher uiDispatcher;
@@ -409,9 +265,8 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
             this.uiDispatcher = uiDispatcher;
         }
 
-        void deliver(DungeonEditorRenderFrame frame) {
+        void deliver(DungeonEditorState state) {
             long revision = deliveryRevision.incrementAndGet();
-            DungeonEditorState state = stateFrom(frame);
             uiDispatcher.dispatch(() -> applyIfCurrent(revision, state));
         }
 
