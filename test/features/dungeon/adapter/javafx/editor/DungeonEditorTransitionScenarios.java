@@ -201,6 +201,11 @@ final class DungeonEditorTransitionScenarios {
                 "DE-TRN-003 invalid entrance-link target map leaves target transitions unchanged");
         assertEquals(sourceRef, runtime.mapSurfaceModel().current().selection().topologyRef(),
                 "DE-TRN-003 invalid entrance-link target map keeps source selected");
+        assertEquals(
+                features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.MISSING_TRANSITION_DESTINATION,
+                ((features.dungeon.api.editor.DungeonEditorCommandOutcome.Rejected)
+                        runtime.controlsModel().current().commandOutcome()).reason(),
+                "DE-TRN-003 invalid target map publishes typed missing-destination rejection");
         assertTransitionEntranceLinkDraft(
                 stateView,
                 targetMapId + 1000L,
@@ -1144,6 +1149,11 @@ final class DungeonEditorTransitionScenarios {
                 scenario + " keeps projection level stable");
         assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
                 scenario + " keeps preview empty");
+        assertEquals(
+                features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.REFERENCED_CONNECTION,
+                ((features.dungeon.api.editor.DungeonEditorCommandOutcome.Rejected)
+                        runtime.controlsModel().current().commandOutcome()).reason(),
+                scenario + " publishes typed referenced-connection rejection");
         assertTrue(renderHasGlyphAt(binding.mapContentModel(), transitionRef, transitionCenter.getX(), transitionCenter.getY(), false),
                 scenario + " keeps rendered transition marker");
     }

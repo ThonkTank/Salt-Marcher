@@ -1,6 +1,7 @@
 package features.dungeon.application.editor.session;
 
 import org.jspecify.annotations.Nullable;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import features.dungeon.api.editor.DungeonEditorToolFamily;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
 
@@ -80,6 +81,9 @@ public final class DungeonEditorSessionWorkflow {
         if (effect.getStatusText() != null) {
             session.replace(session.current().withStatusText(effect.getStatusText()));
         }
+        if (effect.getRejection() != null) {
+            session.replace(session.current().withCommandOutcome(effect.getRejection()));
+        }
         if (effect.isClearSelection()) {
             session.replace(session.current().clearSelection().clearPreview());
         } else if (effect.getSelection() != null) {
@@ -96,6 +100,10 @@ public final class DungeonEditorSessionWorkflow {
 
     public void clearPreviewWithStatus(String statusText) {
         session.replace(session.current().clearPreview().withStatusText(statusText));
+    }
+
+    public void clearPreviewWithCommandOutcome(DungeonEditorCommandOutcome outcome) {
+        session.replace(session.current().clearPreviewWithCommandOutcome(outcome));
     }
 
     public DungeonEditorSessionSnapshot.SnapshotData reconcileSnapshot(

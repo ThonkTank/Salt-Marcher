@@ -4,6 +4,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 
 public final class DungeonEditorFeatureRuntimeRoot
         implements DungeonEditorMapCatalogOperations,
@@ -165,6 +166,10 @@ public final class DungeonEditorFeatureRuntimeRoot
     @Override
     public void clearPointerSession() {
         pointerWorkflow.clearPointerSession();
+    }
+
+    public void rejectCommand(DungeonEditorCommandOutcome.RejectionReason reason) {
+        commands.rejectCommand(reason);
     }
 
     @Override

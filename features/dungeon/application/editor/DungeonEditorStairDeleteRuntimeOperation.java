@@ -41,7 +41,9 @@ final class DungeonEditorStairDeleteRuntimeOperation {
         boolean deleted = context.deleteStair(context.selectedMapId(), stairId);
         if (deleted) {
             context.applySessionEffect(DungeonEditorSessionEffect.clearedSelection());
-            context.clearPreviewWithStatus(context.currentFacts().mutationStatusText());
+            context.clearPreviewWithCommandOutcome(context.currentFacts().commandOutcome());
+        } else {
+            context.reject(features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.REFERENCED_CONNECTION);
         }
         return context.publishCurrent();
     }

@@ -6,6 +6,7 @@ import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapId;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSummary;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 
 public final class DungeonEditorDungeonState {
 
@@ -63,12 +64,12 @@ public final class DungeonEditorDungeonState {
         }
     }
 
-    public record MutationFacts(SnapshotFacts snapshot, String statusText) {
+    public record MutationFacts(SnapshotFacts snapshot, DungeonEditorCommandOutcome commandOutcome) {
         public MutationFacts {
             snapshot = snapshot == null
                     ? new SnapshotFacts("Dungeon Map", 0, DungeonEditorWorkspaceValues.MapSnapshot.empty())
                     : snapshot;
-            statusText = statusText == null ? "" : statusText;
+            commandOutcome = commandOutcome == null ? DungeonEditorCommandOutcome.idle() : commandOutcome;
         }
     }
 

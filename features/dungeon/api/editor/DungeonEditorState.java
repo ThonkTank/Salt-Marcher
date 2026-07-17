@@ -62,13 +62,18 @@ public record DungeonEditorState(
                 CommandStatus.idle());
     }
 
-    public record CommandStatus(boolean busy, String message) {
+    public record CommandStatus(
+            boolean busy,
+            DungeonEditorCommandOutcome outcome,
+            String message
+    ) {
         public CommandStatus {
+            outcome = outcome == null ? DungeonEditorCommandOutcome.idle() : outcome;
             message = message == null ? "" : message;
         }
 
         public static CommandStatus idle() {
-            return new CommandStatus(false, "");
+            return new CommandStatus(false, DungeonEditorCommandOutcome.idle(), "");
         }
     }
 }

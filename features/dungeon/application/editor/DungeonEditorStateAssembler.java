@@ -43,7 +43,10 @@ final class DungeonEditorStateAssembler {
                 draftFrom(safeDrafts),
                 safeMapSurface.preview(),
                 safeState.inspector(),
-                new DungeonEditorState.CommandStatus(false, statusText(safeControls)));
+                new DungeonEditorState.CommandStatus(
+                        false,
+                        safeControls.commandOutcome(),
+                        statusText(safeControls)));
     }
 
     private static String statusText(DungeonEditorControlsSnapshot controls) {

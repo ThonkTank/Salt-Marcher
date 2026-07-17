@@ -10,7 +10,6 @@ import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.api.editor.DungeonEditorToolFamily;
 
 final class DungeonEditorFeatureMarkerRuntimeOperation {
-    private static final String INVALID_FEATURE_MARKER_STATUS = "Feature-Markierung ungueltig.";
     private static final long NO_MARKER_ID = 0L;
 
     private final DungeonEditorRuntimeContext context;
@@ -55,7 +54,7 @@ final class DungeonEditorFeatureMarkerRuntimeOperation {
                 context.selectedMapId(),
                 kind,
                 anchor)) {
-            context.clearPreviewWithStatus(INVALID_FEATURE_MARKER_STATUS);
+            context.reject(features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.INVALID_TARGET);
             return context.publishCurrent();
         }
         long markerId = context.createFeatureMarker(
@@ -63,12 +62,11 @@ final class DungeonEditorFeatureMarkerRuntimeOperation {
                 kind,
                 anchor);
         if (markerId <= NO_MARKER_ID) {
-            context.clearPreviewWithStatus(INVALID_FEATURE_MARKER_STATUS);
+            context.reject(features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.INVALID_TARGET);
             return context.publishCurrent();
         }
-        context.applySessionEffect(DungeonEditorSessionEffect.select(
-                markerSelection(markerId),
-                context.currentFacts().mutationStatusText()));
+        context.applySessionEffect(DungeonEditorSessionEffect.select(markerSelection(markerId)));
+        context.clearPreviewWithCommandOutcome(context.currentFacts().commandOutcome());
         return context.publishCurrent();
     }
 
@@ -91,7 +89,9 @@ final class DungeonEditorFeatureMarkerRuntimeOperation {
         boolean deleted = context.deleteFeatureMarker(context.selectedMapId(), markerId);
         if (deleted) {
             context.applySessionEffect(DungeonEditorSessionEffect.clearedSelection());
-            context.clearPreviewWithStatus(context.currentFacts().mutationStatusText());
+            context.clearPreviewWithCommandOutcome(context.currentFacts().commandOutcome());
+        } else {
+            context.reject(features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.REFERENCED_CONNECTION);
         }
         return context.publishCurrent();
     }

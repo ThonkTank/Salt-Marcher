@@ -8,6 +8,7 @@ import features.dungeon.application.editor.DungeonEditorMainViewInteractionValue
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.InteractionState;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.PendingCorridorTarget;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.PointerState;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 
 final class DungeonEditorCorridorInteractionUseCase {
     private final DungeonEditorCorridorTargetHelper targetService = new DungeonEditorCorridorTargetHelper();
@@ -63,7 +64,9 @@ final class DungeonEditorCorridorInteractionUseCase {
         if (!routeValidationHelper.hasValidRoute(snapshot, facingTargets.start(), facingTargets.target())) {
             return new DungeonEditorMainViewInterpretation(
                     nextState,
-                    DungeonEditorSessionEffect.select(facingTargets.target().selection(), "Korridorroute blockiert."));
+                    DungeonEditorSessionEffect.selectRejected(
+                            facingTargets.target().selection(),
+                            DungeonEditorCommandOutcome.RejectionReason.BLOCKED_ROUTE));
         }
         return new DungeonEditorMainViewInterpretation(
                 nextState,

@@ -22,7 +22,10 @@ import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.api.editor.DungeonEditorApi;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import features.dungeon.api.editor.DungeonEditorIntent;
+import features.dungeon.api.editor.DungeonEditorPointerGesture;
+import features.dungeon.api.editor.DungeonEditorPointerInput;
 import features.dungeon.api.editor.DungeonEditorState;
 import features.dungeon.api.editor.DungeonEditorToolFamily;
 import features.dungeon.api.editor.DungeonEditorToolOptions;
@@ -32,6 +35,39 @@ import features.party.domain.roster.PartyRoster;
 import features.party.domain.roster.repository.PartyRosterRepository;
 
 final class DungeonEditorRuntimeThreadOwnershipTest {
+
+    @Test
+    void stalePointerInputPublishesTypedRejectionWithoutChangingAuthoredState() {
+        InMemoryDungeonRepository repository = new InMemoryDungeonRepository();
+        repository.seed(1L, "Only");
+        DungeonEditorApi api = new DungeonEditorApiFacade(
+                createRuntimeDirect(repository),
+                DirectUiDispatcher.INSTANCE);
+        DungeonEditorState before = api.current();
+
+        api.dispatch(new DungeonEditorIntent.Pointer(new DungeonEditorPointerInput(
+                0L,
+                DungeonEditorPointerInput.Action.PRESSED,
+                DungeonEditorToolSelection.select(),
+                new DungeonEditorPointerGesture(
+                        DungeonEditorPointerGesture.Button.PRIMARY,
+                        false,
+                        false),
+                0.0,
+                0.0,
+                List.of(DungeonEditorPointerInput.Target.empty()),
+                0,
+                DungeonEditorIntent.TransitionDestinationInput.empty())));
+
+        DungeonEditorState after = api.current();
+        DungeonEditorCommandOutcome.Rejected rejected =
+                (DungeonEditorCommandOutcome.Rejected) after.commandStatus().outcome();
+        assertEquals(DungeonEditorCommandOutcome.RejectionReason.STALE_REVISION, rejected.reason());
+        assertEquals(before.selectedWindow(), after.selectedWindow(),
+                "stale pointer input leaves authored state and revision unchanged");
+        assertTrue(after.publicationRevision() > before.publicationRevision(),
+                "stale pointer rejection publishes one new atomic editor state");
+    }
 
     @Test
     void editorApiPublishesTheTypedToolOptionSelectedByItsConsumer() {

@@ -2,6 +2,7 @@ package features.dungeon.api;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
 
 public record DungeonEditorControlsSnapshot(
@@ -13,7 +14,8 @@ public record DungeonEditorControlsSnapshot(
         DungeonOverlaySettings overlaySettings,
         List<Integer> reachableLevels,
         boolean surfaceLoaded,
-        String statusText
+        String statusText,
+        DungeonEditorCommandOutcome commandOutcome
 ) {
     public DungeonEditorControlsSnapshot {
         maps = maps == null ? List.of() : List.copyOf(maps);
@@ -22,6 +24,7 @@ public record DungeonEditorControlsSnapshot(
         overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
         reachableLevels = reachableLevels == null ? List.of(0) : List.copyOf(reachableLevels);
         statusText = statusText == null ? "" : statusText;
+        commandOutcome = commandOutcome == null ? DungeonEditorCommandOutcome.idle() : commandOutcome;
     }
 
     public static DungeonEditorControlsSnapshot empty(String statusText) {
@@ -34,6 +37,7 @@ public record DungeonEditorControlsSnapshot(
                 DungeonOverlaySettings.defaults(),
                 List.of(0),
                 false,
-                statusText);
+                statusText,
+                DungeonEditorCommandOutcome.idle());
     }
 }

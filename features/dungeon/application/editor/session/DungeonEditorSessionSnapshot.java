@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Inspector;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapId;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
 
 public final class DungeonEditorSessionSnapshot {
@@ -23,7 +24,8 @@ public final class DungeonEditorSessionSnapshot {
                 DungeonEditorSessionValues.Selection.empty(),
                 null,
                 DungeonEditorSessionValues.Preview.none(),
-                statusText);
+                statusText,
+                DungeonEditorCommandOutcome.idle());
     }
 
     public record SnapshotData(
@@ -36,7 +38,8 @@ public final class DungeonEditorSessionSnapshot {
             DungeonEditorSessionValues.Selection selection,
             @Nullable SurfaceData surface,
             DungeonEditorSessionValues.Preview preview,
-            String statusText
+            String statusText,
+            DungeonEditorCommandOutcome commandOutcome
     ) {
         public SnapshotData {
             maps = maps == null ? List.of() : List.copyOf(maps);
@@ -46,6 +49,7 @@ public final class DungeonEditorSessionSnapshot {
             selection = selection == null ? DungeonEditorSessionValues.Selection.empty() : selection;
             preview = preview == null ? DungeonEditorSessionValues.Preview.none() : preview;
             statusText = statusText == null ? "" : statusText;
+            commandOutcome = commandOutcome == null ? DungeonEditorCommandOutcome.idle() : commandOutcome;
         }
 
     }
@@ -71,7 +75,8 @@ public final class DungeonEditorSessionSnapshot {
                 safeSession.toolSelection(),
                 safeSession.projectionLevel(),
                 safeSession.overlaySettings(),
-                safeSession.statusText());
+                safeSession.statusText(),
+                safeSession.commandOutcome());
     }
 
     public static SessionFrameData sessionFrameData(@Nullable DungeonEditorSession session) {
@@ -88,13 +93,15 @@ public final class DungeonEditorSessionSnapshot {
             DungeonEditorToolSelection toolSelection,
             int projectionLevel,
             DungeonEditorSessionValues.OverlaySettings overlaySettings,
-            String statusText
+            String statusText,
+            DungeonEditorCommandOutcome commandOutcome
     ) {
         public ControlsData {
             viewMode = viewMode == null ? DungeonEditorSessionValues.ViewMode.defaultMode() : viewMode;
             toolSelection = toolSelection == null ? DungeonEditorToolSelection.select() : toolSelection;
             overlaySettings = overlaySettings == null ? DungeonEditorSessionValues.OverlaySettings.defaults() : overlaySettings;
             statusText = statusText == null ? "" : statusText;
+            commandOutcome = commandOutcome == null ? DungeonEditorCommandOutcome.idle() : commandOutcome;
         }
 
     }

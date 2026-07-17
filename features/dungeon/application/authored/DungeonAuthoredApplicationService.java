@@ -66,6 +66,7 @@ import features.dungeon.api.DungeonAuthoredMutationModel;
 import features.dungeon.api.DungeonAuthoredReadModel;
 import features.dungeon.api.DungeonMapCatalogModel;
 import features.dungeon.api.authored.DungeonAuthoredApi;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import features.dungeon.api.DungeonViewportRequest;
 import features.dungeon.api.DungeonViewportSnapshot;
 
@@ -211,9 +212,15 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         }
         List<Edge> safeEdges = List.copyOf(Objects.requireNonNull(edges, "edges"));
         BoundaryKind safeBoundaryKind = Objects.requireNonNull(boundaryKind, "boundaryKind");
+        DungeonEditorCommandOutcome.RejectionReason rejectionReason = !deleteMode
+                ? DungeonEditorCommandOutcome.RejectionReason.NO_EFFECT
+                : safeBoundaryKind == BoundaryKind.WALL
+                        ? DungeonEditorCommandOutcome.RejectionReason.PROTECTED_EXTERIOR_WALL
+                        : DungeonEditorCommandOutcome.RejectionReason.REFERENCED_CONNECTION;
         OperationResultData result = mutationPipeline.executeOperation(
                 domainMapId(mapId),
-                current -> current.editClusterBoundaries(clusterId, safeEdges, safeBoundaryKind, deleteMode));
+                current -> current.editClusterBoundaries(clusterId, safeEdges, safeBoundaryKind, deleteMode),
+                rejectionReason);
         publicationOperations.publishMutation(result, session.dungeonState());
     }
 
@@ -297,7 +304,8 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                 mutationPipeline.snapshotData(saved, derive(saved)),
                 true,
                 List.of(),
-                List.of(undo ? "undo applied" : "redo applied"));
+                List.of(undo ? "undo applied" : "redo applied"),
+                DungeonEditorCommandOutcome.accepted(saved.revision()));
         publicationOperations.publishMutation(result, session.dungeonState());
     }
 
@@ -491,9 +499,20 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         }
     }
 
-    public record OperationResult(boolean present) {
+    public record OperationResult(DungeonEditorCommandOutcome commandOutcome) {
+        public OperationResult {
+            commandOutcome = commandOutcome == null ? DungeonEditorCommandOutcome.idle() : commandOutcome;
+        }
+
         public static OperationResult fromNullable(Object result) {
-            return new OperationResult(result != null);
+            return new OperationResult(result == null
+                    ? DungeonEditorCommandOutcome.rejected(
+                            DungeonEditorCommandOutcome.RejectionReason.MISSING_TRANSITION_DESTINATION)
+                    : DungeonEditorCommandOutcome.accepted(0L));
+        }
+
+        public boolean present() {
+            return commandOutcome instanceof DungeonEditorCommandOutcome.Accepted;
         }
     }
 
@@ -526,6 +545,14 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                 @Nullable DungeonMapIdentity mapId,
                 @Nullable AuthoredMapMutation operation
         ) {
+            return executeOperation(mapId, operation, DungeonEditorCommandOutcome.RejectionReason.NO_EFFECT);
+        }
+
+        private OperationResultData executeOperation(
+                @Nullable DungeonMapIdentity mapId,
+                @Nullable AuthoredMapMutation operation,
+                DungeonEditorCommandOutcome.RejectionReason rejectionReason
+        ) {
             DungeonMap current = loadMap(mapId);
             DungeonMap operationResult = applyOperation(current, operation);
             boolean changed = !operationResult.equals(current);
@@ -542,7 +569,11 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             if (changed) {
                 editHistory.record(current, saved);
             }
-            return new OperationResultData(snapshotData(saved, derived), changed, validationMessages, reactionMessages);
+            DungeonEditorCommandOutcome outcome = changed
+                    ? DungeonEditorCommandOutcome.accepted(saved.revision())
+                    : DungeonEditorCommandOutcome.rejected(rejectionReason);
+            return new OperationResultData(
+                    snapshotData(saved, derived), changed, validationMessages, reactionMessages, outcome);
         }
 
         private OperationResultData previewOperation(
@@ -556,7 +587,8 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     snapshotData(mutated, derived),
                     !mutated.equals(current),
                     OPERATION_FEEDBACK_POLICY.validationMessages(current, mutated),
-                    OPERATION_FEEDBACK_POLICY.reactionMessages(current, mutated));
+                    OPERATION_FEEDBACK_POLICY.reactionMessages(current, mutated),
+                    DungeonEditorCommandOutcome.idle());
         }
 
         private LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshotData(DungeonMap dungeonMap) {
@@ -610,7 +642,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     : snapshotPublication.stateFacts();
             state.replaceMutation(snapshot == null
                     ? null
-                    : new DungeonEditorDungeonState.MutationFacts(snapshot, mutationStatusText(mutation)));
+                    : new DungeonEditorDungeonState.MutationFacts(snapshot, mutation.commandOutcome()));
             if (mutation != null && snapshotPublication != null) {
                 publishedState.publishMutation(new DungeonAuthoredPublication.Mutation(
                         snapshotPublication.publishedSnapshot(),
@@ -632,21 +664,6 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     snapshot.revision());
         }
 
-        private String mutationStatusText(@Nullable OperationResultData mutation) {
-            if (mutation == null) {
-                return "";
-            }
-            if (!mutation.changed()) {
-                return "Keine Änderung angewendet.";
-            }
-            if (!mutation.reactionMessages().isEmpty()) {
-                return mutation.reactionMessages().getFirst();
-            }
-            if (!mutation.validationMessages().isEmpty()) {
-                return mutation.validationMessages().getFirst();
-            }
-            return "";
-        }
     }
 
     private final class LoadOperations {
@@ -697,14 +714,16 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     current -> current.createCorridor(
                             stairIdForCorridor(current, startEndpoint, endEndpoint, true),
                             startEndpoint,
-                            endEndpoint));
+                            endEndpoint),
+                    DungeonEditorCommandOutcome.RejectionReason.BLOCKED_ROUTE);
             publicationOperations.publishMutation(result, session.dungeonState());
         }
 
         private void deleteCorridor(MapId mapId, CorridorDeletionTarget target, Session session) {
             OperationResultData result = mutationPipeline.executeOperation(
                     domainMapId(mapId),
-                    current -> CORRIDOR_AUTHORING.deleteCorridor(current, target));
+                    current -> CORRIDOR_AUTHORING.deleteCorridor(current, target),
+                    DungeonEditorCommandOutcome.RejectionReason.BLOCKED_ROUTE);
             publicationOperations.publishMutation(result, session.dungeonState());
         }
 
@@ -755,7 +774,8 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             long stairId = repository.nextStairId();
             OperationResultData result = mutationPipeline.executeOperation(
                     domainMapId(mapId),
-                    current -> current.createStair(stairId, spec));
+                    current -> current.createStair(stairId, spec),
+                    DungeonEditorCommandOutcome.RejectionReason.INVALID_STAIR_GEOMETRY);
             publicationOperations.publishMutation(result, session.dungeonState());
         }
 
@@ -772,7 +792,10 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                 return false;
             }
             OperationResultData result =
-                    mutationPipeline.executeOperation(mapIdentity, current -> current.deleteStair(stairId));
+                    mutationPipeline.executeOperation(
+                            mapIdentity,
+                            current -> current.deleteStair(stairId),
+                            DungeonEditorCommandOutcome.RejectionReason.REFERENCED_CONNECTION);
             publicationOperations.publishMutation(result, session.dungeonState());
             return true;
         }
@@ -793,7 +816,8 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                             transitionId,
                             current.metadata().mapId().value(),
                             anchor,
-                            destination)));
+                            destination)),
+                    DungeonEditorCommandOutcome.RejectionReason.MISSING_TRANSITION_DESTINATION);
             publicationOperations.publishMutation(result, session.dungeonState());
         }
 
@@ -817,7 +841,10 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                 return false;
             }
             OperationResultData result =
-                    mutationPipeline.executeOperation(mapIdentity, current -> current.deleteTransition(transitionId));
+                    mutationPipeline.executeOperation(
+                            mapIdentity,
+                            current -> current.deleteTransition(transitionId),
+                            DungeonEditorCommandOutcome.RejectionReason.REFERENCED_CONNECTION);
             publicationOperations.publishMutation(result, session.dungeonState());
             return true;
         }
@@ -1162,7 +1189,8 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     mutationPipeline.snapshotData(savedSourceMap, derived),
                     true,
                     List.of(),
-                    List.of("transition link saved"));
+                    List.of("transition link saved"),
+                    DungeonEditorCommandOutcome.accepted(savedSourceMap.revision()));
         }
 
         private @Nullable LoadedTransitionLink loadTransitionLink(
@@ -1331,7 +1359,8 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             }
             OperationResultData result = mutationPipeline.executeOperation(
                     domainMapId(mapId),
-                    current -> current.saveStairGeometry(stairId, spec));
+                    current -> current.saveStairGeometry(stairId, spec),
+                    DungeonEditorCommandOutcome.RejectionReason.INVALID_STAIR_GEOMETRY);
             publicationOperations.publishMutation(result, state);
         }
 
@@ -1668,11 +1697,13 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot,
             boolean changed,
             List<String> validationMessages,
-            List<String> reactionMessages
+            List<String> reactionMessages,
+            DungeonEditorCommandOutcome commandOutcome
     ) {
         OperationResultData {
             validationMessages = validationMessages == null ? List.of() : List.copyOf(validationMessages);
             reactionMessages = reactionMessages == null ? List.of() : List.copyOf(reactionMessages);
+            commandOutcome = commandOutcome == null ? DungeonEditorCommandOutcome.idle() : commandOutcome;
         }
 
         @Override

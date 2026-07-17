@@ -7,6 +7,7 @@ import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapId;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSummary;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 
 final class DungeonEditorDungeonStateStore {
     private List<MapSummary> catalog = List.of();
@@ -50,7 +51,7 @@ final class DungeonEditorDungeonStateStore {
                 mutationMapId,
                 snapshot == null ? null : snapshot.map(),
                 currentSurface(mapId, selection, preview),
-                mutation == null ? "" : mutation.statusText(),
+                mutation == null ? DungeonEditorCommandOutcome.idle() : mutation.commandOutcome(),
                 preview == DungeonEditorSessionValues.Preview.none() || this.preview == null
                         ? ""
                         : this.preview.statusText());

@@ -73,7 +73,7 @@ final class DungeonEditorSelectedHandleRuntimeOperation {
             return DungeonEditorRuntimeContext.Result.none();
         }
         context.moveCorridorHandle(selectedMapId, preview);
-        context.clearPreviewWithStatus(context.currentFacts().mutationStatusText());
+        context.clearPreviewWithCommandOutcome(context.currentFacts().commandOutcome());
         return context.publishCurrent();
     }
 

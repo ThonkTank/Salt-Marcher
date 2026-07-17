@@ -24,6 +24,7 @@ import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorSessionWorkflow;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceCoreGeometry;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapId;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
@@ -32,8 +33,6 @@ import features.dungeon.application.editor.helper.DungeonEditorSessionPreviewHel
 import features.dungeon.application.editor.helper.DungeonEditorSnapshotStateProjectionHelper;
 
 public final class DungeonEditorRuntimeApplicationService {
-
-    private static final String INVALID_STAIR_GEOMETRY_STATUS = "Treppengeometrie ungueltig.";
 
     private final DungeonAuthoredApplicationService authoredService;
     private final DungeonEditorPublishedState editorPublishedState;
@@ -108,6 +107,10 @@ public final class DungeonEditorRuntimeApplicationService {
             workflow.clearPreviewWithStatus(statusText);
         }
 
+        public void clearPreviewWithCommandOutcome(DungeonEditorCommandOutcome outcome) {
+            workflow.clearPreviewWithCommandOutcome(outcome);
+        }
+
         public @Nullable MapSnapshot loadCommittedSnapshot() {
             return snapshotBuilder.loadCommittedSnapshot(workflow.session().selectedMapId());
         }
@@ -180,6 +183,7 @@ public final class DungeonEditorRuntimeApplicationService {
             MapId mapId = workflow.session().selectedMapId();
             if (mapId != null) {
                 authoredService.undo(mapId, authored);
+                workflow.clearPreviewWithCommandOutcome(currentFacts().commandOutcome());
             }
             return refreshAuthoredSnapshot();
         }
@@ -188,6 +192,7 @@ public final class DungeonEditorRuntimeApplicationService {
             MapId mapId = workflow.session().selectedMapId();
             if (mapId != null) {
                 authoredService.redo(mapId, authored);
+                workflow.clearPreviewWithCommandOutcome(currentFacts().commandOutcome());
             }
             return refreshAuthoredSnapshot();
         }
@@ -255,12 +260,12 @@ public final class DungeonEditorRuntimeApplicationService {
                     input == null ? new DungeonAuthoredApplicationService.RoomNarrationInput(0L, "", List.of()) : input;
             DungeonEditorRoomNarrationInput roomNarration = roomNarration(safeInput);
             if (roomNarration == null || !DungeonEditorWorkspaceValues.hasId(roomNarration.roomId())) {
-                return null;
+                return rejectInvalidTarget();
             }
             if (workflow.session().selectedMapId() != null) {
                 authored.saveAuthoredRoomNarration(workflow.session().selectedMapId(), roomNarration);
             }
-            workflow.clearPreviewWithStatus(currentFacts().mutationStatusText());
+            workflow.clearPreviewWithCommandOutcome(currentFacts().commandOutcome());
             return publishCurrent();
         }
 
@@ -280,7 +285,7 @@ public final class DungeonEditorRuntimeApplicationService {
                         safeInput.targetId(),
                         safeInput.name());
             }
-            workflow.clearPreviewWithStatus(currentFacts().mutationStatusText());
+            workflow.clearPreviewWithCommandOutcome(currentFacts().commandOutcome());
             return publishCurrent();
         }
 
@@ -291,13 +296,13 @@ public final class DungeonEditorRuntimeApplicationService {
                     ? new DungeonAuthoredApplicationService.TransitionDescriptionInput(0L, "")
                     : input;
             if (safeInput.transitionId() <= 0L || !workflow.session().hasSelectedMap()) {
-                return null;
+                return rejectInvalidTarget();
             }
             authored.saveAuthoredTransitionDescription(
                     workflow.session().selectedMapId(),
                     safeInput.transitionId(),
                     safeInput.description());
-            workflow.clearPreviewWithStatus(currentFacts().mutationStatusText());
+            workflow.clearPreviewWithCommandOutcome(currentFacts().commandOutcome());
             return publishCurrent();
         }
 
@@ -305,7 +310,7 @@ public final class DungeonEditorRuntimeApplicationService {
                 DungeonAuthoredApplicationService.TransitionLinkInput input
         ) {
             if (!workflow.session().hasSelectedMap()) {
-                return DungeonAuthoredApplicationService.OperationResult.fromNullable(null);
+                return rejectTransitionLink();
             }
             return saveTransitionLink(workflow.session().selectedMapId(), input);
         }
@@ -318,7 +323,7 @@ public final class DungeonEditorRuntimeApplicationService {
                     ? new DungeonAuthoredApplicationService.TransitionLinkInput(0L, 0L, 0L, false)
                     : input;
             if (sourceMapId == null) {
-                return DungeonAuthoredApplicationService.OperationResult.fromNullable(null);
+                return rejectTransitionLink();
             }
             boolean result = authored.saveAuthoredTransitionLink(
                     sourceMapId,
@@ -327,11 +332,24 @@ public final class DungeonEditorRuntimeApplicationService {
                     safeInput.targetTransitionId(),
                     safeInput.bidirectional());
             if (!result) {
-                return DungeonAuthoredApplicationService.OperationResult.fromNullable(null);
+                return rejectTransitionLink();
             }
-            workflow.clearPreviewWithStatus(currentFacts().mutationStatusText());
+            workflow.clearPreviewWithCommandOutcome(currentFacts().commandOutcome());
             publishCurrent();
             return DungeonAuthoredApplicationService.OperationResult.fromNullable(Boolean.TRUE);
+        }
+
+        private DungeonAuthoredApplicationService.OperationResult rejectTransitionLink() {
+            workflow.clearPreviewWithCommandOutcome(DungeonEditorCommandOutcome.rejected(
+                    DungeonEditorCommandOutcome.RejectionReason.MISSING_TRANSITION_DESTINATION));
+            publishCurrent();
+            return DungeonAuthoredApplicationService.OperationResult.fromNullable(null);
+        }
+
+        private DungeonEditorSessionSnapshot.@Nullable SnapshotData rejectInvalidTarget() {
+            workflow.clearPreviewWithCommandOutcome(DungeonEditorCommandOutcome.rejected(
+                    DungeonEditorCommandOutcome.RejectionReason.INVALID_TARGET));
+            return publishCurrent();
         }
 
         public DungeonEditorSessionSnapshot.@Nullable SnapshotData saveStairGeometry(
@@ -358,14 +376,15 @@ public final class DungeonEditorRuntimeApplicationService {
                             workflow.session().selectedMapId(),
                             safeInput.stairId(),
                             spec)) {
-                workflow.clearPreviewWithStatus(INVALID_STAIR_GEOMETRY_STATUS);
+                workflow.clearPreviewWithCommandOutcome(DungeonEditorCommandOutcome.rejected(
+                        DungeonEditorCommandOutcome.RejectionReason.INVALID_STAIR_GEOMETRY));
                 return publishCurrent();
             }
             authored.saveAuthoredStairGeometry(
                     workflow.session().selectedMapId(),
                     safeInput.stairId(),
                     spec);
-            workflow.clearPreviewWithStatus(currentFacts().mutationStatusText());
+            workflow.clearPreviewWithCommandOutcome(currentFacts().commandOutcome());
             return publishCurrent();
         }
 
@@ -617,7 +636,7 @@ public final class DungeonEditorRuntimeApplicationService {
                 if (mapId != null && authoredCommit != null) {
                     authoredCommit.apply(mapId);
                 }
-                workflow.clearPreviewWithStatus(currentFacts().mutationStatusText());
+                workflow.clearPreviewWithCommandOutcome(currentFacts().commandOutcome());
                 if (DungeonEditorSessionPreviewHelper.clearsSelectionAfterApply(applyPreview)) {
                     workflow.applyEffect(DungeonEditorSessionEffect.clearedSelection());
                 }
@@ -627,8 +646,13 @@ public final class DungeonEditorRuntimeApplicationService {
                     DungeonEditorSession previousSession,
                     DungeonEditorSession currentSession
             ) {
-                return !Objects.equals(previousSession.statusText(), currentSession.statusText())
-                        && previousSession.withStatusText(currentSession.statusText()).equals(currentSession);
+                boolean commandStatusChanged =
+                        !Objects.equals(previousSession.statusText(), currentSession.statusText())
+                                || !Objects.equals(previousSession.commandOutcome(), currentSession.commandOutcome());
+                return commandStatusChanged
+                        && previousSession.withCommandStatus(
+                                currentSession.statusText(),
+                                currentSession.commandOutcome()).equals(currentSession);
             }
 
             private enum PublicationOutcome {
@@ -808,7 +832,8 @@ public final class DungeonEditorRuntimeApplicationService {
                     safeState.selection(),
                     surface,
                     safeState.preview(),
-                    nextStatus);
+                    nextStatus,
+                    safeState.commandOutcome());
         }
 
         private void refreshAuthoredSurface(
