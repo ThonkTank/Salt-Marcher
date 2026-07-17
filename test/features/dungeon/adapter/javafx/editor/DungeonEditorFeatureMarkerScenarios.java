@@ -11,6 +11,8 @@ import features.dungeon.api.DungeonEditorMapSnapshot;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonTopologyElementRef;
+import features.dungeon.api.editor.DungeonEditorToolOptions;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
 import features.dungeon.adapter.javafx.map.DungeonMapView;
@@ -58,7 +60,8 @@ final class DungeonEditorFeatureMarkerScenarios {
                 "DE-FEATURE-001 delete stays off the top-level family row");
         assertPopupAnchoredBelow(featureFamily, dropdown, "DE-FEATURE-001");
         assertPopupOptionSelected("POI", "DE-FEATURE-001 first option is preselected by default");
-        assertEquals("FEATURE_POI_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.feature(DungeonEditorToolOptions.Feature.Kind.POINT_OF_INTEREST),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-FEATURE-001 feature family activates the default POI create tool");
         assertTrue(featureFamily.getAccessibleText().contains("POI"),
                 "DE-FEATURE-001 family button announces the selected feature option");
@@ -67,7 +70,8 @@ final class DungeonEditorFeatureMarkerScenarios {
 
 
         click(popupButton(dropdown, "Objekt"));
-        assertEquals("FEATURE_OBJECT_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.feature(DungeonEditorToolOptions.Feature.Kind.OBJECT),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-FEATURE-002 selecting Objekt routes to object creation");
         assertTrue(featureFamily.getAccessibleText().contains("Objekt"),
                 "DE-FEATURE-002 family button announces the remembered Objekt option");
@@ -77,7 +81,8 @@ final class DungeonEditorFeatureMarkerScenarios {
         dropdown = popupContainerWithSelected("Objekt");
         assertPopupOptionSelected("Objekt", "DE-FEATURE-002 reopening remembers the Objekt option");
         click(popupButton(dropdown, "Encounter"));
-        assertEquals("FEATURE_ENCOUNTER_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.feature(DungeonEditorToolOptions.Feature.Kind.ENCOUNTER),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-FEATURE-002 selecting Encounter routes to encounter creation");
         assertTrue(featureFamily.getAccessibleText().contains("Encounter"),
                 "DE-FEATURE-002 family button announces the remembered Encounter option");
@@ -103,7 +108,8 @@ final class DungeonEditorFeatureMarkerScenarios {
                 "DE-FEATURE-003 fixture starts without authored feature markers");
 
         click(button(controls, "Feature"));
-        assertEquals("FEATURE_POI_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.feature(DungeonEditorToolOptions.Feature.Kind.POINT_OF_INTEREST),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-FEATURE-003 feature family defaults to the POI create route");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         fireMapMousePressed(
@@ -219,7 +225,8 @@ final class DungeonEditorFeatureMarkerScenarios {
         click(featureFamily);
         Parent objectDropdown = popupContainerWithSelected("POI");
         click(popupButton(objectDropdown, "Objekt"));
-        assertEquals("FEATURE_OBJECT_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.feature(DungeonEditorToolOptions.Feature.Kind.OBJECT),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-FEATURE-005 selecting Objekt activates the object create tool before map press");
         fireMapMousePressed(
                 mapView,
@@ -231,7 +238,8 @@ final class DungeonEditorFeatureMarkerScenarios {
         click(featureFamily);
         Parent encounterDropdown = popupContainerWithSelected("Objekt");
         click(popupButton(encounterDropdown, "Encounter"));
-        assertEquals("FEATURE_ENCOUNTER_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.feature(DungeonEditorToolOptions.Feature.Kind.ENCOUNTER),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-FEATURE-005 selecting Encounter activates the encounter create tool before map press");
         fireMapMousePressed(
                 mapView,

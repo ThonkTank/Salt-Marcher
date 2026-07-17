@@ -19,6 +19,24 @@ public record DungeonEditorToolSelection(
         return new DungeonEditorToolSelection(safeFamily, defaultOptions(safeFamily));
     }
 
+    public static DungeonEditorToolSelection wall(DungeonEditorToolOptions.Wall.Mode mode) {
+        return new DungeonEditorToolSelection(
+                DungeonEditorToolFamily.WALL,
+                new DungeonEditorToolOptions.Wall(mode));
+    }
+
+    public static DungeonEditorToolSelection stair(DungeonEditorToolOptions.Stair.Shape shape) {
+        return new DungeonEditorToolSelection(
+                DungeonEditorToolFamily.STAIR,
+                new DungeonEditorToolOptions.Stair(shape));
+    }
+
+    public static DungeonEditorToolSelection feature(DungeonEditorToolOptions.Feature.Kind kind) {
+        return new DungeonEditorToolSelection(
+                DungeonEditorToolFamily.FEATURE,
+                new DungeonEditorToolOptions.Feature(kind));
+    }
+
     private static DungeonEditorToolOptions compatibleOptions(
             DungeonEditorToolFamily family,
             DungeonEditorToolOptions options

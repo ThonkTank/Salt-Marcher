@@ -5,7 +5,7 @@ import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.application.editor.DungeonEditorRuntimeApplicationService;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
-import features.dungeon.api.DungeonEditorTool;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.PaintSession;
 
 final class DungeonEditorRoomPaintRuntimeOperation {
@@ -15,19 +15,13 @@ final class DungeonEditorRoomPaintRuntimeOperation {
         this.context = Objects.requireNonNull(context, "context");
     }
 
-    static DungeonEditorSessionValues.Tool roomTool(DungeonEditorTool tool) {
-        if (tool == DungeonEditorTool.ROOM_PAINT) {
-            return DungeonEditorSessionValues.Tool.ROOM_PAINT;
-        }
-        if (tool == DungeonEditorTool.ROOM_DELETE) {
-            return DungeonEditorSessionValues.Tool.ROOM_DELETE;
-        }
-        return null;
+    static boolean handles(DungeonEditorToolAction tool) {
+        return tool != null && tool.family() == DungeonEditorToolFamily.ROOM;
     }
 
     DungeonEditorRuntimeContext.Result apply(
             PointerAction action,
-            DungeonEditorSessionValues.Tool tool,
+            DungeonEditorToolAction tool,
             PointerSample sample,
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
@@ -65,7 +59,7 @@ final class DungeonEditorRoomPaintRuntimeOperation {
     private DungeonEditorRuntimeContext.Result applyRoom(
             InterpretDungeonEditorMainViewInputUseCase.PointerAction action,
             DungeonEditorMainViewInput input,
-            DungeonEditorSessionValues.Tool tool
+            DungeonEditorToolAction tool
     ) {
         if (context.currentGridOrPublishCurrentResult().committedSnapshot() == null) {
             return DungeonEditorRuntimeContext.Result.none();

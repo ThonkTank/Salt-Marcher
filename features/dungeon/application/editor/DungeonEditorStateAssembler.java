@@ -5,7 +5,6 @@ import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.editor.DungeonEditorDraftState;
 import features.dungeon.api.editor.DungeonEditorState;
-import features.dungeon.api.editor.DungeonEditorToolSelection;
 
 /** Assembles the single public editor publication directly from owner readbacks. */
 final class DungeonEditorStateAssembler {
@@ -15,8 +14,7 @@ final class DungeonEditorStateAssembler {
             DungeonEditorControlsSnapshot controls,
             DungeonEditorMapSurfaceSnapshot mapSurface,
             DungeonEditorStateSnapshot state,
-            DungeonEditorRuntimeDraftFrame drafts,
-            DungeonEditorToolSelection toolSelection
+            DungeonEditorRuntimeDraftFrame drafts
     ) {
         DungeonEditorControlsSnapshot safeControls = controls == null
                 ? DungeonEditorControlsSnapshot.empty("")
@@ -37,7 +35,7 @@ final class DungeonEditorStateAssembler {
                 safeControls.selectedMapId(),
                 safeMapSurface.surface(),
                 safeControls.viewMode(),
-                toolSelection,
+                safeControls.toolSelection(),
                 safeControls.overlaySettings(),
                 safeControls.projectionLevel(),
                 safeControls.reachableLevels(),

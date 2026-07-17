@@ -97,16 +97,14 @@ and commit boundaries. M7 starts only after both are complete.
 
 ## Current Migration State
 
-- Current foundation: M0 and M1 are complete on `main` through PR #493.
-- This slice: M2.1 replaces the public Editor create/delete tool variants and
-  string option keys with typed `ToolFamily`, `ToolOptions`, and
-  `PointerGesture` values, and moves the JavaFX consumer to that boundary.
-- Temporary boundary in this slice: one application-owned adapter maps the new
-  API language to the legacy runtime tool enum. No API or JavaFX caller may use
-  that enum.
-- Next step after this slice merges: M2.2 makes the typed family and gesture
-  language canonical inside the runtime and deletes that adapter, the old tool
-  enum, and tool-name translation.
+- Current foundation: M0, M1, and M2.1 are complete on `main` through PR #494.
+- This slice: M2.2 makes typed tool selections and gesture-derived actions
+  canonical through the runtime and Session, and deletes the old tool enum,
+  registry, definition table, compatibility adapter, and name translation.
+- Contextual wall behavior remains explicit in its owner: secondary input
+  deletes from the base state but completes an already active create path.
+- Next step after this slice merges: M2.3 publishes typed accepted or rejected
+  command outcomes and maps stable rejection reasons to specific status.
 
 ## M0: Target Lock And Baseline
 

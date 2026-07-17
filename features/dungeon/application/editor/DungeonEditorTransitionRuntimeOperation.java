@@ -8,7 +8,7 @@ import features.dungeon.domain.core.graph.DungeonTopologyElementKind;
 import features.dungeon.domain.core.structure.transition.TransitionAnchor;
 import features.dungeon.domain.core.structure.transition.TransitionDestinationType;
 import features.dungeon.application.editor.session.DungeonEditorSessionEffect;
-import features.dungeon.api.DungeonEditorTool;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
 
 final class DungeonEditorTransitionRuntimeOperation {
     private static final String INVALID_TRANSITION_DESTINATION_STATUS = "Uebergangsziel ungueltig.";
@@ -20,13 +20,13 @@ final class DungeonEditorTransitionRuntimeOperation {
         this.context = Objects.requireNonNull(context, "context");
     }
 
-    static boolean handles(DungeonEditorTool tool) {
-        return tool == DungeonEditorTool.TRANSITION_CREATE || tool == DungeonEditorTool.TRANSITION_DELETE;
+    static boolean handles(DungeonEditorToolAction tool) {
+        return tool != null && tool.family() == DungeonEditorToolFamily.TRANSITION;
     }
 
     DungeonEditorRuntimeContext.Result apply(
             PointerAction action,
-            DungeonEditorTool tool,
+            DungeonEditorToolAction tool,
             PointerSample sample,
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
@@ -34,10 +34,10 @@ final class DungeonEditorTransitionRuntimeOperation {
         if (!PointerAction.isPressed(action)) {
             return DungeonEditorRuntimeContext.Result.none();
         }
-        if (tool == DungeonEditorTool.TRANSITION_CREATE) {
+        if (!tool.deleteMode()) {
             return createTransition(sample, wallSingleClickMode, transitionDestination);
         }
-        if (tool == DungeonEditorTool.TRANSITION_DELETE) {
+        if (tool.deleteMode()) {
             return deleteTransition(sample, wallSingleClickMode, transitionDestination);
         }
         return DungeonEditorRuntimeContext.Result.none();

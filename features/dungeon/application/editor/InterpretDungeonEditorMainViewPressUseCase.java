@@ -67,7 +67,7 @@ final class InterpretDungeonEditorMainViewPressUseCase {
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             DungeonEditorSessionValues.Selection currentSelection,
-            DungeonEditorSessionValues.Tool boundaryTool,
+            DungeonEditorToolAction boundaryTool,
             InteractionState state
     ) {
         DungeonEditorWallBoundaryDraftInterpretation boundaryInterpretation =
@@ -84,7 +84,7 @@ final class InterpretDungeonEditorMainViewPressUseCase {
     DungeonEditorDoorBoundaryDraftInterpretation interpretDoorBoundaryOperation(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool boundaryTool,
+            DungeonEditorToolAction boundaryTool,
             InteractionState state
     ) {
         DungeonEditorDoorBoundaryDraftInterpretation boundaryInterpretation =
@@ -101,7 +101,7 @@ final class InterpretDungeonEditorMainViewPressUseCase {
     DungeonEditorMainViewInterpretation interpretCorridor(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool corridorTool,
+            DungeonEditorToolAction corridorTool,
             InteractionState state
     ) {
         InteractionState nextState = state
@@ -113,7 +113,7 @@ final class InterpretDungeonEditorMainViewPressUseCase {
 
     DungeonEditorMainViewInterpretation interpretRoom(
             PointerState input,
-            DungeonEditorSessionValues.Tool roomTool,
+            DungeonEditorToolAction roomTool,
             InteractionState state
     ) {
         PaintSession paintSession = new PaintSession(

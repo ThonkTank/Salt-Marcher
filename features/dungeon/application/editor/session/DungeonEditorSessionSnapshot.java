@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Inspector;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapId;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 
 public final class DungeonEditorSessionSnapshot {
 
@@ -16,7 +17,7 @@ public final class DungeonEditorSessionSnapshot {
                 List.of(),
                 null,
                 DungeonEditorSessionValues.ViewMode.defaultMode(),
-                DungeonEditorSessionValues.Tool.defaultTool(),
+                DungeonEditorToolSelection.select(),
                 0,
                 DungeonEditorSessionValues.OverlaySettings.defaults(),
                 DungeonEditorSessionValues.Selection.empty(),
@@ -29,7 +30,7 @@ public final class DungeonEditorSessionSnapshot {
             List<DungeonEditorWorkspaceValues.MapSummary> maps,
             @Nullable MapId selectedMapId,
             DungeonEditorSessionValues.ViewMode viewMode,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorToolSelection toolSelection,
             int projectionLevel,
             DungeonEditorSessionValues.OverlaySettings overlaySettings,
             DungeonEditorSessionValues.Selection selection,
@@ -40,17 +41,13 @@ public final class DungeonEditorSessionSnapshot {
         public SnapshotData {
             maps = maps == null ? List.of() : List.copyOf(maps);
             viewMode = viewMode == null ? DungeonEditorSessionValues.ViewMode.defaultMode() : viewMode;
-            selectedTool = selectedTool == null ? DungeonEditorSessionValues.Tool.defaultTool() : selectedTool;
+            toolSelection = toolSelection == null ? DungeonEditorToolSelection.select() : toolSelection;
             overlaySettings = overlaySettings == null ? DungeonEditorSessionValues.OverlaySettings.defaults() : overlaySettings;
             selection = selection == null ? DungeonEditorSessionValues.Selection.empty() : selection;
             preview = preview == null ? DungeonEditorSessionValues.Preview.none() : preview;
             statusText = statusText == null ? "" : statusText;
         }
 
-        @Override
-        public DungeonEditorSessionValues.Tool selectedTool() {
-            return DungeonEditorSessionValues.Tool.valueOf(selectedTool.name());
-        }
     }
 
     public record SurfaceData(
@@ -71,7 +68,7 @@ public final class DungeonEditorSessionSnapshot {
         return new ControlsData(
                 safeSession.selectedMapId(),
                 safeSession.viewMode(),
-                safeSession.selectedTool(),
+                safeSession.toolSelection(),
                 safeSession.projectionLevel(),
                 safeSession.overlaySettings(),
                 safeSession.statusText());
@@ -88,22 +85,18 @@ public final class DungeonEditorSessionSnapshot {
     public record ControlsData(
             @Nullable MapId selectedMapId,
             DungeonEditorSessionValues.ViewMode viewMode,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorToolSelection toolSelection,
             int projectionLevel,
             DungeonEditorSessionValues.OverlaySettings overlaySettings,
             String statusText
     ) {
         public ControlsData {
             viewMode = viewMode == null ? DungeonEditorSessionValues.ViewMode.defaultMode() : viewMode;
-            selectedTool = selectedTool == null ? DungeonEditorSessionValues.Tool.defaultTool() : selectedTool;
+            toolSelection = toolSelection == null ? DungeonEditorToolSelection.select() : toolSelection;
             overlaySettings = overlaySettings == null ? DungeonEditorSessionValues.OverlaySettings.defaults() : overlaySettings;
             statusText = statusText == null ? "" : statusText;
         }
 
-        @Override
-        public DungeonEditorSessionValues.Tool selectedTool() {
-            return DungeonEditorSessionValues.Tool.valueOf(selectedTool.name());
-        }
     }
 
     public record SessionFrameData(
@@ -121,8 +114,8 @@ public final class DungeonEditorSessionSnapshot {
             return controlsData.viewMode();
         }
 
-        public DungeonEditorSessionValues.Tool selectedTool() {
-            return controlsData.selectedTool();
+        public DungeonEditorToolSelection toolSelection() {
+            return controlsData.toolSelection();
         }
 
         public int projectionLevel() {

@@ -2,7 +2,6 @@ package features.dungeon.application.editor;
 
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
-import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.DungeonEditorInteractionValues.CellKey;
 import features.dungeon.application.editor.DungeonEditorInteractionValues.VertexKey;
@@ -21,7 +20,7 @@ final class DungeonEditorDirectWallDeleteUseCase {
     @Nullable DungeonEditorMainViewInterpretation press(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorToolAction selectedTool,
             InteractionState state
     ) {
         if (input == null || !wallDeleteGesture(selectedTool, input)) {
@@ -122,8 +121,7 @@ final class DungeonEditorDirectWallDeleteUseCase {
         return boundary != null && boundary.present() && !boundary.doorKind();
     }
 
-    private static boolean wallDeleteGesture(DungeonEditorSessionValues.Tool selectedTool, PointerState input) {
-        return input.secondaryButtonDown()
-                && (selectedTool.deleteMode() || selectedTool == DungeonEditorSessionValues.Tool.WALL_CREATE);
+    private static boolean wallDeleteGesture(DungeonEditorToolAction selectedTool, PointerState input) {
+        return input.secondaryButtonDown() && selectedTool.deleteMode();
     }
 }

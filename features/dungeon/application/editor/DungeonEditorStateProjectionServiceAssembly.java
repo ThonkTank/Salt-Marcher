@@ -23,7 +23,7 @@ final class DungeonEditorStateProjectionServiceAssembly {
                 preview(snapshot.preview()),
                 snapshot.statusText(),
                 DungeonEditorValueProjectionServiceAssembly.viewMode(snapshot.viewMode()),
-                DungeonEditorValueProjectionServiceAssembly.tool(snapshot.selectedTool()),
+                snapshot.toolSelection(),
                 DungeonEditorValueProjectionServiceAssembly.overlay(snapshot.overlaySettings()),
                 snapshot.projectionLevel());
     }
@@ -43,7 +43,7 @@ final class DungeonEditorStateProjectionServiceAssembly {
                 preview(safeFrameData.preview()),
                 safeFrameData.statusText(),
                 DungeonEditorValueProjectionServiceAssembly.viewMode(safeFrameData.viewMode()),
-                DungeonEditorValueProjectionServiceAssembly.tool(safeFrameData.selectedTool()),
+                safeFrameData.toolSelection(),
                 DungeonEditorValueProjectionServiceAssembly.overlay(safeFrameData.overlaySettings()),
                 safeFrameData.projectionLevel());
     }

@@ -1,6 +1,8 @@
 package features.dungeon.application.editor.session;
 
 import org.jspecify.annotations.Nullable;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 
 public final class DungeonEditorSessionWorkflow {
     public static final String MAP_CREATED = "CREATED";
@@ -44,14 +46,14 @@ public final class DungeonEditorSessionWorkflow {
                 .clearTransientState(""));
     }
 
-    public void setTool(DungeonEditorSessionValues.Tool tool) {
-        DungeonEditorSessionValues.Tool nextTool = tool == null
-                ? DungeonEditorSessionValues.Tool.defaultTool()
-                : tool;
+    public void setTool(DungeonEditorToolSelection selection) {
+        DungeonEditorToolSelection nextSelection = selection == null
+                ? DungeonEditorToolSelection.select()
+                : selection;
         DungeonEditorSession nextSession = session.current()
-                .withSelectedTool(nextTool)
+                .withToolSelection(nextSelection)
                 .clearTransientState("");
-        if (!nextTool.isSelect()) {
+        if (nextSelection.family() != DungeonEditorToolFamily.SELECT) {
             nextSession = nextSession.clearSelection();
         }
         session.replace(nextSession);

@@ -2,7 +2,6 @@ package features.dungeon.application.editor;
 
 import java.util.Objects;
 import java.util.function.Consumer;
-import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
 
@@ -124,11 +123,7 @@ public final class DungeonEditorFeatureRuntimeRoot
     }
 
     @Override
-    public void setTool(DungeonEditorTool tool) {
-        commands.setTool(tool);
-    }
-
-    void setTool(DungeonEditorToolSelection selection) {
+    public void setTool(DungeonEditorToolSelection selection) {
         commands.setTool(selection);
     }
 

@@ -14,6 +14,8 @@ import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonTopologyElementRef;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonMapSummary;
@@ -643,7 +645,8 @@ final class DungeonEditorCorridorScenarios {
         Point2D doorOne = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
         Point2D doorThree = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 6.5, 9.0);
         click(button(controls, "Korridor"));
-        assertEquals("CORRIDOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.CORRIDOR),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-COR-004 corridor family selects corridor-create tool");
         assertPointerTarget(binding.mapContentModel(), doorOne,
                 DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, "DE-COR-004 D1");
@@ -836,7 +839,8 @@ final class DungeonEditorCorridorScenarios {
         Point2D genericCorridorPoint = new Point2D(6.05, 5.05);
         Point2D doorOne = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
         click(button(controls, "Korridor"));
-        assertEquals("CORRIDOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.CORRIDOR),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-COR-013 existing-anchor corridor family selects corridor-create tool");
         assertPointerTarget(
                 binding.mapContentModel(),
@@ -916,7 +920,8 @@ final class DungeonEditorCorridorScenarios {
         Point2D genericCorridorPoint = new Point2D(6.05, 4.05);
         Point2D doorOne = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
         click(button(controls, "Korridor"));
-        assertEquals("CORRIDOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.CORRIDOR),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-COR-013 new-anchor corridor family selects corridor-create tool");
         assertPointerTarget(
                 binding.mapContentModel(),

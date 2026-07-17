@@ -3,7 +3,6 @@ package features.dungeon.application.editor;
 import java.util.List;
 import features.dungeon.application.authored.DungeonAuthoredApplicationService;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
-import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonEditorViewMode;
 
 final class DungeonEditorRuntimeInputTranslator {
@@ -60,11 +59,6 @@ final class DungeonEditorRuntimeInputTranslator {
                 doorDeleteSelected,
                 sample.target(),
                 safeDestination);
-    }
-
-    static DungeonEditorSessionValues.Tool tool(DungeonEditorTool tool) {
-        return DungeonEditorSessionValues.Tool.valueOf(
-                (tool == null ? DungeonEditorTool.SELECT : tool).name());
     }
 
     static DungeonEditorSessionValues.ViewMode viewMode(DungeonEditorViewMode viewMode) {

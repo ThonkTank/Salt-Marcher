@@ -12,7 +12,6 @@ import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonEditorSurface;
-import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonEditorMapSnapshot;
@@ -21,6 +20,7 @@ import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
 import features.dungeon.api.editor.DungeonEditorDraftState;
 import features.dungeon.api.editor.DungeonEditorState;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
 import features.dungeon.adapter.javafx.map.DungeonMapView;
 import javafx.event.ActionEvent;
@@ -615,7 +615,8 @@ final class DungeonEditorSelectionScenarios {
 
         DungeonEditorStateSnapshot clearedState = runtime.stateModel().current();
         DungeonEditorMapSurfaceSnapshot clearedSurface = runtime.mapSurfaceModel().current();
-        assertEquals("DOOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.DOOR),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-SEL-014 tool switch applies the requested non-selection tool");
         assertEmptySelection(clearedState.selection(), "DE-SEL-014 state model after non-selection tool switch");
         assertEmptySelection(clearedSurface.selection(), "DE-SEL-014 map surface after non-selection tool switch");
@@ -1008,7 +1009,7 @@ final class DungeonEditorSelectionScenarios {
                 DungeonEditorViewMode.GRID,
                 DungeonOverlaySettings.defaults(),
                 0,
-                DungeonEditorTool.SELECT);
+                DungeonEditorToolSelection.select());
     }
 
     private static String selectionRef(DungeonTopologyElementRef ref) {

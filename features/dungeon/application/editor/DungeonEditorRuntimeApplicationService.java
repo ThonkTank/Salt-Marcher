@@ -23,6 +23,7 @@ import features.dungeon.application.editor.session.DungeonEditorSessionSnapshot;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorSessionWorkflow;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceCoreGeometry;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapId;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
@@ -210,9 +211,9 @@ public final class DungeonEditorRuntimeApplicationService {
         }
 
         public DungeonEditorSessionSnapshot.ControlsData setToolControlsOnly(
-                DungeonEditorSessionValues.Tool tool
+                DungeonEditorToolSelection selection
         ) {
-            workflow.setTool(tool);
+            workflow.setTool(selection);
             DungeonEditorSessionSnapshot.ControlsData controls =
                     DungeonEditorSessionSnapshot.controlsData(workflow.session());
             editorPublishedState.publishEditorControls(controls);
@@ -220,9 +221,9 @@ public final class DungeonEditorRuntimeApplicationService {
         }
 
         public DungeonEditorSessionSnapshot.SnapshotData setTool(
-                DungeonEditorSessionValues.Tool tool
+                DungeonEditorToolSelection selection
         ) {
-            workflow.setTool(tool);
+            workflow.setTool(selection);
             DungeonEditorSessionSnapshot.SnapshotData snapshot =
                     workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session()));
             editorPublishedState.publishEditorSnapshot(snapshot);
@@ -801,7 +802,7 @@ public final class DungeonEditorRuntimeApplicationService {
                     maps,
                     resolvedMapId,
                     safeState.viewMode(),
-                    safeState.selectedTool(),
+                    safeState.toolSelection(),
                     safeState.projectionLevel(),
                     safeState.overlaySettings(),
                     safeState.selection(),

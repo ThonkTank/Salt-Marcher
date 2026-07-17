@@ -2,7 +2,6 @@ package features.dungeon.application.editor;
 
 import java.util.Objects;
 import java.util.Optional;
-import features.dungeon.api.DungeonEditorTool;
 
 final class DungeonEditorPointerSession {
     private static final double VERTEX_SNAP_DISTANCE = 0.22;
@@ -11,7 +10,7 @@ final class DungeonEditorPointerSession {
 
     boolean accept(
             PointerAction action,
-            DungeonEditorTool tool,
+            DungeonEditorToolAction tool,
             PointerSample sample,
             int projectionLevel
     ) {
@@ -32,7 +31,7 @@ final class DungeonEditorPointerSession {
     }
 
     private record HoverSample(
-            DungeonEditorTool tool,
+            DungeonEditorToolAction tool,
             int projectionLevel,
             int cellQ,
             int cellR,
@@ -42,7 +41,7 @@ final class DungeonEditorPointerSession {
             DungeonEditorRuntimePointerTarget target
     ) {
         private static HoverSample from(
-                DungeonEditorTool tool,
+                DungeonEditorToolAction tool,
                 PointerSample sample,
                 int projectionLevel
         ) {
@@ -55,7 +54,7 @@ final class DungeonEditorPointerSession {
                     safeSample.sceneX() - vertexQ,
                     safeSample.sceneY() - vertexR) <= VERTEX_SNAP_DISTANCE;
             return new HoverSample(
-                    tool == null ? DungeonEditorTool.SELECT : tool,
+                    tool == null ? DungeonEditorToolAction.selected(null) : tool,
                     projectionLevel,
                     (int) Math.floor(safeSample.sceneX()),
                     (int) Math.floor(safeSample.sceneY()),

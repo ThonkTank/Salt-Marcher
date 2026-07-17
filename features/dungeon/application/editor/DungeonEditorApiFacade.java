@@ -110,17 +110,10 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
         List<DungeonEditorRuntimePointerTarget> targets = input.targets().stream()
                 .map(DungeonEditorApiFacade::runtimeTargetFrom)
                 .toList();
-        PointerWorkflowGesture gesture = new PointerWorkflowGesture(
-                input.gesture().primary(),
-                input.gesture().secondary(),
-                input.gesture().middle(),
-                input.gesture().shiftDown(),
-                input.gesture().controlDown(),
-                DungeonEditorLegacyToolAdapter.wallSingleClick(input.toolSelection()));
         runtimeRoot.applyPointerInteraction(new PointerInteractionRequest(
                 enumValue(PointerAction.class, input.action().name(), PointerAction.MOVED),
-                DungeonEditorLegacyToolAdapter.tool(input.toolSelection()).name(),
-                gesture,
+                input.toolSelection(),
+                input.gesture(),
                 PointerInteractionTargets.fromRuntimeTargets(
                         input.sceneX(),
                         input.sceneY(),

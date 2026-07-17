@@ -17,6 +17,8 @@ import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorMapSnapshot;
 import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonEditorStateSnapshot;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
 import features.dungeon.application.editor.DungeonEditorRuntimeLabelTarget;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
@@ -2104,7 +2106,8 @@ final class DungeonEditorClusterLabelHandleScenarios {
             String message
     ) {
         click(button(controls, "Raum"));
-        assertEquals("ROOM_PAINT", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.ROOM),
+                runtime.controlsModel().current().toolSelection(),
                 message + " selects room paint");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         fireMapMouse(

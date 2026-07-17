@@ -19,10 +19,10 @@ final class DungeonEditorCorridorInteractionUseCase {
     DungeonEditorMainViewInterpretation press(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorToolAction selectedTool,
             InteractionState state
     ) {
-        if (selectedTool == DungeonEditorSessionValues.Tool.CORRIDOR_DELETE) {
+        if (selectedTool.deleteMode()) {
             PendingCorridorTarget target = targetService.resolveDeleteTarget(input, snapshot);
             InteractionState nextState = state.withCorridorDraft(CorridorDraft.none());
             DungeonEditorSessionValues.DeleteCorridorPreview preview = deletePreview(target);
@@ -73,10 +73,10 @@ final class DungeonEditorCorridorInteractionUseCase {
     DungeonEditorSessionEffect preview(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorToolAction selectedTool,
             InteractionState state
     ) {
-        if (selectedTool == DungeonEditorSessionValues.Tool.CORRIDOR_DELETE) {
+        if (selectedTool.deleteMode()) {
             PendingCorridorTarget target = targetService.resolveDeleteTarget(input, snapshot);
             DungeonEditorSessionValues.DeleteCorridorPreview preview = deletePreview(target);
             if (preview == null || !DungeonEditorWorkspaceValues.hasId(preview.corridorId())) {

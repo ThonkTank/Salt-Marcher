@@ -24,15 +24,14 @@ final class DungeonEditorWallBoundaryDraftUseCase {
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             DungeonEditorSessionValues.Selection currentSelection,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorToolAction selectedTool,
             InteractionState state
     ) {
         if (input != null
                 && input.secondaryButtonDown()
-                && !selectedTool.deleteMode()
                 && state.boundaryDraft().present()
                 && !state.boundaryDraft().deleteMode()) {
-            return completeActiveCreateDraft(input, snapshot, selectedTool, state);
+            return completeActiveCreateDraft(input, snapshot, selectedTool.create(), state);
         }
         DungeonEditorMainViewInterpretation directDelete = directWallDelete.press(input, snapshot, selectedTool, state);
         if (directDelete != null) {
@@ -45,7 +44,7 @@ final class DungeonEditorWallBoundaryDraftUseCase {
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             DungeonEditorSessionValues.Selection currentSelection,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorToolAction selectedTool,
             InteractionState state
     ) {
         var vertex = input.vertexTarget();
@@ -74,7 +73,7 @@ final class DungeonEditorWallBoundaryDraftUseCase {
     DungeonEditorSessionEffect preview(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorToolAction selectedTool,
             InteractionState state
     ) {
         if (!state.boundaryDraft().present()) {
@@ -99,7 +98,7 @@ final class DungeonEditorWallBoundaryDraftUseCase {
     DungeonEditorWallBoundaryDraftInterpretation releaseOperation(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorToolAction selectedTool,
             InteractionState state
     ) {
         if (state.boundaryDraft().present() && state.boundaryDraft().deleteMode()) {
@@ -135,7 +134,9 @@ final class DungeonEditorWallBoundaryDraftUseCase {
     ) {
         InteractionState nextState = state.withBoundaryDraft(BoundaryDraft.none());
         if (!state.boundaryDraft().present() || !state.boundaryDraft().deleteMode() || input == null) {
-            return DungeonEditorWallBoundaryDraftInterpretation.from(draftEffects.clearBoundaryDraftPreview(nextState));
+            return DungeonEditorWallBoundaryDraftInterpretation.from(new DungeonEditorMainViewInterpretation(
+                    nextState,
+                    DungeonEditorSessionEffect.clearPreviewIfNeeded(false)));
         }
         PathResult candidate = boundaryPaths.previewCandidate(input, snapshot, state.boundaryDraft(), true);
         Set<EdgeKey> committedEdges = state.boundaryDraft().completionCandidate(candidate.committedEdges());
@@ -148,7 +149,7 @@ final class DungeonEditorWallBoundaryDraftUseCase {
     private DungeonEditorWallBoundaryDraftInterpretation completeActiveCreateDraft(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorToolAction selectedTool,
             InteractionState state
     ) {
         PathResult candidate = boundaryPaths.previewCandidate(input, snapshot, state.boundaryDraft(), false);
@@ -187,7 +188,7 @@ final class DungeonEditorWallBoundaryDraftUseCase {
     private DungeonEditorWallBoundaryDraftInterpretation advanceBoundaryDraft(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorToolAction selectedTool,
             long clusterId,
             boolean deleteMode,
             VertexKey nextVertex,
@@ -211,7 +212,7 @@ final class DungeonEditorWallBoundaryDraftUseCase {
     private DungeonEditorWallBoundaryDraftInterpretation applyBoundaryDraftOrPreview(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorToolAction selectedTool,
             VertexKey nextVertex,
             InteractionState state,
             boolean explicitCompletion

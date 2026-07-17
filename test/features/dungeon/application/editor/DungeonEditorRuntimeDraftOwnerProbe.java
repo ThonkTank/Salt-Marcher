@@ -10,6 +10,8 @@ import features.dungeon.application.editor.interaction.DungeonEditorHandleType;
 import features.dungeon.application.editor.session.DungeonEditorSessionEffect;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.application.editor.DungeonEditorInteractionValues.VertexKey;
 import features.dungeon.application.editor.DungeonEditorInteractionValues.VertexTarget;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.BoundaryDraft;
@@ -22,6 +24,10 @@ import features.dungeon.application.editor.DungeonEditorMainViewInteractionValue
 
 public final class DungeonEditorRuntimeDraftOwnerProbe {
     private static final long CLUSTER_ID = 7L;
+    private static final DungeonEditorToolAction WALL_ACTION = DungeonEditorToolAction.selected(
+            DungeonEditorToolSelection.family(DungeonEditorToolFamily.WALL));
+    private static final DungeonEditorToolAction CORRIDOR_ACTION = DungeonEditorToolAction.selected(
+            DungeonEditorToolSelection.family(DungeonEditorToolFamily.CORRIDOR));
 
     private DungeonEditorRuntimeDraftOwnerProbe() {
     }
@@ -39,7 +45,7 @@ public final class DungeonEditorRuntimeDraftOwnerProbe {
                 vertexPress(1, 0, true, false),
                 snapshot,
                 selectedCluster,
-                DungeonEditorSessionValues.Tool.WALL_CREATE,
+                WALL_ACTION,
                 InteractionState.empty());
         assertDraft(started.nextState().boundaryDraft(), new VertexKey(1, 0, 0), Set.of(),
                 "wall draft owner starts session-only state at the first vertex");
@@ -51,7 +57,7 @@ public final class DungeonEditorRuntimeDraftOwnerProbe {
                 vertexPress(1, 1, true, false),
                 snapshot,
                 selectedCluster,
-                DungeonEditorSessionValues.Tool.WALL_CREATE,
+                WALL_ACTION,
                 started.nextState());
         assertDraft(intermediate.nextState().boundaryDraft(), new VertexKey(1, 1, 0), Set.of(firstEdge),
                 "wall draft owner accumulates the first intermediate segment");
@@ -63,7 +69,7 @@ public final class DungeonEditorRuntimeDraftOwnerProbe {
                 vertexPress(2, 1, false, true),
                 snapshot,
                 selectedCluster,
-                DungeonEditorSessionValues.Tool.WALL_CREATE,
+                WALL_ACTION,
                 intermediate.nextState());
         assertTrue(!completed.nextState().boundaryDraft().present(),
                 "wall draft owner clears draft state after explicit completion");
@@ -81,7 +87,7 @@ public final class DungeonEditorRuntimeDraftOwnerProbe {
         DungeonEditorWallBoundaryDraftInterpretation cancelled = useCase.releaseOperation(
                 vertexPress(1, 0, true, false),
                 snapshot,
-                DungeonEditorSessionValues.Tool.WALL_CREATE,
+                WALL_ACTION,
                 InteractionState.empty());
         assertTrue(!cancelled.nextState().boundaryDraft().present(),
                 "wall draft owner keeps cancel/no-op release as empty draft state");
@@ -96,7 +102,7 @@ public final class DungeonEditorRuntimeDraftOwnerProbe {
         DungeonEditorMainViewInterpretation started = useCase.press(
                 firstClick,
                 DungeonEditorWorkspaceValues.MapSnapshot.empty(),
-                DungeonEditorSessionValues.Tool.CORRIDOR_CREATE,
+                CORRIDOR_ACTION,
                 InteractionState.empty());
 
         assertTrue(started.nextState().corridorDraft().present(),

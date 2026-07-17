@@ -2,11 +2,12 @@ package features.dungeon.application.editor.session;
 
 import org.jspecify.annotations.Nullable;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapId;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 
 public record DungeonEditorSession(
         @Nullable MapId selectedMapId,
         DungeonEditorSessionValues.ViewMode viewMode,
-        DungeonEditorSessionValues.Tool selectedTool,
+        DungeonEditorToolSelection toolSelection,
         int projectionLevel,
         DungeonEditorSessionValues.OverlaySettings overlaySettings,
         DungeonEditorSessionValues.Selection selection,
@@ -16,7 +17,7 @@ public record DungeonEditorSession(
 
     public DungeonEditorSession {
         viewMode = viewMode == null ? DungeonEditorSessionValues.ViewMode.defaultMode() : viewMode;
-        selectedTool = selectedTool == null ? DungeonEditorSessionValues.Tool.defaultTool() : selectedTool;
+        toolSelection = toolSelection == null ? DungeonEditorToolSelection.select() : toolSelection;
         overlaySettings = overlaySettings == null ? DungeonEditorSessionValues.OverlaySettings.defaults() : overlaySettings;
         selection = selection == null ? DungeonEditorSessionValues.Selection.empty() : selection;
         preview = preview == null ? DungeonEditorSessionValues.Preview.none() : preview;
@@ -27,17 +28,12 @@ public record DungeonEditorSession(
         return new DungeonEditorSession(
                 null,
                 DungeonEditorSessionValues.ViewMode.defaultMode(),
-                DungeonEditorSessionValues.Tool.defaultTool(),
+                DungeonEditorToolSelection.select(),
                 0,
                 DungeonEditorSessionValues.OverlaySettings.defaults(),
                 DungeonEditorSessionValues.Selection.empty(),
                 DungeonEditorSessionValues.Preview.none(),
                 "");
-    }
-
-    @Override
-    public DungeonEditorSessionValues.Tool selectedTool() {
-        return DungeonEditorSessionValues.Tool.valueOf(selectedTool.name());
     }
 
     public boolean hasSelectedMap() {
@@ -48,7 +44,7 @@ public record DungeonEditorSession(
         return new DungeonEditorSession(
                 nextSelectedMapId,
                 viewMode,
-                selectedTool,
+                toolSelection,
                 projectionLevel,
                 overlaySettings,
                 selection,
@@ -60,7 +56,7 @@ public record DungeonEditorSession(
         return new DungeonEditorSession(
                 selectedMapId,
                 nextViewMode,
-                selectedTool,
+                toolSelection,
                 projectionLevel,
                 overlaySettings,
                 selection,
@@ -68,11 +64,11 @@ public record DungeonEditorSession(
                 statusText);
     }
 
-    public DungeonEditorSession withSelectedTool(DungeonEditorSessionValues.Tool nextSelectedTool) {
+    public DungeonEditorSession withToolSelection(DungeonEditorToolSelection nextSelection) {
         return new DungeonEditorSession(
                 selectedMapId,
                 viewMode,
-                nextSelectedTool,
+                nextSelection,
                 projectionLevel,
                 overlaySettings,
                 selection,
@@ -84,7 +80,7 @@ public record DungeonEditorSession(
         return new DungeonEditorSession(
                 selectedMapId,
                 viewMode,
-                selectedTool,
+                toolSelection,
                 nextProjectionLevel,
                 overlaySettings,
                 selection,
@@ -100,7 +96,7 @@ public record DungeonEditorSession(
         return new DungeonEditorSession(
                 selectedMapId,
                 viewMode,
-                selectedTool,
+                toolSelection,
                 projectionLevel,
                 nextOverlaySettings,
                 selection,
@@ -112,7 +108,7 @@ public record DungeonEditorSession(
         return new DungeonEditorSession(
                 selectedMapId,
                 viewMode,
-                selectedTool,
+                toolSelection,
                 projectionLevel,
                 overlaySettings,
                 nextSelection,
@@ -128,7 +124,7 @@ public record DungeonEditorSession(
         return new DungeonEditorSession(
                 selectedMapId,
                 viewMode,
-                selectedTool,
+                toolSelection,
                 projectionLevel,
                 overlaySettings,
                 selection,
@@ -144,7 +140,7 @@ public record DungeonEditorSession(
         return new DungeonEditorSession(
                 selectedMapId,
                 viewMode,
-                selectedTool,
+                toolSelection,
                 projectionLevel,
                 overlaySettings,
                 selection,
