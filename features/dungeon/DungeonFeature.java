@@ -12,11 +12,14 @@ import features.dungeon.api.DungeonEditorStateModel;
 import features.dungeon.api.DungeonMapCatalogModel;
 import features.dungeon.api.TravelDungeonModel;
 import features.dungeon.api.authored.DungeonAuthoredApi;
+import features.dungeon.api.editor.DungeonEditorApi;
 import features.dungeon.api.travel.DungeonTravelApi;
 import features.dungeon.application.authored.DungeonAuthoredApplicationService;
 import features.dungeon.application.authored.DungeonAuthoredPublishedState;
 import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.editor.DungeonEditorPublishedState;
+import features.dungeon.application.editor.DungeonEditorApiFacade;
+import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
 import features.dungeon.application.editor.DungeonEditorRuntimeApplicationService;
 import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
 import features.dungeon.application.travel.DungeonTravelNavigator;
@@ -65,10 +68,14 @@ public final class DungeonFeature {
                 runtime.editor(),
                 lane,
                 dispatcher);
+        DungeonEditorFeatureRuntimeRoot editorRuntimeRoot =
+                DungeonEditorFeatureRuntimeRoot.create(editorDependencies);
+        DungeonEditorApi editorApi = new DungeonEditorApiFacade(editorRuntimeRoot, dispatcher);
         return new Component(
-                new DungeonEditorContribution(editorDependencies),
+                new DungeonEditorContribution(editorRuntimeRoot, dispatcher),
                 new DungeonTravelContribution(runtime.travel(), runtime.mapCatalog(), runtime.travelModel()),
                 runtime.authored(),
+                editorApi,
                 runtime.travel());
     }
 
@@ -113,12 +120,14 @@ public final class DungeonFeature {
             ShellContribution editorContribution,
             ShellContribution travelContribution,
             DungeonAuthoredApi authoredApi,
+            DungeonEditorApi editorApi,
             DungeonTravelApi travelApi
     ) {
         public Component {
             editorContribution = Objects.requireNonNull(editorContribution, "editorContribution");
             travelContribution = Objects.requireNonNull(travelContribution, "travelContribution");
             authoredApi = Objects.requireNonNull(authoredApi, "authoredApi");
+            editorApi = Objects.requireNonNull(editorApi, "editorApi");
             travelApi = Objects.requireNonNull(travelApi, "travelApi");
         }
     }

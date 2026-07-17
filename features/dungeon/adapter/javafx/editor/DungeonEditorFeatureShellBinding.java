@@ -16,8 +16,16 @@ public final class DungeonEditorFeatureShellBinding {
     public DungeonEditorFeatureShellBinding(DungeonEditorRuntimeDependencies dependencies) {
         DungeonEditorRuntimeDependencies safeDependencies =
                 Objects.requireNonNull(dependencies, "dependencies");
-        runtimeRoot = DungeonEditorFeatureRuntimeRoot.create(safeDependencies);
-        uiDispatcher = safeDependencies.uiDispatcher();
+        this.runtimeRoot = DungeonEditorFeatureRuntimeRoot.create(safeDependencies);
+        this.uiDispatcher = safeDependencies.uiDispatcher();
+    }
+
+    public DungeonEditorFeatureShellBinding(
+            DungeonEditorFeatureRuntimeRoot runtimeRoot,
+            UiDispatcher uiDispatcher
+    ) {
+        this.runtimeRoot = Objects.requireNonNull(runtimeRoot, "runtimeRoot");
+        this.uiDispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
     }
 
     public DungeonEditorRuntimeOperations operations() {
