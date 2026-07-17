@@ -1,15 +1,20 @@
 package features.sessionplanner.adapter.javafx;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.function.Consumer;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.LongConsumer;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
@@ -19,539 +24,431 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
+/**
+ * Szenen-Board als Single-Open-Akkordeon. Zu jedem Zeitpunkt ist höchstens eine Szene aufgeklappt
+ * und damit editierbar; alle anderen sind read-only Zeilen. Aktualisierungen der Projektion werden
+ * per {@code sceneToken} reconziliert (kein {@code setAll}-Vollneubau bei jedem Readback), sodass die
+ * geöffnete Editor-Karte inklusive Fokus/Cursor über Mutationen hinweg stabil bleibt.
+ */
 public final class SessionPlannerTimelineMainView extends ScrollPane {
 
     private static final String STYLE_TEXT_SECONDARY = "text-secondary";
     private static final String STYLE_COMPACT = "compact";
     private static final String STYLE_ACCENT = "accent";
     private static final String STYLE_FLAT = "flat";
-    private final VBox content = new VBox(12);
+    private static final BigDecimal ALLOCATION_STEP = BigDecimal.TEN;
+
     private final VBox rows = new VBox(8);
-    private Consumer<SessionPlannerViewModel.TimelineInput> viewInputEventHandler = ignored -> { };
+    private final Label emptyLabel = styledLabel("Noch keine Szenen.", STYLE_TEXT_SECONDARY, "session-planner-empty");
+    private final Button addSceneButton = compactButton("Szene hinzufuegen", STYLE_ACCENT);
+    private final Map<Long, SceneCard> sceneCards = new LinkedHashMap<>();
+    private final Map<Integer, RestSeparator> restSeparators = new LinkedHashMap<>();
+
+    private long openSceneToken;
+    private SceneCard openCard;
+
+    private Runnable addSceneHandler = () -> { };
+    private LongConsumer selectSceneHandler = ignored -> { };
+    private AllocationHandler allocationHandler = (token, percentage) -> { };
+    private MoveHandler moveHandler = (token, up) -> { };
+    private LongConsumer removeSceneHandler = ignored -> { };
+    private SceneEditHandler saveSceneHandler = (token, title, notes, locationId) -> { };
+    private RestHandler shortRestHandler = (left, right) -> { };
+    private RestHandler longRestHandler = (left, right) -> { };
+    private RestHandler clearRestHandler = (left, right) -> { };
+    private LongConsumer addLootHandler = ignored -> { };
+    private LongConsumer removeLootHandler = ignored -> { };
 
     public SessionPlannerTimelineMainView() {
-        addStyles(content, "session-planner-main");
+        VBox content = new VBox(12, rows);
+        content.getStyleClass().add("session-planner-main");
+        addSceneButton.setOnAction(event -> addSceneHandler.run());
         setContent(content);
         getStyleClass().add("session-planner-main-scroll");
         setFitToWidth(true);
         setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
     }
 
-    public void onTimelineInput(Consumer<SessionPlannerViewModel.TimelineInput> handler) {
-        viewInputEventHandler = handler == null ? ignored -> { } : handler;
+    // --- typed callbacks -------------------------------------------------------------------
+
+    public void onAddScene(Runnable handler) {
+        addSceneHandler = handler == null ? () -> { } : handler;
+    }
+
+    public void onSelectScene(LongConsumer handler) {
+        selectSceneHandler = handler == null ? ignored -> { } : handler;
+    }
+
+    public void onSetAllocation(AllocationHandler handler) {
+        allocationHandler = handler == null ? (token, percentage) -> { } : handler;
+    }
+
+    public void onMoveScene(MoveHandler handler) {
+        moveHandler = handler == null ? (token, up) -> { } : handler;
+    }
+
+    public void onRemoveScene(LongConsumer handler) {
+        removeSceneHandler = handler == null ? ignored -> { } : handler;
+    }
+
+    public void onSaveScene(SceneEditHandler handler) {
+        saveSceneHandler = handler == null ? (token, title, notes, locationId) -> { } : handler;
+    }
+
+    public void onShortRest(RestHandler handler) {
+        shortRestHandler = handler == null ? (left, right) -> { } : handler;
+    }
+
+    public void onLongRest(RestHandler handler) {
+        longRestHandler = handler == null ? (left, right) -> { } : handler;
+    }
+
+    public void onClearRest(RestHandler handler) {
+        clearRestHandler = handler == null ? (left, right) -> { } : handler;
+    }
+
+    public void onAddLoot(LongConsumer handler) {
+        addLootHandler = handler == null ? ignored -> { } : handler;
+    }
+
+    public void onRemoveLoot(LongConsumer handler) {
+        removeLootHandler = handler == null ? ignored -> { } : handler;
     }
 
     void bind(SessionPlannerViewModel viewModel) {
         if (viewModel == null) {
             return;
         }
-        viewModel.timelineProjectionProperty().addListener((ignored, before, after) -> show(after));
-        show(viewModel.timelineProjectionProperty().get());
+        viewModel.timelineProjectionProperty().addListener((ignored, before, after) -> render(after));
+        render(viewModel.timelineProjectionProperty().get());
     }
 
-    private void show(SessionPlannerViewModel.TimelineProjection projection) {
+    // --- rendering / reconciliation --------------------------------------------------------
+
+    private void render(SessionPlannerViewModel.TimelineProjection projection) {
         if (projection == null) {
             return;
         }
-        clearNodes(rows);
-        content.getChildren().setAll(setupBox(projection.setup()), rows);
-        if (projection.scenes().isEmpty()) {
-            addNode(rows, label("Noch keine Szenen.", STYLE_TEXT_SECONDARY, "session-planner-empty"));
+        boolean disabled = projection.sessionActionsDisabled();
+        List<SessionPlannerViewModel.TimelineProjection.SceneModel> scenes = projection.scenes();
+        List<SessionPlannerViewModel.TimelineProjection.RestGapModel> restGaps = projection.restGaps();
+
+        Set<Long> presentTokens = new HashSet<>();
+        for (var scene : scenes) {
+            presentTokens.add(scene.sceneToken());
+        }
+        if (openSceneToken != 0L && !presentTokens.contains(openSceneToken)) {
+            openSceneToken = 0L;
+            openCard = null;
+        }
+
+        List<Node> desired = new ArrayList<>();
+        if (scenes.isEmpty()) {
+            desired.add(emptyLabel);
         } else {
-            for (int index = 0; index < projection.scenes().size(); index++) {
-                SessionPlannerViewModel.TimelineProjection.SceneModel scene =
-                        projection.scenes().get(index);
-                addNode(rows, sceneCard(scene, index + 1));
-                if (index < projection.restGaps().size()) {
-                    addNode(rows, restGapCard(projection.restGaps().get(index), index + 1, index + 2));
+            for (int index = 0; index < scenes.size(); index++) {
+                var scene = scenes.get(index);
+                SceneCard card = sceneCards.computeIfAbsent(scene.sceneToken(), SceneCard::new);
+                card.update(scene, index + 1, scene.sceneToken() == openSceneToken, disabled);
+                desired.add(card);
+                if (index < restGaps.size()) {
+                    var gap = restGaps.get(index);
+                    RestSeparator separator = restSeparators.computeIfAbsent(gap.gapIndex(), ignored -> new RestSeparator());
+                    separator.update(gap, disabled);
+                    desired.add(separator);
                 }
             }
         }
-        Button addScene = actionButton(
-                "Szene hinzufuegen",
-                event -> rawPublish(event, projection.setup().sceneAddWidgetToken()),
-                STYLE_ACCENT);
-        addScene.setDisable(projection.setup().sessionActionsDisabled());
-        addNode(rows, addScene);
-    }
+        addSceneButton.setDisable(disabled);
+        desired.add(addSceneButton);
 
-    private Node setupBox(SessionPlannerViewModel.TimelineProjection.SetupModel setup) {
-        ComboBox<String> partyMemberSelector = new ComboBox<>();
-        partyMemberSelector.getItems().setAll(setup.partyMemberChoiceLabels());
-        partyMemberSelector.setPromptText("Spieler");
-        if (!partyMemberSelector.getItems().isEmpty()) {
-            partyMemberSelector.getSelectionModel().selectFirst();
+        sceneCards.keySet().removeIf(token -> !presentTokens.contains(token));
+        restSeparators.keySet().removeIf(gapIndex -> gapIndex >= restGaps.size());
+
+        if (!rows.getChildren().equals(desired)) {
+            rows.getChildren().setAll(desired);
         }
-        partyMemberSelector.setDisable(setup.sessionActionsDisabled() || partyMemberSelector.getItems().isEmpty());
-        Button addPlayer = actionButton(
-                "Hinzufuegen",
-                event -> rawPublishParticipantAdd(
-                        event,
-                        setup.participantAddWidgetToken(),
-                        partyMemberSelector),
-                STYLE_ACCENT);
-        addPlayer.setDisable(partyMemberSelector.isDisabled());
-        TextField encounterDays = new TextField(setup.encounterDaysText());
-        encounterDays.setPromptText("Tage");
-        encounterDays.getStyleClass().add(STYLE_COMPACT);
-        encounterDays.setDisable(setup.sessionActionsDisabled());
-        Button applyDays = actionButton(
-                "Setzen",
-                event -> rawPublishEncounterDays(
-                        event,
-                        setup.encounterDaysWidgetToken(),
-                        encounterDays.getText()),
-                STYLE_FLAT);
-        applyDays.setDisable(setup.sessionActionsDisabled());
+    }
 
-        HBox inputRow = actionRow(
-                label("Spieler", "session-planner-card-title"),
-                partyMemberSelector,
-                addPlayer,
-                label("Tage", "session-planner-card-title"),
-                encounterDays,
-                applyDays,
-                label(setup.sceneTargetText(), "session-planner-scene-target"));
-        HBox.setHgrow(partyMemberSelector, Priority.ALWAYS);
-        HBox.setHgrow(encounterDays, Priority.ALWAYS);
-
-        HBox participantRow = new HBox(6);
-        participantRow.getChildren().add(label("In Session", "session-planner-card-title"));
-        for (SessionPlannerViewModel.TimelineProjection.SessionParticipantModel participant
-                : setup.sessionParticipantRows()) {
-            Button remove = actionButton(
-                    participant.removeText(),
-                    event -> rawPublishParticipantRemove(
-                            event,
-                            participant.removeWidgetToken(),
-                            participant.characterId()),
-                    STYLE_FLAT);
-            remove.setDisable(participant.actionDisabled());
-            remove.setVisible(participant.removeVisible());
-            remove.setManaged(participant.removeVisible());
-            participantRow.getChildren().add(new ActionRow(
-                    4,
-                    label(participant.name(), "session-planner-plan-name", participant.detailStyleClass()),
-                    remove));
+    private void toggle(SceneCard card) {
+        if (openCard == card) {
+            collapse(card);
+            return;
         }
-        participantRow.getChildren().add(spacer());
-        participantRow.getChildren().add(label(setup.budgetText(), STYLE_TEXT_SECONDARY));
-        participantRow.getChildren().add(label(setup.restText(), STYLE_TEXT_SECONDARY));
-
-        VBox box = new VBox(6, inputRow, participantRow);
-        addStyles(box, "session-planner-setup-strip");
-        return box;
-    }
-
-    private Node sceneCard(
-            SessionPlannerViewModel.TimelineProjection.SceneModel scene,
-            int position
-    ) {
-        Label title = label("Szene " + position + ": " + scene.sceneTitle(), "session-planner-encounter-title");
-        Label stateHint = label(
-                scene.selected()
-                        ? "Diese Szene speist aktuell das State-Panel."
-                        : "Wird im State-Panel sichtbar, sobald er ausgewaehlt ist.",
-                scene.selected() ? "session-planner-gap-active" : STYLE_TEXT_SECONDARY);
-
-        Button select = actionButton(
-                scene.selected() ? "Ausgewaehlt" : "Auswaehlen",
-                event -> rawPublishScene(event, scene.selectWidgetToken(), scene.sceneToken()),
-                scene.selected() ? STYLE_FLAT : STYLE_ACCENT);
-        select.setDisable(scene.selected());
-
-        Button decreaseAllocation = actionButton(
-                "-10%",
-                event -> rawPublishScene(event, scene.allocationDecreaseWidgetToken(), scene.sceneToken()),
-                STYLE_FLAT);
-        Button increaseAllocation = actionButton(
-                "+10%",
-                event -> rawPublishScene(event, scene.allocationIncreaseWidgetToken(), scene.sceneToken()),
-                STYLE_FLAT);
-
-        Button up = actionButton(
-                "Hoch",
-                event -> rawPublishScene(event, scene.moveUpWidgetToken(), scene.sceneToken()),
-                STYLE_FLAT);
-        up.setDisable(!scene.canMoveUp());
-
-        Button down = actionButton(
-                "Runter",
-                event -> rawPublishScene(event, scene.moveDownWidgetToken(), scene.sceneToken()),
-                STYLE_FLAT);
-        down.setDisable(!scene.canMoveDown());
-
-        Button remove = actionButton(
-                "X",
-                event -> rawPublishScene(event, scene.removeWidgetToken(), scene.sceneToken()),
-                STYLE_FLAT);
-
-        VBox card = new VBox(6,
-                new ActionRow(8, title, spacer(), remove),
-                linkedEncounterSummary(scene),
-                stateHint,
-                sceneSection(scene),
-                actionRow(select, decreaseAllocation, increaseAllocation),
-                actionRow(up, down),
-                lootSection(scene));
-        addStyles(card, "session-planner-encounter-card");
-        return card;
-    }
-
-    private Node linkedEncounterSummary(SessionPlannerViewModel.TimelineProjection.SceneModel scene) {
-        if (!scene.linkedEncounterPlan()) {
-            return label("Keine Begegnung verknuepft.", STYLE_TEXT_SECONDARY);
+        if (openCard != null) {
+            collapse(openCard);
         }
-        VBox summary = new VBox(
-                4,
-                label(scene.linkedEncounterName(), "session-planner-plan-name"),
-                label(scene.linkedEncounterCreatureCount() + " Kreaturen" + generatedLabelSuffix(scene), STYLE_TEXT_SECONDARY),
-                label(scene.budgetPercentageText() + " Budget · Ziel " + scene.targetXpText() + " XP",
-                        "session-planner-encounter-budget"),
-                label(scene.comparisonText() + " · " + scene.linkedEncounterDifficultyLabel(), STYLE_TEXT_SECONDARY),
-                label("Base " + scene.linkedEncounterTotalBaseXp()
-                                + " XP · Multiplikator x"
-                                + String.format(Locale.US, "%.2f", scene.linkedEncounterXpMultiplier()),
-                        STYLE_TEXT_SECONDARY));
-        addStyles(summary, "session-planner-scene-encounter-summary");
-        return summary;
+        expand(card);
     }
 
-    private Node sceneSection(SessionPlannerViewModel.TimelineProjection.SceneModel scene) {
-        TextField title = new TextField(scene.sceneTitle());
-        title.setPromptText("Szenentitel");
-        title.getStyleClass().add(STYLE_COMPACT);
-        LocationComboBox location = new LocationComboBox(scene.locationChoices(), scene.locationId());
-        TextArea notes = new TextArea(scene.sceneNotes());
-        notes.setPromptText("Szenennotizen");
-        notes.setPrefRowCount(2);
-        notes.getStyleClass().add(STYLE_COMPACT);
-        Runnable publishDraft = () -> rawPublishSceneDraft(
-                scene.sceneDraftWidgetToken(),
-                scene.sceneToken(),
-                title.getText(),
-                notes.getText(),
-                location.selectedLocationId());
-        title.textProperty().addListener((ignored, before, after) -> publishDraft.run());
-        notes.textProperty().addListener((ignored, before, after) -> publishDraft.run());
-        location.valueProperty().addListener((ignored, before, after) -> publishDraft.run());
-
-        Button save = actionButton(
-                "Szene speichern",
-                event -> rawPublishSceneText(
-                        event,
-                        scene.sceneSaveWidgetToken(),
-                        scene.sceneToken(),
-                        title.getText(),
-                        notes.getText(),
-                        location.selectedLocationId()),
-                STYLE_ACCENT);
-
-        return new VBox(
-                6,
-                label("Szene", "session-planner-gap-title"),
-                label(scene.locationLabel(), STYLE_TEXT_SECONDARY),
-                title,
-                notes,
-                actionRow(location, save));
+    private void expand(SceneCard card) {
+        openCard = card;
+        openSceneToken = card.sceneToken;
+        card.setExpanded(true);
+        card.loadEditorFromModel();
+        selectSceneHandler.accept(card.sceneToken);
     }
 
-    private Node lootSection(SessionPlannerViewModel.TimelineProjection.SceneModel scene) {
-        Button addButton = actionButton(
-                "Loot-Platzhalter",
-                event -> rawPublishScene(event, scene.addLootWidgetToken(), scene.sceneToken()),
-                STYLE_ACCENT);
-        VBox rows = new VBox(6);
-        if (scene.lootPlaceholders().isEmpty()) {
-            addNode(rows, label(
-                    "Keine Loot-Platzhalter fuer diese Szene.",
-                    STYLE_TEXT_SECONDARY,
-                    "session-planner-empty"));
-        } else {
-            for (SessionPlannerViewModel.TimelineProjection.LootModel loot : scene.lootPlaceholders()) {
-                addNode(rows, lootCard(loot));
+    private void collapse(SceneCard card) {
+        card.commitIfDirty();
+        card.setExpanded(false);
+        if (openCard == card) {
+            openCard = null;
+            openSceneToken = 0L;
+        }
+    }
+
+    // --- scene card ------------------------------------------------------------------------
+
+    private final class SceneCard extends VBox {
+
+        private final long sceneToken;
+        private final Button toggleButton = compactButton("▶", STYLE_FLAT);
+        private final Label headerTitle = styledLabel("", "session-planner-encounter-title");
+        private final Label headerBudget = styledLabel("", STYLE_TEXT_SECONDARY);
+        private final ProgressBar headerBar = new ProgressBar(0);
+        private final Label headerLocation = styledLabel("", STYLE_TEXT_SECONDARY);
+        private final Button removeButton = compactButton("X", STYLE_FLAT);
+
+        private final Label encounterName = styledLabel("", "session-planner-plan-name");
+        private final Label encounterDetail = styledLabel("", STYLE_TEXT_SECONDARY);
+        private final Label encounterBudget = styledLabel("", "session-planner-encounter-budget");
+        private final Label encounterComparison = styledLabel("", STYLE_TEXT_SECONDARY);
+        private final Label encounterBase = styledLabel("", STYLE_TEXT_SECONDARY);
+        private final VBox encounterSummary = new VBox(4);
+
+        private final TextField titleField = new TextField();
+        private final LocationComboBox locationBox = new LocationComboBox();
+        private final TextArea notesField = new TextArea();
+        private final Label allocationLabel = styledLabel("", STYLE_TEXT_SECONDARY);
+        private final Button decreaseAllocation = compactButton("-10%", STYLE_FLAT);
+        private final Button increaseAllocation = compactButton("+10%", STYLE_FLAT);
+        private final Button moveUp = compactButton("Hoch", STYLE_FLAT);
+        private final Button moveDown = compactButton("Runter", STYLE_FLAT);
+        private final VBox lootRows = new VBox(6);
+        private final Button addLoot = compactButton("Loot-Platzhalter", STYLE_ACCENT);
+        private final VBox editor = new VBox(6);
+
+        private SessionPlannerViewModel.TimelineProjection.SceneModel model;
+        private String loadedTitle = "";
+        private String loadedNotes = "";
+        private long loadedLocationId;
+
+        private SceneCard(long sceneToken) {
+            this.sceneToken = sceneToken;
+            getStyleClass().add("session-planner-encounter-card");
+            setSpacing(6);
+
+            headerBar.getStyleClass().addAll("session-planner-budget-bar", "session-planner-budget-ok");
+            headerBar.setPrefWidth(80);
+            headerBar.setMaxWidth(80);
+            toggleButton.getStyleClass().add("session-planner-scene-toggle");
+            toggleButton.setOnAction(event -> toggle(this));
+            HBox header = new HBox(8, toggleButton, headerTitle, headerBar, headerBudget, spacer(), headerLocation, removeButton);
+            header.setAlignment(Pos.CENTER_LEFT);
+            header.getStyleClass().add("session-planner-encounter-header");
+            header.setOnMouseClicked(event -> toggle(this));
+            removeButton.setOnAction(event -> removeSceneHandler.accept(sceneToken));
+
+            encounterSummary.getChildren().setAll(
+                    encounterName, encounterDetail, encounterBudget, encounterComparison, encounterBase);
+            encounterSummary.getStyleClass().add("session-planner-scene-encounter-summary");
+
+            titleField.setPromptText("Szenentitel");
+            titleField.getStyleClass().add(STYLE_COMPACT);
+            notesField.setPromptText("Szenennotizen");
+            notesField.setPrefRowCount(2);
+            notesField.getStyleClass().add(STYLE_COMPACT);
+            Button save = compactButton("Szene speichern", STYLE_ACCENT);
+            save.setOnAction(event -> saveNow());
+
+            decreaseAllocation.setOnAction(event -> adjustAllocation(ALLOCATION_STEP.negate()));
+            increaseAllocation.setOnAction(event -> adjustAllocation(ALLOCATION_STEP));
+            moveUp.setOnAction(event -> moveHandler.handle(sceneToken, true));
+            moveDown.setOnAction(event -> moveHandler.handle(sceneToken, false));
+            addLoot.setOnAction(event -> addLootHandler.accept(sceneToken));
+
+            editor.getChildren().setAll(
+                    encounterSummary,
+                    titleField,
+                    actionRow(locationBox, save),
+                    notesField,
+                    actionRow(allocationLabel, decreaseAllocation, increaseAllocation),
+                    actionRow(moveUp, moveDown),
+                    new VBox(6, new HBox(8, styledLabel("Loot", "session-planner-gap-title"), addLoot), lootRows));
+            editor.setVisible(false);
+            editor.setManaged(false);
+
+            getChildren().setAll(header, editor);
+        }
+
+        private void update(
+                SessionPlannerViewModel.TimelineProjection.SceneModel scene,
+                int position,
+                boolean expanded,
+                boolean disabled
+        ) {
+            this.model = scene;
+            headerTitle.setText("Szene " + position + ": " + scene.displayTitle());
+            headerBudget.setText(scene.budgetPercentageText());
+            headerBar.setProgress(clampFraction(scene.budgetFraction()));
+            headerLocation.setText(scene.locationLabel());
+            removeButton.setDisable(disabled);
+
+            boolean linked = scene.linkedEncounterPlan();
+            if (linked) {
+                encounterName.setText(scene.linkedEncounterName());
+                encounterDetail.setText(scene.linkedEncounterCreatureCount() + " Kreaturen" + generatedSuffix(scene));
+                encounterBudget.setText(scene.budgetPercentageText() + " Budget · Ziel " + scene.targetXpText() + " XP");
+                encounterComparison.setText(scene.comparisonText() + " · " + scene.linkedEncounterDifficultyLabel());
+                encounterBase.setText("Base " + scene.linkedEncounterTotalBaseXp() + " XP · Multiplikator x"
+                        + String.format(Locale.US, "%.2f", scene.linkedEncounterXpMultiplier()));
+            } else {
+                encounterName.setText("Keine Begegnung verknuepft.");
+                encounterDetail.setText("");
+                encounterBudget.setText("");
+                encounterComparison.setText("");
+                encounterBase.setText("");
+            }
+            show(encounterDetail, linked);
+            show(encounterBudget, linked);
+            show(encounterComparison, linked);
+            show(encounterBase, linked);
+
+            allocationLabel.setText("Budget " + scene.budgetPercentageText());
+            decreaseAllocation.setDisable(disabled || !linked);
+            increaseAllocation.setDisable(disabled || !linked);
+            moveUp.setDisable(disabled || !scene.canMoveUp());
+            moveDown.setDisable(disabled || !scene.canMoveDown());
+            addLoot.setDisable(disabled);
+            renderLoot(scene, disabled);
+            setExpanded(expanded);
+        }
+
+        private void setExpanded(boolean expanded) {
+            toggleButton.setText(expanded ? "▼" : "▶");
+            editor.setVisible(expanded);
+            editor.setManaged(expanded);
+        }
+
+        /** Lädt die Editor-Felder aus dem Modell. Nur beim Aufklappen aufrufen — nie bei jedem Readback,
+         * damit unbestätigte Eingaben nicht überschrieben werden. */
+        private void loadEditorFromModel() {
+            if (model == null) {
+                return;
+            }
+            titleField.setText(model.sceneTitle());
+            notesField.setText(model.sceneNotes());
+            locationBox.setChoices(model.locationChoices(), model.locationId());
+            loadedTitle = model.sceneTitle();
+            loadedNotes = model.sceneNotes();
+            loadedLocationId = model.locationId();
+        }
+
+        private void saveNow() {
+            loadedTitle = titleField.getText().trim();
+            loadedNotes = notesField.getText().trim();
+            loadedLocationId = locationBox.selectedLocationId();
+            saveSceneHandler.handle(sceneToken, loadedTitle, loadedNotes, loadedLocationId);
+        }
+
+        private void commitIfDirty() {
+            if (!editor.isVisible()) {
+                return;
+            }
+            String title = titleField.getText().trim();
+            String notes = notesField.getText().trim();
+            long locationId = locationBox.selectedLocationId();
+            if (!title.equals(loadedTitle) || !notes.equals(loadedNotes) || locationId != loadedLocationId) {
+                saveSceneHandler.handle(sceneToken, title, notes, locationId);
+                loadedTitle = title;
+                loadedNotes = notes;
+                loadedLocationId = locationId;
             }
         }
-        return new VBox(
-                6,
-                new ActionRow(8, label("Loot", "session-planner-gap-title"), addButton),
-                rows);
+
+        private void adjustAllocation(BigDecimal delta) {
+            if (model == null) {
+                return;
+            }
+            allocationHandler.handle(sceneToken, model.budgetPercentage().add(delta));
+        }
+
+        private void renderLoot(
+                SessionPlannerViewModel.TimelineProjection.SceneModel scene,
+                boolean disabled
+        ) {
+            List<Node> cards = new ArrayList<>();
+            if (scene.lootPlaceholders().isEmpty()) {
+                cards.add(styledLabel("Keine Loot-Platzhalter fuer diese Szene.",
+                        STYLE_TEXT_SECONDARY, "session-planner-empty"));
+            } else {
+                for (var loot : scene.lootPlaceholders()) {
+                    Button remove = compactButton("Entfernen", STYLE_FLAT);
+                    remove.setDisable(disabled);
+                    remove.setOnAction(event -> removeLootHandler.accept(loot.token()));
+                    HBox row = new HBox(8, styledLabel(loot.label()), spacer(), remove);
+                    row.setAlignment(Pos.CENTER_LEFT);
+                    row.getStyleClass().add("session-planner-loot-card");
+                    cards.add(row);
+                }
+            }
+            lootRows.getChildren().setAll(cards);
+        }
+
+        private static String generatedSuffix(
+                SessionPlannerViewModel.TimelineProjection.SceneModel scene
+        ) {
+            return scene.linkedEncounterGeneratedLabel().isBlank()
+                    ? ""
+                    : " · " + scene.linkedEncounterGeneratedLabel();
+        }
     }
 
-    private Node lootCard(SessionPlannerViewModel.TimelineProjection.LootModel loot) {
-        Label label = label(loot.label());
-        Button remove = actionButton(
-                "Entfernen",
-                event -> rawPublishLoot(event, loot.removeWidgetToken(), loot.token()),
-                STYLE_FLAT);
-        remove.setVisible(loot.token() > 0L);
-        remove.setManaged(loot.token() > 0L);
-        ActionRow row = new ActionRow(8, label, remove);
-        row.addStyles("session-planner-loot-card");
-        return row;
-    }
+    // --- rest separator --------------------------------------------------------------------
 
-    private Node restGapCard(
-            SessionPlannerViewModel.TimelineProjection.RestGapModel gap,
-            int leftScene,
-            int rightScene
-    ) {
-        Label title = label(
-                "Zwischen Szene " + leftScene + " und " + rightScene,
-                "session-planner-gap-title");
-        Label current = label(gap.label(), gap.hasAssignedRest() ? "session-planner-gap-active" : STYLE_TEXT_SECONDARY);
+    private final class RestSeparator extends HBox {
 
-        Button shortRest = actionButton("Kurze Rast",
-                event -> rawPublishRestGap(
-                        event,
-                        gap.shortRestWidgetToken(),
-                        gap.leftSceneToken(),
-                        gap.rightSceneToken()),
-                STYLE_FLAT);
-        Button longRest = actionButton("Lange Rast",
-                event -> rawPublishRestGap(
-                        event,
-                        gap.longRestWidgetToken(),
-                        gap.leftSceneToken(),
-                        gap.rightSceneToken()),
-                STYLE_FLAT);
-        Button clear = actionButton("Leeren",
-                event -> rawPublishRestGap(
-                        event,
-                        gap.clearRestWidgetToken(),
-                        gap.leftSceneToken(),
-                        gap.rightSceneToken()),
-                STYLE_FLAT);
-        clear.setDisable(!gap.hasAssignedRest());
+        private final Label label = styledLabel("", STYLE_TEXT_SECONDARY);
+        private final Button shortRest = compactButton("Kurze Rast", STYLE_FLAT);
+        private final Button longRest = compactButton("Lange Rast", STYLE_FLAT);
+        private final Button clear = compactButton("Leeren", STYLE_FLAT);
+        private long leftSceneToken;
+        private long rightSceneToken;
 
-        VBox card = new VBox(6, title, current, actionRow(shortRest, longRest, clear));
-        addStyles(card, "session-planner-gap-card");
-        return card;
-    }
-
-    private void rawPublish(ActionEvent event, long widgetToken) {
-        publish(new SessionPlannerViewModel.TimelineInput(
-                rawWidgetToken(event, widgetToken),
-                0L,
-                0L,
-                0L,
-                0L,
-                0L,
-                -1,
-                "",
-                "",
-                "",
-                0L));
-    }
-
-    private void rawPublishScene(ActionEvent event, long widgetToken, long sceneToken) {
-        publish(new SessionPlannerViewModel.TimelineInput(
-                rawWidgetToken(event, widgetToken),
-                sceneToken,
-                0L,
-                0L,
-                0L,
-                0L,
-                -1,
-                "",
-                "",
-                "",
-                0L));
-    }
-
-    private void rawPublishRestGap(ActionEvent event, long widgetToken, long leftSceneToken, long rightSceneToken) {
-        publish(new SessionPlannerViewModel.TimelineInput(
-                rawWidgetToken(event, widgetToken),
-                0L,
-                leftSceneToken,
-                rightSceneToken,
-                0L,
-                0L,
-                -1,
-                "",
-                "",
-                "",
-                0L));
-    }
-
-    private void rawPublishLoot(ActionEvent event, long widgetToken, long lootToken) {
-        publish(new SessionPlannerViewModel.TimelineInput(
-                rawWidgetToken(event, widgetToken),
-                0L,
-                0L,
-                0L,
-                lootToken,
-                0L,
-                -1,
-                "",
-                "",
-                "",
-                0L));
-    }
-
-    private void rawPublishSceneText(
-            ActionEvent event,
-            long widgetToken,
-            long sceneToken,
-            String sceneTitle,
-            String sceneNotes,
-            long locationId
-    ) {
-        publish(new SessionPlannerViewModel.TimelineInput(
-                rawWidgetToken(event, widgetToken),
-                sceneToken,
-                0L,
-                0L,
-                0L,
-                0L,
-                -1,
-                "",
-                sceneTitle,
-                sceneNotes,
-                locationId));
-    }
-
-    private void rawPublishSceneDraft(
-            long widgetToken,
-            long sceneToken,
-            String sceneTitle,
-            String sceneNotes,
-            long locationId
-    ) {
-        publish(new SessionPlannerViewModel.TimelineInput(
-                widgetToken,
-                sceneToken,
-                0L,
-                0L,
-                0L,
-                0L,
-                -1,
-                "",
-                sceneTitle,
-                sceneNotes,
-                locationId));
-    }
-
-    private void rawPublishParticipantAdd(
-            ActionEvent event,
-            long widgetToken,
-            ComboBox<String> participantSelector
-    ) {
-        publish(new SessionPlannerViewModel.TimelineInput(
-                rawWidgetToken(event, widgetToken),
-                0L,
-                0L,
-                0L,
-                0L,
-                0L,
-                participantSelector.getSelectionModel().getSelectedIndex(),
-                "",
-                "",
-                "",
-                0L));
-    }
-
-    private void rawPublishParticipantRemove(ActionEvent event, long widgetToken, long participantId) {
-        publish(new SessionPlannerViewModel.TimelineInput(
-                rawWidgetToken(event, widgetToken),
-                0L,
-                0L,
-                0L,
-                0L,
-                participantId,
-                -1,
-                "",
-                "",
-                "",
-                0L));
-    }
-
-    private void rawPublishEncounterDays(ActionEvent event, long widgetToken, String encounterDays) {
-        publish(new SessionPlannerViewModel.TimelineInput(
-                rawWidgetToken(event, widgetToken),
-                0L,
-                0L,
-                0L,
-                0L,
-                0L,
-                -1,
-                encounterDays,
-                "",
-                "",
-                0L));
-    }
-
-    private long rawWidgetToken(ActionEvent event, long widgetToken) {
-        return event.getSource() instanceof Node ? Math.max(0L, widgetToken) : 0L;
-    }
-
-    private void publish(SessionPlannerViewModel.TimelineInput event) {
-        viewInputEventHandler.accept(event);
-    }
-
-    private static String generatedLabelSuffix(
-            SessionPlannerViewModel.TimelineProjection.SceneModel scene
-    ) {
-        return scene.linkedEncounterGeneratedLabel().isBlank() ? "" : " · " + scene.linkedEncounterGeneratedLabel();
-    }
-
-    private static Label label(String text, String... styleClasses) {
-        return new StyledLabel(text, styleClasses);
-    }
-
-    private static Button actionButton(
-            String text,
-            EventHandler<ActionEvent> action,
-            String emphasisStyle
-    ) {
-        Button button = new StyledButton(text, STYLE_COMPACT, emphasisStyle);
-        button.setOnAction(action);
-        return button;
-    }
-
-    private static HBox actionRow(Node... actions) {
-        return new ActionRow(6, actions);
-    }
-
-    private static Region spacer() {
-        Region region = new Region();
-        HBox.setHgrow(region, Priority.ALWAYS);
-        return region;
-    }
-
-    private static void clearNodes(VBox box) {
-        box.getChildren().clear();
-    }
-
-    private static void addNode(VBox box, Node child) {
-        box.getChildren().add(child);
-    }
-
-    private static void addStyles(Node node, String... styleClasses) {
-        node.getStyleClass().addAll(styleClasses);
-    }
-
-    private static final class ActionRow extends HBox {
-
-        private ActionRow(double spacing, Node... actions) {
-            super(spacing, actions);
+        private RestSeparator() {
+            super(6);
             setAlignment(Pos.CENTER_LEFT);
+            getStyleClass().add("session-planner-rest-separator");
+            shortRest.setOnAction(event -> shortRestHandler.handle(leftSceneToken, rightSceneToken));
+            longRest.setOnAction(event -> longRestHandler.handle(leftSceneToken, rightSceneToken));
+            clear.setOnAction(event -> clearRestHandler.handle(leftSceneToken, rightSceneToken));
+            getChildren().setAll(label, spacer(), shortRest, longRest, clear);
         }
 
-        private void addStyles(String... styleClasses) {
-            getStyleClass().addAll(styleClasses);
+        private void update(
+                SessionPlannerViewModel.TimelineProjection.RestGapModel gap,
+                boolean disabled
+        ) {
+            this.leftSceneToken = gap.leftSceneToken();
+            this.rightSceneToken = gap.rightSceneToken();
+            label.setText(gap.hasAssignedRest() ? "Rast: " + gap.label() : "Keine Rast zwischen den Szenen");
+            label.getStyleClass().removeAll("session-planner-gap-active");
+            if (gap.hasAssignedRest()) {
+                label.getStyleClass().add("session-planner-gap-active");
+            }
+            shortRest.setDisable(disabled);
+            longRest.setDisable(disabled);
+            clear.setDisable(disabled || !gap.hasAssignedRest());
         }
     }
+
+    // --- location combo box ----------------------------------------------------------------
 
     private static final class LocationComboBox
             extends ComboBox<SessionPlannerViewModel.TimelineProjection.LocationChoice> {
 
-        private LocationComboBox(
-                List<SessionPlannerViewModel.TimelineProjection.LocationChoice> choices,
-                long selectedLocationId
-        ) {
-            getItems().setAll(choices == null ? List.of() : choices);
-            getSelectionModel().select(choiceForLocationId(selectedLocationId));
+        private LocationComboBox() {
             setPromptText("Location");
             getStyleClass().add(STYLE_COMPACT);
             setConverter(new StringConverter<>() {
@@ -562,21 +459,27 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
 
                 @Override
                 public SessionPlannerViewModel.TimelineProjection.LocationChoice fromString(String text) {
-                    return null;
+                    return getValue();
                 }
             });
         }
 
+        private void setChoices(
+                List<SessionPlannerViewModel.TimelineProjection.LocationChoice> choices,
+                long selectedLocationId
+        ) {
+            getItems().setAll(choices == null ? List.of() : choices);
+            getSelectionModel().select(choiceForLocationId(selectedLocationId));
+        }
+
         private long selectedLocationId() {
-            SessionPlannerViewModel.TimelineProjection.LocationChoice selected = getValue();
+            var selected = getValue();
             return selected == null ? 0L : selected.id();
         }
 
-        private SessionPlannerViewModel.TimelineProjection.LocationChoice choiceForLocationId(
-                long selectedLocationId
-        ) {
-            for (SessionPlannerViewModel.TimelineProjection.LocationChoice choice : getItems()) {
-                if (choice.id() == selectedLocationId) {
+        private SessionPlannerViewModel.TimelineProjection.LocationChoice choiceForLocationId(long locationId) {
+            for (var choice : getItems()) {
+                if (choice.id() == locationId) {
                     return choice;
                 }
             }
@@ -584,20 +487,64 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         }
     }
 
-    private static final class StyledLabel extends Label {
+    // --- shared helpers --------------------------------------------------------------------
 
-        private StyledLabel(String text, String... styleClasses) {
-            super(text);
-            getStyleClass().addAll(styleClasses);
+    private static double clampFraction(double value) {
+        if (value < 0) {
+            return 0;
         }
+        return Math.min(value, 1.0);
     }
 
-    private static final class StyledButton extends Button {
-
-        private StyledButton(String text, String... styleClasses) {
-            super(text);
-            getStyleClass().addAll(styleClasses);
-        }
+    private static void show(Node node, boolean visible) {
+        node.setVisible(visible);
+        node.setManaged(visible);
     }
 
+    private static HBox actionRow(Node... actions) {
+        HBox row = new HBox(6, actions);
+        row.setAlignment(Pos.CENTER_LEFT);
+        return row;
+    }
+
+    private static Region spacer() {
+        Region region = new Region();
+        HBox.setHgrow(region, Priority.ALWAYS);
+        return region;
+    }
+
+    private static Label styledLabel(String text, String... styleClasses) {
+        Label label = new Label(text);
+        label.getStyleClass().addAll(styleClasses);
+        return label;
+    }
+
+    private static Button compactButton(String text, String... emphasisStyles) {
+        Button button = new Button(text);
+        button.getStyleClass().add(STYLE_COMPACT);
+        button.getStyleClass().addAll(emphasisStyles);
+        return button;
+    }
+
+    // --- callback types --------------------------------------------------------------------
+
+    @FunctionalInterface
+    public interface AllocationHandler {
+        void handle(long sceneToken, BigDecimal newPercentage);
+    }
+
+    @FunctionalInterface
+    public interface MoveHandler {
+        void handle(long sceneToken, boolean up);
+    }
+
+    @FunctionalInterface
+    public interface SceneEditHandler {
+        void handle(long sceneToken, String title, String notes, long locationId);
+    }
+
+    @FunctionalInterface
+    public interface RestHandler {
+        void handle(long leftSceneToken, long rightSceneToken);
+    }
 }
