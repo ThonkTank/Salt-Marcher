@@ -43,13 +43,16 @@ Persisted authored truth includes:
 
 ## Adapter Boundary
 
-- one feature-owned application port owns authored write-model persistence
-- one feature-owned application port owns read-oriented map lookup
+- `DungeonCatalogStore` owns map metadata lookup and catalog mutations
+- `DungeonWindowStore` owns explicit chunk reads and command-specific stable
+  identity closure reads
+- `DungeonUnitOfWork` owns revision-checked `DungeonPatch` and
+  `DungeonCompoundPatch` commits
 - SQLite adapters translate source-local rows into dungeon-domain values and
-  aggregates
-- multi-map authored repository writes MUST commit all supplied domain maps
-  together or roll back all supplied domain maps together; adapters persist
-  only the supplied domain maps and do not infer additional authored maps
+  immutable API or application read facts
+- multi-map authored patches MUST commit every supplied map change together or
+  roll back every supplied map change together; adapters do not infer
+  additional authored maps or mutations
 - SQLite rows MUST NOT become the owner of topology behavior, semantic repair
   policy, preview logic, or travel semantics
 
@@ -67,71 +70,78 @@ readback revision.
 
 `dungeon_chunks` is a source-local spatial inventory keyed by
 `(dungeon_map_id, level_z, chunk_q, chunk_r)`. One chunk covers `64 x 64`
-cells, and negative coordinates use mathematical floor division. The row's
-`revision` identifies the authored map revision from which that inventory entry
-was derived. Chunk rows are indexing metadata, not authored semantic truth.
+cells, and negative coordinates use mathematical floor division. Its content
+revision changes only when authored content intersecting that chunk changes.
+Chunk rows are indexing metadata, not authored semantic truth.
 
-## Window Reads And Incremental Writes
+`dungeon_entity_chunks` indexes map-wide stable entity identity to every chunk
+whose stored authored geometry it intersects. Its key contains map id, entity
+kind, entity id, level, chunk q, and chunk r. It MUST NOT duplicate an entity's
+semantic facts or mint chunk-local entity identity.
 
-- a viewport read MUST address explicit chunk keys and return the request
-  generation plus committed map revision needed to reject late results
+## Window Reads And Identity Closure
+
+- a viewport read MUST address explicit chunk keys and return request
+  generation, committed map revision, and per-chunk content revisions needed to
+  reject late results without invalidating untouched chunks
 - a loaded viewport consists of visible chunks plus one surrounding ring
+- a window read returns authored facts intersecting the requested chunks plus
+  stable entity headers and continuation refs for content outside the window
+- command handling loads full command-relevant identity closure explicitly when
+  validation cannot be completed from window facts alone
 - entities retain map-wide stable identities and MAY cross chunk boundaries;
-  an adapter MUST NOT clone identity merely to fit storage partitions
-- an authored commit MUST validate the expected map revision, write only
-  affected authored rows and chunk inventory, and advance the map revision once
-  in the same transaction
-- a failed validation or storage write MUST roll back authored rows, chunk
-  inventory, and map revision together
-- successful writes return the committed change result; the application MUST
-  NOT require an unconditional whole-map readback to discover what it wrote
-- preview, hover, camera movement, and undo/redo stacks MUST NOT write SQLite
+  an adapter MUST NOT clone identity or semantic facts merely to fit storage
+  partitions
+- a missing required closure is reported as incomplete input; application or
+  adapter code MUST NOT guess at unseen authored truth
+- catalog reads MUST NOT hydrate authored map content
 
-Ordinary single-map commands use the incremental before/after port. Initial map
-creation and the remaining multi-map transition-link write still use one
-whole-record compatibility route. Its owner and deletion milestone live in the
-temporary Dungeon delivery note; it is not an alternative target.
+## Patch And Compound Writes
+
+- an authored commit MUST validate every expected map revision, write only
+  affected authored rows and spatial index rows, and advance each affected map
+  revision once in the same transaction
+- a patch identifies inserted, updated, and removed stable entities plus every
+  touched chunk; it MUST NOT carry complete before and after maps
+- a compound patch is one transaction and one user-command outcome even when it
+  changes several maps
+- affected chunk content revisions advance with their content; untouched chunk
+  content revisions remain stable and cacheable
+- a failed validation or storage write MUST roll back authored rows, entity
+  membership, chunk inventory, chunk revisions, and map revisions together
+- successful writes return committed patch result facts; the application MUST
+  NOT require an unconditional whole-map readback to discover what it wrote
+- preview, hover, camera movement, and undo/redo stacks MUST NOT write SQLite;
+  applying an accepted undo or redo patch is a normal authored commit
 
 ## Authored Name Storage Semantics
 
-`dungeon_rooms.name` stores the authored room display name. Blank or missing
-source values are compatibility inputs that the domain normalizes to
-`Raum <roomId>` on readback and publication.
+`dungeon_rooms.name` stores the authored room display name. The committed value
+is nonblank and already normalized by the domain.
 
-`dungeon_room_clusters.name` stores the authored cluster display name. Current
-schema readiness requires the column to exist. Blank source values remain
-compatibility inputs that the domain normalizes to `Cluster <clusterId>` on
-readback and publication.
+`dungeon_room_clusters.name` stores the authored cluster display name. The
+committed value is nonblank and already normalized by the domain.
 
 SQLite adapters MUST persist the domain-provided room and room-cluster names
-with the corresponding authored record graph. Default display names are
-compatibility and publication semantics, not separate stored authored truth that
-adapters may infer from render state or preview state.
+with the corresponding authored record graph. Adapters do not infer default
+names from render state, preview state, or missing source values.
 
 ## Room And Cluster Geometry Storage Semantics
 
-`dungeon_room_floors` remains room-anchor storage. It stores persisted
-room-floor anchor facts needed to correlate room identity across levels and
-readback, but it is not the cluster floor-cell owner.
-
-`dungeon_room_cluster_floor_cells` stores cluster floor cells. For freshly
-authored room creation, adapters MUST persist the domain-provided cluster floor
-cell set and read it back as the stored floor-cell truth for the retained
-cluster. The table stores source-local rows for domain-owned floor facts; it
-does not own room-membership policy.
+`dungeon_room_cells` stores the authored floor cells owned by one stable room
+identity. Room id plus cell coordinate is unique. Room anchors and cluster floor
+are derived and have no authored storage table.
 
 `dungeon_room_cluster_edges` stores cluster boundary facts. For freshly
 authored room creation, the target stored perimeter is explicit
-`edge_type='WALL'` rows around the committed cluster floor-cell set. Current
-adapter reads use persisted floor cells plus boundary rows as the only
-room-cluster geometry source.
+`edge_type='WALL'` rows around the union of committed member-room cells. Adapter
+reads use room-owned cells plus cluster boundary rows as the only room-cluster
+geometry source.
 
-The retired `dungeon_room_cluster_vertices` table is historical legacy input
-only. Current schema creation, adapter reads, and adapter writes MUST NOT create,
-load, write, or clean up vertex rows as a supported room-cluster geometry path.
-Local databases that still contain only vertex geometry without
-`dungeon_room_cluster_floor_cells` and `dungeon_room_cluster_edges` rows require
-manual data cleanup before they can be loaded as current authored maps.
+`dungeon_room_floors`, `dungeon_room_cluster_floor_cells`, and
+`dungeon_room_cluster_vertices` are not part of the target schema. The automatic
+Dungeon schema replacement removes them rather than translating their duplicate
+geometry into the canonical model.
 
 ## Room Boundary Edge Semantics
 
@@ -139,7 +149,7 @@ manual data cleanup before they can be loaded as current authored maps.
 cluster edges:
 
 - no row means the edge is un-authored; derived perimeter walls from room cells
-  are legacy compatibility input only and are not the target output for fresh
+  are preview or command-planning facts only and are not committed output for
   editor-authored room creation
 - `edge_type='WALL'` means an authored renderable wall edge
 - `edge_type='DOOR'` means an authored renderable door edge
@@ -175,10 +185,9 @@ write. Malformed stair rows, unsupported scalar combinations, missing generated
 path or exit rows for a readable stair, or dangling corridor bindings are
 boundary errors for the domain/repository result, not view-layer behavior.
 
-Previously persisted `LADDER` and `RECTANGULAR` shape rows remain readable compatibility
-inputs. New editor-authored stair creation is governed by the requirements-owned
-visible shapes and must not require a schema change to avoid those older enum
-values.
+Only requirements-owned editor stair shapes are valid in the replacement
+schema. Unsupported historical shape rows are discarded with disposable Dungeon
+development data rather than kept as a second compatibility language.
 
 ## Transition Destination Storage Semantics
 
@@ -212,13 +221,10 @@ travel target for `UNLINKED_ENTRANCE` is not stored authored truth and MUST NOT
 be backfilled into a fake overworld tile or dungeon transition target by the
 adapter.
 
-Rows with missing or null `anchor_type` are compatibility input: adapters derive
-`CELL` when the coordinate columns are present and `NONE` when they are absent.
-Rows with missing, blank, or null `anchor_type` and a non-null
-`anchor_edge_direction` are malformed and must reject reload instead of being
-repaired into authored absence. The compatibility derivation is source-local
-mapping behavior and must not reintroduce nullable-cell transition placement as
-a domain owner.
+Rows with missing, blank, or null `anchor_type`, inconsistent coordinate fields,
+or an edge direction outside an `EDGE` anchor are malformed and reject the
+window or identity-closure read. Adapters do not repair them into authored
+absence.
 
 ## Feature Marker Storage Semantics
 
@@ -232,12 +238,11 @@ map:
 - `label` stores the authored marker label
 - `description` stores the authored marker description
 
-SQLite adapters MUST map these rows into the domain-owned
-`FeatureMarkerCatalog` and MUST persist the domain-provided catalog back to the
-same table. Obsolete marker rows for the saved map MUST be removed when a save
-omits their ids. The table is source-local storage only; it MUST NOT own marker
-defaults, marker validation, encounter/object foreign-key semantics, preview
-state, render state, or travel behavior.
+SQLite adapters MUST map these rows into domain-owned `FeatureMarker` values and
+persist marker inserts, updates, or removals named by a patch. The table is
+source-local storage only; it MUST NOT own marker defaults, marker validation,
+encounter/object foreign-key semantics, preview state, render state, or travel
+behavior.
 
 ## Validation And Error Behavior
 
@@ -259,18 +264,16 @@ state, render state, or travel behavior.
 
 - new fields belong in source-local records first, then map into domain-owned
   values
-- schema readiness creates the current table set and may run current topology
-  and boundary topology backfills for installed current-schema databases
-- old-install upgrades for `dungeon_structure_levels`,
-  `dungeon_room_clusters.structure_object_id`, transition stair-anchor columns,
-  and broad additive ALTER lists are retired; databases that still require
-  those paths need explicit data cleanup or owner-approved repair before
-  they are treated as supported authored maps
+- one automatic destructive Dungeon-only schema migration installs the
+  canonical room-cell, boundary, entity-membership, chunk-revision, and patch
+  target schema
+- the replacement does not backfill or retain historical Dungeon geometry,
+  whole-record, fixed-bounds, or enum-compatibility representations
 - direct runtime token movement does not justify new authored-position tables;
   runtime party position remains owned outside dungeon persistence
-- revision, chunk inventory, and incremental chunk ownership may be introduced
-  through an automatic destructive schema migration; existing Dungeon rows are
-  disposable test data and have no compatibility or backup obligation
+- existing Dungeon rows are disposable development data and have no
+  compatibility or backup obligation; the migration MUST NOT modify Party, Hex,
+  or other feature rows
 
 ## Verification Notes
 

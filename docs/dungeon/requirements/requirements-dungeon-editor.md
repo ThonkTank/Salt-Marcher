@@ -88,6 +88,10 @@ cards.
   guesses
 - preview MUST read as if the pending operation were applied, but MUST NOT
   persist authored truth
+- rejected edits MUST show a specific stable reason that explains the blocked
+  operation; a generic no-change message is not sufficient when the system
+  knows whether geometry, identity, references, routing, or revision caused the
+  rejection
 - handle drag preview MUST be responsive and MUST avoid a full authored
   map reload during per-mouse-move preview when the typed preview can be
   rendered from the current editor session
@@ -100,6 +104,8 @@ cards.
 - corridor editing MUST support visible create and delete flows
 - stair editing MUST support visible create and delete flows plus stair shape, direction, and exit-level configuration
 - transition editing MUST support visible create and delete flows plus destination selection for dungeon, overworld, or an explicit unlinked entrance placeholder
+- object, encounter, and point-of-interest markers MUST support label and
+  description editing after creation
 - cluster and room naming MUST support default and custom names through the
   state panel; only cluster labels may also use direct label editing
 
@@ -129,7 +135,12 @@ cards.
 - history MUST preserve stable authored identities and restore content as a
   new monotonically increasing map revision
 - one map session retains at most `200` committed commands or `128 MiB` of
-  estimated history, whichever limit is reached first
+  encoded history weight, whichever limit is reached first; the byte weight
+  MUST upper-bound or directly measure the retained forward and inverse command
+  payloads rather than estimate only top-level object counts
+- one accepted command that changes several maps, including a bidirectional
+  transition link, MUST create one compound history entry and undo or redo every
+  involved map atomically
 - closing the editor session or restarting the application clears history;
   history MUST NOT be stored as dungeon-authored truth
 
@@ -143,6 +154,10 @@ cards.
   touched chunks rather than total authored map size
 - stable authored content and the dynamic interaction/actor layer MUST be
   independently invalidatable so hover changes do not redraw authored content
+- qualification MUST include a sparse map with at least `100,000` authored
+  cells while the active visible-plus-ring workset contains at most `9` chunks;
+  camera, hover, and preview operation counts MUST remain independent from the
+  off-window cell count
 
 ## Supported Interaction States
 

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-10
+Last Reviewed: 2026-07-17
 Source of Truth: Root documentation index for SaltMarcher documentation layers
 and feature documentation directories.
 
@@ -42,8 +42,8 @@ by the [Documentation Standard](project/documentation.md).
 - [Maps](maps/README.md): shared passive map-canvas behavior and contracts.
 - [Party](party/README.md): party composition and party state.
 - [Session Planner](sessionplanner/README.md): session-owned planning records.
-- [Travel](travel/README.md): deprecated travel domain documentation retained
-  for compatibility context.
+- [Travel](travel/README.md): feature-neutral global travel-context selection
+  across Party, Dungeon, and Hex readbacks.
 - [World Planner](worldplanner/README.md): campaign-world planning records.
 
 ## References

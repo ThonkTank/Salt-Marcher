@@ -1,8 +1,8 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
-Source of Truth: Feature API contract for passive map scenes, hits, and pointer
-samples shared with adopting features.
+Last Reviewed: 2026-07-17
+Source of Truth: Platform contract for passive map scenes, hits, and pointer
+samples shared with adopting feature adapters.
 
 # Maps Canvas Contract
 
@@ -114,7 +114,9 @@ migration with every adopter updated together.
 - Production-route JUnit tests cover empty and populated scenes, draw/hit
   consistency, every pointer phase, stale revisions, camera stability, and
   adopter round-trip identity.
-- `architectureTest` checks that adopters depend only on `features.maps.api`.
+- `architectureTest` checks that only adopting JavaFX adapters depend on
+  `platform.ui.mapcanvas` and that the platform mechanism has no feature
+  dependency.
 - This contract is Review-Owned for payload semantics not expressed by those
   tests.
 

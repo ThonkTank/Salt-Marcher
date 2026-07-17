@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-17
 Source of Truth: Target Dungeon adoption of platform map-canvas mechanisms through feature APIs
 and explicit application composition.
 
@@ -31,8 +31,8 @@ features/dungeon/
 
 The Dungeon JavaFX adapter may depend on `features.dungeon.api`,
 `shell.api`, and `platform.ui.mapcanvas`. It must not
-reach into Dungeon domain, application, or SQLite packages. Maps must not depend
-on any Dungeon package.
+reach into Dungeon domain, application, or SQLite packages. The platform map
+canvas must not depend on any Dungeon package.
 
 ## Composition And Dependencies
 
@@ -69,14 +69,14 @@ input.
 
 ### Preview And Apply
 
-`platform pointer sample -> Dungeon JavaFX translation -> Dungeon Editor API -> Dungeon application -> immutable Dungeon API state -> translated canvas scene`
+`platform pointer sample -> Dungeon JavaFX translation -> DungeonEditorIntent -> DungeonEditorApi -> immutable DungeonEditorState -> translated canvas scene`
 
 Preview and apply reuse the same authored operation vocabulary. Preview does not
 persist; apply commits only after Dungeon validation succeeds.
 
 ### Travel
 
-`Maps pointer sample or travel control -> Dungeon JavaFX translation -> Dungeon Travel API -> Dungeon application -> immutable travel state -> translated Maps scene`
+`map-canvas pointer sample or travel control -> Dungeon JavaFX translation -> DungeonTravelApi -> immutable DungeonTravelState -> translated map-canvas scene`
 
 Party position remains owned by the Party feature and reaches Dungeon only
 through the Party API supplied during explicit composition.

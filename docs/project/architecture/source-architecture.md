@@ -77,6 +77,12 @@ feature and publishes separate Authored, Editor, and Travel APIs.
 - Technical diagnostics MUST remain local and MUST NOT record feature payloads,
   secrets, or user-authored content.
 
+The global compact travel context is owned by a feature-neutral Travel
+capability. It consumes Party position plus Dungeon and Hex API readbacks,
+publishes one immutable `TravelContextSnapshot`, and owns the single global
+`Reise` state contribution. Dungeon and Hex retain their movement semantics and
+detailed workspaces; `app` only composes these APIs.
+
 Internal Java types have no compatibility obligation while all consumers move
 atomically in one green slice. Persisted data and observable behavior retain
 their contract and requirement owners.
@@ -84,8 +90,8 @@ their contract and requirement owners.
 ## Delivery State
 
 Temporary repository state, verification scope, and the next deletion boundary
-live only in [Active Delivery](../delivery/README.md). They do not modify this
-target.
+live only in feature-owned `docs/<feature>/delivery/` documents routed from the
+feature README. They do not modify this target.
 
 The target-package ArchUnit rules are mechanically enforced by
 `architectureTest` and `check`.

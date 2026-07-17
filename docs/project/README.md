@@ -41,7 +41,8 @@ lives under `docs/<feature>/`; see [docs/README.md](../README.md).
 
 ## Delivery
 
-- [Active delivery index](delivery/README.md)
+- Temporary delivery documents are routed from their feature README. Current:
+  [Dungeon Greenfield Roadmap](../dungeon/delivery/roadmap-dungeon-greenfield.md).
 
 ## Verification
 
