@@ -1,8 +1,8 @@
 package features.dungeon.adapter.javafx.map;
 
-import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.api.TravelDungeonSnapshot;
+import features.dungeon.adapter.javafx.DungeonEditorToolPresentation;
 import features.dungeon.api.editor.DungeonEditorState;
 
 final class DungeonMapFrameProjector {
@@ -29,7 +29,7 @@ final class DungeonMapFrameProjector {
                         DungeonMapRenderState.ViewMode.fromEditor(safeState.viewMode()))
                 .withOverlaySettings(toOverlaySettings(safeState.overlaySettings()))
                 .withProjectionLevel(safeState.projectionLevel())
-                .withSelectedTool(toolLabel(safeState.selectedTool()));
+                .withSelectedTool(DungeonEditorToolPresentation.label(safeState.toolSelection()));
     }
 
     DungeonMapRenderState mapTravel(
@@ -60,7 +60,4 @@ final class DungeonMapFrameProjector {
                 safeOverlay.selectedLevels());
     }
 
-    private static String toolLabel(DungeonEditorTool selectedTool) {
-        return DungeonEditorTool.labelFor(selectedTool);
-    }
 }

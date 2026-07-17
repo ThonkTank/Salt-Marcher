@@ -11,6 +11,7 @@ import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.editor.DungeonEditorDraftState;
 import features.dungeon.api.editor.DungeonEditorState;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
 
 final class DungeonEditorStatePanelModel {
     private final ReadOnlyObjectWrapper<StateProjection> stateProjection =
@@ -465,7 +466,7 @@ final class DungeonEditorStatePanelModel {
 
     String stateTextFor(DungeonEditorState state) {
         DungeonEditorState safeState = state == null ? DungeonEditorState.empty() : state;
-        return "Werkzeug: " + DungeonEditorControlsPanelModel.labelOf(safeState.selectedTool())
+        return "Werkzeug: " + DungeonEditorControlsPanelModel.labelOf(safeState.toolSelection())
                 + "\nAnsicht: " + normalizeViewModeKey(safeState.viewMode().name())
                 + "\nEbene: z=" + safeState.projectionLevel()
                 + "\nOverlay: " + safeState.overlaySettings().modeKey()
@@ -651,7 +652,6 @@ final class DungeonEditorStatePanelModel {
     private static final class TransitionPanel {
     private static final long NO_TRANSITION_ID = 0L;
     private static final long NO_SELECTED_MAP_ID = 0L;
-    private static final String TRANSITION_CREATE_TOOL = "TRANSITION_CREATE";
     private static final String DESTINATION_DUNGEON_MAP = "DUNGEON_MAP";
     private static final String DESTINATION_OVERWORLD_TILE = "OVERWORLD_TILE";
     private static final String DESTINATION_UNLINKED_ENTRANCE = "UNLINKED_ENTRANCE";
@@ -695,7 +695,7 @@ final class DungeonEditorStatePanelModel {
         }
         DungeonTopologyElementRef topologyRef = safeTopologyRef(safeState.selection().topologyRef());
         long selectedTransitionId = selectedTransitionId(topologyRef);
-        if (!TRANSITION_CREATE_TOOL.equals(safeState.selectedTool().name())
+        if (safeState.toolSelection().family() != DungeonEditorToolFamily.TRANSITION
                 && selectedTransitionId <= NO_TRANSITION_ID) {
             return null;
         }

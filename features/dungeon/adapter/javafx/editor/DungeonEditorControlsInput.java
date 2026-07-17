@@ -1,7 +1,7 @@
 package features.dungeon.adapter.javafx.editor;
 
-import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonEditorViewMode;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 
 record DungeonEditorControlsInput(
         MapInput map,
@@ -49,18 +49,11 @@ record DungeonEditorControlsInput(
     }
 
     record ToolInput(
-            String requestedFamilyKey,
-            DungeonEditorTool selectedTool,
-            String selectedOptionKey,
+            DungeonEditorToolSelection selection,
             boolean dismissControlActivated
     ) {
-        ToolInput {
-            requestedFamilyKey = requestedFamilyKey == null ? "" : requestedFamilyKey.strip();
-            selectedOptionKey = selectedOptionKey == null ? "" : selectedOptionKey.strip();
-        }
-
         static ToolInput none() {
-            return new ToolInput("", null, "", false);
+            return new ToolInput(null, false);
         }
     }
 

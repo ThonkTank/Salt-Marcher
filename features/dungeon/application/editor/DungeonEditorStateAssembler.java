@@ -3,10 +3,8 @@ package features.dungeon.application.editor;
 import features.dungeon.api.DungeonEditorControlsSnapshot;
 import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorStateSnapshot;
-import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.editor.DungeonEditorDraftState;
 import features.dungeon.api.editor.DungeonEditorState;
-import features.dungeon.api.editor.DungeonEditorToolFamily;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
 
 /** Assembles the single public editor publication directly from owner readbacks. */
@@ -17,7 +15,8 @@ final class DungeonEditorStateAssembler {
             DungeonEditorControlsSnapshot controls,
             DungeonEditorMapSurfaceSnapshot mapSurface,
             DungeonEditorStateSnapshot state,
-            DungeonEditorRuntimeDraftFrame drafts
+            DungeonEditorRuntimeDraftFrame drafts,
+            DungeonEditorToolSelection toolSelection
     ) {
         DungeonEditorControlsSnapshot safeControls = controls == null
                 ? DungeonEditorControlsSnapshot.empty("")
@@ -38,8 +37,7 @@ final class DungeonEditorStateAssembler {
                 safeControls.selectedMapId(),
                 safeMapSurface.surface(),
                 safeControls.viewMode(),
-                safeControls.selectedTool(),
-                toolSelectionFrom(safeControls.selectedTool()),
+                toolSelection,
                 safeControls.overlaySettings(),
                 safeControls.projectionLevel(),
                 safeControls.reachableLevels(),
@@ -61,30 +59,6 @@ final class DungeonEditorStateAssembler {
             return "Kein Dungeon ausgewählt.";
         }
         return controls.statusText();
-    }
-
-    private static DungeonEditorToolSelection toolSelectionFrom(DungeonEditorTool tool) {
-        DungeonEditorTool safeTool = tool == null ? DungeonEditorTool.SELECT : tool;
-        String key = safeTool.name();
-        DungeonEditorToolFamily family;
-        if (key.startsWith("ROOM_")) {
-            family = DungeonEditorToolFamily.ROOM;
-        } else if (key.startsWith("WALL_")) {
-            family = DungeonEditorToolFamily.WALL;
-        } else if (key.startsWith("DOOR_")) {
-            family = DungeonEditorToolFamily.DOOR;
-        } else if (key.startsWith("CORRIDOR_")) {
-            family = DungeonEditorToolFamily.CORRIDOR;
-        } else if (key.startsWith("FEATURE_")) {
-            family = DungeonEditorToolFamily.FEATURE;
-        } else if (key.startsWith("STAIR_")) {
-            family = DungeonEditorToolFamily.STAIR;
-        } else if (key.startsWith("TRANSITION_")) {
-            family = DungeonEditorToolFamily.TRANSITION;
-        } else {
-            family = DungeonEditorToolFamily.SELECT;
-        }
-        return new DungeonEditorToolSelection(family, key);
     }
 
     private static DungeonEditorDraftState draftFrom(DungeonEditorRuntimeDraftFrame drafts) {

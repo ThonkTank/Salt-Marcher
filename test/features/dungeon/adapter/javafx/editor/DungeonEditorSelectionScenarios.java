@@ -973,7 +973,6 @@ final class DungeonEditorSelectionScenarios {
                 null,
                 safeSnapshot.surface(),
                 safeSnapshot.viewMode(),
-                safeSnapshot.selectedTool(),
                 DungeonEditorToolSelection.select(),
                 safeSnapshot.overlaySettings(),
                 safeSnapshot.projectionLevel(),

@@ -3,7 +3,6 @@ package features.dungeon.api.editor;
 import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonEditorSurface;
-import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonMapId;
@@ -20,7 +19,6 @@ public record DungeonEditorState(
         @Nullable DungeonMapId selectedMapId,
         @Nullable DungeonEditorSurface selectedWindow,
         DungeonEditorViewMode viewMode,
-        DungeonEditorTool selectedTool,
         DungeonEditorToolSelection toolSelection,
         DungeonOverlaySettings overlaySettings,
         int projectionLevel,
@@ -36,7 +34,6 @@ public record DungeonEditorState(
         requestGeneration = Math.max(0L, requestGeneration);
         catalog = catalog == null ? List.of() : List.copyOf(catalog);
         viewMode = viewMode == null ? DungeonEditorViewMode.GRID : viewMode;
-        selectedTool = selectedTool == null ? DungeonEditorTool.SELECT : selectedTool;
         toolSelection = toolSelection == null ? DungeonEditorToolSelection.select() : toolSelection;
         overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
         reachableLevels = reachableLevels == null ? List.of(0) : List.copyOf(reachableLevels);
@@ -54,7 +51,6 @@ public record DungeonEditorState(
                 null,
                 null,
                 DungeonEditorViewMode.GRID,
-                DungeonEditorTool.SELECT,
                 DungeonEditorToolSelection.select(),
                 DungeonOverlaySettings.defaults(),
                 0,
