@@ -12,8 +12,8 @@ import features.dungeon.domain.core.projection.DungeonAreaType;
 import features.dungeon.domain.core.projection.DungeonDerivedState;
 import features.dungeon.domain.core.projection.DungeonDerivedStateProjection;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
-import features.dungeon.domain.core.structure.room.Room;
-import features.dungeon.domain.core.structure.room.RoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomClusterGeometry;
 import features.dungeon.domain.core.structure.room.RoomClusterFloorMap;
 import features.dungeon.domain.core.structure.room.RoomClusterRoomPartition;
 import features.dungeon.domain.core.structure.room.RoomClusterWork;
@@ -42,7 +42,7 @@ final class DungeonFloorInvariantScenarios {
     }
 
     private static void assertStructureComposesFloorMap() {
-        RoomCluster cluster = RoomCluster.fromCells(3L, 9L, Set.of(
+        RoomClusterGeometry cluster = RoomClusterGeometry.fromCells(3L, 9L, Set.of(
                 new Cell(1, 1, 0),
                 new Cell(2, 1, 0),
                 new Cell(1, 1, 1)));
@@ -85,10 +85,10 @@ final class DungeonFloorInvariantScenarios {
         Cell left = new Cell(0, 0, 0);
         Cell middle = new Cell(1, 0, 0);
         Cell right = new Cell(2, 0, 0);
-        RoomCluster cluster = RoomCluster.fromCells(9L, 2L, Set.of(right, left, middle));
-        List<Room> rooms = List.of(
-                new Room(7L, 2L, 9L, "Bestand", Map.of(0, left)),
-                new Room(20L, 2L, 9L, "Split", Map.of(0, middle)));
+        RoomClusterGeometry cluster = RoomClusterGeometry.fromCells(9L, 2L, Set.of(right, left, middle));
+        List<RoomRegion> rooms = List.of(
+                new RoomRegion(7L, 2L, 9L, "Bestand", Map.of(0, left)),
+                new RoomRegion(20L, 2L, 9L, "Split", Map.of(0, middle)));
 
         assertEquals(Map.of(
                         7L, List.of(left),
@@ -105,8 +105,8 @@ final class DungeonFloorInvariantScenarios {
         Cell upperLater = new Cell(2, 0, 1);
         Cell lowerFirst = new Cell(0, 0, 0);
         Cell lowerLater = new Cell(1, 0, 0);
-        RoomCluster cluster = RoomCluster.fromCells(9L, 2L, Set.of(upperLater, lowerLater, upperFirst, lowerFirst));
-        RoomClusterWork work = new RoomClusterWork(cluster, List.of(new Room(
+        RoomClusterGeometry cluster = RoomClusterGeometry.fromCells(9L, 2L, Set.of(upperLater, lowerLater, upperFirst, lowerFirst));
+        RoomClusterWork work = new RoomClusterWork(cluster, List.of(new RoomRegion(
                 7L,
                 2L,
                 9L,
@@ -114,11 +114,11 @@ final class DungeonFloorInvariantScenarios {
                 Map.of(0, lowerFirst, 1, upperFirst))));
 
         assertEquals(Map.of(0, lowerFirst, 1, upperFirst),
-                Room.anchorsByLevel(cluster.floorMap().cellsByLevel()),
+                RoomRegion.anchorsByLevel(cluster.floorMap().cellsByLevel()),
                 "floor owner derives one sorted anchor per owned floor level");
 
         Edge split = Edge.sideOf(lowerFirst, Direction.EAST);
-        List<Room> splitRooms = RoomClusterRoomPartition.roomsForBoundaryEdit(
+        List<RoomRegion> splitRooms = RoomClusterRoomPartition.roomsForBoundaryEdit(
                 work,
                 Map.of(0, List.of(split)),
                 20L);

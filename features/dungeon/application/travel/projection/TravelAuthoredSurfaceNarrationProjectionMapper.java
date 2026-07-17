@@ -2,7 +2,7 @@ package features.dungeon.application.travel.projection;
 
 import java.util.ArrayList;
 import java.util.List;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
+import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.DungeonRoomExitDescription;
 
 final class TravelAuthoredSurfaceNarrationProjectionMapper {
@@ -10,9 +10,9 @@ final class TravelAuthoredSurfaceNarrationProjectionMapper {
     private TravelAuthoredSurfaceNarrationProjectionMapper() {
     }
 
-    static List<TravelAuthoredSurface.RoomNarration> toRoomNarrations(List<DungeonRoom> rooms) {
+    static List<TravelAuthoredSurface.RoomNarration> toRoomNarrations(List<RoomRegion> rooms) {
         List<TravelAuthoredSurface.RoomNarration> result = new ArrayList<>();
-        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
+        for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
             TravelAuthoredSurface.RoomNarration narration = toRoomNarration(room);
             if (narration != null) {
                 result.add(narration);
@@ -21,7 +21,7 @@ final class TravelAuthoredSurfaceNarrationProjectionMapper {
         return List.copyOf(result);
     }
 
-    private static TravelAuthoredSurface.RoomNarration toRoomNarration(DungeonRoom room) {
+    private static TravelAuthoredSurface.RoomNarration toRoomNarration(RoomRegion room) {
         if (room == null || room.narration() == null) {
             return null;
         }

@@ -97,15 +97,16 @@ and commit boundaries. M7 starts only after both are complete.
 
 ## Current Migration State
 
-- Current foundation: M0 through M2.2 are complete on `main` through PR #495.
-- This slice: M2.3 publishes typed accepted or rejected command outcomes in the
-  atomic Editor state. Blocked route, protected exterior wall, referenced
-  connection, invalid stair geometry, stale revision, and missing transition
-  destination are stable reasons mapped to user-facing status in one place.
-- Rejected production routes preserve authored state and revision; outcome-only
-  feedback remains a controls publication and does not republish map geometry.
-- Next step after this slice merges: M2.4 establishes `RoomRegion` and
-  `RoomCluster` ownership and collapses same-layer room and cluster pairs.
+- Current foundation: M0 through M2.3 are complete on `main` through PR #496.
+- This slice: M2.4 establishes `RoomRegion` as the exact authored room-floor
+  owner and `RoomCluster` as the cluster identity, name, and boundary owner.
+- The parallel `DungeonRoom`/`Room` and
+  `DungeonRoomCluster`/`RoomCluster` pairs and their same-layer conversions are
+  deleted. Cluster floor and interaction geometry derive from member room
+  cells; the SQLite mapper translates the legacy cluster-floor schema at the
+  adapter boundary.
+- Next step after this slice merges: M2.5 removes the remaining duplicate
+  primitives and enum-name round trips within the M2 boundary.
 
 ## M0: Target Lock And Baseline
 

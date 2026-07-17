@@ -10,30 +10,33 @@ import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
 
 final class DungeonClusterRecordMapperSupport {
 
     private DungeonClusterRecordMapperSupport() {
     }
 
-    static List<DungeonRoomCluster> toClusters(List<DungeonRoomClusterRecord> records) {
-        List<DungeonRoomCluster> result = new ArrayList<>();
+    static List<RoomCluster> toClusters(List<DungeonRoomClusterRecord> records) {
+        List<RoomCluster> result = new ArrayList<>();
         for (DungeonRoomClusterRecord record : records == null ? List.<DungeonRoomClusterRecord>of() : records) {
-            result.add(DungeonRoomCluster.fromPersistenceState(
+            result.add(RoomCluster.authored(
                     record.clusterId(),
                     record.mapId(),
                     record.name(),
                     new Cell(record.centerX(), record.centerY(), record.levelZ()),
-                    DungeonClusterFloorCellRecordMapperSupport.floorMap(record),
                     boundariesByLevel(record.boundaries())));
         }
         return List.copyOf(result);
     }
 
-    static List<DungeonRoomClusterRecord> toClusterRecords(List<DungeonRoomCluster> clusters) {
+    static List<DungeonRoomClusterRecord> toClusterRecords(
+            List<RoomCluster> clusters,
+            List<RoomRegion> rooms
+    ) {
         List<DungeonRoomClusterRecord> result = new ArrayList<>();
-        for (DungeonRoomCluster cluster : clusters == null ? List.<DungeonRoomCluster>of() : clusters) {
+        for (RoomCluster cluster : clusters == null ? List.<RoomCluster>of() : clusters) {
             result.add(new DungeonRoomClusterRecord(
                     cluster.clusterId(),
                     cluster.mapId(),
@@ -41,7 +44,7 @@ final class DungeonClusterRecordMapperSupport {
                     cluster.center().q(),
                     cluster.center().r(),
                     cluster.center().level(),
-                    DungeonClusterFloorCellRecordMapperSupport.toFloorCellRecords(cluster.clusterId(), cluster),
+                    DungeonClusterFloorCellRecordMapperSupport.toFloorCellRecords(cluster.clusterId(), rooms),
                     toBoundaryRecords(cluster)));
         }
         return List.copyOf(result);
@@ -67,7 +70,7 @@ final class DungeonClusterRecordMapperSupport {
         return DungeonNestedListMaps.immutableCopy(result);
     }
 
-    private static List<DungeonClusterBoundaryRecord> toBoundaryRecords(DungeonRoomCluster cluster) {
+    private static List<DungeonClusterBoundaryRecord> toBoundaryRecords(RoomCluster cluster) {
         List<DungeonClusterBoundaryRecord> result = new ArrayList<>();
         for (DungeonClusterBoundary boundary : cluster.orderedBoundariesForWriteback()) {
             result.add(new DungeonClusterBoundaryRecord(

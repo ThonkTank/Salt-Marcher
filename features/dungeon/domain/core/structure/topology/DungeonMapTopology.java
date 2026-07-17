@@ -11,8 +11,8 @@ import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.corridor.Corridor;
 import features.dungeon.domain.core.structure.corridor.CorridorDoorBindingState;
 import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomCatalog;
 import features.dungeon.domain.core.structure.stair.Stair;
 import features.dungeon.domain.core.structure.transition.Transition;
@@ -66,7 +66,7 @@ public record DungeonMapTopology(
     }
 
     private static void appendRoomBindings(List<DungeonTopologyBinding> result, RoomCatalog rooms) {
-        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms.rooms()) {
+        for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms.rooms()) {
             if (room == null) {
                 continue;
             }
@@ -148,7 +148,7 @@ public record DungeonMapTopology(
     }
 
     private static void appendBoundaryBindings(List<DungeonTopologyBinding> result, SpatialTopology topology) {
-        for (DungeonRoomCluster cluster : topology == null ? List.<DungeonRoomCluster>of() : topology.roomClusters()) {
+        for (RoomCluster cluster : topology == null ? List.<RoomCluster>of() : topology.roomClusters()) {
             for (DungeonClusterBoundary boundary : cluster.orderedAuthoredBoundaries()) {
                 if (!boundary.kind().renderable()) {
                     continue;

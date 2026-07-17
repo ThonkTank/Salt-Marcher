@@ -14,7 +14,7 @@ import features.dungeon.domain.core.graph.DungeonTraversalLink;
 import features.dungeon.domain.core.projection.DungeonAreaFacts;
 import features.dungeon.domain.core.projection.DungeonAreaType;
 import features.dungeon.domain.core.projection.DungeonDerivedState;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
+import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.DungeonRoomExitDescription;
 import features.dungeon.domain.core.structure.DungeonMap;
 
@@ -27,28 +27,28 @@ final class BuildDungeonRoomNarrationsUseCase {
             long clusterId,
             boolean clusterSelection
     ) {
-        List<DungeonRoom> selectedRooms = selectedRooms(dungeonMap, topologyRef, clusterId, clusterSelection);
+        List<RoomRegion> selectedRooms = selectedRooms(dungeonMap, topologyRef, clusterId, clusterSelection);
         if (selectedRooms.isEmpty()) {
             return List.of();
         }
-        List<DungeonRoom> sortedRooms = new ArrayList<>(selectedRooms);
+        List<RoomRegion> sortedRooms = new ArrayList<>(selectedRooms);
         sortedRooms.sort(BuildDungeonRoomNarrationsUseCase::compareRooms);
         List<LoadDungeonSnapshotUseCase.RoomNarrationData> narrations = new ArrayList<>();
-        for (DungeonRoom room : sortedRooms) {
+        for (RoomRegion room : sortedRooms) {
             narrations.add(roomNarration(derived, room));
         }
         return List.copyOf(narrations);
     }
 
-    private static List<DungeonRoom> selectedRooms(
+    private static List<RoomRegion> selectedRooms(
             DungeonMap dungeonMap,
             DungeonTopologyRef topologyRef,
             long clusterId,
             boolean clusterSelection
     ) {
         if (clusterSelection && clusterId > 0L) {
-            List<DungeonRoom> rooms = new ArrayList<>();
-            for (DungeonRoom room : dungeonMap.rooms().rooms()) {
+            List<RoomRegion> rooms = new ArrayList<>();
+            for (RoomRegion room : dungeonMap.rooms().rooms()) {
                 if (room.clusterId() == clusterId) {
                     rooms.add(room);
                 }
@@ -58,7 +58,7 @@ final class BuildDungeonRoomNarrationsUseCase {
         if (!isRoomSelection(topologyRef)) {
             return List.of();
         }
-        DungeonRoom room = dungeonMap.rooms().findRoom(topologyRef.id()).orElse(null);
+        RoomRegion room = dungeonMap.rooms().findRoom(topologyRef.id()).orElse(null);
         return room == null ? List.of() : List.of(room);
     }
 
@@ -70,7 +70,7 @@ final class BuildDungeonRoomNarrationsUseCase {
 
     private static LoadDungeonSnapshotUseCase.RoomNarrationData roomNarration(
             DungeonDerivedState derived,
-            DungeonRoom room
+            RoomRegion room
     ) {
         Optional<DungeonAreaFacts> area = areaForRoom(derived, room.roomId());
         Set<Cell> roomCells = area.isPresent() ? Set.copyOf(area.get().cells()) : Set.of();
@@ -93,7 +93,7 @@ final class BuildDungeonRoomNarrationsUseCase {
     }
 
     private static Optional<LoadDungeonSnapshotUseCase.RoomExitNarrationData> exitNarration(
-            DungeonRoom room,
+            RoomRegion room,
             DungeonTraversalLink link,
             Set<Cell> roomCells
     ) {
@@ -110,7 +110,7 @@ final class BuildDungeonRoomNarrationsUseCase {
     }
 
     private static String matchingExitDescription(
-            DungeonRoom room,
+            RoomRegion room,
             Cell roomCell,
             Direction direction
     ) {
@@ -139,7 +139,7 @@ final class BuildDungeonRoomNarrationsUseCase {
         return Optional.empty();
     }
 
-    private static int compareRooms(DungeonRoom left, DungeonRoom right) {
+    private static int compareRooms(RoomRegion left, RoomRegion right) {
         int nameComparison = Comparator.nullsFirst(String.CASE_INSENSITIVE_ORDER).compare(left.name(), right.name());
         if (nameComparison != 0) {
             return nameComparison;

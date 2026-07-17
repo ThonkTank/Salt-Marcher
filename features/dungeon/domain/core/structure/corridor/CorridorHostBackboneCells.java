@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import features.dungeon.domain.core.component.CorridorWaypoint;
 import features.dungeon.domain.core.geometry.Cell;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 
 final class CorridorHostBackboneCells {
     private static final int SINGLE_ROUTE_TERMINUS_COUNT = 1;
@@ -13,7 +13,7 @@ final class CorridorHostBackboneCells {
 
     List<Cell> authoredBackbone(
             List<CorridorWaypoint> waypoints,
-            Map<Long, DungeonRoomCluster> clustersById,
+            Map<Long, RoomCluster> clustersById,
             List<CorridorHostEndpoint> endpoints
     ) {
         List<Cell> waypointCells = waypointCells(waypoints, clustersById);
@@ -62,7 +62,7 @@ final class CorridorHostBackboneCells {
 
     private static List<Cell> waypointCells(
             List<CorridorWaypoint> waypoints,
-            Map<Long, DungeonRoomCluster> clustersById
+            Map<Long, RoomCluster> clustersById
     ) {
         List<Cell> result = new ArrayList<>();
         for (CorridorWaypoint waypoint : waypoints == null ? List.<CorridorWaypoint>of() : waypoints) {
@@ -73,9 +73,9 @@ final class CorridorHostBackboneCells {
 
     private static Cell absoluteWaypointCell(
             CorridorWaypoint waypoint,
-            Map<Long, DungeonRoomCluster> clustersById
+            Map<Long, RoomCluster> clustersById
     ) {
-        DungeonRoomCluster cluster = clustersById.get(waypoint.clusterId());
+        RoomCluster cluster = clustersById.get(waypoint.clusterId());
         Cell center = cluster == null
                 ? new Cell(0, 0, waypoint.level())
                 : cluster.center();

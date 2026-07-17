@@ -11,8 +11,8 @@ public final class RoomTopologyRebuilder {
             SpatialTopology topology,
             List<DungeonRoomTopologyClusterWork> workClusters
     ) {
-        List<DungeonRoomCluster> clusters = new ArrayList<>();
-        List<DungeonRoom> rooms = new ArrayList<>();
+        List<RoomCluster> clusters = new ArrayList<>();
+        List<RoomRegion> rooms = new ArrayList<>();
         for (DungeonRoomTopologyClusterWork work : sortedByClusterId(workClusters)) {
             if (work.allCells().isEmpty() || work.rooms().isEmpty()) {
                 continue;
@@ -23,7 +23,7 @@ public final class RoomTopologyRebuilder {
         return new RebuildResult(safeTopology(topology).withRoomClusters(clusters), new RoomCatalog(rooms));
     }
 
-    public DungeonRoomCluster clusterWithBoundaries(
+    public RoomCluster clusterWithBoundaries(
             DungeonRoomTopologyClusterWork work,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
     ) {
@@ -34,7 +34,7 @@ public final class RoomTopologyRebuilder {
                 boundariesByLevel));
     }
 
-    public DungeonRoomCluster clusterForStretch(
+    public RoomCluster clusterForStretch(
             DungeonRoomTopologyClusterWork work,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
     ) {

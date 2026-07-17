@@ -3,15 +3,15 @@ package features.dungeon.domain.core.structure.corridor;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.DungeonMap;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 
 final class CorridorMapLookup {
     private static final long NO_CORRIDOR_ID = 0L;
 
     @Nullable
-    static DungeonRoom room(DungeonMap dungeonMap, long roomId) {
-        for (DungeonRoom room : dungeonMap.rooms().rooms()) {
+    static RoomRegion room(DungeonMap dungeonMap, long roomId) {
+        for (RoomRegion room : dungeonMap.rooms().rooms()) {
             if (room != null && room.roomId() == roomId) {
                 return room;
             }
@@ -20,8 +20,8 @@ final class CorridorMapLookup {
     }
 
     @Nullable
-    static DungeonRoomCluster cluster(DungeonMap dungeonMap, long clusterId) {
-        for (DungeonRoomCluster cluster : dungeonMap.topology().roomClusters()) {
+    static RoomCluster cluster(DungeonMap dungeonMap, long clusterId) {
+        for (RoomCluster cluster : dungeonMap.topology().roomClusters()) {
             if (cluster != null && cluster.clusterId() == clusterId) {
                 return cluster;
             }
@@ -43,7 +43,7 @@ final class CorridorMapLookup {
     }
 
     static Cell clusterCenterOrOrigin(DungeonMap dungeonMap, long clusterId, int level) {
-        DungeonRoomCluster target = cluster(dungeonMap, clusterId);
+        RoomCluster target = cluster(dungeonMap, clusterId);
         return target == null ? new Cell(0, 0, level) : target.center();
     }
 

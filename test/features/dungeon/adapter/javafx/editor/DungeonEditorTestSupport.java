@@ -14,7 +14,7 @@ import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.room.RoomCellCoverage;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.api.DungeonEdgeRef;
 import features.dungeon.api.DungeonEditorControlsModel;
 import features.dungeon.api.DungeonEditorControlsSnapshot;
@@ -1355,7 +1355,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
         DungeonMap dungeonMap = new SqliteDungeonMapRepository()
                 .findById(new DungeonMapIdentity(mapId))
                 .orElseThrow(() -> new AssertionError("Map not found during persisted room readback: " + mapId));
-        DungeonRoomCluster cluster = dungeonMap.topology().roomClusters().stream()
+        RoomCluster cluster = dungeonMap.topology().roomClusters().stream()
                 .filter(candidate -> candidate.clusterId() == clusterId)
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Cluster not found during persisted room readback: "

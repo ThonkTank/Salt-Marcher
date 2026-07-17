@@ -5,7 +5,7 @@ import java.util.Map;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.graph.DungeonTopologyElementKind;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
+import features.dungeon.domain.core.structure.room.RoomRegion;
 
 public final class DungeonRoomAggregateProjection {
 
@@ -16,10 +16,10 @@ public final class DungeonRoomAggregateProjection {
             List<DungeonState> aggregates,
             List<DungeonAreaFacts> areas,
             long clusterId,
-            List<DungeonRoom> clusterRooms,
+            List<RoomRegion> clusterRooms,
             Map<Long, List<Cell>> roomCells
     ) {
-        for (DungeonRoom room : clusterRooms) {
+        for (RoomRegion room : clusterRooms) {
             List<Cell> cells = roomCells.getOrDefault(room.roomId(), List.of(room.primaryAnchor()));
             DungeonState aggregate = new DungeonState(room.roomId(), DungeonAreaType.ROOM, room.name(), cells);
             aggregates.add(aggregate);

@@ -8,7 +8,7 @@ import features.dungeon.domain.core.component.CorridorAnchorRef;
 import features.dungeon.domain.core.graph.DungeonTopologyElementKind;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.DungeonMap;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
+import features.dungeon.domain.core.structure.room.RoomRegion;
 
 /**
  * Owns corridor endpoint equivalence and deduplication semantics.
@@ -23,8 +23,8 @@ final class CorridorEndpointMatching {
         if (start == null || end == null || !start.isDoorEndpoint() || !end.isDoorEndpoint()) {
             return false;
         }
-        DungeonRoom left = CorridorMapLookup.room(dungeonMap, start.roomId());
-        DungeonRoom right = CorridorMapLookup.room(dungeonMap, end.roomId());
+        RoomRegion left = CorridorMapLookup.room(dungeonMap, start.roomId());
+        RoomRegion right = CorridorMapLookup.room(dungeonMap, end.roomId());
         return left != null && right != null && left.clusterId() == right.clusterId();
     }
 

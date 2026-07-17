@@ -16,7 +16,7 @@ import features.dungeon.domain.core.structure.door.Door;
 import features.dungeon.domain.core.structure.door.DoorBoundaryMaterialization;
 import features.dungeon.domain.core.structure.door.DoorIndex;
 import features.dungeon.domain.core.structure.room.BoundaryStretchOrientation;
-import features.dungeon.domain.core.structure.room.RoomCluster;
+import features.dungeon.domain.core.structure.room.RoomClusterGeometry;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
@@ -26,7 +26,7 @@ import features.dungeon.domain.core.structure.room.RoomClusterFloorMap;
 import features.dungeon.domain.core.structure.room.RoomClusterWallDeleteResolver;
 import features.dungeon.domain.core.structure.room.RoomClusterWallDeleteTarget;
 import features.dungeon.domain.core.structure.room.RoomClusterWallMap;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
+import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 
@@ -67,7 +67,7 @@ final class DungeonWallInvariantScenarios {
                         RoomClusterBoundaryMaterialization.BoundaryKind.OPEN),
                 new BoundaryRow(42L, 1, new Cell(0, 0, 1), Direction.SOUTH,
                         RoomClusterBoundaryMaterialization.BoundaryKind.DOOR)));
-        RoomCluster cluster = new RoomCluster(
+        RoomClusterGeometry cluster = new RoomClusterGeometry(
                 42L,
                 7L,
                 center,
@@ -492,7 +492,7 @@ final class DungeonWallInvariantScenarios {
     }
 
     private static long clusterIdForAnchor(DungeonMap map, Cell anchor) {
-        for (DungeonRoom room : map.rooms().rooms()) {
+        for (RoomRegion room : map.rooms().rooms()) {
             if (room.primaryAnchor().equals(anchor)) {
                 return room.clusterId();
             }

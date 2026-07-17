@@ -12,10 +12,10 @@ public final class RoomTopologyWorkCatalog {
     private static final RoomCellCoverage CELL_COVERAGE = new RoomCellCoverage();
 
     public List<DungeonRoomTopologyClusterWork> workClusters(SpatialTopology topology, RoomCatalog rooms) {
-        Map<Long, List<DungeonRoom>> roomsByCluster = safeRooms(rooms).roomsByCluster();
+        Map<Long, List<RoomRegion>> roomsByCluster = safeRooms(rooms).roomsByCluster();
         List<DungeonRoomTopologyClusterWork> result = new ArrayList<>();
-        for (DungeonRoomCluster cluster : safeTopology(topology).roomClusters()) {
-            List<DungeonRoom> clusterRooms = roomsByCluster.getOrDefault(cluster.clusterId(), List.of());
+        for (RoomCluster cluster : safeTopology(topology).roomClusters()) {
+            List<RoomRegion> clusterRooms = roomsByCluster.getOrDefault(cluster.clusterId(), List.of());
             result.add(clusterWork(cluster, clusterRooms));
         }
         return result;
@@ -29,8 +29,8 @@ public final class RoomTopologyWorkCatalog {
         if (clusterId <= NO_ID) {
             return Optional.empty();
         }
-        List<DungeonRoom> clusterRooms = safeRooms(rooms).roomsInCluster(clusterId);
-        for (DungeonRoomCluster cluster : safeTopology(topology).roomClusters()) {
+        List<RoomRegion> clusterRooms = safeRooms(rooms).roomsInCluster(clusterId);
+        for (RoomCluster cluster : safeTopology(topology).roomClusters()) {
             if (cluster != null && cluster.clusterId() == clusterId) {
                 return Optional.of(clusterWork(cluster, clusterRooms));
             }
@@ -51,8 +51,8 @@ public final class RoomTopologyWorkCatalog {
     }
 
     private static DungeonRoomTopologyClusterWork clusterWork(
-            DungeonRoomCluster cluster,
-            List<DungeonRoom> rooms
+            RoomCluster cluster,
+            List<RoomRegion> rooms
     ) {
         return new DungeonRoomTopologyClusterWork(
                 cluster,
@@ -77,7 +77,7 @@ public final class RoomTopologyWorkCatalog {
 
         private static long nextClusterId(SpatialTopology topology) {
             long result = 0L;
-            for (DungeonRoomCluster cluster : safeTopology(topology).roomClusters()) {
+            for (RoomCluster cluster : safeTopology(topology).roomClusters()) {
                 if (cluster != null && cluster.clusterId() > result) {
                     result = cluster.clusterId();
                 }

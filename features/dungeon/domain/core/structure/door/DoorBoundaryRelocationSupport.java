@@ -7,8 +7,8 @@ import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 
 final class DoorBoundaryRelocationSupport {
 
@@ -28,7 +28,7 @@ final class DoorBoundaryRelocationSupport {
         if (invalidStandaloneRequest(topologyRef, clusterId, sourceEdge, delta)) {
             return null;
         }
-        DungeonRoomCluster targetCluster = targetCluster(sourceMap, clusterId, roomId);
+        RoomCluster targetCluster = targetCluster(sourceMap, clusterId, roomId);
         if (targetCluster == null) {
             return null;
         }
@@ -49,7 +49,7 @@ final class DoorBoundaryRelocationSupport {
     }
 
     private static @Nullable StandaloneMoveContext standaloneMoveContextForCluster(
-            DungeonRoomCluster targetCluster,
+            RoomCluster targetCluster,
             DungeonTopologyRef topologyRef,
             Edge sourceEdge,
             MovementDelta delta
@@ -66,14 +66,14 @@ final class DoorBoundaryRelocationSupport {
         return new StandaloneMoveContext(targetCluster, oldDoorBoundary, expectedTopologyRef, nextDoorEdge);
     }
 
-    private static @Nullable DungeonRoomCluster targetCluster(DungeonMap sourceMap, long clusterId, long roomId) {
+    private static @Nullable RoomCluster targetCluster(DungeonMap sourceMap, long clusterId, long roomId) {
         if (roomId > NO_ID) {
-            DungeonRoom room = sourceMap.rooms().findRoom(roomId).orElse(null);
+            RoomRegion room = sourceMap.rooms().findRoom(roomId).orElse(null);
             if (room == null || room.clusterId() != clusterId) {
                 return null;
             }
         }
-        for (DungeonRoomCluster cluster : sourceMap.topology().roomClusters()) {
+        for (RoomCluster cluster : sourceMap.topology().roomClusters()) {
             if (cluster.clusterId() == clusterId) {
                 return cluster;
             }
@@ -102,7 +102,7 @@ final class DoorBoundaryRelocationSupport {
     }
 
     record StandaloneMoveContext(
-            DungeonRoomCluster targetCluster,
+            RoomCluster targetCluster,
             DungeonClusterBoundary oldDoorBoundary,
             DungeonTopologyRef expectedTopologyRef,
             Edge nextDoorEdge

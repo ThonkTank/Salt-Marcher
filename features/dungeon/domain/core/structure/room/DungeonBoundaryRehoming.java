@@ -14,9 +14,9 @@ final class DungeonBoundaryRehoming {
     }
 
     static Map<Integer, List<DungeonClusterBoundary>> byLevel(
-            DungeonRoomCluster sourceCluster,
+            RoomCluster sourceCluster,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel,
-            RoomCluster targetCluster,
+            RoomClusterGeometry targetCluster,
             Map<Integer, List<Cell>> targetCellsByLevel
     ) {
         if (sourceCluster == null || targetCluster == null) {
@@ -48,9 +48,9 @@ final class DungeonBoundaryRehoming {
     }
 
     private static List<DungeonClusterBoundary> rehomedBoundaries(
-            DungeonRoomCluster sourceCluster,
+            RoomCluster sourceCluster,
             List<DungeonClusterBoundary> boundaries,
-            RoomCluster targetCluster,
+            RoomClusterGeometry targetCluster,
             List<Cell> targetCells
     ) {
         List<DungeonClusterBoundary> result = new ArrayList<>();
@@ -76,9 +76,9 @@ final class DungeonBoundaryRehoming {
     }
 
     private static @Nullable DungeonClusterBoundary rehomedBoundary(
-            DungeonRoomCluster sourceCluster,
+            RoomCluster sourceCluster,
             DungeonClusterBoundary boundary,
-            RoomCluster targetCluster,
+            RoomClusterGeometry targetCluster,
             List<Cell> targetCells
     ) {
         Edge absoluteEdge = boundary.absoluteEdge(sourceCluster.center());

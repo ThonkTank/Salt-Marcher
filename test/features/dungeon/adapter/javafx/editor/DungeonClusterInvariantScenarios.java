@@ -8,7 +8,7 @@ import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization;
 import features.dungeon.domain.core.structure.room.RoomClusterFloorMap;
@@ -53,7 +53,7 @@ final class DungeonClusterInvariantScenarios {
     }
 
     private static void assertTrueCornerFacts() {
-        DungeonRoomCluster cluster = nonRectangularCluster();
+        RoomCluster cluster = nonRectangularCluster();
         List<Cell> vertices = cluster.authoredBoundaryVertices(0);
         assertTrue(vertices.contains(new Cell(13, 11, 0)), "DGI-CLUSTER-002 includes true inset corner");
         assertTrue(!vertices.contains(new Cell(13, 13, 0)), "DGI-CLUSTER-002 omits missing bounding-box corner");
@@ -169,12 +169,11 @@ final class DungeonClusterInvariantScenarios {
     }
 
     private static void assertClusterDefaultAndCustomNames() {
-        DungeonRoomCluster defaultCluster = DungeonRoomCluster.fromPersistenceState(
+        RoomCluster defaultCluster = RoomCluster.authored(
                 42L,
                 7L,
                 "",
                 new Cell(0, 0, 0),
-                new RoomClusterFloorMap(Map.of()),
                 Map.of());
         assertEquals("Cluster 42", defaultCluster.name(), "DGI-CLUSTER-005 default cluster name");
         assertEquals("North Hall", defaultCluster.withName("  North Hall  ").name(),
@@ -191,18 +190,12 @@ final class DungeonClusterInvariantScenarios {
                 .paintRoomRectangle(new Cell(1, 1, 0), new Cell(2, 2, 0));
     }
 
-    private static DungeonRoomCluster nonRectangularCluster() {
-        return DungeonRoomCluster.fromPersistenceState(
+    private static RoomCluster nonRectangularCluster() {
+        return RoomCluster.authored(
                 15L,
                 9L,
                 "",
                 new Cell(10, 10, 0),
-                new RoomClusterFloorMap(Map.of(0, List.of(
-                        new Cell(10, 10, 0),
-                        new Cell(11, 10, 0),
-                        new Cell(12, 10, 0),
-                        new Cell(10, 11, 0),
-                        new Cell(10, 12, 0)))),
                 Map.of(0, List.of(
                         boundary(0, 0, Direction.NORTH),
                         boundary(1, 0, Direction.NORTH),

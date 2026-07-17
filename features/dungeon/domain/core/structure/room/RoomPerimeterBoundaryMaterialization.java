@@ -19,7 +19,7 @@ final class RoomPerimeterBoundaryMaterialization {
     }
 
     static Map<Integer, List<DungeonClusterBoundary>> fromFloorCells(
-            DungeonRoomCluster cluster,
+            RoomCluster cluster,
             Iterable<Cell> currentCells,
             Map<Integer, List<DungeonClusterBoundary>> preservedBoundariesByLevel
     ) {
@@ -31,7 +31,7 @@ final class RoomPerimeterBoundaryMaterialization {
     }
 
     private static Map<DungeonBoundaryKey, DungeonClusterBoundary> preservedByKey(
-            DungeonRoomCluster cluster,
+            RoomCluster cluster,
             Map<Integer, List<DungeonClusterBoundary>> preservedBoundariesByLevel
     ) {
         Map<DungeonBoundaryKey, DungeonClusterBoundary> result = new LinkedHashMap<>();
@@ -44,7 +44,7 @@ final class RoomPerimeterBoundaryMaterialization {
     }
 
     private static List<DungeonClusterBoundary> perimeterWallBoundaries(
-            DungeonRoomCluster cluster,
+            RoomCluster cluster,
             Iterable<Cell> currentCells
     ) {
         Set<Cell> cells = normalizedCells(currentCells);
@@ -57,7 +57,7 @@ final class RoomPerimeterBoundaryMaterialization {
 
     private static void addMissingCellBoundaries(
             List<DungeonClusterBoundary> result,
-            DungeonRoomCluster cluster,
+            RoomCluster cluster,
             Set<Cell> cells,
             Cell cell
     ) {
@@ -70,7 +70,7 @@ final class RoomPerimeterBoundaryMaterialization {
 
     private static void addBoundary(
             List<DungeonClusterBoundary> result,
-            DungeonRoomCluster cluster,
+            RoomCluster cluster,
             Set<Cell> cells,
             Cell cell,
             Direction direction

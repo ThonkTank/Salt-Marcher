@@ -2,7 +2,7 @@ package features.dungeon.domain.core.structure.topology;
 
 import java.util.List;
 import features.dungeon.domain.core.geometry.DungeonTopology;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 
 /**
  * Minimal authored spatial truth for the current dungeon parity foundation.
@@ -17,7 +17,7 @@ public record SpatialTopology(
         int height,
         int roomAnchorQ,
         int roomAnchorR,
-        List<DungeonRoomCluster> roomClusters
+        List<RoomCluster> roomClusters
 ) {
     private static final long NO_CLUSTER_ID = 0L;
 
@@ -48,7 +48,7 @@ public record SpatialTopology(
         return new SpatialTopology(DungeonTopology.SQUARE, 10, 8, 2, 2);
     }
 
-    public SpatialTopology withRoomClusters(List<DungeonRoomCluster> clusters) {
+    public SpatialTopology withRoomClusters(List<RoomCluster> clusters) {
         return new SpatialTopology(topology, width, height, roomAnchorQ, roomAnchorR, clusters);
     }
 
@@ -56,11 +56,11 @@ public record SpatialTopology(
         if (clusterId <= NO_CLUSTER_ID) {
             return this;
         }
-        List<DungeonRoomCluster> nextClusters = new java.util.ArrayList<>();
+        List<RoomCluster> nextClusters = new java.util.ArrayList<>();
         boolean changed = false;
-        for (DungeonRoomCluster cluster : roomClusters) {
+        for (RoomCluster cluster : roomClusters) {
             if (cluster.clusterId() == clusterId) {
-                DungeonRoomCluster renamed = cluster.withName(name);
+                RoomCluster renamed = cluster.withName(name);
                 nextClusters.add(renamed);
                 changed = changed || !renamed.equals(cluster);
             } else {
