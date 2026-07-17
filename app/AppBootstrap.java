@@ -190,7 +190,10 @@ public final class AppBootstrap implements AutoCloseable {
                         () -> world.openFactionCreator(
                                 worldEncounter, creatures.catalog(), tables.catalog(), inspector),
                         () -> world.openLocationCreator(
-                                worldEncounter, creatures.catalog(), tables.catalog(), inspector)),
+                                worldEncounter, creatures.catalog(), tables.catalog(), inspector),
+                        npcId -> assignNpcToFocusedScene(scene, npcId),
+                        locationId -> setFocusedSceneLocation(scene, locationId),
+                        creatureId -> assignMobToFocusedScene(scene, creatureId)),
                 dungeon.editorContribution(),
                 dungeon.travelContribution(),
                 hex.mapContribution(),
@@ -206,6 +209,27 @@ public final class AppBootstrap implements AutoCloseable {
             resolved.add(new ResolvedContribution(contribution.registrationSpec(), contribution.bind()));
         }
         return List.copyOf(resolved);
+    }
+
+    private static void assignNpcToFocusedScene(SceneFeature.Component scene, long npcId) {
+        long sceneId = scene.model().current().focusedSceneId();
+        if (sceneId > 0L && npcId > 0L) {
+            scene.application().execute(new features.scene.api.SceneCommand.AssignNpc(sceneId, npcId));
+        }
+    }
+
+    private static void setFocusedSceneLocation(SceneFeature.Component scene, long locationId) {
+        long sceneId = scene.model().current().focusedSceneId();
+        if (sceneId > 0L && locationId > 0L) {
+            scene.application().execute(new features.scene.api.SceneCommand.SetLocation(sceneId, locationId));
+        }
+    }
+
+    private static void assignMobToFocusedScene(SceneFeature.Component scene, long creatureId) {
+        long sceneId = scene.model().current().focusedSceneId();
+        if (sceneId > 0L && creatureId > 0L) {
+            scene.application().execute(new features.scene.api.SceneCommand.AssignMob(sceneId, creatureId, 1));
+        }
     }
 
     private void register(AppShell shell, ResolvedContribution contribution) {

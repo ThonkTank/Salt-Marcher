@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-16
+Last Reviewed: 2026-07-17
 Source of Truth: User-facing behavior and acceptance criteria for the World
 Planner NPC, faction, location, and encounter-source workflows.
 
@@ -79,6 +79,8 @@ Inspector surfaces so the user can:
 - add or remove NPCs from factions without mutating creature truth
 - configure faction stock as finite or unlimited per creature statblock
 - configure location-to-faction and location-to-table links
+- remove faction membership and location links without deleting the referenced
+  provider records
 - select factions and locations in encounter-generation controls
 - add an NPC to combat while preserving its World Planner identity
 - show a post-combat loss confirmation before durable NPC or inventory state
@@ -112,6 +114,8 @@ Inspector surfaces so the user can:
   Session Planner-owned records.
 - an NPC belongs to at most one faction and its effective disposition is the
   clamped sum of faction base and NPC modifier
+- deleting an NPC removes its faction membership; deleting a faction removes
+  its location links; deleting a location removes only the location
 - Creature statblocks, encounter-table membership, encounter rosters, party
   members, combat HP, dungeon maps, and hex maps stay in their owning
   contexts.

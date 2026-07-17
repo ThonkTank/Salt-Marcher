@@ -28,10 +28,9 @@ import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
 
-public final class CatalogControlsView extends VBox {
+public class CatalogControlsView extends VBox {
 
     private static final String FILTER_SECTION_TITLE = "FILTER";
-    private static final String ENCOUNTER_SECTION_TITLE = "ENCOUNTER";
     private static final String STYLE_COMPACT = "compact";
     private static final String STYLE_FLAT = "flat";
     private static final String STYLE_FILTER_TRIGGER = "filter-trigger";
@@ -203,9 +202,7 @@ public final class CatalogControlsView extends VBox {
                                         worldFactionButton,
                                         new Label("Location"),
                                         worldLocationChoice),
-                                chipControls.node()))),
-                CatalogControlsChrome.separator(),
-                CatalogControlsChrome.section(ENCOUNTER_SECTION_TITLE, tuningControls.node()));
+                                chipControls.node()))));
     }
 
     public void bind(CatalogControlsContentModel contentModel) {

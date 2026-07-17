@@ -1,6 +1,6 @@
 Status: Active
 Owner: Catalog Feature
-Last Reviewed: 2026-07-16
+Last Reviewed: 2026-07-17
 Source of Truth: Entry point for the consolidated reference workspace.
 
 # Catalog Feature

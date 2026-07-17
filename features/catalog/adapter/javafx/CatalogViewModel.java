@@ -10,17 +10,14 @@ import features.creatures.api.SelectCreatureDetailCommand;
 import features.encounter.api.EncounterApi;
 import features.encounter.api.ApplyEncounterStateCommand;
 import features.encounter.api.EncounterBuilderInputs;
-import features.encounter.api.UpdateEncounterBuilderInputsCommand;
+import features.encounter.api.EncounterPoolFilters;
+import features.encounter.api.UpdateEncounterPoolFiltersCommand;
 import features.encountertable.api.EncounterTableApi;
 import features.encountertable.api.RefreshEncounterTableCatalogCommand;
 
 final class CatalogViewModel {
 
     private static final long NO_CREATURE_ID = 0L;
-    private static final int MIN_DIFFICULTY_LEVEL = 1;
-    private static final int DEFAULT_DIFFICULTY_LEVEL = 2;
-    private static final int NEUTRAL_DIFFICULTY_LEVEL = 3;
-    private static final int MAX_DIFFICULTY_LEVEL = 4;
 
     private final CatalogMainContentModel mainContentModel = new CatalogMainContentModel();
     private final CatalogControlsContentModel controlsContentModel = new CatalogControlsContentModel();
@@ -28,15 +25,26 @@ final class CatalogViewModel {
     private final CreaturesApi creatures;
     private final EncounterTableApi encounterTables;
     private final EncounterApi encounters;
+    private final java.util.function.LongConsumer addCreatureToScene;
 
     CatalogViewModel(
             CreaturesApi creatures,
             EncounterTableApi encounterTables,
             EncounterApi encounters
     ) {
+        this(creatures, encounterTables, encounters, ignored -> { });
+    }
+
+    CatalogViewModel(
+            CreaturesApi creatures,
+            EncounterTableApi encounterTables,
+            EncounterApi encounters,
+            java.util.function.LongConsumer addCreatureToScene
+    ) {
         this.creatures = Objects.requireNonNull(creatures, "creatures");
         this.encounterTables = Objects.requireNonNull(encounterTables, "encounterTables");
         this.encounters = Objects.requireNonNull(encounters, "encounters");
+        this.addCreatureToScene = Objects.requireNonNull(addCreatureToScene, "addCreatureToScene");
         creatures.refreshFilterOptions(new RefreshCreatureFilterOptionsCommand());
         encounterTables.refreshCatalog(new RefreshEncounterTableCatalogCommand());
         refreshCatalog();
@@ -66,7 +74,6 @@ final class CatalogViewModel {
         CatalogControlsContentModel.InteractionState interactionState = controlsContentModel.interactionState();
         CatalogControlsContentModel.LocalFilterState previousLocalFilters = interactionState.localFilters();
         CatalogControlsContentModel.ControlsState previousDraftControls = interactionState.draftControls();
-        CatalogControlsContentModel.ControlsState authoritativeControls = interactionState.domainControls();
 
         controlsContentModel.applyControlsDraft(new CatalogControlsContentModel.ControlsDraft(
                 new CatalogControlsContentModel.LocalFilterState(
@@ -112,23 +119,22 @@ final class CatalogViewModel {
         }
 
         CatalogControlsContentModel.ControlsState currentDraftControls = currentState.draftControls();
-        if (!previousDraftControls.equals(currentDraftControls) && !currentDraftControls.equals(authoritativeControls)) {
-            encounters.updateBuilderInputs(new UpdateEncounterBuilderInputsCommand(
-                    new EncounterBuilderInputs(
-                            currentDraftControls.creatureTypes(),
-                            currentDraftControls.creatureSubtypes(),
-                            currentDraftControls.biomes(),
-                            currentDraftControls.difficulty().auto(),
-                            toDifficultyLevel(currentDraftControls.difficulty().value()),
-                            currentDraftControls.balance().auto(),
-                            roundedLevel(currentDraftControls.balance().value()),
-                            currentDraftControls.amount().auto(),
-                            currentDraftControls.amount().value(),
-                            currentDraftControls.diversity().auto(),
-                            roundedLevel(currentDraftControls.diversity().value()),
-                            currentDraftControls.encounterTableIds(),
-                            currentDraftControls.worldFactionIds(),
-                            currentDraftControls.worldLocationId())));
+        boolean poolFiltersChanged = !previousLocalFilters.equals(currentState.localFilters())
+                || !previousDraftControls.equals(currentDraftControls);
+        if (poolFiltersChanged) {
+            CatalogControlsContentModel.LocalFilterState filters = currentState.localFilters();
+            encounters.updatePoolFilters(new UpdateEncounterPoolFiltersCommand(new EncounterPoolFilters(
+                    filters.nameQuery(),
+                    filters.challengeRatingMin(),
+                    filters.challengeRatingMax(),
+                    filters.sizes(),
+                    currentDraftControls.creatureTypes(),
+                    currentDraftControls.creatureSubtypes(),
+                    currentDraftControls.biomes(),
+                    filters.alignments(),
+                    currentDraftControls.encounterTableIds(),
+                    currentDraftControls.worldFactionIds(),
+                    currentDraftControls.worldLocationId())));
         }
     }
 
@@ -155,6 +161,10 @@ final class CatalogViewModel {
         }
         if (event.actionCreatureId() > NO_CREATURE_ID) {
             encounters.applyState(ApplyEncounterStateCommand.addCreature(event.actionCreatureId()));
+            return;
+        }
+        if (event.sceneCreatureId() > NO_CREATURE_ID) {
+            addCreatureToScene.accept(event.sceneCreatureId());
         }
     }
 
@@ -181,21 +191,4 @@ final class CatalogViewModel {
                 mainContentModel.currentPageOffset()));
     }
 
-    private static int toDifficultyLevel(double value) {
-        int rounded = roundedLevel(value);
-        if (rounded <= MIN_DIFFICULTY_LEVEL) {
-            return MIN_DIFFICULTY_LEVEL;
-        }
-        if (rounded == NEUTRAL_DIFFICULTY_LEVEL) {
-            return NEUTRAL_DIFFICULTY_LEVEL;
-        }
-        if (rounded >= MAX_DIFFICULTY_LEVEL) {
-            return MAX_DIFFICULTY_LEVEL;
-        }
-        return DEFAULT_DIFFICULTY_LEVEL;
-    }
-
-    private static int roundedLevel(double value) {
-        return (int) Math.round(value);
-    }
 }

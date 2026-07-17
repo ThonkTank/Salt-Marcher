@@ -776,11 +776,17 @@ public final class CatalogControlsContentModel {
     
         boolean applyEncounterBuilderInputs(EncounterBuilderInputs builderInputs) {
             CatalogControlsContentModel.ControlsState previousAuthoritative = authoritativeControls;
+            CatalogControlsContentModel.LocalFilterState previousLocal = localFilters;
+            EncounterBuilderInputs safeInputs = builderInputs == null ? EncounterBuilderInputs.empty() : builderInputs;
             CatalogControlsContentModel.ControlsState next =
-                    CatalogControlsContentModel.ControlsState.fromBuilderInputs(builderInputs, previousAuthoritative);
+                    CatalogControlsContentModel.ControlsState.fromBuilderInputs(safeInputs, previousAuthoritative);
+            localFilters = new CatalogControlsContentModel.LocalFilterState(
+                    safeInputs.nameQuery(), safeInputs.challengeRatingMin(), safeInputs.challengeRatingMax(),
+                    safeInputs.sizes(), safeInputs.alignments()).retainAvailable(filterOptions);
             authoritativeControls = next;
             controlsState = next;
-            return CatalogControlsContentModel.ControlsState.searchControlsChanged(previousAuthoritative, next);
+            return !previousLocal.equals(localFilters)
+                    || CatalogControlsContentModel.ControlsState.searchControlsChanged(previousAuthoritative, next);
         }
     
         void applyEncounterTables(EncounterTableCatalogResult result) {

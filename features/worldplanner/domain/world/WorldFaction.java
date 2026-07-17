@@ -71,6 +71,17 @@ public record WorldFaction(
                 npcIds.stream().filter(id -> id != npcId).toList(), inventoryLimits);
     }
 
+    public WorldFaction updateDetails(String nextDisplayName, String nextNotes, long nextPrimaryEncounterTableId) {
+        return new WorldFaction(
+                factionId,
+                nextDisplayName,
+                nextNotes,
+                nextPrimaryEncounterTableId,
+                disposition,
+                npcIds,
+                inventoryLimits);
+    }
+
     public WorldFaction withDisposition(int value) {
         return new WorldFaction(
                 factionId, displayName, notes, primaryEncounterTableId, value, npcIds, inventoryLimits);

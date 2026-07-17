@@ -18,7 +18,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TableView;
 import javafx.scene.input.KeyCode;
@@ -118,8 +117,8 @@ public final class CatalogInitialLoadTest {
             Button create = button((Parent) tabs.getSelectionModel().getSelectedItem().getContent(), "NPC anlegen");
             create.fire();
 
-            ListView<?> npcs = descendant(
-                    (Parent) tabs.getSelectionModel().getSelectedItem().getContent(), ListView.class);
+            TableView<?> npcs = descendant(
+                    (Parent) tabs.getSelectionModel().getSelectedItem().getContent(), TableView.class);
             npcs.getSelectionModel().selectFirst();
             npcs.fireEvent(new KeyEvent(
                     KeyEvent.KEY_PRESSED, "", "", KeyCode.ENTER,
@@ -127,6 +126,26 @@ public final class CatalogInitialLoadTest {
 
             assertTrue(createRequested.get(), "NPC creation route was not reachable from an empty Catalog section.");
             assertTrue(openedNpc.get() == 77L, "Enter did not open the selected provider-owned NPC inspector.");
+        });
+    }
+
+    @Test
+    void CATALOG_SCENE_ROUTE_001() throws Exception {
+        seedCreatureCatalog();
+        AtomicLong addedCreature = new AtomicLong();
+        runOnFxThread(() -> {
+            CatalogTestRuntime runtime = services();
+            ShellBinding binding = runtime.contribution(
+                    EmptyInspectorSink.INSTANCE, ignored -> { }, () -> { }, addedCreature::set).bind();
+            CatalogWorkspaceView workspace = slot(binding, ShellSlot.COCKPIT_MAIN, CatalogWorkspaceView.class);
+            Stage stage = new Stage();
+            stage.setScene(new Scene(workspace, 1_100.0, 700.0));
+            stage.show();
+            workspace.applyCss();
+            workspace.layout();
+
+            button(workspace.monsterView(), "+ Scene").fire();
+            assertTrue(addedCreature.get() > 0L, "Monster + Scene did not publish the selected creature id.");
         });
     }
 
