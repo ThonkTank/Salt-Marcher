@@ -19,6 +19,10 @@ final class EncounterCandidateSqliteStore {
                     + CreaturesPersistenceSchema.CREATURES.name()
                     + " "
                     + "WHERE xp >= ? AND xp <= ? "
+                    + "AND (? = '' OR LOWER(name) LIKE '%' || LOWER(?) || '%') "
+                    + "AND ((SELECT COUNT(*) FROM " + CreaturesPersistenceSchema.TEMP_FILTER_SIZES_TABLE + ") = 0 "
+                    + "OR LOWER(size) IN (SELECT value FROM "
+                    + CreaturesPersistenceSchema.TEMP_FILTER_SIZES_TABLE + ")) "
                     + "AND ((SELECT COUNT(*) FROM " + CreaturesPersistenceSchema.TEMP_FILTER_TYPES_TABLE + ") = 0 "
                     + "OR LOWER(creature_type) IN (SELECT value FROM "
                     + CreaturesPersistenceSchema.TEMP_FILTER_TYPES_TABLE + ")) "
@@ -30,6 +34,9 @@ final class EncounterCandidateSqliteStore {
                     + "OR id IN (SELECT creature_id FROM " + CreaturesPersistenceSchema.CREATURE_BIOMES.name()
                     + " WHERE LOWER(biome) IN (SELECT value FROM "
                     + CreaturesPersistenceSchema.TEMP_FILTER_BIOMES_TABLE + "))) "
+                    + "AND ((SELECT COUNT(*) FROM " + CreaturesPersistenceSchema.TEMP_FILTER_ALIGNMENTS_TABLE + ") = 0 "
+                    + "OR LOWER(alignment) IN (SELECT value FROM "
+                    + CreaturesPersistenceSchema.TEMP_FILTER_ALIGNMENTS_TABLE + ")) "
                     + "ORDER BY xp ASC, name ASC LIMIT ?";
 
     List<EncounterCandidateRecord> loadEncounterCandidates(
@@ -40,7 +47,9 @@ final class EncounterCandidateSqliteStore {
         try (PreparedStatement statement = connection.prepareStatement(LOAD_ENCOUNTER_CANDIDATES_SQL)) {
             statement.setInt(1, spec.minimumXp());
             statement.setInt(2, spec.maximumXp());
-            statement.setInt(3, spec.limit());
+            statement.setString(3, spec.nameQuery());
+            statement.setString(4, spec.nameQuery());
+            statement.setInt(5, spec.limit());
             return readEncounterCandidates(statement);
         } finally {
             CreatureFilterTempTables.clearFilters(connection);

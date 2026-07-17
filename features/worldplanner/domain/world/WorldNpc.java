@@ -57,6 +57,20 @@ public record WorldNpc(
                 status);
     }
 
+    public WorldNpc updateDetails(String nextDisplayName, long nextCreatureStatblockId, Notes notes) {
+        Notes safeNotes = notes == null ? Notes.empty() : notes;
+        return new WorldNpc(
+                npcId,
+                nextDisplayName,
+                nextCreatureStatblockId,
+                safeNotes.appearanceNotes(),
+                safeNotes.behaviorNotes(),
+                safeNotes.historyNotes(),
+                safeNotes.generalNotes(),
+                dispositionModifier,
+                status);
+    }
+
     public WorldNpc withDispositionModifier(int modifier) {
         return new WorldNpc(
                 npcId, displayName, creatureStatblockId, appearanceNotes, behaviorNotes,

@@ -143,13 +143,34 @@ public final class EncounterGenerator {
     ) {
         Set<Long> excludedCreatureIds = new LinkedHashSet<>(request.excludedCreatureIds());
         excludedCreatureIds.removeAll(lockedCreatureIds);
-        List<EncounterCandidateProfile> profiles = request.encounterTableIds().isEmpty()
-                ? creatureProfiles(request, thresholds, excludedCreatureIds, lockedCreatureIds, searchLimit)
-                : tableProfiles(request, thresholds, excludedCreatureIds, lockedCreatureIds);
+        List<EncounterCandidateProfile> profiles;
+        if (request.encounterTableIds().isEmpty()) {
+            profiles = creatureProfiles(request, thresholds, excludedCreatureIds, lockedCreatureIds, searchLimit);
+        } else {
+            profiles = tableProfiles(request, thresholds, excludedCreatureIds, lockedCreatureIds);
+            if (profiles != null && hasCreaturePoolConstraint(request)) {
+                java.util.Set<Long> eligibleIds = creatureProfiles(
+                        request, thresholds, excludedCreatureIds, lockedCreatureIds, searchLimit).stream()
+                        .map(EncounterCandidateProfile::id)
+                        .collect(java.util.stream.Collectors.toSet());
+                profiles = profiles.stream().filter(profile -> eligibleIds.contains(profile.id())).toList();
+            }
+        }
         if (profiles == null) {
             return CandidateLoad.failure("Encounter tables are not available.");
         }
         return CandidateLoad.success(profiles);
+    }
+
+    private static boolean hasCreaturePoolConstraint(EncounterGenerationRequest request) {
+        return !request.nameQuery().isBlank()
+                || !request.challengeRatingMin().isBlank()
+                || !request.challengeRatingMax().isBlank()
+                || !request.sizes().isEmpty()
+                || !request.creatureTypes().isEmpty()
+                || !request.creatureSubtypes().isEmpty()
+                || !request.biomes().isEmpty()
+                || !request.alignments().isEmpty();
     }
 
     private List<EncounterCandidateProfile> creatureProfiles(
@@ -163,6 +184,11 @@ public final class EncounterGenerator {
                 request.creatureTypes(),
                 request.creatureSubtypes(),
                 request.biomes(),
+                request.nameQuery(),
+                request.challengeRatingMin(),
+                request.challengeRatingMax(),
+                request.sizes(),
+                request.alignments(),
                 0,
                 EncounterDifficultyTargetHelper.candidateMaxXp(thresholds),
                 searchLimit);

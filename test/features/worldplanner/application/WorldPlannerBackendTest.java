@@ -41,6 +41,15 @@ import features.worldplanner.api.SetWorldNpcLifecycleStatusCommand;
 import features.worldplanner.api.SetWorldNpcDispositionModifierCommand;
 import features.worldplanner.api.WorldDispositionKind;
 import features.worldplanner.api.UpdateWorldNpcNotesCommand;
+import features.worldplanner.api.UpdateWorldNpcCommand;
+import features.worldplanner.api.DeleteWorldNpcCommand;
+import features.worldplanner.api.UpdateWorldFactionCommand;
+import features.worldplanner.api.RemoveWorldFactionNpcCommand;
+import features.worldplanner.api.DeleteWorldFactionCommand;
+import features.worldplanner.api.UpdateWorldLocationCommand;
+import features.worldplanner.api.RemoveWorldLocationFactionCommand;
+import features.worldplanner.api.RemoveWorldLocationEncounterTableCommand;
+import features.worldplanner.api.DeleteWorldLocationCommand;
 import features.worldplanner.api.WorldNpcLifecycleStatus;
 import features.worldplanner.api.WorldPlannerReadStatus;
 import features.worldplanner.api.WorldPlannerSnapshot;
@@ -87,6 +96,22 @@ public final class WorldPlannerBackendTest {
         service.createLocation(new CreateWorldLocationCommand("Old Gate", "wind-cut ruins"));
         service.addLocationFaction(new AddWorldLocationFactionCommand(1L, 1L));
         service.addLocationEncounterTable(new AddWorldLocationEncounterTableCommand(1L, 201L));
+        service.updateNpc(new UpdateWorldNpcCommand(
+                1L, "Captain Vale Updated", 101L, "scarred", "watchful", "former scout", "knows the pass"));
+        service.updateFaction(new UpdateWorldFactionCommand(1L, "Ash Guard Updated", "border patrol", 201L));
+        service.updateLocation(new UpdateWorldLocationCommand(1L, "Old Gate Updated", "wind-cut ruins"));
+        service.removeFactionNpc(new RemoveWorldFactionNpcCommand(1L, 1L));
+        service.addFactionNpc(new AddWorldFactionNpcCommand(1L, 1L));
+        service.removeLocationFaction(new RemoveWorldLocationFactionCommand(1L, 1L));
+        service.addLocationFaction(new AddWorldLocationFactionCommand(1L, 1L));
+        service.removeLocationEncounterTable(new RemoveWorldLocationEncounterTableCommand(1L, 201L));
+        service.addLocationEncounterTable(new AddWorldLocationEncounterTableCommand(1L, 201L));
+        service.createNpc(new CreateWorldNpcCommand("Temporary NPC", 101L, "", "", "", ""));
+        service.deleteNpc(new DeleteWorldNpcCommand(2L));
+        service.createFaction(new CreateWorldFactionCommand("Temporary Faction", "", 201L));
+        service.deleteFaction(new DeleteWorldFactionCommand(2L));
+        service.createLocation(new CreateWorldLocationCommand("Temporary Location", ""));
+        service.deleteLocation(new DeleteWorldLocationCommand(2L));
         service.createNpc(new CreateWorldNpcCommand("Invalid", -1L, "", "", "", ""));
         service.addFactionNpc(new AddWorldFactionNpcCommand(1L, 1L));
         service.addLocationFaction(new AddWorldLocationFactionCommand(1L, 1L));
@@ -98,7 +123,7 @@ public final class WorldPlannerBackendTest {
 
         WorldPlannerSnapshot current = model.current();
         assertEquals(1, current.npcs().size(), "npc count");
-        assertEquals("Captain Vale", current.npcs().get(0).displayName(), "npc name");
+        assertEquals("Captain Vale Updated", current.npcs().get(0).displayName(), "npc name");
         assertEquals(WorldNpcLifecycleStatus.ACTIVE, current.npcs().get(0).status(), "npc lifecycle");
         assertEquals("NPC Status nicht gefunden.", current.statusText(), "transient null lifecycle status");
         assertEquals(1, current.factions().size(), "faction count");
@@ -119,7 +144,9 @@ public final class WorldPlannerBackendTest {
         assertEquals(201L, current.locations().get(0).encounterTableIds().get(0), "location table link");
 
         WorldPlannerSnapshot reloaded = reloadedSnapshot();
-        assertEquals("Captain Vale", reloaded.npcs().get(0).displayName(), "persisted npc name");
+        assertEquals("Captain Vale Updated", reloaded.npcs().get(0).displayName(), "persisted npc name");
+        assertEquals("Ash Guard Updated", reloaded.factions().get(0).displayName(), "persisted faction rename");
+        assertEquals("Old Gate Updated", reloaded.locations().get(0).displayName(), "persisted location rename");
         assertEquals(WorldNpcLifecycleStatus.ACTIVE, reloaded.npcs().get(0).status(), "persisted lifecycle");
         assertEquals(201L, reloaded.factions().get(0).primaryEncounterTableId(), "persisted faction table");
         assertEquals(-20, reloaded.factions().getFirst().disposition(), "persisted faction disposition");

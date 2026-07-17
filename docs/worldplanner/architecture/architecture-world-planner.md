@@ -1,6 +1,6 @@
-Status: Active Target
+Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-16
+Last Reviewed: 2026-07-17
 Source of Truth: World Planner feature ownership, public seams, and target
 dependency direction.
 
