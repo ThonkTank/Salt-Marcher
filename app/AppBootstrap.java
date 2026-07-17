@@ -192,7 +192,8 @@ public final class AppBootstrap implements AutoCloseable {
                         () -> world.openLocationCreator(
                                 worldEncounter, creatures.catalog(), tables.catalog(), inspector),
                         npcId -> assignNpcToFocusedScene(scene, npcId),
-                        locationId -> setFocusedSceneLocation(scene, locationId)),
+                        locationId -> setFocusedSceneLocation(scene, locationId),
+                        creatureId -> assignMobToFocusedScene(scene, creatureId)),
                 dungeon.editorContribution(),
                 dungeon.travelContribution(),
                 hex.mapContribution(),
@@ -221,6 +222,13 @@ public final class AppBootstrap implements AutoCloseable {
         long sceneId = scene.model().current().focusedSceneId();
         if (sceneId > 0L && locationId > 0L) {
             scene.application().execute(new features.scene.api.SceneCommand.SetLocation(sceneId, locationId));
+        }
+    }
+
+    private static void assignMobToFocusedScene(SceneFeature.Component scene, long creatureId) {
+        long sceneId = scene.model().current().focusedSceneId();
+        if (sceneId > 0L && creatureId > 0L) {
+            scene.application().execute(new features.scene.api.SceneCommand.AssignMob(sceneId, creatureId, 1));
         }
     }
 

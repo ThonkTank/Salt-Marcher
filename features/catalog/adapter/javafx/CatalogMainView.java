@@ -23,10 +23,9 @@ public final class CatalogMainView extends BorderPane {
     private static final int PREVIOUS_PAGE_SHIFT = -1;
     private static final int NEXT_PAGE_SHIFT = 1;
     private static final long NO_CREATURE_ID = 0L;
-    private static final String ACTION_LABEL = "+Add";
-    private static final String ACTION_TOOLTIP = "Zum Encounter hinzufügen";
+    private static final String ENCOUNTER_ACTION_LABEL = "+ Encounter";
+    private static final String SCENE_ACTION_LABEL = "+ Scene";
     private static final String CREATURE_ACCESSIBLE_TEXT_PREFIX = "Stat Block: ";
-    private static final String ACTION_ACCESSIBLE_TEXT_PREFIX = ACTION_LABEL + ": ";
     private static final String COLUMN_KEY_CHALLENGE_RATING = "cr";
     private static final String COLUMN_KEY_TYPE = "type";
     private static final String COLUMN_KEY_SIZE = "size";
@@ -89,13 +88,15 @@ public final class CatalogMainView extends BorderPane {
                 0));
     }
 
-    private void publishCreatureEvent(long creatureId, boolean addCreature) {
+    private void publishCreatureEvent(long creatureId, CreatureActionKind action) {
         if (creatureId <= NO_CREATURE_ID) {
             return;
         }
-        viewInputEventHandler.accept(addCreature
-                ? new CatalogMainViewInputEvent("", 0L, creatureId, 0)
-                : new CatalogMainViewInputEvent("", creatureId, 0L, 0));
+        viewInputEventHandler.accept(switch (action) {
+            case ENCOUNTER -> new CatalogMainViewInputEvent("", 0L, creatureId, 0L, 0);
+            case SCENE -> new CatalogMainViewInputEvent("", 0L, 0L, creatureId, 0);
+            default -> new CatalogMainViewInputEvent("", creatureId, 0L, 0L, 0);
+        });
     }
 
     private void publishPageShift(int pageShift) {
@@ -160,6 +161,12 @@ public final class CatalogMainView extends BorderPane {
         }
     }
 
+    private enum CreatureActionKind {
+        OPEN,
+        ENCOUNTER,
+        SCENE
+    }
+
     private static final class CatalogTable {
 
         static void configure(
@@ -176,7 +183,10 @@ public final class CatalogMainView extends BorderPane {
                 if (selectedCreatureId <= NO_CREATURE_ID) {
                     return;
                 }
-                action.accept(selectedCreatureId, event.isShiftDown());
+                action.accept(selectedCreatureId,
+                        event.isShiftDown()
+                                ? (event.isControlDown() ? CreatureActionKind.SCENE : CreatureActionKind.ENCOUNTER)
+                                : CreatureActionKind.OPEN);
                 event.consume();
             });
         }
@@ -234,9 +244,9 @@ public final class CatalogMainView extends BorderPane {
 
         private static TableColumn<Object, Object> createActionColumn(CreatureAction action) {
             TableColumn<Object, Object> actionColumn = new TableColumn<>("");
-            actionColumn.setMinWidth(55);
-            actionColumn.setPrefWidth(65);
-            actionColumn.setMaxWidth(75);
+            actionColumn.setMinWidth(150);
+            actionColumn.setPrefWidth(175);
+            actionColumn.setMaxWidth(210);
             actionColumn.setSortable(false);
             actionColumn.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue()));
             actionColumn.setCellFactory(ignored -> new ActionCell(CatalogTable::creatureId, action));
@@ -279,7 +289,7 @@ public final class CatalogMainView extends BorderPane {
     @FunctionalInterface
     private interface CreatureAction {
 
-        void accept(long creatureId, boolean addCreature);
+        void accept(long creatureId, CreatureActionKind action);
     }
 
     private static final class LinkCell extends TableCell<Object, Object> {
@@ -301,7 +311,7 @@ public final class CatalogMainView extends BorderPane {
                 if (owningTable != null && row != null) {
                     owningTable.getSelectionModel().select(row);
                 }
-                action.accept(creatureIdReader.applyAsLong(row), false);
+                action.accept(creatureIdReader.applyAsLong(row), CreatureActionKind.OPEN);
             });
         }
 
@@ -319,7 +329,9 @@ public final class CatalogMainView extends BorderPane {
 
     private static final class ActionCell extends TableCell<Object, Object> {
 
-        private final Button button = new Button(ACTION_LABEL);
+        private final Button encounterButton = new Button(ENCOUNTER_ACTION_LABEL);
+        private final Button sceneButton = new Button(SCENE_ACTION_LABEL);
+        private final HBox actions = new HBox(4, encounterButton, sceneButton);
         private final java.util.function.ToLongFunction<Object> creatureIdReader;
         private final CreatureAction action;
 
@@ -329,26 +341,31 @@ public final class CatalogMainView extends BorderPane {
         ) {
             this.creatureIdReader = creatureIdReader;
             this.action = action;
-            button.getStyleClass().addAll("accent", "compact");
-            button.setTooltip(new Tooltip(ACTION_TOOLTIP));
-            button.setOnAction(event -> {
-                Object row = getItem();
-                TableView<Object> owningTable = getTableView();
-                if (owningTable != null && row != null) {
-                    owningTable.getSelectionModel().select(row);
-                }
-                action.accept(creatureIdReader.applyAsLong(row), true);
-            });
+            encounterButton.getStyleClass().addAll("accent", "compact");
+            sceneButton.getStyleClass().addAll("compact");
+            encounterButton.setTooltip(new Tooltip("Zum Encounter hinzufügen"));
+            sceneButton.setTooltip(new Tooltip("Zur fokussierten Scene hinzufügen"));
+            encounterButton.setOnAction(event -> publish(CreatureActionKind.ENCOUNTER));
+            sceneButton.setOnAction(event -> publish(CreatureActionKind.SCENE));
+        }
+
+        private void publish(CreatureActionKind kind) {
+            Object row = getItem();
+            TableView<Object> owningTable = getTableView();
+            if (owningTable != null && row != null) {
+                owningTable.getSelectionModel().select(row);
+            }
+            action.accept(creatureIdReader.applyAsLong(row), kind);
         }
 
         @Override
         protected void updateItem(Object row, boolean empty) {
             super.updateItem(row, empty);
             Object displayRow = empty ? null : row;
-            button.setAccessibleText(displayRow == null
-                    ? ""
-                    : ACTION_ACCESSIBLE_TEXT_PREFIX + CatalogTable.cellText(displayRow, FIRST_COLUMN_INDEX));
-            setGraphic(displayRow == null ? null : button);
+            String name = displayRow == null ? "" : CatalogTable.cellText(displayRow, FIRST_COLUMN_INDEX);
+            encounterButton.setAccessibleText(displayRow == null ? "" : "+ Encounter: " + name);
+            sceneButton.setAccessibleText(displayRow == null ? "" : "+ Scene: " + name);
+            setGraphic(displayRow == null ? null : actions);
         }
     }
 

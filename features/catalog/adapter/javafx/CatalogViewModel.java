@@ -25,15 +25,26 @@ final class CatalogViewModel {
     private final CreaturesApi creatures;
     private final EncounterTableApi encounterTables;
     private final EncounterApi encounters;
+    private final java.util.function.LongConsumer addCreatureToScene;
 
     CatalogViewModel(
             CreaturesApi creatures,
             EncounterTableApi encounterTables,
             EncounterApi encounters
     ) {
+        this(creatures, encounterTables, encounters, ignored -> { });
+    }
+
+    CatalogViewModel(
+            CreaturesApi creatures,
+            EncounterTableApi encounterTables,
+            EncounterApi encounters,
+            java.util.function.LongConsumer addCreatureToScene
+    ) {
         this.creatures = Objects.requireNonNull(creatures, "creatures");
         this.encounterTables = Objects.requireNonNull(encounterTables, "encounterTables");
         this.encounters = Objects.requireNonNull(encounters, "encounters");
+        this.addCreatureToScene = Objects.requireNonNull(addCreatureToScene, "addCreatureToScene");
         creatures.refreshFilterOptions(new RefreshCreatureFilterOptionsCommand());
         encounterTables.refreshCatalog(new RefreshEncounterTableCatalogCommand());
         refreshCatalog();
@@ -150,6 +161,10 @@ final class CatalogViewModel {
         }
         if (event.actionCreatureId() > NO_CREATURE_ID) {
             encounters.applyState(ApplyEncounterStateCommand.addCreature(event.actionCreatureId()));
+            return;
+        }
+        if (event.sceneCreatureId() > NO_CREATURE_ID) {
+            addCreatureToScene.accept(event.sceneCreatureId());
         }
     }
 

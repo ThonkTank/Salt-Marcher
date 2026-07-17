@@ -56,8 +56,8 @@ Catalog only composes its presentation with other providers.
 - Previous and next page controls move in fixed 50-row pages.
 - Clicking a creature name or pressing Enter on a selected row opens that
   creature in the shell Inspector.
-- Clicking a creature row's `+Add` action publishes an add-creature request to
-  the Encounter state tab.
+- Each creature row exposes explicit `+ Encounter` and `+ Scene` actions. The
+  Scene action adds one mob of that statblock to the focused running Scene.
 
 ## Visible States
 
@@ -76,8 +76,8 @@ Catalog only composes its presentation with other providers.
 - changing sort order resets pagination to the first page
 - clicking a creature name or confirming the selected row opens the creature in
   the shell Inspector
-- clicking a row `+Add` action publishes an add-creature request without
-  mutating creature catalog truth
+- clicking `+ Encounter` or `+ Scene` publishes only the selected target
+  command without mutating creature catalog truth
 - an empty encounter-table selection keeps the normal creature-catalog source,
   while a non-empty encounter-table selection publishes selected table ids for
   the Encounter state tab

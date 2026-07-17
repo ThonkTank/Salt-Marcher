@@ -46,6 +46,7 @@ public final class CatalogContribution implements ShellContribution {
     private final Runnable createLocation;
     private final java.util.function.LongConsumer addNpcToScene;
     private final java.util.function.LongConsumer setSceneLocation;
+    private final java.util.function.LongConsumer addCreatureToScene;
 
     public CatalogContribution(
             CreaturesApi creatures,
@@ -71,7 +72,7 @@ public final class CatalogContribution implements ShellContribution {
         this(creatures, encounterTables, encounters, builderInputs, filterOptions, catalog,
                 encounterTableCatalog, tuningPreview, savedPlans, items, worldPlanner, inspector,
                 openCreatureInspector, openNpcInspector, openFactionInspector, openLocationInspector,
-                createNpc, createFaction, createLocation, ignored -> { }, ignored -> { });
+                createNpc, createFaction, createLocation, ignored -> { }, ignored -> { }, ignored -> { });
     }
 
     public CatalogContribution(
@@ -95,7 +96,8 @@ public final class CatalogContribution implements ShellContribution {
             Runnable createFaction,
             Runnable createLocation,
             java.util.function.LongConsumer addNpcToScene,
-            java.util.function.LongConsumer setSceneLocation
+            java.util.function.LongConsumer setSceneLocation,
+            java.util.function.LongConsumer addCreatureToScene
     ) {
         this.creatures = Objects.requireNonNull(creatures, "creatures");
         this.encounterTables = Objects.requireNonNull(encounterTables, "encounterTables");
@@ -118,6 +120,7 @@ public final class CatalogContribution implements ShellContribution {
         this.createLocation = Objects.requireNonNull(createLocation, "createLocation");
         this.addNpcToScene = Objects.requireNonNull(addNpcToScene, "addNpcToScene");
         this.setSceneLocation = Objects.requireNonNull(setSceneLocation, "setSceneLocation");
+        this.addCreatureToScene = Objects.requireNonNull(addCreatureToScene, "addCreatureToScene");
     }
 
     @Override
@@ -133,7 +136,8 @@ public final class CatalogContribution implements ShellContribution {
 
     @Override
     public ShellBinding bind() {
-        CatalogViewModel viewModel = new CatalogViewModel(creatures, encounterTables, encounters);
+        CatalogViewModel viewModel = new CatalogViewModel(
+                creatures, encounterTables, encounters, addCreatureToScene);
         CatalogControlsHost controls = new CatalogControlsHost();
         CatalogMainView monsters = new CatalogMainView();
 

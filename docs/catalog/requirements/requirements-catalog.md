@@ -18,7 +18,8 @@ and running-session lookup without taking ownership from provider features.
 - Sections MUST use one horizontal category strip and consistent tabular
   result chrome; the left control slot changes to the selected category.
 - Monster search and encounter-builder controls MUST preserve their accepted
-  behavior, including creature details and adding creatures to Encounter.
+  behavior, including creature details and explicit add-to-Encounter and
+  add-to-focused-Scene actions.
 - Items MUST be read-only, searched asynchronously, distinguish loading,
   unavailable, empty, invalid, and storage-failure outcomes, and open details
   without blocking the JavaFX thread.

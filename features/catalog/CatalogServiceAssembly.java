@@ -43,7 +43,8 @@ public final class CatalogServiceAssembly {
             Runnable createFaction,
             Runnable createLocation,
             java.util.function.LongConsumer addNpcToScene,
-            java.util.function.LongConsumer setSceneLocation
+            java.util.function.LongConsumer setSceneLocation,
+            java.util.function.LongConsumer addCreatureToScene
     ) {
         return new CatalogContribution(
                 creatures,
@@ -66,6 +67,7 @@ public final class CatalogServiceAssembly {
                 createFaction,
                 createLocation,
                 addNpcToScene,
-                setSceneLocation);
+                setSceneLocation,
+                addCreatureToScene);
     }
 }

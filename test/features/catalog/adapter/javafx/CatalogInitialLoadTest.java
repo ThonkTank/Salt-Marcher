@@ -129,6 +129,26 @@ public final class CatalogInitialLoadTest {
         });
     }
 
+    @Test
+    void CATALOG_SCENE_ROUTE_001() throws Exception {
+        seedCreatureCatalog();
+        AtomicLong addedCreature = new AtomicLong();
+        runOnFxThread(() -> {
+            CatalogTestRuntime runtime = services();
+            ShellBinding binding = runtime.contribution(
+                    EmptyInspectorSink.INSTANCE, ignored -> { }, () -> { }, addedCreature::set).bind();
+            CatalogWorkspaceView workspace = slot(binding, ShellSlot.COCKPIT_MAIN, CatalogWorkspaceView.class);
+            Stage stage = new Stage();
+            stage.setScene(new Scene(workspace, 1_100.0, 700.0));
+            stage.show();
+            workspace.applyCss();
+            workspace.layout();
+
+            button(workspace.monsterView(), "+ Scene").fire();
+            assertTrue(addedCreature.get() > 0L, "Monster + Scene did not publish the selected creature id.");
+        });
+    }
+
     private static CatalogFixture setupCatalog() {
         CatalogTestRuntime runtime = services();
         ShellBinding binding = runtime.contribution(EmptyInspectorSink.INSTANCE).bind();
