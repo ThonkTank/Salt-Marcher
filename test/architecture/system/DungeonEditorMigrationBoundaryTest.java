@@ -24,7 +24,6 @@ public final class DungeonEditorMigrationBoundaryTest {
             "features.dungeon.adapter.javafx.editor.DungeonEditorControlsPanelModel",
             "features.dungeon.adapter.javafx.editor.DungeonEditorControlsView",
             "features.dungeon.adapter.javafx.editor.DungeonEditorFeatureShellBinding",
-            "features.dungeon.adapter.javafx.editor.DungeonEditorStatePanelModel",
             "features.dungeon.adapter.javafx.editor.DungeonEditorViewModel",
             "features.dungeon.adapter.javafx.map.DungeonMapContentModel",
             "features.dungeon.adapter.javafx.map.DungeonMapEditorHandleProjector",

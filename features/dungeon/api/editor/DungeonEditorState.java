@@ -21,6 +21,7 @@ public record DungeonEditorState(
         @Nullable DungeonEditorSurface selectedWindow,
         DungeonEditorViewMode viewMode,
         DungeonEditorTool selectedTool,
+        DungeonEditorToolSelection toolSelection,
         DungeonOverlaySettings overlaySettings,
         int projectionLevel,
         List<Integer> reachableLevels,
@@ -36,6 +37,7 @@ public record DungeonEditorState(
         catalog = catalog == null ? List.of() : List.copyOf(catalog);
         viewMode = viewMode == null ? DungeonEditorViewMode.GRID : viewMode;
         selectedTool = selectedTool == null ? DungeonEditorTool.SELECT : selectedTool;
+        toolSelection = toolSelection == null ? DungeonEditorToolSelection.select() : toolSelection;
         overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
         reachableLevels = reachableLevels == null ? List.of(0) : List.copyOf(reachableLevels);
         selection = selection == null ? DungeonEditorStateSnapshot.Selection.empty() : selection;
@@ -53,6 +55,7 @@ public record DungeonEditorState(
                 null,
                 DungeonEditorViewMode.GRID,
                 DungeonEditorTool.SELECT,
+                DungeonEditorToolSelection.select(),
                 DungeonOverlaySettings.defaults(),
                 0,
                 List.of(0),

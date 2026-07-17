@@ -7,8 +7,8 @@ import shell.api.ShellBinding;
 import shell.api.ShellControls;
 import shell.api.ShellSlot;
 import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
-import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
 import features.dungeon.adapter.javafx.editor.DungeonEditorFeatureShellBinding;
+import features.dungeon.api.editor.DungeonEditorApi;
 import platform.ui.catalogcrud.CatalogCrudControlsContentModel;
 import platform.ui.catalogcrud.CatalogCrudControlsView;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
@@ -17,19 +17,16 @@ import features.dungeon.adapter.javafx.map.DungeonMapView;
 final class DungeonEditorBinder {
 
     private final DungeonEditorFeatureRuntimeRoot runtimeRoot;
+    private final DungeonEditorApi editorApi;
     private final platform.ui.UiDispatcher uiDispatcher;
-
-    DungeonEditorBinder(DungeonEditorRuntimeDependencies dependencies) {
-        DungeonEditorRuntimeDependencies safeDependencies = Objects.requireNonNull(dependencies, "dependencies");
-        this.runtimeRoot = DungeonEditorFeatureRuntimeRoot.create(safeDependencies);
-        this.uiDispatcher = safeDependencies.uiDispatcher();
-    }
 
     DungeonEditorBinder(
             DungeonEditorFeatureRuntimeRoot runtimeRoot,
+            DungeonEditorApi editorApi,
             platform.ui.UiDispatcher uiDispatcher
     ) {
         this.runtimeRoot = Objects.requireNonNull(runtimeRoot, "runtimeRoot");
+        this.editorApi = Objects.requireNonNull(editorApi, "editorApi");
         this.uiDispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
     }
 
@@ -45,6 +42,7 @@ final class DungeonEditorBinder {
                 statePanelModel,
                 mapCatalogContentModel,
                 mapContentModel,
+                editorApi,
                 featureShell.operations());
         DungeonEditorControlsView controls = new DungeonEditorControlsView();
         CatalogCrudControlsView mapCatalog = new CatalogCrudControlsView();
@@ -63,6 +61,8 @@ final class DungeonEditorBinder {
         DungeonEditorFeatureShellBinding.PublicationSink frameSink = viewModel::applyFrame;
         featureShell.subscribe(frameSink);
         featureShell.publishCurrent(frameSink);
+        editorApi.subscribe(viewModel::applyState);
+        viewModel.applyState(editorApi.current());
         return new Binding(ShellControls.stack(mapCatalog, controls), main, state, mapContentModel);
     }
 

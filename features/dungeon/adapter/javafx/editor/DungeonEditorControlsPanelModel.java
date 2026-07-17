@@ -402,6 +402,10 @@ final class DungeonEditorControlsPanelModel {
         return ToolPalettePanel.graphViewLabel();
     }
 
+    static String labelOf(@Nullable DungeonEditorTool tool) {
+        return ToolPalettePanel.labelOf(tool);
+    }
+
     boolean wallSingleClickModeSelected() {
         return toolPalette.wallSingleClickModeSelected();
     }

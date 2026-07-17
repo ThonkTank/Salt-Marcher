@@ -10,26 +10,40 @@ import shell.api.ShellContributionSpec;
 import shell.api.ShellLeftBarTabMode;
 import shell.api.ShellLeftBarTabSpec;
 import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
+import features.dungeon.application.editor.DungeonEditorApiFacade;
 import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
+import features.dungeon.api.editor.DungeonEditorApi;
 import platform.ui.UiDispatcher;
 
 public final class DungeonEditorContribution implements ShellContribution {
 
     private final DungeonEditorFeatureRuntimeRoot runtimeRoot;
+    private final DungeonEditorApi editorApi;
     private final UiDispatcher uiDispatcher;
 
     public DungeonEditorContribution(DungeonEditorRuntimeDependencies dependencies) {
-        DungeonEditorRuntimeDependencies safeDependencies = Objects.requireNonNull(dependencies, "dependencies");
-        this.runtimeRoot = DungeonEditorFeatureRuntimeRoot.create(safeDependencies);
-        this.uiDispatcher = safeDependencies.uiDispatcher();
+        this(assembly(dependencies));
+    }
+
+    private DungeonEditorContribution(Assembly assembly) {
+        this(assembly.runtimeRoot(), assembly.editorApi(), assembly.uiDispatcher());
     }
 
     public DungeonEditorContribution(
             DungeonEditorFeatureRuntimeRoot runtimeRoot,
+            DungeonEditorApi editorApi,
             UiDispatcher uiDispatcher
     ) {
         this.runtimeRoot = Objects.requireNonNull(runtimeRoot, "runtimeRoot");
+        this.editorApi = Objects.requireNonNull(editorApi, "editorApi");
         this.uiDispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
+    }
+
+    private static Assembly assembly(DungeonEditorRuntimeDependencies dependencies) {
+        DungeonEditorRuntimeDependencies safeDependencies = Objects.requireNonNull(dependencies, "dependencies");
+        DungeonEditorFeatureRuntimeRoot root = DungeonEditorFeatureRuntimeRoot.create(safeDependencies);
+        return new Assembly(root, new DungeonEditorApiFacade(root, safeDependencies.uiDispatcher()),
+                safeDependencies.uiDispatcher());
     }
 
     @Override
@@ -45,6 +59,13 @@ public final class DungeonEditorContribution implements ShellContribution {
 
     @Override
     public ShellBinding bind() {
-        return new DungeonEditorBinder(runtimeRoot, uiDispatcher).bind();
+        return new DungeonEditorBinder(runtimeRoot, editorApi, uiDispatcher).bind();
+    }
+
+    private record Assembly(
+            DungeonEditorFeatureRuntimeRoot runtimeRoot,
+            DungeonEditorApi editorApi,
+            UiDispatcher uiDispatcher
+    ) {
     }
 }

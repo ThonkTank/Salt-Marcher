@@ -6,6 +6,8 @@ import features.dungeon.api.editor.DungeonEditorApi;
 import features.dungeon.api.editor.DungeonEditorDraftState;
 import features.dungeon.api.editor.DungeonEditorIntent;
 import features.dungeon.api.editor.DungeonEditorState;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -70,9 +72,87 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
             runtimeRoot.undo();
         } else if (safeIntent == DungeonEditorIntent.Redo.INSTANCE) {
             runtimeRoot.redo();
+        } else if (safeIntent instanceof DungeonEditorIntent.UpdateRoomNarration update) {
+            runtimeRoot.updateStatePanelRoomNarrationDraft(roomNarrationDraftFrom(update.narration()));
+        } else if (safeIntent instanceof DungeonEditorIntent.CommitRoomNarration commit) {
+            runtimeRoot.saveRoomNarration(roomNarrationFrom(commit.narration()));
+        } else if (safeIntent instanceof DungeonEditorIntent.UpdateLabelName update) {
+            runtimeRoot.updateStatePanelLabelNameDraft(labelTargetFrom(update.target()), update.name());
+        } else if (safeIntent instanceof DungeonEditorIntent.CommitLabelName commit) {
+            runtimeRoot.saveLabelName(labelTargetFrom(commit.target()), commit.name());
+        } else if (safeIntent instanceof DungeonEditorIntent.UpdateCorridorPoint update) {
+            runtimeRoot.updateStatePanelCorridorPointDraft(update.q(), update.r());
+        } else if (safeIntent instanceof DungeonEditorIntent.CommitCorridorPoint commit) {
+            runtimeRoot.moveStatePanelCorridorPoint(commit.q(), commit.r());
+        } else if (safeIntent instanceof DungeonEditorIntent.UpdateTransitionDescription update) {
+            runtimeRoot.updateStatePanelTransitionDescriptionDraft(
+                    update.transitionId(), update.description());
+        } else if (safeIntent instanceof DungeonEditorIntent.CommitTransitionDescription commit) {
+            runtimeRoot.saveTransitionDescription(commit.transitionId(), commit.description());
+        } else if (safeIntent instanceof DungeonEditorIntent.UpdateTransitionDestination update) {
+            runtimeRoot.updateStatePanelTransitionDestinationDraft(destinationFrom(update.destination()));
+        } else if (safeIntent instanceof DungeonEditorIntent.CommitTransitionDestination commit) {
+            runtimeRoot.saveTransitionLink(commit.sourceTransitionId(), destinationFrom(commit.destination()));
+        } else if (safeIntent instanceof DungeonEditorIntent.UpdateStairGeometry update) {
+            runtimeRoot.updateStatePanelStairGeometryDraft(stairFrom(update.geometry()));
+        } else if (safeIntent instanceof DungeonEditorIntent.CommitStairGeometry commit) {
+            runtimeRoot.saveStairGeometry(stairFrom(commit.geometry()));
         } else {
             throw new IllegalArgumentException("Unsupported Dungeon Editor intent: " + safeIntent.getClass());
         }
+    }
+
+    private static RoomNarrationDraftInput roomNarrationDraftFrom(
+            DungeonEditorIntent.RoomNarrationInput input
+    ) {
+        return new RoomNarrationDraftInput(
+                input.roomId(),
+                input.visualDescription(),
+                input.exits().stream()
+                        .map(exit -> new ExitNarrationDraftInput(
+                                exit.label(), exit.q(), exit.r(), exit.level(),
+                                exit.direction(), exit.description()))
+                        .toList());
+    }
+
+    private static RoomNarration roomNarrationFrom(DungeonEditorIntent.RoomNarrationInput input) {
+        return new RoomNarration(
+                input.roomId(),
+                input.visualDescription(),
+                input.exits().stream()
+                        .map(exit -> new ExitNarration(
+                                exit.label(), exit.q(), exit.r(), exit.level(),
+                                exit.direction(), exit.description()))
+                        .toList());
+    }
+
+    private static DungeonEditorRuntimeLabelTarget labelTargetFrom(DungeonEditorIntent.LabelTarget target) {
+        return switch (target.kind()) {
+            case ROOM -> DungeonEditorRuntimeLabelTarget.room(target.id());
+            case CLUSTER -> DungeonEditorRuntimeLabelTarget.cluster(target.id());
+            case EMPTY -> DungeonEditorRuntimeLabelTarget.empty();
+        };
+    }
+
+    private static TransitionDestinationDraftInput destinationFrom(
+            DungeonEditorIntent.TransitionDestinationInput input
+    ) {
+        return TransitionDestinationDraftInput.fromExternalName(
+                new TransitionDestinationDraftInput.ExternalFields(
+                        input.destinationTypeKey(),
+                        input.mapId(),
+                        input.tileId(),
+                        input.transitionId(),
+                        input.bidirectional()));
+    }
+
+    private static StairGeometryDraftInput stairFrom(DungeonEditorIntent.StairGeometryInput input) {
+        return new StairGeometryDraftInput(
+                input.stairId(),
+                input.shapeName(),
+                input.directionName(),
+                input.dimension1(),
+                input.dimension2());
     }
 
     private static DungeonEditorOverlaySettings overlayFrom(DungeonEditorIntent.SetOverlay intent) {
@@ -113,6 +193,7 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
                 mapSurface.surface(),
                 mapSurface.viewMode(),
                 mapSurface.selectedTool(),
+                toolSelectionFrom(mapSurface.selectedTool()),
                 mapSurface.overlaySettings(),
                 mapSurface.projectionLevel(),
                 facts.reachableLevels(),
@@ -121,6 +202,32 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
                 mapSurface.preview(),
                 statePanel.inspector(),
                 new DungeonEditorState.CommandStatus(facts.busy(), facts.statusText()));
+    }
+
+    private static DungeonEditorToolSelection toolSelectionFrom(features.dungeon.api.DungeonEditorTool tool) {
+        features.dungeon.api.DungeonEditorTool safeTool = tool == null
+                ? features.dungeon.api.DungeonEditorTool.SELECT
+                : tool;
+        String key = safeTool.name();
+        DungeonEditorToolFamily family;
+        if (key.startsWith("ROOM_")) {
+            family = DungeonEditorToolFamily.ROOM;
+        } else if (key.startsWith("WALL_")) {
+            family = DungeonEditorToolFamily.WALL;
+        } else if (key.startsWith("DOOR_")) {
+            family = DungeonEditorToolFamily.DOOR;
+        } else if (key.startsWith("CORRIDOR_")) {
+            family = DungeonEditorToolFamily.CORRIDOR;
+        } else if (key.startsWith("FEATURE_")) {
+            family = DungeonEditorToolFamily.FEATURE;
+        } else if (key.startsWith("STAIR_")) {
+            family = DungeonEditorToolFamily.STAIR;
+        } else if (key.startsWith("TRANSITION_")) {
+            family = DungeonEditorToolFamily.TRANSITION;
+        } else {
+            family = DungeonEditorToolFamily.SELECT;
+        }
+        return new DungeonEditorToolSelection(family, key);
     }
 
     private static DungeonEditorDraftState draftFrom(
