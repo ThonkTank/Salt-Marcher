@@ -3,7 +3,7 @@ package features.worldplanner.adapter.javafx;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import shell.api.InspectorSink;
-import features.creatures.api.CreatureCatalogModel;
+import features.creatures.api.CreatureReferenceIndexModel;
 import features.encountertable.api.EncounterTableCatalogModel;
 import features.worldplanner.api.WorldPlannerApi;
 import features.worldplanner.api.WorldPlannerSnapshotModel;
@@ -14,7 +14,7 @@ public final class WorldPlannerInspectorController implements AutoCloseable {
     private final WorldPlannerApi worldPlanner;
     private final @Nullable WorldPlannerEncounterSink encounter;
     private final WorldPlannerSnapshotModel snapshotModel;
-    private final @Nullable CreatureCatalogModel creatureCatalog;
+    private final @Nullable CreatureReferenceIndexModel creatureCatalog;
     private final @Nullable EncounterTableCatalogModel encounterTableCatalog;
     private final InspectorSink inspector;
     private final WorldPlannerBinder binder;
@@ -24,7 +24,7 @@ public final class WorldPlannerInspectorController implements AutoCloseable {
             WorldPlannerApi worldPlanner,
             @Nullable WorldPlannerEncounterSink encounter,
             WorldPlannerSnapshotModel snapshotModel,
-            @Nullable CreatureCatalogModel creatureCatalog,
+            @Nullable CreatureReferenceIndexModel creatureCatalog,
             @Nullable EncounterTableCatalogModel encounterTableCatalog,
             InspectorSink inspector
     ) {
@@ -71,7 +71,7 @@ public final class WorldPlannerInspectorController implements AutoCloseable {
     public boolean matches(
             @Nullable WorldPlannerEncounterSink nextEncounter,
             WorldPlannerSnapshotModel nextSnapshotModel,
-            @Nullable CreatureCatalogModel nextCreatureCatalog,
+            @Nullable CreatureReferenceIndexModel nextCreatureCatalog,
             @Nullable EncounterTableCatalogModel nextEncounterTableCatalog,
             InspectorSink nextInspector
     ) {

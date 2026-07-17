@@ -3,7 +3,8 @@ package features.creatures.api;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 
-public record RefreshCreatureCatalogCommand(
+/** One independent creature-catalog request. */
+public record CreatureCatalogQuery(
         @Nullable String nameQuery,
         @Nullable String challengeRatingMin,
         @Nullable String challengeRatingMax,
@@ -20,42 +21,17 @@ public record RefreshCreatureCatalogCommand(
     private static final String DEFAULT_SORT_FIELD = "NAME";
     private static final String DEFAULT_SORT_DIRECTION = "ASCENDING";
 
-    public RefreshCreatureCatalogCommand {
-        sizes = copyStrings(sizes);
-        creatureTypes = copyStrings(creatureTypes);
-        creatureSubtypes = copyStrings(creatureSubtypes);
-        biomes = copyStrings(biomes);
-        alignments = copyStrings(alignments);
+    public CreatureCatalogQuery {
+        sizes = copy(sizes);
+        creatureTypes = copy(creatureTypes);
+        creatureSubtypes = copy(creatureSubtypes);
+        biomes = copy(biomes);
+        alignments = copy(alignments);
         sortFieldName = sortFieldName == null ? DEFAULT_SORT_FIELD : sortFieldName;
         sortDirectionName = sortDirectionName == null ? DEFAULT_SORT_DIRECTION : sortDirectionName;
     }
 
-    @Override
-    public List<String> sizes() {
-        return copyStrings(sizes);
-    }
-
-    @Override
-    public List<String> creatureTypes() {
-        return copyStrings(creatureTypes);
-    }
-
-    @Override
-    public List<String> creatureSubtypes() {
-        return copyStrings(creatureSubtypes);
-    }
-
-    @Override
-    public List<String> biomes() {
-        return copyStrings(biomes);
-    }
-
-    @Override
-    public List<String> alignments() {
-        return copyStrings(alignments);
-    }
-
-    private static List<String> copyStrings(@Nullable List<String> values) {
+    private static List<String> copy(@Nullable List<String> values) {
         return values == null ? List.of() : List.copyOf(values);
     }
 }

@@ -19,7 +19,10 @@ import shell.api.ShellStateTabSpec;
 import shell.api.ShellTopBarSpec;
 import shell.host.AppShell;
 import features.creatures.CreaturesServiceAssembly;
+import features.creatures.api.RefreshCreatureReferenceIndexCommand;
 import features.catalog.CatalogServiceAssembly;
+import features.catalog.CatalogServiceAssembly.CatalogActionRoutes;
+import features.catalog.CatalogServiceAssembly.CatalogDataSources;
 import features.dungeon.DungeonFeature;
 import features.encounter.EncounterServiceAssembly;
 import features.encounter.api.ApplyEncounterStateCommand;
@@ -82,6 +85,7 @@ public final class AppBootstrap implements AutoCloseable {
     private Components createComponents() {
         CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(
                 database, executionLane, uiDispatcher, diagnostics);
+        creatures.application().refreshReferenceIndex(new RefreshCreatureReferenceIndexCommand());
         EncounterTableServiceAssembly.Component encounterTables =
                 EncounterTableServiceAssembly.create(
                         database, executionLane, uiDispatcher, diagnostics);
@@ -145,8 +149,7 @@ public final class AppBootstrap implements AutoCloseable {
                 world.snapshot(),
                 session.preparedScenes(),
                 encounter.runtimeContexts(),
-                creatures.catalog(),
-                creatures.application(),
+                creatures.referenceIndex(),
                 executionLane,
                 uiDispatcher,
                 diagnostics);
@@ -174,23 +177,25 @@ public final class AppBootstrap implements AutoCloseable {
                 party.adventuringDayTopBarContribution(),
                 party.partyTopBarContribution(),
                 CatalogServiceAssembly.contribution(
-                        creatures.application(), tables.application(), encounter.application(),
-                        encounter.builderInputs(), creatures.filterOptions(), creatures.catalog(),
-                        tables.catalog(), encounter.tuningPreview(), encounter.savedPlans(),
-                        items.catalog(), world.snapshot(), inspector,
-                        creatureId -> creatures.openInspector(inspector, creatureId),
-                        npcId -> world.openNpcInspector(
-                                npcId, worldEncounter, creatures.catalog(), tables.catalog(), inspector),
-                        factionId -> world.openFactionInspector(
-                                factionId, worldEncounter, creatures.catalog(), tables.catalog(), inspector),
-                        locationId -> world.openLocationInspector(
-                                locationId, worldEncounter, creatures.catalog(), tables.catalog(), inspector),
-                        () -> world.openNpcCreator(
-                                worldEncounter, creatures.catalog(), tables.catalog(), inspector),
-                        () -> world.openFactionCreator(
-                                worldEncounter, creatures.catalog(), tables.catalog(), inspector),
-                        () -> world.openLocationCreator(
-                                worldEncounter, creatures.catalog(), tables.catalog(), inspector)),
+                        new CatalogDataSources(
+                                creatures.application(), creatures.catalogQueries(), tables.application(),
+                                encounter.application(), encounter.builderInputs(), tables.catalog(),
+                                encounter.tuningPreview(), encounter.savedPlans(), items.catalog(), world.snapshot()),
+                        new CatalogActionRoutes(
+                                inspector,
+                                creatureId -> creatures.openInspector(inspector, creatureId),
+                                npcId -> world.openNpcInspector(
+                                        npcId, worldEncounter, creatures.referenceIndex(), tables.catalog(), inspector),
+                                factionId -> world.openFactionInspector(
+                                        factionId, worldEncounter, creatures.referenceIndex(), tables.catalog(), inspector),
+                                locationId -> world.openLocationInspector(
+                                        locationId, worldEncounter, creatures.referenceIndex(), tables.catalog(), inspector),
+                                () -> world.openNpcCreator(
+                                        worldEncounter, creatures.referenceIndex(), tables.catalog(), inspector),
+                                () -> world.openFactionCreator(
+                                        worldEncounter, creatures.referenceIndex(), tables.catalog(), inspector),
+                                () -> world.openLocationCreator(
+                                        worldEncounter, creatures.referenceIndex(), tables.catalog(), inspector))),
                 dungeon.editorContribution(),
                 dungeon.travelContribution(),
                 hex.mapContribution(),

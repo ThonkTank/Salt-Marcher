@@ -1,9 +1,13 @@
 package features.catalog.adapter.javafx;
 
+import features.encountertable.api.EncounterTableSummary;
+import features.worldplanner.api.WorldFactionSummary;
+import features.worldplanner.api.WorldLocationSummary;
+import features.worldplanner.api.WorldNpcSummary;
+import features.worldplanner.api.WorldPlannerSnapshot;
+import java.util.List;
 import java.util.Objects;
-import org.jspecify.annotations.Nullable;
 import shell.api.ContributionKey;
-import shell.api.InspectorSink;
 import shell.api.NavigationGraphicResource;
 import shell.api.NavigationGroupSpec;
 import shell.api.ShellBinding;
@@ -11,80 +15,15 @@ import shell.api.ShellContribution;
 import shell.api.ShellContributionSpec;
 import shell.api.ShellLeftBarTabMode;
 import shell.api.ShellLeftBarTabSpec;
-import features.creatures.api.CreaturesApi;
-import features.creatures.api.CreatureCatalogModel;
-import features.creatures.api.CreatureFilterOptionsModel;
-import features.encounter.api.EncounterApi;
-import features.encounter.api.EncounterBuilderInputsModel;
-import features.encounter.api.EncounterTuningPreviewModel;
-import features.encounter.api.SavedEncounterPlanListModel;
-import features.encountertable.api.EncounterTableApi;
-import features.encountertable.api.EncounterTableCatalogModel;
-import features.items.api.ItemsCatalogApi;
-import features.worldplanner.api.WorldPlannerSnapshotModel;
 
 public final class CatalogContribution implements ShellContribution {
 
-    private final CreaturesApi creatures;
-    private final EncounterTableApi encounterTables;
-    private final EncounterApi encounters;
-    private final EncounterBuilderInputsModel builderInputs;
-    private final CreatureFilterOptionsModel filterOptions;
-    private final CreatureCatalogModel catalog;
-    private final EncounterTableCatalogModel encounterTableCatalog;
-    private final EncounterTuningPreviewModel tuningPreview;
-    private final SavedEncounterPlanListModel savedPlans;
-    private final ItemsCatalogApi items;
-    private final @Nullable WorldPlannerSnapshotModel worldPlanner;
-    private final InspectorSink inspector;
-    private final java.util.function.LongConsumer openCreatureInspector;
-    private final java.util.function.LongConsumer openNpcInspector;
-    private final java.util.function.LongConsumer openFactionInspector;
-    private final java.util.function.LongConsumer openLocationInspector;
-    private final Runnable createNpc;
-    private final Runnable createFaction;
-    private final Runnable createLocation;
+    private final CatalogBindingData data;
+    private final CatalogBindingActions actions;
 
-    public CatalogContribution(
-            CreaturesApi creatures,
-            EncounterTableApi encounterTables,
-            EncounterApi encounters,
-            EncounterBuilderInputsModel builderInputs,
-            CreatureFilterOptionsModel filterOptions,
-            CreatureCatalogModel catalog,
-            EncounterTableCatalogModel encounterTableCatalog,
-            EncounterTuningPreviewModel tuningPreview,
-            SavedEncounterPlanListModel savedPlans,
-            ItemsCatalogApi items,
-            @Nullable WorldPlannerSnapshotModel worldPlanner,
-            InspectorSink inspector,
-            java.util.function.LongConsumer openCreatureInspector,
-            java.util.function.LongConsumer openNpcInspector,
-            java.util.function.LongConsumer openFactionInspector,
-            java.util.function.LongConsumer openLocationInspector,
-            Runnable createNpc,
-            Runnable createFaction,
-            Runnable createLocation
-    ) {
-        this.creatures = Objects.requireNonNull(creatures, "creatures");
-        this.encounterTables = Objects.requireNonNull(encounterTables, "encounterTables");
-        this.encounters = Objects.requireNonNull(encounters, "encounters");
-        this.builderInputs = Objects.requireNonNull(builderInputs, "builderInputs");
-        this.filterOptions = Objects.requireNonNull(filterOptions, "filterOptions");
-        this.catalog = Objects.requireNonNull(catalog, "catalog");
-        this.encounterTableCatalog = Objects.requireNonNull(encounterTableCatalog, "encounterTableCatalog");
-        this.tuningPreview = Objects.requireNonNull(tuningPreview, "tuningPreview");
-        this.savedPlans = Objects.requireNonNull(savedPlans, "savedPlans");
-        this.items = Objects.requireNonNull(items, "items");
-        this.worldPlanner = worldPlanner;
-        this.inspector = Objects.requireNonNull(inspector, "inspector");
-        this.openCreatureInspector = Objects.requireNonNull(openCreatureInspector, "openCreatureInspector");
-        this.openNpcInspector = Objects.requireNonNull(openNpcInspector, "openNpcInspector");
-        this.openFactionInspector = Objects.requireNonNull(openFactionInspector, "openFactionInspector");
-        this.openLocationInspector = Objects.requireNonNull(openLocationInspector, "openLocationInspector");
-        this.createNpc = Objects.requireNonNull(createNpc, "createNpc");
-        this.createFaction = Objects.requireNonNull(createFaction, "createFaction");
-        this.createLocation = Objects.requireNonNull(createLocation, "createLocation");
+    public CatalogContribution(CatalogBindingData data, CatalogBindingActions actions) {
+        this.data = Objects.requireNonNull(data, "data");
+        this.actions = Objects.requireNonNull(actions, "actions");
     }
 
     @Override
@@ -100,56 +39,109 @@ public final class CatalogContribution implements ShellContribution {
 
     @Override
     public ShellBinding bind() {
-        CatalogViewModel viewModel = new CatalogViewModel(creatures, encounterTables, encounters);
-        CatalogControlsView controls = new CatalogControlsView();
+        CatalogViewModel viewModel = new CatalogViewModel(
+                data.creatures(), data.creatureQueries(), data.encounterTables(), data.encounters());
+        CatalogControlsView monsterControls = new CatalogControlsView();
         CatalogMainView monsters = new CatalogMainView();
+        bindMonster(viewModel, monsterControls, monsters);
 
+        ItemsCatalogSection items = new ItemsCatalogSection(data.items(), actions.inspector());
+        SavedEncounterCatalogSection encounters =
+                new SavedEncounterCatalogSection(data.encounters(), data.savedPlans());
+        ReferenceCatalogSection<WorldNpcSummary> npcs = new ReferenceCatalogSection<>(
+                CatalogSectionId.NPCS,
+                "Keine NPCs verfügbar.",
+                WorldNpcSummary::displayName,
+                value -> actions.openNpcInspector().accept(value.npcId()),
+                "Öffne vorhandene NPCs im Inspector oder lege einen neuen Welt-Charakter an.",
+                "NPC anlegen",
+                actions.createNpc());
+        ReferenceCatalogSection<WorldFactionSummary> factions = new ReferenceCatalogSection<>(
+                CatalogSectionId.FACTIONS,
+                "Keine Fraktionen verfügbar.",
+                WorldFactionSummary::displayName,
+                value -> actions.openFactionInspector().accept(value.factionId()),
+                "Fraktionen bleiben World-Planner-Wahrheit und werden im Inspector bearbeitet.",
+                "Fraktion anlegen",
+                actions.createFaction());
+        ReferenceCatalogSection<WorldLocationSummary> locations = new ReferenceCatalogSection<>(
+                CatalogSectionId.LOCATIONS,
+                "Keine Orte verfügbar.",
+                WorldLocationSummary::displayName,
+                value -> actions.openLocationInspector().accept(value.locationId()),
+                "Orte öffnen und bearbeiten sich im World-Planner-Inspector.",
+                "Ort anlegen",
+                actions.createLocation());
+        ReferenceCatalogSection<EncounterTableSummary> encounterTables = new ReferenceCatalogSection<>(
+                CatalogSectionId.ENCOUNTER_TABLES,
+                "Keine Encounter-Tabellen verfügbar.",
+                EncounterTableSummary::name,
+                ignored -> { },
+                "Encounter-Tabellen sind eine read-only Referenz für die Monster- und Encounter-Auswahl.",
+                "",
+                () -> { });
+
+        data.encounterTableCatalog().subscribe(result ->
+                encounterTables.apply(result == null ? List.of() : result.tables()));
+        encounterTables.apply(data.encounterTableCatalog().current().tables());
+        if (data.worldPlanner() != null) {
+            data.worldPlanner().subscribe(snapshot -> applyWorld(snapshot, npcs, factions, locations));
+            applyWorld(data.worldPlanner().current(), npcs, factions, locations);
+        }
+
+        CatalogWorkspace workspace = new CatalogWorkspace(List.of(
+                new MonsterCatalogSection(monsterControls, monsters),
+                items,
+                encounters,
+                npcs,
+                factions,
+                locations,
+                encounterTables));
+        return ShellBinding.cockpit("Katalog", workspace.controls(), workspace.content());
+    }
+
+    private void bindMonster(
+            CatalogViewModel viewModel,
+            CatalogControlsView controls,
+            CatalogMainView monsters
+    ) {
         controls.bind(viewModel.controlsContentModel());
         controls.onViewInputEvent(viewModel::consume);
         monsters.bind(viewModel.mainContentModel());
         monsters.onViewInputEvent(viewModel::consume);
-        viewModel.creatureDetailSelectionProperty().addListener((obs, before, after) -> {
-            if (after == null || after.longValue() <= 0L) {
-                return;
+        viewModel.creatureDetailSelectionProperty().addListener((ignored, before, after) -> {
+            if (after != null && after.longValue() > 0L) {
+                actions.openCreatureInspector().accept(after.longValue());
+                viewModel.setCreatureDetailSelection(0L);
             }
-            openCreatureInspector.accept(after.longValue());
-            viewModel.setCreatureDetailSelection(0L);
         });
-
-        filterOptions.subscribe(viewModel.controlsContentModel()::applyCreatureFilterOptions);
-        catalog.subscribe(viewModel.mainContentModel()::applySearchResult);
-        encounterTableCatalog.subscribe(viewModel.controlsContentModel()::applyEncounterTables);
-        tuningPreview.subscribe(result ->
+        data.encounterTableCatalog().subscribe(viewModel.controlsContentModel()::applyEncounterTables);
+        data.tuningPreview().subscribe(result ->
                 viewModel.controlsContentModel().applyEncounterTuningPreview(result.labels()));
-        builderInputs.subscribe(viewModel::applyEncounterBuilderInputs);
-        if (worldPlanner != null) {
-            worldPlanner.subscribe(viewModel.controlsContentModel()::applyWorldPlannerSnapshot);
+        data.builderInputs().subscribe(viewModel::applyEncounterBuilderInputs);
+        if (data.worldPlanner() != null) {
+            data.worldPlanner().subscribe(viewModel.controlsContentModel()::applyWorldPlannerSnapshot);
         }
-
-        viewModel.controlsContentModel().applyCreatureFilterOptions(filterOptions.current());
-        viewModel.mainContentModel().applySearchResult(catalog.current());
-        viewModel.controlsContentModel().applyEncounterTables(encounterTableCatalog.current());
-        viewModel.controlsContentModel().applyEncounterTuningPreview(tuningPreview.current().labels());
-        if (worldPlanner != null) {
-            viewModel.controlsContentModel().applyWorldPlannerSnapshot(worldPlanner.current());
+        viewModel.controlsContentModel().applyEncounterTables(data.encounterTableCatalog().current());
+        viewModel.controlsContentModel().applyEncounterTuningPreview(data.tuningPreview().current().labels());
+        if (data.worldPlanner() != null) {
+            viewModel.controlsContentModel().applyWorldPlannerSnapshot(data.worldPlanner().current());
         }
-        viewModel.applyEncounterBuilderInputs(builderInputs.current());
-        CatalogWorkspaceView workspace = new CatalogWorkspaceView(
-                monsters,
-                controls,
-                items,
-                encounters,
-                savedPlans,
-                encounterTableCatalog,
-                worldPlanner,
-                inspector,
-                openNpcInspector,
-                openFactionInspector,
-                openLocationInspector,
-                createNpc,
-                createFaction,
-                createLocation);
-        return ShellBinding.cockpit("Katalog", controls, workspace);
+        viewModel.applyEncounterBuilderInputs(data.builderInputs().current());
+        viewModel.initialize();
     }
 
+    private static void applyWorld(
+            WorldPlannerSnapshot snapshot,
+            ReferenceCatalogSection<WorldNpcSummary> npcs,
+            ReferenceCatalogSection<WorldFactionSummary> factions,
+            ReferenceCatalogSection<WorldLocationSummary> locations
+    ) {
+        if (snapshot == null) {
+            return;
+        }
+        npcs.apply(snapshot.npcs());
+        factions.apply(snapshot.factions());
+        locations.apply(snapshot.locations());
+    }
 }

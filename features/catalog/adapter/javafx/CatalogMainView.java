@@ -43,7 +43,10 @@ public final class CatalogMainView extends BorderPane {
     public CatalogMainView() {
         getStyleClass().add("surface-root");
         Chrome.configureSortSelector(sortSelector, this::publishSortSelection);
-        CatalogTable.configure(table, this::publishCreatureEvent);
+        CatalogTable.configure(
+                table,
+                CatalogMainContentModel.MainProjection.initial().columns(),
+                this::publishCreatureEvent);
         previousButton.setOnAction(event -> publishPageShift(PREVIOUS_PAGE_SHIFT));
         nextButton.setOnAction(event -> publishPageShift(NEXT_PAGE_SHIFT));
         setTop(Chrome.topBar(countLabel, sortSelector));
@@ -71,14 +74,14 @@ public final class CatalogMainView extends BorderPane {
         pageLabel.setText(projection.pageLabel());
         previousButton.setDisable(!projection.previousPageAvailable());
         nextButton.setDisable(!projection.nextPageAvailable());
-        sortSelector.getItems().setAll(projection.sortOptions());
+        if (!sortSelector.getItems().equals(projection.sortOptions())) {
+            sortSelector.getItems().setAll(projection.sortOptions());
+        }
         selectSortKey(projection.selectedSortKey());
         CatalogTable.applyProjection(
                 table,
                 projection.placeholderText(),
-                projection.rows(),
-                projection.columns(),
-                this::publishCreatureEvent);
+                projection.rows());
     }
 
     private void publishSortSelection(String sortKey) {
@@ -164,6 +167,7 @@ public final class CatalogMainView extends BorderPane {
 
         static void configure(
                 TableView<Object> table,
+                List<CatalogMainContentModel.KeyLabel> columns,
                 CreatureAction action
         ) {
             table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
@@ -179,20 +183,25 @@ public final class CatalogMainView extends BorderPane {
                 action.accept(selectedCreatureId, event.isShiftDown());
                 event.consume();
             });
+            table.getColumns().setAll(configuredColumns(columns, action));
         }
 
         static void applyProjection(
                 TableView<Object> table,
                 String placeholderText,
-                List<CatalogMainContentModel.CatalogRow> rows,
-                List<CatalogMainContentModel.KeyLabel> columns,
-                CreatureAction action
+                List<CatalogMainContentModel.CatalogRow> rows
         ) {
             if (table.getPlaceholder() instanceof Label label) {
                 label.setText(placeholderText);
             }
+            long selectedId = creatureId(table.getSelectionModel().getSelectedItem());
             table.getItems().setAll(rows == null ? List.of() : List.copyOf(rows));
-            table.getColumns().setAll(configuredColumns(columns, action));
+            if (selectedId > NO_CREATURE_ID) {
+                table.getItems().stream()
+                        .filter(row -> creatureId(row) == selectedId)
+                        .findFirst()
+                        .ifPresent(row -> table.getSelectionModel().select(row));
+            }
         }
 
         private static List<TableColumn<Object, ?>> configuredColumns(

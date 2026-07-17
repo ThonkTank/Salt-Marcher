@@ -28,6 +28,8 @@ import shell.api.ShellLeftBarTabSpec;
 import shell.api.ShellBinding;
 import shell.api.ShellLeftBarTabMode;
 import features.catalog.adapter.javafx.CatalogContribution;
+import features.catalog.CatalogServiceAssembly.CatalogActionRoutes;
+import features.catalog.CatalogServiceAssembly.CatalogDataSources;
 import features.dungeon.adapter.javafx.editor.DungeonEditorContribution;
 import features.dungeon.adapter.javafx.travel.DungeonTravelContribution;
 import features.hex.adapter.javafx.hexmap.HexMapContribution;
@@ -288,14 +290,16 @@ public final class SessionPlannerShellLayoutTest {
     }
 
     private static CatalogContribution catalog(LayoutServices services) {
-        return new CatalogContribution(
-                services.creatures().application(), services.tables().application(),
-                services.encounter().application(), services.encounter().builderInputs(),
-                services.creatures().filterOptions(), services.creatures().catalog(),
-                services.tables().catalog(), services.encounter().tuningPreview(),
-                services.encounter().savedPlans(), unavailableItems(), null,
-                EmptyInspectorSink.INSTANCE, ignored -> { }, ignored -> { }, ignored -> { }, ignored -> { },
-                () -> { }, () -> { }, () -> { });
+        return (CatalogContribution) features.catalog.CatalogServiceAssembly.contribution(
+                new CatalogDataSources(
+                        services.creatures().application(), services.creatures().catalogQueries(),
+                        services.tables().application(), services.encounter().application(),
+                        services.encounter().builderInputs(), services.tables().catalog(),
+                        services.encounter().tuningPreview(), services.encounter().savedPlans(),
+                        unavailableItems(), null),
+                new CatalogActionRoutes(
+                        EmptyInspectorSink.INSTANCE, ignored -> { }, ignored -> { }, ignored -> { }, ignored -> { },
+                        () -> { }, () -> { }, () -> { }));
     }
 
     private static features.items.api.ItemsCatalogApi unavailableItems() {

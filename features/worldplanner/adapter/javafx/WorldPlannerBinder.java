@@ -12,7 +12,7 @@ import shell.api.InspectorSink;
 import shell.api.ShellBinding;
 import shell.api.ShellControls;
 import shell.api.ShellSlot;
-import features.creatures.api.CreatureCatalogModel;
+import features.creatures.api.CreatureReferenceIndexModel;
 import features.encountertable.api.EncounterTableCatalogModel;
 import features.worldplanner.api.WorldPlannerApi;
 import features.worldplanner.api.AddWorldFactionNpcCommand;
@@ -40,7 +40,7 @@ final class WorldPlannerBinder {
     private final WorldPlannerApi worldPlanner;
     private final @Nullable WorldPlannerEncounterSink encounter;
     private final WorldPlannerSnapshotModel snapshotModel;
-    private final @Nullable CreatureCatalogModel creatureCatalog;
+    private final @Nullable CreatureReferenceIndexModel creatureCatalog;
     private final @Nullable EncounterTableCatalogModel encounterTableCatalog;
     private final InspectorSink inspector;
     private @Nullable InspectorSession activeInspector;
@@ -50,7 +50,7 @@ final class WorldPlannerBinder {
             WorldPlannerApi worldPlanner,
             @Nullable WorldPlannerEncounterSink encounter,
             WorldPlannerSnapshotModel snapshotModel,
-            @Nullable CreatureCatalogModel creatureCatalog,
+            @Nullable CreatureReferenceIndexModel creatureCatalog,
             @Nullable EncounterTableCatalogModel encounterTableCatalog,
             InspectorSink inspector
     ) {

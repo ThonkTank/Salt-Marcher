@@ -8,8 +8,8 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
-import features.creatures.api.CreatureCatalogPageResult;
 import features.creatures.api.CreatureCatalogRow;
+import features.creatures.api.CreatureReferenceIndexResult;
 import features.encountertable.api.EncounterTableCatalogResult;
 import features.encountertable.api.EncounterTableSummary;
 import features.worldplanner.api.RefreshWorldPlannerCommand;
@@ -140,7 +140,7 @@ final class WorldPlannerViewModel {
         refreshProjections();
     }
 
-    void applyCreatureCatalog(CreatureCatalogPageResult result) {
+    void applyCreatureCatalog(CreatureReferenceIndexResult result) {
         statblockOptions = creatureRows(result).stream()
                 .map(row -> new WorldPlannerVocabulary.Option<>(
                         WorldPlannerVocabulary.idKey(row.id()),
@@ -358,8 +358,8 @@ final class WorldPlannerViewModel {
         return snapshot == null ? List.of() : snapshot.locations();
     }
 
-    private static List<CreatureCatalogRow> creatureRows(CreatureCatalogPageResult result) {
-        return result == null || result.page() == null ? List.of() : result.page().rows();
+    private static List<CreatureCatalogRow> creatureRows(CreatureReferenceIndexResult result) {
+        return result == null ? List.of() : result.rows();
     }
 
     private static List<EncounterTableSummary> encounterTables(EncounterTableCatalogResult result) {

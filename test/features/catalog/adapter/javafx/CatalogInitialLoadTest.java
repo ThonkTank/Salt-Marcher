@@ -19,7 +19,6 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
-import javafx.scene.control.TabPane;
 import javafx.scene.control.TableView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -69,7 +68,7 @@ public final class CatalogInitialLoadTest {
             assertInitialCatalogRows(fixture.main(), "CATALOG-INITIAL-LOAD-001");
             org.junit.jupiter.api.Assertions.assertEquals(
                     List.of("Monster", "Items", "Encounter", "NPCs", "Fraktionen", "Orte", "Encounter-Tabellen"),
-                    fixture.workspace().sectionTitles());
+                    fixture.controls().sectionTitles());
         });
     }
 
@@ -83,6 +82,35 @@ public final class CatalogInitialLoadTest {
                     fixture.runtime(),
                     fixture.controls(),
                     "CATALOG-INITIAL-LOAD-002");
+        });
+    }
+
+    @Test
+    void CATALOG_MONSTER_TABLE_001_keepsColumnsAndSelectionAcrossRefresh() throws Exception {
+        seedCreatureCatalog();
+        runOnFxThread(() -> {
+            CatalogFixture fixture = setupCatalog();
+            TableView<?> table = descendant(fixture.main(), TableView.class);
+            table.getSelectionModel().selectFirst();
+            CatalogMainContentModel.CatalogRow selected =
+                    (CatalogMainContentModel.CatalogRow) table.getSelectionModel().getSelectedItem();
+            List<?> columns = List.copyOf(table.getColumns());
+
+            descendants(fixture.controls()).stream()
+                    .filter(javafx.scene.control.TextField.class::isInstance)
+                    .map(javafx.scene.control.TextField.class::cast)
+                    .findFirst()
+                    .orElseThrow()
+                    .setText("Abo");
+
+            assertTrue(table.getColumns().size() == columns.size(), "Monster column count changed on refresh.");
+            for (int index = 0; index < columns.size(); index++) {
+                assertTrue(table.getColumns().get(index) == columns.get(index),
+                        "Monster column identity changed on refresh at index " + index);
+            }
+            assertTrue(((CatalogMainContentModel.CatalogRow) table.getSelectionModel().getSelectedItem()).id()
+                            == selected.id(),
+                    "Monster selection was not preserved by creature id.");
         });
     }
 
@@ -103,23 +131,20 @@ public final class CatalogInitialLoadTest {
                     EmptyInspectorSink.INSTANCE,
                     openedNpc::set,
                     () -> createRequested.set(true)).bind();
-            CatalogWorkspaceView workspace = slot(binding, ShellSlot.COCKPIT_MAIN, CatalogWorkspaceView.class);
+            CatalogControlsHost controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, CatalogControlsHost.class);
+            CatalogContentHost content = slot(binding, ShellSlot.COCKPIT_MAIN, CatalogContentHost.class);
             Stage stage = new Stage();
-            stage.setScene(new Scene(workspace, 900.0, 650.0));
+            HBox root = new HBox(controls, content);
+            stage.setScene(new Scene(root, 900.0, 650.0));
             stage.show();
-            workspace.applyCss();
-            workspace.layout();
+            root.applyCss();
+            root.layout();
 
-            TabPane tabs = descendant(workspace, TabPane.class);
-            tabs.getSelectionModel().select(tabs.getTabs().stream()
-                    .filter(tab -> "NPCs".equals(tab.getText()))
-                    .findFirst()
-                    .orElseThrow());
-            Button create = button((Parent) tabs.getSelectionModel().getSelectedItem().getContent(), "NPC anlegen");
+            controls.select(CatalogSectionId.NPCS);
+            Button create = button(controls, "NPC anlegen");
             create.fire();
 
-            ListView<?> npcs = descendant(
-                    (Parent) tabs.getSelectionModel().getSelectedItem().getContent(), ListView.class);
+            ListView<?> npcs = descendant(content, ListView.class);
             npcs.getSelectionModel().selectFirst();
             npcs.fireEvent(new KeyEvent(
                     KeyEvent.KEY_PRESSED, "", "", KeyCode.ENTER,
@@ -130,12 +155,49 @@ public final class CatalogInitialLoadTest {
         });
     }
 
+    @Test
+    void CATALOG_WORKSPACE_001_usesOneSectionRailAndPreservesSectionState() throws Exception {
+        seedCreatureCatalog();
+        runOnFxThread(() -> {
+            CatalogFixture fixture = setupCatalog();
+            CatalogControlsHost controls = fixture.controls();
+            CatalogContentHost content = fixture.workspace();
+
+            controls.select(CatalogSectionId.ITEMS);
+            Node itemsContent = content.getCenter();
+            javafx.scene.control.TextField itemSearch = descendants(controls).stream()
+                    .filter(javafx.scene.control.TextField.class::isInstance)
+                    .map(javafx.scene.control.TextField.class::cast)
+                    .filter(field -> "Item-Name".equals(field.getAccessibleText()))
+                    .findFirst()
+                    .orElseThrow();
+            itemSearch.setText("rapier");
+
+            for (String title : controls.sectionTitles()) {
+                controls.select(java.util.Arrays.stream(CatalogSectionId.values())
+                        .filter(id -> id.label().equals(title)).findFirst().orElseThrow());
+                assertTrue(content.getCenter() != null, title + " has no main-slot content.");
+            }
+
+            controls.select(CatalogSectionId.ITEMS);
+            assertTrue(content.getCenter() == itemsContent, "Items content was recreated after section switches.");
+            javafx.scene.control.TextField restoredSearch = descendants(controls).stream()
+                    .filter(javafx.scene.control.TextField.class::isInstance)
+                    .map(javafx.scene.control.TextField.class::cast)
+                    .filter(field -> "Item-Name".equals(field.getAccessibleText()))
+                    .findFirst()
+                    .orElseThrow();
+            assertTrue(restoredSearch == itemSearch && "rapier".equals(restoredSearch.getText()),
+                    "Items controls did not preserve their draft state.");
+        });
+    }
+
     private static CatalogFixture setupCatalog() {
         CatalogTestRuntime runtime = services();
         ShellBinding binding = runtime.contribution(EmptyInspectorSink.INSTANCE).bind();
-        CatalogControlsView controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, CatalogControlsView.class);
-        CatalogWorkspaceView workspace = slot(binding, ShellSlot.COCKPIT_MAIN, CatalogWorkspaceView.class);
-        CatalogMainView main = workspace.monsterView();
+        CatalogControlsHost controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, CatalogControlsHost.class);
+        CatalogContentHost workspace = slot(binding, ShellSlot.COCKPIT_MAIN, CatalogContentHost.class);
+        CatalogMainView main = descendant(workspace, CatalogMainView.class);
 
         Stage stage = new Stage();
         HBox root = new HBox(controls, workspace);
@@ -375,8 +437,8 @@ public final class CatalogInitialLoadTest {
 
     private record CatalogFixture(
             CatalogTestRuntime runtime,
-            CatalogControlsView controls,
-            CatalogWorkspaceView workspace,
+            CatalogControlsHost controls,
+            CatalogContentHost workspace,
             CatalogMainView main
     ) {
     }

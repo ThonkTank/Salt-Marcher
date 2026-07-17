@@ -10,8 +10,9 @@ Source of Truth: Entry point and document map for the creatures feature.
 The creatures feature owns read-only creature catalog access for reference and
 encounter-generation workflows.
 
-Its public backend surface is `CreaturesApi`; implementation packages remain
-feature-private.
+Its public backend surfaces are `CreaturesApi`, `CreatureCatalogQueryApi`, the
+revisioned `CreatureReferenceIndexModel`, and the synchronous single-detail
+`CreatureReferenceApi`; implementation packages remain feature-private.
 
 ## Documentation Set
 
@@ -28,6 +29,7 @@ In scope:
 - creature detail lookup
 - encounter-ready candidate lookup for downstream runtime features
 - shared creature filter controls consumed by encounter-facing tabs
+- one full immutable reference index for foreign selectors and projections
 
 Out of scope:
 
