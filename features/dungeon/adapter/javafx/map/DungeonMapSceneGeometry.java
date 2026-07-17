@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import features.dungeon.api.DungeonEdgeRef;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreparedLabelKind;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel.LabelTypography;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel.MapCanvasPoint;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel.RenderColor;

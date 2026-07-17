@@ -72,7 +72,7 @@ public final class DungeonFeature {
                 DungeonEditorFeatureRuntimeRoot.create(editorDependencies);
         DungeonEditorApi editorApi = new DungeonEditorApiFacade(editorRuntimeRoot, dispatcher);
         return new Component(
-                new DungeonEditorContribution(editorRuntimeRoot, editorApi, dispatcher),
+                new DungeonEditorContribution(editorApi),
                 new DungeonTravelContribution(runtime.travel(), runtime.mapCatalog(), runtime.travelModel()),
                 runtime.authored(),
                 editorApi,

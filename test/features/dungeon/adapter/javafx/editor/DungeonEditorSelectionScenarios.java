@@ -17,9 +17,10 @@ import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonEditorMapSnapshot;
 import features.dungeon.api.DungeonOverlaySettings;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts;
 import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
-import features.dungeon.application.editor.DungeonEditorRenderFrame;
+import features.dungeon.api.editor.DungeonEditorDraftState;
+import features.dungeon.api.editor.DungeonEditorState;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
 import features.dungeon.adapter.javafx.map.DungeonMapView;
 import javafx.event.ActionEvent;
@@ -933,7 +934,7 @@ final class DungeonEditorSelectionScenarios {
                 secondEdge,
                 wallRef);
         DungeonEditorMapSurfaceSnapshot snapshot = syntheticBoundarySnapshot(firstBoundary, secondBoundary);
-        mapContentModel.applyEditorRenderFrame(syntheticBoundaryRenderFrame(snapshot));
+        mapContentModel.applyEditorState(syntheticBoundaryState(snapshot));
         double sceneX = 0.5;
         double sceneY = 0.0;
         var target = runtimePointerTarget(mapContentModel, sceneX, sceneY, true);
@@ -959,39 +960,29 @@ final class DungeonEditorSelectionScenarios {
                 message + " leaves sibling edge stroke unchanged");
     }
 
-    private static DungeonEditorRenderFrame syntheticBoundaryRenderFrame(
+    private static DungeonEditorState syntheticBoundaryState(
             DungeonEditorMapSurfaceSnapshot snapshot
     ) {
         DungeonEditorMapSurfaceSnapshot safeSnapshot = snapshot == null
                 ? DungeonEditorMapSurfaceSnapshot.empty()
                 : snapshot;
-        DungeonEditorPreparedFrameFacts facts = new DungeonEditorPreparedFrameFacts(
-                List.of(),
-                "",
+        return new DungeonEditorState(
+                1L,
                 0L,
-                List.of(safeSnapshot.projectionLevel()),
-                false,
-                "",
-                safeSnapshot.viewMode().name(),
-                DungeonEditorPreparedFrameFacts.labelForViewMode(safeSnapshot.viewMode().name()),
+                List.of(),
+                null,
+                safeSnapshot.surface(),
+                safeSnapshot.viewMode(),
+                safeSnapshot.selectedTool(),
+                DungeonEditorToolSelection.select(),
                 safeSnapshot.overlaySettings(),
-                DungeonEditorPreparedFrameFacts.OverlayFrame.from(safeSnapshot.overlaySettings()),
                 safeSnapshot.projectionLevel(),
-                safeSnapshot.selectedTool().name(),
-                safeSnapshot.selectedTool().displayLabel(),
-                new DungeonEditorPreparedFrameFacts.MapSurfaceFrame(
-                        safeSnapshot.surface(),
-                        safeSnapshot.selection(),
-                        safeSnapshot.preview(),
-                        DungeonEditorPreparedFrameFacts.PreviewRenderFrame.from(safeSnapshot),
-                        DungeonEditorPreparedFrameFacts.PreviewRenderDiffFrame.from(safeSnapshot),
-                        safeSnapshot.viewMode(),
-                        safeSnapshot.overlaySettings(),
-                        safeSnapshot.projectionLevel(),
-                        safeSnapshot.selectedTool()),
-                DungeonEditorPreparedFrameFacts.MapInteractionFrame.from(safeSnapshot),
-                DungeonEditorPreparedFrameFacts.StatePanelFrame.empty());
-        return new DungeonEditorRenderFrame(facts, null, null);
+                List.of(safeSnapshot.projectionLevel()),
+                safeSnapshot.selection(),
+                DungeonEditorDraftState.empty(),
+                safeSnapshot.preview(),
+                safeSnapshot.surface() == null ? null : safeSnapshot.surface().inspector(),
+                DungeonEditorState.CommandStatus.idle());
     }
 
     private static DungeonEditorMapSurfaceSnapshot syntheticBoundarySnapshot(

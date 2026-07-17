@@ -1,7 +1,6 @@
-package features.dungeon.adapter.javafx.editor;
+package features.dungeon.application.editor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -9,16 +8,16 @@ import java.util.Deque;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import platform.ui.UiDispatcher;
-import features.dungeon.application.editor.DungeonEditorRenderFrame;
+import features.dungeon.api.editor.DungeonEditorState;
 
 final class DungeonEditorPublicationDeliveryTest {
 
     @Test
     void queuedDeliveryRejectsStaleFrames() {
         QueuedDispatcher dispatcher = new QueuedDispatcher();
-        List<DungeonEditorRenderFrame> delivered = new ArrayList<>();
-        DungeonEditorFeatureShellBinding.PublicationDelivery delivery =
-                new DungeonEditorFeatureShellBinding.PublicationDelivery(delivered::add, dispatcher);
+        List<DungeonEditorState> delivered = new ArrayList<>();
+        DungeonEditorApiFacade.StateDelivery delivery =
+                new DungeonEditorApiFacade.StateDelivery(delivered::add, dispatcher);
         DungeonEditorRenderFrame stale = DungeonEditorRenderFrame.empty();
         DungeonEditorRenderFrame current = DungeonEditorRenderFrame.empty();
 
@@ -27,15 +26,15 @@ final class DungeonEditorPublicationDeliveryTest {
         dispatcher.runAll();
 
         assertEquals(1, delivered.size());
-        assertSame(current, delivered.getFirst());
+        assertEquals(0L, delivered.getFirst().publicationRevision());
     }
 
     @Test
     void queuedDeliveryRejectsFramesAfterClose() {
         QueuedDispatcher dispatcher = new QueuedDispatcher();
-        List<DungeonEditorRenderFrame> delivered = new ArrayList<>();
-        DungeonEditorFeatureShellBinding.PublicationDelivery delivery =
-                new DungeonEditorFeatureShellBinding.PublicationDelivery(delivered::add, dispatcher);
+        List<DungeonEditorState> delivered = new ArrayList<>();
+        DungeonEditorApiFacade.StateDelivery delivery =
+                new DungeonEditorApiFacade.StateDelivery(delivered::add, dispatcher);
 
         delivery.deliver(DungeonEditorRenderFrame.empty());
         delivery.close();

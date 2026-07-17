@@ -31,6 +31,9 @@ import features.party.PartyServiceAssembly;
 import features.party.domain.roster.PartyRoster;
 import features.party.domain.roster.repository.PartyRosterRepository;
 import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
+import features.dungeon.application.editor.DungeonEditorApiFacade;
+import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
+import features.dungeon.api.editor.DungeonEditorApi;
 
 class DungeonEditorTestPersistence {
 
@@ -67,6 +70,11 @@ class DungeonEditorTestPersistence {
                     dungeon.editorMapSurface(),
                     dungeon.editorState(),
                     database);
+        }
+
+        DungeonEditorApi editorApi() {
+            DungeonEditorFeatureRuntimeRoot root = DungeonEditorFeatureRuntimeRoot.create(editorDependencies);
+            return new DungeonEditorApiFacade(root, editorDependencies.uiDispatcher());
         }
     }
 

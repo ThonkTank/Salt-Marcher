@@ -31,6 +31,8 @@ import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
 import features.dungeon.application.editor.PointerInteractionTargets;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
+import features.dungeon.adapter.javafx.map.DungeonMapContentModel.PointerTarget;
+import features.dungeon.api.editor.DungeonEditorPointerInput;
 import features.dungeon.adapter.javafx.map.DungeonMapView;
 import platform.ui.catalogcrud.CatalogCrudControlsView;
 import javafx.geometry.Bounds;
@@ -1199,25 +1201,80 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
             boolean boundaryPreferred,
             int projectionLevel
     ) {
-        return new TestRuntimePointerTarget(PointerInteractionTargets.fromRuntimeTargets(
+        List<PointerTarget> localTargets = mapContentModel.pointerTargetsAt(sceneX, sceneY);
+        List<DungeonEditorRuntimePointerTarget> runtimeTargets = localTargets.stream()
+                .map(DungeonEditorTestSupport::runtimeTarget)
+                .toList();
+        DungeonEditorRuntimePointerTarget selected = PointerInteractionTargets.fromRuntimeTargets(
                 sceneX,
                 sceneY,
                 false,
                 false,
-                mapContentModel.runtimePointerTargetsAt(sceneX, sceneY),
-                projectionLevel).primaryTarget(boundaryPreferred));
+                runtimeTargets,
+                projectionLevel).primaryTarget(boundaryPreferred);
+        int selectedIndex = runtimeTargets.indexOf(selected);
+        PointerTarget localTarget = selectedIndex < 0 ? PointerTarget.empty() : localTargets.get(selectedIndex);
+        return new TestRuntimePointerTarget(selected, localTarget);
     }
 
     static void updateHoverTarget(
             DungeonMapContentModel mapContentModel,
             TestRuntimePointerTarget target
     ) {
-        mapContentModel.updateRuntimeHoverDisplayTarget(target.rawTarget());
+        mapContentModel.updateHoverTarget(target.localTarget());
     }
 
-    record TestRuntimePointerTarget(DungeonEditorRuntimePointerTarget rawTarget) {
+    private static DungeonEditorRuntimePointerTarget runtimeTarget(PointerTarget target) {
+        DungeonEditorPointerInput.Target source = target == null
+                ? DungeonEditorPointerInput.Target.empty()
+                : target.toApiTarget();
+        DungeonEditorPointerInput.BoundaryTarget boundary = source.boundary();
+        return new DungeonEditorRuntimePointerTarget(
+                enumValue(DungeonEditorRuntimePointerTarget.TargetKind.class,
+                        source.targetKind(), DungeonEditorRuntimePointerTarget.TargetKind.EMPTY),
+                enumValue(DungeonEditorRuntimePointerTarget.LabelKind.class,
+                        source.labelKind(), DungeonEditorRuntimePointerTarget.LabelKind.EMPTY),
+                enumValue(DungeonEditorRuntimePointerTarget.ElementKind.class,
+                        source.elementKind(), DungeonEditorRuntimePointerTarget.ElementKind.EMPTY),
+                source.ownerId(),
+                source.clusterId(),
+                enumValue(DungeonEditorRuntimePointerTarget.TopologyKind.class,
+                        source.topologyKind(), DungeonEditorRuntimePointerTarget.TopologyKind.EMPTY),
+                source.topologyId(),
+                source.handleRef(),
+                new DungeonEditorRuntimePointerTarget.BoundaryTarget(
+                        enumValue(DungeonEditorRuntimePointerTarget.BoundaryKind.class,
+                                boundary.boundaryKind(), DungeonEditorRuntimePointerTarget.BoundaryKind.WALL),
+                        boundary.key(),
+                        boundary.ownerId(),
+                        enumValue(DungeonEditorRuntimePointerTarget.TopologyKind.class,
+                                boundary.topologyKind(), DungeonEditorRuntimePointerTarget.TopologyKind.EMPTY),
+                        boundary.topologyId(),
+                        boundary.startQ(), boundary.startR(), boundary.startLevel(),
+                        boundary.endQ(), boundary.endR(), boundary.endLevel()),
+                enumValue(DungeonEditorRuntimePointerTarget.SyntheticHoverKind.class,
+                        source.syntheticHoverKind(), DungeonEditorRuntimePointerTarget.SyntheticHoverKind.NONE),
+                new DungeonEditorRuntimePointerTarget.CellTarget(
+                        source.cell().exact(), source.cell().q(), source.cell().r(), source.cell().level()),
+                new DungeonEditorRuntimePointerTarget.VertexTarget(
+                        source.vertex().exact(), source.vertex().q(), source.vertex().r(), source.vertex().level()));
+    }
+
+    private static <E extends Enum<E>> E enumValue(Class<E> type, String name, E fallback) {
+        try {
+            return Enum.valueOf(type, name == null ? "" : name);
+        } catch (IllegalArgumentException ignored) {
+            return fallback;
+        }
+    }
+
+    record TestRuntimePointerTarget(
+            DungeonEditorRuntimePointerTarget rawTarget,
+            PointerTarget localTarget
+    ) {
         TestRuntimePointerTarget {
             rawTarget = rawTarget == null ? DungeonEditorRuntimePointerTarget.empty() : rawTarget;
+            localTarget = localTarget == null ? PointerTarget.empty() : localTarget;
         }
 
         DungeonEditorRuntimePointerTarget.TargetKind targetKind() {
@@ -2260,7 +2317,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static TestBinding bindTest(TestRuntime runtime, double width, double height) {
-        ShellBinding shellBinding = new DungeonEditorContribution(runtime.editorDependencies()).bind();
+        ShellBinding shellBinding = new DungeonEditorContribution(runtime.editorApi()).bind();
         Parent controlsRoot = slot(shellBinding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
         DungeonEditorControlsView controls = descendant(controlsRoot, DungeonEditorControlsView.class);
         DungeonMapView mapView = slot(shellBinding, ShellSlot.COCKPIT_MAIN, DungeonMapView.class);
@@ -2278,7 +2335,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
 
     static TestBinding bindShellTest(TestRuntime runtime, double width, double height) {
         AppShell shell = new AppShell();
-        DungeonEditorContribution contribution = new DungeonEditorContribution(runtime.editorDependencies());
+        DungeonEditorContribution contribution = new DungeonEditorContribution(runtime.editorApi());
         ShellBinding shellBinding = contribution.bind();
         ShellLeftBarTabSpec registrationSpec = (ShellLeftBarTabSpec) contribution.registrationSpec();
         shell.registerLeftBarTab(registrationSpec, shellBinding);

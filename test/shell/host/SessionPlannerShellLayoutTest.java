@@ -54,6 +54,8 @@ import features.hex.HexServiceAssembly;
 import features.party.PartyServiceAssembly;
 import features.sessionplanner.SessionPlannerServiceAssembly;
 import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
+import features.dungeon.application.editor.DungeonEditorApiFacade;
+import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
 
 @org.junit.jupiter.api.Tag("ui")
 public final class SessionPlannerShellLayoutTest {
@@ -282,11 +284,13 @@ public final class SessionPlannerShellLayoutTest {
     }
 
     private static DungeonEditorContribution dungeonEditor(LayoutServices services) {
-        return new DungeonEditorContribution(new DungeonEditorRuntimeDependencies(
+        DungeonEditorRuntimeDependencies dependencies = new DungeonEditorRuntimeDependencies(
                 new DungeonEditorRuntimeDependencies.CompatibilityReadbackModels(
                         services.dungeon().editorControls(), services.dungeon().editorMapSurface(),
                         services.dungeon().editorState()),
-                services.dungeon().editor()));
+                services.dungeon().editor());
+        DungeonEditorFeatureRuntimeRoot root = DungeonEditorFeatureRuntimeRoot.create(dependencies);
+        return new DungeonEditorContribution(new DungeonEditorApiFacade(root, dependencies.uiDispatcher()));
     }
 
     private static CatalogContribution catalog(LayoutServices services) {

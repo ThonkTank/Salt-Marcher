@@ -6,8 +6,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel.MapCanvasPoint;
+import features.dungeon.adapter.javafx.map.DungeonMapContentModel.PointerTarget;
 
 final class DungeonMapHitAreaIndex {
 
@@ -23,12 +23,12 @@ final class DungeonMapHitAreaIndex {
 
     static DungeonMapHitAreaIndex from(
             List<HitArea> hitAreas,
-            Map<String, DungeonEditorRuntimePointerTarget> runtimePointerTargets
+            Map<String, PointerTarget> pointerTargets
     ) {
         if (hitAreas.isEmpty()) {
             return empty();
         }
-        return new DungeonMapHitAreaIndex(HitBuckets.from(hitAreas, runtimePointerTargets));
+        return new DungeonMapHitAreaIndex(HitBuckets.from(hitAreas, pointerTargets));
     }
 
     List<DungeonMapHitIndex.CanvasHit> hitsAt(double sceneX, double sceneY, double gridSize) {
@@ -109,11 +109,11 @@ final class DungeonMapHitAreaIndex {
 
         private static HitCandidate from(
                 HitArea area,
-                Map<String, DungeonEditorRuntimePointerTarget> runtimePointerTargets
+                Map<String, PointerTarget> pointerTargets
         ) {
-            Map<String, DungeonEditorRuntimePointerTarget> safeTargets = runtimePointerTargets == null
+            Map<String, PointerTarget> safeTargets = pointerTargets == null
                     ? Map.of()
-                    : runtimePointerTargets;
+                    : pointerTargets;
             return new HitCandidate(
                     area,
                     new DungeonMapHitIndex.CanvasHit(area.hitRef(), safeTargets.get(area.hitRef())),
@@ -183,15 +183,15 @@ final class DungeonMapHitAreaIndex {
         private static final double HIT_BUCKET_SIZE_SCENE = 4.0;
 
         private static Map<Long, List<HitCandidate>> from(
-                List<HitArea> hitAreas,
-                Map<String, DungeonEditorRuntimePointerTarget> runtimePointerTargets
+            List<HitArea> hitAreas,
+                Map<String, PointerTarget> pointerTargets
         ) {
             Map<Long, List<HitCandidate>> nextBuckets = new LinkedHashMap<>();
             for (HitArea hitArea : hitAreas) {
                 if (hitArea.hitRef().isBlank()) {
                     continue;
                 }
-                HitCandidate candidate = HitCandidate.from(hitArea, runtimePointerTargets);
+                HitCandidate candidate = HitCandidate.from(hitArea, pointerTargets);
                 HitBounds bounds = hitArea.bounds().expand(maximumHitIndexTolerance());
                 int minBucketX = bucket(bounds.minX());
                 int maxBucketX = bucket(bounds.maxX());

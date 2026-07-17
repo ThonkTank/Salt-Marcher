@@ -3,34 +3,17 @@ package features.dungeon.adapter.javafx.map;
 import java.util.List;
 import features.dungeon.api.DungeonEdgeRef;
 import features.dungeon.api.DungeonEditorStateSnapshot;
-import features.dungeon.application.editor.DungeonEditorMarkerHitRefs;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreviewHandleDiffFrame;
 
 final class DungeonMapPreviewHandleDiffProjector {
 
     void addPreviewHandleDiff(
             List<DungeonMapRenderState.Marker> markers,
             List<PreviewHandleDiffFrame> handles,
-            DungeonMapContentModel.MapInteractionFrame interactionFrame,
             DungeonEditorStateSnapshot.Selection selection
     ) {
-        DungeonMapContentModel.MapInteractionFrame safeFrame = interactionFrame == null
-                ? DungeonMapContentModel.MapInteractionFrame.empty()
-                : interactionFrame;
         for (PreviewHandleDiffFrame handle : handles) {
-            if (!runtimePreparedPreviewHandle(handle, safeFrame)) {
-                continue;
-            }
             markers.add(previewHandleMarker(handle, selection));
         }
-    }
-
-    private static boolean runtimePreparedPreviewHandle(
-            PreviewHandleDiffFrame handle,
-            DungeonMapContentModel.MapInteractionFrame interactionFrame
-    ) {
-        return interactionFrame.previewHandleHitRefs()
-                .contains(DungeonEditorMarkerHitRefs.marker(handle.ref(), handle.cell()).value());
     }
 
     private static DungeonMapRenderState.Marker previewHandleMarker(

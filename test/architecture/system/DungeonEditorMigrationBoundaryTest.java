@@ -17,34 +17,7 @@ public final class DungeonEditorMigrationBoundaryTest {
     private static final String APPLICATION_PACKAGE = "features.dungeon.application.";
 
     // M1 deletes this complete ledger together with the JavaFX-to-Application exception.
-    private static final Set<String> TEMPORARY_APPLICATION_CLIENTS = Set.of(
-            "features.dungeon.adapter.javafx.editor.DungeonEditorBinder",
-            "features.dungeon.adapter.javafx.editor.DungeonEditorContribution",
-            "features.dungeon.adapter.javafx.editor.DungeonEditorControlsInput",
-            "features.dungeon.adapter.javafx.editor.DungeonEditorControlsPanelModel",
-            "features.dungeon.adapter.javafx.editor.DungeonEditorControlsView",
-            "features.dungeon.adapter.javafx.editor.DungeonEditorFeatureShellBinding",
-            "features.dungeon.adapter.javafx.editor.DungeonEditorViewModel",
-            "features.dungeon.adapter.javafx.map.DungeonMapContentModel",
-            "features.dungeon.adapter.javafx.map.DungeonMapEditorHandleProjector",
-            "features.dungeon.adapter.javafx.map.DungeonMapEditorProjectionAccumulator",
-            "features.dungeon.adapter.javafx.map.DungeonMapEditorRenderProjector",
-            "features.dungeon.adapter.javafx.map.DungeonMapFrameConsumption",
-            "features.dungeon.adapter.javafx.map.DungeonMapFrameProjector",
-            "features.dungeon.adapter.javafx.map.DungeonMapHitAreaIndex",
-            "features.dungeon.adapter.javafx.map.DungeonMapHitIndex",
-            "features.dungeon.adapter.javafx.map.DungeonMapPreparedPreviewProjector",
-            "features.dungeon.adapter.javafx.map.DungeonMapPreviewAreaDiffProjector",
-            "features.dungeon.adapter.javafx.map.DungeonMapPreviewBoundaryDiffProjector",
-            "features.dungeon.adapter.javafx.map.DungeonMapPreviewDiffProjector",
-            "features.dungeon.adapter.javafx.map.DungeonMapPreviewFeatureDiffProjector",
-            "features.dungeon.adapter.javafx.map.DungeonMapPreviewHandleDiffProjector",
-            "features.dungeon.adapter.javafx.map.DungeonMapRenderElementFactory",
-            "features.dungeon.adapter.javafx.map.DungeonMapRenderMarkers",
-            "features.dungeon.adapter.javafx.map.DungeonMapRenderState",
-            "features.dungeon.adapter.javafx.map.DungeonMapSceneGeometry",
-            "features.dungeon.adapter.javafx.map.DungeonMapSceneIdentity",
-            "features.dungeon.adapter.javafx.map.DungeonMapSceneStyles");
+    private static final Set<String> TEMPORARY_APPLICATION_CLIENTS = Set.of();
 
     private DungeonEditorMigrationBoundaryTest() {
     }

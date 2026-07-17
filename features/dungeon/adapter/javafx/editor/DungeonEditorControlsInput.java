@@ -2,7 +2,6 @@ package features.dungeon.adapter.javafx.editor;
 
 import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonEditorViewMode;
-import features.dungeon.application.editor.DungeonEditorOverlaySettings;
 
 record DungeonEditorControlsInput(
         MapInput map,
@@ -85,7 +84,7 @@ record DungeonEditorControlsInput(
     }
 
     record OverlayInput(
-            DungeonEditorOverlaySettings.Mode mode,
+            OverlayMode mode,
             int levelRange,
             double opacity,
             String selectedLevelsText
@@ -99,5 +98,11 @@ record DungeonEditorControlsInput(
         static OverlayInput none() {
             return new OverlayInput(null, 0, 0.0, "");
         }
+    }
+
+    enum OverlayMode {
+        OFF,
+        NEARBY,
+        SELECTED
     }
 }

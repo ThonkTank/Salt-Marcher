@@ -2,13 +2,6 @@ package features.dungeon.adapter.javafx.map;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import features.dungeon.application.editor.DungeonEditorCellHitRefs;
-import features.dungeon.application.editor.DungeonEditorEdgeHitRefs;
-import features.dungeon.application.editor.DungeonEditorGraphHitRefs;
-import features.dungeon.application.editor.DungeonEditorLabelHitRefs;
-import features.dungeon.application.editor.DungeonEditorMarkerHitRefs;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreparedLabelKind;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreparedTopologyKind;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel.BoundaryTarget;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel.PointerTarget;
 
@@ -35,46 +28,38 @@ final class DungeonMapSceneIdentity {
         if (cell.preview()) {
             return "";
         }
-        return DungeonEditorCellHitRefs.exactCell(
-                        cell.kind().name(),
-                        cell.ownerId(),
-                        cell.clusterId(),
-                        cell.topologyRef().kind().name(),
-                        cell.topologyRef().id(),
-                        cell.q(),
-                        cell.r(),
-                        cell.z())
-                .value();
+        return "cell:" + cell.kind().name()
+                + ":" + cell.ownerId()
+                + ":" + cell.clusterId()
+                + ":" + cell.topologyRef().kind().name()
+                + ":" + cell.topologyRef().id()
+                + ":" + cell.q() + ":" + cell.r() + ":" + cell.z();
     }
 
     static String edgeHitRef(DungeonMapRenderState.Edge edge) {
         if (edge.preview()) {
             return "";
         }
-        return DungeonEditorEdgeHitRefs.edge(
-                        edge.kind().name(),
-                        edge.ownerId(),
-                        edge.topologyRef().kind().name(),
-                        edge.topologyRef().id(),
-                        edge.z(),
-                        edge.startQ(),
-                        edge.startR(),
-                        edge.endQ(),
-                        edge.endR())
-                .value();
+        return "edge:" + edge.kind().name()
+                + ":" + edge.ownerId()
+                + ":" + edge.topologyRef().kind().name()
+                + ":" + edge.topologyRef().id()
+                + ":" + edge.z()
+                + ":" + Math.round(edge.startQ())
+                + ":" + Math.round(edge.startR())
+                + ":" + Math.round(edge.endQ())
+                + ":" + Math.round(edge.endR());
     }
 
     static String labelHitRef(DungeonMapRenderState.Label label) {
         if (label.preview() || label.labelKind() == PreparedLabelKind.ROOM_LABEL) {
             return "";
         }
-        return DungeonEditorLabelHitRefs.label(
-                        label.ownerId(),
-                        label.clusterId(),
-                        label.topologyRef().kind().name(),
-                        label.topologyRef().id(),
-                        label.labelKind().name())
-                .value();
+        return "label:" + label.ownerId()
+                + ":" + label.clusterId()
+                + ":" + label.topologyRef().kind().name()
+                + ":" + label.topologyRef().id()
+                + ":" + label.labelKind().name();
     }
 
     static String markerHitRef(DungeonMapRenderState.Marker marker) {
@@ -87,25 +72,30 @@ final class DungeonMapSceneIdentity {
             return topologyRef.equals(DungeonMapRenderState.TopologyRef.empty())
                     || !featureMarkerTopology(topologyRef)
                     ? ""
-                    : DungeonEditorMarkerHitRefs.featureMarker(
-                            topologyRef.kind().name(),
-                            topologyRef.id(),
-                            topologyRef.id(),
-                            (int) Math.floor(marker.q()),
-                            (int) Math.floor(marker.r()),
-                            marker.z())
-                    .value();
+                    : "marker:FEATURE:" + topologyRef.kind().name()
+                    + ":" + topologyRef.id()
+                    + ":" + topologyRef.id()
+                    + ":" + (int) Math.floor(marker.q())
+                    + ":" + (int) Math.floor(marker.r())
+                    + ":" + marker.z();
         }
-        return DungeonEditorMarkerHitRefs.marker(
-                        handle.ref(),
-                        handle.q(),
-                        handle.r(),
-                        handle.level())
-                .value();
+        var ref = handle.ref();
+        return "marker:" + ref.kind().name()
+                + ":" + ref.topologyRef().kind().name()
+                + ":" + ref.topologyRef().id()
+                + ":" + ref.ownerId()
+                + ":" + ref.clusterId()
+                + ":" + ref.corridorId()
+                + ":" + ref.roomId()
+                + ":" + ref.index()
+                + ":" + handle.q()
+                + ":" + handle.r()
+                + ":" + handle.level()
+                + ":" + ref.direction();
     }
 
     static String graphNodeHitRef(DungeonMapRenderState.GraphNode node) {
-        return DungeonEditorGraphHitRefs.graphNode(node.id(), node.clusterId()).value();
+        return "graph-node:ROOM:" + node.id() + ":" + node.clusterId();
     }
 
     private static boolean featureMarkerTopology(DungeonMapRenderState.TopologyRef topologyRef) {

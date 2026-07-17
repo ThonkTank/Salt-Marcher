@@ -28,7 +28,7 @@ import javafx.scene.layout.VBox;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonEditorViewMode;
-import features.dungeon.application.editor.DungeonEditorOverlaySettings;
+import features.dungeon.adapter.javafx.editor.DungeonEditorControlsInput.OverlayMode;
 
 public final class DungeonEditorControlsView extends VBox {
 
@@ -223,7 +223,7 @@ public final class DungeonEditorControlsView extends VBox {
             emitCurrentPopupOverlay(selectedPopupOverlayMode());
         }
 
-        private void emitCurrentPopupOverlay(DungeonEditorOverlaySettings.Mode mode) {
+        private void emitCurrentPopupOverlay(OverlayMode mode) {
             emitOverlayInput(
                     rendering,
                     mode,
@@ -275,7 +275,7 @@ public final class DungeonEditorControlsView extends VBox {
             }
         }
 
-        private DungeonEditorOverlaySettings.Mode selectedPopupOverlayMode() {
+        private OverlayMode selectedPopupOverlayMode() {
             for (Node node : popupOverlayModeRow.getChildren()) {
                 if (node instanceof Button button
                         && button.getStyleClass().contains(SELECTED_STYLE_CLASS)
@@ -540,7 +540,7 @@ public final class DungeonEditorControlsView extends VBox {
 
     private void emitOverlayInput(
             boolean[] rendering,
-            DungeonEditorOverlaySettings.Mode mode,
+            OverlayMode mode,
             int levelRange,
             double opacity,
             String selectedLevelsText
@@ -622,11 +622,11 @@ public final class DungeonEditorControlsView extends VBox {
         }
     }
 
-    private static DungeonEditorOverlaySettings.Mode selectedOverlayMode(
+    private static OverlayMode selectedOverlayMode(
             ComboBox<Object> modeSelector
     ) {
         DungeonEditorControlsPanelModel.OverlayModeOption option = asOverlayModeOption(comboValue(modeSelector));
-        return option == null ? DungeonEditorOverlaySettings.Mode.OFF : option.mode();
+        return option == null ? OverlayMode.OFF : option.mode();
     }
 
     private static void markSelectedFamily(

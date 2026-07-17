@@ -3,10 +3,9 @@ package features.dungeon.adapter.javafx.map;
 import java.util.ArrayList;
 import java.util.List;
 import features.dungeon.api.DungeonEditorMapSnapshot;
+import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonEditorSurface;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreviewRenderDiffFrame;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreviewRenderFrame;
 
 final class DungeonMapEditorProjectionAccumulator {
     private final DungeonMapRoomLabelPlanner roomLabelPlanner;
@@ -61,15 +60,14 @@ final class DungeonMapEditorProjectionAccumulator {
     void addHandles(
             DungeonEditorMapSnapshot map,
             DungeonEditorStateSnapshot.Selection selection,
-            DungeonMapContentModel.MapInteractionFrame interactionFrame
+            DungeonEditorPreview preview
     ) {
-        DungeonMapEditorHandleProjector.addHandles(markers, map, selection, interactionFrame);
+        DungeonMapEditorHandleProjector.addHandles(markers, map, selection, preview);
     }
 
     void addPreviewRenderDiff(
             PreviewRenderDiffFrame previewRenderDiff,
-            DungeonEditorStateSnapshot.Selection selection,
-            DungeonMapContentModel.MapInteractionFrame interactionFrame
+            DungeonEditorStateSnapshot.Selection selection
     ) {
         previewDiffProjector.addPreviewRenderDiff(
                 cells,
@@ -77,7 +75,6 @@ final class DungeonMapEditorProjectionAccumulator {
                 labels,
                 markers,
                 previewRenderDiff,
-                interactionFrame,
                 selection,
                 roomLabelPlanner);
     }

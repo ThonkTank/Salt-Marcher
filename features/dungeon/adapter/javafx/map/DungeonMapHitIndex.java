@@ -1,10 +1,9 @@
 package features.dungeon.adapter.javafx.map;
 
 import java.util.List;
-import java.util.Map;
 import org.jspecify.annotations.Nullable;
-import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel.RenderScene;
+import features.dungeon.adapter.javafx.map.DungeonMapContentModel.PointerTarget;
 
 final class DungeonMapHitIndex {
 
@@ -13,13 +12,12 @@ final class DungeonMapHitIndex {
     void update(
             DungeonMapSceneAssembler.SceneBuckets buckets,
             @Nullable DungeonMapRenderState displayModel,
-            RenderScene renderScene,
-            Map<String, DungeonEditorRuntimePointerTarget> runtimePointerTargets
+            RenderScene renderScene
     ) {
         hitIndex = renderScene != null && renderScene.containsRenderablePrimitives() && buckets != null
                 ? DungeonMapHitAreaIndex.from(
                         DungeonMapHitAreaProjector.project(buckets, displayModel),
-                        runtimePointerTargets)
+                        DungeonMapSemanticTargetIndex.from(displayModel))
                 : DungeonMapHitAreaIndex.empty();
     }
 
@@ -29,14 +27,12 @@ final class DungeonMapHitIndex {
 
     record CanvasHit(
             String hitRef,
-            DungeonEditorRuntimePointerTarget runtimePointerTarget
+            PointerTarget pointerTarget
     ) {
 
         CanvasHit {
             hitRef = hitRef == null ? "" : hitRef;
-            runtimePointerTarget = runtimePointerTarget == null
-                    ? DungeonEditorRuntimePointerTarget.empty()
-                    : runtimePointerTarget;
+            pointerTarget = pointerTarget == null ? PointerTarget.empty() : pointerTarget;
         }
     }
 }
