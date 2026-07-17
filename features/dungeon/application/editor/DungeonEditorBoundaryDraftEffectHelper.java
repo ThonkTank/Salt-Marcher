@@ -29,7 +29,7 @@ final class DungeonEditorBoundaryDraftEffectHelper {
                 new DungeonEditorSessionValues.ClusterBoundariesPreview(
                         clusterId,
                         edgeRefs(edges),
-                        DungeonEditorWorkspaceValues.BoundaryKind.WALL,
+                        features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.WALL,
                         true)));
     }
 
@@ -89,12 +89,12 @@ final class DungeonEditorBoundaryDraftEffectHelper {
         return new DungeonEditorSessionValues.ClusterBoundariesPreview(
                 clusterId,
                 edgeRefs(edges),
-                DungeonEditorWorkspaceValues.BoundaryKind.WALL,
+                features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.WALL,
                 deleteMode);
     }
 
-    static List<DungeonEditorWorkspaceValues.Edge> edgeRefs(Set<EdgeKey> edges) {
-        List<DungeonEditorWorkspaceValues.Edge> result = new ArrayList<>();
+    static List<features.dungeon.domain.core.geometry.Edge> edgeRefs(Set<EdgeKey> edges) {
+        List<features.dungeon.domain.core.geometry.Edge> result = new ArrayList<>();
         for (EdgeKey edge : edges) {
             result.add(edge.toEdgeRef());
         }

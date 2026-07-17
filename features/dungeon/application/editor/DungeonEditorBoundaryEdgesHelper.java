@@ -21,7 +21,7 @@ final class DungeonEditorBoundaryEdgesHelper {
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             Set<EdgeKey> internalEdges,
             int level,
-            DungeonEditorWorkspaceValues.BoundaryKind kind
+            features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind kind
     ) {
         Set<EdgeKey> result = new LinkedHashSet<>();
         if (snapshot == null) {
@@ -37,7 +37,7 @@ final class DungeonEditorBoundaryEdgesHelper {
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             Set<CellKey> cells,
             int level,
-            DungeonEditorWorkspaceValues.BoundaryKind kind
+            features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind kind
     ) {
         return existingInternal(snapshot, internal(cells), level, kind);
     }
@@ -46,7 +46,7 @@ final class DungeonEditorBoundaryEdgesHelper {
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             Set<CellKey> cells,
             int level,
-            DungeonEditorWorkspaceValues.BoundaryKind kind
+            features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind kind
     ) {
         Set<EdgeKey> clusterEdges = new LinkedHashSet<>(internal(cells));
         clusterEdges.addAll(outer(cells));
@@ -91,7 +91,7 @@ final class DungeonEditorBoundaryEdgesHelper {
             Set<EdgeKey> internalEdges,
             DungeonEditorWorkspaceValues.Boundary boundary,
             int level,
-            DungeonEditorWorkspaceValues.BoundaryKind kind
+            features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind kind
     ) {
         if (boundary.edge() == null
                 || boundary.edge().from() == null

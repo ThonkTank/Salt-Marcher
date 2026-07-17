@@ -12,6 +12,7 @@ import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.geometry.EdgeKey;
+import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 
 public final class RoomClusterBoundaryStretchPlan {
@@ -305,6 +306,14 @@ public final class RoomClusterBoundaryStretchPlan {
                 case NORTH -> movement > 0;
                 case SOUTH -> movement < 0;
             };
+        }
+
+        public Set<DungeonBoundaryKey> boundaryKeys() {
+            Set<DungeonBoundaryKey> result = new LinkedHashSet<>();
+            for (EdgeKey key : sourceKeys) {
+                result.add(new DungeonBoundaryKey(key.lower(), key.upper()));
+            }
+            return Set.copyOf(result);
         }
 
         public List<BoundaryVertex> vertices() {

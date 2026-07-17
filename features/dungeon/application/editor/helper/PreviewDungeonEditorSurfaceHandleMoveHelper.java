@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceGeometry;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceGeometry.EdgeKey;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Cell;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Edge;
+import features.dungeon.domain.core.geometry.EdgeKey;
+import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Handle;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.HandleRef;
 
@@ -49,7 +49,7 @@ public final class PreviewDungeonEditorSurfaceHandleMoveHelper {
         List<Handle> result = new ArrayList<>();
         for (Handle handle : handles) {
             Edge sourceEdge = handle.ref().sourceEdge();
-            result.add(sourceEdge != null && sourceEdgeKeys.contains(EdgeKey.of(sourceEdge))
+            result.add(sourceEdge != null && sourceEdgeKeys.contains(EdgeKey.from(sourceEdge))
                     ? movedHandle(handle, deltaQ, deltaR, deltaLevel)
                     : handle);
         }

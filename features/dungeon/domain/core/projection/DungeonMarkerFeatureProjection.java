@@ -14,9 +14,8 @@ final class DungeonMarkerFeatureProjection {
             if (marker == null) {
                 continue;
             }
-            FeatureMarkerKind markerKind = marker.kind();
             features.add(new DungeonFeatureFacts(
-                    DungeonFeatureType.valueOf(markerKind.name()),
+                    featureType(marker.kind()),
                     marker.markerId(),
                     marker.label(),
                     List.of(marker.anchor()),
@@ -26,5 +25,13 @@ final class DungeonMarkerFeatureProjection {
                     marker.topologyRef(),
                     null));
         }
+    }
+
+    private static DungeonFeatureType featureType(FeatureMarkerKind kind) {
+        return switch (kind) {
+            case OBJECT -> DungeonFeatureType.OBJECT;
+            case ENCOUNTER -> DungeonFeatureType.ENCOUNTER;
+            case POI -> DungeonFeatureType.POI;
+        };
     }
 }

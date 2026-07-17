@@ -6,29 +6,19 @@ import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.api.DungeonEditorViewMode;
+import features.dungeon.api.DungeonOverlaySettings;
 
 final class DungeonEditorValueProjectionServiceAssembly {
 
     private DungeonEditorValueProjectionServiceAssembly() {
     }
 
-    static features.dungeon.api.DungeonOverlaySettings overlay(
-            DungeonEditorSessionValues.@Nullable OverlaySettings overlay
-    ) {
-        DungeonEditorSessionValues.OverlaySettings safeOverlay = overlay == null
-                ? DungeonEditorSessionValues.OverlaySettings.defaults()
-                : overlay;
-        return new features.dungeon.api.DungeonOverlaySettings(
-                safeOverlay.modeKey(),
-                safeOverlay.levelRange(),
-                safeOverlay.opacity(),
-                safeOverlay.selectedLevels());
+    static DungeonOverlaySettings overlay(@Nullable DungeonOverlaySettings overlay) {
+        return overlay == null ? DungeonOverlaySettings.defaults() : overlay;
     }
 
-    static DungeonEditorViewMode viewMode(DungeonEditorSessionValues.@Nullable ViewMode viewMode) {
-        return viewMode != null && "GRAPH".equals(viewMode.name())
-                ? DungeonEditorViewMode.GRAPH
-                : DungeonEditorViewMode.GRID;
+    static DungeonEditorViewMode viewMode(@Nullable DungeonEditorViewMode viewMode) {
+        return viewMode == null ? DungeonEditorViewMode.GRID : viewMode;
     }
 
     static features.dungeon.api.DungeonEditorHandleRef handleRef(
@@ -38,7 +28,7 @@ final class DungeonEditorValueProjectionServiceAssembly {
             return features.dungeon.api.DungeonEditorHandleRef.empty();
         }
         return new features.dungeon.api.DungeonEditorHandleRef(
-                features.dungeon.api.DungeonEditorHandleKind.valueOf(handleRef.kind().name()),
+                handleRef.kind(),
                 domainTopologyRef(handleRef.topologyRef()),
                 handleRef.ownerId(),
                 handleRef.clusterId(),
@@ -46,13 +36,13 @@ final class DungeonEditorValueProjectionServiceAssembly {
                 handleRef.roomId(),
                 handleRef.index(),
                 cell(handleRef.cell()),
-                handleRef.direction(),
+                handleRef.direction().name(),
                 handleRef.sourceEdge() == null ? null : edge(handleRef.sourceEdge()),
                 edges(handleRef.sourceEdges()));
     }
 
     private static List<features.dungeon.api.DungeonEdgeRef> edges(
-            List<features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Edge> edges
+            List<features.dungeon.domain.core.geometry.Edge> edges
     ) {
         return edges == null
                 ? List.of()
@@ -66,18 +56,18 @@ final class DungeonEditorValueProjectionServiceAssembly {
     }
 
     static List<features.dungeon.api.DungeonCellRef> cells(
-            List<features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Cell> cells
+            List<features.dungeon.domain.core.geometry.Cell> cells
     ) {
         List<features.dungeon.api.DungeonCellRef> result = new ArrayList<>();
-        for (features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Cell cell
-                : cells == null ? List.<features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Cell>of() : cells) {
+        for (features.dungeon.domain.core.geometry.Cell cell
+                : cells == null ? List.<features.dungeon.domain.core.geometry.Cell>of() : cells) {
             result.add(cell(cell));
         }
         return List.copyOf(result);
     }
 
     static features.dungeon.api.DungeonCellRef cell(
-            features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Cell mapCell
+            features.dungeon.domain.core.geometry.Cell mapCell
     ) {
         return mapCell == null
                 ? new features.dungeon.api.DungeonCellRef(0, 0, 0)
@@ -85,7 +75,7 @@ final class DungeonEditorValueProjectionServiceAssembly {
     }
 
     static features.dungeon.api.DungeonEdgeRef edge(
-            features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Edge mapEdge
+            features.dungeon.domain.core.geometry.Edge mapEdge
     ) {
         if (mapEdge == null) {
             return new features.dungeon.api.DungeonEdgeRef(

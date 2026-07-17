@@ -67,7 +67,7 @@ final class DungeonTopologyInvariantScenarios {
                 "corridor-bound setup contains authored door boundary");
         assertTrue(!corridorBound.corridors().isEmpty(), "corridor-bound setup contains authored corridor");
         assertTrue(
-                !corridorBound.corridors().getFirst().stateBindings().doorBindings().isEmpty(),
+                !corridorBound.corridors().getFirst().bindings().doorBindings().isEmpty(),
                 "corridor-bound setup contains corridor door bindings");
         DungeonMap rejectedDelete = corridorBound.editClusterBoundaries(
                 boundDoor.clusterId(),

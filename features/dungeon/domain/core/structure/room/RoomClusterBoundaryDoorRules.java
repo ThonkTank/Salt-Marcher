@@ -13,7 +13,7 @@ import features.dungeon.domain.core.structure.door.Door;
 import features.dungeon.domain.core.structure.door.DoorBoundaryMaterialization;
 import features.dungeon.domain.core.structure.door.DoorIndex;
 import features.dungeon.domain.core.structure.corridor.Corridor;
-import features.dungeon.domain.core.structure.corridor.CorridorDoorBindingState;
+import features.dungeon.domain.core.component.CorridorDoorBinding;
 import features.dungeon.domain.core.structure.corridor.CorridorDoorBindingGeometry;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 
@@ -173,7 +173,7 @@ final class RoomClusterBoundaryDoorRules {
                 return false;
             }
             for (Corridor corridor : corridors) {
-                for (CorridorDoorBindingState binding : corridor.stateBindings().doorBindings()) {
+                for (CorridorDoorBinding binding : corridor.bindings().doorBindings()) {
                     if (ref.equals(binding.topologyRef())) {
                         return true;
                     }
@@ -184,7 +184,7 @@ final class RoomClusterBoundaryDoorRules {
 
         private boolean boundByCurrentBoundaryKey() {
             for (Corridor corridor : corridors) {
-                for (CorridorDoorBindingState binding : corridor.stateBindings().doorBindings()) {
+                for (CorridorDoorBinding binding : corridor.bindings().doorBindings()) {
                     if (binding.clusterId() != target.cluster().clusterId()
                             || binding.relativeCell().level() != existing.level()) {
                         continue;

@@ -18,7 +18,7 @@ public final class DungeonEditorWorkspaceAreaProjectionHelper {
     }
 
     private static DungeonEditorWorkspaceValues.Area area(DungeonAreaFacts area) {
-        List<DungeonEditorWorkspaceValues.Cell> cells = new ArrayList<>();
+        List<features.dungeon.domain.core.geometry.Cell> cells = new ArrayList<>();
         for (Cell cell : area.cells()) {
             cells.add(cell(cell));
         }
@@ -31,9 +31,9 @@ public final class DungeonEditorWorkspaceAreaProjectionHelper {
                 area.topologyRef());
     }
 
-    private static DungeonEditorWorkspaceValues.Cell cell(@Nullable Cell cell) {
+    private static features.dungeon.domain.core.geometry.Cell cell(@Nullable Cell cell) {
         return cell == null
-                ? DungeonEditorWorkspaceValues.Cell.empty()
-                : new DungeonEditorWorkspaceValues.Cell(cell.q(), cell.r(), cell.level());
+                ? features.dungeon.domain.core.geometry.Cell.empty()
+                : new features.dungeon.domain.core.geometry.Cell(cell.q(), cell.r(), cell.level());
     }
 }

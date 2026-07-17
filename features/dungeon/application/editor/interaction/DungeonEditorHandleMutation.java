@@ -15,7 +15,7 @@ public final class DungeonEditorHandleMutation {
             int deltaR,
             int deltaLevel
     ) {
-        if (handle == null || stationary(deltaQ, deltaR, deltaLevel) || handle.kind().isUnknown()) {
+        if (handle == null || stationary(deltaQ, deltaR, deltaLevel)) {
             return current;
         }
         return applyActiveHandle(current, handle, deltaQ, deltaR, deltaLevel);

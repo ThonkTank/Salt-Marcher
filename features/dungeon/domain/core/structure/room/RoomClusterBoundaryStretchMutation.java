@@ -7,7 +7,7 @@ import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.structure.corridor.Corridor;
 import features.dungeon.domain.core.structure.room.RoomBoundaryStretchValues.StretchMutationResult;
-import features.dungeon.domain.core.structure.room.RoomBoundaryStretchValues.StretchSelection;
+import features.dungeon.domain.core.structure.room.RoomClusterBoundaryStretchPlan.Selection;
 import features.dungeon.domain.core.structure.room.RoomTopologyRebuilder.RebuildResult;
 import features.dungeon.domain.core.structure.topology.SpatialTopology;
 
@@ -37,7 +37,7 @@ public final class RoomClusterBoundaryStretchMutation {
             return Optional.empty();
         }
         Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = target.get().cluster().boundaryMap();
-        Optional<StretchSelection> stretch = target.get().boundaryStretchSelection(sourceEdges, deltaQ, deltaR, deltaLevel);
+        Optional<Selection> stretch = target.get().boundaryStretchSelection(sourceEdges, deltaQ, deltaR, deltaLevel);
         if (stretch.isEmpty() || stretch.get().movement() == 0) {
             return Optional.empty();
         }
@@ -51,7 +51,7 @@ public final class RoomClusterBoundaryStretchMutation {
     private Optional<StretchMutationResult> applyStretchMutation(
             List<Corridor> corridors,
             DungeonRoomTopologyClusterWork target,
-            StretchSelection stretch,
+            Selection stretch,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries
     ) {
         return stretch.outer()

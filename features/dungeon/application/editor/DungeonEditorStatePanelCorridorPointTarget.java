@@ -1,7 +1,7 @@
 package features.dungeon.application.editor;
 
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
-import features.dungeon.application.editor.interaction.DungeonEditorHandleType;
+import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.api.DungeonCellRef;
 import features.dungeon.api.DungeonEdgeRef;
@@ -32,7 +32,7 @@ final class DungeonEditorStatePanelCorridorPointTarget {
         DungeonEditorWorkspaceValues.HandleRef safeHandle = handle == null
                 ? DungeonEditorWorkspaceValues.HandleRef.empty()
                 : handle;
-        return DungeonEditorHandleType.CORRIDOR_WAYPOINT == safeHandle.kind()
+        return DungeonEditorHandleKind.CORRIDOR_WAYPOINT == safeHandle.kind()
                 ? CORRIDOR_WAYPOINT_LABEL
                 : CORRIDOR_ANCHOR_LABEL;
     }
@@ -48,7 +48,7 @@ final class DungeonEditorStatePanelCorridorPointTarget {
 
     private static DungeonEditorWorkspaceValues.HandleRef toWorkspaceHandleRef(DungeonEditorHandleRef handleRef) {
         return new DungeonEditorWorkspaceValues.HandleRef(
-                DungeonEditorRuntimeEnumTranslator.handleType(handleRef.kind().name()),
+                handleRef.kind(),
                 new DungeonTopologyRef(
                         DungeonEditorMainViewInteractionValues.toTopologyKind(handleRef.topologyRef().kind().name()),
                         handleRef.topologyRef().id()),
@@ -58,26 +58,26 @@ final class DungeonEditorStatePanelCorridorPointTarget {
                 handleRef.roomId(),
                 handleRef.index(),
                 cell(handleRef.cell()),
-                handleRef.direction(),
+                Direction.parse(handleRef.direction()),
                 sourceEdge(handleRef.sourceEdge()),
                 sourceEdges(handleRef));
     }
 
-    private static DungeonEditorWorkspaceValues.Cell cell(DungeonCellRef cell) {
+    private static features.dungeon.domain.core.geometry.Cell cell(DungeonCellRef cell) {
         DungeonCellRef safeCell = cell == null ? new DungeonCellRef(0, 0, 0) : cell;
-        return new DungeonEditorWorkspaceValues.Cell(safeCell.q(), safeCell.r(), safeCell.level());
+        return new features.dungeon.domain.core.geometry.Cell(safeCell.q(), safeCell.r(), safeCell.level());
     }
 
-    private static DungeonEditorWorkspaceValues.Edge sourceEdge(DungeonEdgeRef edge) {
+    private static features.dungeon.domain.core.geometry.Edge sourceEdge(DungeonEdgeRef edge) {
         return sourceEdgePresent(edge)
-                ? new DungeonEditorWorkspaceValues.Edge(cell(edge.from()), cell(edge.to()))
+                ? new features.dungeon.domain.core.geometry.Edge(cell(edge.from()), cell(edge.to()))
                 : null;
     }
 
-    private static java.util.List<DungeonEditorWorkspaceValues.Edge> sourceEdges(DungeonEditorHandleRef handleRef) {
+    private static java.util.List<features.dungeon.domain.core.geometry.Edge> sourceEdges(DungeonEditorHandleRef handleRef) {
         return handleRef.sourceEdges().stream()
                 .filter(DungeonEditorStatePanelCorridorPointTarget::sourceEdgePresent)
-                .map(edge -> new DungeonEditorWorkspaceValues.Edge(cell(edge.from()), cell(edge.to())))
+                .map(edge -> new features.dungeon.domain.core.geometry.Edge(cell(edge.from()), cell(edge.to())))
                 .toList();
     }
 

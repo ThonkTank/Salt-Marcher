@@ -1,16 +1,18 @@
 package features.dungeon.application.editor.session;
 
 import org.jspecify.annotations.Nullable;
+import features.dungeon.api.DungeonEditorViewMode;
+import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapId;
 import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
 
 public record DungeonEditorSession(
         @Nullable MapId selectedMapId,
-        DungeonEditorSessionValues.ViewMode viewMode,
+        DungeonEditorViewMode viewMode,
         DungeonEditorToolSelection toolSelection,
         int projectionLevel,
-        DungeonEditorSessionValues.OverlaySettings overlaySettings,
+        DungeonOverlaySettings overlaySettings,
         DungeonEditorSessionValues.Selection selection,
         DungeonEditorSessionValues.Preview preview,
         String statusText,
@@ -18,9 +20,9 @@ public record DungeonEditorSession(
 ) {
 
     public DungeonEditorSession {
-        viewMode = viewMode == null ? DungeonEditorSessionValues.ViewMode.defaultMode() : viewMode;
+        viewMode = viewMode == null ? DungeonEditorViewMode.GRID : viewMode;
         toolSelection = toolSelection == null ? DungeonEditorToolSelection.select() : toolSelection;
-        overlaySettings = overlaySettings == null ? DungeonEditorSessionValues.OverlaySettings.defaults() : overlaySettings;
+        overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
         selection = selection == null ? DungeonEditorSessionValues.Selection.empty() : selection;
         preview = preview == null ? DungeonEditorSessionValues.Preview.none() : preview;
         statusText = statusText == null ? "" : statusText;
@@ -30,10 +32,10 @@ public record DungeonEditorSession(
     public static DungeonEditorSession empty() {
         return new DungeonEditorSession(
                 null,
-                DungeonEditorSessionValues.ViewMode.defaultMode(),
+                DungeonEditorViewMode.GRID,
                 DungeonEditorToolSelection.select(),
                 0,
-                DungeonEditorSessionValues.OverlaySettings.defaults(),
+                DungeonOverlaySettings.defaults(),
                 DungeonEditorSessionValues.Selection.empty(),
                 DungeonEditorSessionValues.Preview.none(),
                 "",
@@ -49,7 +51,7 @@ public record DungeonEditorSession(
                 selection, preview, statusText, commandOutcome);
     }
 
-    public DungeonEditorSession withViewMode(DungeonEditorSessionValues.ViewMode nextViewMode) {
+    public DungeonEditorSession withViewMode(DungeonEditorViewMode nextViewMode) {
         return copy(selectedMapId, nextViewMode, toolSelection, projectionLevel, overlaySettings,
                 selection, preview, statusText, commandOutcome);
     }
@@ -68,7 +70,7 @@ public record DungeonEditorSession(
         return withProjectionLevel(projectionLevel + delta);
     }
 
-    public DungeonEditorSession withOverlaySettings(DungeonEditorSessionValues.OverlaySettings nextOverlaySettings) {
+    public DungeonEditorSession withOverlaySettings(DungeonOverlaySettings nextOverlaySettings) {
         return copy(selectedMapId, viewMode, toolSelection, projectionLevel, nextOverlaySettings,
                 selection, preview, statusText, commandOutcome);
     }
@@ -119,10 +121,10 @@ public record DungeonEditorSession(
 
     private static DungeonEditorSession copy(
             @Nullable MapId selectedMapId,
-            DungeonEditorSessionValues.ViewMode viewMode,
+            DungeonEditorViewMode viewMode,
             DungeonEditorToolSelection toolSelection,
             int projectionLevel,
-            DungeonEditorSessionValues.OverlaySettings overlaySettings,
+            DungeonOverlaySettings overlaySettings,
             DungeonEditorSessionValues.Selection selection,
             DungeonEditorSessionValues.Preview preview,
             String statusText,

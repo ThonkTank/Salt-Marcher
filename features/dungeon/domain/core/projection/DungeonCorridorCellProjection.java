@@ -25,10 +25,10 @@ final class DungeonCorridorCellProjection {
             List<DungeonCorridorEndpointResolver.CorridorEndpoint> endpoints,
             Set<Cell> roomCells
     ) {
-        boolean authoredBackbone = !corridor.stateBindings().waypoints().isEmpty();
+        boolean authoredBackbone = !corridor.bindings().waypoints().isEmpty();
         List<Cell> backbone = !authoredBackbone
                 ? endpointCells(endpoints)
-                : authoredRouteCells(corridor.stateBindings().waypoints(), clustersById, endpoints);
+                : authoredRouteCells(corridor.bindings().waypoints(), clustersById, endpoints);
         Set<Cell> cells = new LinkedHashSet<>();
         addRouteCells(cells, backbone, roomCells, !authoredBackbone);
         if (cells.isEmpty()) {

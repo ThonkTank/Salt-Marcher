@@ -18,7 +18,7 @@ public final class DungeonEditorWorkspaceFeatureProjectionHelper {
     }
 
     private static DungeonEditorWorkspaceValues.Feature feature(DungeonFeatureFacts feature) {
-        List<DungeonEditorWorkspaceValues.Cell> cells = new ArrayList<>();
+        List<features.dungeon.domain.core.geometry.Cell> cells = new ArrayList<>();
         for (Cell cell : feature.cells()) {
             cells.add(cell(cell));
         }
@@ -33,17 +33,17 @@ public final class DungeonEditorWorkspaceFeatureProjectionHelper {
                 edge(feature.anchorEdge()));
     }
 
-    private static DungeonEditorWorkspaceValues.Cell cell(@Nullable Cell cell) {
+    private static features.dungeon.domain.core.geometry.Cell cell(@Nullable Cell cell) {
         return cell == null
-                ? DungeonEditorWorkspaceValues.Cell.empty()
-                : new DungeonEditorWorkspaceValues.Cell(cell.q(), cell.r(), cell.level());
+                ? features.dungeon.domain.core.geometry.Cell.empty()
+                : new features.dungeon.domain.core.geometry.Cell(cell.q(), cell.r(), cell.level());
     }
 
-    private static DungeonEditorWorkspaceValues.Edge edge(
+    private static features.dungeon.domain.core.geometry.Edge edge(
             features.dungeon.domain.core.geometry.Edge edge
     ) {
         return edge == null
                 ? null
-                : new DungeonEditorWorkspaceValues.Edge(cell(edge.from()), cell(edge.to()));
+                : new features.dungeon.domain.core.geometry.Edge(cell(edge.from()), cell(edge.to()));
     }
 }

@@ -5,7 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Area;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Cell;
+import features.dungeon.domain.core.geometry.Cell;
 
 public final class PreviewDungeonEditorDoorRoomCellsHelper {
 

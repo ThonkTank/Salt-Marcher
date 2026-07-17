@@ -6,9 +6,9 @@ import features.dungeon.domain.core.structure.door.DoorBoundaryPreviewRelocation
 import features.dungeon.domain.core.structure.door.DoorBoundaryPreviewRelocation.PreviewBoundary;
 import features.dungeon.domain.core.structure.door.DoorBoundaryPreviewRelocation.PreviewBoundaryKind;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Boundary;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.BoundaryKind;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Cell;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Edge;
+import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.Edge;
 
 public final class PreviewDungeonEditorDoorBoundaryProjectionHelper {
 

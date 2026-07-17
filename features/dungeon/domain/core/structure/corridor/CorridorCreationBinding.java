@@ -22,7 +22,7 @@ final class CorridorCreationBinding {
                 endResolved.map().metadata().mapId().value(),
                 level,
                 roomIds(startResolved, endResolved),
-                CorridorBindingState.empty());
+                CorridorBindings.empty());
         corridor = startResolved.applyTo(corridor);
         return endResolved.applyTo(corridor);
     }

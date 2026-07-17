@@ -8,6 +8,7 @@ import features.dungeon.application.editor.DungeonEditorInteractionValues.Vertex
 import features.dungeon.application.editor.DungeonEditorInteractionValues.VertexTarget;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.BoundaryTarget;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.EdgeKey;
+import features.dungeon.application.editor.DungeonEditorWallRunDeleteUseCase.ResolvedDelete;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.InteractionState;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.PointerState;
 
@@ -64,7 +65,7 @@ final class DungeonEditorDirectWallDeleteUseCase {
             InteractionState state
     ) {
         VertexTarget vertex = input.vertexTarget();
-        DungeonEditorWallDeleteTarget target =
+        ResolvedDelete target =
                 wallRuns.cornerRunDelete(snapshot, new VertexKey(vertex.q(), vertex.r(), vertex.level()));
         if (!DungeonEditorWorkspaceValues.hasId(target.clusterId())) {
             return draftEffects.clearBoundaryDraftPreview(state);
@@ -77,7 +78,7 @@ final class DungeonEditorDirectWallDeleteUseCase {
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             InteractionState state
     ) {
-        DungeonEditorWallDeleteTarget target =
+        ResolvedDelete target =
                 wallRuns.cellRunDelete(snapshot, new CellKey(input.q(), input.r(), input.level()));
         if (!DungeonEditorWorkspaceValues.hasId(target.clusterId())) {
             return null;
@@ -107,7 +108,7 @@ final class DungeonEditorDirectWallDeleteUseCase {
 
     private DungeonEditorMainViewInterpretation previewDelete(
             InteractionState state,
-            DungeonEditorWallDeleteTarget target
+            ResolvedDelete target
     ) {
         if (target.protectedExterior()) {
             return draftEffects.rejectExteriorWallDelete(state);

@@ -42,7 +42,7 @@ final class DungeonPublishedMapProjectionServiceAssembly {
                         PublishedProjectionSupport.edge(boundary.edge()),
                         PublishedProjectionSupport.topologyRef(boundary.topologyRef()))).toList(),
                 safeFacts.features().stream().map(feature -> new features.dungeon.api.DungeonFeatureSnapshot(
-                        features.dungeon.api.DungeonFeatureKind.valueOf(feature.kind().name()),
+                        publishedFeatureKind(feature.kind()),
                         feature.id(),
                         feature.label(),
                         feature.cells().stream().map(PublishedProjectionSupport::cell).toList(),
@@ -68,6 +68,18 @@ final class DungeonPublishedMapProjectionServiceAssembly {
 
     private static DungeonTopologyKind topology(features.dungeon.domain.core.projection.DungeonMapFacts facts) {
         return facts.topology() == DungeonTopology.HEX ? DungeonTopologyKind.HEX : DungeonTopologyKind.SQUARE;
+    }
+
+    private static features.dungeon.api.DungeonFeatureKind publishedFeatureKind(
+            features.dungeon.domain.core.projection.DungeonFeatureType kind
+    ) {
+        return switch (kind) {
+            case STAIR -> features.dungeon.api.DungeonFeatureKind.STAIR;
+            case TRANSITION -> features.dungeon.api.DungeonFeatureKind.TRANSITION;
+            case OBJECT -> features.dungeon.api.DungeonFeatureKind.OBJECT;
+            case ENCOUNTER -> features.dungeon.api.DungeonFeatureKind.ENCOUNTER;
+            case POI -> features.dungeon.api.DungeonFeatureKind.POI;
+        };
     }
 
     private static features.dungeon.api.DungeonAreaSnapshot area(features.dungeon.domain.core.projection.DungeonAreaFacts area) {
@@ -123,7 +135,7 @@ final class DungeonPublishedMapProjectionServiceAssembly {
                 DungeonEditorHandleProjection handle
         ) {
             return new features.dungeon.api.DungeonEditorHandleRef(
-                    features.dungeon.api.DungeonEditorHandleKind.valueOf(handle.kind().name()),
+                    handle.kind(),
                     topologyRef(handle.topologyRef()),
                     handle.ownerId(),
                     handle.clusterId(),
@@ -139,11 +151,32 @@ final class DungeonPublishedMapProjectionServiceAssembly {
         private static features.dungeon.api.DungeonTopologyElementKind publishedTopologyKind(
                 DungeonTopologyRef ref
         ) {
-            try {
-                return features.dungeon.api.DungeonTopologyElementKind.valueOf(ref.kind().name());
-            } catch (IllegalArgumentException exception) {
-                return features.dungeon.api.DungeonTopologyElementKind.EMPTY;
+            var kind = ref.kind();
+            if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.ROOM) {
+                return features.dungeon.api.DungeonTopologyElementKind.ROOM;
             }
+            if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.CORRIDOR) {
+                return features.dungeon.api.DungeonTopologyElementKind.CORRIDOR;
+            }
+            if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.CORRIDOR_ANCHOR) {
+                return features.dungeon.api.DungeonTopologyElementKind.CORRIDOR_ANCHOR;
+            }
+            if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.DOOR) {
+                return features.dungeon.api.DungeonTopologyElementKind.DOOR;
+            }
+            if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.WALL) {
+                return features.dungeon.api.DungeonTopologyElementKind.WALL;
+            }
+            if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.STAIR) {
+                return features.dungeon.api.DungeonTopologyElementKind.STAIR;
+            }
+            if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.TRANSITION) {
+                return features.dungeon.api.DungeonTopologyElementKind.TRANSITION;
+            }
+            if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.FEATURE_MARKER) {
+                return features.dungeon.api.DungeonTopologyElementKind.FEATURE_MARKER;
+            }
+            return features.dungeon.api.DungeonTopologyElementKind.EMPTY;
         }
     }
 }

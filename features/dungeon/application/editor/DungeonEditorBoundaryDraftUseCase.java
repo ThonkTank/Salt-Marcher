@@ -57,7 +57,7 @@ final class DungeonEditorBoundaryDraftUseCase {
         return DungeonEditorSessionEffect.preview(new DungeonEditorSessionValues.ClusterBoundariesPreview(
                 clusterId,
                 List.of(boundary.edgeRef()),
-                DungeonEditorWorkspaceValues.BoundaryKind.DOOR,
+                features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.DOOR,
                 deleteMode));
     }
 
@@ -100,7 +100,7 @@ final class DungeonEditorBoundaryDraftUseCase {
                 new DungeonEditorSessionValues.ClusterBoundariesPreview(
                         clusterId,
                         List.of(edge.toEdgeRef()),
-                        DungeonEditorWorkspaceValues.BoundaryKind.DOOR,
+                        features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.DOOR,
                         deleteMode);
         return new DungeonEditorDoorBoundaryDraftInterpretation(
                 nextState,
@@ -140,7 +140,7 @@ final class DungeonEditorBoundaryDraftUseCase {
                 new DungeonEditorSessionValues.ClusterBoundariesPreview(
                         clusterId,
                         List.of(boundary.edgeRef()),
-                        DungeonEditorWorkspaceValues.BoundaryKind.DOOR,
+                        features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.DOOR,
                 deleteMode)));
     }
 

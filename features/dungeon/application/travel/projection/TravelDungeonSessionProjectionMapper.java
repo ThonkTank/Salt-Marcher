@@ -39,7 +39,7 @@ public final class TravelDungeonSessionProjectionMapper {
         }
         return new TravelPositionFacts(
                 position.mapId(),
-                LocationKind.fromName(position.locationKind().name()),
+                position.locationKind(),
                 position.ownerId(),
                 position.tile(),
                 position.heading());
@@ -61,7 +61,7 @@ public final class TravelDungeonSessionProjectionMapper {
                 position == null ? 1L : position.mapId(),
                 position == null
                         ? LocationKind.defaultKind()
-                        : LocationKind.fromName(position.locationKind().name()),
+                        : position.locationKind(),
                 position == null ? 0L : position.ownerId(),
                 position == null ? new Cell(0, 0, 0) : position.tile(),
                 position == null ? TravelHeading.defaultHeading() : position.heading());

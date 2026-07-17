@@ -8,7 +8,7 @@ import java.util.Optional;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.CellOrdering;
 import features.dungeon.domain.core.geometry.Edge;
-import features.dungeon.domain.core.structure.room.RoomBoundaryStretchValues.StretchSelection;
+import features.dungeon.domain.core.structure.room.RoomClusterBoundaryStretchPlan.Selection;
 
 public record DungeonRoomTopologyClusterWork(
         RoomCluster cluster,
@@ -42,7 +42,7 @@ public record DungeonRoomTopologyClusterWork(
         return cluster.rebuiltForTopologyWork(cellsByLevel, boundariesByLevel);
     }
 
-    Optional<StretchSelection> boundaryStretchSelection(
+    Optional<Selection> boundaryStretchSelection(
             List<Edge> sourceEdges,
             int deltaQ,
             int deltaR,

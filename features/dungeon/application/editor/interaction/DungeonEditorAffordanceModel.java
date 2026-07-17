@@ -1,5 +1,6 @@
 package features.dungeon.application.editor.interaction;
 
+import features.dungeon.api.DungeonEditorHandleKind;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -49,7 +50,7 @@ public final class DungeonEditorAffordanceModel {
         Map<Integer, List<Cell>> cellsByLevel = new RoomCellCoverage().cellsByLevel(cluster, clusterRooms);
         Cell labelCell = primaryLabelCell(cluster, cellsByLevel);
         result.add(new DungeonEditorHandleProjection(
-                DungeonEditorHandleProjectionKind.CLUSTER_LABEL,
+                DungeonEditorHandleKind.CLUSTER_LABEL,
                 new DungeonTopologyRef(DungeonTopologyElementKind.ROOM, room.roomId()),
                 cluster.clusterId(),
                 cluster.clusterId(),
@@ -92,7 +93,7 @@ public final class DungeonEditorAffordanceModel {
         for (int index = 0; index < corners.size(); index++) {
             Cell corner = corners.get(index);
             result.add(new DungeonEditorHandleProjection(
-                    DungeonEditorHandleProjectionKind.CLUSTER_CORNER,
+                    DungeonEditorHandleKind.CLUSTER_CORNER,
                     new DungeonTopologyRef(DungeonTopologyElementKind.ROOM, room.roomId()),
                     room.roomId(),
                     cluster.clusterId(),
@@ -124,7 +125,7 @@ public final class DungeonEditorAffordanceModel {
             RoomClusterWallRun wallRun = wallRuns.get(index);
             RoomClusterWallRunSource source = wallRun.source();
             result.add(new DungeonEditorHandleProjection(
-                    DungeonEditorHandleProjectionKind.CLUSTER_WALL_RUN,
+                    DungeonEditorHandleKind.CLUSTER_WALL_RUN,
                     new DungeonTopologyRef(DungeonTopologyElementKind.ROOM, room.roomId()),
                     cluster.clusterId(),
                     cluster.clusterId(),

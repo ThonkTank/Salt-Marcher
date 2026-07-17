@@ -106,7 +106,7 @@ final class DungeonEditorInspectorProjectionServiceAssembly {
         features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.RoomExitNarration safeExit = exit == null
                 ? new features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.RoomExitNarration(
                         "",
-                        features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Cell.empty(),
+                        features.dungeon.domain.core.geometry.Cell.empty(),
                         "",
                         "")
                 : exit;

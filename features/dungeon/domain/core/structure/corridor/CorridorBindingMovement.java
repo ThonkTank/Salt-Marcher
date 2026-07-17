@@ -1,5 +1,6 @@
 package features.dungeon.domain.core.structure.corridor;
 
+import features.dungeon.domain.core.component.CorridorDoorBinding;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -26,7 +27,7 @@ public final class CorridorBindingMovement {
             int deltaLevel
     ) {
         Objects.requireNonNull(dungeonMap, "dungeonMap");
-        CorridorDoorBindingState oldBinding = doorBinding(dungeonMap.corridors(), corridorId, bindingIndex, roomId);
+        CorridorDoorBinding oldBinding = doorBinding(dungeonMap.corridors(), corridorId, bindingIndex, roomId);
         if (stationary(deltaQ, deltaR, deltaLevel)) {
             return new DoorBindingMoveResult(
                     dungeonMap,
@@ -130,15 +131,15 @@ public final class CorridorBindingMovement {
             int deltaR,
             int deltaLevel
     ) {
-        CorridorBindingState movedBindings = CorridorBindingStateMovement.moveDoorBinding(
-                corridor.stateBindings(),
+        CorridorBindings movedBindings = CorridorBindingValueMovement.moveDoorBinding(
+                corridor.bindings(),
                 bindingIndex,
                 roomId,
                 deltaQ,
                 deltaR,
                 deltaLevel);
-        boolean changed = !movedBindings.equals(corridor.stateBindings());
-        movedCorridors.add(changed ? corridor.withStateBindings(movedBindings) : corridor);
+        boolean changed = !movedBindings.equals(corridor.bindings());
+        movedCorridors.add(changed ? corridor.withBindings(movedBindings) : corridor);
         return changed;
     }
 
@@ -151,15 +152,15 @@ public final class CorridorBindingMovement {
             int deltaR,
             int deltaLevel
     ) {
-        CorridorBindingState movedBindings = CorridorBindingStateMovement.moveAnchorBinding(
-                corridor.stateBindings(),
+        CorridorBindings movedBindings = CorridorBindingValueMovement.moveAnchorBinding(
+                corridor.bindings(),
                 bindingIndex,
                 anchorId,
                 deltaQ,
                 deltaR,
                 deltaLevel);
-        boolean changed = !movedBindings.equals(corridor.stateBindings());
-        movedCorridors.add(changed ? corridor.withStateBindings(movedBindings) : corridor);
+        boolean changed = !movedBindings.equals(corridor.bindings());
+        movedCorridors.add(changed ? corridor.withBindings(movedBindings) : corridor);
         return changed;
     }
 
@@ -171,14 +172,14 @@ public final class CorridorBindingMovement {
             int deltaR,
             int deltaLevel
     ) {
-        CorridorBindingState movedBindings = CorridorBindingStateMovement.moveWaypoint(
-                corridor.stateBindings(),
+        CorridorBindings movedBindings = CorridorBindingValueMovement.moveWaypoint(
+                corridor.bindings(),
                 waypointIndex,
                 deltaQ,
                 deltaR,
                 deltaLevel);
-        boolean changed = !movedBindings.equals(corridor.stateBindings());
-        movedCorridors.add(changed ? corridor.withStateBindings(movedBindings) : corridor);
+        boolean changed = !movedBindings.equals(corridor.bindings());
+        movedCorridors.add(changed ? corridor.withBindings(movedBindings) : corridor);
         return changed;
     }
 
@@ -213,7 +214,7 @@ public final class CorridorBindingMovement {
         return topologyRef.id();
     }
 
-    private static CorridorDoorBindingState doorBinding(
+    private static CorridorDoorBinding doorBinding(
             Iterable<Corridor> corridors,
             long corridorId,
             int bindingIndex,
@@ -223,10 +224,10 @@ public final class CorridorBindingMovement {
             return null;
         }
         for (Corridor corridor : corridors) {
-            if (corridor.corridorId() != corridorId || bindingIndex >= corridor.stateBindings().doorBindings().size()) {
+            if (corridor.corridorId() != corridorId || bindingIndex >= corridor.bindings().doorBindings().size()) {
                 continue;
             }
-            CorridorDoorBindingState binding = corridor.stateBindings().doorBindings().get(bindingIndex);
+            CorridorDoorBinding binding = corridor.bindings().doorBindings().get(bindingIndex);
             if (binding.roomId() == roomId) {
                 return binding;
             }
@@ -238,8 +239,8 @@ public final class CorridorBindingMovement {
             DungeonMap sourceMap,
             List<Corridor> movedCorridors,
             Set<Long> movedCorridorIds,
-            CorridorDoorBindingState oldBinding,
-            CorridorDoorBindingState newBinding
+            CorridorDoorBinding oldBinding,
+            CorridorDoorBinding newBinding
     ) {
         public DoorBindingMoveResult {
             sourceMap = Objects.requireNonNull(sourceMap, "sourceMap");

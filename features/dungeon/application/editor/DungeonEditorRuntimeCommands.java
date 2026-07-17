@@ -11,6 +11,7 @@ import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateModel;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonEditorViewMode;
+import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
 
 final class DungeonEditorRuntimeCommands
@@ -154,9 +155,9 @@ final class DungeonEditorRuntimeCommands
     }
 
     @Override
-    public void setOverlay(DungeonEditorOverlaySettings overlaySettings) {
-        DungeonEditorOverlaySettings safeOverlaySettings = overlaySettings == null
-                ? DungeonEditorOverlaySettings.defaults()
+    public void setOverlay(DungeonOverlaySettings overlaySettings) {
+        DungeonOverlaySettings safeOverlaySettings = overlaySettings == null
+                ? DungeonOverlaySettings.defaults()
                 : overlaySettings;
         apply(() -> context.setOverlay(safeOverlaySettings));
     }

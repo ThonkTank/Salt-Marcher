@@ -25,7 +25,7 @@ final class DungeonEditorBoundaryVertexUseCase {
                         snapshot,
                         cells,
                         vertex.level(),
-                        DungeonEditorWorkspaceValues.BoundaryKind.WALL)
+                        features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.WALL)
                 : boundaryEdges.internal(cells);
         return DungeonEditorBoundaryEdgesHelper.touchesAny(edges, DungeonEditorInteractionValues.vertexKey(vertex));
     }
@@ -40,7 +40,7 @@ final class DungeonEditorBoundaryVertexUseCase {
                 snapshot,
                 cells,
                 vertex.level(),
-                DungeonEditorWorkspaceValues.BoundaryKind.WALL));
+                features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.WALL));
         edges.addAll(boundaryEdges.outer(cells));
         return DungeonEditorBoundaryEdgesHelper.touchesAny(edges, vertex);
     }

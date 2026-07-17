@@ -1,33 +1,34 @@
 package features.dungeon.domain.core.structure.corridor;
 
+import features.dungeon.domain.core.component.CorridorDoorBinding;
 import java.util.ArrayList;
 import java.util.List;
 import features.dungeon.domain.core.component.CorridorAnchor;
 import features.dungeon.domain.core.component.CorridorWaypoint;
 import features.dungeon.domain.core.geometry.Cell;
 
-final class CorridorBindingStateMovement {
-    private CorridorBindingStateMovement() {
+final class CorridorBindingValueMovement {
+    private CorridorBindingValueMovement() {
     }
 
-    static CorridorBindingState moveDoorBinding(
-            CorridorBindingState source,
+    static CorridorBindings moveDoorBinding(
+            CorridorBindings source,
             int bindingIndex,
             long roomId,
             int deltaQ,
             int deltaR,
             int deltaLevel
     ) {
-        List<CorridorDoorBindingState> sourceDoorBindings = source.doorBindings();
+        List<CorridorDoorBinding> sourceDoorBindings = source.doorBindings();
         if (bindingIndex < 0 || bindingIndex >= sourceDoorBindings.size()) {
             return source;
         }
-        List<CorridorDoorBindingState> updated = new ArrayList<>();
+        List<CorridorDoorBinding> updated = new ArrayList<>();
         boolean changed = false;
         for (int index = 0; index < sourceDoorBindings.size(); index++) {
-            CorridorDoorBindingState binding = sourceDoorBindings.get(index);
+            CorridorDoorBinding binding = sourceDoorBindings.get(index);
             if (index == bindingIndex && binding.roomId() == roomId) {
-                updated.add(new CorridorDoorBindingState(
+                updated.add(new CorridorDoorBinding(
                         binding.roomId(),
                         binding.clusterId(),
                         movedCell(binding.relativeCell(), deltaQ, deltaR, deltaLevel),
@@ -39,12 +40,12 @@ final class CorridorBindingStateMovement {
             }
         }
         return changed
-                ? new CorridorBindingState(source.waypoints(), updated, source.anchorBindings(), source.anchorRefs())
+                ? new CorridorBindings(source.waypoints(), updated, source.anchorBindings(), source.anchorRefs())
                 : source;
     }
 
-    static CorridorBindingState moveAnchorBinding(
-            CorridorBindingState source,
+    static CorridorBindings moveAnchorBinding(
+            CorridorBindings source,
             int bindingIndex,
             long anchorId,
             int deltaQ,
@@ -66,8 +67,8 @@ final class CorridorBindingStateMovement {
         return changed ? source.replaceAnchorBindings(updated) : source;
     }
 
-    static CorridorBindingState moveWaypoint(
-            CorridorBindingState source,
+    static CorridorBindings moveWaypoint(
+            CorridorBindings source,
             int waypointIndex,
             int deltaQ,
             int deltaR,
@@ -92,7 +93,7 @@ final class CorridorBindingStateMovement {
             }
         }
         return changed
-                ? new CorridorBindingState(updated, source.doorBindings(), source.anchorBindings(), source.anchorRefs())
+                ? new CorridorBindings(updated, source.doorBindings(), source.anchorBindings(), source.anchorRefs())
                 : source;
     }
 

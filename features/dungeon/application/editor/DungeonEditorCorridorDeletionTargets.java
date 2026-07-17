@@ -1,7 +1,7 @@
 package features.dungeon.application.editor;
 
 import features.dungeon.domain.core.structure.corridor.CorridorDeletionTarget;
-import features.dungeon.application.editor.interaction.DungeonEditorHandleType;
+import features.dungeon.api.DungeonEditorHandleKind;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.PendingCorridorTarget;
 
@@ -20,13 +20,13 @@ final class DungeonEditorCorridorDeletionTargets {
             long corridorId,
             DungeonEditorWorkspaceValues.HandleRef handle
     ) {
-        if (handle.kind() == DungeonEditorHandleType.DOOR) {
+        if (handle.kind() == DungeonEditorHandleKind.DOOR) {
             return doorDeletionTarget(corridorId, handle);
         }
-        if (handle.kind() == DungeonEditorHandleType.CORRIDOR_ANCHOR) {
+        if (handle.kind() == DungeonEditorHandleKind.CORRIDOR_ANCHOR) {
             return corridorAnchorDeletionTarget(corridorId, handle);
         }
-        if (handle.kind() == DungeonEditorHandleType.CORRIDOR_WAYPOINT) {
+        if (handle.kind() == DungeonEditorHandleKind.CORRIDOR_WAYPOINT) {
             return CorridorDeletionTarget.corridorWaypoint(corridorId, handle.index());
         }
         return wholeCorridorDeletionTarget(corridorId, handle);

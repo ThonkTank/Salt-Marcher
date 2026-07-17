@@ -65,7 +65,7 @@ final class DungeonEditorBoundaryPathUseCase {
                 snapshot,
                 cells,
                 start.level(),
-                DungeonEditorWorkspaceValues.BoundaryKind.DOOR);
+                features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.DOOR);
         Set<EdgeKey> committed = new LinkedHashSet<>(route);
         committed.removeAll(doors);
         return new PathResult(route, committed);
@@ -81,7 +81,7 @@ final class DungeonEditorBoundaryPathUseCase {
                 snapshot,
                 cells,
                 start.level(),
-                DungeonEditorWorkspaceValues.BoundaryKind.WALL);
+                features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.WALL);
         List<EdgeKey> route = pathFinder.shortestPath(start, goal, walls);
         return route.isEmpty() ? PathResult.empty() : new PathResult(route, new LinkedHashSet<>(route));
     }

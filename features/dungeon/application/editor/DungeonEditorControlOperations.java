@@ -1,6 +1,7 @@
 package features.dungeon.application.editor;
 
 import features.dungeon.api.DungeonEditorViewMode;
+import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
 
 public interface DungeonEditorControlOperations {
@@ -12,7 +13,7 @@ public interface DungeonEditorControlOperations {
 
     void shiftProjectionLevel(int levelShift);
 
-    void setOverlay(DungeonEditorOverlaySettings overlaySettings);
+    void setOverlay(DungeonOverlaySettings overlaySettings);
 
     void scrollSelection(int levelDelta);
 

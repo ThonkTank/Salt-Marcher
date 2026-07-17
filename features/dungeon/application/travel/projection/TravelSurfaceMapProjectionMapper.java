@@ -23,7 +23,9 @@ final class TravelSurfaceMapProjectionMapper {
             return TravelDungeonSessionSurface.MapData.empty();
         }
         return new TravelDungeonSessionSurface.MapData(
-                TopologyKind.fromName(map.topology().name()),
+                map.topology() == features.dungeon.domain.core.geometry.DungeonTopology.HEX
+                        ? TopologyKind.HEX
+                        : TopologyKind.SQUARE,
                 map.width(),
                 map.height(),
                 toRuntimeAreas(map.areas()),
@@ -46,7 +48,9 @@ final class TravelSurfaceMapProjectionMapper {
 
     private static TravelDungeonSessionSurface.AreaData toRuntimeArea(DungeonAreaFacts area) {
         return new TravelDungeonSessionSurface.AreaData(
-                AreaKind.fromName(area.kind().name()),
+                area.kind() == features.dungeon.domain.core.projection.DungeonAreaType.CORRIDOR
+                        ? AreaKind.CORRIDOR
+                        : AreaKind.ROOM,
                 area.id(),
                 area.label(),
                 area.cells().stream().map(TravelGeometryProjectionMapper::cellOrOrigin).toList(),
@@ -97,7 +101,9 @@ final class TravelSurfaceMapProjectionMapper {
 
     private static TravelDungeonSessionSurface.FeatureData toRuntimeFeature(DungeonFeatureFacts feature) {
         return new TravelDungeonSessionSurface.FeatureData(
-                FeatureKind.fromName(feature.kind().name()),
+                feature.kind() == DungeonFeatureType.TRANSITION
+                        ? FeatureKind.TRANSITION
+                        : FeatureKind.STAIR,
                 feature.id(),
                 feature.label(),
                 feature.cells().stream().map(TravelGeometryProjectionMapper::cellOrOrigin).toList(),

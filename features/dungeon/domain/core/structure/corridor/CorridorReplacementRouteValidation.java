@@ -88,9 +88,9 @@ final class CorridorReplacementRouteValidation {
                     roomsById,
                     roomCellsByRoom,
                     anchorsByKey);
-            List<Cell> backbone = corridor.stateBindings().waypoints().isEmpty()
+            List<Cell> backbone = corridor.bindings().waypoints().isEmpty()
                     ? BACKBONE_CELLS.endpointBackbone(endpoints)
-                    : BACKBONE_CELLS.authoredBackbone(corridor.stateBindings().waypoints(), clustersById, endpoints);
+                    : BACKBONE_CELLS.authoredBackbone(corridor.bindings().waypoints(), clustersById, endpoints);
             return hasUnblockedBackbone(backbone, allRoomCells);
         }
     }

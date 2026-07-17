@@ -3,31 +3,20 @@ package features.dungeon.domain.core.structure.corridor;
 import java.util.List;
 import java.util.Objects;
 import features.dungeon.domain.core.component.CorridorDoorBinding;
-import features.dungeon.domain.core.graph.DungeonTopologyRef;
 
 public record Corridor(
         long corridorId,
         long mapId,
         int level,
         List<Long> roomIds,
-        CorridorBindingState stateBindings
+        CorridorBindings bindings
 ) {
 
     public Corridor {
         corridorId = Math.max(0L, corridorId);
         mapId = Math.max(0L, mapId);
         roomIds = new CorridorRoomSet(roomIds).roomIds();
-        stateBindings = stateBindings == null ? CorridorBindingState.empty() : stateBindings;
-    }
-
-    public Corridor(
-            long corridorId,
-            long mapId,
-            int level,
-            CorridorRoomSet rooms,
-            CorridorBindingState bindings
-    ) {
-        this(corridorId, mapId, level, rooms == null ? List.of() : rooms.roomIds(), bindings);
+        bindings = bindings == null ? CorridorBindings.empty() : bindings;
     }
 
     public Corridor(
@@ -37,11 +26,7 @@ public record Corridor(
             CorridorRoomSet rooms,
             CorridorBindings bindings
     ) {
-        this(corridorId, mapId, level, rooms, stateFromCore(bindings));
-    }
-
-    public CorridorBindings coreBindings() {
-        return stateBindings.toCore();
+        this(corridorId, mapId, level, rooms == null ? List.of() : rooms.roomIds(), bindings);
     }
 
     @Override
@@ -50,21 +35,17 @@ public record Corridor(
     }
 
     public boolean isReadable() {
-        return endpointCount() >= 2 || !stateBindings.waypoints().isEmpty();
+        return endpointCount() >= 2 || !bindings.waypoints().isEmpty();
     }
 
     public int endpointCount() {
-        return stateBindings.doorBindings().size() + stateBindings.anchorRefs().size();
+        return bindings.doorBindings().size() + bindings.anchorRefs().size();
     }
 
     public Corridor withDoorBinding(CorridorDoorBinding binding) {
         Objects.requireNonNull(binding);
-        return withDoorBinding(new CorridorDoorBindingState(
-                binding.roomId(),
-                binding.clusterId(),
-                binding.relativeCell(),
-                binding.direction(),
-                DungeonTopologyRef.empty()));
+        Corridor updated = roomSet().connects(binding.roomId()) ? this : withAddedRoom(binding.roomId());
+        return updated.withBindings(updated.bindings.withDoorBinding(binding));
     }
 
     public Corridor withoutDoorTarget(
@@ -74,69 +55,32 @@ public record Corridor(
             int secondEndpointIndex
     ) {
         Objects.requireNonNull(removedDoor);
-        CorridorRoomSet nextRooms = roomSet().without(removedDoor.roomId());
-        CorridorBindings nextBindings = coreBindings().withoutDoorTarget(
-                removedDoor,
-                pruneRouteWaypoints,
-                firstEndpointIndex,
-                secondEndpointIndex);
         return new Corridor(
                 corridorId,
                 mapId,
                 level,
-                nextRooms,
-                CorridorBindingState.fromCore(stateBindings, nextBindings, null));
+                roomSet().without(removedDoor.roomId()),
+                bindings.withoutDoorTarget(
+                        removedDoor,
+                        pruneRouteWaypoints,
+                        firstEndpointIndex,
+                        secondEndpointIndex));
     }
 
     public Corridor withoutAnchorTarget(long anchorId) {
-        return withBindings(coreBindings().withoutAnchorRefAndRouteWaypoints(anchorId));
+        return withBindings(bindings.withoutAnchorRefAndRouteWaypoints(anchorId));
     }
 
     public Corridor withoutWaypointTarget(int waypointIndex) {
-        return withBindings(coreBindings().withoutWaypoint(waypointIndex));
+        return withBindings(bindings.withoutWaypoint(waypointIndex));
     }
 
     public Corridor withBindings(CorridorBindings nextBindings) {
-        return withStateBindings(CorridorBindingState.fromCore(stateBindings, nextBindings, null));
-    }
-
-    public Corridor withStateBindings(CorridorBindingState nextBindings) {
         return new Corridor(corridorId, mapId, level, roomIds, nextBindings);
     }
 
-    public Corridor withResolvedEndpoint(
-            CorridorResolvedEndpoint endpoint,
-            CorridorDoorBindingState replacementDoor
-    ) {
-        Objects.requireNonNull(endpoint, "endpoint");
-        Corridor resolvedCore = endpoint.applyTo(coreIdentity());
-        return fromCore(this, resolvedCore, replacementDoor);
-    }
-
-    public static Corridor fromCore(
-            Corridor source,
-            Corridor coreCorridor,
-            CorridorDoorBindingState replacementDoor
-    ) {
-        return new Corridor(
-                coreCorridor.corridorId(),
-                coreCorridor.mapId(),
-                coreCorridor.level(),
-                coreCorridor.roomIds(),
-                CorridorBindingState.fromCore(
-                        source.stateBindings(),
-                        coreCorridor.coreBindings(),
-                        replacementDoor));
-    }
-
-    private Corridor withDoorBinding(CorridorDoorBindingState binding) {
-        Objects.requireNonNull(binding);
-        Corridor updated = roomSet().connects(binding.roomId()) ? this : withAddedRoom(binding.roomId());
-        CorridorBindings nextBindings = updated.coreBindings().withDoorBinding(binding.toCore());
-        return updated.withStateBindings(CorridorBindingState.fromCore(
-                updated.stateBindings,
-                nextBindings,
-                binding));
+    public Corridor withResolvedEndpoint(CorridorResolvedEndpoint endpoint) {
+        return Objects.requireNonNull(endpoint, "endpoint").applyTo(this);
     }
 
     private Corridor withAddedRoom(long roomId) {
@@ -145,21 +89,10 @@ public record Corridor(
     }
 
     private Corridor withRoomSet(CorridorRoomSet nextRooms) {
-        return new Corridor(corridorId, mapId, level, nextRooms, stateBindings);
-    }
-
-    private Corridor coreIdentity() {
-        return new Corridor(corridorId, mapId, level, new CorridorRoomSet(roomIds), coreBindings());
+        return new Corridor(corridorId, mapId, level, nextRooms, bindings);
     }
 
     private CorridorRoomSet roomSet() {
         return new CorridorRoomSet(roomIds);
-    }
-
-    private static CorridorBindingState stateFromCore(CorridorBindings bindings) {
-        return CorridorBindingState.fromCore(
-                CorridorBindingState.empty(),
-                bindings == null ? CorridorBindings.empty() : bindings,
-                null);
     }
 }

@@ -61,7 +61,7 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
         } else if (safeIntent instanceof DungeonEditorIntent.ShiftProjectionLevel shiftLevel) {
             runtimeRoot.shiftProjectionLevel(shiftLevel.levelShift());
         } else if (safeIntent instanceof DungeonEditorIntent.SetOverlay setOverlay) {
-            runtimeRoot.setOverlay(overlayFrom(setOverlay));
+            runtimeRoot.setOverlay(setOverlay.overlaySettings());
         } else if (safeIntent instanceof DungeonEditorIntent.ScrollSelection scrollSelection) {
             runtimeRoot.scrollSelection(scrollSelection.levelDelta());
         } else if (safeIntent == DungeonEditorIntent.CancelPreview.INSTANCE) {
@@ -232,21 +232,6 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
                 input.directionName(),
                 input.dimension1(),
                 input.dimension2());
-    }
-
-    private static DungeonEditorOverlaySettings overlayFrom(DungeonEditorIntent.SetOverlay intent) {
-        var settings = intent.overlaySettings();
-        DungeonEditorOverlaySettings.Mode mode;
-        try {
-            mode = DungeonEditorOverlaySettings.Mode.valueOf(settings.modeKey());
-        } catch (IllegalArgumentException ignored) {
-            mode = DungeonEditorOverlaySettings.Mode.OFF;
-        }
-        return new DungeonEditorOverlaySettings(
-                mode,
-                settings.levelRange(),
-                settings.opacity(),
-                settings.selectedLevels());
     }
 
     static final class StateDelivery {

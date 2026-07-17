@@ -7,8 +7,9 @@ import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.graph.DungeonTopologyElementKind;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
+import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.domain.core.structure.room.BoundaryStretchOrientation;
-import features.dungeon.application.editor.interaction.DungeonEditorHandleType;
+import features.dungeon.api.DungeonEditorHandleKind;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.DungeonEditorInteractionValues.CellKey;
@@ -133,22 +134,22 @@ final class DungeonEditorMainViewInteractionValues {
             long clusterId
     ) {
         return new DungeonEditorWorkspaceValues.HandleRef(
-                DungeonEditorHandleType.CLUSTER_LABEL,
+                DungeonEditorHandleKind.CLUSTER_LABEL,
                 topologyRef(topologyRefKind, topologyRefId),
                 ownerId,
                 clusterId,
                 0L,
                 0L,
                 0,
-                DungeonEditorWorkspaceValues.Cell.empty(),
-                "",
+                features.dungeon.domain.core.geometry.Cell.empty(),
+                Direction.NORTH,
                 null,
                 List.of());
     }
 
     static boolean handleKind(
             DungeonEditorWorkspaceValues.HandleRef handleRef,
-            DungeonEditorHandleType kind
+            DungeonEditorHandleKind kind
     ) {
         DungeonEditorWorkspaceValues.HandleRef safeHandle = handleRef == null
                 ? DungeonEditorWorkspaceValues.HandleRef.empty()
@@ -199,8 +200,8 @@ final class DungeonEditorMainViewInteractionValues {
             return boundaryKind.isDoor();
         }
 
-        DungeonEditorWorkspaceValues.Edge edgeRef() {
-            return new DungeonEditorWorkspaceValues.Edge(start.toWorkspaceCell(), end.toWorkspaceCell());
+        features.dungeon.domain.core.geometry.Edge edgeRef() {
+            return new features.dungeon.domain.core.geometry.Edge(start.toWorkspaceCell(), end.toWorkspaceCell());
         }
 
         DungeonTopologyRef topologyRef() {
@@ -250,7 +251,7 @@ final class DungeonEditorMainViewInteractionValues {
         }
 
         boolean draggable() {
-            return ((kind == HitKind.HANDLE && !handleKind(handleRef, DungeonEditorHandleType.CLUSTER_WALL_RUN))
+            return ((kind == HitKind.HANDLE && !handleKind(handleRef, DungeonEditorHandleKind.CLUSTER_WALL_RUN))
                     || clusterLabelTarget())
                     && (clusterId > 0L || handleRef.ownerId() > 0L);
         }
@@ -258,9 +259,9 @@ final class DungeonEditorMainViewInteractionValues {
         boolean clusterSelection() {
             return clusterLabelTarget()
                     || (kind == HitKind.HANDLE
-                            && (handleKind(handleRef, DungeonEditorHandleType.CLUSTER_LABEL)
-                                    || handleKind(handleRef, DungeonEditorHandleType.CLUSTER_CORNER)
-                                    || handleKind(handleRef, DungeonEditorHandleType.CLUSTER_WALL_RUN)));
+                            && (handleKind(handleRef, DungeonEditorHandleKind.CLUSTER_LABEL)
+                                    || handleKind(handleRef, DungeonEditorHandleKind.CLUSTER_CORNER)
+                                    || handleKind(handleRef, DungeonEditorHandleKind.CLUSTER_WALL_RUN)));
         }
 
         DungeonEditorWorkspaceValues.HandleRef dragHandleRef() {
@@ -327,8 +328,8 @@ final class DungeonEditorMainViewInteractionValues {
 
         DungeonEditorSessionValues.RoomRectanglePreview preview() {
             return new DungeonEditorSessionValues.RoomRectanglePreview(
-                    new DungeonEditorWorkspaceValues.Cell(startQ, startR, level),
-                    new DungeonEditorWorkspaceValues.Cell(endQ, endR, level),
+                    new features.dungeon.domain.core.geometry.Cell(startQ, startR, level),
+                    new features.dungeon.domain.core.geometry.Cell(endQ, endR, level),
                     deleteMode);
         }
     }
@@ -388,7 +389,7 @@ final class DungeonEditorMainViewInteractionValues {
                 return selection.handleRef();
             }
             return new DungeonEditorWorkspaceValues.HandleRef(
-                    DungeonEditorHandleType.CLUSTER_LABEL,
+                    DungeonEditorHandleKind.CLUSTER_LABEL,
                     new DungeonTopologyRef(
                             selection.topologyRef().kind(),
                             selection.topologyRef().id()),
@@ -397,8 +398,8 @@ final class DungeonEditorMainViewInteractionValues {
                     0L,
                     0L,
                     0,
-                    DungeonEditorWorkspaceValues.Cell.empty(),
-                    "",
+                    features.dungeon.domain.core.geometry.Cell.empty(),
+                    Direction.NORTH,
                     null,
                     List.of());
         }
@@ -423,7 +424,7 @@ final class DungeonEditorMainViewInteractionValues {
     record BoundaryStretchSession(
             DungeonEditorSessionValues.Selection selection,
             long clusterId,
-            List<DungeonEditorWorkspaceValues.Edge> sourceEdges,
+            List<features.dungeon.domain.core.geometry.Edge> sourceEdges,
             BoundaryStretchOrientation orientation,
             int pressQ,
             int pressR,
@@ -609,7 +610,7 @@ final class DungeonEditorMainViewInteractionValues {
                     0L,
                     new DungeonEditorWorkspaceValues.CorridorAnchorEndpoint(
                             0L,
-                            DungeonEditorWorkspaceValues.Cell.empty(),
+                            features.dungeon.domain.core.geometry.Cell.empty(),
                             DungeonTopologyRef.empty()));
         }
 
@@ -632,7 +633,7 @@ final class DungeonEditorMainViewInteractionValues {
 
     record BoundaryRoomTouch(
             DungeonEditorWorkspaceValues.Area room,
-            DungeonEditorWorkspaceValues.Cell roomCell
+            features.dungeon.domain.core.geometry.Cell roomCell
     ) {
         BoundaryRoomTouch {
             Objects.requireNonNull(room);
@@ -661,7 +662,7 @@ final class DungeonEditorMainViewInteractionValues {
             Objects.requireNonNull(end);
         }
 
-        static EdgeKey from(DungeonEditorWorkspaceValues.Edge edge) {
+        static EdgeKey from(features.dungeon.domain.core.geometry.Edge edge) {
             return between(
                     new VertexKey(edge.from().q(), edge.from().r(), edge.from().level()),
                     new VertexKey(edge.to().q(), edge.to().r(), edge.to().level()));
@@ -688,10 +689,10 @@ final class DungeonEditorMainViewInteractionValues {
             return start.equals(vertex) || end.equals(vertex);
         }
 
-        DungeonEditorWorkspaceValues.Edge toEdgeRef() {
-            return new DungeonEditorWorkspaceValues.Edge(
-                    new DungeonEditorWorkspaceValues.Cell(start.q(), start.r(), start.level()),
-                    new DungeonEditorWorkspaceValues.Cell(end.q(), end.r(), end.level()));
+        features.dungeon.domain.core.geometry.Edge toEdgeRef() {
+            return new features.dungeon.domain.core.geometry.Edge(
+                    new features.dungeon.domain.core.geometry.Cell(start.q(), start.r(), start.level()),
+                    new features.dungeon.domain.core.geometry.Cell(end.q(), end.r(), end.level()));
         }
     }
 }

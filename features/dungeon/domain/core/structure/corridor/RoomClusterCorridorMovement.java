@@ -56,7 +56,7 @@ public final class RoomClusterCorridorMovement {
             Map<CorridorNetwork.AnchorKey, Cell> sourceAnchors,
             Map<CorridorNetwork.AnchorKey, Cell> movedAnchors
     ) {
-        for (CorridorAnchor anchor : corridor.stateBindings().anchorBindings()) {
+        for (CorridorAnchor anchor : corridor.bindings().anchorBindings()) {
             if (anchor == null) {
                 continue;
             }
@@ -81,7 +81,7 @@ public final class RoomClusterCorridorMovement {
             if (corridor == null) {
                 continue;
             }
-            for (CorridorAnchor anchor : corridor.stateBindings().anchorBindings()) {
+            for (CorridorAnchor anchor : corridor.bindings().anchorBindings()) {
                 if (anchor != null) {
                     result.put(CorridorNetwork.AnchorKey.from(anchor), anchor.position());
                 }

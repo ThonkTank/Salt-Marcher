@@ -15,7 +15,7 @@ final class CorridorNetworkMovementAnchors {
                 continue;
             }
             Set<Cell> anchorCells = new LinkedHashSet<>();
-            for (CorridorAnchor anchor : corridor.stateBindings().anchorBindings()) {
+            for (CorridorAnchor anchor : corridor.bindings().anchorBindings()) {
                 if (anchor != null && !anchorCells.add(anchor.position())) {
                     return true;
                 }
@@ -53,7 +53,7 @@ final class CorridorNetworkMovementAnchors {
             if (corridor == null || !corridorIds.contains(corridor.corridorId())) {
                 continue;
             }
-            for (CorridorAnchor anchor : corridor.stateBindings().anchorBindings()) {
+            for (CorridorAnchor anchor : corridor.bindings().anchorBindings()) {
                 if (anchor != null) {
                     result.put(CorridorNetwork.AnchorKey.from(anchor), anchor.position());
                 }

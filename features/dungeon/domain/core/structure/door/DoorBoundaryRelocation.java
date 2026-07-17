@@ -7,7 +7,7 @@ import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.DungeonMap;
-import features.dungeon.domain.core.structure.corridor.CorridorDoorBindingState;
+import features.dungeon.domain.core.component.CorridorDoorBinding;
 import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.topology.SpatialTopology;
 
@@ -21,8 +21,8 @@ public final class DoorBoundaryRelocation {
 
     public @Nullable DoorBoundaryMovePlan planMovedDoorBinding(
             DungeonMap sourceMap,
-            CorridorDoorBindingState oldBinding,
-            CorridorDoorBindingState newBinding
+            CorridorDoorBinding oldBinding,
+            CorridorDoorBinding newBinding
     ) {
         DungeonMap safeSourceMap = Objects.requireNonNull(sourceMap, "sourceMap");
         DoorBindingMoveContext context = DoorBindingMoveContext.from(safeSourceMap, oldBinding, newBinding);

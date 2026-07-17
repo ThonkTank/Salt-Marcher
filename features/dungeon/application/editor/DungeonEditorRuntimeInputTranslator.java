@@ -2,8 +2,6 @@ package features.dungeon.application.editor;
 
 import java.util.List;
 import features.dungeon.application.authored.DungeonAuthoredApplicationService;
-import features.dungeon.application.editor.session.DungeonEditorSessionValues;
-import features.dungeon.api.DungeonEditorViewMode;
 
 final class DungeonEditorRuntimeInputTranslator {
 
@@ -59,25 +57,6 @@ final class DungeonEditorRuntimeInputTranslator {
                 doorDeleteSelected,
                 sample.target(),
                 safeDestination);
-    }
-
-    static DungeonEditorSessionValues.ViewMode viewMode(DungeonEditorViewMode viewMode) {
-        return viewMode == DungeonEditorViewMode.GRAPH
-                ? DungeonEditorSessionValues.ViewMode.GRAPH
-                : DungeonEditorSessionValues.ViewMode.GRID;
-    }
-
-    static DungeonEditorSessionValues.OverlaySettings overlaySettings(
-            DungeonEditorOverlaySettings overlaySettings
-    ) {
-        DungeonEditorOverlaySettings safeSettings = overlaySettings == null
-                ? DungeonEditorOverlaySettings.defaults()
-                : overlaySettings;
-        return new DungeonEditorSessionValues.OverlaySettings(
-                DungeonEditorSessionValues.OverlaySettings.Mode.valueOf(safeSettings.mode().name()),
-                safeSettings.levelRange(),
-                safeSettings.opacity(),
-                safeSettings.selectedLevels());
     }
 
     static List<DungeonAuthoredApplicationService.RoomNarrationExitInput> exitInputs(RoomNarration narration) {

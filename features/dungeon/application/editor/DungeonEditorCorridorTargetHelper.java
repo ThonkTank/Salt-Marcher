@@ -5,7 +5,7 @@ import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.graph.DungeonTopologyElementKind;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
-import features.dungeon.application.editor.interaction.DungeonEditorHandleType;
+import features.dungeon.api.DungeonEditorHandleKind;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.DungeonEditorInteractionValues.CellKey;
@@ -87,7 +87,7 @@ final class DungeonEditorCorridorTargetHelper {
                 return null;
             }
             DungeonEditorWorkspaceValues.HandleRef handleRef = hit.handleRef();
-            DungeonEditorWorkspaceValues.Cell roomCell = roomCellForDoorHandle(handleRef);
+            features.dungeon.domain.core.geometry.Cell roomCell = roomCellForDoorHandle(handleRef);
             return new PendingCorridorTarget.EndpointTarget(
                     DungeonEditorMainViewInteractionValues.doorTargetKey(handleRef.roomId(), hit.topologyRefId()),
                     DOOR_LABEL_PREFIX + hit.topologyRefId(),
@@ -140,7 +140,7 @@ final class DungeonEditorCorridorTargetHelper {
                     || hit.handleRef() == null
                     || !DungeonEditorMainViewInteractionValues.handleKind(
                             hit.handleRef(),
-                            DungeonEditorHandleType.CORRIDOR_ANCHOR)) {
+                            DungeonEditorHandleKind.CORRIDOR_ANCHOR)) {
                 return null;
             }
             long hostCorridorId = hit.handleRef().corridorId();
@@ -172,7 +172,7 @@ final class DungeonEditorCorridorTargetHelper {
                     || hit.handleRef() == null
                     || !DungeonEditorMainViewInteractionValues.handleKind(
                             hit.handleRef(),
-                            DungeonEditorHandleType.CORRIDOR_WAYPOINT)
+                            DungeonEditorHandleKind.CORRIDOR_WAYPOINT)
                     || !DungeonEditorWorkspaceValues.hasId(hit.handleRef().corridorId())) {
                 return null;
             }
@@ -207,7 +207,7 @@ final class DungeonEditorCorridorTargetHelper {
                     corridorId,
                     new DungeonEditorWorkspaceValues.CorridorAnchorEndpoint(
                             corridorId,
-                            new DungeonEditorWorkspaceValues.Cell(input.q(), input.r(), input.level()),
+                            new features.dungeon.domain.core.geometry.Cell(input.q(), input.r(), input.level()),
                             DungeonTopologyRef.empty()));
         }
 
@@ -216,30 +216,28 @@ final class DungeonEditorCorridorTargetHelper {
                     && hit.handleRef() != null
                     && DungeonEditorMainViewInteractionValues.handleKind(
                             hit.handleRef(),
-                            DungeonEditorHandleType.DOOR)
+                            DungeonEditorHandleKind.DOOR)
                     && DungeonEditorWorkspaceValues.hasId(hit.handleRef().roomId())
                     && DungeonEditorWorkspaceValues.hasId(hit.handleRef().clusterId())
-                    && !hit.handleRef().direction().isBlank()
                     && DungeonEditorWorkspaceValues.hasId(hit.topologyRefId());
         }
 
-        private static DungeonEditorWorkspaceValues.Cell roomCellForDoorHandle(DungeonEditorWorkspaceValues.HandleRef handleRef) {
-            DungeonEditorWorkspaceValues.Cell corridorCell = handleRef.cell();
+        private static features.dungeon.domain.core.geometry.Cell roomCellForDoorHandle(DungeonEditorWorkspaceValues.HandleRef handleRef) {
+            features.dungeon.domain.core.geometry.Cell corridorCell = handleRef.cell();
             return switch (handleRef.direction()) {
-                case "EAST" -> roomCellNear(corridorCell, -1, 0);
-                case "SOUTH" -> roomCellNear(corridorCell, 0, -1);
-                case "WEST" -> roomCellNear(corridorCell, 1, 0);
-                case "NORTH" -> roomCellNear(corridorCell, 0, 1);
-                default -> roomCellNear(corridorCell, 0, 1);
+                case EAST -> roomCellNear(corridorCell, -1, 0);
+                case SOUTH -> roomCellNear(corridorCell, 0, -1);
+                case WEST -> roomCellNear(corridorCell, 1, 0);
+                case NORTH -> roomCellNear(corridorCell, 0, 1);
             };
         }
 
-        private static DungeonEditorWorkspaceValues.Cell roomCellNear(
-                DungeonEditorWorkspaceValues.Cell corridorCell,
+        private static features.dungeon.domain.core.geometry.Cell roomCellNear(
+                features.dungeon.domain.core.geometry.Cell corridorCell,
                 int deltaQ,
                 int deltaR
         ) {
-            return new DungeonEditorWorkspaceValues.Cell(
+            return new features.dungeon.domain.core.geometry.Cell(
                     corridorCell.q() + deltaQ,
                     corridorCell.r() + deltaR,
                     corridorCell.level());
@@ -275,7 +273,7 @@ final class DungeonEditorCorridorTargetHelper {
             }
             for (DungeonEditorWorkspaceValues.Handle handle : snapshot.editorHandles()) {
                 DungeonEditorWorkspaceValues.HandleRef ref = handle.ref();
-                if (ref.kind() == DungeonEditorHandleType.DOOR
+                if (ref.kind() == DungeonEditorHandleKind.DOOR
                         && ref.topologyRef().id() == hit.topologyRefId()
                         && DungeonEditorWorkspaceValues.hasId(ref.corridorId())) {
                     return new PendingCorridorTarget.EndpointTarget(
@@ -319,10 +317,10 @@ final class DungeonEditorCorridorTargetHelper {
         }
 
         private static @Nullable PendingCorridorTarget corridorPoint(DungeonEditorWorkspaceValues.HandleRef ref) {
-            if (ref.kind() == DungeonEditorHandleType.CORRIDOR_ANCHOR) {
+            if (ref.kind() == DungeonEditorHandleKind.CORRIDOR_ANCHOR) {
                 return corridorAnchorPoint(ref);
             }
-            if (ref.kind() == DungeonEditorHandleType.CORRIDOR_WAYPOINT) {
+            if (ref.kind() == DungeonEditorHandleKind.CORRIDOR_WAYPOINT) {
                 return corridorWaypointPoint(ref);
             }
             return null;
@@ -450,7 +448,7 @@ final class DungeonEditorCorridorTargetHelper {
                     roomTouch.room().id(),
                     roomTouch.room().clusterId(),
                     roomTouch.roomCell(),
-                    direction,
+                    features.dungeon.domain.core.geometry.Direction.parse(direction),
                     boundaryRef);
         }
     }
@@ -482,7 +480,7 @@ final class DungeonEditorCorridorTargetHelper {
                             room.id(),
                             room.clusterId(),
                             roomCell,
-                            direction,
+                            features.dungeon.domain.core.geometry.Direction.parse(direction),
                             DungeonTopologyRef.empty()));
         }
 
@@ -530,29 +528,29 @@ final class DungeonEditorCorridorTargetHelper {
             return null;
         }
 
-        private static DungeonEditorWorkspaceValues.Cell corridorRoomCell(
+        private static features.dungeon.domain.core.geometry.Cell corridorRoomCell(
                 DungeonEditorWorkspaceValues.Area room,
                 int pointerQ,
                 int pointerR
         ) {
-            DungeonEditorWorkspaceValues.Cell bestCell = null;
+            features.dungeon.domain.core.geometry.Cell bestCell = null;
             int bestDistance = Integer.MAX_VALUE;
-            for (DungeonEditorWorkspaceValues.Cell cell : room.cells()) {
+            for (features.dungeon.domain.core.geometry.Cell cell : room.cells()) {
                 int distance = Math.abs(cell.q() - pointerQ) + Math.abs(cell.r() - pointerR);
                 if (bestCell == null || closerRoomCell(cell, distance, bestCell, bestDistance)) {
                     bestCell = cell;
                     bestDistance = distance;
                 }
             }
-            return bestCell == null ? new DungeonEditorWorkspaceValues.Cell(pointerQ, pointerR, 0) : bestCell;
+            return bestCell == null ? new features.dungeon.domain.core.geometry.Cell(pointerQ, pointerR, 0) : bestCell;
         }
 
         private static String corridorDirection(
                 DungeonEditorWorkspaceValues.Area room,
-                DungeonEditorWorkspaceValues.Cell roomCell
+                features.dungeon.domain.core.geometry.Cell roomCell
         ) {
             Set<CellKey> roomCells = new LinkedHashSet<>();
-            for (DungeonEditorWorkspaceValues.Cell cell : room.cells()) {
+            for (features.dungeon.domain.core.geometry.Cell cell : room.cells()) {
                 roomCells.add(new CellKey(cell.q(), cell.r(), cell.level()));
             }
             CellKey key = new CellKey(roomCell.q(), roomCell.r(), roomCell.level());
@@ -565,9 +563,9 @@ final class DungeonEditorCorridorTargetHelper {
         }
 
         private static boolean closerRoomCell(
-                DungeonEditorWorkspaceValues.Cell cell,
+                features.dungeon.domain.core.geometry.Cell cell,
                 int distance,
-                DungeonEditorWorkspaceValues.Cell bestCell,
+                features.dungeon.domain.core.geometry.Cell bestCell,
                 int bestDistance
         ) {
             if (distance != bestDistance) {

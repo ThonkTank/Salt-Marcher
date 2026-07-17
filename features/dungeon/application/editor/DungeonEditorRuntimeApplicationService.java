@@ -21,11 +21,13 @@ import features.dungeon.application.editor.session.DungeonEditorSession;
 import features.dungeon.application.editor.session.DungeonEditorSessionEffect;
 import features.dungeon.application.editor.session.DungeonEditorSessionSnapshot;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
+import features.dungeon.api.DungeonEditorViewMode;
+import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.application.editor.session.DungeonEditorSessionWorkflow;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceCoreGeometry;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
+import features.dungeon.application.editor.session.DungeonEditorWorkspaceGeometry;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapId;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSummary;
@@ -206,7 +208,7 @@ public final class DungeonEditorRuntimeApplicationService {
         }
 
         public DungeonEditorSessionSnapshot.SessionFrameData setViewMode(
-                DungeonEditorSessionValues.ViewMode viewMode
+                DungeonEditorViewMode viewMode
         ) {
             workflow.setViewMode(viewMode);
             DungeonEditorSessionSnapshot.SessionFrameData frameData =
@@ -244,7 +246,7 @@ public final class DungeonEditorRuntimeApplicationService {
         }
 
         public DungeonEditorSessionSnapshot.SessionFrameData setOverlay(
-                DungeonEditorSessionValues.OverlaySettings overlaySettings
+                DungeonOverlaySettings overlaySettings
         ) {
             workflow.setOverlay(overlaySettings);
             DungeonEditorSessionSnapshot.SessionFrameData frameData =
@@ -452,13 +454,13 @@ public final class DungeonEditorRuntimeApplicationService {
         public void applyDoorBoundary(
                 MapId mapId,
                 long clusterId,
-                DungeonEditorWorkspaceValues.Edge edge,
+                features.dungeon.domain.core.geometry.Edge edge,
                 boolean deleteMode
         ) {
             authoredService.applyDoorBoundary(
                     mapId,
                     clusterId,
-                    DungeonEditorWorkspaceCoreGeometry.edges(List.of(edge)),
+                    DungeonEditorWorkspaceGeometry.unitEdges(List.of(edge)),
                     deleteMode,
                     authored);
         }
@@ -466,13 +468,13 @@ public final class DungeonEditorRuntimeApplicationService {
         public void applyWallBoundary(
                 MapId mapId,
                 long clusterId,
-                List<DungeonEditorWorkspaceValues.Edge> edges,
+                List<features.dungeon.domain.core.geometry.Edge> edges,
                 boolean deleteMode
         ) {
             authoredService.applyWallBoundary(
                     mapId,
                     clusterId,
-                    DungeonEditorWorkspaceCoreGeometry.edges(edges),
+                    DungeonEditorWorkspaceGeometry.unitEdges(edges),
                     deleteMode,
                     authored);
         }
@@ -550,7 +552,7 @@ public final class DungeonEditorRuntimeApplicationService {
             for (DungeonAuthoredApplicationService.RoomNarrationExitInput exit : input.exits()) {
                 exits.add(new DungeonEditorWorkspaceValues.RoomExitNarration(
                         exit.label(),
-                        new DungeonEditorWorkspaceValues.Cell(exit.q(), exit.r(), exit.level()),
+                        new features.dungeon.domain.core.geometry.Cell(exit.q(), exit.r(), exit.level()),
                         exit.direction(),
                         exit.description()));
             }
@@ -568,7 +570,7 @@ public final class DungeonEditorRuntimeApplicationService {
                         snapshotBuilder.loadCommittedSnapshot(workflow.session().selectedMapId());
                 if (workflow.session().hasSelectedMap()
                         && committedSnapshot != null
-                        && workflow.session().viewMode().isGrid()) {
+                        && workflow.session().viewMode() == DungeonEditorViewMode.GRID) {
                     return new CurrentGridResult(committedSnapshot, PublicationOutcome.COMMITTED_GRID_AVAILABLE);
                 }
                 return new CurrentGridResult(null, prepareCurrentReadback());

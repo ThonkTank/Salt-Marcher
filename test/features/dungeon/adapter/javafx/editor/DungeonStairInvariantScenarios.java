@@ -8,7 +8,7 @@ import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring.AuthoredContent;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.corridor.Corridor;
-import features.dungeon.domain.core.structure.corridor.CorridorBindingState;
+import features.dungeon.domain.core.structure.corridor.CorridorBindings;
 import features.dungeon.domain.core.structure.corridor.CorridorDeletionTarget;
 import features.dungeon.domain.core.structure.corridor.CorridorMapAuthoring;
 import features.dungeon.domain.core.structure.corridor.CorridorRoomSet;
@@ -64,7 +64,7 @@ final class DungeonStairInvariantScenarios {
                 90L,
                 0,
                 new CorridorRoomSet(List.of()),
-                CorridorBindingState.empty());
+                CorridorBindings.empty());
         Stair boundStair = Stair.corridorBound(
                 STAIR_ID,
                 90L,

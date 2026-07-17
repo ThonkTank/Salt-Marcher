@@ -6,7 +6,7 @@ import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.corridor.CorridorDoorBindingGeometry;
-import features.dungeon.domain.core.structure.corridor.CorridorDoorBindingState;
+import features.dungeon.domain.core.component.CorridorDoorBinding;
 import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.RoomCluster;
@@ -17,12 +17,12 @@ record DoorBindingMoveContext(
         DungeonTopologyRef expectedTopologyRef,
         Edge nextDoorEdge,
         @Nullable DungeonClusterBoundary nextBoundary,
-        CorridorDoorBindingState newBinding
+        CorridorDoorBinding newBinding
 ) {
     static @Nullable DoorBindingMoveContext from(
             DungeonMap sourceMap,
-            @Nullable CorridorDoorBindingState oldBinding,
-            @Nullable CorridorDoorBindingState newBinding
+            @Nullable CorridorDoorBinding oldBinding,
+            @Nullable CorridorDoorBinding newBinding
     ) {
         if (!sameRoomClusterMove(oldBinding, newBinding)) {
             return null;
@@ -52,8 +52,8 @@ record DoorBindingMoveContext(
     }
 
     private static boolean sameRoomClusterMove(
-            @Nullable CorridorDoorBindingState oldBinding,
-            @Nullable CorridorDoorBindingState newBinding
+            @Nullable CorridorDoorBinding oldBinding,
+            @Nullable CorridorDoorBinding newBinding
     ) {
         return oldBinding != null
                 && newBinding != null
@@ -64,7 +64,7 @@ record DoorBindingMoveContext(
 
     private static @Nullable RoomCluster targetCluster(
             DungeonMap sourceMap,
-            CorridorDoorBindingState oldBinding
+            CorridorDoorBinding oldBinding
     ) {
         RoomRegion room = sourceMap.rooms().findRoom(oldBinding.roomId()).orElse(null);
         if (room == null || room.clusterId() != oldBinding.clusterId()) {
@@ -75,8 +75,8 @@ record DoorBindingMoveContext(
 
     private static boolean matchingTopology(
             DungeonTopologyRef expectedTopologyRef,
-            CorridorDoorBindingState oldBinding,
-            CorridorDoorBindingState newBinding
+            CorridorDoorBinding oldBinding,
+            CorridorDoorBinding newBinding
     ) {
         return expectedTopologyRef.equals(oldBinding.topologyRef())
                 && expectedTopologyRef.equals(newBinding.topologyRef());
@@ -87,8 +87,8 @@ record DoorBindingMoveContext(
     }
 
     private static boolean sameBoundary(
-            CorridorDoorBindingState oldBinding,
-            CorridorDoorBindingState newBinding
+            CorridorDoorBinding oldBinding,
+            CorridorDoorBinding newBinding
     ) {
         return oldBinding.roomId() == newBinding.roomId()
                 && oldBinding.clusterId() == newBinding.clusterId()
@@ -109,7 +109,7 @@ record DoorBindingMoveContext(
         return null;
     }
 
-    private static Edge doorEdge(RoomCluster cluster, CorridorDoorBindingState binding) {
+    private static Edge doorEdge(RoomCluster cluster, CorridorDoorBinding binding) {
         return CorridorDoorBindingGeometry.absoluteDoorEdge(binding, cluster.center());
     }
 

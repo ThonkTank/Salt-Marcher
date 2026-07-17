@@ -106,11 +106,11 @@ final class DungeonEditorStateProjectionServiceAssembly {
     }
 
     private static List<features.dungeon.api.DungeonEdgeRef> edges(
-            List<features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Edge> edges
+            List<features.dungeon.domain.core.geometry.Edge> edges
     ) {
         List<features.dungeon.api.DungeonEdgeRef> result = new ArrayList<>();
-        for (features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Edge edge
-                : edges == null ? List.<features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Edge>of() : edges) {
+        for (features.dungeon.domain.core.geometry.Edge edge
+                : edges == null ? List.<features.dungeon.domain.core.geometry.Edge>of() : edges) {
             result.add(DungeonEditorValueProjectionServiceAssembly.edge(edge));
         }
         return List.copyOf(result);

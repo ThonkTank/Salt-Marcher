@@ -8,7 +8,7 @@ import java.util.Optional;
 import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.geometry.EdgeKey;
-import features.dungeon.domain.core.structure.room.RoomBoundaryStretchValues.StretchSelection;
+import features.dungeon.domain.core.structure.room.RoomClusterBoundaryStretchPlan.Selection;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 
 final class RoomClusterWallStretchSelection {
@@ -16,7 +16,7 @@ final class RoomClusterWallStretchSelection {
     private RoomClusterWallStretchSelection() {
     }
 
-    static Optional<StretchSelection> resolve(
+    static Optional<Selection> resolve(
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
             RoomClusterFloorMap floorMap,
             List<Edge> sourceEdges,
@@ -24,26 +24,14 @@ final class RoomClusterWallStretchSelection {
             int deltaR,
             int deltaLevel
     ) {
-        Optional<RoomClusterBoundaryStretchPlan.Selection> selection =
-                RoomClusterWallMap.fromKeyedRows(rowsByKey(boundaries))
-                        .stretchSelection(floorMap, sourceEdges, deltaQ, deltaR, deltaLevel);
-        return selection.map(value -> StretchSelection.fromCore(value, boundariesByKey(boundaries)));
+        return RoomClusterWallMap.fromKeyedRows(rowsByKey(boundaries))
+                .stretchSelection(floorMap, sourceEdges, deltaQ, deltaR, deltaLevel);
     }
 
     private static Map<EdgeKey, BoundaryRow> rowsByKey(Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries) {
         Map<EdgeKey, BoundaryRow> result = new LinkedHashMap<>();
         for (Map.Entry<DungeonBoundaryKey, DungeonClusterBoundary> entry : boundaryEntries(boundaries)) {
             result.put(edgeKey(entry.getKey()), row(entry.getValue()));
-        }
-        return Map.copyOf(result);
-    }
-
-    private static Map<EdgeKey, DungeonClusterBoundary> boundariesByKey(
-            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries
-    ) {
-        Map<EdgeKey, DungeonClusterBoundary> result = new LinkedHashMap<>();
-        for (Map.Entry<DungeonBoundaryKey, DungeonClusterBoundary> entry : boundaryEntries(boundaries)) {
-            result.put(edgeKey(entry.getKey()), entry.getValue());
         }
         return Map.copyOf(result);
     }

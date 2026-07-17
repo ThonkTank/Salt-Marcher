@@ -7,7 +7,6 @@ import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.domain.core.structure.room.DungeonRoomExitDescription;
 import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
 import features.dungeon.application.editor.session.DungeonEditorRoomNarrationInput;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceCoreGeometry;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 
 public interface DungeonEditorAuthoredOperationHelper {
@@ -18,11 +17,11 @@ public interface DungeonEditorAuthoredOperationHelper {
                 roomExits(roomNarration.exits()));
     }
 
-    static Cell cell(DungeonEditorWorkspaceValues.Cell cell) {
-        DungeonEditorWorkspaceValues.Cell safeCell = cell == null
-                ? DungeonEditorWorkspaceValues.Cell.empty()
+    static Cell cell(features.dungeon.domain.core.geometry.Cell cell) {
+        features.dungeon.domain.core.geometry.Cell safeCell = cell == null
+                ? features.dungeon.domain.core.geometry.Cell.empty()
                 : cell;
-        return DungeonEditorWorkspaceCoreGeometry.cell(safeCell);
+        return safeCell;
     }
 
     private static List<DungeonRoomExitDescription> roomExits(
@@ -33,7 +32,7 @@ public interface DungeonEditorAuthoredOperationHelper {
             DungeonEditorWorkspaceValues.RoomExitNarration safeExit = exit == null
                     ? new DungeonEditorWorkspaceValues.RoomExitNarration(
                             "",
-                            DungeonEditorWorkspaceValues.Cell.empty(),
+                            features.dungeon.domain.core.geometry.Cell.empty(),
                             "",
                             "")
                     : exit;

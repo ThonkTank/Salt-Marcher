@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Set;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceGeometry;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Area;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Cell;
+import features.dungeon.domain.core.geometry.Cell;
 
 public final class PreviewDungeonEditorSurfaceAreaMoveHelper {
 
