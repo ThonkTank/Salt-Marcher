@@ -40,8 +40,8 @@ import features.dungeon.domain.core.structure.DungeonMapMetadata;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomCatalog;
 import features.dungeon.domain.core.structure.room.RoomClusterFloorMap;
 import features.dungeon.domain.core.structure.stair.StairCollection;
@@ -491,22 +491,21 @@ final class DungeonRuntimeProjectionInvariantScenarios {
     ) {
         long clusterId = 41L + mapId;
         long roomId = 81L + mapId;
-        DungeonRoomCluster cluster = DungeonRoomCluster.fromPersistenceState(
+        RoomCluster cluster = RoomCluster.authored(
                 clusterId,
                 mapId,
                 mapName,
                 new Cell(0, 0, 0),
-                RoomClusterFloorMap.fromCells(roomCells),
                 DungeonClusterBoundary.orderedByLevel(List.of()));
         DungeonMap map = new DungeonMap(
                 new DungeonMapMetadata(new DungeonMapIdentity(mapId), mapName),
                 SpatialTopology.defaultGrid().withRoomClusters(List.of(cluster)),
-                new RoomCatalog(List.of(new DungeonRoom(
+                new RoomCatalog(List.of(new RoomRegion(
                         roomId,
                         mapId,
                         clusterId,
                         mapName,
-                        Map.of(0, roomCells.getFirst()),
+                        java.util.Set.copyOf(roomCells),
                         null))),
                 List.of(),
                 new StairCollection(List.of()),

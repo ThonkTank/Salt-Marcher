@@ -12,8 +12,9 @@ import features.dungeon.adapter.sqlite.model.DungeonRoomClusterFloorCellRecord;
 import features.dungeon.adapter.sqlite.model.DungeonRoomClusterRecord;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.CellOrdering;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomClusterFloorMap;
+import features.dungeon.domain.core.structure.room.RoomRegion;
 
 final class DungeonClusterFloorCellRecordMapperSupport {
 
@@ -26,14 +27,17 @@ final class DungeonClusterFloorCellRecordMapperSupport {
 
     static List<DungeonRoomClusterFloorCellRecord> toFloorCellRecords(
             long clusterId,
-            DungeonRoomCluster cluster
+            List<RoomRegion> rooms
     ) {
         List<DungeonRoomClusterFloorCellRecord> result = new ArrayList<>();
-        for (Map.Entry<Integer, List<Cell>> entry : floorCellsByLevel(cluster).entrySet()) {
-            for (Cell cell : entry.getValue()) {
+        for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
+            if (room == null || room.clusterId() != clusterId) {
+                continue;
+            }
+            for (Cell cell : room.floorCells()) {
                 result.add(new DungeonRoomClusterFloorCellRecord(
                         clusterId,
-                        entry.getKey(),
+                        cell.level(),
                         cell.q(),
                         cell.r()));
             }
@@ -58,10 +62,6 @@ final class DungeonClusterFloorCellRecordMapperSupport {
 
     private static Map<Integer, List<Cell>> floorCellsByLevel(DungeonRoomClusterRecord record) {
         return floorCellsByLevel(record.floorCells());
-    }
-
-    private static Map<Integer, List<Cell>> floorCellsByLevel(DungeonRoomCluster cluster) {
-        return new RoomClusterFloorMap(cluster.cellsByLevel()).cellsByLevel();
     }
 
     private static Map<Integer, List<Cell>> immutableSortedCellMap(Map<Integer, List<Cell>> source) {

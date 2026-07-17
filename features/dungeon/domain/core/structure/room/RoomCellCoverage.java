@@ -15,84 +15,62 @@ public final class RoomCellCoverage {
     public static final Cell LOOP_SEPARATOR = CellLoopSequence.LOOP_SEPARATOR;
 
     public Map<Long, List<Cell>> cellsByRoom(
-            DungeonRoomCluster cluster,
-            List<DungeonRoom> rooms
+            RoomCluster cluster,
+            List<RoomRegion> rooms
     ) {
-        List<DungeonRoom> safeRooms = rooms == null ? List.of() : rooms;
-        Map<Integer, List<Cell>> cellsByLevel = cellsByLevel(cluster, safeRooms);
-        Map<Long, List<Cell>> partitionedCellsByRoom = RoomClusterRoomPartition.cellsByRoom(
-                cluster.toCore(cellsByLevel),
-                coreRooms(safeRooms),
-                cluster.closedBoundaryEdgesByLevel());
         Map<Long, List<Cell>> result = new LinkedHashMap<>();
-        for (Map.Entry<Long, List<Cell>> entry : partitionedCellsByRoom.entrySet()) {
-            result.put(entry.getKey(), nonNullCells(entry.getValue()));
+        for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
+            if (room != null) {
+                result.put(room.roomId(), CellOrdering.sortedCells(room.floorCells()));
+            }
         }
         return Map.copyOf(result);
     }
 
     public Map<Integer, List<Cell>> cellsByLevel(
-            DungeonRoomCluster cluster,
-            List<DungeonRoom> rooms
+            RoomCluster cluster,
+            List<RoomRegion> rooms
     ) {
         Map<Integer, List<Cell>> result = new LinkedHashMap<>();
-        for (Integer level : levels(cluster, rooms)) {
-            result.put(level, CellOrdering.sortedCells(clusterCells(cluster, rooms, level)));
+        for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
+            if (room != null) {
+                for (Map.Entry<Integer, List<Cell>> entry : room.cellsByLevel().entrySet()) {
+                    result.computeIfAbsent(entry.getKey(), ignored -> new ArrayList<>()).addAll(entry.getValue());
+                }
+            }
         }
-        return Map.copyOf(result);
+        Map<Integer, List<Cell>> normalized = new LinkedHashMap<>();
+        for (Map.Entry<Integer, List<Cell>> entry : result.entrySet()) {
+            normalized.put(entry.getKey(), CellOrdering.sortedCells(entry.getValue()));
+        }
+        return Map.copyOf(normalized);
     }
 
     public Set<Cell> clusterCells(
-            DungeonRoomCluster cluster,
-            List<DungeonRoom> rooms,
+            RoomCluster cluster,
+            List<RoomRegion> rooms,
             int level
     ) {
-        List<Cell> floorCells = cluster.cellsByLevel().getOrDefault(level, List.of());
-        if (!floorCells.isEmpty()) {
-            return Set.copyOf(floorCells);
-        }
-        Set<Cell> anchors = new LinkedHashSet<>();
-        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
-            Cell anchor = room.floorAnchors().get(level);
-            if (anchor != null) {
-                anchors.add(anchor);
+        Set<Cell> cells = new LinkedHashSet<>();
+        for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
+            if (room != null) {
+                cells.addAll(room.cellsAt(level));
             }
         }
-        if (anchors.isEmpty()) {
-            anchors.add(new Cell(cluster.center().q(), cluster.center().r(), level));
+        if (cells.isEmpty()) {
+            cells.add(new Cell(cluster.center().q(), cluster.center().r(), level));
         }
-        return anchors;
+        return Set.copyOf(cells);
     }
 
-    private static Set<Integer> levels(DungeonRoomCluster cluster, List<DungeonRoom> rooms) {
+    private static Set<Integer> levels(RoomCluster cluster, List<RoomRegion> rooms) {
         Set<Integer> levels = new LinkedHashSet<>();
         levels.add(cluster.center().level());
-        levels.addAll(cluster.cellsByLevel().keySet());
         levels.addAll(cluster.boundaryLevels());
-        for (DungeonRoom room : rooms) {
-            levels.addAll(room.floorAnchors().keySet());
+        for (RoomRegion room : rooms) {
+            levels.addAll(room.cellsByLevel().keySet());
         }
         return levels;
-    }
-
-    private static List<Cell> nonNullCells(List<Cell> cells) {
-        List<Cell> result = new ArrayList<>();
-        for (Cell cell : cells == null ? List.<Cell>of() : cells) {
-            if (cell != null) {
-                result.add(cell);
-            }
-        }
-        return List.copyOf(result);
-    }
-
-    private static List<Room> coreRooms(List<DungeonRoom> rooms) {
-        List<Room> result = new ArrayList<>();
-        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
-            if (room != null) {
-                result.add(room.toCore());
-            }
-        }
-        return List.copyOf(result);
     }
 
 }

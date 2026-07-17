@@ -10,7 +10,7 @@ import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterializ
 
 final class RoomClusterDoorBoundaryMovement {
 
-    DungeonRoomCluster moved(DungeonRoomCluster cluster, RoomClusterDoorBoundaryMove move) {
+    RoomCluster moved(RoomCluster cluster, RoomClusterDoorBoundaryMove move) {
         if (cluster == null || move == null || move.oldDoorBoundary() == null
                 || move.nextRelativeCell() == null || move.nextDirection() == null) {
             return cluster;

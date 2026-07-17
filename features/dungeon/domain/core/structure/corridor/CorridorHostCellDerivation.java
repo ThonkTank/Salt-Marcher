@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import features.dungeon.domain.core.geometry.Cell;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 
 final class CorridorHostCellDerivation {
     private static final int SINGLE_ROUTE_TERMINUS_COUNT = 1;
@@ -16,7 +16,7 @@ final class CorridorHostCellDerivation {
 
     List<Cell> corridorCells(
             Corridor corridor,
-            Map<Long, DungeonRoomCluster> clustersById,
+            Map<Long, RoomCluster> clustersById,
             List<CorridorHostEndpoint> endpoints,
             Set<Cell> roomCells
     ) {

@@ -17,7 +17,7 @@ final class RoomClusterRoomComponents {
     private RoomClusterRoomComponents() {
     }
 
-    static List<Room> roomsForMutation(
+    static List<RoomRegion> roomsForMutation(
             RoomClusterWork work,
             Map<Integer, ? extends Iterable<Edge>> barriersByLevel,
             long nextRoomId,
@@ -30,9 +30,9 @@ final class RoomClusterRoomComponents {
         Map<Long, Set<Cell>> previousCellSetsByRoom = previousCellSetsByRoom(resolvedPreviousCellsByRoom);
         RoomIdCursor idCursor = new RoomIdCursor(nextRoomId);
         Set<Long> usedRoomIds = new LinkedHashSet<>();
-        List<Room> rooms = new ArrayList<>();
+        List<RoomRegion> rooms = new ArrayList<>();
         for (RoomComponent component : components) {
-            Optional<Room> template = RoomComponentTemplateSelection.templateFor(
+            Optional<RoomRegion> template = RoomComponentTemplateSelection.templateFor(
                     work.rooms(),
                     previousCellSetsByRoom,
                     component,
@@ -51,24 +51,25 @@ final class RoomClusterRoomComponents {
     }
 
     private static void addRoom(
-            List<Room> rooms,
+            List<RoomRegion> rooms,
             RoomClusterWork work,
             RoomComponent component,
-            Room template,
+            RoomRegion template,
             RoomIdCursor idCursor,
             Set<Long> usedRoomIds
     ) {
         long roomId = template == null ? idCursor.reserveUnusedRoomId(usedRoomIds) : template.roomId();
         usedRoomIds.add(roomId);
-        rooms.add(new Room(
+        rooms.add(new RoomRegion(
                 roomId,
                 work.cluster().mapId(),
                 work.cluster().clusterId(),
                 template == null ? "Raum " + roomId : template.name(),
-                Map.of(component.level(), anchorFor(component, template))));
+                Set.copyOf(component.cells()),
+                template == null ? DungeonRoomNarration.empty() : template.narration()));
     }
 
-    private static Cell anchorFor(RoomComponent component, Room template) {
+    private static Cell anchorFor(RoomComponent component, RoomRegion template) {
         if (template == null) {
             return component.anchor();
         }

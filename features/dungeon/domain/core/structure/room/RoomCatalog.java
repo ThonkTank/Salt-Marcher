@@ -10,7 +10,7 @@ import java.util.Optional;
  * Authored rooms loaded from the dungeon write model.
  */
 public record RoomCatalog(
-        List<DungeonRoom> rooms
+        List<RoomRegion> rooms
 ) {
 
     public RoomCatalog {
@@ -21,8 +21,8 @@ public record RoomCatalog(
         return new RoomCatalog(List.of());
     }
 
-    public Optional<DungeonRoom> findRoom(long roomId) {
-        for (DungeonRoom room : rooms) {
+    public Optional<RoomRegion> findRoom(long roomId) {
+        for (RoomRegion room : rooms) {
             if (room != null && room.roomId() == roomId) {
                 return Optional.of(room);
             }
@@ -30,9 +30,9 @@ public record RoomCatalog(
         return Optional.empty();
     }
 
-    public List<DungeonRoom> roomsInCluster(long clusterId) {
-        List<DungeonRoom> result = new ArrayList<>();
-        for (DungeonRoom room : rooms) {
+    public List<RoomRegion> roomsInCluster(long clusterId) {
+        List<RoomRegion> result = new ArrayList<>();
+        for (RoomRegion room : rooms) {
             if (room != null && room.clusterId() == clusterId) {
                 result.add(room);
             }
@@ -40,15 +40,15 @@ public record RoomCatalog(
         return List.copyOf(result);
     }
 
-    public Map<Long, List<DungeonRoom>> roomsByCluster() {
-        Map<Long, List<DungeonRoom>> result = new LinkedHashMap<>();
-        for (DungeonRoom room : rooms) {
+    public Map<Long, List<RoomRegion>> roomsByCluster() {
+        Map<Long, List<RoomRegion>> result = new LinkedHashMap<>();
+        for (RoomRegion room : rooms) {
             if (room != null) {
                 result.computeIfAbsent(room.clusterId(), unused -> new ArrayList<>()).add(room);
             }
         }
-        Map<Long, List<DungeonRoom>> copied = new LinkedHashMap<>();
-        for (Map.Entry<Long, List<DungeonRoom>> entry : result.entrySet()) {
+        Map<Long, List<RoomRegion>> copied = new LinkedHashMap<>();
+        for (Map.Entry<Long, List<RoomRegion>> entry : result.entrySet()) {
             copied.put(entry.getKey(), List.copyOf(entry.getValue()));
         }
         return Map.copyOf(copied);
@@ -56,7 +56,7 @@ public record RoomCatalog(
 
     public long nextRoomId() {
         long result = 0L;
-        for (DungeonRoom room : rooms) {
+        for (RoomRegion room : rooms) {
             if (room != null && room.roomId() > result) {
                 result = room.roomId();
             }

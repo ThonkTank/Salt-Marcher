@@ -6,22 +6,23 @@ import java.util.Set;
 import features.dungeon.domain.core.geometry.Cell;
 
 public record RoomClusterWork(
-        RoomCluster cluster,
-        List<Room> rooms
+        RoomClusterGeometry cluster,
+        List<RoomRegion> rooms
 ) {
     public RoomClusterWork {
-        cluster = cluster == null ? RoomCluster.fromCells(0L, 0L, Set.of()) : cluster;
+        cluster = cluster == null ? RoomClusterGeometry.fromCells(0L, 0L, Set.of()) : cluster;
         rooms = rooms == null ? List.of() : List.copyOf(rooms);
     }
 
     public static RoomClusterWork newClusterWork(ClusterRoomIds ids, long mapId, Set<Cell> cells) {
-        RoomCluster cluster = RoomCluster.fromCells(ids.clusterId(), mapId, cells);
-        Room room = new Room(
+        RoomClusterGeometry cluster = RoomClusterGeometry.fromCells(ids.clusterId(), mapId, cells);
+        RoomRegion room = new RoomRegion(
                 ids.roomId(),
                 mapId,
                 ids.clusterId(),
                 "Raum " + ids.roomId(),
-                Room.anchorsByLevel(cluster.cellsByLevel()));
+                cells,
+                DungeonRoomNarration.empty());
         return new RoomClusterWork(cluster, List.of(room));
     }
 

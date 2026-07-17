@@ -29,8 +29,8 @@ final class RoomMutationIdCursor {
         return nextRoomId;
     }
 
-    void observeRooms(List<DungeonRoom> rooms) {
-        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
+    void observeRooms(List<RoomRegion> rooms) {
+        for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
             nextRoomId = Math.max(nextRoomId, room.roomId() + 1L);
         }
     }

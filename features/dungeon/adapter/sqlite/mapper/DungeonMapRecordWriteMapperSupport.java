@@ -35,8 +35,10 @@ final class DungeonMapRecordWriteMapperSupport {
                         topology.height(),
                         topology.roomAnchorQ(),
                         topology.roomAnchorR()),
-                DungeonClusterRecordMapperSupport.toClusterRecords(topology.roomClusters()),
-                DungeonRoomRecordMapperSupport.toRoomRecords(dungeonMap.rooms().rooms()),
+                DungeonClusterRecordMapperSupport.toClusterRecords(
+                        topology.roomClusters(), dungeonMap.rooms().rooms()),
+                DungeonRoomRecordMapperSupport.toRoomRecords(
+                        dungeonMap.rooms().rooms(), topology.roomClusters()),
                 DungeonTopologyElementRecordMapperSupport.toTopologyElementRecords(
                         mapId,
                         resolvedTopologyIndex(dungeonMap, topology, corridors, stairs, transitions)),

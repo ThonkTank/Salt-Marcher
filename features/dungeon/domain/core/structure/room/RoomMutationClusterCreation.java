@@ -16,29 +16,31 @@ final class RoomMutationClusterCreation {
                 new RoomClusterWork.ClusterRoomIds(clusterId, roomId),
                 mapId,
                 cells);
-        return fromCoreWithPerimeter(coreWork);
+        return fromPartitionWorkWithPerimeter(coreWork);
     }
 
     static DungeonRoomTopologyClusterWork newClusterShell(
             long clusterId,
             long mapId,
             Map<Integer, List<Cell>> cellsByLevel,
-            List<DungeonRoom> rooms
+            List<RoomRegion> rooms
     ) {
-        RoomCluster coreCluster = RoomCluster.fromCells(clusterId, mapId, flattenedCells(cellsByLevel));
-        DungeonRoomCluster baseCluster = DungeonRoomCluster.fromCore(coreCluster, Map.of());
-        DungeonRoomCluster cluster = DungeonRoomCluster.fromCore(
-                coreCluster,
+        RoomClusterGeometry coreCluster = RoomClusterGeometry.fromCells(clusterId, mapId, flattenedCells(cellsByLevel));
+        RoomCluster baseCluster = RoomCluster.authored(
+                clusterId, mapId, "", coreCluster.center(), Map.of());
+        RoomCluster cluster = RoomCluster.authored(
+                clusterId,
+                mapId,
+                "",
+                coreCluster.center(),
                 RoomPerimeterBoundaryMaterialization.fromFloorCells(
-                        baseCluster,
-                        coreCluster.floorMap().allCells(),
-                        Map.of()));
+                        baseCluster, coreCluster.floorMap().allCells(), Map.of()));
         return new DungeonRoomTopologyClusterWork(cluster, rooms, cellsByLevel);
     }
 
-    private static DungeonRoomTopologyClusterWork fromCoreWithPerimeter(RoomClusterWork coreWork) {
-        DungeonRoomTopologyClusterWork work = DungeonRoomTopologyClusterWork.fromCore(coreWork, null);
-        DungeonRoomCluster cluster = work.cluster().rebuiltForTopologyWork(
+    private static DungeonRoomTopologyClusterWork fromPartitionWorkWithPerimeter(RoomClusterWork coreWork) {
+        DungeonRoomTopologyClusterWork work = DungeonRoomTopologyClusterWork.fromPartitionWork(coreWork, null);
+        RoomCluster cluster = work.cluster().rebuiltForTopologyWork(
                 work.cellsByLevel(),
                 RoomPerimeterBoundaryMaterialization.fromFloorCells(work.cluster(), work.allCells(), Map.of()));
         return new DungeonRoomTopologyClusterWork(cluster, work.rooms(), work.cellsByLevel());

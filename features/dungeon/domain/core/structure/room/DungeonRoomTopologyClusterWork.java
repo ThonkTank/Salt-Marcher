@@ -11,8 +11,8 @@ import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.structure.room.RoomBoundaryStretchValues.StretchSelection;
 
 public record DungeonRoomTopologyClusterWork(
-        DungeonRoomCluster cluster,
-        List<DungeonRoom> rooms,
+        RoomCluster cluster,
+        List<RoomRegion> rooms,
         Map<Integer, List<Cell>> cellsByLevel
 ) {
 
@@ -38,7 +38,7 @@ public record DungeonRoomTopologyClusterWork(
         return CellOrdering.sortedCells(result);
     }
 
-    public DungeonRoomCluster rebuiltClusterWithBoundaries(Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel) {
+    public RoomCluster rebuiltClusterWithBoundaries(Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel) {
         return cluster.rebuiltForTopologyWork(cellsByLevel, boundariesByLevel);
     }
 
@@ -65,37 +65,36 @@ public record DungeonRoomTopologyClusterWork(
         return RoomClusterFloorMap.fromCells(cellsAt(safeEdges.getFirst().from().level()));
     }
 
-    public RoomClusterWork toCore() {
-        List<Room> coreRooms = new ArrayList<>();
-        for (DungeonRoom room : rooms) {
-            if (room != null) {
-                coreRooms.add(room.toCore());
-            }
-        }
-        return new RoomClusterWork(cluster.toCore(cellsByLevel), coreRooms);
+    public RoomClusterWork partitionWork() {
+        return new RoomClusterWork(cluster.geometry(cellsByLevel), rooms);
     }
 
-    public static DungeonRoomTopologyClusterWork fromCore(
+    public static DungeonRoomTopologyClusterWork fromPartitionWork(
             RoomClusterWork coreWork,
             DungeonRoomTopologyClusterWork previous
     ) {
-        List<DungeonRoom> nextRooms = new ArrayList<>();
-        for (Room room : coreWork.rooms()) {
-            nextRooms.add(DungeonRoom.fromCore(room, narrationFor(previous, room.roomId())));
+        List<RoomRegion> nextRooms = new ArrayList<>();
+        for (RoomRegion room : coreWork.rooms()) {
+            nextRooms.add(room.withNarration(narrationFor(previous, room.roomId())));
         }
         return new DungeonRoomTopologyClusterWork(
                 previous == null
-                        ? DungeonRoomCluster.fromCore(coreWork.cluster(), Map.of())
+                        ? RoomCluster.authored(
+                                coreWork.cluster().clusterId(),
+                                coreWork.cluster().mapId(),
+                                "",
+                                coreWork.cluster().center(),
+                                Map.of())
                         : previous.cluster(),
                 nextRooms,
-                fromCoreCellsByLevel(coreWork.cellsByLevel()));
+                copiedCellsByLevel(coreWork.cellsByLevel()));
     }
 
     private static DungeonRoomNarration narrationFor(DungeonRoomTopologyClusterWork previous, long roomId) {
         if (previous == null) {
             return DungeonRoomNarration.empty();
         }
-        for (DungeonRoom room : previous.rooms()) {
+        for (RoomRegion room : previous.rooms()) {
             if (room != null && room.roomId() == roomId) {
                 return room.narration();
             }
@@ -103,7 +102,7 @@ public record DungeonRoomTopologyClusterWork(
         return DungeonRoomNarration.empty();
     }
 
-    private static Map<Integer, List<Cell>> fromCoreCellsByLevel(Map<Integer, List<Cell>> source) {
+    private static Map<Integer, List<Cell>> copiedCellsByLevel(Map<Integer, List<Cell>> source) {
         Map<Integer, List<Cell>> result = new LinkedHashMap<>();
         for (Map.Entry<Integer, List<Cell>> entry : source.entrySet()) {
             List<Cell> cells = new ArrayList<>();

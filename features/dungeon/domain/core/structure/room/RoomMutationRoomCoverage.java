@@ -23,9 +23,9 @@ final class RoomMutationRoomCoverage {
         return Map.copyOf(result);
     }
 
-    static Set<Long> roomIds(List<DungeonRoom> rooms) {
+    static Set<Long> roomIds(List<RoomRegion> rooms) {
         Set<Long> result = new LinkedHashSet<>();
-        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
+        for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
             if (room != null) {
                 result.add(room.roomId());
             }

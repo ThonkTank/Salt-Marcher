@@ -5,7 +5,7 @@ import java.util.Objects;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.projection.DungeonDerivedState;
 import features.dungeon.domain.core.structure.DungeonMap;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 
 /**
  * Builds dungeon inspector snapshots from authored truth and selection context.
@@ -79,7 +79,7 @@ public final class InspectDungeonSelectionUseCase {
         if (dungeonMap == null) {
             return "Cluster " + clusterId;
         }
-        for (DungeonRoomCluster cluster : dungeonMap.topology().roomClusters()) {
+        for (RoomCluster cluster : dungeonMap.topology().roomClusters()) {
             if (cluster.clusterId() == clusterId) {
                 return cluster.name();
             }

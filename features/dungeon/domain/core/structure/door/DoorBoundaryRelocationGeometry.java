@@ -7,8 +7,8 @@ import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomCellCoverage;
 
 final class DoorBoundaryRelocationGeometry {
@@ -18,7 +18,7 @@ final class DoorBoundaryRelocationGeometry {
 
     static boolean targetMaterializesDoor(
             DungeonMap sourceMap,
-            DungeonRoomCluster targetCluster,
+            RoomCluster targetCluster,
             Edge nextDoorEdge,
             @Nullable DungeonClusterBoundary nextBoundary
     ) {
@@ -28,7 +28,7 @@ final class DoorBoundaryRelocationGeometry {
                 boundaryKind(nextBoundary)).materializesDoor();
     }
 
-    static @Nullable DungeonClusterBoundary boundaryAt(DungeonRoomCluster cluster, Edge edge) {
+    static @Nullable DungeonClusterBoundary boundaryAt(RoomCluster cluster, Edge edge) {
         DungeonBoundaryKey key = DungeonBoundaryKey.from(edge);
         for (DungeonClusterBoundary boundary : cluster.orderedAuthoredBoundaries()) {
             if (boundary != null && key.equals(DungeonBoundaryKey.from(boundary.absoluteEdge(cluster.center())))) {
@@ -38,9 +38,9 @@ final class DoorBoundaryRelocationGeometry {
         return null;
     }
 
-    static List<DungeonRoom> roomsInCluster(DungeonMap dungeonMap, long clusterId) {
-        List<DungeonRoom> result = new ArrayList<>();
-        for (DungeonRoom room : dungeonMap.rooms().rooms()) {
+    static List<RoomRegion> roomsInCluster(DungeonMap dungeonMap, long clusterId) {
+        List<RoomRegion> result = new ArrayList<>();
+        for (RoomRegion room : dungeonMap.rooms().rooms()) {
             if (room != null && room.clusterId() == clusterId) {
                 result.add(room);
             }

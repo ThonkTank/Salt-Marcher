@@ -9,7 +9,7 @@ import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring.AuthoredContent;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 
 public final class DungeonCorridorDeletionOwnerProbe {
     private static final long CORRIDOR_ID = 20L;
@@ -23,7 +23,7 @@ public final class DungeonCorridorDeletionOwnerProbe {
                 new DungeonMapIdentity(80L),
                 "Corridor Replacement Route Rejection");
         base = base.paintRoomRectangle(new Cell(1, 0, 0), new Cell(1, 0, 0));
-        DungeonRoomCluster blocker = base.topology().roomClusters().getFirst();
+        RoomCluster blocker = base.topology().roomClusters().getFirst();
         Corridor corridor = replacementRouteFixture(blocker);
         DungeonMap withCorridor = DungeonMapAuthoring.authored(
                 base.metadata().mapId(),
@@ -46,7 +46,7 @@ public final class DungeonCorridorDeletionOwnerProbe {
                 "corridor deletion owner rejects invalid replacement route before mutation");
     }
 
-    private static Corridor replacementRouteFixture(DungeonRoomCluster blocker) {
+    private static Corridor replacementRouteFixture(RoomCluster blocker) {
         Cell waypoint = new Cell(0, 1, 0);
         Cell relativeWaypoint = new Cell(
                 waypoint.q() - blocker.center().q(),

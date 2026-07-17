@@ -44,7 +44,7 @@ public final class RoomClusterBoundaryMutation {
             return Optional.empty();
         }
         RoomTopologyWorkCatalog.IdAllocation ids = WORK_CATALOG.newIdAllocation(topology, rooms);
-        List<DungeonRoom> rebuiltRooms = edit.partitionEditedRooms(target, ids);
+        List<RoomRegion> rebuiltRooms = edit.partitionEditedRooms(target, ids);
         List<DungeonRoomTopologyClusterWork> nextClusters = new ArrayList<>();
         for (DungeonRoomTopologyClusterWork work : clusters) {
             nextClusters.add(work.cluster().clusterId() == clusterId

@@ -8,8 +8,8 @@ import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.DungeonMap;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomCellCoverage;
 
 final class CorridorRouteValidation {
@@ -76,8 +76,8 @@ final class CorridorRouteValidation {
         }
         RoomCellCoverage coverage = new RoomCellCoverage();
         Set<Cell> result = new LinkedHashSet<>();
-        for (DungeonRoomCluster cluster : dungeonMap.topology().roomClusters()) {
-            List<DungeonRoom> clusterRooms = clusterRooms(dungeonMap, cluster.clusterId());
+        for (RoomCluster cluster : dungeonMap.topology().roomClusters()) {
+            List<RoomRegion> clusterRooms = clusterRooms(dungeonMap, cluster.clusterId());
             for (List<Cell> cells : coverage.cellsByRoom(cluster, clusterRooms).values()) {
                 result.addAll(nonNullCells(cells));
             }
@@ -85,9 +85,9 @@ final class CorridorRouteValidation {
         return Set.copyOf(result);
     }
 
-    private static List<DungeonRoom> clusterRooms(DungeonMap dungeonMap, long clusterId) {
-        List<DungeonRoom> result = new ArrayList<>();
-        for (DungeonRoom room : dungeonMap.rooms().rooms()) {
+    private static List<RoomRegion> clusterRooms(DungeonMap dungeonMap, long clusterId) {
+        List<RoomRegion> result = new ArrayList<>();
+        for (RoomRegion room : dungeonMap.rooms().rooms()) {
             if (room != null && room.clusterId() == clusterId) {
                 result.add(room);
             }

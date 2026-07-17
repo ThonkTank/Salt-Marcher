@@ -6,8 +6,8 @@ import java.util.Set;
 import features.dungeon.domain.core.component.CorridorAnchor;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.DungeonMap;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 
 final class CorridorReplacementRouteValidation {
     private static final CorridorHostRoomCells ROOM_CELLS = new CorridorHostRoomCells();
@@ -45,8 +45,8 @@ final class CorridorReplacementRouteValidation {
 
     record ValidationContext(
             boolean valid,
-            Map<Long, DungeonRoomCluster> clustersById,
-            Map<Long, DungeonRoom> roomsById,
+            Map<Long, RoomCluster> clustersById,
+            Map<Long, RoomRegion> roomsById,
             Map<Long, List<Cell>> roomCellsByRoom,
             Map<CorridorNetwork.AnchorKey, CorridorAnchor> anchorsByKey,
             Set<Cell> allRoomCells

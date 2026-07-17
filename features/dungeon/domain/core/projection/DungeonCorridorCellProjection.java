@@ -9,7 +9,7 @@ import features.dungeon.domain.core.component.CorridorWaypoint;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.corridor.Corridor;
 import features.dungeon.domain.core.structure.corridor.CorridorRoute;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 
 /**
  * Projection boundary for authored corridor route facts supplied by core
@@ -21,7 +21,7 @@ final class DungeonCorridorCellProjection {
 
     List<Cell> corridorCells(
             Corridor corridor,
-            Map<Long, DungeonRoomCluster> clustersById,
+            Map<Long, RoomCluster> clustersById,
             List<DungeonCorridorEndpointResolver.CorridorEndpoint> endpoints,
             Set<Cell> roomCells
     ) {
@@ -56,7 +56,7 @@ final class DungeonCorridorCellProjection {
 
     private static List<Cell> authoredRouteCells(
             List<CorridorWaypoint> waypoints,
-            Map<Long, DungeonRoomCluster> clustersById,
+            Map<Long, RoomCluster> clustersById,
             List<DungeonCorridorEndpointResolver.CorridorEndpoint> endpoints
     ) {
         List<Cell> waypointCells = corridorWaypoints(waypoints, clustersById);
@@ -98,11 +98,11 @@ final class DungeonCorridorCellProjection {
 
     private static List<Cell> corridorWaypoints(
             List<CorridorWaypoint> waypoints,
-            Map<Long, DungeonRoomCluster> clustersById
+            Map<Long, RoomCluster> clustersById
     ) {
         List<Cell> result = new ArrayList<>();
         for (CorridorWaypoint waypoint : waypoints) {
-            DungeonRoomCluster cluster = clustersById.get(waypoint.clusterId());
+            RoomCluster cluster = clustersById.get(waypoint.clusterId());
             Cell center = cluster == null
                     ? new Cell(0, 0, waypoint.level())
                     : cluster.center();

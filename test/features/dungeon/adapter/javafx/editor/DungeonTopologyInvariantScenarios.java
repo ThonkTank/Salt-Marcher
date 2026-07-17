@@ -10,8 +10,8 @@ import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.corridor.DungeonCorridorEndpoint;
 import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import features.dungeon.domain.core.structure.transition.Transition;
 import features.dungeon.domain.core.structure.transition.TransitionAnchor;
@@ -38,7 +38,7 @@ final class DungeonTopologyInvariantScenarios {
     private static void assertDoorTopologyIdentity() {
         DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(70L), "Door Topology Identity");
         map = map.paintRoomRectangle(new Cell(1, 1, 0), new Cell(3, 3, 0));
-        DungeonRoomCluster cluster = clusterContainingAnchor(map, new Cell(1, 1, 0));
+        RoomCluster cluster = clusterContainingAnchor(map, new Cell(1, 1, 0));
         Edge doorEdge = Edge.sideOf(new Cell(3, 2, 0), Direction.EAST);
         DungeonTopologyRef doorRef = DungeonTopologyRef.door(DungeonBoundaryKey.from(doorEdge).stableId());
 
@@ -113,8 +113,8 @@ final class DungeonTopologyInvariantScenarios {
                 clusterContainingAnchor(map, new Cell(8, 1, 0)).clusterId(),
                 rightDoor.cell(),
                 rightDoor.direction());
-        DungeonRoom leftRoom = roomInCluster(map, leftDoor.clusterId());
-        DungeonRoom rightRoom = roomInCluster(map, rightDoor.clusterId());
+        RoomRegion leftRoom = roomInCluster(map, leftDoor.clusterId());
+        RoomRegion rightRoom = roomInCluster(map, rightDoor.clusterId());
         return map.createCorridor(
                 0L,
                 DungeonCorridorEndpoint.door(
@@ -204,8 +204,8 @@ final class DungeonTopologyInvariantScenarios {
         return new DungeonTopologyRef(DungeonTopologyElementKind.TRANSITION, transitionId);
     }
 
-    private static DungeonRoomCluster clusterContainingAnchor(DungeonMap map, Cell cell) {
-        for (DungeonRoom room : map.rooms().rooms()) {
+    private static RoomCluster clusterContainingAnchor(DungeonMap map, Cell cell) {
+        for (RoomRegion room : map.rooms().rooms()) {
             if (room.primaryAnchor().equals(cell)) {
                 return clusterById(map, room.clusterId());
             }
@@ -213,8 +213,8 @@ final class DungeonTopologyInvariantScenarios {
         throw new IllegalStateException("No room cluster contains anchor cell " + cell);
     }
 
-    private static DungeonRoomCluster clusterById(DungeonMap map, long clusterId) {
-        for (DungeonRoomCluster cluster : map.topology().roomClusters()) {
+    private static RoomCluster clusterById(DungeonMap map, long clusterId) {
+        for (RoomCluster cluster : map.topology().roomClusters()) {
             if (cluster.clusterId() == clusterId) {
                 return cluster;
             }
@@ -222,8 +222,8 @@ final class DungeonTopologyInvariantScenarios {
         throw new IllegalStateException("No room cluster found for clusterId=" + clusterId);
     }
 
-    private static DungeonRoom roomInCluster(DungeonMap map, long clusterId) {
-        for (DungeonRoom room : map.rooms().rooms()) {
+    private static RoomRegion roomInCluster(DungeonMap map, long clusterId) {
+        for (RoomRegion room : map.rooms().rooms()) {
             if (room.clusterId() == clusterId) {
                 return room;
             }
@@ -232,7 +232,7 @@ final class DungeonTopologyInvariantScenarios {
     }
 
     private static boolean hasDoorBoundary(DungeonMap map, long clusterId, Edge edge) {
-        DungeonRoomCluster cluster = clusterById(map, clusterId);
+        RoomCluster cluster = clusterById(map, clusterId);
         DungeonClusterBoundary boundary = cluster.boundaryAt(edge);
         return boundary != null && boundary.isDoor();
     }

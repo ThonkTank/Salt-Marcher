@@ -11,19 +11,19 @@ import features.dungeon.domain.core.geometry.Edge;
 
 public final class DungeonRoomBoundaryPartition {
 
-    public List<DungeonRoom> roomsForBoundaryEdit(
+    public List<RoomRegion> roomsForBoundaryEdit(
             DungeonRoomTopologyClusterWork work,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel,
             RoomTopologyWorkCatalog.IdAllocation ids
     ) {
-        List<Room> coreRooms = RoomClusterRoomPartition.roomsForBoundaryEdit(
-                work.toCore(),
+        List<RoomRegion> coreRooms = RoomClusterRoomPartition.roomsForBoundaryEdit(
+                work.partitionWork(),
                 closedBoundaryEdgesByLevel(DungeonBoundaryRehoming.flatten(boundariesByLevel), work.cluster().center()),
                 ids.nextRoomId());
         return authoredRooms(coreRooms, work);
     }
 
-    public List<DungeonRoom> roomsForMutation(
+    public List<RoomRegion> roomsForMutation(
             DungeonRoomTopologyClusterWork work,
             Map<Integer, List<Cell>> nextCellsByLevel,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel,
@@ -31,9 +31,9 @@ public final class DungeonRoomBoundaryPartition {
             Map<Long, List<Cell>> previousCellsByRoom
     ) {
         RoomClusterWork coreWork = new RoomClusterWork(
-                work.cluster().toCore(nextCellsByLevel),
+                work.cluster().geometry(nextCellsByLevel),
                 coreRooms(work.rooms(), work.cluster().clusterId()));
-        List<Room> coreRooms = RoomClusterRoomPartition.roomsForMutation(
+        List<RoomRegion> coreRooms = RoomClusterRoomPartition.roomsForMutation(
                 coreWork,
                 closedBoundaryEdgesByLevel(DungeonBoundaryRehoming.flatten(boundariesByLevel), work.cluster().center()),
                 nextRoomId,
@@ -59,19 +59,19 @@ public final class DungeonRoomBoundaryPartition {
         return Collections.unmodifiableMap(result);
     }
 
-    private static List<DungeonRoom> authoredRooms(
-            List<Room> coreRooms,
+    private static List<RoomRegion> authoredRooms(
+            List<RoomRegion> coreRooms,
             DungeonRoomTopologyClusterWork previous
     ) {
-        List<DungeonRoom> result = new ArrayList<>();
-        for (Room room : coreRooms == null ? List.<Room>of() : coreRooms) {
-            result.add(DungeonRoom.fromCore(room, narrationFor(previous, room.roomId())));
+        List<RoomRegion> result = new ArrayList<>();
+        for (RoomRegion room : coreRooms == null ? List.<RoomRegion>of() : coreRooms) {
+            result.add(room.withNarration(narrationFor(previous, room.roomId())));
         }
         return List.copyOf(result);
     }
 
     private static DungeonRoomNarration narrationFor(DungeonRoomTopologyClusterWork previous, long roomId) {
-        for (DungeonRoom room : previous.rooms()) {
+        for (RoomRegion room : previous.rooms()) {
             if (room != null && room.roomId() == roomId) {
                 return room.narration();
             }
@@ -79,17 +79,17 @@ public final class DungeonRoomBoundaryPartition {
         return DungeonRoomNarration.empty();
     }
 
-    private static List<Room> coreRooms(List<DungeonRoom> rooms, long clusterId) {
-        List<Room> result = new ArrayList<>();
-        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
+    private static List<RoomRegion> coreRooms(List<RoomRegion> rooms, long clusterId) {
+        List<RoomRegion> result = new ArrayList<>();
+        for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
             if (room != null) {
-                Room coreRoom = room.toCore();
-                result.add(new Room(
-                        coreRoom.roomId(),
-                        coreRoom.mapId(),
+                result.add(new RoomRegion(
+                        room.roomId(),
+                        room.mapId(),
                         clusterId,
-                        coreRoom.name(),
-                        coreRoom.floorAnchors()));
+                        room.name(),
+                        room.floorCells(),
+                        room.narration()));
             }
         }
         return List.copyOf(result);

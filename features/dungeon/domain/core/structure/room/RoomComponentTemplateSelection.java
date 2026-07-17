@@ -12,14 +12,14 @@ final class RoomComponentTemplateSelection {
     private RoomComponentTemplateSelection() {
     }
 
-    static Optional<Room> templateFor(
-            List<Room> rooms,
+    static Optional<RoomRegion> templateFor(
+            List<RoomRegion> rooms,
             Map<Long, Set<Cell>> previousCellSetsByRoom,
             RoomClusterRoomComponents.RoomComponent component,
             Set<Long> usedRoomIds
     ) {
         List<Candidate> candidates = new ArrayList<>();
-        for (Room room : rooms == null ? List.<Room>of() : rooms) {
+        for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
             if (room != null && !usedRoomIds.contains(room.roomId())) {
                 Candidate candidate = candidate(room, previousCellSetsByRoom, component);
                 if (candidate.represented()) {
@@ -34,7 +34,7 @@ final class RoomComponentTemplateSelection {
     }
 
     private static Candidate candidate(
-            Room room,
+            RoomRegion room,
             Map<Long, Set<Cell>> previousCellSetsByRoom,
             RoomClusterRoomComponents.RoomComponent component
     ) {
@@ -61,12 +61,16 @@ final class RoomComponentTemplateSelection {
         if (left.anchorMatch != right.anchorMatch) {
             return left.anchorMatch ? -1 : 1;
         }
+        int stableIdentity = Long.compare(left.room().roomId(), right.room().roomId());
+        if (stableIdentity != 0) {
+            return stableIdentity;
+        }
         int overlap = Integer.compare(right.overlap, left.overlap);
-        return overlap != 0 ? overlap : Long.compare(left.room().roomId(), right.room().roomId());
+        return overlap;
     }
 
     private record Candidate(
-            Room room,
+            RoomRegion room,
             boolean anchorMatch,
             int overlap
     ) {

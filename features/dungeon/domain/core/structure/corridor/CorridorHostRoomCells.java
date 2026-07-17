@@ -8,8 +8,8 @@ import java.util.Map;
 import java.util.Set;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.DungeonMap;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomCellCoverage;
 
 final class CorridorHostRoomCells {
@@ -17,15 +17,15 @@ final class CorridorHostRoomCells {
     Map<Long, List<Cell>> roomCellsByRoom(DungeonMap dungeonMap) {
         RoomCellCoverage coverage = new RoomCellCoverage();
         Map<Long, List<Cell>> result = new LinkedHashMap<>();
-        for (DungeonRoomCluster cluster : dungeonMap.topology().roomClusters()) {
+        for (RoomCluster cluster : dungeonMap.topology().roomClusters()) {
             result.putAll(coverage.cellsByRoom(cluster, clusterRooms(dungeonMap, cluster.clusterId())));
         }
         return Map.copyOf(result);
     }
 
-    Map<Long, DungeonRoom> roomsById(DungeonMap dungeonMap) {
-        Map<Long, DungeonRoom> result = new LinkedHashMap<>();
-        for (DungeonRoom room : dungeonMap.rooms().rooms()) {
+    Map<Long, RoomRegion> roomsById(DungeonMap dungeonMap) {
+        Map<Long, RoomRegion> result = new LinkedHashMap<>();
+        for (RoomRegion room : dungeonMap.rooms().rooms()) {
             if (room != null) {
                 result.put(room.roomId(), room);
             }
@@ -33,9 +33,9 @@ final class CorridorHostRoomCells {
         return Map.copyOf(result);
     }
 
-    Map<Long, DungeonRoomCluster> clustersById(DungeonMap dungeonMap) {
-        Map<Long, DungeonRoomCluster> result = new LinkedHashMap<>();
-        for (DungeonRoomCluster cluster : dungeonMap.topology().roomClusters()) {
+    Map<Long, RoomCluster> clustersById(DungeonMap dungeonMap) {
+        Map<Long, RoomCluster> result = new LinkedHashMap<>();
+        for (RoomCluster cluster : dungeonMap.topology().roomClusters()) {
             if (cluster != null) {
                 result.put(cluster.clusterId(), cluster);
             }
@@ -51,9 +51,9 @@ final class CorridorHostRoomCells {
         return Set.copyOf(result);
     }
 
-    private static List<DungeonRoom> clusterRooms(DungeonMap dungeonMap, long clusterId) {
-        List<DungeonRoom> result = new ArrayList<>();
-        for (DungeonRoom room : dungeonMap.rooms().rooms()) {
+    private static List<RoomRegion> clusterRooms(DungeonMap dungeonMap, long clusterId) {
+        List<RoomRegion> result = new ArrayList<>();
+        for (RoomRegion room : dungeonMap.rooms().rooms()) {
             if (room != null && room.clusterId() == clusterId) {
                 result.add(room);
             }

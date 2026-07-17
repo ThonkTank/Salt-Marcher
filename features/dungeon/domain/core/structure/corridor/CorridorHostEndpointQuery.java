@@ -11,8 +11,8 @@ import features.dungeon.domain.core.component.CorridorAnchor;
 import features.dungeon.domain.core.component.CorridorAnchorRef;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 
 final class CorridorHostEndpointQuery {
     private static final long NO_ROOM_ID = 0L;
@@ -22,8 +22,8 @@ final class CorridorHostEndpointQuery {
 
     List<CorridorHostEndpoint> endpoints(
             Corridor corridor,
-            Map<Long, DungeonRoomCluster> clustersById,
-            Map<Long, DungeonRoom> roomsById,
+            Map<Long, RoomCluster> clustersById,
+            Map<Long, RoomRegion> roomsById,
             Map<Long, List<Cell>> roomCellsByRoom,
             Map<CorridorNetwork.AnchorKey, CorridorAnchor> anchorsByKey
     ) {
@@ -50,8 +50,8 @@ final class CorridorHostEndpointQuery {
     private static void appendRoomEndpoints(
             List<CorridorHostEndpoint> result,
             Corridor corridor,
-            Map<Long, DungeonRoomCluster> clustersById,
-            Map<Long, DungeonRoom> roomsById,
+            Map<Long, RoomCluster> clustersById,
+            Map<Long, RoomRegion> roomsById,
             Map<Long, List<Cell>> roomCellsByRoom
     ) {
         Map<Long, CorridorDoorBindingState> bindingsByRoom =
@@ -70,13 +70,13 @@ final class CorridorHostEndpointQuery {
     private static @Nullable CorridorHostEndpoint boundEndpoint(
             Long roomId,
             Map<Long, CorridorDoorBindingState> bindingsByRoom,
-            Map<Long, DungeonRoomCluster> clustersById
+            Map<Long, RoomCluster> clustersById
     ) {
         CorridorDoorBindingState binding = bindingsByRoom.get(roomId);
         if (binding == null) {
             return null;
         }
-        DungeonRoomCluster cluster = clustersById.get(binding.clusterId());
+        RoomCluster cluster = clustersById.get(binding.clusterId());
         if (cluster == null) {
             return null;
         }
@@ -90,10 +90,10 @@ final class CorridorHostEndpointQuery {
     private static @Nullable CorridorHostEndpoint derivedEndpoint(
             Corridor corridor,
             Long roomId,
-            Map<Long, DungeonRoom> roomsById,
+            Map<Long, RoomRegion> roomsById,
             Map<Long, List<Cell>> roomCellsByRoom
     ) {
-        DungeonRoom room = roomsById.get(roomId);
+        RoomRegion room = roomsById.get(roomId);
         if (room == null) {
             return null;
         }

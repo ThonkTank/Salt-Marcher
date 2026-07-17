@@ -13,8 +13,8 @@ import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.graph.DungeonRelationGraph;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 
 /**
@@ -32,18 +32,18 @@ final class DungeonRoomBoundaryProjectionState {
     private final Map<DungeonBoundaryKey, Long> boundaryIdsByKey = new LinkedHashMap<>();
     private long nextBoundaryId = 1_000L;
 
-    void addAuthoredBoundaries(DungeonRoomCluster cluster, Map<Long, List<Cell>> roomCells) {
+    void addAuthoredBoundaries(RoomCluster cluster, Map<Long, List<Cell>> roomCells) {
         for (DungeonClusterBoundary boundary : cluster.orderedAuthoredBoundaries()) {
             addBoundary(cluster, boundary, roomCells);
         }
     }
 
     void addPerimeterBoundaries(
-            DungeonRoomCluster cluster,
-            List<DungeonRoom> clusterRooms,
+            RoomCluster cluster,
+            List<RoomRegion> clusterRooms,
             Map<Long, List<Cell>> roomCells
     ) {
-        for (DungeonRoom room : clusterRooms) {
+        for (RoomRegion room : clusterRooms) {
             for (Cell cell : roomCells.getOrDefault(room.roomId(), List.of())) {
                 addCellPerimeter(cluster, roomCells, cell);
             }
@@ -60,7 +60,7 @@ final class DungeonRoomBoundaryProjectionState {
     }
 
     private void addCellPerimeter(
-            DungeonRoomCluster cluster,
+            RoomCluster cluster,
             Map<Long, List<Cell>> roomCells,
             Cell cell
     ) {
@@ -74,7 +74,7 @@ final class DungeonRoomBoundaryProjectionState {
     }
 
     private static DungeonClusterBoundary perimeterBoundary(
-            DungeonRoomCluster cluster,
+            RoomCluster cluster,
             Cell cell,
             Direction direction
     ) {
@@ -90,7 +90,7 @@ final class DungeonRoomBoundaryProjectionState {
     }
 
     private void addBoundary(
-            DungeonRoomCluster cluster,
+            RoomCluster cluster,
             DungeonClusterBoundary boundary,
             Map<Long, List<Cell>> roomCells
     ) {

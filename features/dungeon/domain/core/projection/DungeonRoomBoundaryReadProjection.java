@@ -5,8 +5,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import features.dungeon.domain.core.geometry.Cell;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomCellCoverage;
 import features.dungeon.domain.core.structure.topology.SpatialTopology;
 
@@ -14,18 +14,18 @@ public final class DungeonRoomBoundaryReadProjection {
 
     private final RoomCellCoverage roomCellCoverage = new RoomCellCoverage();
 
-    public DungeonRoomBoundaryProjection project(List<DungeonRoom> authoredRooms, SpatialTopology topology) {
-        List<DungeonRoom> safeRooms = authoredRooms == null ? List.of() : authoredRooms;
+    public DungeonRoomBoundaryProjection project(List<RoomRegion> authoredRooms, SpatialTopology topology) {
+        List<RoomRegion> safeRooms = authoredRooms == null ? List.of() : authoredRooms;
         SpatialTopology safeTopology = topology == null ? SpatialTopology.empty() : topology;
-        Map<Long, DungeonRoom> roomsById = roomsById(safeRooms);
-        Map<Long, List<DungeonRoom>> roomsByCluster = indexRoomsByCluster(safeRooms);
-        Map<Long, DungeonRoomCluster> clustersById = clustersById(safeTopology.roomClusters());
+        Map<Long, RoomRegion> roomsById = roomsById(safeRooms);
+        Map<Long, List<RoomRegion>> roomsByCluster = indexRoomsByCluster(safeRooms);
+        Map<Long, RoomCluster> clustersById = clustersById(safeTopology.roomClusters());
         List<DungeonState> aggregates = new ArrayList<>();
         List<DungeonAreaFacts> areas = new ArrayList<>();
         Map<Long, List<Cell>> allRoomCells = new LinkedHashMap<>();
         DungeonRoomBoundaryProjectionState state = new DungeonRoomBoundaryProjectionState();
-        for (DungeonRoomCluster cluster : safeTopology.roomClusters()) {
-            List<DungeonRoom> clusterRooms = roomsByCluster.getOrDefault(cluster.clusterId(), List.of());
+        for (RoomCluster cluster : safeTopology.roomClusters()) {
+            List<RoomRegion> clusterRooms = roomsByCluster.getOrDefault(cluster.clusterId(), List.of());
             Map<Long, List<Cell>> roomCells = roomCellCoverage.cellsByRoom(cluster, clusterRooms);
             allRoomCells.putAll(roomCells);
             DungeonRoomAggregateProjection.addRoomAggregates(aggregates, areas, cluster.clusterId(), clusterRooms, roomCells);
@@ -46,9 +46,9 @@ public final class DungeonRoomBoundaryReadProjection {
                 boundaryProjection.nextBoundaryId());
     }
 
-    private static Map<Long, List<DungeonRoom>> indexRoomsByCluster(List<DungeonRoom> rooms) {
-        Map<Long, List<DungeonRoom>> result = new LinkedHashMap<>();
-        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
+    private static Map<Long, List<RoomRegion>> indexRoomsByCluster(List<RoomRegion> rooms) {
+        Map<Long, List<RoomRegion>> result = new LinkedHashMap<>();
+        for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
             if (room != null) {
                 result.computeIfAbsent(room.clusterId(), unused -> new ArrayList<>()).add(room);
             }
@@ -56,17 +56,17 @@ public final class DungeonRoomBoundaryReadProjection {
         return Map.copyOf(result);
     }
 
-    private static Map<Long, DungeonRoom> roomsById(List<DungeonRoom> rooms) {
-        Map<Long, DungeonRoom> result = new LinkedHashMap<>();
-        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
+    private static Map<Long, RoomRegion> roomsById(List<RoomRegion> rooms) {
+        Map<Long, RoomRegion> result = new LinkedHashMap<>();
+        for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
             result.put(room.roomId(), room);
         }
         return Map.copyOf(result);
     }
 
-    private static Map<Long, DungeonRoomCluster> clustersById(List<DungeonRoomCluster> clusters) {
-        Map<Long, DungeonRoomCluster> result = new LinkedHashMap<>();
-        for (DungeonRoomCluster cluster : clusters == null ? List.<DungeonRoomCluster>of() : clusters) {
+    private static Map<Long, RoomCluster> clustersById(List<RoomCluster> clusters) {
+        Map<Long, RoomCluster> result = new LinkedHashMap<>();
+        for (RoomCluster cluster : clusters == null ? List.<RoomCluster>of() : clusters) {
             result.put(cluster.clusterId(), cluster);
         }
         return Map.copyOf(result);

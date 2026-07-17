@@ -28,8 +28,8 @@ import features.dungeon.domain.core.structure.corridor.CorridorRoomSet;
 import features.dungeon.domain.core.structure.corridor.CorridorRoutePlan;
 import features.dungeon.domain.core.structure.door.DoorBoundaryMaterialization;
 import features.dungeon.domain.core.structure.room.BoundaryStretchOrientation;
-import features.dungeon.domain.core.structure.room.Room;
-import features.dungeon.domain.core.structure.room.RoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomClusterGeometry;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryOrdering;
@@ -549,15 +549,15 @@ final class DungeonStructureInvariantScenarios {
         Cell middle = new Cell(1, 0, 0);
         Cell right = new Cell(2, 0, 0);
         Edge split = Edge.sideOf(left, Direction.EAST);
-        RoomCluster cluster = new RoomCluster(
+        RoomClusterGeometry cluster = new RoomClusterGeometry(
                 9L,
                 2L,
                 left,
                 new RoomClusterFloorMap(Map.of(0, List.of(left, middle, right))));
-        Room existingRoom = new Room(7L, 2L, 9L, "Bestand", Map.of(0, left));
+        RoomRegion existingRoom = new RoomRegion(7L, 2L, 9L, "Bestand", Map.of(0, left));
         RoomClusterWork work = new RoomClusterWork(cluster, List.of(existingRoom));
 
-        List<Room> rooms = RoomClusterRoomPartition.roomsForBoundaryEdit(
+        List<RoomRegion> rooms = RoomClusterRoomPartition.roomsForBoundaryEdit(
                 work,
                 Map.of(0, List.of(split)),
                 20L);
@@ -737,9 +737,9 @@ final class DungeonStructureInvariantScenarios {
                 "core room stretch rejects movement outside the boundary normal");
     }
 
-    private static List<Long> roomIds(List<Room> rooms) {
+    private static List<Long> roomIds(List<RoomRegion> rooms) {
         List<Long> result = new java.util.ArrayList<>();
-        for (Room room : rooms) {
+        for (RoomRegion room : rooms) {
             result.add(room.roomId());
         }
         return List.copyOf(result);

@@ -30,7 +30,10 @@ public final class DungeonMapRecordMapper {
                 : record;
         DungeonGridBoundsRecord gridBounds = resolvedRecord.gridBounds();
         var clusters = DungeonClusterRecordMapperSupport.toClusters(resolvedRecord.roomClusters());
-        RoomCatalog rooms = new RoomCatalog(DungeonRoomRecordMapperSupport.toRooms(resolvedRecord.rooms()));
+        var roomSeeds = DungeonRoomRecordMapperSupport.toRooms(resolvedRecord.rooms());
+        RoomCatalog rooms = new RoomCatalog(
+                DungeonRoomRecordMapperSupport.assignLegacyClusterFloorCells(
+                        roomSeeds, clusters, resolvedRecord.roomClusters()));
         List<Corridor> corridors =
                 DungeonCorridorConnectionReadMapperSupport.toCorridors(resolvedRecord.corridors());
         StairCollection stairs = DungeonStairRecordMapperSupport.toStairs(resolvedRecord.stairs());
