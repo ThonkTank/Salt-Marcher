@@ -24,6 +24,7 @@ import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.api.editor.DungeonEditorApi;
 import features.dungeon.api.editor.DungeonEditorIntent;
 import features.dungeon.api.editor.DungeonEditorState;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
 import features.party.PartyServiceAssembly;
 import features.party.domain.roster.PartyRoster;
 import features.party.domain.roster.repository.PartyRosterRepository;
@@ -61,6 +62,8 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
         assertEquals(current.preview(), published.preview());
         assertEquals(current.inspector(), published.inspector());
         assertEquals(current.commandStatus(), published.commandStatus());
+        assertEquals(DungeonEditorToolFamily.SELECT, published.toolSelection().family());
+        assertEquals("SELECT", published.toolSelection().optionKey());
     }
 
     @Test

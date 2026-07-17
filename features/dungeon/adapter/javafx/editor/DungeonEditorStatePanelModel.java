@@ -9,13 +9,8 @@ import org.jspecify.annotations.Nullable;
 import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonInspectorSnapshot;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts;
-import features.dungeon.application.editor.DungeonEditorStatePanelCorridorPointDrafts;
-import features.dungeon.application.editor.DungeonEditorStatePanelLabelNameDrafts;
-import features.dungeon.application.editor.DungeonEditorStatePanelRoomNarrationDrafts;
-import features.dungeon.application.editor.DungeonEditorStatePanelStairGeometryDrafts;
-import features.dungeon.application.editor.DungeonEditorStatePanelTransitionDescriptionDrafts;
-import features.dungeon.application.editor.DungeonEditorStatePanelTransitionDestinationDrafts;
+import features.dungeon.api.editor.DungeonEditorDraftState;
+import features.dungeon.api.editor.DungeonEditorState;
 
 final class DungeonEditorStatePanelModel {
     private final ReadOnlyObjectWrapper<StateProjection> stateProjection =
@@ -33,27 +28,26 @@ final class DungeonEditorStatePanelModel {
         return stateProjection.getReadOnlyProperty();
     }
 
-    void apply(DungeonEditorPreparedFrameFacts.StatePanelFrame frame) {
-        DungeonEditorPreparedFrameFacts.StatePanelFrame safeFrame = frame == null
-                ? DungeonEditorPreparedFrameFacts.StatePanelFrame.empty()
-                : frame;
+    void apply(DungeonEditorState state) {
+        DungeonEditorState safeState = state == null ? DungeonEditorState.empty() : state;
+        DungeonEditorDraftState draft = safeState.draft();
         List<RoomNarrationCardProjection> narrationCards = narrationContent.narrationCards(
-                safeFrame.inspector(),
-                safeFrame.roomNarrationDrafts());
+                safeState.inspector(),
+                draft.roomNarrations());
         stateProjection.set(new StateProjection(
-                selectionPreviewContent.stateTextFor(safeFrame),
-                safeFrame.statusText(),
-                safeFrame.busy(),
+                selectionPreviewContent.stateTextFor(safeState),
+                safeState.commandStatus().message(),
+                safeState.commandStatus().busy(),
                 narrationContent.renderStructureKey(
                         narrationCards,
-                        safeFrame.busy(),
-                        safeFrame.statusText()),
+                        safeState.commandStatus().busy(),
+                        safeState.commandStatus().message()),
                 narrationCards,
-                nameProjection(safeFrame),
-                corridorPointProjection(safeFrame),
-                transitionContent.transitionDestinationProjection(safeFrame),
-                transitionContent.transitionDescriptionProjection(safeFrame),
-                stairGeometryContent.stairGeometryProjection(safeFrame)));
+                nameProjection(safeState),
+                corridorPointProjection(safeState),
+                transitionContent.transitionDestinationProjection(safeState),
+                transitionContent.transitionDescriptionProjection(safeState),
+                stairGeometryContent.stairGeometryProjection(safeState)));
     }
 
     @Nullable RoomNarrationCardProjection currentNarrationCard(long roomId) {
@@ -72,15 +66,13 @@ final class DungeonEditorStatePanelModel {
         return TransitionPanel.transitionDestinationTypeKey(optionIndex);
     }
 
-    private static @Nullable NameProjection nameProjection(DungeonEditorPreparedFrameFacts.StatePanelFrame frame) {
-        DungeonEditorPreparedFrameFacts.StatePanelFrame safeFrame = frame == null
-                ? DungeonEditorPreparedFrameFacts.StatePanelFrame.empty()
-                : frame;
-        DungeonEditorStatePanelLabelNameDrafts.Draft target = safeFrame.labelNameDraft();
-        if (!target.targetPresent()) {
+    private static @Nullable NameProjection nameProjection(DungeonEditorState state) {
+        DungeonEditorState safeState = state == null ? DungeonEditorState.empty() : state;
+        DungeonEditorDraftState.LabelNameDraft target = safeState.draft().labelName();
+        if (!target.present() && target.targetId() <= 0L) {
             return null;
         }
-        DungeonInspectorSnapshot inspector = safeFrame.inspector();
+        DungeonInspectorSnapshot inspector = safeState.inspector();
         String fallbackName = target.fallbackName();
         String currentName = inspector == null || inspector.title().isBlank() ? fallbackName : inspector.title();
         String draft = target.present()
@@ -92,26 +84,22 @@ final class DungeonEditorStatePanelModel {
                 draft);
     }
 
-    private static LabelNameTarget labelNameTarget(
-            DungeonEditorStatePanelLabelNameDrafts.Draft target
-    ) {
-        if (target == null || !target.targetPresent()) {
+    private static LabelNameTarget labelNameTarget(DungeonEditorDraftState.LabelNameDraft target) {
+        if (target == null || target.targetId() <= 0L) {
             return LabelNameTarget.empty();
         }
-        return switch (target.target().kind()) {
-            case ROOM -> LabelNameTarget.room(target.target().id());
-            case CLUSTER -> LabelNameTarget.cluster(target.target().id());
-            case EMPTY -> LabelNameTarget.empty();
+        return switch (target.targetKind()) {
+            case "ROOM" -> LabelNameTarget.room(target.targetId());
+            case "CLUSTER" -> LabelNameTarget.cluster(target.targetId());
+            default -> LabelNameTarget.empty();
         };
     }
 
     private static @Nullable CorridorPointProjection corridorPointProjection(
-            DungeonEditorPreparedFrameFacts.StatePanelFrame frame
+            DungeonEditorState state
     ) {
-        DungeonEditorPreparedFrameFacts.StatePanelFrame safeFrame = frame == null
-                ? DungeonEditorPreparedFrameFacts.StatePanelFrame.empty()
-                : frame;
-        DungeonEditorStatePanelCorridorPointDrafts.Draft draft = safeFrame.corridorPointDraft();
+        DungeonEditorState safeState = state == null ? DungeonEditorState.empty() : state;
+        DungeonEditorDraftState.CorridorPointDraft draft = safeState.draft().corridorPoint();
         if (!draft.targetPresent()) {
             return null;
         }
@@ -339,14 +327,14 @@ final class DungeonEditorStatePanelModel {
 
     List<DungeonEditorStatePanelModel.RoomNarrationCardProjection> narrationCards(
             @Nullable DungeonInspectorSnapshot inspector,
-            DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts narrationDrafts
+            List<DungeonEditorDraftState.RoomNarrationDraft> narrationDrafts
     ) {
-        DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts safeDrafts = narrationDrafts == null
-                ? DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts.empty()
-                : narrationDrafts;
-        Map<Long, DungeonEditorStatePanelRoomNarrationDrafts.RoomDraft> roomDrafts = safeDrafts.rooms().stream()
+        List<DungeonEditorDraftState.RoomNarrationDraft> safeDrafts = narrationDrafts == null
+                ? List.of()
+                : List.copyOf(narrationDrafts);
+        Map<Long, DungeonEditorDraftState.RoomNarrationDraft> roomDrafts = safeDrafts.stream()
                 .collect(java.util.stream.Collectors.toMap(
-                        DungeonEditorStatePanelRoomNarrationDrafts.RoomDraft::roomId,
+                        DungeonEditorDraftState.RoomNarrationDraft::roomId,
                         draft -> draft,
                         (first, second) -> second));
         if (inspector == null) {
@@ -400,9 +388,9 @@ final class DungeonEditorStatePanelModel {
 
     private static DungeonEditorStatePanelModel.RoomNarrationCardProjection narrationCard(
             DungeonInspectorSnapshot.RoomNarrationCard card,
-            DungeonEditorStatePanelRoomNarrationDrafts.RoomDraft roomDraft
+            DungeonEditorDraftState.RoomNarrationDraft roomDraft
     ) {
-        Map<RoomExitKey, DungeonEditorStatePanelRoomNarrationDrafts.ExitDraft> exitDrafts = roomDraft == null
+        Map<RoomExitKey, DungeonEditorDraftState.ExitNarrationDraft> exitDrafts = roomDraft == null
                 ? Map.of()
                 : roomDraft.exits().stream()
                 .collect(java.util.stream.Collectors.toMap(
@@ -422,7 +410,7 @@ final class DungeonEditorStatePanelModel {
 
     private static DungeonEditorStatePanelModel.RoomExitNarrationProjection narrationExit(
             DungeonInspectorSnapshot.RoomExitNarration exit,
-            DungeonEditorStatePanelRoomNarrationDrafts.ExitDraft exitDraft
+            DungeonEditorDraftState.ExitNarrationDraft exitDraft
     ) {
         return new DungeonEditorStatePanelModel.RoomExitNarrationProjection(
                 exit.label(),
@@ -459,9 +447,9 @@ final class DungeonEditorStatePanelModel {
                     exit.direction());
         }
 
-        static RoomExitKey from(DungeonEditorStatePanelRoomNarrationDrafts.ExitDraft exit) {
-            DungeonEditorStatePanelRoomNarrationDrafts.ExitDraft safeExit = exit == null
-                    ? new DungeonEditorStatePanelRoomNarrationDrafts.ExitDraft("", 0, 0, 0, "", "", false)
+        static RoomExitKey from(DungeonEditorDraftState.ExitNarrationDraft exit) {
+            DungeonEditorDraftState.ExitNarrationDraft safeExit = exit == null
+                    ? new DungeonEditorDraftState.ExitNarrationDraft("", 0, 0, 0, "", "", false)
                     : exit;
             return new RoomExitKey(
                     safeExit.label(),
@@ -475,16 +463,15 @@ final class DungeonEditorStatePanelModel {
 
     private static final class SelectionPreviewPanel {
 
-    String stateTextFor(DungeonEditorPreparedFrameFacts.StatePanelFrame frame) {
-        DungeonEditorPreparedFrameFacts.StatePanelFrame safeFrame = frame == null
-                ? DungeonEditorPreparedFrameFacts.StatePanelFrame.empty()
-                : frame;
-        return "Werkzeug: " + safeFrame.selectedToolLabel()
-                + "\nAnsicht: " + normalizeViewModeKey(safeFrame.viewModeLabel())
-                + "\nEbene: z=" + safeFrame.projectionLevel()
-                + "\n" + safeFrame.overlayLabel()
-                + "\n" + selectionTextFor(SelectionData.from(safeFrame.selectionTopologyRef()), safeFrame.inspector())
-                + "\n" + previewTextFor(safeFrame.preview());
+    String stateTextFor(DungeonEditorState state) {
+        DungeonEditorState safeState = state == null ? DungeonEditorState.empty() : state;
+        return "Werkzeug: " + DungeonEditorControlsPanelModel.labelOf(safeState.selectedTool())
+                + "\nAnsicht: " + normalizeViewModeKey(safeState.viewMode().name())
+                + "\nEbene: z=" + safeState.projectionLevel()
+                + "\nOverlay: " + safeState.overlaySettings().modeKey()
+                + "\n" + selectionTextFor(
+                        SelectionData.from(safeState.selection().topologyRef()), safeState.inspector())
+                + "\n" + previewTextFor(safeState.preview());
     }
 
     private static String selectionTextFor(
@@ -572,15 +559,13 @@ final class DungeonEditorStatePanelModel {
 
     private static final class StairGeometryPanel {
     DungeonEditorStatePanelModel.@Nullable StairGeometryProjection stairGeometryProjection(
-            DungeonEditorPreparedFrameFacts.StatePanelFrame frame
+            DungeonEditorState state
     ) {
-        DungeonEditorPreparedFrameFacts.StatePanelFrame safeFrame = frame == null
-                ? DungeonEditorPreparedFrameFacts.StatePanelFrame.empty()
-                : frame;
-        DungeonTopologyElementRef topologyRef = safeFrame.selectionTopologyRef() == null
+        DungeonEditorState safeState = state == null ? DungeonEditorState.empty() : state;
+        DungeonTopologyElementRef topologyRef = safeState.selection().topologyRef() == null
                 ? DungeonTopologyElementRef.empty()
-                : safeFrame.selectionTopologyRef();
-        DungeonInspectorSnapshot inspector = safeFrame.inspector();
+                : safeState.selection().topologyRef();
+        DungeonInspectorSnapshot inspector = safeState.inspector();
         long stairId = selectedStairId(topologyRef);
         if (stairId <= 0L || inspector == null) {
             return null;
@@ -589,7 +574,7 @@ final class DungeonEditorStatePanelModel {
         if (facts == null) {
             return null;
         }
-        StairGeometryFacts draft = currentStairGeometryFacts(safeFrame.stairGeometryDraft(), stairId, facts);
+        StairGeometryFacts draft = currentStairGeometryFacts(safeState.draft().stairGeometry(), stairId, facts);
         String label = inspector.title().isBlank() ? "Treppe " + stairId : inspector.title();
         return new DungeonEditorStatePanelModel.StairGeometryProjection(
                 stairId,
@@ -610,25 +595,25 @@ final class DungeonEditorStatePanelModel {
     }
 
     private static StairGeometryFacts currentStairGeometryFacts(
-            DungeonEditorStatePanelStairGeometryDrafts.Draft runtimeDraft,
+            DungeonEditorDraftState.StairGeometryDraft runtimeDraft,
             long stairId,
             StairGeometryFacts fallback
     ) {
-        DungeonEditorStatePanelStairGeometryDrafts.Draft safeDraft = runtimeDraft == null
-                ? DungeonEditorStatePanelStairGeometryDrafts.Draft.empty()
+        DungeonEditorDraftState.StairGeometryDraft safeDraft = runtimeDraft == null
+                ? DungeonEditorDraftState.StairGeometryDraft.empty()
                 : runtimeDraft;
         if (!runtimeStairDraftMatches(safeDraft, stairId)) {
             return fallback;
         }
         return new StairGeometryFacts(
-                safeDraft.shapeName(),
-                safeDraft.directionName(),
+                safeDraft.shape(),
+                safeDraft.direction(),
                 safeDraft.dimension1(),
                 safeDraft.dimension2());
     }
 
     private static boolean runtimeStairDraftMatches(
-            DungeonEditorStatePanelStairGeometryDrafts.Draft runtimeDraft,
+            DungeonEditorDraftState.StairGeometryDraft runtimeDraft,
             long stairId
     ) {
         return runtimeDraft.present() && runtimeDraft.targetPresent() && runtimeDraft.stairId() == stairId;
@@ -676,14 +661,14 @@ final class DungeonEditorStatePanelModel {
             new DestinationTypeOption(DESTINATION_DUNGEON_MAP, "Dungeon-Eingang"));
 
     DungeonEditorStatePanelModel.@Nullable TransitionDescriptionProjection transitionDescriptionProjection(
-            DungeonEditorPreparedFrameFacts.StatePanelFrame frame
+            DungeonEditorState state
     ) {
-        DungeonEditorPreparedFrameFacts.StatePanelFrame safeFrame = safeFrame(frame);
-        DungeonTopologyElementRef topologyRef = safeTopologyRef(safeFrame.selectionTopologyRef());
-        DungeonInspectorSnapshot inspector = safeFrame.inspector();
-        DungeonEditorStatePanelTransitionDescriptionDrafts.Draft runtimeDraft =
-                safeTransitionDescriptionDraft(safeFrame.transitionDescriptionDraft());
-        if (!runtimeDraft.targetPresent()
+        DungeonEditorState safeState = safeState(state);
+        DungeonTopologyElementRef topologyRef = safeTopologyRef(safeState.selection().topologyRef());
+        DungeonInspectorSnapshot inspector = safeState.inspector();
+        DungeonEditorDraftState.TransitionDescriptionDraft runtimeDraft =
+                safeTransitionDescriptionDraft(safeState.draft().transitionDescription());
+        if (runtimeDraft.transitionId() <= NO_TRANSITION_ID
                 || topologyRef.kind() != features.dungeon.api.DungeonTopologyElementKind.TRANSITION
                 || topologyRef.id() != runtimeDraft.transitionId()) {
             return null;
@@ -702,23 +687,24 @@ final class DungeonEditorStatePanelModel {
     }
 
     DungeonEditorStatePanelModel.@Nullable TransitionDestinationProjection transitionDestinationProjection(
-            DungeonEditorPreparedFrameFacts.StatePanelFrame frame
+            DungeonEditorState state
     ) {
-        DungeonEditorPreparedFrameFacts.StatePanelFrame safeFrame = safeFrame(frame);
-        if (safeFrame.selectedMapIdValue() <= NO_SELECTED_MAP_ID) {
+        DungeonEditorState safeState = safeState(state);
+        if (safeState.selectedMapId() == null || safeState.selectedMapId().value() <= NO_SELECTED_MAP_ID) {
             return null;
         }
-        DungeonTopologyElementRef topologyRef = safeTopologyRef(safeFrame.selectionTopologyRef());
+        DungeonTopologyElementRef topologyRef = safeTopologyRef(safeState.selection().topologyRef());
         long selectedTransitionId = selectedTransitionId(topologyRef);
-        if (!TRANSITION_CREATE_TOOL.equals(safeFrame.selectedToolKey()) && selectedTransitionId <= NO_TRANSITION_ID) {
+        if (!TRANSITION_CREATE_TOOL.equals(safeState.selectedTool().name())
+                && selectedTransitionId <= NO_TRANSITION_ID) {
             return null;
         }
-        DungeonEditorStatePanelTransitionDestinationDrafts.Draft runtimeDraft =
-                safeTransitionDestinationDraft(safeFrame.transitionDestinationDraft());
+        DungeonEditorDraftState.TransitionDestinationDraft runtimeDraft =
+                safeTransitionDestinationDraft(safeState.draft().transitionDestination());
         if (!runtimeDraft.targetPresent()) {
             return null;
         }
-        TransitionDestinationDraft baseline = TransitionDestinationDraft.fromTypedInspector(safeFrame.inspector());
+        TransitionDestinationDraft baseline = TransitionDestinationDraft.fromTypedInspector(safeState.inspector());
         TransitionDestinationDraft draft = runtimeDraft.present()
                 ? TransitionDestinationDraft.fromRuntimeDraft(runtimeDraft)
                 : baseline;
@@ -732,7 +718,7 @@ final class DungeonEditorStatePanelModel {
                 draft.tileId(),
                 draft.transitionId(),
                 draft.bidirectional(),
-                safeFrame.busy());
+                safeState.commandStatus().busy());
     }
 
     static String transitionDestinationTypeKey(int optionIndex) {
@@ -801,26 +787,24 @@ final class DungeonEditorStatePanelModel {
                 saveDisabled(safeProjection.busy(), linkMode, dungeonMapDestination, targetFieldsComplete));
     }
 
-    private static DungeonEditorPreparedFrameFacts.StatePanelFrame safeFrame(
-            DungeonEditorPreparedFrameFacts.StatePanelFrame frame
-    ) {
-        return frame == null ? DungeonEditorPreparedFrameFacts.StatePanelFrame.empty() : frame;
+    private static DungeonEditorState safeState(DungeonEditorState state) {
+        return state == null ? DungeonEditorState.empty() : state;
     }
 
     private static DungeonTopologyElementRef safeTopologyRef(DungeonTopologyElementRef topologyRef) {
         return topologyRef == null ? DungeonTopologyElementRef.empty() : topologyRef;
     }
 
-    private static DungeonEditorStatePanelTransitionDescriptionDrafts.Draft safeTransitionDescriptionDraft(
-            DungeonEditorStatePanelTransitionDescriptionDrafts.Draft draft
+    private static DungeonEditorDraftState.TransitionDescriptionDraft safeTransitionDescriptionDraft(
+            DungeonEditorDraftState.TransitionDescriptionDraft draft
     ) {
-        return draft == null ? DungeonEditorStatePanelTransitionDescriptionDrafts.Draft.empty() : draft;
+        return draft == null ? DungeonEditorDraftState.TransitionDescriptionDraft.empty() : draft;
     }
 
-    private static DungeonEditorStatePanelTransitionDestinationDrafts.Draft safeTransitionDestinationDraft(
-            DungeonEditorStatePanelTransitionDestinationDrafts.Draft draft
+    private static DungeonEditorDraftState.TransitionDestinationDraft safeTransitionDestinationDraft(
+            DungeonEditorDraftState.TransitionDestinationDraft draft
     ) {
-        return draft == null ? DungeonEditorStatePanelTransitionDestinationDrafts.Draft.empty() : draft;
+        return draft == null ? DungeonEditorDraftState.TransitionDestinationDraft.empty() : draft;
     }
 
     private static long selectedTransitionId(DungeonTopologyElementRef topologyRef) {
@@ -937,12 +921,12 @@ final class DungeonEditorStatePanelModel {
         }
 
         static TransitionDestinationDraft fromRuntimeDraft(
-                DungeonEditorStatePanelTransitionDestinationDrafts.Draft draft
+                DungeonEditorDraftState.TransitionDestinationDraft draft
         ) {
-            DungeonEditorStatePanelTransitionDestinationDrafts.Draft safeDraft =
-                    draft == null ? DungeonEditorStatePanelTransitionDestinationDrafts.Draft.empty() : draft;
+            DungeonEditorDraftState.TransitionDestinationDraft safeDraft =
+                    draft == null ? DungeonEditorDraftState.TransitionDestinationDraft.empty() : draft;
             return new TransitionDestinationDraft(
-                    safeDraft.destinationTypeKey(),
+                    safeDraft.destinationType(),
                     safeDraft.mapId(),
                     safeDraft.tileId(),
                     safeDraft.transitionId(),
