@@ -2,9 +2,7 @@ package features.creatures.api;
 
 public interface CreaturesApi {
 
-    void refreshFilterOptions(RefreshCreatureFilterOptionsCommand command);
-
-    void refreshCatalog(RefreshCreatureCatalogCommand command);
+    void refreshReferenceIndex(RefreshCreatureReferenceIndexCommand command);
 
     void selectCreatureDetail(SelectCreatureDetailCommand command);
 

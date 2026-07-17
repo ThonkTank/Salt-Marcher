@@ -11,7 +11,7 @@ import platform.persistence.SqliteDatabase;
 import platform.ui.DirectUiDispatcher;
 import platform.ui.UiDispatcher;
 import shell.api.InspectorSink;
-import features.creatures.api.CreatureCatalogModel;
+import features.creatures.api.CreatureReferenceIndexModel;
 import features.creatures.api.CreatureReferenceApi;
 import features.encountertable.api.EncounterTableCatalogModel;
 import features.encountertable.api.EncounterTableReferenceApi;
@@ -138,7 +138,7 @@ public final class WorldPlannerServiceAssembly {
         public void openNpcInspector(
                 long npcId,
                 WorldPlannerEncounterSink encounter,
-                CreatureCatalogModel creatureCatalog,
+                CreatureReferenceIndexModel creatureCatalog,
                 EncounterTableCatalogModel encounterTableCatalog,
                 InspectorSink inspector
         ) {
@@ -150,7 +150,7 @@ public final class WorldPlannerServiceAssembly {
         public void openFactionInspector(
                 long factionId,
                 WorldPlannerEncounterSink encounter,
-                CreatureCatalogModel creatureCatalog,
+                CreatureReferenceIndexModel creatureCatalog,
                 EncounterTableCatalogModel encounterTableCatalog,
                 InspectorSink inspector
         ) {
@@ -162,7 +162,7 @@ public final class WorldPlannerServiceAssembly {
         public void openLocationInspector(
                 long locationId,
                 WorldPlannerEncounterSink encounter,
-                CreatureCatalogModel creatureCatalog,
+                CreatureReferenceIndexModel creatureCatalog,
                 EncounterTableCatalogModel encounterTableCatalog,
                 InspectorSink inspector
         ) {
@@ -173,7 +173,7 @@ public final class WorldPlannerServiceAssembly {
 
         public void openNpcCreator(
                 WorldPlannerEncounterSink encounter,
-                CreatureCatalogModel creatureCatalog,
+                CreatureReferenceIndexModel creatureCatalog,
                 EncounterTableCatalogModel encounterTableCatalog,
                 InspectorSink inspector
         ) {
@@ -183,7 +183,7 @@ public final class WorldPlannerServiceAssembly {
 
         public void openFactionCreator(
                 WorldPlannerEncounterSink encounter,
-                CreatureCatalogModel creatureCatalog,
+                CreatureReferenceIndexModel creatureCatalog,
                 EncounterTableCatalogModel encounterTableCatalog,
                 InspectorSink inspector
         ) {
@@ -193,7 +193,7 @@ public final class WorldPlannerServiceAssembly {
 
         public void openLocationCreator(
                 WorldPlannerEncounterSink encounter,
-                CreatureCatalogModel creatureCatalog,
+                CreatureReferenceIndexModel creatureCatalog,
                 EncounterTableCatalogModel encounterTableCatalog,
                 InspectorSink inspector
         ) {
@@ -205,7 +205,7 @@ public final class WorldPlannerServiceAssembly {
                 WorldPlannerApi application,
                 WorldPlannerEncounterSink encounter,
                 WorldPlannerSnapshotModel snapshot,
-                CreatureCatalogModel creatureCatalog,
+                CreatureReferenceIndexModel creatureCatalog,
                 EncounterTableCatalogModel encounterTableCatalog,
                 InspectorSink inspector
         ) {

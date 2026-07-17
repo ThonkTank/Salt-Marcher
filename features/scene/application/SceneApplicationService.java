@@ -1,9 +1,7 @@
 package features.scene.application;
 
-import features.creatures.api.CreatureCatalogModel;
-import features.creatures.api.CreatureQueryStatus;
-import features.creatures.api.CreaturesApi;
-import features.creatures.api.RefreshCreatureCatalogCommand;
+import features.creatures.api.CreatureReferenceIndexModel;
+import features.creatures.api.CreatureReferenceIndexStatus;
 import features.encounter.api.EncounterRuntimeContextApi;
 import features.encounter.api.EncounterRuntimeContextId;
 import features.encounter.api.EncounterRuntimeContextSpec;
@@ -51,8 +49,7 @@ public final class SceneApplicationService implements SceneApi {
     private final WorldPlannerSnapshotModel world;
     private final PreparedSceneCatalogModel preparedScenes;
     private final EncounterRuntimeContextApi encounters;
-    private final CreatureCatalogModel creatureCatalog;
-    private final CreaturesApi creatures;
+    private final CreatureReferenceIndexModel creatureReferences;
     private final ExecutionLane executionLane;
     private final Diagnostics diagnostics;
     private final SceneProjection projection = new SceneProjection();
@@ -66,8 +63,7 @@ public final class SceneApplicationService implements SceneApi {
             WorldPlannerSnapshotModel world,
             PreparedSceneCatalogModel preparedScenes,
             EncounterRuntimeContextApi encounters,
-            CreatureCatalogModel creatureCatalog,
-            CreaturesApi creatures,
+            CreatureReferenceIndexModel creatureReferences,
             ExecutionLane executionLane,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
@@ -77,8 +73,7 @@ public final class SceneApplicationService implements SceneApi {
         this.world = Objects.requireNonNull(world, "world");
         this.preparedScenes = Objects.requireNonNull(preparedScenes, "preparedScenes");
         this.encounters = Objects.requireNonNull(encounters, "encounters");
-        this.creatureCatalog = Objects.requireNonNull(creatureCatalog, "creatureCatalog");
-        this.creatures = Objects.requireNonNull(creatures, "creatures");
+        this.creatureReferences = Objects.requireNonNull(creatureReferences, "creatureReferences");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
         publishedState = new ScenePublishedState(Objects.requireNonNull(uiDispatcher, "uiDispatcher"));
@@ -403,8 +398,8 @@ public final class SceneApplicationService implements SceneApi {
     }
 
     private void requireCreature(long id) {
-        boolean known = creatureCatalog.current().status() == CreatureQueryStatus.SUCCESS
-                && creatureCatalog.current().page().rows().stream().anyMatch(row -> row.id() == id);
+        boolean known = creatureReferences.current().status() == CreatureReferenceIndexStatus.SUCCESS
+                && creatureReferences.current().rows().stream().anyMatch(row -> row.id() == id);
         if (!known) {
             throw new MissingForeignReferenceException("Kreatur nicht gefunden.");
         }
@@ -419,7 +414,7 @@ public final class SceneApplicationService implements SceneApi {
                 party.current(),
                 world.current(),
                 preparedScenes.current(),
-                creatureCatalog.current()));
+                creatureReferences.current()));
     }
 
     private void scheduleProjectionRefresh() {
@@ -438,8 +433,7 @@ public final class SceneApplicationService implements SceneApi {
         party.subscribe(ignored -> execute(new SceneCommand.Refresh()));
         world.subscribe(ignored -> execute(new SceneCommand.Refresh()));
         preparedScenes.subscribe(ignored -> scheduleProjectionRefresh());
-        creatureCatalog.subscribe(ignored -> scheduleProjectionRefresh());
-        creatures.refreshCatalog(catalogRefreshCommand());
+        creatureReferences.subscribe(ignored -> scheduleProjectionRefresh());
     }
 
     private static features.scene.domain.SceneParticipantKind domainKind(SceneParticipantKind kind) {
@@ -448,12 +442,6 @@ public final class SceneApplicationService implements SceneApi {
             case NPC -> features.scene.domain.SceneParticipantKind.NPC;
             case MOB -> features.scene.domain.SceneParticipantKind.MOB;
         };
-    }
-
-    private static RefreshCreatureCatalogCommand catalogRefreshCommand() {
-        return new RefreshCreatureCatalogCommand(
-                null, null, null, List.of(), List.of(), List.of(), List.of(), List.of(),
-                null, null, 500, 0);
     }
 
     private SceneMutationResult storageError(RuntimeException exception) {

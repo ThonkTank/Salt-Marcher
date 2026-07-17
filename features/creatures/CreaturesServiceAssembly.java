@@ -11,15 +11,15 @@ import platform.ui.DirectUiDispatcher;
 import platform.ui.UiDispatcher;
 import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
 import features.creatures.api.CreaturesApi;
+import features.creatures.api.CreatureCatalogQueryApi;
 import features.creatures.application.CreatureCatalogProjection;
 import features.creatures.application.CreaturesApplicationService;
 import features.creatures.application.CreaturesPublishedState;
 import features.creatures.domain.catalog.port.CreatureCatalogPort;
-import features.creatures.api.CreatureCatalogModel;
 import features.creatures.api.CreatureDetailModel;
 import features.creatures.api.CreatureDetailResult;
 import features.creatures.api.CreatureEncounterCandidatesModel;
-import features.creatures.api.CreatureFilterOptionsModel;
+import features.creatures.api.CreatureReferenceIndexModel;
 import features.creatures.api.CreatureLookupStatus;
 import features.creatures.api.CreatureReferenceApi;
 
@@ -62,8 +62,7 @@ public final class CreaturesServiceAssembly {
         UiDispatcher safeUiDispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
         Diagnostics safeDiagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
         CreaturesPublishedState publishedState = new CreaturesPublishedState(safeUiDispatcher);
-        CreatureFilterOptionsModel filterOptions = publishedState.filterOptionsModel();
-        CreatureCatalogModel catalog = publishedState.catalogModel();
+        CreatureReferenceIndexModel referenceIndex = publishedState.referenceIndexModel();
         CreatureDetailModel detail = publishedState.detailModel();
         CreatureEncounterCandidatesModel encounterCandidates = publishedState.encounterCandidatesModel();
         CreaturesApplicationService application = new CreaturesApplicationService(
@@ -85,14 +84,14 @@ public final class CreaturesServiceAssembly {
                 return new CreatureDetailResult(CreatureLookupStatus.STORAGE_ERROR, null);
             }
         };
-        return new Component(application, references, filterOptions, catalog, detail, encounterCandidates);
+        return new Component(application, application, references, referenceIndex, detail, encounterCandidates);
     }
 
     public record Component(
             CreaturesApi application,
+            CreatureCatalogQueryApi catalogQueries,
             CreatureReferenceApi references,
-            CreatureFilterOptionsModel filterOptions,
-            CreatureCatalogModel catalog,
+            CreatureReferenceIndexModel referenceIndex,
             CreatureDetailModel detail,
             CreatureEncounterCandidatesModel encounterCandidates
     ) {

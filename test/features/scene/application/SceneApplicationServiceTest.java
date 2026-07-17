@@ -4,16 +4,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import features.creatures.api.CreatureCatalogModel;
-import features.creatures.api.CreatureCatalogPage;
-import features.creatures.api.CreatureCatalogPageResult;
 import features.creatures.api.CreatureCatalogRow;
-import features.creatures.api.CreatureQueryStatus;
-import features.creatures.api.CreaturesApi;
-import features.creatures.api.RefreshCreatureCatalogCommand;
-import features.creatures.api.RefreshCreatureEncounterCandidatesCommand;
-import features.creatures.api.RefreshCreatureFilterOptionsCommand;
-import features.creatures.api.SelectCreatureDetailCommand;
+import features.creatures.api.CreatureReferenceIndexModel;
+import features.creatures.api.CreatureReferenceIndexResult;
+import features.creatures.api.CreatureReferenceIndexStatus;
+import features.creatures.CreaturesServiceAssembly;
+import features.creatures.api.CreatureCatalogQuery;
+import features.creatures.api.RefreshCreatureReferenceIndexCommand;
+import features.creatures.domain.catalog.CreatureCatalogData;
+import features.creatures.domain.catalog.port.CreatureCatalogPort;
 import features.encounter.api.EncounterRuntimeContextApi;
 import features.encounter.api.EncounterRuntimeContextSyncResult;
 import features.encounter.api.SynchronizeEncounterRuntimeContextsCommand;
@@ -200,6 +199,26 @@ class SceneApplicationServiceTest {
         assertEquals(1, service.model().current().scenes().size());
     }
 
+    @Test
+    void sceneInitializationDoesNotIssueOrReplaceCatalogQueries() {
+        CountingCreaturePort port = new CountingCreaturePort();
+        CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(port);
+        creatures.application().refreshReferenceIndex(new RefreshCreatureReferenceIndexCommand());
+        var catalogResult = creatures.catalogQueries().search(new CreatureCatalogQuery(
+                "catalog-only", null, null, List.of(), List.of(), List.of(), List.of(), List.of(),
+                null, null, 50, 0)).toCompletableFuture().join();
+        int searchesBeforeScene = port.searches;
+        SceneApplicationService service = new SceneApplicationService(
+                new MemoryRepository(), party(1L).model(), world(), prepared(), new CapturingEncounters(),
+                creatures.referenceIndex(), DirectExecutionLane.INSTANCE, DirectUiDispatcher.INSTANCE,
+                NoopDiagnostics.INSTANCE);
+
+        await(service.execute(new SceneCommand.Initialize()));
+
+        assertEquals(searchesBeforeScene, port.searches);
+        assertEquals("catalog-only", catalogResult.page().rows().getFirst().name());
+    }
+
     private static SceneApplicationService service(
             MemoryRepository repository,
             PartyFacts party,
@@ -224,36 +243,18 @@ class SceneApplicationServiceTest {
                 prepared,
                 encounters,
                 catalog(),
-                creatures(),
                 DirectExecutionLane.INSTANCE,
                 DirectUiDispatcher.INSTANCE,
                 NoopDiagnostics.INSTANCE);
     }
 
-    private static CreatureCatalogModel catalog() {
-        CreatureCatalogPageResult result = new CreatureCatalogPageResult(
-                CreatureQueryStatus.SUCCESS,
-                new CreatureCatalogPage(
-                        List.of(new CreatureCatalogRow(
-                                101L, "Goblin", "Klein", "Humanoid", "neutral böse", "1/4", 50, 7, 15)),
-                        1, 50, 0));
-        return new CreatureCatalogModel(() -> result, ignored -> () -> { });
-    }
-
-    private static CreaturesApi creatures() {
-        return new CreaturesApi() {
-            @Override
-            public void refreshFilterOptions(RefreshCreatureFilterOptionsCommand command) { }
-
-            @Override
-            public void refreshCatalog(RefreshCreatureCatalogCommand command) { }
-
-            @Override
-            public void selectCreatureDetail(SelectCreatureDetailCommand command) { }
-
-            @Override
-            public void refreshEncounterCandidates(RefreshCreatureEncounterCandidatesCommand command) { }
-        };
+    private static CreatureReferenceIndexModel catalog() {
+        CreatureReferenceIndexResult result = new CreatureReferenceIndexResult(
+                CreatureReferenceIndexStatus.SUCCESS,
+                1L,
+                List.of(new CreatureCatalogRow(
+                        101L, "Goblin", "Klein", "Humanoid", "neutral böse", "1/4", 50, 7, 15)));
+        return new CreatureReferenceIndexModel(() -> result, ignored -> () -> { });
     }
 
     private static PartyFacts party(long... ids) {
@@ -297,6 +298,37 @@ class SceneApplicationServiceTest {
         @Override
         public void save(SceneWorkspace workspace) {
             state = workspace;
+        }
+    }
+
+    private static final class CountingCreaturePort implements CreatureCatalogPort {
+        private int searches;
+
+        @Override
+        public CreatureCatalogData.DistinctFilterValues loadFilterValues() {
+            return CreatureCatalogData.emptyFilterValues();
+        }
+
+        @Override
+        public CreatureCatalogData.CatalogPageData searchCatalog(CreatureCatalogData.CatalogSearchSpec spec) {
+            searches++;
+            String name = spec.nameQuery() == null ? "Goblin" : spec.nameQuery();
+            return new CreatureCatalogData.CatalogPageData(
+                    List.of(new CreatureCatalogData.CatalogRowData(
+                            101L, name, "Klein", "Humanoid", "neutral böse", "1/4", 50, 7, 15)),
+                    1, spec.pageSize(), spec.pageOffset());
+        }
+
+        @Override
+        public CreatureCatalogData.CreatureProfile loadCreatureDetail(long creatureId) {
+            return null;
+        }
+
+        @Override
+        public List<CreatureCatalogData.EncounterCandidateProfile> loadEncounterCandidates(
+                CreatureCatalogData.EncounterCandidateSpec spec
+        ) {
+            return List.of();
         }
     }
 

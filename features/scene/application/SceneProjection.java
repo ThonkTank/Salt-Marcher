@@ -1,8 +1,8 @@
 package features.scene.application;
 
-import features.creatures.api.CreatureCatalogPageResult;
 import features.creatures.api.CreatureCatalogRow;
-import features.creatures.api.CreatureQueryStatus;
+import features.creatures.api.CreatureReferenceIndexResult;
+import features.creatures.api.CreatureReferenceIndexStatus;
 import features.party.api.ActivePartyResult;
 import features.party.api.PartyMemberSummary;
 import features.party.api.ReadStatus;
@@ -28,7 +28,7 @@ final class SceneProjection {
             ActivePartyResult party,
             WorldPlannerSnapshot world,
             PreparedSceneCatalogSnapshot prepared,
-            CreatureCatalogPageResult catalog
+            CreatureReferenceIndexResult catalog
     ) {
         List<PartyMemberSummary> members = party.status() == ReadStatus.SUCCESS ? party.members() : List.of();
         Map<Long, CreatureCatalogRow> creaturesById = creatureIndex(catalog);
@@ -66,10 +66,10 @@ final class SceneProjection {
                 status(workspace, party));
     }
 
-    private static Map<Long, CreatureCatalogRow> creatureIndex(CreatureCatalogPageResult catalog) {
+    private static Map<Long, CreatureCatalogRow> creatureIndex(CreatureReferenceIndexResult catalog) {
         Map<Long, CreatureCatalogRow> index = new LinkedHashMap<>();
-        if (catalog != null && catalog.status() == CreatureQueryStatus.SUCCESS) {
-            catalog.page().rows().forEach(row -> index.putIfAbsent(row.id(), row));
+        if (catalog != null && catalog.status() == CreatureReferenceIndexStatus.SUCCESS) {
+            catalog.rows().forEach(row -> index.putIfAbsent(row.id(), row));
         }
         return index;
     }

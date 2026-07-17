@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import features.creatures.CreaturesServiceAssembly;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import org.junit.jupiter.api.Test;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
@@ -13,39 +14,53 @@ import platform.ui.UiDispatcher;
 import features.creatures.domain.catalog.CreatureCatalogData;
 import features.creatures.domain.catalog.port.CreatureCatalogPort;
 import features.creatures.api.CreatureLookupStatus;
+import features.creatures.api.CreatureCatalogPageResult;
+import features.creatures.api.CreatureCatalogQuery;
 import features.creatures.api.CreatureQueryStatus;
-import features.creatures.api.RefreshCreatureCatalogCommand;
+import features.creatures.api.CreatureReferenceIndexStatus;
+import features.creatures.api.RefreshCreatureReferenceIndexCommand;
 
 final class CreaturesRuntimeBoundaryTest {
 
     @Test
-    void catalogWorkIsQueuedDispatchedAndLatestRequestWins() {
+    void independentQueriesCompleteWithTheirOwnResultsAndReferenceIndexPublishesThroughUi() {
         ControllableLane lane = new ControllableLane();
         QueuedUiDispatcher ui = new QueuedUiDispatcher();
         RecordingDiagnostics diagnostics = new RecordingDiagnostics();
         RecordingPort port = new RecordingPort();
         CreaturesServiceAssembly.Component component =
                 CreaturesServiceAssembly.create(port, lane, ui, diagnostics);
-        List<String> observedNames = new ArrayList<>();
-        component.catalog().subscribe(result -> observedNames.add(firstName(result)));
+        CompletionStage<CreatureCatalogPageResult> older = component.catalogQueries().search(command("older"));
+        CompletionStage<CreatureCatalogPageResult> newer = component.catalogQueries().search(command("newer"));
 
-        component.application().refreshCatalog(command("older"));
-        component.application().refreshCatalog(command("newer"));
-
-        assertEquals(0, port.searchCount, "commands do not touch storage on the caller");
+        assertEquals(0, port.searchCount, "queries do not touch storage on the caller");
         lane.run(1);
-        assertEquals("newer", firstName(component.catalog().current()), "newer completion is current");
-        assertEquals(List.of(), observedNames, "publication callback waits for UI dispatch");
+        assertEquals("newer", firstName(newer.toCompletableFuture().join()));
+        assertEquals(false, older.toCompletableFuture().isDone(), "older request remains independently pending");
         lane.run(0);
-        assertEquals("newer", firstName(component.catalog().current()), "older completion cannot replace newer state");
-        assertEquals(1, ui.size(), "stale completion does not enqueue another UI update");
+        assertEquals("older", firstName(older.toCompletableFuture().join()));
+        assertEquals(0, ui.size(), "request/response queries do not publish global UI state");
 
+        CompletionStage<CreatureCatalogPageResult> failed = component.catalogQueries().search(command("fail"));
+        lane.run(0);
+        assertEquals(CreatureQueryStatus.STORAGE_ERROR, failed.toCompletableFuture().join().status());
+
+        List<CreatureReferenceIndexStatus> observed = new ArrayList<>();
+        component.referenceIndex().subscribe(result -> observed.add(result.status()));
+        component.application().refreshReferenceIndex(new RefreshCreatureReferenceIndexCommand());
+        component.application().refreshReferenceIndex(new RefreshCreatureReferenceIndexCommand());
+        assertEquals(CreatureReferenceIndexStatus.LOADING, component.referenceIndex().current().status());
+        assertEquals(2L, component.referenceIndex().current().revision());
+        lane.run(1);
+        assertEquals(CreatureReferenceIndexStatus.SUCCESS, component.referenceIndex().current().status());
+        assertEquals(2L, component.referenceIndex().current().revision());
+        lane.run(0);
+        assertEquals(2L, component.referenceIndex().current().revision(), "stale index completion is ignored");
+        assertEquals(List.of(), observed, "reference callbacks wait for UI dispatch");
         ui.runAll();
-        assertEquals(List.of("newer"), observedNames, "callback runs through the supplied UI dispatcher");
+        assertEquals(List.of(CreatureReferenceIndexStatus.SUCCESS), observed,
+                "queued UI publication coalesces to the latest immutable index");
 
-        component.application().refreshCatalog(command("fail"));
-        lane.run(0);
-        assertEquals(CreatureQueryStatus.STORAGE_ERROR, component.catalog().current().status());
         port.failDetail = true;
         assertEquals(CreatureLookupStatus.STORAGE_ERROR, component.references().find(7L).status());
         assertEquals(
@@ -53,8 +68,8 @@ final class CreaturesRuntimeBoundaryTest {
                 diagnostics.ids());
     }
 
-    private static RefreshCreatureCatalogCommand command(String query) {
-        return new RefreshCreatureCatalogCommand(
+    private static CreatureCatalogQuery command(String query) {
+        return new CreatureCatalogQuery(
                 query,
                 null,
                 null,

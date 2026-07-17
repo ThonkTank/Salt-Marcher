@@ -1,11 +1,18 @@
 package features.catalog.adapter.javafx;
 
 import java.util.Objects;
+import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyLongProperty;
 import javafx.beans.property.ReadOnlyLongWrapper;
 import features.creatures.api.CreaturesApi;
-import features.creatures.api.RefreshCreatureCatalogCommand;
-import features.creatures.api.RefreshCreatureFilterOptionsCommand;
+import features.creatures.api.CreatureCatalogPage;
+import features.creatures.api.CreatureCatalogPageResult;
+import features.creatures.api.CreatureCatalogQuery;
+import features.creatures.api.CreatureCatalogQueryApi;
+import features.creatures.api.CreatureFilterOptions;
+import features.creatures.api.CreatureFilterOptionsResult;
+import features.creatures.api.CreatureQueryStatus;
+import features.creatures.api.CreatureReadStatus;
 import features.creatures.api.SelectCreatureDetailCommand;
 import features.encounter.api.EncounterApi;
 import features.encounter.api.ApplyEncounterStateCommand;
@@ -23,30 +30,30 @@ final class CatalogViewModel {
     private final CatalogControlsContentModel controlsContentModel = new CatalogControlsContentModel();
     private final ReadOnlyLongWrapper creatureDetailSelection = new ReadOnlyLongWrapper(0L);
     private final CreaturesApi creatures;
+    private final CreatureCatalogQueryApi creatureQueries;
     private final EncounterTableApi encounterTables;
     private final EncounterApi encounters;
     private final java.util.function.LongConsumer addCreatureToScene;
+    private long searchRevision;
+    private long filterOptionsRevision;
 
     CatalogViewModel(
             CreaturesApi creatures,
-            EncounterTableApi encounterTables,
-            EncounterApi encounters
-    ) {
-        this(creatures, encounterTables, encounters, ignored -> { });
-    }
-
-    CatalogViewModel(
-            CreaturesApi creatures,
+            CreatureCatalogQueryApi creatureQueries,
             EncounterTableApi encounterTables,
             EncounterApi encounters,
             java.util.function.LongConsumer addCreatureToScene
     ) {
         this.creatures = Objects.requireNonNull(creatures, "creatures");
+        this.creatureQueries = Objects.requireNonNull(creatureQueries, "creatureQueries");
         this.encounterTables = Objects.requireNonNull(encounterTables, "encounterTables");
         this.encounters = Objects.requireNonNull(encounters, "encounters");
         this.addCreatureToScene = Objects.requireNonNull(addCreatureToScene, "addCreatureToScene");
-        creatures.refreshFilterOptions(new RefreshCreatureFilterOptionsCommand());
         encounterTables.refreshCatalog(new RefreshEncounterTableCatalogCommand());
+    }
+
+    void initialize() {
+        loadFilterOptions();
         refreshCatalog();
     }
 
@@ -176,7 +183,8 @@ final class CatalogViewModel {
 
     private void refreshCatalog() {
         CatalogControlsContentModel.CreatureFilters searchFilters = controlsContentModel.currentSearchFilters();
-        creatures.refreshCatalog(new RefreshCreatureCatalogCommand(
+        long revision = ++searchRevision;
+        creatureQueries.search(new CreatureCatalogQuery(
                 searchFilters.nameQuery(),
                 searchFilters.challengeRatingMin(),
                 searchFilters.challengeRatingMax(),
@@ -188,7 +196,36 @@ final class CatalogViewModel {
                 mainContentModel.currentSortFieldName(),
                 mainContentModel.currentSortDirectionName(),
                 50,
-                mainContentModel.currentPageOffset()));
+                mainContentModel.currentPageOffset())).whenComplete((result, failure) -> runOnFx(() -> {
+                    if (revision != searchRevision) {
+                        return;
+                    }
+                    mainContentModel.applySearchResult(failure == null && result != null
+                            ? result
+                            : new CreatureCatalogPageResult(
+                                    CreatureQueryStatus.STORAGE_ERROR,
+                                    CreatureCatalogPage.empty(50, mainContentModel.currentPageOffset())));
+                }));
+    }
+
+    private void loadFilterOptions() {
+        long revision = ++filterOptionsRevision;
+        creatureQueries.loadFilterOptions().whenComplete((result, failure) -> runOnFx(() -> {
+            if (revision != filterOptionsRevision) {
+                return;
+            }
+            controlsContentModel.applyCreatureFilterOptions(failure == null && result != null
+                    ? result
+                    : new CreatureFilterOptionsResult(CreatureReadStatus.STORAGE_ERROR, CreatureFilterOptions.empty()));
+        }));
+    }
+
+    private static void runOnFx(Runnable action) {
+        if (Platform.isFxApplicationThread()) {
+            action.run();
+        } else {
+            Platform.runLater(action);
+        }
     }
 
 }

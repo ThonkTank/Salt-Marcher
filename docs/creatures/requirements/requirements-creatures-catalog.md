@@ -1,16 +1,15 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-07-17
-Source of Truth: Catalog left-bar tab composition, content selection, filter
-controls, list management, and main list behavior.
+Source of Truth: Creature browsing behavior inside the consolidated Catalog.
 
 # Catalog Tab UI
 
 ## Component Purpose
 
-The catalog tab is the shared reference browser for read-only game catalogs.
-It owns the left-bar tab shell entrypoint and hosts content-specific catalog
-presentations through one shared presentation state.
+The Monster section is the creature provider's read-only browsing experience
+inside the consolidated `Katalog` workspace. Catalog owns section composition;
+Creatures owns query, reference-index, detail, and encounter-candidate reads.
 
 Creature detail display is published to the shell Inspector through the
 creature detail entry. Creatures remains the owner of imported statblock truth;
@@ -18,13 +17,13 @@ Catalog only composes its presentation with other providers.
 
 ## Visible Surfaces
 
-- The shell title and single left navigation entry are `Katalog`; the entry is
-  icon-only and uses
+- The shell title is `Katalog`. The left navigation entry is icon-only and uses
+  the crossed-blades reference graphic from
   `resources/view/leftbartabs/catalog/navigation-icon.svg`.
-- `COCKPIT_CONTROLS` contains creature filters, active filter chips,
-  encounter-table selection, and World Planner source selection while Monster
-  is active.
-- `COCKPIT_MAIN` contains the active catalog list, result count, sort
+- The common Catalog section rail and active Monster controls in
+  `COCKPIT_CONTROLS` contain creature filters, active
+  filter chips, encounter-table selection, and World Planner source selection.
+- `COCKPIT_MAIN` contains the active Catalog result surface, result count, sort
   selection, and page controls.
 - Difficulty, balance, amount, and diversity controls live in a collapsible
   section of the global Encounter state tab.
@@ -54,6 +53,10 @@ Catalog only composes its presentation with other providers.
 - `Leeren` clears all creature filters and reloads the first page.
 - Sort changes reset to page one.
 - Previous and next page controls move in fixed 50-row pages.
+- A late completion from an older Monster query does not replace a newer query.
+- Scene and World Planner reference refreshes do not replace Monster rows.
+- Row refreshes retain table columns and preserve selection when the same
+  creature id remains visible.
 - Clicking a creature name or pressing Enter on a selected row opens that
   creature in the shell Inspector.
 - Each creature row exposes explicit `+ Encounter` and `+ Scene` actions. The
@@ -81,6 +84,7 @@ Catalog only composes its presentation with other providers.
 - an empty encounter-table selection keeps the normal creature-catalog source,
   while a non-empty encounter-table selection publishes selected table ids for
   the Encounter state tab
+- Scene activation leaves the current Monster query and visible rows unchanged
 - changing Catalog pool filters does not overwrite Encounter-owned tuning
 
 ## References

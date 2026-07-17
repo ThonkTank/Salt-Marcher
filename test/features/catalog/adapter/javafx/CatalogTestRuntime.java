@@ -1,5 +1,7 @@
 package features.catalog.adapter.javafx;
 
+import features.catalog.CatalogServiceAssembly.CatalogActionRoutes;
+import features.catalog.CatalogServiceAssembly.CatalogDataSources;
 import shell.api.InspectorSink;
 import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
 import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
@@ -64,12 +66,16 @@ final class CatalogTestRuntime {
             Runnable createNpc,
             java.util.function.LongConsumer addCreatureToScene
     ) {
-        return new CatalogContribution(
-                creatures.application(), tables.application(), encounter.application(),
-                encounter.builderInputs(), creatures.filterOptions(), creatures.catalog(),
-                tables.catalog(), encounter.tuningPreview(), encounter.savedPlans(), unavailableItems(),
-                worldPlanner, inspector, ignored -> { }, openNpc, ignored -> { }, ignored -> { },
-                createNpc, () -> { }, () -> { }, ignored -> { }, ignored -> { }, addCreatureToScene);
+        return (CatalogContribution) features.catalog.CatalogServiceAssembly.contribution(
+                new CatalogDataSources(
+                        creatures.application(), creatures.catalogQueries(), creatures.referenceIndex(),
+                        tables.application(),
+                        encounter.application(), encounter.builderInputs(), tables.catalog(),
+                        encounter.tuningPreview(), encounter.savedPlans(), unavailableItems(), worldPlanner),
+                new CatalogActionRoutes(
+                        inspector, ignored -> { }, openNpc, ignored -> { }, ignored -> { },
+                        createNpc, () -> { }, () -> { }, ignored -> { }, ignored -> { },
+                        addCreatureToScene));
     }
 
     private static features.items.api.ItemsCatalogApi unavailableItems() {

@@ -15,8 +15,12 @@ and running-session lookup without taking ownership from provider features.
 
 - The workspace MUST expose Monster, Items, Encounter, NPCs, Fraktionen, Orte,
   and Encounter-Tabellen as distinct visible sections.
-- Sections MUST use one horizontal category strip and consistent tabular
-  result chrome; the left control slot changes to the selected category.
+- One persistent section selector MUST remain at the top of the Catalog
+  controls area. The selected section's controls MUST always appear below it,
+  and its results MUST appear in the main area.
+- Switching sections MUST preserve each section's filters, selection, paging,
+  and unfinished input for the lifetime of the Catalog workspace.
+- Sections MUST use consistent tabular result chrome.
 - Monster search and encounter-builder controls MUST preserve their accepted
   behavior, including creature details and explicit add-to-Encounter and
   add-to-focused-Scene actions.
@@ -38,6 +42,8 @@ and running-session lookup without taking ownership from provider features.
 - The separate World Planner navigation entry and local state-panel slot MUST
   not be registered. World data and edit capabilities remain available through
   Catalog and Inspector.
+- Activating or refreshing Scene MUST NOT change the visible Monster query,
+  rows, sort, page, selection, or loading state.
 
 ## Non-Goals
 
@@ -47,8 +53,11 @@ items, own encounter runtime state, or duplicate provider command logic.
 ## Acceptance Criteria
 
 Automated UI tests MUST prove one Catalog contribution contains all seven
-sections, routes saved-plan confirmation, renders explicit Items states, and
-does not render Encounter tuning inside Catalog controls.
+sections in the common controls/main structure, preserves section state,
+retains stable Monster columns and selection across result refreshes, routes
+saved-plan confirmation, renders explicit Items states, and remains unchanged
+when Scene initializes. They MUST also prove the explicit Encounter and Scene
+routes and that Encounter tuning is absent from Catalog controls.
 Architecture proof MUST reject Catalog imports from foreign adapters. Final
 visual and interaction acceptance remains owner manual testing.
 

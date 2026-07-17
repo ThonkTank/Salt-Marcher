@@ -24,6 +24,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.junit.jupiter.api.AfterAll;
@@ -58,8 +59,9 @@ public final class ItemsCatalogUiTest {
     void ITEMS_CATALOG_UI_001_mapsEveryFilterSortAndPageToTheApi() throws Exception {
         runOnFxThread(() -> {
             FakeItemsApi api = new FakeItemsApi();
-            CatalogWorkspaceView.ItemsPane pane = show(api, new RecordingInspector());
-            pane.refresh();
+            ItemsFixture fixture = show(api, new RecordingInspector());
+            fixture.section().refresh();
+            Parent pane = fixture.host();
 
             text(pane, "Item-Name").setText("  blade  ");
             select(combo(pane, "Item-Kategorie"), "Weapon");
@@ -102,8 +104,9 @@ public final class ItemsCatalogUiTest {
     void ITEMS_CATALOG_UI_002_rendersLoadingEmptyAndEveryTypedFailureState() throws Exception {
         runOnFxThread(() -> {
             FakeItemsApi api = new FakeItemsApi();
-            CatalogWorkspaceView.ItemsPane pane = show(api, new RecordingInspector());
-            pane.refresh();
+            ItemsFixture fixture = show(api, new RecordingInspector());
+            fixture.section().refresh();
+            Parent pane = fixture.host();
 
             api.deferNextSearch();
             button(pane, "Items suchen").fire();
@@ -132,8 +135,9 @@ public final class ItemsCatalogUiTest {
         runOnFxThread(() -> {
             FakeItemsApi api = new FakeItemsApi();
             RecordingInspector inspector = new RecordingInspector();
-            CatalogWorkspaceView.ItemsPane pane = show(api, inspector);
-            pane.refresh();
+            ItemsFixture fixture = show(api, inspector);
+            fixture.section().refresh();
+            Parent pane = fixture.host();
             TableView<?> results = table(pane, "Item-Ergebnisse");
             results.getSelectionModel().selectFirst();
 
@@ -152,7 +156,7 @@ public final class ItemsCatalogUiTest {
     }
 
     private static void assertState(
-            CatalogWorkspaceView.ItemsPane pane,
+            Parent pane,
             FakeItemsApi api,
             ItemsCatalogApi.CatalogStatus status,
             String expectedText
@@ -185,14 +189,16 @@ public final class ItemsCatalogUiTest {
         assertTrue(facts.contains("Quelle: 2014 SRD / https://www.dnd5eapi.co/api/2014/equipment/rapier"));
     }
 
-    private static CatalogWorkspaceView.ItemsPane show(ItemsCatalogApi api, InspectorSink inspector) {
-        CatalogWorkspaceView.ItemsPane pane = new CatalogWorkspaceView.ItemsPane(api, inspector);
+    private static ItemsFixture show(ItemsCatalogApi api, InspectorSink inspector) {
+        ItemsCatalogSection section = new ItemsCatalogSection(api, inspector);
+        BorderPane pane = new BorderPane(section.content());
+        pane.setLeft(section.controls());
         Stage stage = new Stage();
         stage.setScene(new Scene(pane, 1_180.0, 720.0));
         stage.show();
         pane.applyCss();
         pane.layout();
-        return pane;
+        return new ItemsFixture(section, pane);
     }
 
     private static TextField text(Parent root, String accessibleText) {
@@ -256,6 +262,9 @@ public final class ItemsCatalogUiTest {
         if (node instanceof Parent parent) {
             parent.getChildrenUnmodifiable().forEach(child -> collect(child, nodes));
         }
+    }
+
+    private record ItemsFixture(ItemsCatalogSection section, Parent host) {
     }
 
     private static void runOnFxThread(ThrowingRunnable action) throws Exception {

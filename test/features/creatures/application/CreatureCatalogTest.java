@@ -21,22 +21,20 @@ import features.creatures.domain.catalog.CreatureCatalogData.DistinctFilterValue
 import features.creatures.domain.catalog.CreatureCatalogData.EncounterCandidateProfile;
 import features.creatures.domain.catalog.CreatureCatalogData.EncounterCandidateSpec;
 import features.creatures.domain.catalog.port.CreatureCatalogPort;
-import features.creatures.api.CreatureCatalogModel;
+import features.creatures.api.CreatureCatalogQuery;
+import features.creatures.api.CreatureCatalogQueryApi;
 import features.creatures.api.CreatureCatalogPageResult;
 import features.creatures.api.CreatureDetail;
 import features.creatures.api.CreatureDetailModel;
 import features.creatures.api.CreatureEncounterCandidate;
 import features.creatures.api.CreatureEncounterCandidatesModel;
 import features.creatures.api.CreatureEncounterCandidatesResult;
-import features.creatures.api.CreatureFilterOptionsModel;
 import features.creatures.api.CreatureFilterOptionsResult;
 import features.creatures.api.CreatureLookupStatus;
 import features.creatures.api.CreatureQueryStatus;
 import features.creatures.api.CreatureReadStatus;
 import features.creatures.api.CreaturesApi;
-import features.creatures.api.RefreshCreatureCatalogCommand;
 import features.creatures.api.RefreshCreatureEncounterCandidatesCommand;
-import features.creatures.api.RefreshCreatureFilterOptionsCommand;
 import features.creatures.api.SelectCreatureDetailCommand;
 import org.junit.jupiter.api.Test;
 
@@ -45,15 +43,14 @@ public final class CreatureCatalogTest {
     @Test
     void CREATURE_CATALOG_001() {
         TestRuntime runtime = runtimeWithAshImp();
-        runtime.service.refreshFilterOptions(new RefreshCreatureFilterOptionsCommand());
-        assertFilterOptions(runtime.filterOptions.current());
+        assertFilterOptions(runtime.queries.loadFilterOptions());
     }
 
     @Test
     void CREATURE_CATALOG_002() {
         TestRuntime runtime = runtimeWithAshImp();
-        runtime.service.refreshCatalog(filteredCatalogCommand());
-        assertFilteredCatalogReadback(runtime.catalog.current(), runtime.port.lastSearchSpec);
+        runtime.queries.search(filteredCatalogCommand());
+        assertFilteredCatalogReadback(runtime.queries.current(), runtime.port.lastSearchSpec);
     }
 
     @Test
@@ -66,13 +63,13 @@ public final class CreatureCatalogTest {
     @Test
     void CREATURE_CATALOG_004() {
         TestRuntime runtime = runtimeWithAshImp();
-        runtime.service.refreshCatalog(filteredCatalogCommand());
+        runtime.queries.search(filteredCatalogCommand());
         runtime.service.selectCreatureDetail(new SelectCreatureDetailCommand(101L));
 
         runtime.port.replaceCreature(ashImpEdited());
-        runtime.service.refreshCatalog(editedCatalogCommand());
+        runtime.queries.search(editedCatalogCommand());
         runtime.service.selectCreatureDetail(new SelectCreatureDetailCommand(101L));
-        assertEditedCreatureReadback(runtime.catalog.current(), runtime.detail.current().detail());
+        assertEditedCreatureReadback(runtime.queries.current(), runtime.detail.current().detail());
     }
 
     @Test
@@ -123,7 +120,7 @@ public final class CreatureCatalogTest {
     @Test
     void CREATURE_CATALOG_009() {
         TestRuntime runtime = runtimeWithEditedAshImp();
-        runtime.service.refreshCatalog(new RefreshCreatureCatalogCommand(
+        runtime.queries.search(new CreatureCatalogQuery(
                 "",
                 "2",
                 "1",
@@ -145,9 +142,8 @@ public final class CreatureCatalogTest {
         return new TestRuntime(
                 port,
                 services.application(),
-                services.catalog(),
+                new QueryHarness(services.catalogQueries()),
                 services.detail(),
-                services.filterOptions(),
                 services.encounterCandidates());
     }
 
@@ -171,16 +167,16 @@ public final class CreatureCatalogTest {
 
     private static TestRuntime runtimeAfterEditedCatalogReadback() {
         TestRuntime runtime = runtimeWithAshImp();
-        runtime.service.refreshCatalog(filteredCatalogCommand());
+        runtime.queries.search(filteredCatalogCommand());
         runtime.service.selectCreatureDetail(new SelectCreatureDetailCommand(101L));
         runtime.port.replaceCreature(ashImpEdited());
-        runtime.service.refreshCatalog(editedCatalogCommand());
+        runtime.queries.search(editedCatalogCommand());
         runtime.service.selectCreatureDetail(new SelectCreatureDetailCommand(101L));
         return runtime;
     }
 
-    private static RefreshCreatureCatalogCommand filteredCatalogCommand() {
-        return new RefreshCreatureCatalogCommand(
+    private static CreatureCatalogQuery filteredCatalogCommand() {
+        return new CreatureCatalogQuery(
                 " Ash ",
                 "1/8",
                 "1",
@@ -195,8 +191,8 @@ public final class CreatureCatalogTest {
                 -4);
     }
 
-    private static RefreshCreatureCatalogCommand editedCatalogCommand() {
-        return new RefreshCreatureCatalogCommand(
+    private static CreatureCatalogQuery editedCatalogCommand() {
+        return new CreatureCatalogQuery(
                 "Cinder",
                 null,
                 null,
@@ -274,7 +270,7 @@ public final class CreatureCatalogTest {
     }
 
     private static void assertEditedCatalogPrecondition(TestRuntime runtime) {
-        CreatureCatalogPageResult page = runtime.catalog.current();
+        CreatureCatalogPageResult page = runtime.queries.current();
         assertEquals(CreatureQueryStatus.SUCCESS, page.status(), "setup edited catalog status");
         assertEquals(1, page.page().totalCount(), "setup edited catalog total count");
         assertEquals("Cinder Imp", page.page().rows().getFirst().name(), "setup edited catalog row name");
@@ -288,7 +284,7 @@ public final class CreatureCatalogTest {
 
     private static void assertInvalidCatalogQueryDoesNotHitLookup(TestRuntime runtime) {
         int before = runtime.port.searchCount;
-        runtime.service.refreshCatalog(new RefreshCreatureCatalogCommand(
+        runtime.queries.search(new CreatureCatalogQuery(
                 "",
                 "2",
                 "1",
@@ -301,7 +297,7 @@ public final class CreatureCatalogTest {
                 null,
                 25,
                 3));
-        CreatureCatalogPageResult result = runtime.catalog.current();
+        CreatureCatalogPageResult result = runtime.queries.current();
         assertEquals(CreatureQueryStatus.INVALID_QUERY, result.status(), "CREATURE-CATALOG-005 invalid CR status");
         assertEquals(0, result.page().rows().size(), "CREATURE-CATALOG-005 invalid CR empty page");
         assertEquals(25, result.page().pageSize(), "CREATURE-CATALOG-005 invalid CR page size");
@@ -364,8 +360,8 @@ public final class CreatureCatalogTest {
 
     private static void assertCatalogStorageFailurePublishesEmptyErrorPage(TestRuntime runtime) {
         runtime.port.failNextSearch = true;
-        runtime.service.refreshCatalog(null);
-        CreatureCatalogPageResult result = runtime.catalog.current();
+        runtime.queries.search(null);
+        CreatureCatalogPageResult result = runtime.queries.current();
         assertEquals(CreatureQueryStatus.STORAGE_ERROR, result.status(),
                 "CREATURE-CATALOG-009 catalog storage error status");
         assertEquals(0, result.page().rows().size(), "CREATURE-CATALOG-009 catalog storage error empty page");
@@ -462,11 +458,32 @@ public final class CreatureCatalogTest {
     private record TestRuntime(
             MutableCreatureCatalogPort port,
             CreaturesApi service,
-            CreatureCatalogModel catalog,
+            QueryHarness queries,
             CreatureDetailModel detail,
-            CreatureFilterOptionsModel filterOptions,
             CreatureEncounterCandidatesModel encounterCandidates
     ) {
+    }
+
+    private static final class QueryHarness {
+        private final CreatureCatalogQueryApi api;
+        private CreatureCatalogPageResult current;
+
+        private QueryHarness(CreatureCatalogQueryApi api) {
+            this.api = api;
+        }
+
+        private CreatureCatalogPageResult search(CreatureCatalogQuery query) {
+            current = api.search(query).toCompletableFuture().join();
+            return current;
+        }
+
+        private CreatureFilterOptionsResult loadFilterOptions() {
+            return api.loadFilterOptions().toCompletableFuture().join();
+        }
+
+        private CreatureCatalogPageResult current() {
+            return current;
+        }
     }
 
     private static final class MutableCreatureCatalogPort implements CreatureCatalogPort {

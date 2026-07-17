@@ -4,34 +4,39 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import org.jspecify.annotations.Nullable;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
 import platform.diagnostics.NoopDiagnostics;
 import platform.execution.DirectExecutionLane;
 import platform.execution.ExecutionLane;
-import platform.state.LatestState;
-import platform.state.UpdateToken;
 import features.creatures.domain.catalog.CreatureCatalogData;
 import features.creatures.domain.catalog.CreatureCatalogData.CatalogSortField;
 import features.creatures.domain.catalog.CreatureCatalogData.CreatureProfile;
 import features.creatures.domain.catalog.port.CreatureCatalogPort;
 import features.creatures.api.CreatureCatalogPageResult;
+import features.creatures.api.CreatureCatalogQuery;
+import features.creatures.api.CreatureCatalogQueryApi;
+import features.creatures.api.CreatureCatalogRow;
 import features.creatures.api.CreatureDetailResult;
 import features.creatures.api.CreatureEncounterCandidatesResult;
 import features.creatures.api.CreatureFilterOptionsResult;
 import features.creatures.api.CreatureLookupStatus;
 import features.creatures.api.CreatureQueryStatus;
 import features.creatures.api.CreatureReadStatus;
-import features.creatures.api.RefreshCreatureCatalogCommand;
+import features.creatures.api.CreatureReferenceIndexResult;
+import features.creatures.api.CreatureReferenceIndexStatus;
+import features.creatures.api.RefreshCreatureReferenceIndexCommand;
 import features.creatures.api.RefreshCreatureEncounterCandidatesCommand;
-import features.creatures.api.RefreshCreatureFilterOptionsCommand;
 import features.creatures.api.SelectCreatureDetailCommand;
 
 /**
  * Public backend facade for creature catalog publication.
  */
-public final class CreaturesApplicationService implements features.creatures.api.CreaturesApi {
+public final class CreaturesApplicationService
+        implements features.creatures.api.CreaturesApi, CreatureCatalogQueryApi {
 
     private static final long NO_CREATURE_ID = 0L;
     private static final int DEFAULT_PAGE_SIZE = 50;
@@ -44,6 +49,8 @@ public final class CreaturesApplicationService implements features.creatures.api
     private static final DiagnosticId FILTER_OPTIONS_FAILURE =
             new DiagnosticId("creatures.filter-options.storage-failure");
     private static final DiagnosticId CATALOG_FAILURE = new DiagnosticId("creatures.catalog.storage-failure");
+    private static final DiagnosticId REFERENCE_INDEX_FAILURE =
+            new DiagnosticId("creatures.reference-index.storage-failure");
     private static final DiagnosticId DETAIL_FAILURE = new DiagnosticId("creatures.detail.storage-failure");
     private static final DiagnosticId ENCOUNTER_CANDIDATES_FAILURE =
             new DiagnosticId("creatures.encounter-candidates.storage-failure");
@@ -94,8 +101,8 @@ public final class CreaturesApplicationService implements features.creatures.api
     private final CreaturesPublishedState publishedState;
     private final ExecutionLane executionLane;
     private final Diagnostics diagnostics;
-    private final LatestState<Long> catalogRequests = new LatestState<>(0L);
-    private final Object catalogPublicationLock = new Object();
+    private final Object referenceIndexLock = new Object();
+    private long referenceIndexRevision;
 
     public CreaturesApplicationService(
             CreatureCatalogPort lookup,
@@ -120,47 +127,119 @@ public final class CreaturesApplicationService implements features.creatures.api
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
-    public void refreshFilterOptions(RefreshCreatureFilterOptionsCommand command) {
-        Objects.requireNonNull(command, COMMAND_PARAMETER);
-        executionLane.execute(this::refreshFilterOptionsInLane);
+    @Override
+    public CompletionStage<CreatureFilterOptionsResult> loadFilterOptions() {
+        CompletableFuture<CreatureFilterOptionsResult> completion = new CompletableFuture<>();
+        try {
+            executionLane.execute(() -> completion.complete(loadFilterOptionsInLane()));
+        } catch (RuntimeException exception) {
+            diagnostics.failure(FILTER_OPTIONS_FAILURE, exception.getClass());
+            completion.complete(filterOptionsStorageError());
+        }
+        return completion;
     }
 
-    private void refreshFilterOptionsInLane() {
+    private CreatureFilterOptionsResult loadFilterOptionsInLane() {
         try {
-            publishedState.publishFilterOptions(new CreatureFilterOptionsResult(
+            return new CreatureFilterOptionsResult(
                     CreatureReadStatus.SUCCESS,
                     CreatureCatalogProjection.filterOptions(
                             lookup.loadFilterValues(),
-                            CHALLENGE_RATINGS)));
+                            CHALLENGE_RATINGS));
         } catch (IllegalStateException exception) {
             diagnostics.failure(FILTER_OPTIONS_FAILURE, exception.getClass());
-            publishedState.publishFilterOptions(new CreatureFilterOptionsResult(
-                    CreatureReadStatus.STORAGE_ERROR,
-                    CreatureCatalogProjection.filterOptions(
-                            CreatureCatalogData.emptyFilterValues(),
-                            List.of())));
+            return filterOptionsStorageError();
         }
     }
 
-    public void refreshCatalog(RefreshCreatureCatalogCommand command) {
-        CatalogRequest request = CatalogRequest.from(command);
-        UpdateToken requestToken;
-        synchronized (catalogPublicationLock) {
-            requestToken = catalogRequests.beginUpdate();
-        }
-        executionLane.execute(() -> refreshCatalogInLane(request, requestToken));
+    private static CreatureFilterOptionsResult filterOptionsStorageError() {
+        return new CreatureFilterOptionsResult(
+                CreatureReadStatus.STORAGE_ERROR,
+                CreatureCatalogProjection.filterOptions(CreatureCatalogData.emptyFilterValues(), List.of()));
     }
 
-    private void refreshCatalogInLane(CatalogRequest request, UpdateToken requestToken) {
+    @Override
+    public CompletionStage<CreatureCatalogPageResult> search(CreatureCatalogQuery query) {
+        CatalogRequest request = CatalogRequest.from(query);
+        CompletableFuture<CreatureCatalogPageResult> completion = new CompletableFuture<>();
+        try {
+            executionLane.execute(() -> completion.complete(searchInLane(request)));
+        } catch (RuntimeException exception) {
+            diagnostics.failure(CATALOG_FAILURE, exception.getClass());
+            completion.complete(new CreatureCatalogPageResult(
+                    CreatureQueryStatus.STORAGE_ERROR,
+                    CreatureCatalogProjection.catalogPage(request.emptyPage())));
+        }
+        return completion;
+    }
+
+    private CreatureCatalogPageResult searchInLane(CatalogRequest request) {
         try {
             if (!request.hasValidChallengeRatingRange()) {
-                publishCatalog(requestToken, CreatureQueryStatus.INVALID_QUERY, request.emptyPage());
-                return;
+                return catalogResult(CreatureQueryStatus.INVALID_QUERY, request.emptyPage());
             }
-            publishCatalog(requestToken, CreatureQueryStatus.SUCCESS, lookup.searchCatalog(request.spec()));
+            return catalogResult(CreatureQueryStatus.SUCCESS, lookup.searchCatalog(request.spec()));
         } catch (IllegalStateException exception) {
             diagnostics.failure(CATALOG_FAILURE, exception.getClass());
-            publishCatalog(requestToken, CreatureQueryStatus.STORAGE_ERROR, request.emptyPage());
+            return catalogResult(CreatureQueryStatus.STORAGE_ERROR, request.emptyPage());
+        }
+    }
+
+    private static CreatureCatalogPageResult catalogResult(
+            CreatureQueryStatus status,
+            CreatureCatalogData.CatalogPageData page
+    ) {
+        return new CreatureCatalogPageResult(status, CreatureCatalogProjection.catalogPage(page));
+    }
+
+    @Override
+    public void refreshReferenceIndex(RefreshCreatureReferenceIndexCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        long revision;
+        synchronized (referenceIndexLock) {
+            revision = ++referenceIndexRevision;
+        }
+        publishedState.publishReferenceIndex(new CreatureReferenceIndexResult(
+                CreatureReferenceIndexStatus.LOADING, revision, List.of()));
+        try {
+            executionLane.execute(() -> refreshReferenceIndexInLane(revision));
+        } catch (RuntimeException exception) {
+            diagnostics.failure(REFERENCE_INDEX_FAILURE, exception.getClass());
+            publishReferenceIndex(revision, CreatureReferenceIndexStatus.STORAGE_ERROR, List.of());
+        }
+    }
+
+    private void refreshReferenceIndexInLane(long revision) {
+        try {
+            List<CreatureCatalogRow> rows = new ArrayList<>();
+            int offset = 0;
+            int totalCount;
+            do {
+                CatalogRequest request = CatalogRequest.referenceIndex(offset);
+                CreatureCatalogPageResult result = catalogResult(
+                        CreatureQueryStatus.SUCCESS,
+                        lookup.searchCatalog(request.spec()));
+                rows.addAll(result.page().rows());
+                totalCount = result.page().totalCount();
+                offset += Math.max(1, result.page().pageSize());
+            } while (offset < totalCount);
+            publishReferenceIndex(revision, CreatureReferenceIndexStatus.SUCCESS, rows);
+        } catch (IllegalStateException exception) {
+            diagnostics.failure(REFERENCE_INDEX_FAILURE, exception.getClass());
+            publishReferenceIndex(revision, CreatureReferenceIndexStatus.STORAGE_ERROR, List.of());
+        }
+    }
+
+    private void publishReferenceIndex(
+            long revision,
+            CreatureReferenceIndexStatus status,
+            List<CreatureCatalogRow> rows
+    ) {
+        synchronized (referenceIndexLock) {
+            if (revision != referenceIndexRevision) {
+                return;
+            }
+            publishedState.publishReferenceIndex(new CreatureReferenceIndexResult(status, revision, rows));
         }
     }
 
@@ -198,20 +277,6 @@ public final class CreaturesApplicationService implements features.creatures.api
         } catch (IllegalStateException exception) {
             diagnostics.failure(ENCOUNTER_CANDIDATES_FAILURE, exception.getClass());
             publishEncounterCandidates(CreatureQueryStatus.STORAGE_ERROR, List.of());
-        }
-    }
-
-    private void publishCatalog(
-            UpdateToken requestToken,
-            CreatureQueryStatus status,
-            CreatureCatalogData.CatalogPageData page
-    ) {
-        synchronized (catalogPublicationLock) {
-            if (catalogRequests.replace(requestToken, requestToken.revision())) {
-                publishedState.publishCatalog(new CreatureCatalogPageResult(
-                        status,
-                        CreatureCatalogProjection.catalogPage(page)));
-            }
         }
     }
 
@@ -255,7 +320,7 @@ public final class CreaturesApplicationService implements features.creatures.api
             int pageOffset
     ) {
 
-        static CatalogRequest from(@Nullable RefreshCreatureCatalogCommand command) {
+        static CatalogRequest from(@Nullable CreatureCatalogQuery command) {
             if (command == null) {
                 return empty();
             }
@@ -294,6 +359,24 @@ public final class CreaturesApplicationService implements features.creatures.api
                     true,
                     DEFAULT_PAGE_SIZE,
                     DEFAULT_PAGE_OFFSET);
+        }
+
+        private static CatalogRequest referenceIndex(int pageOffset) {
+            return new CatalogRequest(
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    CatalogSortField.NAME,
+                    true,
+                    MAX_PAGE_SIZE,
+                    Math.max(0, pageOffset));
         }
 
         CreatureCatalogData.CatalogSearchSpec spec() {

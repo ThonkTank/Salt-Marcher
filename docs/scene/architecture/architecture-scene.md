@@ -33,8 +33,9 @@ Session Planner API -------/          |
 ```
 
 Scene consumes `ActivePartyModel`, `WorldPlannerSnapshotModel`,
-`PreparedSceneCatalogModel`, and `EncounterRuntimeContextApi` only from the
-providers' `api` packages. It MUST NOT read foreign repositories or persist
+`PreparedSceneCatalogModel`, `CreatureReferenceIndexModel`, and
+`EncounterRuntimeContextApi` only from the providers' `api` packages. It MUST
+NOT read foreign repositories, issue creature Catalog page queries, or persist
 copied foreign details. Encounter accepts opaque context identifiers and MUST
 NOT depend on Scene types.
 
@@ -49,6 +50,10 @@ NOT depend on Scene types.
 - Scene commands and persistence work run asynchronously on the shared
   `ExecutionLane`; `SceneModel.current()` reads published memory and performs no
   persistence or foreign I/O.
+- Creature choices and mob labels come from the app-refreshed immutable,
+  revisioned creature reference index. Scene subscribes to that index but does
+  not own its refresh lifecycle, so Scene activation cannot replace a Catalog
+  search result.
 - Scene saves the workspace with `encounterSynchronized=false` before sending a
   complete revisioned context snapshot. Only an accepted Encounter revision is
   saved as synchronized. Initialization and refresh retry a pending snapshot.
