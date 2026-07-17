@@ -11,6 +11,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.Set;
 
 final class DungeonSqliteMapRecordWriter {
@@ -25,6 +27,17 @@ final class DungeonSqliteMapRecordWriter {
     static void persist(Connection connection, DungeonMapRecord record) throws SQLException {
         upsertMap(connection, record);
         persistAuthoredGeometry(connection, record);
+        DungeonSqliteChunkWriter.replaceChunkInventory(connection, record);
+    }
+
+    static void persistChange(
+            Connection connection,
+            DungeonMapRecord before,
+            DungeonMapRecord after
+    ) throws SQLException {
+        upsertMap(connection, after);
+        persistChangedAuthoredGeometry(connection, before, after);
+        DungeonSqliteChunkWriter.updateChunkInventory(connection, before, after);
     }
 
     static void deleteMap(Connection connection, long mapId) throws SQLException {
@@ -37,18 +50,40 @@ final class DungeonSqliteMapRecordWriter {
 
     private static void upsertMap(Connection connection, DungeonMapRecord record) throws SQLException {
         try (PreparedStatement update = connection.prepareStatement(
-                "UPDATE " + DungeonPersistenceSchema.MAPS_TABLE + " SET name=?" + SQL_WHERE + "dungeon_map_id=?")) {
+                "UPDATE " + DungeonPersistenceSchema.MAPS_TABLE
+                        + " SET name=?, revision=?" + SQL_WHERE
+                        + "dungeon_map_id=? AND revision=?")) {
             update.setString(1, record.name());
-            update.setLong(2, record.mapId());
+            update.setLong(2, record.revision());
+            update.setLong(3, record.mapId());
+            update.setLong(4, record.revision() - 1L);
             if (update.executeUpdate() > 0) {
                 return;
             }
         }
+        if (mapExists(connection, record.mapId())) {
+            throw new SQLException(
+                    "Dungeon map revision mismatch for map " + record.mapId()
+                            + "; expected " + (record.revision() - 1L));
+        }
         try (PreparedStatement insert = connection.prepareStatement(
-                INSERT_INTO + DungeonPersistenceSchema.MAPS_TABLE + "(dungeon_map_id, name) VALUES(?,?)")) {
+                INSERT_INTO + DungeonPersistenceSchema.MAPS_TABLE
+                        + "(dungeon_map_id, name, revision) VALUES(?,?,?)")) {
             insert.setLong(1, record.mapId());
             insert.setString(2, record.name());
+            insert.setLong(3, record.revision());
             insert.executeUpdate();
+        }
+    }
+
+    private static boolean mapExists(Connection connection, long mapId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT 1 FROM " + DungeonPersistenceSchema.MAPS_TABLE
+                        + SQL_WHERE + "dungeon_map_id=?")) {
+            statement.setLong(1, mapId);
+            try (var resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
         }
     }
 
@@ -67,6 +102,50 @@ final class DungeonSqliteMapRecordWriter {
         }
         DungeonSqliteRetainedIdCleanup.deleteObsoleteRooms(connection, record.mapId(), roomIds);
         DungeonSqliteRetainedIdCleanup.deleteObsoleteRoomClusters(connection, record.mapId(), clusterIds);
+    }
+
+    private static void persistChangedAuthoredGeometry(
+            Connection connection,
+            DungeonMapRecord before,
+            DungeonMapRecord after
+    ) throws SQLException {
+        Map<Long, DungeonRoomClusterRecord> previousClusters = clustersById(before);
+        Set<Long> retainedClusterIds = new LinkedHashSet<>();
+        for (DungeonRoomClusterRecord cluster : after.roomClusters()) {
+            retainedClusterIds.add(cluster.clusterId());
+            if (!cluster.equals(previousClusters.get(cluster.clusterId()))) {
+                DungeonSqliteClusterGeometryWriter.persist(connection, cluster);
+            }
+        }
+        Map<Long, DungeonRoomRecord> previousRooms = roomsById(before);
+        Set<Long> retainedRoomIds = new LinkedHashSet<>();
+        for (DungeonRoomRecord room : after.rooms()) {
+            retainedRoomIds.add(room.roomId());
+            if (!room.equals(previousRooms.get(room.roomId()))) {
+                upsertRoomPosition(connection, room);
+                replaceRoomFloors(connection, room);
+                replaceRoomExitDescriptions(connection, room);
+            }
+        }
+        DungeonSqliteRetainedIdCleanup.deleteObsoleteRooms(connection, after.mapId(), retainedRoomIds);
+        DungeonSqliteRetainedIdCleanup.deleteObsoleteRoomClusters(
+                connection, after.mapId(), retainedClusterIds);
+    }
+
+    private static Map<Long, DungeonRoomClusterRecord> clustersById(DungeonMapRecord record) {
+        Map<Long, DungeonRoomClusterRecord> result = new LinkedHashMap<>();
+        for (DungeonRoomClusterRecord cluster : record.roomClusters()) {
+            result.put(cluster.clusterId(), cluster);
+        }
+        return result;
+    }
+
+    private static Map<Long, DungeonRoomRecord> roomsById(DungeonMapRecord record) {
+        Map<Long, DungeonRoomRecord> result = new LinkedHashMap<>();
+        for (DungeonRoomRecord room : record.rooms()) {
+            result.put(room.roomId(), room);
+        }
+        return result;
     }
 
     private static void upsertRoomPosition(Connection connection, DungeonRoomRecord room) throws SQLException {

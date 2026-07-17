@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-23
+Last Reviewed: 2026-07-17
 Source of Truth: Editor-facing dungeon behavior, visible states, and acceptance criteria.
 
 # Dungeon Editor Requirements
@@ -34,8 +34,8 @@ structure, authored dungeon invariants, or SQLite schema detail.
 - The sibling `salt-marcher` repo shows the fuller visible target-state editor
   experience for corridor creation or merge, stair parameter editing, and
   transition destination selection.
-- No current SaltMarcher editor surface evidence was found for dedicated
-  committed-history controls; future history behavior remains target-state.
+- The editor owns per-session committed history and exposes undo/redo through
+  the standard platform shortcuts. History is not persisted across restarts.
 
 ## Visible Structure
 
@@ -91,12 +91,58 @@ cards.
 - handle drag preview MUST be responsive and MUST avoid a full authored
   map reload during per-mouse-move preview when the typed preview can be
   rendered from the current editor session
+- after the visible chunk workset is loaded, pointer preview MUST NOT read from
+  or write to the repository
+- only the newest pending pointer-move preview may remain queued; press,
+  release, commit, cancel, and tool-switch inputs MUST invalidate older queued
+  move samples
 - apply MUST commit only on explicit gesture completion
 - corridor editing MUST support visible create and delete flows
 - stair editing MUST support visible create and delete flows plus stair shape, direction, and exit-level configuration
 - transition editing MUST support visible create and delete flows plus destination selection for dungeon, overworld, or an explicit unlinked entrance placeholder
 - cluster and room naming MUST support default and custom names through the
   state panel; only cluster labels may also use direct label editing
+
+## Sparse Map And Camera Behavior
+
+- authored coordinates MUST support positive and negative values without a
+  fixed map width or height acting as an editing boundary
+- the editor MUST load chunks intersecting the visible viewport plus one
+  surrounding chunk ring for the active level
+- chunks are `64 x 64` cells and use mathematical floor division for negative
+  coordinates
+- panning or zooming MUST remain passive presentation behavior and MUST NOT
+  mutate authored truth
+- coordinate jump, fit-selection, and fit-authored-content actions MUST remain
+  possible even when authored content is far from the current viewport
+- graph presentation MUST distinguish loaded relations from continuations into
+  unloaded chunks rather than presenting the loaded window as the whole map
+
+## Committed History
+
+- `Ctrl/Cmd+Z` MUST undo the latest committed authored command for the selected
+  map in the running editor session
+- `Ctrl/Cmd+Y` and `Ctrl/Cmd+Shift+Z` MUST redo the latest undone command
+- previews, rejected commands, camera changes, selection, and tool changes MUST
+  NOT create history entries
+- a new committed command after undo MUST discard that map's redo branch
+- history MUST preserve stable authored identities and restore content as a
+  new monotonically increasing map revision
+- one map session retains at most `200` committed commands or `128 MiB` of
+  estimated history, whichever limit is reached first
+- closing the editor session or restarting the application clears history;
+  history MUST NOT be stored as dungeon-authored truth
+
+## Responsiveness Qualification
+
+- camera-only and hover-only work MUST complete within a `16 ms` p95 budget in
+  the qualification scenario
+- preview over an already loaded workset MUST complete within a `50 ms` p95
+  budget
+- rendering and hit work MUST be proportional to visible primitives and
+  touched chunks rather than total authored map size
+- stable authored content and the dynamic interaction/actor layer MUST be
+  independently invalidatable so hover changes do not redraw authored content
 
 ## Supported Interaction States
 
@@ -338,6 +384,10 @@ Delete and corridor binding behavior:
   and recompute deterministically.
 - Advanced tool families stay directly visible even when specific authored
   mutations are still delivered incrementally.
+- Undo and redo are observable through the real map-view shortcut route,
+  persist the restored authored result, and keep revision monotonic.
+- Negative-coordinate chunk assignment, one-ring loading, preview workset
+  reuse, and latest-wins pointer scheduling are deterministic and executable.
 
 ## References
 

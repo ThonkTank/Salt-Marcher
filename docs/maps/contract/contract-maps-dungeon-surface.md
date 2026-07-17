@@ -147,7 +147,7 @@ requests.
 - Missing optional result sections mean absence, not defaults invented by a
   consumer.
 - A stale asynchronous result must not overwrite a newer Dungeon API revision.
-- Translation into Maps API values must preserve Dungeon meaning but must not
+- Translation into canvas-native values must preserve Dungeon meaning but must not
   mutate Dungeon state.
 
 ## Compatibility, Migration, And Versioning

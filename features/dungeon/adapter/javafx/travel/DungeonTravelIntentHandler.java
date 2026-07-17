@@ -2,7 +2,7 @@ package features.dungeon.adapter.javafx.travel;
 
 import java.util.List;
 import java.util.Objects;
-import features.dungeon.application.travel.DungeonTravelRuntimeApplicationService;
+import features.dungeon.api.travel.DungeonTravelApi;
 import features.dungeon.api.DungeonOverlaySettings;
 import platform.ui.catalogcrud.CatalogCrudControlsContentModel;
 import platform.ui.catalogcrud.CatalogCrudControlsViewInputEvent;
@@ -15,7 +15,7 @@ final class DungeonTravelIntentHandler {
     private final DungeonTravelContributionModel presentationModel;
     private final CatalogCrudControlsContentModel catalogContentModel;
     private final DungeonMapContentModel mapContentModel;
-    private final DungeonTravelRuntimeApplicationService travel;
+    private final DungeonTravelApi travel;
     private double previousMiddleDragCanvasX;
     private double previousMiddleDragCanvasY;
     private boolean middleDragInProgress;
@@ -24,7 +24,7 @@ final class DungeonTravelIntentHandler {
             DungeonTravelContributionModel presentationModel,
             CatalogCrudControlsContentModel catalogContentModel,
             DungeonMapContentModel mapContentModel,
-            DungeonTravelRuntimeApplicationService travel
+            DungeonTravelApi travel
     ) {
         this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
         this.catalogContentModel = Objects.requireNonNull(catalogContentModel, "catalogContentModel");

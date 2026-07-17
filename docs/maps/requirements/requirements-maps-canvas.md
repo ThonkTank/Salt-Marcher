@@ -8,8 +8,9 @@ canvas.
 
 ## Goal
 
-Provide one generic passive map canvas that Dungeon and Hex surfaces reuse for
-rendering, hit-testing, and passive pointer capture.
+Provide feature-neutral passive map-canvas mechanisms that Dungeon and Hex
+JavaFX surfaces reuse for rendering, hit-testing, camera behavior, viewport
+caching, and passive pointer capture.
 
 ## Non-Goals
 

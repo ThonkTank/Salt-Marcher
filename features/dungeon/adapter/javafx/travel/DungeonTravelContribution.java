@@ -9,18 +9,18 @@ import shell.api.ShellContribution;
 import shell.api.ShellContributionSpec;
 import shell.api.ShellLeftBarTabMode;
 import shell.api.ShellLeftBarTabSpec;
-import features.dungeon.application.travel.DungeonTravelRuntimeApplicationService;
+import features.dungeon.api.travel.DungeonTravelApi;
 import features.dungeon.api.DungeonMapCatalogModel;
 import features.dungeon.api.TravelDungeonModel;
 
 public final class DungeonTravelContribution implements ShellContribution {
 
-    private final DungeonTravelRuntimeApplicationService travel;
+    private final DungeonTravelApi travel;
     private final DungeonMapCatalogModel mapCatalogModel;
     private final TravelDungeonModel travelModel;
 
     public DungeonTravelContribution(
-            DungeonTravelRuntimeApplicationService travel,
+            DungeonTravelApi travel,
             DungeonMapCatalogModel mapCatalogModel,
             TravelDungeonModel travelModel
     ) {

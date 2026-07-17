@@ -35,6 +35,21 @@ final class DungeonSqliteCorridorPersistence {
         DungeonSqliteRetainedIdCleanup.deleteObsoleteCorridors(connection, record.mapId(), corridorIds);
     }
 
+    static void persistChange(Connection connection, DungeonMapRecord before, DungeonMapRecord after)
+            throws SQLException {
+        for (DungeonCorridorRecord corridor : DungeonSqliteChangedRecords.changed(
+                before.corridors(), after.corridors(), DungeonCorridorRecord::corridorId)) {
+            upsertCorridor(connection, corridor);
+            replaceCorridorMembers(connection, corridor);
+            replaceCorridorWaypoints(connection, corridor);
+            replaceCorridorBindings(connection, corridor);
+        }
+        DungeonSqliteRetainedIdCleanup.deleteObsoleteCorridors(
+                connection,
+                after.mapId(),
+                DungeonSqliteChangedRecords.identities(after.corridors(), DungeonCorridorRecord::corridorId));
+    }
+
     private static void upsertCorridor(Connection connection, DungeonCorridorRecord corridor) throws SQLException {
         try (PreparedStatement update = connection.prepareStatement(
                 "UPDATE " + DungeonPersistenceSchema.CORRIDORS_TABLE

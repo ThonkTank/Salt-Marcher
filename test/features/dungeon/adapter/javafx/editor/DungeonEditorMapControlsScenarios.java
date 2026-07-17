@@ -53,6 +53,46 @@ final class DungeonEditorMapControlsScenarios {
         route(() -> verifyToolFamilyRowThroughControlsView());
         route(() -> verifySecondaryToolDropdownThroughControlsView());
         route(() -> verifyEscapeResetsToolThroughMapView());
+        route(() -> verifySessionUndoRedoThroughMapView());
+    }
+
+    private static void verifySessionUndoRedoThroughMapView() {
+        TestRuntime runtime = TestRuntime.create();
+        TestBinding binding = bindTest(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+        long mapId = createMapThroughControls(controls, runtime, "Undo Redo Map");
+        click(button(controls, "Raum"));
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        double startX = viewport.sceneToScreenX(1.5);
+        double startY = viewport.sceneToScreenY(1.5);
+        double endX = viewport.sceneToScreenX(3.5);
+        double endY = viewport.sceneToScreenY(3.5);
+        fireMapMouse(mapView, MouseEvent.MOUSE_PRESSED, MouseButton.PRIMARY, startX, startY, false);
+        fireMapMouse(mapView, MouseEvent.MOUSE_DRAGGED, MouseButton.PRIMARY, endX, endY, false);
+        fireMapMouse(mapView, MouseEvent.MOUSE_RELEASED, MouseButton.PRIMARY, endX, endY, false);
+        assertEquals(1L, runtime.database().countRoomsForMap(mapId),
+                "DE-HISTORY-001 room exists after committed edit");
+        assertEquals(2L, runtime.database().mapRevision(mapId),
+                "DE-HISTORY-001 committed edit persists the aggregate revision");
+        assertEquals(1L, runtime.database().countChunksForMap(mapId),
+                "DE-HISTORY-001 committed edit persists the affected chunk inventory");
+
+        fireMapShortcut(mapView, KeyCode.Z, true, false);
+        assertEquals(0L, runtime.database().countRoomsForMap(mapId),
+                "DE-HISTORY-001 shortcut undo restores the prior authored map");
+        assertEquals(3L, runtime.database().mapRevision(mapId),
+                "DE-HISTORY-001 undo restores content as a new revision");
+        assertEquals(0L, runtime.database().countChunksForMap(mapId),
+                "DE-HISTORY-001 undo removes obsolete chunk inventory");
+
+        fireMapShortcut(mapView, KeyCode.Y, true, false);
+        assertEquals(1L, runtime.database().countRoomsForMap(mapId),
+                "DE-HISTORY-002 shortcut redo reapplies the authored edit");
+        assertEquals(4L, runtime.database().mapRevision(mapId),
+                "DE-HISTORY-002 redo restores content as a new revision");
+        assertEquals(1L, runtime.database().countChunksForMap(mapId),
+                "DE-HISTORY-002 redo restores chunk inventory");
     }
 
     private static void route(

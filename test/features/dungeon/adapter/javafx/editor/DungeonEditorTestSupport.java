@@ -284,14 +284,18 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static void fireMapShortcut(DungeonMapView view, KeyCode keyCode) {
+        fireMapShortcut(view, keyCode, false, false);
+    }
+
+    static void fireMapShortcut(DungeonMapView view, KeyCode keyCode, boolean controlDown, boolean shiftDown) {
         Pane canvasLayer = mapCanvasLayer(view);
         canvasLayer.fireEvent(new KeyEvent(
                 KeyEvent.KEY_PRESSED,
                 keyCode.getChar(),
                 keyCode.getName(),
                 keyCode,
-                false,
-                false,
+                shiftDown,
+                controlDown,
                 false,
                 false));
     }

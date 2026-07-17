@@ -33,7 +33,7 @@ Generic shared map-canvas behavior remains canonical in `docs/maps/`.
 
 ### Related Maps Docs
 
-- [Maps Feature Overview](../maps/README.md) (line 1)
+- [Map Canvas Overview](../maps/README.md) (line 1)
 - [Maps Canvas Requirements](../maps/requirements/requirements-maps-canvas.md) (line 1)
 - [Hex Map Adoption Architecture](../maps/architecture/architecture-maps-hex-adoption.md) (line 1)
 
@@ -50,4 +50,4 @@ Generic shared map-canvas behavior remains canonical in `docs/maps/`.
 
 ## References
 
-- [Maps Feature Overview](../maps/README.md) (line 1)
+- [Map Canvas Overview](../maps/README.md) (line 1)

@@ -194,6 +194,14 @@ class DungeonEditorTestPersistence {
             return count("SELECT COUNT(*) FROM dungeon_rooms WHERE dungeon_map_id=?", mapId);
         }
 
+        long mapRevision(long mapId) {
+            return count("SELECT revision FROM dungeon_maps WHERE dungeon_map_id=?", mapId);
+        }
+
+        long countChunksForMap(long mapId) {
+            return count("SELECT COUNT(*) FROM dungeon_chunks WHERE dungeon_map_id=?", mapId);
+        }
+
         long countRoomClustersForMap(long mapId) {
             return count("SELECT COUNT(*) FROM dungeon_room_clusters WHERE dungeon_map_id=?", mapId);
         }

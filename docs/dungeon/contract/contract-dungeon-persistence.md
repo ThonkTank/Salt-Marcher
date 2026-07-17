@@ -1,6 +1,6 @@
-Status: Draft
+Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-08
+Last Reviewed: 2026-07-17
 Source of Truth: Dungeon persistence boundary, stored truth, adapter mapping
 rules, and schema ownership.
 
@@ -60,6 +60,37 @@ Persisted authored truth includes:
 - `dungeon_topology_elements` is authoritative for persisted topology identity
 - compatibility detail tables remain source-local storage and correlation
   detail, not alternate semantic owners
+
+`dungeon_maps.revision` stores the last committed authored revision. Adapters
+MUST read and write that value; they MUST NOT replace it with a constant
+readback revision.
+
+`dungeon_chunks` is a source-local spatial inventory keyed by
+`(dungeon_map_id, level_z, chunk_q, chunk_r)`. One chunk covers `64 x 64`
+cells, and negative coordinates use mathematical floor division. The row's
+`revision` identifies the authored map revision from which that inventory entry
+was derived. Chunk rows are indexing metadata, not authored semantic truth.
+
+## Window Reads And Incremental Writes
+
+- a viewport read MUST address explicit chunk keys and return the request
+  generation plus committed map revision needed to reject late results
+- a loaded viewport consists of visible chunks plus one surrounding ring
+- entities retain map-wide stable identities and MAY cross chunk boundaries;
+  an adapter MUST NOT clone identity merely to fit storage partitions
+- an authored commit MUST validate the expected map revision, write only
+  affected authored rows and chunk inventory, and advance the map revision once
+  in the same transaction
+- a failed validation or storage write MUST roll back authored rows, chunk
+  inventory, and map revision together
+- successful writes return the committed change result; the application MUST
+  NOT require an unconditional whole-map readback to discover what it wrote
+- preview, hover, camera movement, and undo/redo stacks MUST NOT write SQLite
+
+Ordinary single-map commands use the incremental before/after port. Initial map
+creation and the remaining multi-map transition-link write still use one
+whole-record compatibility route. Its owner and deletion milestone live in the
+temporary Dungeon delivery note; it is not an alternative target.
 
 ## Authored Name Storage Semantics
 
@@ -237,6 +268,9 @@ state, render state, or travel behavior.
   they are treated as supported authored maps
 - direct runtime token movement does not justify new authored-position tables;
   runtime party position remains owned outside dungeon persistence
+- revision, chunk inventory, and incremental chunk ownership may be introduced
+  through an automatic destructive schema migration; existing Dungeon rows are
+  disposable test data and have no compatibility or backup obligation
 
 ## Verification Notes
 
@@ -250,4 +284,4 @@ state, render state, or travel behavior.
 
 - [Dungeon Domain Model](../domain/domain-dungeon.md) (line 1)
 - [Dungeon Map Surface Contract](../../maps/contract/contract-maps-dungeon-surface.md) (line 1)
-- [Maps Feature Overview](../../maps/README.md) (line 1)
+- [Map Canvas Overview](../../maps/README.md) (line 1)

@@ -45,7 +45,7 @@ final class DungeonSqliteMapRecordLoader {
         return new DungeonMapRecord(
                 mapId,
                 resultSet.getString("name"),
-                1L,
+                resultSet.getLong("revision"),
                 gridBounds(connection, mapId),
                 loadRoomClusters(connection, mapId),
                 loadRooms(connection, mapId),

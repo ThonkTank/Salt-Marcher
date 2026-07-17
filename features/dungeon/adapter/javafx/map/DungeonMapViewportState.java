@@ -3,9 +3,16 @@ package features.dungeon.adapter.javafx.map;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel.Viewport;
+import platform.ui.mapcanvas.MapCanvasCamera;
+import platform.ui.mapcanvas.MapCanvasViewport;
 
 final class DungeonMapViewportState {
-    private Viewport viewport = Viewport.initial();
+    private final MapCanvasCamera camera = new MapCanvasCamera(
+            DungeonMapViewportScale.baseGrid(),
+            DungeonMapViewportScale.defaultZoom(),
+            DungeonMapViewportScale.minimumZoom(),
+            DungeonMapViewportScale.maximumZoom());
+    private Viewport viewport = dungeonViewport(camera.viewport());
     private final ReadOnlyDoubleWrapper zoom = new ReadOnlyDoubleWrapper(viewport.zoom());
 
     ReadOnlyDoubleProperty zoomProperty() {
@@ -21,29 +28,25 @@ final class DungeonMapViewportState {
     }
 
     Viewport resetCamera() {
-        return setViewport(Viewport.initial());
+        return setViewport(dungeonViewport(camera.reset()));
     }
 
     Viewport panByPixels(double deltaX, double deltaY) {
-        return setViewport(new Viewport(
-                viewport.panX() + deltaX,
-                viewport.panY() + deltaY,
-                viewport.zoom()));
+        return setViewport(dungeonViewport(camera.panByPixels(deltaX, deltaY)));
     }
 
     Viewport zoomAround(double canvasX, double canvasY, double factor) {
-        double nextZoom = DungeonMapViewportScale.clampZoom(viewport.zoom() * factor);
-        double scale = nextZoom / viewport.zoom();
-        return setViewport(new Viewport(
-                canvasX - (canvasX - viewport.panX()) * scale,
-                canvasY - (canvasY - viewport.panY()) * scale,
-                nextZoom));
+        return setViewport(dungeonViewport(camera.zoomAround(canvasX, canvasY, factor)));
     }
 
     private Viewport setViewport(Viewport nextViewport) {
         viewport = nextViewport == null ? Viewport.initial() : nextViewport;
         zoom.set(viewport.zoom());
         return viewport;
+    }
+
+    private static Viewport dungeonViewport(MapCanvasViewport viewport) {
+        return new Viewport(viewport.panX(), viewport.panY(), viewport.zoom());
     }
 
 }

@@ -40,6 +40,8 @@ import features.dungeon.adapter.javafx.map.DungeonMapViewInputEvent;
 
 final class DungeonEditorViewModel {
     private static final long NO_TRANSITION_ID = 0L;
+    private static final String UNDO_COMMAND = "UNDO";
+    private static final String REDO_COMMAND = "REDO";
 
     private final ReadOnlyObjectWrapper<ControlsProjection> controlsProjection =
             new ReadOnlyObjectWrapper<>(ControlsProjection.initial());
@@ -470,12 +472,30 @@ final class DungeonEditorViewModel {
         if (event == null) {
             return;
         }
-        if (consumeInlineLabelEditEvent(event) || consumeInlineEditOutsidePressGesture(event)
+        if (consumeInlineLabelEditEvent(event) || consumeHistoryCommand(event)
+                || consumeInlineEditOutsidePressGesture(event)
                 || consumeActiveInlineEditBoundary(event)
                 || consumeLocalCameraInput(event) || consumeScrollInput(event) || consumeEscapeInput(event)) {
             return;
         }
         consumePointerToolInput(event);
+    }
+
+    private boolean consumeHistoryCommand(DungeonMapViewInputEvent event) {
+        if (!event.input().escapePressed()) {
+            return false;
+        }
+        if (UNDO_COMMAND.equals(event.textInput())) {
+            mapContentModel.clearHoverTarget();
+            controlOperations.undo();
+            return true;
+        }
+        if (REDO_COMMAND.equals(event.textInput())) {
+            mapContentModel.clearHoverTarget();
+            controlOperations.redo();
+            return true;
+        }
+        return false;
     }
 
     private boolean consumeInlineLabelEditEvent(DungeonMapViewInputEvent event) {

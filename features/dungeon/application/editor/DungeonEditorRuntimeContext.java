@@ -117,6 +117,14 @@ final class DungeonEditorRuntimeContext {
         return fromSnapshot(session.deleteMap(mapIdValue));
     }
 
+    Result undo() {
+        return fromSnapshot(session.undo());
+    }
+
+    Result redo() {
+        return fromSnapshot(session.redo());
+    }
+
     Result setViewMode(DungeonEditorViewMode viewMode) {
         return fromSessionFrame(session.setViewMode(DungeonEditorRuntimeInputTranslator.viewMode(viewMode)));
     }

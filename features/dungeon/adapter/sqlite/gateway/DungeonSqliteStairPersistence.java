@@ -38,6 +38,20 @@ final class DungeonSqliteStairPersistence {
         DungeonSqliteRetainedIdCleanup.deleteObsoleteStairs(connection, record.mapId(), stairIds);
     }
 
+    static void persistChange(Connection connection, DungeonMapRecord before, DungeonMapRecord after)
+            throws SQLException {
+        for (DungeonStairRecord stair : DungeonSqliteChangedRecords.changed(
+                before.stairs(), after.stairs(), DungeonStairRecord::stairId)) {
+            upsertStair(connection, stair);
+            replaceStairPathNodes(connection, stair);
+            replaceStairExits(connection, stair);
+        }
+        DungeonSqliteRetainedIdCleanup.deleteObsoleteStairs(
+                connection,
+                after.mapId(),
+                DungeonSqliteChangedRecords.identities(after.stairs(), DungeonStairRecord::stairId));
+    }
+
     private static void upsertStair(Connection connection, DungeonStairRecord stair) throws SQLException {
         try (PreparedStatement update = connection.prepareStatement(
                 "UPDATE " + DungeonPersistenceSchema.STAIRS_TABLE
