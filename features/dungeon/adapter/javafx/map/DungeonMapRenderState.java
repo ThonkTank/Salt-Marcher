@@ -11,8 +11,6 @@ import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonTopologyKind;
 import features.dungeon.api.DungeonTravelHeading;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreparedLabelKind;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreparedTopologyKind;
 
 // Render-state values
 record DungeonMapRenderState(

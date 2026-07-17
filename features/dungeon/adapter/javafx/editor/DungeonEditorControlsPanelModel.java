@@ -9,7 +9,7 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.api.DungeonEditorTool;
-import features.dungeon.application.editor.DungeonEditorOverlaySettings;
+import features.dungeon.adapter.javafx.editor.DungeonEditorControlsInput.OverlayMode;
 
 final class DungeonEditorControlsPanelModel {
     private final MapCatalogPanel mapCatalog = new MapCatalogPanel();
@@ -237,7 +237,7 @@ final class DungeonEditorControlsPanelModel {
     }
 
     record OverlayModeOption(
-            DungeonEditorOverlaySettings.Mode mode,
+            OverlayMode mode,
             String label,
             boolean rangeVisible,
             boolean selectedLevelsVisible
@@ -257,8 +257,8 @@ final class DungeonEditorControlsPanelModel {
         }
     }
 
-    private static DungeonEditorOverlaySettings.Mode defaultOverlayMode() {
-        return DungeonEditorOverlaySettings.defaults().mode();
+    private static OverlayMode defaultOverlayMode() {
+        return OverlayMode.OFF;
     }
 
     record OverlayPanelState(
@@ -523,17 +523,17 @@ final class DungeonEditorControlsPanelModel {
     List<DungeonEditorControlsPanelModel.OverlayModeOption> overlayModeOptions() {
         return List.of(
                 new DungeonEditorControlsPanelModel.OverlayModeOption(
-                        DungeonEditorOverlaySettings.Mode.OFF,
+                        OverlayMode.OFF,
                         "Aus",
                         false,
                         false),
                 new DungeonEditorControlsPanelModel.OverlayModeOption(
-                        DungeonEditorOverlaySettings.Mode.NEARBY,
+                        OverlayMode.NEARBY,
                         "Nahe Ebenen",
                         true,
                         false),
                 new DungeonEditorControlsPanelModel.OverlayModeOption(
-                        DungeonEditorOverlaySettings.Mode.SELECTED,
+                        OverlayMode.SELECTED,
                         defaultToolLabel(),
                         false,
                         true));

@@ -3,7 +3,6 @@ package features.dungeon.adapter.javafx.map;
 import java.util.List;
 import features.dungeon.api.DungeonEdgeRef;
 import features.dungeon.api.DungeonEditorStateSnapshot;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreviewBoundaryDiffFrame;
 
 final class DungeonMapPreviewBoundaryDiffProjector {
 

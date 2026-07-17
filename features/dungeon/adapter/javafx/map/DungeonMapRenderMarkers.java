@@ -6,7 +6,6 @@ import features.dungeon.api.DungeonEditorHandleRef;
 import features.dungeon.api.DungeonEditorHandleSnapshot;
 import features.dungeon.api.DungeonEditorMapSnapshot;
 import features.dungeon.api.DungeonEditorStateSnapshot;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreparedLabelKind;
 
 final class DungeonMapRenderMarkers {
 

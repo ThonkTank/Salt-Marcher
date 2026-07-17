@@ -5,6 +5,7 @@ import features.dungeon.api.DungeonMapSummary;
 import features.dungeon.api.editor.DungeonEditorApi;
 import features.dungeon.api.editor.DungeonEditorDraftState;
 import features.dungeon.api.editor.DungeonEditorIntent;
+import features.dungeon.api.editor.DungeonEditorPointerInput;
 import features.dungeon.api.editor.DungeonEditorState;
 import features.dungeon.api.editor.DungeonEditorToolFamily;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
@@ -97,8 +98,95 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
             runtimeRoot.updateStatePanelStairGeometryDraft(stairFrom(update.geometry()));
         } else if (safeIntent instanceof DungeonEditorIntent.CommitStairGeometry commit) {
             runtimeRoot.saveStairGeometry(stairFrom(commit.geometry()));
+        } else if (safeIntent instanceof DungeonEditorIntent.Pointer pointer) {
+            dispatchPointer(pointer.input());
+        } else if (safeIntent == DungeonEditorIntent.ClearPointerSession.INSTANCE) {
+            runtimeRoot.clearPointerSession();
         } else {
             throw new IllegalArgumentException("Unsupported Dungeon Editor intent: " + safeIntent.getClass());
+        }
+    }
+
+    private void dispatchPointer(DungeonEditorPointerInput input) {
+        if (input.sourceRevision() != current().publicationRevision()) {
+            return;
+        }
+        List<DungeonEditorRuntimePointerTarget> targets = input.targets().stream()
+                .map(DungeonEditorApiFacade::runtimeTargetFrom)
+                .toList();
+        PointerWorkflowGesture gesture = new PointerWorkflowGesture(
+                input.gesture().primaryButtonDown(),
+                input.gesture().secondaryButtonDown(),
+                input.gesture().middleButtonDown(),
+                input.gesture().shiftDown(),
+                input.gesture().controlDown(),
+                input.gesture().wallSingleClickModeSelected());
+        runtimeRoot.applyPointerInteraction(new PointerInteractionRequest(
+                enumValue(PointerAction.class, input.action().name(), PointerAction.MOVED),
+                input.selectedToolKey(),
+                gesture,
+                PointerInteractionTargets.fromRuntimeTargets(
+                        input.sceneX(),
+                        input.sceneY(),
+                        input.primaryButtonDown(),
+                        input.secondaryButtonDown(),
+                        targets,
+                        input.projectionLevel()),
+                input.projectionLevel(),
+                TransitionDestination.fromDraftInput(destinationFrom(input.transitionDestination()))));
+    }
+
+    private static DungeonEditorRuntimePointerTarget runtimeTargetFrom(DungeonEditorPointerInput.Target target) {
+        DungeonEditorPointerInput.Target safeTarget = target == null
+                ? DungeonEditorPointerInput.Target.empty()
+                : target;
+        DungeonEditorPointerInput.BoundaryTarget boundary = safeTarget.boundary();
+        return new DungeonEditorRuntimePointerTarget(
+                enumValue(DungeonEditorRuntimePointerTarget.TargetKind.class,
+                        safeTarget.targetKind(), DungeonEditorRuntimePointerTarget.TargetKind.EMPTY),
+                enumValue(DungeonEditorRuntimePointerTarget.LabelKind.class,
+                        safeTarget.labelKind(), DungeonEditorRuntimePointerTarget.LabelKind.EMPTY),
+                enumValue(DungeonEditorRuntimePointerTarget.ElementKind.class,
+                        safeTarget.elementKind(), DungeonEditorRuntimePointerTarget.ElementKind.EMPTY),
+                safeTarget.ownerId(),
+                safeTarget.clusterId(),
+                enumValue(DungeonEditorRuntimePointerTarget.TopologyKind.class,
+                        safeTarget.topologyKind(), DungeonEditorRuntimePointerTarget.TopologyKind.EMPTY),
+                safeTarget.topologyId(),
+                safeTarget.handleRef(),
+                new DungeonEditorRuntimePointerTarget.BoundaryTarget(
+                        enumValue(DungeonEditorRuntimePointerTarget.BoundaryKind.class,
+                                boundary.boundaryKind(), DungeonEditorRuntimePointerTarget.BoundaryKind.WALL),
+                        boundary.key(),
+                        boundary.ownerId(),
+                        enumValue(DungeonEditorRuntimePointerTarget.TopologyKind.class,
+                                boundary.topologyKind(), DungeonEditorRuntimePointerTarget.TopologyKind.EMPTY),
+                        boundary.topologyId(),
+                        boundary.startQ(),
+                        boundary.startR(),
+                        boundary.startLevel(),
+                        boundary.endQ(),
+                        boundary.endR(),
+                        boundary.endLevel()),
+                enumValue(DungeonEditorRuntimePointerTarget.SyntheticHoverKind.class,
+                        safeTarget.syntheticHoverKind(), DungeonEditorRuntimePointerTarget.SyntheticHoverKind.NONE),
+                new DungeonEditorRuntimePointerTarget.CellTarget(
+                        safeTarget.cell().exact(),
+                        safeTarget.cell().q(),
+                        safeTarget.cell().r(),
+                        safeTarget.cell().level()),
+                new DungeonEditorRuntimePointerTarget.VertexTarget(
+                        safeTarget.vertex().exact(),
+                        safeTarget.vertex().q(),
+                        safeTarget.vertex().r(),
+                        safeTarget.vertex().level()));
+    }
+
+    private static <E extends Enum<E>> E enumValue(Class<E> type, String name, E fallback) {
+        try {
+            return Enum.valueOf(type, name == null ? "" : name);
+        } catch (IllegalArgumentException ignored) {
+            return fallback;
         }
     }
 
@@ -310,18 +398,18 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
                         safeInlineLabel.draftText()));
     }
 
-    private static final class StateDelivery {
+    static final class StateDelivery {
         private final Consumer<DungeonEditorState> subscriber;
         private final UiDispatcher uiDispatcher;
         private final AtomicBoolean open = new AtomicBoolean(true);
         private final AtomicLong deliveryRevision = new AtomicLong();
 
-        private StateDelivery(Consumer<DungeonEditorState> subscriber, UiDispatcher uiDispatcher) {
+        StateDelivery(Consumer<DungeonEditorState> subscriber, UiDispatcher uiDispatcher) {
             this.subscriber = subscriber;
             this.uiDispatcher = uiDispatcher;
         }
 
-        private void deliver(DungeonEditorRenderFrame frame) {
+        void deliver(DungeonEditorRenderFrame frame) {
             long revision = deliveryRevision.incrementAndGet();
             DungeonEditorState state = stateFrom(frame);
             uiDispatcher.dispatch(() -> applyIfCurrent(revision, state));
@@ -333,7 +421,7 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
             }
         }
 
-        private void close() {
+        void close() {
             open.set(false);
             deliveryRevision.incrementAndGet();
         }

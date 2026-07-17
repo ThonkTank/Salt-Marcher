@@ -2,7 +2,6 @@ package features.dungeon.adapter.javafx.map;
 
 import java.util.List;
 import features.dungeon.api.DungeonEditorStateSnapshot;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreviewRenderDiffFrame;
 
 final class DungeonMapPreviewDiffProjector {
     private final DungeonMapPreviewAreaDiffProjector areaProjector = new DungeonMapPreviewAreaDiffProjector();
@@ -16,7 +15,6 @@ final class DungeonMapPreviewDiffProjector {
             List<DungeonMapRenderState.Label> labels,
             List<DungeonMapRenderState.Marker> markers,
             PreviewRenderDiffFrame previewRenderDiff,
-            DungeonMapContentModel.MapInteractionFrame interactionFrame,
             DungeonEditorStateSnapshot.Selection selection,
             DungeonMapRoomLabelPlanner roomLabelPlanner
     ) {
@@ -40,8 +38,8 @@ final class DungeonMapPreviewDiffProjector {
                 roomLabelPlanner);
         boundaryProjector.addPreviewBoundaryDiff(edges, safePreviewRenderDiff.changedBoundaries(), selection);
         boundaryProjector.addPreviewBoundaryDiff(edges, safePreviewRenderDiff.removedBoundaries(), selection);
-        handleProjector.addPreviewHandleDiff(markers, safePreviewRenderDiff.changedHandles(), interactionFrame, selection);
-        handleProjector.addPreviewHandleDiff(markers, safePreviewRenderDiff.removedHandles(), interactionFrame, selection);
+        handleProjector.addPreviewHandleDiff(markers, safePreviewRenderDiff.changedHandles(), selection);
+        handleProjector.addPreviewHandleDiff(markers, safePreviewRenderDiff.removedHandles(), selection);
         featureProjector.addPreviewFeatureDiff(cells, labels, markers, safePreviewRenderDiff.changedFeatures(), selection);
         featureProjector.addPreviewFeatureDiff(cells, labels, markers, safePreviewRenderDiff.removedFeatures(), selection);
     }

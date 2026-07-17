@@ -76,6 +76,18 @@ public sealed interface DungeonEditorIntent {
         INSTANCE
     }
 
+    record Pointer(DungeonEditorPointerInput input) implements DungeonEditorIntent {
+        public Pointer {
+            if (input == null) {
+                throw new IllegalArgumentException("input is required");
+            }
+        }
+    }
+
+    enum ClearPointerSession implements DungeonEditorIntent {
+        INSTANCE
+    }
+
     record UpdateRoomNarration(RoomNarrationInput narration) implements DungeonEditorIntent {
         public UpdateRoomNarration {
             narration = narration == null ? RoomNarrationInput.empty() : narration;

@@ -17,7 +17,6 @@ import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorMapSnapshot;
 import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonEditorStateSnapshot;
-import features.dungeon.adapter.javafx.editor.DungeonEditorFeatureShellBinding;
 import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
 import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreviewRenderDiffFrame;
 import features.dungeon.application.editor.DungeonEditorRuntimeLabelTarget;
@@ -227,12 +226,14 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 roomLabelCenter,
                 "DE-LABEL-010 passive room label hover");
         assertRoomLabelHitAndEditorPresentation(binding, runtime, roomIds, roomLabelCenter, roomLabelText);
-        DungeonEditorRuntimeOperations operations =
-                new DungeonEditorFeatureShellBinding(runtime.editorDependencies()).operations();
-        operations.catalog().selectMap(roomMapId);
-        operations.transitionStairs().saveLabelName(
-                DungeonEditorRuntimeLabelTarget.room(roomIds.roomId()),
-                "   Lantern Room   ");
+        var editorApi = runtime.editorApi();
+        editorApi.dispatch(new features.dungeon.api.editor.DungeonEditorIntent.SelectMap(
+                new features.dungeon.api.DungeonMapId(roomMapId)));
+        editorApi.dispatch(new features.dungeon.api.editor.DungeonEditorIntent.CommitLabelName(
+                new features.dungeon.api.editor.DungeonEditorIntent.LabelTarget(
+                        features.dungeon.api.editor.DungeonEditorIntent.LabelTargetKind.ROOM,
+                        roomIds.roomId()),
+                "   Lantern Room   "));
         assertEquals("Lantern Room", runtime.database().roomName(roomIds.roomId()),
                 "DE-LABEL-006 shared label-name operation trims and saves custom room label");
         assertEquals(roomGeometryRowsBefore, runtime.database().countAuthoredGeometryRows(roomMapId),

@@ -3,7 +3,7 @@ package features.dungeon.adapter.javafx.map;
 import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.api.TravelDungeonSnapshot;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.MapSurfaceFrame;
+import features.dungeon.api.editor.DungeonEditorState;
 
 final class DungeonMapFrameProjector {
     private final DungeonMapRoomLabelPlanner roomLabelPlanner = new DungeonMapRoomLabelPlanner();
@@ -14,25 +14,22 @@ final class DungeonMapFrameProjector {
 
     DungeonMapRenderState mapEditorSurface(
             String placeholderTitle,
-            MapSurfaceFrame frame,
-            DungeonMapContentModel.MapInteractionFrame interactionFrame
+            DungeonEditorState state
     ) {
-        MapSurfaceFrame safeFrame = frame == null
-                ? MapSurfaceFrame.empty()
-                : frame;
+        DungeonEditorState safeState = state == null ? DungeonEditorState.empty() : state;
         DungeonMapRenderState baseState = editorRenderProjector.project(
                 placeholderTitle,
-                safeFrame.surface(),
-                safeFrame.selection(),
-                safeFrame.previewRender(),
-                safeFrame.previewRenderDiff(),
-                interactionFrame,
+                safeState.selectedWindow(),
+                safeState.selection(),
+                safeState.preview(),
+                DungeonMapPreviewModel.renderFrame(safeState.preview()),
+                DungeonMapPreviewModel.diffFrame(safeState),
                 true);
         return baseState.withViewMode(
-                        DungeonMapRenderState.ViewMode.fromEditor(safeFrame.viewMode()))
-                .withOverlaySettings(toOverlaySettings(safeFrame.overlaySettings()))
-                .withProjectionLevel(safeFrame.projectionLevel())
-                .withSelectedTool(toolLabel(safeFrame.selectedTool()));
+                        DungeonMapRenderState.ViewMode.fromEditor(safeState.viewMode()))
+                .withOverlaySettings(toOverlaySettings(safeState.overlaySettings()))
+                .withProjectionLevel(safeState.projectionLevel())
+                .withSelectedTool(toolLabel(safeState.selectedTool()));
     }
 
     DungeonMapRenderState mapTravel(

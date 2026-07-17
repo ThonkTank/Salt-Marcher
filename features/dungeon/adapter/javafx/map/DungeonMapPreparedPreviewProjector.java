@@ -2,12 +2,6 @@ package features.dungeon.adapter.javafx.map;
 
 import java.util.List;
 import features.dungeon.api.DungeonCellRef;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreparedBoundaryKind;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreparedLabelKind;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreviewBoundaryEdgeFrame;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreviewRenderFrame;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreviewStairCellFrame;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreviewStairMarkerFrame;
 import features.dungeon.adapter.javafx.map.DungeonMapRenderState.CellKind;
 import features.dungeon.adapter.javafx.map.DungeonMapRenderState.EdgeKind;
 import features.dungeon.adapter.javafx.map.DungeonMapRenderState.MarkerKind;
