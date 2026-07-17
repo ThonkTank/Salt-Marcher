@@ -49,7 +49,12 @@ public record TraversalLink(
     public TravelHeading headingFrom(Cell sourceTile, TravelHeading currentHeading) {
         TravelHeading fallback = currentHeading == null ? TravelHeading.defaultHeading() : currentHeading;
         Direction direction = directionFrom(sourceTile);
-        return direction == null ? fallback : TravelHeading.valueOf(direction.name());
+        return direction == null ? fallback : switch (direction) {
+            case NORTH -> TravelHeading.NORTH;
+            case EAST -> TravelHeading.EAST;
+            case SOUTH -> TravelHeading.SOUTH;
+            case WEST -> TravelHeading.WEST;
+        };
     }
 
     public @Nullable Direction directionFrom(Cell sourceTile) {

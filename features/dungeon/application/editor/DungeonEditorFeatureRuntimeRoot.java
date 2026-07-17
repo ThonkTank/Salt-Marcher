@@ -3,6 +3,7 @@ package features.dungeon.application.editor;
 import java.util.Objects;
 import java.util.function.Consumer;
 import features.dungeon.api.DungeonEditorViewMode;
+import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 
@@ -149,7 +150,7 @@ public final class DungeonEditorFeatureRuntimeRoot
     }
 
     @Override
-    public void setOverlay(DungeonEditorOverlaySettings overlaySettings) {
+    public void setOverlay(DungeonOverlaySettings overlaySettings) {
         commands.setOverlay(overlaySettings);
     }
 

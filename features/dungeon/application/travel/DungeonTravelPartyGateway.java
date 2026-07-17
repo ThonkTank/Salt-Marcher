@@ -110,13 +110,13 @@ public final class DungeonTravelPartyGateway {
             return new PartyLocationData(
                     new PositionData(
                             dungeonLocation.mapId(),
-                            LocationKind.fromName(dungeonLocation.locationKind().name()),
+                            locationKind(dungeonLocation.locationKind()),
                             dungeonLocation.ownerId(),
                             new Cell(
                                     dungeonLocation.tile().q(),
                                     dungeonLocation.tile().r(),
                                     dungeonLocation.tile().level()),
-                            TravelHeading.fromName(dungeonLocation.heading().name())),
+                            travelHeading(dungeonLocation.heading())),
                     0L,
                     false);
         }
@@ -135,6 +135,21 @@ public final class DungeonTravelPartyGateway {
             case EAST -> PartyTravelHeading.EAST;
             case WEST -> PartyTravelHeading.WEST;
             case SOUTH -> PartyTravelHeading.SOUTH;
+        };
+    }
+
+    private static LocationKind locationKind(PartyDungeonTravelLocationKind kind) {
+        return kind == PartyDungeonTravelLocationKind.TRANSITION
+                ? LocationKind.TRANSITION
+                : LocationKind.TILE;
+    }
+
+    private static TravelHeading travelHeading(PartyTravelHeading heading) {
+        return switch (heading == null ? PartyTravelHeading.SOUTH : heading) {
+            case NORTH -> TravelHeading.NORTH;
+            case EAST -> TravelHeading.EAST;
+            case SOUTH -> TravelHeading.SOUTH;
+            case WEST -> TravelHeading.WEST;
         };
     }
 }

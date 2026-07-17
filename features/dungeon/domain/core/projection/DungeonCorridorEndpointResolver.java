@@ -15,7 +15,7 @@ import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.corridor.Corridor;
 import features.dungeon.domain.core.structure.corridor.CorridorNetwork;
-import features.dungeon.domain.core.structure.corridor.CorridorDoorBindingState;
+import features.dungeon.domain.core.component.CorridorDoorBinding;
 import features.dungeon.domain.core.structure.corridor.CorridorDoorBindingGeometry;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.RoomCluster;
@@ -37,7 +37,7 @@ final class DungeonCorridorEndpointResolver {
         appendRoomEndpoints(
                 endpoints,
                 corridor,
-                CorridorDoorBindingGeometry.bindingsByRoom(corridor.stateBindings().doorBindings()),
+                CorridorDoorBindingGeometry.bindingsByRoom(corridor.bindings().doorBindings()),
                 clustersById,
                 roomsById,
                 roomCellsByRoom);
@@ -48,7 +48,7 @@ final class DungeonCorridorEndpointResolver {
     Map<CorridorNetwork.AnchorKey, CorridorAnchor> anchorsByKey(List<Corridor> corridors) {
         Map<CorridorNetwork.AnchorKey, CorridorAnchor> result = new LinkedHashMap<>();
         for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
-            for (CorridorAnchor anchor : corridor.stateBindings().anchorBindings()) {
+            for (CorridorAnchor anchor : corridor.bindings().anchorBindings()) {
                 if (anchor != null) {
                     result.put(CorridorNetwork.AnchorKey.from(anchor), anchor);
                 }
@@ -60,7 +60,7 @@ final class DungeonCorridorEndpointResolver {
     private static void appendRoomEndpoints(
             List<CorridorEndpoint> endpoints,
             Corridor corridor,
-            Map<Long, CorridorDoorBindingState> bindingsByRoom,
+            Map<Long, CorridorDoorBinding> bindingsByRoom,
             Map<Long, RoomCluster> clustersById,
             Map<Long, RoomRegion> roomsById,
             Map<Long, List<Cell>> roomCellsByRoom
@@ -78,10 +78,10 @@ final class DungeonCorridorEndpointResolver {
 
     private static @Nullable CorridorEndpoint boundEndpoint(
             Long roomId,
-            Map<Long, CorridorDoorBindingState> bindingsByRoom,
+            Map<Long, CorridorDoorBinding> bindingsByRoom,
             Map<Long, RoomCluster> clustersById
     ) {
-        CorridorDoorBindingState binding = bindingsByRoom.get(roomId);
+        CorridorDoorBinding binding = bindingsByRoom.get(roomId);
         if (binding == null) {
             return null;
         }
@@ -103,7 +103,7 @@ final class DungeonCorridorEndpointResolver {
             Corridor corridor,
             Map<CorridorNetwork.AnchorKey, CorridorAnchor> anchorsByKey
     ) {
-        for (CorridorAnchorRef anchorRef : corridor.stateBindings().anchorRefs()) {
+        for (CorridorAnchorRef anchorRef : corridor.bindings().anchorRefs()) {
             CorridorEndpoint endpoint = anchorEndpoint(anchorRef, anchorsByKey);
             if (endpoint != null) {
                 endpoints.add(endpoint);

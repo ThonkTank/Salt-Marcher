@@ -1,5 +1,6 @@
 package features.dungeon.domain.core.structure.corridor;
 
+import features.dungeon.domain.core.component.CorridorDoorBinding;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -37,7 +38,7 @@ final class CorridorHostEndpointQuery {
         Map<CorridorNetwork.AnchorKey, CorridorAnchor> result = new LinkedHashMap<>();
         for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
             if (corridor != null) {
-                for (CorridorAnchor anchor : corridor.stateBindings().anchorBindings()) {
+                for (CorridorAnchor anchor : corridor.bindings().anchorBindings()) {
                     if (anchor != null) {
                         result.put(CorridorNetwork.AnchorKey.from(anchor), anchor);
                     }
@@ -54,8 +55,8 @@ final class CorridorHostEndpointQuery {
             Map<Long, RoomRegion> roomsById,
             Map<Long, List<Cell>> roomCellsByRoom
     ) {
-        Map<Long, CorridorDoorBindingState> bindingsByRoom =
-                CorridorDoorBindingGeometry.bindingsByRoom(corridor.stateBindings().doorBindings());
+        Map<Long, CorridorDoorBinding> bindingsByRoom =
+                CorridorDoorBindingGeometry.bindingsByRoom(corridor.bindings().doorBindings());
         for (Long roomId : corridor.roomIds()) {
             CorridorHostEndpoint endpoint = boundEndpoint(roomId, bindingsByRoom, clustersById);
             if (endpoint == null) {
@@ -69,10 +70,10 @@ final class CorridorHostEndpointQuery {
 
     private static @Nullable CorridorHostEndpoint boundEndpoint(
             Long roomId,
-            Map<Long, CorridorDoorBindingState> bindingsByRoom,
+            Map<Long, CorridorDoorBinding> bindingsByRoom,
             Map<Long, RoomCluster> clustersById
     ) {
-        CorridorDoorBindingState binding = bindingsByRoom.get(roomId);
+        CorridorDoorBinding binding = bindingsByRoom.get(roomId);
         if (binding == null) {
             return null;
         }
@@ -118,7 +119,7 @@ final class CorridorHostEndpointQuery {
             Corridor corridor,
             Map<CorridorNetwork.AnchorKey, CorridorAnchor> anchorsByKey
     ) {
-        for (CorridorAnchorRef anchorRef : corridor.stateBindings().anchorRefs()) {
+        for (CorridorAnchorRef anchorRef : corridor.bindings().anchorRefs()) {
             CorridorHostEndpoint endpoint = anchorEndpoint(anchorRef, anchorsByKey);
             if (endpoint != null) {
                 result.add(endpoint);

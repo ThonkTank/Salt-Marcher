@@ -9,7 +9,7 @@ import features.dungeon.domain.core.component.CorridorAnchor;
 import features.dungeon.domain.core.graph.DungeonTopologyElementKind;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.corridor.Corridor;
-import features.dungeon.domain.core.structure.corridor.CorridorDoorBindingState;
+import features.dungeon.domain.core.component.CorridorDoorBinding;
 import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.RoomCluster;
@@ -91,7 +91,7 @@ public record DungeonMapTopology(
     }
 
     private static void appendDoorBindings(List<DungeonTopologyBinding> result, Corridor corridor) {
-        for (CorridorDoorBindingState doorBinding : corridor.stateBindings().doorBindings()) {
+        for (CorridorDoorBinding doorBinding : corridor.bindings().doorBindings()) {
             if (doorBinding.topologyRef().present()) {
                 result.add(new DungeonTopologyBinding(
                         doorBinding.topologyRef(),
@@ -103,7 +103,7 @@ public record DungeonMapTopology(
     }
 
     private static void appendAnchorBindings(List<DungeonTopologyBinding> result, Corridor corridor) {
-        for (CorridorAnchor anchor : corridor.stateBindings().anchorBindings()) {
+        for (CorridorAnchor anchor : corridor.bindings().anchorBindings()) {
             if (anchor != null && anchor.anchorId() > 0L) {
                 DungeonTopologyRef ref = DungeonTopologyRef.corridorAnchor(anchor.anchorId());
                 result.add(new DungeonTopologyBinding(

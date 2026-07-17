@@ -97,16 +97,18 @@ and commit boundaries. M7 starts only after both are complete.
 
 ## Current Migration State
 
-- Current foundation: M0 through M2.3 are complete on `main` through PR #496.
-- This slice: M2.4 establishes `RoomRegion` as the exact authored room-floor
-  owner and `RoomCluster` as the cluster identity, name, and boundary owner.
-- The parallel `DungeonRoom`/`Room` and
-  `DungeonRoomCluster`/`RoomCluster` pairs and their same-layer conversions are
-  deleted. Cluster floor and interaction geometry derive from member room
-  cells; the SQLite mapper translates the legacy cluster-floor schema at the
-  adapter boundary.
-- Next step after this slice merges: M2.5 removes the remaining duplicate
-  primitives and enum-name round trips within the M2 boundary.
+- Current foundation: M0 through M2.4 are complete on `main` through PR #497.
+- This slice: M2.5 makes the API handle, view, and overlay values and the domain
+  `Cell`, `Edge`, `Direction`, boundary kind, corridor binding, wall-delete,
+  and boundary-stretch values canonical within Dungeon.
+- The parallel Editor handle kinds, session view and overlay values, workspace
+  geometry values, corridor binding state adapters, wall-delete copy, and
+  boundary-stretch selection copy are deleted. Dungeon-layer enum publication
+  now uses typed values or explicit boundary mappings instead of enum-name
+  round trips.
+- Next step after this slice merges: M2.6 injects corridor routing, moves
+  feature-marker semantic edits to the typed command path, and closes the M2
+  architecture and behavior gates.
 
 ## M0: Target Lock And Baseline
 

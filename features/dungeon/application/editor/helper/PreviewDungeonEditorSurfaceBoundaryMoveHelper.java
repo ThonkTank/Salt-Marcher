@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceGeometry;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceGeometry.EdgeKey;
+import features.dungeon.domain.core.geometry.EdgeKey;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Boundary;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Cell;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Edge;
+import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.Edge;
 
 public final class PreviewDungeonEditorSurfaceBoundaryMoveHelper {
 
@@ -63,7 +63,7 @@ public final class PreviewDungeonEditorSurfaceBoundaryMoveHelper {
         Set<EdgeKey> sourceEdgeKeys = DungeonEditorWorkspaceGeometry.unitEdgeKeys(sourceEdges);
         List<Boundary> result = new ArrayList<>();
         for (Boundary boundary : boundaries) {
-            result.add(sourceEdgeKeys.contains(EdgeKey.of(boundary.edge()))
+            result.add(sourceEdgeKeys.contains(EdgeKey.from(boundary.edge()))
                     ? movedBoundary(boundary, deltaQ, deltaR, deltaLevel)
                     : boundary);
         }

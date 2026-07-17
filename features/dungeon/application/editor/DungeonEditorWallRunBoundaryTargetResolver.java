@@ -4,7 +4,7 @@ import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.domain.core.geometry.Edge;
-import features.dungeon.application.editor.interaction.DungeonEditorHandleType;
+import features.dungeon.api.DungeonEditorHandleKind;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.DungeonEditorInteractionValues.CellTarget;
@@ -22,7 +22,7 @@ final class DungeonEditorWallRunBoundaryTargetResolver {
         var handle = input.hitTarget().handleRef();
         if (!DungeonEditorMainViewInteractionValues.handleKind(
                 handle,
-                DungeonEditorHandleType.CLUSTER_WALL_RUN)
+                DungeonEditorHandleKind.CLUSTER_WALL_RUN)
                 || currentSelection == null
                 || !currentSelection.clusterSelection()
                 || currentSelection.clusterId() != handle.clusterId()) {
@@ -37,14 +37,14 @@ final class DungeonEditorWallRunBoundaryTargetResolver {
     }
 
     private static Edge fallbackEdge(DungeonEditorWorkspaceValues.HandleRef handle) {
-        Direction direction = Direction.valueOf(handle.direction());
+        Direction direction = handle.direction();
         return direction.edgeOf(new Cell(
                 handle.cell().q(),
                 handle.cell().r(),
                 handle.cell().level()));
     }
 
-    private static Cell workspaceCell(DungeonEditorWorkspaceValues.Cell cell) {
+    private static Cell workspaceCell(features.dungeon.domain.core.geometry.Cell cell) {
         return cell == null ? new Cell(0, 0, 0) : new Cell(cell.q(), cell.r(), cell.level());
     }
 

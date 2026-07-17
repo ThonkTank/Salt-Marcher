@@ -3,13 +3,13 @@ package features.dungeon.application.editor.usecase;
 import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
-import features.dungeon.application.editor.interaction.DungeonEditorHandleType;
+import features.dungeon.api.DungeonEditorHandleKind;
 import features.dungeon.application.editor.session.DungeonEditorDungeonState;
 import features.dungeon.application.editor.session.DungeonEditorSessionSnapshot;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceGeometry;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Cell;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Edge;
+import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.HandleRef;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
 import features.dungeon.application.editor.helper.PreviewDungeonEditorSurfaceAreaMoveHelper;
@@ -59,14 +59,14 @@ public final class PreviewDungeonEditorSurfaceMoveUseCase {
             MapSnapshot committed,
             DungeonEditorSessionValues.MoveHandlePreview preview
     ) {
-        DungeonEditorHandleType kind = preview.handleRef().kind();
-        if (kind == DungeonEditorHandleType.CLUSTER_LABEL) {
+        DungeonEditorHandleKind kind = preview.handleRef().kind();
+        if (kind == DungeonEditorHandleKind.CLUSTER_LABEL) {
             return clusterMovePreview(committed, preview);
         }
-        if (kind == DungeonEditorHandleType.CLUSTER_CORNER) {
+        if (kind == DungeonEditorHandleKind.CLUSTER_CORNER) {
             return cornerMovePreview(committed, preview);
         }
-        return kind == DungeonEditorHandleType.CLUSTER_WALL_RUN
+        return kind == DungeonEditorHandleKind.CLUSTER_WALL_RUN
                 ? sourceEdgeMovePreview(committed, preview)
                 : null;
     }

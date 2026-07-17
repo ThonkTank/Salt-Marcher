@@ -1,7 +1,7 @@
 package features.dungeon.application.editor.helper;
 
 import org.jspecify.annotations.Nullable;
-import features.dungeon.application.editor.interaction.DungeonEditorHandleType;
+import features.dungeon.api.DungeonEditorHandleKind;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 
 public interface DungeonEditorSessionPreviewHelper {
@@ -20,24 +20,24 @@ public interface DungeonEditorSessionPreviewHelper {
 
     static boolean inMemoryDragPreview(DungeonEditorSessionValues.@Nullable Preview preview) {
         if (preview instanceof DungeonEditorSessionValues.MoveHandlePreview moveHandle) {
-            DungeonEditorHandleType kind = moveHandle.handleRef().kind();
-            return kind == DungeonEditorHandleType.DOOR
-                    || kind == DungeonEditorHandleType.CLUSTER_LABEL
-                    || kind == DungeonEditorHandleType.CLUSTER_CORNER
-                    || kind == DungeonEditorHandleType.CLUSTER_WALL_RUN;
+            DungeonEditorHandleKind kind = moveHandle.handleRef().kind();
+            return kind == DungeonEditorHandleKind.DOOR
+                    || kind == DungeonEditorHandleKind.CLUSTER_LABEL
+                    || kind == DungeonEditorHandleKind.CLUSTER_CORNER
+                    || kind == DungeonEditorHandleKind.CLUSTER_WALL_RUN;
         }
         return preview instanceof DungeonEditorSessionValues.MoveBoundaryStretchPreview;
     }
 
-    static boolean directClusterMoveCommitHandle(DungeonEditorHandleType kind) {
+    static boolean directClusterMoveCommitHandle(DungeonEditorHandleKind kind) {
         return kind != null && kind.isDirectClusterMoveCommit();
     }
 
-    static boolean directDoorMoveCommitHandle(DungeonEditorHandleType kind) {
+    static boolean directDoorMoveCommitHandle(DungeonEditorHandleKind kind) {
         return kind != null && kind.isDirectDoorMoveCommit();
     }
 
-    static boolean directCorridorMoveCommitHandle(DungeonEditorHandleType kind) {
+    static boolean directCorridorMoveCommitHandle(DungeonEditorHandleKind kind) {
         return kind != null && kind.isDirectCorridorMoveCommit();
     }
 

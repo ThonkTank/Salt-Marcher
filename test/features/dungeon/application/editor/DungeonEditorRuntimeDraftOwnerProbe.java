@@ -6,7 +6,7 @@ import features.dungeon.domain.core.geometry.DungeonTopology;
 import features.dungeon.domain.core.graph.DungeonTopologyElementKind;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.projection.DungeonAreaType;
-import features.dungeon.application.editor.interaction.DungeonEditorHandleType;
+import features.dungeon.api.DungeonEditorHandleKind;
 import features.dungeon.application.editor.session.DungeonEditorSessionEffect;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
@@ -128,10 +128,10 @@ public final class DungeonEditorRuntimeDraftOwnerProbe {
                         CLUSTER_ID,
                         "R1",
                         List.of(
-                                new DungeonEditorWorkspaceValues.Cell(0, 0, 0),
-                                new DungeonEditorWorkspaceValues.Cell(1, 0, 0),
-                                new DungeonEditorWorkspaceValues.Cell(0, 1, 0),
-                                new DungeonEditorWorkspaceValues.Cell(1, 1, 0)),
+                                new features.dungeon.domain.core.geometry.Cell(0, 0, 0),
+                                new features.dungeon.domain.core.geometry.Cell(1, 0, 0),
+                                new features.dungeon.domain.core.geometry.Cell(0, 1, 0),
+                                new features.dungeon.domain.core.geometry.Cell(1, 1, 0)),
                         new DungeonTopologyRef(DungeonTopologyElementKind.ROOM, 11L))),
                 List.of(),
                 List.of(),
@@ -159,15 +159,15 @@ public final class DungeonEditorRuntimeDraftOwnerProbe {
     private static PointerState corridorDoorPress() {
         DungeonTopologyRef doorRef = new DungeonTopologyRef(DungeonTopologyElementKind.DOOR, 41L);
         DungeonEditorWorkspaceValues.HandleRef handle = new DungeonEditorWorkspaceValues.HandleRef(
-                DungeonEditorHandleType.DOOR,
+                DungeonEditorHandleKind.DOOR,
                 doorRef,
                 41L,
                 CLUSTER_ID,
                 0L,
                 11L,
                 0,
-                new DungeonEditorWorkspaceValues.Cell(4, 2, 0),
-                "EAST",
+                new features.dungeon.domain.core.geometry.Cell(4, 2, 0),
+                features.dungeon.domain.core.geometry.Direction.EAST,
                 null,
                 List.of());
         return new PointerState(

@@ -11,8 +11,8 @@ import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.DungeonMapMetadata;
 import features.dungeon.domain.core.structure.corridor.Corridor;
-import features.dungeon.domain.core.structure.corridor.CorridorBindingState;
-import features.dungeon.domain.core.structure.corridor.CorridorDoorBindingState;
+import features.dungeon.domain.core.structure.corridor.CorridorBindings;
+import features.dungeon.domain.core.component.CorridorDoorBinding;
 import features.dungeon.domain.core.structure.door.Door;
 import features.dungeon.domain.core.structure.door.DoorBoundaryMaterialization;
 import features.dungeon.domain.core.structure.door.DoorIndex;
@@ -168,7 +168,7 @@ final class DungeonDoorInvariantScenarios {
         assertFalse(source.equals(moved), "door move changes the aggregate for a valid target");
         assertEquals(
                 new Cell(1, 1, 0),
-                moved.corridors().getFirst().stateBindings().doorBindings().getFirst().relativeCell(),
+                moved.corridors().getFirst().bindings().doorBindings().getFirst().relativeCell(),
                 "door move updates the corridor door binding to the moved boundary cell");
         assertTrue(boundaryIs(moved, new Cell(1, 0, 0), Direction.EAST, BoundaryKind.WALL),
                 "door move restores the old authored room boundary to wall");
@@ -223,9 +223,9 @@ final class DungeonDoorInvariantScenarios {
                 mapId,
                 0,
                 List.of(roomId),
-                new CorridorBindingState(
+                new CorridorBindings(
                         List.of(),
-                        List.of(new CorridorDoorBindingState(
+                        List.of(new CorridorDoorBinding(
                                 roomId,
                                 clusterId,
                                 new Cell(1, 0, 0),

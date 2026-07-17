@@ -153,9 +153,9 @@ final class DungeonEditorStairDraftRuntimeOperation {
         return tool.stairShape();
     }
 
-    private static DungeonEditorWorkspaceValues.Cell workspaceCell(Cell cell) {
+    private static features.dungeon.domain.core.geometry.Cell workspaceCell(Cell cell) {
         Cell safeCell = cell == null ? new Cell(0, 0, 0) : cell;
-        return new DungeonEditorWorkspaceValues.Cell(safeCell.q(), safeCell.r(), safeCell.level());
+        return new features.dungeon.domain.core.geometry.Cell(safeCell.q(), safeCell.r(), safeCell.level());
     }
 
     private record Draft(DungeonEditorToolAction tool, Cell start, Cell end) {

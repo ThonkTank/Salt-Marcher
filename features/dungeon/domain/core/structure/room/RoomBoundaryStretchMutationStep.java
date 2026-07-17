@@ -15,9 +15,9 @@ import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.corridor.CorridorDoorBindingGeometry;
 import features.dungeon.domain.core.structure.corridor.Corridor;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryStretchPlan.BoundaryVertex;
-import features.dungeon.domain.core.structure.room.RoomBoundaryStretchValues.StretchEdge;
+import features.dungeon.domain.core.structure.room.RoomClusterBoundaryStretchPlan.StretchEdge;
 import features.dungeon.domain.core.structure.room.RoomBoundaryStretchValues.StretchMutationResult;
-import features.dungeon.domain.core.structure.room.RoomBoundaryStretchValues.StretchSelection;
+import features.dungeon.domain.core.structure.room.RoomClusterBoundaryStretchPlan.Selection;
 
 final class RoomBoundaryStretchMutationStep {
 
@@ -31,7 +31,7 @@ final class RoomBoundaryStretchMutationStep {
     Optional<StretchMutationResult> applyInnerStretch(
             List<Corridor> corridors,
             DungeonRoomTopologyClusterWork target,
-            StretchSelection stretch,
+            Selection stretch,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaryMap
     ) {
         Set<Cell> levelCells = new LinkedHashSet<>(target.cellsAt(stretch.level()));
@@ -41,7 +41,7 @@ final class RoomBoundaryStretchMutationStep {
                 target.cluster().center(),
                 target.cluster().clusterId(),
                 stretch.level(),
-                stretch.sourceKeys())) {
+                stretch.boundaryKeys())) {
             return Optional.empty();
         }
         Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = new LinkedHashMap<>(boundaryMap);
@@ -57,7 +57,7 @@ final class RoomBoundaryStretchMutationStep {
     Optional<StretchMutationResult> applyOuterStretch(
             List<Corridor> corridors,
             DungeonRoomTopologyClusterWork target,
-            StretchSelection stretch,
+            Selection stretch,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaryMap
     ) {
         Map<Integer, List<Cell>> nextCellsByLevel = new LinkedHashMap<>(target.cellsByLevel());
@@ -79,7 +79,7 @@ final class RoomBoundaryStretchMutationStep {
         for (BoundaryVertex vertex : stretch.vertices()) {
             if (!BOUNDARY_LOOKUP.hasPerpendicularBoundary(
                     boundaries,
-                    stretch.sourceKeys(),
+                    stretch.boundaryKeys(),
                     vertex,
                     stretch.orientation())) {
                 continue;
@@ -104,12 +104,14 @@ final class RoomBoundaryStretchMutationStep {
 
     private boolean replaceStretchEdges(
             DungeonRoomTopologyClusterWork target,
-            StretchSelection stretch,
+            Selection stretch,
             Set<Cell> levelCells,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries
     ) {
+        Map<DungeonBoundaryKey, DungeonClusterBoundary> originals = new LinkedHashMap<>();
         for (StretchEdge edge : stretch.edges()) {
-            boundaries.remove(edge.key());
+            DungeonBoundaryKey sourceKey = boundaryKey(edge);
+            originals.put(sourceKey, boundaries.remove(sourceKey));
         }
         for (StretchEdge edge : stretch.edges()) {
             Edge movedEdge = stretch.orientation().move(edge.edge(), stretch.movement());
@@ -122,8 +124,8 @@ final class RoomBoundaryStretchMutationStep {
                     target.cluster().center(),
                     target.cluster().clusterId(),
                     movedEdge,
-                    edge.kind(),
-                    preserveTopologyRef(edge, target.cluster().center()).orElse(null));
+                    edge.existing() == null ? features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.WALL : edge.existing().kind(),
+                    preserveTopologyRef(originals.get(boundaryKey(edge)), target.cluster().center()).orElse(null));
             if (moved == null) {
                 return false;
             }
@@ -132,7 +134,7 @@ final class RoomBoundaryStretchMutationStep {
         return true;
     }
 
-    private boolean sourceStaysInternal(StretchSelection stretch, Set<Cell> clusterCells) {
+    private boolean sourceStaysInternal(Selection stretch, Set<Cell> clusterCells) {
         for (StretchEdge edge : stretch.edges()) {
             DungeonBoundaryTouch movedTouch = new DungeonBoundaryTouch(
                     insideCells(stretch.orientation().move(edge.edge(), stretch.movement()).touchingCells(), clusterCells));
@@ -154,14 +156,18 @@ final class RoomBoundaryStretchMutationStep {
     }
 
     private Optional<DungeonTopologyRef> preserveTopologyRef(
-            StretchEdge edge,
+            DungeonClusterBoundary existing,
             Cell center
     ) {
-        if (edge.existing() == null) {
+        if (existing == null) {
             return Optional.empty();
         }
-        return edge.existing().topologyRef().present()
-                ? Optional.of(edge.existing().topologyRef())
-                : Optional.of(edge.existing().resolvedTopologyRef(center));
+        return existing.topologyRef().present()
+                ? Optional.of(existing.topologyRef())
+                : Optional.of(existing.resolvedTopologyRef(center));
+    }
+
+    private static DungeonBoundaryKey boundaryKey(StretchEdge edge) {
+        return new DungeonBoundaryKey(edge.key().lower(), edge.key().upper());
     }
 }

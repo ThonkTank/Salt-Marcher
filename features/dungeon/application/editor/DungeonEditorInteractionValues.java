@@ -40,8 +40,8 @@ final class DungeonEditorInteractionValues {
             return level;
         }
 
-        DungeonEditorWorkspaceValues.Cell toWorkspaceCell() {
-            return new DungeonEditorWorkspaceValues.Cell(q, r, level);
+        features.dungeon.domain.core.geometry.Cell toWorkspaceCell() {
+            return new features.dungeon.domain.core.geometry.Cell(q, r, level);
         }
 
         @Override

@@ -2,6 +2,8 @@ package features.dungeon.application.editor.session;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import features.dungeon.api.DungeonEditorViewMode;
+import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Inspector;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapId;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
@@ -17,10 +19,10 @@ public final class DungeonEditorSessionSnapshot {
         return new SnapshotData(
                 List.of(),
                 null,
-                DungeonEditorSessionValues.ViewMode.defaultMode(),
+                DungeonEditorViewMode.GRID,
                 DungeonEditorToolSelection.select(),
                 0,
-                DungeonEditorSessionValues.OverlaySettings.defaults(),
+                DungeonOverlaySettings.defaults(),
                 DungeonEditorSessionValues.Selection.empty(),
                 null,
                 DungeonEditorSessionValues.Preview.none(),
@@ -31,10 +33,10 @@ public final class DungeonEditorSessionSnapshot {
     public record SnapshotData(
             List<DungeonEditorWorkspaceValues.MapSummary> maps,
             @Nullable MapId selectedMapId,
-            DungeonEditorSessionValues.ViewMode viewMode,
+            DungeonEditorViewMode viewMode,
             DungeonEditorToolSelection toolSelection,
             int projectionLevel,
-            DungeonEditorSessionValues.OverlaySettings overlaySettings,
+            DungeonOverlaySettings overlaySettings,
             DungeonEditorSessionValues.Selection selection,
             @Nullable SurfaceData surface,
             DungeonEditorSessionValues.Preview preview,
@@ -43,9 +45,9 @@ public final class DungeonEditorSessionSnapshot {
     ) {
         public SnapshotData {
             maps = maps == null ? List.of() : List.copyOf(maps);
-            viewMode = viewMode == null ? DungeonEditorSessionValues.ViewMode.defaultMode() : viewMode;
+            viewMode = viewMode == null ? DungeonEditorViewMode.GRID : viewMode;
             toolSelection = toolSelection == null ? DungeonEditorToolSelection.select() : toolSelection;
-            overlaySettings = overlaySettings == null ? DungeonEditorSessionValues.OverlaySettings.defaults() : overlaySettings;
+            overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
             selection = selection == null ? DungeonEditorSessionValues.Selection.empty() : selection;
             preview = preview == null ? DungeonEditorSessionValues.Preview.none() : preview;
             statusText = statusText == null ? "" : statusText;
@@ -89,17 +91,17 @@ public final class DungeonEditorSessionSnapshot {
 
     public record ControlsData(
             @Nullable MapId selectedMapId,
-            DungeonEditorSessionValues.ViewMode viewMode,
+            DungeonEditorViewMode viewMode,
             DungeonEditorToolSelection toolSelection,
             int projectionLevel,
-            DungeonEditorSessionValues.OverlaySettings overlaySettings,
+            DungeonOverlaySettings overlaySettings,
             String statusText,
             DungeonEditorCommandOutcome commandOutcome
     ) {
         public ControlsData {
-            viewMode = viewMode == null ? DungeonEditorSessionValues.ViewMode.defaultMode() : viewMode;
+            viewMode = viewMode == null ? DungeonEditorViewMode.GRID : viewMode;
             toolSelection = toolSelection == null ? DungeonEditorToolSelection.select() : toolSelection;
-            overlaySettings = overlaySettings == null ? DungeonEditorSessionValues.OverlaySettings.defaults() : overlaySettings;
+            overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
             statusText = statusText == null ? "" : statusText;
             commandOutcome = commandOutcome == null ? DungeonEditorCommandOutcome.idle() : commandOutcome;
         }
@@ -117,7 +119,7 @@ public final class DungeonEditorSessionSnapshot {
             preview = preview == null ? DungeonEditorSessionValues.Preview.none() : preview;
         }
 
-        public DungeonEditorSessionValues.ViewMode viewMode() {
+        public DungeonEditorViewMode viewMode() {
             return controlsData.viewMode();
         }
 
@@ -129,7 +131,7 @@ public final class DungeonEditorSessionSnapshot {
             return controlsData.projectionLevel();
         }
 
-        public DungeonEditorSessionValues.OverlaySettings overlaySettings() {
+        public DungeonOverlaySettings overlaySettings() {
             return controlsData.overlaySettings();
         }
 

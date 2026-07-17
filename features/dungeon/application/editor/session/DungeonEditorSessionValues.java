@@ -11,99 +11,6 @@ public final class DungeonEditorSessionValues {
     private DungeonEditorSessionValues() {
     }
 
-    public static final class ViewMode {
-        public static final ViewMode GRID = new ViewMode("GRID");
-        public static final ViewMode GRAPH = new ViewMode("GRAPH");
-
-        private final String name;
-
-        private ViewMode(String name) {
-            this.name = name;
-        }
-
-        public static ViewMode defaultMode() {
-            return GRID;
-        }
-
-        public String name() {
-            return name;
-        }
-
-        public boolean isGrid() {
-            return this == GRID;
-        }
-
-        @Override
-        public String toString() {
-            return name;
-        }
-    }
-
-    public static final class OverlaySettings {
-        private final Mode mode;
-        private final int levelRange;
-        private final double opacity;
-        private final List<Integer> selectedLevels;
-
-        public OverlaySettings(Mode mode, int levelRange, double opacity, List<Integer> selectedLevels) {
-            this.mode = mode == null ? Mode.OFF : mode;
-            this.levelRange = Math.max(0, levelRange);
-            this.opacity = Math.max(0.0, Math.min(1.0, opacity));
-            this.selectedLevels = selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
-        }
-
-        public static OverlaySettings defaults() {
-            return new OverlaySettings(Mode.OFF, 2, 0.35, List.of());
-        }
-
-        public String modeKey() {
-            return mode.name();
-        }
-
-        public int levelRange() {
-            return levelRange;
-        }
-
-        public double opacity() {
-            return opacity;
-        }
-
-        public List<Integer> selectedLevels() {
-            return List.copyOf(selectedLevels);
-        }
-
-        @Override
-        public boolean equals(Object other) {
-            if (this == other) {
-                return true;
-            }
-            if (!(other instanceof OverlaySettings that)) {
-                return false;
-            }
-            return levelRange == that.levelRange
-                    && Double.compare(opacity, that.opacity) == 0
-                    && mode == that.mode
-                    && Objects.equals(selectedLevels, that.selectedLevels);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(mode, levelRange, opacity, selectedLevels);
-        }
-
-        @Override
-        public String toString() {
-            return "OverlaySettings[modeKey=%s, levelRange=%d, opacity=%s, selectedLevels=%s]"
-                    .formatted(modeKey(), levelRange, opacity, selectedLevels);
-        }
-
-        public enum Mode {
-            OFF,
-            NEARBY,
-            SELECTED;
-        }
-    }
-
     public record Selection(
             DungeonTopologyRef topologyRef,
             long clusterId,
@@ -148,25 +55,25 @@ public final class DungeonEditorSessionValues {
     }
 
     public static final class RoomRectanglePreview implements Preview {
-        private final DungeonEditorWorkspaceValues.Cell start;
-        private final DungeonEditorWorkspaceValues.Cell end;
+        private final features.dungeon.domain.core.geometry.Cell start;
+        private final features.dungeon.domain.core.geometry.Cell end;
         private final boolean deleteMode;
 
         public RoomRectanglePreview(
-                DungeonEditorWorkspaceValues.Cell start,
-                DungeonEditorWorkspaceValues.Cell end,
+                features.dungeon.domain.core.geometry.Cell start,
+                features.dungeon.domain.core.geometry.Cell end,
                 boolean deleteMode
         ) {
-            this.start = start == null ? DungeonEditorWorkspaceValues.Cell.empty() : start;
-            this.end = end == null ? DungeonEditorWorkspaceValues.Cell.empty() : end;
+            this.start = start == null ? features.dungeon.domain.core.geometry.Cell.empty() : start;
+            this.end = end == null ? features.dungeon.domain.core.geometry.Cell.empty() : end;
             this.deleteMode = deleteMode;
         }
 
-        public DungeonEditorWorkspaceValues.Cell start() {
+        public features.dungeon.domain.core.geometry.Cell start() {
             return start;
         }
 
-        public DungeonEditorWorkspaceValues.Cell end() {
+        public features.dungeon.domain.core.geometry.Cell end() {
             return end;
         }
 
@@ -200,26 +107,26 @@ public final class DungeonEditorSessionValues {
 
     public record ClusterBoundariesPreview(
             long clusterId,
-            List<DungeonEditorWorkspaceValues.Edge> edges,
-            DungeonEditorWorkspaceValues.BoundaryKind boundaryKind,
+            List<features.dungeon.domain.core.geometry.Edge> edges,
+            features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind boundaryKind,
             boolean deleteMode
     ) implements Preview {
         public ClusterBoundariesPreview {
             clusterId = Math.max(0L, clusterId);
             edges = edges == null ? List.of() : List.copyOf(edges);
-            boundaryKind = boundaryKind == null ? DungeonEditorWorkspaceValues.BoundaryKind.defaultKind() : boundaryKind;
+            boundaryKind = boundaryKind == null ? features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.defaultKind() : boundaryKind;
         }
 
         @Override
-        public List<DungeonEditorWorkspaceValues.Edge> edges() {
+        public List<features.dungeon.domain.core.geometry.Edge> edges() {
             return List.copyOf(edges);
         }
     }
 
     public record StairCreatePreview(
-            DungeonEditorWorkspaceValues.Cell anchor,
-            DungeonEditorWorkspaceValues.Cell end,
-            DungeonEditorWorkspaceValues.Cell specAnchor,
+            features.dungeon.domain.core.geometry.Cell anchor,
+            features.dungeon.domain.core.geometry.Cell end,
+            features.dungeon.domain.core.geometry.Cell specAnchor,
             String shapeName,
             String directionName,
             int dimension1,
@@ -228,7 +135,7 @@ public final class DungeonEditorSessionValues {
             String statusText
     ) implements Preview {
         public StairCreatePreview {
-            anchor = anchor == null ? DungeonEditorWorkspaceValues.Cell.empty() : anchor;
+            anchor = anchor == null ? features.dungeon.domain.core.geometry.Cell.empty() : anchor;
             end = end == null ? anchor : end;
             specAnchor = specAnchor == null ? anchor : specAnchor;
             shapeName = shapeName == null || shapeName.isBlank() ? "STRAIGHT" : shapeName.trim();
@@ -274,14 +181,14 @@ public final class DungeonEditorSessionValues {
 
     public static final class MoveBoundaryStretchPreview implements Preview {
         private final long clusterId;
-        private final List<DungeonEditorWorkspaceValues.Edge> sourceEdges;
+        private final List<features.dungeon.domain.core.geometry.Edge> sourceEdges;
         private final int deltaQ;
         private final int deltaR;
         private final int deltaLevel;
 
         public MoveBoundaryStretchPreview(
                 long clusterId,
-                List<DungeonEditorWorkspaceValues.Edge> sourceEdges,
+                List<features.dungeon.domain.core.geometry.Edge> sourceEdges,
                 int deltaQ,
                 int deltaR,
                 int deltaLevel
@@ -297,7 +204,7 @@ public final class DungeonEditorSessionValues {
             return clusterId;
         }
 
-        public List<DungeonEditorWorkspaceValues.Edge> sourceEdges() {
+        public List<features.dungeon.domain.core.geometry.Edge> sourceEdges() {
             return List.copyOf(sourceEdges);
         }
 

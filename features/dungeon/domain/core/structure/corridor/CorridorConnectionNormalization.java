@@ -55,14 +55,14 @@ public final class CorridorConnectionNormalization {
         List<Corridor> result = new ArrayList<>();
         for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
             List<CorridorAnchor> snapped = new ArrayList<>();
-            for (CorridorAnchor anchor : corridor.stateBindings().anchorBindings()) {
+            for (CorridorAnchor anchor : corridor.bindings().anchorBindings()) {
                 if (anchor != null) {
                     snapped.add(anchor.withPosition(hostCells.snapToHostCell(
                             anchor.hostCorridorId(),
                             anchor.position())));
                 }
             }
-            result.add(corridor.withStateBindings(corridor.stateBindings().replaceAnchorBindings(snapped)));
+            result.add(corridor.withBindings(corridor.bindings().replaceAnchorBindings(snapped)));
         }
         return List.copyOf(result);
     }

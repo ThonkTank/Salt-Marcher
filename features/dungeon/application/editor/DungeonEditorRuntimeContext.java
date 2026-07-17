@@ -17,6 +17,7 @@ import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapId;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
 import features.dungeon.api.DungeonEditorViewMode;
+import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 
@@ -135,7 +136,7 @@ final class DungeonEditorRuntimeContext {
     }
 
     Result setViewMode(DungeonEditorViewMode viewMode) {
-        return fromSessionFrame(session.setViewMode(DungeonEditorRuntimeInputTranslator.viewMode(viewMode)));
+        return fromSessionFrame(session.setViewMode(viewMode));
     }
 
     Result setTool(DungeonEditorToolSelection selection) {
@@ -154,8 +155,8 @@ final class DungeonEditorRuntimeContext {
         return fromSessionFrame(session.shiftProjectionLevel(levelShift));
     }
 
-    Result setOverlay(DungeonEditorOverlaySettings overlaySettings) {
-        return fromSessionFrame(session.setOverlay(DungeonEditorRuntimeInputTranslator.overlaySettings(overlaySettings)));
+    Result setOverlay(DungeonOverlaySettings overlaySettings) {
+        return fromSessionFrame(session.setOverlay(overlaySettings));
     }
 
     Result saveRoomNarration(RoomNarration narration) {
@@ -267,7 +268,7 @@ final class DungeonEditorRuntimeContext {
     void applyDoorBoundary(
             MapId mapId,
             long clusterId,
-            DungeonEditorWorkspaceValues.Edge edge,
+            features.dungeon.domain.core.geometry.Edge edge,
             boolean deleteMode
     ) {
         session.applyDoorBoundary(mapId, clusterId, edge, deleteMode);
@@ -276,7 +277,7 @@ final class DungeonEditorRuntimeContext {
     void applyWallBoundary(
             MapId mapId,
             long clusterId,
-            java.util.List<DungeonEditorWorkspaceValues.Edge> edges,
+            java.util.List<features.dungeon.domain.core.geometry.Edge> edges,
             boolean deleteMode
     ) {
         session.applyWallBoundary(mapId, clusterId, edges, deleteMode);

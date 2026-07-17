@@ -66,8 +66,24 @@ public final class RoomClusterBoundaryMaterialization {
             return WALL;
         }
 
+        public static BoundaryKind fromExternalKind(String value) {
+            return parse(value);
+        }
+
+        public static BoundaryKind defaultKind() {
+            return WALL;
+        }
+
         public String boundaryKind() {
             return boundaryKind;
+        }
+
+        public String externalKind() {
+            return boundaryKind;
+        }
+
+        public boolean isDoor() {
+            return this == DOOR;
         }
 
         public boolean renderable() {

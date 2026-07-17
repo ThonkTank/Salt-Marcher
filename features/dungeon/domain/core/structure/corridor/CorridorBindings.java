@@ -151,6 +151,10 @@ public record CorridorBindings(
         return new CorridorBindings(nextWaypoints, doorBindings, anchorBindings, anchorRefs);
     }
 
+    public CorridorBindings replaceWaypoints(List<CorridorWaypoint> nextWaypoints) {
+        return withWaypoints(nextWaypoints);
+    }
+
     public List<CorridorWaypoint> waypointsBetweenEndpointIndexes(int firstIndex, int secondIndex) {
         int start = Math.min(firstIndex, secondIndex) + 1;
         int end = Math.max(firstIndex, secondIndex);
@@ -164,8 +168,61 @@ public record CorridorBindings(
         return new CorridorBindings(waypoints, doorBindings, nextAnchorBindings, anchorRefs);
     }
 
+    public CorridorBindings replaceAnchorBindings(List<CorridorAnchor> nextAnchorBindings) {
+        return withAnchorBindings(nextAnchorBindings);
+    }
+
     public CorridorBindings withAnchorRefs(List<CorridorAnchorRef> nextAnchorRefs) {
         return new CorridorBindings(waypoints, doorBindings, anchorBindings, nextAnchorRefs);
+    }
+
+    public CorridorBindings withInteriorRouteAnchors(
+            CorridorRoutePlan routePlan,
+            List<CorridorAnchor> routeAnchors
+    ) {
+        if (routePlan == null) {
+            return this;
+        }
+        CorridorBindings planned = routePlan.bindInteriorAnchors(this, nonNullAnchors(routeAnchors));
+        return new CorridorBindings(
+                planned.waypoints(),
+                doorBindings,
+                anchorBindings,
+                retainedAnchorRefs(planned.anchorRefs(), anchorRefs));
+    }
+
+    private static List<CorridorAnchor> nonNullAnchors(List<CorridorAnchor> source) {
+        return source == null ? List.of() : source.stream().filter(Objects::nonNull).toList();
+    }
+
+    private static List<CorridorAnchorRef> retainedAnchorRefs(
+            List<CorridorAnchorRef> plannedRefs,
+            List<CorridorAnchorRef> existingRefs
+    ) {
+        List<CorridorAnchorRef> remaining = new ArrayList<>(existingRefs == null ? List.of() : existingRefs);
+        List<CorridorAnchorRef> result = new ArrayList<>();
+        for (CorridorAnchorRef plannedRef : plannedRefs == null ? List.<CorridorAnchorRef>of() : plannedRefs) {
+            CorridorAnchorRef retained = removeEqual(remaining, plannedRef);
+            addUnique(result, retained == null ? plannedRef : retained);
+        }
+        return List.copyOf(result);
+    }
+
+    private static CorridorAnchorRef removeEqual(List<CorridorAnchorRef> candidates, CorridorAnchorRef expected) {
+        for (int index = 0; index < candidates.size(); index++) {
+            if (Objects.equals(candidates.get(index), expected)) {
+                return candidates.remove(index);
+            }
+        }
+        return null;
+    }
+
+    private static void addUnique(List<CorridorAnchorRef> refs, CorridorAnchorRef candidate) {
+        if (candidate != null && refs.stream().noneMatch(existing ->
+                existing.hostCorridorId() == candidate.hostCorridorId()
+                        && existing.anchorId() == candidate.anchorId())) {
+            refs.add(candidate);
+        }
     }
 
 }

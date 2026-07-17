@@ -3,6 +3,7 @@ package features.dungeon.application.editor;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.DungeonEditorInteractionValues.CellKey;
 import features.dungeon.application.editor.DungeonEditorInteractionValues.TravelHeading;
@@ -30,29 +31,29 @@ final class DungeonEditorCorridorFacingTargetHelper {
                         door.roomId(),
                         door.clusterId(),
                         facingDoor.roomCell(),
-                        facingDoor.direction().name(),
+                        features.dungeon.domain.core.geometry.Direction.parse(facingDoor.direction().name()),
                         door.topologyRef()));
     }
 
     private static @Nullable FacingDoor facingDoor(
             DungeonEditorWorkspaceValues.@Nullable Area room,
-            DungeonEditorWorkspaceValues.@Nullable Cell otherCell
+            @Nullable Cell otherCell
     ) {
         if (room == null || otherCell == null) {
             return null;
         }
         Set<CellKey> roomCells = cellKeys(room);
         FacingDoor result = null;
-        for (DungeonEditorWorkspaceValues.Cell cell : room.cells()) {
+        for (features.dungeon.domain.core.geometry.Cell cell : room.cells()) {
             result = betterFacingDoorFromCell(cell, roomCells, otherCell, result);
         }
         return result;
     }
 
     private static @Nullable FacingDoor betterFacingDoorFromCell(
-            DungeonEditorWorkspaceValues.Cell cell,
+            features.dungeon.domain.core.geometry.Cell cell,
             Set<CellKey> roomCells,
-            DungeonEditorWorkspaceValues.Cell otherCell,
+            features.dungeon.domain.core.geometry.Cell otherCell,
             @Nullable FacingDoor current
     ) {
         CellKey key = new CellKey(cell.q(), cell.r(), cell.level());
@@ -63,7 +64,7 @@ final class DungeonEditorCorridorFacingTargetHelper {
                 FacingDoor candidate = new FacingDoor(
                         cell,
                         direction,
-                        new DungeonEditorWorkspaceValues.Cell(corridorKey.q(), corridorKey.r(), corridorKey.level()));
+                        new features.dungeon.domain.core.geometry.Cell(corridorKey.q(), corridorKey.r(), corridorKey.level()));
                 if (result == null || betterFacingDoor(candidate, result, otherCell)) {
                     result = candidate;
                 }
@@ -75,7 +76,7 @@ final class DungeonEditorCorridorFacingTargetHelper {
     private static boolean betterFacingDoor(
             FacingDoor candidate,
             FacingDoor current,
-            DungeonEditorWorkspaceValues.Cell otherCell
+            features.dungeon.domain.core.geometry.Cell otherCell
     ) {
         int distanceComparison = Integer.compare(
                 manhattan(candidate.corridorCell(), otherCell),
@@ -100,7 +101,7 @@ final class DungeonEditorCorridorFacingTargetHelper {
                 && target.targetKey().equals(DungeonEditorMainViewInteractionValues.roomTargetKey(door.roomId()));
     }
 
-    private static DungeonEditorWorkspaceValues.@Nullable Cell corridorCell(
+    private static @Nullable Cell corridorCell(
             DungeonEditorWorkspaceValues.CorridorEndpoint endpoint
     ) {
         return switch (endpoint) {
@@ -110,14 +111,14 @@ final class DungeonEditorCorridorFacingTargetHelper {
         };
     }
 
-    private static DungeonEditorWorkspaceValues.Cell doorCorridorCell(
+    private static features.dungeon.domain.core.geometry.Cell doorCorridorCell(
             DungeonEditorWorkspaceValues.CorridorDoorEndpoint door
     ) {
         return switch (door.direction()) {
-            case "EAST" -> new DungeonEditorWorkspaceValues.Cell(door.roomCell().q() + 1, door.roomCell().r(), door.roomCell().level());
-            case "SOUTH" -> new DungeonEditorWorkspaceValues.Cell(door.roomCell().q(), door.roomCell().r() + 1, door.roomCell().level());
-            case "WEST" -> new DungeonEditorWorkspaceValues.Cell(door.roomCell().q() - 1, door.roomCell().r(), door.roomCell().level());
-            default -> new DungeonEditorWorkspaceValues.Cell(door.roomCell().q(), door.roomCell().r() - 1, door.roomCell().level());
+            case EAST -> new features.dungeon.domain.core.geometry.Cell(door.roomCell().q() + 1, door.roomCell().r(), door.roomCell().level());
+            case SOUTH -> new features.dungeon.domain.core.geometry.Cell(door.roomCell().q(), door.roomCell().r() + 1, door.roomCell().level());
+            case WEST -> new features.dungeon.domain.core.geometry.Cell(door.roomCell().q() - 1, door.roomCell().r(), door.roomCell().level());
+            case NORTH -> new features.dungeon.domain.core.geometry.Cell(door.roomCell().q(), door.roomCell().r() - 1, door.roomCell().level());
         };
     }
 
@@ -138,22 +139,22 @@ final class DungeonEditorCorridorFacingTargetHelper {
 
     private static Set<CellKey> cellKeys(DungeonEditorWorkspaceValues.Area room) {
         Set<CellKey> result = new LinkedHashSet<>();
-        for (DungeonEditorWorkspaceValues.Cell cell : room.cells()) {
+        for (features.dungeon.domain.core.geometry.Cell cell : room.cells()) {
             result.add(new CellKey(cell.q(), cell.r(), cell.level()));
         }
         return Set.copyOf(result);
     }
 
-    private static int manhattan(DungeonEditorWorkspaceValues.Cell left, DungeonEditorWorkspaceValues.Cell right) {
+    private static int manhattan(features.dungeon.domain.core.geometry.Cell left, features.dungeon.domain.core.geometry.Cell right) {
         return Math.abs(left.q() - right.q())
                 + Math.abs(left.r() - right.r())
                 + Math.abs(left.level() - right.level());
     }
 
     private record FacingDoor(
-            DungeonEditorWorkspaceValues.Cell roomCell,
+            features.dungeon.domain.core.geometry.Cell roomCell,
             TravelHeading direction,
-            DungeonEditorWorkspaceValues.Cell corridorCell
+            features.dungeon.domain.core.geometry.Cell corridorCell
     ) {
     }
 }

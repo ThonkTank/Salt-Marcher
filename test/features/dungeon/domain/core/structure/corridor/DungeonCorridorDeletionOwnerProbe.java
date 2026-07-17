@@ -57,7 +57,7 @@ public final class DungeonCorridorDeletionOwnerProbe {
                 80L,
                 0,
                 new CorridorRoomSet(List.of()),
-                new CorridorBindingState(
+                new CorridorBindings(
                         List.of(new CorridorWaypoint(blocker.clusterId(), relativeWaypoint, 0)),
                         List.of(),
                         List.of(

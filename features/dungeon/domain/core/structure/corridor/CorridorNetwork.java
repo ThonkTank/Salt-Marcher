@@ -42,7 +42,7 @@ public record CorridorNetwork(List<Corridor> corridors) {
         List<Corridor> result = new ArrayList<>();
         for (Corridor corridor : corridors) {
             result.add(corridor.withBindings(
-                    corridor.coreBindings()
+                    corridor.bindings()
                             .withAnchorBindings(keptBindings(corridor, usage))
                             .withAnchorRefs(keptRefs(corridor, usage))));
         }
@@ -93,7 +93,7 @@ public record CorridorNetwork(List<Corridor> corridors) {
 
     private static List<CorridorAnchor> keptBindings(Corridor corridor, AnchorUsage usage) {
         List<CorridorAnchor> result = new ArrayList<>();
-        for (CorridorAnchor binding : corridor.coreBindings().anchorBindings()) {
+        for (CorridorAnchor binding : corridor.bindings().anchorBindings()) {
             if (binding != null && usage.referenced().contains(AnchorKey.from(binding))) {
                 result.add(binding);
             }
@@ -103,7 +103,7 @@ public record CorridorNetwork(List<Corridor> corridors) {
 
     private static List<CorridorAnchorRef> keptRefs(Corridor corridor, AnchorUsage usage) {
         List<CorridorAnchorRef> result = new ArrayList<>();
-        for (CorridorAnchorRef ref : corridor.coreBindings().anchorRefs()) {
+        for (CorridorAnchorRef ref : corridor.bindings().anchorRefs()) {
             if (ref != null && ref.present() && usage.hosted().contains(AnchorKey.from(ref))) {
                 result.add(ref);
             }
@@ -112,7 +112,7 @@ public record CorridorNetwork(List<Corridor> corridors) {
     }
 
     private static boolean referencesAny(Corridor corridor, Set<AnchorKey> anchors) {
-        for (CorridorAnchorRef ref : corridor.coreBindings().anchorRefs()) {
+        for (CorridorAnchorRef ref : corridor.bindings().anchorRefs()) {
             if (ref != null && anchors.contains(AnchorKey.from(ref))) {
                 return true;
             }
@@ -122,7 +122,7 @@ public record CorridorNetwork(List<Corridor> corridors) {
 
     private static Set<AnchorKey> ownedAnchorKeys(Corridor owner) {
         Set<AnchorKey> result = new LinkedHashSet<>();
-        for (CorridorAnchor binding : owner.coreBindings().anchorBindings()) {
+        for (CorridorAnchor binding : owner.bindings().anchorBindings()) {
             if (binding != null) {
                 result.add(AnchorKey.from(binding));
             }
@@ -150,12 +150,12 @@ public record CorridorNetwork(List<Corridor> corridors) {
             Set<AnchorKey> referenced = new LinkedHashSet<>();
             Set<AnchorKey> hosted = new LinkedHashSet<>();
             for (Corridor corridor : corridors) {
-                for (CorridorAnchor binding : corridor.coreBindings().anchorBindings()) {
+                for (CorridorAnchor binding : corridor.bindings().anchorBindings()) {
                     if (binding != null) {
                         hosted.add(AnchorKey.from(binding));
                     }
                 }
-                for (CorridorAnchorRef ref : corridor.coreBindings().anchorRefs()) {
+                for (CorridorAnchorRef ref : corridor.bindings().anchorRefs()) {
                     if (ref != null && ref.present()) {
                         referenced.add(AnchorKey.from(ref));
                     }

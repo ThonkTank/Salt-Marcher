@@ -101,7 +101,7 @@ public record CorridorAnchorEndpointMaterialization(
                         corridor.mapId(),
                         corridor.level(),
                         new CorridorRoomSet(corridor.roomIds()),
-                        corridor.coreBindings()));
+                        corridor.bindings()));
             }
         }
         return List.copyOf(result);
@@ -112,7 +112,7 @@ public record CorridorAnchorEndpointMaterialization(
             long preferredAnchorId,
             Cell anchorCell
     ) {
-        for (CorridorAnchor anchor : host.coreBindings().anchorBindings()) {
+        for (CorridorAnchor anchor : host.bindings().anchorBindings()) {
             if (preferredAnchorId > 0L && anchor.anchorId() == preferredAnchorId || anchor.matchesPosition(anchorCell)) {
                 return anchor;
             }
@@ -126,7 +126,7 @@ public record CorridorAnchorEndpointMaterialization(
             if (corridor == null) {
                 continue;
             }
-            for (CorridorAnchor anchor : corridor.coreBindings().anchorBindings()) {
+            for (CorridorAnchor anchor : corridor.bindings().anchorBindings()) {
                 if (anchor.anchorId() > result) {
                     result = anchor.anchorId();
                 }
@@ -151,7 +151,7 @@ public record CorridorAnchorEndpointMaterialization(
                 host.mapId(),
                 host.level(),
                 new CorridorRoomSet(host.roomIds()),
-                host.coreBindings().withAnchorBinding(created));
+                host.bindings().withAnchorBinding(created));
     }
 
     public record AuthoredEndpointMaterialization(

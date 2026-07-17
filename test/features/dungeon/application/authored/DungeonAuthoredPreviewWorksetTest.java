@@ -24,8 +24,8 @@ final class DungeonAuthoredPreviewWorksetTest {
         DungeonAuthoredApplicationService.Session session = service.openSession(new DungeonEditorDungeonState());
         DungeonEditorWorkspaceValues.MapId mapId = new DungeonEditorWorkspaceValues.MapId(1L);
         DungeonEditorSessionValues.RoomRectanglePreview preview = new DungeonEditorSessionValues.RoomRectanglePreview(
-                new DungeonEditorWorkspaceValues.Cell(0, 0, 0),
-                new DungeonEditorWorkspaceValues.Cell(2, 2, 0),
+                new features.dungeon.domain.core.geometry.Cell(0, 0, 0),
+                new features.dungeon.domain.core.geometry.Cell(2, 2, 0),
                 false);
 
         session.executePreview(mapId, preview);

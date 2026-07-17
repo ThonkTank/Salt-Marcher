@@ -1,5 +1,6 @@
 package features.dungeon.domain.core.structure.corridor;
 
+import features.dungeon.domain.core.component.CorridorDoorBinding;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
@@ -55,7 +56,7 @@ final class CorridorEndpointResolution {
         if (mappedCluster == null || boundary == null || !boundary.isDoor()) {
             return null;
         }
-        CorridorDoorBindingState binding = new CorridorDoorBindingState(
+        CorridorDoorBinding binding = new CorridorDoorBinding(
                 endpoint.roomId(),
                 endpoint.clusterId(),
                 new Cell(
@@ -66,8 +67,7 @@ final class CorridorEndpointResolution {
                 boundary.resolvedTopologyRef(mappedCluster.center()));
         return new ResolvedEndpointResult(
                 mapped,
-                CorridorResolvedEndpoint.forDoor(binding.toCore(), CorridorEndpointMatching.doorSemantics(binding)),
-                binding);
+                CorridorResolvedEndpoint.forDoor(binding, CorridorEndpointMatching.doorSemantics(binding)));
     }
 
     private static @Nullable ResolvedEndpointResult resolveAnchorEndpoint(
@@ -95,7 +95,7 @@ final class CorridorEndpointResolution {
                         dungeonMap.transitionCatalog(),
                         dungeonMap.revision() + 1L)
                 : dungeonMap;
-        return new ResolvedEndpointResult(resolvedMap, resolvedAnchor(resolved.anchor()), null);
+        return new ResolvedEndpointResult(resolvedMap, resolvedAnchor(resolved.anchor()));
     }
 
     private static DungeonMap ensureDoorBoundary(DungeonMap dungeonMap, long clusterId, Edge edge) {
@@ -151,11 +151,10 @@ final class CorridorEndpointResolution {
 
     record ResolvedEndpointResult(
             DungeonMap map,
-            CorridorResolvedEndpoint endpoint,
-            @Nullable CorridorDoorBindingState replacementDoor
+            CorridorResolvedEndpoint endpoint
     ) {
         Corridor applyTo(Corridor corridor) {
-            return corridor.withResolvedEndpoint(endpoint, replacementDoor);
+            return corridor.withResolvedEndpoint(endpoint);
         }
     }
 }

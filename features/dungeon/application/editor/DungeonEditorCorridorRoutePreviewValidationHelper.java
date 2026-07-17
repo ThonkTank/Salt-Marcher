@@ -4,6 +4,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.domain.core.structure.corridor.CorridorRoute;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.DungeonEditorInteractionValues.CellKey;
@@ -17,8 +18,8 @@ final class DungeonEditorCorridorRoutePreviewValidationHelper {
             PendingCorridorTarget start,
             PendingCorridorTarget end
     ) {
-        DungeonEditorWorkspaceValues.Cell startCell = corridorCell(start.endpoint());
-        DungeonEditorWorkspaceValues.Cell endCell = corridorCell(end.endpoint());
+        features.dungeon.domain.core.geometry.Cell startCell = corridorCell(start.endpoint());
+        features.dungeon.domain.core.geometry.Cell endCell = corridorCell(end.endpoint());
         if (snapshot == null || startCell == null || endCell == null || startCell.level() != endCell.level()) {
             return true;
         }
@@ -26,7 +27,7 @@ final class DungeonEditorCorridorRoutePreviewValidationHelper {
         return CorridorRoute.unblockedBetween(toCoreCell(startCell), toCoreCell(endCell), coreCells(roomCells)).present();
     }
 
-    DungeonEditorWorkspaceValues.@Nullable Cell corridorCell(
+    @Nullable Cell corridorCell(
             DungeonEditorWorkspaceValues.CorridorEndpoint endpoint
     ) {
         return switch (endpoint) {
@@ -41,7 +42,7 @@ final class DungeonEditorCorridorRoutePreviewValidationHelper {
         Set<CellKey> result = new LinkedHashSet<>();
         for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
             if (area.kind().isRoom()) {
-                for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {
+                for (features.dungeon.domain.core.geometry.Cell cell : area.cells()) {
                     result.add(new CellKey(cell.q(), cell.r(), cell.level()));
                 }
             }
@@ -57,21 +58,21 @@ final class DungeonEditorCorridorRoutePreviewValidationHelper {
         return Set.copyOf(result);
     }
 
-    private static Cell toCoreCell(DungeonEditorWorkspaceValues.Cell cell) {
+    private static Cell toCoreCell(features.dungeon.domain.core.geometry.Cell cell) {
         return new Cell(cell.q(), cell.r(), cell.level());
     }
 
-    private static DungeonEditorWorkspaceValues.Cell neighbor(
-            DungeonEditorWorkspaceValues.Cell cell,
+    private static features.dungeon.domain.core.geometry.Cell neighbor(
+            features.dungeon.domain.core.geometry.Cell cell,
             TravelHeading direction
     ) {
         CellKey key = new CellKey(cell.q(), cell.r(), cell.level()).neighbor(direction);
-        return new DungeonEditorWorkspaceValues.Cell(key.q(), key.r(), key.level());
+        return new features.dungeon.domain.core.geometry.Cell(key.q(), key.r(), key.level());
     }
 
-    private static TravelHeading travelHeading(@Nullable String direction) {
+    private static TravelHeading travelHeading(@Nullable Direction direction) {
         for (TravelHeading heading : TravelHeading.values()) {
-            if (heading.name().equals(direction)) {
+            if (direction != null && heading.name().equals(direction.name())) {
                 return heading;
             }
         }

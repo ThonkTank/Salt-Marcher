@@ -1,7 +1,7 @@
 package features.dungeon.application.editor;
 
 import features.dungeon.domain.core.graph.DungeonTopologyElementKind;
-import features.dungeon.application.editor.interaction.DungeonEditorHandleType;
+import features.dungeon.api.DungeonEditorHandleKind;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.DungeonEditorInteractionValues.VertexTarget;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.BoundaryTarget;
@@ -49,7 +49,7 @@ final class DungeonEditorMainViewInputBoundaryTranslationHelper {
         if (!safeTarget.isHandleTarget()
                 || !DungeonEditorMainViewInteractionValues.handleKind(
                         handle,
-                        DungeonEditorHandleType.DOOR)
+                        DungeonEditorHandleKind.DOOR)
                 || !handle.hasSourceEdge()) {
             return safeTarget;
         }
@@ -171,7 +171,7 @@ final class DungeonEditorMainViewInputBoundaryTranslationHelper {
             double r,
             int level
     ) {
-        DungeonEditorWorkspaceValues.Cell cell = DungeonEditorRuntimeInputValues.cell(q, r, level);
+        features.dungeon.domain.core.geometry.Cell cell = DungeonEditorRuntimeInputValues.cell(q, r, level);
         return new features.dungeon.application.editor.DungeonEditorInteractionValues.CellTarget(
                 cell.q(),
                 cell.r(),

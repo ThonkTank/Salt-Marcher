@@ -1,5 +1,6 @@
 package features.dungeon.domain.core.structure.corridor;
 
+import features.dungeon.domain.core.component.CorridorDoorBinding;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -44,10 +45,10 @@ final class CorridorEndpointMatching {
 
     private static Set<CorridorEndpointSemantics> explicitEndpointSemantics(Corridor corridor) {
         Set<CorridorEndpointSemantics> result = new LinkedHashSet<>();
-        for (CorridorDoorBindingState binding : corridor.stateBindings().doorBindings()) {
+        for (CorridorDoorBinding binding : corridor.bindings().doorBindings()) {
             result.add(doorSemantics(binding));
         }
-        for (CorridorAnchorRef ref : corridor.stateBindings().anchorRefs()) {
+        for (CorridorAnchorRef ref : corridor.bindings().anchorRefs()) {
             if (ref != null && ref.present()) {
                 result.add(CorridorEndpointSemantics.forAnchor(ref));
             }
@@ -60,10 +61,10 @@ final class CorridorEndpointMatching {
         return endpoint.semantics();
     }
 
-    static CorridorEndpointSemantics doorSemantics(CorridorDoorBindingState binding) {
+    static CorridorEndpointSemantics doorSemantics(CorridorDoorBinding binding) {
         return isDoorTopologyRef(binding.topologyRef())
                 ? CorridorEndpointSemantics.forStableDoor(binding.topologyRef().id())
-                : CorridorEndpointSemantics.forDoor(binding.toCore());
+                : CorridorEndpointSemantics.forDoor(binding.withoutTopologyRef());
     }
 
     private static boolean isDoorTopologyRef(DungeonTopologyRef ref) {

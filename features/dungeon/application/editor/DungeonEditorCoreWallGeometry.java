@@ -38,7 +38,7 @@ final class DungeonEditorCoreWallGeometry {
         return new Cell(vertex.q(), vertex.r(), vertex.level());
     }
 
-    static Edge edge(DungeonEditorWorkspaceValues.Edge edge) {
+    static Edge edge(features.dungeon.domain.core.geometry.Edge edge) {
         return new Edge(cell(edge.from()), cell(edge.to()));
     }
 
@@ -54,7 +54,7 @@ final class DungeonEditorCoreWallGeometry {
                 new VertexKey(edge.to().q(), edge.to().r(), edge.to().level()));
     }
 
-    private static Cell cell(DungeonEditorWorkspaceValues.Cell cell) {
+    private static Cell cell(features.dungeon.domain.core.geometry.Cell cell) {
         return new Cell(cell.q(), cell.r(), cell.level());
     }
 }

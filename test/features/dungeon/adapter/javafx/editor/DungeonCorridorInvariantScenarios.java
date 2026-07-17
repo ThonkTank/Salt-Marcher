@@ -17,7 +17,6 @@ import features.dungeon.domain.core.structure.DungeonMapMetadata;
 import features.dungeon.domain.core.structure.corridor.Corridor;
 import features.dungeon.domain.core.structure.corridor.CorridorAnchorEndpointMaterialization;
 import features.dungeon.domain.core.structure.corridor.CorridorBindings;
-import features.dungeon.domain.core.structure.corridor.CorridorBindingState;
 import features.dungeon.domain.core.structure.corridor.CorridorDeletionTarget;
 import features.dungeon.domain.core.structure.corridor.CorridorEndpointSemantics;
 import features.dungeon.domain.core.structure.corridor.CorridorHostCells;
@@ -60,12 +59,12 @@ final class DungeonCorridorInvariantScenarios {
                 .forDoor(door, CorridorEndpointSemantics.forDoor(door))
                 .applyTo(emptyCorridor(1L));
         assertEquals(List.of(4L), doorBound.roomIds(), "corridor endpoint owner adds door room id");
-        assertEquals(List.of(door), doorBound.coreBindings().doorBindings(),
+        assertEquals(List.of(door), doorBound.bindings().doorBindings(),
                 "corridor endpoint owner applies concrete door binding");
 
         CorridorAnchorRef anchorRef = new CorridorAnchorRef(10L, 1L);
         Corridor anchorBound = CorridorResolvedEndpoint.forAnchor(anchorRef).applyTo(emptyCorridor(2L));
-        assertEquals(List.of(anchorRef), anchorBound.coreBindings().anchorRefs(),
+        assertEquals(List.of(anchorRef), anchorBound.bindings().anchorRefs(),
                 "corridor endpoint owner applies concrete anchor ref");
 
         Corridor host = emptyCorridor(10L);
@@ -175,9 +174,9 @@ final class DungeonCorridorInvariantScenarios {
                         new CorridorTargetDeletion.WaypointTarget(new Cell(0, 0, 0)),
                         new CorridorTargetDeletion.WaypointTarget(new Cell(2, 0, 0)),
                         new CorridorTargetDeletion.WaypointTarget(new Cell(4, 0, 0))));
-        assertEquals(List.of(survivingDoor), withoutDoor.coreBindings().doorBindings(),
+        assertEquals(List.of(survivingDoor), withoutDoor.bindings().doorBindings(),
                 "corridor delete owner removes only the targeted door branch");
-        assertEquals(List.of(second), withoutDoor.coreBindings().waypoints(),
+        assertEquals(List.of(second), withoutDoor.bindings().waypoints(),
                 "corridor delete owner preserves the interior branch span between remaining endpoints");
 
         Corridor withoutPoint = deletion.deleteTarget(
@@ -186,7 +185,7 @@ final class DungeonCorridorInvariantScenarios {
                 List.of(),
                 List.of(),
                 List.of());
-        assertEquals(List.of(first, third), withoutPoint.coreBindings().waypoints(),
+        assertEquals(List.of(first, third), withoutPoint.bindings().waypoints(),
                 "corridor delete owner removes only the targeted waypoint");
 
         Corridor protectedOwner = new Corridor(
@@ -270,7 +269,7 @@ final class DungeonCorridorInvariantScenarios {
                 1L,
                 0,
                 new CorridorRoomSet(List.of()),
-                new CorridorBindingState(
+                new CorridorBindings(
                         List.of(
                                 new CorridorWaypoint(0L, new Cell(0, 0, 0), 0),
                                 new CorridorWaypoint(0L, new Cell(1, 0, 0), 0),

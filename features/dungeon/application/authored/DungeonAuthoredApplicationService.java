@@ -41,14 +41,14 @@ import features.dungeon.domain.core.structure.transition.TransitionCatalog.Autho
 import features.dungeon.domain.core.structure.transition.TransitionDestination;
 import features.dungeon.application.editor.interaction.DungeonEditorHandleMutation;
 import features.dungeon.application.editor.interaction.DungeonEditorHandleProjection;
-import features.dungeon.application.editor.interaction.DungeonEditorHandleType;
+import features.dungeon.api.DungeonEditorHandleKind;
 import features.dungeon.application.editor.session.DungeonEditorDungeonState;
 import features.dungeon.application.editor.session.DungeonEditorRoomNarrationInput;
 import features.dungeon.application.editor.session.DungeonEditorSessionSnapshot;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceCoreGeometry;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceHandleMovement;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
+import features.dungeon.application.editor.session.DungeonEditorWorkspaceGeometry;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapId;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
 import features.dungeon.application.editor.helper.DungeonEditorAuthoredOperationHelper;
@@ -407,12 +407,12 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             case DungeonEditorWorkspaceValues.CorridorDoorEndpoint door -> DungeonCorridorEndpoint.door(
                     door.roomId(),
                     door.clusterId(),
-                    DungeonEditorWorkspaceCoreGeometry.cell(door.roomCell()),
-                    Direction.parse(door.direction()),
+                    door.roomCell(),
+                    door.direction(),
                     door.topologyRef());
             case DungeonEditorWorkspaceValues.CorridorAnchorEndpoint anchor -> DungeonCorridorEndpoint.anchor(
                     anchor.hostCorridorId(),
-                    DungeonEditorWorkspaceCoreGeometry.cell(anchor.anchorCell()),
+                    anchor.anchorCell(),
                     anchor.topologyRef());
             case null -> DungeonCorridorEndpoint.door(
                     0L,
@@ -875,7 +875,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             DungeonEditorSessionValues.MoveHandlePreview safePreview =
                     Objects.requireNonNull(preview, PREVIEW_ARGUMENT);
             DungeonEditorWorkspaceValues.HandleRef handleRef = safePreview.handleRef();
-            if (handleRef.kind() != DungeonEditorHandleType.DOOR) {
+            if (handleRef.kind() != DungeonEditorHandleKind.DOOR) {
                 return;
             }
             OperationResultData result = mutationPipeline.executeOperation(
@@ -919,7 +919,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     Objects.requireNonNull(preview, PREVIEW_ARGUMENT);
             DungeonEditorWorkspaceValues.HandleRef handleRef = safePreview.handleRef();
             OperationResultData result;
-            if (handleRef.kind() == DungeonEditorHandleType.CORRIDOR_ANCHOR) {
+            if (handleRef.kind() == DungeonEditorHandleKind.CORRIDOR_ANCHOR) {
                 result = mutationPipeline.executeOperation(
                         domainMapId(mapId),
                         current -> stationary(safePreview)
@@ -933,7 +933,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                                         safePreview.deltaQ(),
                                         safePreview.deltaR(),
                                         safePreview.deltaLevel()));
-            } else if (handleRef.kind() == DungeonEditorHandleType.CORRIDOR_WAYPOINT) {
+            } else if (handleRef.kind() == DungeonEditorHandleKind.CORRIDOR_WAYPOINT) {
                 result = mutationPipeline.executeOperation(
                         domainMapId(mapId),
                         current -> stationary(safePreview)
@@ -958,7 +958,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             DungeonEditorSessionValues.MoveHandlePreview safePreview =
                     Objects.requireNonNull(preview, PREVIEW_ARGUMENT);
             DungeonEditorWorkspaceValues.HandleRef handleRef = safePreview.handleRef();
-            if (handleRef.kind() != DungeonEditorHandleType.STAIR_ANCHOR) {
+            if (handleRef.kind() != DungeonEditorHandleKind.STAIR_ANCHOR) {
                 return;
             }
             OperationResultData result = applyHandleMovement(domainMapId(mapId), handleRef, safePreview);
@@ -976,7 +976,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     domainMapId(mapId),
                     current -> current.moveBoundaryStretch(
                             safePreview.clusterId(),
-                            DungeonEditorWorkspaceCoreGeometry.edges(safePreview.sourceEdges()),
+                            DungeonEditorWorkspaceGeometry.unitEdges(safePreview.sourceEdges()),
                             safePreview.deltaQ(),
                             safePreview.deltaR(),
                             safePreview.deltaLevel()));
@@ -1000,10 +1000,10 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
 
         private Edge sourceEdge(DungeonEditorWorkspaceValues.HandleRef handleRef) {
             if (handleRef.sourceEdge() != null) {
-                return DungeonEditorWorkspaceCoreGeometry.edge(handleRef.sourceEdge());
+                return handleRef.sourceEdge();
             }
-            Cell cell = DungeonEditorWorkspaceCoreGeometry.cell(handleRef.cell());
-            return Direction.parse(handleRef.direction()).edgeOf(cell);
+            Cell cell = handleRef.cell();
+            return handleRef.direction().edgeOf(cell);
         }
 
         private boolean stationary(DungeonEditorSessionValues.MoveHandlePreview preview) {
@@ -1472,11 +1472,11 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                         domainMapId,
                         room.deleteMode()
                                 ? current -> current.deleteRoomRectangle(
-                                        DungeonEditorWorkspaceCoreGeometry.cell(room.start()),
-                                        DungeonEditorWorkspaceCoreGeometry.cell(room.end()))
+                                        room.start(),
+                                        room.end())
                                 : current -> current.paintRoomRectangle(
-                                        DungeonEditorWorkspaceCoreGeometry.cell(room.start()),
-                                        DungeonEditorWorkspaceCoreGeometry.cell(room.end())));
+                                        room.start(),
+                                        room.end()));
             }
             if (preview instanceof DungeonEditorSessionValues.ClusterBoundariesPreview boundaries
                     && !boundaries.boundaryKind().isDoor()) {
@@ -1484,8 +1484,8 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                         domainMapId,
                         current -> current.editClusterBoundaries(
                                 boundaries.clusterId(),
-                                DungeonEditorWorkspaceCoreGeometry.edges(boundaries.edges()),
-                                DungeonEditorWorkspaceCoreGeometry.boundaryKind(boundaries.boundaryKind()),
+                                DungeonEditorWorkspaceGeometry.unitEdges(boundaries.edges()),
+                                boundaries.boundaryKind(),
                                 boundaries.deleteMode()));
             }
             return null;
@@ -1518,7 +1518,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                 DungeonEditorSessionValues.Preview preview
         ) {
             if (preview instanceof DungeonEditorSessionValues.MoveHandlePreview move
-                    && (move.handleRef().kind() == DungeonEditorHandleType.STAIR_ANCHOR
+                    && (move.handleRef().kind() == DungeonEditorHandleKind.STAIR_ANCHOR
                     || DungeonEditorSessionPreviewHelper.directClusterMoveCommitHandle(move.handleRef().kind()))) {
                 return mutationPipeline.previewOperation(
                         domainMapId,
@@ -1534,7 +1534,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                         domainMapId,
                         current -> current.moveBoundaryStretch(
                                 stretch.clusterId(),
-                                DungeonEditorWorkspaceCoreGeometry.edges(stretch.sourceEdges()),
+                                DungeonEditorWorkspaceGeometry.unitEdges(stretch.sourceEdges()),
                                 stretch.deltaQ(),
                                 stretch.deltaR(),
                                 stretch.deltaLevel()));
@@ -1552,7 +1552,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     ? null
                     : new StairGeometrySpec(
                             shape,
-                            DungeonEditorWorkspaceCoreGeometry.cell(stair.specAnchor()),
+                            stair.specAnchor(),
                             direction,
                             stair.dimension1(),
                             stair.dimension2());
@@ -1904,8 +1904,8 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                         new DungeonEditorWorkspaceValues.RoomExitNarration(
                                 exit.label(),
                                 cell == null
-                                        ? DungeonEditorWorkspaceValues.Cell.empty()
-                                        : new DungeonEditorWorkspaceValues.Cell(cell.q(), cell.r(), cell.level()),
+                                        ? Cell.empty()
+                                        : new Cell(cell.q(), cell.r(), cell.level()),
                                 exit.direction().name(),
                                 exit.description()),
                         new DungeonAuthoredPublication.RoomExitNarration(

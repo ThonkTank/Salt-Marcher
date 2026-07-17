@@ -40,4 +40,20 @@ public enum DungeonEditorHandleKind {
     public boolean isCorridorGeometryHandle() {
         return isCorridorAnchor() || isCorridorWaypoint();
     }
+
+    public boolean isStairAnchor() {
+        return this == STAIR_ANCHOR;
+    }
+
+    public boolean isDirectClusterMoveCommit() {
+        return isClusterLabel() || isClusterCorner();
+    }
+
+    public boolean isDirectDoorMoveCommit() {
+        return isDoor();
+    }
+
+    public boolean isDirectCorridorMoveCommit() {
+        return isCorridorGeometryHandle();
+    }
 }

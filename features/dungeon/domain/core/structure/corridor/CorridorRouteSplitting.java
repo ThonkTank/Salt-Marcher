@@ -34,8 +34,8 @@ final class CorridorRouteSplitting {
                 nonNullRouteCells(routeCells),
                 waypointClusterId,
                 clusterCenter);
-        return corridor.withStateBindings(
-                corridor.stateBindings().withInteriorRouteAnchors(routePlan, routeAnchors(dungeonMap)));
+        return corridor.withBindings(
+                corridor.bindings().withInteriorRouteAnchors(routePlan, routeAnchors(dungeonMap)));
     }
 
     private static long waypointClusterId(
@@ -63,7 +63,7 @@ final class CorridorRouteSplitting {
     private static List<CorridorAnchor> routeAnchors(DungeonMap dungeonMap) {
         List<CorridorAnchor> result = new ArrayList<>();
         for (Corridor corridor : dungeonMap.corridors()) {
-            for (CorridorAnchor anchor : corridor.stateBindings().anchorBindings()) {
+            for (CorridorAnchor anchor : corridor.bindings().anchorBindings()) {
                 if (anchor != null) {
                     result.add(anchor);
                 }

@@ -3,11 +3,11 @@ package features.dungeon.application.editor.usecase;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.structure.door.DoorBoundaryPreviewRelocation;
 import features.dungeon.domain.core.structure.door.DoorBoundaryPreviewRelocation.DoorBoundaryPreviewPlan;
-import features.dungeon.application.editor.interaction.DungeonEditorHandleType;
+import features.dungeon.api.DungeonEditorHandleKind;
 import features.dungeon.application.editor.session.DungeonEditorDungeonState;
 import features.dungeon.application.editor.session.DungeonEditorSessionSnapshot;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Edge;
+import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.HandleRef;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
 import features.dungeon.application.editor.helper.PreviewDungeonEditorDoorBoundaryProjectionHelper;
@@ -28,7 +28,7 @@ final class PreviewDungeonEditorDoorMoveUseCase {
             DungeonEditorSessionValues.Preview preview
     ) {
         if (!(preview instanceof DungeonEditorSessionValues.MoveHandlePreview move)
-                || move.handleRef().kind() != DungeonEditorHandleType.DOOR
+                || move.handleRef().kind() != DungeonEditorHandleKind.DOOR
                 || surface == null) {
             return null;
         }

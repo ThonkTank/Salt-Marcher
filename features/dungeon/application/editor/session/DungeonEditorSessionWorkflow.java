@@ -1,5 +1,7 @@
 package features.dungeon.application.editor.session;
 
+import features.dungeon.api.DungeonEditorViewMode;
+import features.dungeon.api.DungeonOverlaySettings;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import features.dungeon.api.editor.DungeonEditorToolFamily;
@@ -39,9 +41,9 @@ public final class DungeonEditorSessionWorkflow {
         });
     }
 
-    public void setViewMode(DungeonEditorSessionValues.ViewMode viewMode) {
-        DungeonEditorSessionValues.ViewMode safeViewMode = viewMode == null
-                ? DungeonEditorSessionValues.ViewMode.defaultMode()
+    public void setViewMode(DungeonEditorViewMode viewMode) {
+        DungeonEditorViewMode safeViewMode = viewMode == null
+                ? DungeonEditorViewMode.GRID
                 : viewMode;
         session.replace(session.current().withViewMode(safeViewMode)
                 .clearTransientState(""));
@@ -64,9 +66,9 @@ public final class DungeonEditorSessionWorkflow {
         session.replace(session.current().shiftProjectionLevel(projectionLevelDelta).clearPreview().withStatusText(""));
     }
 
-    public void setOverlay(DungeonEditorSessionValues.OverlaySettings overlaySettings) {
-        DungeonEditorSessionValues.OverlaySettings safeOverlaySettings = overlaySettings == null
-                ? DungeonEditorSessionValues.OverlaySettings.defaults()
+    public void setOverlay(DungeonOverlaySettings overlaySettings) {
+        DungeonOverlaySettings safeOverlaySettings = overlaySettings == null
+                ? DungeonOverlaySettings.defaults()
                 : overlaySettings;
         session.replace(session.current().withOverlaySettings(safeOverlaySettings).withStatusText(""));
     }

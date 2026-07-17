@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.structure.room.BoundaryStretchOrientation;
-import features.dungeon.application.editor.interaction.DungeonEditorHandleType;
+import features.dungeon.api.DungeonEditorHandleKind;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.DungeonEditorInteractionValues.CellKey;
@@ -50,7 +50,7 @@ final class DungeonEditorBoundaryStretchHelper {
             if (!DungeonEditorWorkspaceValues.hasId(clusterId)) {
                 return null;
             }
-            List<DungeonEditorWorkspaceValues.Edge> sourceEdges = sourceEdges(input, snapshot, clusterId, boundaryTarget,
+            List<features.dungeon.domain.core.geometry.Edge> sourceEdges = sourceEdges(input, snapshot, clusterId, boundaryTarget,
                     orientation, edges);
             if (sourceEdges.isEmpty()) {
                 return null;
@@ -58,7 +58,7 @@ final class DungeonEditorBoundaryStretchHelper {
             return session(input, sourceEdges, orientation, selection(snapshot, currentSelection, clusterId, boundaryTarget), clusterId);
         }
 
-        private static List<DungeonEditorWorkspaceValues.Edge> sourceEdges(
+        private static List<features.dungeon.domain.core.geometry.Edge> sourceEdges(
                 PointerState input,
                 DungeonEditorWorkspaceValues.MapSnapshot snapshot,
                 long clusterId,
@@ -68,13 +68,13 @@ final class DungeonEditorBoundaryStretchHelper {
         ) {
             if (DungeonEditorMainViewInteractionValues.handleKind(
                     input.hitTarget().handleRef(),
-                    DungeonEditorHandleType.CLUSTER_WALL_RUN)) {
+                    DungeonEditorHandleKind.CLUSTER_WALL_RUN)) {
                 return handleSourceEdges(input.hitTarget().handleRef());
             }
             return edges.resolve(snapshot, clusterId, boundaryTarget, orientation);
         }
 
-        private static List<DungeonEditorWorkspaceValues.Edge> handleSourceEdges(
+        private static List<features.dungeon.domain.core.geometry.Edge> handleSourceEdges(
                 DungeonEditorWorkspaceValues.HandleRef handle
         ) {
             return handle.sourceEdges();
@@ -89,7 +89,7 @@ final class DungeonEditorBoundaryStretchHelper {
             }
             if (DungeonEditorMainViewInteractionValues.handleKind(
                     input.hitTarget().handleRef(),
-                    DungeonEditorHandleType.CLUSTER_WALL_RUN)) {
+                    DungeonEditorHandleKind.CLUSTER_WALL_RUN)) {
                 return DungeonEditorWallRunBoundaryTargetResolver.resolve(input, currentSelection);
             }
             BoundaryTarget boundaryTarget = input.boundaryTarget();
@@ -101,7 +101,7 @@ final class DungeonEditorBoundaryStretchHelper {
 
         private static BoundaryStretchSession session(
                 PointerState input,
-                List<DungeonEditorWorkspaceValues.Edge> sourceEdges,
+                List<features.dungeon.domain.core.geometry.Edge> sourceEdges,
                 BoundaryStretchOrientation orientation,
                 DungeonEditorSessionValues.Selection selection,
                 long clusterId
@@ -161,7 +161,7 @@ final class DungeonEditorBoundaryStretchHelper {
     }
 
     private static final class StretchEdges {
-        private List<DungeonEditorWorkspaceValues.Edge> resolve(
+        private List<features.dungeon.domain.core.geometry.Edge> resolve(
                 DungeonEditorWorkspaceValues.MapSnapshot snapshot,
                 long clusterId,
                 BoundaryTarget boundaryTarget,
@@ -170,26 +170,26 @@ final class DungeonEditorBoundaryStretchHelper {
             if (snapshot == null || !boundaryTarget.present() || !DungeonEditorWorkspaceValues.hasId(clusterId)) {
                 return List.of();
             }
-            Set<DungeonEditorWorkspaceValues.Cell> clusterCells =
+            Set<features.dungeon.domain.core.geometry.Cell> clusterCells =
                     StretchCluster.clusterCells(snapshot, clusterId, boundaryTarget.start().level());
             if (clusterCells.isEmpty()) {
                 return List.of();
             }
-            DungeonEditorWorkspaceValues.Edge clickedEdge = boundaryTarget.edgeRef();
+            features.dungeon.domain.core.geometry.Edge clickedEdge = boundaryTarget.edgeRef();
             BoundaryStretchSide stretchSide = stretchSide(clickedEdge, clusterCells);
             if (stretchSide == BoundaryStretchSide.NONE) {
                 return List.of();
             }
-            Map<Integer, DungeonEditorWorkspaceValues.Edge> lineEdges =
+            Map<Integer, features.dungeon.domain.core.geometry.Edge> lineEdges =
                     edgesOnLine(snapshot, clusterCells, clickedEdge, orientation, stretchSide.outer());
-            List<DungeonEditorWorkspaceValues.Edge> contiguousEdges =
+            List<features.dungeon.domain.core.geometry.Edge> contiguousEdges =
                     StretchGeometry.contiguousEdges(lineEdges, clickedEdge, orientation);
             return contiguousEdges.isEmpty() ? List.of(clickedEdge) : contiguousEdges;
         }
 
         private static BoundaryStretchSide stretchSide(
-                DungeonEditorWorkspaceValues.Edge clickedEdge,
-                Set<DungeonEditorWorkspaceValues.Cell> clusterCells
+                features.dungeon.domain.core.geometry.Edge clickedEdge,
+                Set<features.dungeon.domain.core.geometry.Cell> clusterCells
         ) {
             return switch (DungeonEditorBoundaryTouchGeometry.fromEdge(clickedEdge).touchingCount(clusterCells)) {
                 case 0 -> BoundaryStretchSide.NONE;
@@ -198,14 +198,14 @@ final class DungeonEditorBoundaryStretchHelper {
             };
         }
 
-        private static Map<Integer, DungeonEditorWorkspaceValues.Edge> edgesOnLine(
+        private static Map<Integer, features.dungeon.domain.core.geometry.Edge> edgesOnLine(
                 DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-                Set<DungeonEditorWorkspaceValues.Cell> clusterCells,
-                DungeonEditorWorkspaceValues.Edge clickedEdge,
+                Set<features.dungeon.domain.core.geometry.Cell> clusterCells,
+                features.dungeon.domain.core.geometry.Edge clickedEdge,
                 BoundaryStretchOrientation orientation,
                 boolean outer
         ) {
-            Map<Integer, DungeonEditorWorkspaceValues.Edge> edgesByVariable = new LinkedHashMap<>();
+            Map<Integer, features.dungeon.domain.core.geometry.Edge> edgesByVariable = new LinkedHashMap<>();
             int level = clickedEdge.from().level();
             int fixedCoordinate = StretchGeometry.fixedCoordinate(clickedEdge, orientation);
             for (DungeonEditorWorkspaceValues.Boundary boundary : snapshot.boundaries()) {
@@ -215,9 +215,9 @@ final class DungeonEditorBoundaryStretchHelper {
         }
 
         private static void addIfMatching(
-                Map<Integer, DungeonEditorWorkspaceValues.Edge> edgesByVariable,
-                DungeonEditorWorkspaceValues.Edge edge,
-                Set<DungeonEditorWorkspaceValues.Cell> clusterCells,
+                Map<Integer, features.dungeon.domain.core.geometry.Edge> edgesByVariable,
+                features.dungeon.domain.core.geometry.Edge edge,
+                Set<features.dungeon.domain.core.geometry.Cell> clusterCells,
                 int level,
                 BoundaryStretchOrientation orientation,
                 int fixedCoordinate,
@@ -249,7 +249,7 @@ final class DungeonEditorBoundaryStretchHelper {
             return 0L;
         }
 
-        private static Set<DungeonEditorWorkspaceValues.Cell> clusterCells(
+        private static Set<features.dungeon.domain.core.geometry.Cell> clusterCells(
                 DungeonEditorWorkspaceValues.MapSnapshot snapshot,
                 long clusterId,
                 int level
@@ -257,7 +257,7 @@ final class DungeonEditorBoundaryStretchHelper {
             if (snapshot == null || !DungeonEditorWorkspaceValues.hasId(clusterId)) {
                 return Set.of();
             }
-            Set<DungeonEditorWorkspaceValues.Cell> result = new LinkedHashSet<>();
+            Set<features.dungeon.domain.core.geometry.Cell> result = new LinkedHashSet<>();
             for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
                 collectClusterCells(result, area, clusterId, level);
             }
@@ -265,7 +265,7 @@ final class DungeonEditorBoundaryStretchHelper {
         }
 
         private static void collectClusterCells(
-                Set<DungeonEditorWorkspaceValues.Cell> result,
+                Set<features.dungeon.domain.core.geometry.Cell> result,
                 DungeonEditorWorkspaceValues.Area area,
                 long clusterId,
                 int level
@@ -273,7 +273,7 @@ final class DungeonEditorBoundaryStretchHelper {
             if (!area.kind().isRoom() || area.clusterId() != clusterId) {
                 return;
             }
-            for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {
+            for (features.dungeon.domain.core.geometry.Cell cell : area.cells()) {
                 if (cell.level() == level) {
                     result.add(cell);
                 }
@@ -284,7 +284,7 @@ final class DungeonEditorBoundaryStretchHelper {
                 DungeonEditorWorkspaceValues.Area area,
                 List<CellKey> touchingCells
         ) {
-            for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {
+            for (features.dungeon.domain.core.geometry.Cell cell : area.cells()) {
                 if (touchingCells.contains(new CellKey(cell.q(), cell.r(), cell.level()))) {
                     return true;
                 }
@@ -307,9 +307,9 @@ final class DungeonEditorBoundaryStretchHelper {
             return null;
         }
 
-        private static List<DungeonEditorWorkspaceValues.Edge> contiguousEdges(
-                Map<Integer, DungeonEditorWorkspaceValues.Edge> edgesByVariable,
-                DungeonEditorWorkspaceValues.Edge clickedEdge,
+        private static List<features.dungeon.domain.core.geometry.Edge> contiguousEdges(
+                Map<Integer, features.dungeon.domain.core.geometry.Edge> edgesByVariable,
+                features.dungeon.domain.core.geometry.Edge clickedEdge,
                 BoundaryStretchOrientation orientation
         ) {
             int min = variableCoordinate(clickedEdge, orientation);
@@ -324,8 +324,8 @@ final class DungeonEditorBoundaryStretchHelper {
         }
 
         private static boolean matchesLine(
-                DungeonEditorWorkspaceValues.Edge edge,
-                Set<DungeonEditorWorkspaceValues.Cell> clusterCells,
+                features.dungeon.domain.core.geometry.Edge edge,
+                Set<features.dungeon.domain.core.geometry.Cell> clusterCells,
                 int level,
                 BoundaryStretchOrientation orientation,
                 int fixedCoordinate,
@@ -344,11 +344,11 @@ final class DungeonEditorBoundaryStretchHelper {
             return touchCount > 0 && touchCount == 1 == outer;
         }
 
-        private static int fixedCoordinate(DungeonEditorWorkspaceValues.Edge edge, BoundaryStretchOrientation orientation) {
+        private static int fixedCoordinate(features.dungeon.domain.core.geometry.Edge edge, BoundaryStretchOrientation orientation) {
             return orientation == BoundaryStretchOrientation.VERTICAL ? edge.from().q() : edge.from().r();
         }
 
-        private static int variableCoordinate(DungeonEditorWorkspaceValues.Edge edge, BoundaryStretchOrientation orientation) {
+        private static int variableCoordinate(features.dungeon.domain.core.geometry.Edge edge, BoundaryStretchOrientation orientation) {
             return orientation == BoundaryStretchOrientation.VERTICAL
                     ? Math.min(edge.from().r(), edge.to().r())
                     : Math.min(edge.from().q(), edge.to().q());
@@ -356,7 +356,7 @@ final class DungeonEditorBoundaryStretchHelper {
 
         private static boolean sameOrientation(
                 BoundaryStretchOrientation orientation,
-                DungeonEditorWorkspaceValues.Edge edge
+                features.dungeon.domain.core.geometry.Edge edge
         ) {
             if (orientation == BoundaryStretchOrientation.HORIZONTAL) {
                 return edge.from().r() == edge.to().r();
@@ -364,14 +364,14 @@ final class DungeonEditorBoundaryStretchHelper {
             return edge.from().q() == edge.to().q();
         }
 
-        private static List<DungeonEditorWorkspaceValues.Edge> contiguousRange(
-                Map<Integer, DungeonEditorWorkspaceValues.Edge> edgesByVariable,
+        private static List<features.dungeon.domain.core.geometry.Edge> contiguousRange(
+                Map<Integer, features.dungeon.domain.core.geometry.Edge> edgesByVariable,
                 int min,
                 int max
         ) {
-            List<DungeonEditorWorkspaceValues.Edge> contiguousEdges = new ArrayList<>();
+            List<features.dungeon.domain.core.geometry.Edge> contiguousEdges = new ArrayList<>();
             for (int variable = min; variable <= max; variable++) {
-                DungeonEditorWorkspaceValues.Edge edge = edgesByVariable.get(variable);
+                features.dungeon.domain.core.geometry.Edge edge = edgesByVariable.get(variable);
                 if (edge != null) {
                     contiguousEdges.add(edge);
                 }
