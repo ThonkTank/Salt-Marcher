@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-24
+Last Reviewed: 2026-07-17
 Source of Truth: User-facing behavior, capabilities, and acceptance criteria for
 the dungeon feature.
 
@@ -27,8 +27,9 @@ Provide one dungeon workflow that lets a GM:
 
 - SaltMarcher already ships a dungeon map surface, a dungeon travel surface,
   and a dungeon editor surface over shared authored dungeon truth.
-- The current global runtime tab labeled `Reise` is still a generic
-  placeholder and not yet a dungeon-specialized read-only summary surface.
+- The current global runtime tab labeled `Reise` is wired through the Hex
+  travel contribution and does not yet select Dungeon context through the
+  feature-neutral Travel capability.
 - The sibling `salt-marcher` repo shows the richer visible target-state
   behavior for dungeon runtime travel and advanced editor tool families such as
   corridor, stair, and transition editing.
@@ -99,6 +100,8 @@ Provide one dungeon workflow that lets a GM:
   to own the interactive dungeon workspace to communicate current travel
   context.
 - Runtime travel state is not treated as authored dungeon truth.
+- Dungeon publishes compact typed travel readback, while the feature-neutral
+  Travel capability owns selection and display in the global `Reise` tab.
 
 ## Open Product Questions
 
@@ -114,3 +117,4 @@ Provide one dungeon workflow that lets a GM:
 - [Dungeon Travel Requirements](./requirements-dungeon-travel.md)
 - [Maps Canvas Requirements](../../maps/requirements/requirements-maps-canvas.md) (line 1)
 - [Dungeon Domain Model](../domain/domain-dungeon.md) (line 1)
+- [Travel Context Domain](../../travel/domain/domain-travel.md)

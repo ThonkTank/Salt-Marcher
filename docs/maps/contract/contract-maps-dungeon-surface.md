@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-17
 Source of Truth: Dungeon feature API contract for authored map, editor, catalog,
 and travel capabilities consumed by presentation and other features.
 
@@ -28,6 +28,8 @@ schema.
   or Travel API for that workspace.
 - Preview and apply reuse one authored operation vocabulary. Preview never
   persists authored truth.
+- Editor controls, map, selection, preview, inspector, and command outcome come
+  from one immutable `DungeonEditorState` revision.
 - Catalog work uses one catalog request and response family.
 - Runtime travel reads and moves use one travel-session command and immutable
   state family.
@@ -56,11 +58,13 @@ Optional context:
 
 ### Authored Mutation
 
-Operations cover map selection, projection, overlay, tool, narration, label,
-stair, transition, and pointer-driven authored work.
+`DungeonEditorIntent` covers map selection, projection, overlay, tool family and
+options, narration, labels, stairs, transitions, markers, and pointer-driven
+authored work. Pointer intents carry `ToolFamily`, `ToolOptions`, and
+`PointerGesture` meaning translated from the displayed canvas revision.
 
-Preview and apply carry the same `DungeonEditorAuthoredOperation` body. Apply
-adds commit intent; it does not reconstruct a second edit vocabulary.
+Preview and apply use the same typed command plan. Apply adds commit intent; it
+does not reconstruct a second edit vocabulary.
 
 ### Catalog
 
@@ -77,6 +81,7 @@ Actions:
 
 - `REFRESH`
 - `ACTION`
+- `MOVE_TO_CELL`
 - `SET_PROJECTION_LEVEL`
 - `SHIFT_PROJECTION_LEVEL`
 - `SET_OVERLAY`
@@ -84,6 +89,7 @@ Actions:
 Required fields:
 
 - chosen action id for `ACTION`
+- target Dungeon cell for `MOVE_TO_CELL`
 - projection level for `SET_PROJECTION_LEVEL`
 - projection-level delta for `SHIFT_PROJECTION_LEVEL`
 - overlay settings for `SET_OVERLAY`
@@ -97,14 +103,15 @@ Optional fields:
 
 ### Authored Read
 
-- committed `DungeonSnapshot`
-- `DungeonInspectorSnapshot`
+- committed `DungeonViewportSnapshot`
+- stable inspector facts carried by `DungeonEditorState` when selected
 - map revision and stable authored identities
 
 ### Authored Mutation
 
-- `DungeonOperationResult`
-- commit status, validation messages, and resulting revision when committed
+- immutable `DungeonEditorState`
+- accepted result with resulting revision and changed stable identities, or a
+  typed rejection reason with unchanged committed revision
 
 ### Catalog
 
@@ -113,7 +120,7 @@ Optional fields:
 
 ### Travel
 
-- immutable `TravelDungeonSnapshot`
+- immutable `DungeonTravelState`
 - travel-session revision, available actions, projection level, overlays, and
   party position needed by the workspace
 
@@ -123,8 +130,8 @@ presentation projection class.
 ## Maps Integration
 
 The Dungeon JavaFX adapter translates Dungeon API state into
-`features.maps.api` scene values and Maps pointer samples into Dungeon API
-requests.
+`platform.ui.mapcanvas` scene values and map-canvas pointer samples into
+Dungeon API requests.
 
 - Dungeon-grid coordinates and topology identity never enter Maps as domain
   types.
@@ -136,14 +143,17 @@ requests.
 
 ## Validation And Error Behavior
 
-- Invalid authored edits return a non-committing `DungeonOperationResult` with
-  unchanged committed truth.
+- Invalid authored edits publish a rejected `DungeonEditorCommandOutcome` with
+  unchanged committed truth and a stable typed rejection reason.
 - Invalid travel actions return unchanged authored truth and an immutable travel
   result that reports rejection without inventing a move.
 - Preview must not persist authored truth.
 - Unknown map, topology, handle, selection, or action identities are rejected or
   represented as absence according to the owning operation; adapters must not
   synthesize replacements.
+- A travel action is addressed by stable action id, never by presentation-row
+  position. Direct movement and listed actions share one validation and outcome
+  path.
 - Missing optional result sections mean absence, not defaults invented by a
   consumer.
 - A stale asynchronous result must not overwrite a newer Dungeon API revision.

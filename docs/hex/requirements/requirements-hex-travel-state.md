@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-19
+Last Reviewed: 2026-07-17
 Source of Truth: Compact hex-facing travel-state surface behavior for the
 runtime `Reise` tab, visible states, and acceptance criteria.
 
@@ -52,6 +52,9 @@ Define the compact read-mostly travel-state surface shown in the runtime
 - the surface MUST consume an approved Hex runtime readback and MUST NOT infer
   Hex travel context from editor-only map selection
 - movement commands MUST remain outside the compact state tab
+- Hex MUST publish its compact context as typed readback for the feature-neutral
+  Travel capability; Hex MUST NOT remain the permanent owner of the global
+  `travel` shell contribution
 
 ## Visible States
 
@@ -74,3 +77,4 @@ Define the compact read-mostly travel-state surface shown in the runtime
 - [Hex Feature Requirements](./requirements-hex.md)
 - [Hex Travel Requirements](./requirements-hex-travel.md)
 - [Travel State Tab UI](../../project/requirements/requirements-travel-state-tab.md) (line 1)
+- [Travel Context Domain](../../travel/domain/domain-travel.md)

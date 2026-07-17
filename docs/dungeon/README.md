@@ -26,6 +26,9 @@ Dungeon architecture owns how its API facts adopt those mechanisms.
    write-model ownership, API language, and invariants.
 4. Read the relevant requirements document for user-visible behavior. Executable
    evidence lives in the matching JUnit tests.
+5. Read the temporary [Dungeon Greenfield Roadmap](./delivery/roadmap-dungeon-greenfield.md)
+   only when implementing or reviewing migration work. It owns sequencing and
+   deletion gates, not durable behavior or architecture.
 
 ### Architecture
 
@@ -48,7 +51,7 @@ Dungeon architecture owns how its API facts adopt those mechanisms.
 
 ### Temporary Delivery
 
-- [Dungeon Greenfield Delivery](./delivery/delivery-dungeon-greenfield.md)
+- [Dungeon Greenfield Roadmap](./delivery/roadmap-dungeon-greenfield.md)
 
 ### Related Map Canvas Docs
 

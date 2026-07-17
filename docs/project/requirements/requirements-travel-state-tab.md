@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-19
+Last Reviewed: 2026-07-17
 Source of Truth: Travel global state-tab placeholder structure and visible
 runtime travel context.
 
@@ -19,14 +19,14 @@ Current state:
 - Hex travel-state readback is implemented. The Hex behavior is owned by
   `docs/hex/requirements/requirements-hex-travel-state.md:1`
   and replaces the placeholder when the party token points at a valid Hex tile.
-- Other live travel state remains owned by the Travel left-bar tab and later
-  dungeon travel runtime work.
+- Dungeon live context and the feature-neutral global context selector are not
+  yet wired.
 
 Target state:
 
-- When a feature-owned travel context publishes an approved live runtime
-  readback for the active party, the `Reise` state tab shows that compact
-  runtime context instead of the static placeholder.
+- One feature-neutral Travel capability consumes Party position plus approved
+  Dungeon and Hex readbacks, selects the matching live context, and owns the
+  single global `Reise` contribution.
 - Feature-owned travel contexts keep their behavior requirements in their
   feature requirement docs; this project-wide document owns only the shared
   global state-tab shell behavior and the placeholder-to-live-context
@@ -72,8 +72,13 @@ Target state:
 - a feature-owned live travel context can replace the placeholder only through
   an approved readback surface and without adding movement commands to this
   state tab
+- Dungeon and Hex MUST NOT register separate global `travel` contribution keys;
+  the feature-neutral Travel capability owns exactly one contribution and an
+  explicit no-context fallback
 
 ## References
 
 - [Encounter Runtime State UI](../../encounter/requirements/requirements-encounter-state-tab.md)
 - [Hex Travel State Requirements](../../hex/requirements/requirements-hex-travel-state.md)
+- [Dungeon Travel State Requirements](../../dungeon/requirements/requirements-dungeon-travel-state.md)
+- [Travel Context Domain](../../travel/domain/domain-travel.md)
