@@ -145,6 +145,8 @@ public final class AppBootstrap implements AutoCloseable {
                 world.snapshot(),
                 session.preparedScenes(),
                 encounter.runtimeContexts(),
+                creatures.catalog(),
+                creatures.application(),
                 executionLane,
                 uiDispatcher,
                 diagnostics);
@@ -193,7 +195,7 @@ public final class AppBootstrap implements AutoCloseable {
                 dungeon.travelContribution(),
                 hex.mapContribution(),
                 session.contribution(),
-                scene.contribution(),
+                scene.contribution(creatureId -> creatures.openInspector(inspector, creatureId)),
                 encounter.stateContribution(
                         creatures.application(), world.application(),
                         creatureId -> creatures.openInspector(inspector, creatureId)),

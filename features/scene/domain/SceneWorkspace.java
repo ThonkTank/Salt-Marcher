@@ -41,7 +41,7 @@ public record SceneWorkspace(
 
     public SceneWorkspace create(String title) {
         RunningScene created = new RunningScene(nextSceneId, title, "", 0L, 0L, "", 0L, 0L,
-                List.of(), List.of());
+                List.of(), List.of(), List.of(), List.of());
         return changed(append(scenes, created), nextSceneId, nextSceneId + 1L, "Szene erstellt.");
     }
 
@@ -57,7 +57,8 @@ public record SceneWorkspace(
             String status
     ) {
         RunningScene imported = new RunningScene(nextSceneId, title, notes, sourceSessionId, sourceSceneId,
-                sourceSessionName, initialEncounterPlanId, locationId, partyMemberIds, List.of());
+                sourceSessionName, initialEncounterPlanId, locationId,
+                partyMemberIds, List.of(), List.of(), List.of());
         return changed(append(scenes, imported), nextSceneId, nextSceneId + 1L, status);
     }
 
@@ -120,6 +121,91 @@ public record SceneWorkspace(
             throw new IllegalArgumentException("locationId must not be negative");
         }
         return replace(requireScene(sceneId).withLocation(locationId), focusedSceneId, "Ort aktualisiert.");
+    }
+
+    public SceneWorkspace assignMob(long sceneId, long creatureId, int count) {
+        RunningScene scene = requireScene(sceneId);
+        requirePositive(creatureId, "creatureId");
+        if (count <= 0) {
+            throw new IllegalArgumentException("count must be positive");
+        }
+        List<SceneMob> mobs = new ArrayList<>(scene.mobs());
+        int index = indexOfMob(mobs, creatureId);
+        if (index >= 0) {
+            mobs.set(index, mobs.get(index).withCount(mobs.get(index).count() + count));
+        } else {
+            mobs.add(new SceneMob(creatureId, count));
+        }
+        return replace(scene.withMobs(List.copyOf(mobs)), focusedSceneId, "Mob hinzugefügt.");
+    }
+
+    public SceneWorkspace unassignMob(long sceneId, long creatureId) {
+        RunningScene scene = requireScene(sceneId);
+        List<SceneMob> mobs = scene.mobs().stream()
+                .filter(mob -> mob.creatureId() != creatureId)
+                .toList();
+        return replace(scene.withMobs(mobs), focusedSceneId, "Mob entfernt.");
+    }
+
+    public SceneWorkspace setMobCount(long sceneId, long creatureId, int count) {
+        RunningScene scene = requireScene(sceneId);
+        List<SceneMob> mobs;
+        if (count <= 0) {
+            mobs = scene.mobs().stream().filter(mob -> mob.creatureId() != creatureId).toList();
+        } else {
+            List<SceneMob> updated = new ArrayList<>();
+            boolean found = false;
+            for (SceneMob mob : scene.mobs()) {
+                if (mob.creatureId() == creatureId) {
+                    updated.add(mob.withCount(count));
+                    found = true;
+                } else {
+                    updated.add(mob);
+                }
+            }
+            if (!found) {
+                updated.add(new SceneMob(creatureId, count));
+            }
+            mobs = List.copyOf(updated);
+        }
+        return replace(scene.withMobs(mobs), focusedSceneId, "Mob-Anzahl aktualisiert.");
+    }
+
+    private static int indexOfMob(List<SceneMob> mobs, long creatureId) {
+        for (int index = 0; index < mobs.size(); index++) {
+            if (mobs.get(index).creatureId() == creatureId) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    public SceneWorkspace setParticipantDefeated(
+            long sceneId, SceneParticipantKind kind, long refId, boolean defeated) {
+        RunningScene scene = requireScene(sceneId);
+        requireKind(kind);
+        requirePositive(refId, "refId");
+        SceneParticipantState current = scene.participantState(kind, refId);
+        RunningScene updated = scene.withParticipantState(
+                new SceneParticipantState(kind, refId, defeated, current.notes()));
+        return replace(updated, focusedSceneId, defeated ? "Als besiegt markiert." : "Als aktiv markiert.");
+    }
+
+    public SceneWorkspace setParticipantNotes(
+            long sceneId, SceneParticipantKind kind, long refId, String notes) {
+        RunningScene scene = requireScene(sceneId);
+        requireKind(kind);
+        requirePositive(refId, "refId");
+        SceneParticipantState current = scene.participantState(kind, refId);
+        RunningScene updated = scene.withParticipantState(
+                new SceneParticipantState(kind, refId, current.defeated(), notes));
+        return replace(updated, focusedSceneId, "Notiz gespeichert.");
+    }
+
+    private static void requireKind(SceneParticipantKind kind) {
+        if (kind == null) {
+            throw new IllegalArgumentException("kind must be present");
+        }
     }
 
     public SceneWorkspace retainActivePartyMembers(Set<Long> activeIds) {

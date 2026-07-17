@@ -3,6 +3,7 @@ package features.scene.adapter.javafx;
 import features.scene.api.SceneApi;
 import features.scene.api.SceneCommand;
 import features.scene.api.SceneModel;
+import features.scene.api.SceneParticipantKind;
 import features.scene.api.SceneSnapshot;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.LongConsumer;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -20,7 +22,6 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -32,6 +33,7 @@ final class SceneBinder {
 
     private final SceneApi scenes;
     private final SceneModel model;
+    private final LongConsumer openStatblock;
     private final VBox controls = new VBox(10.0);
     private final BorderPane main = new BorderPane();
     private final Map<Long, SceneDraft> sceneDrafts = new HashMap<>();
@@ -40,9 +42,10 @@ final class SceneBinder {
     private String newSceneDraft = "";
     private long pendingDeleteSceneId;
 
-    SceneBinder(SceneApi scenes, SceneModel model) {
+    SceneBinder(SceneApi scenes, SceneModel model, LongConsumer openStatblock) {
         this.scenes = Objects.requireNonNull(scenes, "scenes");
         this.model = Objects.requireNonNull(model, "model");
+        this.openStatblock = Objects.requireNonNull(openStatblock, "openStatblock");
     }
 
     ShellBinding bind() {
@@ -140,8 +143,10 @@ final class SceneBinder {
             main.setCenter(message("Keine fokussierte Szene verfügbar."));
             return;
         }
-        VBox content = new VBox(12.0, details(focused), assignmentGrid(snapshot, focused));
+        Node board = board(snapshot, focused);
+        VBox content = new VBox(12.0, locationBanner(snapshot, focused), details(focused), board);
         content.setFillWidth(true);
+        VBox.setVgrow(board, Priority.ALWAYS);
         main.setCenter(content);
     }
 
@@ -164,85 +169,248 @@ final class SceneBinder {
         return box;
     }
 
-    private Node assignmentGrid(SceneSnapshot snapshot, SceneSnapshot.SceneEntry scene) {
-        GridPane grid = new GridPane();
-        grid.setHgap(10.0);
-        grid.setVgap(10.0);
-        grid.add(partyPanel(snapshot, scene), 0, 0);
-        grid.add(npcPanel(snapshot, scene), 1, 0);
-        grid.add(locationPanel(snapshot, scene), 2, 0);
-        for (int column = 0; column < 3; column++) {
-            GridPane.setHgrow(grid.getChildren().get(column), Priority.ALWAYS);
-            GridPane.setVgrow(grid.getChildren().get(column), Priority.ALWAYS);
-        }
-        return grid;
-    }
-
-    private Node partyPanel(SceneSnapshot snapshot, SceneSnapshot.SceneEntry scene) {
-        VBox rows = panel("PCs");
-        for (SceneSnapshot.PartyChoice member : snapshot.activePartyMembers()) {
-            boolean assignedHere = member.sceneId() == scene.sceneId();
-            String action = assignedHere ? "Entfernen" : "Hierher";
-            Runnable command = assignedHere
-                    ? () -> execute(new SceneCommand.UnassignPc(member.id()))
-                    : () -> execute(new SceneCommand.AssignPc(scene.sceneId(), member.id()));
-            rows.getChildren().add(row(member.name() + " · Stufe " + member.level(), action, command));
-        }
-        if (snapshot.activePartyMembers().isEmpty()) {
-            rows.getChildren().add(status("Keine aktiven PCs."));
-        }
-        return scroll(rows);
-    }
-
-    private Node npcPanel(SceneSnapshot snapshot, SceneSnapshot.SceneEntry scene) {
-        VBox rows = panel("NPCs");
-        for (SceneSnapshot.NpcChoice npc : scene.npcs()) {
-            rows.getChildren().add(row(npc.name(), "Entfernen",
-                    () -> execute(new SceneCommand.UnassignNpc(npc.id()))));
-        }
-        for (SceneSnapshot.NpcChoice npc : snapshot.availableNpcs()) {
-            if (scene.npcs().stream().noneMatch(selected -> selected.id() == npc.id())) {
-                rows.getChildren().add(row(npc.name(), "Hierher",
-                        () -> execute(new SceneCommand.AssignNpc(scene.sceneId(), npc.id()))));
-            }
-        }
-        if (scene.npcs().isEmpty() && snapshot.availableNpcs().isEmpty()) {
-            rows.getChildren().add(status("Keine World-Planner-NPCs."));
-        }
-        return scroll(rows);
-    }
-
-    private Node locationPanel(SceneSnapshot snapshot, SceneSnapshot.SceneEntry scene) {
-        VBox rows = panel("Ort");
+    private Node locationBanner(SceneSnapshot snapshot, SceneSnapshot.SceneEntry scene) {
         ComboBox<LocationChoice> choices = new ComboBox<>();
-        choices.setMaxWidth(Double.MAX_VALUE);
         choices.getItems().add(new LocationChoice(0L, "Kein Ort"));
         snapshot.availableLocations().stream()
                 .map(location -> new LocationChoice(location.id(), location.name()))
                 .forEach(choices.getItems()::add);
         choices.getSelectionModel().select(choices.getItems().stream()
-                .filter(choice -> choice.id == scene.locationId())
+                .filter(choice -> choice.id() == scene.locationId())
                 .findFirst().orElse(choices.getItems().getFirst()));
-        rows.getChildren().addAll(
-                status(scene.locationName().isBlank() ? "Kein Ort gesetzt" : scene.locationName()),
-                choices,
-                button("Ort übernehmen", () -> {
-                    LocationChoice selected = choices.getValue();
-                    if (selected != null) {
-                        execute(new SceneCommand.SetLocation(scene.sceneId(), selected.id));
-                    }
-                }));
-        return scroll(rows);
+        Button apply = button("Ort übernehmen", () -> {
+            LocationChoice selected = choices.getValue();
+            if (selected != null) {
+                execute(new SceneCommand.SetLocation(scene.sceneId(), selected.id()));
+            }
+        });
+        Label pin = title("📍 " + (scene.locationName().isBlank() ? "Kein Ort gesetzt" : scene.locationName()));
+        HBox banner = new HBox(10.0, pin, choices, apply);
+        banner.setAlignment(Pos.CENTER_LEFT);
+        banner.setPadding(new Insets(10.0));
+        banner.getStyleClass().add("scene-board-location");
+        return banner;
     }
 
-    private static HBox row(String text, String action, Runnable handler) {
-        Label label = new Label(text);
-        label.setWrapText(true);
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox row = new HBox(6.0, label, spacer, button(action, handler));
+    private Node board(SceneSnapshot snapshot, SceneSnapshot.SceneEntry scene) {
+        Node party = partyBoard(snapshot, scene);
+        Node npcs = npcBoard(snapshot, scene);
+        Node mobs = mobBoard(snapshot, scene);
+        VBox right = new VBox(12.0, npcs, mobs);
+        right.setFillWidth(true);
+        right.setPrefWidth(340.0);
+        right.setMinWidth(280.0);
+        VBox.setVgrow(npcs, Priority.ALWAYS);
+        VBox.setVgrow(mobs, Priority.ALWAYS);
+        HBox body = new HBox(12.0, party, right);
+        body.setFillHeight(true);
+        HBox.setHgrow(party, Priority.ALWAYS);
+        return body;
+    }
+
+    private Node partyBoard(SceneSnapshot snapshot, SceneSnapshot.SceneEntry scene) {
+        HBox cards = new HBox(8.0);
+        cards.setAlignment(Pos.CENTER_LEFT);
+        for (SceneSnapshot.PartyChoice member : snapshot.activePartyMembers()) {
+            cards.getChildren().add(pcCard(scene, member));
+        }
+        if (snapshot.activePartyMembers().isEmpty()) {
+            cards.getChildren().add(status("Keine aktiven PCs."));
+        }
+        ScrollPane horizontal = new ScrollPane(cards);
+        horizontal.setFitToHeight(true);
+        horizontal.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        horizontal.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        VBox box = panel("Party");
+        box.getChildren().add(horizontal);
+        VBox.setVgrow(horizontal, Priority.ALWAYS);
+        return box;
+    }
+
+    private Node pcCard(SceneSnapshot.SceneEntry scene, SceneSnapshot.PartyChoice member) {
+        boolean assignedHere = member.sceneId() == scene.sceneId();
+        boolean assignedElsewhere = member.sceneId() > 0L && !assignedHere;
+        Runnable command = assignedHere
+                ? () -> execute(new SceneCommand.UnassignPc(member.id()))
+                : () -> execute(new SceneCommand.AssignPc(scene.sceneId(), member.id()));
+        VBox card = card(member.name());
+        card.getChildren().add(status("Stufe " + member.level()));
+        if (assignedElsewhere) {
+            card.getChildren().add(status("In anderer Szene"));
+        }
+        card.getChildren().add(button(assignedHere ? "Entfernen" : "Hierher", command));
+        if (assignedHere) {
+            decorateWithState(card, scene, SceneParticipantKind.PC, member.id());
+        }
+        return card;
+    }
+
+    private Node npcBoard(SceneSnapshot snapshot, SceneSnapshot.SceneEntry scene) {
+        VBox rows = new VBox(8.0);
+        for (SceneSnapshot.NpcChoice npc : scene.npcs()) {
+            rows.getChildren().add(npcCard(scene, npc, true));
+        }
+        for (SceneSnapshot.NpcChoice npc : snapshot.availableNpcs()) {
+            if (scene.npcs().stream().noneMatch(selected -> selected.id() == npc.id())) {
+                rows.getChildren().add(npcCard(scene, npc, false));
+            }
+        }
+        if (scene.npcs().isEmpty() && snapshot.availableNpcs().isEmpty()) {
+            rows.getChildren().add(status("Keine World-Planner-NPCs."));
+        }
+        ScrollPane scroll = scroll(rows);
+        VBox box = panel("NPCs");
+        box.getChildren().add(scroll);
+        VBox.setVgrow(scroll, Priority.ALWAYS);
+        return box;
+    }
+
+    private Node npcCard(SceneSnapshot.SceneEntry scene, SceneSnapshot.NpcChoice npc, boolean assignedHere) {
+        VBox card = card(npc.name());
+        card.getChildren().add(status(npc.active() ? "Aktiv" : "Inaktiv"));
+        HBox actions = new HBox(6.0);
+        actions.setAlignment(Pos.CENTER_LEFT);
+        if (npc.statblockId() > 0L) {
+            actions.getChildren().add(button("Statblock", () -> openStatblock.accept(npc.statblockId())));
+        }
+        actions.getChildren().add(button(assignedHere ? "Entfernen" : "Hierher",
+                assignedHere
+                        ? () -> execute(new SceneCommand.UnassignNpc(npc.id()))
+                        : () -> execute(new SceneCommand.AssignNpc(scene.sceneId(), npc.id()))));
+        card.getChildren().add(actions);
+        if (assignedHere) {
+            decorateWithState(card, scene, SceneParticipantKind.NPC, npc.id());
+        }
+        return card;
+    }
+
+    private Node mobBoard(SceneSnapshot snapshot, SceneSnapshot.SceneEntry scene) {
+        VBox rows = new VBox(8.0);
+        for (SceneSnapshot.MobChoice mob : scene.mobs()) {
+            rows.getChildren().add(mobCard(scene, mob));
+        }
+        if (scene.mobs().isEmpty()) {
+            rows.getChildren().add(status("Noch keine Mobs in dieser Szene."));
+        }
+        ScrollPane scroll = scroll(rows);
+        VBox box = panel("Mobs");
+        box.getChildren().add(mobAddControl(snapshot, scene));
+        box.getChildren().add(scroll);
+        VBox.setVgrow(scroll, Priority.ALWAYS);
+        return box;
+    }
+
+    private Node mobAddControl(SceneSnapshot snapshot, SceneSnapshot.SceneEntry scene) {
+        ComboBox<CreaturePick> choices = new ComboBox<>();
+        choices.setMaxWidth(Double.MAX_VALUE);
+        snapshot.availableCreatures().stream().map(CreaturePick::new).forEach(choices.getItems()::add);
+        if (!choices.getItems().isEmpty()) {
+            choices.getSelectionModel().selectFirst();
+        }
+        TextField count = new TextField("1");
+        count.setPrefColumnCount(3);
+        Button add = button("Mob hinzufügen", () -> {
+            CreaturePick selected = choices.getValue();
+            if (selected != null) {
+                execute(new SceneCommand.AssignMob(scene.sceneId(), selected.value.id(), parseCount(count.getText())));
+            }
+        });
+        add.setDisable(choices.getItems().isEmpty());
+        if (choices.getItems().isEmpty()) {
+            return new VBox(6.0, status("Kreaturen-Katalog wird geladen …"));
+        }
+        HBox row = new HBox(6.0, choices, count, add);
         row.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(choices, Priority.ALWAYS);
         return row;
+    }
+
+    private Node mobCard(SceneSnapshot.SceneEntry scene, SceneSnapshot.MobChoice mob) {
+        VBox card = card(mob.name() + "  ×" + mob.count());
+        card.getChildren().add(status(mobStats(mob)));
+        HBox actions = new HBox(6.0);
+        actions.setAlignment(Pos.CENTER_LEFT);
+        if (mob.creatureId() > 0L) {
+            actions.getChildren().add(button("Statblock", () -> openStatblock.accept(mob.creatureId())));
+        }
+        actions.getChildren().addAll(
+                button("−", () -> execute(new SceneCommand.SetMobCount(
+                        scene.sceneId(), mob.creatureId(), mob.count() - 1))),
+                button("+", () -> execute(new SceneCommand.SetMobCount(
+                        scene.sceneId(), mob.creatureId(), mob.count() + 1))),
+                button("Entfernen", () -> execute(new SceneCommand.UnassignMob(
+                        scene.sceneId(), mob.creatureId()))));
+        card.getChildren().add(actions);
+        decorateWithState(card, scene, SceneParticipantKind.MOB, mob.creatureId());
+        return card;
+    }
+
+    private void decorateWithState(
+            VBox card, SceneSnapshot.SceneEntry scene, SceneParticipantKind kind, long refId) {
+        SceneSnapshot.ParticipantStateView state = scene.participantState(kind, refId);
+        if (state.defeated()) {
+            card.getStyleClass().add("scene-board-card-defeated");
+            card.getChildren().add(status("Besiegt"));
+        }
+        Button toggle = button(
+                state.defeated() ? "Aktivieren" : "Besiegt",
+                () -> execute(new SceneCommand.SetParticipantDefeated(
+                        scene.sceneId(), kind, refId, !state.defeated())));
+        TextField note = new TextField(state.notes());
+        note.setPromptText("Notiz");
+        note.setOnAction(event -> commitNote(scene, kind, refId, note.getText(), state.notes()));
+        note.focusedProperty().addListener((observable, hadFocus, hasFocus) -> {
+            if (hadFocus && !hasFocus) {
+                commitNote(scene, kind, refId, note.getText(), state.notes());
+            }
+        });
+        card.getChildren().addAll(toggle, note);
+    }
+
+    private void commitNote(
+            SceneSnapshot.SceneEntry scene, SceneParticipantKind kind, long refId, String text, String previous) {
+        if (!text.trim().equals(previous)) {
+            execute(new SceneCommand.SetParticipantNotes(scene.sceneId(), kind, refId, text));
+        }
+    }
+
+    private static String mobStats(SceneSnapshot.MobChoice mob) {
+        StringBuilder builder = new StringBuilder();
+        if (!mob.challengeRating().isBlank()) {
+            builder.append("CR ").append(mob.challengeRating());
+        }
+        if (mob.hitPoints() > 0) {
+            append(builder, "HP " + mob.hitPoints());
+        }
+        if (mob.armorClass() > 0) {
+            append(builder, "AC " + mob.armorClass());
+        }
+        return builder.isEmpty() ? "Keine Statblock-Werte geladen." : builder.toString();
+    }
+
+    private static void append(StringBuilder builder, String value) {
+        if (!builder.isEmpty()) {
+            builder.append(" · ");
+        }
+        builder.append(value);
+    }
+
+    private static int parseCount(String text) {
+        try {
+            return Math.max(1, Integer.parseInt(text.trim()));
+        } catch (NumberFormatException exception) {
+            return 1;
+        }
+    }
+
+    private static VBox card(String name) {
+        Label heading = new Label(name);
+        heading.setWrapText(true);
+        heading.getStyleClass().add("scene-board-card-title");
+        VBox card = new VBox(4.0, heading);
+        card.setMinWidth(150.0);
+        card.getStyleClass().addAll("entity-card", "scene-board-card");
+        return card;
     }
 
     private static VBox panel(String heading) {
@@ -374,6 +542,15 @@ final class SceneBinder {
         @Override
         public String toString() {
             return name;
+        }
+    }
+
+    private record CreaturePick(SceneSnapshot.CreatureChoice value) {
+        @Override
+        public String toString() {
+            return value.challengeRating().isBlank()
+                    ? value.name()
+                    : value.name() + " (CR " + value.challengeRating() + ")";
         }
     }
 

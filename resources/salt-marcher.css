@@ -1043,6 +1043,23 @@
     -fx-background-radius: 3;
     -fx-padding: 8 12 8 12;
 }
+.scene-board-location {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-background-radius: 6;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 6;
+}
+.scene-board-card {
+    -fx-spacing: 4;
+}
+.scene-board-card-title {
+    -fx-font-weight: bold;
+    -fx-text-fill: -sm-text-primary;
+}
+.scene-board-card-defeated {
+    -fx-opacity: 0.55;
+    -fx-border-color: -sm-hp-critical;
+}
 .panel-title {
     -fx-font-size: 13px;
     -fx-font-weight: bold;

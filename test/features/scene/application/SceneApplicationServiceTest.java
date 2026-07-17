@@ -4,6 +4,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import features.creatures.api.CreatureCatalogModel;
+import features.creatures.api.CreatureCatalogPage;
+import features.creatures.api.CreatureCatalogPageResult;
+import features.creatures.api.CreatureCatalogRow;
+import features.creatures.api.CreatureQueryStatus;
+import features.creatures.api.CreaturesApi;
+import features.creatures.api.RefreshCreatureCatalogCommand;
+import features.creatures.api.RefreshCreatureEncounterCandidatesCommand;
+import features.creatures.api.RefreshCreatureFilterOptionsCommand;
+import features.creatures.api.SelectCreatureDetailCommand;
 import features.encounter.api.EncounterRuntimeContextApi;
 import features.encounter.api.EncounterRuntimeContextSyncResult;
 import features.encounter.api.SynchronizeEncounterRuntimeContextsCommand;
@@ -13,6 +23,7 @@ import features.party.api.PartyMemberSummary;
 import features.party.api.ReadStatus;
 import features.scene.api.SceneCommand;
 import features.scene.api.SceneMutationResult;
+import features.scene.api.SceneParticipantKind;
 import features.scene.api.SceneSnapshot;
 import features.scene.domain.SceneWorkspace;
 import features.sessionplanner.api.PreparedSceneCatalogModel;
@@ -135,6 +146,49 @@ class SceneApplicationServiceTest {
     }
 
     @Test
+    void mobsAreCuratedFromTheCreatureCatalogAndResolveStats() {
+        SceneApplicationService service = service(
+                new MemoryRepository(), party(1L), world(), prepared(), new CapturingEncounters());
+        await(service.execute(new SceneCommand.Initialize()));
+
+        await(service.execute(new SceneCommand.AssignMob(1L, 101L, 3)));
+        await(service.execute(new SceneCommand.AssignMob(1L, 101L, 2)));
+
+        SceneSnapshot.MobChoice mob = service.model().current().scenes().getFirst().mobs().getFirst();
+        assertEquals(101L, mob.creatureId());
+        assertEquals("Goblin", mob.name());
+        assertEquals(5, mob.count());
+        assertEquals(15, mob.armorClass());
+
+        SceneMutationResult unknown = await(service.execute(new SceneCommand.AssignMob(1L, 999L, 1)));
+        assertEquals(SceneMutationResult.Status.NOT_FOUND, unknown.status());
+
+        await(service.execute(new SceneCommand.SetMobCount(1L, 101L, 0)));
+        assertTrue(service.model().current().scenes().getFirst().mobs().isEmpty());
+    }
+
+    @Test
+    void participantLiveStateTracksDefeatedAndNotesAndPrunesOnLeave() {
+        SceneApplicationService service = service(
+                new MemoryRepository(), party(1L, 2L), world(), prepared(), new CapturingEncounters());
+        await(service.execute(new SceneCommand.Initialize()));
+
+        await(service.execute(new SceneCommand.SetParticipantDefeated(1L, SceneParticipantKind.PC, 1L, true)));
+        await(service.execute(new SceneCommand.SetParticipantNotes(1L, SceneParticipantKind.PC, 1L, "geflohen")));
+
+        SceneSnapshot.ParticipantStateView state = service.model().current().scenes().getFirst()
+                .participantState(SceneParticipantKind.PC, 1L);
+        assertTrue(state.defeated());
+        assertEquals("geflohen", state.notes());
+
+        await(service.execute(new SceneCommand.Create("Nebenraum")));
+        await(service.execute(new SceneCommand.AssignPc(2L, 1L)));
+
+        assertFalse(service.model().current().scenes().getFirst()
+                .participantState(SceneParticipantKind.PC, 1L).defeated());
+    }
+
+    @Test
     void defaultSceneCannotBeDeleted() {
         SceneApplicationService service = service(
                 new MemoryRepository(), party(1L), world(), prepared(), new CapturingEncounters());
@@ -169,9 +223,37 @@ class SceneApplicationServiceTest {
                 world,
                 prepared,
                 encounters,
+                catalog(),
+                creatures(),
                 DirectExecutionLane.INSTANCE,
                 DirectUiDispatcher.INSTANCE,
                 NoopDiagnostics.INSTANCE);
+    }
+
+    private static CreatureCatalogModel catalog() {
+        CreatureCatalogPageResult result = new CreatureCatalogPageResult(
+                CreatureQueryStatus.SUCCESS,
+                new CreatureCatalogPage(
+                        List.of(new CreatureCatalogRow(
+                                101L, "Goblin", "Klein", "Humanoid", "neutral böse", "1/4", 50, 7, 15)),
+                        1, 50, 0));
+        return new CreatureCatalogModel(() -> result, ignored -> () -> { });
+    }
+
+    private static CreaturesApi creatures() {
+        return new CreaturesApi() {
+            @Override
+            public void refreshFilterOptions(RefreshCreatureFilterOptionsCommand command) { }
+
+            @Override
+            public void refreshCatalog(RefreshCreatureCatalogCommand command) { }
+
+            @Override
+            public void selectCreatureDetail(SelectCreatureDetailCommand command) { }
+
+            @Override
+            public void refreshEncounterCandidates(RefreshCreatureEncounterCandidatesCommand command) { }
+        };
     }
 
     private static PartyFacts party(long... ids) {

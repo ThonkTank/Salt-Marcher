@@ -3,6 +3,7 @@ package features.scene.adapter.javafx;
 import features.scene.api.SceneApi;
 import features.scene.api.SceneModel;
 import java.util.Objects;
+import java.util.function.LongConsumer;
 import shell.api.ContributionKey;
 import shell.api.NavigationGraphicResource;
 import shell.api.NavigationGroupSpec;
@@ -16,10 +17,12 @@ public final class SceneContribution implements ShellContribution {
 
     private final SceneApi scenes;
     private final SceneModel model;
+    private final LongConsumer openStatblock;
 
-    public SceneContribution(SceneApi scenes, SceneModel model) {
+    public SceneContribution(SceneApi scenes, SceneModel model, LongConsumer openStatblock) {
         this.scenes = Objects.requireNonNull(scenes, "scenes");
         this.model = Objects.requireNonNull(model, "model");
+        this.openStatblock = Objects.requireNonNull(openStatblock, "openStatblock");
     }
 
     @Override
@@ -35,6 +38,6 @@ public final class SceneContribution implements ShellContribution {
 
     @Override
     public ShellBinding bind() {
-        return new SceneBinder(scenes, model).bind();
+        return new SceneBinder(scenes, model, openStatblock).bind();
     }
 }
