@@ -7,10 +7,11 @@ import org.jspecify.annotations.Nullable;
 import features.dungeon.api.DungeonEdgeRef;
 import features.dungeon.api.DungeonEditorHandleKind;
 import features.dungeon.api.DungeonEditorHandleRef;
-import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonTopologyKind;
 import features.dungeon.api.DungeonTravelHeading;
+import features.dungeon.adapter.javafx.DungeonEditorToolPresentation;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 
 // Render-state values
 record DungeonMapRenderState(
@@ -561,7 +562,7 @@ private static String normalizeTool(String selectedTool) {
 }
 
 static String selectToolLabel() {
-    return DungeonEditorTool.SELECT.displayLabel();
+    return DungeonEditorToolPresentation.label(DungeonEditorToolSelection.select());
 }
 
 private static String normalizeEmptyMessage(String emptyMessage, boolean projectionAvailable) {

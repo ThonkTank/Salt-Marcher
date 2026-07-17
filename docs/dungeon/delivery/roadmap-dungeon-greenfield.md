@@ -97,15 +97,16 @@ and commit boundaries. M7 starts only after both are complete.
 
 ## Current Migration State
 
-- Current foundation: M0 is complete, and M1 slices 1 through 3 are complete on
-  `main` through PRs #489 through #492.
-- This slice: M1 slice 4 makes `DungeonEditorState` the internal atomic
-  publication, removes compatibility readbacks and prepared render frames, and
-  installs the permanent API-only Dungeon JavaFX architecture rule.
-- Next step after this slice merges: M2 canonicalizes Editor language and adds
-  typed command outcomes.
-- Remaining M1 boundary: none; M1 is complete when this slice merges with a
-  green `check`.
+- Current foundation: M0 and M1 are complete on `main` through PR #493.
+- This slice: M2.1 replaces the public Editor create/delete tool variants and
+  string option keys with typed `ToolFamily`, `ToolOptions`, and
+  `PointerGesture` values, and moves the JavaFX consumer to that boundary.
+- Temporary boundary in this slice: one application-owned adapter maps the new
+  API language to the legacy runtime tool enum. No API or JavaFX caller may use
+  that enum.
+- Next step after this slice merges: M2.2 makes the typed family and gesture
+  language canonical inside the runtime and deletes that adapter, the old tool
+  enum, and tool-name translation.
 
 ## M0: Target Lock And Baseline
 
@@ -228,6 +229,22 @@ Make the model and interaction language express product concepts once.
   treating an unchanged map as the only rejection signal
 - make corridor routing an injected domain policy so a richer route finder can
   replace the initial orthogonal policy without changing editor commands
+
+### Migration Slices
+
+1. Publish typed tool families, family-specific options, and pointer gestures;
+   move the JavaFX consumer and retain only one application adapter to the old
+   runtime language.
+2. Make family and gesture semantics canonical in the runtime; delete the old
+   create/delete tool enum, registry, and tool-name translation.
+3. Publish typed accepted or rejected outcomes and map stable rejection reasons
+   to specific status messages.
+4. Establish `RoomRegion` and `RoomCluster` ownership and collapse same-layer
+   room and cluster wrapper/core pairs.
+5. Remove the remaining duplicate primitives and enum-name round trips within
+   the milestone boundary.
+6. Inject corridor routing, move feature-marker semantic edits to the typed
+   command path, and close the M2 architecture and behavior gates.
 
 ### Exit Gate
 

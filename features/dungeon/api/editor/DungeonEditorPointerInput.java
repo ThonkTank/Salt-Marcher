@@ -7,12 +7,10 @@ import java.util.List;
 public record DungeonEditorPointerInput(
         long sourceRevision,
         Action action,
-        String selectedToolKey,
-        Gesture gesture,
+        DungeonEditorToolSelection toolSelection,
+        DungeonEditorPointerGesture gesture,
         double sceneX,
         double sceneY,
-        boolean primaryButtonDown,
-        boolean secondaryButtonDown,
         List<Target> targets,
         int projectionLevel,
         DungeonEditorIntent.TransitionDestinationInput transitionDestination
@@ -20,8 +18,8 @@ public record DungeonEditorPointerInput(
     public DungeonEditorPointerInput {
         sourceRevision = Math.max(0L, sourceRevision);
         action = action == null ? Action.MOVED : action;
-        selectedToolKey = selectedToolKey == null ? "" : selectedToolKey;
-        gesture = gesture == null ? Gesture.empty() : gesture;
+        toolSelection = toolSelection == null ? DungeonEditorToolSelection.select() : toolSelection;
+        gesture = gesture == null ? DungeonEditorPointerGesture.none() : gesture;
         sceneX = Double.isFinite(sceneX) ? sceneX : 0.0;
         sceneY = Double.isFinite(sceneY) ? sceneY : 0.0;
         targets = targets == null ? List.of() : List.copyOf(targets);
@@ -35,19 +33,6 @@ public record DungeonEditorPointerInput(
         DRAGGED,
         RELEASED,
         MOVED
-    }
-
-    public record Gesture(
-            boolean primaryButtonDown,
-            boolean secondaryButtonDown,
-            boolean middleButtonDown,
-            boolean shiftDown,
-            boolean controlDown,
-            boolean wallSingleClickModeSelected
-    ) {
-        public static Gesture empty() {
-            return new Gesture(false, false, false, false, false, false);
-        }
     }
 
     public record Target(

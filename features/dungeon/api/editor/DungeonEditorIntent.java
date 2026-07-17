@@ -1,6 +1,5 @@
 package features.dungeon.api.editor;
 
-import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonMapId;
 import features.dungeon.api.DungeonOverlaySettings;
@@ -46,9 +45,9 @@ public sealed interface DungeonEditorIntent {
         }
     }
 
-    record SetTool(DungeonEditorTool tool) implements DungeonEditorIntent {
+    record SetTool(DungeonEditorToolSelection selection) implements DungeonEditorIntent {
         public SetTool {
-            tool = tool == null ? DungeonEditorTool.SELECT : tool;
+            selection = selection == null ? DungeonEditorToolSelection.select() : selection;
         }
     }
 

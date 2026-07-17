@@ -11,11 +11,12 @@ import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.api.DungeonEditorHandleRef;
-import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.TravelDungeonSnapshot;
 import features.dungeon.api.editor.DungeonEditorDraftState;
 import features.dungeon.api.editor.DungeonEditorPointerInput;
 import features.dungeon.api.editor.DungeonEditorState;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 
 public final class DungeonMapContentModel {
 
@@ -105,21 +106,23 @@ public final class DungeonMapContentModel {
     }
 
     public PointerTarget syntheticHoverTarget(
-            String selectedToolKey,
+            DungeonEditorToolSelection toolSelection,
             boolean wallSingleClick,
             double sceneX,
             double sceneY,
             int level
     ) {
-        String tool = selectedToolKey == null ? "" : selectedToolKey;
-        if (tool.startsWith("ROOM_")) {
+        DungeonEditorToolFamily family = toolSelection == null
+                ? DungeonEditorToolFamily.SELECT
+                : toolSelection.family();
+        if (family == DungeonEditorToolFamily.ROOM) {
             return PointerTarget.syntheticCell(PreparedElementKind.ROOM,
                     (int) Math.floor(sceneX), (int) Math.floor(sceneY), level);
         }
-        if (tool.startsWith("WALL_") && !wallSingleClick) {
+        if (family == DungeonEditorToolFamily.WALL && !wallSingleClick) {
             return PointerTarget.syntheticVertex((int) Math.round(sceneX), (int) Math.round(sceneY), level);
         }
-        if (tool.startsWith("WALL_") || tool.startsWith("DOOR_")) {
+        if (family == DungeonEditorToolFamily.WALL || family == DungeonEditorToolFamily.DOOR) {
             int q = (int) Math.floor(sceneX);
             int r = (int) Math.floor(sceneY);
             double localQ = sceneX - q;

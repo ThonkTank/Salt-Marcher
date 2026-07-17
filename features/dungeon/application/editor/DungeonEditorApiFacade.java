@@ -56,7 +56,7 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
         } else if (safeIntent instanceof DungeonEditorIntent.SetViewMode setViewMode) {
             runtimeRoot.setViewMode(setViewMode.viewMode());
         } else if (safeIntent instanceof DungeonEditorIntent.SetTool setTool) {
-            runtimeRoot.setTool(setTool.tool());
+            runtimeRoot.setTool(setTool.selection());
         } else if (safeIntent instanceof DungeonEditorIntent.ShiftProjectionLevel shiftLevel) {
             runtimeRoot.shiftProjectionLevel(shiftLevel.levelShift());
         } else if (safeIntent instanceof DungeonEditorIntent.SetOverlay setOverlay) {
@@ -111,21 +111,21 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
                 .map(DungeonEditorApiFacade::runtimeTargetFrom)
                 .toList();
         PointerWorkflowGesture gesture = new PointerWorkflowGesture(
-                input.gesture().primaryButtonDown(),
-                input.gesture().secondaryButtonDown(),
-                input.gesture().middleButtonDown(),
+                input.gesture().primary(),
+                input.gesture().secondary(),
+                input.gesture().middle(),
                 input.gesture().shiftDown(),
                 input.gesture().controlDown(),
-                input.gesture().wallSingleClickModeSelected());
+                DungeonEditorLegacyToolAdapter.wallSingleClick(input.toolSelection()));
         runtimeRoot.applyPointerInteraction(new PointerInteractionRequest(
                 enumValue(PointerAction.class, input.action().name(), PointerAction.MOVED),
-                input.selectedToolKey(),
+                DungeonEditorLegacyToolAdapter.tool(input.toolSelection()).name(),
                 gesture,
                 PointerInteractionTargets.fromRuntimeTargets(
                         input.sceneX(),
                         input.sceneY(),
-                        input.primaryButtonDown(),
-                        input.secondaryButtonDown(),
+                        input.gesture().primary(),
+                        input.gesture().secondary(),
                         targets,
                         input.projectionLevel()),
                 input.projectionLevel(),

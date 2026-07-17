@@ -25,11 +25,34 @@ import features.dungeon.api.editor.DungeonEditorApi;
 import features.dungeon.api.editor.DungeonEditorIntent;
 import features.dungeon.api.editor.DungeonEditorState;
 import features.dungeon.api.editor.DungeonEditorToolFamily;
+import features.dungeon.api.editor.DungeonEditorToolOptions;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.party.PartyServiceAssembly;
 import features.party.domain.roster.PartyRoster;
 import features.party.domain.roster.repository.PartyRosterRepository;
 
 final class DungeonEditorRuntimeThreadOwnershipTest {
+
+    @Test
+    void editorApiPublishesTheTypedToolOptionSelectedByItsConsumer() {
+        InMemoryDungeonRepository repository = new InMemoryDungeonRepository();
+        repository.seed(1L, "Only");
+        DungeonEditorFeatureRuntimeRoot runtime = createRuntimeDirect(repository);
+        DungeonEditorApi api = new DungeonEditorApiFacade(runtime, DirectUiDispatcher.INSTANCE);
+        DungeonEditorToolSelection pathSelection = DungeonEditorToolSelection.family(
+                DungeonEditorToolFamily.WALL);
+        DungeonEditorToolSelection singleSelection = new DungeonEditorToolSelection(
+                DungeonEditorToolFamily.WALL,
+                new DungeonEditorToolOptions.Wall(DungeonEditorToolOptions.Wall.Mode.SINGLE));
+
+        api.dispatch(new DungeonEditorIntent.SetTool(pathSelection));
+        long pathRevision = api.current().publicationRevision();
+        api.dispatch(new DungeonEditorIntent.SetTool(singleSelection));
+
+        assertEquals(singleSelection, api.current().toolSelection());
+        assertTrue(api.current().publicationRevision() > pathRevision,
+                "an option-only change must publish even when its legacy tool value stays equal");
+    }
 
     @Test
     void editorApiPublishesOneAtomicStateAndDispatchesThroughTheRuntimeOwner() {
@@ -63,7 +86,7 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
         assertEquals(current.inspector(), published.inspector());
         assertEquals(current.commandStatus(), published.commandStatus());
         assertEquals(DungeonEditorToolFamily.SELECT, published.toolSelection().family());
-        assertEquals("SELECT", published.toolSelection().optionKey());
+        assertEquals(DungeonEditorToolOptions.none(), published.toolSelection().options());
     }
 
     @Test

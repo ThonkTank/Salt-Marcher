@@ -9,8 +9,12 @@ import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.api.DungeonMapId;
 import features.dungeon.api.editor.DungeonEditorApi;
 import features.dungeon.api.editor.DungeonEditorIntent;
+import features.dungeon.api.editor.DungeonEditorPointerGesture;
 import features.dungeon.api.editor.DungeonEditorPointerInput;
 import features.dungeon.api.editor.DungeonEditorState;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
+import features.dungeon.api.editor.DungeonEditorToolOptions;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 import platform.ui.catalogcrud.CatalogCrudControlsContentModel;
 import platform.ui.catalogcrud.CatalogCrudControlsViewInputEvent;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
@@ -111,7 +115,7 @@ final class DungeonEditorViewModel {
                 safeProjection.viewModeLabel(),
                 safeProjection.overlaySettings(),
                 safeProjection.projectionLevel(),
-                safeProjection.selectedToolLabel());
+                safeProjection.toolSelection());
     }
 
     private static void applyMapCatalogProjection(
@@ -579,7 +583,7 @@ final class DungeonEditorViewModel {
     }
 
     private void consumePointerToolInput(DungeonMapViewInputEvent event) {
-        String selectedTool = currentInteractionState().currentSelectedToolKey();
+        DungeonEditorToolSelection toolSelection = currentInteractionState().currentToolSelection();
         DungeonEditorPointerInput.Action action = pointerAction(event.input());
         double sceneX = sceneX(event);
         double sceneY = sceneY(event);
@@ -590,16 +594,14 @@ final class DungeonEditorViewModel {
         editorApi.dispatch(new DungeonEditorIntent.Pointer(new DungeonEditorPointerInput(
                 latestEditorState.publicationRevision(),
                 action,
-                selectedTool,
+                toolSelection,
                 pointerWorkflowGesture(event),
                 sceneX,
                 sceneY,
-                event.buttons().primaryButtonDown(),
-                event.buttons().secondaryButtonDown(),
                 targets.stream().map(DungeonEditorViewModel::apiPointerTarget).toList(),
                 currentInteractionState().currentProjectionLevel(),
                 transitionDestination())));
-        updateHoverTarget(event, hoverTarget(selectedTool, event, targets, sceneX, sceneY));
+        updateHoverTarget(event, hoverTarget(toolSelection, event, targets, sceneX, sceneY));
     }
 
     private void updateHoverTarget(
@@ -649,40 +651,42 @@ final class DungeonEditorViewModel {
     }
 
     private PointerTarget hoverTarget(
-            String selectedTool,
+            DungeonEditorToolSelection toolSelection,
             DungeonMapViewInputEvent event,
             List<PointerTarget> targets,
             double sceneX,
             double sceneY
     ) {
         PointerTarget primary = primaryTarget(targets, sceneX, sceneY);
-        String tool = effectiveHoverTool(selectedTool, event);
-        if (tool.isBlank()) {
+        DungeonEditorToolFamily family = toolSelection == null
+                ? DungeonEditorToolFamily.SELECT
+                : toolSelection.family();
+        if (event.buttons().secondaryButtonDown() && event.modifiers().shiftDown()
+                && family != DungeonEditorToolFamily.WALL) {
             return PointerTarget.empty();
         }
-        if ("SELECT".equals(tool)) {
+        if (family == DungeonEditorToolFamily.SELECT) {
             return primary.selectableBySelectTool() ? primary : PointerTarget.empty();
         }
-        if (tool.startsWith("ROOM_")) {
+        if (family == DungeonEditorToolFamily.ROOM) {
             return mapContentModel.syntheticHoverTarget(
-                    tool, false, sceneX, sceneY, currentInteractionState().currentProjectionLevel());
+                    toolSelection, false, sceneX, sceneY, currentInteractionState().currentProjectionLevel());
         }
-        if ("WALL_CREATE".equals(tool)) {
+        if (family == DungeonEditorToolFamily.WALL) {
             boolean singleClick = event.modifiers().controlDown()
-                    || controlsPanelModel.wallSingleClickModeSelected();
+                    || toolSelection.options() instanceof DungeonEditorToolOptions.Wall wall
+                    && wall.mode() == DungeonEditorToolOptions.Wall.Mode.SINGLE;
             if (singleClick && primary.isBoundaryTarget()) {
                 return primary;
             }
             return mapContentModel.syntheticHoverTarget(
-                    tool, singleClick, sceneX, sceneY, currentInteractionState().currentProjectionLevel());
+                    toolSelection, singleClick, sceneX, sceneY, currentInteractionState().currentProjectionLevel());
         }
-        if ("WALL_DELETE".equals(tool)
-                || "DOOR_CREATE".equals(tool)
-                || "DOOR_DELETE".equals(tool)) {
+        if (family == DungeonEditorToolFamily.DOOR) {
             PointerTarget boundary = boundaryPreferredTarget(targets, sceneX, sceneY);
             return boundary.isBoundaryTarget() ? boundary : PointerTarget.empty();
         }
-        if (tool.startsWith("CORRIDOR_")) {
+        if (family == DungeonEditorToolFamily.CORRIDOR) {
             PointerTarget boundaryPreferred = boundaryPreferredTarget(targets, sceneX, sceneY);
             return boundaryPreferred.isWallOrDoorBoundaryTarget() || boundaryPreferred.isCorridorCellTarget()
                     ? boundaryPreferred
@@ -739,28 +743,6 @@ final class DungeonEditorViewModel {
             }
         }
         return bestTarget;
-    }
-
-    private static String effectiveHoverTool(String selectedTool, DungeonMapViewInputEvent event) {
-        String tool = selectedTool == null ? "" : selectedTool;
-        if (event.buttons().secondaryButtonDown() && event.modifiers().shiftDown()) {
-            return "WALL_CREATE".equals(tool) ? tool : "";
-        }
-        if (event.buttons().secondaryButtonDown()
-                && !event.buttons().primaryButtonDown()
-                && !event.buttons().middleButtonDown()) {
-            return switch (tool) {
-                case "ROOM_PAINT" -> "ROOM_DELETE";
-                case "WALL_CREATE" -> "WALL_CREATE";
-                case "DOOR_CREATE" -> "DOOR_DELETE";
-                case "CORRIDOR_CREATE" -> "CORRIDOR_DELETE";
-                case "FEATURE_CREATE" -> "FEATURE_DELETE";
-                case "STAIR_CREATE" -> "STAIR_DELETE";
-                case "TRANSITION_CREATE" -> "TRANSITION_DELETE";
-                default -> tool;
-            };
-        }
-        return tool;
     }
 
     private static int pointerTargetPriority(PointerTarget target) {
@@ -932,14 +914,18 @@ final class DungeonEditorViewModel {
         return currentInteractionState().currentTransitionDestination();
     }
 
-    private DungeonEditorPointerInput.Gesture pointerWorkflowGesture(DungeonMapViewInputEvent event) {
-        return new DungeonEditorPointerInput.Gesture(
-                event.buttons().primaryButtonDown(),
-                event.buttons().secondaryButtonDown(),
-                event.buttons().middleButtonDown(),
+    private static DungeonEditorPointerGesture pointerWorkflowGesture(DungeonMapViewInputEvent event) {
+        DungeonEditorPointerGesture.Button button = event.buttons().primaryButtonDown()
+                ? DungeonEditorPointerGesture.Button.PRIMARY
+                : event.buttons().secondaryButtonDown()
+                ? DungeonEditorPointerGesture.Button.SECONDARY
+                : event.buttons().middleButtonDown()
+                ? DungeonEditorPointerGesture.Button.MIDDLE
+                : DungeonEditorPointerGesture.Button.NONE;
+        return new DungeonEditorPointerGesture(
+                button,
                 event.modifiers().shiftDown(),
-                event.modifiers().controlDown(),
-                controlsPanelModel.wallSingleClickModeSelected());
+                event.modifiers().controlDown());
     }
 
     private static int normalizeLevelDelta(double scrollDeltaY) {
@@ -1109,18 +1095,15 @@ final class DungeonEditorViewModel {
             editorApi.dispatch(DungeonEditorIntent.CancelPreview.INSTANCE);
             return;
         }
-        if (tool.selectedTool() == null) {
+        if (tool.selection() == null) {
             return;
         }
         InteractionState interactionState = currentInteractionState();
-        String selectedToolControlKey = tool.selectedTool().name();
-        controlsPanelModel.rememberToolSelection(
-                tool.requestedFamilyKey(),
-                tool.selectedTool(),
-                tool.selectedOptionKey());
-        if (!selectedToolControlKey.equals(interactionState.currentSelectedToolKey())) {
+        DungeonEditorToolSelection selection = tool.selection();
+        controlsPanelModel.rememberToolSelection(selection);
+        if (!selection.equals(interactionState.currentToolSelection())) {
             mapContentModel.clearHoverTarget();
-            editorApi.dispatch(new DungeonEditorIntent.SetTool(tool.selectedTool()));
+            editorApi.dispatch(new DungeonEditorIntent.SetTool(selection));
         }
     }
 
@@ -1157,9 +1140,7 @@ final class DungeonEditorViewModel {
     }
 
     private static boolean hasToolInput(DungeonEditorControlsInput.ToolInput tool) {
-        return !tool.requestedFamilyKey().isBlank()
-                || tool.selectedTool() != null
-                || tool.dismissControlActivated();
+        return tool.selection() != null || tool.dismissControlActivated();
     }
 
     private static Optional<List<Integer>> parseLevels(@Nullable String raw) {
@@ -1270,7 +1251,7 @@ final class DungeonEditorViewModel {
             String viewModeLabel,
             DungeonOverlaySettings overlaySettings,
             int projectionLevel,
-            String selectedToolLabel
+            DungeonEditorToolSelection toolSelection
     ) {
         ControlsProjection {
             mapEntries = mapEntries == null ? List.of() : List.copyOf(mapEntries);
@@ -1279,9 +1260,7 @@ final class DungeonEditorViewModel {
             statusText = statusText == null ? "" : statusText;
             viewModeLabel = DungeonEditorControlsPanelModel.normalizeViewModeKey(viewModeLabel);
             overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
-            selectedToolLabel = selectedToolLabel == null
-                    ? DungeonEditorControlsPanelModel.defaultToolLabel()
-                    : selectedToolLabel;
+            toolSelection = toolSelection == null ? DungeonEditorToolSelection.select() : toolSelection;
         }
 
         static ControlsProjection initial() {
@@ -1294,7 +1273,7 @@ final class DungeonEditorViewModel {
                     DungeonEditorControlsPanelModel.gridViewLabel(),
                     DungeonOverlaySettings.defaults(),
                     0,
-                    DungeonEditorControlsPanelModel.defaultToolLabel());
+                    DungeonEditorToolSelection.select());
         }
 
         static ControlsProjection from(DungeonEditorState state) {
@@ -1318,15 +1297,14 @@ final class DungeonEditorViewModel {
                             : DungeonEditorControlsPanelModel.gridViewLabel(),
                     safeState.overlaySettings(),
                     safeState.projectionLevel(),
-                    DungeonEditorControlsPanelModel.labelOf(safeState.selectedTool()));
+                    safeState.toolSelection());
         }
     }
 
     record InteractionState(
             long currentSelectedMapIdValue,
             String currentViewModeKey,
-            String currentSelectedToolLabel,
-            String currentSelectedToolKey,
+            DungeonEditorToolSelection currentToolSelection,
             int currentProjectionLevel,
             DungeonOverlaySettings currentOverlayProjection,
             long currentSelectedTransitionId,
@@ -1335,12 +1313,9 @@ final class DungeonEditorViewModel {
         InteractionState {
             currentSelectedMapIdValue = Math.max(0L, currentSelectedMapIdValue);
             currentViewModeKey = DungeonEditorControlsPanelModel.normalizeViewModeKey(currentViewModeKey);
-            currentSelectedToolLabel = currentSelectedToolLabel == null
-                    ? DungeonEditorControlsPanelModel.defaultToolLabel()
-                    : currentSelectedToolLabel;
-            currentSelectedToolKey = currentSelectedToolKey == null || currentSelectedToolKey.isBlank()
-                    ? "SELECT"
-                    : currentSelectedToolKey;
+            currentToolSelection = currentToolSelection == null
+                    ? DungeonEditorToolSelection.select()
+                    : currentToolSelection;
             currentOverlayProjection = currentOverlayProjection == null
                     ? DungeonOverlaySettings.defaults()
                     : currentOverlayProjection;
@@ -1354,8 +1329,7 @@ final class DungeonEditorViewModel {
             return new InteractionState(
                     0L,
                     DungeonEditorControlsPanelModel.gridViewLabel(),
-                    DungeonEditorControlsPanelModel.defaultToolLabel(),
-                    "SELECT",
+                    DungeonEditorToolSelection.select(),
                     0,
                     DungeonOverlaySettings.defaults(),
                     0L,
@@ -1375,8 +1349,7 @@ final class DungeonEditorViewModel {
                     safeState.viewMode() == features.dungeon.api.DungeonEditorViewMode.GRAPH
                             ? DungeonEditorControlsPanelModel.graphViewLabel()
                             : DungeonEditorControlsPanelModel.gridViewLabel(),
-                    DungeonEditorControlsPanelModel.labelOf(safeState.selectedTool()),
-                    safeState.selectedTool().name(),
+                    safeState.toolSelection(),
                     safeState.projectionLevel(),
                     safeState.overlaySettings(),
                     transitionId,

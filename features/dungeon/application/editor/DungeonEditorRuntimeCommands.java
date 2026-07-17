@@ -11,6 +11,7 @@ import features.dungeon.api.DungeonEditorStateModel;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonEditorViewMode;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 
 final class DungeonEditorRuntimeCommands
         implements DungeonEditorMapCatalogOperations,
@@ -119,9 +120,18 @@ final class DungeonEditorRuntimeCommands
 
     @Override
     public void setTool(DungeonEditorTool tool) {
+        setTool(DungeonEditorLegacyToolAdapter.selection(tool));
+    }
+
+    void setTool(DungeonEditorToolSelection selection) {
+        DungeonEditorToolSelection safeSelection = selection == null
+                ? DungeonEditorToolSelection.select()
+                : selection;
+        DungeonEditorTool tool = DungeonEditorLegacyToolAdapter.tool(safeSelection);
         execute(() -> {
             clearActiveInteraction();
             stairDraftOperation.clear();
+            statePublisher.selectTool(safeSelection);
             if (activePublishedMapInteraction()) {
                 applyInExecutionLane(() -> context.setToolAndPublishSnapshot(tool));
                 return;
@@ -135,6 +145,7 @@ final class DungeonEditorRuntimeCommands
         execute(() -> {
             clearActiveInteraction();
             stairDraftOperation.clear();
+            statePublisher.selectTool(DungeonEditorToolSelection.select());
             if (!activePublishedMapInteraction()) {
                 applyInExecutionLane(() -> context.setTool(DungeonEditorTool.SELECT));
                 return;
@@ -366,7 +377,7 @@ final class DungeonEditorRuntimeCommands
         boolean ownerReadbackChanged = !Objects.equals(controlsBefore, controlsModel.current())
                 || !Objects.equals(mapSurfaceBefore, mapSurfaceModel.current())
                 || !Objects.equals(stateBefore, stateModel.current());
-        if (operationResult.shouldPublish(ownerReadbackChanged)) {
+        if (operationResult.shouldPublish(ownerReadbackChanged) || statePublisher.publicationPending()) {
             beforePublish.accept(operationResult);
             statePublisher.publishCurrentToSubscribers();
         }
