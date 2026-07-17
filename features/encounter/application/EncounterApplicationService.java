@@ -20,8 +20,12 @@ import features.encounter.domain.session.EncounterSessionCommand;
 import features.encounter.domain.session.Mode;
 import features.encounter.api.ApplyEncounterStateCommand;
 import features.encounter.api.EncounterBuilderInputs;
+import features.encounter.api.EncounterPoolFilters;
+import features.encounter.api.EncounterTuningSettings;
 import features.encounter.api.RefreshEncounterPlanBudgetCommand;
 import features.encounter.api.UpdateEncounterBuilderInputsCommand;
+import features.encounter.api.UpdateEncounterPoolFiltersCommand;
+import features.encounter.api.UpdateEncounterTuningCommand;
 import features.encounter.api.EncounterRuntimeContextApi;
 import features.encounter.api.EncounterRuntimeContextId;
 import features.encounter.api.EncounterRuntimeContextSpec;
@@ -118,6 +122,16 @@ public final class EncounterApplicationService implements features.encounter.api
         executionLane.execute(() -> commands.updateBuilderInputs(command));
     }
 
+    @Override
+    public void updatePoolFilters(UpdateEncounterPoolFiltersCommand command) {
+        executionLane.execute(() -> commands.updatePoolFilters(command));
+    }
+
+    @Override
+    public void updateTuning(UpdateEncounterTuningCommand command) {
+        executionLane.execute(() -> commands.updateTuning(command));
+    }
+
     public void refreshPlanBudget(RefreshEncounterPlanBudgetCommand command) {
         executionLane.execute(() -> commands.refreshPlanBudget(command));
     }
@@ -212,6 +226,11 @@ public final class EncounterApplicationService implements features.encounter.api
                 effective.encounterTableIds(),
                 effective.worldFactionIds(),
                 effective.worldLocationId(),
+                effective.nameQuery(),
+                effective.challengeRatingMin(),
+                effective.challengeRatingMax(),
+                effective.sizes(),
+                effective.alignments(),
                 Map.of());
     }
 
@@ -227,6 +246,18 @@ public final class EncounterApplicationService implements features.encounter.api
         void applyState(ApplyEncounterStateCommand command);
 
         void updateBuilderInputs(UpdateEncounterBuilderInputsCommand command);
+
+        default void updatePoolFilters(UpdateEncounterPoolFiltersCommand command) {
+            EncounterPoolFilters filters = command == null ? EncounterPoolFilters.empty() : command.filters();
+            updateBuilderInputs(new UpdateEncounterBuilderInputsCommand(
+                    new EncounterBuilderInputs(filters, EncounterTuningSettings.defaults())));
+        }
+
+        default void updateTuning(UpdateEncounterTuningCommand command) {
+            EncounterTuningSettings tuning = command == null ? EncounterTuningSettings.defaults() : command.settings();
+            updateBuilderInputs(new UpdateEncounterBuilderInputsCommand(
+                    new EncounterBuilderInputs(EncounterPoolFilters.empty(), tuning)));
+        }
 
         void refreshPlanBudget(RefreshEncounterPlanBudgetCommand command);
     }
@@ -319,6 +350,24 @@ public final class EncounterApplicationService implements features.encounter.api
                     focused().access());
             persist();
             publishCurrentSession();
+        }
+
+        @Override
+        public void updatePoolFilters(UpdateEncounterPoolFiltersCommand command) {
+            EncounterPoolFilters filters = command == null ? EncounterPoolFilters.empty() : command.filters();
+            EncounterGenerationInputs current = focused().session().builderInputs();
+            updateBuilderInputs(new UpdateEncounterBuilderInputsCommand(new EncounterBuilderInputs(
+                    filters,
+                    EncounterProjection.builderInputs(current).tuning())));
+        }
+
+        @Override
+        public void updateTuning(UpdateEncounterTuningCommand command) {
+            EncounterTuningSettings tuning = command == null ? EncounterTuningSettings.defaults() : command.settings();
+            EncounterGenerationInputs current = focused().session().builderInputs();
+            updateBuilderInputs(new UpdateEncounterBuilderInputsCommand(new EncounterBuilderInputs(
+                    EncounterProjection.builderInputs(current).poolFilters(),
+                    tuning)));
         }
 
         @Override
@@ -618,6 +667,11 @@ public final class EncounterApplicationService implements features.encounter.api
                     original.encounterTableIds(),
                     original.worldFactionIds(),
                     specification.locationId(),
+                    original.nameQuery(),
+                    original.challengeRatingMin(),
+                    original.challengeRatingMax(),
+                    original.sizes(),
+                    original.alignments(),
                     original.finiteCreatureStockCaps());
             return new EncounterGenerationRequest(
                     scoped,

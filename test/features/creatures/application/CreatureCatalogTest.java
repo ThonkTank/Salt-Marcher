@@ -93,6 +93,11 @@ public final class CreatureCatalogTest {
                 List.of(" Fiend ", "Fiend", ""),
                 List.of("Devil"),
                 List.of("Cavern"),
+                "Cinder",
+                "1/2",
+                "1/2",
+                List.of("Tiny"),
+                List.of("LE"),
                 0,
                 1_000,
                 0));
@@ -323,6 +328,11 @@ public final class CreatureCatalogTest {
     ) {
         assertEquals(CreatureQueryStatus.SUCCESS, result.status(), "CREATURE-CATALOG-007 candidate status");
         assertEquals(List.of("Fiend"), lastEncounterSpec.types(), "CREATURE-CATALOG-007 normalized candidate type");
+        assertEquals("Cinder", lastEncounterSpec.nameQuery(), "CREATURE-CATALOG-007 candidate name filter");
+        assertEquals(List.of("Tiny"), lastEncounterSpec.sizes(), "CREATURE-CATALOG-007 candidate size filter");
+        assertEquals(List.of("LE"), lastEncounterSpec.alignments(), "CREATURE-CATALOG-007 candidate alignment filter");
+        assertEquals(100, lastEncounterSpec.minimumXp(), "CREATURE-CATALOG-007 CR minimum");
+        assertEquals(100, lastEncounterSpec.maximumXp(), "CREATURE-CATALOG-007 CR maximum");
         assertEquals(250, lastEncounterSpec.limit(), "CREATURE-CATALOG-007 default candidate limit");
         assertEquals(1, result.candidates().size(), "CREATURE-CATALOG-007 candidate count");
         CreatureEncounterCandidate candidate = result.candidates().getFirst();
@@ -565,10 +575,13 @@ public final class CreatureCatalogTest {
         }
 
         private static boolean matchesEncounter(EncounterCandidateSpec spec, CreatureProfile profile) {
-            return withinXp(profile, spec.minimumXp(), spec.maximumXp())
+            return containsName(profile, spec.nameQuery())
+                    && withinXp(profile, spec.minimumXp(), spec.maximumXp())
+                    && matchesAny(spec.sizes(), List.of(profile.size()))
                     && matchesAny(spec.types(), List.of(profile.creatureType()))
                     && matchesAny(spec.subtypes(), profile.subtypes())
-                    && matchesAny(spec.biomes(), profile.biomes());
+                    && matchesAny(spec.biomes(), profile.biomes())
+                    && matchesAny(spec.alignments(), List.of(profile.alignment()));
         }
 
         private static boolean containsName(CreatureProfile profile, String query) {

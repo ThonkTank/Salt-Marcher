@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: Catalog Feature
-Last Reviewed: 2026-07-16
+Last Reviewed: 2026-07-17
 Source of Truth: Catalog presentation boundary and dependency direction.
 
 # Catalog Architecture
@@ -35,6 +35,12 @@ local request revision. Scene and World Planner consume the separately
 refreshed `CreatureReferenceIndexModel`; they MUST NOT issue or publish Catalog
 page queries. This split prevents one feature's search lifecycle from replacing
 another feature's visible rows.
+
+`CatalogSectionFrame` owns only shared table chrome. Provider-specific columns,
+commands, and Inspector routes remain injected composition. The controls host
+preserves the established Monster filter surface and swaps only the visible
+category controls. Catalog writes Encounter pool filters through the partial
+pool command and never writes Encounter tuning.
 
 Catalog has no domain, application, or SQLite role because it owns no durable
 truth or orchestration. `app` registers Catalog once and does not register the

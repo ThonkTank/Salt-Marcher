@@ -8,13 +8,14 @@ import features.encounter.api.SavedEncounterPlanListResult;
 import features.encounter.api.SavedEncounterPlanSummary;
 import java.util.List;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
@@ -22,7 +23,7 @@ import javafx.scene.layout.VBox;
 final class SavedEncounterCatalogSection implements CatalogSection {
 
     private final EncounterApi encounters;
-    private final ListView<SavedEncounterPlanSummary> plans = new ListView<>();
+    private final TableView<SavedEncounterPlanSummary> plans = new TableView<>();
     private final Label status = new Label();
     private final VBox controls;
     private final BorderPane content = new BorderPane();
@@ -31,13 +32,10 @@ final class SavedEncounterCatalogSection implements CatalogSection {
         this.encounters = encounters;
         plans.setAccessibleText("Gespeicherte Encounter");
         plans.setPlaceholder(new Label("Keine gespeicherten Encounter verfügbar."));
-        plans.setCellFactory(ignored -> new ListCell<>() {
-            @Override
-            protected void updateItem(SavedEncounterPlanSummary item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? "" : item.name() + " · " + item.summaryText());
-            }
-        });
+        plans.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        plans.getColumns().setAll(
+                textColumn("Name", SavedEncounterPlanSummary::name),
+                textColumn("Zusammenfassung", SavedEncounterPlanSummary::summaryText));
         plans.setOnMouseClicked(event -> {
             if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
                 open(false);
@@ -117,6 +115,15 @@ final class SavedEncounterCatalogSection implements CatalogSection {
         Label label = new Label(text);
         label.getStyleClass().add("catalog-section-heading");
         return label;
+    }
+
+    private static TableColumn<SavedEncounterPlanSummary, String> textColumn(
+            String title,
+            java.util.function.Function<SavedEncounterPlanSummary, String> value
+    ) {
+        TableColumn<SavedEncounterPlanSummary, String> column = new TableColumn<>(title);
+        column.setCellValueFactory(cell -> new SimpleStringProperty(value.apply(cell.getValue())));
+        return column;
     }
 
     private static Label description(String text) {

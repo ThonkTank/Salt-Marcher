@@ -3,12 +3,13 @@ package features.catalog.adapter.javafx;
 import features.items.api.ItemsCatalogApi;
 import java.util.List;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
@@ -38,7 +39,7 @@ final class ItemsCatalogSection implements CatalogSection {
     private final TextField maximumCost = textField("Item-Maximalkosten", "Max. CP");
     private final ComboBox<ItemsCatalogApi.SortField> sort = sortBox();
     private final ComboBox<SortDirection> direction = directionBox();
-    private final ListView<ItemsCatalogApi.ItemRow> rows = new ListView<>();
+    private final TableView<ItemsCatalogApi.ItemRow> rows = new TableView<>();
     private final Label status = new Label();
     private final Label page = new Label("Seite –");
     private final Button previous = new Button("Zurück");
@@ -116,13 +117,13 @@ final class ItemsCatalogSection implements CatalogSection {
     private void configureRows() {
         rows.setAccessibleText("Item-Ergebnisse");
         rows.setPlaceholder(new Label("Keine Items gefunden."));
-        rows.setCellFactory(ignored -> new ListCell<>() {
-            @Override
-            protected void updateItem(ItemsCatalogApi.ItemRow item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? "" : rowText(item));
-            }
-        });
+        rows.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        rows.getColumns().setAll(
+                textColumn("Name", ItemsCatalogApi.ItemRow::name),
+                textColumn("Kategorie", item -> joined(item.category(), item.subcategory())),
+                textColumn("Seltenheit", item -> shown(item.rarity())),
+                textColumn("Magie", item -> yesNo(item.magic())),
+                textColumn("Kosten", item -> shown(item.costDisplay())));
         rows.setOnMouseClicked(event -> {
             if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
                 openDetail();
@@ -380,9 +381,13 @@ final class ItemsCatalogSection implements CatalogSection {
         return value == null || value.isBlank() ? null : Integer.valueOf(value.trim());
     }
 
-    private static String rowText(ItemsCatalogApi.ItemRow item) {
-        return item.name() + " · " + joined(item.category(), item.subcategory()) + " · " + shown(item.rarity())
-                + (item.magic() ? " · Magisch" : "") + " · " + shown(item.costDisplay());
+    private static TableColumn<ItemsCatalogApi.ItemRow, String> textColumn(
+            String title,
+            java.util.function.Function<ItemsCatalogApi.ItemRow, String> value
+    ) {
+        TableColumn<ItemsCatalogApi.ItemRow, String> column = new TableColumn<>(title);
+        column.setCellValueFactory(cell -> new SimpleStringProperty(value.apply(cell.getValue())));
+        return column;
     }
 
     private static String costText(ItemsCatalogApi.ItemDetail detail) {

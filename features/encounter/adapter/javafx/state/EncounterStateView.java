@@ -10,6 +10,7 @@ import features.encounter.api.EncounterStateSnapshot;
 public final class EncounterStateView extends VBox {
 
     private final StackPane contentArea = new EncounterContentStack();
+    private final Node tuning;
 
     public EncounterStateView(
             Node builderContent,
@@ -17,11 +18,26 @@ public final class EncounterStateView extends VBox {
             Node combatContent,
             Node resultsContent
     ) {
+        this(null, builderContent, initiativeContent, combatContent, resultsContent);
+    }
+
+    public EncounterStateView(
+            Node tuning,
+            Node builderContent,
+            Node initiativeContent,
+            Node combatContent,
+            Node resultsContent
+    ) {
+        this.tuning = tuning;
         ((EncounterContentStack) contentArea).setContent(builderContent, initiativeContent, combatContent, resultsContent);
         getStyleClass().add("surface-root");
         setFillWidth(true);
         setVgrow(contentArea, Priority.ALWAYS);
-        getChildren().add(contentArea);
+        if (tuning == null) {
+            getChildren().add(contentArea);
+        } else {
+            getChildren().addAll(tuning, contentArea);
+        }
     }
 
     public void bind(ReadOnlyObjectProperty<EncounterStateSnapshot.Mode> activeMode) {
@@ -33,6 +49,11 @@ public final class EncounterStateView extends VBox {
     }
 
     private void show(EncounterStateSnapshot.Mode activeContent) {
+        if (tuning != null) {
+            boolean builder = activeContent == EncounterStateSnapshot.Mode.BUILDER;
+            tuning.setVisible(builder);
+            tuning.setManaged(builder);
+        }
         showContent(EncounterStateVocabulary.contentIndex(activeContent));
     }
 

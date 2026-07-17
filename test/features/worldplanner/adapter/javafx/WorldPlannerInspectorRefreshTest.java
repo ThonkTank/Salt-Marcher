@@ -337,6 +337,14 @@ public final class WorldPlannerInspectorRefreshTest {
         }
 
         @Override
+        public void updateNpc(features.worldplanner.api.UpdateWorldNpcCommand command) {
+        }
+
+        @Override
+        public void deleteNpc(features.worldplanner.api.DeleteWorldNpcCommand command) {
+        }
+
+        @Override
         public void setNpcLifecycleStatus(SetWorldNpcLifecycleStatusCommand command) {
             WorldPlannerSnapshot current = snapshots.current();
             List<WorldNpcSummary> npcs = current.npcs().stream()
@@ -370,6 +378,18 @@ public final class WorldPlannerInspectorRefreshTest {
                             : npc)
                     .toList();
             snapshots.publish(copy(current, npcs, factions, current.locations()));
+        }
+
+        @Override
+        public void removeFactionNpc(features.worldplanner.api.RemoveWorldFactionNpcCommand command) {
+        }
+
+        @Override
+        public void updateFaction(features.worldplanner.api.UpdateWorldFactionCommand command) {
+        }
+
+        @Override
+        public void deleteFaction(features.worldplanner.api.DeleteWorldFactionCommand command) {
         }
 
         @Override
@@ -420,7 +440,25 @@ public final class WorldPlannerInspectorRefreshTest {
         }
 
         @Override
+        public void removeLocationFaction(features.worldplanner.api.RemoveWorldLocationFactionCommand command) {
+        }
+
+        @Override
         public void addLocationEncounterTable(AddWorldLocationEncounterTableCommand command) {
+        }
+
+        @Override
+        public void removeLocationEncounterTable(
+                features.worldplanner.api.RemoveWorldLocationEncounterTableCommand command
+        ) {
+        }
+
+        @Override
+        public void updateLocation(features.worldplanner.api.UpdateWorldLocationCommand command) {
+        }
+
+        @Override
+        public void deleteLocation(features.worldplanner.api.DeleteWorldLocationCommand command) {
         }
 
         private static WorldNpcSummary npc(

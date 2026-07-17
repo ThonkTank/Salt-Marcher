@@ -46,4 +46,26 @@ public record WorldLocation(
                 factionIds,
                 WorldPlannerIds.addUnique(encounterTableIds, encounterTableId));
     }
+
+    public WorldLocation removeFaction(long factionId) {
+        return new WorldLocation(
+                locationId,
+                displayName,
+                notes,
+                factionIds.stream().filter(id -> id.longValue() != factionId).toList(),
+                encounterTableIds);
+    }
+
+    public WorldLocation removeEncounterTable(long encounterTableId) {
+        return new WorldLocation(
+                locationId,
+                displayName,
+                notes,
+                factionIds,
+                encounterTableIds.stream().filter(id -> id.longValue() != encounterTableId).toList());
+    }
+
+    public WorldLocation updateDetails(String nextDisplayName, String nextNotes) {
+        return new WorldLocation(locationId, nextDisplayName, nextNotes, factionIds, encounterTableIds);
+    }
 }

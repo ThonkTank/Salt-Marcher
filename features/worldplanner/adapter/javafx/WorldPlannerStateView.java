@@ -34,6 +34,7 @@ public final class WorldPlannerStateView extends VBox {
     private final TextArea generalNotes = notesArea();
     private final TextField npcDisposition = new TextField("0");
     private final TextField factionName = new TextField();
+    private final TextArea factionNotes = notesArea();
     private final ComboBox<String> primaryEncounterTableChoice = new ComboBox<>();
     private final ComboBox<String> npcChoice = new ComboBox<>();
     private final ComboBox<String> inventoryStatblockChoice = new ComboBox<>();
@@ -41,6 +42,7 @@ public final class WorldPlannerStateView extends VBox {
     private final TextField inventoryQuantity = new TextField();
     private final TextField factionDisposition = new TextField("0");
     private final TextField locationName = new TextField();
+    private final TextArea locationNotes = notesArea();
     private final ComboBox<String> factionChoice = new ComboBox<>();
     private final ComboBox<String> locationTableChoice = new ComboBox<>();
     private final VBox npcEditor = new VBox(8);
@@ -117,6 +119,7 @@ public final class WorldPlannerStateView extends VBox {
 
     private void renderFaction(FactionEditor faction) {
         factionName.setText(faction.displayName());
+        factionNotes.setText(faction.notes());
         renderChoices(primaryEncounterTableChoice, faction.encounterTableLabels(), faction.selectedPrimaryTableLabel());
         renderChoices(npcChoice, faction.npcReferenceLabels(), "");
         renderChoices(inventoryStatblockChoice, faction.statblockLabels(), "");
@@ -125,6 +128,7 @@ public final class WorldPlannerStateView extends VBox {
 
     private void renderLocation(LocationEditor location) {
         locationName.setText(location.displayName());
+        locationNotes.setText(location.notes());
         renderChoices(factionChoice, location.factionReferenceLabels(), "");
         renderChoices(locationTableChoice, location.encounterTableLabels(), "");
     }
@@ -141,17 +145,19 @@ public final class WorldPlannerStateView extends VBox {
     private Node factionFields() {
         GridPane fields = grid();
         fields.addRow(0, factionName, primaryEncounterTableChoice);
-        fields.addRow(1, npcChoice, inventoryStatblockChoice);
-        fields.addRow(2, finiteInventory, inventoryQuantity);
-        fields.addRow(3, labelled("Haltung zu den PCs", factionDisposition));
+        fields.addRow(1, labelled("Notizen", factionNotes));
+        fields.addRow(2, npcChoice, inventoryStatblockChoice);
+        fields.addRow(3, finiteInventory, inventoryQuantity);
+        fields.addRow(4, labelled("Haltung zu den PCs", factionDisposition));
         return fields;
     }
 
     private Node locationFields() {
         GridPane fields = grid();
         fields.addRow(0, locationName);
-        fields.addRow(1, factionChoice);
-        fields.addRow(2, locationTableChoice);
+        fields.addRow(1, labelled("Notizen", locationNotes));
+        fields.addRow(2, factionChoice);
+        fields.addRow(3, locationTableChoice);
         return fields;
     }
 
@@ -159,13 +165,15 @@ public final class WorldPlannerStateView extends VBox {
         Button create = action(NPCS, "NPC anlegen", actions(true, false, false, false, false, false, false, false, false));
         Button updateNotes = action(NPCS, "Notizen speichern",
                 actions(false, true, false, false, false, false, false, false, false));
+        Button save = action(NPCS, "NPC speichern", requested(ActionKind.SAVE));
+        Button delete = destructive(NPCS, "NPC löschen", requested(ActionKind.DELETE));
         Button defeat = action(NPCS, "Besiegt", actions(false, false, true, false, false, false, false, false, false));
         Button reactivate = action(NPCS, "Aktiv", actions(false, false, false, true, false, false, false, false, false));
         Button addToEncounter = action(NPCS, "Zum Encounter",
                 actions(false, false, false, false, true, false, false, false, false));
         Button disposition = action(NPCS, "Haltung setzen",
-                new ActionSnapshot(false, false, false, false, false, false, false, false, false, true, false));
-        return new HBox(8, create, updateNotes, disposition, defeat, reactivate, addToEncounter);
+                requested(ActionKind.NPC_DISPOSITION));
+        return new HBox(8, create, save, updateNotes, disposition, defeat, reactivate, addToEncounter, delete);
     }
 
     private Node factionActions() {
@@ -173,11 +181,14 @@ public final class WorldPlannerStateView extends VBox {
                 actions(true, false, false, false, false, false, false, false, false));
         Button addNpc = action(FACTIONS, "NPC hinzufuegen",
                 actions(false, false, false, false, false, true, false, false, false));
+        Button removeNpc = action(FACTIONS, "NPC entfernen", requested(ActionKind.REMOVE_NPC));
+        Button save = action(FACTIONS, "Fraktion speichern", requested(ActionKind.SAVE));
+        Button delete = destructive(FACTIONS, "Fraktion löschen", requested(ActionKind.DELETE));
         Button limit = action(FACTIONS, "Bestand setzen",
                 actions(false, false, false, false, false, false, true, false, false));
         Button disposition = action(FACTIONS, "Haltung setzen",
-                new ActionSnapshot(false, false, false, false, false, false, false, false, false, false, true));
-        return new HBox(8, create, addNpc, disposition, limit);
+                requested(ActionKind.FACTION_DISPOSITION));
+        return new HBox(8, create, save, addNpc, removeNpc, disposition, limit, delete);
     }
 
     private Node locationActions() {
@@ -187,12 +198,32 @@ public final class WorldPlannerStateView extends VBox {
                 actions(false, false, false, false, false, false, false, true, false));
         Button linkTable = action(LOCATIONS, "Tabelle linken",
                 actions(false, false, false, false, false, false, false, false, true));
-        return new HBox(8, create, linkFaction, linkTable);
+        Button unlinkFaction = action(LOCATIONS, "Fraktion entfernen", requested(ActionKind.REMOVE_FACTION));
+        Button unlinkTable = action(LOCATIONS, "Tabelle entfernen", requested(ActionKind.REMOVE_TABLE));
+        Button save = action(LOCATIONS, "Ort speichern", requested(ActionKind.SAVE));
+        Button delete = destructive(LOCATIONS, "Ort löschen", requested(ActionKind.DELETE));
+        return new HBox(8, create, save, linkFaction, unlinkFaction, linkTable, unlinkTable, delete);
     }
 
     private Button action(int moduleIndex, String label, ActionSnapshot actions) {
         Button button = new Button(label);
         button.setOnAction(event -> eventSink.accept(snapshot(moduleIndex, actions)));
+        return button;
+    }
+
+    private Button destructive(int moduleIndex, String label, ActionSnapshot actions) {
+        Button button = new Button(label);
+        button.getStyleClass().add("danger");
+        button.setOnAction(event -> {
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                    javafx.scene.control.Alert.AlertType.CONFIRMATION,
+                    label + "?",
+                    javafx.scene.control.ButtonType.CANCEL,
+                    javafx.scene.control.ButtonType.OK);
+            alert.setHeaderText("Diese Änderung kann nicht rückgängig gemacht werden.");
+            alert.showAndWait().filter(javafx.scene.control.ButtonType.OK::equals)
+                    .ifPresent(ignored -> eventSink.accept(snapshot(moduleIndex, actions)));
+        });
         return button;
     }
 
@@ -212,6 +243,7 @@ public final class WorldPlannerStateView extends VBox {
                         npcDisposition.getText()),
                 new FactionSnapshot(
                         factionName.getText(),
+                        factionNotes.getText(),
                         primaryEncounterTableChoice.getSelectionModel().getSelectedIndex(),
                         npcChoice.getSelectionModel().getSelectedIndex(),
                         inventoryStatblockChoice.getSelectionModel().getSelectedIndex(),
@@ -220,6 +252,7 @@ public final class WorldPlannerStateView extends VBox {
                         factionDisposition.getText()),
                 new LocationSnapshot(
                         locationName.getText(),
+                        locationNotes.getText(),
                         factionChoice.getSelectionModel().getSelectedIndex(),
                         locationTableChoice.getSelectionModel().getSelectedIndex()),
                 actions);
@@ -246,6 +279,22 @@ public final class WorldPlannerStateView extends VBox {
                 setInventoryLimit,
                 linkFaction,
                 linkTable);
+    }
+
+    private static ActionSnapshot requested(ActionKind kind) {
+        return new ActionSnapshot(
+                false, false, false, false, false, false, false, false, false,
+                kind == ActionKind.NPC_DISPOSITION,
+                kind == ActionKind.FACTION_DISPOSITION,
+                kind == ActionKind.SAVE,
+                kind == ActionKind.DELETE,
+                kind == ActionKind.REMOVE_NPC,
+                kind == ActionKind.REMOVE_FACTION,
+                kind == ActionKind.REMOVE_TABLE);
+    }
+
+    private enum ActionKind {
+        SAVE, DELETE, REMOVE_NPC, REMOVE_FACTION, REMOVE_TABLE, NPC_DISPOSITION, FACTION_DISPOSITION
     }
 
     private static void renderChoices(ComboBox<String> comboBox, List<String> rows, String selected) {

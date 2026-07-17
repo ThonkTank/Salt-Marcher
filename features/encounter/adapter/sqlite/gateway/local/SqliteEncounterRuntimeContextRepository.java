@@ -214,6 +214,11 @@ public final class SqliteEncounterRuntimeContextRepository implements EncounterR
                 integers(values, "encounter-table"),
                 integers(values, "world-faction"),
                 root.getLong("builder_world_location_id"),
+                firstText(values, "name-query"),
+                firstText(values, "challenge-rating-min"),
+                firstText(values, "challenge-rating-max"),
+                texts(values, "size"),
+                texts(values, "alignment"),
                 caps);
     }
 
@@ -269,6 +274,11 @@ public final class SqliteEncounterRuntimeContextRepository implements EncounterR
         writeTextValues(connection, contextId, "creature-type", inputs.creatureTypes());
         writeTextValues(connection, contextId, "creature-subtype", inputs.creatureSubtypes());
         writeTextValues(connection, contextId, "biome", inputs.biomes());
+        writeTextValues(connection, contextId, "name-query", List.of(inputs.nameQuery()));
+        writeTextValues(connection, contextId, "challenge-rating-min", List.of(inputs.challengeRatingMin()));
+        writeTextValues(connection, contextId, "challenge-rating-max", List.of(inputs.challengeRatingMax()));
+        writeTextValues(connection, contextId, "size", inputs.sizes());
+        writeTextValues(connection, contextId, "alignment", inputs.alignments());
         writeIntegerValues(connection, contextId, "encounter-table", inputs.encounterTableIds());
         writeIntegerValues(connection, contextId, "world-faction", inputs.worldFactionIds());
         int order = 0;
@@ -295,6 +305,11 @@ public final class SqliteEncounterRuntimeContextRepository implements EncounterR
 
     private static List<String> texts(Map<String, List<ValueRow>> values, String kind) {
         return values.getOrDefault(kind, List.of()).stream().map(ValueRow::textValue).toList();
+    }
+
+    private static String firstText(Map<String, List<ValueRow>> values, String kind) {
+        List<ValueRow> rows = values.getOrDefault(kind, List.of());
+        return rows.isEmpty() ? "" : rows.getFirst().textValue();
     }
 
     private static List<Long> integers(Map<String, List<ValueRow>> values, String kind) {

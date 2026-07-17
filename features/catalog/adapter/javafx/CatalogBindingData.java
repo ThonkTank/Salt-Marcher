@@ -1,6 +1,7 @@
 package features.catalog.adapter.javafx;
 
 import features.creatures.api.CreatureCatalogQueryApi;
+import features.creatures.api.CreatureReferenceIndexModel;
 import features.creatures.api.CreaturesApi;
 import features.encounter.api.EncounterApi;
 import features.encounter.api.EncounterBuilderInputsModel;
@@ -15,6 +16,7 @@ import org.jspecify.annotations.Nullable;
 public record CatalogBindingData(
         CreaturesApi creatures,
         CreatureCatalogQueryApi creatureQueries,
+        CreatureReferenceIndexModel creatureReferences,
         EncounterTableApi encounterTables,
         EncounterApi encounters,
         EncounterBuilderInputsModel builderInputs,

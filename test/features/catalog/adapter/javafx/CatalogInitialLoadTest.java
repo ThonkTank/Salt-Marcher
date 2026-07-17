@@ -18,7 +18,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
 import javafx.scene.control.TableView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -144,7 +143,7 @@ public final class CatalogInitialLoadTest {
             Button create = button(controls, "NPC anlegen");
             create.fire();
 
-            ListView<?> npcs = descendant(content, ListView.class);
+            TableView<?> npcs = descendant(content, TableView.class);
             npcs.getSelectionModel().selectFirst();
             npcs.fireEvent(new KeyEvent(
                     KeyEvent.KEY_PRESSED, "", "", KeyCode.ENTER,
@@ -189,6 +188,29 @@ public final class CatalogInitialLoadTest {
                     .orElseThrow();
             assertTrue(restoredSearch == itemSearch && "rapier".equals(restoredSearch.getText()),
                     "Items controls did not preserve their draft state.");
+        });
+    }
+
+    @Test
+    void CATALOG_SCENE_ROUTE_001() throws Exception {
+        seedCreatureCatalog();
+        AtomicLong addedCreature = new AtomicLong();
+        runOnFxThread(() -> {
+            CatalogTestRuntime runtime = services();
+            ShellBinding binding = runtime.contribution(
+                    EmptyInspectorSink.INSTANCE, ignored -> { }, () -> { }, addedCreature::set).bind();
+            CatalogContentHost workspace = slot(binding, ShellSlot.COCKPIT_MAIN, CatalogContentHost.class);
+            CatalogMainView monsters = descendant(workspace, CatalogMainView.class);
+            Stage stage = new Stage();
+            stage.setScene(new Scene(workspace, 1_100.0, 700.0));
+            stage.show();
+            workspace.applyCss();
+            workspace.layout();
+
+            TableView<?> table = descendant(monsters, TableView.class);
+            table.getSelectionModel().selectFirst();
+            button(monsters, "+ Scene").fire();
+            assertTrue(addedCreature.get() > 0L, "Monster + Scene did not publish the selected creature id.");
         });
     }
 

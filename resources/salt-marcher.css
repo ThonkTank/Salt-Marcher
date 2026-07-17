@@ -301,6 +301,10 @@
     -fx-spacing: 6;
     -fx-padding: 8;
 }
+.encounter-tuning-pane {
+    -fx-background-color: -sm-bg-panel;
+    -fx-border-color: transparent transparent -sm-border-subtle transparent;
+}
 .party-header {
     -fx-background-color: -sm-bg-elevated;
     -fx-padding: 8 12 8 12;

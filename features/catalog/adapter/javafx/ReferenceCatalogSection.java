@@ -4,56 +4,40 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javafx.scene.Node;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.MouseButton;
-import javafx.scene.layout.BorderPane;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 
+/** Persistent tabular reference section with explicit, non-mutating row actions. */
 final class ReferenceCatalogSection<T> implements CatalogSection {
 
     private final CatalogSectionId id;
-    private final Node controls;
-    private final BorderPane content = new BorderPane();
-    private final ListView<T> values = new ListView<>();
+    private final VBox controls;
+    private final CatalogSectionFrame<T> content;
 
     ReferenceCatalogSection(
             CatalogSectionId id,
             String emptyText,
             Function<T, String> label,
+            Function<T, String> detail,
             Consumer<T> open,
-            String detail,
+            String description,
             String createLabel,
             Runnable create
     ) {
         this.id = id;
-        controls = createLabel == null || createLabel.isBlank()
-                ? CatalogSectionControls.intro(id.label(), detail)
-                : CatalogSectionControls.intro(id.label(), detail, createLabel, create);
-        values.setAccessibleText(id.label() + "-Katalog");
-        values.setPlaceholder(new Label(emptyText));
-        values.setCellFactory(ignored -> new ListCell<>() {
-            @Override
-            protected void updateItem(T item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? "" : label.apply(item));
-            }
-        });
-        values.setOnMouseClicked(event -> {
-            T selected = values.getSelectionModel().getSelectedItem();
-            if (selected != null && event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
-                open.accept(selected);
-            }
-        });
-        values.setOnKeyPressed(event -> {
-            T selected = values.getSelectionModel().getSelectedItem();
-            if (selected != null && event.getCode() == KeyCode.ENTER) {
-                open.accept(selected);
-                event.consume();
-            }
-        });
-        content.setCenter(values);
+        content = new CatalogSectionFrame<>(id.label(), emptyText,
+                value -> label.apply(value) + " " + detail.apply(value), open, "", () -> { });
+        content.addTextColumn("Name", 240.0, label);
+        content.addTextColumn("Details", 420.0, detail);
+        TextField query = new TextField();
+        query.setAccessibleText(id.label() + " suchen");
+        query.setPromptText(id.label() + " suchen …");
+        query.textProperty().addListener((ignored, before, after) -> content.setQuery(after));
+        Node intro = createLabel == null || createLabel.isBlank()
+                ? CatalogSectionControls.intro(id.label(), description)
+                : CatalogSectionControls.intro(id.label(), description, createLabel, create);
+        controls = new VBox(intro, query);
+        controls.getStyleClass().add("catalog-section-intro");
     }
 
     @Override
@@ -71,11 +55,15 @@ final class ReferenceCatalogSection<T> implements CatalogSection {
         return content;
     }
 
+    void addAction(String title, String buttonText, Consumer<T> action) {
+        content.addActionColumn(title, buttonText, action);
+    }
+
     void apply(List<T> next) {
-        T selected = values.getSelectionModel().getSelectedItem();
-        values.getItems().setAll(next == null ? List.of() : next);
-        if (selected != null && values.getItems().contains(selected)) {
-            values.getSelectionModel().select(selected);
+        T selected = content.table().getSelectionModel().getSelectedItem();
+        content.apply(next);
+        if (selected != null && content.table().getItems().contains(selected)) {
+            content.table().getSelectionModel().select(selected);
         }
     }
 }

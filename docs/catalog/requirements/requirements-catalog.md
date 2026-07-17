@@ -1,6 +1,6 @@
 Status: Active
 Owner: Catalog Feature
-Last Reviewed: 2026-07-16
+Last Reviewed: 2026-07-17
 Source of Truth: User-visible consolidated catalog behavior.
 
 # Catalog Requirements
@@ -20,8 +20,10 @@ and running-session lookup without taking ownership from provider features.
   and its results MUST appear in the main area.
 - Switching sections MUST preserve each section's filters, selection, paging,
   and unfinished input for the lifetime of the Catalog workspace.
+- Sections MUST use consistent tabular result chrome.
 - Monster search and encounter-builder controls MUST preserve their accepted
-  behavior, including creature details and adding creatures to Encounter.
+  behavior, including creature details and explicit add-to-Encounter and
+  add-to-focused-Scene actions.
 - Items MUST be read-only, searched asynchronously, distinguish loading,
   unavailable, empty, invalid, and storage-failure outcomes, and open details
   without blocking the JavaFX thread.
@@ -30,6 +32,13 @@ and running-session lookup without taking ownership from provider features.
   explicit discard confirmation.
 - NPC, faction, and location details and edit actions MUST open through
   World-Planner-owned inspector content.
+- NPCs MUST support explicit Encounter and focused-Scene actions. Factions,
+  locations, and Encounter tables MUST support explicit Encounter-source
+  actions; locations MUST support assigning the focused Scene location.
+- Selecting or opening a row alone MUST NOT mutate Encounter or Scene state.
+- Creature pool filters remain Catalog-owned and constrain Encounter
+  generation. Difficulty, balance, amount, and diversity controls MUST live in
+  a collapsible section in the global Encounter state tab.
 - The separate World Planner navigation entry and local state-panel slot MUST
   not be registered. World data and edit capabilities remain available through
   Catalog and Inspector.
@@ -47,7 +56,8 @@ Automated UI tests MUST prove one Catalog contribution contains all seven
 sections in the common controls/main structure, preserves section state,
 retains stable Monster columns and selection across result refreshes, routes
 saved-plan confirmation, renders explicit Items states, and remains unchanged
-when Scene initializes.
+when Scene initializes. They MUST also prove the explicit Encounter and Scene
+routes and that Encounter tuning is absent from Catalog controls.
 Architecture proof MUST reject Catalog imports from foreign adapters. Final
 visual and interaction acceptance remains owner manual testing.
 

@@ -20,7 +20,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -138,7 +138,7 @@ public final class ItemsCatalogUiTest {
             ItemsFixture fixture = show(api, inspector);
             fixture.section().refresh();
             Parent pane = fixture.host();
-            ListView<?> results = list(pane, "Item-Ergebnisse");
+            TableView<?> results = table(pane, "Item-Ergebnisse");
             results.getSelectionModel().selectFirst();
 
             Button open = button(pane, "Ausgewähltes Item im Inspector öffnen");
@@ -217,8 +217,8 @@ public final class ItemsCatalogUiTest {
         return node(root, Label.class, accessibleText);
     }
 
-    private static ListView<?> list(Parent root, String accessibleText) {
-        return node(root, ListView.class, accessibleText);
+    private static TableView<?> table(Parent root, String accessibleText) {
+        return node(root, TableView.class, accessibleText);
     }
 
     private static <T extends Node> T node(Parent root, Class<T> type, String accessibleText) {

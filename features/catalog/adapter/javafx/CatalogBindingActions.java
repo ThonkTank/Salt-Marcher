@@ -11,6 +11,9 @@ public record CatalogBindingActions(
         LongConsumer openLocationInspector,
         Runnable createNpc,
         Runnable createFaction,
-        Runnable createLocation
+        Runnable createLocation,
+        LongConsumer addNpcToScene,
+        LongConsumer setSceneLocation,
+        LongConsumer addCreatureToScene
 ) {
 }

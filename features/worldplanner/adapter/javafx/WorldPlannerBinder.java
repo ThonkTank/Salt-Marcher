@@ -26,6 +26,15 @@ import features.worldplanner.api.SetWorldFactionDispositionCommand;
 import features.worldplanner.api.SetWorldNpcLifecycleStatusCommand;
 import features.worldplanner.api.SetWorldNpcDispositionModifierCommand;
 import features.worldplanner.api.UpdateWorldNpcNotesCommand;
+import features.worldplanner.api.UpdateWorldNpcCommand;
+import features.worldplanner.api.DeleteWorldNpcCommand;
+import features.worldplanner.api.UpdateWorldFactionCommand;
+import features.worldplanner.api.RemoveWorldFactionNpcCommand;
+import features.worldplanner.api.DeleteWorldFactionCommand;
+import features.worldplanner.api.UpdateWorldLocationCommand;
+import features.worldplanner.api.RemoveWorldLocationFactionCommand;
+import features.worldplanner.api.RemoveWorldLocationEncounterTableCommand;
+import features.worldplanner.api.DeleteWorldLocationCommand;
 import features.worldplanner.api.WorldPlannerSnapshotModel;
 import features.worldplanner.api.WorldPlannerEncounterSink;
 import platform.ui.searchfilter.SearchFilterControlsView;
@@ -236,6 +245,14 @@ final class WorldPlannerBinder {
                     snapshot.behaviorNotes(),
                     snapshot.historyNotes(),
                     snapshot.generalNotes()));
+        } else if (actions.saveEntityRequested()) {
+            worldPlanner.updateNpc(new UpdateWorldNpcCommand(
+                    viewModel.selectedNpcId(),
+                    snapshot.displayName(),
+                    viewModel.npcStatblockChoiceId(snapshot.statblockChoiceIndex()),
+                    snapshot.appearanceNotes(), snapshot.behaviorNotes(), snapshot.historyNotes(), snapshot.generalNotes()));
+        } else if (actions.deleteRequested()) {
+            worldPlanner.deleteNpc(new DeleteWorldNpcCommand(viewModel.selectedNpcId()));
         } else if (actions.saveNotesRequested()) {
             worldPlanner.updateNpcNotes(new UpdateWorldNpcNotesCommand(
                     viewModel.selectedNpcId(),
@@ -267,12 +284,21 @@ final class WorldPlannerBinder {
         if (actions.createRequested()) {
             worldPlanner.createFaction(new CreateWorldFactionCommand(
                     snapshot.displayName(),
-                    "",
+                    snapshot.notes(),
                     viewModel.factionPrimaryTableChoiceId(snapshot.primaryEncounterTableChoiceIndex())));
+        } else if (actions.saveEntityRequested()) {
+            worldPlanner.updateFaction(new UpdateWorldFactionCommand(
+                    viewModel.selectedFactionId(), snapshot.displayName(), snapshot.notes(),
+                    viewModel.factionPrimaryTableChoiceId(snapshot.primaryEncounterTableChoiceIndex())));
+        } else if (actions.deleteRequested()) {
+            worldPlanner.deleteFaction(new DeleteWorldFactionCommand(viewModel.selectedFactionId()));
         } else if (actions.addNpcRequested()) {
             worldPlanner.addFactionNpc(new AddWorldFactionNpcCommand(
                     viewModel.selectedFactionId(),
                     viewModel.factionNpcChoiceId(snapshot.npcChoiceIndex())));
+        } else if (actions.removeNpcRequested()) {
+            worldPlanner.removeFactionNpc(new RemoveWorldFactionNpcCommand(
+                    viewModel.selectedFactionId(), viewModel.factionNpcChoiceId(snapshot.npcChoiceIndex())));
         } else if (actions.setInventoryLimitRequested()) {
             worldPlanner.setFactionInventoryLimit(new SetWorldFactionInventoryLimitCommand(
                     viewModel.selectedFactionId(),
@@ -293,15 +319,26 @@ final class WorldPlannerBinder {
             ActionSnapshot actions
     ) {
         if (actions.createRequested()) {
-            worldPlanner.createLocation(new CreateWorldLocationCommand(snapshot.displayName(), ""));
+            worldPlanner.createLocation(new CreateWorldLocationCommand(snapshot.displayName(), snapshot.notes()));
+        } else if (actions.saveEntityRequested()) {
+            worldPlanner.updateLocation(new UpdateWorldLocationCommand(
+                    viewModel.selectedLocationId(), snapshot.displayName(), snapshot.notes()));
+        } else if (actions.deleteRequested()) {
+            worldPlanner.deleteLocation(new DeleteWorldLocationCommand(viewModel.selectedLocationId()));
         } else if (actions.linkFactionRequested()) {
             worldPlanner.addLocationFaction(new AddWorldLocationFactionCommand(
                     viewModel.selectedLocationId(),
                     viewModel.locationFactionChoiceId(snapshot.factionChoiceIndex())));
+        } else if (actions.removeFactionRequested()) {
+            worldPlanner.removeLocationFaction(new RemoveWorldLocationFactionCommand(
+                    viewModel.selectedLocationId(), viewModel.locationFactionChoiceId(snapshot.factionChoiceIndex())));
         } else if (actions.linkTableRequested()) {
             worldPlanner.addLocationEncounterTable(new AddWorldLocationEncounterTableCommand(
                     viewModel.selectedLocationId(),
                     viewModel.locationTableChoiceId(snapshot.encounterTableChoiceIndex())));
+        } else if (actions.removeTableRequested()) {
+            worldPlanner.removeLocationEncounterTable(new RemoveWorldLocationEncounterTableCommand(
+                    viewModel.selectedLocationId(), viewModel.locationTableChoiceId(snapshot.encounterTableChoiceIndex())));
         }
     }
 
@@ -430,7 +467,12 @@ final class WorldPlannerBinder {
                 || actions.linkFactionRequested()
                 || actions.linkTableRequested()
                 || actions.setNpcDispositionRequested()
-                || actions.setFactionDispositionRequested();
+                || actions.setFactionDispositionRequested()
+                || actions.saveEntityRequested()
+                || actions.deleteRequested()
+                || actions.removeNpcRequested()
+                || actions.removeFactionRequested()
+                || actions.removeTableRequested();
     }
 
     private static Map<String, List<String>> selectedFiltersByGroup(SearchFilterControlsViewInputEvent event) {

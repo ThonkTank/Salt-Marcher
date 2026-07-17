@@ -4,6 +4,11 @@ public interface EncounterApi {
 
     void applyState(ApplyEncounterStateCommand command);
 
+    void updatePoolFilters(UpdateEncounterPoolFiltersCommand command);
+
+    void updateTuning(UpdateEncounterTuningCommand command);
+
+    /** Compatibility entry point for consumers that still submit one complete snapshot. */
     void updateBuilderInputs(UpdateEncounterBuilderInputsCommand command);
 
     void refreshPlanBudget(RefreshEncounterPlanBudgetCommand command);

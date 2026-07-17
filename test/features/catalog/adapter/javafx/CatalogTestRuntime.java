@@ -57,14 +57,25 @@ final class CatalogTestRuntime {
             java.util.function.LongConsumer openNpc,
             Runnable createNpc
     ) {
+        return contribution(inspector, openNpc, createNpc, ignored -> { });
+    }
+
+    CatalogContribution contribution(
+            InspectorSink inspector,
+            java.util.function.LongConsumer openNpc,
+            Runnable createNpc,
+            java.util.function.LongConsumer addCreatureToScene
+    ) {
         return (CatalogContribution) features.catalog.CatalogServiceAssembly.contribution(
                 new CatalogDataSources(
-                        creatures.application(), creatures.catalogQueries(), tables.application(),
+                        creatures.application(), creatures.catalogQueries(), creatures.referenceIndex(),
+                        tables.application(),
                         encounter.application(), encounter.builderInputs(), tables.catalog(),
                         encounter.tuningPreview(), encounter.savedPlans(), unavailableItems(), worldPlanner),
                 new CatalogActionRoutes(
                         inspector, ignored -> { }, openNpc, ignored -> { }, ignored -> { },
-                        createNpc, () -> { }, () -> { }));
+                        createNpc, () -> { }, () -> { }, ignored -> { }, ignored -> { },
+                        addCreatureToScene));
     }
 
     private static features.items.api.ItemsCatalogApi unavailableItems() {

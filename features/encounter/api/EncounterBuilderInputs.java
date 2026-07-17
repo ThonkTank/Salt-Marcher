@@ -2,72 +2,116 @@ package features.encounter.api;
 
 import java.util.List;
 
-public record EncounterBuilderInputs(
-        List<String> creatureTypes,
-        List<String> creatureSubtypes,
-        List<String> biomes,
-        boolean autoDifficulty,
-        int difficultyLevel,
-        boolean autoBalance,
-        int balanceLevel,
-        boolean autoAmount,
-        double amountValue,
-        boolean autoDiversity,
-        int diversityLevel,
-        List<Long> encounterTableIds,
-        List<Long> worldFactionIds,
-        long worldLocationId
-) {
-
-    private static final int DEFAULT_DIFFICULTY_LEVEL = 2;
-    private static final int DEFAULT_BALANCE_LEVEL = 3;
-    private static final double DEFAULT_AMOUNT_VALUE = 3.0;
-    private static final int DEFAULT_DIVERSITY_LEVEL = 3;
+public record EncounterBuilderInputs(EncounterPoolFilters poolFilters, EncounterTuningSettings tuning) {
 
     public EncounterBuilderInputs {
-        creatureTypes = creatureTypes == null ? List.of() : List.copyOf(creatureTypes);
-        creatureSubtypes = creatureSubtypes == null ? List.of() : List.copyOf(creatureSubtypes);
-        biomes = biomes == null ? List.of() : List.copyOf(biomes);
-        difficultyLevel = normalizeDifficulty(difficultyLevel);
-        balanceLevel = normalizeBalance(balanceLevel);
-        amountValue = normalizeAmount(amountValue);
-        diversityLevel = normalizeDiversity(diversityLevel);
-        encounterTableIds = encounterTableIds == null ? List.of() : List.copyOf(encounterTableIds);
-        worldFactionIds = worldFactionIds == null ? List.of() : List.copyOf(worldFactionIds);
-        worldLocationId = Math.max(0L, worldLocationId);
+        poolFilters = poolFilters == null ? EncounterPoolFilters.empty() : poolFilters;
+        tuning = tuning == null ? EncounterTuningSettings.defaults() : tuning;
+    }
+
+    public EncounterBuilderInputs(
+            List<String> creatureTypes,
+            List<String> creatureSubtypes,
+            List<String> biomes,
+            boolean autoDifficulty,
+            int difficultyLevel,
+            boolean autoBalance,
+            int balanceLevel,
+            boolean autoAmount,
+            double amountValue,
+            boolean autoDiversity,
+            int diversityLevel,
+            List<Long> encounterTableIds,
+            List<Long> worldFactionIds,
+            long worldLocationId
+    ) {
+        this(new EncounterPoolFilters(
+                        "", "", "", List.of(), creatureTypes, creatureSubtypes, biomes, List.of(),
+                        encounterTableIds, worldFactionIds, worldLocationId),
+                new EncounterTuningSettings(
+                        autoDifficulty, difficultyLevel,
+                        autoBalance, balanceLevel,
+                        autoAmount, amountValue,
+                        autoDiversity, diversityLevel));
     }
 
     public static EncounterBuilderInputs empty() {
-        return new EncounterBuilderInputs(
-                List.of(),
-                List.of(),
-                List.of(),
-                true,
-                DEFAULT_DIFFICULTY_LEVEL,
-                true,
-                DEFAULT_BALANCE_LEVEL,
-                true,
-                DEFAULT_AMOUNT_VALUE,
-                true,
-                DEFAULT_DIVERSITY_LEVEL,
-                List.of(),
-                List.of(),
-                0L);
+        return new EncounterBuilderInputs(EncounterPoolFilters.empty(), EncounterTuningSettings.defaults());
     }
 
-    private static int normalizeDifficulty(int value) {
-        return value < 1 || value > 4 ? DEFAULT_DIFFICULTY_LEVEL : value;
+    public String nameQuery() {
+        return poolFilters.nameQuery();
     }
 
-    private static int normalizeBalance(int value) {
-        return value < 1 || value > 5 ? DEFAULT_BALANCE_LEVEL : value;
+    public String challengeRatingMin() {
+        return poolFilters.challengeRatingMin();
     }
 
-    private static double normalizeAmount(double value) {
-        return !Double.isFinite(value) || value < 1.0 || value > 5.0 ? DEFAULT_AMOUNT_VALUE : value;
+    public String challengeRatingMax() {
+        return poolFilters.challengeRatingMax();
     }
 
-    private static int normalizeDiversity(int value) {
-        return value < 1 || value > 4 ? DEFAULT_DIVERSITY_LEVEL : value;
+    public List<String> sizes() {
+        return poolFilters.sizes();
+    }
+
+    public List<String> creatureTypes() {
+        return poolFilters.creatureTypes();
+    }
+
+    public List<String> creatureSubtypes() {
+        return poolFilters.creatureSubtypes();
+    }
+
+    public List<String> biomes() {
+        return poolFilters.biomes();
+    }
+
+    public List<String> alignments() {
+        return poolFilters.alignments();
+    }
+
+    public List<Long> encounterTableIds() {
+        return poolFilters.encounterTableIds();
+    }
+
+    public List<Long> worldFactionIds() {
+        return poolFilters.worldFactionIds();
+    }
+
+    public long worldLocationId() {
+        return poolFilters.worldLocationId();
+    }
+
+    public boolean autoDifficulty() {
+        return tuning.autoDifficulty();
+    }
+
+    public int difficultyLevel() {
+        return tuning.difficultyLevel();
+    }
+
+    public boolean autoBalance() {
+        return tuning.autoBalance();
+    }
+
+    public int balanceLevel() {
+        return tuning.balanceLevel();
+    }
+
+    public boolean autoAmount() {
+        return tuning.autoAmount();
+    }
+
+    public double amountValue() {
+        return tuning.amountValue();
+    }
+
+    public boolean autoDiversity() {
+        return tuning.autoDiversity();
+    }
+
+    public int diversityLevel() {
+        return tuning.diversityLevel();
     }
 }
