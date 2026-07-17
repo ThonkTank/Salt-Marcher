@@ -35,6 +35,26 @@ public record EncounterGenerationRequest(
         return inputs.biomes();
     }
 
+    public String nameQuery() {
+        return inputs.nameQuery();
+    }
+
+    public String challengeRatingMin() {
+        return inputs.challengeRatingMin();
+    }
+
+    public String challengeRatingMax() {
+        return inputs.challengeRatingMax();
+    }
+
+    public List<String> sizes() {
+        return inputs.sizes();
+    }
+
+    public List<String> alignments() {
+        return inputs.alignments();
+    }
+
     public EncounterRequestedDifficulty requestedDifficulty() {
         return inputs.targetDifficulty();
     }

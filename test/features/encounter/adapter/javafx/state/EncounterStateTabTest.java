@@ -35,6 +35,10 @@ import features.encounter.domain.plan.repository.EncounterPlanRepository;
 import features.encounter.api.ApplyEncounterStateCommand;
 import features.encounter.api.OpenSavedEncounterPlanCommand;
 import features.encounter.api.OpenSavedEncounterPlanResult;
+import features.encounter.api.EncounterPoolFilters;
+import features.encounter.api.EncounterTuningSettings;
+import features.encounter.api.UpdateEncounterPoolFiltersCommand;
+import features.encounter.api.UpdateEncounterTuningCommand;
 import features.encountertable.domain.catalog.EncounterTableCandidateData;
 import features.encountertable.domain.catalog.EncounterTableSummaryData;
 import features.encountertable.domain.catalog.port.EncounterTableCatalogPort;
@@ -80,6 +84,14 @@ public final class EncounterStateTabTest {
     }
 
     @Test
+    void ENCOUNTER_STATE_TAB_003_hostsCollapsibleTuning() throws Exception {
+        runOnFxThread(() -> {
+            EncounterStateView view = encounterStateView(TestRuntime.create().contribution().bind());
+            assertTextPresent(view, "Encounter abstimmen", "Encounter tuning title");
+        });
+    }
+
+    @Test
     void savedCatalogOpenRequiresDiscardConfirmationForUnsavedRoster() {
         TestRuntime runtime = TestRuntime.create();
         runtime.encounter.application().applyState(ApplyEncounterStateCommand.addCreature(GOBLIN_ID));
@@ -117,6 +129,22 @@ public final class EncounterStateTabTest {
         org.junit.jupiter.api.Assertions.assertEquals(
                 OpenSavedEncounterPlanResult.Status.CONFIRMATION_REQUIRED,
                 guarded.status());
+    }
+
+    @Test
+    void poolAndTuningUpdatesMergeWithoutOverwritingEachOther() {
+        TestRuntime runtime = TestRuntime.create();
+        runtime.encounter.application().updatePoolFilters(new UpdateEncounterPoolFiltersCommand(
+                new EncounterPoolFilters("goblin", "1/4", "2", List.of("Small"), List.of("Humanoid"),
+                        List.of(), List.of("Forest"), List.of("Neutral Evil"), List.of(), List.of(), 0L)));
+        runtime.encounter.application().updateTuning(new UpdateEncounterTuningCommand(
+                new EncounterTuningSettings(false, 4, false, 5, false, 2.5, false, 2)));
+
+        var inputs = runtime.encounter.builderInputs().current();
+        org.junit.jupiter.api.Assertions.assertEquals("goblin", inputs.nameQuery());
+        org.junit.jupiter.api.Assertions.assertEquals(List.of("Small"), inputs.sizes());
+        org.junit.jupiter.api.Assertions.assertEquals(4, inputs.difficultyLevel());
+        org.junit.jupiter.api.Assertions.assertEquals(2.5, inputs.amountValue());
     }
 
     private static void assertEncounterStateTabOpensThroughShellBinding() {
@@ -268,7 +296,7 @@ public final class EncounterStateTabTest {
         EncounterStateContribution contribution() {
             return new EncounterStateContribution(
                     creatures.application(), encounter.state(), encounter.application(),
-                    null, ignored -> { });
+                    encounter.builderInputs(), null, ignored -> { });
         }
 
         private static void seedParty(PartyApi party) {

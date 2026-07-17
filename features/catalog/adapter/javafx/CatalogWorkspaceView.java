@@ -14,6 +14,9 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TableColumn;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.BorderPane;
@@ -27,6 +30,10 @@ import features.encounter.api.EncounterApi;
 import features.encounter.api.OpenSavedEncounterPlanCommand;
 import features.encounter.api.OpenSavedEncounterPlanResult;
 import features.encounter.api.SavedEncounterPlanListModel;
+import features.encounter.api.EncounterBuilderInputsModel;
+import features.encounter.api.EncounterPoolFilters;
+import features.encounter.api.UpdateEncounterPoolFiltersCommand;
+import features.encounter.api.ApplyEncounterStateCommand;
 import features.encounter.api.SavedEncounterPlanListResult;
 import features.encounter.api.SavedEncounterPlanSummary;
 import features.encountertable.api.EncounterTableCatalogModel;
@@ -38,6 +45,8 @@ import features.worldplanner.api.WorldLocationSummary;
 import features.worldplanner.api.WorldNpcSummary;
 import features.worldplanner.api.WorldPlannerSnapshot;
 import features.worldplanner.api.WorldPlannerSnapshotModel;
+import features.creatures.api.CreatureCatalogModel;
+import features.creatures.api.CreatureQueryStatus;
 
 /** One reference workspace; provider features keep all domain truth. */
 final class CatalogWorkspaceView extends BorderPane {
@@ -50,13 +59,19 @@ final class CatalogWorkspaceView extends BorderPane {
     private final ReferenceListPane<WorldFactionSummary> factions;
     private final ReferenceListPane<WorldLocationSummary> locations;
     private final ReferenceListPane<EncounterTableSummary> encounterTables;
+    private final java.util.Map<Long, String> creatureNames = new java.util.HashMap<>();
+    private final java.util.Map<Long, String> factionNames = new java.util.HashMap<>();
+    private final java.util.Map<Long, String> tableNames = new java.util.HashMap<>();
+    private WorldPlannerSnapshot currentWorld;
 
     CatalogWorkspaceView(
             CatalogMainView monsters,
-            CatalogControlsView monsterControls,
+            CatalogControlsHost controls,
             ItemsCatalogApi itemsApi,
             EncounterApi encounterApi,
             SavedEncounterPlanListModel savedPlans,
+            EncounterBuilderInputsModel builderInputs,
+            CreatureCatalogModel creatureCatalog,
             EncounterTableCatalogModel encounterTableCatalog,
             WorldPlannerSnapshotModel worldPlanner,
             InspectorSink inspector,
@@ -65,19 +80,43 @@ final class CatalogWorkspaceView extends BorderPane {
             java.util.function.LongConsumer openLocationInspector,
             Runnable createNpc,
             Runnable createFaction,
-            Runnable createLocation
+            Runnable createLocation,
+            java.util.function.LongConsumer addNpcToScene,
+            java.util.function.LongConsumer setSceneLocation
     ) {
         this.monsters = monsters;
         items = new ItemsPane(itemsApi, inspector);
         encounters = new SavedEncounterPane(encounterApi);
-        npcs = new ReferenceListPane<>("Keine NPCs verfügbar.", WorldNpcSummary::displayName,
+        npcs = new ReferenceListPane<>("NPCs", "Keine NPCs verfügbar.", WorldNpcSummary::displayName,
+                value -> reference(creatureNames, value.creatureStatblockId(), "Statblock") + " · "
+                        + reference(factionNames, value.factionId(), "Keine Fraktion")
+                        + " · " + value.disposition() + " · " + value.status(),
                 value -> openNpcInspector.accept(value.npcId()), "NPC anlegen", createNpc);
-        factions = new ReferenceListPane<>("Keine Fraktionen verfügbar.", WorldFactionSummary::displayName,
+        factions = new ReferenceListPane<>("Fraktionen", "Keine Fraktionen verfügbar.", WorldFactionSummary::displayName,
+                value -> reference(tableNames, value.primaryEncounterTableId(), "Tabelle")
+                        + " · Haltung " + value.disposition()
+                        + " · " + value.npcIds().size() + " NPCs",
                 value -> openFactionInspector.accept(value.factionId()), "Fraktion anlegen", createFaction);
-        locations = new ReferenceListPane<>("Keine Orte verfügbar.", WorldLocationSummary::displayName,
+        locations = new ReferenceListPane<>("Orte", "Keine Orte verfügbar.", WorldLocationSummary::displayName,
+                value -> joinedReferences(factionNames, value.factionIds(), "Fraktionen") + " · "
+                        + joinedReferences(tableNames, value.encounterTableIds(), "Tabellen"),
                 value -> openLocationInspector.accept(value.locationId()), "Ort anlegen", createLocation);
-        encounterTables = new ReferenceListPane<>("Keine Encounter-Tabellen verfügbar.", EncounterTableSummary::name,
-                ignored -> { }, "", () -> { });
+        encounterTables = new ReferenceListPane<>("Tabellen", "Keine Encounter-Tabellen verfügbar.",
+                EncounterTableSummary::name,
+                value -> "#" + value.tableId(), ignored -> { }, "", () -> { });
+        npcs.addAction("Encounter", "Zum Encounter", value -> encounterApi.applyState(
+                ApplyEncounterStateCommand.addWorldNpcCreature(value.creatureStatblockId(), value.npcId())));
+        npcs.addAction("Scene", "Zur Scene", value -> addNpcToScene.accept(value.npcId()));
+        factions.addAction("Encounter", "Als Quelle", value -> encounterApi.updatePoolFilters(
+                new UpdateEncounterPoolFiltersCommand(withFaction(builderInputs.current().poolFilters(),
+                        value.factionId()))));
+        locations.addAction("Encounter", "Als Quelle", value -> encounterApi.updatePoolFilters(
+                new UpdateEncounterPoolFiltersCommand(withLocation(builderInputs.current().poolFilters(),
+                        value.locationId()))));
+        locations.addAction("Scene", "Als Ort", value -> setSceneLocation.accept(value.locationId()));
+        encounterTables.addAction("Encounter", "Als Quelle", value -> encounterApi.updatePoolFilters(
+                new UpdateEncounterPoolFiltersCommand(withTable(builderInputs.current().poolFilters(),
+                        value.tableId()))));
 
         Tab monsterTab = tab("Monster", monsters);
         tabs.getTabs().setAll(
@@ -88,10 +127,25 @@ final class CatalogWorkspaceView extends BorderPane {
                 tab("Fraktionen", factions),
                 tab("Orte", locations),
                 tab("Encounter-Tabellen", encounterTables));
+        tabs.getStyleClass().add("catalog-category-tabs");
         tabs.getSelectionModel().selectedItemProperty().addListener((ignored, before, after) -> {
-            boolean monsterSelected = after == monsterTab;
-            monsterControls.setVisible(monsterSelected);
-            monsterControls.setManaged(monsterSelected);
+            if (after == monsterTab) {
+                controls.showMonster();
+            } else if (after != null && "Items".equals(after.getText())) {
+                controls.showSection("Items", "Items filtern …", items::setQuickQuery, "", () -> { });
+            } else if (after != null && "Encounter".equals(after.getText())) {
+                controls.showSection("Encounter", "Gespeicherte Encounter suchen …", encounters::setQuery, "", () -> { });
+            } else if (after != null && "NPCs".equals(after.getText())) {
+                controls.showSection("NPCs", "NPCs suchen …", npcs::setQuery, "NPC anlegen", createNpc);
+            } else if (after != null && "Fraktionen".equals(after.getText())) {
+                controls.showSection("Fraktionen", "Fraktionen suchen …", factions::setQuery,
+                        "Fraktion anlegen", createFaction);
+            } else if (after != null && "Orte".equals(after.getText())) {
+                controls.showSection("Orte", "Orte suchen …", locations::setQuery, "Ort anlegen", createLocation);
+            } else {
+                controls.showSection("Encounter-Tabellen", "Tabellen suchen …", encounterTables::setQuery,
+                        "", () -> { });
+            }
         });
         setCenter(tabs);
 
@@ -99,6 +153,8 @@ final class CatalogWorkspaceView extends BorderPane {
         encounters.apply(savedPlans.current());
         encounterTableCatalog.subscribe(this::applyEncounterTables);
         applyEncounterTables(encounterTableCatalog.current());
+        creatureCatalog.subscribe(this::applyCreatures);
+        applyCreatures(creatureCatalog.current());
         if (worldPlanner != null) {
             worldPlanner.subscribe(this::applyWorld);
             applyWorld(worldPlanner.current());
@@ -119,13 +175,31 @@ final class CatalogWorkspaceView extends BorderPane {
     }
 
     private void applyEncounterTables(EncounterTableCatalogResult result) {
-        encounterTables.apply(result == null ? List.of() : result.tables());
+        List<EncounterTableSummary> values = result == null ? List.of() : result.tables();
+        tableNames.clear();
+        values.forEach(value -> tableNames.put(value.tableId(), value.name()));
+        encounterTables.apply(values);
+        if (currentWorld != null) {
+            applyWorld(currentWorld);
+        }
+    }
+
+    private void applyCreatures(features.creatures.api.CreatureCatalogPageResult result) {
+        if (result != null && result.status() == CreatureQueryStatus.SUCCESS && result.page() != null) {
+            result.page().rows().forEach(value -> creatureNames.put(value.id(), value.name()));
+            if (currentWorld != null) {
+                applyWorld(currentWorld);
+            }
+        }
     }
 
     private void applyWorld(WorldPlannerSnapshot snapshot) {
         if (snapshot == null) {
             return;
         }
+        currentWorld = snapshot;
+        factionNames.clear();
+        snapshot.factions().forEach(value -> factionNames.put(value.factionId(), value.displayName()));
         npcs.apply(snapshot.npcs());
         factions.apply(snapshot.factions());
         locations.apply(snapshot.locations());
@@ -137,21 +211,42 @@ final class CatalogWorkspaceView extends BorderPane {
         return tab;
     }
 
+    private static String reference(java.util.Map<Long, String> labels, long id, String fallback) {
+        if (id <= 0L) {
+            return fallback;
+        }
+        String label = labels.get(id);
+        return label == null || label.isBlank() ? fallback + " #" + id : label + " (#" + id + ")";
+    }
+
+    private static String joinedReferences(
+            java.util.Map<Long, String> labels,
+            List<Long> ids,
+            String empty
+    ) {
+        if (ids == null || ids.isEmpty()) {
+            return "Keine " + empty;
+        }
+        return ids.stream().map(id -> reference(labels, id, empty)).collect(java.util.stream.Collectors.joining(", "));
+    }
+
     private static final class SavedEncounterPane extends BorderPane {
 
         private final EncounterApi encounters;
-        private final ListView<SavedEncounterPlanSummary> plans = new ListView<>();
+        private final TableView<SavedEncounterPlanSummary> plans = new TableView<>();
         private final Label status = new Label();
+        private List<SavedEncounterPlanSummary> source = List.of();
+        private String query = "";
 
         private SavedEncounterPane(EncounterApi encounters) {
             this.encounters = encounters;
-            plans.setCellFactory(ignored -> new ListCell<>() {
-                @Override
-                protected void updateItem(SavedEncounterPlanSummary item, boolean empty) {
-                    super.updateItem(item, empty);
-                    setText(empty || item == null ? "" : item.name() + " · " + item.summaryText());
-                }
-            });
+            plans.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+            TableColumn<SavedEncounterPlanSummary, String> name =
+                    textColumn("Name", SavedEncounterPlanSummary::name);
+            TableColumn<SavedEncounterPlanSummary, String> summary =
+                    textColumn("Zusammenfassung", SavedEncounterPlanSummary::summaryText);
+            plans.getColumns().setAll(name, summary);
+            plans.setPlaceholder(new Label("Keine gespeicherten Encounter."));
             plans.setOnMouseClicked(event -> {
                 if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
                     open(false);
@@ -166,8 +261,21 @@ final class CatalogWorkspaceView extends BorderPane {
         }
 
         private void apply(SavedEncounterPlanListResult result) {
-            plans.getItems().setAll(result == null ? List.of() : result.plans());
+            source = result == null ? List.of() : result.plans();
+            refilter();
             status.setText(result == null ? "" : result.message());
+        }
+
+        private void setQuery(String value) {
+            query = value == null ? "" : value.trim().toLowerCase(java.util.Locale.ROOT);
+            refilter();
+        }
+
+        private void refilter() {
+            plans.getItems().setAll(query.isBlank() ? source : source.stream()
+                    .filter(plan -> (plan.name() + " " + plan.summaryText())
+                            .toLowerCase(java.util.Locale.ROOT).contains(query))
+                    .toList());
         }
 
         private void open(boolean confirmed) {
@@ -221,7 +329,7 @@ final class CatalogWorkspaceView extends BorderPane {
         private final TextField maximumCost = textField("Item-Maximalkosten", "Max. CP");
         private final ComboBox<ItemsCatalogApi.SortField> sort = sortBox();
         private final ComboBox<SortDirection> direction = directionBox();
-        private final ListView<ItemsCatalogApi.ItemRow> rows = new ListView<>();
+        private final TableView<ItemsCatalogApi.ItemRow> rows = new TableView<>();
         private final Label status = new Label();
         private final Label page = new Label("Seite –");
         private final Button previous = new Button("Zurück");
@@ -270,13 +378,17 @@ final class CatalogWorkspaceView extends BorderPane {
         private void configureRows() {
             rows.setAccessibleText("Item-Ergebnisse");
             rows.setPlaceholder(new Label("Keine Items gefunden."));
-            rows.setCellFactory(ignored -> new ListCell<>() {
-                @Override
-                protected void updateItem(ItemsCatalogApi.ItemRow item, boolean empty) {
-                    super.updateItem(item, empty);
-                    setText(empty || item == null ? "" : rowText(item));
-                }
-            });
+            rows.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+            TableColumn<ItemsCatalogApi.ItemRow, String> name = textColumn("Name", ItemsCatalogApi.ItemRow::name);
+            TableColumn<ItemsCatalogApi.ItemRow, String> category =
+                    textColumn("Kategorie", item -> joined(item.category(), item.subcategory()));
+            TableColumn<ItemsCatalogApi.ItemRow, String> rarity =
+                    textColumn("Seltenheit", item -> shown(item.rarity()));
+            TableColumn<ItemsCatalogApi.ItemRow, String> magic =
+                    textColumn("Magie", item -> yesNo(item.magic()));
+            TableColumn<ItemsCatalogApi.ItemRow, String> cost =
+                    textColumn("Kosten", item -> shown(item.costDisplay()));
+            rows.getColumns().setAll(name, category, rarity, magic, cost);
             rows.setOnMouseClicked(event -> {
                 if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
                     openDetail();
@@ -312,6 +424,11 @@ final class CatalogWorkspaceView extends BorderPane {
 
         void refresh() {
             loadFilterOptions();
+            searchFirstPage();
+        }
+
+        void setQuickQuery(String value) {
+            search.setText(value == null ? "" : value);
             searchFirstPage();
         }
 
@@ -640,49 +757,60 @@ final class CatalogWorkspaceView extends BorderPane {
 
     private static final class ReferenceListPane<T> extends BorderPane {
 
-        private final ListView<T> values = new ListView<>();
+        private final CatalogSectionFrame<T> frame;
 
         private ReferenceListPane(
+                String resultLabel,
                 String emptyText,
                 java.util.function.Function<T, String> label,
+                java.util.function.Function<T, String> detail,
                 java.util.function.Consumer<T> open,
                 String createLabel,
                 Runnable create
         ) {
-            values.setPlaceholder(new Label(emptyText));
-            values.setCellFactory(ignored -> new ListCell<>() {
-                @Override
-                protected void updateItem(T item, boolean empty) {
-                    super.updateItem(item, empty);
-                    setText(empty || item == null ? "" : label.apply(item));
-                }
-            });
-            values.setOnMouseClicked(event -> {
-                T selected = values.getSelectionModel().getSelectedItem();
-                if (selected != null && event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
-                    open.accept(selected);
-                }
-            });
-            values.setOnKeyPressed(event -> {
-                T selected = values.getSelectionModel().getSelectedItem();
-                if (selected != null && event.getCode() == KeyCode.ENTER) {
-                    open.accept(selected);
-                    event.consume();
-                }
-            });
-            setCenter(values);
-            if (!createLabel.isBlank()) {
-                Button createButton = new Button(createLabel);
-                createButton.setOnAction(ignored -> create.run());
-                HBox actions = new HBox(createButton);
-                actions.setPadding(new Insets(8));
-                setTop(actions);
-            }
+            frame = new CatalogSectionFrame<>(resultLabel, emptyText,
+                    value -> label.apply(value) + " " + detail.apply(value), open,
+                    createLabel, create);
+            frame.addTextColumn("Name", 260, label);
+            frame.addTextColumn("Details", 520, detail);
+            frame.addActionColumn("Aktion", "Details", open);
+            setCenter(frame);
         }
 
         private void apply(List<T> next) {
-            values.getItems().setAll(next == null ? List.of() : next);
+            frame.apply(next);
         }
+
+        private void setQuery(String query) {
+            frame.setQuery(query);
+        }
+
+        private void addAction(String title, String label, java.util.function.Consumer<T> action) {
+            frame.addActionColumn(title, label, action);
+        }
+    }
+
+    private static EncounterPoolFilters withFaction(EncounterPoolFilters source, long factionId) {
+        EncounterPoolFilters safe = source == null ? EncounterPoolFilters.empty() : source;
+        return new EncounterPoolFilters(safe.nameQuery(), safe.challengeRatingMin(), safe.challengeRatingMax(),
+                safe.sizes(), safe.creatureTypes(), safe.creatureSubtypes(), safe.biomes(), safe.alignments(),
+                safe.encounterTableIds(), List.of(factionId), safe.worldLocationId());
+    }
+
+    private static EncounterPoolFilters withLocation(EncounterPoolFilters source, long locationId) {
+        EncounterPoolFilters safe = source == null ? EncounterPoolFilters.empty() : source;
+        return new EncounterPoolFilters(safe.nameQuery(), safe.challengeRatingMin(), safe.challengeRatingMax(),
+                safe.sizes(), safe.creatureTypes(), safe.creatureSubtypes(), safe.biomes(), safe.alignments(),
+                safe.encounterTableIds(), safe.worldFactionIds(), locationId);
+    }
+
+    private static EncounterPoolFilters withTable(EncounterPoolFilters source, long tableId) {
+        EncounterPoolFilters safe = source == null ? EncounterPoolFilters.empty() : source;
+        java.util.LinkedHashSet<Long> ids = new java.util.LinkedHashSet<>(safe.encounterTableIds());
+        ids.add(tableId);
+        return new EncounterPoolFilters(safe.nameQuery(), safe.challengeRatingMin(), safe.challengeRatingMax(),
+                safe.sizes(), safe.creatureTypes(), safe.creatureSubtypes(), safe.biomes(), safe.alignments(),
+                List.copyOf(ids), safe.worldFactionIds(), safe.worldLocationId());
     }
 
     private static void runOnFx(Runnable action) {
@@ -691,5 +819,14 @@ final class CatalogWorkspaceView extends BorderPane {
         } else {
             Platform.runLater(action);
         }
+    }
+
+    private static <T> TableColumn<T, String> textColumn(
+            String title,
+            java.util.function.Function<T, String> value
+    ) {
+        TableColumn<T, String> column = new TableColumn<>(title);
+        column.setCellValueFactory(cell -> new SimpleStringProperty(value.apply(cell.getValue())));
+        return column;
     }
 }

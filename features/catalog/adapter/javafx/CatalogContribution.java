@@ -44,6 +44,8 @@ public final class CatalogContribution implements ShellContribution {
     private final Runnable createNpc;
     private final Runnable createFaction;
     private final Runnable createLocation;
+    private final java.util.function.LongConsumer addNpcToScene;
+    private final java.util.function.LongConsumer setSceneLocation;
 
     public CatalogContribution(
             CreaturesApi creatures,
@@ -66,6 +68,35 @@ public final class CatalogContribution implements ShellContribution {
             Runnable createFaction,
             Runnable createLocation
     ) {
+        this(creatures, encounterTables, encounters, builderInputs, filterOptions, catalog,
+                encounterTableCatalog, tuningPreview, savedPlans, items, worldPlanner, inspector,
+                openCreatureInspector, openNpcInspector, openFactionInspector, openLocationInspector,
+                createNpc, createFaction, createLocation, ignored -> { }, ignored -> { });
+    }
+
+    public CatalogContribution(
+            CreaturesApi creatures,
+            EncounterTableApi encounterTables,
+            EncounterApi encounters,
+            EncounterBuilderInputsModel builderInputs,
+            CreatureFilterOptionsModel filterOptions,
+            CreatureCatalogModel catalog,
+            EncounterTableCatalogModel encounterTableCatalog,
+            EncounterTuningPreviewModel tuningPreview,
+            SavedEncounterPlanListModel savedPlans,
+            ItemsCatalogApi items,
+            @Nullable WorldPlannerSnapshotModel worldPlanner,
+            InspectorSink inspector,
+            java.util.function.LongConsumer openCreatureInspector,
+            java.util.function.LongConsumer openNpcInspector,
+            java.util.function.LongConsumer openFactionInspector,
+            java.util.function.LongConsumer openLocationInspector,
+            Runnable createNpc,
+            Runnable createFaction,
+            Runnable createLocation,
+            java.util.function.LongConsumer addNpcToScene,
+            java.util.function.LongConsumer setSceneLocation
+    ) {
         this.creatures = Objects.requireNonNull(creatures, "creatures");
         this.encounterTables = Objects.requireNonNull(encounterTables, "encounterTables");
         this.encounters = Objects.requireNonNull(encounters, "encounters");
@@ -85,6 +116,8 @@ public final class CatalogContribution implements ShellContribution {
         this.createNpc = Objects.requireNonNull(createNpc, "createNpc");
         this.createFaction = Objects.requireNonNull(createFaction, "createFaction");
         this.createLocation = Objects.requireNonNull(createLocation, "createLocation");
+        this.addNpcToScene = Objects.requireNonNull(addNpcToScene, "addNpcToScene");
+        this.setSceneLocation = Objects.requireNonNull(setSceneLocation, "setSceneLocation");
     }
 
     @Override
@@ -101,7 +134,7 @@ public final class CatalogContribution implements ShellContribution {
     @Override
     public ShellBinding bind() {
         CatalogViewModel viewModel = new CatalogViewModel(creatures, encounterTables, encounters);
-        CatalogControlsView controls = new CatalogControlsView();
+        CatalogControlsHost controls = new CatalogControlsHost();
         CatalogMainView monsters = new CatalogMainView();
 
         controls.bind(viewModel.controlsContentModel());
@@ -140,6 +173,8 @@ public final class CatalogContribution implements ShellContribution {
                 items,
                 encounters,
                 savedPlans,
+                builderInputs,
+                catalog,
                 encounterTableCatalog,
                 worldPlanner,
                 inspector,
@@ -148,7 +183,9 @@ public final class CatalogContribution implements ShellContribution {
                 openLocationInspector,
                 createNpc,
                 createFaction,
-                createLocation);
+                createLocation,
+                addNpcToScene,
+                setSceneLocation);
         return ShellBinding.cockpit("Katalog", controls, workspace);
     }
 

@@ -442,10 +442,10 @@ record StateInput(
     StateInput {
         activeModuleIndex = Math.max(0, activeModuleIndex);
         npc = npc == null ? new NpcSnapshot("", -1, "", "", "", "", "0") : npc;
-        faction = faction == null ? new FactionSnapshot("", -1, -1, -1, false, "", "0") : faction;
-        location = location == null ? new LocationSnapshot("", -1, -1) : location;
+        faction = faction == null ? new FactionSnapshot("", "", -1, -1, -1, false, "", "0") : faction;
+        location = location == null ? new LocationSnapshot("", "", -1, -1) : location;
         actions = actions == null
-                ? new ActionSnapshot(false, false, false, false, false, false, false, false, false, false, false)
+                ? ActionSnapshot.none()
                 : actions;
     }
 }
@@ -476,6 +476,7 @@ record NpcSnapshot(
 
 record FactionSnapshot(
         String displayName,
+        String notes,
         int primaryEncounterTableChoiceIndex,
         int npcChoiceIndex,
         int inventoryStatblockChoiceIndex,
@@ -485,11 +486,12 @@ record FactionSnapshot(
 ) {
     FactionSnapshot(String displayName, int primaryEncounterTableChoiceIndex, int npcChoiceIndex,
             int inventoryStatblockChoiceIndex, boolean finiteInventory, String inventoryQuantityText) {
-        this(displayName, primaryEncounterTableChoiceIndex, npcChoiceIndex, inventoryStatblockChoiceIndex,
+        this(displayName, "", primaryEncounterTableChoiceIndex, npcChoiceIndex, inventoryStatblockChoiceIndex,
                 finiteInventory, inventoryQuantityText, "0");
     }
     FactionSnapshot {
         displayName = WorldPlannerVocabulary.text(displayName);
+        notes = WorldPlannerVocabulary.text(notes);
         primaryEncounterTableChoiceIndex = Math.max(-1, primaryEncounterTableChoiceIndex);
         npcChoiceIndex = Math.max(-1, npcChoiceIndex);
         inventoryStatblockChoiceIndex = Math.max(-1, inventoryStatblockChoiceIndex);
@@ -500,11 +502,13 @@ record FactionSnapshot(
 
 record LocationSnapshot(
         String displayName,
+        String notes,
         int factionChoiceIndex,
         int encounterTableChoiceIndex
 ) {
     LocationSnapshot {
         displayName = WorldPlannerVocabulary.text(displayName);
+        notes = WorldPlannerVocabulary.text(notes);
         factionChoiceIndex = Math.max(-1, factionChoiceIndex);
         encounterTableChoiceIndex = Math.max(-1, encounterTableChoiceIndex);
     }
@@ -521,13 +525,24 @@ record ActionSnapshot(
         boolean linkFactionRequested,
         boolean linkTableRequested,
         boolean setNpcDispositionRequested,
-        boolean setFactionDispositionRequested
+        boolean setFactionDispositionRequested,
+        boolean saveEntityRequested,
+        boolean deleteRequested,
+        boolean removeNpcRequested,
+        boolean removeFactionRequested,
+        boolean removeTableRequested
 ) {
     ActionSnapshot(boolean createRequested, boolean saveNotesRequested, boolean defeatRequested,
             boolean reactivateRequested, boolean addToEncounterRequested, boolean addNpcRequested,
             boolean setInventoryLimitRequested, boolean linkFactionRequested, boolean linkTableRequested) {
         this(createRequested, saveNotesRequested, defeatRequested, reactivateRequested, addToEncounterRequested,
-                addNpcRequested, setInventoryLimitRequested, linkFactionRequested, linkTableRequested, false, false);
+                addNpcRequested, setInventoryLimitRequested, linkFactionRequested, linkTableRequested,
+                false, false, false, false, false, false, false);
+    }
+
+    static ActionSnapshot none() {
+        return new ActionSnapshot(false, false, false, false, false, false, false, false, false,
+                false, false, false, false, false, false, false);
     }
 }
 
@@ -574,6 +589,7 @@ record FactionProjection(
         List<String> statblockLabels,
         int selectedFactionIndex,
         String selectedFactionName,
+        String selectedNotes,
         String selectedPrimaryTableLabel,
         int selectedDisposition,
         String emptyText
@@ -585,12 +601,13 @@ record FactionProjection(
         npcReferenceLabels = WorldPlannerViewModel.copiedStrings(npcReferenceLabels);
         statblockLabels = WorldPlannerViewModel.copiedStrings(statblockLabels);
         selectedFactionName = WorldPlannerVocabulary.text(selectedFactionName);
+        selectedNotes = WorldPlannerVocabulary.text(selectedNotes);
         selectedPrimaryTableLabel = WorldPlannerVocabulary.text(selectedPrimaryTableLabel);
         emptyText = WorldPlannerVocabulary.text(emptyText);
     }
 
     static FactionProjection empty() {
-        return new FactionProjection(false, List.of(), List.of(), List.of(), List.of(), List.of(), -1, "", "", 0,
+        return new FactionProjection(false, List.of(), List.of(), List.of(), List.of(), List.of(), -1, "", "", "", 0,
                 "Noch keine Fraktionen.");
     }
 }
@@ -603,6 +620,7 @@ record LocationProjection(
         List<String> encounterTableLabels,
         int selectedLocationIndex,
         String selectedLocationName,
+        String selectedNotes,
         String emptyText
 ) {
     LocationProjection {
@@ -611,11 +629,12 @@ record LocationProjection(
         factionReferenceLabels = WorldPlannerViewModel.copiedStrings(factionReferenceLabels);
         encounterTableLabels = WorldPlannerViewModel.copiedStrings(encounterTableLabels);
         selectedLocationName = WorldPlannerVocabulary.text(selectedLocationName);
+        selectedNotes = WorldPlannerVocabulary.text(selectedNotes);
         emptyText = WorldPlannerVocabulary.text(emptyText);
     }
 
     static LocationProjection empty() {
-        return new LocationProjection(false, List.of(), List.of(), List.of(), List.of(), -1, "",
+        return new LocationProjection(false, List.of(), List.of(), List.of(), List.of(), -1, "", "",
                 "Noch keine Locations.");
     }
 }
@@ -709,6 +728,7 @@ record NpcEditor(
 
 record FactionEditor(
         String displayName,
+        String notes,
         List<String> encounterTableLabels,
         String selectedPrimaryTableLabel,
         List<String> npcReferenceLabels,
@@ -717,6 +737,7 @@ record FactionEditor(
 ) {
     FactionEditor {
         displayName = WorldPlannerVocabulary.text(displayName);
+        notes = WorldPlannerVocabulary.text(notes);
         encounterTableLabels = WorldPlannerViewModel.copiedStrings(encounterTableLabels);
         selectedPrimaryTableLabel = WorldPlannerVocabulary.text(selectedPrimaryTableLabel);
         npcReferenceLabels = WorldPlannerViewModel.copiedStrings(npcReferenceLabels);
@@ -725,23 +746,25 @@ record FactionEditor(
     }
 
     static FactionEditor empty() {
-        return new FactionEditor("", List.of(), "", List.of(), List.of(), "0");
+        return new FactionEditor("", "", List.of(), "", List.of(), List.of(), "0");
     }
 }
 
 record LocationEditor(
         String displayName,
+        String notes,
         List<String> factionReferenceLabels,
         List<String> encounterTableLabels
 ) {
     LocationEditor {
         displayName = WorldPlannerVocabulary.text(displayName);
+        notes = WorldPlannerVocabulary.text(notes);
         factionReferenceLabels = WorldPlannerViewModel.copiedStrings(factionReferenceLabels);
         encounterTableLabels = WorldPlannerViewModel.copiedStrings(encounterTableLabels);
     }
 
     static LocationEditor empty() {
-        return new LocationEditor("", List.of(), List.of());
+        return new LocationEditor("", "", List.of(), List.of());
     }
 }
 
@@ -1108,6 +1131,7 @@ final class WorldPlannerStateProjectionBuilder {
                 NpcEditor.empty(),
                 new FactionEditor(
                         projection.selectedFactionName(),
+                        projection.selectedNotes(),
                         projection.encounterTableLabels(),
                         projection.selectedPrimaryTableLabel(),
                         projection.npcReferenceLabels(),
@@ -1130,6 +1154,7 @@ final class WorldPlannerStateProjectionBuilder {
                 FactionEditor.empty(),
                 new LocationEditor(
                         projection.selectedLocationName(),
+                        projection.selectedNotes(),
                         projection.factionReferenceLabels(),
                         projection.encounterTableLabels()),
                 "");
@@ -1434,6 +1459,7 @@ final class WorldPlannerProjectionBuilder {
                 WorldPlannerProjectionLabels.labels(input.options().statblockOptions()),
                 WorldPlannerVocabulary.indexOf(ids, input.selection().selectedFactionId()),
                 selected == null ? "" : selected.displayName(),
+                selected == null ? "" : selected.notes(),
                 WorldPlannerProjectionLabels.tableLabel(input.options().encounterTableOptions(), selected),
                 selected == null ? 0 : selected.disposition(),
                 ids.isEmpty() ? "Noch keine Fraktionen." : "");
@@ -1459,6 +1485,7 @@ final class WorldPlannerProjectionBuilder {
                 WorldPlannerProjectionLabels.labels(input.options().encounterTableOptions()),
                 WorldPlannerVocabulary.indexOf(ids, input.selection().selectedLocationId()),
                 selected == null ? "" : selected.displayName(),
+                selected == null ? "" : selected.notes(),
                 ids.isEmpty() ? "Noch keine Locations." : "");
     }
 

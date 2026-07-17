@@ -200,6 +200,7 @@ public final class EncounterServiceAssembly {
                     creatures,
                     state,
                     application,
+                    builderInputs,
                     worldPlanner,
                     openCreatureInspector);
         }

@@ -252,6 +252,31 @@
     -fx-spacing: 8;
     -fx-padding: 8 0 0 0;
 }
+.catalog-category-tabs > .tab-header-area > .headers-region > .tab {
+    -fx-background-color: -sm-bg-panel;
+    -fx-border-color: transparent transparent -sm-border-subtle transparent;
+    -fx-padding: 7 12 7 12;
+}
+.catalog-category-tabs > .tab-header-area > .headers-region > .tab:selected {
+    -fx-background-color: -sm-bg-darkest;
+    -fx-border-color: transparent transparent -sm-accent transparent;
+    -fx-border-width: 0 0 2 0;
+}
+.catalog-category-tabs > .tab-header-area {
+    -fx-background-color: -sm-bg-panel;
+    -fx-padding: 0;
+}
+.filter-surface {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 8;
+}
+.encounter-tuning-pane {
+    -fx-background-color: -sm-bg-panel;
+    -fx-border-color: transparent transparent -sm-border-subtle transparent;
+}
 .party-header {
     -fx-background-color: -sm-bg-elevated;
     -fx-padding: 8 12 8 12;

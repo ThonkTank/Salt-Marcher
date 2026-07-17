@@ -128,8 +128,8 @@ public final class CatalogControlsRawInputTest {
     void CATALOG_CONTROLS_RAW_INPUT_007() throws Exception {
         runOnFxThread(() -> {
             start();
-            toggleDifficultyAutoAndSlide();
-            assertDifficultyTuningPublishesRawInput();
+            assertTrue(descendants(view()).stream().noneMatch(Slider.class::isInstance),
+                    "Encounter tuning belongs to the Encounter state tab, not Catalog controls");
         });
     }
 

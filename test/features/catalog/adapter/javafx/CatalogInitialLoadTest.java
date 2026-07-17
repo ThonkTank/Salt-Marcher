@@ -18,7 +18,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TableView;
 import javafx.scene.input.KeyCode;
@@ -118,8 +117,8 @@ public final class CatalogInitialLoadTest {
             Button create = button((Parent) tabs.getSelectionModel().getSelectedItem().getContent(), "NPC anlegen");
             create.fire();
 
-            ListView<?> npcs = descendant(
-                    (Parent) tabs.getSelectionModel().getSelectedItem().getContent(), ListView.class);
+            TableView<?> npcs = descendant(
+                    (Parent) tabs.getSelectionModel().getSelectedItem().getContent(), TableView.class);
             npcs.getSelectionModel().selectFirst();
             npcs.fireEvent(new KeyEvent(
                     KeyEvent.KEY_PRESSED, "", "", KeyCode.ENTER,

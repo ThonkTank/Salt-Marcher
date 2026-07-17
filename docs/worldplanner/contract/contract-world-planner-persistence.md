@@ -1,6 +1,6 @@
-Status: Draft
+Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-16
+Last Reviewed: 2026-07-17
 Source of Truth: Persistence boundary, stored truth, reference rules, and
 error behavior for World Planner authored state.
 
@@ -68,6 +68,9 @@ World Planner persistence does not store:
   encounter-table references.
 - Writes must reject duplicate membership or duplicate link rows instead of
   silently persisting ambiguous truth.
+- NPC deletion must remove faction membership in the same saved state.
+- Faction deletion must remove location links in the same saved state.
+- Removing a relationship must leave both referenced records intact.
 - Disposition values must remain between `-50` and `+50`.
 - Finite inventory limits must be non-negative.
 - A faction must not persist more than one primary encounter-table reference.

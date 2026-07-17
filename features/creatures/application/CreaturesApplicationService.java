@@ -259,10 +259,10 @@ public final class CreaturesApplicationService implements features.creatures.api
             if (command == null) {
                 return empty();
             }
-            String minimumChallengeRating = trimmedOrNull(command.challengeRatingMin());
-            String maximumChallengeRating = trimmedOrNull(command.challengeRatingMax());
+            String minimumChallengeRating = CatalogRequest.trimmedOrNull(command.challengeRatingMin());
+            String maximumChallengeRating = CatalogRequest.trimmedOrNull(command.challengeRatingMax());
             return new CatalogRequest(
-                    trimmedOrNull(command.nameQuery()),
+                    CatalogRequest.trimmedOrNull(command.nameQuery()),
                     minimumChallengeRating,
                     maximumChallengeRating,
                     xpForChallengeRating(minimumChallengeRating),
@@ -364,9 +364,12 @@ public final class CreaturesApplicationService implements features.creatures.api
     }
 
     private record EncounterCandidateRequest(
+            @Nullable String nameQuery,
             List<String> creatureTypes,
             List<String> creatureSubtypes,
             List<String> biomes,
+            List<String> sizes,
+            List<String> alignments,
             int minimumXp,
             int maximumXp,
             int limit
@@ -375,6 +378,9 @@ public final class CreaturesApplicationService implements features.creatures.api
         static EncounterCandidateRequest from(@Nullable RefreshCreatureEncounterCandidatesCommand command) {
             if (command == null) {
                 return new EncounterCandidateRequest(
+                        null,
+                        List.of(),
+                        List.of(),
                         List.of(),
                         List.of(),
                         List.of(),
@@ -382,20 +388,35 @@ public final class CreaturesApplicationService implements features.creatures.api
                         Integer.MAX_VALUE,
                         DEFAULT_ENCOUNTER_CANDIDATE_LIMIT);
             }
+            String minimumChallengeRating = CatalogRequest.trimmedOrNull(command.challengeRatingMin());
+            String maximumChallengeRating = CatalogRequest.trimmedOrNull(command.challengeRatingMax());
+            Integer challengeMinimumXp = CatalogRequest.xpForChallengeRating(minimumChallengeRating);
+            Integer challengeMaximumXp = CatalogRequest.xpForChallengeRating(maximumChallengeRating);
             return new EncounterCandidateRequest(
+                    CatalogRequest.trimmedOrNull(command.nameQuery()),
                     CatalogRequest.normalizeValues(command.creatureTypes()),
                     CatalogRequest.normalizeValues(command.creatureSubtypes()),
                     CatalogRequest.normalizeValues(command.biomes()),
-                    Math.max(0, command.minimumXp()),
-                    command.maximumXp() <= 0 ? Integer.MAX_VALUE : command.maximumXp(),
+                    CatalogRequest.normalizeValues(command.sizes()),
+                    CatalogRequest.normalizeValues(command.alignments()),
+                    challengeMinimumXp == null
+                            ? Math.max(0, command.minimumXp())
+                            : Math.max(Math.max(0, command.minimumXp()), challengeMinimumXp.intValue()),
+                    challengeMaximumXp == null
+                            ? (command.maximumXp() <= 0 ? Integer.MAX_VALUE : command.maximumXp())
+                            : Math.min(command.maximumXp() <= 0 ? Integer.MAX_VALUE : command.maximumXp(),
+                                    challengeMaximumXp.intValue()),
                     normalizeLimit(command.limit()));
         }
 
         CreatureCatalogData.EncounterCandidateSpec spec() {
             return new CreatureCatalogData.EncounterCandidateSpec(
+                    nameQuery,
                     creatureTypes,
                     creatureSubtypes,
                     biomes,
+                    sizes,
+                    alignments,
                     minimumXp,
                     maximumXp,
                     limit);

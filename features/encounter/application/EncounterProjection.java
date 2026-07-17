@@ -72,20 +72,27 @@ final class EncounterProjection {
                 difficulty == null ? EncounterRequestedDifficulty.autoDifficulty() : difficulty;
         EncounterTuningIntent safeTuning = tuning == null ? EncounterTuningIntent.defaultIntent() : tuning;
         return new EncounterBuilderInputs(
-                safeInputs.creatureTypes(),
-                safeInputs.creatureSubtypes(),
-                safeInputs.biomes(),
-                difficulty == null || difficulty.isAuto(),
-                safeDifficulty.publishedDifficultyLevel(),
-                tuning == null || tuning.isBalanceAuto(),
-                safeTuning.publishedBalanceLevel(),
-                tuning == null || tuning.isAmountAuto(),
-                safeTuning.publishedAmountValue(),
-                tuning == null || tuning.isDiversityAuto(),
-                safeTuning.publishedDiversityLevel(),
-                safeInputs.encounterTableIds(),
-                safeInputs.worldFactionIds(),
-                safeInputs.worldLocationId());
+                new features.encounter.api.EncounterPoolFilters(
+                        safeInputs.nameQuery(),
+                        safeInputs.challengeRatingMin(),
+                        safeInputs.challengeRatingMax(),
+                        safeInputs.sizes(),
+                        safeInputs.creatureTypes(),
+                        safeInputs.creatureSubtypes(),
+                        safeInputs.biomes(),
+                        safeInputs.alignments(),
+                        safeInputs.encounterTableIds(),
+                        safeInputs.worldFactionIds(),
+                        safeInputs.worldLocationId()),
+                new features.encounter.api.EncounterTuningSettings(
+                        difficulty == null || difficulty.isAuto(),
+                        safeDifficulty.publishedDifficultyLevel(),
+                        tuning == null || tuning.isBalanceAuto(),
+                        safeTuning.publishedBalanceLevel(),
+                        tuning == null || tuning.isAmountAuto(),
+                        safeTuning.publishedAmountValue(),
+                        tuning == null || tuning.isDiversityAuto(),
+                        safeTuning.publishedDiversityLevel()));
     }
 
     static EncounterTuningPreviewResult tuningPreview(EncounterTuningPreviewData data) {

@@ -51,9 +51,12 @@ public final class CreatureCatalogQueryMappingFacade {
             CreatureCatalogData.EncounterCandidateSpec spec
     ) {
         return new EncounterCandidateCriteriaRecord(
+                spec.nameQuery(),
                 spec.types(),
                 spec.subtypes(),
                 spec.biomes(),
+                spec.sizes(),
+                spec.alignments(),
                 spec.minimumXp(),
                 spec.maximumXp(),
                 spec.limit());
