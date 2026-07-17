@@ -1,5 +1,7 @@
 package features.scene;
 
+import features.creatures.api.CreatureCatalogModel;
+import features.creatures.api.CreaturesApi;
 import features.encounter.api.EncounterRuntimeContextApi;
 import features.party.api.ActivePartyModel;
 import features.scene.adapter.javafx.SceneContribution;
@@ -26,6 +28,8 @@ public final class SceneFeature {
             WorldPlannerSnapshotModel world,
             PreparedSceneCatalogModel preparedScenes,
             EncounterRuntimeContextApi encounters,
+            CreatureCatalogModel creatureCatalog,
+            CreaturesApi creatures,
             ExecutionLane executionLane,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
@@ -36,6 +40,8 @@ public final class SceneFeature {
                 world,
                 preparedScenes,
                 encounters,
+                creatureCatalog,
+                creatures,
                 executionLane,
                 uiDispatcher,
                 diagnostics);
@@ -49,8 +55,8 @@ public final class SceneFeature {
             model = Objects.requireNonNull(model, "model");
         }
 
-        public ShellContribution contribution() {
-            return new SceneContribution(application, model);
+        public ShellContribution contribution(java.util.function.LongConsumer openStatblock) {
+            return new SceneContribution(application, model, openStatblock);
         }
     }
 }

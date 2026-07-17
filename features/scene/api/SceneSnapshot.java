@@ -10,6 +10,7 @@ public record SceneSnapshot(
         List<PartyChoice> activePartyMembers,
         List<NpcChoice> availableNpcs,
         List<LocationChoice> availableLocations,
+        List<CreatureChoice> availableCreatures,
         List<PreparedChoice> preparedScenes,
         boolean initialized,
         boolean encounterSynchronized,
@@ -24,13 +25,14 @@ public record SceneSnapshot(
         activePartyMembers = copy(activePartyMembers);
         availableNpcs = copy(availableNpcs);
         availableLocations = copy(availableLocations);
+        availableCreatures = copy(availableCreatures);
         preparedScenes = copy(preparedScenes);
         statusText = statusText == null ? "" : statusText;
     }
 
     public static SceneSnapshot uninitialized() {
         return new SceneSnapshot(0L, 0L, 0L, List.of(), List.of(), List.of(), List.of(), List.of(),
-                false, false, "Szenen werden geladen.");
+                List.of(), false, false, "Szenen werden geladen.");
     }
 
     public record SceneEntry(
@@ -44,7 +46,9 @@ public record SceneSnapshot(
             long locationId,
             String locationName,
             List<PartyChoice> partyMembers,
-            List<NpcChoice> npcs
+            List<NpcChoice> npcs,
+            List<MobChoice> mobs,
+            List<ParticipantStateView> participantStates
     ) {
         public SceneEntry {
             title = normalized(title, "Szene " + sceneId);
@@ -53,6 +57,22 @@ public record SceneSnapshot(
             locationName = locationName == null ? "" : locationName;
             partyMembers = copy(partyMembers);
             npcs = copy(npcs);
+            mobs = copy(mobs);
+            participantStates = copy(participantStates);
+        }
+
+        public ParticipantStateView participantState(SceneParticipantKind kind, long refId) {
+            return participantStates.stream()
+                    .filter(state -> state.kind() == kind && state.refId() == refId)
+                    .findFirst()
+                    .orElse(new ParticipantStateView(kind, refId, false, ""));
+        }
+    }
+
+    public record ParticipantStateView(SceneParticipantKind kind, long refId, boolean defeated, String notes) {
+        public ParticipantStateView {
+            refId = Math.max(0L, refId);
+            notes = notes == null ? "" : notes;
         }
     }
 
@@ -92,6 +112,34 @@ public record SceneSnapshot(
         public LocationChoice {
             name = normalized(name, "Ort #" + id);
             sceneIds = copy(sceneIds);
+        }
+    }
+
+    public record CreatureChoice(
+            long id,
+            String name,
+            String challengeRating,
+            int hitPoints,
+            int armorClass
+    ) {
+        public CreatureChoice {
+            name = normalized(name, "Kreatur #" + id);
+            challengeRating = challengeRating == null ? "" : challengeRating;
+        }
+    }
+
+    public record MobChoice(
+            long creatureId,
+            String name,
+            int count,
+            String challengeRating,
+            int hitPoints,
+            int armorClass
+    ) {
+        public MobChoice {
+            name = normalized(name, "Kreatur #" + creatureId);
+            count = Math.max(0, count);
+            challengeRating = challengeRating == null ? "" : challengeRating;
         }
     }
 

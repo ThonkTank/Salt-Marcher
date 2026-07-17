@@ -2,6 +2,9 @@ package features.scene.adapter.sqlite;
 
 import features.scene.application.SceneWorkspaceRepository;
 import features.scene.domain.RunningScene;
+import features.scene.domain.SceneMob;
+import features.scene.domain.SceneParticipantKind;
+import features.scene.domain.SceneParticipantState;
 import features.scene.domain.SceneWorkspace;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -25,12 +28,18 @@ public final class SqliteSceneWorkspaceRepository implements SceneWorkspaceRepos
     private static final String SCENE_TABLE = "scene_running_scene";
     private static final String PC_TABLE = "scene_party_member";
     private static final String NPC_TABLE = "scene_npc";
+    private static final String MOB_TABLE = "scene_mob";
+    private static final String STATE_TABLE = "scene_participant_state";
 
     private final SqliteConnectionSource connections;
 
     public SqliteSceneWorkspaceRepository(SqliteDatabase database) {
         connections = Objects.requireNonNull(database, "database")
-                .connections(OWNER, new SqliteMigration(1, SqliteSceneWorkspaceRepository::createSchema));
+                .connections(
+                        OWNER,
+                        new SqliteMigration(1, SqliteSceneWorkspaceRepository::createSchema),
+                        new SqliteMigration(2, SqliteSceneWorkspaceRepository::createMobSchema),
+                        new SqliteMigration(3, SqliteSceneWorkspaceRepository::createParticipantStateSchema));
     }
 
     @Override
@@ -43,6 +52,8 @@ public final class SqliteSceneWorkspaceRepository implements SceneWorkspaceRepos
             Map<Long, StoredScene> scenes = loadScenes(connection);
             loadAssignments(connection, PC_TABLE, scenes, true);
             loadAssignments(connection, NPC_TABLE, scenes, false);
+            loadMobs(connection, scenes);
+            loadParticipantStates(connection, scenes);
             List<RunningScene> runningScenes = scenes.values().stream().map(StoredScene::toDomain).toList();
             return Optional.of(workspace.toDomain(runningScenes));
         } catch (SQLException | IllegalArgumentException exception) {
@@ -92,6 +103,32 @@ public final class SqliteSceneWorkspaceRepository implements SceneWorkspaceRepos
                     + "sort_order INTEGER NOT NULL CHECK(sort_order>=0))");
             statement.execute(assignmentTableSql(PC_TABLE, "party_member_external_id"));
             statement.execute(assignmentTableSql(NPC_TABLE, "npc_external_id"));
+        }
+    }
+
+    private static void createMobSchema(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("CREATE TABLE IF NOT EXISTS " + MOB_TABLE + " ("
+                    + "scene_id INTEGER NOT NULL, "
+                    + "creature_external_id INTEGER NOT NULL CHECK(creature_external_id>0), "
+                    + "count INTEGER NOT NULL CHECK(count>0), "
+                    + "sort_order INTEGER NOT NULL CHECK(sort_order>=0), "
+                    + "PRIMARY KEY(scene_id,creature_external_id), "
+                    + "FOREIGN KEY(scene_id) REFERENCES " + SCENE_TABLE + "(scene_id) ON DELETE CASCADE)");
+        }
+    }
+
+    private static void createParticipantStateSchema(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("CREATE TABLE IF NOT EXISTS " + STATE_TABLE + " ("
+                    + "scene_id INTEGER NOT NULL, "
+                    + "participant_kind TEXT NOT NULL CHECK(participant_kind IN ('PC','NPC','MOB')), "
+                    + "participant_ref_id INTEGER NOT NULL CHECK(participant_ref_id>0), "
+                    + "defeated INTEGER NOT NULL CHECK(defeated IN (0,1)), "
+                    + "notes TEXT NOT NULL, "
+                    + "sort_order INTEGER NOT NULL CHECK(sort_order>=0), "
+                    + "PRIMARY KEY(scene_id,participant_kind,participant_ref_id), "
+                    + "FOREIGN KEY(scene_id) REFERENCES " + SCENE_TABLE + "(scene_id) ON DELETE CASCADE)");
         }
     }
 
@@ -165,6 +202,38 @@ public final class SqliteSceneWorkspaceRepository implements SceneWorkspaceRepos
         }
     }
 
+    private static void loadMobs(Connection connection, Map<Long, StoredScene> scenes) throws SQLException {
+        String sql = "SELECT scene_id,creature_external_id,count FROM " + MOB_TABLE + " ORDER BY scene_id,sort_order";
+        try (Statement statement = connection.createStatement(); ResultSet rows = statement.executeQuery(sql)) {
+            while (rows.next()) {
+                StoredScene scene = scenes.get(rows.getLong("scene_id"));
+                if (scene == null) {
+                    throw new SQLException("Scene mob references a missing owned scene");
+                }
+                scene.mobs.add(new SceneMob(rows.getLong("creature_external_id"), rows.getInt("count")));
+            }
+        }
+    }
+
+    private static void loadParticipantStates(
+            Connection connection, Map<Long, StoredScene> scenes) throws SQLException {
+        String sql = "SELECT scene_id,participant_kind,participant_ref_id,defeated,notes FROM " + STATE_TABLE
+                + " ORDER BY scene_id,sort_order";
+        try (Statement statement = connection.createStatement(); ResultSet rows = statement.executeQuery(sql)) {
+            while (rows.next()) {
+                StoredScene scene = scenes.get(rows.getLong("scene_id"));
+                if (scene == null) {
+                    throw new SQLException("Scene participant state references a missing owned scene");
+                }
+                scene.participantStates.add(new SceneParticipantState(
+                        SceneParticipantKind.valueOf(rows.getString("participant_kind")),
+                        rows.getLong("participant_ref_id"),
+                        rows.getInt("defeated") == 1,
+                        rows.getString("notes")));
+            }
+        }
+    }
+
     private static void writeWorkspace(Connection connection, SceneWorkspace workspace) throws SQLException {
         String sql = "INSERT INTO " + WORKSPACE_TABLE
                 + "(workspace_id,revision,next_scene_id,default_scene_id,focused_scene_id,"
@@ -187,12 +256,16 @@ public final class SqliteSceneWorkspaceRepository implements SceneWorkspaceRepos
     private static void replaceScenes(Connection connection, List<RunningScene> scenes) throws SQLException {
         deleteAll(connection, PC_TABLE);
         deleteAll(connection, NPC_TABLE);
+        deleteAll(connection, MOB_TABLE);
+        deleteAll(connection, STATE_TABLE);
         deleteAll(connection, SCENE_TABLE);
         for (int index = 0; index < scenes.size(); index++) {
             RunningScene scene = scenes.get(index);
             insertScene(connection, scene, index);
             insertAssignments(connection, PC_TABLE, "party_member_external_id", scene.sceneId(), scene.partyMemberIds());
             insertAssignments(connection, NPC_TABLE, "npc_external_id", scene.sceneId(), scene.npcIds());
+            insertMobs(connection, scene.sceneId(), scene.mobs());
+            insertParticipantStates(connection, scene.sceneId(), scene.participantStates());
         }
     }
 
@@ -239,6 +312,40 @@ public final class SqliteSceneWorkspaceRepository implements SceneWorkspaceRepos
         }
     }
 
+    private static void insertMobs(Connection connection, long sceneId, List<SceneMob> mobs) throws SQLException {
+        String sql = "INSERT INTO " + MOB_TABLE + "(scene_id,creature_external_id,count,sort_order) VALUES(?,?,?,?)";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            for (int index = 0; index < mobs.size(); index++) {
+                SceneMob mob = mobs.get(index);
+                statement.setLong(1, sceneId);
+                statement.setLong(2, mob.creatureId());
+                statement.setInt(3, mob.count());
+                statement.setInt(4, index);
+                statement.addBatch();
+            }
+            statement.executeBatch();
+        }
+    }
+
+    private static void insertParticipantStates(
+            Connection connection, long sceneId, List<SceneParticipantState> states) throws SQLException {
+        String sql = "INSERT INTO " + STATE_TABLE
+                + "(scene_id,participant_kind,participant_ref_id,defeated,notes,sort_order) VALUES(?,?,?,?,?,?)";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            for (int index = 0; index < states.size(); index++) {
+                SceneParticipantState state = states.get(index);
+                statement.setLong(1, sceneId);
+                statement.setString(2, state.kind().name());
+                statement.setLong(3, state.refId());
+                statement.setInt(4, state.defeated() ? 1 : 0);
+                statement.setString(5, state.notes());
+                statement.setInt(6, index);
+                statement.addBatch();
+            }
+            statement.executeBatch();
+        }
+    }
+
     private static void rollback(Connection connection, Exception original) {
         try {
             connection.rollback();
@@ -272,6 +379,8 @@ public final class SqliteSceneWorkspaceRepository implements SceneWorkspaceRepos
         private final long locationId;
         private final List<Long> partyMemberIds = new ArrayList<>();
         private final List<Long> npcIds = new ArrayList<>();
+        private final List<SceneMob> mobs = new ArrayList<>();
+        private final List<SceneParticipantState> participantStates = new ArrayList<>();
 
         private StoredScene(
                 long sceneId,
@@ -295,7 +404,8 @@ public final class SqliteSceneWorkspaceRepository implements SceneWorkspaceRepos
 
         private RunningScene toDomain() {
             return new RunningScene(sceneId, title, notes, sourceSessionId, sourceSceneId,
-                    sourceSessionName, initialEncounterPlanId, locationId, partyMemberIds, npcIds);
+                    sourceSessionName, initialEncounterPlanId, locationId,
+                    partyMemberIds, npcIds, mobs, participantStates);
         }
     }
 }

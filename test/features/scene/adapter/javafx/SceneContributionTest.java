@@ -4,6 +4,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import features.creatures.api.CreatureCatalogModel;
+import features.creatures.api.CreatureCatalogPage;
+import features.creatures.api.CreatureCatalogPageResult;
+import features.creatures.api.CreatureCatalogRow;
+import features.creatures.api.CreatureQueryStatus;
+import features.creatures.api.CreaturesApi;
+import features.creatures.api.RefreshCreatureCatalogCommand;
+import features.creatures.api.RefreshCreatureEncounterCandidatesCommand;
+import features.creatures.api.RefreshCreatureFilterOptionsCommand;
+import features.creatures.api.SelectCreatureDetailCommand;
 import features.encounter.api.EncounterRuntimeContextApi;
 import features.encounter.api.EncounterRuntimeContextSyncResult;
 import features.party.api.ActivePartyModel;
@@ -59,7 +69,7 @@ final class SceneContributionTest {
     void contributionInitializesCreatesAndMovesPcThroughProductionCommands() throws Exception {
         runOnFxThread(() -> {
             SceneApplicationService application = application();
-            ShellBinding binding = new SceneContribution(application, application.model()).bind();
+            ShellBinding binding = new SceneContribution(application, application.model(), statblockId -> { }).bind();
             assertFalse(binding.slotContent().containsKey(ShellSlot.COCKPIT_STATE));
 
             binding.onActivate();
@@ -71,8 +81,9 @@ final class SceneContributionTest {
 
             assertEquals(2L, application.model().current().activePartyMembers().getFirst().sceneId());
             assertEquals("", textField(controls, "Neue Szene").getText());
-            assertTrue(labels(main).containsAll(List.of("PCs", "NPCs", "Ort")));
-            assertTrue(labels(main).stream().anyMatch(text -> text.contains("PC 1 · Stufe 3")));
+            assertTrue(labels(main).containsAll(List.of("Party", "NPCs", "Mobs")));
+            assertTrue(labels(main).contains("PC 1"));
+            assertTrue(labels(main).stream().anyMatch(text -> text.contains("Stufe 3")));
         });
     }
 
@@ -80,7 +91,7 @@ final class SceneContributionTest {
     void deleteRequiresExplicitConfirmationAndCancelKeepsScene() throws Exception {
         runOnFxThread(() -> {
             SceneApplicationService application = application();
-            ShellBinding binding = new SceneContribution(application, application.model()).bind();
+            ShellBinding binding = new SceneContribution(application, application.model(), statblockId -> { }).bind();
             binding.onActivate();
             Parent controls = (Parent) binding.slotContent().get(ShellSlot.COCKPIT_CONTROLS);
 
@@ -104,7 +115,7 @@ final class SceneContributionTest {
     void foreignFactPublicationKeepsUnsavedSceneAndCreationDrafts() throws Exception {
         runOnFxThread(() -> {
             SceneApplicationService application = application();
-            ShellBinding binding = new SceneContribution(application, application.model()).bind();
+            ShellBinding binding = new SceneContribution(application, application.model(), statblockId -> { }).bind();
             binding.onActivate();
             Parent controls = (Parent) binding.slotContent().get(ShellSlot.COCKPIT_CONTROLS);
             Parent main = (Parent) binding.slotContent().get(ShellSlot.COCKPIT_MAIN);
@@ -149,9 +160,37 @@ final class SceneContributionTest {
                 worldModel,
                 prepared,
                 encounters,
+                catalog(),
+                creatures(),
                 DirectExecutionLane.INSTANCE,
                 DirectUiDispatcher.INSTANCE,
                 NoopDiagnostics.INSTANCE);
+    }
+
+    private static CreatureCatalogModel catalog() {
+        CreatureCatalogPageResult result = new CreatureCatalogPageResult(
+                CreatureQueryStatus.SUCCESS,
+                new CreatureCatalogPage(
+                        List.of(new CreatureCatalogRow(
+                                101L, "Goblin", "Klein", "Humanoid", "neutral böse", "1/4", 50, 7, 15)),
+                        1, 50, 0));
+        return new CreatureCatalogModel(() -> result, ignored -> () -> { });
+    }
+
+    private static CreaturesApi creatures() {
+        return new CreaturesApi() {
+            @Override
+            public void refreshFilterOptions(RefreshCreatureFilterOptionsCommand command) { }
+
+            @Override
+            public void refreshCatalog(RefreshCreatureCatalogCommand command) { }
+
+            @Override
+            public void selectCreatureDetail(SelectCreatureDetailCommand command) { }
+
+            @Override
+            public void refreshEncounterCandidates(RefreshCreatureEncounterCandidatesCommand command) { }
+        };
     }
 
     private static TextField textField(Parent root, String prompt) {

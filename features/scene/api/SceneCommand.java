@@ -35,4 +35,20 @@ public sealed interface SceneCommand {
     record UnassignNpc(long npcId) implements SceneCommand { }
 
     record SetLocation(long sceneId, long locationId) implements SceneCommand { }
+
+    record AssignMob(long sceneId, long creatureId, int count) implements SceneCommand { }
+
+    record UnassignMob(long sceneId, long creatureId) implements SceneCommand { }
+
+    record SetMobCount(long sceneId, long creatureId, int count) implements SceneCommand { }
+
+    record SetParticipantDefeated(
+            long sceneId, SceneParticipantKind kind, long refId, boolean defeated) implements SceneCommand { }
+
+    record SetParticipantNotes(
+            long sceneId, SceneParticipantKind kind, long refId, String notes) implements SceneCommand {
+        public SetParticipantNotes {
+            notes = notes == null ? "" : notes.trim();
+        }
+    }
 }

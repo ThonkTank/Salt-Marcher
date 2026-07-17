@@ -1,5 +1,7 @@
 package features.scene.domain;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 public record RunningScene(
@@ -12,7 +14,9 @@ public record RunningScene(
         long initialEncounterPlanId,
         long locationId,
         List<Long> partyMemberIds,
-        List<Long> npcIds
+        List<Long> npcIds,
+        List<SceneMob> mobs,
+        List<SceneParticipantState> participantStates
 ) {
 
     public RunningScene {
@@ -28,31 +32,69 @@ public record RunningScene(
         locationId = Math.max(0L, locationId);
         partyMemberIds = positiveDistinct(partyMemberIds);
         npcIds = positiveDistinct(npcIds);
+        mobs = normalizeMobs(mobs);
+        participantStates = normalizeStates(participantStates, partyMemberIds, npcIds, mobs);
     }
 
     public static RunningScene defaultScene(List<Long> activePartyMemberIds) {
         return new RunningScene(1L, "Standardszene", "", 0L, 0L, "", 0L, 0L,
-                activePartyMemberIds, List.of());
+                activePartyMemberIds, List.of(), List.of(), List.of());
     }
 
     public RunningScene withDetails(String nextTitle, String nextNotes) {
         return new RunningScene(sceneId, nextTitle, nextNotes, sourceSessionId, sourceSceneId,
-                sourceSessionName, initialEncounterPlanId, locationId, partyMemberIds, npcIds);
+                sourceSessionName, initialEncounterPlanId, locationId,
+                partyMemberIds, npcIds, mobs, participantStates);
     }
 
     public RunningScene withPartyMembers(List<Long> ids) {
         return new RunningScene(sceneId, title, notes, sourceSessionId, sourceSceneId,
-                sourceSessionName, initialEncounterPlanId, locationId, ids, npcIds);
+                sourceSessionName, initialEncounterPlanId, locationId,
+                ids, npcIds, mobs, participantStates);
     }
 
     public RunningScene withNpcs(List<Long> ids) {
         return new RunningScene(sceneId, title, notes, sourceSessionId, sourceSceneId,
-                sourceSessionName, initialEncounterPlanId, locationId, partyMemberIds, ids);
+                sourceSessionName, initialEncounterPlanId, locationId,
+                partyMemberIds, ids, mobs, participantStates);
+    }
+
+    public RunningScene withMobs(List<SceneMob> nextMobs) {
+        return new RunningScene(sceneId, title, notes, sourceSessionId, sourceSceneId,
+                sourceSessionName, initialEncounterPlanId, locationId,
+                partyMemberIds, npcIds, nextMobs, participantStates);
     }
 
     public RunningScene withLocation(long id) {
         return new RunningScene(sceneId, title, notes, sourceSessionId, sourceSceneId,
-                sourceSessionName, initialEncounterPlanId, id, partyMemberIds, npcIds);
+                sourceSessionName, initialEncounterPlanId, id,
+                partyMemberIds, npcIds, mobs, participantStates);
+    }
+
+    public RunningScene withParticipantState(SceneParticipantState state) {
+        List<SceneParticipantState> next = new ArrayList<>();
+        boolean replaced = false;
+        for (SceneParticipantState existing : participantStates) {
+            if (existing.addressesSameParticipant(state.kind(), state.refId())) {
+                next.add(state);
+                replaced = true;
+            } else {
+                next.add(existing);
+            }
+        }
+        if (!replaced) {
+            next.add(state);
+        }
+        return new RunningScene(sceneId, title, notes, sourceSessionId, sourceSceneId,
+                sourceSessionName, initialEncounterPlanId, locationId,
+                partyMemberIds, npcIds, mobs, next);
+    }
+
+    public SceneParticipantState participantState(SceneParticipantKind kind, long refId) {
+        return participantStates.stream()
+                .filter(state -> state.addressesSameParticipant(kind, refId))
+                .findFirst()
+                .orElse(new SceneParticipantState(kind, refId, false, ""));
     }
 
     private static String normalizeTitle(String value, long id) {
@@ -65,5 +107,49 @@ public record RunningScene(
                 .filter(id -> id != null && id.longValue() > 0L)
                 .distinct()
                 .toList();
+    }
+
+    private static List<SceneMob> normalizeMobs(List<SceneMob> values) {
+        if (values == null) {
+            return List.of();
+        }
+        LinkedHashMap<Long, SceneMob> byCreature = new LinkedHashMap<>();
+        for (SceneMob mob : values) {
+            if (mob != null) {
+                byCreature.put(mob.creatureId(), mob);
+            }
+        }
+        return List.copyOf(byCreature.values());
+    }
+
+    private static List<SceneParticipantState> normalizeStates(
+            List<SceneParticipantState> values,
+            List<Long> partyMemberIds,
+            List<Long> npcIds,
+            List<SceneMob> mobs
+    ) {
+        if (values == null) {
+            return List.of();
+        }
+        LinkedHashMap<String, SceneParticipantState> byParticipant = new LinkedHashMap<>();
+        for (SceneParticipantState state : values) {
+            if (state != null && isPresent(state, partyMemberIds, npcIds, mobs)) {
+                byParticipant.put(state.kind() + ":" + state.refId(), state);
+            }
+        }
+        return List.copyOf(byParticipant.values());
+    }
+
+    private static boolean isPresent(
+            SceneParticipantState state,
+            List<Long> partyMemberIds,
+            List<Long> npcIds,
+            List<SceneMob> mobs
+    ) {
+        return switch (state.kind()) {
+            case PC -> partyMemberIds.contains(state.refId());
+            case NPC -> npcIds.contains(state.refId());
+            case MOB -> mobs.stream().anyMatch(mob -> mob.creatureId() == state.refId());
+        };
     }
 }
