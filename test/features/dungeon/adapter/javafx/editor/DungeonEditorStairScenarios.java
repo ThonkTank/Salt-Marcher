@@ -416,6 +416,14 @@ final class DungeonEditorStairScenarios {
                 "DE-STATE-003 published feature exposes generated circular top exit");
         assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(expectedCircularPath),
                 "DE-STATE-003 render state exposes circular active-level path");
+        assertTrue(runtime.controlsModel().current().commandOutcome()
+                        instanceof features.dungeon.api.editor.DungeonEditorCommandOutcome.Accepted,
+                "DE-STATE-003 publishes typed accepted stair edit outcome");
+        assertEquals(
+                runtime.mapSurfaceModel().current().surface().revision(),
+                (int) ((features.dungeon.api.editor.DungeonEditorCommandOutcome.Accepted)
+                        runtime.controlsModel().current().commandOutcome()).authoredRevision(),
+                "DE-STATE-003 accepted outcome identifies committed authored revision");
         click(button(controls, "+"));
         assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).contains("4,2,1"),
                 "DE-STATE-003 render state exposes circular top crossed-floor exit");
@@ -443,6 +451,11 @@ final class DungeonEditorStairScenarios {
                 "DE-STAIR-007 zero-level span");
         assertEquals("Treppengeometrie ungueltig.", runtime.controlsModel().current().statusText(),
                 "DE-STAIR-007 zero-level span publishes rejection status");
+        assertEquals(
+                features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.INVALID_STAIR_GEOMETRY,
+                ((features.dungeon.api.editor.DungeonEditorCommandOutcome.Rejected)
+                        runtime.controlsModel().current().commandOutcome()).reason(),
+                "DE-STAIR-007 publishes typed invalid-geometry rejection");
 
         invalidBaselineSurface = runtime.mapSurfaceModel().current();
         invalidBaselineRenderCells = renderSurfaceCellOriginsWithZ(binding.mapContentModel());

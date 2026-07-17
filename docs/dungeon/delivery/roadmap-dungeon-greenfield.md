@@ -97,14 +97,15 @@ and commit boundaries. M7 starts only after both are complete.
 
 ## Current Migration State
 
-- Current foundation: M0, M1, and M2.1 are complete on `main` through PR #494.
-- This slice: M2.2 makes typed tool selections and gesture-derived actions
-  canonical through the runtime and Session, and deletes the old tool enum,
-  registry, definition table, compatibility adapter, and name translation.
-- Contextual wall behavior remains explicit in its owner: secondary input
-  deletes from the base state but completes an already active create path.
-- Next step after this slice merges: M2.3 publishes typed accepted or rejected
-  command outcomes and maps stable rejection reasons to specific status.
+- Current foundation: M0 through M2.2 are complete on `main` through PR #495.
+- This slice: M2.3 publishes typed accepted or rejected command outcomes in the
+  atomic Editor state. Blocked route, protected exterior wall, referenced
+  connection, invalid stair geometry, stale revision, and missing transition
+  destination are stable reasons mapped to user-facing status in one place.
+- Rejected production routes preserve authored state and revision; outcome-only
+  feedback remains a controls publication and does not republish map geometry.
+- Next step after this slice merges: M2.4 establishes `RoomRegion` and
+  `RoomCluster` ownership and collapses same-layer room and cluster pairs.
 
 ## M0: Target Lock And Baseline
 

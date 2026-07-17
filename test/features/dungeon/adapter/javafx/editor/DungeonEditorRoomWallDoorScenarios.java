@@ -2665,6 +2665,11 @@ final class DungeonEditorRoomWallDoorScenarios {
                 "DE-WALL-014 exterior delete rejection leaves rendered geometry unchanged");
         assertTrue(runtime.controlsModel().current().statusText().contains("Aussenwand"),
                 "DE-WALL-014 exterior delete rejection publishes a concrete status");
+        assertEquals(
+                features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.PROTECTED_EXTERIOR_WALL,
+                ((features.dungeon.api.editor.DungeonEditorCommandOutcome.Rejected)
+                        runtime.controlsModel().current().commandOutcome()).reason(),
+                "DE-WALL-014 publishes typed exterior-wall rejection");
         assertEquals(0L, rejectionMapSurfacePublications.get(),
                 "DE-WALL-014 exterior delete rejection does not publish map surface");
         assertEquals(0L, rejectionStatePublications.get(),

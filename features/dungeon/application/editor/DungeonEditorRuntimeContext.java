@@ -18,6 +18,7 @@ import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 
 final class DungeonEditorRuntimeContext {
     private final DungeonEditorRuntimeApplicationService.RuntimeSession session;
@@ -69,6 +70,14 @@ final class DungeonEditorRuntimeContext {
 
     void clearPreviewWithStatus(String statusText) {
         session.clearPreviewWithStatus(statusText);
+    }
+
+    void clearPreviewWithCommandOutcome(DungeonEditorCommandOutcome outcome) {
+        session.clearPreviewWithCommandOutcome(outcome);
+    }
+
+    void reject(DungeonEditorCommandOutcome.RejectionReason reason) {
+        clearPreviewWithCommandOutcome(DungeonEditorCommandOutcome.rejected(reason));
     }
 
     DungeonEditorDungeonFacts currentFacts() {

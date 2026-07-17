@@ -3,6 +3,7 @@ package features.dungeon.application.editor;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import platform.execution.ExecutionLane;
 import features.dungeon.api.DungeonEditorControlsModel;
 import features.dungeon.api.DungeonEditorMapSurfaceModel;
@@ -326,6 +327,13 @@ final class DungeonEditorRuntimeCommands
 
     void apply(Supplier<DungeonEditorRuntimeContext.Result> action) {
         apply(action, ignored -> { });
+    }
+
+    void rejectCommand(DungeonEditorCommandOutcome.RejectionReason reason) {
+        apply(() -> {
+            context.reject(reason);
+            return context.publishCurrent();
+        });
     }
 
     void apply(

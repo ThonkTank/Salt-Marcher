@@ -5,6 +5,7 @@ import features.dungeon.api.editor.DungeonEditorApi;
 import features.dungeon.api.editor.DungeonEditorIntent;
 import features.dungeon.api.editor.DungeonEditorPointerInput;
 import features.dungeon.api.editor.DungeonEditorState;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -105,6 +106,7 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
 
     private void dispatchPointer(DungeonEditorPointerInput input) {
         if (input.sourceRevision() != current().publicationRevision()) {
+            runtimeRoot.rejectCommand(DungeonEditorCommandOutcome.RejectionReason.STALE_REVISION);
             return;
         }
         List<DungeonEditorRuntimePointerTarget> targets = input.targets().stream()

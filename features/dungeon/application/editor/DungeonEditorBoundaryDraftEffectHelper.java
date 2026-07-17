@@ -6,6 +6,7 @@ import java.util.Set;
 import features.dungeon.application.editor.session.DungeonEditorSessionEffect;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.BoundaryDraft;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.EdgeKey;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.InteractionState;
@@ -76,7 +77,8 @@ final class DungeonEditorBoundaryDraftEffectHelper {
     DungeonEditorMainViewInterpretation rejectExteriorWallDelete(InteractionState state) {
         return new DungeonEditorMainViewInterpretation(
                 state.withBoundaryDraft(BoundaryDraft.none()),
-                DungeonEditorSessionEffect.clearPreviewWithStatus("Cluster-Aussenwand kann nicht gelöscht werden."));
+                DungeonEditorSessionEffect.rejected(
+                        DungeonEditorCommandOutcome.RejectionReason.PROTECTED_EXTERIOR_WALL));
     }
 
     private static DungeonEditorSessionValues.ClusterBoundariesPreview boundaryPreview(

@@ -1051,6 +1051,11 @@ final class DungeonEditorCorridorScenarios {
                 "DE-COR-008 invalid route clears published preview state");
         assertTrue(runtime.controlsModel().current().statusText().contains("blockiert"),
                 "DE-COR-008 status reports route rejection");
+        assertEquals(
+                features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.BLOCKED_ROUTE,
+                ((features.dungeon.api.editor.DungeonEditorCommandOutcome.Rejected)
+                        runtime.controlsModel().current().commandOutcome()).reason(),
+                "DE-COR-008 publishes typed blocked-route rejection");
         assertEquals(0L, runtime.mapSurfaceModel().current().surface().map().areas().stream()
                         .filter(area -> "CORRIDOR".equalsIgnoreCase(area.kind()))
                         .count(),

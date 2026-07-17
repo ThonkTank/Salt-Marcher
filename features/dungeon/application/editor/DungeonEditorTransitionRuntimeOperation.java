@@ -11,7 +11,6 @@ import features.dungeon.application.editor.session.DungeonEditorSessionEffect;
 import features.dungeon.api.editor.DungeonEditorToolFamily;
 
 final class DungeonEditorTransitionRuntimeOperation {
-    private static final String INVALID_TRANSITION_DESTINATION_STATUS = "Uebergangsziel ungueltig.";
     private static final long NO_TRANSITION_ID = 0L;
 
     private final DungeonEditorRuntimeContext context;
@@ -62,7 +61,9 @@ final class DungeonEditorTransitionRuntimeOperation {
         boolean deleted = context.deleteTransition(context.selectedMapId(), transitionId);
         if (deleted) {
             context.applySessionEffect(DungeonEditorSessionEffect.clearedSelection());
-            context.clearPreviewWithStatus(context.currentFacts().mutationStatusText());
+            context.clearPreviewWithCommandOutcome(context.currentFacts().commandOutcome());
+        } else {
+            context.reject(features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.REFERENCED_CONNECTION);
         }
         return context.publishCurrent();
     }
@@ -86,11 +87,11 @@ final class DungeonEditorTransitionRuntimeOperation {
                 context.selectedMapId(),
                 anchor,
                 destination)) {
-            context.clearPreviewWithStatus(INVALID_TRANSITION_DESTINATION_STATUS);
+            context.reject(features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.MISSING_TRANSITION_DESTINATION);
             return context.publishCurrent();
         }
         context.createTransition(context.selectedMapId(), anchor, destination);
-        context.clearPreviewWithStatus(context.currentFacts().mutationStatusText());
+        context.clearPreviewWithCommandOutcome(context.currentFacts().commandOutcome());
         return context.publishCurrent();
     }
 
