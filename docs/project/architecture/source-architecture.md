@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-17
 Source of Truth: Target source shape, dependency direction, and
 architecture-significant quality constraints for the SaltMarcher desktop app.
 
@@ -53,6 +53,9 @@ feature and publishes separate Authored, Editor, and Travel APIs.
   `app`, `shell`, or feature code. Its capability packages are
   `platform.execution`, `platform.persistence`, `platform.diagnostics`,
   `platform.state`, and `platform.ui`; new catch-all packages are forbidden.
+  Passive map camera, viewport, layered-canvas, cache, and technical pointer
+  mechanisms live in `platform.ui.mapcanvas`; they do not form a Maps feature
+  or own adopter coordinates and behavior.
 - A feature MUST expose cross-feature capabilities only from its `api` package.
   Application, JavaFX adapter, and composition code may consume foreign APIs;
   no consumer may import another feature's domain, application, adapters, or

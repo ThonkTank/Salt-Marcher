@@ -5,11 +5,15 @@ import features.dungeon.adapter.sqlite.gateway.DungeonSqliteGateway;
 import features.dungeon.adapter.sqlite.mapper.DungeonMapRecordMapper;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.application.authored.port.DungeonMapRepository;
+import features.dungeon.application.authored.port.DungeonChangeSet;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import features.dungeon.api.DungeonChunkKey;
+import features.dungeon.api.DungeonViewportRequest;
 
 public final class SqliteDungeonMapRepository implements DungeonMapRepository {
 
@@ -68,6 +72,14 @@ public final class SqliteDungeonMapRepository implements DungeonMapRepository {
     }
 
     @Override
+    public DungeonMap saveChange(DungeonChangeSet changeSet) {
+        DungeonChangeSet safeChangeSet = Objects.requireNonNull(changeSet, "changeSet");
+        return DungeonMapRecordMapper.toDomain(gateway.saveChange(
+                DungeonMapRecordMapper.toRecord(safeChangeSet.before()),
+                DungeonMapRecordMapper.toRecord(safeChangeSet.after())));
+    }
+
+    @Override
     public List<DungeonMap> saveAll(List<DungeonMap> dungeonMaps) {
         if (dungeonMaps == null || dungeonMaps.isEmpty()) {
             return List.of();
@@ -85,5 +97,10 @@ public final class SqliteDungeonMapRepository implements DungeonMapRepository {
         if (mapId != null) {
             gateway.deleteMap(mapId.value());
         }
+    }
+
+    @Override
+    public Set<DungeonChunkKey> findAvailableChunks(DungeonViewportRequest request) {
+        return gateway.findAvailableChunks(request);
     }
 }

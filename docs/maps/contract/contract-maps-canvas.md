@@ -8,11 +8,11 @@ samples shared with adopting features.
 
 ## Purpose, Owners, And Consumers
 
-This feature-boundary contract defines the canvas-native values exchanged
-through `features/maps/api`.
+This technical contract defines canvas-native values exchanged through
+`platform.ui.mapcanvas`.
 
-- provider: Maps feature
-- consumers: adopting feature JavaFX adapters and application composition
+- provider: platform map-canvas mechanism
+- consumers: adopting feature JavaFX adapters
 - non-owners: adopter domain, application, persistence, and gameplay semantics
 
 The API owns technical scene, camera, hit, and pointer semantics. It does not own
@@ -88,7 +88,7 @@ adopter truth.
 
 ## Validation And Error Behavior
 
-- Non-finite coordinates or geometry are rejected at the Maps API boundary.
+- Non-finite coordinates or geometry are rejected at the map-canvas boundary.
 - A pointer sample without a hit still carries a valid canvas point and scene
   revision.
 - A hit whose revision is stale or unknown is returned as no-hit; Maps does not

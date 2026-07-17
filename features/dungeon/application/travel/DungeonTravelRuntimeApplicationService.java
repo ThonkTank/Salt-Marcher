@@ -8,11 +8,12 @@ import features.dungeon.application.travel.projection.TravelActionFacts.Selected
 import features.dungeon.application.travel.session.TravelDungeonSession;
 import features.dungeon.application.travel.session.TravelDungeonSessionSurface.OverlayMode;
 import features.dungeon.api.DungeonOverlaySettings;
+import features.dungeon.api.travel.DungeonTravelApi;
 
 /**
  * Public backend facade for runtime travel composition.
  */
-public final class DungeonTravelRuntimeApplicationService {
+public final class DungeonTravelRuntimeApplicationService implements DungeonTravelApi {
     private static final long NO_MAP_ID = 0L;
 
     private final TravelDungeonSession session = new TravelDungeonSession();

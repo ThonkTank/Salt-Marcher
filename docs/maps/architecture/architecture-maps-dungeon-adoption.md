@@ -1,7 +1,7 @@
 Status: Active Target
 Owner: SaltMarcher Team
 Last Reviewed: 2026-07-15
-Source of Truth: Target Dungeon adoption of the Maps canvas through feature APIs
+Source of Truth: Target Dungeon adoption of platform map-canvas mechanisms through feature APIs
 and explicit application composition.
 
 # Dungeon Map Adoption Architecture
@@ -12,7 +12,7 @@ This specification defines how the Dungeon feature adopts the passive Maps
 canvas for editor and travel workspaces. It serves Dungeon, Maps, shell, and
 application-composition maintainers.
 
-It owns the structural translation between Dungeon API state and Maps API scene
+It owns the structural translation between Dungeon API state and canvas-native scene
 and pointer types. Dungeon requirements own observable editor and travel
 behavior; Dungeon domain and persistence documents own authored truth and stored
 truth.
@@ -30,15 +30,15 @@ features/dungeon/
 ```
 
 The Dungeon JavaFX adapter may depend on `features.dungeon.api`,
-`features.maps.api`, `shell.api`, and feature-neutral UI contracts. It must not
+`shell.api`, and `platform.ui.mapcanvas`. It must not
 reach into Dungeon domain, application, or SQLite packages. Maps must not depend
 on any Dungeon package.
 
 ## Composition And Dependencies
 
-`app` constructs platform persistence, the Maps entry point, and the Dungeon
-entry point explicitly. It supplies Dungeon with the Maps canvas capability and
-any foreign feature APIs required by travel composition. Dungeon exposes its
+`app` constructs platform persistence and the Dungeon entry point explicitly.
+Dungeon's JavaFX adapter instantiates the passive canvas mechanism and receives
+foreign feature APIs required by travel composition. Dungeon exposes its
 constructed shell contribution and public APIs back to `app`; internal
 repositories and adapters remain feature-private.
 
@@ -49,8 +49,8 @@ of the target route.
 
 The Dungeon JavaFX adapter is the single owner of both directions:
 
-- Dungeon API state to one canvas-native Maps API scene revision
-- Maps API pointer and hit samples to typed Dungeon API inputs
+- Dungeon API state to one canvas-native scene revision
+- platform pointer and hit samples to typed Dungeon API inputs
 
 Dungeon-grid coordinates, topology identity, preview meaning, editing tools,
 selection, and travel actions remain Dungeon-owned. Canvas coordinates, camera,
@@ -65,11 +65,11 @@ input.
 
 ### Authored And Editor Read
 
-`Dungeon API state -> Dungeon JavaFX translation -> Maps API scene -> Maps canvas`
+`Dungeon API state -> Dungeon JavaFX translation -> platform map canvas`
 
 ### Preview And Apply
 
-`Maps pointer sample -> Dungeon JavaFX translation -> Dungeon Editor API -> Dungeon application -> immutable Dungeon API state -> translated Maps scene`
+`platform pointer sample -> Dungeon JavaFX translation -> Dungeon Editor API -> Dungeon application -> immutable Dungeon API state -> translated canvas scene`
 
 Preview and apply reuse the same authored operation vocabulary. Preview does not
 persist; apply commits only after Dungeon validation succeeds.
@@ -93,7 +93,7 @@ API.
   authored catalog work belongs to `DungeonAuthoredApi`.
 - One JavaFX translation owner keeps dungeon-grid conversion and hit identity
   consistent across editor and travel surfaces.
-- Maps receives canvas-native presentation facts only; it never receives
+- The platform canvas receives canvas-native presentation facts only; it never receives
   Dungeon commands, aggregates, repositories, or persistence rows.
 - Render-ready state is derived in the JavaFX adapter from revisioned Dungeon API
   state and must not become a second Dungeon publication or persistence model.

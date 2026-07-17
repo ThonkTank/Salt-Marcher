@@ -15,4 +15,8 @@ public interface DungeonEditorControlOperations {
     void setOverlay(DungeonEditorOverlaySettings overlaySettings);
 
     void scrollSelection(int levelDelta);
+
+    void undo();
+
+    void redo();
 }

@@ -93,6 +93,22 @@ final class DungeonEditorRuntimeCommands
     }
 
     @Override
+    public void undo() {
+        execute(() -> {
+            clearActiveInteraction();
+            applyInExecutionLane(context::undo);
+        });
+    }
+
+    @Override
+    public void redo() {
+        execute(() -> {
+            clearActiveInteraction();
+            applyInExecutionLane(context::redo);
+        });
+    }
+
+    @Override
     public void setViewMode(DungeonEditorViewMode viewMode) {
         execute(() -> {
             clearActiveInteraction();

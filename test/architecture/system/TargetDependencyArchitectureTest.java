@@ -153,6 +153,12 @@ public final class TargetDependencyArchitectureTest {
                     case API, DOMAIN, SQLITE_ADAPTER, RESOURCE_ADAPTER, HTTP_ADAPTER, INVALID, NONE -> true;
                 };
             }
+            if (featureArea == FeatureArea.JAVAFX_ADAPTER
+                    && "dungeon".equals(feature)
+                    && inPackage(packageName, "features.dungeon.adapter.javafx.travel")) {
+                return target.featureArea != FeatureArea.API
+                        && target.featureArea != FeatureArea.JAVAFX_ADAPTER;
+            }
             return switch (featureArea) {
                 case API -> target.featureArea != FeatureArea.API;
                 case DOMAIN -> target.featureArea != FeatureArea.DOMAIN;

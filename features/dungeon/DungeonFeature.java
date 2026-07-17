@@ -11,6 +11,8 @@ import features.dungeon.api.DungeonEditorMapSurfaceModel;
 import features.dungeon.api.DungeonEditorStateModel;
 import features.dungeon.api.DungeonMapCatalogModel;
 import features.dungeon.api.TravelDungeonModel;
+import features.dungeon.api.authored.DungeonAuthoredApi;
+import features.dungeon.api.travel.DungeonTravelApi;
 import features.dungeon.application.authored.DungeonAuthoredApplicationService;
 import features.dungeon.application.authored.DungeonAuthoredPublishedState;
 import features.dungeon.application.authored.port.DungeonMapRepository;
@@ -65,7 +67,9 @@ public final class DungeonFeature {
                 dispatcher);
         return new Component(
                 new DungeonEditorContribution(editorDependencies),
-                new DungeonTravelContribution(runtime.travel(), runtime.mapCatalog(), runtime.travelModel()));
+                new DungeonTravelContribution(runtime.travel(), runtime.mapCatalog(), runtime.travelModel()),
+                runtime.authored(),
+                runtime.travel());
     }
 
     static Runtime createRuntime(
@@ -107,11 +111,15 @@ public final class DungeonFeature {
 
     public record Component(
             ShellContribution editorContribution,
-            ShellContribution travelContribution
+            ShellContribution travelContribution,
+            DungeonAuthoredApi authoredApi,
+            DungeonTravelApi travelApi
     ) {
         public Component {
             editorContribution = Objects.requireNonNull(editorContribution, "editorContribution");
             travelContribution = Objects.requireNonNull(travelContribution, "travelContribution");
+            authoredApi = Objects.requireNonNull(authoredApi, "authoredApi");
+            travelApi = Objects.requireNonNull(travelApi, "travelApi");
         }
     }
 

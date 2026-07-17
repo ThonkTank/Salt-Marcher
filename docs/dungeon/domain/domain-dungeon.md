@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-08
+Last Reviewed: 2026-07-17
 Source of Truth: Dungeon write model, ownership boundaries, and domain
 invariants.
 
@@ -65,6 +65,12 @@ Application-owned editor-session values/effects and travel-session state may
 exist outside the authored write model when they are not persisted as dungeon
 truth. Pointer interpretation, transient interaction state, and draft workflows
 are application concerns, not authored domain truth.
+
+Chunks are a spatial partition of authored facts, not a second write model.
+Chunk identity, viewport membership, cache residency, request generation, and
+authored bounds are derived indexing or application state. Stable entity and
+topology identities remain map-wide even when an entity touches several
+chunks.
 
 ## Aggregate Model
 
@@ -205,6 +211,9 @@ and travel capabilities without publishing repositories or adapters.
 - authored feature markers use `FEATURE_MARKER` topology refs and do not reuse
   stair or transition identity
 - preview state never mutates authored truth
+- one successful user command advances the authored map revision exactly once
+- per-session undo and redo restore aggregate-owned authored content as a new
+  revision; their stacks and memory estimates are not durable domain truth
 - room geometry authority comes from reusable floor-cell and boundary-segment
   component ownership; boundary-corner and wall-run handles derive through
   that component boundary, and persistence adapters translate its segments

@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
@@ -19,6 +21,7 @@ import features.dungeon.domain.core.projection.DungeonDerivedState;
 import features.dungeon.domain.core.projection.DungeonDerivedStateProjection;
 import features.dungeon.domain.core.projection.DungeonMapFacts;
 import features.dungeon.application.authored.port.DungeonMapRepository;
+import features.dungeon.application.authored.port.DungeonChangeSet;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
@@ -59,8 +62,14 @@ import features.dungeon.application.editor.usecase.InspectDungeonSelectionUseCas
 import features.dungeon.application.editor.usecase.LoadDungeonSnapshotUseCase;
 import features.dungeon.application.editor.usecase.PreviewDungeonEditorSurfaceMoveUseCase;
 import features.dungeon.application.editor.usecase.PublishDungeonEditorHandlesUseCase;
+import features.dungeon.api.DungeonAuthoredMutationModel;
+import features.dungeon.api.DungeonAuthoredReadModel;
+import features.dungeon.api.DungeonMapCatalogModel;
+import features.dungeon.api.authored.DungeonAuthoredApi;
+import features.dungeon.api.DungeonViewportRequest;
+import features.dungeon.api.DungeonViewportSnapshot;
 
-public final class DungeonAuthoredApplicationService {
+public final class DungeonAuthoredApplicationService implements DungeonAuthoredApi {
     private static final DungeonMapOperationFeedbackRules OPERATION_FEEDBACK_POLICY =
             new DungeonMapOperationFeedbackRules();
     private static final DungeonEditorHandleMutation HANDLE_MUTATION = new DungeonEditorHandleMutation();
@@ -75,6 +84,10 @@ public final class DungeonAuthoredApplicationService {
 
     private final DungeonMapRepository repository;
     private final DungeonAuthoredPublishedState publishedState;
+    /* Pointer previews operate on this immutable authored workset. */
+    private final ConcurrentMap<Long, DungeonMap> authoredWorkset = new ConcurrentHashMap<>();
+    private final DungeonEditHistory editHistory = new DungeonEditHistory();
+    private final DungeonViewportProjection viewportProjection = new DungeonViewportProjection();
     private final DungeonDerivedStateProjection derivedStateProjection = new DungeonDerivedStateProjection();
     private final PublishDungeonEditorHandlesUseCase publishDungeonEditorHandles =
             new PublishDungeonEditorHandlesUseCase();
@@ -111,18 +124,64 @@ public final class DungeonAuthoredApplicationService {
                 Objects.requireNonNull(dungeonState, "dungeonState"));
     }
 
+    @Override
+    public DungeonAuthoredReadModel authoredMaps() {
+        return publishedState.authoredReadModel();
+    }
+
+    @Override
+    public DungeonAuthoredMutationModel authoredMutations() {
+        return publishedState.authoredMutationModel();
+    }
+
+    @Override
+    public DungeonMapCatalogModel mapCatalog() {
+        return publishedState.mapCatalogModel();
+    }
+
+    @Override
+    public DungeonViewportSnapshot viewport(DungeonViewportRequest request) {
+        DungeonViewportRequest safeRequest = Objects.requireNonNull(request, "request");
+        DungeonMap map = loadMap(new DungeonMapIdentity(safeRequest.mapId()));
+        DungeonDerivedState derived = derive(map);
+        return viewportProjection.project(
+                safeRequest,
+                map.revision(),
+                DungeonPublishedMapProjectionServiceAssembly.mapSnapshot(
+                        derived.map(),
+                        publishDungeonEditorHandles.execute(map)));
+    }
+
     public DungeonMap loadMap(@Nullable DungeonMapIdentity mapId) {
         if (mapId != null) {
+            DungeonMap cached = authoredWorkset.get(mapId.value());
+            if (cached != null) {
+                return cached;
+            }
             Optional<DungeonMap> map = repository.findById(mapId);
             if (map.isPresent()) {
-                return map.get();
+                DungeonMap loaded = map.get();
+                authoredWorkset.put(mapId.value(), loaded);
+                return loaded;
             }
         }
-        return repository.firstMap().orElse(emptyFallbackMap());
+        DungeonMap fallback = repository.firstMap().orElse(emptyFallbackMap());
+        authoredWorkset.putIfAbsent(fallback.metadata().mapId().value(), fallback);
+        return fallback;
     }
 
     public Optional<DungeonMap> findMap(DungeonMapIdentity mapId) {
         return repository.findById(mapId);
+    }
+
+    private DungeonMap reloadMap(@Nullable DungeonMapIdentity mapId) {
+        DungeonMap loaded = mapId == null
+                ? repository.firstMap().orElse(emptyFallbackMap())
+                : repository.findById(mapId)
+                        .or(repository::firstMap)
+                        .orElseGet(DungeonAuthoredApplicationService::emptyFallbackMap);
+        authoredWorkset.put(loaded.metadata().mapId().value(), loaded);
+        return loaded;
     }
 
     public DungeonDerivedState derive(DungeonMap dungeonMap) {
@@ -194,6 +253,52 @@ public final class DungeonAuthoredApplicationService {
         if (preview instanceof DungeonEditorSessionValues.MoveHandlePreview move) {
             moveStairHandle(mapId, move, session);
         }
+    }
+
+    public boolean canUndo(MapId mapId) {
+        return mapId != null && editHistory.canUndo(domainMapId(mapId));
+    }
+
+    public boolean canRedo(MapId mapId) {
+        return mapId != null && editHistory.canRedo(domainMapId(mapId));
+    }
+
+    public void undo(MapId mapId, Session session) {
+        applyHistoryStep(mapId, session, true);
+    }
+
+    public void redo(MapId mapId, Session session) {
+        applyHistoryStep(mapId, session, false);
+    }
+
+    private void applyHistoryStep(MapId mapId, Session session, boolean undo) {
+        if (mapId == null || session == null) {
+            return;
+        }
+        DungeonMap current = loadMap(domainMapId(mapId));
+        DungeonMap snapshot = undo ? editHistory.undo(current) : editHistory.redo(current);
+        if (snapshot.equals(current)) {
+            return;
+        }
+        DungeonMap restored = DungeonMapAuthoring.restoreContent(snapshot, current.revision() + 1L);
+        DungeonMap saved;
+        try {
+            saved = repository.saveChange(new DungeonChangeSet(current, restored));
+        } catch (RuntimeException failure) {
+            if (undo) {
+                editHistory.redo(current);
+            } else {
+                editHistory.undo(current);
+            }
+            throw failure;
+        }
+        authoredWorkset.put(saved.metadata().mapId().value(), saved);
+        OperationResultData result = new OperationResultData(
+                mutationPipeline.snapshotData(saved, derive(saved)),
+                true,
+                List.of(),
+                List.of(undo ? "undo applied" : "redo applied"));
+        publicationOperations.publishMutation(result, session.dungeonState());
     }
 
     public void createCorridor(
@@ -422,12 +527,21 @@ public final class DungeonAuthoredApplicationService {
                 @Nullable AuthoredMapMutation operation
         ) {
             DungeonMap current = loadMap(mapId);
-            DungeonMap mutated = applyOperation(current, operation);
-            boolean changed = !mutated.equals(current);
+            DungeonMap operationResult = applyOperation(current, operation);
+            boolean changed = !operationResult.equals(current);
+            DungeonMap mutated = changed
+                    ? DungeonMapAuthoring.committedContent(operationResult, current.revision() + 1L)
+                    : current;
             List<String> validationMessages = OPERATION_FEEDBACK_POLICY.validationMessages(current, mutated);
             List<String> reactionMessages = OPERATION_FEEDBACK_POLICY.reactionMessages(current, mutated);
             DungeonDerivedState derived = derive(mutated);
-            DungeonMap saved = changed ? repository.save(mutated) : current;
+            DungeonMap saved = changed
+                    ? repository.saveChange(new DungeonChangeSet(current, mutated))
+                    : current;
+            authoredWorkset.put(saved.metadata().mapId().value(), saved);
+            if (changed) {
+                editHistory.record(current, saved);
+            }
             return new OperationResultData(snapshotData(saved, derived), changed, validationMessages, reactionMessages);
         }
 
@@ -542,7 +656,7 @@ public final class DungeonAuthoredApplicationService {
                 DungeonEditorDungeonState state
         ) {
             LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot =
-                    mutationPipeline.snapshotData(loadMap(domainMapId(mapId)));
+                    mutationPipeline.snapshotData(reloadMap(domainMapId(mapId)));
             publicationOperations.publishSnapshot(snapshot, state);
             return snapshot;
         }
@@ -554,7 +668,7 @@ public final class DungeonAuthoredApplicationService {
                 boolean clusterSelection,
                 DungeonEditorDungeonState state
         ) {
-            DungeonMap dungeonMap = loadMap(domainMapId(mapId));
+            DungeonMap dungeonMap = reloadMap(domainMapId(mapId));
             LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot = mutationPipeline.snapshotData(dungeonMap);
             LoadDungeonSnapshotUseCase.InspectorSnapshotData inspector = inspectDungeonSelection.execute(
                     dungeonMap,
@@ -919,23 +1033,29 @@ public final class DungeonAuthoredApplicationService {
                     : requestedMapName;
             DungeonMap dungeonMap = DungeonMapAuthoring.empty(mapIdentity, mapName);
             DungeonMap saved = repository.save(dungeonMap);
+            authoredWorkset.put(saved.metadata().mapId().value(), saved);
             return saved.metadata().mapId();
         }
 
         private DungeonMapIdentity renameMap(DungeonMapIdentity mapIdentity, String requestedMapName) {
-            Optional<DungeonMap> foundMap = repository.findById(mapIdentity);
-            if (foundMap.isEmpty()) {
+            DungeonMap foundMap = loadMap(mapIdentity);
+            if (!foundMap.metadata().mapId().equals(mapIdentity)) {
                 throw new IllegalArgumentException("Unknown dungeon map: " + mapIdentity.value());
             }
             String mapName = requestedMapName == null || requestedMapName.isBlank()
                     ? DEFAULT_MAP_NAME
                     : requestedMapName;
-            DungeonMap renamed = repository.save(DungeonMapAuthoring.rename(foundMap.orElseThrow(), mapName));
+            DungeonMap renamed = repository.saveChange(new DungeonChangeSet(
+                    foundMap,
+                    DungeonMapAuthoring.rename(foundMap, mapName)));
+            authoredWorkset.put(renamed.metadata().mapId().value(), renamed);
             return renamed.metadata().mapId();
         }
 
         private DungeonMapIdentity deleteMap(DungeonMapIdentity mapIdentity) {
             repository.delete(mapIdentity);
+            authoredWorkset.remove(mapIdentity.value());
+            editHistory.remove(mapIdentity);
             return mapIdentity;
         }
 
@@ -1033,6 +1153,9 @@ public final class DungeonAuthoredApplicationService {
             }
             applyCatalogUpdates(pendingMaps, rewrite);
             List<DungeonMap> savedMaps = repository.saveAll(List.copyOf(pendingMaps.values()));
+            for (DungeonMap savedMap : savedMaps) {
+                authoredWorkset.put(savedMap.metadata().mapId().value(), savedMap);
+            }
             DungeonMap savedSourceMap = savedSourceMap(savedMaps, loaded.sourceIdentity().value());
             DungeonDerivedState derived = derive(savedSourceMap);
             return new OperationResultData(

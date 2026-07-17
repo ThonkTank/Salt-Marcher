@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-07
+Last Reviewed: 2026-07-17
 Source of Truth: Routing entrypoint for the dungeon gameplay and domain
 documentation bundle.
 
@@ -11,8 +11,8 @@ documentation bundle.
 The dungeon feature owns authored dungeon truth, dungeon travel runtime
 behavior, dungeon editor behavior, and dungeon persistence truth.
 
-Generic map-canvas behavior and dungeon map-surface adoption now live in
-`docs/maps/`.
+Generic passive map-canvas mechanisms live in `platform.ui.mapcanvas`; the
+Dungeon architecture owns how its API facts adopt those mechanisms.
 
 ## Document Set
 
@@ -46,9 +46,13 @@ Generic map-canvas behavior and dungeon map-surface adoption now live in
 
 - [Dungeon Domain Model](./domain/domain-dungeon.md)
 
-### Related Maps Docs
+### Temporary Delivery
 
-- [Maps Feature Overview](../maps/README.md) (line 1)
+- [Dungeon Greenfield Delivery](./delivery/delivery-dungeon-greenfield.md)
+
+### Related Map Canvas Docs
+
+- [Map Canvas Overview](../maps/README.md) (line 1)
 - [Dungeon Map Adoption Architecture](../maps/architecture/architecture-maps-dungeon-adoption.md) (line 1)
 - [Dungeon Map Surface Contract](../maps/contract/contract-maps-dungeon-surface.md) (line 1)
 - [Maps Canvas Requirements](../maps/requirements/requirements-maps-canvas.md) (line 1)

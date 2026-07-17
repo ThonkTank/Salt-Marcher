@@ -16,4 +16,15 @@ final class DungeonSqliteConnectionPersistence {
         DungeonSqliteTransitionPersistence.persist(connection, record);
         DungeonSqliteFeatureMarkerPersistence.persist(connection, record);
     }
+
+    static void persistChange(
+            Connection connection,
+            DungeonMapRecord before,
+            DungeonMapRecord after
+    ) throws SQLException {
+        DungeonSqliteCorridorPersistence.persistChange(connection, before, after);
+        DungeonSqliteStairPersistence.persistChange(connection, before, after);
+        DungeonSqliteTransitionPersistence.persistChange(connection, before, after);
+        DungeonSqliteFeatureMarkerPersistence.persistChange(connection, before, after);
+    }
 }

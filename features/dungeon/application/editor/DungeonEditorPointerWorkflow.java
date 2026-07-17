@@ -1,6 +1,9 @@
 package features.dungeon.application.editor;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
+import platform.execution.ExecutionLane;
+import platform.execution.LatestWinsTaskQueue;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.api.DungeonEditorTool;
 
@@ -8,13 +11,17 @@ final class DungeonEditorPointerWorkflow implements DungeonEditorPointerInteract
     private final RuntimeFamilies runtimeFamilies;
     private final DungeonEditorRuntimeCommands commandPublisher;
     private final DungeonEditorPointerSession pointerSession = new DungeonEditorPointerSession();
+    private final LatestWinsTaskQueue hoverQueue;
+    private final AtomicLong interactionGeneration = new AtomicLong();
 
     DungeonEditorPointerWorkflow(
             RuntimeFamilies runtimeFamilies,
-            DungeonEditorRuntimeCommands commandPublisher
+            DungeonEditorRuntimeCommands commandPublisher,
+            ExecutionLane executionLane
     ) {
         this.runtimeFamilies = Objects.requireNonNull(runtimeFamilies, "runtimeFamilies");
         this.commandPublisher = Objects.requireNonNull(commandPublisher, "commandPublisher");
+        hoverQueue = new LatestWinsTaskQueue(Objects.requireNonNull(executionLane, "executionLane"));
     }
 
     @Override
@@ -47,12 +54,31 @@ final class DungeonEditorPointerWorkflow implements DungeonEditorPointerInteract
                 hoverTarget,
                 safeRequest.projectionLevel());
         PointerSample sample = DungeonEditorPointerSamplePolicy.pointerSample(targets, sampleTarget, intent);
-        commandPublisher.execute(() -> applyPointerInExecutionLane(safeRequest, intent, sample));
+        enqueuePointerSample(safeRequest, intent, sample);
         return new PointerInteractionResult(true, hoverTarget);
+    }
+
+    private void enqueuePointerSample(
+            PointerInteractionRequest request,
+            PointerWorkflowIntent intent,
+            PointerSample sample
+    ) {
+        if (PointerAction.isMoved(request.action())) {
+            long generation = interactionGeneration.get();
+            hoverQueue.submit(() -> {
+                if (generation == interactionGeneration.get()) {
+                    applyPointerInExecutionLane(request, intent, sample);
+                }
+            });
+            return;
+        }
+        interactionGeneration.incrementAndGet();
+        commandPublisher.execute(() -> applyPointerInExecutionLane(request, intent, sample));
     }
 
     @Override
     public void clearPointerSession() {
+        interactionGeneration.incrementAndGet();
         commandPublisher.execute(pointerSession::clear);
     }
 

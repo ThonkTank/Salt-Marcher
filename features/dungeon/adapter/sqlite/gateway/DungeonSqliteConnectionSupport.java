@@ -12,7 +12,7 @@ import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
 
 final class DungeonSqliteConnectionSupport {
 
-    private static final String SELECT_MAP_COLUMNS = "SELECT dungeon_map_id, name";
+    private static final String SELECT_MAP_COLUMNS = "SELECT dungeon_map_id, name, revision";
     private static final String SQL_FROM = " FROM ";
     private static final String SQL_WHERE = " WHERE ";
     private static final String WHERE_DUNGEON_MAP_ID = SQL_WHERE + "dungeon_map_id=?";

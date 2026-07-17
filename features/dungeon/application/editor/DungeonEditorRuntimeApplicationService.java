@@ -175,6 +175,30 @@ public final class DungeonEditorRuntimeApplicationService {
             return refreshAuthoredSnapshot();
         }
 
+        public DungeonEditorSessionSnapshot.SnapshotData undo() {
+            MapId mapId = workflow.session().selectedMapId();
+            if (mapId != null) {
+                authoredService.undo(mapId, authored);
+            }
+            return refreshAuthoredSnapshot();
+        }
+
+        public DungeonEditorSessionSnapshot.SnapshotData redo() {
+            MapId mapId = workflow.session().selectedMapId();
+            if (mapId != null) {
+                authoredService.redo(mapId, authored);
+            }
+            return refreshAuthoredSnapshot();
+        }
+
+        public boolean canUndo() {
+            return authoredService.canUndo(workflow.session().selectedMapId());
+        }
+
+        public boolean canRedo() {
+            return authoredService.canRedo(workflow.session().selectedMapId());
+        }
+
         public DungeonEditorSessionSnapshot.SessionFrameData setViewMode(
                 DungeonEditorSessionValues.ViewMode viewMode
         ) {

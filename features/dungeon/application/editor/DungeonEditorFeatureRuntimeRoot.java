@@ -86,7 +86,8 @@ public final class DungeonEditorFeatureRuntimeRoot
                         new DungeonEditorTransitionRuntimeOperation(safeContext),
                         new DungeonEditorFeatureMarkerRuntimeOperation(safeContext),
                         selectedHandleOperation),
-                commands);
+                commands,
+                safeExecutionLane);
         commands.bindPointerOperations(pointerWorkflow);
         commands.apply(safeContext::publishCurrent);
     }
@@ -166,6 +167,16 @@ public final class DungeonEditorFeatureRuntimeRoot
     @Override
     public void cancelActivePreviewSession() {
         commands.cancelActivePreviewSession();
+    }
+
+    @Override
+    public void undo() {
+        commands.undo();
+    }
+
+    @Override
+    public void redo() {
+        commands.redo();
     }
 
     @Override

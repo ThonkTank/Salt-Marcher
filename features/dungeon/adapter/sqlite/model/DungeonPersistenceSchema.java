@@ -24,11 +24,23 @@ public final class DungeonPersistenceSchema {
     public static final String STAIR_EXITS_TABLE = "dungeon_stair_exits";
     public static final String TRANSITIONS_TABLE = "dungeon_transitions";
     public static final String FEATURE_MARKERS_TABLE = "dungeon_feature_markers";
+    public static final String CHUNKS_TABLE = "dungeon_chunks";
 
     public static final String CREATE_DUNGEON_MAPS_TABLE_SQL =
             "CREATE TABLE IF NOT EXISTS dungeon_maps ("
                     + "dungeon_map_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                    + "name           TEXT NOT NULL"
+                    + "name           TEXT NOT NULL,"
+                    + "revision       INTEGER NOT NULL DEFAULT 1"
+                    + ")";
+
+    public static final String CREATE_DUNGEON_CHUNKS_TABLE_SQL =
+            "CREATE TABLE IF NOT EXISTS dungeon_chunks ("
+                    + "dungeon_map_id INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                    + "level_z        INTEGER NOT NULL,"
+                    + "chunk_q        INTEGER NOT NULL,"
+                    + "chunk_r        INTEGER NOT NULL,"
+                    + "revision       INTEGER NOT NULL DEFAULT 0,"
+                    + "PRIMARY KEY (dungeon_map_id, level_z, chunk_q, chunk_r)"
                     + ")";
 
     public static final String CREATE_DUNGEON_ROOM_CLUSTERS_TABLE_SQL =
@@ -232,6 +244,7 @@ public final class DungeonPersistenceSchema {
 
     public static final List<String> CREATE_TABLE_SQL = List.of(
             CREATE_DUNGEON_MAPS_TABLE_SQL,
+            CREATE_DUNGEON_CHUNKS_TABLE_SQL,
             CREATE_DUNGEON_ROOM_CLUSTERS_TABLE_SQL,
             CREATE_DUNGEON_ROOMS_TABLE_SQL,
             CREATE_DUNGEON_CORRIDORS_TABLE_SQL,
