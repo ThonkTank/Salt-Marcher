@@ -1,7 +1,6 @@
 package features.dungeon.application.editor;
 
 import features.dungeon.application.editor.session.DungeonEditorSessionEffect;
-import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.BoundaryStretchSession;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.DragSession;
@@ -39,7 +38,7 @@ final class InterpretDungeonEditorMainViewReleaseUseCase {
     DungeonEditorWallBoundaryDraftInterpretation interpretWallBoundaryOperation(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool boundaryTool,
+            DungeonEditorToolAction boundaryTool,
             InteractionState state
     ) {
         return boundaryDraft.releaseWall(input, snapshot, boundaryTool, state);
@@ -48,7 +47,7 @@ final class InterpretDungeonEditorMainViewReleaseUseCase {
     DungeonEditorDoorBoundaryDraftInterpretation interpretDoorBoundaryOperation(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool boundaryTool,
+            DungeonEditorToolAction boundaryTool,
             InteractionState state
     ) {
         return boundaryDraft.releaseDoor(input, snapshot, boundaryTool, state);

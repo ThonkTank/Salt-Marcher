@@ -70,7 +70,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     DungeonEditorRoomPaintInterpretation roomPaintOperation(
             PointerAction action,
             DungeonEditorMainViewInput input,
-            DungeonEditorSessionValues.Tool roomTool,
+            DungeonEditorToolAction roomTool,
             int projectionLevel
     ) {
         DungeonEditorRoomPaintInterpretation interpretation = switch (action) {
@@ -95,7 +95,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
             DungeonEditorMainViewInput input,
             MapSnapshot snapshot,
             DungeonEditorSessionValues.Selection selection,
-            DungeonEditorSessionValues.Tool boundaryTool,
+            DungeonEditorToolAction boundaryTool,
             int projectionLevel
     ) {
         DungeonEditorWallBoundaryDraftInterpretation interpretation = switch (action) {
@@ -125,7 +125,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
             PointerAction action,
             DungeonEditorMainViewInput input,
             MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool boundaryTool,
+            DungeonEditorToolAction boundaryTool,
             int projectionLevel
     ) {
         DungeonEditorDoorBoundaryDraftInterpretation interpretation = switch (action) {
@@ -153,7 +153,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     private DungeonEditorWallBoundaryDraftInterpretation hoverWallBoundaryOperation(
             DungeonEditorMainViewInput input,
             MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool boundaryTool,
+            DungeonEditorToolAction boundaryTool,
             int projectionLevel
     ) {
         return new DungeonEditorWallBoundaryDraftInterpretation(
@@ -169,7 +169,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     private DungeonEditorDoorBoundaryDraftInterpretation hoverDoorBoundaryOperation(
             DungeonEditorMainViewInput input,
             MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool boundaryTool,
+            DungeonEditorToolAction boundaryTool,
             int projectionLevel
     ) {
         return new DungeonEditorDoorBoundaryDraftInterpretation(
@@ -186,7 +186,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
             PointerAction action,
             DungeonEditorMainViewInput input,
             MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool corridorTool,
+            DungeonEditorToolAction corridorTool,
             int projectionLevel
     ) {
         if (action == PointerAction.HOVER) {

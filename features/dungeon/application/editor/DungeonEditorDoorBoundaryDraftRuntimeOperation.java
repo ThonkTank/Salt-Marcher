@@ -4,7 +4,7 @@ import org.jspecify.annotations.Nullable;
 import features.dungeon.application.editor.DungeonEditorRuntimeApplicationService;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
-import features.dungeon.api.DungeonEditorTool;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
 import features.dungeon.application.editor.DungeonEditorDoorBoundaryDraftInterpretation.DoorBoundaryCommit;
 
 final class DungeonEditorDoorBoundaryDraftRuntimeOperation {
@@ -14,13 +14,13 @@ final class DungeonEditorDoorBoundaryDraftRuntimeOperation {
         this.context = java.util.Objects.requireNonNull(context, "context");
     }
 
-    static boolean handles(DungeonEditorTool tool) {
-        return tool == DungeonEditorTool.DOOR_CREATE || tool == DungeonEditorTool.DOOR_DELETE;
+    static boolean handles(DungeonEditorToolAction tool) {
+        return tool != null && tool.family() == DungeonEditorToolFamily.DOOR;
     }
 
     DungeonEditorRuntimeContext.Result apply(
             PointerAction action,
-            DungeonEditorTool doorTool,
+            DungeonEditorToolAction doorTool,
             PointerSample sample,
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
@@ -28,21 +28,15 @@ final class DungeonEditorDoorBoundaryDraftRuntimeOperation {
         DungeonEditorMainViewInput input = DungeonEditorRuntimeInputTranslator.mainViewInput(
                 sample,
                 wallSingleClickMode,
-                doorTool == DungeonEditorTool.DOOR_DELETE,
+                doorTool.deleteMode(),
                 transitionDestination);
-        if (doorTool == DungeonEditorTool.DOOR_CREATE) {
-            return applyWorkflow(action, input, DungeonEditorSessionValues.Tool.DOOR_CREATE);
-        } else if (doorTool == DungeonEditorTool.DOOR_DELETE) {
-            return applyWorkflow(action, input, DungeonEditorSessionValues.Tool.DOOR_DELETE);
-        } else {
-            throw new IllegalArgumentException("Unsupported door draft tool: " + doorTool);
-        }
+        return applyWorkflow(action, input, doorTool);
     }
 
     private DungeonEditorRuntimeContext.Result applyWorkflow(
             PointerAction action,
             DungeonEditorMainViewInput input,
-            DungeonEditorSessionValues.Tool doorTool
+            DungeonEditorToolAction doorTool
     ) {
         DungeonEditorRuntimeApplicationService.CurrentGridPublication currentGrid =
                 context.currentGridOrPublishCurrentResult();

@@ -13,6 +13,8 @@ import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonTopologyElementRef;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonMapSummary;
@@ -458,7 +460,8 @@ final class DungeonEditorTransitionScenarios {
                 "DE-TRN-001 fixture starts without transition rows");
 
         click(button(controls, "Übergang"));
-        assertEquals("TRANSITION_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.TRANSITION),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-TRN-001 transition family selects transition creation");
         ComboBox<?> destinationType = comboBox(stateView, "Übergang Zieltyp");
         assertTrue(comboBoxContainsDisplayText(destinationType, "Weltkarte"),
@@ -1018,7 +1021,8 @@ final class DungeonEditorTransitionScenarios {
                 "DE-TRN-002 transition marker carries a transition topology ref");
         assertCompactTransitionGlyph(binding.mapContentModel(), transitionRef, "DE-TRN-002");
         click(button(controls, "Übergang"));
-        assertEquals("TRANSITION_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.TRANSITION),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-TRN-002 transition family selects the transition family tool");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 

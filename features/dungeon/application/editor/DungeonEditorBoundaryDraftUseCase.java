@@ -20,7 +20,7 @@ final class DungeonEditorBoundaryDraftUseCase {
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             DungeonEditorSessionValues.Selection currentSelection,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorToolAction selectedTool,
             InteractionState state
     ) {
         return wallDraft.pressOperation(input, snapshot, currentSelection, selectedTool, state);
@@ -29,7 +29,7 @@ final class DungeonEditorBoundaryDraftUseCase {
     DungeonEditorDoorBoundaryDraftInterpretation pressDoor(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorToolAction selectedTool,
             InteractionState state
     ) {
         return DungeonEditorDoorBoundaryDraftInterpretation.from(armDoorBoundary(
@@ -42,10 +42,10 @@ final class DungeonEditorBoundaryDraftUseCase {
     DungeonEditorSessionEffect preview(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorToolAction selectedTool,
             InteractionState state
     ) {
-        if (!selectedTool.isDoorTool()) {
+        if (!selectedTool.isDoorAction()) {
             return wallDraft.preview(input, snapshot, selectedTool, state);
         }
         BoundaryTarget boundary = input.boundaryTarget();
@@ -64,7 +64,7 @@ final class DungeonEditorBoundaryDraftUseCase {
     DungeonEditorWallBoundaryDraftInterpretation releaseWall(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorToolAction selectedTool,
             InteractionState state
     ) {
         return wallDraft.releaseOperation(input, snapshot, selectedTool, state);
@@ -73,11 +73,11 @@ final class DungeonEditorBoundaryDraftUseCase {
     DungeonEditorDoorBoundaryDraftInterpretation releaseDoor(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorToolAction selectedTool,
             InteractionState state
     ) {
         InteractionState nextState = state.withBoundaryDraft(BoundaryDraft.none());
-        if (!selectedTool.isDoorTool() || !state.boundaryDraft().present() || input == null) {
+        if (!selectedTool.isDoorAction() || !state.boundaryDraft().present() || input == null) {
             return new DungeonEditorDoorBoundaryDraftInterpretation(
                     nextState,
                     DungeonEditorSessionEffect.clearPreviewIfNeeded(true),
@@ -114,7 +114,7 @@ final class DungeonEditorBoundaryDraftUseCase {
     private DungeonEditorMainViewInterpretation armDoorBoundary(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorToolAction selectedTool,
             InteractionState state
     ) {
         if (input == null || !doorBoundaryPressMatchesTool(input, selectedTool)) {
@@ -146,7 +146,7 @@ final class DungeonEditorBoundaryDraftUseCase {
 
     private static boolean doorBoundaryPressMatchesTool(
             PointerState input,
-            DungeonEditorSessionValues.Tool selectedTool
+            DungeonEditorToolAction selectedTool
     ) {
         return selectedTool.deleteMode() ? input.secondaryButtonDown() : input.primaryButtonDown();
     }

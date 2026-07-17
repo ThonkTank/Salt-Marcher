@@ -16,8 +16,8 @@ import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapId;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
-import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonEditorViewMode;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 
 final class DungeonEditorRuntimeContext {
     private final DungeonEditorRuntimeApplicationService.RuntimeSession session;
@@ -129,16 +129,16 @@ final class DungeonEditorRuntimeContext {
         return fromSessionFrame(session.setViewMode(DungeonEditorRuntimeInputTranslator.viewMode(viewMode)));
     }
 
-    Result setTool(DungeonEditorTool tool) {
-        return fromControls(session.setToolControlsOnly(DungeonEditorRuntimeInputTranslator.tool(tool)));
+    Result setTool(DungeonEditorToolSelection selection) {
+        return fromControls(session.setToolControlsOnly(selection));
     }
 
-    Result setToolAndPublishSnapshot(DungeonEditorTool tool) {
-        return fromSnapshot(session.setTool(DungeonEditorRuntimeInputTranslator.tool(tool)));
+    Result setToolAndPublishSnapshot(DungeonEditorToolSelection selection) {
+        return fromSnapshot(session.setTool(selection));
     }
 
     Result cancelActivePreviewSession() {
-        return fromSnapshot(session.setTool(DungeonEditorSessionValues.Tool.SELECT));
+        return fromSnapshot(session.setTool(DungeonEditorToolSelection.select()));
     }
 
     Result shiftProjectionLevel(int levelShift) {
@@ -297,7 +297,7 @@ final class DungeonEditorRuntimeContext {
             InterpretDungeonEditorMainViewInputUseCase.PointerAction action,
             DungeonEditorMainViewInput input,
             MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool corridorTool
+            DungeonEditorToolAction corridorTool
     ) {
         return mainViewInterpreter.corridor(
                 action,
@@ -311,7 +311,7 @@ final class DungeonEditorRuntimeContext {
             InterpretDungeonEditorMainViewInputUseCase.PointerAction action,
             DungeonEditorMainViewInput input,
             MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool boundaryTool
+            DungeonEditorToolAction boundaryTool
     ) {
         return mainViewInterpreter.doorBoundaryOperation(
                 action,
@@ -325,7 +325,7 @@ final class DungeonEditorRuntimeContext {
             InterpretDungeonEditorMainViewInputUseCase.PointerAction action,
             DungeonEditorMainViewInput input,
             MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool boundaryTool
+            DungeonEditorToolAction boundaryTool
     ) {
         return mainViewInterpreter.wallBoundaryOperation(
                 action,
@@ -339,7 +339,7 @@ final class DungeonEditorRuntimeContext {
     DungeonEditorRoomPaintInterpretation roomPaintInterpretation(
             InterpretDungeonEditorMainViewInputUseCase.PointerAction action,
             DungeonEditorMainViewInput input,
-            DungeonEditorSessionValues.Tool tool
+            DungeonEditorToolAction tool
     ) {
         return mainViewInterpreter.roomPaintOperation(
                 action,

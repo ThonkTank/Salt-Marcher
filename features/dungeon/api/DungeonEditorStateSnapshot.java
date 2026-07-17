@@ -1,6 +1,7 @@
 package features.dungeon.api;
 
 import org.jspecify.annotations.Nullable;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 
 public record DungeonEditorStateSnapshot(
         Selection selection,
@@ -8,7 +9,7 @@ public record DungeonEditorStateSnapshot(
         DungeonEditorPreview preview,
         String statusText,
         DungeonEditorViewMode viewMode,
-        DungeonEditorTool selectedTool,
+        DungeonEditorToolSelection toolSelection,
         DungeonOverlaySettings overlaySettings,
         int projectionLevel
 ) {
@@ -17,7 +18,7 @@ public record DungeonEditorStateSnapshot(
         preview = preview == null ? DungeonEditorPreview.none() : preview;
         statusText = statusText == null ? "" : statusText;
         viewMode = viewMode == null ? DungeonEditorViewMode.GRID : viewMode;
-        selectedTool = selectedTool == null ? DungeonEditorTool.SELECT : selectedTool;
+        toolSelection = toolSelection == null ? DungeonEditorToolSelection.select() : toolSelection;
         overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
     }
 
@@ -28,7 +29,7 @@ public record DungeonEditorStateSnapshot(
                 DungeonEditorPreview.none(),
                 statusText,
                 DungeonEditorViewMode.GRID,
-                DungeonEditorTool.SELECT,
+                DungeonEditorToolSelection.select(),
                 DungeonOverlaySettings.defaults(),
                 0);
     }

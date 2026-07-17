@@ -1,7 +1,6 @@
 package features.dungeon.application.editor;
 
 import features.dungeon.application.editor.session.DungeonEditorSessionEffect;
-import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.InteractionState;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.PointerState;
@@ -17,7 +16,7 @@ final class InterpretDungeonEditorMainViewHoverUseCase {
     DungeonEditorSessionEffect interpretBoundary(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool boundaryTool,
+            DungeonEditorToolAction boundaryTool,
             InteractionState state
     ) {
         if (input == null) {
@@ -29,7 +28,7 @@ final class InterpretDungeonEditorMainViewHoverUseCase {
     DungeonEditorSessionEffect interpretCorridor(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool corridorTool,
+            DungeonEditorToolAction corridorTool,
             InteractionState state
     ) {
         if (input == null) {

@@ -1,19 +1,19 @@
 package features.dungeon.application.editor;
 
-import features.dungeon.api.DungeonEditorTool;
-
 record PointerWorkflowIntent(
         boolean workflowAccepted,
-        DungeonEditorTool effectiveTool,
+        DungeonEditorToolAction toolAction,
         boolean boundaryTargetsPreferred,
         boolean wallSingleClickMode
 ) {
     PointerWorkflowIntent {
-        effectiveTool = effectiveTool == null ? DungeonEditorTool.SELECT : effectiveTool;
+        toolAction = toolAction == null
+                ? DungeonEditorToolAction.selected(null)
+                : toolAction;
     }
 
     static PointerWorkflowIntent ignored() {
-        return new PointerWorkflowIntent(false, DungeonEditorTool.SELECT, false, false);
+        return new PointerWorkflowIntent(false, DungeonEditorToolAction.selected(null), false, false);
     }
 
 }

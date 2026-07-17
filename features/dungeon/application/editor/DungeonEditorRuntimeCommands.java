@@ -9,7 +9,6 @@ import features.dungeon.api.DungeonEditorMapSurfaceModel;
 import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateModel;
 import features.dungeon.api.DungeonEditorStateSnapshot;
-import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
 
@@ -119,24 +118,18 @@ final class DungeonEditorRuntimeCommands
     }
 
     @Override
-    public void setTool(DungeonEditorTool tool) {
-        setTool(DungeonEditorLegacyToolAdapter.selection(tool));
-    }
-
-    void setTool(DungeonEditorToolSelection selection) {
+    public void setTool(DungeonEditorToolSelection selection) {
         DungeonEditorToolSelection safeSelection = selection == null
                 ? DungeonEditorToolSelection.select()
                 : selection;
-        DungeonEditorTool tool = DungeonEditorLegacyToolAdapter.tool(safeSelection);
         execute(() -> {
             clearActiveInteraction();
             stairDraftOperation.clear();
-            statePublisher.selectTool(safeSelection);
             if (activePublishedMapInteraction()) {
-                applyInExecutionLane(() -> context.setToolAndPublishSnapshot(tool));
+                applyInExecutionLane(() -> context.setToolAndPublishSnapshot(safeSelection));
                 return;
             }
-            applyInExecutionLane(() -> context.setTool(tool));
+            applyInExecutionLane(() -> context.setTool(safeSelection));
         });
     }
 
@@ -145,9 +138,8 @@ final class DungeonEditorRuntimeCommands
         execute(() -> {
             clearActiveInteraction();
             stairDraftOperation.clear();
-            statePublisher.selectTool(DungeonEditorToolSelection.select());
             if (!activePublishedMapInteraction()) {
-                applyInExecutionLane(() -> context.setTool(DungeonEditorTool.SELECT));
+                applyInExecutionLane(() -> context.setTool(DungeonEditorToolSelection.select()));
                 return;
             }
             applyInExecutionLane(context::cancelActivePreviewSession);
@@ -377,7 +369,7 @@ final class DungeonEditorRuntimeCommands
         boolean ownerReadbackChanged = !Objects.equals(controlsBefore, controlsModel.current())
                 || !Objects.equals(mapSurfaceBefore, mapSurfaceModel.current())
                 || !Objects.equals(stateBefore, stateModel.current());
-        if (operationResult.shouldPublish(ownerReadbackChanged) || statePublisher.publicationPending()) {
+        if (operationResult.shouldPublish(ownerReadbackChanged)) {
             beforePublish.accept(operationResult);
             statePublisher.publishCurrentToSubscribers();
         }

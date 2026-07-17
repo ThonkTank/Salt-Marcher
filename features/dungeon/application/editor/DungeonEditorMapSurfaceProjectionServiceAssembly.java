@@ -21,7 +21,7 @@ final class DungeonEditorMapSurfaceProjectionServiceAssembly {
                 DungeonEditorValueProjectionServiceAssembly.viewMode(snapshot.viewMode()),
                 DungeonEditorValueProjectionServiceAssembly.overlay(snapshot.overlaySettings()),
                 snapshot.projectionLevel(),
-                DungeonEditorValueProjectionServiceAssembly.tool(snapshot.selectedTool()));
+                snapshot.toolSelection());
     }
 
     static DungeonEditorMapSurfaceSnapshot snapshot(
@@ -40,7 +40,7 @@ final class DungeonEditorMapSurfaceProjectionServiceAssembly {
                 DungeonEditorValueProjectionServiceAssembly.viewMode(safeFrameData.viewMode()),
                 DungeonEditorValueProjectionServiceAssembly.overlay(safeFrameData.overlaySettings()),
                 safeFrameData.projectionLevel(),
-                DungeonEditorValueProjectionServiceAssembly.tool(safeFrameData.selectedTool()));
+                safeFrameData.toolSelection());
     }
 
     static DungeonEditorMapSurfaceSnapshot snapshotPreservingSurface(
@@ -59,7 +59,7 @@ final class DungeonEditorMapSurfaceProjectionServiceAssembly {
                 DungeonEditorValueProjectionServiceAssembly.viewMode(safeFrameData.viewMode()),
                 DungeonEditorValueProjectionServiceAssembly.overlay(safeFrameData.overlaySettings()),
                 safeFrameData.projectionLevel(),
-                DungeonEditorValueProjectionServiceAssembly.tool(safeFrameData.selectedTool()));
+                safeFrameData.toolSelection());
     }
 
     private static DungeonEditorSurface committedSurface(DungeonEditorSurface surface) {

@@ -1,5 +1,6 @@
 package features.dungeon.application.editor;
 
+import java.util.Locale;
 import features.dungeon.application.editor.interaction.DungeonEditorHandleType;
 
 final class DungeonEditorRuntimeEnumTranslator {
@@ -15,6 +16,6 @@ final class DungeonEditorRuntimeEnumTranslator {
     }
 
     static String normalizedEnumName(String value) {
-        return DungeonEditorToolRegistry.normalizedToolKey(value);
+        return value == null ? "" : value.trim().toUpperCase(Locale.ROOT).replace('-', '_');
     }
 }

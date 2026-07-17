@@ -7,12 +7,11 @@ import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.feature.FeatureMarkerKind;
 import features.dungeon.application.editor.session.DungeonEditorSessionEffect;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
-import features.dungeon.api.DungeonEditorTool;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
 
 final class DungeonEditorFeatureMarkerRuntimeOperation {
     private static final String INVALID_FEATURE_MARKER_STATUS = "Feature-Markierung ungueltig.";
     private static final long NO_MARKER_ID = 0L;
-    private static final DungeonEditorToolRegistry TOOL_REGISTRY = DungeonEditorToolRegistry.current();
 
     private final DungeonEditorRuntimeContext context;
 
@@ -20,14 +19,13 @@ final class DungeonEditorFeatureMarkerRuntimeOperation {
         this.context = Objects.requireNonNull(context, "context");
     }
 
-    static boolean handles(DungeonEditorTool tool) {
-        return TOOL_REGISTRY.featureMarkerKind(tool) != null
-                || tool == DungeonEditorTool.FEATURE_DELETE;
+    static boolean handles(DungeonEditorToolAction tool) {
+        return tool != null && tool.family() == DungeonEditorToolFamily.FEATURE;
     }
 
     DungeonEditorRuntimeContext.Result apply(
             PointerAction action,
-            DungeonEditorTool tool,
+            DungeonEditorToolAction tool,
             PointerSample sample,
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
@@ -35,7 +33,7 @@ final class DungeonEditorFeatureMarkerRuntimeOperation {
         if (!PointerAction.isPressed(action)) {
             return DungeonEditorRuntimeContext.Result.none();
         }
-        FeatureMarkerKind markerKind = TOOL_REGISTRY.featureMarkerKind(tool);
+        FeatureMarkerKind markerKind = tool.featureMarkerKind();
         if (markerKind != null) {
             return createMarker(DungeonEditorPointRuntimeTarget.anchor(
                     sample,
@@ -43,7 +41,7 @@ final class DungeonEditorFeatureMarkerRuntimeOperation {
                     transitionDestination,
                     context.projectionLevel()), markerKind);
         }
-        if (tool == DungeonEditorTool.FEATURE_DELETE) {
+        if (tool.deleteMode()) {
             return deleteMarker(sample, wallSingleClickMode, transitionDestination);
         }
         return DungeonEditorRuntimeContext.Result.none();

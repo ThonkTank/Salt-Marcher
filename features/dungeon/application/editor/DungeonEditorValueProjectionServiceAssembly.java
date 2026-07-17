@@ -5,7 +5,6 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
-import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonEditorViewMode;
 
 final class DungeonEditorValueProjectionServiceAssembly {
@@ -30,10 +29,6 @@ final class DungeonEditorValueProjectionServiceAssembly {
         return viewMode != null && "GRAPH".equals(viewMode.name())
                 ? DungeonEditorViewMode.GRAPH
                 : DungeonEditorViewMode.GRID;
-    }
-
-    static DungeonEditorTool tool(DungeonEditorSessionValues.@Nullable Tool tool) {
-        return tool == null ? DungeonEditorTool.SELECT : DungeonEditorTool.valueOf(tool.name());
     }
 
     static features.dungeon.api.DungeonEditorHandleRef handleRef(

@@ -1,29 +1,27 @@
 package features.dungeon.application.editor;
 
-import features.dungeon.api.DungeonEditorTool;
+import features.dungeon.api.editor.DungeonEditorPointerGesture;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 
 final class DungeonEditorPointerWorkflowIntentResolver {
-    private static final DungeonEditorToolRegistry TOOL_REGISTRY = DungeonEditorToolRegistry.current();
-
     private DungeonEditorPointerWorkflowIntentResolver() {
     }
 
     static PointerWorkflowIntent resolve(
-            String selectedTool,
-            PointerWorkflowGesture gesture
+            DungeonEditorToolSelection selection,
+            DungeonEditorPointerGesture gesture
     ) {
-        PointerWorkflowGesture safeGesture = gesture == null ? PointerWorkflowGesture.empty() : gesture;
-        DungeonEditorTool effectiveTool = TOOL_REGISTRY.effectivePointerTool(
-                selectedTool,
-                safeGesture);
-        if (effectiveTool == null) {
+        DungeonEditorPointerGesture safeGesture = gesture == null ? DungeonEditorPointerGesture.none() : gesture;
+        DungeonEditorToolAction action = resolveAction(selection, safeGesture);
+        if (action == null) {
             return PointerWorkflowIntent.ignored();
         }
         return new PointerWorkflowIntent(
                 true,
-                effectiveTool,
-                TOOL_REGISTRY.prefersBoundaryTargets(effectiveTool),
-                TOOL_REGISTRY.wallSingleClickMode(effectiveTool, safeGesture));
+                action,
+                action.prefersBoundaryTargets(),
+                action.wallSingleClickMode(safeGesture.controlDown()));
     }
 
     static PointerInteractionDecision resolveInteraction(
@@ -47,18 +45,18 @@ final class DungeonEditorPointerWorkflowIntentResolver {
             PointerWorkflowIntent intent,
             DungeonEditorRuntimePointerTarget primaryTarget
     ) {
-        DungeonEditorTool tool = intent.effectiveTool();
+        DungeonEditorToolAction tool = intent.toolAction();
         DungeonEditorRuntimePointerTarget safeTarget = safeTarget(primaryTarget);
-        return switch (tool) {
+        return switch (tool.family()) {
             case SELECT -> selectableHoverTarget(safeTarget)
                     ? PointerTargetChoice.primary()
                     : PointerTargetChoice.empty();
-            case ROOM_PAINT, ROOM_DELETE -> PointerTargetChoice.roomCellHover();
-            case WALL_CREATE -> intent.wallSingleClickMode()
+            case ROOM -> PointerTargetChoice.roomCellHover();
+            case WALL -> intent.wallSingleClickMode()
                     ? wallSingleHoverTarget(safeTarget)
                     : PointerTargetChoice.wallVertexHover();
-            case WALL_DELETE, DOOR_CREATE, DOOR_DELETE -> boundaryHoverTarget(safeTarget);
-            case CORRIDOR_CREATE, CORRIDOR_DELETE -> corridorHoverTarget(safeTarget);
+            case DOOR -> boundaryHoverTarget(safeTarget);
+            case CORRIDOR -> corridorHoverTarget(safeTarget);
             default -> PointerTargetChoice.primary();
         };
     }
@@ -67,17 +65,37 @@ final class DungeonEditorPointerWorkflowIntentResolver {
             PointerAction action,
             PointerWorkflowIntent intent
     ) {
-        DungeonEditorTool tool = intent.effectiveTool();
-        if (tool == DungeonEditorTool.TRANSITION_CREATE) {
+        DungeonEditorToolAction tool = intent.toolAction();
+        if (tool.is(DungeonEditorToolFamily.TRANSITION, DungeonEditorToolAction.Operation.CREATE)) {
             return PointerTargetChoice.transitionPlacement();
         }
-        if (tool == DungeonEditorTool.WALL_CREATE) {
+        if (tool.family() == DungeonEditorToolFamily.WALL) {
             return PointerTargetChoice.hoverTarget();
         }
-        if (tool == DungeonEditorTool.SELECT && PointerAction.isMoved(action)) {
+        if (tool.isSelect() && PointerAction.isMoved(action)) {
             return PointerTargetChoice.hoverTarget();
         }
         return PointerTargetChoice.primary();
+    }
+
+    private static DungeonEditorToolAction resolveAction(
+            DungeonEditorToolSelection selection,
+            DungeonEditorPointerGesture gesture
+    ) {
+        DungeonEditorToolSelection safeSelection = selection == null
+                ? DungeonEditorToolSelection.select()
+                : selection;
+        if (gesture.secondary() && gesture.shiftDown()) {
+            return safeSelection.family() == DungeonEditorToolFamily.WALL
+                    ? DungeonEditorToolAction.selected(safeSelection)
+                    : null;
+        }
+        if (gesture.secondary()) {
+            return safeSelection.family() == DungeonEditorToolFamily.SELECT
+                    ? null
+                    : DungeonEditorToolAction.delete(safeSelection);
+        }
+        return DungeonEditorToolAction.selected(safeSelection);
     }
 
     private static PointerTargetChoice wallSingleHoverTarget(DungeonEditorRuntimePointerTarget target) {

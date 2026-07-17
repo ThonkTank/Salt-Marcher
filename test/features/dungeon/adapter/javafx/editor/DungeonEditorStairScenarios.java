@@ -14,6 +14,9 @@ import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonTopologyElementRef;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
+import features.dungeon.api.editor.DungeonEditorToolOptions;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonMapSummary;
@@ -74,7 +77,7 @@ final class DungeonEditorStairScenarios {
         runtime.database().seedF7StairAnchor(mapId);
         selectMap(controls, "Stair Anchor Move Map");
         click(button(controls, "Auswahl"));
-        assertEquals("SELECT", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.select(), runtime.controlsModel().current().toolSelection(),
                 "DE-STAIR-005 input route uses the select tool");
         var stairHandle = runtime.mapSurfaceModel().current().surface().map().editorHandles().stream()
                 .filter(handle -> "STAIR_ANCHOR".equals(handle.ref().kind().name()))
@@ -598,7 +601,8 @@ final class DungeonEditorStairScenarios {
         click(button(controls, "Treppe"));
         assertTrue(popupButtonVisible("Gerade"), "DE-STAIR-001 straight stair option is visible");
         click(popupButton("Gerade"));
-        assertEquals("STAIR_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.stair(DungeonEditorToolOptions.Stair.Shape.STRAIGHT),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-STAIR-001 input route selects the straight stair creation tool");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         clickMap(
@@ -724,7 +728,8 @@ final class DungeonEditorStairScenarios {
         click(button(controls, "Treppe"));
         assertTrue(popupButtonVisible("Eckspirale"), "DE-STAIR-002 square stair option is visible");
         click(popupButton("Eckspirale"));
-        assertEquals("STAIR_CREATE_SQUARE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.stair(DungeonEditorToolOptions.Stair.Shape.SQUARE),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-STAIR-002 input route selects the square stair creation tool");
         clickMap(
                 mapView,
@@ -846,7 +851,8 @@ final class DungeonEditorStairScenarios {
         click(button(controls, "Treppe"));
         assertTrue(popupButtonVisible("Rundspirale"), "DE-STAIR-003 round stair option is visible");
         click(popupButton("Rundspirale"));
-        assertEquals("STAIR_CREATE_CIRCULAR", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.stair(DungeonEditorToolOptions.Stair.Shape.CIRCULAR),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-STAIR-003 input route selects the circular stair creation tool");
         clickMap(
                 mapView,
@@ -958,7 +964,8 @@ final class DungeonEditorStairScenarios {
         assertTrue(!runtime.database().stairExitState(mapId).isEmpty(),
                 "DE-STAIR-009 unbound fixture starts with stair exit rows");
         click(button(controls, "Treppe"));
-        assertEquals("STAIR_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.stair(DungeonEditorToolOptions.Stair.Shape.STRAIGHT),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-STAIR-009 input route selects the stair family tool");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         clickMap(
@@ -1144,7 +1151,8 @@ final class DungeonEditorStairScenarios {
         assertTrue(stairRowsBefore.isEmpty(), "DE-STAIR-008 fixture starts without stair rows");
         click(button(controls, "-"));
         click(button(controls, "Korridor"));
-        assertEquals("CORRIDOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.CORRIDOR),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-STAIR-008 corridor family selects corridor-create tool");
         Point2D levelZeroDoor = doorHandleCenterAt(
                 runtime.mapSurfaceModel().current(),

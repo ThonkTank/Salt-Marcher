@@ -4,7 +4,7 @@ import org.jspecify.annotations.Nullable;
 import features.dungeon.application.editor.DungeonEditorRuntimeApplicationService;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
-import features.dungeon.api.DungeonEditorTool;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
 import features.dungeon.application.editor.DungeonEditorWallBoundaryDraftInterpretation.WallBoundaryCommit;
 
 final class DungeonEditorWallBoundaryDraftRuntimeOperation {
@@ -14,13 +14,13 @@ final class DungeonEditorWallBoundaryDraftRuntimeOperation {
         this.context = java.util.Objects.requireNonNull(context, "context");
     }
 
-    static boolean handles(DungeonEditorTool tool) {
-        return tool == DungeonEditorTool.WALL_CREATE || tool == DungeonEditorTool.WALL_DELETE;
+    static boolean handles(DungeonEditorToolAction tool) {
+        return tool != null && tool.family() == DungeonEditorToolFamily.WALL;
     }
 
     DungeonEditorRuntimeContext.Result apply(
             PointerAction action,
-            DungeonEditorTool wallTool,
+            DungeonEditorToolAction wallTool,
             PointerSample sample,
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
@@ -29,19 +29,13 @@ final class DungeonEditorWallBoundaryDraftRuntimeOperation {
                 sample,
                 wallSingleClickMode,
                 transitionDestination);
-        if (wallTool == DungeonEditorTool.WALL_CREATE) {
-            return applyWorkflow(action, input, DungeonEditorSessionValues.Tool.WALL_CREATE);
-        } else if (wallTool == DungeonEditorTool.WALL_DELETE) {
-            return applyWorkflow(action, input, DungeonEditorSessionValues.Tool.WALL_DELETE);
-        } else {
-            throw new IllegalArgumentException("Unsupported wall draft tool: " + wallTool);
-        }
+        return applyWorkflow(action, input, wallTool);
     }
 
     private DungeonEditorRuntimeContext.Result applyWorkflow(
             PointerAction action,
             DungeonEditorMainViewInput input,
-            DungeonEditorSessionValues.Tool wallTool
+            DungeonEditorToolAction wallTool
     ) {
         DungeonEditorRuntimeApplicationService.CurrentGridPublication currentGrid =
                 context.currentGridOrPublishCurrentResult();
