@@ -369,7 +369,7 @@ final class DungeonEditorRuntimeContext {
     }
 
     Result fromSnapshot(DungeonEditorSessionSnapshot.@Nullable SnapshotData snapshot) {
-        return snapshot == null ? Result.publishAfterStateModelSideEffect() : Result.publish();
+        return snapshot == null ? Result.none() : Result.publish();
     }
 
     Result fromPublication(DungeonEditorRuntimeApplicationService.PublicationResult publication) {
@@ -377,9 +377,7 @@ final class DungeonEditorRuntimeContext {
     }
 
     Result fromOperationResult(DungeonAuthoredApplicationService.OperationResult result) {
-        return result == null || !result.present()
-                ? Result.none()
-                : Result.publishAfterStateModelSideEffect();
+        return Result.none();
     }
 
     Result fromPublication(
@@ -396,11 +394,11 @@ final class DungeonEditorRuntimeContext {
     }
 
     Result fromSessionFrame(DungeonEditorSessionSnapshot.@Nullable SessionFrameData frameData) {
-        return frameData == null ? Result.publishAfterStateModelSideEffect() : fromControls(frameData.controlsData());
+        return frameData == null ? Result.none() : fromControls(frameData.controlsData());
     }
 
     Result fromControls(DungeonEditorSessionSnapshot.@Nullable ControlsData controls) {
-        return controls == null ? Result.publishAfterStateModelSideEffect() : Result.publish();
+        return controls == null ? Result.none() : Result.publish();
     }
 
     private static DungeonAuthoredApplicationService.LabelTargetKind labelTargetKind(
@@ -414,31 +412,22 @@ final class DungeonEditorRuntimeContext {
         };
     }
 
-    record Result(
-            boolean publishRuntimeFrame,
-            boolean publishSuppressedStateModelFrame
-    ) {
+    record Result(boolean publicationRequested) {
         static Result none() {
-            return new Result(false, true);
+            return new Result(false);
         }
 
         static Result publish() {
-            return new Result(true, true);
-        }
-
-        static Result publishAfterStateModelSideEffect() {
-            return new Result(false, true);
+            return new Result(true);
         }
 
         Result merge(Result next) {
             Result safeNext = next == null ? none() : next;
-            return new Result(
-                    publishRuntimeFrame || safeNext.publishRuntimeFrame(),
-                    publishSuppressedStateModelFrame || safeNext.publishSuppressedStateModelFrame());
+            return new Result(publicationRequested || safeNext.publicationRequested());
         }
 
-        boolean shouldPublish(boolean stateModelFrameSuppressed) {
-            return publishRuntimeFrame || stateModelFrameSuppressed && publishSuppressedStateModelFrame;
+        boolean shouldPublish(boolean ownerReadbackChanged) {
+            return publicationRequested || ownerReadbackChanged;
         }
     }
 }

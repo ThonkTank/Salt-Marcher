@@ -97,17 +97,15 @@ and commit boundaries. M7 starts only after both are complete.
 
 ## Current Migration State
 
-- Current foundation: M0 and M1 slices 1 and 2 are complete on `main` through
-  PRs #489 through #491.
-- This slice: M1 slice 3 moves map scene construction, semantic hit translation,
-  revision-bound pointer dispatch, and inline-label interaction state to the
-  Editor API and JavaFX-local mechanisms.
-- Next step after this slice merges: M1 slice 4 removes the compatibility
-  readback and prepared-frame publication path, makes `DungeonEditorState` the
-  internal atomic publication, and installs the permanent architecture rule.
-- Remaining M1 boundary: application internals still adapt the legacy runtime
-  frame into `DungeonEditorState`; slice 4 deletes that adapter and the temporary
-  migration ledger.
+- Current foundation: M0 is complete, and M1 slices 1 through 3 are complete on
+  `main` through PRs #489 through #492.
+- This slice: M1 slice 4 makes `DungeonEditorState` the internal atomic
+  publication, removes compatibility readbacks and prepared render frames, and
+  installs the permanent API-only Dungeon JavaFX architecture rule.
+- Next step after this slice merges: M2 canonicalizes Editor language and adds
+  typed command outcomes.
+- Remaining M1 boundary: none; M1 is complete when this slice merges with a
+  green `check`.
 
 ## M0: Target Lock And Baseline
 

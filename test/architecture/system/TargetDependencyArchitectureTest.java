@@ -154,8 +154,7 @@ public final class TargetDependencyArchitectureTest {
                 };
             }
             if (featureArea == FeatureArea.JAVAFX_ADAPTER
-                    && "dungeon".equals(feature)
-                    && inPackage(packageName, "features.dungeon.adapter.javafx.travel")) {
+                    && "dungeon".equals(feature)) {
                 return target.featureArea != FeatureArea.API
                         && target.featureArea != FeatureArea.JAVAFX_ADAPTER;
             }

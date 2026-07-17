@@ -18,8 +18,8 @@ final class DungeonEditorPublicationDeliveryTest {
         List<DungeonEditorState> delivered = new ArrayList<>();
         DungeonEditorApiFacade.StateDelivery delivery =
                 new DungeonEditorApiFacade.StateDelivery(delivered::add, dispatcher);
-        DungeonEditorRenderFrame stale = DungeonEditorRenderFrame.empty();
-        DungeonEditorRenderFrame current = DungeonEditorRenderFrame.empty();
+        DungeonEditorState stale = DungeonEditorState.empty();
+        DungeonEditorState current = DungeonEditorState.empty();
 
         delivery.deliver(stale);
         delivery.deliver(current);
@@ -36,7 +36,7 @@ final class DungeonEditorPublicationDeliveryTest {
         DungeonEditorApiFacade.StateDelivery delivery =
                 new DungeonEditorApiFacade.StateDelivery(delivered::add, dispatcher);
 
-        delivery.deliver(DungeonEditorRenderFrame.empty());
+        delivery.deliver(DungeonEditorState.empty());
         delivery.close();
         dispatcher.runAll();
 

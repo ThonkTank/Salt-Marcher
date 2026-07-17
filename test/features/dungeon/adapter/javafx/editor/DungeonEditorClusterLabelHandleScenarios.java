@@ -18,9 +18,7 @@ import features.dungeon.api.DungeonEditorMapSnapshot;
 import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreviewRenderDiffFrame;
 import features.dungeon.application.editor.DungeonEditorRuntimeLabelTarget;
-import features.dungeon.application.editor.DungeonEditorRuntimeOperations;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
 import features.dungeon.adapter.javafx.map.DungeonMapView;
 import static features.dungeon.adapter.javafx.editor.DungeonEditorTestSupport.*;
@@ -240,6 +238,14 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 "DE-LABEL-006 room rename leaves authored geometry row count unchanged");
         assertEquals(roomBoundaryRowsBefore, runtime.database().roomBoundaryEdgeState(roomMapId),
                 "DE-LABEL-006 room rename leaves boundary geometry unchanged");
+        assertEquals("Lantern Room", editorApi.current().selectedWindow().map().areas().stream()
+                        .filter(area -> area.id() == roomIds.roomId())
+                        .map(features.dungeon.api.DungeonEditorMapSnapshot.Area::label)
+                        .findFirst()
+                        .orElse("missing"),
+                "DE-LABEL-006 atomic editor state updates custom room label");
+        assertEquals(editorApi.current().publicationRevision(), binding.mapContentModel().appliedPublicationRevision(),
+                "DE-LABEL-006 JavaFX consumer receives latest atomic publication");
         LabelCenter renamedRoomLabelCenter = labelCenter(
                 binding.mapContentModel(),
                 displayRoomLabel("Lantern Room"),
@@ -1079,7 +1085,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 "DE-CLUSTER-003 publishes a preview map during true-corner drag");
         assertTrue(!mapSnapshotCellSet(previewSurface.surface().previewMap()).equals(cellsBefore),
                 "DE-CLUSTER-003 preview map changes affected cluster cells before release");
-        PreviewRenderDiffFrame previewRenderDiff = PreviewRenderDiffFrame.from(previewSurface);
+        PreviewDiff previewRenderDiff = PreviewDiff.from(previewSurface);
         assertTrue(previewRenderDiff.changedHandles().stream().anyMatch(handle ->
                         handle.ref().kind() == cornerHandle.ref().kind()
                                 && handle.cell().q() == 14
@@ -1224,7 +1230,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
         assertTrue(!mapSnapshotCellSet(previewSurface.surface().previewMap())
                         .equals(mapSnapshotCellSet(previewSurface.surface().map())),
                 "DE-HANDLE-003 preview map differs from the committed cluster cells");
-        PreviewRenderDiffFrame previewRenderDiff = PreviewRenderDiffFrame.from(previewSurface);
+        PreviewDiff previewRenderDiff = PreviewDiff.from(previewSurface);
         assertTrue(previewRenderDiff.changedBoundaries().stream()
                         .map(boundary -> boundary.edge())
                         .collect(java.util.stream.Collectors.toSet())
@@ -1511,7 +1517,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                         new Cell(4, 3, 0),
                         new Cell(4, 4, 0)),
                 "DE-HANDLE-006 door drag preview map contains the moved door boundary");
-        PreviewRenderDiffFrame previewRenderDiff = PreviewRenderDiffFrame.from(previewSurface);
+        PreviewDiff previewRenderDiff = PreviewDiff.from(previewSurface);
         assertTrue(previewRenderDiff.changedBoundaries().stream()
                         .anyMatch(boundary -> "door".equalsIgnoreCase(boundary.kind())
                                 && sameEdge(boundary.edge(), new Cell(4, 3, 0), new Cell(4, 4, 0))),
@@ -1644,7 +1650,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                         new Cell(4, 3, 0),
                         new Cell(4, 4, 0)),
                 "DE-HANDLE-006 standalone door drag preview map contains the moved door boundary");
-        PreviewRenderDiffFrame previewRenderDiff = PreviewRenderDiffFrame.from(previewSurface);
+        PreviewDiff previewRenderDiff = PreviewDiff.from(previewSurface);
         assertTrue(previewRenderDiff.changedBoundaries().stream()
                         .anyMatch(boundary -> "door".equalsIgnoreCase(boundary.kind())
                                 && sameEdge(boundary.edge(), new Cell(4, 3, 0), new Cell(4, 4, 0))),
@@ -2249,7 +2255,10 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 .filter(label -> text.equals(label.text()))
                 .map(label -> new LabelCenter(label.centerX(), label.centerY()))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError(message + " label not rendered: " + text));
+                .orElseThrow(() -> new AssertionError(message + " label not rendered: " + text
+                        + "; rendered labels=" + mapContentModel.canvasStateProperty().get().renderScene().texts().stream()
+                                .map(label -> label.text())
+                                .toList()));
     }
 
     private static LabelText labelText(DungeonMapContentModel mapContentModel, String text, String message) {

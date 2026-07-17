@@ -63,8 +63,7 @@ public final class DungeonFeature {
                 dispatcher,
                 Objects.requireNonNull(diagnostics, "diagnostics"));
         DungeonEditorRuntimeDependencies editorDependencies = new DungeonEditorRuntimeDependencies(
-                new DungeonEditorRuntimeDependencies.CompatibilityReadbackModels(
-                        runtime.editorControls(), runtime.editorMapSurface(), runtime.editorState()),
+                runtime.editorControls(), runtime.editorMapSurface(), runtime.editorState(),
                 runtime.editor(),
                 lane,
                 dispatcher);

@@ -57,24 +57,26 @@ class DungeonEditorTestPersistence {
             DungeonEditorControlsModel controlsModel,
             DungeonEditorMapSurfaceModel mapSurfaceModel,
             DungeonEditorStateModel stateModel,
-            DatabaseAssertions database
+            DatabaseAssertions database,
+            DungeonEditorApi editorApi
     ) {
         static TestRuntime create() {
             DatabaseAssertions database = new DatabaseAssertions();
             database.clearDungeonData();
             DungeonTestAssembly.Component dungeon =
                     createDungeonServices(new SqliteDungeonMapRepository());
+            DungeonEditorRuntimeDependencies dependencies =
+                    DungeonEditorTestPersistence.editorDependencies(dungeon);
+            DungeonEditorApi api = new DungeonEditorApiFacade(
+                    DungeonEditorFeatureRuntimeRoot.create(dependencies),
+                    dependencies.uiDispatcher());
             return new TestRuntime(
-                    DungeonEditorTestPersistence.editorDependencies(dungeon),
+                    dependencies,
                     dungeon.editorControls(),
                     dungeon.editorMapSurface(),
                     dungeon.editorState(),
-                    database);
-        }
-
-        DungeonEditorApi editorApi() {
-            DungeonEditorFeatureRuntimeRoot root = DungeonEditorFeatureRuntimeRoot.create(editorDependencies);
-            return new DungeonEditorApiFacade(root, editorDependencies.uiDispatcher());
+                    database,
+                    api);
         }
     }
 
@@ -90,10 +92,9 @@ class DungeonEditorTestPersistence {
 
     static DungeonEditorRuntimeDependencies editorDependencies(DungeonTestAssembly.Component dungeon) {
         return new DungeonEditorRuntimeDependencies(
-                new DungeonEditorRuntimeDependencies.CompatibilityReadbackModels(
-                        dungeon.editorControls(),
-                        dungeon.editorMapSurface(),
-                        dungeon.editorState()),
+                dungeon.editorControls(),
+                dungeon.editorMapSurface(),
+                dungeon.editorState(),
                 dungeon.editor());
     }
 
