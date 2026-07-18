@@ -8,9 +8,11 @@ import java.util.OptionalInt;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
 import platform.execution.ExecutionLane;
-import features.encounter.api.GeneratedEncounterPlanImportApi;
-import features.encounter.api.GeneratedEncounterPlanImportCommand;
-import features.encounter.api.GeneratedEncounterPlanImportResult;
+import features.encounter.api.CommitGeneratedEncounterBatchCommand;
+import features.encounter.api.CommittedGeneratedEncounterBatchResult;
+import features.encounter.api.EncounterApi;
+import features.encounter.api.GeneratedEncounterBatchStatus;
+import features.encounter.api.PreparedGeneratedEncounterBatchResult;
 import features.sessiongeneration.api.GenerationResponse;
 import features.sessiongeneration.api.GenerationResult;
 import features.sessiongeneration.api.GenerationRunId;
@@ -34,7 +36,7 @@ public final class SessionGenerationCoordinator {
     private final SessionPlannerPublishedState sessions;
     private final SessionGenerationPublishedState previews;
     private final SessionGenerationApi generation;
-    private final GeneratedEncounterPlanImportApi encounterImport;
+    private final EncounterApi encounters;
     private final ExecutionLane executionLane;
     private final Diagnostics diagnostics;
     private long attemptSequence;
@@ -46,7 +48,7 @@ public final class SessionGenerationCoordinator {
             SessionPlannerPublishedState sessions,
             SessionGenerationPublishedState previews,
             SessionGenerationApi generation,
-            GeneratedEncounterPlanImportApi encounterImport,
+            EncounterApi encounters,
             ExecutionLane executionLane,
             Diagnostics diagnostics
     ) {
@@ -55,7 +57,7 @@ public final class SessionGenerationCoordinator {
         this.sessions = Objects.requireNonNull(sessions, "sessions");
         this.previews = Objects.requireNonNull(previews, "previews");
         this.generation = Objects.requireNonNull(generation, "generation");
-        this.encounterImport = Objects.requireNonNull(encounterImport, "encounterImport");
+        this.encounters = Objects.requireNonNull(encounters, "encounters");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
@@ -270,14 +272,14 @@ public final class SessionGenerationCoordinator {
             return;
         }
         try {
-            GeneratedEncounterPlanImportCommand command = GeneratedSessionAssembly.toImportCommand(result);
+            var command = GeneratedSessionAssembly.toPrepareCommand(result);
             if (!isActiveAndLive(active)) {
                 staleActive(active);
                 return;
             }
-            encounterImport.importGeneratedPlans(command)
-                    .whenComplete((imported, importFailure) -> executionLane.execute(() -> completeEncounterImport(
-                            active, result, imported, importFailure)));
+            encounters.prepareGeneratedBatch(command)
+                    .whenComplete((prepared, prepareFailure) -> executionLane.execute(() -> completeEncounterPrepare(
+                            active, result, prepared, prepareFailure)));
         } catch (RuntimeException exception) {
             reportFailure(exception);
             publishFromBinding(active, SessionGenerationPreviewStatus.ERROR,
@@ -285,29 +287,64 @@ public final class SessionGenerationCoordinator {
         }
     }
 
-    private void completeEncounterImport(
+    private void completeEncounterPrepare(
             PreviewBinding active,
             GenerationResult result,
-            GeneratedEncounterPlanImportResult imported,
+            PreparedGeneratedEncounterBatchResult prepared,
             Throwable failure
     ) {
         if (!isActiveAndLive(active)) {
             staleActive(active);
             return;
         }
-        if (failure != null || imported == null
-                || imported.status() != GeneratedEncounterPlanImportResult.Status.SUCCESS) {
+        if (failure != null || prepared == null
+                || prepared.status() != GeneratedEncounterBatchStatus.SUCCESS || prepared.batch().isEmpty()) {
             if (failure != null) {
                 reportFailure(failure);
             }
             publishFromBinding(active, SessionGenerationPreviewStatus.ERROR,
-                    SessionGenerationFailureMessages.forEncounterImport(imported));
+                    "Generierte Encounter konnten nicht vollständig vorbereitet werden.");
+            return;
+        }
+        if (!isActiveAndLive(active)) {
+            staleActive(active);
+            return;
+        }
+        try {
+            encounters.commitGeneratedBatch(new CommitGeneratedEncounterBatchCommand(
+                    prepared.batch().orElseThrow()))
+                    .whenComplete((committed, commitFailure) -> executionLane.execute(() -> completeEncounterCommit(
+                            active, result, committed, commitFailure)));
+        } catch (RuntimeException exception) {
+            reportFailure(exception);
+            publishFromBinding(active, SessionGenerationPreviewStatus.ERROR,
+                    "Generierte Encounter konnten nicht gespeichert werden.");
+        }
+    }
+
+    private void completeEncounterCommit(
+            PreviewBinding active,
+            GenerationResult result,
+            CommittedGeneratedEncounterBatchResult committed,
+            Throwable failure
+    ) {
+        if (!isActiveAndLive(active)) {
+            staleActive(active);
+            return;
+        }
+        if (failure != null || committed == null
+                || committed.status() != GeneratedEncounterBatchStatus.SUCCESS) {
+            if (failure != null) {
+                reportFailure(failure);
+            }
+            publishFromBinding(active, SessionGenerationPreviewStatus.ERROR,
+                    "Generierte Encounter konnten nicht gespeichert werden.");
             return;
         }
         SessionPlan candidate;
         try {
             candidate = GeneratedSessionAssembly.toSessionPlan(
-                    active.fingerprint().sessionSnapshot(), result, imported.plans());
+                    active.fingerprint().sessionSnapshot(), result, committed.mappings());
         } catch (RuntimeException exception) {
             reportFailure(exception);
             publishFromBinding(active, SessionGenerationPreviewStatus.ERROR,

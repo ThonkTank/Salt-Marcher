@@ -444,6 +444,18 @@ public final class EncounterStateTabTest {
                     .toList();
         }
 
+        @Override
+        public List<CreatureCatalogData.EncounterCandidateProfile> loadCreatureFacts(
+                CreatureCatalogData.CreatureFactsSpec spec
+        ) {
+            return PROFILES.values().stream()
+                    .filter(profile -> spec.mode() == CreatureCatalogData.CreatureFactsSpec.FactsMode.CREATURE_IDS
+                            ? spec.values().contains(Long.valueOf(profile.id()))
+                            : spec.values().contains(Long.valueOf(profile.xp())))
+                    .map(FixtureCreatureCatalogPort::candidate)
+                    .toList();
+        }
+
         private static Map<Long, CreatureProfile> profiles() {
             Map<Long, CreatureProfile> profiles = new LinkedHashMap<>();
             profiles.put(GOBLIN_ID, profile(GOBLIN_ID, "Goblin Ambusher", 50));

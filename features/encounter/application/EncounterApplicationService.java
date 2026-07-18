@@ -74,6 +74,7 @@ public final class EncounterApplicationService implements features.encounter.api
     private final CommandActions commands;
     private final ExecutionLane executionLane;
     private final EncounterRuntimeContextApi runtimeContexts;
+    private final GeneratedEncounterBatchService generatedBatches;
 
     public EncounterApplicationService(
             EncounterSessionRuntimeAccess runtimeAccess,
@@ -81,7 +82,7 @@ public final class EncounterApplicationService implements features.encounter.api
             EncounterPublishedState publishedState,
             ExecutionLane executionLane
     ) {
-        this(runtimeAccess, plans, publishedState, new InMemoryRuntimeContextRepository(), executionLane);
+        this(runtimeAccess, plans, publishedState, new InMemoryRuntimeContextRepository(), executionLane, null);
     }
 
     public EncounterApplicationService(
@@ -91,14 +92,34 @@ public final class EncounterApplicationService implements features.encounter.api
             EncounterRuntimeContextRepository contextRepository,
             ExecutionLane executionLane
     ) {
-        this(RuntimeCommandActions.create(runtimeAccess, plans, publishedState, contextRepository), executionLane);
+        this(runtimeAccess, plans, publishedState, contextRepository, executionLane, null);
+    }
+
+    public EncounterApplicationService(
+            EncounterSessionRuntimeAccess runtimeAccess,
+            EncounterPlanGateway plans,
+            EncounterPublishedState publishedState,
+            EncounterRuntimeContextRepository contextRepository,
+            ExecutionLane executionLane,
+            GeneratedEncounterBatchService generatedBatches
+    ) {
+        this(RuntimeCommandActions.create(runtimeAccess, plans, publishedState, contextRepository),
+                executionLane, generatedBatches);
     }
 
     EncounterApplicationService(CommandActions commands) {
-        this(commands, DirectExecutionLane.INSTANCE);
+        this(commands, DirectExecutionLane.INSTANCE, null);
     }
 
     EncounterApplicationService(CommandActions commands, ExecutionLane executionLane) {
+        this(commands, executionLane, null);
+    }
+
+    EncounterApplicationService(
+            CommandActions commands,
+            ExecutionLane executionLane,
+            GeneratedEncounterBatchService generatedBatches
+    ) {
         this.commands = Objects.requireNonNull(commands, "commands");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
         this.runtimeContexts = commands instanceof RuntimeCommandActions runtime
@@ -107,7 +128,44 @@ public final class EncounterApplicationService implements features.encounter.api
                         EncounterRuntimeContextSyncResult.Status.INVALID,
                         0L,
                         "Encounter runtime contexts are unavailable."));
+        this.generatedBatches = generatedBatches;
         this.executionLane.execute(commands::initialize);
+    }
+
+    @Override
+    public java.util.concurrent.CompletionStage<features.encounter.api.PreparedGeneratedEncounterBatchResult>
+            prepareGeneratedBatch(features.encounter.api.PrepareGeneratedEncounterBatchCommand command) {
+        if (generatedBatches == null) {
+            return java.util.concurrent.CompletableFuture.completedFuture(
+                    features.encounter.api.PreparedGeneratedEncounterBatchResult.failure(
+                            features.encounter.api.GeneratedEncounterBatchStatus.STORAGE_FAILURE,
+                            "Generated encounter preparation is unavailable."));
+        }
+        return generatedBatches.prepare(command);
+    }
+
+    @Override
+    public java.util.concurrent.CompletionStage<features.encounter.api.CommittedGeneratedEncounterBatchResult>
+            commitGeneratedBatch(features.encounter.api.CommitGeneratedEncounterBatchCommand command) {
+        if (generatedBatches == null) {
+            return java.util.concurrent.CompletableFuture.completedFuture(
+                    features.encounter.api.CommittedGeneratedEncounterBatchResult.failure(
+                            features.encounter.api.GeneratedEncounterBatchStatus.STORAGE_FAILURE,
+                            "Generated encounter commit is unavailable."));
+        }
+        return generatedBatches.commit(command);
+    }
+
+    @Override
+    public java.util.concurrent.CompletionStage<features.encounter.api.GeneratedEncounterPlanSummaryBatchResult>
+            loadGeneratedPlanSummaries(features.encounter.api.GeneratedEncounterPlanSummaryBatchQuery query) {
+        if (generatedBatches == null) {
+            return java.util.concurrent.CompletableFuture.completedFuture(
+                    features.encounter.api.GeneratedEncounterPlanSummaryBatchResult.failure(
+                            features.encounter.api.GeneratedEncounterBatchStatus.STORAGE_FAILURE,
+                            "Generated encounter summaries are unavailable."));
+        }
+        return generatedBatches.loadSummaries(query);
     }
 
     public EncounterRuntimeContextApi runtimeContexts() {

@@ -467,6 +467,13 @@ public final class WorldPlannerBackendTest {
         ) {
             throw unavailable();
         }
+
+        @Override
+        public List<CreatureCatalogData.EncounterCandidateProfile> loadCreatureFacts(
+                CreatureCatalogData.CreatureFactsSpec spec
+        ) {
+            throw unavailable();
+        }
     }
 
     private static final class FailingEncounterTableCatalogPort implements EncounterTableCatalogPort {

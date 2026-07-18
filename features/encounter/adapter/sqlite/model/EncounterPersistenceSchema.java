@@ -24,6 +24,7 @@ public final class EncounterPersistenceSchema {
             column("creature_id", "INTEGER NOT NULL REFERENCES " + REFERENCED_CREATURES_TABLE_NAME
                     + "(id) ON DELETE RESTRICT"),
             column("quantity", "INTEGER NOT NULL CHECK(quantity > 0)"),
+            column("last_known_display_name", "TEXT NOT NULL DEFAULT ''"),
             column("sort_order", "INTEGER NOT NULL"));
 
     public static final String GENERATED_ENCOUNTER_PLAN_BATCHES_TABLE_NAME =
@@ -41,6 +42,7 @@ public final class EncounterPersistenceSchema {
                     + "creature_id INTEGER NOT NULL REFERENCES " + REFERENCED_CREATURES_TABLE_NAME
                     + "(id) ON DELETE RESTRICT, "
                     + "quantity INTEGER NOT NULL CHECK(quantity > 0), "
+                    + "last_known_display_name TEXT NOT NULL DEFAULT '', "
                     + "sort_order INTEGER NOT NULL, "
                     + "PRIMARY KEY(plan_id, creature_id)"
                     + ")";
@@ -57,6 +59,7 @@ public final class EncounterPersistenceSchema {
             "CREATE TABLE IF NOT EXISTS " + GENERATED_ENCOUNTER_PLAN_BATCHES_TABLE_NAME + " ("
                     + "engine_version TEXT NOT NULL, "
                     + "generation_id TEXT NOT NULL, "
+                    + "preparation_id TEXT, "
                     + "batch_fingerprint TEXT NOT NULL, "
                     + "encounter_count INTEGER NOT NULL CHECK(encounter_count > 0), "
                     + "PRIMARY KEY(engine_version, generation_id)"
@@ -69,6 +72,7 @@ public final class EncounterPersistenceSchema {
                     + "encounter_number INTEGER NOT NULL CHECK(encounter_number > 0), "
                     + "batch_order INTEGER NOT NULL CHECK(batch_order >= 0), "
                     + "spec_fingerprint TEXT NOT NULL, "
+                    + "roster_fingerprint TEXT NOT NULL DEFAULT '', "
                     + "plan_id INTEGER NOT NULL UNIQUE REFERENCES " + ENCOUNTER_PLANS.name()
                     + "(plan_id) ON DELETE CASCADE, "
                     + "PRIMARY KEY(engine_version, generation_id, encounter_number), "
@@ -77,6 +81,11 @@ public final class EncounterPersistenceSchema {
                     + GENERATED_ENCOUNTER_PLAN_BATCHES_TABLE_NAME
                     + "(engine_version, generation_id) ON DELETE CASCADE"
                     + ")";
+
+    public static final String CREATE_GENERATED_PREPARATION_IDENTITY_INDEX_SQL =
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_generated_encounter_preparation_identity ON "
+                    + GENERATED_ENCOUNTER_PLAN_BATCHES_TABLE_NAME
+                    + "(engine_version, preparation_id) WHERE preparation_id IS NOT NULL";
 
     private EncounterPersistenceSchema() {
     }

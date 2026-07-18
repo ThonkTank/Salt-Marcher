@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import features.encounter.adapter.sqlite.model.EncounterPersistenceSchema;
+import platform.persistence.SqliteSchemaColumnSupport;
 
 final class EncounterSchemaMigrator {
 
@@ -117,6 +118,28 @@ final class EncounterSchemaMigrator {
                     + "sort_order INTEGER NOT NULL, name TEXT NOT NULL, creature_id INTEGER NOT NULL, "
                     + "world_npc_id INTEGER NOT NULL, status TEXT NOT NULL, hp_loss INTEGER NOT NULL, xp INTEGER NOT NULL, "
                     + "defeated_by_default INTEGER NOT NULL, loot TEXT NOT NULL, PRIMARY KEY(context_id, sort_order))");
+        }
+    }
+
+    void ensureGeneratedBatchV4(Connection connection) throws SQLException {
+        addColumnIfMissing(connection, EncounterPersistenceSchema.ENCOUNTER_PLAN_CREATURES.name(),
+                "last_known_display_name", "TEXT NOT NULL DEFAULT ''");
+        addColumnIfMissing(connection, EncounterPersistenceSchema.GENERATED_ENCOUNTER_PLAN_BATCHES_TABLE_NAME,
+                "preparation_id", "TEXT");
+        addColumnIfMissing(connection, EncounterPersistenceSchema.GENERATED_ENCOUNTER_PLAN_ORIGINS_TABLE_NAME,
+                "roster_fingerprint", "TEXT NOT NULL DEFAULT ''");
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(EncounterPersistenceSchema.CREATE_GENERATED_PREPARATION_IDENTITY_INDEX_SQL);
+        }
+    }
+
+    private static void addColumnIfMissing(
+            Connection connection, String table, String column, String declaration
+    ) throws SQLException {
+        if (!SqliteSchemaColumnSupport.hasColumn(connection, table, column)) {
+            try (Statement statement = connection.createStatement()) {
+                statement.execute("ALTER TABLE " + table + " ADD COLUMN " + column + " " + declaration);
+            }
         }
     }
 }

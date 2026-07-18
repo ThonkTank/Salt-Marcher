@@ -364,6 +364,11 @@ public final class CatalogControlsRawInputTest {
         ) {
             return List.of();
         }
+        @Override public List<CreatureCatalogData.EncounterCandidateProfile> loadCreatureFacts(
+                CreatureCatalogData.CreatureFactsSpec spec
+        ) {
+            return List.of();
+        }
     }
 
     private static final class EmptyEncounterTables implements EncounterTableCatalogPort {

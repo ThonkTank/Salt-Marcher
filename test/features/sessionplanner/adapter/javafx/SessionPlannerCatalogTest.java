@@ -40,7 +40,7 @@ import features.encounter.api.EncounterPlanBudgetModel;
 import features.encounter.api.EncounterPlanBudgetResult;
 import features.encounter.api.EncounterPlanBudgetStatus;
 import features.encounter.api.EncounterPlanBudgetSummary;
-import features.encounter.api.GeneratedEncounterPlanImportResult;
+import features.encounter.api.EncounterApi;
 import features.encounter.api.SavedEncounterPlanListModel;
 import features.encounter.api.SavedEncounterPlanListResult;
 import features.encounter.api.SavedEncounterPlanStatus;
@@ -723,10 +723,8 @@ public final class SessionPlannerCatalogTest {
                 });
         SessionPlannerServiceAssembly planner = new SessionPlannerServiceAssembly(
                 new SqliteSessionPlanRepository(), party.application(), party.activeParty(),
-                party.adventuringDayCalculation(), noopEncounterApplicationService(), savedPlans,
+                party.adventuringDayCalculation(), generatedEncounterApi(), savedPlans,
                 planBudget, world.snapshotModel(), generation,
-                command -> CompletableFuture.completedFuture(GeneratedEncounterPlanImportResult.success(
-                        List.of(new GeneratedEncounterPlanImportResult.ImportedPlan(1, 901L)))),
                 platform.execution.DirectExecutionLane.INSTANCE,
                 platform.ui.DirectUiDispatcher.INSTANCE,
                 platform.diagnostics.NoopDiagnostics.INSTANCE);
@@ -778,8 +776,80 @@ public final class SessionPlannerCatalogTest {
                 "");
     }
 
-    private static EncounterApplicationService noopEncounterApplicationService() {
-        return EncounterApplicationServiceFakes.noOp();
+    private static EncounterApi generatedEncounterApi() {
+        EncounterApplicationService delegate = EncounterApplicationServiceFakes.noOp();
+        return new EncounterApi() {
+            @Override
+            public java.util.concurrent.CompletionStage<features.encounter.api.PreparedGeneratedEncounterBatchResult>
+                    prepareGeneratedBatch(features.encounter.api.PrepareGeneratedEncounterBatchCommand command) {
+                var rosters = command.intents().stream().map(intent -> {
+                    int quantity = intent.blocks().stream()
+                            .mapToInt(features.encounter.api.GeneratedEncounterBlock::quantity).sum();
+                    var creature = new features.encounter.api.PreparedEncounterCreature(
+                            101L, quantity, "Generated creature");
+                    var summary = new features.encounter.api.GeneratedEncounterPlanSummary(
+                            0L, intent.displayLabel(), List.of(creature), quantity, 100L, 100L,
+                            features.encounter.api.GeneratedEncounterDifficulty.MEDIUM,
+                            quantity + "x Generated creature");
+                    return new features.encounter.api.PreparedEncounterRoster(
+                            intent.encounterNumber(), intent.displayLabel(), "intent", "roster",
+                            List.of(creature), summary);
+                }).toList();
+                return CompletableFuture.completedFuture(
+                        features.encounter.api.PreparedGeneratedEncounterBatchResult.success(
+                                new features.encounter.api.PreparedEncounterBatch(
+                                        command.source(), "batch", rosters)));
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<features.encounter.api.CommittedGeneratedEncounterBatchResult>
+                    commitGeneratedBatch(features.encounter.api.CommitGeneratedEncounterBatchCommand command) {
+                var mappings = command.batch().rosters().stream().map(roster -> {
+                    long planId = 900L + roster.encounterNumber();
+                    var source = roster.summary();
+                    var summary = new features.encounter.api.GeneratedEncounterPlanSummary(
+                            planId, source.label(), source.roster(), source.creatureCount(), source.baseXp(),
+                            source.adjustedXp(), source.difficulty(), source.displaySummary());
+                    return new features.encounter.api.CommittedGeneratedEncounterMapping(
+                            roster.encounterNumber(), planId, summary);
+                }).toList();
+                return CompletableFuture.completedFuture(
+                        features.encounter.api.CommittedGeneratedEncounterBatchResult.success(mappings));
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<features.encounter.api.GeneratedEncounterPlanSummaryBatchResult>
+                    loadGeneratedPlanSummaries(
+                            features.encounter.api.GeneratedEncounterPlanSummaryBatchQuery query) {
+                return CompletableFuture.completedFuture(
+                        features.encounter.api.GeneratedEncounterPlanSummaryBatchResult.success(List.of()));
+            }
+
+            @Override
+            public void applyState(features.encounter.api.ApplyEncounterStateCommand command) {
+                delegate.applyState(command);
+            }
+
+            @Override
+            public void updatePoolFilters(features.encounter.api.UpdateEncounterPoolFiltersCommand command) {
+                delegate.updatePoolFilters(command);
+            }
+
+            @Override
+            public void updateTuning(features.encounter.api.UpdateEncounterTuningCommand command) {
+                delegate.updateTuning(command);
+            }
+
+            @Override
+            public void updateBuilderInputs(features.encounter.api.UpdateEncounterBuilderInputsCommand command) {
+                delegate.updateBuilderInputs(command);
+            }
+
+            @Override
+            public void refreshPlanBudget(features.encounter.api.RefreshEncounterPlanBudgetCommand command) {
+                delegate.refreshPlanBudget(command);
+            }
+        };
     }
 
     private static SessionGenerationApi generationService() {

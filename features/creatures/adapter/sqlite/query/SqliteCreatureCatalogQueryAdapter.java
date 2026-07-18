@@ -52,6 +52,13 @@ public final class SqliteCreatureCatalogQueryAdapter implements CreatureCatalogP
                 gateway.loadEncounterCandidates(CreatureCatalogQueryMappingFacade.toEncounterCriteria(spec)));
     }
 
+    @Override
+    public List<EncounterCandidateProfile> loadCreatureFacts(
+            features.creatures.domain.catalog.CreatureCatalogData.CreatureFactsSpec spec
+    ) {
+        return CreatureCatalogQueryMappingFacade.toDomain(gateway.loadCreatureFacts(spec));
+    }
+
     private static SqliteCreatureCatalogLocalGateway requireGateway(SqliteCreatureCatalogLocalGateway gateway) {
         if (gateway == null) {
             throw new IllegalArgumentException("gateway");

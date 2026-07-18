@@ -11,6 +11,8 @@ import java.util.Optional;
 import features.encounter.adapter.sqlite.model.EncounterPersistenceSchema;
 import features.encounter.adapter.sqlite.model.EncounterPlanCreatureRecord;
 import features.encounter.adapter.sqlite.model.EncounterPlanRecord;
+import features.encounter.api.PreparedEncounterRoster;
+import features.encounter.application.GeneratedEncounterBatchRepository;
 
 final class EncounterPlanSqliteStore {
 
@@ -29,20 +31,23 @@ final class EncounterPlanSqliteStore {
                     + "GROUP BY p.plan_id, p.name, p.generated_label, p.updated_at "
                     + "ORDER BY p.updated_at DESC, p.plan_id DESC";
     private static final String LOAD_CREATURES_SQL =
-            "SELECT creature_id, quantity, sort_order FROM "
+            "SELECT creature_id, quantity, sort_order, last_known_display_name FROM "
                     + EncounterPersistenceSchema.ENCOUNTER_PLAN_CREATURES.name()
                     + " WHERE plan_id = ? ORDER BY sort_order, creature_id";
     private static final String DELETE_CREATURES_SQL =
             "DELETE FROM " + EncounterPersistenceSchema.ENCOUNTER_PLAN_CREATURES.name() + " WHERE plan_id = ?";
-    private static final String INSERT_CREATURE_SQL =
+    private static final String INSERT_CREATURE_WITH_NAME_SQL =
             "INSERT INTO " + EncounterPersistenceSchema.ENCOUNTER_PLAN_CREATURES.name()
-                    + " (plan_id, creature_id, quantity, sort_order) VALUES (?, ?, ?, ?)";
+                    + " (plan_id, creature_id, quantity, sort_order, last_known_display_name) VALUES (?, ?, ?, ?, ?)";
     private static final String UPDATE_PLAN_SQL =
             "UPDATE " + EncounterPersistenceSchema.ENCOUNTER_PLANS.name()
                     + " SET name = ?, generated_label = ?, updated_at = CURRENT_TIMESTAMP WHERE plan_id = ?";
     private static final String INSERT_PLAN_SQL =
             "INSERT INTO " + EncounterPersistenceSchema.ENCOUNTER_PLANS.name()
                     + " (name, generated_label) VALUES (?, ?)";
+    private static final String INSERT_GENERATED_PLAN_SQL =
+            "INSERT INTO " + EncounterPersistenceSchema.ENCOUNTER_PLANS.name()
+                    + " (plan_id, name, generated_label) VALUES (?, ?, ?)";
     private static final String EXISTS_SQL =
             "SELECT 1 FROM " + EncounterPersistenceSchema.ENCOUNTER_PLANS.name() + " WHERE plan_id = ?";
 
@@ -85,7 +90,8 @@ final class EncounterPlanSqliteStore {
                     creatures.add(new EncounterPlanCreatureRecord(
                             resultSet.getLong("creature_id"),
                             resultSet.getInt("quantity"),
-                            resultSet.getInt("sort_order")));
+                            resultSet.getInt("sort_order"),
+                            resultSet.getString("last_known_display_name")));
                 }
                 return creatures;
             }
@@ -101,14 +107,59 @@ final class EncounterPlanSqliteStore {
             delete.setLong(1, planId);
             delete.executeUpdate();
         }
-        try (PreparedStatement insert = connection.prepareStatement(INSERT_CREATURE_SQL)) {
+        try (PreparedStatement insert = connection.prepareStatement(INSERT_CREATURE_WITH_NAME_SQL)) {
             for (int index = 0; index < creatures.size(); index++) {
                 EncounterPlanCreatureRecord creature = creatures.get(index);
                 insert.setLong(1, planId);
                 insert.setLong(2, creature.creatureId());
                 insert.setInt(3, creature.quantity());
                 insert.setInt(4, index);
+                insert.setString(5, creature.lastKnownDisplayName());
                 insert.addBatch();
+            }
+            insert.executeBatch();
+        }
+    }
+
+    List<GeneratedEncounterBatchRepository.Mapping> insertGeneratedPlans(
+            Connection connection,
+            List<PreparedEncounterRoster> rosters
+    ) throws SQLException {
+        long nextPlanId = nextPlanId(connection);
+        List<GeneratedEncounterBatchRepository.Mapping> mappings = new ArrayList<>();
+        try (PreparedStatement insert = connection.prepareStatement(INSERT_GENERATED_PLAN_SQL)) {
+            for (PreparedEncounterRoster roster : rosters) {
+                long planId = nextPlanId++;
+                insert.setLong(1, planId);
+                insert.setString(2, roster.displayLabel());
+                insert.setString(3, roster.displayLabel());
+                insert.addBatch();
+                mappings.add(new GeneratedEncounterBatchRepository.Mapping(
+                        roster.encounterNumber(), planId));
+            }
+            insert.executeBatch();
+        }
+        return List.copyOf(mappings);
+    }
+
+    void insertGeneratedCreatures(
+            Connection connection,
+            List<PreparedEncounterRoster> rosters,
+            List<GeneratedEncounterBatchRepository.Mapping> mappings
+    ) throws SQLException {
+        try (PreparedStatement insert = connection.prepareStatement(INSERT_CREATURE_WITH_NAME_SQL)) {
+            for (int rosterIndex = 0; rosterIndex < rosters.size(); rosterIndex++) {
+                PreparedEncounterRoster roster = rosters.get(rosterIndex);
+                long planId = mappings.get(rosterIndex).planId();
+                for (int creatureIndex = 0; creatureIndex < roster.creatures().size(); creatureIndex++) {
+                    var creature = roster.creatures().get(creatureIndex);
+                    insert.setLong(1, planId);
+                    insert.setLong(2, creature.creatureId());
+                    insert.setInt(3, creature.quantity());
+                    insert.setInt(4, creatureIndex);
+                    insert.setString(5, creature.displayName());
+                    insert.addBatch();
+                }
             }
             insert.executeBatch();
         }
@@ -155,5 +206,16 @@ final class EncounterPlanSqliteStore {
                 return resultSet.next();
             }
         }
+    }
+
+    private static long nextPlanId(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement();
+                ResultSet rows = statement.executeQuery(
+                        "SELECT COALESCE(MAX(plan_id),0)+1 FROM saved_encounter_plans")) {
+            if (rows.next()) {
+                return rows.getLong(1);
+            }
+        }
+        throw new SQLException("Could not allocate generated encounter plan identities.");
     }
 }

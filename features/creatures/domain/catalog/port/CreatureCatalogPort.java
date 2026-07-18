@@ -15,4 +15,7 @@ public interface CreatureCatalogPort {
 
     List<CreatureCatalogData.EncounterCandidateProfile> loadEncounterCandidates(
             CreatureCatalogData.EncounterCandidateSpec spec);
+
+    List<CreatureCatalogData.EncounterCandidateProfile> loadCreatureFacts(
+            CreatureCatalogData.CreatureFactsSpec spec);
 }

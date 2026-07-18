@@ -12,11 +12,9 @@ import features.encounter.adapter.sqlite.model.EncounterPlanSnapshotRecord;
 import features.encounter.domain.plan.EncounterPlan;
 import features.encounter.domain.plan.repository.EncounterPlanRepository;
 import features.encounter.domain.plan.EncounterPlanSummary;
-import features.encounter.api.GeneratedEncounterPlanSource;
-import features.encounter.application.GeneratedEncounterPlanBatchRepository;
 
 public final class SqliteEncounterPlanRepository
-        implements EncounterPlanRepository, GeneratedEncounterPlanBatchRepository {
+        implements EncounterPlanRepository, features.encounter.application.GeneratedEncounterBatchRepository {
 
     private final SqliteEncounterLocalGateway gateway;
 
@@ -42,13 +40,13 @@ public final class SqliteEncounterPlanRepository
                         plan.generatedLabel(),
                         plan.creatureCount()),
                 toRecords(plan));
-        return EncounterPlanMapper.toDomainPlan(saved.plan(), saved.creatures());
+        return EncounterPlanMapper.toDomainPlan(saved);
     }
 
     @Override
     public Optional<EncounterPlan> load(long planId) {
         return gateway.load(planId)
-                .map(saved -> EncounterPlanMapper.toDomainPlan(saved.plan(), saved.creatures()));
+                .map(EncounterPlanMapper::toDomainPlan);
     }
 
     @Override
@@ -59,17 +57,17 @@ public final class SqliteEncounterPlanRepository
     }
 
     @Override
-    public Optional<StoredBatch> loadGeneratedBatch(GeneratedEncounterPlanSource source) {
-        return gateway.loadGeneratedBatch(source);
+    public features.encounter.application.GeneratedEncounterBatchRepository.CommitOutcome commit(
+            features.encounter.api.PreparedEncounterBatch batch
+    ) {
+        return gateway.commitGeneratedBatch(batch);
     }
 
     @Override
-    public StoredBatch saveGeneratedBatch(
-            GeneratedEncounterPlanSource source,
-            String batchFingerprint,
-            List<ResolvedPlan> plans
-    ) {
-        return gateway.saveGeneratedBatch(source, batchFingerprint, plans);
+    public List<EncounterPlan> loadPlansByIds(List<Long> planIds) {
+        return gateway.loadPlansByIds(planIds).stream()
+                .map(EncounterPlanMapper::toDomainPlan)
+                .toList();
     }
 
     private static List<EncounterPlanCreatureRecord> toRecords(EncounterPlan plan) {
@@ -77,7 +75,8 @@ public final class SqliteEncounterPlanRepository
                 .map(creature -> new EncounterPlanCreatureRecord(
                         creature.creatureId(),
                         creature.quantity(),
-                        0))
+                        0,
+                        creature.lastKnownDisplayName()))
                 .toList();
     }
 }

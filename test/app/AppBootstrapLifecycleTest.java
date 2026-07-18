@@ -15,15 +15,19 @@ final class AppBootstrapLifecycleTest {
     java.nio.file.Path temporaryDirectory;
 
     @Test
-    void bootstrapClosesBothOwnedSessionGenerationLanesExactlyOnce() {
+    void bootstrapClosesAllOwnedGenerationLanesExactlyOnce() {
         RecordingLane shared = new RecordingLane();
         RecordingLane generationCpu = new RecordingLane();
         RecordingLane generationIo = new RecordingLane();
+        RecordingLane encounterCpu = new RecordingLane();
+        RecordingLane encounterIo = new RecordingLane();
         AppBootstrap bootstrap = new AppBootstrap(
                 NoopDiagnostics.INSTANCE,
                 shared,
                 generationCpu,
                 generationIo,
+                encounterCpu,
+                encounterIo,
                 DirectUiDispatcher.INSTANCE,
                 new SqliteDatabase(temporaryDirectory.resolve("lifecycle.sqlite"), NoopDiagnostics.INSTANCE));
 
@@ -32,6 +36,8 @@ final class AppBootstrapLifecycleTest {
 
         assertEquals(1, generationCpu.closes);
         assertEquals(1, generationIo.closes);
+        assertEquals(1, encounterCpu.closes);
+        assertEquals(1, encounterIo.closes);
         assertEquals(1, shared.closes);
     }
 

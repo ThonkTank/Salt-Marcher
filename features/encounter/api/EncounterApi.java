@@ -2,6 +2,15 @@ package features.encounter.api;
 
 public interface EncounterApi {
 
+    java.util.concurrent.CompletionStage<PreparedGeneratedEncounterBatchResult> prepareGeneratedBatch(
+            PrepareGeneratedEncounterBatchCommand command);
+
+    java.util.concurrent.CompletionStage<CommittedGeneratedEncounterBatchResult> commitGeneratedBatch(
+            CommitGeneratedEncounterBatchCommand command);
+
+    java.util.concurrent.CompletionStage<GeneratedEncounterPlanSummaryBatchResult> loadGeneratedPlanSummaries(
+            GeneratedEncounterPlanSummaryBatchQuery query);
+
     void applyState(ApplyEncounterStateCommand command);
 
     void updatePoolFilters(UpdateEncounterPoolFiltersCommand command);

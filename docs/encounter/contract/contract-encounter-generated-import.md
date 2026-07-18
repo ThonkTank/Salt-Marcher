@@ -30,6 +30,13 @@ All operations are asynchronous. The summary query accepts unique Encounter
 plan identities and returns existing structured summaries in request order,
 with missing identities reported explicitly rather than omitted.
 
+Summary hydration captures the current active Party composition once and
+loads one complete current Creature facts snapshot for the union of referenced
+creature IDs. It derives base XP, adjusted XP, and difficulty from those two
+current inputs. Stored display names are last-known fallbacks only; resolvable
+current Creature names take precedence. A missing plan and a plan whose current
+creature facts cannot be resolved remain distinct ordered result states.
+
 The prepare command contains a stable preparation identity, generation-run
 identity, declared engine version, and an ordered non-empty list of intents.
 Each intent has one unique positive Encounter number, display label, target XP,

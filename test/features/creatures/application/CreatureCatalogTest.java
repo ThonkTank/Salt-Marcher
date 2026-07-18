@@ -557,6 +557,16 @@ public final class CreatureCatalogTest {
                     .toList();
         }
 
+        @Override
+        public List<EncounterCandidateProfile> loadCreatureFacts(CreatureCatalogData.CreatureFactsSpec spec) {
+            return profiles.values().stream()
+                    .filter(profile -> spec.mode() == CreatureCatalogData.CreatureFactsSpec.FactsMode.CREATURE_IDS
+                            ? spec.values().contains(Long.valueOf(profile.id()))
+                            : spec.values().contains(Long.valueOf(profile.xp())))
+                    .map(MutableCreatureCatalogPort::candidate)
+                    .toList();
+        }
+
         private static List<String> distinct(List<String> values) {
             return values.stream()
                     .filter(value -> value != null && !value.isBlank())
