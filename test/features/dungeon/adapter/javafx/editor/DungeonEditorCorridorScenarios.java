@@ -565,6 +565,7 @@ final class DungeonEditorCorridorScenarios {
         assertPointerTarget(binding.mapContentModel(), doorTwo,
                 DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, "DE-COR-014 second door");
         AuthoredCorridorState beforeFirstClick = AuthoredCorridorState.capture(runtime, binding, mapId);
+        long revisionBeforeCreate = runtime.database().mapRevision(mapId);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
         clickMap(mapView, MouseButton.PRIMARY,
@@ -593,6 +594,8 @@ final class DungeonEditorCorridorScenarios {
 
         long newCorridorId = singleNewCorridorId(corridorIdsBefore, runtime.database().corridorIdsForMap(mapId),
                 "DE-COR-014");
+        assertEquals(revisionBeforeCreate + 1L, runtime.database().mapRevision(mapId),
+                "DE-COR-014 corridor create commits exactly one aggregate revision");
         assertCorridorDoorBindingCount(runtime.database().corridorStableConnectionState(mapId), newCorridorId, 2,
                 "DE-COR-014");
         assertEquals(doorRowsBefore, runtime.database().doorBoundaryState(mapId),
@@ -610,6 +613,26 @@ final class DungeonEditorCorridorScenarios {
                 runtimePointerTarget(binding.mapContentModel(), fallbackCorridorBody.getX(), fallbackCorridorBody.getY())
                         .elementKind(),
                 "DE-COR-014 fallback body remains a semantic corridor target");
+
+        fireMapShortcut(mapView, KeyCode.Z, true, false);
+        assertEquals(corridorIdsBefore, runtime.database().corridorIdsForMap(mapId),
+                "DE-COR-014 patch undo removes the created corridor");
+        assertEquals(revisionBeforeCreate + 2L, runtime.database().mapRevision(mapId),
+                "DE-COR-014 patch undo restores content as one new revision");
+        assertEquals(doorRowsBefore, runtime.database().doorBoundaryState(mapId),
+                "DE-COR-014 patch undo preserves reused door identities");
+
+        fireMapShortcut(mapView, KeyCode.Y, true, false);
+        assertTrue(runtime.database().corridorIdsForMap(mapId).contains(newCorridorId),
+                "DE-COR-014 patch redo restores the created corridor identity");
+        assertEquals(revisionBeforeCreate + 3L, runtime.database().mapRevision(mapId),
+                "DE-COR-014 patch redo restores content as one new revision");
+        assertCorridorCreatedInSnapshot(
+                runtime.mapSurfaceModel().current(),
+                binding.mapContentModel(),
+                newCorridorId,
+                expectedCells,
+                "DE-COR-014 redo");
         selectMap(controls, "Corridor Vertical Fallback Reload Hop");
         selectMap(controls, "Corridor Vertical Fallback Map");
         assertCorridorCreatedInSnapshot(
@@ -729,6 +752,7 @@ final class DungeonEditorCorridorScenarios {
                 "DE-COR-006 fixture starts with authored A1 at (6,5,0)");
         click(button(controls, "Korridor"));
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        long revisionBeforeDelete = runtime.database().mapRevision(mapId);
 
         clickMap(
                 mapView,
@@ -737,6 +761,8 @@ final class DungeonEditorCorridorScenarios {
                 viewport.sceneToScreenY(anchorCenter.getY()),
                 false);
 
+        assertEquals(revisionBeforeDelete + 1L, runtime.database().mapRevision(mapId),
+                "DE-COR-006 corridor branch delete commits exactly one aggregate revision");
         assertCorridorDoorBindingCount(runtime.database().corridorStableConnectionState(mapId), corridorId, 2,
                 "DE-COR-006 keeps both surviving door endpoints");
         assertNoCorridorAnchorRef(runtime.database().corridorStableConnectionState(mapId), corridorId, anchorRef.id(),

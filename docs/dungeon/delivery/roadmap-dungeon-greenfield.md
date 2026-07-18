@@ -97,32 +97,33 @@ and commit boundaries. M7 starts only after both are complete.
 
 ## Current Migration State
 
-- Current foundation: M0 through M2 and M3.1 through M3.5 are complete on
-  `main` through PR #504. Feature markers, room or cluster semantics, stairs,
-  and transitions use exact patches; transition links use atomic compound
-  patches and shared multi-map history.
-- This slice: M3.6 moves room rectangle paint or delete, cluster-boundary edits,
-  cluster-corner moves, and wall-run stretches to one exact room-geometry patch
-  planner and the shared patch executor. Their production consumers no longer
-  commit through `executeOperation`; preview planning remains repository-free.
-- Room and cluster changes now encode create, update, membership change, and
-  delete states. The planner derives stable-identity changes from the
-  aggregate-owned result and verifies that applying the patch reproduces the
-  complete aggregate exactly before persistence.
-- Newly rebuilt renderable room boundaries materialize stable topology refs in
-  domain truth before persistence. Patch history therefore matches SQLite
-  readback exactly and real shortcut undo or redo remains monotonic.
-- Deterministic and production-route proof covers negative chunks, room and
-  cluster create or delete, exact inverse application, boundary edits, corner
-  movement, wall-run stretch, stable boundary refs, typed protected-wall
-  rejection, preview storage isolation, persistence reload, and undo or redo.
-- Whole-cluster label movement remains with the later connection-handle slice
-  because it also moves attached corridors. Door, corridor, and stair handles
-  plus corridor create or delete retain temporary snapshot history until their
-  remaining M3 slices migrate.
-- Next step after this slice merges: M3.7 moves corridor create and delete,
-  including corridor-owned stair segments, to exact connection patches and
-  deletes their direct commit routes.
+- Current foundation: M0 through M2 and M3.1 through M3.6 are complete on
+  `main` through PR #505. Feature markers, room or cluster semantics, room
+  geometry, stairs, and transitions use exact patches; transition links use
+  atomic compound patches and shared multi-map history.
+- This slice: M3.7 moves corridor create, whole-corridor delete, and targeted
+  branch delete to one exact corridor patch planner and the shared patch
+  executor. Their production consumers no longer commit through
+  `executeOperation`; create and delete previews remain repository-free.
+- Corridor changes encode create, update, and delete states with exact touched
+  chunks. The planner also carries endpoint-created room-cluster boundaries,
+  modified host corridors, and corridor-owned stairs in the same accepted
+  patch, then proves that applying it reproduces the complete aggregate.
+- Topology rebuild now derives current binding membership, order, and ownership
+  from canonical aggregate content while preserving stable labels and the
+  persisted topology-ref mapping for surviving corridor anchors. Deleted refs
+  cannot remain as stale index entries.
+- Deterministic and production-route proof covers same-level and cross-level
+  create, bound-stair create or owner delete, targeted branch delete, stable
+  anchor and door identities, negative-safe touched chunks, typed blocked-route
+  rejection, one-revision commits, exact inverse application, shortcut undo or
+  redo, SQLite reload, and preview storage isolation.
+- Whole-cluster label movement plus door, corridor-anchor, corridor-waypoint,
+  and stair-anchor handles retain temporary snapshot history until the next
+  connection-handle slice. `DungeonChangeSet(before, after)`, snapshot history,
+  and `executeOperation` remain only for those not-yet-migrated M3 routes.
+- Next step after this slice merges: M3.8 moves all remaining connection-handle
+  commits to exact patches and removes their direct operation routes.
 
 ## M0: Target Lock And Baseline
 

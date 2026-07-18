@@ -24,9 +24,7 @@ final class RoomGeometryPatchPlanner {
         if (after == null || after.equals(current)) {
             return new DungeonCommandResult.Rejected(noEffectReason);
         }
-        List<DungeonPatchChange> changes = new ArrayList<>();
-        changes.addAll(roomChanges(current, after));
-        changes.addAll(clusterChanges(current, after));
+        List<DungeonPatchChange> changes = new ArrayList<>(changes(current, after));
         if (changes.isEmpty()) {
             throw new IllegalStateException("room geometry operation changed unencoded authored truth");
         }
@@ -35,6 +33,13 @@ final class RoomGeometryPatchPlanner {
             throw new IllegalStateException("room geometry patch must reproduce the exact aggregate result");
         }
         return DungeonCommandResult.Accepted.from(patch);
+    }
+
+    static List<DungeonPatchChange> changes(DungeonMap before, DungeonMap after) {
+        List<DungeonPatchChange> result = new ArrayList<>();
+        result.addAll(roomChanges(before, after));
+        result.addAll(clusterChanges(before, after));
+        return List.copyOf(result);
     }
 
     private static List<DungeonPatchChange> roomChanges(DungeonMap before, DungeonMap after) {

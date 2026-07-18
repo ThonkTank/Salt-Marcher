@@ -3,7 +3,9 @@ package features.dungeon.domain.core.structure.corridor;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.component.CorridorAnchor;
 import features.dungeon.domain.core.component.CorridorAnchorRef;
 
@@ -33,6 +35,30 @@ public record CorridorNetwork(List<Corridor> corridors) {
             if (corridor.corridorId() != corridorId) {
                 result.add(corridor);
             }
+        }
+        return new CorridorNetwork(result);
+    }
+
+    public CorridorNetwork withExactChange(@Nullable Corridor before, @Nullable Corridor after) {
+        Corridor identity = after == null ? before : after;
+        if (identity == null) {
+            throw new IllegalArgumentException("corridor change requires identity");
+        }
+        if (!Objects.equals(corridorById(identity.corridorId()), before)) {
+            throw new IllegalStateException("corridor patch does not match current authored truth");
+        }
+        List<Corridor> result = new ArrayList<>();
+        for (Corridor corridor : corridors) {
+            if (corridor.corridorId() == identity.corridorId()) {
+                if (after != null) {
+                    result.add(after);
+                }
+            } else {
+                result.add(corridor);
+            }
+        }
+        if (before == null && after != null) {
+            result.add(after);
         }
         return new CorridorNetwork(result);
     }

@@ -1162,6 +1162,7 @@ final class DungeonEditorStairScenarios {
         Set<Long> corridorIdsBefore = runtime.database().corridorIdsForMap(mapId);
         List<String> stairRowsBefore = runtime.database().stairStableState(mapId);
         assertTrue(stairRowsBefore.isEmpty(), "DE-STAIR-008 fixture starts without stair rows");
+        long revisionBeforeCorridor = runtime.database().mapRevision(mapId);
         click(button(controls, "-"));
         click(button(controls, "Korridor"));
         assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.CORRIDOR),
@@ -1199,6 +1200,8 @@ final class DungeonEditorStairScenarios {
 
         long newCorridorId = singleNewCorridorId(corridorIdsBefore, runtime.database().corridorIdsForMap(mapId),
                 "DE-STAIR-008");
+        assertEquals(revisionBeforeCorridor + 1L, runtime.database().mapRevision(mapId),
+                "DE-STAIR-008 cross-level corridor and bound stair commit exactly one aggregate revision");
         List<String> stableCorridorState = runtime.database().corridorStableConnectionState(mapId);
         assertCorridorDoorBindingCount(stableCorridorState, newCorridorId, 2, "DE-STAIR-008");
         List<String> stairRowsAfter = runtime.database().stairStableState(mapId);

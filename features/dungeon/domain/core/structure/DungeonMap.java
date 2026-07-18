@@ -6,6 +6,7 @@ import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.corridor.Corridor;
+import features.dungeon.domain.core.structure.corridor.CorridorNetwork;
 import features.dungeon.domain.core.structure.corridor.DungeonCorridorEndpoint;
 import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
 import features.dungeon.domain.core.structure.feature.FeatureMarkerCatalog;
@@ -275,7 +276,7 @@ public record DungeonMap(
         return new DungeonMap(
                 metadata,
                 topology,
-                null,
+                topologyIndex,
                 nextRooms,
                 corridors,
                 stairs,
@@ -292,7 +293,7 @@ public record DungeonMap(
         return new DungeonMap(
                 metadata,
                 nextTopology,
-                null,
+                topologyIndex,
                 rooms,
                 corridors,
                 stairs,
@@ -309,7 +310,7 @@ public record DungeonMap(
         return new DungeonMap(
                 metadata,
                 topology,
-                null,
+                topologyIndex,
                 rooms,
                 corridors,
                 nextStairs,
@@ -323,6 +324,25 @@ public record DungeonMap(
             @Nullable Transition after
     ) {
         return withTransitionCatalog(transitionCatalog.withExactChange(before, after), null);
+    }
+
+    public DungeonMap withExactCorridorChange(
+            @Nullable Corridor before,
+            @Nullable Corridor after
+    ) {
+        List<Corridor> nextCorridors = new CorridorNetwork(corridors)
+                .withExactChange(before, after)
+                .corridors();
+        return new DungeonMap(
+                metadata,
+                topology,
+                topologyIndex,
+                rooms,
+                nextCorridors,
+                stairs,
+                transitionCatalog,
+                featureMarkers,
+                revision + 1L);
     }
 
     public DungeonMap withTransitionCatalog(TransitionCatalog nextTransitions) {

@@ -119,10 +119,12 @@ final class CorridorEndpointResolution {
         return new DungeonMap(
                 dungeonMap.metadata(),
                 rebuild.topology(),
+                dungeonMap.topologyIndex(),
                 rebuild.rooms(),
                 dungeonMap.corridors(),
                 dungeonMap.stairs(),
                 dungeonMap.transitionCatalog(),
+                dungeonMap.featureMarkers(),
                 dungeonMap.revision() + 1L);
     }
 

@@ -27,12 +27,14 @@ import features.dungeon.application.authored.command.DungeonCommandResult;
 import features.dungeon.application.authored.command.DungeonCompoundCommandResult;
 import features.dungeon.application.authored.command.DungeonCompoundPatch;
 import features.dungeon.application.authored.command.CreateFeatureMarkerCommand;
+import features.dungeon.application.authored.command.CreateCorridorCommand;
 import features.dungeon.application.authored.command.CreateStairCommand;
 import features.dungeon.application.authored.command.CreateTransitionCommand;
 import features.dungeon.application.authored.command.ClusterBoundaryCommand;
 import features.dungeon.application.authored.command.ClusterBoundaryStretchCommand;
 import features.dungeon.application.authored.command.ClusterCornerCommand;
 import features.dungeon.application.authored.command.DeleteFeatureMarkerCommand;
+import features.dungeon.application.authored.command.DeleteCorridorCommand;
 import features.dungeon.application.authored.command.DeleteStairCommand;
 import features.dungeon.application.authored.command.DeleteTransitionCommand;
 import features.dungeon.application.authored.command.FeatureMarkerSemanticsCommand;
@@ -107,6 +109,8 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
     private final DungeonAuthoredPublishedState publishedState;
     private final CorridorRoutingPolicy corridorRoutingPolicy;
     private final CorridorMapAuthoring corridorAuthoring;
+    private final CreateCorridorCommand createCorridorCommand;
+    private final DeleteCorridorCommand deleteCorridorCommand;
     /* Pointer previews operate on this immutable authored workset. */
     private final ConcurrentMap<Long, DungeonMap> authoredWorkset = new ConcurrentHashMap<>();
     private final DungeonEditHistory editHistory = new DungeonEditHistory();
@@ -169,6 +173,8 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
         this.corridorRoutingPolicy = Objects.requireNonNull(corridorRoutingPolicy, "corridorRoutingPolicy");
         corridorAuthoring = new CorridorMapAuthoring(this.corridorRoutingPolicy);
+        createCorridorCommand = new CreateCorridorCommand(this.corridorRoutingPolicy);
+        deleteCorridorCommand = new DeleteCorridorCommand(this.corridorRoutingPolicy);
     }
 
     public Session openSession(DungeonEditorDungeonState dungeonState) {
@@ -808,22 +814,20 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         ) {
             DungeonCorridorEndpoint startEndpoint = corridorEndpoint(start);
             DungeonCorridorEndpoint endEndpoint = corridorEndpoint(end);
-            OperationResultData result = mutationPipeline.executeOperation(
+            OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
-                    current -> current.createCorridor(
-                            corridorRoutingPolicy,
+                    current -> createCorridorCommand.plan(
+                            current,
                             stairIdForCorridor(current, startEndpoint, endEndpoint, true),
                             startEndpoint,
-                            endEndpoint),
-                    DungeonEditorCommandOutcome.RejectionReason.BLOCKED_ROUTE);
+                            endEndpoint));
             publicationOperations.publishMutation(result, session.dungeonState());
         }
 
         private void deleteCorridor(MapId mapId, CorridorDeletionTarget target, Session session) {
-            OperationResultData result = mutationPipeline.executeOperation(
+            OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
-                    current -> corridorAuthoring.deleteCorridor(current, target),
-                    DungeonEditorCommandOutcome.RejectionReason.BLOCKED_ROUTE);
+                    current -> deleteCorridorCommand.plan(current, target));
             publicationOperations.publishMutation(result, session.dungeonState());
         }
 
