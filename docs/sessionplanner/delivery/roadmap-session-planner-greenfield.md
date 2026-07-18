@@ -196,14 +196,13 @@ acceptance after the last UI diff.
 
 ## Current Migration Position
 
-- Current foundation: the owner documents define the greenfield target and this
-  roadmap is the only migration sequence owner.
-- Current milestone: M0 remains open until every M0 document criterion is true
-  and the final candidate has literal green `git diff --check`,
-  `./gradlew check`, and `./gradlew installDesktopApp` results. Whitespace proof
-  alone does not close M0.
-- Next milestone: M1 captures stage baselines and replaces Session Generation's
-  hot-path persistence contract before planner orchestration changes.
+- Current foundation: M0 is merged. The owner documents define the greenfield
+  target, and this roadmap is the only migration sequence owner.
+- Current milestone: M1 captures stage baselines and replaces Session
+  Generation's hot-path persistence contract before planner orchestration
+  changes.
+- M0 closure: documentation whitespace, required `check`, and desktop install
+  proof are green after the final owner-language diff.
 
 ## Delivery Rules
 
