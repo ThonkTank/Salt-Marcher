@@ -87,6 +87,9 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
                     update.transitionId(), update.description());
         } else if (safeIntent instanceof DungeonEditorIntent.CommitTransitionDescription commit) {
             runtimeRoot.saveTransitionDescription(commit.transitionId(), commit.description());
+        } else if (safeIntent instanceof DungeonEditorIntent.CommitFeatureMarkerSemantics commit) {
+            runtimeRoot.saveFeatureMarkerSemantics(
+                    commit.markerId(), commit.label(), commit.description());
         } else if (safeIntent instanceof DungeonEditorIntent.UpdateTransitionDestination update) {
             runtimeRoot.updateStatePanelTransitionDestinationDraft(destinationFrom(update.destination()));
         } else if (safeIntent instanceof DungeonEditorIntent.CommitTransitionDestination commit) {
@@ -113,7 +116,7 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
                 .map(DungeonEditorApiFacade::runtimeTargetFrom)
                 .toList();
         runtimeRoot.applyPointerInteraction(new PointerInteractionRequest(
-                enumValue(PointerAction.class, input.action().name(), PointerAction.MOVED),
+                pointerActionFrom(input.action()),
                 input.toolSelection(),
                 input.gesture(),
                 PointerInteractionTargets.fromRuntimeTargets(
@@ -133,25 +136,19 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
                 : target;
         DungeonEditorPointerInput.BoundaryTarget boundary = safeTarget.boundary();
         return new DungeonEditorRuntimePointerTarget(
-                enumValue(DungeonEditorRuntimePointerTarget.TargetKind.class,
-                        safeTarget.targetKind(), DungeonEditorRuntimePointerTarget.TargetKind.EMPTY),
-                enumValue(DungeonEditorRuntimePointerTarget.LabelKind.class,
-                        safeTarget.labelKind(), DungeonEditorRuntimePointerTarget.LabelKind.EMPTY),
-                enumValue(DungeonEditorRuntimePointerTarget.ElementKind.class,
-                        safeTarget.elementKind(), DungeonEditorRuntimePointerTarget.ElementKind.EMPTY),
+                targetKindFrom(safeTarget.targetKind()),
+                labelKindFrom(safeTarget.labelKind()),
+                elementKindFrom(safeTarget.elementKind()),
                 safeTarget.ownerId(),
                 safeTarget.clusterId(),
-                enumValue(DungeonEditorRuntimePointerTarget.TopologyKind.class,
-                        safeTarget.topologyKind(), DungeonEditorRuntimePointerTarget.TopologyKind.EMPTY),
+                topologyKindFrom(safeTarget.topologyKind()),
                 safeTarget.topologyId(),
                 safeTarget.handleRef(),
                 new DungeonEditorRuntimePointerTarget.BoundaryTarget(
-                        enumValue(DungeonEditorRuntimePointerTarget.BoundaryKind.class,
-                                boundary.boundaryKind(), DungeonEditorRuntimePointerTarget.BoundaryKind.WALL),
+                        boundaryKindFrom(boundary.boundaryKind()),
                         boundary.key(),
                         boundary.ownerId(),
-                        enumValue(DungeonEditorRuntimePointerTarget.TopologyKind.class,
-                                boundary.topologyKind(), DungeonEditorRuntimePointerTarget.TopologyKind.EMPTY),
+                        topologyKindFrom(boundary.topologyKind()),
                         boundary.topologyId(),
                         boundary.startQ(),
                         boundary.startR(),
@@ -159,8 +156,7 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
                         boundary.endQ(),
                         boundary.endR(),
                         boundary.endLevel()),
-                enumValue(DungeonEditorRuntimePointerTarget.SyntheticHoverKind.class,
-                        safeTarget.syntheticHoverKind(), DungeonEditorRuntimePointerTarget.SyntheticHoverKind.NONE),
+                syntheticHoverKindFrom(safeTarget.syntheticHoverKind()),
                 new DungeonEditorRuntimePointerTarget.CellTarget(
                         safeTarget.cell().exact(),
                         safeTarget.cell().q(),
@@ -173,12 +169,82 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
                         safeTarget.vertex().level()));
     }
 
-    private static <E extends Enum<E>> E enumValue(Class<E> type, String name, E fallback) {
-        try {
-            return Enum.valueOf(type, name == null ? "" : name);
-        } catch (IllegalArgumentException ignored) {
-            return fallback;
-        }
+    private static PointerAction pointerActionFrom(DungeonEditorPointerInput.Action action) {
+        return switch (action == null ? DungeonEditorPointerInput.Action.MOVED : action) {
+            case PRESSED -> PointerAction.PRESSED;
+            case DRAGGED -> PointerAction.DRAGGED;
+            case RELEASED -> PointerAction.RELEASED;
+            case MOVED -> PointerAction.MOVED;
+        };
+    }
+
+    private static DungeonEditorRuntimePointerTarget.TargetKind targetKindFrom(String value) {
+        return switch (value == null ? "" : value) {
+            case "CELL" -> DungeonEditorRuntimePointerTarget.TargetKind.CELL;
+            case "LABEL" -> DungeonEditorRuntimePointerTarget.TargetKind.LABEL;
+            case "MARKER" -> DungeonEditorRuntimePointerTarget.TargetKind.MARKER;
+            case "GRAPH_NODE" -> DungeonEditorRuntimePointerTarget.TargetKind.GRAPH_NODE;
+            case "HANDLE" -> DungeonEditorRuntimePointerTarget.TargetKind.HANDLE;
+            case "BOUNDARY" -> DungeonEditorRuntimePointerTarget.TargetKind.BOUNDARY;
+            case "VERTEX" -> DungeonEditorRuntimePointerTarget.TargetKind.VERTEX;
+            default -> DungeonEditorRuntimePointerTarget.TargetKind.EMPTY;
+        };
+    }
+
+    private static DungeonEditorRuntimePointerTarget.LabelKind labelKindFrom(String value) {
+        return switch (value == null ? "" : value) {
+            case "ROOM_LABEL" -> DungeonEditorRuntimePointerTarget.LabelKind.ROOM_LABEL;
+            case "CLUSTER_LABEL" -> DungeonEditorRuntimePointerTarget.LabelKind.CLUSTER_LABEL;
+            case "FEATURE_LABEL" -> DungeonEditorRuntimePointerTarget.LabelKind.FEATURE_LABEL;
+            default -> DungeonEditorRuntimePointerTarget.LabelKind.EMPTY;
+        };
+    }
+
+    private static DungeonEditorRuntimePointerTarget.ElementKind elementKindFrom(String value) {
+        return switch (value == null ? "" : value) {
+            case "ROOM" -> DungeonEditorRuntimePointerTarget.ElementKind.ROOM;
+            case "CORRIDOR" -> DungeonEditorRuntimePointerTarget.ElementKind.CORRIDOR;
+            case "CORRIDOR_ANCHOR" -> DungeonEditorRuntimePointerTarget.ElementKind.CORRIDOR_ANCHOR;
+            case "STAIR" -> DungeonEditorRuntimePointerTarget.ElementKind.STAIR;
+            case "TRANSITION" -> DungeonEditorRuntimePointerTarget.ElementKind.TRANSITION;
+            case "FEATURE_MARKER" -> DungeonEditorRuntimePointerTarget.ElementKind.FEATURE_MARKER;
+            case "FEATURE_OBJECT" -> DungeonEditorRuntimePointerTarget.ElementKind.FEATURE_OBJECT;
+            case "FEATURE_ENCOUNTER" -> DungeonEditorRuntimePointerTarget.ElementKind.FEATURE_ENCOUNTER;
+            case "FEATURE_POI" -> DungeonEditorRuntimePointerTarget.ElementKind.FEATURE_POI;
+            case "WALL" -> DungeonEditorRuntimePointerTarget.ElementKind.WALL;
+            case "DOOR" -> DungeonEditorRuntimePointerTarget.ElementKind.DOOR;
+            case "WALL_VERTEX" -> DungeonEditorRuntimePointerTarget.ElementKind.WALL_VERTEX;
+            default -> DungeonEditorRuntimePointerTarget.ElementKind.EMPTY;
+        };
+    }
+
+    private static DungeonEditorRuntimePointerTarget.TopologyKind topologyKindFrom(String value) {
+        return switch (value == null ? "" : value) {
+            case "ROOM" -> DungeonEditorRuntimePointerTarget.TopologyKind.ROOM;
+            case "CORRIDOR" -> DungeonEditorRuntimePointerTarget.TopologyKind.CORRIDOR;
+            case "CORRIDOR_ANCHOR" -> DungeonEditorRuntimePointerTarget.TopologyKind.CORRIDOR_ANCHOR;
+            case "DOOR" -> DungeonEditorRuntimePointerTarget.TopologyKind.DOOR;
+            case "WALL" -> DungeonEditorRuntimePointerTarget.TopologyKind.WALL;
+            case "STAIR" -> DungeonEditorRuntimePointerTarget.TopologyKind.STAIR;
+            case "TRANSITION" -> DungeonEditorRuntimePointerTarget.TopologyKind.TRANSITION;
+            case "FEATURE_MARKER" -> DungeonEditorRuntimePointerTarget.TopologyKind.FEATURE_MARKER;
+            default -> DungeonEditorRuntimePointerTarget.TopologyKind.EMPTY;
+        };
+    }
+
+    private static DungeonEditorRuntimePointerTarget.BoundaryKind boundaryKindFrom(String value) {
+        return "DOOR".equals(value)
+                ? DungeonEditorRuntimePointerTarget.BoundaryKind.DOOR
+                : DungeonEditorRuntimePointerTarget.BoundaryKind.WALL;
+    }
+
+    private static DungeonEditorRuntimePointerTarget.SyntheticHoverKind syntheticHoverKindFrom(String value) {
+        return switch (value == null ? "" : value) {
+            case "CELL" -> DungeonEditorRuntimePointerTarget.SyntheticHoverKind.CELL;
+            case "BOUNDARY" -> DungeonEditorRuntimePointerTarget.SyntheticHoverKind.BOUNDARY;
+            case "VERTEX" -> DungeonEditorRuntimePointerTarget.SyntheticHoverKind.VERTEX;
+            default -> DungeonEditorRuntimePointerTarget.SyntheticHoverKind.NONE;
+        };
     }
 
     private static RoomNarrationDraftInput roomNarrationDraftFrom(

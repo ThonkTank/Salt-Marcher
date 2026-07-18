@@ -1,6 +1,6 @@
 Status: Temporary Migration
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-17
+Last Reviewed: 2026-07-18
 Source of Truth: Ordered delivery milestones, dependencies, exit gates, and
 legacy-deletion boundaries for the Dungeon greenfield migration.
 
@@ -97,18 +97,18 @@ and commit boundaries. M7 starts only after both are complete.
 
 ## Current Migration State
 
-- Current foundation: M0 through M2.4 are complete on `main` through PR #497.
-- This slice: M2.5 makes the API handle, view, and overlay values and the domain
-  `Cell`, `Edge`, `Direction`, boundary kind, corridor binding, wall-delete,
-  and boundary-stretch values canonical within Dungeon.
-- The parallel Editor handle kinds, session view and overlay values, workspace
-  geometry values, corridor binding state adapters, wall-delete copy, and
-  boundary-stretch selection copy are deleted. Dungeon-layer enum publication
-  now uses typed values or explicit boundary mappings instead of enum-name
-  round trips.
-- Next step after this slice merges: M2.6 injects corridor routing, moves
-  feature-marker semantic edits to the typed command path, and closes the M2
-  architecture and behavior gates.
+- Current foundation: M0 through M2.5 are complete on `main` through PR #498.
+- This slice: M2.6 moves deterministic orthogonal route selection behind one
+  injected domain policy shared by Editor preview and authored corridor
+  commands. `CorridorRoute` remains only the immutable route value.
+- Feature-marker label and description edits now travel from the JavaFX state
+  panel through a typed Editor intent to the aggregate and persistence boundary.
+  The direct-SQL description shortcut in production-route proof is deleted;
+  accepted and rejected edits prove revision, selection, persistence, reload,
+  and typed outcome behavior.
+- Next step after this slice merges: M3.1 introduces the canonical typed command,
+  patch, inverse, touched-chunk, and result-fact vocabulary without changing the
+  now-closed M2 Editor command language.
 
 ## M0: Target Lock And Baseline
 

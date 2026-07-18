@@ -313,6 +313,11 @@ final class DungeonEditorRuntimeCommands
         });
     }
 
+    public void saveFeatureMarkerSemantics(long markerId, String label, String description) {
+        execute(() -> applyInExecutionLane(
+                () -> context.saveFeatureMarkerSemantics(markerId, label, description)));
+    }
+
     @Override
     public void saveStairGeometry(StairGeometryDraftInput input) {
         StairGeometryDraftInput safeInput = input == null ? StairGeometryDraftInput.empty() : input;

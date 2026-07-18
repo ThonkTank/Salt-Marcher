@@ -7,7 +7,13 @@ import features.dungeon.application.editor.DungeonEditorMainViewInteractionValue
 
 final class InterpretDungeonEditorMainViewHoverUseCase {
     private final DungeonEditorBoundaryDraftUseCase boundaryDraft = new DungeonEditorBoundaryDraftUseCase();
-    private final DungeonEditorCorridorInteractionUseCase corridor = new DungeonEditorCorridorInteractionUseCase();
+    private final DungeonEditorCorridorInteractionUseCase corridor;
+
+    InterpretDungeonEditorMainViewHoverUseCase(
+            features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy routingPolicy
+    ) {
+        corridor = new DungeonEditorCorridorInteractionUseCase(routingPolicy);
+    }
 
     DungeonEditorSessionEffect interpretSelection(InteractionState state) {
         return DungeonEditorSessionEffect.clearPreviewIfNeeded(state.boundaryDraft().present() || state.corridorDraft().present());

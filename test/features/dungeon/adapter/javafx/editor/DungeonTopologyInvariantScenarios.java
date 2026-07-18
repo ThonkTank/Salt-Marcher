@@ -116,6 +116,7 @@ final class DungeonTopologyInvariantScenarios {
         RoomRegion leftRoom = roomInCluster(map, leftDoor.clusterId());
         RoomRegion rightRoom = roomInCluster(map, rightDoor.clusterId());
         return map.createCorridor(
+                new features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy(),
                 0L,
                 DungeonCorridorEndpoint.door(
                         leftRoom.roomId(),

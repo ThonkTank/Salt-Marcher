@@ -300,6 +300,7 @@ final class DungeonEditorViewModel {
         consumeTransitionDestinationWhenPresent(event.transitionDestination());
         consumeTransitionDescriptionWhenPresent(event.transitionDescription());
         consumeStairGeometryWhenPresent(event.stairGeometry());
+        consumeFeatureMarkerSemanticsWhenPresent(event.featureMarkerSemantics());
     }
 
     private void consumeNarrationWhenPresent(DungeonEditorStateInput.NarrationInput input) {
@@ -348,6 +349,16 @@ final class DungeonEditorViewModel {
         if (input.inputObserved() || input.saveRequested()) {
             consumeStairGeometryInput(input);
         }
+    }
+
+    private void consumeFeatureMarkerSemanticsWhenPresent(
+            DungeonEditorStateInput.FeatureMarkerSemanticsInput input
+    ) {
+        if (input.markerId() <= 0L || input.label().isBlank()) {
+            return;
+        }
+        editorApi.dispatch(new DungeonEditorIntent.CommitFeatureMarkerSemantics(
+                input.markerId(), input.label(), input.description()));
     }
 
     private void consumeNarrationInput(DungeonEditorStateInput.NarrationInput input) {

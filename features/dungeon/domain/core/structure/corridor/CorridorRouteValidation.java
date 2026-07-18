@@ -14,6 +14,11 @@ import features.dungeon.domain.core.structure.room.RoomCellCoverage;
 
 final class CorridorRouteValidation {
     private static final CorridorHostCellQuery HOST_CELL_QUERY = new CorridorHostCellQuery();
+    private final CorridorRoutingPolicy routingPolicy;
+
+    CorridorRouteValidation(CorridorRoutingPolicy routingPolicy) {
+        this.routingPolicy = java.util.Objects.requireNonNull(routingPolicy, "routingPolicy");
+    }
 
     RouteValidation validate(
             DungeonMap dungeonMap,
@@ -32,7 +37,7 @@ final class CorridorRouteValidation {
         return HOST_CELL_QUERY.cellsByCorridor(dungeonMap, corridors);
     }
 
-    private static CorridorRoute route(
+    private CorridorRoute route(
             DungeonMap dungeonMap,
             DungeonCorridorEndpoint start,
             DungeonCorridorEndpoint end,
@@ -47,7 +52,7 @@ final class CorridorRouteValidation {
         if (startCell == null || endCell == null) {
             return new CorridorRoute(List.of());
         }
-        return CorridorRoute.unblockedBetween(startCell, endCell, roomCells);
+        return routingPolicy.route(startCell, endCell, roomCells);
     }
 
     private static @Nullable Cell corridorCell(

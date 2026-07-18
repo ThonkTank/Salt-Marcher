@@ -9,12 +9,15 @@ import features.dungeon.application.editor.DungeonEditorRuntimeApplicationServic
 import features.dungeon.api.DungeonEditorControlsModel;
 import features.dungeon.api.DungeonEditorMapSurfaceModel;
 import features.dungeon.api.DungeonEditorStateModel;
+import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
+import features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy;
 
 public record DungeonEditorRuntimeDependencies(
         DungeonEditorControlsModel controlsModel,
         DungeonEditorMapSurfaceModel mapSurfaceModel,
         DungeonEditorStateModel stateModel,
         DungeonEditorRuntimeApplicationService editorRuntimeApplicationService,
+        CorridorRoutingPolicy corridorRoutingPolicy,
         ExecutionLane executionLane,
         UiDispatcher uiDispatcher
 ) {
@@ -25,7 +28,20 @@ public record DungeonEditorRuntimeDependencies(
             DungeonEditorRuntimeApplicationService editorRuntimeApplicationService
     ) {
         this(controlsModel, mapSurfaceModel, stateModel, editorRuntimeApplicationService,
+                new OrthogonalCorridorRoutingPolicy(),
                 DirectExecutionLane.INSTANCE, DirectUiDispatcher.INSTANCE);
+    }
+
+    public DungeonEditorRuntimeDependencies(
+            DungeonEditorControlsModel controlsModel,
+            DungeonEditorMapSurfaceModel mapSurfaceModel,
+            DungeonEditorStateModel stateModel,
+            DungeonEditorRuntimeApplicationService editorRuntimeApplicationService,
+            ExecutionLane executionLane,
+            UiDispatcher uiDispatcher
+    ) {
+        this(controlsModel, mapSurfaceModel, stateModel, editorRuntimeApplicationService,
+                new OrthogonalCorridorRoutingPolicy(), executionLane, uiDispatcher);
     }
 
     public DungeonEditorRuntimeDependencies {
@@ -34,6 +50,7 @@ public record DungeonEditorRuntimeDependencies(
         stateModel = Objects.requireNonNull(stateModel, "stateModel");
         editorRuntimeApplicationService =
                 Objects.requireNonNull(editorRuntimeApplicationService, "editorRuntimeApplicationService");
+        corridorRoutingPolicy = Objects.requireNonNull(corridorRoutingPolicy, "corridorRoutingPolicy");
         executionLane = Objects.requireNonNull(executionLane, "executionLane");
         uiDispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
     }

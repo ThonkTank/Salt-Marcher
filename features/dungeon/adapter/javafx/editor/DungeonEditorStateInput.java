@@ -9,7 +9,8 @@ record DungeonEditorStateInput(
         CorridorPointInput corridorPoint,
         TransitionDestinationInput transitionDestination,
         TransitionDescriptionInput transitionDescription,
-        StairGeometryInput stairGeometry
+        StairGeometryInput stairGeometry,
+        FeatureMarkerSemanticsInput featureMarkerSemantics
 ) {
 
     DungeonEditorStateInput {
@@ -23,6 +24,9 @@ record DungeonEditorStateInput(
                 ? TransitionDescriptionInput.none()
                 : transitionDescription;
         stairGeometry = stairGeometry == null ? StairGeometryInput.none() : stairGeometry;
+        featureMarkerSemantics = featureMarkerSemantics == null
+                ? FeatureMarkerSemanticsInput.none()
+                : featureMarkerSemantics;
     }
 
     static DungeonEditorStateInput narration(
@@ -37,7 +41,8 @@ record DungeonEditorStateInput(
                 CorridorPointInput.none(),
                 TransitionDestinationInput.none(),
                 TransitionDescriptionInput.none(),
-                StairGeometryInput.none());
+                StairGeometryInput.none(),
+                FeatureMarkerSemanticsInput.none());
     }
 
     static DungeonEditorStateInput labelName(
@@ -51,7 +56,8 @@ record DungeonEditorStateInput(
                 CorridorPointInput.none(),
                 TransitionDestinationInput.none(),
                 TransitionDescriptionInput.none(),
-                StairGeometryInput.none());
+                StairGeometryInput.none(),
+                FeatureMarkerSemanticsInput.none());
     }
 
     static DungeonEditorStateInput corridorPoint(
@@ -65,7 +71,8 @@ record DungeonEditorStateInput(
                 new CorridorPointInput(q, r, true, submitRequested),
                 TransitionDestinationInput.none(),
                 TransitionDescriptionInput.none(),
-                StairGeometryInput.none());
+                StairGeometryInput.none(),
+                FeatureMarkerSemanticsInput.none());
     }
 
     static DungeonEditorStateInput transitionDescription(
@@ -79,7 +86,8 @@ record DungeonEditorStateInput(
                 CorridorPointInput.none(),
                 TransitionDestinationInput.none(),
                 new TransitionDescriptionInput(transitionId, description, true, saveRequested),
-                StairGeometryInput.none());
+                StairGeometryInput.none(),
+                FeatureMarkerSemanticsInput.none());
     }
 
     static DungeonEditorStateInput transitionDestination(
@@ -103,7 +111,8 @@ record DungeonEditorStateInput(
                         true,
                         saveRequested),
                 TransitionDescriptionInput.none(),
-                StairGeometryInput.none());
+                StairGeometryInput.none(),
+                FeatureMarkerSemanticsInput.none());
     }
 
     static DungeonEditorStateInput stairGeometry(
@@ -127,7 +136,35 @@ record DungeonEditorStateInput(
                         dimension1,
                         dimension2,
                         true,
-                        saveRequested));
+                        saveRequested),
+                FeatureMarkerSemanticsInput.none());
+    }
+
+    static DungeonEditorStateInput featureMarkerSemantics(
+            long markerId,
+            String label,
+            String description
+    ) {
+        return new DungeonEditorStateInput(
+                NarrationInput.none(),
+                LabelNameInput.none(),
+                CorridorPointInput.none(),
+                TransitionDestinationInput.none(),
+                TransitionDescriptionInput.none(),
+                StairGeometryInput.none(),
+                new FeatureMarkerSemanticsInput(markerId, label, description));
+    }
+
+    record FeatureMarkerSemanticsInput(long markerId, String label, String description) {
+        FeatureMarkerSemanticsInput {
+            markerId = Math.max(0L, markerId);
+            label = safeText(label);
+            description = safeText(description);
+        }
+
+        static FeatureMarkerSemanticsInput none() {
+            return new FeatureMarkerSemanticsInput(0L, "", "");
+        }
     }
 
     record NarrationInput(

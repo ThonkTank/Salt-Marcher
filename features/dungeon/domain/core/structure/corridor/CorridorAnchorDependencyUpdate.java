@@ -13,7 +13,7 @@ import features.dungeon.domain.core.structure.DungeonMap;
 
 final class CorridorAnchorDependencyUpdate {
     private static final CorridorReplacementRouteValidation REPLACEMENT_ROUTE_VALIDATION =
-            new CorridorReplacementRouteValidation();
+            new CorridorReplacementRouteValidation(new OrthogonalCorridorRoutingPolicy());
 
     DependencyUpdateResult rerouteDependents(
             DungeonMap currentMap,

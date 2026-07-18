@@ -8,7 +8,8 @@ import java.util.Set;
 import features.dungeon.domain.core.component.CorridorWaypoint;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.corridor.Corridor;
-import features.dungeon.domain.core.structure.corridor.CorridorRoute;
+import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
+import features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy;
 import features.dungeon.domain.core.structure.room.RoomCluster;
 
 /**
@@ -16,6 +17,7 @@ import features.dungeon.domain.core.structure.room.RoomCluster;
  * structure owners.
  */
 final class DungeonCorridorCellProjection {
+    private static final CorridorRoutingPolicy ROUTING_POLICY = new OrthogonalCorridorRoutingPolicy();
     private static final int SINGLE_ROUTE_TERMINUS_COUNT = 1;
     private static final int FULL_ROUTE_TERMINUS_COUNT = 2;
 
@@ -138,7 +140,7 @@ final class DungeonCorridorCellProjection {
             return List.of();
         }
         Set<Cell> blockedCells = roomCells == null ? Set.of() : roomCells;
-        return CorridorRoute.unblockedBetweenWithLevelTransition(start, end, blockedCells).cells();
+        return ROUTING_POLICY.routeWithLevelTransition(start, end, blockedCells).cells();
     }
 
     private static int compareCells(Cell left, Cell right) {
