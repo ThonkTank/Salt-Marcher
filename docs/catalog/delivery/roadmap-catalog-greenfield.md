@@ -91,17 +91,19 @@ M0 Target Lock And Documentation
 
 ## Current Migration Position
 
-- Current foundation: M0 is merged. M1 moves the production Catalog composition,
-  immutable workspace publication, provider subscriptions, request epochs, and
-  component lifecycle behind `CatalogFeature.create(CatalogProviders,
-  CatalogRoutes)` while retaining the seven existing views through the one
-  permitted `LegacyCatalogBindingAdapter`.
-- Current milestone: M1 is delivered by PR #513. Its final candidate has green
-  local `./gradlew check` and desktop-install proof and merges only after
-  required PR CI is green.
-- Next step after PR #513 merges: M2 moves the complete Monster query, filter,
-  paging, selection, Inspector, and Encounter-filter path out of the temporary
-  adapter and adopts the shared table scaffold.
+- Current foundation: M0 and M1 are merged. PR #513 established the production
+  Catalog application seam, immutable workspace publication, provider-owned
+  subscriptions and component lifecycle behind
+  `CatalogFeature.create(CatalogProviders, CatalogRoutes)`.
+- Current milestone: M2 is delivered by PR #514. Its final candidate moves the
+  complete Monster query, filter, sort, paging, stable selection, Inspector and
+  Encounter pool-filter paths to the application controller; Monster is the
+  first production adopter of `CatalogTableScaffold`. Local
+  `./gradlew architectureTest`, `./gradlew check`, desktop install and diff
+  whitespace proof are green. It merges only after required PR CI is green.
+- Next step after PR #514 merges: M3 migrates Items and Saved Encounters from the
+  single compatibility adapter, including their async result lifecycles,
+  stable-id selection, confirmation intent and shared table scaffold.
 
 ## Delivery Rules
 
