@@ -22,41 +22,54 @@ import org.junit.jupiter.api.Test;
 final class DungeonEditHistoryTest {
     @Test
     void undoAndRedoRemainLocalToOneRunningSessionAndMap() {
-        DungeonMapIdentity mapId = new DungeonMapIdentity(1L);
-        DungeonMap before = DungeonMapAuthoring.empty(mapId, "Before");
-        DungeonMap after = DungeonMapAuthoring.rename(before, "After");
+        DungeonMap before = transitionMap(1L, 1L, "Before");
+        DungeonMapIdentity mapId = before.metadata().mapId();
+        Transition initial = before.transitionCatalog().transition(1L);
+        DungeonPatch patch = DungeonPatch.of(
+                mapId,
+                before.revision(),
+                List.of(new TransitionChange(initial, initial.withDescription("After"))));
+        DungeonMap after = patch.applyTo(before);
         DungeonEditHistory history = new DungeonEditHistory();
 
-        history.record(before, after);
+        history.recordPatch(patch);
 
         assertTrue(history.canUndo(mapId));
         DungeonMap undone = applyAndComplete(history, after, true);
-        assertEquals(before.metadata(), undone.metadata());
+        assertEquals(before.transitionCatalog(), undone.transitionCatalog());
         assertEquals(after.revision() + 1L, undone.revision());
         assertFalse(history.canUndo(mapId));
         assertTrue(history.canRedo(mapId));
         DungeonMap redone = applyAndComplete(history, undone, false);
-        assertEquals(after.metadata(), redone.metadata());
+        assertEquals(after.transitionCatalog(), redone.transitionCatalog());
         assertEquals(undone.revision() + 1L, redone.revision());
     }
 
     @Test
     void newCommitClearsTheRedoBranch() {
-        DungeonMapIdentity mapId = new DungeonMapIdentity(1L);
-        DungeonMap first = DungeonMapAuthoring.empty(mapId, "First");
-        DungeonMap second = DungeonMapAuthoring.rename(first, "Second");
-        DungeonMap replacement = DungeonMapAuthoring.rename(first, "Replacement");
+        DungeonMap first = transitionMap(1L, 1L, "First");
+        DungeonMapIdentity mapId = first.metadata().mapId();
+        Transition initial = first.transitionCatalog().transition(1L);
+        DungeonPatch firstPatch = DungeonPatch.of(
+                mapId,
+                first.revision(),
+                List.of(new TransitionChange(initial, initial.withDescription("Second"))));
+        DungeonMap second = firstPatch.applyTo(first);
         DungeonEditHistory history = new DungeonEditHistory();
-        history.record(first, second);
+        history.recordPatch(firstPatch);
         DungeonMap undone = applyAndComplete(history, second, true);
 
-        DungeonMap committedReplacement = DungeonMapAuthoring.committedContent(
-                replacement,
-                undone.revision() + 1L);
-        history.record(undone, committedReplacement);
+        DungeonPatch replacementPatch = DungeonPatch.of(
+                mapId,
+                undone.revision(),
+                List.of(new TransitionChange(initial, initial.withDescription("Replacement"))));
+        DungeonMap committedReplacement = replacementPatch.applyTo(undone);
+        history.recordPatch(replacementPatch);
 
         assertFalse(history.canRedo(mapId));
-        assertEquals(first.metadata(), applyAndComplete(history, committedReplacement, true).metadata());
+        assertEquals(
+                first.transitionCatalog(),
+                applyAndComplete(history, committedReplacement, true).transitionCatalog());
     }
 
     @Test
@@ -98,8 +111,15 @@ final class DungeonEditHistoryTest {
         assertEquals(changed.get(11L).transitionCatalog(), redone.get(11L).transitionCatalog());
         assertEquals(changed.get(12L).transitionCatalog(), redone.get(12L).transitionCatalog());
 
-        DungeonMap laterTarget = DungeonMapAuthoring.rename(redone.get(12L), "Later target edit");
-        history.record(redone.get(12L), laterTarget);
+        DungeonMap currentTarget = redone.get(12L);
+        Transition currentTargetTransition = currentTarget.transitionCatalog().transition(2L);
+        DungeonPatch laterTargetPatch = DungeonPatch.of(
+                currentTarget.metadata().mapId(),
+                currentTarget.revision(),
+                List.of(new TransitionChange(
+                        currentTargetTransition,
+                        currentTargetTransition.withDescription("Later target edit"))));
+        history.recordPatch(laterTargetPatch);
         assertFalse(history.canUndo(source.metadata().mapId()));
         assertTrue(history.canUndo(target.metadata().mapId()));
     }

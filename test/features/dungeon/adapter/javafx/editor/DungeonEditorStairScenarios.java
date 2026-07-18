@@ -90,6 +90,7 @@ final class DungeonEditorStairScenarios {
         List<String> stableRowsBefore = runtime.database().stairStableState(mapId);
         List<String> pathRowsBefore = runtime.database().stairPathState(mapId);
         List<String> exitRowsBefore = runtime.database().stairExitState(mapId);
+        long revisionBeforeMove = runtime.database().mapRevision(mapId);
         String pathRowBefore = pathRowsBefore.stream()
                 .filter(row -> row.contains("|sort_order=0|")
                         && row.contains("|cell_x=2|")
@@ -158,6 +159,8 @@ final class DungeonEditorStairScenarios {
                 "DE-STAIR-005 keeps stair exit coordinates unchanged for direct path-node movement");
         assertEquals(stableRowsBefore, runtime.database().stairStableState(mapId),
                 "DE-STAIR-005 keeps stair identity, shape, dimensions, and topology refs stable");
+        assertEquals(revisionBeforeMove + 1L, runtime.database().mapRevision(mapId),
+                "DE-STAIR-005 stair-handle patch commits exactly one aggregate revision");
         DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
         assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
                 "DE-STAIR-005 clears move preview after release");
@@ -167,6 +170,20 @@ final class DungeonEditorStairScenarios {
                 "DE-STAIR-005");
         assertCanvasPaintedAtScene(mapView, 3.5, 2.5,
                 "DE-STAIR-005 rendered canvas paints the moved stair handle");
+
+        fireMapShortcut(mapView, KeyCode.Z, true, false);
+        assertEquals(pathRowsBefore, runtime.database().stairPathState(mapId),
+                "DE-STAIR-005 patch undo restores the original stair path node");
+        assertEquals(revisionBeforeMove + 2L, runtime.database().mapRevision(mapId),
+                "DE-STAIR-005 patch undo restores content as one new revision");
+        assertEquals(stableRowsBefore, runtime.database().stairStableState(mapId),
+                "DE-STAIR-005 patch undo keeps stable stair identity facts");
+
+        fireMapShortcut(mapView, KeyCode.Y, true, false);
+        assertEquals(pathRowsAfter, runtime.database().stairPathState(mapId),
+                "DE-STAIR-005 patch redo restores the moved stair path node");
+        assertEquals(revisionBeforeMove + 3L, runtime.database().mapRevision(mapId),
+                "DE-STAIR-005 patch redo restores content as one new revision");
 
         selectMap(controls, "Stair Anchor Move Reload Hop");
         selectMap(controls, "Stair Anchor Move Map");

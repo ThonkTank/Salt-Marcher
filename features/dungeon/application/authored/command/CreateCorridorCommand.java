@@ -25,7 +25,7 @@ public final class CreateCorridorCommand {
             return new DungeonCommandResult.Rejected(
                     DungeonEditorCommandOutcome.RejectionReason.INVALID_TARGET);
         }
-        return CorridorPatchPlanner.plan(
+        return ConnectionPatchPlanner.plan(
                 current,
                 map -> authoring.createCorridor(map, stairId, start, end),
                 DungeonEditorCommandOutcome.RejectionReason.BLOCKED_ROUTE);
