@@ -1,6 +1,7 @@
 package features.sessiongeneration.adapter.sqlite.persistence;
 
 import features.sessiongeneration.domain.generation.GeneratedRun;
+import features.sessiongeneration.domain.generation.GeneratedRunDraft;
 import features.sessiongeneration.domain.generation.GeneratedRun.Audit;
 import features.sessiongeneration.domain.generation.GeneratedRun.EncounterBlock;
 import features.sessiongeneration.domain.generation.GeneratedRun.EncounterPlan;
@@ -16,8 +17,9 @@ import java.sql.SQLException;
 
 final class GenerationRunSqliteWriter {
 
-    void insert(Connection connection, GeneratedRun run) throws SQLException {
-        insertRun(connection, run);
+    void insert(Connection connection, GeneratedRunDraft draft) throws SQLException {
+        GeneratedRun run = draft.run();
+        insertRun(connection, run, draft.contentFingerprint());
         insertParty(connection, run);
         insertTargets(connection, run);
         insertEncounters(connection, run);
@@ -27,7 +29,33 @@ final class GenerationRunSqliteWriter {
         insertAudits(connection, run);
     }
 
-    private static void insertRun(Connection connection, GeneratedRun run) throws SQLException {
+    void insertLegacyV1(Connection connection, GeneratedRun run) throws SQLException {
+        insertRunV1(connection, run);
+        insertParty(connection, run);
+        insertTargets(connection, run);
+        insertEncounters(connection, run);
+        insertTreasures(connection, run);
+        insertLoot(connection, run);
+        insertPacking(connection, run);
+        insertAudits(connection, run);
+    }
+
+    private static void insertRun(Connection connection, GeneratedRun run, String contentFingerprint)
+            throws SQLException {
+        String sql = "INSERT INTO " + SessionGenerationSchema.RUNS + " ("
+                + "run_id, owner, schema_version, engine_version, catalog_version, catalog_hash, seed, "
+                + "adventure_fraction, encounter_count, party_count, day_xp_budget, session_xp_target, average_level, "
+                + "normal_budget_cp, overstock_budget_cp, nonmagic_slots, normal_magic, overstock_magic, treasure_count, "
+                + "normal_actual_cp, overstock_actual_cp, magic_count, formatted_text, content_fingerprint) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            bindRun(statement, run);
+            statement.setString(24, contentFingerprint);
+            statement.executeUpdate();
+        }
+    }
+
+    private static void insertRunV1(Connection connection, GeneratedRun run) throws SQLException {
         String sql = "INSERT INTO " + SessionGenerationSchema.RUNS + " ("
                 + "run_id, owner, schema_version, engine_version, catalog_version, catalog_hash, seed, "
                 + "adventure_fraction, encounter_count, party_count, day_xp_budget, session_xp_target, average_level, "
@@ -35,32 +63,36 @@ final class GenerationRunSqliteWriter {
                 + "normal_actual_cp, overstock_actual_cp, magic_count, formatted_text) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            SessionContext session = run.session();
-            statement.setString(1, run.runId());
-            statement.setString(2, SqliteGenerationRunRepository.OWNER);
-            statement.setInt(3, SqliteGenerationRunRepository.SCHEMA_VERSION);
-            statement.setString(4, run.engineVersion());
-            statement.setString(5, run.catalogVersion());
-            statement.setString(6, run.catalogContentHash());
-            statement.setLong(7, run.seed());
-            statement.setString(8, session.adventureDayFraction().toPlainString());
-            statement.setInt(9, session.encounterCount());
-            statement.setInt(10, session.partyCount());
-            statement.setLong(11, session.dayXpBudget());
-            statement.setLong(12, session.sessionXpTarget());
-            statement.setString(13, session.averageLevel().toPlainString());
-            statement.setLong(14, session.normalBudgetCp());
-            statement.setLong(15, session.overstockBudgetCp());
-            statement.setInt(16, session.nonMagicSlots());
-            statement.setInt(17, session.normalMagic());
-            statement.setInt(18, session.overstockMagic());
-            statement.setInt(19, session.treasureCount());
-            statement.setLong(20, run.rewards().normalActualCp());
-            statement.setLong(21, run.rewards().overstockActualCp());
-            statement.setInt(22, run.rewards().magicCount());
-            statement.setString(23, run.formattedText());
+            bindRun(statement, run);
             statement.executeUpdate();
         }
+    }
+
+    private static void bindRun(PreparedStatement statement, GeneratedRun run) throws SQLException {
+        SessionContext session = run.session();
+        statement.setString(1, run.runId());
+        statement.setString(2, SqliteGenerationRunRepository.OWNER);
+        statement.setInt(3, SqliteGenerationRunRepository.RUN_SCHEMA_VERSION);
+        statement.setString(4, run.engineVersion());
+        statement.setString(5, run.catalogVersion());
+        statement.setString(6, run.catalogContentHash());
+        statement.setLong(7, run.seed());
+        statement.setString(8, session.adventureDayFraction().toPlainString());
+        statement.setInt(9, session.encounterCount());
+        statement.setInt(10, session.partyCount());
+        statement.setLong(11, session.dayXpBudget());
+        statement.setLong(12, session.sessionXpTarget());
+        statement.setString(13, session.averageLevel().toPlainString());
+        statement.setLong(14, session.normalBudgetCp());
+        statement.setLong(15, session.overstockBudgetCp());
+        statement.setInt(16, session.nonMagicSlots());
+        statement.setInt(17, session.normalMagic());
+        statement.setInt(18, session.overstockMagic());
+        statement.setInt(19, session.treasureCount());
+        statement.setLong(20, run.rewards().normalActualCp());
+        statement.setLong(21, run.rewards().overstockActualCp());
+        statement.setInt(22, run.rewards().magicCount());
+        statement.setString(23, run.formattedText());
     }
 
     private static void insertParty(Connection connection, GeneratedRun run) throws SQLException {

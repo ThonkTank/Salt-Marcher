@@ -8,6 +8,7 @@ import org.jspecify.annotations.Nullable;
 import platform.diagnostics.Diagnostics;
 import platform.diagnostics.SystemLoggerDiagnostics;
 import platform.execution.ExecutionLane;
+import platform.execution.BoundedExecutionLane;
 import platform.execution.SerialExecutionLane;
 import platform.persistence.SqliteDatabase;
 import platform.ui.JavaFxUiDispatcher;
@@ -45,6 +46,8 @@ public final class AppBootstrap implements AutoCloseable {
 
     private final Diagnostics diagnostics;
     private final ExecutionLane executionLane;
+    private final ExecutionLane sessionGenerationCpuLane;
+    private final ExecutionLane sessionGenerationIoLane;
     private final UiDispatcher uiDispatcher;
     private final SqliteDatabase database;
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -58,6 +61,11 @@ public final class AppBootstrap implements AutoCloseable {
         this(
                 diagnostics,
                 new SerialExecutionLane(diagnostics),
+                new BoundedExecutionLane(
+                        diagnostics,
+                        "session-generation-cpu",
+                        Math.max(2, Runtime.getRuntime().availableProcessors() - 1)),
+                new BoundedExecutionLane(diagnostics, "session-generation-io", 2),
                 new JavaFxUiDispatcher(),
                 SqliteDatabase.defaultDatabase(SqliteDatabase.DEFAULT_DATABASE_FILE_NAME, diagnostics));
     }
@@ -68,8 +76,29 @@ public final class AppBootstrap implements AutoCloseable {
             UiDispatcher uiDispatcher,
             SqliteDatabase database
     ) {
+        this(
+                diagnostics,
+                executionLane,
+                new BoundedExecutionLane(diagnostics, "session-generation-cpu", 2),
+                new BoundedExecutionLane(diagnostics, "session-generation-io", 2),
+                uiDispatcher,
+                database);
+    }
+
+    AppBootstrap(
+            Diagnostics diagnostics,
+            ExecutionLane executionLane,
+            ExecutionLane sessionGenerationCpuLane,
+            ExecutionLane sessionGenerationIoLane,
+            UiDispatcher uiDispatcher,
+            SqliteDatabase database
+    ) {
         this.diagnostics = java.util.Objects.requireNonNull(diagnostics, "diagnostics");
         this.executionLane = java.util.Objects.requireNonNull(executionLane, "executionLane");
+        this.sessionGenerationCpuLane = java.util.Objects.requireNonNull(
+                sessionGenerationCpuLane, "sessionGenerationCpuLane");
+        this.sessionGenerationIoLane = java.util.Objects.requireNonNull(
+                sessionGenerationIoLane, "sessionGenerationIoLane");
         this.uiDispatcher = java.util.Objects.requireNonNull(uiDispatcher, "uiDispatcher");
         this.database = java.util.Objects.requireNonNull(database, "database");
     }
@@ -134,7 +163,8 @@ public final class AppBootstrap implements AutoCloseable {
         HexServiceAssembly.Component hex = HexServiceAssembly.create(
                 database, party.travelPositions(), party.application(),
                 executionLane, uiDispatcher, diagnostics);
-        SessionGenerationApi generation = SessionGenerationServiceAssembly.create(database, executionLane);
+        SessionGenerationApi generation = SessionGenerationServiceAssembly.create(
+                database, sessionGenerationCpuLane, sessionGenerationIoLane);
         SessionPlannerServiceAssembly session = SessionPlannerServiceAssembly.create(
                 database,
                 party.application(),
@@ -431,6 +461,8 @@ public final class AppBootstrap implements AutoCloseable {
             catalog.close();
             catalogComponent = null;
         }
+        sessionGenerationCpuLane.close();
+        sessionGenerationIoLane.close();
         executionLane.close();
         database.close();
     }

@@ -353,6 +353,7 @@ final class SessionGenerationCoordinatorTest {
                 "catalog-2026-07-16",
                 "10e7b8c2f3d43c0868e2ce0c3bf8471b72ed4d5327fc633452e0245d32f416f6",
                 seed,
+                List.of(new GenerationResult.PartyLevel(3, 2)),
                 new GenerationResult.SessionSummary(
                         2, new BigDecimal("0.6"), 1, 1000L, 100L,
                         new BigDecimal("3.5"), 1000L, 200L, 3, 0, 0, 3),
@@ -366,7 +367,10 @@ final class SessionGenerationCoordinatorTest {
                         "1 × creature",
                         1,
                         BigDecimal.ONE,
+                        1,
+                        BigDecimal.ZERO,
                         List.of(new GenerationResult.EncounterBlock(
+                                "block-1",
                                 GenerationResult.EncounterRole.STANDARD,
                                 1,
                                 "1/2",
@@ -436,6 +440,32 @@ final class SessionGenerationCoordinatorTest {
 
         private RecordingGeneration(GenerationResult result) {
             this.result = result;
+        }
+
+        @Override
+        public CompletionStage<features.sessiongeneration.api.GenerationDraftResponse> draft(
+                GenerationRequest request
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public CompletionStage<features.sessiongeneration.api.GenerationRunResponse> commit(
+                features.sessiongeneration.api.CommitGenerationRunCommand command
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public CompletionStage<features.sessiongeneration.api.GenerationRunResponse> loadRun(GenerationRunId runId) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public CompletionStage<features.sessiongeneration.api.GenerationRewardBatchResponse> loadRewards(
+                features.sessiongeneration.api.GenerationRewardBatchQuery query
+        ) {
+            throw new UnsupportedOperationException();
         }
 
         @Override

@@ -196,13 +196,21 @@ acceptance after the last UI diff.
 
 ## Current Migration Position
 
-- Current foundation: M0 is merged. The owner documents define the greenfield
-  target, and this roadmap is the only migration sequence owner.
-- Current milestone: M1 captures stage baselines and replaces Session
-  Generation's hot-path persistence contract before planner orchestration
+- Current foundation: M0 and M1 are merged. Session Generation now publishes
+  the typed draft/commit/load/reward-read boundary, commits immutable semantic
+  drafts idempotently, and uses separately owned bounded CPU and I/O execution.
+- Current milestone: M2 replaces abstract generated Encounter slots with one
+  concrete deterministic prepare-and-commit batch before planner orchestration
   changes.
 - M0 closure: documentation whitespace, required `check`, and desktop install
   proof are green after the final owner-language diff.
+- M1 closure: the Golden fixture uses two level-3 and two level-4 characters,
+  adventure-day fraction `0.6`, three Encounters, and seed `179974`. Its final
+  independent JUnit baselines recorded catalog load `0.212s`, pure engine
+  `0.629s`, persistence commit plus canonical load `1.271s`, and structured
+  reward batch read `0.320s`. Final `git diff --check`, focused production-route
+  and architecture proof, required `check` (`4m 29s`), and desktop install
+  (`14s`) are green after the last M1 code diff.
 
 ## Delivery Rules
 

@@ -21,6 +21,11 @@ import features.party.api.AdventuringDayCalculationModel;
 import features.party.api.PartyApi;
 import features.sessiongeneration.api.GenerationRequest;
 import features.sessiongeneration.api.GenerationResponse;
+import features.sessiongeneration.api.CommitGenerationRunCommand;
+import features.sessiongeneration.api.GenerationDraftResponse;
+import features.sessiongeneration.api.GenerationRewardBatchQuery;
+import features.sessiongeneration.api.GenerationRewardBatchResponse;
+import features.sessiongeneration.api.GenerationRunResponse;
 import features.sessiongeneration.api.GenerationRunId;
 import features.sessiongeneration.api.GenerationStatus;
 import features.sessiongeneration.api.SessionGenerationApi;
@@ -255,6 +260,34 @@ public final class SessionPlannerServiceAssembly {
 
     private static SessionGenerationApi unavailableGeneration() {
         return new SessionGenerationApi() {
+            @Override
+            public java.util.concurrent.CompletionStage<GenerationDraftResponse> draft(GenerationRequest request) {
+                return CompletableFuture.completedFuture(GenerationDraftResponse.failure(
+                        GenerationStatus.CATALOG_FAILURE, "Session generation is not configured."));
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<GenerationRunResponse> commit(
+                    CommitGenerationRunCommand command
+            ) {
+                return CompletableFuture.completedFuture(GenerationRunResponse.failure(
+                        GenerationStatus.STORAGE_FAILURE, "Session generation is not configured."));
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<GenerationRunResponse> loadRun(GenerationRunId runId) {
+                return CompletableFuture.completedFuture(GenerationRunResponse.failure(
+                        GenerationStatus.NOT_FOUND, "Session generation is not configured."));
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<GenerationRewardBatchResponse> loadRewards(
+                    GenerationRewardBatchQuery query
+            ) {
+                return CompletableFuture.completedFuture(GenerationRewardBatchResponse.failure(
+                        GenerationStatus.STORAGE_FAILURE, "Session generation is not configured."));
+            }
+
             @Override
             public java.util.concurrent.CompletionStage<GenerationResponse> generate(GenerationRequest request) {
                 return CompletableFuture.completedFuture(GenerationResponse.failure(

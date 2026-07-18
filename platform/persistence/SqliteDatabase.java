@@ -163,12 +163,21 @@ public final class SqliteDatabase implements AutoCloseable {
         synchronized (this) {
             requireOpen();
         }
-        Connection connection = openConfigured(databasePath);
+        Connection connection = null;
         try {
-            migrate(connection, registeredPlans());
+            // Connection setup changes WAL mode and may execute idempotent DDL or feature
+            // migrations. Serialize only that initialization window for this database lifecycle;
+            // returned connections and their feature transactions remain independently concurrent.
+            synchronized (this) {
+                requireOpen();
+                connection = openConfigured(databasePath);
+                migrate(connection, registeredPlans());
+            }
             return connection;
         } catch (SQLException | RuntimeException exception) {
-            connection.close();
+            if (connection != null) {
+                connection.close();
+            }
             if (exception instanceof SQLException sqlException) {
                 throw sqlException;
             }

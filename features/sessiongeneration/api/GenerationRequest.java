@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.OptionalInt;
 
 public record GenerationRequest(
+        GenerationPreparationIdentity preparationIdentity,
         List<PartyLevel> party,
         BigDecimal adventureDayFraction,
         OptionalInt encounterCount,
@@ -14,6 +15,7 @@ public record GenerationRequest(
 ) {
 
     public GenerationRequest {
+        preparationIdentity = Objects.requireNonNull(preparationIdentity, "preparationIdentity");
         party = List.copyOf(Objects.requireNonNull(party, "party")).stream()
                 .sorted(Comparator.comparingInt(PartyLevel::level))
                 .toList();
@@ -35,6 +37,17 @@ public record GenerationRequest(
                 && (encounterCount.getAsInt() < 1 || encounterCount.getAsInt() > 10)) {
             throw new IllegalArgumentException("encounter count must be between 1 and 10");
         }
+    }
+
+    /** Temporary constructor for the coordinator removed in M3. */
+    @Deprecated(forRemoval = true)
+    public GenerationRequest(
+            List<PartyLevel> party,
+            BigDecimal adventureDayFraction,
+            OptionalInt encounterCount,
+            long seed
+    ) {
+        this(GenerationPreparationIdentity.legacy(), party, adventureDayFraction, encounterCount, seed);
     }
 
     public record PartyLevel(int level, int players) {

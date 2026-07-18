@@ -1,10 +1,13 @@
 package features.sessiongeneration.domain.generation;
 
 import java.util.Optional;
+import java.util.List;
 
 public interface GenerationRunRepository {
 
-    GeneratedRun save(GeneratedRun run);
+    GenerationRunCommitResult commit(GeneratedRunDraft draft);
 
-    Optional<GeneratedRun> load(String runId);
+    Optional<GeneratedRunDraft> load(String runId);
+
+    GenerationRewardBatch loadRewards(List<GenerationRewardReference> references);
 }

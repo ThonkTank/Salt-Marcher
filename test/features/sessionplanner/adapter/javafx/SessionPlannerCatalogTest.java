@@ -103,6 +103,33 @@ public final class SessionPlannerCatalogTest {
         CompletableFuture<GenerationResponse> pending = new CompletableFuture<>();
         SessionGenerationApi delayedGeneration = new SessionGenerationApi() {
             @Override
+            public java.util.concurrent.CompletionStage<features.sessiongeneration.api.GenerationDraftResponse> draft(
+                    GenerationRequest request
+            ) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<features.sessiongeneration.api.GenerationRunResponse> commit(
+                    features.sessiongeneration.api.CommitGenerationRunCommand command
+            ) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<features.sessiongeneration.api.GenerationRunResponse> loadRun(
+                    GenerationRunId runId
+            ) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<features.sessiongeneration.api.GenerationRewardBatchResponse>
+                    loadRewards(features.sessiongeneration.api.GenerationRewardBatchQuery query) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
             public java.util.concurrent.CompletionStage<GenerationResponse> generate(GenerationRequest request) {
                 return pending;
             }
@@ -762,6 +789,7 @@ public final class SessionPlannerCatalogTest {
                 "catalog-2026-07-16",
                 "10e7b8c2f3d43c0868e2ce0c3bf8471b72ed4d5327fc633452e0245d32f416f6",
                 179_974L,
+                List.of(new GenerationResult.PartyLevel(4, 1)),
                 new GenerationResult.SessionSummary(
                         1, BigDecimal.ONE, 1, 1_000L, 100L, BigDecimal.valueOf(4L),
                         100L, 20L, 1, 0, 0, 1),
@@ -769,7 +797,9 @@ public final class SessionPlannerCatalogTest {
                 List.of(new GenerationResult.Encounter(
                         1, 100L, 100L, GenerationResult.Difficulty.MEDIUM,
                         "candidate", "Generated creature", 1, BigDecimal.ONE,
+                        1, BigDecimal.ZERO,
                         List.of(new GenerationResult.EncounterBlock(
+                                "block-1",
                                 GenerationResult.EncounterRole.STANDARD, 1, "1/2", 100L, 1)))),
                 List.of(new GenerationResult.Treasure(
                         1, GenerationResult.StockClass.NORMAL, GenerationResult.RewardChannel.ENCOUNTER,
@@ -783,6 +813,33 @@ public final class SessionPlannerCatalogTest {
                 List.of(new GenerationResult.Audit(
                         "final-output", GenerationResult.AuditStatus.PASS, "ok")));
         return new SessionGenerationApi() {
+            @Override
+            public java.util.concurrent.CompletionStage<features.sessiongeneration.api.GenerationDraftResponse> draft(
+                    GenerationRequest request
+            ) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<features.sessiongeneration.api.GenerationRunResponse> commit(
+                    features.sessiongeneration.api.CommitGenerationRunCommand command
+            ) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<features.sessiongeneration.api.GenerationRunResponse> loadRun(
+                    GenerationRunId runId
+            ) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<features.sessiongeneration.api.GenerationRewardBatchResponse>
+                    loadRewards(features.sessiongeneration.api.GenerationRewardBatchQuery query) {
+                throw new UnsupportedOperationException();
+            }
+
             @Override
             public java.util.concurrent.CompletionStage<GenerationResponse> generate(GenerationRequest request) {
                 return CompletableFuture.completedFuture(GenerationResponse.success(result));

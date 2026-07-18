@@ -1,21 +1,33 @@
 package features.sessiongeneration.adapter.sqlite.persistence;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.sessiongeneration.adapter.resource.TsvGenerationCatalog;
 import features.sessiongeneration.domain.generation.GeneratedRun;
+import features.sessiongeneration.domain.generation.GeneratedRunDraft;
 import features.sessiongeneration.domain.generation.GenerationInput;
+import features.sessiongeneration.domain.generation.GenerationRewardReference;
+import features.sessiongeneration.domain.generation.GenerationRunCommitResult;
+import features.sessiongeneration.domain.generation.GenerationRunIdentityConflictException;
 import features.sessiongeneration.domain.generation.SessionGenerationEngine;
 import java.math.BigDecimal;
 import java.sql.DriverManager;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalInt;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import platform.diagnostics.NoopDiagnostics;
 import platform.persistence.SqliteDatabase;
+import platform.persistence.SqliteMigration;
 
 final class SqliteGenerationRunRepositoryTest {
 
@@ -23,97 +35,247 @@ final class SqliteGenerationRunRepositoryTest {
     java.nio.file.Path temporaryDirectory;
 
     @Test
-    void immutableRelationalRunRoundTripsWithoutBinaryPayload() throws Exception {
+    void firstCommitInsertsEqualRetryIsAlreadyPresentAndRoundTripPreservesMeaning() throws Exception {
         java.nio.file.Path databasePath = temporaryDirectory.resolve("roundtrip.sqlite");
+        GeneratedRunDraft draft = GeneratedRunDraft.from(generate(179974L));
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
             SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(database);
-            GeneratedRun generated = generate(179974L);
 
-            assertEquals(generated, repository.save(generated));
-            assertEquals(generated, repository.load(generated.runId()).orElseThrow());
+            assertEquals(GenerationRunCommitResult.Outcome.INSERTED, repository.commit(draft).outcome());
+            assertEquals(GenerationRunCommitResult.Outcome.ALREADY_PRESENT, repository.commit(draft).outcome());
+            assertEquals(draft, repository.load(draft.run().runId()).orElseThrow());
         }
 
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
                 var statement = connection.createStatement();
-                var rows = statement.executeQuery("SELECT owner, schema_version FROM session_generation_runs")) {
+                var rows = statement.executeQuery(
+                        "SELECT owner, schema_version, content_fingerprint FROM session_generation_runs")) {
             assertTrue(rows.next());
             assertEquals("session-generation", rows.getString(1));
             assertEquals(1, rows.getInt(2));
+            assertEquals(draft.contentFingerprint(), rows.getString(3));
+        }
+    }
+
+    @Test
+    void sameIdentityWithDifferentSemanticFingerprintFailsClosed() {
+        java.nio.file.Path databasePath = temporaryDirectory.resolve("conflict.sqlite");
+        GeneratedRun original = generate(179974L);
+        GeneratedRun changed = withSeed(original, original.seed() + 1L);
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
+            SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(database);
+            repository.commit(GeneratedRunDraft.from(original));
+
+            assertThrows(GenerationRunIdentityConflictException.class,
+                    () -> repository.commit(GeneratedRunDraft.from(changed)));
+            assertEquals(original, repository.load(original.runId()).orElseThrow().run());
+        }
+    }
+
+    @Test
+    void equalConcurrentCommitRaceConvergesOnOneInsertAndOneAlreadyPresent() throws Exception {
+        java.nio.file.Path databasePath = temporaryDirectory.resolve("race.sqlite");
+        GeneratedRunDraft draft = GeneratedRunDraft.from(generate(179974L));
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE);
+                var workers = Executors.newFixedThreadPool(2)) {
+            SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(database);
+            CountDownLatch ready = new CountDownLatch(2);
+            CountDownLatch start = new CountDownLatch(1);
+            List<java.util.concurrent.Future<GenerationRunCommitResult.Outcome>> outcomes = new ArrayList<>();
+            for (int index = 0; index < 2; index++) {
+                outcomes.add(workers.submit(() -> {
+                    ready.countDown();
+                    start.await();
+                    return repository.commit(draft).outcome();
+                }));
+            }
+            ready.await();
+            start.countDown();
+
+            assertEquals(
+                    java.util.Set.of(
+                            GenerationRunCommitResult.Outcome.INSERTED,
+                            GenerationRunCommitResult.Outcome.ALREADY_PRESENT),
+                    java.util.Set.of(outcomes.get(0).get(), outcomes.get(1).get()));
         }
     }
 
     @Test
     void failedChildInsertRollsBackEntireImmutableRun() throws Exception {
         java.nio.file.Path databasePath = temporaryDirectory.resolve("rollback.sqlite");
-        GeneratedRun first = generate(179974L);
-        GeneratedRun blocked = generate(179975L);
+        GeneratedRunDraft first = GeneratedRunDraft.from(generate(179974L));
+        GeneratedRunDraft blocked = GeneratedRunDraft.from(generate(179975L));
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
             SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(database);
-            repository.save(first);
+            repository.commit(first);
             try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
                     var statement = connection.createStatement()) {
                 statement.execute("CREATE TRIGGER fail_generation_loot BEFORE INSERT ON session_generation_loot_items "
                         + "BEGIN SELECT RAISE(ABORT, 'forced rollback'); END");
             }
 
-            assertThrows(IllegalStateException.class, () -> repository.save(blocked));
-            assertTrue(repository.load(blocked.runId()).isEmpty());
-            assertTrue(repository.load(first.runId()).isPresent());
+            assertThrows(IllegalStateException.class, () -> repository.commit(blocked));
+            assertTrue(repository.load(blocked.run().runId()).isEmpty());
+            assertTrue(repository.load(first.run().runId()).isPresent());
         }
     }
 
     @Test
-    void loadRejectsCorruptedAggregateSummary() throws Exception {
-        java.nio.file.Path databasePath = temporaryDirectory.resolve("corrupt.sqlite");
-        GeneratedRun generated = generate(179974L);
+    void v1CanonicalRowsMigrateAndDeriveFingerprintWithoutReadRewrite() throws Exception {
+        java.nio.file.Path databasePath = temporaryDirectory.resolve("legacy-v1.sqlite");
+        GeneratedRun legacy = generate(179974L);
+        SessionGenerationSchema schema = new SessionGenerationSchema();
+        try (SqliteDatabase v1 = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE);
+                var connection = v1.connections(
+                        SqliteGenerationRunRepository.OWNER,
+                        new SqliteMigration(1, schema::migrateV1)).openConnection()) {
+            new GenerationRunSqliteWriter().insertLegacyV1(connection, legacy);
+        }
+
+        GeneratedRunDraft loaded;
+        try (SqliteDatabase migrated = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
+            loaded = new SqliteGenerationRunRepository(migrated).load(legacy.runId()).orElseThrow();
+        }
+        assertEquals(legacy, loaded.run());
+
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+                var statement = connection.createStatement();
+                var rows = statement.executeQuery(
+                        "SELECT content_fingerprint FROM session_generation_runs WHERE run_id = '" + legacy.runId() + "'")) {
+            assertTrue(rows.next());
+            assertNull(rows.getString(1));
+        }
+    }
+
+    @Test
+    void rewardBatchPreservesCallerOrderDuplicatesAndMissingAcrossChunks() {
+        java.nio.file.Path databasePath = temporaryDirectory.resolve("rewards.sqlite");
+        GeneratedRunDraft draft = GeneratedRunDraft.from(generate(179974L));
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
             SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(database);
-            repository.save(generated);
+            repository.commit(draft);
+            GenerationRewardReference present = new GenerationRewardReference(draft.run().runId(), 1);
+            GenerationRewardReference missing = new GenerationRewardReference(draft.run().runId(), 999);
+            List<GenerationRewardReference> requested = new ArrayList<>();
+            requested.add(present);
+            requested.add(missing);
+            requested.add(present);
+            for (int index = 1; index <= GenerationRewardSqliteReader.MAX_KEYS_PER_QUERY; index++) {
+                requested.add(new GenerationRewardReference("missing-run-" + index, 1));
+            }
+
+            AtomicInteger queries = new AtomicInteger();
+            SqliteGenerationRunRepository counted = new SqliteGenerationRunRepository(
+                    () -> countingConnection(databasePath, queries));
+            var batch = counted.loadRewards(requested);
+
+            assertEquals(List.of(present, present), batch.resolved().stream()
+                    .map(value -> value.reference()).toList());
+            assertEquals(requested.size() - 2, batch.missing().size());
+            assertEquals(missing, batch.missing().getFirst());
+            assertEquals(draft.run().treasures().getFirst(), batch.resolved().getFirst().treasure());
+            assertEquals(
+                    draft.run().loot().stream().filter(line -> line.treasureId() == 1).toList(),
+                    batch.resolved().getFirst().loot());
+            assertEquals(2, queries.get());
+        }
+    }
+
+    @Test
+    void emptyRewardBatchOpensNoSqliteConnection() {
+        SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(
+                () -> { throw new AssertionError("empty reward batch must not open SQLite"); });
+
+        assertTrue(repository.loadRewards(List.of()).resolved().isEmpty());
+    }
+
+    @Test
+    void rewardBatchDeduplicatesSqlKeysButReconstructsEveryCallerDuplicate() {
+        java.nio.file.Path databasePath = temporaryDirectory.resolve("reward-dedup.sqlite");
+        GeneratedRunDraft draft = GeneratedRunDraft.from(generate(179974L));
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
+            new SqliteGenerationRunRepository(database).commit(draft);
+            GenerationRewardReference repeated = new GenerationRewardReference(draft.run().runId(), 1);
+            List<GenerationRewardReference> requested = java.util.Collections.nCopies(
+                    GenerationRewardSqliteReader.MAX_KEYS_PER_QUERY + 1, repeated);
+            AtomicInteger queries = new AtomicInteger();
+            SqliteGenerationRunRepository counted = new SqliteGenerationRunRepository(
+                    () -> countingConnection(databasePath, queries));
+
+            var batch = counted.loadRewards(requested);
+
+            assertEquals(requested.size(), batch.resolved().size());
+            assertEquals(1, queries.get());
+        }
+    }
+
+    @Test
+    void loadRejectsCorruptedAggregateSummaryAndFingerprint() throws Exception {
+        java.nio.file.Path databasePath = temporaryDirectory.resolve("corrupt.sqlite");
+        GeneratedRunDraft generated = GeneratedRunDraft.from(generate(179974L));
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
+            SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(database);
+            repository.commit(generated);
             try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
                     var statement = connection.createStatement()) {
                 statement.executeUpdate("UPDATE session_generation_runs SET normal_actual_cp = normal_actual_cp + 1");
             }
 
-            assertThrows(IllegalStateException.class, () -> repository.load(generated.runId()));
+            assertThrows(IllegalStateException.class, () -> repository.load(generated.run().runId()));
         }
     }
 
     @Test
-    void loadRejectsGappedEncounterBlockOrder() throws Exception {
-        assertOrderCorruptionRejected(
-                "block-order.sqlite",
-                "UPDATE session_generation_encounter_blocks SET block_order = 99 "
-                        + "WHERE rowid = (SELECT rowid FROM session_generation_encounter_blocks LIMIT 1)");
-    }
-
-    @Test
-    void loadRejectsGappedAuditOrder() throws Exception {
-        assertOrderCorruptionRejected(
-                "audit-order.sqlite",
-                "UPDATE session_generation_audits SET audit_order = 99 "
-                        + "WHERE audit_order = 0");
-    }
-
-    private void assertOrderCorruptionRejected(String fileName, String updateSql) throws Exception {
-        java.nio.file.Path databasePath = temporaryDirectory.resolve(fileName);
-        GeneratedRun generated = generate(179974L);
+    void canonicalLoadUsesFixedQueryFamiliesRatherThanPerEncounterReads() {
+        java.nio.file.Path databasePath = temporaryDirectory.resolve("load-query-bound.sqlite");
+        GeneratedRunDraft draft = GeneratedRunDraft.from(generate(179974L));
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(database);
-            repository.save(generated);
-            try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
-                    var statement = connection.createStatement()) {
-                statement.executeUpdate(updateSql);
-            }
+            new SqliteGenerationRunRepository(database).commit(draft);
+            AtomicInteger queries = new AtomicInteger();
+            SqliteGenerationRunRepository counted = new SqliteGenerationRunRepository(
+                    () -> countingConnection(databasePath, queries));
 
-            assertThrows(IllegalStateException.class, () -> repository.load(generated.runId()));
+            assertEquals(draft, counted.load(draft.run().runId()).orElseThrow());
+            assertEquals(9, queries.get());
         }
     }
 
-    private static GeneratedRun generate(long seed) {
+    private static GeneratedRun withSeed(GeneratedRun run, long seed) {
+        return new GeneratedRun(
+                run.runId(), run.engineVersion(), run.catalogVersion(), run.catalogContentHash(), seed,
+                run.party(), run.session(), run.encounterTargets(), run.encounters(), run.treasures(), run.loot(),
+                run.packing(), run.rewards(), run.formattedText(), run.audits());
+    }
+
+    static GeneratedRun generate(long seed) {
         return new SessionGenerationEngine().generate(
                 new GenerationInput(
                         List.of(new GeneratedRun.PartyLevel(3, 2), new GeneratedRun.PartyLevel(4, 2)),
                         new BigDecimal("0.6"), OptionalInt.of(3), seed),
                 new TsvGenerationCatalog().load());
     }
+
+    private static java.sql.Connection countingConnection(
+            java.nio.file.Path databasePath,
+            AtomicInteger queries
+    ) throws java.sql.SQLException {
+        java.sql.Connection delegate = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+        try (var statement = delegate.createStatement()) {
+            statement.execute("PRAGMA foreign_keys = ON");
+        }
+        return (java.sql.Connection) Proxy.newProxyInstance(
+                SqliteGenerationRunRepositoryTest.class.getClassLoader(),
+                new Class<?>[] {java.sql.Connection.class},
+                (proxy, method, arguments) -> {
+                    if (method.getName().equals("prepareStatement")) {
+                        queries.incrementAndGet();
+                    }
+                    try {
+                        return method.invoke(delegate, arguments);
+                    } catch (InvocationTargetException exception) {
+                        throw exception.getCause();
+                    }
+                });
+    }
+
 }

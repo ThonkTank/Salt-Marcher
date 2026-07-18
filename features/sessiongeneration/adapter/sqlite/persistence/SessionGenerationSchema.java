@@ -18,7 +18,7 @@ final class SessionGenerationSchema {
 
     private static final String RUN_REFERENCE = "run_id TEXT NOT NULL REFERENCES " + RUNS + "(run_id), ";
 
-    void migrate(Connection connection) throws SQLException {
+    void migrateV1(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             statement.execute("CREATE TABLE IF NOT EXISTS " + RUNS + " ("
                     + "run_id TEXT PRIMARY KEY, "
@@ -70,6 +70,12 @@ final class SessionGenerationSchema {
             statement.execute("CREATE TABLE IF NOT EXISTS " + AUDITS + " (" + RUN_REFERENCE
                     + "audit_order INTEGER NOT NULL, code TEXT NOT NULL, status TEXT NOT NULL, detail TEXT NOT NULL, "
                     + "PRIMARY KEY(run_id, audit_order))");
+        }
+    }
+
+    void migrateV2(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("ALTER TABLE " + RUNS + " ADD COLUMN content_fingerprint TEXT");
         }
     }
 }
