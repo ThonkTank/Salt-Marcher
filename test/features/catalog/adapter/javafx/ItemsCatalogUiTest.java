@@ -260,7 +260,12 @@ public final class ItemsCatalogUiTest {
                             features.encountertable.api.RefreshEncounterTableCandidatesCommand command) { }
                 };
         return new CatalogProviders(
-                new CatalogProviders.MonsterProviders(creatures, encounterInputs),
+                new CatalogProviders.MonsterProviders(
+                        creatures,
+                        new features.encounter.api.EncounterPoolFiltersModel(
+                                () -> encounterInputs.current().poolFilters(),
+                                listener -> encounterInputs.subscribe(
+                                        inputs -> listener.accept(inputs.poolFilters())))),
                 new CatalogProviders.ItemsProviders(items),
                 new CatalogProviders.SavedEncounterProviders(savedPlans),
                 new CatalogProviders.WorldReferenceProviders(creatureReferences, world),

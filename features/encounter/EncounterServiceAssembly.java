@@ -175,6 +175,7 @@ public final class EncounterServiceAssembly {
                 generatedPlanImport,
                 publishedState.stateModel(),
                 publishedState.builderInputsModel(),
+                publishedState.poolFiltersModel(),
                 publishedState.tuningPreviewModel(),
                 publishedState.savedPlansModel(),
                 publishedState.planBudgetModel());
@@ -186,6 +187,7 @@ public final class EncounterServiceAssembly {
             GeneratedEncounterPlanImportApi generatedPlanImport,
             features.encounter.api.EncounterStateModel state,
             features.encounter.api.EncounterBuilderInputsModel builderInputs,
+            features.encounter.api.EncounterPoolFiltersModel poolFilters,
             features.encounter.api.EncounterTuningPreviewModel tuningPreview,
             features.encounter.api.SavedEncounterPlanListModel savedPlans,
             features.encounter.api.EncounterPlanBudgetModel planBudget

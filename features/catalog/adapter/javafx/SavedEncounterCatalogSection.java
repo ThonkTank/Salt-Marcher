@@ -21,7 +21,7 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 
-final class SavedEncounterCatalogSection implements CatalogSection {
+public final class SavedEncounterCatalogSection implements CatalogSection {
 
     private final EncounterHandoff encounters;
     private final CatalogWorkspaceController controller;
@@ -30,7 +30,7 @@ final class SavedEncounterCatalogSection implements CatalogSection {
     private final VBox controls;
     private final BorderPane content = new BorderPane();
 
-    SavedEncounterCatalogSection(EncounterHandoff encounters, CatalogWorkspaceController controller) {
+    public SavedEncounterCatalogSection(EncounterHandoff encounters, CatalogWorkspaceController controller) {
         this.encounters = Objects.requireNonNull(encounters, "encounters");
         this.controller = Objects.requireNonNull(controller, "controller");
         plans.setAccessibleText("Gespeicherte Encounter");
@@ -73,7 +73,7 @@ final class SavedEncounterCatalogSection implements CatalogSection {
         return content;
     }
 
-    void apply(SavedEncounterPlanListResult result) {
+    public void apply(SavedEncounterPlanListResult result) {
         long selectedId = plans.getSelectionModel().getSelectedItem() == null
                 ? 0L : plans.getSelectionModel().getSelectedItem().planId();
         plans.getItems().setAll(result == null ? List.of() : result.plans());

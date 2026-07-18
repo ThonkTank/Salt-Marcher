@@ -38,6 +38,7 @@ import features.worldplanner.api.WorldPlannerReadStatus;
 import features.worldplanner.api.WorldPlannerSnapshot;
 import features.worldplanner.api.WorldPlannerSnapshotModel;
 import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
+import features.creatures.api.CreatureCatalogRow;
 import features.catalog.application.CatalogSectionId;
 import features.encountertable.adapter.sqlite.query.SqliteEncounterTableCatalogAdapter;
 import org.junit.jupiter.api.AfterAll;
@@ -92,8 +93,7 @@ public final class CatalogInitialLoadTest {
             CatalogFixture fixture = setupCatalog();
             TableView<?> table = descendant(fixture.main(), TableView.class);
             table.getSelectionModel().selectFirst();
-            CatalogMainContentModel.CatalogRow selected =
-                    (CatalogMainContentModel.CatalogRow) table.getSelectionModel().getSelectedItem();
+            CreatureCatalogRow selected = (CreatureCatalogRow) table.getSelectionModel().getSelectedItem();
             List<?> columns = List.copyOf(table.getColumns());
 
             descendants(fixture.controls()).stream()
@@ -108,7 +108,7 @@ public final class CatalogInitialLoadTest {
                 assertTrue(table.getColumns().get(index) == columns.get(index),
                         "Monster column identity changed on refresh at index " + index);
             }
-            assertTrue(((CatalogMainContentModel.CatalogRow) table.getSelectionModel().getSelectedItem()).id()
+            assertTrue(((CreatureCatalogRow) table.getSelectionModel().getSelectedItem()).id()
                             == selected.id(),
                     "Monster selection was not preserved by creature id.");
         });
@@ -203,7 +203,7 @@ public final class CatalogInitialLoadTest {
                     EmptyInspectorSink.INSTANCE, ignored -> { }, () -> { }, addedCreature::set).bind();
             binding.onActivate();
             CatalogContentHost workspace = slot(binding, ShellSlot.COCKPIT_MAIN, CatalogContentHost.class);
-            CatalogMainView monsters = descendant(workspace, CatalogMainView.class);
+            CatalogTableScaffold<?, ?> monsters = descendant(workspace, CatalogTableScaffold.class);
             Stage stage = new Stage();
             stage.setScene(new Scene(workspace, 1_100.0, 700.0));
             stage.show();
@@ -223,7 +223,7 @@ public final class CatalogInitialLoadTest {
         binding.onActivate();
         CatalogControlsHost controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, CatalogControlsHost.class);
         CatalogContentHost workspace = slot(binding, ShellSlot.COCKPIT_MAIN, CatalogContentHost.class);
-        CatalogMainView main = descendant(workspace, CatalogMainView.class);
+        CatalogTableScaffold<?, ?> main = descendant(workspace, CatalogTableScaffold.class);
 
         Stage stage = new Stage();
         HBox root = new HBox(controls, workspace);
@@ -234,7 +234,7 @@ public final class CatalogInitialLoadTest {
         return new CatalogFixture(runtime, controls, workspace, main);
     }
 
-    private static void assertInitialCatalogRows(CatalogMainView main, String label) {
+    private static void assertInitialCatalogRows(Parent main, String label) {
         TableView<?> table = descendant(main, TableView.class);
         Label countLabel = descendants(main).stream()
                 .filter(Label.class::isInstance)
@@ -465,7 +465,7 @@ public final class CatalogInitialLoadTest {
             CatalogTestRuntime runtime,
             CatalogControlsHost controls,
             CatalogContentHost workspace,
-            CatalogMainView main
+            CatalogTableScaffold<?, ?> main
     ) {
     }
 

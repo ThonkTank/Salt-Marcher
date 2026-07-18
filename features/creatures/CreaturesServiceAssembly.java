@@ -17,6 +17,7 @@ import features.creatures.application.CreaturesApplicationService;
 import features.creatures.application.CreaturesPublishedState;
 import features.creatures.domain.catalog.port.CreatureCatalogPort;
 import features.creatures.api.CreatureDetailModel;
+import features.creatures.api.CreatureDetailQueryApi;
 import features.creatures.api.CreatureDetailResult;
 import features.creatures.api.CreatureEncounterCandidatesModel;
 import features.creatures.api.CreatureReferenceIndexModel;
@@ -64,6 +65,17 @@ public final class CreaturesServiceAssembly {
         CreaturesPublishedState publishedState = new CreaturesPublishedState(safeUiDispatcher);
         CreatureReferenceIndexModel referenceIndex = publishedState.referenceIndexModel();
         CreatureDetailModel detail = publishedState.detailModel();
+        CreatureDetailQueryApi detailQueries = creatureId -> {
+            java.util.concurrent.CompletableFuture<CreatureDetailResult> result = new java.util.concurrent.CompletableFuture<>();
+            try {
+                safeExecutionLane.execute(() -> result.complete(loadDetail(
+                        safeCatalogPort, safeDiagnostics, creatureId)));
+            } catch (RuntimeException exception) {
+                safeDiagnostics.failure(REFERENCE_FAILURE, exception.getClass());
+                result.complete(new CreatureDetailResult(CreatureLookupStatus.STORAGE_ERROR, null));
+            }
+            return result;
+        };
         CreatureEncounterCandidatesModel encounterCandidates = publishedState.encounterCandidatesModel();
         CreaturesApplicationService application = new CreaturesApplicationService(
                 safeCatalogPort,
@@ -84,7 +96,28 @@ public final class CreaturesServiceAssembly {
                 return new CreatureDetailResult(CreatureLookupStatus.STORAGE_ERROR, null);
             }
         };
-        return new Component(application, application, references, referenceIndex, detail, encounterCandidates);
+        return new Component(
+                application, application, references, referenceIndex, detail, detailQueries,
+                encounterCandidates, safeUiDispatcher);
+    }
+
+    private static CreatureDetailResult loadDetail(
+            CreatureCatalogPort catalogPort,
+            Diagnostics diagnostics,
+            long creatureId
+    ) {
+        if (creatureId <= 0L) {
+            return new CreatureDetailResult(CreatureLookupStatus.NOT_FOUND, null);
+        }
+        try {
+            var found = catalogPort.loadCreatureDetail(creatureId);
+            return new CreatureDetailResult(
+                    found == null ? CreatureLookupStatus.NOT_FOUND : CreatureLookupStatus.SUCCESS,
+                    CreatureCatalogProjection.creatureDetail(found));
+        } catch (IllegalStateException exception) {
+            diagnostics.failure(REFERENCE_FAILURE, exception.getClass());
+            return new CreatureDetailResult(CreatureLookupStatus.STORAGE_ERROR, null);
+        }
     }
 
     public record Component(
@@ -93,13 +126,13 @@ public final class CreaturesServiceAssembly {
             CreatureReferenceApi references,
             CreatureReferenceIndexModel referenceIndex,
             CreatureDetailModel detail,
-            CreatureEncounterCandidatesModel encounterCandidates
+            CreatureDetailQueryApi detailQueries,
+            CreatureEncounterCandidatesModel encounterCandidates,
+            UiDispatcher uiDispatcher
     ) {
         public void openInspector(shell.api.InspectorSink inspector, long creatureId) {
-            features.creatures.adapter.javafx.details.CreatureDetailsView.openInspector(
-                    inspector,
-                    detail,
-                    creatureId);
+            new features.creatures.adapter.javafx.details.CreatureInspectorSession(
+                    detailQueries, uiDispatcher, creatureId).open(inspector);
         }
     }
 }

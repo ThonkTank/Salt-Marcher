@@ -13,36 +13,31 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import org.jspecify.annotations.Nullable;
-import shell.api.InspectorEntrySpec;
-import shell.api.InspectorSink;
-import features.creatures.api.CreatureDetailModel;
 import features.creatures.api.CreatureDetailResult;
+import features.creatures.api.CreatureLookupStatus;
+import java.util.concurrent.CompletionStage;
+import platform.ui.UiDispatcher;
 
 public final class CreatureDetailsView extends VBox {
-
-    private static final long NO_CREATURE_ID = 0L;
 
     public CreatureDetailsView() {
         getStyleClass().add("stat-block-pane");
     }
 
-    public static void openInspector(InspectorSink inspector, CreatureDetailModel detailModel, long creatureId) {
-        if (creatureId <= NO_CREATURE_ID) {
-            return;
-        }
-        inspector.push(new InspectorEntrySpec(
-                "Creature",
-                "creature:" + creatureId,
-                () -> loaded(detailModel.current()),
-                null));
+    public static Node loading(CompletionStage<CreatureDetailResult> detail, UiDispatcher dispatcher) {
+        CreatureDetailsView detailView = new CreatureDetailsView();
+        detailView.showMessage("Lade Kreaturenwerte...");
+        detail.whenComplete((result, failure) -> dispatcher.dispatch(() -> detailView.load(
+                failure == null && result != null
+                        ? result
+                        : new CreatureDetailResult(CreatureLookupStatus.STORAGE_ERROR, null))));
+        return detailView;
     }
 
-    private static Node loaded(CreatureDetailResult detailResult) {
-        CreatureDetailsView detailView = new CreatureDetailsView();
+    private void load(CreatureDetailResult detailResult) {
         CreatureDetailsContentModel contentModel = new CreatureDetailsContentModel(detailResult);
-        detailView.bind(contentModel);
+        bind(contentModel);
         contentModel.load();
-        return detailView;
     }
 
     public void bind(CreatureDetailsContentModel presentationModel) {
