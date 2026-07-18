@@ -97,28 +97,30 @@ and commit boundaries. M7 starts only after both are complete.
 
 ## Current Migration State
 
-- Current foundation: M0 through M2 and M3.1 through M3.3 are complete on
-  `main` through PR #502. Feature-marker and room or cluster semantic commands
-  use exact patches and one shared patch executor; their former direct mutation
-  routes are deleted.
-- This slice: M3.4 moves editor-authored stair create, full geometry recompute,
-  and delete to exact stable-entity patches and the shared executor. The
-  history-free preview mutation is named explicitly; replaced commit mutation
-  routes are deleted.
-- Patch result facts now identify a stable authored entity and carry its
-  topology ref only where that entity owns one. This preserves independent
-  cluster identity without fabricating a room topology ref.
-- Deterministic proof covers exact stair identity and topology ref, generated
-  geometry, chunk membership, forward and inverse application, monotonic
-  revision, encoded byte weight, and typed rejection of invalid geometry, room
-  collisions, id collisions, no-effect updates, and corridor-bound deletion.
-- Direct stair-handle movement and corridor-owned stair segments remain owned
-  by later geometry and corridor patch slices; M3.4 does not create a second
-  route for either behavior.
-- `DungeonChangeSet` persistence and full-map session history remain temporary
-  M3/M4 boundaries; no second persistence contract is introduced in this slice.
-- Next step after this slice merges: M3.5 introduces exact transition changes,
-  compound cross-map patches, and atomic transition-link history.
+- Current foundation: M0 through M2 and M3.1 through M3.4 are complete on
+  `main` through PR #503. Feature markers, room or cluster semantics, and stair
+  create, geometry update, and delete use exact patches and the shared patch
+  executor; their replaced direct commit routes are deleted.
+- This slice: M3.5 moves transition create, description, delete, and authored
+  link save to exact transition changes. A transition link now yields one
+  `DungeonCompoundPatch` covering every affected map and persists the resulting
+  map set atomically through the existing multi-map repository boundary.
+- Per-session history stores forward and inverse patches for the M3.1 through
+  M3.5 command families. One compound transition entry is shared by every
+  affected map, and undo or redo applies and persists the full map set before
+  moving any history stack.
+- Deterministic proof covers transition identity and topology ref, touched
+  chunks, exact forward and inverse application, closure loading, missing
+  previous-map fallback, atomic multi-map history, later-edit ordering, encoded
+  patch weight, monotonic revisions, and typed rejection of invalid, referenced,
+  missing, and no-effect transition operations.
+- Ordinary commands that still use `executeOperation` retain the temporary
+  full-map `DungeonChangeSet` and snapshot-history path until their remaining
+  M3 geometry and corridor slices migrate. M3.5 introduces no second
+  persistence contract.
+- Next step after this slice merges: M3.6 moves room paint or delete,
+  cluster-boundary edits, and cluster geometry-handle commits to exact room and
+  cluster patches, then deletes their direct commit routes.
 
 ## M0: Target Lock And Baseline
 

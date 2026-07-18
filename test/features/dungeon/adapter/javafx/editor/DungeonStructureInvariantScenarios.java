@@ -855,11 +855,13 @@ final class DungeonStructureInvariantScenarios {
                         null);
         features.dungeon.domain.core.structure.DungeonMap map = transitionMap(source, oldTarget, target, remoteReference);
 
-        assertFalse(map.canDeleteTransition(1L),
+        assertFalse(map.transitionCatalog().canDelete(1L),
                 "core transition ownership preserves source reverse-link delete protection");
-        assertFalse(map.canDeleteTransition(3L),
+        assertFalse(map.transitionCatalog().canDelete(3L),
                 "core transition ownership preserves referenced-transition delete protection");
-        assertEquals(List.of(1L, 2L, 3L), transitionIds(map.deleteTransition(4L).transitionCatalog().transitions()),
+        assertEquals(List.of(1L, 2L, 3L), transitionIds(map.withExactTransitionChange(
+                        map.transitionCatalog().transition(4L),
+                        null).transitionCatalog().transitions()),
                 "core transition ownership removes deletable transition through core catalog");
         features.dungeon.domain.core.structure.DungeonMap linkedMap =
                 map.withTransitionCatalog(map.transitionCatalog().withMapLocalAuthoredTransitionLink(

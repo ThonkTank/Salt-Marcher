@@ -19,6 +19,7 @@ import features.dungeon.domain.core.structure.stair.StairGeometrySpec;
 import features.dungeon.domain.core.structure.topology.DungeonMapTopology;
 import features.dungeon.domain.core.structure.topology.SpatialTopology;
 import features.dungeon.domain.core.structure.transition.TransitionCatalog;
+import features.dungeon.domain.core.structure.transition.Transition;
 
 /**
  * Canonical aggregate root state for one authored dungeon map.
@@ -34,8 +35,6 @@ public record DungeonMap(
         FeatureMarkerCatalog featureMarkers,
         long revision
 ) {
-    private static final long NO_TRANSITION_ID = 0L;
-
     public DungeonMap(
             DungeonMapMetadata metadata,
             SpatialTopology topology,
@@ -188,27 +187,6 @@ public record DungeonMap(
         return ROOM_AUTHORING.moveBoundaryStretch(this, clusterId, sourceEdges, deltaQ, deltaR, deltaLevel);
     }
 
-    public DungeonMap saveTransitionDescription(long transitionId, String description) {
-        if (transitionId <= NO_TRANSITION_ID) {
-            return this;
-        }
-        TransitionCatalog nextTransitions = transitionCatalog.withDescription(transitionId, description);
-        return nextTransitions.equals(transitionCatalog)
-                ? this
-                : withTransitionCatalog(nextTransitions, topologyIndex);
-    }
-
-    public boolean canDeleteTransition(long transitionId) {
-        return transitionCatalog.canDelete(transitionId);
-    }
-
-    public DungeonMap deleteTransition(long transitionId) {
-        if (!canDeleteTransition(transitionId)) {
-            return this;
-        }
-        return withTransitionCatalog(transitionCatalog.withoutTransition(transitionId), null);
-    }
-
     public long nextFeatureMarkerId() {
         return featureMarkers.nextMarkerId();
     }
@@ -338,6 +316,13 @@ public record DungeonMap(
                 transitionCatalog,
                 featureMarkers,
                 revision + 1L);
+    }
+
+    public DungeonMap withExactTransitionChange(
+            @Nullable Transition before,
+            @Nullable Transition after
+    ) {
+        return withTransitionCatalog(transitionCatalog.withExactChange(before, after), null);
     }
 
     public DungeonMap withTransitionCatalog(TransitionCatalog nextTransitions) {

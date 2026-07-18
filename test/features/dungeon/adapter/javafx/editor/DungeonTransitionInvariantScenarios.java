@@ -227,6 +227,28 @@ final class DungeonTransitionInvariantScenarios {
                 "transition link use case still writes target reverse link when previous map is missing");
         assertFalse(repository.savedMapIds().contains(missingPreviousMapId),
                 "transition link use case cannot mutate a missing previous map");
+
+        DungeonAuthoredApplicationService.Session authoredSession = services.authored().openSession(dungeonState);
+        assertTrue(services.authored().canUndo(new MapId(sourceMapId)),
+                "compound transition link is available as one source-map undo step");
+        services.authored().undo(new MapId(sourceMapId), authoredSession);
+        assertEquals(
+                TransitionDestination.dungeonMap(missingPreviousMapId, missingPreviousTransitionId),
+                transitionById(repository.savedMap(sourceMapId), sourceTransitionId).destination(),
+                "compound undo restores the source destination");
+        assertEquals(null,
+                transitionById(repository.savedMap(targetMapId), targetTransitionId).linkedTransitionId(),
+                "compound undo restores the target reverse link atomically");
+        assertTrue(services.authored().canRedo(new MapId(targetMapId)),
+                "compound transition link is available as one target-map redo step");
+        services.authored().redo(new MapId(targetMapId), authoredSession);
+        assertEquals(
+                TransitionDestination.dungeonMap(targetMapId, targetTransitionId),
+                transitionById(repository.savedMap(sourceMapId), sourceTransitionId).destination(),
+                "compound redo reapplies the source destination");
+        assertEquals(sourceTransitionId,
+                transitionById(repository.savedMap(targetMapId), targetTransitionId).linkedTransitionId(),
+                "compound redo reapplies the target reverse link atomically");
     }
 
     private static void assertProtectedDeletePolicy() {
@@ -247,10 +269,8 @@ final class DungeonTransitionInvariantScenarios {
         assertFalse(catalog.canDelete(2L), "transition catalog rejects destination-referenced transition delete");
         assertFalse(catalog.canDelete(3L), "transition catalog rejects reverse-linked transition delete");
         assertTrue(catalog.canDelete(4L), "transition catalog allows unreferenced transition delete");
-        assertEquals(List.of(1L, 2L, 3L), transitionIds(catalog.withoutTransition(4L)),
+        assertEquals(List.of(1L, 2L, 3L), transitionIds(catalog.withExactChange(deletable, null)),
                 "transition catalog removes deletable transition");
-        assertEquals(List.of(1L, 2L, 3L, 4L), transitionIds(catalog.withoutTransition(2L)),
-                "transition catalog preserves protected transition");
     }
 
     private static Transition transition(
@@ -370,6 +390,7 @@ final class DungeonTransitionInvariantScenarios {
             savedMapsById.clear();
             for (DungeonMap dungeonMap : dungeonMaps == null ? List.<DungeonMap>of() : dungeonMaps) {
                 savedMapsById.put(dungeonMap.metadata().mapId().value(), dungeonMap);
+                mapsById.put(dungeonMap.metadata().mapId().value(), dungeonMap);
             }
             return List.copyOf(savedMapsById.values());
         }

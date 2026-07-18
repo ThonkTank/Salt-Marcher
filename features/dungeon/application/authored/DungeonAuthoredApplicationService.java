@@ -3,12 +3,13 @@ package features.dungeon.application.authored;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.OptionalLong;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.jspecify.annotations.Nullable;
@@ -23,15 +24,21 @@ import features.dungeon.domain.core.projection.DungeonMapFacts;
 import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.authored.port.DungeonChangeSet;
 import features.dungeon.application.authored.command.DungeonCommandResult;
+import features.dungeon.application.authored.command.DungeonCompoundCommandResult;
+import features.dungeon.application.authored.command.DungeonCompoundPatch;
 import features.dungeon.application.authored.command.CreateFeatureMarkerCommand;
 import features.dungeon.application.authored.command.CreateStairCommand;
+import features.dungeon.application.authored.command.CreateTransitionCommand;
 import features.dungeon.application.authored.command.DeleteFeatureMarkerCommand;
 import features.dungeon.application.authored.command.DeleteStairCommand;
+import features.dungeon.application.authored.command.DeleteTransitionCommand;
 import features.dungeon.application.authored.command.FeatureMarkerSemanticsCommand;
 import features.dungeon.application.authored.command.RoomClusterNameCommand;
 import features.dungeon.application.authored.command.RoomNameCommand;
 import features.dungeon.application.authored.command.RoomNarrationCommand;
 import features.dungeon.application.authored.command.UpdateStairGeometryCommand;
+import features.dungeon.application.authored.command.TransitionDescriptionCommand;
+import features.dungeon.application.authored.command.TransitionLinkCommand;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
@@ -48,8 +55,6 @@ import features.dungeon.domain.core.structure.stair.StairGeometrySpec;
 import features.dungeon.domain.core.structure.stair.StairShape;
 import features.dungeon.domain.core.structure.transition.TransitionAnchor;
 import features.dungeon.domain.core.structure.transition.TransitionCatalog;
-import features.dungeon.domain.core.structure.transition.TransitionCatalog.AuthoredTransitionLinkMap;
-import features.dungeon.domain.core.structure.transition.TransitionCatalog.AuthoredTransitionLinkRewrite;
 import features.dungeon.domain.core.structure.transition.TransitionDestination;
 import features.dungeon.application.editor.interaction.DungeonEditorHandleMutation;
 import features.dungeon.application.editor.interaction.DungeonEditorHandleProjection;
@@ -124,6 +129,11 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
     private final DeleteStairCommand deleteStairCommand = new DeleteStairCommand();
     private final UpdateStairGeometryCommand updateStairGeometryCommand =
             new UpdateStairGeometryCommand();
+    private final CreateTransitionCommand createTransitionCommand = new CreateTransitionCommand();
+    private final DeleteTransitionCommand deleteTransitionCommand = new DeleteTransitionCommand();
+    private final TransitionDescriptionCommand transitionDescriptionCommand =
+            new TransitionDescriptionCommand();
+    private final TransitionLinkCommand transitionLinkCommand = new TransitionLinkCommand();
     private final PublicationOperations publicationOperations = new PublicationOperations();
     private final PreviewOperations previewOperations = new PreviewOperations();
     private final DetailSaveOperations detailSaveOperations = new DetailSaveOperations();
@@ -318,24 +328,35 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         if (mapId == null || session == null) {
             return;
         }
-        DungeonMap current = loadMap(domainMapId(mapId));
-        DungeonMap snapshot = undo ? editHistory.undo(current) : editHistory.redo(current);
-        if (snapshot.equals(current)) {
+        DungeonMapIdentity selectedMapId = domainMapId(mapId);
+        DungeonEditHistory.Step step = undo
+                ? editHistory.peekUndo(selectedMapId)
+                : editHistory.peekRedo(selectedMapId);
+        if (!step.present()) {
             return;
         }
-        DungeonMap restored = DungeonMapAuthoring.restoreContent(snapshot, current.revision() + 1L);
-        DungeonMap saved;
-        try {
-            saved = repository.saveChange(new DungeonChangeSet(current, restored));
-        } catch (RuntimeException failure) {
-            if (undo) {
-                editHistory.redo(current);
-            } else {
-                editHistory.undo(current);
+        Map<Long, DungeonMap> currentMaps = new LinkedHashMap<>();
+        for (long affectedMapId : step.mapIds()) {
+            DungeonMap current = repository.findById(new DungeonMapIdentity(affectedMapId)).orElse(null);
+            if (current == null) {
+                return;
             }
-            throw failure;
+            currentMaps.put(affectedMapId, current);
         }
-        authoredWorkset.put(saved.metadata().mapId().value(), saved);
+        Map<Long, DungeonMap> changedMaps = step.applyTo(currentMaps);
+        List<DungeonMap> savedMaps = changedMaps.size() == 1
+                ? List.of(repository.saveChange(new DungeonChangeSet(
+                        currentMaps.values().iterator().next(),
+                        changedMaps.values().iterator().next())))
+                : repository.saveAll(List.copyOf(changedMaps.values()));
+        editHistory.complete(step);
+        for (DungeonMap savedMap : savedMaps) {
+            authoredWorkset.put(savedMap.metadata().mapId().value(), savedMap);
+        }
+        DungeonMap saved = savedMaps.stream()
+                .filter(candidate -> candidate.metadata().mapId().equals(selectedMapId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("history save omitted the selected map"));
         OperationResultData result = new OperationResultData(
                 mutationPipeline.snapshotData(saved, derive(saved)),
                 true,
@@ -610,7 +631,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             DungeonMap patched = accepted.patch().applyTo(current);
             DungeonMap saved = repository.saveChange(new DungeonChangeSet(current, patched));
             authoredWorkset.put(saved.metadata().mapId().value(), saved);
-            editHistory.record(current, saved);
+            editHistory.recordPatch(accepted.patch());
             return new OperationResultData(
                     snapshotData(saved, derive(saved)),
                     true,
@@ -871,14 +892,13 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             Objects.requireNonNull(anchor, "anchor");
             Objects.requireNonNull(destination, "destination");
             long transitionId = repository.nextTransitionId();
-            OperationResultData result = mutationPipeline.executeOperation(
+            OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
-                    current -> current.withTransitionCatalog(current.transitionCatalog().withCreated(
+                    current -> createTransitionCommand.plan(
+                            current,
                             transitionId,
-                            current.metadata().mapId().value(),
                             anchor,
-                            destination)),
-                    DungeonEditorCommandOutcome.RejectionReason.MISSING_TRANSITION_DESTINATION);
+                            destination));
             publicationOperations.publishMutation(result, session.dungeonState());
         }
 
@@ -897,17 +917,11 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             if (mapId == null || transitionId <= 0L) {
                 return false;
             }
-            DungeonMapIdentity mapIdentity = domainMapId(mapId);
-            if (!loadMap(mapIdentity).canDeleteTransition(transitionId)) {
-                return false;
-            }
-            OperationResultData result =
-                    mutationPipeline.executeOperation(
-                            mapIdentity,
-                            current -> current.deleteTransition(transitionId),
-                            DungeonEditorCommandOutcome.RejectionReason.REFERENCED_CONNECTION);
+            OperationResultData result = mutationPipeline.executePatchCommand(
+                    domainMapId(mapId),
+                    current -> deleteTransitionCommand.plan(current, transitionId));
             publicationOperations.publishMutation(result, session.dungeonState());
-            return true;
+            return result.changed();
         }
     }
 
@@ -1212,35 +1226,43 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                 return null;
             }
             Map<Long, DungeonMap> pendingMaps = loadedMaps(loaded.sourceMap(), loaded.targetMap());
-            AuthoredTransitionLinkRewrite rewrite = transitionLinkRewrite(
-                    pendingMaps,
+            Set<Long> knownMissingMapIds = new LinkedHashSet<>();
+            DungeonCompoundCommandResult commandResult = transitionLinkCommand.plan(
+                    pendingMaps.values(),
                     loaded.sourceIdentity().value(),
                     sourceTransitionId,
                     loaded.targetIdentity().value(),
                     targetTransitionId,
-                    bidirectional);
-            OptionalLong requestedMapId = rewrite.requestedMapId();
-            if (requestedMapId.isPresent()) {
-                long mapId = requestedMapId.orElseThrow();
+                    bidirectional,
+                    knownMissingMapIds);
+            if (commandResult instanceof DungeonCompoundCommandResult.RequiresMap requiresMap) {
+                long mapId = requiresMap.mapId();
                 Optional<DungeonMap> requiredMap = repository.findById(new DungeonMapIdentity(mapId));
                 if (requiredMap.isPresent()) {
                     pendingMaps.put(mapId, requiredMap.orElseThrow());
-                    rewrite = transitionLinkRewrite(
-                            pendingMaps,
-                            loaded.sourceIdentity().value(),
-                            sourceTransitionId,
-                            loaded.targetIdentity().value(),
-                            targetTransitionId,
-                            bidirectional);
                 } else {
-                    rewrite = rewrite.acceptMissingRequestedMap();
+                    knownMissingMapIds.add(mapId);
                 }
+                commandResult = transitionLinkCommand.plan(
+                        pendingMaps.values(),
+                        loaded.sourceIdentity().value(),
+                        sourceTransitionId,
+                        loaded.targetIdentity().value(),
+                        targetTransitionId,
+                        bidirectional,
+                        knownMissingMapIds);
             }
-            if (!rewrite.accepted()) {
+            if (!(commandResult instanceof DungeonCompoundCommandResult.Accepted accepted)) {
                 return null;
             }
-            applyCatalogUpdates(pendingMaps, rewrite);
-            List<DungeonMap> savedMaps = repository.saveAll(List.copyOf(pendingMaps.values()));
+            DungeonCompoundPatch patch = accepted.patch();
+            Map<Long, DungeonMap> patchedMaps = patch.applyTo(pendingMaps);
+            List<DungeonMap> savedMaps = patchedMaps.size() == 1
+                    ? List.of(repository.saveChange(new DungeonChangeSet(
+                            pendingMaps.get(patchedMaps.keySet().iterator().next()),
+                            patchedMaps.values().iterator().next())))
+                    : repository.saveAll(List.copyOf(patchedMaps.values()));
+            editHistory.recordCompoundPatch(patch);
             for (DungeonMap savedMap : savedMaps) {
                 authoredWorkset.put(savedMap.metadata().mapId().value(), savedMap);
             }
@@ -1276,40 +1298,6 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             pendingMaps.put(sourceMap.metadata().mapId().value(), sourceMap);
             pendingMaps.put(targetMap.metadata().mapId().value(), targetMap);
             return pendingMaps;
-        }
-
-        private AuthoredTransitionLinkRewrite transitionLinkRewrite(
-                Map<Long, DungeonMap> pendingMaps,
-                long sourceMapId,
-                long sourceTransitionId,
-                long targetMapId,
-                long targetTransitionId,
-                boolean bidirectional
-        ) {
-            List<AuthoredTransitionLinkMap> loadedCatalogs = new ArrayList<>();
-            for (DungeonMap map : pendingMaps.values()) {
-                loadedCatalogs.add(new AuthoredTransitionLinkMap(
-                        map.metadata().mapId().value(),
-                        map.transitionCatalog()));
-            }
-            return TransitionCatalog.authoredTransitionLinkRewrite(
-                    loadedCatalogs,
-                    sourceMapId,
-                    sourceTransitionId,
-                    targetMapId,
-                    targetTransitionId,
-                    bidirectional);
-        }
-
-        private void applyCatalogUpdates(
-                Map<Long, DungeonMap> pendingMaps,
-                AuthoredTransitionLinkRewrite rewrite
-        ) {
-            for (Map.Entry<Long, DungeonMap> entry : pendingMaps.entrySet()) {
-                DungeonMap map = entry.getValue();
-                TransitionCatalog nextCatalog = rewrite.catalogFor(entry.getKey(), map.transitionCatalog());
-                entry.setValue(map.withTransitionCatalog(nextCatalog));
-            }
         }
 
         private DungeonMap savedSourceMap(List<DungeonMap> savedMaps, long sourceMapId) {
@@ -1385,9 +1373,9 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             if (mapId == null || transitionId <= 0L) {
                 return;
             }
-            OperationResultData result = mutationPipeline.executeOperation(
+            OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
-                    current -> current.saveTransitionDescription(transitionId, description));
+                    current -> transitionDescriptionCommand.plan(current, transitionId, description));
             publicationOperations.publishMutation(result, state);
         }
 

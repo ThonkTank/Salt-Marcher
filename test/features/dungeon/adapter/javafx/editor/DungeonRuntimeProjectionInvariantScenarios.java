@@ -22,6 +22,7 @@ import features.dungeon.domain.core.projection.DungeonDerivedState;
 import features.dungeon.domain.core.projection.DungeonDerivedStateProjection;
 import features.dungeon.domain.core.projection.DungeonMapFacts;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
+import features.dungeon.domain.core.structure.transition.Transition;
 import features.dungeon.domain.core.structure.transition.TransitionDestination;
 import features.dungeon.domain.core.structure.transition.TransitionDestinationTarget;
 import features.dungeon.application.travel.projection.TravelActionFacts;
@@ -172,11 +173,13 @@ final class DungeonRuntimeProjectionInvariantScenarios {
     private static void assertRuntimeTransitionProjection() {
         Cell anchor = new Cell(2, 0, 0);
         DungeonMap emptyMap = DungeonMapAuthoring.empty(new DungeonMapIdentity(4L), "Runtime Transitions");
-        DungeonMap map = emptyMap.withTransitionCatalog(emptyMap.transitionCatalog().withCreated(
+        DungeonMap map = withTransition(emptyMap, new Transition(
                 40L,
                 emptyMap.metadata().mapId().value(),
+                "",
                 TransitionAnchor.cell(anchor),
-                TransitionDestination.dungeonMap(9L, 12L)));
+                TransitionDestination.dungeonMap(9L, 12L),
+                null));
         DungeonDerivedState derived = derivedState(
                 List.of(area(DungeonAreaType.ROOM, 11L, "Portalraum", List.of(anchor))),
                 List.of());
@@ -198,11 +201,13 @@ final class DungeonRuntimeProjectionInvariantScenarios {
                 transition.transitionTarget(),
                 "runtime transition projection recomputes transition target from authored destination facts");
 
-        DungeonMap unlinkedMap = emptyMap.withTransitionCatalog(emptyMap.transitionCatalog().withCreated(
+        DungeonMap unlinkedMap = withTransition(emptyMap, new Transition(
                 41L,
                 emptyMap.metadata().mapId().value(),
+                "",
                 TransitionAnchor.cell(anchor),
-                TransitionDestination.unlinkedEntrance()));
+                TransitionDestination.unlinkedEntrance(),
+                null));
         TravelSurfaceFacts unlinkedSurface = project(unlinkedMap, derived, new Cell(2, 0, 0));
         TravelActionFacts unlinkedTransition = firstActionOfKind(unlinkedSurface, TravelActionKind.TRANSITION);
         assertTrue(unlinkedTransition != null, "runtime transition projection publishes unlinked entrance action");
@@ -473,11 +478,7 @@ final class DungeonRuntimeProjectionInvariantScenarios {
     ) {
         DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(mapId), mapName);
         for (features.dungeon.domain.core.structure.transition.Transition transition : transitions) {
-            map = map.withTransitionCatalog(map.transitionCatalog().withCreated(
-                    transition.transitionId(),
-                    map.metadata().mapId().value(),
-                    transition.anchor(),
-                    transition.destination()));
+            map = withTransition(map, transition);
         }
         return TravelAuthoredSurfaceProjectionMapper.from(map, derivedState(areas, List.of()));
     }
@@ -514,11 +515,17 @@ final class DungeonRuntimeProjectionInvariantScenarios {
         if (transitionAnchor == null || transitionId <= 0L) {
             return map;
         }
-        return map.withTransitionCatalog(map.transitionCatalog().withCreated(
+        return withTransition(map, new Transition(
                 transitionId,
                 mapId,
+                "",
                 TransitionAnchor.cell(transitionAnchor),
-                TransitionDestination.dungeonMap(99L, 7L)));
+                TransitionDestination.dungeonMap(99L, 7L),
+                null));
+    }
+
+    private static DungeonMap withTransition(DungeonMap map, Transition transition) {
+        return map.withExactTransitionChange(null, transition);
     }
 
     private static DungeonMapRepository repositoryOf(DungeonMap firstMap, DungeonMap secondMap) {

@@ -94,6 +94,8 @@ public record DungeonPatch(
                         roomClusterChange.before(), roomClusterChange.after());
                 case StairChange stairChange -> changed.withExactStairChange(
                         stairChange.before(), stairChange.after());
+                case TransitionChange transitionChange -> changed.withExactTransitionChange(
+                        transitionChange.before(), transitionChange.after());
             };
         }
         if (changed.equals(safeCurrent)) {
