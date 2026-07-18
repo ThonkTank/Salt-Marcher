@@ -29,6 +29,9 @@ import features.dungeon.application.authored.command.DungeonCompoundPatch;
 import features.dungeon.application.authored.command.CreateFeatureMarkerCommand;
 import features.dungeon.application.authored.command.CreateStairCommand;
 import features.dungeon.application.authored.command.CreateTransitionCommand;
+import features.dungeon.application.authored.command.ClusterBoundaryCommand;
+import features.dungeon.application.authored.command.ClusterBoundaryStretchCommand;
+import features.dungeon.application.authored.command.ClusterCornerCommand;
 import features.dungeon.application.authored.command.DeleteFeatureMarkerCommand;
 import features.dungeon.application.authored.command.DeleteStairCommand;
 import features.dungeon.application.authored.command.DeleteTransitionCommand;
@@ -36,6 +39,7 @@ import features.dungeon.application.authored.command.FeatureMarkerSemanticsComma
 import features.dungeon.application.authored.command.RoomClusterNameCommand;
 import features.dungeon.application.authored.command.RoomNameCommand;
 import features.dungeon.application.authored.command.RoomNarrationCommand;
+import features.dungeon.application.authored.command.RoomRectangleCommand;
 import features.dungeon.application.authored.command.UpdateStairGeometryCommand;
 import features.dungeon.application.authored.command.TransitionDescriptionCommand;
 import features.dungeon.application.authored.command.TransitionLinkCommand;
@@ -125,6 +129,11 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
     private final RoomNarrationCommand roomNarrationCommand = new RoomNarrationCommand();
     private final RoomNameCommand roomNameCommand = new RoomNameCommand();
     private final RoomClusterNameCommand roomClusterNameCommand = new RoomClusterNameCommand();
+    private final RoomRectangleCommand roomRectangleCommand = new RoomRectangleCommand();
+    private final ClusterBoundaryCommand clusterBoundaryCommand = new ClusterBoundaryCommand();
+    private final ClusterCornerCommand clusterCornerCommand = new ClusterCornerCommand();
+    private final ClusterBoundaryStretchCommand clusterBoundaryStretchCommand =
+            new ClusterBoundaryStretchCommand();
     private final CreateStairCommand createStairCommand = new CreateStairCommand();
     private final DeleteStairCommand deleteStairCommand = new DeleteStairCommand();
     private final UpdateStairGeometryCommand updateStairGeometryCommand =
@@ -238,10 +247,9 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
     public void applyRoomRectangle(MapId mapId, Cell start, Cell end, boolean deleteMode, Session session) {
         Objects.requireNonNull(start, "start");
         Objects.requireNonNull(end, "end");
-        OperationResultData result = mutationPipeline.executeOperation(
+        OperationResultData result = mutationPipeline.executePatchCommand(
                 domainMapId(mapId),
-                deleteMode ? current -> current.deleteRoomRectangle(start, end)
-                        : current -> current.paintRoomRectangle(start, end));
+                current -> roomRectangleCommand.plan(current, start, end, deleteMode));
         publicationOperations.publishMutation(result, session.dungeonState());
     }
 
@@ -258,15 +266,14 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         }
         List<Edge> safeEdges = List.copyOf(Objects.requireNonNull(edges, "edges"));
         BoundaryKind safeBoundaryKind = Objects.requireNonNull(boundaryKind, "boundaryKind");
-        DungeonEditorCommandOutcome.RejectionReason rejectionReason = !deleteMode
-                ? DungeonEditorCommandOutcome.RejectionReason.NO_EFFECT
-                : safeBoundaryKind == BoundaryKind.WALL
-                        ? DungeonEditorCommandOutcome.RejectionReason.PROTECTED_EXTERIOR_WALL
-                        : DungeonEditorCommandOutcome.RejectionReason.REFERENCED_CONNECTION;
-        OperationResultData result = mutationPipeline.executeOperation(
+        OperationResultData result = mutationPipeline.executePatchCommand(
                 domainMapId(mapId),
-                current -> current.editClusterBoundaries(clusterId, safeEdges, safeBoundaryKind, deleteMode),
-                rejectionReason);
+                current -> clusterBoundaryCommand.plan(
+                        current,
+                        clusterId,
+                        safeEdges,
+                        safeBoundaryKind,
+                        deleteMode));
         publicationOperations.publishMutation(result, session.dungeonState());
     }
 
@@ -938,7 +945,19 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             if (!DungeonEditorSessionPreviewHelper.directClusterMoveCommitHandle(handleRef.kind())) {
                 return;
             }
-            OperationResultData result = applyHandleMovement(domainMapId(mapId), handleRef, safePreview);
+            OperationResultData result = handleRef.kind() == DungeonEditorHandleKind.CLUSTER_CORNER
+                    ? mutationPipeline.executePatchCommand(
+                            domainMapId(mapId),
+                            current -> clusterCornerCommand.plan(
+                                    current,
+                                    handleRef.clusterId() > 0L
+                                            ? handleRef.clusterId()
+                                            : current.clusterIdForTopologyRef(handleRef.topologyRef()),
+                                    handleRef.cell(),
+                                    safePreview.deltaQ(),
+                                    safePreview.deltaR(),
+                                    safePreview.deltaLevel()))
+                    : applyHandleMovement(domainMapId(mapId), handleRef, safePreview);
             publicationOperations.publishMutation(result, session.dungeonState());
         }
 
@@ -1047,9 +1066,10 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         ) {
             DungeonEditorSessionValues.MoveBoundaryStretchPreview safePreview =
                     Objects.requireNonNull(preview, PREVIEW_ARGUMENT);
-            OperationResultData result = mutationPipeline.executeOperation(
+            OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
-                    current -> current.moveBoundaryStretch(
+                    current -> clusterBoundaryStretchCommand.plan(
+                            current,
                             safePreview.clusterId(),
                             DungeonEditorWorkspaceGeometry.unitEdges(safePreview.sourceEdges()),
                             safePreview.deltaQ(),

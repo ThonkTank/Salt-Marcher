@@ -150,6 +150,26 @@ public final class RoomCluster {
         return new RoomClusterDoorBoundaryMovement().moved(this, move);
     }
 
+    /** Materializes stable topology refs for newly authored non-open boundaries. */
+    public RoomCluster withResolvedBoundaryTopologyRefs() {
+        Map<Integer, List<DungeonClusterBoundary>> resolved = new LinkedHashMap<>();
+        for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : boundariesByLevel.entrySet()) {
+            List<DungeonClusterBoundary> boundaries = new ArrayList<>();
+            for (DungeonClusterBoundary boundary : entry.getValue()) {
+                boundaries.add(new DungeonClusterBoundary(
+                        boundary.clusterId(),
+                        boundary.level(),
+                        boundary.relativeCell(),
+                        boundary.direction(),
+                        boundary.kind(),
+                        boundary.resolvedTopologyRef(center)));
+            }
+            resolved.put(entry.getKey(), List.copyOf(boundaries));
+        }
+        RoomCluster result = new RoomCluster(clusterId, mapId, name, center, resolved);
+        return result.equals(this) ? this : result;
+    }
+
     RoomCluster movedBy(int deltaQ, int deltaR, int deltaLevel) {
         return new RoomCluster(
                 clusterId,
