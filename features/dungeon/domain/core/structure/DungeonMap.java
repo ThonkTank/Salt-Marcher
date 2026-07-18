@@ -299,10 +299,6 @@ public record DungeonMap(
         return withFeatureMarkers(featureMarkers.withoutMarker(markerId));
     }
 
-    public DungeonMap updateFeatureMarkerSemantics(long markerId, String label, String description) {
-        return withFeatureMarkers(featureMarkers.withSemantics(markerId, label, description));
-    }
-
     public boolean canDeleteStair(long stairId) {
         return stairId > 0L && stairs.canDeleteUnboundStair(stairId);
     }
