@@ -1,6 +1,6 @@
 Status: Active
 Owner: Catalog Feature
-Last Reviewed: 2026-07-18
+Last Reviewed: 2026-07-19
 Source of Truth: User-visible consolidated catalog behavior.
 
 # Catalog Requirements
@@ -29,12 +29,32 @@ workspace serves both game preparation and running-session lookup.
 - One persistent section selector MUST remain at the top of the Catalog
   controls area. The selected section's controls MUST always appear below it,
   and its results MUST appear in the main area.
+- Search text and filter edits MUST update the selected section automatically
+  after 200 ms without another edit. Enter MUST submit the current valid input
+  immediately. All seven sections use this behavior when they expose search or
+  filters.
+- Only the selected section may load or observe provider results. Switching
+  sections MUST stop invisible work without discarding that section's input,
+  accepted result, selection, sort, or page.
+- Every section MUST use the same compact control hierarchy: one wrapping row
+  for search and section actions, wrapping inside-labeled filters, removable
+  active-filter chips, and one feedback area when those capabilities exist.
+  Empty regions MUST not render placeholders or consume space.
+- Equivalent section, search, filter, sort, paging, and action controls MUST
+  render at 28 pixels high with the same 12-pixel regular-weight type style.
+  Removable filter chips use the shared compact information style.
+- Search and filter meaning MUST appear inside the interactive element through
+  its prompt or displayed value. Redundant field-side labels, `FILTER`, and
+  `AKTIONEN` headings MUST not appear.
 - Switching sections MUST preserve each section's filters, selection, paging,
   and unfinished input for the lifetime of the Catalog workspace.
 - Sections MUST use consistent table, status, paging, keyboard, and selection
   behavior while retaining section-specific columns, filters, and actions.
 - Every section MUST distinguish loading, empty, unavailable, invalid-input,
   and failed outcomes whenever the underlying operation can produce them.
+- Refreshing an already successful section MUST keep its accepted rows visible
+  while communicating that they are being refreshed. A failed refresh MUST not
+  present stale rows as current success.
 - Monster search and encounter-builder controls MUST preserve their accepted
   behavior, including creature details and explicit add-to-Encounter and
   add-to-focused-Scene actions.
@@ -68,6 +88,13 @@ Encounter or Scene workspaces, or expose a second World Planner workspace.
 
 - One `Katalog` contribution shows all seven sections in the common controls
   and main workspace.
+- At 1150×700 and 900×650, the selected section retains the persistent selector,
+  compact controls, and a visible result workspace without horizontal scrolling.
+- Equivalent controls satisfy the shared 28-pixel and 12-pixel visual contract,
+  use inside labels, and do not render redundant group headings.
+- Typing several characters inside 200 ms publishes only the final query;
+  Enter publishes the current valid query immediately.
+- Inactive sections issue no provider query and retain their last state.
 - Switching through every section and returning preserves each section's
   current query, filter draft, selected record, page, and unfinished input.
 - Refreshing provider results preserves a still-present selected record by its

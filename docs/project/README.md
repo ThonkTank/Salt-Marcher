@@ -41,8 +41,8 @@ lives under `docs/<feature>/`; see [docs/README.md](../README.md).
 
 ## Delivery
 
-- Temporary delivery documents are routed from their feature README. Current:
-  [Dungeon Greenfield Roadmap](../dungeon/delivery/roadmap-dungeon-greenfield.md).
+- [Active Project Delivery](delivery/README.md) routes temporary migrations.
+  Feature roadmaps remain owned and retired by their feature.
 
 ## Verification
 
