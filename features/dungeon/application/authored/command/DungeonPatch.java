@@ -96,6 +96,8 @@ public record DungeonPatch(
                         stairChange.before(), stairChange.after());
                 case TransitionChange transitionChange -> changed.withExactTransitionChange(
                         transitionChange.before(), transitionChange.after());
+                case CorridorChange corridorChange -> changed.withExactCorridorChange(
+                        corridorChange.before(), corridorChange.after());
             };
         }
         if (changed.equals(safeCurrent)) {

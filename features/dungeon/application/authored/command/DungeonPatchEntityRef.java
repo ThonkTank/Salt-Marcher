@@ -20,6 +20,7 @@ public record DungeonPatchEntityRef(
             case FEATURE_MARKER -> DungeonTopologyElementKind.FEATURE_MARKER;
             case STAIR -> DungeonTopologyElementKind.STAIR;
             case TRANSITION -> DungeonTopologyElementKind.TRANSITION;
+            case CORRIDOR -> DungeonTopologyElementKind.CORRIDOR;
             case ROOM_CLUSTER -> null;
         };
         if (expectedTopologyKind == null && topologyRef != null) {
@@ -65,11 +66,19 @@ public record DungeonPatchEntityRef(
                 new DungeonTopologyRef(DungeonTopologyElementKind.TRANSITION, transitionId));
     }
 
+    public static DungeonPatchEntityRef corridor(long corridorId) {
+        return new DungeonPatchEntityRef(
+                Kind.CORRIDOR,
+                corridorId,
+                new DungeonTopologyRef(DungeonTopologyElementKind.CORRIDOR, corridorId));
+    }
+
     public enum Kind {
         ROOM,
         ROOM_CLUSTER,
         FEATURE_MARKER,
         STAIR,
-        TRANSITION
+        TRANSITION,
+        CORRIDOR
     }
 }

@@ -14,6 +14,7 @@ import features.dungeon.domain.core.structure.topology.DungeonMapTopology;
 import features.dungeon.domain.core.structure.topology.SpatialTopology;
 import features.dungeon.domain.core.structure.feature.FeatureMarkerCatalog;
 import features.dungeon.domain.core.structure.transition.Transition;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -40,11 +41,23 @@ public final class DungeonMapRecordMapper {
         List<Transition> transitions = DungeonTransitionRecordMapperSupport.toTransitions(resolvedRecord.transitions());
         FeatureMarkerCatalog featureMarkers =
                 DungeonFeatureMarkerRecordMapperSupport.toFeatureMarkers(resolvedRecord.featureMarkers());
-        DungeonMapTopology topologyIndex =
-                DungeonMapTopology.merge(
-                        new DungeonMapTopology(DungeonCorridorConnectionReadMapperSupport.toAnchorTopologyBindings(
-                                resolvedRecord.corridors())),
-                        DungeonTopologyElementRecordMapperSupport.toTopologyIndex(resolvedRecord.topologyElements()));
+        DungeonMapTopology storedTopology =
+                DungeonTopologyElementRecordMapperSupport.toTopologyIndex(resolvedRecord.topologyElements());
+        List<DungeonMapTopology.DungeonTopologyBinding> topologyBindings = new ArrayList<>();
+        for (DungeonMapTopology.DungeonTopologyBinding anchorBinding
+                : DungeonCorridorConnectionReadMapperSupport.toAnchorTopologyBindings(resolvedRecord.corridors())) {
+            DungeonMapTopology.DungeonTopologyBinding storedBinding = storedTopology.binding(anchorBinding.ref());
+            topologyBindings.add(storedBinding == null
+                    ? anchorBinding
+                    : new DungeonMapTopology.DungeonTopologyBinding(
+                            anchorBinding.ref(),
+                            anchorBinding.clusterId(),
+                            anchorBinding.corridorId(),
+                            anchorBinding.localElementId(),
+                            storedBinding.label()));
+        }
+        topologyBindings.addAll(storedTopology.bindings());
+        DungeonMapTopology topologyIndex = new DungeonMapTopology(topologyBindings);
         return DungeonMapAuthoring.authored(
                 new DungeonMapIdentity(resolvedRecord.mapId()),
                 resolvedRecord.name(),
