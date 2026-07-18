@@ -10,6 +10,7 @@ import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.room.RoomCluster;
 
 final class CorridorHostCellDerivation {
+    private static final CorridorRoutingPolicy ROUTING_POLICY = new OrthogonalCorridorRoutingPolicy();
     private static final int SINGLE_ROUTE_TERMINUS_COUNT = 1;
     private static final CorridorHostBackboneCells BACKBONE_CELLS = new CorridorHostBackboneCells();
     private static final int FULL_ROUTE_TERMINUS_COUNT = 2;
@@ -72,7 +73,7 @@ final class CorridorHostCellDerivation {
         Cell current = routeNodes.get(index);
         return previous == null || current == null
                 ? List.of()
-                : CorridorRoute.unblockedBetweenWithLevelTransition(previous, current, roomCells).cells();
+                : ROUTING_POLICY.routeWithLevelTransition(previous, current, roomCells).cells();
     }
 
     private static void addIfKept(

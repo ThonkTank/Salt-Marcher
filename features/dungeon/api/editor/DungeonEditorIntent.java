@@ -137,6 +137,18 @@ public sealed interface DungeonEditorIntent {
         }
     }
 
+    record CommitFeatureMarkerSemantics(
+            long markerId,
+            String label,
+            String description
+    ) implements DungeonEditorIntent {
+        public CommitFeatureMarkerSemantics {
+            markerId = Math.max(0L, markerId);
+            label = safeText(label);
+            description = safeText(description);
+        }
+    }
+
     record UpdateTransitionDestination(TransitionDestinationInput destination) implements DungeonEditorIntent {
         public UpdateTransitionDestination {
             destination = destination == null ? TransitionDestinationInput.empty() : destination;

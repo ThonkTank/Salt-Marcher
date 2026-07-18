@@ -18,14 +18,18 @@ public final class CorridorMapAuthoring {
             new CorridorEndpointMatching();
     private static final CorridorEndpointResolution ENDPOINT_RESOLUTION =
             new CorridorEndpointResolution();
-    private static final CorridorRouteValidation ROUTE_VALIDATION =
-            new CorridorRouteValidation();
     private static final CorridorRouteSplitting ROUTE_SPLITTING =
             new CorridorRouteSplitting();
     private static final CorridorCreationBinding CREATION_BINDING =
             new CorridorCreationBinding();
-    private static final CorridorDeletion DELETION =
-            new CorridorDeletion();
+    private final CorridorRouteValidation routeValidation;
+    private final CorridorDeletion deletion;
+
+    public CorridorMapAuthoring(CorridorRoutingPolicy routingPolicy) {
+        CorridorRoutingPolicy safePolicy = Objects.requireNonNull(routingPolicy, "routingPolicy");
+        routeValidation = new CorridorRouteValidation(safePolicy);
+        deletion = new CorridorDeletion(safePolicy);
+    }
 
     public DungeonMap createCorridor(
             DungeonMap dungeonMap,
@@ -38,7 +42,7 @@ public final class CorridorMapAuthoring {
             return dungeonMap;
         }
         CorridorHostCells initialHostCells = hostCells(dungeonMap, dungeonMap.corridors());
-        RouteValidation routeValidation = ROUTE_VALIDATION.validate(dungeonMap, start, end, initialHostCells);
+        RouteValidation routeValidation = this.routeValidation.validate(dungeonMap, start, end, initialHostCells);
         if (!routeValidation.hasValidRoute()) {
             return dungeonMap;
         }
@@ -87,7 +91,7 @@ public final class CorridorMapAuthoring {
             DungeonMap dungeonMap,
             CorridorDeletionTarget target
     ) {
-        return DELETION.deleteCorridor(dungeonMap, target);
+        return deletion.deleteCorridor(dungeonMap, target);
     }
 
     private static boolean validCreateEndpoints(DungeonCorridorEndpoint start, DungeonCorridorEndpoint end) {

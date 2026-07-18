@@ -43,7 +43,9 @@ final class DungeonEditorRuntimeContext {
                 Objects.requireNonNull(interactionState, "interactionState");
         DungeonEditorDungeonState dungeonState = new DungeonEditorDungeonState();
         InterpretDungeonEditorMainViewInputUseCase interpreter =
-                new InterpretDungeonEditorMainViewInputUseCase(safeInteractionState);
+                new InterpretDungeonEditorMainViewInputUseCase(
+                        safeInteractionState,
+                        safeDependencies.corridorRoutingPolicy());
         return safeDependencies.editorRuntimeApplicationService().openSession(
                 dungeonState,
                 runtimeSession -> new DungeonEditorRuntimeContext(runtimeSession, interpreter));
@@ -192,6 +194,12 @@ final class DungeonEditorRuntimeContext {
                 new DungeonAuthoredApplicationService.TransitionDescriptionInput(
                         transitionId,
                         description)));
+    }
+
+    Result saveFeatureMarkerSemantics(long markerId, String label, String description) {
+        return fromSnapshot(session.saveFeatureMarkerSemantics(
+                new DungeonAuthoredApplicationService.FeatureMarkerSemanticsInput(
+                        markerId, label, description)));
     }
 
     Result saveStairGeometry(StairGeometryDraftInput input) {

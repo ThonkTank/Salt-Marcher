@@ -14,8 +14,13 @@ final class DungeonEditorCorridorInteractionUseCase {
     private final DungeonEditorCorridorTargetHelper targetService = new DungeonEditorCorridorTargetHelper();
     private final DungeonEditorCorridorFacingTargetHelper facingTargetHelper =
             new DungeonEditorCorridorFacingTargetHelper();
-    private final DungeonEditorCorridorRoutePreviewValidationHelper routeValidationHelper =
-            new DungeonEditorCorridorRoutePreviewValidationHelper();
+    private final DungeonEditorCorridorRoutePreviewValidationHelper routeValidationHelper;
+
+    DungeonEditorCorridorInteractionUseCase(
+            features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy routingPolicy
+    ) {
+        routeValidationHelper = new DungeonEditorCorridorRoutePreviewValidationHelper(routingPolicy);
+    }
 
     DungeonEditorMainViewInterpretation press(
             PointerState input,

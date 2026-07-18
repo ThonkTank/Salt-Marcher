@@ -22,7 +22,8 @@ final class DungeonStairInvariantScenarios {
 
     private static final long CORRIDOR_ID = 20L;
     private static final long STAIR_ID = 9L;
-    private static final CorridorMapAuthoring CORRIDOR_AUTHORING = new CorridorMapAuthoring();
+    private static final CorridorMapAuthoring CORRIDOR_AUTHORING = new CorridorMapAuthoring(
+            new features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy());
 
     private DungeonStairInvariantScenarios() {
     }

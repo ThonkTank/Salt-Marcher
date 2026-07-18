@@ -46,6 +46,7 @@ final class DungeonEditorStatePanelModel {
                 narrationCards,
                 nameProjection(safeState),
                 corridorPointProjection(safeState),
+                featureMarkerProjection(safeState),
                 transitionContent.transitionDestinationProjection(safeState),
                 transitionContent.transitionDescriptionProjection(safeState),
                 stairGeometryContent.stairGeometryProjection(safeState)));
@@ -85,6 +86,22 @@ final class DungeonEditorStatePanelModel {
                 draft);
     }
 
+    private static @Nullable FeatureMarkerProjection featureMarkerProjection(DungeonEditorState state) {
+        DungeonEditorState safeState = state == null ? DungeonEditorState.empty() : state;
+        DungeonTopologyElementRef topologyRef = safeState.selection().topologyRef();
+        DungeonInspectorSnapshot inspector = safeState.inspector();
+        if (topologyRef == null
+                || topologyRef.kind() != features.dungeon.api.DungeonTopologyElementKind.FEATURE_MARKER
+                || topologyRef.id() <= 0L
+                || inspector == null) {
+            return null;
+        }
+        return new FeatureMarkerProjection(
+                topologyRef.id(),
+                inspector.title(),
+                inspector.summary());
+    }
+
     private static LabelNameTarget labelNameTarget(DungeonEditorDraftState.LabelNameDraft target) {
         if (target == null || target.targetId() <= 0L) {
             return LabelNameTarget.empty();
@@ -119,6 +136,7 @@ final class DungeonEditorStatePanelModel {
             List<RoomNarrationCardProjection> narrationCards,
             @Nullable NameProjection name,
             @Nullable CorridorPointProjection corridorPoint,
+            @Nullable FeatureMarkerProjection featureMarker,
             @Nullable TransitionDestinationProjection transitionDestination,
             @Nullable TransitionDescriptionProjection transitionDescription,
             @Nullable StairGeometryProjection stairGeometry
@@ -131,7 +149,15 @@ final class DungeonEditorStatePanelModel {
         }
 
         static StateProjection initial() {
-            return new StateProjection("", "", false, "", List.of(), null, null, null, null, null);
+            return new StateProjection("", "", false, "", List.of(), null, null, null, null, null, null);
+        }
+    }
+
+    record FeatureMarkerProjection(long markerId, String label, String description) {
+        FeatureMarkerProjection {
+            markerId = Math.max(0L, markerId);
+            label = label == null ? "" : label;
+            description = description == null ? "" : description;
         }
     }
 

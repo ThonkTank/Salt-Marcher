@@ -50,6 +50,19 @@ public record FeatureMarkerCatalog(
         return false;
     }
 
+    public FeatureMarkerCatalog withSemantics(long markerId, String label, String description) {
+        if (!canDelete(markerId)) {
+            return this;
+        }
+        List<FeatureMarker> nextMarkers = new ArrayList<>();
+        for (FeatureMarker marker : markers) {
+            nextMarkers.add(marker.markerId() == markerId
+                    ? marker.withSemantics(label, description)
+                    : marker);
+        }
+        return new FeatureMarkerCatalog(nextMarkers);
+    }
+
     public FeatureMarkerCatalog withoutMarker(long markerId) {
         if (!canDelete(markerId)) {
             return this;

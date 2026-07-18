@@ -97,7 +97,8 @@ public final class DungeonEditorRuntimeDraftOwnerProbe {
     }
 
     public static void assertCorridorDraftSessionOwner() {
-        DungeonEditorCorridorInteractionUseCase useCase = new DungeonEditorCorridorInteractionUseCase();
+        DungeonEditorCorridorInteractionUseCase useCase = new DungeonEditorCorridorInteractionUseCase(
+                new features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy());
         PointerState firstClick = corridorDoorPress();
         DungeonEditorMainViewInterpretation started = useCase.press(
                 firstClick,

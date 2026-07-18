@@ -22,8 +22,11 @@ final class CorridorDeletion {
             new CorridorConnectionNormalization();
     private static final CorridorTargetDeletion TARGET_DELETION =
             new CorridorTargetDeletion();
-    private static final CorridorReplacementRouteValidation REPLACEMENT_ROUTE_VALIDATION =
-            new CorridorReplacementRouteValidation();
+    private final CorridorReplacementRouteValidation replacementRouteValidation;
+
+    CorridorDeletion(CorridorRoutingPolicy routingPolicy) {
+        replacementRouteValidation = new CorridorReplacementRouteValidation(routingPolicy);
+    }
 
     DungeonMap deleteCorridor(
             DungeonMap dungeonMap,
@@ -71,7 +74,7 @@ final class CorridorDeletion {
         }
         Corridor updated = updatedCore;
         List<Corridor> candidateCorridors = withUpdatedCorridor(dungeonMap, updated);
-        if (!REPLACEMENT_ROUTE_VALIDATION.hasValidReplacementRoute(dungeonMap, updated, candidateCorridors)) {
+        if (!replacementRouteValidation.hasValidReplacementRoute(dungeonMap, updated, candidateCorridors)) {
             return dungeonMap;
         }
         return CONNECTION_NORMALIZATION.copyWithConnections(

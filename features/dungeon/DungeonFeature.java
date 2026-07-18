@@ -22,6 +22,8 @@ import features.dungeon.application.editor.DungeonEditorApiFacade;
 import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
 import features.dungeon.application.editor.DungeonEditorRuntimeApplicationService;
 import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
+import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
+import features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy;
 import features.dungeon.application.travel.DungeonTravelNavigator;
 import features.dungeon.application.travel.DungeonTravelPartyGateway;
 import features.dungeon.application.travel.DungeonTravelPublishedState;
@@ -65,6 +67,7 @@ public final class DungeonFeature {
         DungeonEditorRuntimeDependencies editorDependencies = new DungeonEditorRuntimeDependencies(
                 runtime.editorControls(), runtime.editorMapSurface(), runtime.editorState(),
                 runtime.editor(),
+                runtime.corridorRoutingPolicy(),
                 lane,
                 dispatcher);
         DungeonEditorFeatureRuntimeRoot editorRuntimeRoot =
@@ -93,8 +96,9 @@ public final class DungeonFeature {
         Objects.requireNonNull(diagnostics, "diagnostics");
         DungeonEditorPublishedState editorPublishedState = new DungeonEditorPublishedState(dispatcher);
         DungeonAuthoredPublishedState authoredPublishedState = new DungeonAuthoredPublishedState(dispatcher);
+        CorridorRoutingPolicy corridorRoutingPolicy = new OrthogonalCorridorRoutingPolicy();
         DungeonAuthoredApplicationService authoredMaps = new DungeonAuthoredApplicationService(
-                Objects.requireNonNull(repository, "repository"), authoredPublishedState);
+                Objects.requireNonNull(repository, "repository"), authoredPublishedState, corridorRoutingPolicy);
         DungeonEditorRuntimeApplicationService editor =
                 new DungeonEditorRuntimeApplicationService(authoredMaps, editorPublishedState);
         DungeonTravelPartyGateway partyGateway = new DungeonTravelPartyGateway(
@@ -103,6 +107,7 @@ public final class DungeonFeature {
         DungeonTravelNavigator navigator = new DungeonTravelNavigator(authoredMaps, partyGateway, surfaceLoader);
         DungeonTravelPublishedState publishedState = new DungeonTravelPublishedState(dispatcher);
         return new Runtime(
+                corridorRoutingPolicy,
                 authoredMaps,
                 editor,
                 new DungeonTravelRuntimeApplicationService(surfaceLoader, navigator, publishedState, lane),
@@ -132,6 +137,7 @@ public final class DungeonFeature {
     }
 
     record Runtime(
+            CorridorRoutingPolicy corridorRoutingPolicy,
             DungeonAuthoredApplicationService authored,
             DungeonEditorRuntimeApplicationService editor,
             DungeonTravelRuntimeApplicationService travel,

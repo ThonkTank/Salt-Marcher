@@ -308,6 +308,26 @@ public final class DungeonEditorRuntimeApplicationService {
             return publishCurrent();
         }
 
+        public DungeonEditorSessionSnapshot.@Nullable SnapshotData saveFeatureMarkerSemantics(
+                DungeonAuthoredApplicationService.FeatureMarkerSemanticsInput input
+        ) {
+            DungeonAuthoredApplicationService.FeatureMarkerSemanticsInput safeInput = input == null
+                    ? new DungeonAuthoredApplicationService.FeatureMarkerSemanticsInput(0L, "", "")
+                    : input;
+            if (safeInput.markerId() <= 0L
+                    || safeInput.label().isBlank()
+                    || !workflow.session().hasSelectedMap()) {
+                return rejectInvalidTarget();
+            }
+            authored.saveAuthoredFeatureMarkerSemantics(
+                    workflow.session().selectedMapId(),
+                    safeInput.markerId(),
+                    safeInput.label(),
+                    safeInput.description());
+            workflow.clearPreviewWithCommandOutcome(currentFacts().commandOutcome());
+            return publishCurrent();
+        }
+
         public DungeonAuthoredApplicationService.OperationResult saveTransitionLink(
                 DungeonAuthoredApplicationService.TransitionLinkInput input
         ) {

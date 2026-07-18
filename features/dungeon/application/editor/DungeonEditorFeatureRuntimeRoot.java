@@ -248,6 +248,10 @@ public final class DungeonEditorFeatureRuntimeRoot
         commands.saveTransitionDescription(transitionId, description);
     }
 
+    public void saveFeatureMarkerSemantics(long markerId, String label, String description) {
+        commands.saveFeatureMarkerSemantics(markerId, label, description);
+    }
+
     @Override
     public void saveStairGeometry(StairGeometryDraftInput input) {
         commands.saveStairGeometry(input);

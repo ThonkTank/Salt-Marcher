@@ -28,6 +28,8 @@ import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.DungeonMapOperationFeedbackRules;
 import features.dungeon.domain.core.structure.corridor.CorridorDeletionTarget;
 import features.dungeon.domain.core.structure.corridor.CorridorMapAuthoring;
+import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
+import features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy;
 import features.dungeon.domain.core.structure.corridor.DungeonCorridorEndpoint;
 import features.dungeon.domain.core.structure.feature.FeatureMarkerKind;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
@@ -74,7 +76,6 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
     private static final DungeonMapOperationFeedbackRules OPERATION_FEEDBACK_POLICY =
             new DungeonMapOperationFeedbackRules();
     private static final DungeonEditorHandleMutation HANDLE_MUTATION = new DungeonEditorHandleMutation();
-    private static final CorridorMapAuthoring CORRIDOR_AUTHORING = new CorridorMapAuthoring();
     private static final long PREVIEW_STAIR_ID = Long.MAX_VALUE;
     private static final long ABSENT_ID = 0L;
     private static final long MIN_CLUSTER_ID = 0L;
@@ -85,6 +86,8 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
 
     private final DungeonMapRepository repository;
     private final DungeonAuthoredPublishedState publishedState;
+    private final CorridorRoutingPolicy corridorRoutingPolicy;
+    private final CorridorMapAuthoring corridorAuthoring;
     /* Pointer previews operate on this immutable authored workset. */
     private final ConcurrentMap<Long, DungeonMap> authoredWorkset = new ConcurrentHashMap<>();
     private final DungeonEditHistory editHistory = new DungeonEditHistory();
@@ -112,8 +115,18 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             DungeonMapRepository repository,
             DungeonAuthoredPublishedState publishedState
     ) {
+        this(repository, publishedState, new OrthogonalCorridorRoutingPolicy());
+    }
+
+    public DungeonAuthoredApplicationService(
+            DungeonMapRepository repository,
+            DungeonAuthoredPublishedState publishedState,
+            CorridorRoutingPolicy corridorRoutingPolicy
+    ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
+        this.corridorRoutingPolicy = Objects.requireNonNull(corridorRoutingPolicy, "corridorRoutingPolicy");
+        corridorAuthoring = new CorridorMapAuthoring(this.corridorRoutingPolicy);
     }
 
     public Session openSession(DungeonEditorDungeonState dungeonState) {
@@ -523,6 +536,14 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         }
     }
 
+    public record FeatureMarkerSemanticsInput(long markerId, String label, String description) {
+        public FeatureMarkerSemanticsInput {
+            markerId = Math.max(0L, markerId);
+            label = label == null ? "" : label;
+            description = description == null ? "" : description;
+        }
+    }
+
     public record StairGeometryInput(
             long stairId,
             String shapeName,
@@ -712,6 +733,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             OperationResultData result = mutationPipeline.executeOperation(
                     domainMapId(mapId),
                     current -> current.createCorridor(
+                            corridorRoutingPolicy,
                             stairIdForCorridor(current, startEndpoint, endEndpoint, true),
                             startEndpoint,
                             endEndpoint),
@@ -722,7 +744,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         private void deleteCorridor(MapId mapId, CorridorDeletionTarget target, Session session) {
             OperationResultData result = mutationPipeline.executeOperation(
                     domainMapId(mapId),
-                    current -> CORRIDOR_AUTHORING.deleteCorridor(current, target),
+                    current -> corridorAuthoring.deleteCorridor(current, target),
                     DungeonEditorCommandOutcome.RejectionReason.BLOCKED_ROUTE);
             publicationOperations.publishMutation(result, session.dungeonState());
         }
@@ -1324,6 +1346,23 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             publicationOperations.publishMutation(result, state);
         }
 
+        private void saveAuthoredFeatureMarkerSemantics(
+                MapId mapId,
+                long markerId,
+                String label,
+                String description,
+                DungeonEditorDungeonState state
+        ) {
+            if (mapId == null || markerId <= 0L || label == null || label.isBlank()) {
+                return;
+            }
+            OperationResultData result = mutationPipeline.executeOperation(
+                    domainMapId(mapId),
+                    current -> current.updateFeatureMarkerSemantics(markerId, label, description),
+                    DungeonEditorCommandOutcome.RejectionReason.INVALID_TARGET);
+            publicationOperations.publishMutation(result, state);
+        }
+
         private boolean saveAuthoredTransitionLink(
                 MapId sourceMapId,
                 long sourceTransitionId,
@@ -1501,6 +1540,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                 return mutationPipeline.previewOperation(
                         domainMapId,
                         current -> current.createCorridor(
+                                corridorRoutingPolicy,
                                 stairIdForCorridor(current, startEndpoint, endEndpoint, false),
                                 startEndpoint,
                                 endEndpoint));
@@ -1508,7 +1548,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             if (preview instanceof DungeonEditorSessionValues.DeleteCorridorPreview corridor) {
                 return mutationPipeline.previewOperation(
                         domainMapId,
-                        current -> CORRIDOR_AUTHORING.deleteCorridor(current, corridor.target()));
+                        current -> corridorAuthoring.deleteCorridor(current, corridor.target()));
             }
             return null;
         }
@@ -1612,6 +1652,16 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
 
         public void saveAuthoredTransitionDescription(MapId mapId, long transitionId, String description) {
             detailSaveOperations.saveAuthoredTransitionDescription(mapId, transitionId, description, dungeonState);
+        }
+
+        public void saveAuthoredFeatureMarkerSemantics(
+                MapId mapId,
+                long markerId,
+                String label,
+                String description
+        ) {
+            detailSaveOperations.saveAuthoredFeatureMarkerSemantics(
+                    mapId, markerId, label, description, dungeonState);
         }
 
         public boolean saveAuthoredTransitionLink(

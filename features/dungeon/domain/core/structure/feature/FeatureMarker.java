@@ -33,6 +33,10 @@ public record FeatureMarker(
         return new DungeonTopologyRef(DungeonTopologyElementKind.FEATURE_MARKER, markerId);
     }
 
+    public FeatureMarker withSemantics(String nextLabel, String nextDescription) {
+        return new FeatureMarker(markerId, mapId, kind, anchor, nextLabel, nextDescription);
+    }
+
     private static String defaultLabel(FeatureMarkerKind kind, long markerId) {
         return kind.name() + " " + markerId;
     }

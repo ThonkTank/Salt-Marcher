@@ -25,6 +25,8 @@ import features.dungeon.domain.core.structure.corridor.CorridorResolvedEndpoint;
 import features.dungeon.domain.core.structure.corridor.CorridorRoomSet;
 import features.dungeon.domain.core.structure.corridor.CorridorRoute;
 import features.dungeon.domain.core.structure.corridor.CorridorRoutePlan;
+import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
+import features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy;
 import features.dungeon.domain.core.structure.corridor.CorridorTargetDeletion;
 import features.dungeon.domain.core.structure.corridor.DungeonCorridorDeletionOwnerProbe;
 import features.dungeon.domain.core.structure.room.RoomCatalog;
@@ -35,6 +37,7 @@ import features.dungeon.application.editor.DungeonEditorRuntimeDraftOwnerProbe;
 import static features.dungeon.adapter.javafx.editor.DungeonEditorTestSupport.*;
 
 final class DungeonCorridorInvariantScenarios {
+    private static final CorridorRoutingPolicy ROUTING_POLICY = new OrthogonalCorridorRoutingPolicy();
 
 
     private DungeonCorridorInvariantScenarios() {
@@ -104,11 +107,11 @@ final class DungeonCorridorInvariantScenarios {
     }
 
     private static void assertRouteOwner() {
-        CorridorRoute straight = CorridorRoute.unblockedBetween(new Cell(0, 0, 0), new Cell(3, 0, 0), Set.of());
+        CorridorRoute straight = ROUTING_POLICY.route(new Cell(0, 0, 0), new Cell(3, 0, 0), Set.of());
         assertEquals(List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0), new Cell(3, 0, 0)),
                 straight.cells(),
                 "corridor route owner derives deterministic straight route");
-        CorridorRoute turned = CorridorRoute.unblockedBetween(new Cell(0, 0, 0), new Cell(2, 2, 1), Set.of());
+        CorridorRoute turned = ROUTING_POLICY.route(new Cell(0, 0, 0), new Cell(2, 2, 1), Set.of());
         assertEquals(List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0),
                         new Cell(2, 1, 0), new Cell(2, 2, 0)),
                 turned.cells(),
@@ -119,13 +122,13 @@ final class DungeonCorridorInvariantScenarios {
                 "corridor route owner ignores unrelated blocked cells");
         assertEquals(List.of(new Cell(0, 0, 0), new Cell(0, 1, 0), new Cell(0, 2, 0),
                         new Cell(1, 2, 0), new Cell(2, 2, 0)),
-                CorridorRoute.unblockedBetween(
+                ROUTING_POLICY.route(
                                 new Cell(0, 0, 0),
                                 new Cell(2, 2, 1),
                                 Set.of(new Cell(1, 0, 0)))
                         .cells(),
                 "corridor route owner uses vertical-first fallback when horizontal-first is blocked");
-        assertTrue(!CorridorRoute.unblockedBetween(
+        assertTrue(!ROUTING_POLICY.route(
                         new Cell(0, 0, 0),
                         new Cell(2, 2, 1),
                         Set.of(new Cell(1, 0, 0), new Cell(0, 1, 0)))
@@ -216,6 +219,7 @@ final class DungeonCorridorInvariantScenarios {
         assertEquals(List.of(10L), corridorIds(network.withoutCorridor(11L)),
                 "corridor network deletes the unreferenced branch corridor");
         DungeonCorridorDeletionOwnerProbe.assertInvalidReplacementRouteRejectedBeforeMutation();
+        DungeonCorridorDeletionOwnerProbe.assertInjectedRoutingPolicyOwnsReplacementValidation();
     }
 
     private static void assertNetworkMovementOwner() {

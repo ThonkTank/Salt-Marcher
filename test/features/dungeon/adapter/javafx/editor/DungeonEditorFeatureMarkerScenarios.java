@@ -5,6 +5,8 @@ import java.util.Optional;
 import javafx.geometry.Point2D;
 import javafx.scene.Parent;
 import javafx.scene.control.ButtonBase;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.input.MouseButton;
 import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorMapSnapshot;
@@ -13,6 +15,8 @@ import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.editor.DungeonEditorToolOptions;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
+import features.dungeon.api.editor.DungeonEditorIntent;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
 import features.dungeon.adapter.javafx.map.DungeonMapView;
@@ -124,8 +128,6 @@ final class DungeonEditorFeatureMarkerScenarios {
                 "DE-FEATURE-003 persists one dungeon_feature_markers row for the created POI");
         assertEquals(1L, runtime.database().countFeatureMarkerTopologyElementById(mapId, markerId),
                 "DE-FEATURE-003 persists one stable FEATURE_MARKER topology ref");
-        String authoredDescription = "Verborgener Altar am alten Pilgerweg.";
-        runtime.database().updateFeatureMarkerDescription(mapId, markerId, authoredDescription);
         List<String> stableRowsAfterCreate = runtime.database().featureMarkerStableState(mapId);
         assertTrue(stableRowsAfterCreate.stream().anyMatch(row -> row.startsWith(
                         "dungeon_feature_markers|feature_marker_id=" + markerId)
@@ -174,9 +176,43 @@ final class DungeonEditorFeatureMarkerScenarios {
         assertEquals(DungeonInspectorSnapshot.StatePanelFacts.empty(), selectedState.inspector().statePanelFacts(),
                 "DE-FEATURE-004 marker inspector publishes no unrelated stair or transition panel state");
 
+        String authoredLabel = "Verborgener Altar";
+        String authoredDescription = "Verborgener Altar am alten Pilgerweg.";
+        long revisionBeforeSemanticEdit = runtime.mapSurfaceModel().current().surface().revision();
+        TextField labelField = textField(binding.stateView(), "Feature-Marker Name");
+        TextArea descriptionArea = textArea(binding.stateView(), "Feature-Marker Beschreibung");
+        labelField.setText(authoredLabel);
+        descriptionArea.setText(authoredDescription);
+        click(buttonWithAccessibleText(binding.stateView(), "Feature-Marker speichern"));
+        DungeonEditorStateSnapshot editedState = runtime.stateModel().current();
+        assertEquals(revisionBeforeSemanticEdit + 1L,
+                runtime.mapSurfaceModel().current().surface().revision(),
+                "DE-FEATURE-006 one typed marker semantic command advances revision exactly once");
+        assertEquals(markerRef, editedState.selection().topologyRef(),
+                "DE-FEATURE-006 marker semantic edit preserves selection identity");
+        assertEquals(authoredLabel, editedState.inspector().title(),
+                "DE-FEATURE-006 typed marker semantic edit publishes the authored label");
+        assertEquals(authoredDescription, editedState.inspector().summary(),
+                "DE-FEATURE-006 typed marker semantic edit publishes the authored description");
+        List<String> stableRowsAfterSemanticEdit = runtime.database().featureMarkerStableState(mapId);
+        assertTrue(stableRowsAfterSemanticEdit.stream().anyMatch(row -> row.contains("|label=" + authoredLabel)
+                        && row.contains("|description=" + authoredDescription)),
+                "DE-FEATURE-006 typed marker semantic edit persists label and description");
+        long revisionBeforeRejectedEdit = runtime.mapSurfaceModel().current().surface().revision();
+        runtime.editorApi().dispatch(new DungeonEditorIntent.CommitFeatureMarkerSemantics(
+                markerId + 10_000L, "Fehlt", "Ungültiges Ziel"));
+        assertEquals(revisionBeforeRejectedEdit, runtime.mapSurfaceModel().current().surface().revision(),
+                "DE-FEATURE-006 rejected marker semantic edit preserves authored revision");
+        assertEquals(new DungeonEditorCommandOutcome.Rejected(
+                        DungeonEditorCommandOutcome.RejectionReason.INVALID_TARGET),
+                runtime.editorApi().current().commandStatus().outcome(),
+                "DE-FEATURE-006 rejected marker semantic edit publishes one typed reason");
+        assertEquals(stableRowsAfterSemanticEdit, runtime.database().featureMarkerStableState(mapId),
+                "DE-FEATURE-006 rejected marker semantic edit preserves persisted state");
+
         selectMap(controls, "Feature POI Reload Hop");
         selectMap(controls, "Feature POI Create Map");
-        assertEquals(stableRowsAfterCreate, runtime.database().featureMarkerStableState(mapId),
+        assertEquals(stableRowsAfterSemanticEdit, runtime.database().featureMarkerStableState(mapId),
                 "DE-FEATURE-006 reload keeps the POI feature-marker rows stable");
         assertFeatureMarkerCreatedInSnapshot(
                 runtime.mapSurfaceModel().current(),
@@ -200,6 +236,8 @@ final class DungeonEditorFeatureMarkerScenarios {
                 "DE-FEATURE-006 production selection publishes the typed marker topology ref");
         assertTrue(reloadedSelection.inspector() != null,
                 "DE-FEATURE-006 production selection publishes the marker inspector");
+        assertEquals(authoredLabel, reloadedSelection.inspector().title(),
+                "DE-FEATURE-006 reloaded inspector keeps the authored marker label");
         assertEquals(authoredDescription, reloadedSelection.inspector().summary(),
                 "DE-FEATURE-006 inspector summary is only the authored marker description");
         assertEquals(DungeonInspectorSnapshot.StatePanelFacts.empty(),

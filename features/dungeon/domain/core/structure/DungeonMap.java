@@ -8,6 +8,7 @@ import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.corridor.Corridor;
 import features.dungeon.domain.core.structure.corridor.DungeonCorridorEndpoint;
+import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
 import features.dungeon.domain.core.structure.feature.FeatureMarkerCatalog;
 import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
 import features.dungeon.domain.core.structure.room.RoomCatalog;
@@ -298,6 +299,10 @@ public record DungeonMap(
         return withFeatureMarkers(featureMarkers.withoutMarker(markerId));
     }
 
+    public DungeonMap updateFeatureMarkerSemantics(long markerId, String label, String description) {
+        return withFeatureMarkers(featureMarkers.withSemantics(markerId, label, description));
+    }
+
     public boolean canDeleteStair(long stairId) {
         return stairId > 0L && stairs.canDeleteUnboundStair(stairId);
     }
@@ -355,11 +360,12 @@ public record DungeonMap(
     }
 
     public DungeonMap createCorridor(
+            CorridorRoutingPolicy routingPolicy,
             long stairId,
             DungeonCorridorEndpoint start,
             DungeonCorridorEndpoint end
     ) {
-        return CONNECTION_AUTHORING.createCorridor(this, stairId, start, end);
+        return CONNECTION_AUTHORING.createCorridor(this, routingPolicy, stairId, start, end);
     }
 
     DungeonMap withStairs(StairCollection nextStairs) {

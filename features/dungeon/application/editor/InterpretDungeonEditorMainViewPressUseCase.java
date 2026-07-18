@@ -12,8 +12,14 @@ import features.dungeon.application.editor.DungeonEditorMainViewInteractionValue
 
 final class InterpretDungeonEditorMainViewPressUseCase {
     private final DungeonEditorBoundaryDraftUseCase boundaryDraft = new DungeonEditorBoundaryDraftUseCase();
-    private final DungeonEditorCorridorInteractionUseCase corridor = new DungeonEditorCorridorInteractionUseCase();
+    private final DungeonEditorCorridorInteractionUseCase corridor;
     private final DungeonEditorBoundaryStretchHelper boundaryStretch = new DungeonEditorBoundaryStretchHelper();
+
+    InterpretDungeonEditorMainViewPressUseCase(
+            features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy routingPolicy
+    ) {
+        corridor = new DungeonEditorCorridorInteractionUseCase(routingPolicy);
+    }
 
     DungeonEditorMainViewInterpretation interpretSelection(
             PointerState input,
