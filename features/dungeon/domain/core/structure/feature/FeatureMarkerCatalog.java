@@ -2,6 +2,8 @@ package features.dungeon.domain.core.structure.feature;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.topology.DungeonMapTopology.DungeonTopologyBinding;
@@ -50,15 +52,39 @@ public record FeatureMarkerCatalog(
         return false;
     }
 
-    public FeatureMarkerCatalog withSemantics(long markerId, String label, String description) {
-        if (!canDelete(markerId)) {
-            return this;
+    public @Nullable FeatureMarker marker(long markerId) {
+        for (FeatureMarker marker : markers) {
+            if (marker.markerId() == markerId) {
+                return marker;
+            }
+        }
+        return null;
+    }
+
+    public FeatureMarkerCatalog withExactChange(
+            @Nullable FeatureMarker before,
+            @Nullable FeatureMarker after
+    ) {
+        FeatureMarker identity = after == null ? before : after;
+        if (identity == null) {
+            throw new IllegalArgumentException("feature marker change requires identity");
+        }
+        FeatureMarker current = marker(identity.markerId());
+        if (!Objects.equals(current, before)) {
+            throw new IllegalStateException("feature marker patch does not match current authored truth");
         }
         List<FeatureMarker> nextMarkers = new ArrayList<>();
         for (FeatureMarker marker : markers) {
-            nextMarkers.add(marker.markerId() == markerId
-                    ? marker.withSemantics(label, description)
-                    : marker);
+            if (marker.markerId() == identity.markerId()) {
+                if (after != null) {
+                    nextMarkers.add(after);
+                }
+            } else {
+                nextMarkers.add(marker);
+            }
+        }
+        if (before == null && after != null) {
+            nextMarkers.add(after);
         }
         return new FeatureMarkerCatalog(nextMarkers);
     }

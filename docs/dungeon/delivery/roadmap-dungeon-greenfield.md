@@ -97,18 +97,19 @@ and commit boundaries. M7 starts only after both are complete.
 
 ## Current Migration State
 
-- Current foundation: M0 through M2.5 are complete on `main` through PR #498.
-- This slice: M2.6 moves deterministic orthogonal route selection behind one
-  injected domain policy shared by Editor preview and authored corridor
-  commands. `CorridorRoute` remains only the immutable route value.
-- Feature-marker label and description edits now travel from the JavaFX state
-  panel through a typed Editor intent to the aggregate and persistence boundary.
-  The direct-SQL description shortcut in production-route proof is deleted;
-  accepted and rejected edits prove revision, selection, persistence, reload,
-  and typed outcome behavior.
-- Next step after this slice merges: M3.1 introduces the canonical typed command,
-  patch, inverse, touched-chunk, and result-fact vocabulary without changing the
-  now-closed M2 Editor command language.
+- Current foundation: M0 through M2 are complete on `main` through PR #499.
+- This slice: M3.1 introduces `DungeonCommandResult`, revision-checked
+  `DungeonPatch`, stable-entity changes, touched chunks, result facts, exact
+  encoded-weight bounds, and generated inverse patches.
+- Feature-marker semantic edits are the first real production command moved to
+  that vocabulary. Their former direct aggregate-mutation route is deleted;
+  deterministic proof covers forward and inverse application, stale revision,
+  negative chunk identity, result facts, byte weight, and typed rejection.
+- `DungeonChangeSet` persistence and full-map session history remain temporary
+  M3/M4 boundaries; no second persistence contract is introduced in this slice.
+- Next step after this slice merges: M3.2 moves the remaining ordinary
+  single-map authored commands to exact patches and removes unchanged-map
+  inference from their commit results.
 
 ## M0: Target Lock And Baseline
 

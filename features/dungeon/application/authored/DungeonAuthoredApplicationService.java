@@ -22,6 +22,8 @@ import features.dungeon.domain.core.projection.DungeonDerivedStateProjection;
 import features.dungeon.domain.core.projection.DungeonMapFacts;
 import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.authored.port.DungeonChangeSet;
+import features.dungeon.application.authored.command.DungeonCommandResult;
+import features.dungeon.application.authored.command.FeatureMarkerSemanticsCommand;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
@@ -101,6 +103,8 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
     private final PreviewDungeonEditorSurfaceMoveUseCase surfaceMovePreviewUseCase =
             new PreviewDungeonEditorSurfaceMoveUseCase();
     private final MutationPipeline mutationPipeline = new MutationPipeline();
+    private final FeatureMarkerSemanticsCommand featureMarkerSemanticsCommand =
+            new FeatureMarkerSemanticsCommand();
     private final PublicationOperations publicationOperations = new PublicationOperations();
     private final PreviewOperations previewOperations = new PreviewOperations();
     private final DetailSaveOperations detailSaveOperations = new DetailSaveOperations();
@@ -567,6 +571,36 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                 @Nullable AuthoredMapMutation operation
         ) {
             return executeOperation(mapId, operation, DungeonEditorCommandOutcome.RejectionReason.NO_EFFECT);
+        }
+
+        private OperationResultData executeFeatureMarkerSemantics(
+                DungeonMapIdentity mapId,
+                long markerId,
+                String label,
+                String description
+        ) {
+            DungeonMap current = loadMap(mapId);
+            DungeonCommandResult commandResult = featureMarkerSemanticsCommand.plan(
+                    current, markerId, label, description);
+            if (commandResult instanceof DungeonCommandResult.Rejected rejected) {
+                return new OperationResultData(
+                        snapshotData(current, derive(current)),
+                        false,
+                        List.of(),
+                        List.of(),
+                        DungeonEditorCommandOutcome.rejected(rejected.reason()));
+            }
+            DungeonCommandResult.Accepted accepted = (DungeonCommandResult.Accepted) commandResult;
+            DungeonMap patched = accepted.patch().applyTo(current);
+            DungeonMap saved = repository.saveChange(new DungeonChangeSet(current, patched));
+            authoredWorkset.put(saved.metadata().mapId().value(), saved);
+            editHistory.record(current, saved);
+            return new OperationResultData(
+                    snapshotData(saved, derive(saved)),
+                    true,
+                    OPERATION_FEEDBACK_POLICY.validationMessages(current, saved),
+                    OPERATION_FEEDBACK_POLICY.reactionMessages(current, saved),
+                    DungeonEditorCommandOutcome.accepted(saved.revision()));
         }
 
         private OperationResultData executeOperation(
@@ -1356,10 +1390,8 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             if (mapId == null || markerId <= 0L || label == null || label.isBlank()) {
                 return;
             }
-            OperationResultData result = mutationPipeline.executeOperation(
-                    domainMapId(mapId),
-                    current -> current.updateFeatureMarkerSemantics(markerId, label, description),
-                    DungeonEditorCommandOutcome.RejectionReason.INVALID_TARGET);
+            OperationResultData result = mutationPipeline.executeFeatureMarkerSemantics(
+                    domainMapId(mapId), markerId, label, description);
             publicationOperations.publishMutation(result, state);
         }
 
