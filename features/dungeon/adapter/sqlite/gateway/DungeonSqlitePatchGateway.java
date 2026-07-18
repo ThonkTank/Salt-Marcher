@@ -1,13 +1,19 @@
 package features.dungeon.adapter.sqlite.gateway;
 
 import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
+import features.dungeon.application.authored.command.DungeonCompoundPatch;
 import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.port.DungeonUnitOfWorkResult;
 import features.dungeon.api.DungeonChunkKey;
+import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import platform.diagnostics.NoopDiagnostics;
@@ -15,7 +21,7 @@ import platform.persistence.SqliteConnectionSource;
 import platform.persistence.SqliteDatabase;
 import platform.persistence.SqliteMigration;
 
-/** Transaction owner for one revision-checked row-level Dungeon patch. */
+/** Transaction owner for revision-checked row-level Dungeon patches. */
 public final class DungeonSqlitePatchGateway {
 
     private final SqliteConnectionSource connections;
@@ -40,21 +46,42 @@ public final class DungeonSqlitePatchGateway {
 
     public CommitOutcome commit(DungeonPatch patch) {
         DungeonPatch safePatch = Objects.requireNonNull(patch, "patch");
-        validatePatch(safePatch);
+        return switch (commitPatches(List.of(safePatch))) {
+            case TransactionOutcome.Committed committed ->
+                    new CommitOutcome.Committed(committed.maps().getFirst().chunkRevisions());
+            case TransactionOutcome.Rejected rejected -> new CommitOutcome.Rejected(rejected.reason());
+        };
+    }
+
+    public CompoundCommitOutcome commit(DungeonCompoundPatch compoundPatch) {
+        DungeonCompoundPatch safePatch = Objects.requireNonNull(compoundPatch, "compoundPatch");
+        List<DungeonPatch> ordered = safePatch.patches().stream()
+                .sorted(Comparator.comparingLong(patch -> patch.mapId().value()))
+                .toList();
+        return switch (commitPatches(ordered)) {
+            case TransactionOutcome.Committed committed ->
+                    new CompoundCommitOutcome.Committed(committed.maps());
+            case TransactionOutcome.Rejected rejected ->
+                    new CompoundCommitOutcome.Rejected(rejected.mapId(), rejected.reason());
+        };
+    }
+
+    private TransactionOutcome commitPatches(List<DungeonPatch> patches) {
+        validatePatches(patches);
         Connection connection = openConnection();
         Boolean previousAutoCommit = null;
-        CommitOutcome outcome;
+        TransactionOutcome outcome;
         try {
             previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
-            outcome = commitTransaction(connection, safePatch);
+            outcome = commitTransaction(connection, patches);
         } catch (SQLException | RuntimeException failure) {
             IllegalStateException reported = storageFailure(failure);
             rollback(connection, reported);
             cleanup(connection, previousAutoCommit, reported);
             throw reported;
         }
-        if (outcome instanceof CommitOutcome.Committed) {
+        if (outcome instanceof TransactionOutcome.Committed) {
             cleanup(connection, previousAutoCommit, null);
             return outcome;
         }
@@ -69,25 +96,44 @@ public final class DungeonSqlitePatchGateway {
         }
     }
 
-    private CommitOutcome commitTransaction(Connection connection, DungeonPatch patch) throws SQLException {
-        CasResult current = currentRevision(connection, patch);
-        if (current != CasResult.COMMITTED) {
-            connection.rollback();
-            return rejected(current);
+    private TransactionOutcome commitTransaction(Connection connection, List<DungeonPatch> patches)
+            throws SQLException {
+        for (DungeonPatch patch : patches) {
+            CasResult current = currentRevision(connection, patch);
+            if (current != CasResult.COMMITTED) {
+                connection.rollback();
+                return rejected(patch.mapId(), current);
+            }
         }
-        DungeonSqlitePatchEntityWriter.validateStoredBeforeGraph(connection, patch);
-        CasResult cas = compareAndSetRevision(connection, patch);
-        if (cas != CasResult.COMMITTED) {
-            connection.rollback();
-            return rejected(cas);
+
+        Map<DungeonMapIdentity, DungeonSqlitePatchSpatialWriter.PreparedReconciliation> spatialPlans =
+                new LinkedHashMap<>();
+        for (DungeonPatch patch : patches) {
+            DungeonSqlitePatchEntityWriter.validateStoredBeforeGraph(connection, patch);
+            spatialPlans.put(patch.mapId(), DungeonSqlitePatchSpatialWriter.prepare(connection, patch));
         }
-        failureHook.after(Phase.MAP_REVISION_CAS);
-        DungeonSqlitePatchEntityWriter.apply(connection, patch);
-        failureHook.after(Phase.AUTHORED_ROWS);
-        Map<DungeonChunkKey, Long> chunks = DungeonSqlitePatchSpatialWriter.reconcile(connection, patch);
-        failureHook.after(Phase.SPATIAL_ROWS);
+        failureHook.after(Phase.PREFLIGHT);
+
+        for (DungeonPatch patch : patches) {
+            CasResult cas = compareAndSetRevision(connection, patch);
+            if (cas != CasResult.COMMITTED) {
+                connection.rollback();
+                return rejected(patch.mapId(), cas);
+            }
+            failureHook.after(Phase.MAP_REVISION_CAS);
+        }
+
+        List<MapCommit> committedMaps = new ArrayList<>();
+        for (DungeonPatch patch : patches) {
+            DungeonSqlitePatchEntityWriter.apply(connection, patch);
+            failureHook.after(Phase.AUTHORED_ROWS);
+            Map<DungeonChunkKey, Long> chunks = DungeonSqlitePatchSpatialWriter.reconcile(
+                    connection, patch, spatialPlans.get(patch.mapId()));
+            failureHook.after(Phase.SPATIAL_ROWS);
+            committedMaps.add(new MapCommit(patch.mapId(), chunks));
+        }
         failureHook.after(Phase.BEFORE_COMMIT);
-        CommitOutcome committed = new CommitOutcome.Committed(chunks);
+        TransactionOutcome committed = new TransactionOutcome.Committed(committedMaps);
         connection.commit();
         return committed;
     }
@@ -100,10 +146,12 @@ public final class DungeonSqlitePatchGateway {
         }
     }
 
-    private static CommitOutcome rejected(CasResult result) {
-        return new CommitOutcome.Rejected(result == CasResult.MISSING
-                ? DungeonUnitOfWorkResult.Reason.MAP_NOT_FOUND
-                : DungeonUnitOfWorkResult.Reason.STALE_REVISION);
+    private static TransactionOutcome rejected(DungeonMapIdentity mapId, CasResult result) {
+        return new TransactionOutcome.Rejected(
+                mapId,
+                result == CasResult.MISSING
+                        ? DungeonUnitOfWorkResult.Reason.MAP_NOT_FOUND
+                        : DungeonUnitOfWorkResult.Reason.STALE_REVISION);
     }
 
     private static SqliteConnectionSource connections(SqliteDatabase database) {
@@ -116,6 +164,20 @@ public final class DungeonSqlitePatchGateway {
                 new SqliteMigration(4, schema::addCorridorDoorLevel),
                 new SqliteMigration(5, schema::addCorridorRouteCellIndex),
                 new SqliteMigration(6, schema::addCorridorRouteDependencyIndex));
+    }
+
+    private static void validatePatches(List<DungeonPatch> patches) {
+        if (patches == null || patches.isEmpty()) {
+            throw new IllegalArgumentException("at least one Dungeon patch is required");
+        }
+        long previousMapId = 0L;
+        for (DungeonPatch patch : patches) {
+            validatePatch(Objects.requireNonNull(patch, "patch"));
+            if (patch.mapId().value() <= previousMapId) {
+                throw new IllegalArgumentException("Dungeon patches must be unique and ordered by map id");
+            }
+            previousMapId = patch.mapId().value();
+        }
     }
 
     private static void validatePatch(DungeonPatch patch) {
@@ -226,7 +288,32 @@ public final class DungeonSqlitePatchGateway {
         record Rejected(DungeonUnitOfWorkResult.Reason reason) implements CommitOutcome { }
     }
 
-    enum Phase { MAP_REVISION_CAS, AUTHORED_ROWS, SPATIAL_ROWS, BEFORE_COMMIT }
+    public sealed interface CompoundCommitOutcome
+            permits CompoundCommitOutcome.Committed, CompoundCommitOutcome.Rejected {
+        record Committed(List<MapCommit> maps) implements CompoundCommitOutcome {
+            public Committed { maps = List.copyOf(maps); }
+        }
+        record Rejected(DungeonMapIdentity mapId, DungeonUnitOfWorkResult.Reason reason)
+                implements CompoundCommitOutcome { }
+    }
+
+    public record MapCommit(DungeonMapIdentity mapId, Map<DungeonChunkKey, Long> chunkRevisions) {
+        public MapCommit {
+            mapId = Objects.requireNonNull(mapId, "mapId");
+            chunkRevisions = Map.copyOf(chunkRevisions);
+        }
+    }
+
+    private sealed interface TransactionOutcome
+            permits TransactionOutcome.Committed, TransactionOutcome.Rejected {
+        record Committed(List<MapCommit> maps) implements TransactionOutcome {
+            public Committed { maps = List.copyOf(maps); }
+        }
+        record Rejected(DungeonMapIdentity mapId, DungeonUnitOfWorkResult.Reason reason)
+                implements TransactionOutcome { }
+    }
+
+    enum Phase { PREFLIGHT, MAP_REVISION_CAS, AUTHORED_ROWS, SPATIAL_ROWS, BEFORE_COMMIT }
 
     @FunctionalInterface
     interface FailureHook {

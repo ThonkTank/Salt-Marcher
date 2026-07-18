@@ -8,7 +8,10 @@ import features.dungeon.api.DungeonEditorStateModel;
 import features.dungeon.api.DungeonMapCatalogModel;
 import features.dungeon.api.TravelDungeonModel;
 import features.dungeon.application.authored.DungeonAuthoredApplicationService;
+import features.dungeon.application.authored.command.DungeonCompoundPatch;
+import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
+import features.dungeon.application.authored.port.DungeonCompoundUnitOfWorkResult;
 import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.authored.port.DungeonUnitOfWork;
 import features.dungeon.application.authored.port.DungeonUnitOfWorkResult;
@@ -188,13 +191,28 @@ public final class DungeonTestAssembly {
     }
 
     public static DungeonUnitOfWork inMemoryUnitOfWork() {
-        return patch -> new DungeonUnitOfWorkResult.Committed(
-                patch.mapId(),
-                patch.committedRevision(),
-                patch.touchedChunks().stream().collect(java.util.stream.Collectors.toUnmodifiableMap(
-                        key -> key,
-                        ignored -> patch.committedRevision())),
-                patch.resultFacts());
+        return new DungeonUnitOfWork() {
+            @Override
+            public DungeonUnitOfWorkResult commit(DungeonPatch patch) {
+                return committed(patch);
+            }
+
+            @Override
+            public DungeonCompoundUnitOfWorkResult commit(DungeonCompoundPatch patch) {
+                return new DungeonCompoundUnitOfWorkResult.Committed(
+                        patch.patches().stream().map(this::committed).toList());
+            }
+
+            private DungeonUnitOfWorkResult.Committed committed(DungeonPatch patch) {
+                return new DungeonUnitOfWorkResult.Committed(
+                        patch.mapId(),
+                        patch.committedRevision(),
+                        patch.touchedChunks().stream().collect(java.util.stream.Collectors.toUnmodifiableMap(
+                                key -> key,
+                                ignored -> patch.committedRevision())),
+                        patch.resultFacts());
+            }
+        };
     }
 
     public record Component(

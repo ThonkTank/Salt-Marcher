@@ -17,6 +17,7 @@ import features.dungeon.adapter.sqlite.model.DungeonStairExitRecord;
 import features.dungeon.adapter.sqlite.model.DungeonStairPathNodeRecord;
 import features.dungeon.adapter.sqlite.model.DungeonStairRecord;
 import features.dungeon.adapter.sqlite.model.DungeonTransitionRecord;
+import features.dungeon.adapter.sqlite.mapper.DungeonMapRecordFixtureMapper;
 import features.dungeon.adapter.sqlite.mapper.DungeonMapRecordMapper;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
 import features.dungeon.application.authored.command.DungeonPatchEntityRef;
@@ -45,12 +46,12 @@ final class DungeonCanonicalSpatialIndexTest {
     void fullMapBridgeRoundTripsCanonicalGeometryAndIndexesEveryIntersectingChunk(@TempDir Path tempDir)
             throws Exception {
         Path databasePath = tempDir.resolve("spatial-index.db");
-        DungeonMapRecord authored = DungeonMapRecordMapper.toRecord(
+        DungeonMapRecord authored = DungeonMapRecordFixtureMapper.toRecord(
                 DungeonMapRecordMapper.toDomain(authoredMap()));
 
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
+            DungeonSqliteFixtureSeeder.seed(database, authored);
             DungeonSqliteGateway gateway = new DungeonSqliteGateway(database);
-            gateway.saveMaps(List.of(authored));
 
             DungeonMapRecord loaded = gateway.findMap(authored.mapId()).orElseThrow();
             assertEquals(authored.rooms().getFirst().floorCells(), loaded.rooms().getFirst().floorCells());

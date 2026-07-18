@@ -7,11 +7,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.dungeon.api.editor.DungeonEditorCommandOutcome;
+import features.dungeon.application.authored.command.DungeonCompoundPatch;
 import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.command.DungeonPatchEntityRef;
 import features.dungeon.application.authored.command.CorridorChange;
 import features.dungeon.application.authored.command.RoomRegionChange;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
+import features.dungeon.application.authored.port.DungeonCompoundUnitOfWorkResult;
 import features.dungeon.application.authored.port.DungeonIdentityClosureRequest;
 import features.dungeon.application.authored.port.DungeonIdentityClosureResult;
 import features.dungeon.application.authored.port.DungeonMapHeader;
@@ -102,7 +104,6 @@ final class DungeonUnitOfWorkApplicationTest {
         assertEquals(1L, markerId);
         assertEquals(List.of(7L), unitOfWork.expectedRevisions());
         assertEquals(1, store.findByIdCalls);
-        assertEquals(0, store.saveAllCalls);
         assertEquals(8L, acceptedRevision(state));
         assertTrue(service.canUndo(mapId));
 
@@ -118,7 +119,6 @@ final class DungeonUnitOfWorkApplicationTest {
         assertEquals(List.of(7L, 8L, 9L), unitOfWork.expectedRevisions());
         assertEquals(1, store.findByIdCalls, "redo reuses the committed in-memory workset");
         assertEquals(10L, acceptedRevision(state));
-        assertEquals(0, store.saveAllCalls, "single-map history never uses the compound compatibility writer");
     }
 
     @Test
@@ -323,6 +323,11 @@ final class DungeonUnitOfWorkApplicationTest {
                     patch.resultFacts());
         }
 
+        @Override
+        public DungeonCompoundUnitOfWorkResult commit(DungeonCompoundPatch patch) {
+            throw new AssertionError("single-map application route used the compound-patch overload");
+        }
+
         private List<Long> expectedRevisions() {
             return patches.stream().map(DungeonPatch::expectedRevision).toList();
         }
@@ -343,7 +348,6 @@ final class DungeonUnitOfWorkApplicationTest {
     private static final class InMemoryStore implements DungeonCatalogStore, DungeonMapRepository {
         private final DungeonMap map;
         private int findByIdCalls;
-        private int saveAllCalls;
 
         private InMemoryStore(DungeonMap map) {
             this.map = map;
@@ -363,12 +367,6 @@ final class DungeonUnitOfWorkApplicationTest {
 
         @Override public Optional<DungeonMap> firstMap() {
             throw new AssertionError("fallback repository read attempted after requested-map hydration");
-        }
-
-        @Override
-        public List<DungeonMap> saveAll(List<DungeonMap> maps) {
-            saveAllCalls++;
-            return List.copyOf(maps);
         }
 
         @Override

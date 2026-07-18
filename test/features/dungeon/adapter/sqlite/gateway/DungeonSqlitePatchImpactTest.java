@@ -49,7 +49,7 @@ final class DungeonSqlitePatchImpactTest {
     ) throws Exception {
         Path path = directory.resolve("patch-impact.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            new DungeonSqliteGateway(database).saveMaps(List.of(authoredMap()));
+            DungeonSqliteFixtureSeeder.seed(database, authoredMap());
             DungeonSqlitePatchGateway gateway = new DungeonSqlitePatchGateway(database);
             List<String> unrelatedBefore = unrelatedRows(path);
             installMutationAudit(path);

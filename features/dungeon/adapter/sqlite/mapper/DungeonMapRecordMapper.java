@@ -78,7 +78,4 @@ public final class DungeonMapRecordMapper {
                 resolvedRecord.revision());
     }
 
-    public static DungeonMapRecord toRecord(DungeonMap dungeonMap) {
-        return DungeonMapRecordWriteMapperSupport.toRecord(dungeonMap);
-    }
 }

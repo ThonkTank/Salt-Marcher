@@ -427,7 +427,6 @@ final class DungeonEditorWindowLoadIntegrationTest {
             firstMapCalls++;
             throw new AssertionError("cold Editor route hydrated the first whole map");
         }
-        @Override public List<DungeonMap> saveAll(List<DungeonMap> maps) { throw new UnsupportedOperationException(); }
     }
 
     private static final class CountingRepository implements DungeonMapRepository {
@@ -445,7 +444,6 @@ final class DungeonEditorWindowLoadIntegrationTest {
             firstMapCalls++;
             return Optional.of(aggregate);
         }
-        @Override public List<DungeonMap> saveAll(List<DungeonMap> maps) { return List.copyOf(maps); }
     }
 
     private static final class RevisionedRepository implements DungeonMapRepository {
@@ -459,13 +457,6 @@ final class DungeonEditorWindowLoadIntegrationTest {
             return mapId.value() == 1L ? Optional.of(aggregate) : Optional.empty();
         }
         @Override public Optional<DungeonMap> firstMap() { return Optional.of(aggregate); }
-        @Override public List<DungeonMap> saveAll(List<DungeonMap> maps) {
-            if (!maps.isEmpty()) {
-                aggregate = maps.getFirst();
-            }
-            return List.copyOf(maps);
-        }
-
         private static DungeonMap withRevision(DungeonMap map, long revision) {
             return new DungeonMap(
                     map.metadata(),

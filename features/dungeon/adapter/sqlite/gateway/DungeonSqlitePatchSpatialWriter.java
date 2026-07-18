@@ -33,7 +33,7 @@ final class DungeonSqlitePatchSpatialWriter {
     private DungeonSqlitePatchSpatialWriter() {
     }
 
-    static Map<DungeonChunkKey, Long> reconcile(Connection connection, DungeonPatch patch) throws SQLException {
+    static PreparedReconciliation prepare(Connection connection, DungeonPatch patch) throws SQLException {
         ImpactCandidates impact = impactCandidates(connection, patch);
         List<DungeonPatchEntityRef> refs = impact.refs();
         Map<DungeonPatchEntityRef, Set<DungeonChunkKey>> oldMemberships = loadMemberships(
@@ -42,6 +42,19 @@ final class DungeonSqlitePatchSpatialWriter {
         Map<RouteKey, RouteRow> oldRoutes = loadRouteRows(connection, patch.mapId().value(), corridorIds);
         Map<DependencyKey, DependencyRow> oldDependencies = loadDependencyRows(
                 connection, patch.mapId().value(), corridorIds);
+        return new PreparedReconciliation(impact, oldMemberships, oldRoutes, oldDependencies);
+    }
+
+    static Map<DungeonChunkKey, Long> reconcile(
+            Connection connection,
+            DungeonPatch patch,
+            PreparedReconciliation prepared
+    ) throws SQLException {
+        ImpactCandidates impact = prepared.impact();
+        List<DungeonPatchEntityRef> refs = impact.refs();
+        Map<DungeonPatchEntityRef, Set<DungeonChunkKey>> oldMemberships = prepared.oldMemberships();
+        Map<RouteKey, RouteRow> oldRoutes = prepared.oldRoutes();
+        Map<DependencyKey, DependencyRow> oldDependencies = prepared.oldDependencies();
 
         DungeonSqliteClosureBatchLoader.LoadResult closure = DungeonSqliteClosureBatchLoader.loadAll(
                 connection, patch.mapId().value(), refs, new DungeonSqliteQueryCounter());
@@ -87,6 +100,10 @@ final class DungeonSqlitePatchSpatialWriter {
         patch.touchedChunks().stream().sorted(DungeonChunkKeyOrder.ORDER)
                 .forEach(key -> result.put(key, patch.committedRevision()));
         return Map.copyOf(result);
+    }
+
+    static Map<DungeonChunkKey, Long> reconcile(Connection connection, DungeonPatch patch) throws SQLException {
+        return reconcile(connection, patch, prepare(connection, patch));
     }
 
     private static ImpactCandidates impactCandidates(Connection connection, DungeonPatch patch) throws SQLException {
@@ -720,6 +737,18 @@ final class DungeonSqlitePatchSpatialWriter {
             refs = List.copyOf(refs);
             directRefs = Set.copyOf(directRefs);
             clusterIds = Set.copyOf(clusterIds);
+        }
+    }
+    record PreparedReconciliation(
+            ImpactCandidates impact,
+            Map<DungeonPatchEntityRef, Set<DungeonChunkKey>> oldMemberships,
+            Map<RouteKey, RouteRow> oldRoutes,
+            Map<DependencyKey, DependencyRow> oldDependencies
+    ) {
+        PreparedReconciliation {
+            oldMemberships = Map.copyOf(oldMemberships);
+            oldRoutes = Map.copyOf(oldRoutes);
+            oldDependencies = Map.copyOf(oldDependencies);
         }
     }
     private record ChunkBounds(int minQ, int maxQ, int minR, int maxR) {

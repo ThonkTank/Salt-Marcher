@@ -446,14 +446,6 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
         }
 
         @Override
-        public List<DungeonMap> saveAll(List<DungeonMap> dungeonMaps) {
-            for (DungeonMap dungeonMap : dungeonMaps) {
-                maps.put(dungeonMap.metadata().mapId().value(), dungeonMap);
-            }
-            return List.copyOf(dungeonMaps);
-        }
-
-        @Override
         public void delete(DungeonMapIdentity mapId) {
             maps.remove(mapId.value());
         }

@@ -1,7 +1,6 @@
 package features.dungeon.adapter.sqlite.gateway;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import features.dungeon.adapter.sqlite.model.DungeonGridBoundsRecord;
 import features.dungeon.adapter.sqlite.model.DungeonFeatureMarkerRecord;
@@ -29,31 +28,10 @@ class DungeonSqliteOptimisticRevisionTest {
     Path temporaryDirectory;
 
     @Test
-    void rejectsSkippedOrStaleRevisionsWithoutChangingTheStoredMap() {
-        try (SqliteDatabase database = new SqliteDatabase(
-                temporaryDirectory.resolve("dungeon.sqlite"),
-                NoopDiagnostics.INSTANCE)) {
-            DungeonSqliteGateway gateway = new DungeonSqliteGateway(database);
-            gateway.saveMaps(List.of(map(41L, "first", 1L)));
-
-            assertThrows(
-                    IllegalStateException.class,
-                    () -> gateway.saveMaps(List.of(map(41L, "skipped", 3L))));
-
-            DungeonMapRecord stored = gateway.findMap(41L).orElseThrow();
-            assertEquals(1L, stored.revision());
-            assertEquals("first", stored.name());
-
-            assertEquals(2L, gateway.saveMaps(List.of(map(41L, "second", 2L))).getFirst().revision());
-        }
-    }
-
-    @Test
     void patchCommitDoesNotRewriteUnchangedStableIdentityRows() throws Exception {
         Path databasePath = temporaryDirectory.resolve("incremental.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            DungeonSqliteGateway gateway = new DungeonSqliteGateway(database);
-            gateway.saveMaps(List.of(mapWithMarkers()));
+            DungeonSqliteFixtureSeeder.seed(database, mapWithMarkers());
             try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
                  var statement = connection.createStatement()) {
                 statement.execute("CREATE TABLE marker_update_count(value INTEGER NOT NULL)");
@@ -73,10 +51,6 @@ class DungeonSqliteOptimisticRevisionTest {
             assertEquals("Untouched", text(databasePath,
                     "SELECT label FROM dungeon_feature_markers WHERE feature_marker_id=72"));
         }
-    }
-
-    private static DungeonMapRecord map(long id, String name, long revision) {
-        return new DungeonMapRecord(id, name, revision, DungeonGridBoundsRecord.defaultGrid());
     }
 
     private static DungeonMapRecord mapWithMarkers() {

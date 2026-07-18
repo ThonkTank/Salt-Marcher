@@ -90,7 +90,7 @@ final class DungeonSqliteReadSnapshotTest {
 
     private static SqliteDatabase savedDatabase(Path path) {
         SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE);
-        new DungeonSqliteGateway(database).saveMaps(List.of(new DungeonMapRecord(
+        DungeonSqliteFixtureSeeder.seed(database, List.of(new DungeonMapRecord(
                 MAP_ID,
                 "Snapshot map",
                 OLD_REVISION,

@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import features.dungeon.adapter.sqlite.gateway.DungeonSqliteGateway;
+import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSeeder;
 import features.dungeon.adapter.sqlite.gateway.DungeonSqliteWindowGateway;
 import features.dungeon.adapter.sqlite.model.DungeonClusterBoundaryRecord;
 import features.dungeon.adapter.sqlite.model.DungeonCorridorAnchorBindingRecord;
@@ -251,7 +251,7 @@ final class SqliteDungeonWindowStoreTest {
                         corridorId, 1L, corridorId, 6, 5, 0, topologyId)),
                 List.of(new DungeonCorridorAnchorRefRecord(corridorId, corridorId, topologyId)));
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            new DungeonSqliteGateway(database).saveMaps(List.of(new DungeonMapRecord(
+            DungeonSqliteFixtureSeeder.seed(database, List.of(new DungeonMapRecord(
                     MAP_ID,
                     "Anchor-only corridor",
                     REVISION,
@@ -728,13 +728,13 @@ final class SqliteDungeonWindowStoreTest {
 
     private static SqliteDatabase savedDatabase(Path path, int markerCount) {
         SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE);
-        new DungeonSqliteGateway(database).saveMaps(List.of(authoredMap(markerCount, 1)));
+        DungeonSqliteFixtureSeeder.seed(database, List.of(authoredMap(markerCount, 1)));
         return database;
     }
 
     private static SqliteDatabase savedGraphDatabase(Path path, int corridorCount) {
         SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE);
-        new DungeonSqliteGateway(database).saveMaps(List.of(authoredMap(1, corridorCount)));
+        DungeonSqliteFixtureSeeder.seed(database, List.of(authoredMap(1, corridorCount)));
         return database;
     }
 

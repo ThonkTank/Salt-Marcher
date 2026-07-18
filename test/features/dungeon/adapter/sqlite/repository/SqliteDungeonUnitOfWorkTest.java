@@ -3,7 +3,7 @@ package features.dungeon.adapter.sqlite.repository;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
-import features.dungeon.adapter.sqlite.gateway.DungeonSqliteGateway;
+import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSeeder;
 import features.dungeon.adapter.sqlite.model.DungeonGridBoundsRecord;
 import features.dungeon.adapter.sqlite.model.DungeonMapRecord;
 import features.dungeon.application.authored.command.CorridorChange;
@@ -59,7 +59,7 @@ final class SqliteDungeonUnitOfWorkTest {
     void insertsUpdatesAndRemovesEveryPatchFamilyWithoutFullMapReadback(@TempDir Path directory) throws Exception {
         Path path = directory.resolve("single-map-uow.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            new DungeonSqliteGateway(database).saveMaps(List.of(
+            DungeonSqliteFixtureSeeder.seed(database, List.of(
                     new DungeonMapRecord(MAP_ID, "Patch map", 1L, DungeonGridBoundsRecord.defaultGrid())));
             SqliteDungeonUnitOfWork unitOfWork = new SqliteDungeonUnitOfWork(database);
             SqliteDungeonWindowStore readStore = new SqliteDungeonWindowStore(database);

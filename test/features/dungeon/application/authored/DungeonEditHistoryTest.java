@@ -137,6 +137,29 @@ final class DungeonEditHistoryTest {
     }
 
     @Test
+    void oneMapCompoundEntryExposesOnlyARebasedCompoundPatch() {
+        DungeonMap before = transitionMap(21L, 1L, "Before");
+        Transition initial = before.transitionCatalog().transition(1L);
+        DungeonPatch mapPatch = DungeonPatch.of(
+                before.metadata().mapId(),
+                before.revision(),
+                List.of(new TransitionChange(initial, initial.withDescription("After"))));
+        DungeonCompoundPatch compound = DungeonCompoundPatch.of(List.of(mapPatch));
+        DungeonMap after = compound.applyTo(Map.of(21L, before)).get(21L);
+        DungeonEditHistory history = new DungeonEditHistory();
+        history.recordCompoundPatch(compound);
+
+        DungeonEditHistory.Step undo = history.peekUndo(before.metadata().mapId());
+        DungeonCompoundPatch replay = undo.rebasedCompoundPatch(Map.of(21L, after));
+
+        assertTrue(replay != null);
+        assertEquals(1, replay.patches().size());
+        assertEquals(after.revision(), replay.patches().getFirst().expectedRevision());
+        assertEquals(null, undo.rebasedSinglePatch(after.revision()),
+                "a one-map compound history entry must never degrade to the single-map route");
+    }
+
+    @Test
     void commandLimitEvictsTheOldestCommittedPatch() {
         DungeonMap current = transitionMap(1L, 1L, "Initial");
         DungeonMapIdentity mapId = current.metadata().mapId();

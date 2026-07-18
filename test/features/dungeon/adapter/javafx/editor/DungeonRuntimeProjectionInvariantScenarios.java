@@ -574,11 +574,6 @@ final class DungeonRuntimeProjectionInvariantScenarios {
             }
 
             @Override
-            public List<DungeonMap> saveAll(List<DungeonMap> dungeonMaps) {
-                return dungeonMaps == null ? List.of() : List.copyOf(dungeonMaps);
-            }
-
-            @Override
             public void delete(DungeonMapIdentity mapId) {
             }
         };
