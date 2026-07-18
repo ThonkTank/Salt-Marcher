@@ -8,6 +8,7 @@ import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import features.dungeon.domain.core.structure.room.RoomTopologyRebuilder.RebuildResult;
+import features.dungeon.domain.core.structure.topology.SpatialTopology;
 
 /**
  * Owns aggregate-level room topology authoring inside the core room structure.
@@ -118,9 +119,13 @@ public final class RoomTopologyAuthoring {
     }
 
     private static DungeonMap withRoomTopology(DungeonMap dungeonMap, RebuildResult rebuild) {
+        SpatialTopology resolvedTopology = rebuild.topology().withRoomClusters(
+                rebuild.topology().roomClusters().stream()
+                        .map(RoomCluster::withResolvedBoundaryTopologyRefs)
+                        .toList());
         return new DungeonMap(
                 dungeonMap.metadata(),
-                rebuild.topology(),
+                resolvedTopology,
                 rebuild.rooms(),
                 dungeonMap.corridors(),
                 dungeonMap.stairs(),

@@ -11,30 +11,33 @@ import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
-/** Exact before/after delta for one stable authored room. */
+/** Exact before/after delta for one authored room identity. */
 public record RoomRegionChange(RoomRegion before, RoomRegion after) implements DungeonPatchChange {
     private static final long FIXED_ENCODING_BYTES = 128L;
     private static final long CELL_ENCODING_BYTES = 16L;
 
     public RoomRegionChange {
-        if (before == null || after == null || before.equals(after)) {
-            throw new IllegalArgumentException("a room semantic change requires distinct before and after state");
+        if (before == null && after == null) {
+            throw new IllegalArgumentException("a room change requires before or after state");
         }
-        if (before.roomId() != after.roomId()
-                || before.mapId() != after.mapId()
-                || before.clusterId() != after.clusterId()) {
-            throw new IllegalArgumentException("room identity and cluster membership must remain stable");
+        if (before != null && after != null) {
+            if (before.equals(after)) {
+                throw new IllegalArgumentException("a room change requires distinct before and after state");
+            }
+            if (before.roomId() != after.roomId() || before.mapId() != after.mapId()) {
+                throw new IllegalArgumentException("room identity must remain stable");
+            }
         }
     }
 
     @Override
     public DungeonMapIdentity mapId() {
-        return new DungeonMapIdentity(after.mapId());
+        return new DungeonMapIdentity(state().mapId());
     }
 
     @Override
     public DungeonPatchEntityRef entityRef() {
-        return DungeonPatchEntityRef.room(after.roomId());
+        return DungeonPatchEntityRef.room(state().roomId());
     }
 
     @Override
@@ -55,7 +58,14 @@ public record RoomRegionChange(RoomRegion before, RoomRegion after) implements D
         return new RoomRegionChange(after, before);
     }
 
+    private RoomRegion state() {
+        return after == null ? before : after;
+    }
+
     private static void addChunks(Set<DungeonChunkKey> result, RoomRegion room) {
+        if (room == null) {
+            return;
+        }
         for (Cell cell : room.floorCells()) {
             result.add(new DungeonChunkKey(
                     room.mapId(),
@@ -66,6 +76,9 @@ public record RoomRegionChange(RoomRegion before, RoomRegion after) implements D
     }
 
     private static long encodedBytes(RoomRegion room) {
+        if (room == null) {
+            return 1L;
+        }
         return CELL_ENCODING_BYTES * room.floorCells().size()
                 + textBytes(room.name())
                 + narrationBytes(room.narration());
