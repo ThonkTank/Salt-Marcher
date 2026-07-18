@@ -37,7 +37,7 @@ final class DungeonSqlitePatchGatewayCleanupFailureTest {
         AtomicBoolean restoreAttempted = new AtomicBoolean();
         AtomicBoolean closeAttempted = new AtomicBoolean();
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            new DungeonSqliteGateway(database).saveMaps(List.of(
+            DungeonSqliteFixtureSeeder.seed(database, List.of(
                     new DungeonMapRecord(MAP_ID, "Cleanup map", 1L, DungeonGridBoundsRecord.defaultGrid())));
             DungeonSqlitePatchGateway gateway = new DungeonSqlitePatchGateway(
                     () -> cleanupFailingConnection(

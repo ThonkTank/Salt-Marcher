@@ -264,11 +264,6 @@ final class DungeonAuthoredPreviewWorksetTest {
         }
 
         @Override
-        public List<DungeonMap> saveAll(List<DungeonMap> dungeonMaps) {
-            return List.copyOf(dungeonMaps);
-        }
-
-        @Override
         public void delete(DungeonMapIdentity mapId) {
         }
 

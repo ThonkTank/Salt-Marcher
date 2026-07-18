@@ -73,19 +73,6 @@ public final class SqliteDungeonMapRepository implements DungeonCatalogStore, Du
     }
 
     @Override
-    public List<DungeonMap> saveAll(List<DungeonMap> dungeonMaps) {
-        if (dungeonMaps == null || dungeonMaps.isEmpty()) {
-            return List.of();
-        }
-        return gateway.saveMaps(dungeonMaps.stream()
-                        .map(DungeonMapRecordMapper::toRecord)
-                        .toList())
-                .stream()
-                .map(DungeonMapRecordMapper::toDomain)
-                .toList();
-    }
-
-    @Override
     public void delete(DungeonMapIdentity mapId) {
         if (mapId != null) {
             gateway.deleteMap(mapId.value());

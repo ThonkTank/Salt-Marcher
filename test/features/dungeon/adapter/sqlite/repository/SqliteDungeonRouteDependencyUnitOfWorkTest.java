@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import features.dungeon.adapter.sqlite.gateway.DungeonSqliteGateway;
+import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSeeder;
 import features.dungeon.adapter.sqlite.model.DungeonCorridorRecord;
 import features.dungeon.adapter.sqlite.model.DungeonCorridorWaypointRecord;
 import features.dungeon.adapter.sqlite.model.DungeonGridBoundsRecord;
@@ -46,7 +46,7 @@ final class SqliteDungeonRouteDependencyUnitOfWorkTest {
             throws Exception {
         Path path = directory.resolve("route-dependency.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            new DungeonSqliteGateway(database).saveMaps(List.of(authoredMap()));
+            DungeonSqliteFixtureSeeder.seed(database, authoredMap());
             SqliteDungeonUnitOfWork unitOfWork = new SqliteDungeonUnitOfWork(database);
             assertEquals(verticalRoute(), routeCells(path));
             assertEquals(candidateCells(), dependencyCells(path));

@@ -25,7 +25,6 @@ public final class DungeonSqliteGateway {
     private static final String SELECT_MAP_COLUMNS = "SELECT dungeon_map_id, name, revision";
 
     private final DungeonSqliteConnectionSupport connectionSupport;
-    private final DungeonSqliteMapBatchGateway batchGateway;
     private final DungeonSqliteIdentityReservation identityReservation;
 
     public DungeonSqliteGateway() {
@@ -45,7 +44,6 @@ public final class DungeonSqliteGateway {
                 new SqliteMigration(5, schemaManager::addCorridorRouteCellIndex),
                 new SqliteMigration(6, schemaManager::addCorridorRouteDependencyIndex));
         connectionSupport = new DungeonSqliteConnectionSupport(connections);
-        batchGateway = new DungeonSqliteMapBatchGateway(connections);
         identityReservation = new DungeonSqliteIdentityReservation(connections);
     }
 
@@ -138,13 +136,9 @@ public final class DungeonSqliteGateway {
         }
     }
 
-    public List<DungeonMapRecord> saveMaps(List<DungeonMapRecord> records) {
-        return batchGateway.saveMaps(records);
-    }
-
     public void deleteMap(long mapId) {
         try (Connection connection = connectionSupport.openReadyConnection()) {
-            DungeonSqliteMapRecordWriter.deleteMap(connection, mapId);
+            DungeonSqliteMapRowDelete.delete(connection, mapId);
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to delete dungeon map from SQLite.", exception);
         }

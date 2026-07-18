@@ -205,6 +205,13 @@ final class DungeonEditHistory {
             return patchEntry.selected(undo).rebased(expectedRevision);
         }
 
+        @Nullable DungeonCompoundPatch rebasedCompoundPatch(Map<Long, DungeonMap> currentMaps) {
+            if (!(entry instanceof CompoundPatchEntry compoundEntry)) {
+                return null;
+            }
+            return compoundEntry.selected(currentMaps, undo);
+        }
+
         Map<Long, DungeonMap> applyTo(Map<Long, DungeonMap> currentMaps) {
             if (entry == null) {
                 return Map.of();
@@ -263,13 +270,16 @@ final class DungeonEditHistory {
 
         @Override
         public Map<Long, DungeonMap> applyTo(Map<Long, DungeonMap> currentMaps, boolean undo) {
+            return selected(currentMaps, undo).applyTo(currentMaps);
+        }
+
+        private DungeonCompoundPatch selected(Map<Long, DungeonMap> currentMaps, boolean undo) {
             Map<DungeonMapIdentity, Long> revisions = new LinkedHashMap<>();
             for (long mapId : mapIds()) {
                 DungeonMap current = requiredMap(currentMaps, mapId);
                 revisions.put(current.metadata().mapId(), current.revision());
             }
-            DungeonCompoundPatch selected = (undo ? inverse : forward).rebased(revisions);
-            return selected.applyTo(currentMaps);
+            return (undo ? inverse : forward).rebased(revisions);
         }
     }
 

@@ -5,7 +5,6 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import architecture.AnalyzeMainClasses;
 import com.tngtech.archunit.core.domain.JavaClass;
-import com.tngtech.archunit.core.domain.JavaMethodCall;
 import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchCondition;
@@ -44,6 +43,8 @@ public final class DungeonStoragePortArchitectureTest {
             "features.dungeon.adapter.sqlite.gateway.DungeonSqliteMapRecordLoader";
     private static final String FULL_MAP_RECORD_WRITER =
             "features.dungeon.adapter.sqlite.gateway.DungeonSqliteMapRecordWriter";
+    private static final String FULL_MAP_BATCH_GATEWAY =
+            "features.dungeon.adapter.sqlite.gateway.DungeonSqliteMapBatchGateway";
     private static final String FULL_MAP_CONNECTION_SUPPORT =
             "features.dungeon.adapter.sqlite.gateway.DungeonSqliteConnectionSupport";
     private static final String SQLITE_PATCH_COMPONENT_PATTERN =
@@ -61,6 +62,7 @@ public final class DungeonStoragePortArchitectureTest {
             FULL_MAP_RECORD_MAPPER,
             FULL_MAP_RECORD_LOADER,
             FULL_MAP_RECORD_WRITER,
+            FULL_MAP_BATCH_GATEWAY,
             FULL_MAP_CONNECTION_SUPPORT,
             MAP_REPOSITORY);
 
@@ -143,13 +145,29 @@ public final class DungeonStoragePortArchitectureTest {
                     .allowEmptyShould(false);
 
     @ArchTest
-    static final ArchRule fullMapBatchWritesRemainOnCompoundCompatibilityPaths =
+    static final ArchRule wholeMapRepositoryHasNoFullMapWriteMethod =
             classes()
                     .that()
-                    .haveFullyQualifiedName(AUTHORED_SERVICE)
-                    .or()
-                    .haveNameMatching(AUTHORED_SERVICE.replace(".", "\\.") + "\\$.*")
-                    .should(callSaveAllOnlyFromCompoundCompatibilityPaths())
+                    .haveFullyQualifiedName(MAP_REPOSITORY)
+                    .should(notExposeMethodsNamed("saveAll", "saveMaps"))
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule fullMapRecordMapperIsReadOnly =
+            classes()
+                    .that()
+                    .haveFullyQualifiedName(FULL_MAP_RECORD_MAPPER)
+                    .should(notExposeMethodsNamed("toRecord"))
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule productionSQLiteGatewayHasNoFullMapWriterOrBatchGateway =
+            classes()
+                    .that()
+                    .resideInAPackage("features.dungeon.adapter.sqlite.gateway")
+                    .should(notHaveSimpleNames(
+                            "DungeonSqliteMapRecordWriter",
+                            "DungeonSqliteMapBatchGateway"))
                     .allowEmptyShould(false);
 
     @ArchTest
@@ -214,26 +232,30 @@ public final class DungeonStoragePortArchitectureTest {
         };
     }
 
-    private static ArchCondition<JavaClass> callSaveAllOnlyFromCompoundCompatibilityPaths() {
-        return new ArchCondition<>("call saveAll only from compound compatibility paths") {
+    private static ArchCondition<JavaClass> notExposeMethodsNamed(String... forbiddenNames) {
+        Set<String> names = Set.of(forbiddenNames);
+        return new ArchCondition<>("not expose methods named " + names) {
             @Override
             public void check(JavaClass item, ConditionEvents events) {
-                for (JavaMethodCall call : item.getMethodCallsFromSelf()) {
-                    if (!call.getTargetOwner().getName().equals(MAP_REPOSITORY)
-                            || !call.getName().equals("saveAll")) {
-                        continue;
-                    }
-                    String originName = call.getOrigin().getName();
-                    boolean allowed = item.getName().equals(AUTHORED_SERVICE)
-                                    && originName.equals("applyCompoundHistoryStep")
-                            || item.getName().equals(AUTHORED_SERVICE + "$TransitionLinkOperations")
-                                    && originName.equals("transitionLinkOperation");
-                    if (!allowed) {
+                item.getMethods().stream()
+                        .filter(method -> names.contains(method.getName()))
+                        .forEach(method ->
                         events.add(SimpleConditionEvent.violated(
-                                call,
-                                call.getDescription()
-                                        + " must remain on an explicit compound compatibility path"));
-                    }
+                                method,
+                                method.getDescription() + " is a forbidden full-map write surface")));
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> notHaveSimpleNames(String... forbiddenNames) {
+        Set<String> names = Set.of(forbiddenNames);
+        return new ArchCondition<>("not have simple names " + names) {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                if (names.contains(item.getSimpleName())) {
+                    events.add(SimpleConditionEvent.violated(
+                            item,
+                            item.getName() + " is a forbidden production full-map write surface"));
                 }
             }
         };

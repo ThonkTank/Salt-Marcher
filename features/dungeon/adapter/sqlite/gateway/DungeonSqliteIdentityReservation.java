@@ -55,7 +55,7 @@ final class DungeonSqliteIdentityReservation {
         try {
             long reservationMapId = insertReservationMap(connection);
             long featureId = reservation.reserve(connection, reservationMapId);
-            DungeonSqliteMapRecordWriter.deleteMap(connection, reservationMapId);
+            DungeonSqliteMapRowDelete.delete(connection, reservationMapId);
             connection.commit();
             return featureId;
         } catch (SQLException exception) {

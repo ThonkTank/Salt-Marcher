@@ -29,7 +29,7 @@ final class DungeonSqlitePatchGatewayRollbackTest {
     void rollsBackRevisionAuthoredSpatialAndTopologyRowsWhenCommitFails(@TempDir Path directory) throws Exception {
         Path path = directory.resolve("rollback.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            new DungeonSqliteGateway(database).saveMaps(List.of(
+            DungeonSqliteFixtureSeeder.seed(database, List.of(
                     new DungeonMapRecord(MAP_ID, "Rollback map", 1L, DungeonGridBoundsRecord.defaultGrid())));
             DungeonSqlitePatchGateway gateway = new DungeonSqlitePatchGateway(database, phase -> {
                 if (phase == DungeonSqlitePatchGateway.Phase.BEFORE_COMMIT) {

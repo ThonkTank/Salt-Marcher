@@ -140,7 +140,7 @@ final class DungeonSqlitePatchEntityValidationTest {
         for (BeforeGraphScenario scenario : scenarios) {
             Path path = directory.resolve(scenario.name() + ".sqlite");
             try (SqliteDatabase database = database(path)) {
-                new DungeonSqliteGateway(database).saveMaps(List.of(canonicalMap(stored)));
+                DungeonSqliteFixtureSeeder.seed(database, canonicalMap(stored));
                 List<String> before = dungeonRows(path);
 
                 assertThrows(IllegalStateException.class, () -> new DungeonSqlitePatchGateway(database).commit(
@@ -156,7 +156,7 @@ final class DungeonSqlitePatchEntityValidationTest {
         Path path = directory.resolve("stale-complete-snapshot.sqlite");
         Facts stored = facts("stored", false);
         try (SqliteDatabase database = database(path)) {
-            new DungeonSqliteGateway(database).saveMaps(List.of(canonicalMap(stored)));
+            DungeonSqliteFixtureSeeder.seed(database, canonicalMap(stored));
             List<String> before = dungeonRows(path);
 
             DungeonSqlitePatchGateway.CommitOutcome.Rejected rejected = assertInstanceOf(
@@ -176,7 +176,7 @@ final class DungeonSqlitePatchEntityValidationTest {
         Path path = directory.resolve("late-failure-complete-snapshot.sqlite");
         Facts stored = facts("stored", false);
         try (SqliteDatabase database = database(path)) {
-            new DungeonSqliteGateway(database).saveMaps(List.of(canonicalMap(stored)));
+            DungeonSqliteFixtureSeeder.seed(database, canonicalMap(stored));
             List<String> before = dungeonRows(path);
             DungeonSqlitePatchGateway gateway = new DungeonSqlitePatchGateway(database, phase -> {
                 if (phase == DungeonSqlitePatchGateway.Phase.BEFORE_COMMIT) {
@@ -326,7 +326,7 @@ final class DungeonSqlitePatchEntityValidationTest {
     }
 
     private static void seedMaps(SqliteDatabase database) {
-        new DungeonSqliteGateway(database).saveMaps(List.of(
+        DungeonSqliteFixtureSeeder.seed(database, List.of(
                 new DungeonMapRecord(MAP_ID, "local", 1L, DungeonGridBoundsRecord.defaultGrid()),
                 new DungeonMapRecord(OTHER_MAP_ID, "other", 1L, DungeonGridBoundsRecord.defaultGrid())));
     }

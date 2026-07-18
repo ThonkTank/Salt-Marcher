@@ -27,6 +27,7 @@ import features.dungeon.domain.core.projection.DungeonMapFacts;
 import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
 import features.dungeon.application.authored.port.DungeonMapHeader;
+import features.dungeon.application.authored.port.DungeonCompoundUnitOfWorkResult;
 import features.dungeon.application.authored.port.DungeonUnitOfWork;
 import features.dungeon.application.authored.port.DungeonUnitOfWorkResult;
 import features.dungeon.application.authored.port.DungeonWindow;
@@ -440,22 +441,42 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
     ) {
         Map<Long, DungeonMap> currentMaps = new LinkedHashMap<>();
         for (long affectedMapId : step.mapIds()) {
-            DungeonMap current = repository.findById(new DungeonMapIdentity(affectedMapId)).orElse(null);
+            DungeonMap current = authoredWorkset.get(affectedMapId);
+            if (current == null) {
+                current = repository.findById(new DungeonMapIdentity(affectedMapId)).orElse(null);
+            }
             if (current == null) {
                 return;
             }
             currentMaps.put(affectedMapId, current);
         }
-        Map<Long, DungeonMap> changedMaps = step.applyTo(currentMaps);
-        List<DungeonMap> savedMaps = repository.saveAll(List.copyOf(changedMaps.values()));
-        editHistory.complete(step);
-        for (DungeonMap savedMap : savedMaps) {
-            authoredWorkset.put(savedMap.metadata().mapId().value(), savedMap);
+        DungeonCompoundPatch patch = step.rebasedCompoundPatch(currentMaps);
+        if (patch == null) {
+            throw new IllegalStateException("compound history step did not expose a compound patch");
         }
-        DungeonMap saved = savedMaps.stream()
-                .filter(candidate -> candidate.metadata().mapId().equals(selectedMapId))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("history save omitted the selected map"));
+        Map<Long, DungeonMap> changedMaps = patch.applyTo(currentMaps);
+        DungeonCompoundUnitOfWorkResult commit = unitOfWork.commit(patch);
+        if (commit instanceof DungeonCompoundUnitOfWorkResult.Rejected rejected) {
+            DungeonMap selected = currentMaps.get(selectedMapId.value());
+            if (selected == null) {
+                throw new IllegalStateException("compound history omitted the selected map");
+            }
+            publicationOperations.publishMutation(
+                    rejectedCommit(selected, rejected.reason()),
+                    session.dungeonState());
+            return;
+        }
+        DungeonCompoundUnitOfWorkResult.Committed committed =
+                (DungeonCompoundUnitOfWorkResult.Committed) commit;
+        validateCommittedCompoundPatch(patch, committed);
+        for (DungeonMap changedMap : changedMaps.values()) {
+            authoredWorkset.put(changedMap.metadata().mapId().value(), changedMap);
+        }
+        editHistory.complete(step);
+        DungeonMap saved = changedMaps.get(selectedMapId.value());
+        if (saved == null) {
+            throw new IllegalStateException("compound history omitted the selected map");
+        }
         OperationResultData result = new OperationResultData(
                 mutationPipeline.snapshotData(saved, derive(saved)),
                 true,
@@ -933,6 +954,36 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                 || !patch.touchedChunks().equals(committed.chunkRevisions().keySet())
                 || !patch.resultFacts().equals(committed.resultFacts())) {
             throw new IllegalStateException("Dungeon unit of work returned facts that do not match the committed patch");
+        }
+    }
+
+    private static void validateCommittedCompoundPatch(
+            DungeonCompoundPatch patch,
+            DungeonCompoundUnitOfWorkResult.Committed committed
+    ) {
+        Objects.requireNonNull(patch, "patch");
+        Objects.requireNonNull(committed, "committed");
+        Map<DungeonMapIdentity, DungeonPatch> expectedByMap = new LinkedHashMap<>();
+        for (DungeonPatch mapPatch : patch.patches()) {
+            expectedByMap.put(mapPatch.mapId(), mapPatch);
+        }
+        Set<DungeonMapIdentity> returnedMapIds = new LinkedHashSet<>();
+        long previousMapId = Long.MIN_VALUE;
+        for (DungeonUnitOfWorkResult.Committed mapCommit : committed.committedMaps()) {
+            if (mapCommit.mapId().value() <= previousMapId
+                    || !returnedMapIds.add(mapCommit.mapId())) {
+                throw new IllegalStateException("Dungeon compound unit of work returned unordered or duplicate maps");
+            }
+            previousMapId = mapCommit.mapId().value();
+            DungeonPatch expected = expectedByMap.get(mapCommit.mapId());
+            if (expected == null) {
+                throw new IllegalStateException("Dungeon compound unit of work returned an unexpected map");
+            }
+            validateCommittedPatch(expected, mapCommit);
+        }
+        if (returnedMapIds.size() != expectedByMap.size()
+                || !returnedMapIds.equals(expectedByMap.keySet())) {
+            throw new IllegalStateException("Dungeon compound unit of work omitted a committed map");
         }
     }
 
@@ -1583,12 +1634,21 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             }
             DungeonCompoundPatch patch = accepted.patch();
             Map<Long, DungeonMap> patchedMaps = patch.applyTo(pendingMaps);
-            List<DungeonMap> savedMaps = repository.saveAll(List.copyOf(patchedMaps.values()));
-            editHistory.recordCompoundPatch(patch);
-            for (DungeonMap savedMap : savedMaps) {
-                authoredWorkset.put(savedMap.metadata().mapId().value(), savedMap);
+            DungeonCompoundUnitOfWorkResult commit = unitOfWork.commit(patch);
+            if (commit instanceof DungeonCompoundUnitOfWorkResult.Rejected rejected) {
+                return rejectedCommit(loaded.sourceMap(), rejected.reason());
             }
-            DungeonMap savedSourceMap = savedSourceMap(savedMaps, loaded.sourceIdentity().value());
+            validateCommittedCompoundPatch(
+                    patch,
+                    (DungeonCompoundUnitOfWorkResult.Committed) commit);
+            for (DungeonMap patchedMap : patchedMaps.values()) {
+                authoredWorkset.put(patchedMap.metadata().mapId().value(), patchedMap);
+            }
+            editHistory.recordCompoundPatch(patch);
+            DungeonMap savedSourceMap = patchedMaps.get(loaded.sourceIdentity().value());
+            if (savedSourceMap == null) {
+                throw new IllegalStateException("Atomic transition link commit omitted the source map.");
+            }
             DungeonDerivedState derived = derive(savedSourceMap);
             return new OperationResultData(
                     mutationPipeline.snapshotData(savedSourceMap, derived),
@@ -1620,15 +1680,6 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             pendingMaps.put(sourceMap.metadata().mapId().value(), sourceMap);
             pendingMaps.put(targetMap.metadata().mapId().value(), targetMap);
             return pendingMaps;
-        }
-
-        private DungeonMap savedSourceMap(List<DungeonMap> savedMaps, long sourceMapId) {
-            for (DungeonMap map : savedMaps) {
-                if (map.metadata().mapId().value() == sourceMapId) {
-                    return map;
-                }
-            }
-            throw new IllegalStateException("Atomic transition link save did not return the source map.");
         }
 
         private record LoadedTransitionLink(

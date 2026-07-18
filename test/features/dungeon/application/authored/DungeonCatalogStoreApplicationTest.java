@@ -120,11 +120,6 @@ final class DungeonCatalogStoreApplicationTest {
             throw unexpectedCall();
         }
 
-        @Override
-        public List<DungeonMap> saveAll(List<DungeonMap> dungeonMaps) {
-            throw unexpectedCall();
-        }
-
         private static AssertionError unexpectedCall() {
             return new AssertionError("catalog lifecycle must not use whole-map persistence");
         }

@@ -6,11 +6,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import features.dungeon.DungeonTestAssembly;
+import features.dungeon.application.authored.command.DungeonCompoundPatch;
+import features.dungeon.application.authored.command.DungeonPatch;
+import features.dungeon.application.authored.port.DungeonCompoundUnitOfWorkResult;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
 import features.dungeon.application.authored.port.DungeonMapHeader;
+import features.dungeon.application.authored.port.DungeonUnitOfWork;
+import features.dungeon.application.authored.port.DungeonUnitOfWorkResult;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.DungeonMapMetadata;
@@ -203,7 +208,7 @@ final class DungeonTransitionInvariantScenarios {
                 repository,
                 repository,
                 DungeonTestAssembly.emptyWindowStore(),
-                DungeonTestAssembly.inMemoryUnitOfWork());
+                repository.unitOfWork());
         DungeonEditorDungeonState dungeonState = new DungeonEditorDungeonState();
         DungeonAuthoredApplicationService.OperationResult result = services
                 .editor()
@@ -391,17 +396,57 @@ final class DungeonTransitionInvariantScenarios {
         }
 
         @Override
-        public List<DungeonMap> saveAll(List<DungeonMap> dungeonMaps) {
-            savedMapsById.clear();
-            for (DungeonMap dungeonMap : dungeonMaps == null ? List.<DungeonMap>of() : dungeonMaps) {
-                savedMapsById.put(dungeonMap.metadata().mapId().value(), dungeonMap);
-                mapsById.put(dungeonMap.metadata().mapId().value(), dungeonMap);
-            }
-            return List.copyOf(savedMapsById.values());
+        public void delete(DungeonMapIdentity mapId) {
         }
 
-        @Override
-        public void delete(DungeonMapIdentity mapId) {
+        private DungeonUnitOfWork unitOfWork() {
+            return new DungeonUnitOfWork() {
+                @Override
+                public DungeonUnitOfWorkResult commit(DungeonPatch patch) {
+                    DungeonMap current = mapsById.get(patch.mapId().value());
+                    if (current == null) {
+                        return new DungeonUnitOfWorkResult.Rejected(
+                                DungeonUnitOfWorkResult.Reason.MAP_NOT_FOUND);
+                    }
+                    DungeonMap committed = patch.applyTo(current);
+                    mapsById.put(patch.mapId().value(), committed);
+                    savedMapsById.clear();
+                    savedMapsById.put(patch.mapId().value(), committed);
+                    return committedResult(patch);
+                }
+
+                @Override
+                public DungeonCompoundUnitOfWorkResult commit(DungeonCompoundPatch patch) {
+                    for (DungeonPatch mapPatch : patch.patches()) {
+                        if (!mapsById.containsKey(mapPatch.mapId().value())) {
+                            return new DungeonCompoundUnitOfWorkResult.Rejected(
+                                    mapPatch.mapId(), DungeonUnitOfWorkResult.Reason.MAP_NOT_FOUND);
+                        }
+                    }
+                    Map<Long, DungeonMap> committedMaps = new LinkedHashMap<>();
+                    for (DungeonPatch mapPatch : patch.patches()) {
+                        committedMaps.put(
+                                mapPatch.mapId().value(),
+                                mapPatch.applyTo(mapsById.get(mapPatch.mapId().value())));
+                    }
+                    savedMapsById.clear();
+                    savedMapsById.putAll(committedMaps);
+                    mapsById.putAll(committedMaps);
+                    return new DungeonCompoundUnitOfWorkResult.Committed(
+                            patch.patches().stream().map(this::committedResult).toList());
+                }
+
+                private DungeonUnitOfWorkResult.Committed committedResult(DungeonPatch patch) {
+                    return new DungeonUnitOfWorkResult.Committed(
+                            patch.mapId(),
+                            patch.committedRevision(),
+                            patch.touchedChunks().stream().collect(
+                                    java.util.stream.Collectors.toUnmodifiableMap(
+                                            key -> key,
+                                            ignored -> patch.committedRevision())),
+                            patch.resultFacts());
+                }
+            };
         }
 
         private List<Long> requestedMapIds() {
