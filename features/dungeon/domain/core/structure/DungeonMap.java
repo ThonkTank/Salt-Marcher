@@ -14,6 +14,7 @@ import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import features.dungeon.domain.core.structure.stair.StairCollection;
+import features.dungeon.domain.core.structure.stair.Stair;
 import features.dungeon.domain.core.structure.stair.StairGeometrySpec;
 import features.dungeon.domain.core.structure.topology.DungeonMapTopology;
 import features.dungeon.domain.core.structure.topology.SpatialTopology;
@@ -212,22 +213,11 @@ public record DungeonMap(
         return featureMarkers.nextMarkerId();
     }
 
-    public boolean canDeleteStair(long stairId) {
-        return stairId > 0L && stairs.canDeleteUnboundStair(stairId);
-    }
-
-    public DungeonMap deleteStair(long stairId) {
-        if (!canDeleteStair(stairId)) {
-            return this;
-        }
-        return withStairs(stairs.withoutUnboundStair(stairId));
-    }
-
-    public DungeonMap createStair(
+    public DungeonMap previewStair(
             long stairId,
             StairGeometrySpec spec
     ) {
-        return STAIR_AUTHORING.createStair(this, stairId, spec);
+        return STAIR_AUTHORING.previewStair(this, stairId, spec);
     }
 
     public boolean canCreateStair(StairGeometrySpec spec) {
@@ -239,16 +229,6 @@ public record DungeonMap(
             StairGeometrySpec spec
     ) {
         return STAIR_AUTHORING.canSaveStairGeometry(this, stairId, spec);
-    }
-
-    public DungeonMap saveStairGeometry(
-            long stairId,
-            StairGeometrySpec spec
-    ) {
-        if (!canSaveStairGeometry(stairId, spec)) {
-            return this;
-        }
-        return STAIR_AUTHORING.saveStairGeometry(this, stairId, spec);
     }
 
     public DungeonMap paintRoomRectangle(Cell start, Cell end) {
@@ -338,6 +318,23 @@ public record DungeonMap(
                 rooms,
                 corridors,
                 stairs,
+                transitionCatalog,
+                featureMarkers,
+                revision + 1L);
+    }
+
+    public DungeonMap withExactStairChange(
+            @Nullable Stair before,
+            @Nullable Stair after
+    ) {
+        StairCollection nextStairs = stairs.withExactChange(before, after);
+        return new DungeonMap(
+                metadata,
+                topology,
+                null,
+                rooms,
+                corridors,
+                nextStairs,
                 transitionCatalog,
                 featureMarkers,
                 revision + 1L);

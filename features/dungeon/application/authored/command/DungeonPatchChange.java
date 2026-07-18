@@ -5,7 +5,8 @@ import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import java.util.Set;
 
 /** One stable-identity authored entity delta carried by a Dungeon patch. */
-public sealed interface DungeonPatchChange permits FeatureMarkerChange, RoomRegionChange, RoomClusterChange {
+public sealed interface DungeonPatchChange permits FeatureMarkerChange, RoomRegionChange, RoomClusterChange,
+        StairChange {
 
     DungeonMapIdentity mapId();
 

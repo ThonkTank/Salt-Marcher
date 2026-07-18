@@ -18,6 +18,7 @@ public record DungeonPatchEntityRef(
         DungeonTopologyElementKind expectedTopologyKind = switch (kind) {
             case ROOM -> DungeonTopologyElementKind.ROOM;
             case FEATURE_MARKER -> DungeonTopologyElementKind.FEATURE_MARKER;
+            case STAIR -> DungeonTopologyElementKind.STAIR;
             case ROOM_CLUSTER -> null;
         };
         if (expectedTopologyKind == null && topologyRef != null) {
@@ -49,9 +50,17 @@ public record DungeonPatchEntityRef(
                 new DungeonTopologyRef(DungeonTopologyElementKind.FEATURE_MARKER, markerId));
     }
 
+    public static DungeonPatchEntityRef stair(long stairId) {
+        return new DungeonPatchEntityRef(
+                Kind.STAIR,
+                stairId,
+                new DungeonTopologyRef(DungeonTopologyElementKind.STAIR, stairId));
+    }
+
     public enum Kind {
         ROOM,
         ROOM_CLUSTER,
-        FEATURE_MARKER
+        FEATURE_MARKER,
+        STAIR
     }
 }
