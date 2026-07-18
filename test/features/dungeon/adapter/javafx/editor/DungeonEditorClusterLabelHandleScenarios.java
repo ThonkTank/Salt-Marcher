@@ -1552,15 +1552,15 @@ final class DungeonEditorClusterLabelHandleScenarios {
         List<String> stableRowsAfter = runtime.database().corridorStableConnectionState(mapId);
         assertTrue(stableRowsAfter.stream().anyMatch(row ->
                         row.startsWith("dungeon_corridor_door_overrides|")
-                                && row.contains("|relative_cell_x=1|")
-                                && row.contains("|relative_cell_y=1|")
+                                && row.contains("|relative_cell_x=2|")
+                                && row.contains("|relative_cell_y=2|")
                                 && row.contains("|edge_direction=EAST|")
                                 && row.contains("|topology_element_id=" + doorHandle.ref().topologyRef().id())),
                 "DE-DOOR-004 release moves the bound corridor endpoint with the door: " + stableRowsAfter);
         assertTrue(stableRowsAfter.stream().noneMatch(row ->
                         row.startsWith("dungeon_corridor_door_overrides|")
-                                && row.contains("|relative_cell_x=1|")
-                                && row.contains("|relative_cell_y=0|")
+                                && row.contains("|relative_cell_x=2|")
+                                && row.contains("|relative_cell_y=1|")
                                 && row.contains("|edge_direction=EAST|")
                                 && row.contains("|topology_element_id=" + doorHandle.ref().topologyRef().id())),
                 "DE-DOOR-004 release leaves no stale source corridor binding: " + stableRowsAfter);
@@ -1680,17 +1680,17 @@ final class DungeonEditorClusterLabelHandleScenarios {
 
         List<String> doorRowsAfter = runtime.database().doorBoundaryState(mapId);
         assertTrue(doorRowsAfter.stream().anyMatch(row ->
-                        row.startsWith("door_edges|cluster_id=" + doorHandle.ref().clusterId() + "|")
-                                && row.contains("|cell_x=1|")
-                                && row.contains("|cell_y=1|")
+                row.startsWith("door_edges|cluster_id=" + doorHandle.ref().clusterId() + "|")
+                                && row.contains("|cell_x=3|")
+                                && row.contains("|cell_y=3|")
                                 && row.contains("|edge_direction=EAST|")
                                 && row.contains("|edge_type=DOOR|")
                                 && row.contains("|topology_element_id=" + doorHandle.ref().topologyRef().id())),
                 "DE-DOOR-004 standalone release moves the authored door row: " + doorRowsAfter);
         assertTrue(doorRowsAfter.stream().noneMatch(row ->
-                        row.startsWith("door_edges|cluster_id=" + doorHandle.ref().clusterId() + "|")
-                                && row.contains("|cell_x=1|")
-                                && row.contains("|cell_y=0|")
+                row.startsWith("door_edges|cluster_id=" + doorHandle.ref().clusterId() + "|")
+                                && row.contains("|cell_x=3|")
+                                && row.contains("|cell_y=2|")
                                 && row.contains("|edge_direction=EAST|")
                                 && row.contains("|edge_type=DOOR|")
                                 && row.contains("|topology_element_id=" + doorHandle.ref().topologyRef().id())),
@@ -1713,8 +1713,8 @@ final class DungeonEditorClusterLabelHandleScenarios {
         List<String> reloadedDoorRows = runtime.database().doorBoundaryState(mapId);
         assertTrue(reloadedDoorRows.stream().anyMatch(row ->
                         row.startsWith("door_edges|cluster_id=" + doorHandle.ref().clusterId() + "|")
-                                && row.contains("|cell_x=1|")
-                                && row.contains("|cell_y=1|")
+                                && row.contains("|cell_x=3|")
+                                && row.contains("|cell_y=3|")
                                 && row.contains("|edge_direction=EAST|")
                                 && row.contains("|edge_type=DOOR|")
                                 && row.contains("|topology_element_id=" + doorHandle.ref().topologyRef().id())),

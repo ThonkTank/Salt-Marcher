@@ -43,7 +43,8 @@ public final class DungeonSqliteGateway {
         SqliteConnectionSource connections = Objects.requireNonNull(database, "database").connections(
                 "dungeon",
                 new SqliteMigration(1, schemaManager::ensureSchema),
-                new SqliteMigration(2, schemaManager::ensureSchema));
+                new SqliteMigration(2, schemaManager::ensureSchema),
+                new SqliteMigration(3, schemaManager::replaceWithCanonicalSchema));
         connectionSupport = new DungeonSqliteConnectionSupport(connections);
         batchGateway = new DungeonSqliteMapBatchGateway(connections);
         identityReservation = new DungeonSqliteIdentityReservation(connections);

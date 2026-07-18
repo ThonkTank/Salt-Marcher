@@ -7,6 +7,10 @@ import features.dungeon.adapter.sqlite.model.DungeonMapRecord;
 import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
 import features.dungeon.adapter.sqlite.model.DungeonRoomClusterRecord;
 import features.dungeon.adapter.sqlite.model.DungeonTopologyElementRecord;
+import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.Direction;
+import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
+import features.dungeon.domain.core.geometry.Edge;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -98,11 +102,7 @@ final class DungeonSqliteTopologyElementGateway {
         Set<TopologyElementKey> renderableKeys = new LinkedHashSet<>();
         for (DungeonRoomClusterRecord cluster : clusters == null ? List.<DungeonRoomClusterRecord>of() : clusters) {
             for (DungeonClusterBoundaryRecord boundary : cluster.boundaries()) {
-                long elementId = DungeonSqliteBoundaryTopologyBackfill.boundaryStableId(
-                        cluster.centerX() + boundary.cellX(),
-                        cluster.centerY() + boundary.cellY(),
-                        boundary.levelZ(),
-                        boundary.edgeDirection());
+                long elementId = boundaryStableId(boundary);
                 if (openBoundary(boundary)) {
                     openKeys.add(new TopologyElementKey(ELEMENT_KIND_WALL, elementId));
                 } else {
@@ -112,6 +112,13 @@ final class DungeonSqliteTopologyElementGateway {
         }
         openKeys.removeAll(renderableKeys);
         return Set.copyOf(openKeys);
+    }
+
+    private static long boundaryStableId(DungeonClusterBoundaryRecord boundary) {
+        Edge edge = Edge.sideOf(
+                new Cell(boundary.cellX(), boundary.cellY(), boundary.levelZ()),
+                Direction.parse(boundary.edgeDirection()));
+        return DungeonBoundaryKey.from(edge).stableId();
     }
 
     private static boolean openBoundary(DungeonClusterBoundaryRecord boundary) {

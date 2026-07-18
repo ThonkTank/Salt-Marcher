@@ -920,8 +920,8 @@ final class DungeonEditorRoomWallDoorScenarios {
         RoomClusterIds roomIds = runtime.database().roomByName(mapId, "R1");
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
         List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
-        assertEquals(roomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 2, 2, 0),
-                "DE-SEL-009 starts with R1 cluster centered at (2,2,0)");
+        assertEquals(roomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 1, 1, 0),
+                "DE-SEL-009 starts with R1 derived cluster anchor at (1,1,0)");
         assertEquals(roomIds, runtime.database().roomByComponent(mapId, 2, 2, 0),
                 "DE-SEL-009 starts with R1 component at (2,2,0)");
         assertEquals(cellRect(1, 1, 3, 3, 0), persistedClusterCellsThroughRepository(mapId, roomIds.clusterId(), 0),
@@ -989,8 +989,8 @@ final class DungeonEditorRoomWallDoorScenarios {
                 "DE-SEL-009 drag preview leaves authored DB row count unchanged");
         assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
                 "DE-SEL-009 drag preview leaves all authored geometry stores unchanged");
-        assertEquals(roomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 2, 2, 0),
-                "DE-SEL-009 drag preview leaves persisted cluster center unchanged");
+        assertEquals(roomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 1, 1, 0),
+                "DE-SEL-009 drag preview leaves persisted derived cluster anchor unchanged");
         assertTrue(previewSurface.preview() instanceof DungeonEditorPreview.MoveHandlePreview,
                 "DE-SEL-009 publishes a move-handle preview during cluster-label drag");
         DungeonEditorPreview.MoveHandlePreview preview =
@@ -1023,12 +1023,12 @@ final class DungeonEditorRoomWallDoorScenarios {
 
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
                 "DE-SEL-009 release keeps authored DB row count stable");
-        assertEquals(roomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 4, 3, 0),
-                "DE-SEL-009 persists translated cluster center at (4,3,0)");
+        assertEquals(roomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 3, 2, 0),
+                "DE-SEL-009 persists translated derived cluster anchor at (3,2,0)");
         assertEquals(roomIds, runtime.database().roomByComponent(mapId, 4, 3, 0),
                 "DE-SEL-009 persists translated room component at (4,3,0)");
-        assertEquals(0L, runtime.database().countClustersAtCenter(mapId, 2, 2, 0),
-                "DE-SEL-009 removes old cluster-center coordinates");
+        assertEquals(0L, runtime.database().countClustersAtCenter(mapId, 1, 1, 0),
+                "DE-SEL-009 removes old derived cluster-anchor coordinates");
         assertEquals(cellRect(3, 2, 5, 4, 0), persistedClusterCellsThroughRepository(mapId, roomIds.clusterId(), 0),
                 "DE-SEL-009 persisted readback translates the whole cluster cells");
         assertEquals(Set.of("3,2,0", "6,2,0", "6,5,0", "3,5,0"),
