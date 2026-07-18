@@ -91,20 +91,20 @@ M0 Target Lock And Documentation
 
 ## Current Migration Position
 
-- Current foundation: M0 through M2 are merged. PR #514 moved the complete
-  Monster lifecycle, stable selection, Inspector and Encounter pool-filter
-  paths to the application controller and introduced `CatalogTableScaffold`.
-- Current milestone: M3 is delivered by PR #515. Its final candidate moves
-  Items draft validation, async paging/detail requests and Inspector routing,
-  plus saved-Encounter subscription, stable selection and discard confirmation,
-  into their application controllers. Both sections use the shared scaffold;
-  the workspace request-token bridge is deleted and the compatibility adapter
-  contains only the four M4 sections. Local `./gradlew architectureTest`,
+- Current foundation: M0 through M3 are merged. PR #515 moved Items and saved
+  Encounters to application-owned async lifecycles and the shared scaffold,
+  then removed the workspace request-token bridge.
+- Current milestone: M4 is delivered by PR #516. Its final candidate moves NPC,
+  faction, location and Encounter Table query, stable selection, label joins and
+  semantic handoffs into their application controllers. All seven sections are
+  native scaffold renderers; the compatibility adapter is empty and inert, and
+  the obsolete World Planner workspace is deleted while its Inspector/editor
+  path remains provider-owned. Local `./gradlew architectureTest`,
   `./gradlew check`, desktop install and diff whitespace proof are green. It
   merges only after required PR CI is green.
-- Next step after PR #515 merges: M4 migrates NPC, faction, location and
-  Encounter Table state, stable-id selection, label joins and semantic
-  handoffs, leaving no production section behind the compatibility adapter.
+- Next step after PR #516 merges: M5 deletes the empty compatibility adapter,
+  removes remaining obsolete compatibility surfaces, closes enforcement and
+  proof gaps, and prepares the complete Catalog for owner acceptance.
 
 ## Delivery Rules
 
@@ -229,7 +229,8 @@ Every implementation milestone must:
 
 ### Exit Gate
 
-- empty, unavailable, and failed provider snapshots remain distinguishable
+- loading, empty, and failed provider snapshots remain distinguishable;
+  unavailable is represented only when an owning provider can express it
 - refreshing labels or relationships preserves a still-present selection
 - default row opening changes only Inspector content
 - every explicit handoff reaches exactly its named destination
