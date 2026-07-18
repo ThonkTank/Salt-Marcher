@@ -41,7 +41,7 @@ public final class EncounterTableCatalogSection implements CatalogSection {
                         new CatalogTableScaffold.ColumnSpec<>("Name", EncounterTableRow::name),
                         new CatalogTableScaffold.ColumnSpec<>("Details", EncounterTableRow::details)),
                 Optional.empty(),
-                id -> this.intents.accept(new EncounterTableCatalogIntent.SelectTable(id == null ? 0L : id)),
+                id -> this.intents.accept(new EncounterTableCatalogIntent.SelectTable(id.orElse(0L))),
                 List.of(new CatalogTableScaffold.ActionSpec<>(
                         "Als Quelle", "Encounter-Tabelle als Encounter-Quelle verwenden", "Als Encounter-Quelle",
                         List.of("accent", "compact"), row -> this.intents.accept(

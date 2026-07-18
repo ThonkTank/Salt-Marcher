@@ -108,12 +108,20 @@ public final class WorldReferenceCatalogController implements CatalogLifecycle {
                 state.npcs(), state.factions(), state.locations(),
                 state.factionOptions(), state.locationOptions());
         long lifecycleRevision = state.lifecycleRevision();
-        unsubscribe.add(CurrentFirstSubscription.open(
-                creatures::current, creatures::subscribe,
-                value -> dispatcher.dispatch(() -> applyCreatures(lifecycleRevision, value))));
-        unsubscribe.add(CurrentFirstSubscription.open(
-                world::current, world::subscribe,
-                value -> dispatcher.dispatch(() -> applyWorld(lifecycleRevision, value))));
+        try {
+            unsubscribe.add(creatures.observeLatest(
+                    value -> dispatcher.dispatch(() -> applyCreatures(lifecycleRevision, value))));
+            unsubscribe.add(world.observeLatest(
+                    value -> dispatcher.dispatch(() -> applyWorld(lifecycleRevision, value))));
+        } catch (RuntimeException | Error failure) {
+            try {
+                releaseSubscriptions();
+            } catch (RuntimeException | Error cleanupFailure) {
+                failure.addSuppressed(cleanupFailure);
+            }
+            rollbackActivation();
+            throw failure;
+        }
     }
 
     @Override
@@ -121,8 +129,33 @@ public final class WorldReferenceCatalogController implements CatalogLifecycle {
         if (state.lifecycle() != WorldReferenceCatalogState.Lifecycle.ACTIVE) {
             return;
         }
-        unsubscribe.forEach(Runnable::run);
+        try {
+            releaseSubscriptions();
+        } finally {
+            rollbackActivation();
+        }
+    }
+
+    private void releaseSubscriptions() {
+        RuntimeException failure = null;
+        for (int index = unsubscribe.size() - 1; index >= 0; index--) {
+            try {
+                unsubscribe.get(index).run();
+            } catch (RuntimeException cleanupFailure) {
+                if (failure == null) {
+                    failure = cleanupFailure;
+                } else {
+                    failure.addSuppressed(cleanupFailure);
+                }
+            }
+        }
         unsubscribe.clear();
+        if (failure != null) {
+            throw failure;
+        }
+    }
+
+    private void rollbackActivation() {
         replace(state.lifecycleRevision() + 1L, WorldReferenceCatalogState.Lifecycle.INACTIVE,
                 state.npcs(), state.factions(), state.locations(),
                 state.factionOptions(), state.locationOptions());

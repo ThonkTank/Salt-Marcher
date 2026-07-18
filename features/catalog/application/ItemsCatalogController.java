@@ -54,8 +54,21 @@ public final class ItemsCatalogController implements CatalogLifecycle {
                 state.detailRequestRevision(), ItemsCatalogState.Lifecycle.ACTIVE, state.filterDraft(),
                 state.filterOptions(), state.query(), state.results(), state.selectedSourceKey(),
                 state.pageOffset(), state.totalCount(), state.actionMessage());
-        loadFilterOptions();
-        beginSearch(state.pageOffset());
+        try {
+            loadFilterOptions();
+            beginSearch(state.pageOffset());
+        } catch (RuntimeException | Error failure) {
+            rollbackActivation();
+            throw failure;
+        }
+    }
+
+    private void rollbackActivation() {
+        replace(state.lifecycleRevision() + 1L, state.optionsRequestRevision() + 1L,
+                state.pageRequestRevision() + 1L, state.detailRequestRevision() + 1L,
+                ItemsCatalogState.Lifecycle.INACTIVE, state.filterDraft(), state.filterOptions(), state.query(),
+                state.results(), state.selectedSourceKey(), state.pageOffset(), state.totalCount(),
+                state.actionMessage());
     }
 
     @Override

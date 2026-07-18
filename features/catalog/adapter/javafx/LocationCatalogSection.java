@@ -40,7 +40,7 @@ public final class LocationCatalogSection implements CatalogSection {
                         new CatalogTableScaffold.ColumnSpec<>("Name", LocationRow::displayName),
                         new CatalogTableScaffold.ColumnSpec<>("Details", LocationRow::details)),
                 row -> this.intents.accept(new WorldReferenceCatalogIntent.OpenLocation(row.locationId())),
-                id -> this.intents.accept(new WorldReferenceCatalogIntent.SelectLocation(id == null ? 0L : id)),
+                id -> this.intents.accept(new WorldReferenceCatalogIntent.SelectLocation(id.orElse(0L))),
                 List.of(
                         action("Als Quelle", "Ort als Encounter-Quelle verwenden", "Als Encounter-Quelle",
                                 row -> new WorldReferenceCatalogIntent.UseLocationAsEncounterSource(row.locationId())),

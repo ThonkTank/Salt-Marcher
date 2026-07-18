@@ -39,7 +39,7 @@ final class MonsterCatalogSection implements CatalogSection {
                         new CatalogTableScaffold.ColumnSpec<>("XP", row ->
                                 NumberFormat.getIntegerInstance(Locale.US).format(row.xp()))),
                 row -> requiredIntents.accept(new MonsterCatalogIntent.OpenCreature(row.id())),
-                id -> requiredIntents.accept(new MonsterCatalogIntent.SelectCreature(id == null ? 0L : id)),
+                id -> requiredIntents.accept(new MonsterCatalogIntent.SelectCreature(id.orElse(0L))),
                 List.of(
                         new CatalogTableScaffold.ActionSpec<>(
                                 "+ Encounter", "Zum Encounter hinzufügen", "+ Encounter",

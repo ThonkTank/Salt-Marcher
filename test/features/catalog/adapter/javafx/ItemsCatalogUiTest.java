@@ -120,9 +120,9 @@ public final class ItemsCatalogUiTest {
 
             api.deferNextSearch();
             button(pane, "Items suchen").fire();
-            assertEquals("Items werden geladen …", label(pane, "Item-Status").getText());
+            assertEquals("Lade...", label(pane, "Item-Ergebnisse Status").getText());
             api.completeDeferred(ItemsCatalogApi.CatalogStatus.SUCCESS, List.of(), 0);
-            assertEquals("Keine Items gefunden.", label(pane, "Item-Status").getText());
+            assertEquals("Keine Einträge gefunden.", label(pane, "Item-Ergebnisse Status").getText());
 
             assertState(pane, api, ItemsCatalogApi.CatalogStatus.INVALID_QUERY, "Ungültige Item-Suche.");
             assertState(pane, api, ItemsCatalogApi.CatalogStatus.UNAVAILABLE,
@@ -136,7 +136,7 @@ public final class ItemsCatalogUiTest {
             text(pane, "Item-Minimalkosten").setText("keine Zahl");
             button(pane, "Items suchen").fire();
             assertEquals(callsBeforeInvalidText, api.queries.size());
-            assertEquals("Ungültige Item-Suche.", label(pane, "Item-Status").getText());
+            assertEquals("Ungültige Item-Suche.", label(pane, "Item-Ergebnisse Status").getText());
         });
     }
 
@@ -200,7 +200,7 @@ public final class ItemsCatalogUiTest {
     ) {
         api.nextStatus = status;
         button(pane, "Items suchen").fire();
-        assertEquals(expectedText, label(pane, "Item-Status").getText());
+        assertEquals(expectedText, label(pane, "Item-Ergebnisse Status").getText());
     }
 
     private static void assertCompleteInspector(InspectorEntrySpec entry) {
@@ -266,20 +266,41 @@ public final class ItemsCatalogUiTest {
         var savedPlans = new features.encounter.api.SavedEncounterPlanListModel(
                 () -> new features.encounter.api.SavedEncounterPlanListResult(
                         features.encounter.api.SavedEncounterPlanStatus.SUCCESS, List.of(), ""),
-                listener -> () -> { });
+                listener -> () -> { },
+                listener -> {
+                    listener.accept(new features.encounter.api.SavedEncounterPlanListResult(
+                            features.encounter.api.SavedEncounterPlanStatus.SUCCESS, List.of(), ""));
+                    return () -> { };
+                });
         var creatureReferences = new features.creatures.api.CreatureReferenceIndexModel(
                 () -> new features.creatures.api.CreatureReferenceIndexResult(
                         features.creatures.api.CreatureReferenceIndexStatus.SUCCESS, 1L, List.of()),
-                listener -> () -> { });
+                listener -> () -> { },
+                listener -> {
+                    listener.accept(new features.creatures.api.CreatureReferenceIndexResult(
+                            features.creatures.api.CreatureReferenceIndexStatus.SUCCESS, 1L, List.of()));
+                    return () -> { };
+                });
         var world = new features.worldplanner.api.WorldPlannerSnapshotModel(
                 () -> new features.worldplanner.api.WorldPlannerSnapshot(
                         features.worldplanner.api.WorldPlannerReadStatus.SUCCESS,
                         List.of(), List.of(), List.of(), ""),
-                listener -> () -> { });
+                listener -> () -> { },
+                listener -> {
+                    listener.accept(new features.worldplanner.api.WorldPlannerSnapshot(
+                            features.worldplanner.api.WorldPlannerReadStatus.SUCCESS,
+                            List.of(), List.of(), List.of(), ""));
+                    return () -> { };
+                });
         var tableModel = new features.encountertable.api.EncounterTableCatalogModel(
                 () -> new features.encountertable.api.EncounterTableCatalogResult(
                         features.encountertable.api.EncounterTableReadStatus.SUCCESS, List.of()),
-                listener -> () -> { });
+                listener -> () -> { },
+                listener -> {
+                    listener.accept(new features.encountertable.api.EncounterTableCatalogResult(
+                            features.encountertable.api.EncounterTableReadStatus.SUCCESS, List.of()));
+                    return () -> { };
+                });
         features.encountertable.api.EncounterTableApi tableCommands =
                 new features.encountertable.api.EncounterTableApi() {
                     @Override public void refreshCatalog(
@@ -293,7 +314,12 @@ public final class ItemsCatalogUiTest {
                         new features.encounter.api.EncounterPoolFiltersModel(
                                 () -> encounterInputs.current().poolFilters(),
                                 listener -> encounterInputs.subscribe(
-                                        inputs -> listener.accept(inputs.poolFilters())))),
+                                        inputs -> listener.accept(inputs.poolFilters())),
+                                listener -> {
+                                    listener.accept(encounterInputs.current().poolFilters());
+                                    return encounterInputs.subscribe(
+                                            inputs -> listener.accept(inputs.poolFilters()));
+                                })),
                 new CatalogProviders.ItemsProviders(items),
                 new CatalogProviders.SavedEncounterProviders(savedPlans),
                 new CatalogProviders.WorldReferenceProviders(creatureReferences, world),

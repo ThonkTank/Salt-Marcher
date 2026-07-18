@@ -27,7 +27,7 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
     private final Function<Row, Id> idReader;
     private final Function<Row, String> accessibleLabel;
     private final Optional<Consumer<Row>> primaryAction;
-    private final Consumer<Id> selectionAction;
+    private final Consumer<Optional<Id>> selectionAction;
     private final Optional<Paging> paging;
     private final Label count = new Label();
     private final Label status = new Label();
@@ -45,7 +45,7 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
             Function<Row, String> accessibleLabel,
             List<ColumnSpec<Row>> columns,
             Consumer<Row> primaryAction,
-            Consumer<Id> selectionAction,
+            Consumer<Optional<Id>> selectionAction,
             List<ActionSpec<Row>> actions,
             Paging paging
     ) {
@@ -59,7 +59,7 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
             Function<Row, String> accessibleLabel,
             List<ColumnSpec<Row>> columns,
             Consumer<Row> primaryAction,
-            Consumer<Id> selectionAction,
+            Consumer<Optional<Id>> selectionAction,
             List<ActionSpec<Row>> actions
     ) {
         this(accessibleTableName, idReader, accessibleLabel, columns, Optional.of(primaryAction),
@@ -72,7 +72,7 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
             Function<Row, String> accessibleLabel,
             List<ColumnSpec<Row>> columns,
             Optional<Consumer<Row>> primaryAction,
-            Consumer<Id> selectionAction,
+            Consumer<Optional<Id>> selectionAction,
             List<ActionSpec<Row>> actions
     ) {
         this(accessibleTableName, idReader, accessibleLabel, columns, primaryAction,
@@ -85,7 +85,7 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
             Function<Row, String> accessibleLabel,
             List<ColumnSpec<Row>> columns,
             Optional<Consumer<Row>> primaryAction,
-            Consumer<Id> selectionAction,
+            Consumer<Optional<Id>> selectionAction,
             List<ActionSpec<Row>> actions,
             Optional<Paging> paging
     ) {
@@ -96,7 +96,9 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
         this.paging = Objects.requireNonNull(paging, "paging");
         getStyleClass().add("surface-root");
         count.getStyleClass().add("text-secondary");
+        count.setAccessibleText(accessibleTableName + " Anzahl");
         status.getStyleClass().add("text-muted");
+        status.setAccessibleText(accessibleTableName + " Status");
         page.getStyleClass().add("text-secondary");
         table.setAccessibleText(accessibleTableName);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
@@ -104,7 +106,7 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
         table.getColumns().setAll(createColumns(columns, actions));
         table.getSelectionModel().selectedItemProperty().addListener((ignored, before, selected) -> {
             if (!rendering) {
-                selectionAction.accept(selected == null ? null : idReader.apply(selected));
+                selectionAction.accept(Optional.ofNullable(selected).map(idReader));
             }
         });
         if (primaryAction.isPresent()) {

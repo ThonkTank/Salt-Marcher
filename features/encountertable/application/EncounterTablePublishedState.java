@@ -23,7 +23,8 @@ public final class EncounterTablePublishedState {
         candidates = new PublishedState<>(
                 new EncounterTableCandidatesResult(EncounterTableReadStatus.STORAGE_ERROR, List.of()),
                 dispatcher);
-        catalogModel = new EncounterTableCatalogModel(catalog::current, catalog::subscribe);
+        catalogModel = new EncounterTableCatalogModel(
+                catalog::current, catalog::subscribe, catalog::observeLatest);
         candidatesModel = new EncounterTableCandidatesModel(candidates::current, candidates::subscribe);
     }
 

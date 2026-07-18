@@ -216,7 +216,12 @@ public final class CatalogControlsRawInputTest {
                 new WorldPlannerSnapshotModel(
                         () -> new WorldPlannerSnapshot(
                                 WorldPlannerReadStatus.SUCCESS, List.of(), List.of(), List.of(), ""),
-                        listener -> () -> { }));
+                        listener -> () -> { },
+                        listener -> {
+                            listener.accept(new WorldPlannerSnapshot(
+                                    WorldPlannerReadStatus.SUCCESS, List.of(), List.of(), List.of(), ""));
+                            return () -> { };
+                        }));
     }
 
     private static Stage show(Parent root) {

@@ -56,6 +56,21 @@ public final class PublishedState<T> {
         return () -> unsubscribeUnique(subscriber);
     }
 
+    /** Atomically observes the current value and all later values, while rejecting superseded queued revisions. */
+    public Runnable observeLatest(Consumer<T> observer) {
+        Consumer<T> safeObserver = Objects.requireNonNull(observer, "observer");
+        AtomicBoolean active = new AtomicBoolean(true);
+        Runnable unsubscribe = state.subscribe(snapshot -> dispatcher.dispatch(() -> {
+            if (active.get() && snapshot.revision() == state.current().revision()) {
+                safeObserver.accept(snapshot.value());
+            }
+        }));
+        return () -> {
+            active.set(false);
+            unsubscribe.run();
+        };
+    }
+
     private Runnable subscribeDistinct(Consumer<T> subscriber) {
         AtomicBoolean initialReplay = new AtomicBoolean(true);
         AtomicBoolean active = new AtomicBoolean(true);

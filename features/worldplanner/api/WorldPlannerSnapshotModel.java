@@ -10,9 +10,18 @@ public final class WorldPlannerSnapshotModel {
 
     private final Supplier<WorldPlannerSnapshot> currentSupplier;
     private final Function<Consumer<WorldPlannerSnapshot>, Runnable> subscribeAction;
+    private final Function<Consumer<WorldPlannerSnapshot>, Runnable> observeLatestAction;
     public WorldPlannerSnapshotModel(
             Supplier<WorldPlannerSnapshot> currentSupplier,
             Function<Consumer<WorldPlannerSnapshot>, Runnable> subscribeAction
+    ) {
+        this(currentSupplier, subscribeAction, unsupportedAtomicObservation());
+    }
+
+    public WorldPlannerSnapshotModel(
+            Supplier<WorldPlannerSnapshot> currentSupplier,
+            Function<Consumer<WorldPlannerSnapshot>, Runnable> subscribeAction,
+            Function<Consumer<WorldPlannerSnapshot>, Runnable> observeLatestAction
     ) {
         this.currentSupplier = currentSupplier == null
                 ? WorldPlannerSnapshotModel::emptySnapshot
@@ -20,6 +29,16 @@ public final class WorldPlannerSnapshotModel {
         this.subscribeAction = subscribeAction == null
                 ? listener -> () -> { }
                 : subscribeAction;
+        this.observeLatestAction = Objects.requireNonNull(observeLatestAction, "observeLatestAction");
+    }
+
+    public Runnable observeLatest(Consumer<WorldPlannerSnapshot> observer) {
+        return Objects.requireNonNull(observeLatestAction.apply(Objects.requireNonNull(observer, "observer")),
+                "unsubscribe");
+    }
+
+    private static Function<Consumer<WorldPlannerSnapshot>, Runnable> unsupportedAtomicObservation() {
+        return ignored -> { throw new IllegalStateException("Atomic world observation is not configured."); };
     }
 
     public WorldPlannerSnapshot current() {

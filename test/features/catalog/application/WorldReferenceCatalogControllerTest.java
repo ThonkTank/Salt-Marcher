@@ -186,8 +186,8 @@ final class WorldReferenceCatalogControllerTest {
             Runnable changed
     ) {
         return new WorldReferenceCatalogController(
-                new CreatureReferenceIndexModel(creatures::current, creatures::subscribe),
-                new WorldPlannerSnapshotModel(world::current, world::subscribe),
+                new CreatureReferenceIndexModel(creatures::current, creatures::subscribe, creatures::observeLatest),
+                new WorldPlannerSnapshotModel(world::current, world::subscribe, world::observeLatest),
                 routes, routes, routes, dispatcher, changed);
     }
 
@@ -223,6 +223,11 @@ final class WorldReferenceCatalogControllerTest {
                 active--;
                 listener = ignored -> { };
             };
+        }
+        private Runnable observeLatest(Consumer<T> next) {
+            Runnable close = subscribe(next);
+            next.accept(current);
+            return close;
         }
         private void emit(T value) { current = value; listener.accept(value); }
         private int activeSubscriptions() { return active; }

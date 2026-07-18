@@ -23,6 +23,10 @@ public final class CatalogWorkspacePublication {
         return state.subscribe(Objects.requireNonNull(listener, "listener"));
     }
 
+    Runnable observeLatest(Consumer<CatalogWorkspaceState> observer) {
+        return state.observeLatest(Objects.requireNonNull(observer, "observer"));
+    }
+
     void publish(CatalogWorkspaceState next) {
         state.publish(Objects.requireNonNull(next, "next"));
     }

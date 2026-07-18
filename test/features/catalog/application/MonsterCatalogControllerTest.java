@@ -153,6 +153,11 @@ final class MonsterCatalogControllerTest {
                 next -> {
                     listener = next;
                     return () -> listener = ignored -> { };
+                },
+                next -> {
+                    listener = next;
+                    next.accept(current);
+                    return () -> listener = ignored -> { };
                 });
         void emit(EncounterPoolFilters filters) {
             current = filters;

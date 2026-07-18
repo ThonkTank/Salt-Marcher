@@ -9,9 +9,18 @@ public final class EncounterTableCatalogModel {
 
     private final Supplier<EncounterTableCatalogResult> currentSupplier;
     private final Function<Consumer<EncounterTableCatalogResult>, Runnable> subscribeAction;
+    private final Function<Consumer<EncounterTableCatalogResult>, Runnable> observeLatestAction;
     public EncounterTableCatalogModel(
             Supplier<EncounterTableCatalogResult> currentSupplier,
             Function<Consumer<EncounterTableCatalogResult>, Runnable> subscribeAction
+    ) {
+        this(currentSupplier, subscribeAction, unsupportedAtomicObservation());
+    }
+
+    public EncounterTableCatalogModel(
+            Supplier<EncounterTableCatalogResult> currentSupplier,
+            Function<Consumer<EncounterTableCatalogResult>, Runnable> subscribeAction,
+            Function<Consumer<EncounterTableCatalogResult>, Runnable> observeLatestAction
     ) {
         this.currentSupplier = currentSupplier == null
                 ? EncounterTableCatalogModel::emptyResult
@@ -19,6 +28,16 @@ public final class EncounterTableCatalogModel {
         this.subscribeAction = subscribeAction == null
                 ? listener -> () -> { }
                 : subscribeAction;
+        this.observeLatestAction = Objects.requireNonNull(observeLatestAction, "observeLatestAction");
+    }
+
+    public Runnable observeLatest(Consumer<EncounterTableCatalogResult> observer) {
+        return Objects.requireNonNull(observeLatestAction.apply(Objects.requireNonNull(observer, "observer")),
+                "unsubscribe");
+    }
+
+    private static Function<Consumer<EncounterTableCatalogResult>, Runnable> unsupportedAtomicObservation() {
+        return ignored -> { throw new IllegalStateException("Atomic table observation is not configured."); };
     }
 
     public EncounterTableCatalogResult current() {

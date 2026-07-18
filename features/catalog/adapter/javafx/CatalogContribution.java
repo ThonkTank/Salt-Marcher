@@ -1,12 +1,12 @@
 package features.catalog.adapter.javafx;
 
 import features.catalog.application.CatalogWorkspaceController;
+import features.catalog.application.CatalogWorkspaceBinding;
 import features.catalog.application.CatalogWorkspaceState;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.jspecify.annotations.Nullable;
 import shell.api.ContributionKey;
 import shell.api.NavigationGraphicResource;
 import shell.api.NavigationGroupSpec;
@@ -22,7 +22,7 @@ public final class CatalogContribution implements ShellContribution, AutoCloseab
 
     private final CatalogWorkspaceController controller;
     private final AtomicBoolean closed = new AtomicBoolean();
-    private @Nullable Runnable unsubscribe;
+    private final CatalogWorkspaceBinding binding;
     private CatalogWorkspaceView workspace;
     private MonsterCatalogSection monsters;
     private ItemsCatalogSection items;
@@ -33,8 +33,9 @@ public final class CatalogContribution implements ShellContribution, AutoCloseab
     private EncounterTableCatalogSection encounterTables;
     private long renderedWorkspaceRevision = -1L;
 
-    public CatalogContribution(CatalogWorkspaceController controller) {
+    public CatalogContribution(CatalogWorkspaceController controller, CatalogWorkspaceBinding binding) {
         this.controller = Objects.requireNonNull(controller, "controller");
+        this.binding = Objects.requireNonNull(binding, "binding");
     }
 
     @Override
@@ -66,8 +67,7 @@ public final class CatalogContribution implements ShellContribution, AutoCloseab
         workspace = new CatalogWorkspaceView(
                 controller,
                 List.of(monsters, items, savedEncounters, npcs, factions, locations, encounterTables));
-        unsubscribe = controller.publication().subscribe(this::apply);
-        apply(controller.publication().current());
+        binding.attach(this::apply);
         return new CatalogShellBinding(workspace);
     }
 
@@ -94,11 +94,6 @@ public final class CatalogContribution implements ShellContribution, AutoCloseab
     public void close() {
         if (!closed.compareAndSet(false, true)) {
             return;
-        }
-        Runnable currentSubscription = unsubscribe;
-        unsubscribe = null;
-        if (currentSubscription != null) {
-            currentSubscription.run();
         }
     }
 

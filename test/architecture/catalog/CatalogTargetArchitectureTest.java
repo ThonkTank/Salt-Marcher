@@ -1,6 +1,7 @@
 package architecture.catalog;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -13,6 +14,7 @@ import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import features.catalog.adapter.javafx.CatalogSection;
 import features.catalog.adapter.javafx.CatalogTableScaffold;
+import features.catalog.application.CatalogWorkspacePublication;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Set;
@@ -44,6 +46,15 @@ public final class CatalogTargetArchitectureTest {
                     .resideInAPackage("features.catalog..")
                     .should(notHaveRetiredName());
 
+    @ArchTest
+    static final ArchRule catalogJavaFxMustNotOwnWorkspacePublicationObservation =
+            noClasses()
+                    .that()
+                    .resideInAPackage("features.catalog.adapter.javafx..")
+                    .should()
+                    .dependOnClassesThat()
+                    .areAssignableTo(CatalogWorkspacePublication.class);
+
     @Test
     void exactlySevenNativeSectionsUseTheCommonContractAndScaffold() throws ClassNotFoundException {
         assertEquals(7, NATIVE_SECTION_NAMES.size());
@@ -56,6 +67,13 @@ public final class CatalogTargetArchitectureTest {
                             .anyMatch(CatalogTableScaffold.class::isAssignableFrom),
                     () -> section.getName() + " does not own CatalogTableScaffold");
         }
+    }
+
+    @Test
+    void scaffoldSelectionAbsenceIsExplicitlyTyped() throws NoSuchFieldException {
+        Field selectionAction = CatalogTableScaffold.class.getDeclaredField("selectionAction");
+        assertEquals("java.util.function.Consumer<java.util.Optional<Id>>",
+                selectionAction.getGenericType().getTypeName());
     }
 
     private static ArchCondition<JavaClass> notHaveRetiredName() {

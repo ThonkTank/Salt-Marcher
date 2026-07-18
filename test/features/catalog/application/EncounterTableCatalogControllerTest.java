@@ -40,7 +40,8 @@ final class EncounterTableCatalogControllerTest {
         WorldReferenceCatalogController world = worldController();
         world.activate();
         EncounterTableCatalogController controller = new EncounterTableCatalogController(
-                tables, new EncounterTableCatalogModel(tables::current, tables::subscribe), encounter,
+                tables, new EncounterTableCatalogModel(
+                        tables::current, tables::subscribe, tables::observeLatest), encounter,
                 world, DirectUiDispatcher.INSTANCE, () -> { });
 
         controller.activate();
@@ -93,7 +94,8 @@ final class EncounterTableCatalogControllerTest {
         world.activate();
         dispatcher.runAll();
         EncounterTableCatalogController controller = new EncounterTableCatalogController(
-                tables, new EncounterTableCatalogModel(tables::current, tables::subscribe),
+                tables, new EncounterTableCatalogModel(
+                        tables::current, tables::subscribe, tables::observeLatest),
                 new RecordingEncounter(), world, dispatcher, () -> { });
 
         controller.activate();
@@ -129,8 +131,10 @@ final class EncounterTableCatalogControllerTest {
                 List.of(), "");
         EmptyRoutes routes = new EmptyRoutes();
         return new WorldReferenceCatalogController(
-                new CreatureReferenceIndexModel(() -> creatures, ignored -> () -> { }),
-                new WorldPlannerSnapshotModel(() -> snapshot, ignored -> () -> { }),
+                new CreatureReferenceIndexModel(
+                        () -> creatures, ignored -> () -> { }, listener -> { listener.accept(creatures); return () -> { }; }),
+                new WorldPlannerSnapshotModel(
+                        () -> snapshot, ignored -> () -> { }, listener -> { listener.accept(snapshot); return () -> { }; }),
                 routes, routes, routes, dispatcher, () -> { });
     }
 
@@ -151,6 +155,11 @@ final class EncounterTableCatalogControllerTest {
                 active--;
                 listener = ignored -> { };
             };
+        }
+        private Runnable observeLatest(Consumer<EncounterTableCatalogResult> next) {
+            Runnable close = subscribe(next);
+            next.accept(current);
+            return close;
         }
         private void emit(EncounterTableCatalogResult value) { current = value; listener.accept(value); }
         @Override public void refreshCatalog(RefreshEncounterTableCatalogCommand command) { refreshes++; }

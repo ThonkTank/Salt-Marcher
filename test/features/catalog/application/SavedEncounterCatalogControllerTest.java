@@ -104,7 +104,7 @@ final class SavedEncounterCatalogControllerTest {
 
     private static SavedEncounterCatalogController controller(PlanSource source, RecordingEncounter encounter) {
         return new SavedEncounterCatalogController(
-                new SavedEncounterPlanListModel(source::current, source::subscribe), encounter,
+                new SavedEncounterPlanListModel(source::current, source::subscribe, source::observeLatest), encounter,
                 DirectUiDispatcher.INSTANCE, () -> { });
     }
 
@@ -143,6 +143,12 @@ final class SavedEncounterCatalogControllerTest {
                 activeSubscriptions--;
                 listener = ignored -> { };
             };
+        }
+
+        private Runnable observeLatest(Consumer<SavedEncounterPlanListResult> next) {
+            Runnable close = subscribe(next);
+            next.accept(current);
+            return close;
         }
 
         private void publish(SavedEncounterPlanListResult next) {

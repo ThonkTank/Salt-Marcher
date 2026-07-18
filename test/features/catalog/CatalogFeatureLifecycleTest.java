@@ -3,6 +3,7 @@ package features.catalog;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import features.catalog.application.CatalogWorkspaceState;
 import features.creatures.api.CreatureCatalogPage;
@@ -72,7 +73,7 @@ final class CatalogFeatureLifecycleTest {
     }
 
     @Test
-    void productionBindingBalancesCurrentFirstSubscriptionsAcrossReactivationAndClose() throws Exception {
+    void productionBindingBalancesAtomicObservationsAcrossReactivationAndClose() throws Exception {
         runOnFx(() -> {
             TrackingSubscription<EncounterBuilderInputs> builder = new TrackingSubscription<>(
                     EncounterBuilderInputs.empty(),
@@ -108,8 +109,8 @@ final class CatalogFeatureLifecycleTest {
             assertTracker(tables, 1, 1);
             CatalogWorkspaceState current = component.controller().publication().current();
             assertEquals("published", current.monsters().filterDraft().nameQuery(),
-                    "provider publication buffered during subscribe must apply only after current snapshot");
-            assertEquals(1, builder.currentCalls.get());
+                    "atomic provider observation must expose its latest snapshot");
+            assertEquals(0, builder.currentCalls.get(), "Catalog must not split atomic observation into current plus subscribe");
             long monsterRevision = current.monsters().revision();
             creatures.emit(new CreatureReferenceIndexResult(
                     CreatureReferenceIndexStatus.SUCCESS, 2L, List.of()));
@@ -143,6 +144,34 @@ final class CatalogFeatureLifecycleTest {
             assertActive(creatures, 0);
             assertActive(world, 0);
             assertActive(tables, 0);
+        });
+    }
+
+    @Test
+    void activationFailureReleasesPartialSectionAndWorkspaceAcquisitions() throws Exception {
+        runOnFx(() -> {
+            TrackingSubscription<EncounterBuilderInputs> builder =
+                    new TrackingSubscription<>(EncounterBuilderInputs.empty(), null);
+            TrackingSubscription<SavedEncounterPlanListResult> saved = new TrackingSubscription<>(
+                    new SavedEncounterPlanListResult(SavedEncounterPlanStatus.SUCCESS, List.of(), ""), null);
+            TrackingSubscription<CreatureReferenceIndexResult> creatures = new TrackingSubscription<>(
+                    new CreatureReferenceIndexResult(CreatureReferenceIndexStatus.SUCCESS, 1L, List.of()), null);
+            TrackingSubscription<WorldPlannerSnapshot> world = new TrackingSubscription<>(emptyWorld(), null);
+            TrackingSubscription<EncounterTableCatalogResult> tables = new TrackingSubscription<>(
+                    new EncounterTableCatalogResult(EncounterTableReadStatus.SUCCESS, List.of()), null);
+            world.observationFailure = new IllegalStateException("world observation failed");
+            CatalogFeature.Component component = create(
+                    new ControllableCreatureQueries(), new ControllableItemsApi(), builder, saved,
+                    creatures, world, tables, new RecordingItemRoute());
+            ShellBinding binding = component.contribution().bind();
+
+            assertThrows(IllegalStateException.class, binding::onActivate);
+            assertActive(builder, 0);
+            assertActive(saved, 0);
+            assertActive(creatures, 0);
+            assertActive(world, 0);
+            assertActive(tables, 0);
+            component.close();
         });
     }
 
@@ -332,15 +361,18 @@ final class CatalogFeatureLifecycleTest {
                 new CatalogProviders.MonsterProviders(
                         queries, new EncounterPoolFiltersModel(
                                 () -> builder.current().poolFilters(),
-                                listener -> builder.subscribe(inputs -> listener.accept(inputs.poolFilters())))),
+                                listener -> builder.subscribe(inputs -> listener.accept(inputs.poolFilters())),
+                                listener -> builder.observeLatest(inputs -> listener.accept(inputs.poolFilters())))),
                 new CatalogProviders.ItemsProviders(items),
                 new CatalogProviders.SavedEncounterProviders(
-                        new SavedEncounterPlanListModel(saved::current, saved::subscribe)),
+                        new SavedEncounterPlanListModel(saved::current, saved::subscribe, saved::observeLatest)),
                 new CatalogProviders.WorldReferenceProviders(
-                        new CreatureReferenceIndexModel(creatures::current, creatures::subscribe),
-                        new WorldPlannerSnapshotModel(world::current, world::subscribe)),
+                        new CreatureReferenceIndexModel(
+                                creatures::current, creatures::subscribe, creatures::observeLatest),
+                        new WorldPlannerSnapshotModel(world::current, world::subscribe, world::observeLatest)),
                 new CatalogProviders.EncounterTableProviders(
-                        tableCommands, new EncounterTableCatalogModel(tables::current, tables::subscribe)),
+                        tableCommands, new EncounterTableCatalogModel(
+                                tables::current, tables::subscribe, tables::observeLatest)),
                 DirectUiDispatcher.INSTANCE);
         return CatalogFeature.create(providers, routes(itemRoute, encounter));
     }
@@ -486,6 +518,7 @@ final class CatalogFeatureLifecycleTest {
         private final AtomicInteger active = new AtomicInteger();
         private final AtomicInteger currentCalls = new AtomicInteger();
         private Consumer<T> listener = ignored -> { };
+        private RuntimeException observationFailure;
 
         private TrackingSubscription(T current, T synchronousPublication) {
             this.current = current;
@@ -509,6 +542,23 @@ final class CatalogFeatureLifecycleTest {
                 if (open.compareAndSet(true, false)) {
                     active.decrementAndGet();
                     this.listener = ignored -> { };
+                }
+            };
+        }
+
+        Runnable observeLatest(Consumer<T> next) {
+            if (observationFailure != null) {
+                throw observationFailure;
+            }
+            subscriptions.incrementAndGet();
+            active.incrementAndGet();
+            listener = next;
+            next.accept(synchronousPublication == null ? current : synchronousPublication);
+            AtomicBoolean open = new AtomicBoolean(true);
+            return () -> {
+                if (open.compareAndSet(true, false)) {
+                    active.decrementAndGet();
+                    listener = ignored -> { };
                 }
             };
         }

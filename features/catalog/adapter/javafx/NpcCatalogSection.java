@@ -40,7 +40,7 @@ public final class NpcCatalogSection implements CatalogSection {
                         new CatalogTableScaffold.ColumnSpec<>("Name", NpcRow::displayName),
                         new CatalogTableScaffold.ColumnSpec<>("Details", NpcRow::details)),
                 row -> this.intents.accept(new WorldReferenceCatalogIntent.OpenNpc(row.npcId())),
-                id -> this.intents.accept(new WorldReferenceCatalogIntent.SelectNpc(id == null ? 0L : id)),
+                id -> this.intents.accept(new WorldReferenceCatalogIntent.SelectNpc(id.orElse(0L))),
                 List.of(
                         action("Zum Encounter", "NPC zum Encounter hinzufügen", "Zum Encounter",
                                 row -> new WorldReferenceCatalogIntent.AddNpcToEncounter(row.npcId())),

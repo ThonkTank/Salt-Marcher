@@ -101,11 +101,29 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
         if (active || closed) {
             return;
         }
-        active = true;
         activating = true;
-        sections.forEach(CatalogLifecycle::activate);
-        activating = false;
-        publish();
+        int activated = 0;
+        try {
+            for (CatalogLifecycle section : sections) {
+                section.activate();
+                activated++;
+            }
+            active = true;
+            activating = false;
+            publish();
+        } catch (RuntimeException | Error failure) {
+            for (int index = activated - 1; index >= 0; index--) {
+                try {
+                    sections.get(index).deactivate();
+                } catch (RuntimeException | Error rollbackFailure) {
+                    failure.addSuppressed(rollbackFailure);
+                }
+            }
+            active = false;
+            throw failure;
+        } finally {
+            activating = false;
+        }
     }
 
     @Override

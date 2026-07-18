@@ -130,7 +130,8 @@ public final class CatalogInitialLoadTest {
         runOnFxThread(() -> {
             WorldPlannerSnapshotModel world = new WorldPlannerSnapshotModel(
                     CatalogInitialLoadTest::worldPlannerSnapshotWithNpc,
-                    listener -> () -> { });
+                    listener -> () -> { },
+                    listener -> { listener.accept(worldPlannerSnapshotWithNpc()); return () -> { }; });
             CatalogTestRuntime runtime = CatalogTestRuntime.create(
                     new SqliteCreatureCatalogQueryAdapter(),
                     new SqliteEncounterTableCatalogAdapter(),
@@ -181,7 +182,9 @@ public final class CatalogInitialLoadTest {
                             return List.of();
                         }
                     },
-                    new WorldPlannerSnapshotModel(CatalogInitialLoadTest::m4WorldSnapshot, ignored -> () -> { }));
+                    new WorldPlannerSnapshotModel(
+                            CatalogInitialLoadTest::m4WorldSnapshot, ignored -> () -> { },
+                            listener -> { listener.accept(m4WorldSnapshot()); return () -> { }; }));
             ShellBinding binding = runtime.contribution(routes.routes()).bind();
             binding.onActivate();
             CatalogControlsHost controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, CatalogControlsHost.class);
@@ -344,7 +347,9 @@ public final class CatalogInitialLoadTest {
         return CatalogTestRuntime.create(
                 new SqliteCreatureCatalogQueryAdapter(),
                 new SqliteEncounterTableCatalogAdapter(),
-                new WorldPlannerSnapshotModel(CatalogInitialLoadTest::worldPlannerSnapshot, listener -> () -> { }));
+                new WorldPlannerSnapshotModel(
+                        CatalogInitialLoadTest::worldPlannerSnapshot, listener -> () -> { },
+                        listener -> { listener.accept(worldPlannerSnapshot()); return () -> { }; }));
     }
 
     private static void assertWorldPlannerSourceControls(CatalogTestRuntime runtime, Parent controls, String label) {

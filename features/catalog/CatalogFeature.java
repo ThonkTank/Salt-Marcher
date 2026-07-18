@@ -1,6 +1,7 @@
 package features.catalog;
 
 import features.catalog.application.CatalogWorkspaceController;
+import features.catalog.application.CatalogWorkspaceBinding;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import shell.api.ShellContribution;
@@ -25,21 +26,25 @@ public final class CatalogFeature {
                 requiredProviders.encounterTables().catalog(),
                 requiredProviders.publicationDispatcher(),
                 requiredRoutes);
+        CatalogWorkspaceBinding binding = new CatalogWorkspaceBinding(controller.publication());
         features.catalog.adapter.javafx.CatalogContribution contribution =
-                new features.catalog.adapter.javafx.CatalogContribution(controller);
-        return new Component(controller, contribution);
+                new features.catalog.adapter.javafx.CatalogContribution(controller, binding);
+        return new Component(controller, binding, contribution);
     }
 
     public static final class Component implements AutoCloseable {
         private final CatalogWorkspaceController controller;
+        private final CatalogWorkspaceBinding binding;
         private final features.catalog.adapter.javafx.CatalogContribution contribution;
         private final AtomicBoolean closed = new AtomicBoolean();
 
         private Component(
                 CatalogWorkspaceController controller,
+                CatalogWorkspaceBinding binding,
                 features.catalog.adapter.javafx.CatalogContribution contribution
         ) {
             this.controller = controller;
+            this.binding = binding;
             this.contribution = contribution;
         }
 
@@ -56,6 +61,7 @@ public final class CatalogFeature {
             if (!closed.compareAndSet(false, true)) {
                 return;
             }
+            binding.close();
             contribution.close();
             controller.close();
         }

@@ -41,7 +41,7 @@ public final class FactionCatalogSection implements CatalogSection {
                         new CatalogTableScaffold.ColumnSpec<>("Name", FactionRow::displayName),
                         new CatalogTableScaffold.ColumnSpec<>("Details", FactionRow::details)),
                 row -> this.intents.accept(new WorldReferenceCatalogIntent.OpenFaction(row.factionId())),
-                id -> this.intents.accept(new WorldReferenceCatalogIntent.SelectFaction(id == null ? 0L : id)),
+                id -> this.intents.accept(new WorldReferenceCatalogIntent.SelectFaction(id.orElse(0L))),
                 List.of(new CatalogTableScaffold.ActionSpec<>(
                         "Als Quelle", "Fraktion als Encounter-Quelle verwenden", "Als Encounter-Quelle",
                         List.of("accent", "compact"), row -> this.intents.accept(

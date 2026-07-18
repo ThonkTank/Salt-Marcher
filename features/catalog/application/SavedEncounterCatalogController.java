@@ -18,7 +18,7 @@ public final class SavedEncounterCatalogController implements CatalogLifecycle {
     private final UiDispatcher dispatcher;
     private final Runnable changed;
     private SavedEncounterCatalogState state = SavedEncounterCatalogState.initial();
-    private Runnable unsubscribe = () -> { };
+    private Runnable unsubscribe;
 
     SavedEncounterCatalogController(
             SavedEncounterPlanListModel plans,
@@ -57,15 +57,18 @@ public final class SavedEncounterCatalogController implements CatalogLifecycle {
                 SavedEncounterCatalogState.Lifecycle.ACTIVE, state.results(), state.selectedPlanId(),
                 state.confirmation(), state.actionMessage());
         long lifecycleRevision = state.lifecycleRevision();
-        unsubscribe = CurrentFirstSubscription.open(
-                plans::current,
-                plans::subscribe,
-                result -> dispatcher.dispatch(() -> {
+        try {
+            unsubscribe = plans.observeLatest(result -> dispatcher.dispatch(() -> {
                     if (state.lifecycle() == SavedEncounterCatalogState.Lifecycle.ACTIVE
                             && state.lifecycleRevision() == lifecycleRevision) {
                         apply(result);
                     }
                 }));
+        } catch (RuntimeException | Error failure) {
+            unsubscribe = null;
+            rollbackActivation();
+            throw failure;
+        }
     }
 
     @Override
@@ -73,8 +76,18 @@ public final class SavedEncounterCatalogController implements CatalogLifecycle {
         if (state.lifecycle() != SavedEncounterCatalogState.Lifecycle.ACTIVE) {
             return;
         }
-        unsubscribe.run();
-        unsubscribe = () -> { };
+        Runnable current = unsubscribe;
+        unsubscribe = null;
+        try {
+            if (current != null) {
+                current.run();
+            }
+        } finally {
+            rollbackActivation();
+        }
+    }
+
+    private void rollbackActivation() {
         replace(state.lifecycleRevision() + 1L, state.openRequestRevision() + 1L,
                 SavedEncounterCatalogState.Lifecycle.INACTIVE, state.results(), state.selectedPlanId(),
                 state.confirmation().clear(), state.actionMessage());
