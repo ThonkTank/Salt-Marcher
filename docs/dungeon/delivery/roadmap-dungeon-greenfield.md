@@ -97,34 +97,33 @@ and commit boundaries. M7 starts only after both are complete.
 
 ## Current Migration State
 
-- Current foundation: M0 through M2 and M3.1 through M3.7 are complete on
-  `main` through PR #506. Feature markers, room or cluster semantics, room
-  geometry, stairs, transitions, and corridor create or delete use exact
-  patches; transition links use atomic compound patches and shared multi-map
-  history.
-- This slice: M3.8 moves whole-cluster label, bound and standalone door,
-  corridor-anchor, corridor-waypoint, and stair-anchor commits to one typed
-  move command and the shared connection patch planner. Corner and wall-run
-  handles retain their already-landed specialized patch commands.
-- `executeOperation`, `DungeonEditHistory.SnapshotEntry`, full-map history
-  recording, and structural-object memory estimation are deleted. History now
-  accepts only single-map or compound patches with encoded byte weights.
-- The production consumer dispatches every successful handle release through
-  `executePatchCommand`; the same in-memory handle mutation remains available
-  only to repository-free drag preview after its authored workset is loaded.
-- Deterministic and production-route proof covers multi-entity cluster moves
-  across negative chunks, every handle variant, exact inverse application,
-  typed no-effect and invalid-target rejection, preview storage isolation,
-  one-revision commit, patch shortcut undo or redo, stable identities, and
-  SQLite reload.
+- Current foundation: M0 through M2 and M3.1 through M3.8 are complete on
+  `main` through PR #507. Every authored Editor commit now enters history only
+  as an exact single-map or compound patch; snapshot history and its whole-map
+  operation route are deleted.
+- This slice: M3.9 closes the patch/history milestone. Production defaults
+  retain at most `200` committed commands or `128 MiB` of measured forward and
+  inverse patch bytes, while deterministic limit injection qualifies eviction
+  without changing the shipped limits.
+- The shared `MEDIUM` qualification dataset proves byte-budget enforcement with
+  a real `10,000`-cell room patch. Command-limit proof applies and undoes exact
+  patches after the oldest entry is evicted.
+- The real map-view shortcut route places tool change, selection, camera pan,
+  repository-free preview, and typed exterior-wall rejection between one
+  authored commit and undo. One shortcut undo still removes that commit,
+  proving that every intervening action creates no history entry.
+- The M3 architecture gate permits history entries to retain only forward and
+  inverse `DungeonPatch` or `DungeonCompoundPatch` payloads, rejects complete
+  `DungeonMap` fields in patch carriers, and prevents new application consumers
+  from adopting the temporary whole-map persistence bridge.
 - `DungeonChangeSet(before, after)` remains only as the temporary whole-map
   persistence bridge used beneath accepted patches, history replay, transition
   compounds, and catalog rename. M4 owns its replacement with incremental
   `DungeonUnitOfWork`; no new caller may use it.
-- Next step after this slice merges: M3.9 closes the patch/history milestone by
-  qualifying command and byte retention limits, proving the remaining
-  no-history command exclusions, and tightening the M3 architecture gate before
-  M4 replaces the temporary persistence bridge.
+- Next step after this slice merges: open M4 by replacing the temporary
+  repository boundary with explicit catalog, window-read, and incremental
+  unit-of-work ports, then move one production consumer at a time and delete
+  each replaced whole-map route in its owning slice.
 
 ## M0: Target Lock And Baseline
 
