@@ -147,7 +147,9 @@ public final class ItemsCatalogUiTest {
             RecordingInspector inspector = new RecordingInspector();
             ItemsFixture fixture = show(api, inspector);
             Parent pane = fixture.host();
+            assertEquals(1, api.queries.size());
             TableView<?> results = table(pane, "Item-Ergebnisse");
+            assertEquals(1, results.getItems().size());
             results.getSelectionModel().selectFirst();
 
             Button open = button(pane, "Ausgewähltes Item im Inspector öffnen");
@@ -161,6 +163,32 @@ public final class ItemsCatalogUiTest {
                     KeyEvent.KEY_PRESSED, "", "", KeyCode.ENTER,
                     false, false, false, false));
             assertNotNull(inspector.entry, "Enter must invoke the same accessible primary detail action");
+        });
+    }
+
+    @Test
+    void ITEMS_CATALOG_UI_004_preservesDraftPageAndSelectionAcrossSectionSwitches() throws Exception {
+        runOnFxThread(() -> {
+            FakeItemsApi api = new FakeItemsApi();
+            ItemsFixture fixture = show(api, new RecordingInspector());
+            Parent pane = fixture.host();
+            TextField query = text(pane, "Item-Name");
+            query.setText("  rapier draft  ");
+            button(pane, "Items suchen").fire();
+            button(pane, "Nächste Item-Seite").fire();
+            TableView<?> results = table(pane, "Item-Ergebnisse");
+            results.getSelectionModel().selectFirst();
+            Object selected = results.getSelectionModel().getSelectedItem();
+            int callsBeforeSwitch = api.queries.size();
+
+            node(pane, ToggleButton.class, "Katalogbereich Monster").fire();
+            node(pane, ToggleButton.class, "Katalogbereich Items").fire();
+
+            assertEquals("  rapier draft  ", text(pane, "Item-Name").getText());
+            assertEquals("Seite 2 von 3", label(pane, "Item-Seite").getText());
+            assertEquals(selected, table(pane, "Item-Ergebnisse").getSelectionModel().getSelectedItem());
+            assertEquals(callsBeforeSwitch, api.queries.size(),
+                    "section switching must not trigger a replacement Items query");
         });
     }
 

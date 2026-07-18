@@ -23,6 +23,7 @@ import features.encounter.api.EncounterPoolFilters;
 import features.encounter.api.OpenSavedEncounterPlanResult;
 import features.encounter.api.SavedEncounterPlanListModel;
 import features.encounter.api.SavedEncounterPlanListResult;
+import features.encounter.api.SavedEncounterPlanSummary;
 import features.encounter.api.SavedEncounterPlanStatus;
 import features.encountertable.api.EncounterTableApi;
 import features.encountertable.api.EncounterTableCatalogModel;
@@ -91,6 +92,17 @@ final class CatalogFeatureLifecycleTest {
             ControllableItemsApi items = new ControllableItemsApi();
             CatalogFeature.Component component = create(
                     queries, items, builder, saved, creatures, world, tables, new RecordingItemRoute());
+            LegacyCatalogBindingAdapter budgetProbe = new LegacyCatalogBindingAdapter(
+                    component.controller(), routes(new RecordingItemRoute()));
+            assertEquals(
+                    List.of(
+                            features.catalog.application.CatalogSectionId.NPCS,
+                            features.catalog.application.CatalogSectionId.FACTIONS,
+                            features.catalog.application.CatalogSectionId.LOCATIONS,
+                            features.catalog.application.CatalogSectionId.ENCOUNTER_TABLES),
+                    budgetProbe.sections().stream().map(
+                            features.catalog.adapter.javafx.CatalogSection::id).toList());
+            budgetProbe.close();
             ShellBinding binding = component.contribution().bind();
 
             binding.onActivate();
@@ -241,6 +253,48 @@ final class CatalogFeatureLifecycleTest {
         });
     }
 
+    @Test
+    void savedEncounterConfirmationIsRenderedAndConfirmedOnceThroughProductionIntents() throws Exception {
+        runOnFx(() -> {
+            TrackingSubscription<EncounterBuilderInputs> builder =
+                    new TrackingSubscription<>(EncounterBuilderInputs.empty(), null);
+            TrackingSubscription<SavedEncounterPlanListResult> saved = new TrackingSubscription<>(
+                    new SavedEncounterPlanListResult(
+                            SavedEncounterPlanStatus.SUCCESS,
+                            List.of(new SavedEncounterPlanSummary(41L, "Proof plan", "One creature")), ""),
+                    null);
+            TrackingSubscription<CreatureReferenceIndexResult> creatures = new TrackingSubscription<>(
+                    new CreatureReferenceIndexResult(CreatureReferenceIndexStatus.SUCCESS, 1L, List.of()), null);
+            TrackingSubscription<WorldPlannerSnapshot> world = new TrackingSubscription<>(emptyWorld(), null);
+            TrackingSubscription<EncounterTableCatalogResult> tables = new TrackingSubscription<>(
+                    new EncounterTableCatalogResult(EncounterTableReadStatus.SUCCESS, List.of()), null);
+            RecordingSavedOpen savedOpen = new RecordingSavedOpen();
+            CatalogFeature.Component component = create(
+                    new ControllableCreatureQueries(), new ControllableItemsApi(), builder, saved,
+                    creatures, world, tables, new RecordingItemRoute(), savedOpen);
+            ShellBinding binding = component.contribution().bind();
+            Parent controls = (Parent) binding.slotContent().get(ShellSlot.COCKPIT_CONTROLS);
+            Parent main = (Parent) binding.slotContent().get(ShellSlot.COCKPIT_MAIN);
+            binding.onActivate();
+            toggle(controls, "Katalogbereich Encounter").fire();
+            TableView<?> plans = descendants(main).stream()
+                    .filter(TableView.class::isInstance).map(TableView.class::cast)
+                    .filter(table -> "Gespeicherte Encounter".equals(table.getAccessibleText()))
+                    .findFirst().orElseThrow();
+            plans.getSelectionModel().selectFirst();
+            button(controls, "Ausgewählten Encounter im globalen Encounter öffnen").fire();
+            assertEquals(List.of(false), savedOpen.discardFlags());
+            savedOpen.requests.getFirst().complete(new OpenSavedEncounterPlanResult(
+                    OpenSavedEncounterPlanResult.Status.CONFIRMATION_REQUIRED, 41L, "Discard?"));
+            Button confirm = button(controls, "Verwerfen und öffnen");
+            assertTrue(confirm.isVisible());
+            confirm.fire();
+            confirm.fire();
+            assertEquals(List.of(false, true), savedOpen.discardFlags());
+            component.close();
+        });
+    }
+
     private static CatalogFeature.Component create(
             ControllableCreatureQueries queries,
             ControllableItemsApi items,
@@ -250,6 +304,20 @@ final class CatalogFeatureLifecycleTest {
             TrackingSubscription<WorldPlannerSnapshot> world,
             TrackingSubscription<EncounterTableCatalogResult> tables,
             RecordingItemRoute itemRoute
+    ) {
+        return create(queries, items, builder, saved, creatures, world, tables, itemRoute, defaultEncounter());
+    }
+
+    private static CatalogFeature.Component create(
+            ControllableCreatureQueries queries,
+            ControllableItemsApi items,
+            TrackingSubscription<EncounterBuilderInputs> builder,
+            TrackingSubscription<SavedEncounterPlanListResult> saved,
+            TrackingSubscription<CreatureReferenceIndexResult> creatures,
+            TrackingSubscription<WorldPlannerSnapshot> world,
+            TrackingSubscription<EncounterTableCatalogResult> tables,
+            RecordingItemRoute itemRoute,
+            CatalogRoutes.EncounterHandoff encounter
     ) {
         EncounterTableApi tableCommands = new EncounterTableApi() {
             @Override public void refreshCatalog(RefreshEncounterTableCatalogCommand command) { }
@@ -269,10 +337,17 @@ final class CatalogFeatureLifecycleTest {
                 new CatalogProviders.EncounterTableProviders(
                         tableCommands, new EncounterTableCatalogModel(tables::current, tables::subscribe)),
                 DirectUiDispatcher.INSTANCE);
-        return CatalogFeature.create(providers, routes(itemRoute));
+        return CatalogFeature.create(providers, routes(itemRoute, encounter));
     }
 
     private static CatalogRoutes routes(RecordingItemRoute itemRoute) {
+        return routes(itemRoute, defaultEncounter());
+    }
+
+    private static CatalogRoutes routes(
+            RecordingItemRoute itemRoute,
+            CatalogRoutes.EncounterHandoff encounter
+    ) {
         CatalogRoutes.WorldInspectorRoutes world = new CatalogRoutes.WorldInspectorRoutes() {
             @Override public void openNpc(long npcId) { }
             @Override public void openFaction(long factionId) { }
@@ -281,7 +356,16 @@ final class CatalogFeatureLifecycleTest {
             @Override public void createFaction() { }
             @Override public void createLocation() { }
         };
-        CatalogRoutes.EncounterHandoff encounter = new CatalogRoutes.EncounterHandoff() {
+        CatalogRoutes.SceneHandoff scene = new CatalogRoutes.SceneHandoff() {
+            @Override public void addCreature(long creatureId) { }
+            @Override public void addNpc(long npcId) { }
+            @Override public void setLocation(long locationId) { }
+        };
+        return new CatalogRoutes(ignored -> { }, itemRoute, world, encounter, scene);
+    }
+
+    private static CatalogRoutes.EncounterHandoff defaultEncounter() {
+        return new CatalogRoutes.EncounterHandoff() {
             @Override public void updatePoolFilters(EncounterPoolFilters filters) { }
             @Override public void addCreature(long creatureId) { }
             @Override public void addWorldNpc(long creatureId, long npcId) { }
@@ -295,12 +379,6 @@ final class CatalogFeatureLifecycleTest {
                         OpenSavedEncounterPlanResult.Status.OPENED, planId, ""));
             }
         };
-        CatalogRoutes.SceneHandoff scene = new CatalogRoutes.SceneHandoff() {
-            @Override public void addCreature(long creatureId) { }
-            @Override public void addNpc(long npcId) { }
-            @Override public void setLocation(long locationId) { }
-        };
-        return new CatalogRoutes(ignored -> { }, itemRoute, world, encounter, scene);
     }
 
     private static CreatureCatalogPageResult creaturePage(long id, String name) {
@@ -479,6 +557,32 @@ final class CatalogFeatureLifecycleTest {
             details.add(future);
             return future;
         }
+    }
+
+    private static final class RecordingSavedOpen implements CatalogRoutes.EncounterHandoff {
+        private final List<Boolean> flags = new ArrayList<>();
+        private final List<CompletableFuture<OpenSavedEncounterPlanResult>> requests = new ArrayList<>();
+
+        private List<Boolean> discardFlags() {
+            return List.copyOf(flags);
+        }
+
+        @Override public CompletionStage<OpenSavedEncounterPlanResult> openSavedEncounter(
+                long planId,
+                boolean discardUnsavedChanges
+        ) {
+            flags.add(discardUnsavedChanges);
+            CompletableFuture<OpenSavedEncounterPlanResult> future = new CompletableFuture<>();
+            requests.add(future);
+            return future;
+        }
+
+        @Override public void updatePoolFilters(EncounterPoolFilters filters) { }
+        @Override public void addCreature(long creatureId) { }
+        @Override public void addWorldNpc(long creatureId, long npcId) { }
+        @Override public void useFactionSource(long factionId) { }
+        @Override public void useLocationSource(long locationId) { }
+        @Override public void useEncounterTableSource(long tableId) { }
     }
 
     private static final class RecordingItemRoute implements CatalogRoutes.ItemInspectorRoute {

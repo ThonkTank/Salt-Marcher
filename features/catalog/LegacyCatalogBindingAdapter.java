@@ -1,17 +1,13 @@
 package features.catalog;
 
 import features.catalog.adapter.javafx.CatalogSection;
-import features.catalog.adapter.javafx.ItemsCatalogSection;
 import features.catalog.adapter.javafx.ReferenceCatalogSection;
-import features.catalog.adapter.javafx.SavedEncounterCatalogSection;
 import features.catalog.application.CatalogApplicationRoutes;
 import features.catalog.application.CatalogResultState;
 import features.catalog.application.CatalogSectionId;
 import features.catalog.application.CatalogWorkspaceController;
 import features.catalog.application.CatalogWorkspaceState;
 import features.creatures.api.CreatureReferenceIndexResult;
-import features.encounter.api.SavedEncounterPlanListResult;
-import features.encounter.api.SavedEncounterPlanStatus;
 import features.encountertable.api.EncounterTableCatalogResult;
 import features.encountertable.api.EncounterTableReadStatus;
 import features.encountertable.api.EncounterTableSummary;
@@ -25,10 +21,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** Temporary bridge only for the six sections that migrate in M3 and M4. */
+/** Temporary bridge only for the four World Reference and Encounter Table sections migrating in M4. */
 final class LegacyCatalogBindingAdapter implements AutoCloseable {
 
-    private final SavedEncounterCatalogSection savedEncounters;
     private final ReferenceCatalogSection<WorldNpcSummary> npcs;
     private final ReferenceCatalogSection<WorldFactionSummary> factions;
     private final ReferenceCatalogSection<WorldLocationSummary> locations;
@@ -42,15 +37,12 @@ final class LegacyCatalogBindingAdapter implements AutoCloseable {
     LegacyCatalogBindingAdapter(CatalogWorkspaceController controller, CatalogApplicationRoutes routes) {
         CatalogWorkspaceController requiredController = Objects.requireNonNull(controller, "controller");
         CatalogApplicationRoutes requiredRoutes = Objects.requireNonNull(routes, "routes");
-        ItemsCatalogSection items = new ItemsCatalogSection(
-                requiredController.itemCatalog(), requiredRoutes.itemInspector(), requiredController);
-        savedEncounters = new SavedEncounterCatalogSection(requiredRoutes.encounter(), requiredController);
         npcs = npcSection(requiredRoutes);
         factions = factionSection(requiredRoutes);
         locations = locationSection(requiredRoutes);
         encounterTables = tableSection();
         addActions(requiredRoutes);
-        sections = List.of(items, savedEncounters, npcs, factions, locations, encounterTables);
+        sections = List.of(npcs, factions, locations, encounterTables);
         unsubscribe = requiredController.publication().subscribe(this::apply);
         apply(requiredController.publication().current());
     }
@@ -113,7 +105,6 @@ final class LegacyCatalogBindingAdapter implements AutoCloseable {
     private void apply(CatalogWorkspaceState state) {
         EncounterTableCatalogResult tables = encounterTableResult(state);
         WorldPlannerSnapshot world = worldSnapshot(state);
-        savedEncounters.apply(savedEncounterResult(state));
         applyCreatureNames(state.worldReferences().creatures(), creatureNames);
         applyTableNames(tables.tables(), tableNames);
         factionNames.clear();
@@ -130,14 +121,6 @@ final class LegacyCatalogBindingAdapter implements AutoCloseable {
                 || result.status() == CatalogResultState.Status.EMPTY
                 ? EncounterTableReadStatus.SUCCESS : EncounterTableReadStatus.STORAGE_ERROR;
         return new EncounterTableCatalogResult(status, result.rows());
-    }
-
-    private static SavedEncounterPlanListResult savedEncounterResult(CatalogWorkspaceState state) {
-        var result = state.savedEncounters().results();
-        SavedEncounterPlanStatus status = result.status() == CatalogResultState.Status.READY
-                || result.status() == CatalogResultState.Status.EMPTY
-                ? SavedEncounterPlanStatus.SUCCESS : SavedEncounterPlanStatus.STORAGE_ERROR;
-        return new SavedEncounterPlanListResult(status, result.rows(), result.message());
     }
 
     private static WorldPlannerSnapshot worldSnapshot(CatalogWorkspaceState state) {

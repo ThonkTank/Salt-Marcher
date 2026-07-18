@@ -1,22 +1,34 @@
 package features.catalog.application;
 
+import features.catalog.application.CatalogApplicationRoutes.EncounterHandoff;
+import features.encounter.api.OpenSavedEncounterPlanResult;
 import features.encounter.api.SavedEncounterPlanListModel;
 import features.encounter.api.SavedEncounterPlanListResult;
 import features.encounter.api.SavedEncounterPlanStatus;
+import features.encounter.api.SavedEncounterPlanSummary;
 import java.util.List;
 import java.util.Objects;
+import platform.ui.UiDispatcher;
 
+/** Owns saved-plan subscription, stable selection, opening, and confirmation. */
 public final class SavedEncounterCatalogController implements CatalogLifecycle {
 
     private final SavedEncounterPlanListModel plans;
+    private final EncounterHandoff encounter;
+    private final UiDispatcher dispatcher;
     private final Runnable changed;
     private SavedEncounterCatalogState state = SavedEncounterCatalogState.initial();
     private Runnable unsubscribe = () -> { };
-    private long lifecycleEpoch;
-    private boolean active;
 
-    SavedEncounterCatalogController(SavedEncounterPlanListModel plans, Runnable changed) {
+    SavedEncounterCatalogController(
+            SavedEncounterPlanListModel plans,
+            EncounterHandoff encounter,
+            UiDispatcher dispatcher,
+            Runnable changed
+    ) {
         this.plans = Objects.requireNonNull(plans, "plans");
+        this.encounter = Objects.requireNonNull(encounter, "encounter");
+        this.dispatcher = Objects.requireNonNull(dispatcher, "dispatcher");
         this.changed = Objects.requireNonNull(changed, "changed");
     }
 
@@ -24,43 +36,197 @@ public final class SavedEncounterCatalogController implements CatalogLifecycle {
         return state;
     }
 
-    @Override
-    public void activate() {
-        if (active) {
+    public void accept(SavedEncounterCatalogIntent intent) {
+        if (intent == null || state.lifecycle() == SavedEncounterCatalogState.Lifecycle.CLOSED) {
             return;
         }
-        active = true;
-        long epoch = ++lifecycleEpoch;
-        unsubscribe = CurrentFirstSubscription.open(
-                plans::current, plans::subscribe, result -> {
-                    if (active && lifecycleEpoch == epoch) {
-                        apply(result);
-                    }
-                });
+        switch (intent) {
+            case SavedEncounterCatalogIntent.SelectPlan select -> select(select.planId());
+            case SavedEncounterCatalogIntent.OpenPlan open -> beginOpen(open.planId(), false);
+            case SavedEncounterCatalogIntent.ConfirmOpen confirm -> confirm(confirm);
+            case SavedEncounterCatalogIntent.CancelOpen cancel -> cancel(cancel);
+        }
     }
 
-    private void apply(SavedEncounterPlanListResult result) {
-        CatalogResultState<features.encounter.api.SavedEncounterPlanSummary> results =
-                result.status() == SavedEncounterPlanStatus.SUCCESS
-                        ? CatalogResultState.ready(result.plans())
-                        : new CatalogResultState<>(CatalogResultState.Status.FAILED, List.of(), result.message());
-        state = new SavedEncounterCatalogState(results, state.selectedPlanId());
-        changed.run();
+    @Override
+    public void activate() {
+        if (state.lifecycle() != SavedEncounterCatalogState.Lifecycle.INACTIVE) {
+            return;
+        }
+        replace(state.lifecycleRevision() + 1L, state.openRequestRevision(),
+                SavedEncounterCatalogState.Lifecycle.ACTIVE, state.results(), state.selectedPlanId(),
+                state.confirmation(), state.actionMessage());
+        long lifecycleRevision = state.lifecycleRevision();
+        unsubscribe = CurrentFirstSubscription.open(
+                plans::current,
+                plans::subscribe,
+                result -> dispatcher.dispatch(() -> {
+                    if (state.lifecycle() == SavedEncounterCatalogState.Lifecycle.ACTIVE
+                            && state.lifecycleRevision() == lifecycleRevision) {
+                        apply(result);
+                    }
+                }));
     }
 
     @Override
     public void deactivate() {
-        if (!active) {
+        if (state.lifecycle() != SavedEncounterCatalogState.Lifecycle.ACTIVE) {
             return;
         }
-        active = false;
-        lifecycleEpoch++;
         unsubscribe.run();
         unsubscribe = () -> { };
+        replace(state.lifecycleRevision() + 1L, state.openRequestRevision() + 1L,
+                SavedEncounterCatalogState.Lifecycle.INACTIVE, state.results(), state.selectedPlanId(),
+                state.confirmation().clear(), state.actionMessage());
     }
 
     @Override
     public void close() {
+        if (state.lifecycle() == SavedEncounterCatalogState.Lifecycle.CLOSED) {
+            return;
+        }
         deactivate();
+        replace(state.lifecycleRevision() + 1L, state.openRequestRevision() + 1L,
+                SavedEncounterCatalogState.Lifecycle.CLOSED, state.results(), state.selectedPlanId(),
+                state.confirmation().clear(), state.actionMessage());
+    }
+
+    private void apply(SavedEncounterPlanListResult result) {
+        CatalogResultState<SavedEncounterPlanSummary> results;
+        if (result == null || result.status() != SavedEncounterPlanStatus.SUCCESS) {
+            String message = result == null ? "Encounter konnten nicht geladen werden." : result.message();
+            results = new CatalogResultState<>(CatalogResultState.Status.FAILED, List.of(), message);
+        } else {
+            results = CatalogResultState.ready(result.plans());
+        }
+        long selected = results.rows().stream().anyMatch(plan -> plan.planId() == state.selectedPlanId())
+                ? state.selectedPlanId() : 0L;
+        SavedEncounterCatalogState.Confirmation confirmation = results.rows().stream()
+                .anyMatch(plan -> plan.planId() == state.confirmation().planId())
+                ? state.confirmation() : state.confirmation().clear();
+        replaceKeepingLifecycle(results, selected, confirmation, state.actionMessage());
+    }
+
+    private void select(long planId) {
+        long selected = Math.max(0L, planId);
+        if (selected == state.selectedPlanId()) {
+            return;
+        }
+        replace(state.lifecycleRevision(), state.openRequestRevision() + 1L, state.lifecycle(), state.results(),
+                selected, state.confirmation().clear(), "");
+    }
+
+    private void beginOpen(long planId, boolean discardUnsavedChanges) {
+        if (state.lifecycle() != SavedEncounterCatalogState.Lifecycle.ACTIVE
+                || planId <= 0L || planId != state.selectedPlanId()) {
+            return;
+        }
+        SavedEncounterPlanSummary plan = selectedPlan(planId);
+        if (plan == null) {
+            return;
+        }
+        long lifecycleRevision = state.lifecycleRevision();
+        long requestRevision = state.openRequestRevision() + 1L;
+        replace(lifecycleRevision, requestRevision, state.lifecycle(), state.results(), state.selectedPlanId(),
+                state.confirmation().clear(), "Encounter wird geöffnet …");
+        encounter.openSavedEncounter(planId, discardUnsavedChanges)
+                .whenComplete((result, failure) -> dispatcher.dispatch(() ->
+                        completeOpen(lifecycleRevision, requestRevision, plan, discardUnsavedChanges,
+                                result, failure)));
+    }
+
+    private void completeOpen(
+            long lifecycleRevision,
+            long requestRevision,
+            SavedEncounterPlanSummary plan,
+            boolean confirmed,
+            OpenSavedEncounterPlanResult result,
+            Throwable failure
+    ) {
+        if (!acceptsOpen(lifecycleRevision, requestRevision, plan.planId())) {
+            return;
+        }
+        if (failure != null || result == null) {
+            replaceKeepingLifecycle(state.results(), state.selectedPlanId(), state.confirmation().clear(),
+                    "Encounter konnte nicht geöffnet werden.");
+            return;
+        }
+        if (result.planId() > 0L && result.planId() != plan.planId()) {
+            replaceKeepingLifecycle(state.results(), state.selectedPlanId(), state.confirmation().clear(),
+                    "Encounter konnte nicht geöffnet werden.");
+            return;
+        }
+        if (result.status() == OpenSavedEncounterPlanResult.Status.CONFIRMATION_REQUIRED && !confirmed) {
+            SavedEncounterCatalogState.Confirmation pending = new SavedEncounterCatalogState.Confirmation(
+                    state.confirmation().revision() + 1L, plan.planId(), plan.name(), true);
+            replaceKeepingLifecycle(state.results(), state.selectedPlanId(), pending, result.message());
+            return;
+        }
+        if (result.status() == OpenSavedEncounterPlanResult.Status.CONFIRMATION_REQUIRED) {
+            replaceKeepingLifecycle(state.results(), state.selectedPlanId(), state.confirmation().clear(),
+                    "Encounter konnte nach Bestätigung nicht geöffnet werden.");
+            return;
+        }
+        replaceKeepingLifecycle(state.results(), state.selectedPlanId(), state.confirmation().clear(),
+                result.message());
+    }
+
+    private void confirm(SavedEncounterCatalogIntent.ConfirmOpen intent) {
+        if (!matchesPending(intent.confirmationRevision(), intent.planId())) {
+            return;
+        }
+        beginOpen(intent.planId(), true);
+    }
+
+    private void cancel(SavedEncounterCatalogIntent.CancelOpen intent) {
+        if (!matchesPending(intent.confirmationRevision(), intent.planId())) {
+            return;
+        }
+        replace(state.lifecycleRevision(), state.openRequestRevision() + 1L, state.lifecycle(), state.results(),
+                state.selectedPlanId(), state.confirmation().clear(), "Öffnen abgebrochen.");
+    }
+
+    private boolean matchesPending(long confirmationRevision, long planId) {
+        SavedEncounterCatalogState.Confirmation confirmation = state.confirmation();
+        return confirmation.required()
+                && confirmation.revision() == confirmationRevision
+                && confirmation.planId() == planId
+                && state.selectedPlanId() == planId;
+    }
+
+    private boolean acceptsOpen(long lifecycleRevision, long requestRevision, long planId) {
+        return state.lifecycle() == SavedEncounterCatalogState.Lifecycle.ACTIVE
+                && state.lifecycleRevision() == lifecycleRevision
+                && state.openRequestRevision() == requestRevision
+                && state.selectedPlanId() == planId;
+    }
+
+    private SavedEncounterPlanSummary selectedPlan(long planId) {
+        return state.results().rows().stream().filter(plan -> plan.planId() == planId).findFirst().orElse(null);
+    }
+
+    private void replaceKeepingLifecycle(
+            CatalogResultState<SavedEncounterPlanSummary> results,
+            long selectedPlanId,
+            SavedEncounterCatalogState.Confirmation confirmation,
+            String actionMessage
+    ) {
+        replace(state.lifecycleRevision(), state.openRequestRevision(), state.lifecycle(), results,
+                selectedPlanId, confirmation, actionMessage);
+    }
+
+    private void replace(
+            long lifecycleRevision,
+            long openRequestRevision,
+            SavedEncounterCatalogState.Lifecycle lifecycle,
+            CatalogResultState<SavedEncounterPlanSummary> results,
+            long selectedPlanId,
+            SavedEncounterCatalogState.Confirmation confirmation,
+            String actionMessage
+    ) {
+        state = new SavedEncounterCatalogState(
+                state.revision() + 1L, lifecycleRevision, openRequestRevision, lifecycle,
+                results, selectedPlanId, confirmation, actionMessage);
+        changed.run();
     }
 }
