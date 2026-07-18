@@ -16,6 +16,8 @@ Items, saved Encounters, World Planner records, and Encounter Tables inside one
    user-visible behavior and acceptance criteria.
 2. Read [Catalog Architecture](architecture/architecture-catalog.md) for the
    durable target structure, ownership, and dependency direction.
+3. During the replacement only, read the temporary
+   [Catalog Greenfield Roadmap](delivery/roadmap-catalog-greenfield.md).
 
 ## Document Set
 
@@ -26,3 +28,8 @@ Items, saved Encounters, World Planner records, and Encounter Tables inside one
 ### Architecture
 
 - [Catalog Architecture](architecture/architecture-catalog.md)
+
+### Delivery
+
+- [Catalog Greenfield Roadmap](delivery/roadmap-catalog-greenfield.md) -- temporary;
+  delete after final acceptance.

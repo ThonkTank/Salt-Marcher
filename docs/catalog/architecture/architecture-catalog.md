@@ -1,162 +1,196 @@
 Status: Active Target
 Owner: Catalog Feature
-Last Reviewed: 2026-07-18
-Source of Truth: Catalog application ownership, presentation boundary, and
-dependency direction.
+Last Reviewed: 2026-07-19
+Source of Truth: Catalog application ownership, typed section composition,
+presentation boundary, lifecycle, and dependency direction.
 
 # Catalog Architecture
 
-## Entity, Stakeholders, And Concerns
+## Purpose And Boundary
 
-Catalog is the application capability for finding, evaluating, and explicitly
-handing reference content to another active workspace. GMs need one predictable
-reference surface during preparation and table play. Feature maintainers need
-provider truth and validation to remain cohesive. UI maintainers need one state
-and lifecycle model rather than separate section-specific orchestration stacks.
+Catalog is the read-and-handoff workspace for reference content. It owns the
+user's transient browsing experience: active section, unfinished input,
+committed query, result lifecycle, sort, page, selection, and explicit actions.
+It owns no creature, item, Encounter, World Planner, or Encounter Table truth
+and has no persistence adapter.
 
-The primary concerns are responsive asynchronous lookup, stable workspace
-state, explicit side effects, provider independence, consistent presentation,
-and complete retirement of the current JavaFX-owned orchestration.
+Provider features remain the sole owners of durable records, validation,
+migrations, details, and mutations. Catalog consumes only their public APIs.
+Encounter owns generation pool criteria; the visible Monster filter editor
+edits that typed capability and queries Creatures with the accepted revision.
 
 ## Target Topology
 
 ```text
 features/catalog/
 ├── application/
-│   ├── CatalogWorkspaceController
-│   ├── monster/MonsterCatalogController
-│   ├── items/ItemsCatalogController
-│   ├── encounters/SavedEncounterCatalogController
-│   ├── world/WorldReferenceCatalogController
-│   └── tables/EncounterTableCatalogController
+│   ├── CatalogWorkspace
+│   ├── BrowseSession
+│   ├── CatalogSectionDefinition
+│   ├── CatalogSectionState
+│   └── CatalogResult
 ├── adapter/javafx/
 │   ├── CatalogContribution
 │   ├── CatalogWorkspaceView
-│   ├── CatalogSectionHost
-│   └── CatalogTableScaffold
+│   ├── CatalogSectionRenderer
+│   └── CatalogControlFactory
 └── CatalogFeature
 ```
 
-Catalog owns an application and JavaFX role. It owns no domain or persistence
-role because it defines no durable business truth and stores no reference
-records.
+The seven sections are statically and explicitly composed. They are not seven
+controllers or JavaFX view classes. Each is a typed definition that supplies
+provider query translation, immutable filter fields, columns, stable identity,
+and available actions to shared application and presentation mechanisms.
 
-## Application Ownership
+Runtime discovery and a plugin registry are rejected because the product owns
+exactly seven sections and has no extension need.
 
-`CatalogWorkspaceController` owns the active section, the lifetime of every
-section controller, and immutable workspace publication. It delegates queries
-and actions to the controller that owns the selected section; it does not
-contain provider-specific filter or mapping logic.
+## Typed Section Definition
 
-Every section controller owns:
+`CatalogSectionDefinition<Q, R, K>` contains:
 
-- its Catalog-specific query and draft state
-- its request revision and current result projection
-- stable selection identity, sort, and paging where applicable
-- translation between user intents and provider APIs or typed outward routes
-- activation, deactivation, and subscription cleanup
+- stable section id, label, and initial immutable query draft
+- typed filter specifications with getters and immutable updaters
+- provider query function and provider-result translation
+- stable row identity and table column specifications
+- optional paging and typed row or section actions
+- optional provider revision observation used only while the section is active
 
-`WorldReferenceCatalogController` may serve the NPC, faction, and location
-sections because they share one provider snapshot and lifecycle. Their
-published section states remain distinct.
+Filter specifications are a sealed family for text search, single choice,
+multi-choice, range, and tri-state values. They do not use string-keyed maps,
+untyped values, reflection, JavaFX nodes, CSS classes, or provider persistence
+types.
 
-Every section publishes an immutable `CatalogResultState<Row>` with a typed
-status covering loading, ready, empty, invalid input, unavailable, and failed
-outcomes. A section-specific state wraps that result together with its filters,
-selection id, page, and unfinished input. JavaFX properties and nodes do not
-cross into application state.
+Provider APIs keep their own result vocabularies. The definition translates at
+the real consumer boundary into one Catalog result model rather than requiring
+providers to depend on Catalog.
 
-## Provider And Action Boundaries
+## Browse Session And Workspace State
 
-`CatalogFeature.create(CatalogProviders, CatalogRoutes)` is the feature-root
-composition entry point. `CatalogProviders` groups required dependencies by
-section as `MonsterProviders`, `ItemsProviders`, `SavedEncounterProviders`,
-`WorldReferenceProviders`, and `EncounterTableProviders`. Required providers
-are never nullable and have no no-op fallback.
+One reusable `BrowseSession<Q, R, K>` owns the lifecycle shared by all sections:
 
-`CatalogRoutes` groups semantic outward capabilities:
+- unfinished draft and last committed query
+- 200 ms debounce and immediate Enter submission
+- request epoch and cancellation or invalidation of superseded work
+- page, total, stable selection, provider revision, and stale marker
+- immutable result state: uninitialized, loading, refreshing, ready, empty,
+  invalid, unavailable, or failed
 
-- `CreatureInspectorRoute`
-- `ItemInspectorRoute`
-- `WorldInspectorRoutes`
-- `EncounterHandoff`
-- `SceneHandoff`
+Only the selected session is active. Activating a section observes its provider
+and queries when uninitialized, stale, or edited. Deactivating it releases the
+subscription and invalidates in-flight publication while retaining immutable
+state. An inactive section performs no query, option load, or provider
+subscription.
 
-Catalog application code may consume foreign feature APIs. It MUST NOT import a
-foreign domain, application, composition root, JavaFX adapter, or persistence
-adapter. Provider-owned Inspector content is supplied through the typed routes;
-Catalog does not rebuild foreign editors.
+The workspace owns the active section and the seven retained session states.
+It publishes one revisioned immutable snapshot. JavaFX state is never the
+source of unfinished input or selection.
 
-Creature details load and open through one route so a global detail selection
-and Inspector push cannot race. Encounter and Scene changes occur only through
-explicit handoff intents.
+A refresh retains the last successful rows while exposing `refreshing`. A
+failure may retain that read-only result with a retry action, but it cannot be
+reported as current success. A selected identity survives refresh only when it
+is present in the accepted result.
 
-## Monster Query And Encounter Filters
+## Actions And Cross-Feature State
 
-Catalog owns the visible Monster query draft. It sends the query to the
-creature catalog provider and maps the relevant filter values to an Encounter
-pool-filter command. Encounter owns the canonical generation-filter truth and
-publishes readback when it changes elsewhere.
+Selecting or opening a row is read-only with respect to Encounter and Scene.
+Every external change uses a named typed action and returns a typed action
+outcome for visible feedback.
 
-Catalog never reads or writes Encounter tuning. Difficulty, balance, amount,
-and diversity remain Encounter-owned inputs and presentation.
+Catalog consumes exact routes for:
 
-Catalog page queries remain independent from the creature reference index used
-by Scene and World Planner. A Scene or World Planner refresh therefore cannot
-replace the Catalog's visible page lifecycle.
+- provider-owned details and editors in the Inspector
+- adding a Creature or NPC to Encounter or focused Scene
+- opening a saved Encounter with the provider-owned discard decision
+- selecting faction, location, or Encounter Table sources for Encounter
+- assigning the focused Scene location
 
-## JavaFX Boundary
+Catalog does not coordinate a cross-provider transaction. A future action that
+requires one must be owned by the feature that owns the consistency boundary,
+not by callbacks or a Catalog database.
 
-The JavaFX adapter renders immutable application state and translates raw
-control events into application intents. It performs no provider query,
-cross-feature command coordination, or subscription ownership.
+Monster generation filters have one canonical owner: Encounter. Catalog keeps
+only the unfinished editor value required to show invalid or not-yet-debounced
+input. An accepted filter command returns or publishes its revision; the
+Creature query records that revision so late readback cannot replace newer
+visible work.
 
-`CatalogTableScaffold` owns shared header, result status, table behavior,
-stable-id selection, optional paging, keyboard interaction, accessibility, and
-the action-column layout. Section renderers supply columns, filters, and the
-available typed actions. The seven section roots remain alive for the active
-Catalog binding so switching sections does not discard local view state.
+## JavaFX Presentation
 
-## Lifecycle And Concurrency
+`CatalogSectionRenderer` is the only section result and control renderer. It
+constructs the selected section from the sealed filter specifications, column
+specifications, paging capability, action specifications, and immutable state.
+Changing section rebinds or rebuilds this one renderer; application state, not
+seven retained node trees, preserves work.
 
-Activating Catalog registers provider subscriptions and applies each current
-snapshot before accepting later publications. Deactivating Catalog unregisters
-subscriptions, invalidates in-flight request generations, and retains immutable
-workspace state for later reactivation. Closing the Catalog component releases
-all remaining resources.
+`CatalogControlFactory` owns the approved Catalog visual roles and creates all
+interactive controls. Section definitions cannot construct controls or assign
+styles. The renderer owns:
 
-Persistence- or file-backed provider calls remain non-blocking. Each request
-captures a local revision; a result may publish only when its revision is still
-current. Application publication uses the feature-neutral UI dispatcher before
-the JavaFX adapter mutates controls.
+- the persistent section selector and compact wrapping controls area
+- inside-label search, selection, range, and filter controls
+- active-filter chips and clear behavior
+- status, empty and failure presentation, retry, table, paging, keyboard,
+  accessibility, and stable-id selection
+- the shared 28 px control and 12 px regular type contract, plus the compact
+  chip information style
 
-## Decisions And Rejected Alternatives
+Section-specific behavior is limited to typed data, columns, filters, and
+actions. A one-off JavaFX escape hatch is not a supported section capability.
 
-- A JavaFX-only aggregator is rejected because Catalog already owns query,
-  lifecycle, projection, and handoff use cases.
-- A Catalog domain or copied provider database is rejected because it would
-  duplicate provider truth and introduce synchronization invariants without a
-  user need.
-- A dynamic section plugin registry is rejected because seven statically known
-  sections do not justify discovery or runtime extension machinery.
-- Broad data-source and callback bags are rejected because they hide per-section
-  dependencies and permit silent no-op behavior.
-- Long-lived compatibility adapters are rejected. The migration may retain one
-  internal adapter only under the deletion budget owned by the delivery
-  roadmap.
+## Persistence, Execution, And Failure Isolation
 
-## Enforcement And Verification Ownership
+Catalog never receives `SqliteDatabase`, JDBC, paths, or migration plans.
+Provider services are created only after their owner-scoped storage readiness
+is known under the [persistence lifecycle](../../project/contract/persistence-lifecycle.md).
 
-`architectureTest` mechanically enforces valid feature roles, foreign API-only
-dependencies, and the absence of JavaFX dependencies from Catalog application
-code. UI behavior tests own the seven-section workspace, state preservation,
-stable-id selection, visible result states, and explicit handoff behavior.
-Lifecycle tests own balanced subscription and request invalidation behavior.
-Final visual and interaction acceptance remains owner manual testing.
+Persistence-backed queries run outside the JavaFX thread. Independent provider
+reads may execute concurrently on a bounded I/O executor; ordered writes are
+serialized by their owning feature or store, not by one application-wide queue.
+One provider's newer schema, migration failure, unavailable source, or query
+failure becomes only that section's typed unavailable or failed state.
+
+Diagnostics remain payload-free and local. A visible failure carries a stable
+local diagnostic id and retryability, not SQL, paths, or exception messages.
+
+## Composition And Enforcement
+
+`CatalogFeature` receives the seven definitions plus the UI dispatcher and
+constructs the workspace and contribution. `app` explicitly supplies provider
+APIs and outward routes; neither Catalog nor shell locates services.
+
+Permanent architecture proof enforces:
+
+- Catalog application imports provider APIs but no foreign implementation,
+  JavaFX, JDBC, or persistence package
+- Catalog has no domain or SQLite role
+- exactly seven definitions are explicitly composed
+- section definitions contain no JavaFX nodes or style decisions
+- only the shared renderer and control factory construct Catalog controls and tables
+- no section-specific lifecycle controller or JavaFX section class returns
+- inactive sections cannot acquire subscriptions or issue provider calls in
+  production-route lifecycle tests
+
+Automated checks are evidence for these boundaries, not authority to retain a
+superseded topology.
+
+## Rejected Alternatives
+
+- Seven controllers and seven JavaFX section roots are rejected because they
+  duplicate one browsing lifecycle and one presentation grammar.
+- Eager activation is rejected because invisible sections have no user work to
+  perform and failures or latency must remain isolated.
+- A dynamic form map is rejected because it sacrifices typed update semantics.
+- A Catalog-owned read database is rejected because it duplicates provider
+  truth and creates synchronization invariants.
+- One global serial execution lane is rejected because independent reads and
+  failures do not share an ordering invariant.
 
 ## References
 
 - [Catalog Requirements](../requirements/requirements-catalog.md)
+- [Catalog Greenfield Roadmap](../delivery/roadmap-catalog-greenfield.md)
+- [Persistence Lifecycle](../../project/contract/persistence-lifecycle.md)
 - [Source Architecture](../../project/architecture/source-architecture.md)
 - [Feature Boundaries](../../project/architecture/patterns/feature-boundaries.md)
 - [Shell Layer](../../project/architecture/patterns/shell-layer.md)
