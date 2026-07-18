@@ -9,13 +9,13 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 
 /** Persistent tabular reference section with explicit, non-mutating row actions. */
-final class ReferenceCatalogSection<T> implements CatalogSection {
+public final class ReferenceCatalogSection<T> implements CatalogSection {
 
     private final CatalogSectionId id;
     private final VBox controls;
     private final CatalogSectionFrame<T> content;
 
-    ReferenceCatalogSection(
+    public ReferenceCatalogSection(
             CatalogSectionId id,
             String emptyText,
             Function<T, String> label,
@@ -41,7 +41,7 @@ final class ReferenceCatalogSection<T> implements CatalogSection {
         controls.getStyleClass().add("catalog-section-intro");
     }
 
-    ReferenceCatalogSection(
+    public ReferenceCatalogSection(
             CatalogSectionId id,
             String emptyText,
             Function<T, String> label,
@@ -76,11 +76,11 @@ final class ReferenceCatalogSection<T> implements CatalogSection {
         return content;
     }
 
-    void addAction(String title, String buttonText, Consumer<T> action) {
+    public void addAction(String title, String buttonText, Consumer<T> action) {
         content.addActionColumn(title, buttonText, action);
     }
 
-    void apply(List<T> next) {
+    public void apply(List<T> next) {
         T selected = content.table().getSelectionModel().getSelectedItem();
         content.apply(next);
         if (selected != null && content.table().getItems().contains(selected)) {

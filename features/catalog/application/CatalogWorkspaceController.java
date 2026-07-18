@@ -2,12 +2,10 @@ package features.catalog.application;
 
 import features.creatures.api.CreatureCatalogQueryApi;
 import features.creatures.api.CreatureReferenceIndexModel;
-import features.encounter.api.EncounterBuilderInputsModel;
+import features.encounter.api.EncounterPoolFiltersModel;
 import features.encounter.api.SavedEncounterPlanListModel;
 import features.encountertable.api.EncounterTableApi;
 import features.encountertable.api.EncounterTableCatalogModel;
-import features.creatures.api.CreatureCatalogPageResult;
-import features.creatures.api.CreatureFilterOptionsResult;
 import features.items.api.ItemsCatalogApi;
 import features.worldplanner.api.WorldPlannerSnapshotModel;
 import java.util.List;
@@ -34,17 +32,26 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
 
     public CatalogWorkspaceController(
             CreatureCatalogQueryApi creatureQueries,
-            EncounterBuilderInputsModel encounterPoolFilters,
+            EncounterPoolFiltersModel encounterPoolFilters,
             ItemsCatalogApi itemCatalog,
             SavedEncounterPlanListModel savedPlans,
             CreatureReferenceIndexModel creatureReferences,
             WorldPlannerSnapshotModel world,
             EncounterTableApi encounterTableCommands,
             EncounterTableCatalogModel encounterTableCatalog,
-            UiDispatcher publicationDispatcher
+            UiDispatcher publicationDispatcher,
+            CatalogApplicationRoutes routes
     ) {
         dispatcher = Objects.requireNonNull(publicationDispatcher, "publicationDispatcher");
-        monsters = new MonsterCatalogController(creatureQueries, encounterPoolFilters, this::sectionChanged);
+        CatalogApplicationRoutes requiredRoutes = Objects.requireNonNull(routes, "routes");
+        monsters = new MonsterCatalogController(
+                creatureQueries,
+                encounterPoolFilters,
+                requiredRoutes.creatureInspector(),
+                requiredRoutes.encounter(),
+                requiredRoutes.scene(),
+                dispatcher,
+                this::sectionChanged);
         items = new ItemsCatalogController(itemCatalog, this::sectionChanged);
         savedEncounters = new SavedEncounterCatalogController(savedPlans, this::sectionChanged);
         worldReferences = new WorldReferenceCatalogController(creatureReferences, world, this::sectionChanged);
@@ -56,10 +63,6 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
 
     public CatalogWorkspacePublication publication() {
         return publication;
-    }
-
-    public CreatureCatalogQueryApi creatureQueries() {
-        return monsters.queries();
     }
 
     public ItemsCatalogApi itemCatalog() {
@@ -75,12 +78,8 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
         publish();
     }
 
-    public CatalogRequestToken beginMonsterSearch() {
-        return requestEpoch.begin(CatalogRequestToken.RequestKind.MONSTER_SEARCH);
-    }
-
-    public CatalogRequestToken beginMonsterFilterOptions() {
-        return requestEpoch.begin(CatalogRequestToken.RequestKind.MONSTER_FILTER_OPTIONS);
+    public void acceptMonsterIntent(MonsterCatalogIntent intent) {
+        monsters.accept(intent);
     }
 
     public CatalogRequestToken beginItemsFilterOptions() {
@@ -110,14 +109,6 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
     public void complete(CatalogRequestToken token, Runnable acceptedResult) {
         Objects.requireNonNull(acceptedResult, "acceptedResult");
         dispatcher.dispatch(() -> requestEpoch.runIfAccepted(token, acceptedResult));
-    }
-
-    public void monsterSearchCompleted(CreatureCatalogPageResult result, Throwable failure) {
-        monsters.applySearchResult(result, failure);
-    }
-
-    public void monsterFilterOptionsCompleted(CreatureFilterOptionsResult result, Throwable failure) {
-        monsters.applyFilterOptions(result, failure);
     }
 
     public void itemsFilterOptionsCompleted(ItemsCatalogApi.FilterOptionsResult result, Throwable failure) {

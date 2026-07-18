@@ -182,7 +182,7 @@ public final class AppBootstrap implements AutoCloseable {
         CatalogFeature.Component catalog = CatalogFeature.create(
                 new CatalogProviders(
                         new CatalogProviders.MonsterProviders(
-                                creatures.catalogQueries(), encounter.builderInputs()),
+                                creatures.catalogQueries(), encounter.poolFilters()),
                         new CatalogProviders.ItemsProviders(items.catalog()),
                         new CatalogProviders.SavedEncounterProviders(encounter.savedPlans()),
                         new CatalogProviders.WorldReferenceProviders(
@@ -276,17 +276,17 @@ public final class AppBootstrap implements AutoCloseable {
 
             @Override
             public void useFactionSource(long factionId) {
-                updatePoolFilters(withFaction(encounter.builderInputs().current().poolFilters(), factionId));
+                updatePoolFilters(withFaction(encounter.poolFilters().current(), factionId));
             }
 
             @Override
             public void useLocationSource(long locationId) {
-                updatePoolFilters(withLocation(encounter.builderInputs().current().poolFilters(), locationId));
+                updatePoolFilters(withLocation(encounter.poolFilters().current(), locationId));
             }
 
             @Override
             public void useEncounterTableSource(long tableId) {
-                updatePoolFilters(withTable(encounter.builderInputs().current().poolFilters(), tableId));
+                updatePoolFilters(withTable(encounter.poolFilters().current(), tableId));
             }
 
             @Override
@@ -313,11 +313,7 @@ public final class AppBootstrap implements AutoCloseable {
             }
         };
         return new CatalogRoutes(
-                creatureId -> {
-                    creatures.application().selectCreatureDetail(
-                            new features.creatures.api.SelectCreatureDetailCommand(creatureId));
-                    creatures.openInspector(inspector, creatureId);
-                },
+                creatureId -> creatures.openInspector(inspector, creatureId),
                 detail -> items.openInspector(inspector, detail),
                 worldInspectors,
                 encounterHandoff,

@@ -330,7 +330,7 @@ public final class SessionPlannerShellLayoutTest {
         return CatalogFeature.create(
                 new CatalogProviders(
                         new CatalogProviders.MonsterProviders(
-                                services.creatures().catalogQueries(), services.encounter().builderInputs()),
+                                services.creatures().catalogQueries(), services.encounter().poolFilters()),
                         new CatalogProviders.ItemsProviders(unavailableItems()),
                         new CatalogProviders.SavedEncounterProviders(services.encounter().savedPlans()),
                         new CatalogProviders.WorldReferenceProviders(

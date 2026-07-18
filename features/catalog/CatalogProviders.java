@@ -2,7 +2,7 @@ package features.catalog;
 
 import features.creatures.api.CreatureCatalogQueryApi;
 import features.creatures.api.CreatureReferenceIndexModel;
-import features.encounter.api.EncounterBuilderInputsModel;
+import features.encounter.api.EncounterPoolFiltersModel;
 import features.encounter.api.SavedEncounterPlanListModel;
 import features.encountertable.api.EncounterTableApi;
 import features.encountertable.api.EncounterTableCatalogModel;
@@ -32,11 +32,11 @@ public record CatalogProviders(
 
     public record MonsterProviders(
             CreatureCatalogQueryApi queries,
-            EncounterBuilderInputsModel encounterPoolFilters
+            EncounterPoolFiltersModel poolFilters
     ) {
         public MonsterProviders {
             queries = Objects.requireNonNull(queries, "queries");
-            encounterPoolFilters = Objects.requireNonNull(encounterPoolFilters, "encounterPoolFilters");
+            poolFilters = Objects.requireNonNull(poolFilters, "poolFilters");
         }
     }
 

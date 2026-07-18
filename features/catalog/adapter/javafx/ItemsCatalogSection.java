@@ -24,7 +24,7 @@ import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
 
 /** Persistent Items query controls and result surface. */
-final class ItemsCatalogSection implements CatalogSection {
+public final class ItemsCatalogSection implements CatalogSection {
 
     private static final int PAGE_SIZE = 50;
     private static final String ALL = "Alle";
@@ -54,7 +54,7 @@ final class ItemsCatalogSection implements CatalogSection {
     private int totalCount;
     private boolean activated;
 
-    ItemsCatalogSection(
+    public ItemsCatalogSection(
             ItemsCatalogApi items,
             ItemInspectorRoute itemInspector,
             CatalogWorkspaceController controller

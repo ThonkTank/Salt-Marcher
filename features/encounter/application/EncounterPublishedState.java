@@ -8,6 +8,7 @@ import features.encounter.domain.session.EncounterSessionPublicationData;
 import features.encounter.api.EncounterBuilderInputs;
 import features.encounter.api.EncounterBuilderInputsModel;
 import features.encounter.api.EncounterPlanBudgetModel;
+import features.encounter.api.EncounterPoolFiltersModel;
 import features.encounter.api.EncounterPlanBudgetResult;
 import features.encounter.api.EncounterStateModel;
 import features.encounter.api.EncounterStateSnapshot;
@@ -30,6 +31,7 @@ public final class EncounterPublishedState {
     private final PublishedState<EncounterPlanBudgetResult> planBudget;
     private final EncounterStateModel stateModel;
     private final EncounterBuilderInputsModel builderInputsModel;
+    private final EncounterPoolFiltersModel poolFiltersModel;
     private final EncounterTuningPreviewModel tuningPreviewModel;
     private final SavedEncounterPlanListModel savedPlansModel;
     private final EncounterPlanBudgetModel planBudgetModel;
@@ -42,6 +44,9 @@ public final class EncounterPublishedState {
         planBudget = new PublishedState<>(EncounterProjection.emptyPlanBudget(), dispatcher);
         stateModel = new EncounterStateModel(state::current, state::subscribe);
         builderInputsModel = new EncounterBuilderInputsModel(builderInputs::current, builderInputs::subscribe);
+        poolFiltersModel = new EncounterPoolFiltersModel(
+                () -> builderInputs.current().poolFilters(),
+                listener -> builderInputs.subscribe(inputs -> listener.accept(inputs.poolFilters())));
         tuningPreviewModel = new EncounterTuningPreviewModel(tuningPreview::current, tuningPreview::subscribe);
         savedPlansModel = new SavedEncounterPlanListModel(savedPlans::current, savedPlans::subscribe);
         planBudgetModel = new EncounterPlanBudgetModel(planBudget::current, planBudget::subscribe);
@@ -53,6 +58,10 @@ public final class EncounterPublishedState {
 
     public EncounterBuilderInputsModel builderInputsModel() {
         return builderInputsModel;
+    }
+
+    public EncounterPoolFiltersModel poolFiltersModel() {
+        return poolFiltersModel;
     }
 
     public EncounterTuningPreviewModel tuningPreviewModel() {

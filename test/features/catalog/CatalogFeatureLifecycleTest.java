@@ -18,7 +18,7 @@ import features.creatures.api.CreatureReferenceIndexModel;
 import features.creatures.api.CreatureReferenceIndexResult;
 import features.creatures.api.CreatureReferenceIndexStatus;
 import features.encounter.api.EncounterBuilderInputs;
-import features.encounter.api.EncounterBuilderInputsModel;
+import features.encounter.api.EncounterPoolFiltersModel;
 import features.encounter.api.EncounterPoolFilters;
 import features.encounter.api.OpenSavedEncounterPlanResult;
 import features.encounter.api.SavedEncounterPlanListModel;
@@ -100,9 +100,16 @@ final class CatalogFeatureLifecycleTest {
             assertTracker(world, 1, 1);
             assertTracker(tables, 1, 1);
             CatalogWorkspaceState current = component.controller().publication().current();
-            assertEquals("published", current.monsters().encounterPoolFilters().poolFilters().nameQuery(),
+            assertEquals("published", current.monsters().filterDraft().nameQuery(),
                     "provider publication buffered during subscribe must apply only after current snapshot");
             assertEquals(1, builder.currentCalls.get());
+            long monsterRevision = current.monsters().revision();
+            creatures.emit(new CreatureReferenceIndexResult(
+                    CreatureReferenceIndexStatus.SUCCESS, 2L, List.of()));
+            world.emit(emptyWorld());
+            assertEquals(monsterRevision,
+                    component.controller().publication().current().monsters().revision(),
+                    "reference-index or Scene-facing world publication changed Monster state");
 
             binding.onDeactivate();
             assertActive(builder, 0);
@@ -212,8 +219,8 @@ final class CatalogFeatureLifecycleTest {
             int monsterOptionsBeforeSelection = queries.filterOptions.size();
             int monsterSearchesBeforeSelection = queries.searches.size();
             toggle(controls, "Katalogbereich Monster").fire();
-            assertEquals(monsterOptionsBeforeSelection + 1, queries.filterOptions.size());
-            assertEquals(monsterSearchesBeforeSelection + 1, queries.searches.size());
+            assertEquals(monsterOptionsBeforeSelection, queries.filterOptions.size());
+            assertEquals(monsterSearchesBeforeSelection, queries.searches.size());
             CompletableFuture<CreatureFilterOptionsResult> rejectedMonsterOptions =
                     queries.filterOptions.getLast();
             CompletableFuture<CreatureCatalogPageResult> rejectedMonsterSearch = queries.searches.getLast();
@@ -250,7 +257,9 @@ final class CatalogFeatureLifecycleTest {
         };
         CatalogProviders providers = new CatalogProviders(
                 new CatalogProviders.MonsterProviders(
-                        queries, new EncounterBuilderInputsModel(builder::current, builder::subscribe)),
+                        queries, new EncounterPoolFiltersModel(
+                                () -> builder.current().poolFilters(),
+                                listener -> builder.subscribe(inputs -> listener.accept(inputs.poolFilters())))),
                 new CatalogProviders.ItemsProviders(items),
                 new CatalogProviders.SavedEncounterProviders(
                         new SavedEncounterPlanListModel(saved::current, saved::subscribe)),
@@ -393,6 +402,7 @@ final class CatalogFeatureLifecycleTest {
         private final AtomicInteger subscriptions = new AtomicInteger();
         private final AtomicInteger active = new AtomicInteger();
         private final AtomicInteger currentCalls = new AtomicInteger();
+        private Consumer<T> listener = ignored -> { };
 
         private TrackingSubscription(T current, T synchronousPublication) {
             this.current = current;
@@ -407,6 +417,7 @@ final class CatalogFeatureLifecycleTest {
         Runnable subscribe(Consumer<T> listener) {
             subscriptions.incrementAndGet();
             active.incrementAndGet();
+            this.listener = listener;
             if (synchronousPublication != null) {
                 listener.accept(synchronousPublication);
             }
@@ -414,8 +425,13 @@ final class CatalogFeatureLifecycleTest {
             return () -> {
                 if (open.compareAndSet(true, false)) {
                     active.decrementAndGet();
+                    this.listener = ignored -> { };
                 }
             };
+        }
+
+        void emit(T value) {
+            listener.accept(value);
         }
     }
 

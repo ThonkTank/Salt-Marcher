@@ -107,7 +107,7 @@ final class CatalogTestRuntime {
         CatalogFeature.Component catalog = CatalogFeature.create(
                 new CatalogProviders(
                         new CatalogProviders.MonsterProviders(
-                                creatures.catalogQueries(), encounter.builderInputs()),
+                                creatures.catalogQueries(), encounter.poolFilters()),
                         new CatalogProviders.ItemsProviders(unavailableItems()),
                         new CatalogProviders.SavedEncounterProviders(encounter.savedPlans()),
                         new CatalogProviders.WorldReferenceProviders(creatures.referenceIndex(), worldPlanner),
@@ -141,5 +141,10 @@ final class CatalogTestRuntime {
 
     features.encounter.api.EncounterBuilderInputsModel builderInputs() {
         return encounter.builderInputs();
+    }
+
+    void updatePoolFilters(features.encounter.api.EncounterPoolFilters filters) {
+        encounter.application().updatePoolFilters(
+                new features.encounter.api.UpdateEncounterPoolFiltersCommand(filters));
     }
 }
