@@ -25,10 +25,17 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 final class GenerationRunSqliteReader {
 
     Optional<GeneratedRun> load(Connection connection, String runId) throws SQLException {
+        return loadStored(connection, runId).map(StoredGeneratedRun::run);
+    }
+
+    Optional<StoredGeneratedRun> loadStored(Connection connection, String runId) throws SQLException {
         String sql = "SELECT * FROM " + SessionGenerationSchema.RUNS + " WHERE run_id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, runId);
@@ -44,14 +51,18 @@ final class GenerationRunSqliteReader {
                 RewardSummary rewards = new RewardSummary(
                         result.getLong("normal_actual_cp"), result.getLong("overstock_actual_cp"),
                         result.getInt("magic_count"));
-                return Optional.of(new GeneratedRun(
+                GeneratedRun run = new GeneratedRun(
                         runId, result.getString("engine_version"), result.getString("catalog_version"),
                         result.getString("catalog_hash"), result.getLong("seed"), loadParty(connection, runId),
                         session, loadTargets(connection, runId), loadEncounters(connection, runId),
                         loadTreasures(connection, runId), loadLoot(connection, runId), loadPacking(connection, runId),
-                        rewards, result.getString("formatted_text"), loadAudits(connection, runId)));
+                        rewards, result.getString("formatted_text"), loadAudits(connection, runId));
+                return Optional.of(new StoredGeneratedRun(run, result.getString("content_fingerprint")));
             }
         }
+    }
+
+    record StoredGeneratedRun(GeneratedRun run, @Nullable String storedFingerprint) {
     }
 
     private static List<PartyLevel> loadParty(Connection connection, String runId) throws SQLException {
@@ -95,8 +106,11 @@ final class GenerationRunSqliteReader {
                         new BigDecimal(rows.getString("boss_score"))));
             }
         }
+        Map<Integer, List<EncounterBlock>> blocks = loadBlocks(connection, runId);
         List<EncounterPlan> result = new ArrayList<>();
-        for (EncounterRow row : loaded) result.add(row.toPlan(loadBlocks(connection, runId, row.number())));
+        for (EncounterRow row : loaded) {
+            result.add(row.toPlan(blocks.getOrDefault(row.number(), List.of())));
+        }
         return List.copyOf(result);
     }
 
@@ -170,24 +184,28 @@ final class GenerationRunSqliteReader {
         }
     }
 
-    private static List<EncounterBlock> loadBlocks(Connection connection, String runId, int encounterNo)
+    private static Map<Integer, List<EncounterBlock>> loadBlocks(Connection connection, String runId)
             throws SQLException {
         String sql = "SELECT * FROM " + SessionGenerationSchema.ENCOUNTER_BLOCKS
-                + " WHERE run_id = ? AND encounter_no = ? ORDER BY block_order";
+                + " WHERE run_id = ? ORDER BY encounter_no, block_order";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, runId);
-            statement.setInt(2, encounterNo);
             try (ResultSet rows = statement.executeQuery()) {
-                List<EncounterBlock> result = new ArrayList<>();
-                int expectedOrder = 0;
+                Map<Integer, List<EncounterBlock>> mutable = new LinkedHashMap<>();
+                Map<Integer, Integer> expectedOrders = new LinkedHashMap<>();
                 while (rows.next()) {
-                    requireOrder(rows.getInt("block_order"), expectedOrder++, "encounter block");
-                    result.add(new EncounterBlock(
+                    int encounterNo = rows.getInt("encounter_no");
+                    int expectedOrder = expectedOrders.getOrDefault(encounterNo, 0);
+                    requireOrder(rows.getInt("block_order"), expectedOrder, "encounter block");
+                    expectedOrders.put(encounterNo, expectedOrder + 1);
+                    mutable.computeIfAbsent(encounterNo, ignored -> new ArrayList<>()).add(new EncounterBlock(
                             rows.getString("block_id"), EncounterRole.valueOf(rows.getString("role")),
                             rows.getInt("challenge_code"), rows.getString("challenge_label"),
                             rows.getLong("unit_xp"), rows.getInt("quantity")));
                 }
-                return List.copyOf(result);
+                Map<Integer, List<EncounterBlock>> result = new LinkedHashMap<>();
+                mutable.forEach((number, values) -> result.put(number, List.copyOf(values)));
+                return Map.copyOf(result);
             }
         }
     }

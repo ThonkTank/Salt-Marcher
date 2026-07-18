@@ -73,6 +73,49 @@ final class SqliteDatabaseTest {
     }
 
     @Test
+    void concurrentConnectionInitializationSerializesMigrationMetadataWithoutSerializingUse() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("concurrent-open.db");
+        AtomicInteger migrations = new AtomicInteger();
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { });
+                var workers = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            SqliteConnectionSource source = database.connections("concurrent", new SqliteMigration(1, connection -> {
+                migrations.incrementAndGet();
+                connection.createStatement().execute(
+                        "CREATE TABLE concurrent_rows(id INTEGER PRIMARY KEY, value TEXT NOT NULL)");
+            }));
+            CountDownLatch ready = new CountDownLatch(2);
+            CountDownLatch start = new CountDownLatch(1);
+            List<java.util.concurrent.Future<Void>> opened = new ArrayList<>();
+            for (int id = 1; id <= 2; id++) {
+                int rowId = id;
+                opened.add(workers.submit(() -> {
+                    ready.countDown();
+                    start.await();
+                    try (var connection = source.openConnection();
+                            var statement = connection.prepareStatement(
+                                    "INSERT INTO concurrent_rows(id, value) VALUES(?, ?)")) {
+                        statement.setInt(1, rowId);
+                        statement.setString(2, "row-" + rowId);
+                        statement.executeUpdate();
+                    }
+                    return null;
+                }));
+            }
+            ready.await();
+            start.countDown();
+            for (var openedConnection : opened) {
+                openedConnection.get();
+            }
+            assertEquals(1, migrations.get());
+            try (var connection = source.openConnection();
+                    var rows = connection.createStatement().executeQuery("SELECT COUNT(*) FROM concurrent_rows")) {
+                assertTrue(rows.next());
+                assertEquals(2, rows.getInt(1));
+            }
+        }
+    }
+
+    @Test
     void maintenanceBackupIsIntegrityCheckedAndRestoreTestedBeforePublication() throws Exception {
         Path databasePath = temporaryDirectory.resolve("maintenance.db");
         SqliteMigration migration = seedMigration();

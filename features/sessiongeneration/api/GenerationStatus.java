@@ -6,5 +6,6 @@ public enum GenerationStatus {
     INVALID_REQUEST,
     CATALOG_FAILURE,
     GENERATION_FAILURE,
+    IDENTITY_CONFLICT,
     STORAGE_FAILURE
 }

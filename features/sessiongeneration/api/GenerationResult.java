@@ -10,6 +10,7 @@ public record GenerationResult(
         String catalogVersion,
         String catalogContentHash,
         long seed,
+        List<PartyLevel> party,
         SessionSummary session,
         List<EncounterTarget> encounterTargets,
         List<Encounter> encounters,
@@ -26,6 +27,7 @@ public record GenerationResult(
         engineVersion = required(engineVersion, "engineVersion");
         catalogVersion = required(catalogVersion, "catalogVersion");
         catalogContentHash = required(catalogContentHash, "catalogContentHash");
+        party = List.copyOf(party);
         session = Objects.requireNonNull(session, "session");
         encounterTargets = List.copyOf(encounterTargets);
         encounters = List.copyOf(encounters);
@@ -35,6 +37,9 @@ public record GenerationResult(
         rewards = Objects.requireNonNull(rewards, "rewards");
         formattedText = Objects.requireNonNull(formattedText, "formattedText");
         audits = List.copyOf(audits);
+    }
+
+    public record PartyLevel(int level, int players) {
     }
 
     private static String required(String value, String name) {
@@ -73,6 +78,8 @@ public record GenerationResult(
             String monsterSummary,
             int monsterCount,
             BigDecimal multiplier,
+            int maxChallengeCode,
+            BigDecimal bossScore,
             List<EncounterBlock> blocks
     ) {
 
@@ -82,6 +89,7 @@ public record GenerationResult(
     }
 
     public record EncounterBlock(
+            String id,
             EncounterRole requestedRole,
             int challengeCode,
             String challengeLabel,

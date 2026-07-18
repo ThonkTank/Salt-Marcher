@@ -1,10 +1,17 @@
 package features.sessiongeneration.adapter.sqlite.persistence;
 
-import features.sessiongeneration.domain.generation.GeneratedRun;
-import features.sessiongeneration.domain.generation.GenerationRunRepository;
+import features.sessiongeneration.adapter.sqlite.persistence.GenerationRunSqliteReader.StoredGeneratedRun;
+import features.sessiongeneration.domain.generation.GeneratedRunDraft;
 import features.sessiongeneration.domain.generation.GeneratedRunValidator;
+import features.sessiongeneration.domain.generation.GenerationContentFingerprint;
+import features.sessiongeneration.domain.generation.GenerationRewardBatch;
+import features.sessiongeneration.domain.generation.GenerationRewardReference;
+import features.sessiongeneration.domain.generation.GenerationRunCommitResult;
+import features.sessiongeneration.domain.generation.GenerationRunIdentityConflictException;
+import features.sessiongeneration.domain.generation.GenerationRunRepository;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import platform.persistence.SqliteConnectionSource;
@@ -14,66 +21,113 @@ import platform.persistence.SqliteMigration;
 public final class SqliteGenerationRunRepository implements GenerationRunRepository {
 
     public static final String OWNER = "session-generation";
-    public static final int SCHEMA_VERSION = 1;
+    public static final int SCHEMA_VERSION = 2;
+    static final int RUN_SCHEMA_VERSION = 1;
 
     private final SqliteConnectionSource connections;
     private final GenerationRunSqliteReader reader = new GenerationRunSqliteReader();
     private final GenerationRunSqliteWriter writer = new GenerationRunSqliteWriter();
+    private final GenerationRewardSqliteReader rewardReader = new GenerationRewardSqliteReader();
     private final GeneratedRunValidator validator = new GeneratedRunValidator();
 
     public SqliteGenerationRunRepository(SqliteDatabase database) {
         SessionGenerationSchema schema = new SessionGenerationSchema();
         connections = Objects.requireNonNull(database, "database").connections(
                 OWNER,
-                new SqliteMigration(SCHEMA_VERSION, schema::migrate));
+                new SqliteMigration(1, schema::migrateV1),
+                new SqliteMigration(2, schema::migrateV2));
+    }
+
+    SqliteGenerationRunRepository(SqliteConnectionSource connections) {
+        this.connections = Objects.requireNonNull(connections, "connections");
     }
 
     @Override
-    public GeneratedRun save(GeneratedRun run) {
-        Objects.requireNonNull(run, "run");
-        validator.validate(run);
+    public GenerationRunCommitResult commit(GeneratedRunDraft draft) {
+        validateDraft(draft);
         try (Connection connection = connections.openConnection()) {
-            return saveTransaction(connection, run);
+            return commitTransaction(connection, draft);
+        } catch (GenerationRunIdentityConflictException exception) {
+            throw exception;
         } catch (SQLException exception) {
-            throw new IllegalStateException("Failed to persist session-generation run.", exception);
+            throw new IllegalStateException("Failed to commit session-generation run.", exception);
         }
     }
 
     @Override
-    public Optional<GeneratedRun> load(String runId) {
+    public Optional<GeneratedRunDraft> load(String runId) {
         Objects.requireNonNull(runId, "runId");
         try (Connection connection = connections.openConnection()) {
-            Optional<GeneratedRun> loaded = reader.load(connection, runId);
-            loaded.ifPresent(validator::validate);
-            return loaded;
+            return reader.loadStored(connection, runId).map(this::validatedDraft);
         } catch (SQLException | IllegalArgumentException exception) {
             throw new IllegalStateException("Failed to load session-generation run.", exception);
         }
     }
 
-    private GeneratedRun saveTransaction(Connection connection, GeneratedRun run) throws SQLException {
+    @Override
+    public GenerationRewardBatch loadRewards(List<GenerationRewardReference> references) {
+        List<GenerationRewardReference> safeReferences = List.copyOf(references);
+        if (safeReferences.isEmpty()) {
+            return new GenerationRewardBatch(List.of(), List.of());
+        }
+        try (Connection connection = connections.openConnection()) {
+            return rewardReader.load(connection, safeReferences);
+        } catch (SQLException | IllegalArgumentException exception) {
+            throw new IllegalStateException("Failed to load session-generation rewards.", exception);
+        }
+    }
+
+    private GenerationRunCommitResult commitTransaction(Connection connection, GeneratedRunDraft draft)
+            throws SQLException {
         boolean autoCommit = connection.getAutoCommit();
         connection.setAutoCommit(false);
         try {
-            Optional<GeneratedRun> existing = reader.load(connection, run.runId());
-            if (existing.isPresent()) {
-                validator.validate(existing.get());
+            try {
+                // Insert-first acquires SQLite write intent without creating a stale read snapshot.
+                // A concurrent/equal identity resolves through the root uniqueness constraint,
+                // after which rollback plus canonical reread decides already-present vs conflict.
+                writer.insert(connection, draft);
+                connection.commit();
+                return new GenerationRunCommitResult(draft, GenerationRunCommitResult.Outcome.INSERTED);
+            } catch (SQLException insertionFailure) {
                 connection.rollback();
-                if (!existing.get().equals(run)) {
-                    throw new IllegalStateException("immutable generation run id collision");
+                Optional<StoredGeneratedRun> raced = reader.loadStored(connection, draft.run().runId());
+                if (raced.isPresent()) {
+                    return decideExisting(raced.orElseThrow(), draft);
                 }
-                return existing.get();
+                throw insertionFailure;
             }
-            writer.insert(connection, run);
-            connection.commit();
-            GeneratedRun stored = reader.load(connection, run.runId()).orElseThrow();
-            validator.validate(stored);
-            return stored;
         } catch (SQLException | RuntimeException exception) {
             connection.rollback();
             throw exception;
         } finally {
             connection.setAutoCommit(autoCommit);
+        }
+    }
+
+    private GenerationRunCommitResult decideExisting(StoredGeneratedRun stored, GeneratedRunDraft requested) {
+        GeneratedRunDraft existing = validatedDraft(stored);
+        if (!existing.contentFingerprint().equals(requested.contentFingerprint())) {
+            throw new GenerationRunIdentityConflictException(requested.run().runId());
+        }
+        return new GenerationRunCommitResult(existing, GenerationRunCommitResult.Outcome.ALREADY_PRESENT);
+    }
+
+    private GeneratedRunDraft validatedDraft(StoredGeneratedRun stored) {
+        validator.validate(stored.run());
+        String derived = GenerationContentFingerprint.v1(stored.run());
+        if (stored.storedFingerprint() != null && !stored.storedFingerprint().equals(derived)) {
+            throw new IllegalStateException("stored generation content fingerprint does not match semantic rows");
+        }
+        return new GeneratedRunDraft(stored.run(), derived);
+    }
+
+    private void validateDraft(GeneratedRunDraft draft) {
+        Objects.requireNonNull(draft, "draft");
+        validator.validate(draft.run());
+        String derived = GenerationContentFingerprint.v1(draft.run());
+        if (!draft.contentFingerprint().equals(derived)) {
+            throw new IllegalStateException("generation draft content fingerprint does not match semantic content");
         }
     }
 }

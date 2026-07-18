@@ -2,6 +2,7 @@ package features.sessiongeneration.adapter.resource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.charset.StandardCharsets;
@@ -14,6 +15,8 @@ import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 final class TsvGenerationCatalogManifestTest {
@@ -36,6 +39,44 @@ final class TsvGenerationCatalogManifestTest {
 
         assertEquals(ARTIFACT_HASH, snapshot.contentHash());
         assertNotEquals(SOURCE_HASH, snapshot.contentHash());
+    }
+
+    @Test
+    void oneServiceInstanceReusesExactlyOneValidatedSnapshotForItsContentIdentity() {
+        AtomicInteger reads = new AtomicInteger();
+        TsvGenerationCatalog.ResourceLoader classpath = classpath();
+        TsvGenerationCatalog catalog = new TsvGenerationCatalog(file -> {
+            reads.incrementAndGet();
+            return classpath.read(file);
+        });
+
+        var first = catalog.load();
+        int readsAfterValidation = reads.get();
+        var second = catalog.load();
+
+        assertSame(first, second);
+        assertEquals(ARTIFACT_HASH, first.contentHash());
+        assertEquals(readsAfterValidation, reads.get());
+    }
+
+    @Test
+    void failedValidationIsNeverPublishedAndAValidRetryCanBecomeTheCachedSnapshot() {
+        AtomicBoolean firstManifest = new AtomicBoolean(true);
+        TsvGenerationCatalog.ResourceLoader classpath = classpath();
+        TsvGenerationCatalog catalog = new TsvGenerationCatalog(file -> {
+            byte[] content = classpath.read(file);
+            if (file.equals("manifest.json") && firstManifest.getAndSet(false)) {
+                return new String(content, StandardCharsets.UTF_8)
+                        .replace(ARTIFACT_HASH, "0".repeat(64)).getBytes(StandardCharsets.UTF_8);
+            }
+            return content;
+        });
+
+        assertThrows(IllegalStateException.class, catalog::load);
+        var validated = catalog.load();
+
+        assertEquals(ARTIFACT_HASH, validated.contentHash());
+        assertSame(validated, catalog.load());
     }
 
     @Test

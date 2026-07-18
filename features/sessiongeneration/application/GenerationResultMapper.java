@@ -3,6 +3,7 @@ package features.sessiongeneration.application;
 import features.sessiongeneration.api.GenerationResult;
 import features.sessiongeneration.api.GenerationRunId;
 import features.sessiongeneration.domain.generation.GeneratedRun;
+import features.sessiongeneration.domain.generation.GeneratedRunDraft;
 
 final class GenerationResultMapper {
 
@@ -16,6 +17,8 @@ final class GenerationResultMapper {
                 run.catalogVersion(),
                 run.catalogContentHash(),
                 run.seed(),
+                run.party().stream().map(value -> new GenerationResult.PartyLevel(
+                        value.level(), value.players())).toList(),
                 new GenerationResult.SessionSummary(
                         run.session().partyCount(), run.session().adventureDayFraction(),
                         run.session().encounterCount(), run.session().dayXpBudget(),
@@ -29,7 +32,9 @@ final class GenerationResultMapper {
                         encounter.encounterNumber(), encounter.targetXp(), encounter.adjustedXp(),
                         GenerationResult.Difficulty.valueOf(encounter.difficulty().name()), encounter.candidateId(),
                         encounter.monsterSummary(), encounter.monsterCount(), encounter.multiplier(),
+                        encounter.maxChallengeCode(), encounter.bossScore(),
                         encounter.blocks().stream().map(block -> new GenerationResult.EncounterBlock(
+                                block.id(),
                                 encounterRole(block.role()),
                                 block.challengeCode(), block.challengeLabel(), block.unitXp(), block.quantity()))
                                 .toList())).toList(),
@@ -51,6 +56,51 @@ final class GenerationResultMapper {
                 run.audits().stream().map(audit -> new GenerationResult.Audit(
                         audit.code(), GenerationResult.AuditStatus.valueOf(audit.status().name()), audit.detail()))
                         .toList());
+    }
+
+    static GeneratedRunDraft toDomain(features.sessiongeneration.api.GenerationDraft draft) {
+        GenerationResult result = draft.result();
+        GeneratedRun run = new GeneratedRun(
+                result.runId().value(), result.engineVersion(), result.catalogVersion(), result.catalogContentHash(),
+                result.seed(),
+                result.party().stream().map(value -> new GeneratedRun.PartyLevel(
+                        value.level(), value.players())).toList(),
+                new GeneratedRun.SessionContext(
+                        result.session().partyCount(), result.session().adventureDayFraction(),
+                        result.session().encounterCount(), result.session().dayXpBudget(),
+                        result.session().sessionXpTarget(), result.session().averageLevel(),
+                        result.session().normalBudgetCp(), result.session().overstockBudgetCp(),
+                        result.session().nonMagicSlots(), result.session().normalMagic(),
+                        result.session().overstockMagic(), result.session().treasureCount()),
+                result.encounterTargets().stream().map(value -> new GeneratedRun.EncounterTarget(
+                        value.encounterNumber(), value.targetXp())).toList(),
+                result.encounters().stream().map(value -> new GeneratedRun.EncounterPlan(
+                        value.encounterNumber(), value.targetXp(), value.adjustedXp(),
+                        GeneratedRun.Difficulty.valueOf(value.difficulty().name()), value.candidateId(),
+                        value.monsterSummary(), value.monsterCount(), value.multiplier(), value.maxChallengeCode(),
+                        value.bossScore(), value.blocks().stream().map(block -> new GeneratedRun.EncounterBlock(
+                                block.id(), GeneratedRun.EncounterRole.valueOf(block.requestedRole().name()),
+                                block.challengeCode(), block.challengeLabel(), block.monsterXp(), block.count()))
+                                .toList())).toList(),
+                result.treasures().stream().map(value -> new GeneratedRun.TreasurePlan(
+                        value.treasureId(), GeneratedRun.StockClass.valueOf(value.stockClass().name()),
+                        GeneratedRun.RewardChannel.valueOf(value.channel().name()), value.anchorEncounterNumber(),
+                        value.theme(), value.magicType(), value.targetCp(), value.nonMagicSlots(), value.magicSlots()))
+                        .toList(),
+                result.lootItems().stream().map(value -> new GeneratedRun.LootLine(
+                        value.lineId(), value.treasureId(), GeneratedRun.LootRole.valueOf(value.role().name()),
+                        value.itemId(), value.text(), value.quantity(), value.unitCp(), value.actualCp(),
+                        value.totalCapacity(), value.allowedContainers(), value.magicRarity(), value.cursed())).toList(),
+                result.packing().stream().map(value -> new GeneratedRun.PackingRow(
+                        value.lineId(), value.treasureId(), value.containerType(), value.containerCount(),
+                        value.containerId(), value.valid())).toList(),
+                new GeneratedRun.RewardSummary(
+                        result.rewards().normalActualCp(), result.rewards().overstockActualCp(),
+                        result.rewards().magicCount()),
+                result.formattedText(),
+                result.audits().stream().map(value -> new GeneratedRun.Audit(
+                        value.code(), GeneratedRun.AuditStatus.valueOf(value.status().name()), value.detail())).toList());
+        return new GeneratedRunDraft(run, draft.contentFingerprint());
     }
 
     private static GenerationResult.EncounterRole encounterRole(GeneratedRun.EncounterRole role) {

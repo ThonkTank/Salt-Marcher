@@ -14,11 +14,16 @@ public final class SessionGenerationServiceAssembly {
     private SessionGenerationServiceAssembly() {
     }
 
-    public static SessionGenerationApi create(SqliteDatabase database, ExecutionLane executionLane) {
+    public static SessionGenerationApi create(
+            SqliteDatabase database,
+            ExecutionLane cpuLane,
+            ExecutionLane ioLane
+    ) {
         return new SessionGenerationService(
                 new TsvGenerationCatalog(),
                 new SqliteGenerationRunRepository(Objects.requireNonNull(database, "database")),
                 new SessionGenerationEngine(),
-                Objects.requireNonNull(executionLane, "executionLane"));
+                Objects.requireNonNull(cpuLane, "cpuLane"),
+                Objects.requireNonNull(ioLane, "ioLane"));
     }
 }
