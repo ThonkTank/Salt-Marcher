@@ -23,7 +23,8 @@ The feature publishes:
 - `SessionPlanId`, `SessionSceneId`, and optimistic `SessionRevision`
 - session catalog summaries and authored-session commands
 - `PrepareSessionCommand` and `PreparationStatus`
-- immutable session and scene summaries containing typed foreign references
+- one immutable, revisioned `SessionPlannerWorkspaceSnapshot`
+- one revisioned prepared-scene catalog for Scene consumers
 
 SQL rows, repositories, JavaFX controls, and foreign internal models are not
 part of the published language.
