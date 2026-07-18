@@ -1,181 +1,148 @@
-Status: Draft
-Owner: SaltMarcher Team
-Last Reviewed: 2026-07-16
-Source of Truth: User-facing behavior and acceptance criteria for the session
-planner session record and planning workspace.
+Status: Active Target
+Owner: Session Planner Feature
+Last Reviewed: 2026-07-18
+Source of Truth: Observable Session Planner behavior and acceptance criteria.
 
 # Session Planner Requirements
 
 ## Goal
 
-Provide one session-owned planning surface that:
+Give a game master one compact workspace for authoring and preparing a session.
+The planner MUST support manual planning and one-click deterministic preparation
+that produces editable scenes with concrete saved encounters and structured
+generated rewards.
 
-- creates or loads one persisted session plan
-- stores session-local participant references without mutating party
-  membership
-- uses those session participants as the planning baseline
-- stores how many encounter days the session covers
-- stores ordered session-owned scenes with title, notes, and an optional World
-  Planner location reference
-- lets a scene optionally reference one saved encounter plan; scenes are not
-  encounters and may exist without an encounter
-- shows the session XP budget and the remaining or exceeded amount
-- attaches saved encounter plans as optional scene encounter references
-- recommends how many short and long rests the planned encounter XP implies
-- lets the user place rests between planned scenes
-- previews deterministic session generation before it changes the authored plan
-- applies a current preview as encounter-plan and generated-reward references
+## Authored Planning
+
+The user can:
+
+- create, open, rename, and delete persisted session plans
+- add or remove session participants without changing Party membership
+- set the adventure-day fraction used for planning
+- add, edit, remove, and reorder session-owned scenes
+- give a scene a title, notes, and optional World Planner location
+- attach or detach one saved Encounter plan through an action on the selected
+  scene
+- allocate encounter budget per encounter-linked scene
+- see session XP budget, planned XP, remaining or exceeded XP, and recommended
+  rests
+- place short and long rests only between adjacent scenes
+- record manual loot notes without presenting them as generated loot
+- select a scene and edit all planner-owned fields after generation
+
+Scenes exist independently of encounters. Encounter rosters, creature details,
+party members, locations, and generated reward contents remain owned by their
+source features.
+
+## Compact Workspace
+
+The Session Planner is one master-detail workspace:
+
+- the main area shows the ordered scene list and the selected scene inspector
+- the controls slot uses one compact preparation toolbar rather than nested
+  cards
+- session selection and session actions, participant summary, adventure-day
+  input, optional encounter count, Generate, progress, and failure status fit
+  in that toolbar
+- participant detail may expand on demand without permanently consuming the
+  controls slot
+- saved Encounter plans are searched and attached from the selected scene;
+  the controls slot does not render the full saved-plan catalog
+- the state slot shows a compact budget and selection summary
+- generated rewards appear as structured reward cards in their owning scene;
+  manual loot notes remain visually and semantically distinct
+
+The Generate action MUST remain available without exposing a ruleset selector,
+engine version, catalog version, or an intermediate Apply button.
+
+## Session Preparation Flow
+
+1. The user selects a session and requests generation.
+2. If replacing existing scenes, rests, generated reward references, or manual
+   loot notes would be destructive, the planner asks for explicit confirmation
+   before work starts. An empty session needs no confirmation.
+3. Preparation runs asynchronously. The existing workspace remains usable and
+   shows stage progress while encounters and rewards are prepared.
+4. Success publishes the complete generated session as the current editable
+   planner state without an intermediate preview or second Apply action.
+
+If the selected session or relevant inputs change while preparation is
+running, the older result MUST NOT replace the newer authored state. Invalid
+input, generation failure, encounter resolution failure, or saving failure
+leaves the existing session unchanged and exposes an actionable stage status.
+A retry of the same request MUST NOT create visible duplicate runs, Encounter
+plans, scenes, or rewards.
+
+## Generated Output
+
+Every generated encounter scene MUST reference a real Encounter-owned saved
+plan whose concrete roster contains stable creature identities and quantities.
+The scene shows at least the plan label, difficulty, adjusted XP, creature
+count, and concrete roster summary.
+
+Every generated reward MUST be visible as structured Session Generation truth,
+including its channel and generated item lines with quantities. Value, magic,
+curse, and packing facts are shown when present. Encounter-channel rewards
+attach to their generated encounter scene. Quest and environment rewards use
+encounter-free scenes. A generated reward MUST NOT be projected as a manual
+loot placeholder or reduced to a last-known label while its source is
+available.
+
+Generated scenes and planner-owned metadata are editable after preparation.
+Editing or removing a scene does not mutate or delete the immutable generation
+run or Encounter-owned saved plan.
+
+## Visible Preparation States
+
+- `idle`: no preparation is running
+- `confirming-replacement`: destructive replacement awaits the user's choice
+- `generating`: Session Generation is computing encounters and rewards
+- `resolving-encounters`: concrete Encounter rosters are being prepared
+- `saving`: the complete prepared result is being saved
+- `ready`: the authored session contains the completed result
+- `invalid`: current inputs cannot produce a session
+- `failed`: a stage failed and authored truth is unchanged
+
+The last stable workspace remains visible in every non-ready state.
 
 ## Non-Goals
 
-- editing encounter-plan rosters inside the session planner
-- mutating party membership when a character is added to or removed from a
-  session
-- copying encounter rosters, party character details, creature statblocks, or
-  loot internals into sessionplanner-owned truth
-- copying World Planner location details into sessionplanner-owned truth
-- deriving gold budgets from provisional heuristics
-- owning generation formulas, generated reward detail, or generated encounter
-  import
-- replacing the encounter state tab or the party dropdown
-- showing a generation ruleset selector or ruleset-version label
+- editing Encounter rosters or creature statblocks inside Session Planner
+- mutating Party membership
+- copying foreign domain internals into Session Planner persistence
+- exposing generation rulesets or catalog versions as user controls
+- a second generation tab or a long-lived preview workflow
+- deriving a gold budget from provisional heuristics
 
-## Primary User Flow
+## Performance Acceptance
 
-1. The user opens the Session Planner left-bar tab.
-2. The user creates a new session or opens an existing persisted session.
-3. The planner reads session-local participant refs plus the current foreign
-   party and encounter summaries needed for planning.
-4. The user adds or removes party characters from the session without changing
-   party membership.
-5. The user adds one or more scenes to the session.
-6. The user optionally links saved encounter plans to scenes.
-7. The user records scene title, notes, and an optional World Planner location
-   reference on each scene.
-8. The planner updates the planned XP total, remaining budget, and rest
-   recommendation.
-9. The user reorders scenes, adjusts budget allocations for encounter-linked
-   scenes, and places short or long rests between scenes.
-10. The user selects one session scene for the preparatory state-panel
-   context.
-11. The user requests a generation preview. The planner fingerprints the
-    current session identity and revision, resolved participant levels,
-    adventure-day fraction, optional encounter count, and seed.
-12. The user reviews the generated encounters, rewards, warnings, and audit
-    outcome. The preview does not mutate the session.
-13. If any fingerprint input changes, the preview remains visible as stale and
-    Apply is locked until the user regenerates.
-14. The user applies a current preview. Encounter first imports the complete
-    generated encounter batch atomically; after explicit destructive
-    confirmation Session Planner replaces the current scene, rest, and manual
-    loot-placeholder content with the returned plan references in generation
-    order and stable generated-reward references. Session identity,
-    participants, and adventure-day fraction remain unchanged.
-    Encounter-channel rewards attach to their generated encounter scenes;
-    quest and environment rewards create encounter-free session scenes.
-
-## Expected Capabilities
-
-- create or reopen a session-owned planning record
-- show session participant count, level spread, and planning readiness
-- show the total XP budget for the current session participants
-- show planned encounter XP, remaining XP, and over-budget XP when applicable
-- visually distinguish in-budget and over-budget planning states
-- show recommended short-rest and long-rest counts derived from the planned
-  encounter XP
-- show how many rests are currently placed in the timeline
-- add blank session-owned scenes without requiring an encounter plan
-- optionally attach saved encounter plans through the encounter public boundary
-  instead of touching encounter persistence directly
-- show scene cards with title, notes, optional World Planner location ID, and
-  encounter detail only when a saved encounter plan is linked
-- allow scene reordering
-- allow budget-percent changes per scene when an encounter plan is linked
-- allow short-rest or long-rest placement only in the gaps between scenes
-- preserve selected scene context for the preparatory state panel
-- allow loot placeholders that do not affect XP math and do not claim a gold
-  budget is already available
-- request a non-blocking Session Generation preview and keep the last stable
-  preview visible while a newer request is pending or fails
-- distinguish ready, stale, invalid, and failed generation states
-- lock Apply when the preview fingerprint differs from current inputs or when
-  a hard generation audit failed
-- show no ruleset selector or ruleset-version label
-- apply only the exact current generation identity, import all generated
-  encounters as one Encounter batch, and store reward references rather than
-  copied generated reward detail
-
-## Visible States
-
-Current state:
-
-- the first implementation is an open scaffold
-- the planner now persists a session catalog with stable session identity,
-  user-visible session names, and one current-session pointer as
-  planner-owned truth
-- scene rows now persist session-owned scene title, scene notes, optional World
-  Planner location reference, and optional encounter-plan reference
-- XP budget and rest recommendation are real party-based calculations
-- imported encounter-linked scene cards use real encounter-plan budget reads
-- gold budgeting remains a visible placeholder
-- loot placeholders are structural only
-- generated previews are derived runtime state and are not part of the authored
-  session until successfully applied
-
-Target state:
-
-- `sessionplanner` persists session-local planning truth as its own authored
-  record
-- later iterations may attach real loot and gold rules and richer encounter
-  composition controls without changing the owning feature boundary
-- applied generations add encounter-plan references and stable generated reward
-  references without transferring generation truth into Session Planner
+- Generate shows visible in-progress feedback by the next UI pulse and does not
+  freeze editing, selection, scrolling, or cancellation while work continues.
+- A newer preparation request or relevant session edit remains authoritative;
+  late completion from older work never replaces the visible workspace.
+- On the warmed reference desktop fixture, the canonical input of two level-3
+  and two level-4 participants, `0.6` adventure days, and three encounters MUST
+  publish the completed editable session within 2 seconds at p95 over 20 runs.
+  First-use initialization and schema migration are outside this warmed target.
 
 ## Acceptance Criteria
 
-- the session planner is a dedicated left-bar tab and not a dropdown or global
-  state tab
-- the planner can create or load a session-owned planning record instead of
-  rebuilding all state as transient-only runtime orchestration
-- the planner depends only on public party and encounter application-service
-  boundaries
-- linked encounter plans contribute real adjusted XP to the planner budget;
-  blank scenes contribute no XP
-- the planner stores only session-local references and planning allocations,
-  not foreign encounter rosters or party-character internals
-- scene location links store World Planner location IDs, not copied location
-  detail
-- the planner shows when linked encounter plans stay within the XP budget and
-  when they exceed it
-- recommended rests update when the imported encounter XP total changes
-- placed rests can appear only between adjacent scenes
-- loot placeholders stay visible while gold budgeting remains explicitly marked
-  as unavailable
-- requesting generation does not mutate scenes, rests, selections, encounter
-  plans, or generated reward references
-- a preview fingerprint covers session identity and revision plus every
-  generation input; any mismatch leaves the preview readable but locks Apply
-- a failed generation request keeps the last stable preview and authored
-  session unchanged
-- Apply is available only for a current preview whose hard audits pass
-- Encounter import succeeds for the whole generated batch before Session
-  Planner persists its scene and reward references; a partial import result is
-  never applied
-- persisted generated reward references contain only session scene identity,
-  typed Session Generation run identity, treasure identity, ordering, and a
-  last-known display label
-- quest and environment rewards become encounter-free Session scenes, while an
-  encounter-channel reward references its corresponding generated encounter
-  scene
-- removing a scene removes its generated reward references without deleting
-  the Session Generation run or Encounter-owned saved plan
-- the Session Planner generation UI shows no ruleset selector or ruleset label
+- the Session Planner is a dedicated left-bar tab with the compact
+  master-detail structure above
+- manual planning survives close and reopen
+- linked Encounter plans contribute real adjusted XP; blank scenes contribute
+  none
+- one Generate action produces concrete saved Encounter rosters and structured
+  generated rewards without a second Apply action
+- destructive replacement requires confirmation; failed or stale preparation
+  changes no authored session content
+- retry does not expose duplicate or partial generated content
+- the UI stays responsive and meets the warmed reference-fixture target
 
 ## References
 
-- [Session Planner Architecture](../architecture/architecture-session-planner.md) (line 1)
-- [Session Planner Persistence Contract](../contract/contract-session-planner-persistence.md) (line 1)
-- [Session Planner Domain Model](../domain/domain-session-planner.md) (line 1)
-- [Encounter Plan Budget Contract](../../encounter/contract/contract-encounter-plan-budget.md) (line 1)
+- [Domain](../domain/domain-session-planner.md)
+- [Persistence Contract](../contract/contract-session-planner-persistence.md)
+- [Architecture](../architecture/architecture-session-planner.md)
 - [Session Generation Requirements](../../sessiongeneration/requirements/requirements-session-generation.md)
-- [Encounter Generated Import Contract](../../encounter/contract/contract-encounter-generated-import.md)
+- [Encounter Requirements](../../encounter/requirements/requirements-encounter.md)

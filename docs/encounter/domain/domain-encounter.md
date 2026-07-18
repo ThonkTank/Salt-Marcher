@@ -1,239 +1,132 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-16
-Source of Truth: Encounter feature ownership, saved-plan write model, runtime
-generation policy, and domain invariants.
+Last Reviewed: 2026-07-18
+Source of Truth: Encounter ownership, write model, derived runtime state, and
+domain invariants.
 
 # Encounter Domain Model
 
-## Context Role
+## Context Role And Ownership
+
+Context Name: `Encounter`
 
 Context Role: Roster Truth Context
-Context Name: Encounter
 
-- `encounter` owns saved encounter-plan roster truth.
-- It also owns runtime encounter-generation policy for creating suggested
-  rosters from the active party, creature catalog, and encounter tables.
-- It does not own party truth, creature truth, or encounter-table membership.
-- It consumes foreign facts only through `PartyApi`, `CreaturesApi`,
-  `EncounterTableApi`, and `WorldPlannerApi`.
+Encounter owns saved encounter-plan roster truth and encounter-generation
+policy. Party membership, creature facts, encounter-table membership, World
+Planner facts, Session Generation rewards, and Session Planner scenes remain
+foreign truth.
 
 ## Published Language
 
-`EncounterApi` owns view-facing immutable runtime state plus shared request and
-chooser-display language.
+`EncounterApi` publishes Encounter-owned immutable language for:
 
-- immutable, revisioned `EncounterStateSnapshot`, `ApplyEncounterStateCommand`,
-  and typed command results
-- immutable, revisioned `EncounterBuilderInputs`,
-  `UpdateEncounterBuilderInputsCommand`, and typed update results
-- `EncounterTuningPreviewResult`
+- `EncounterPlanId`, `EncounterPlan`, saved-plan summaries, and planning facts
+- difficulty bands, thresholds, tuning choices, candidate diagnostics, and
+  generated alternatives
+- revisioned builder, initiative, combat, and result runtime state
+- ordered generated intents, prepared concrete roster summaries, generated
+  batch outcomes, and Encounter-number-to-plan mappings
 
-It also owns shared request/read vocabulary such as difficulty bands, tuning
-preview labels, one saved-plan chooser display carrier, and status enums.
+Public commands and foreign API results are translated before they enter
+Encounter policies or the write model. API carriers, repositories, persistence
+rows, and foreign internal models are not Encounter domain truth.
 
-Generated import publishes `GeneratedEncounterPlanSource`, ordered
-`GeneratedEncounterPlanSpec` and typed XP-and-role slots, plus one atomic import
-result mapping encounter numbers to saved-plan identities. These carriers are
-translation language; they do not become the saved-plan aggregate model.
+## Write Model
 
-`EncounterDifficultyBand.AUTO` and Auto tuning sentinels are public request
-language only. The application boundary resolves them into concrete generation
-values before invoking draft construction.
-
-Saved encounter plans publish only the chooser display language reused by the
-encounter builder. SessionPlanner-specific list and budget/detail facts leave
-the feature through `EncounterApi`; no second reply channel or repository is a
-cross-feature boundary. The chooser
-surface is intentionally thin and does not mirror the internal
-`EncounterPlanSummary` record. Creature details remain owned by the creatures
-context and are reloaded when a saved plan is opened.
-
-The generation and plan models MUST NOT depend on API carriers as invariant
-inputs. The application boundary translates public commands and foreign API results into
-encounter application values before invoking policies, factories, or plan
-ports.
-
-## Application Boundary
-
-The application boundary coordinates foreign party, creature, encounter-table,
-and world-planner inputs, translates foreign API results into encounter
-application values, and delegates generation or saved-plan work. It publishes
-only encounter-owned immutable, revisioned API state instead of exporting
-internal session carriers.
-
-Generation orchestration coordinates foreign APIs without owning their truth.
-A separate budget read exposes party-derived encounter thresholds without
-constructing a generated encounter. A saved-plan budget read exposes one plan
-as party-specific planning facts for downstream planning surfaces.
-The catalog tuning preview remains a read-only Encounter API result.
-
-Saved-plan use cases own save, list, and load orchestration through one
-feature-owned persistence port. The SQLite adapter persists plan and creature
-rows; the domain model keeps the saved roster invariant independent of storage
-shape.
-
-Generated-plan import resolves all typed slots through current creature facts,
-validates the full batch, and delegates one atomic batch write. Reward and
-Session Planner mutations remain outside Encounter.
-
-## Architecture Constraints
-
-- Encounter owns saved-plan roster truth, balancing, candidate narrowing, and
-  ranking behavior.
-- Application code owns orchestration and foreign-API coordination.
-- Domain code owns immutable generation facts, named balancing and ranking
-  policies, deterministic draft construction, and the saved-plan aggregate.
-- Package and helper decomposition inside those roles is an internal choice,
-  not a compatibility or architecture contract.
-
-## Write Model And Derived State
-
-Write Model: Saved Encounter Plans
-
-The encounter write model persists accepted encounter rosters as saved plans.
-Each saved plan owns:
+`EncounterPlan` is the Encounter write model and aggregate root. It owns:
 
 - stable plan identity
-- user-visible plan name
-- optional generated encounter label
-- ordered creature identity and quantity rows
-- optional generated origin containing engine version, generation-run
-  identity, encounter number, and normalized-spec fingerprint
+- user-visible plan name and optional generated encounter label
+- ordered `EncounterPlanCreature` values containing creature identity,
+  quantity, and last-known display name
+- optional immutable generated origin identifying the preparation, generation
+  run, engine meaning, Encounter number, and normalized roster
 
-It derives:
+An `EncounterPlan` contains at least one creature. It does not embed creature
+statblocks, party members, initiative, combat HP, generated rewards, packing,
+audits, session scenes, or dungeon placement.
 
-- party-specific encounter thresholds
-- encounter-ready candidate pools
-- encounter-table-constrained candidate pools
-- world-location and faction constrained encounter-table pools
-- finite world-faction stock caps for generated statblocks
-- role hints for encounter composition
-- ranked encounter alternatives
-- generator diagnostics describing the resolved difficulty/tuning attempt,
-  search quality, stop category, candidate-pool size, and attempt/evaluation
-  counts
-- party-derived budget summaries for the active runtime session
-- party-derived saved-plan planning facts for downstream planner surfaces
-- party-derived tuning preview labels for catalog encounter controls
+Generated preparation carriers translate a complete proposed batch into
+ordinary `EncounterPlan` aggregates. They are not a second write model.
 
-Generated alternatives remain ephemeral derived state until the user saves the
-current roster as an encounter plan.
+## Derived And Runtime State
 
-The current builder, initiative, combat, and result session state is
-domain-owned runtime state. It is not persisted as a saved encounter plan, but
-it is also not view-owned mutable state.
+Encounter derives:
 
-## Aggregate Model
+- active-party difficulty thresholds and daily-budget context
+- candidate pools constrained by filters, encounter tables, World Planner
+  sources, and finite stock caps
+- role hints, ranked alternatives, fallback advice, and generation diagnostics
+- party-specific planning facts for saved plans
+- prepared concrete generated-roster batches
 
-Aggregate Root: EncounterPlan
+Generated alternatives and prepared batches remain transient until saved. The
+current builder, initiative, combat, and result session state is Encounter-owned
+runtime state, not persisted `EncounterPlan` truth and not view-owned mutable
+state.
 
-`EncounterPlan` owns the saved encounter roster. It stores only encounter-plan
-identity, display labels, and creature quantities. It does not embed creature
-statblocks, party members, initiative, combat HP, loot resolution, or dungeon
-room placement.
+## Mutation Language
 
-- `EncounterPlan` owns plan identity and roster membership.
-- `EncounterPlanCreature` owns one creature-id and quantity pair.
-- `EncounterPlanSummary` owns list-screen summary language.
-- A feature-owned application port owns outbound saved-plan persistence.
+Encounter supports:
 
-Generation values, policies, and factories remain stateless domain modules used
-to construct candidate rosters before a saved plan exists.
+- generate encounter alternatives
+- save the current roster as an Encounter plan
+- load or list saved Encounter plans
+- prepare one ordered generated-intent batch as concrete rosters
+- commit one complete prepared batch as saved Encounter plans
 
-## Commands And Invariants
+## Invariants
 
-Commands entering the model are:
-
-- generate encounter
-- save current encounter plan
-- list saved encounter plans
-- load saved encounter plan
-- atomically import generated encounter specifications
-
-Core invariants:
-
-- the active party is the balancing baseline for generation
-- encounter math is computed from public party data, not duplicated persistence
-- selected encounter tables replace creature filter sourcing for that
-  generation pass
-- selected world locations and factions may narrow encounter tables and finite
-  stock caps, but they do not transfer world-planner ownership into encounter
-- Auto difficulty and Auto tuning are resolved deterministically from the
-  generation seed and request fingerprint before draft enumeration
-- a non-empty candidate pool with no viable draft is distinguished from an
-  empty candidate pool
-- foreign feature internals remain hidden behind their API boundaries
-- generator ranking must be deterministic for the same inputs
-- a saved plan must contain at least one creature
-- saved plans store creature identity and quantity, not creature truth
-- generated origin is unique per engine version, generation identity, and
-  encounter number
-- every generated spec resolves to a non-empty roster before any member of its
-  batch is persisted
-- one generated batch is all-or-nothing and an identical completed retry is
-  idempotent
+- the active party is the balancing baseline for runtime generation
+- encounter math uses current public Party facts rather than copied Party truth
+- selected encounter tables replace creature-filter sourcing for that pass
+- selected World Planner sources may narrow encounter tables and stock caps but
+  do not transfer World Planner ownership
+- Auto difficulty and tuning resolve deterministically from the generation
+  seed and request meaning before alternatives are enumerated
+- a non-empty candidate pool with no viable roster is distinct from an empty
+  candidate pool
+- ranking is deterministic for the same inputs
+- saved plans contain at least one concrete creature identity with positive
+  quantity and never own creature statblocks
+- generated origin is unique for one engine meaning, preparation identity, and
+  Encounter number
+- every generated intent resolves to one concrete non-empty roster before any
+  plan from the batch becomes durable
+- the complete generated batch is all-or-nothing and an identical completed
+  retry denotes the same saved plans
 - generated origin never transfers reward, packing, audit, or session-scene
   ownership into Encounter
 
-## Consistency Model
-
-Encounter generation reads party, creature, and encounter-table snapshots
-through their public APIs. It does not save party,
-creature, or encounter-table state.
-
-Saved encounter plans are persisted through an encounter-owned application
-port. Opening a plan rebuilds the runtime roster from
-the saved creature identities and current creature details; initiative, combat,
-result, and generator-alternative state are cleared because they are session
-runtime state.
-
-Generated batch import is one persistence consistency boundary. Resolution
-failure or a mismatched retry writes nothing. Once imported, the roster follows
-the same saved-plan invariants as a manually saved plan; its origin remains
-immutable audit and idempotency metadata.
-
-## Ubiquitous Language
-
-- `EncounterDifficultyBand`: requested difficulty intent.
-- `EncounterDifficultyTargets`: policy thresholds for the active party.
-- `EncounterDraft`: candidate generated encounter before export.
-- `EncounterCandidateProfile`: creature candidate enriched for generation.
-- `GeneratedEncounter`: exported generated encounter suggestion.
-- `EncounterPlan`: saved encounter roster aggregate.
-- `SavedEncounterPlanChoice`: published saved-plan chooser display row.
-- `EncounterPlanFact`: Session Planner-facing saved-plan planning readout
-  exposed by `EncounterApi`.
-- `GeneratedEncounterPlanSource`: immutable generation origin.
-- `GeneratedEncounterPlanSpec`: ordered generated encounter slots awaiting
-  Encounter-owned creature resolution.
-
 ## Domain Policies
 
-- difficulty evaluation uses encounter thresholds plus monster-count
-  multipliers
-- candidate filtering may narrow by creature type, subtype, and biome
-- generator tuning may prefer smaller or larger creature counts, narrower or
-  wider XP spread, and lower or higher statblock diversity
-- Auto generation first tries a neutral resolved configuration, then up to a
-  bounded set of seeded variants, and returns an exact match when a resolved
-  target difficulty is met
-- when no exact match exists but drafts are available, generation returns the
-  best-ranked fallback with a fallback advisory instead of treating it as a
-  creature-source failure
-- role hints are heuristic derived state; they do not become persisted creature
+- difficulty evaluation uses party thresholds and monster-count multipliers
+- candidate filtering may narrow by creature type, subtype, biome, selected
+  tables, World Planner sources, and finite stock
+- tuning may prefer different creature counts, XP spread, and statblock
+  diversity
+- Auto generation tries a neutral configuration and then a bounded seeded set
+  of alternatives
+- when no exact difficulty match exists but valid rosters do, the best-ranked
+  fallback is returned with an advisory
+- role hints are heuristic derived state and never persisted creature truth
+- saved plans preserve roster composition only; combat state is never plan
   truth
-- the feature may enrich final suggestions with creature-detail tags without
-  changing creature ownership
-- saved plans preserve roster composition only; combat state is never saved as
-  plan truth
+
+## Consistency Boundary
+
+One `EncounterPlan` is the manual-save consistency boundary. One generated
+batch is a larger all-or-nothing consistency boundary containing multiple
+ordinary Encounter plans with immutable generated origins. Opening a plan
+rebuilds runtime state from current creature detail and clears prior initiative,
+combat, result, and generated-alternative runtime state.
 
 ## References
 
-- [Feature Spec](../requirements/requirements-encounter.md)
+- [Feature Requirements](../requirements/requirements-encounter.md)
 - [Encounter Persistence](../contract/contract-encounter-persistence.md)
-- [Encounter Builder Inputs Contract](../contract/contract-encounter-builder-inputs.md)
 - [Encounter Saved Plans Contract](../contract/contract-encounter-saved-plans.md)
-- [Encounter State Contract](../contract/contract-encounter-state.md)
-- [Generated Import Contract](../contract/contract-encounter-generated-import.md)
-- [Encounter UI](../requirements/requirements-encounter-state-tab.md)
+- [Generated Preparation Contract](../contract/contract-encounter-generated-import.md)
+- [Architecture](../architecture/architecture-encounter.md)
+- [Encounter Runtime UI](../requirements/requirements-encounter-state-tab.md)

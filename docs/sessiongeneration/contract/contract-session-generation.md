@@ -1,176 +1,129 @@
 Status: Active Target
-Owner: SaltMarcher Team
-Last Reviewed: 2026-07-16
-Source of Truth: Session Generation public API, stored-result schema semantics,
-compatibility, migration, validation, and error behavior.
+Owner: Session Generation Feature
+Last Reviewed: 2026-07-18
+Source of Truth: Session Generation API, persistence, compatibility, and error
+semantics.
 
 # Session Generation API And Persistence Contract
 
-## Purpose, Owners, And Consumers
+## Owner And Consumers
 
-`sessiongeneration` owns this feature boundary and its stored generation truth.
-Session Planner is the primary API consumer. The Session Generation application
-and SQLite adapter are the only writers of generation runs and catalog
-snapshots.
-
-This contract does not define the Session Planner flow, generation formulas,
-Encounter import behavior, or source architecture; those remain with their
-neighboring owners.
+Session Generation owns this boundary and all stored generation-run truth.
+Session Planner is the primary consumer. Only Session Generation writes its
+normalized run schema. Encounter consumes encounter intents only through the
+Session Planner preparation workflow and never writes generation storage.
 
 ## Non-Blocking API
 
-`SessionGenerationApi` exposes two non-blocking typed operations:
+`SessionGenerationApi` exposes:
 
-- `generate(GenerationRequest) -> GenerationResponse`
-- `load(GenerationRunId) -> GenerationResponse`
+```text
+draft(GenerationRequest) -> GenerationDraftResponse
+commit(CommitGenerationRunCommand) -> GenerationRunResponse
+load(GenerationRunId) -> GenerationRunResponse
+loadRewards(GenerationRewardBatchQuery) -> GenerationRewardBatchResponse
+```
 
-Both operations complete asynchronously and MUST NOT perform file or SQLite
-work on the JavaFX thread.
+Every operation completes asynchronously and performs no file or SQLite work
+on the JavaFX thread.
 
-`GenerationRequest` requires ordered unique `PartyLevelCount` values, exact
-decimal `adventureDayFraction`, optional encounter count, and seed. It contains
-no JavaFX, SQL, Session Planner persistence, or foreign domain types.
+`GenerationRequest` contains one opaque preparation identity, ordered unique
+party-level counts, exact adventure-day fraction, optional encounter count, and
+seed. It contains no SQL, JavaFX, Session Planner persistence, or foreign
+domain carriers.
 
-A successful `GenerationResponse` contains exactly one immutable
-`GenerationResult`. The result contains run identity, engine and catalog
-metadata, seed, session summary, ordered encounter targets and encounters,
-treasures, loot items, packing, reward summary, formatted text, and audits.
-Failure contains no partial result.
+A successful draft response contains one complete structured
+`GeneratedRunDraft` with stable run identity and normalized content
+fingerprint. Commit accepts that draft, validates it again, and returns its
+durable identity. Load returns the immutable structured run. Batch reward reads
+accept unique run-and-treasure identities and preserve request order.
 
-The API publishes typed statuses:
+Public statuses distinguish success, invalid request, not found, catalog
+failure, generation failure, identity conflict, and storage failure. A
+non-success result contains no partial draft, run, or reward list.
 
-- `SUCCESS`: a stored run was produced or loaded and all hard audits pass
-- `NOT_FOUND`: the requested run identity does not exist
-- `INVALID_REQUEST`: input validation failed
-- `CATALOG_FAILURE`: no complete valid catalog snapshot could be loaded
-- `GENERATION_FAILURE`: candidate coverage or another hard generation
-  invariant failed
-- `STORAGE_FAILURE`: migration, read, or atomic write failed
+## Draft Identity And Commit
 
-Messages are display-safe summaries. Adapter exceptions, SQL, file paths,
-catalog payloads, and authored session content MUST NOT cross the API.
+Run identity is assigned only after a complete draft passes hard audits and is
+stable for preparation identity, engine version, and catalog content hash. The
+content fingerprint covers normalized inputs and every semantic persisted
+child in stable order. It excludes creation time and optional formatted text.
 
-## Validation
+Commit is idempotent:
 
-- levels MUST be unique and from 1 through 20
-- counts MUST be non-negative and total party count MUST be positive
-- adventure-day fraction MUST be an exact non-negative decimal
-- explicit encounter count MUST be from 1 through 10
-- run IDs, versions, and hashes MUST be non-blank typed values
-- success MUST have one result; non-success MUST have none
-- all aggregate invariants in the domain owner MUST pass before persistence
-- load MUST reconstruct typed values and reject corrupt, orphaned, duplicate,
-  unknown-enum, or out-of-order stored rows as `STORAGE_FAILURE`
+- a new identity and valid draft insert the root and every child once
+- an existing identity with the same fingerprint and reconstructed semantic
+  value returns success without rewriting rows
+- an existing identity with different content returns `IDENTITY_CONFLICT`
+- no consumer must load the just-committed run to continue the same workflow
 
-## Normalized Relational Run Persistence
+## Normalized Persistence
 
-The persistence-lifecycle owner key is `session-generation`. The immutable
-catalog artifact is not duplicated into mutable runtime SQLite tables. Its
-manifest and content-hashed TSV files are the canonical catalog owner; each
-self-contained run pins the artifact version and catalog-content hash it used.
-The catalog-content hash is SHA-256 over the catalog version plus the
-canonical filename-sorted inventory of table names, dimensions, and per-file
-SHA-256 values. It therefore identifies the shipped artifact independently of
-where its source workbook was hosted. `sourceSha256` and `sourceUrl` remain
-manifest provenance and MUST NOT be substituted for artifact identity.
+The persistence lifecycle owner key remains `session-generation`. The logical
+schema stores:
 
-The logical SQLite schema is:
+- run identity, content fingerprint, engine version, catalog version and
+  content hash, seed, exact adventure-day fraction, session summary, reward
+  summary, and optional formatted output
+- normalized party-level counts
+- ordered encounter targets, encounters, and selected role/CR blocks
+- ordered treasures, concrete loot item lines, and packing rows
+- ordered typed warnings and audits
 
-- `session_generation_runs`: opaque run ID, engine version, catalog version
-  and content hash,
-  seed, exact adventure-day fraction, derived session summary, reward summary,
-  and formatted output
-- `session_generation_party_levels`: normalized request level counts
-- `session_generation_encounter_targets`: ordered target detail
-- `session_generation_encounters` and
-  `session_generation_encounter_blocks`: the selected encounter and its
-  ordered selected blocks per target
-- `session_generation_treasures`, `session_generation_loot_items`, and
-  `session_generation_packing_rows`: generated reward structure
-- `session_generation_audits`: ordered typed pass, warning, or failure facts
+Every child uses the run identity plus generation-local identity and explicit
+ordering where order affects behavior. Exact decimals are lossless; money uses
+copper-piece units; enums use constrained canonical codes. Composite foreign
+keys prevent cross-run anchors and packing references.
 
-Every child row has a foreign key to its owning run and an explicit
-stable identity plus `sort_order` where ordering affects behavior. Typed
-vocabulary is stored as constrained canonical codes. Exact decimals are stored
-losslessly as canonical decimal text or scaled integers; money is stored in
-copper-piece units. Booleans and optional references use explicit constrained
-columns.
+The schema MUST NOT store JSON aggregates, Java serialization, delimiter-packed
+records, copied catalog families, unselected candidate search space, or
+formatted text as the only representation of structured facts.
 
-Run child primary keys are the run ID plus their generation-local identity.
-Selected encounter
-blocks, packing rows, and encounter anchors use composite foreign keys to
-prevent cross-run references.
+One run and all children insert in one transaction. A failure leaves no visible
+partial root. Load reconstructs typed values and fails on corrupt, orphaned,
+duplicate, unknown-enum, fingerprint-mismatched, or out-of-order rows.
 
-The canonical model MUST NOT store a generated run, catalog family, or reward
-as JSON, Java serialization, delimiter-packed text, or one opaque payload
-column. Human-readable formatted output is an additional derived output, not
-the persistence format for structured facts.
+## Catalog Boundary
 
-The complete encounter candidate search space and its unselected blocks are
-transient engine state and MUST NOT be persisted in normalized tables, opaque
-payloads, or formatted output. Persistence retains only targets, selected
-encounters, their selected blocks, and the candidate-coverage audit outcome.
+The shipped catalog remains a read-only versioned artifact. Its content hash is
+SHA-256 over catalog version plus the canonical filename-sorted inventory,
+dimensions, and per-file hashes. Resource validation is all-or-nothing and
+includes required families, identities, vocabularies, ordering, and
+cross-references before one immutable snapshot is cached.
 
-Catalog artifact identity is `(catalog_version, catalog_content_hash)`. The
-resource adapter validates the complete manifest, exact required table
-inventory, dimensions, per-file hashes, recomputed catalog-content hash,
-closed vocabularies, identities, ordering, and material cross-references before
-exposing one immutable snapshot. This includes the decision-type and loot-source
-families even though the generator does not publish them directly. Run children
-have no update path; the root and all children are inserted once in a single
-transaction.
+Runs pin catalog version and content hash. Source URL and source-file hash are
+provenance and do not replace runtime artifact identity.
 
-## Migration And Initialization
+## Compatibility And Migration
 
-Feature migrations are contiguous, monotonic, begin at version `1`, and run
-through the shared persistence lifecycle under owner key `session-generation`.
-Version `1` creates only the normalized immutable-run schema. Catalog loading
-is a separate read-only resource boundary and fails closed unless all required
-families, identities, enum codes, references, ordering constraints, and hashes
-validate.
+Migrations remain contiguous and monotonic under the existing owner key. An
+applied migration is never rewritten. A newer database version fails closed.
 
-Later schema or catalog changes add a new migration; they MUST NOT rewrite an
-already recorded migration or silently reinterpret stored engine or catalog
-versions. A database with a newer feature version fails closed under the shared
-persistence lifecycle.
+Existing canonical runs remain loadable with their recorded engine and catalog
+meaning. Canonical migrations may add content fingerprints and indexes but MUST
+NOT reinterpret existing rows. When a canonical run lacks a stored fingerprint,
+the adapter derives it from its validated typed rows for comparison without
+rewriting the run.
 
-There is deliberately no compatibility contract for PR #478 or any other
-proof-of-concept generation schema, file, JSON shape, Java carrier, table name,
-or stored run. The canonical migration MUST NOT detect, copy, dual-read,
-backfill, or retain those surfaces. Existing canonical SaltMarcher data owned
-by other features remains untouched.
+Unadopted proof-of-concept schemas, files, JSON shapes, Java carriers, and
+tables have no compatibility status and are never accepted as canonical input.
+Only the normalized contract in this document and canonical migrations under
+the `session-generation` owner key are durable.
 
-## Atomicity And Error Behavior
+## Diagnostics And Errors
 
-- catalog artifact validation is all-or-nothing
-- run generation happens over one already loaded immutable snapshot
-- successful run persistence inserts the root and every child in one
-  transaction; failure leaves no visible run root or partial children
-- a failed load or write does not replace a previously published successful
-  response
-- catalog parse, validation, or reference failures surface as
-  `CATALOG_FAILURE`
-- no candidate coverage or hard audit failure surfaces as
-  `GENERATION_FAILURE`, not a partial success
-- SQLite readiness, migration, integrity, or operation failures surface as
-  `STORAGE_FAILURE`
+Diagnostics may record operation, stable run or catalog identity, stage,
+duration, cardinality, and failure class. They exclude generated item text,
+authored session content, SQL, exception payloads, secrets, and local paths.
+Public messages are display-safe.
 
-Technical diagnostics use stable run or catalog identities and failure class
-only. They MUST NOT record generated item text, session-authored content,
-secrets, raw SQL, or local paths.
+## Verification Ownership
 
-## Compatibility And Verification
-
-Internal Java carriers have no compatibility obligation while consumers move
-atomically in one green slice. Persisted canonical rows retain their declared
-engine and catalog meaning. A changed calculation profile requires a new engine
-version; changed reference content requires a new catalog content hash.
-
-This contract is review-owned except for shared lifecycle behavior and package
-boundaries already enforced by project gates. Production-route tests must
-cover asynchronous completion, typed status mapping, normalized round-trip,
-atomic rollback, deterministic reload, migration from an empty canonical
-database, and fail-closed newer versions.
+Production-route proof covers async completion, deterministic draft equality,
+idempotent and conflicting commit, normalized round-trip, atomic rollback,
+batch reward ordering, catalog failure, empty canonical migration, and load of
+existing canonical runs. Architecture enforcement owns the absence of JavaFX,
+foreign implementation imports, and opaque aggregate storage.
 
 ## Sources
 
@@ -179,5 +132,5 @@ database, and fail-closed newer versions.
 - Preserved original:
   `/home/aaron/Schreibtisch/projects/references/.tools/markdown/saltmarcher-encounter-loot-generation-design-2026-07-16.md`
 - [Shared Persistence Lifecycle](../../project/contract/persistence-lifecycle.md)
-- [Domain Model](../domain/domain-session-generation.md)
+- [Domain](../domain/domain-session-generation.md)
 - [Source Architecture](../../project/architecture/source-architecture.md)

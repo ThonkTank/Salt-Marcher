@@ -1,156 +1,113 @@
 Status: Active Target
-Owner: SaltMarcher Team
-Last Reviewed: 2026-07-16
-Source of Truth: Observable Session Generation behavior, adopted reference-rule
-parity, and acceptance criteria.
+Owner: Session Generation Feature
+Last Reviewed: 2026-07-18
+Source of Truth: Observable generation results, rule parity, and acceptance.
 
 # Session Generation Requirements
 
 ## Goal And Scope
 
-Session Generation MUST let a Session Planner user create a reproducible,
-reviewable preview of encounter targets, encounter compositions, and rewards,
-then apply that exact preview to the current session through the owning feature
-boundaries.
+Given normalized party levels, an adventure-day fraction, optional encounter
+count, and seed, Session Generation MUST produce one deterministic structured
+result containing encounter intents, rewards, packing, warnings, and audits.
+After the result is saved and reopened, its structured meaning MUST be
+equivalent to the result first presented for the same generation.
 
-The affected user is a game master preparing an authored Session Planner
-record. Session Generation owns the generated proposal. Session Planner owns
-the preview interaction and applied session references; Encounter owns saved
-encounter plans.
+Session Planner is the primary consumer. Encounter converts generated encounter
+intents into concrete rosters. Session Generation does not own UI, authored
+sessions, Party members, creature facts, or saved Encounter plans.
 
-## Non-Goals
+## User-Observable Result
 
-- editing party membership, creature truth, or saved Encounter plans
-- replacing the existing Encounter builder and its runtime generator
-- making generated output authoritative before the user applies it
-- exposing a ruleset selector or ruleset-version label in the UI
-- reproducing spreadsheet row identities or exact selected candidates, items,
-  containers, monetary totals, or final formatted text
-- importing or preserving proof-of-concept generation data
+Through Session Planner, a successful generation contributes:
 
-## Inputs And User Flow
+- ordered encounter targets and typed role/CR composition intents
+- generated reward channels and encounter anchors
+- concrete generated item lines with quantity, value, magic, curse, and packing
+  facts when applicable
+- display summaries, warnings, and audit outcome
+- stable run and treasure identities used by the prepared session
 
-1. Session Planner resolves the current session participants to counts per
-   level and supplies the adventure-day fraction, optional encounter count,
-   and seed.
-2. The user requests generation without leaving the Session Planner surface.
-3. Generation runs without blocking the JavaFX thread. The existing session
-   remains usable while the request is pending.
-4. Success shows one structured preview containing encounter targets,
-   generated encounter summaries, rewards, warnings, and audit outcome. The UI
-   MUST NOT show a ruleset label.
-5. The preview is not applied automatically. Session Planner locks Apply when
-   the preview fingerprint no longer matches the current generation inputs.
-6. The user regenerates after a stale lock or applies the still-current
-   preview. Apply imports all generated encounters through Encounter's atomic
-   generated-origin operation, then records the returned encounter-plan and
-   generated-reward references in one Session Planner mutation.
-7. Failure leaves both the authored session and the last stable preview
-   unchanged and shows an actionable status.
+Generated loot is structured result data. Formatted text is an optional derived
+rendering and MUST NOT be the only reward output. Engine and catalog versions
+are audit metadata, not user-selectable ruleset controls.
 
-An empty party is a visible invalid-input state. An omitted encounter count
-activates deterministic automatic calculation; an explicit value MUST be from
-1 through 10. Party levels MUST be from 1 through 20, player counts MUST be
-non-negative, the total player count MUST be positive, and the adventure-day
-fraction MUST be non-negative.
+## Inputs And Validation
+
+Party levels are unique and from 1 through 20. Counts are non-negative and sum
+to a positive party size. The adventure-day fraction is an exact non-negative
+decimal. An explicit encounter count is from 1 through 10; omission activates
+deterministic automatic calculation. The seed is explicit.
+
+Invalid input produces no result. Catalog, generation, and saving failures are
+distinguishable and expose no partial result.
 
 ## Adopted Rule-Parity Profile
 
-The target adopts the executed rule groups documented in sections 3 through 15
-of the preserved reference as the `saltmarcher-v1` calculation profile, with
-the explicit acceptance boundary below. This is behavioral rule parity, not a
-spreadsheet row-selection or seeded-output compatibility promise.
+The target retains the executed rule groups in sections 3 through 15 of the
+preserved owner-provided reference as the `saltmarcher-v1` behavior profile.
+This is stage and invariant parity, not spreadsheet-row or exact-item parity.
 
-The implementation MUST preserve these behavioral rule groups:
+The engine MUST preserve:
 
-- normalize the request, retain the explicit seed, calculate party count,
-  daily XP, session XP, interpolated average level, gold pools, magic targets,
-  treasure count, and non-magic slots as specified by the reference
-- allocate encounter targets so their exact sum equals session XP; use the
-  reference medium-to-deadly weighting and assign rounding remainder to the
-  last target
-- build role-banded CR blocks and one-, two-, or three-role patterns, use the
-  effective-monster-count multiplier, rank by absolute target delta with
-  stable tie-breaking, and make the seeded choice among the best eligible
-  candidates
-- retain the position-based EASY, MEDIUM, HARD, and DEADLY labels and the
-  reference bossiness ordering
-- preserve normal versus overstock budgets, reward-channel caps, theme and
-  magic distribution, descending slot allocation, dynamic per-line budget,
-  role proportions, candidate tolerances, contextual bulk behavior, coin,
-  adorned, useful, flavor, magic, enspelled, curse, packing, and formatting
-  rules
-- use positive modulo semantics, stable explicit ordering, and deterministic
-  selection; no volatile random source may influence a run
-- preserve documented fallbacks as typed warnings where the reference still
-  produces output; a missing encounter candidate or failing hard invariant
-  makes the preview non-applicable
-- run the per-generation hard invariants and budget tolerances from reference
-  section 15 before publishing an applicable result
+- request normalization, session XP, gold pools, magic targets, treasure count,
+  and non-magic slot calculation
+- exact-sum encounter target allocation, role bands, patterns, effective
+  monster count, ranking, seeded choice, difficulty labels, and bossiness
+- normal and overstock budgets, channel caps, theme and magic distribution,
+  descending slots, dynamic line budgets, loot roles, candidate tolerances,
+  bulk behavior, coins, adorned/useful/flavor items, magic, enspelling, curses,
+  packing, and formatting
+- positive modulo, explicit stable ordering, deterministic selection, typed
+  fallbacks, hard audits, and budget tolerances
 
-Catalog content is SaltMarcher-owned. Rule parity does not require importing
-the spreadsheet's exact active rows or their row order. The engine applies the
-adopted rules to the active, versioned SaltMarcher catalog and therefore MAY
-use its own stable keyed entropy and MAY select different candidates, loot,
-magic items, or containers. The spreadsheet's per-cell seed multipliers and
-exact selected rows are explicitly outside compatibility; deterministic
-selection, distribution, caps, tolerances, and hard invariants remain required.
+SaltMarcher owns catalog content. The engine may use stable keyed entropy and
+different active catalog rows. Exact selected candidates, items, containers,
+monetary totals, formatted text, spreadsheet row identities, and per-cell seed
+multipliers are outside compatibility.
 
 ## Golden Acceptance Boundary
 
-For the preserved input of two level-3 players, two level-4 players, adventure
-day fraction `0.6`, explicit encounter count `3`, and seed `179974`, the only
-Golden Master output required by this feature is:
+For two level-3 players, two level-4 players, adventure-day fraction `0.6`,
+explicit encounter count `3`, and seed `179974`, the required Golden output is:
 
 ```text
 encounterTargets = [680, 1000, 1800]
 ```
 
-Exact encounter candidates or CR compositions, selected loot items, container
-assignments, reward totals, and formatted text are explicitly not Golden
-parity requirements.
+No exact encounter candidate, creature roster, loot item, packing choice, or
+formatted-text snapshot is Golden compatibility.
 
-## Visible States And Errors
+## Result Completeness And Stability
 
-- `idle`: no preview exists
-- `generating`: the request is in flight and Apply is unavailable
-- `ready`: all hard audits pass and Apply is available
-- `stale`: a preview remains readable, but Apply is locked until regeneration
-- `invalid`: input validation failed
-- `failed`: the catalog, generation, or storage operation failed without
-  replacing stable state
-
-Warnings MUST remain visible with the preview and MUST NOT be represented as
-successful hard audits. A hard audit failure MUST prevent Apply.
+- generation completes asynchronously without blocking the visible planner
+- success exposes one complete structured result; consumers never observe an
+  intermediate encounter-only or reward-only result
+- failed hard audits prevent success; non-blocking fallbacks remain visible as
+  typed warnings
+- saved and reopened results retain the same encounters, rewards, packing,
+  warnings, audits, seed, and recorded engine/catalog meaning
+- repeating an already completed request does not create visible duplicates
+- reward details remain available as structured fields rather than only as
+  formatted text
 
 ## Acceptance Criteria
 
-- the generation call and stored-result load are non-blocking typed operations
-- the same normalized request, engine semantics, and catalog snapshot produce
-  the same structured result apart from persistence identity and timestamps
+- equal normalized input, engine version, and catalog content hash produce
+  equal structured results
 - encounter targets sum exactly to session XP
-- generated results retain seed, engine version, catalog version, catalog
-  content hash, structured audits, and stable generation identity
-- a preview never mutates Session Planner or Encounter truth before Apply
-- changing any fingerprint input locks Apply while leaving the stale preview
-  visible
-- Apply never imports a partial encounter batch
-- the UI contains no ruleset selector or ruleset-version label
-- the Golden input produces exactly `[680, 1000, 1800]` as its target list;
-  no exact item, container, candidate, or text snapshot is required
-
-## Verification Notes
-
-Every `MUST` above is review-owned until a production-route test names it.
-Determinism is checked by repeated equal requests; parity is checked at stage
-boundaries, and the Golden acceptance checks only the target list declared
-above.
+- every applicable result retains seed, versions, content hash, structured
+  encounters, rewards, packing, warnings, and audits
+- concrete item lines survive save and reopen as typed fields with equivalent
+  meaning
+- failed generation or saving exposes no partial generated result
+- the Golden input produces exactly `[680, 1000, 1800]`
 
 ## Sources
 
 - Readable owner-provided reference:
   `/home/aaron/Schreibtisch/projects/references/saltmarcher/session-generation/encounter-loot-generation-design.md`
-- Preserved original recorded by that reference:
+- Preserved original:
   `/home/aaron/Schreibtisch/projects/references/.tools/markdown/saltmarcher-encounter-loot-generation-design-2026-07-16.md`
 - Original locator: `local-owner-provided document`, snapshot 2026-07-16
 - [Session Planner Requirements](../../sessionplanner/requirements/requirements-session-planner.md)

@@ -1,16 +1,9 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-16
+Last Reviewed: 2026-07-18
 Source of Truth: Entry point and document map for the encounter feature.
 
 # Encounter Feature README
-
-## Purpose
-
-The encounter feature owns runtime encounter generation for the currently
-active party and saved encounter-plan roster truth. It composes party state and
-creature catalog data into rule-oriented encounter suggestions, then persists
-only the user-accepted roster when the user saves a plan.
 
 ## Documentation Set
 
@@ -21,29 +14,8 @@ only the user-accepted roster when the user saves a plan.
 - [Plan Budget Contract](contract/contract-encounter-plan-budget.md)
 - [Builder Inputs Contract](contract/contract-encounter-builder-inputs.md)
 - [Encounter State Contract](contract/contract-encounter-state.md)
-- [Generated Import Contract](contract/contract-encounter-generated-import.md)
+- [Generated Preparation Contract](contract/contract-encounter-generated-import.md)
+- [Architecture](architecture/architecture-encounter.md)
 - [Runtime Context Contract](contract/contract-encounter-runtime-contexts.md)
 - [Encounter Table Feature README](../encountertable/README.md)
 - [Encounter UI](requirements/requirements-encounter-state-tab.md)
-
-## Scope
-
-In scope:
-
-- deriving encounter budgets from the active party
-- reading saved encounter plans as party-specific budget summaries for planner
-  surfaces
-- filtering the creature catalog into encounter-ready candidates
-- generating and ranking multiple encounter alternatives
-- adding catalog creature rows into a manual runtime roster
-- saving and opening encounter-plan rosters
-- atomically importing generated-origin encounter specifications as saved plans
-- preserving one independent builder, initiative, combat, and result runtime
-  for every running Scene context
-
-Out of scope:
-
-- Scene workspace, party, location, NPC, or disposition truth
-- dungeon room placement or biome ownership
-- bootstrap or shell policy
-- generated reward, packing, audit, or session-scene ownership

@@ -1,19 +1,33 @@
 Status: Active Target
-Owner: SaltMarcher Team
-Last Reviewed: 2026-07-16
-Source of Truth: Session Planner feature ownership, public seams, and target
-dependency direction.
+Owner: Session Planner Feature
+Last Reviewed: 2026-07-18
+Source of Truth: Session Planner structure, preparation orchestration,
+publication, concurrency, and quality decisions.
 
 # Session Planner Architecture
 
-## Entity And Concerns
+## Objective
 
-This specification serves maintainers of persisted sessions, planner UI, and
-Party, Encounter, or World Planner integration. Session Planner owns session
-records, ordered scenes, participant references, allocations, rests,
-placeholders, selection, and the current-session pointer. It does not own party
-characters, encounter rosters, creature truth, World Planner details, or
-generated-run truth.
+The target supports one responsive preparation command that publishes concrete
+Encounter rosters, structured rewards, and one coherent editable workspace
+revision. Persistence is durable truth rather than in-process transport, and
+latency stays bounded by provider family rather than saved or generated row
+count.
+
+## Stakeholders And Concerns
+
+- Game masters need one responsive action, coherent progress, and one complete
+  editable result.
+- Session Planner maintainers need one orchestration owner, explicit foreign
+  seams, and no persistence transport hidden in the workflow.
+- Session Generation, Encounter, Party, and World Planner maintainers need their
+  truth accessed only through their public APIs.
+- Verification maintainers need observable revision behavior, fixed query
+  families, stage timing, and one reproducible reference fixture.
+
+This document owns structural and quality decisions for preparation and
+workspace publication. Product outcomes belong to requirements, write-model
+truth to domain documents, and payload or persistence semantics to contracts.
 
 ## Target Topology
 
@@ -26,58 +40,192 @@ features/sessionplanner/adapter/javafx/
 features/sessionplanner/SessionPlannerFeature
 ```
 
-The application composition supplies `PartyApi`, `EncounterApi`,
-`SessionGenerationApi`, and `WorldPlannerApi` explicitly. `SessionPlannerFeature` exposes
-`SessionPlannerApi` plus constructed shell contributions.
+Session Planner remains one feature in the local modular monolith. It receives
+`PartyApi`, `EncounterApi`, `SessionGenerationApi`, and `WorldPlannerApi`
+explicitly from application composition. It exposes `SessionPlannerApi`, one
+workspace snapshot publication, prepared-scene publication, and passive shell
+contributions.
 
-## Boundaries
+## One Workspace State
 
-- `SessionPlannerApi` owns typed workflows, results, catalog queries, and one
-  immutable revisioned session-planner state surface.
-- Domain code owns session-record invariants without JavaFX, SQL, shell, or
-  foreign-feature dependencies.
-- Application code re-reads foreign facts through provider APIs and translates
-  them into planner-owned values.
-- Application code resolves session participants, creates the preview
-  fingerprint and one request token, calls the UI-free
-  `SessionGenerationApi`, discards results whose token is no longer current,
-  and coordinates Apply through Encounter's generated-origin import API.
-- The SQLite adapter persists only planner-owned truth and stable foreign IDs.
-- The JavaFX adapter uses `SessionPlannerApi`, `shell.api`, and feature-neutral
-  platform UI contracts only; it renders controls, timeline, and state without
-  mutating feature state directly.
-- Applied reward detail remains Session Generation truth. Session Planner
-  persists only scene-to-generation-and-treasure references plus a last-known
-  label.
+`SessionPlannerWorkspaceSnapshot` is the sole view-facing planner state. One
+revision contains:
 
-Persistence-backed calls are non-blocking. Failed writes retain the last stable
-state; late asynchronous results cannot replace a newer revision.
+- session catalog and current session
+- resolved participant summaries and budget
+- ordered scene summaries and selected-scene detail
+- linked Encounter summaries and structured generated rewards
+- preparation status and stage progress
+- display-safe missing-reference and failure states
 
-Apply has two explicit consistency boundaries. Encounter first resolves and
-persists the complete generated encounter batch atomically. Only a complete
-number-to-plan-id mapping may enter the Session Planner aggregate, whose scenes
-and reward references are then written in one planner transaction. A planner
-write failure leaves no partial planner mutation; generated Encounter plans
-remain Encounter-owned and a retry uses their persisted generated origin.
-Encounter-channel rewards reference their generated encounter scene. Quest and
-environment rewards are represented by encounter-free Session scenes, keeping
-every generated reward reference within the Session Planner aggregate.
+`SessionPlannerWorkspaceAssembler` loads one planner snapshot, collects foreign
+IDs, performs one batch read per owning feature, and joins immutable results in
+memory. The JavaFX adapter renders that revision and dispatches typed intents;
+it performs no provider calls, persistence, orchestration, or independent
+projection refresh.
 
-## Shell Surface
+Publication is latest-revision-wins. One authored mutation or foreign-provider
+revision schedules at most one coalesced assembly. Scene, participant, controls,
+and state-panel views do not subscribe to separate planner projections.
 
-Session Planner remains one left-bar contribution using cockpit controls, main,
-and state slots. Explicit composition changes construction, not accepted
-observable behavior.
+## Publication Semantics
 
-## Verification
+The application publishes one immutable workspace value at a time. Each value
+contains the source `SessionRevision`, one monotonically increasing publication
+revision, and the preparation status that applies to that source revision.
+Assembly begins from a captured planner snapshot; foreign results are joined
+only if that capture is still current. Completion from a stale capture is
+discarded and cannot overwrite a newer publication.
 
-Target dependency direction is mechanically enforced by `architectureTest`.
-JUnit production routes own persisted-session, integration, and UI proof.
+An in-progress or failed preparation updates status around the last stable
+authored workspace. Only a successful final Session Planner commit may publish
+new authored prepared content. JavaFX applies a complete immutable value in one
+dispatch and never combines sections from different revisions.
+
+## Prepare Session Use Case
+
+```text
+JavaFX Generate intent
+  -> SessionPlannerApi.prepareSession(command)
+  -> capture plan revision + generation inputs + preparation identity
+  -> SessionGenerationApi.draft(request)
+  -> EncounterApi.prepareGeneratedBatch(batch)
+  -> validate PreparedSessionDraft
+  -> commit generation run || commit Encounter plan batch
+  -> replace SessionPlan references
+  -> assemble and publish one workspace revision
+```
+
+The two foreign commits may run concurrently after complete in-memory
+validation. Session Planner commits only after both succeed. The preparation
+identity is derived from session identity, source revision, normalized inputs,
+and seed; Session Generation and Encounter retain it with their content
+fingerprints. A planner write failure therefore leaves reusable immutable
+foreign artifacts rather than triggering compensating deletion.
+
+Preparation never uses persistence as message transport. The generated draft
+and concrete Encounter roster drafts remain typed in-memory values until the
+commit stage. Session Generation validates again at its write boundary;
+Encounter validates the full concrete batch before its transaction.
+
+## Responsibility Boundaries
+
+Session Planner owns:
+
+- the user command, replacement confirmation, captured fingerprint, progress,
+  cancellation, orchestration, and final planner mutation
+- planner-owned session and workspace state
+- translating foreign results into planner references
+
+Session Generation owns:
+
+- deterministic encounter intents, reward generation, audits, catalog
+  identity, immutable generation-run persistence, and typed reward reads
+
+Encounter owns:
+
+- one batch creature-candidate snapshot, concrete roster selection, encounter
+  math, saved-plan validation, and atomic idempotent plan persistence
+
+Party and World Planner own their facts. No feature imports another feature's
+implementation package or repository.
+
+## Execution And Cancellation
+
+- the JavaFX dispatcher only captures intents and applies completed immutable
+  snapshots
+- pure generation and Encounter draft construction run on bounded CPU work
+- resource and SQLite work run on I/O execution; database transactions remain
+  short and contain no generation search
+- no global serial lane encloses the whole preparation workflow
+- each request has a cancellation token and captured fingerprint
+- a newer request, session switch, or relevant authored revision cancels or
+  invalidates older work
+- late completion may contribute diagnostics but cannot publish or commit
+  against a stale fingerprint
+
+Stage timings record stable request identity, stage, duration, candidate count,
+and query count only. Diagnostics exclude authored text, creature payloads,
+generated item text, SQL, and local paths.
+
+## Compact JavaFX Composition
+
+The accepted master-detail timeline remains. The controls adapter renders one
+horizontal preparation toolbar with progressive disclosure for participant
+detail. Saved-plan search belongs to the selected-scene inspector. The Generate
+button and progress share the toolbar; there is no separate preparation card or
+Apply control. Generated rewards use structured cards, while manual loot notes
+use a separate presentation type.
+
+## Performance Model
+
+The hot path has bounded service calls:
+
+- one Party resolution read
+- one immutable Session Generation catalog snapshot per catalog version
+- one Encounter candidate batch read for all generated intents
+- one generation-run transaction and one Encounter-plan batch transaction
+- one Session Planner replacement transaction
+- one batch workspace assembly after commit
+
+It forbids per-slot creature queries, per-creature detail reads, loading every
+saved Encounter plan to render controls, repeated full Session catalogs during
+one assembly, save-then-reload equality checks, and independent projection
+fan-out.
+
+Measurable architecture targets are:
+
+- Generate dispatch and immutable snapshot application are the only
+  preparation work allowed on the JavaFX thread; in-progress publication is
+  eligible for the next pulse.
+- one workspace assembly performs one planner read and at most one batch read
+  each from Party, Encounter, Session Generation, and World Planner, independent
+  of scene, saved-plan, reward, slot, and roster-member cardinality
+- the warmed reference fixture is two level-3 and two level-4 participants,
+  `0.6` adventure days, and three encounters over 20 runs; the complete editable
+  publication must satisfy the 2-second p95 product target
+- catalog initialization, migration, and cold caches are measured separately;
+  each CPU, foreign-read, commit, assembly, and JavaFX-apply stage records its
+  own duration and query count
+
+## Durable Decisions And Rejected Alternatives
+
+Chosen decisions:
+
+- `prepareSession` is the sole preparation use case; it validates one complete
+  typed in-memory preparation before durable commits.
+- The master-detail workspace renders one revisioned workspace snapshot.
+- Encounter preparation produces concrete rosters from one batch candidate
+  boundary; abstract slots are not a planner result.
+- Generated reward truth remains in Session Generation and is batch-projected
+  into Session Planner through stable references.
+- Revision guards, idempotent foreign commits, and one final optimistic planner
+  commit provide retry safety without shared storage ownership.
+
+Rejected alternatives:
+
+- backend preview/apply and save/reload workflow transport
+- multiple independently refreshed planner projections
+- copied foreign reward, creature, Party, or World Planner truth
+- a shared cross-feature transaction, workflow database, saga store, or event
+  bus
+- a remote generator service, dynamic rules plugin system, or second generation
+  UI
+
+## Enforcement And Proof
+
+Architecture enforcement rejects JavaFX orchestration, foreign implementation
+imports, repositories crossing APIs, Session Generation JavaFX code, and
+planner persistence of foreign detail. Production-route proof owns stale-result
+rejection, idempotent retry, all-or-nothing replacement, structured reward
+projection, concrete Encounter rosters, bounded query counts, responsiveness,
+and the warmed reference-fixture threshold.
 
 ## References
 
-- [Session Planner Persistence Contract](../contract/contract-session-planner-persistence.md)
-- [Session Planner Requirements](../requirements/requirements-session-planner.md)
-- [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)
+- [Requirements](../requirements/requirements-session-planner.md)
+- [Domain](../domain/domain-session-planner.md)
+- [Persistence Contract](../contract/contract-session-planner-persistence.md)
 - [Session Generation Architecture](../../sessiongeneration/architecture/architecture-session-generation.md)
-- [Encounter Generated Import](../../encounter/contract/contract-encounter-generated-import.md)
+- [Encounter Generated Preparation](../../encounter/contract/contract-encounter-generated-import.md)
+- [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)

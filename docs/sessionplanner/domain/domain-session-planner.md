@@ -1,150 +1,113 @@
-Status: Draft
-Owner: SaltMarcher Team
-Last Reviewed: 2026-07-16
-Source of Truth: Session planner context role, session-record ownership, and
-domain invariants.
+Status: Active Target
+Owner: Session Planner Feature
+Last Reviewed: 2026-07-18
+Source of Truth: Session Planner language, authored truth, and invariants.
 
 # Session Planner Domain Model
 
-## Context Role
+## Context Role And Ownership
 
-Context Role: Roster Truth Context
-Context Name: SessionPlanner
+Context Name: `SessionPlanner`
 
-- `sessionplanner` owns the authored planning record for one adventure session
-- its public boundary is `SessionPlannerApi`
-- it does not own party truth, encounter-plan roster truth, creature truth, or
-  generated-run truth
+Context Role: Authored Session Preparation Context
+
+Session Planner owns the editable preparation record for one session. Party,
+Encounter, Creatures, World Planner, and Session Generation retain their own
+truth. Session Planner records stable references to foreign truth without
+copying that truth into its model.
 
 ## Published Language
 
-`SessionPlannerApi` owns planner commands, rest-kind vocabulary, and immutable
-revisioned planner state.
+The feature publishes:
 
-- the feature publishes planner-owned workflows and one immutable state surface
-- it does not publish encounter persistence carriers, creature-detail carriers,
-  or party mutation carriers; those stay owned by their original contexts
-- generation preview state publishes a typed fingerprint and readiness state;
-  it does not republish engine or catalog versions as a user-selectable ruleset
+- `SessionPlanId`, `SessionSceneId`, and optimistic `SessionRevision`
+- session catalog summaries and authored-session commands
+- `PrepareSessionCommand` and `PreparationStatus`
+- immutable session and scene summaries containing typed foreign references
 
-## Application Boundary
+SQL rows, repositories, JavaFX controls, and foreign internal models are not
+part of the published language.
 
-The Session Planner application coordinates:
+## Write Model
 
-- session-plan reads and writes through a planner-owned repository port
-- active-party composition reads needed to resolve participant references
-- party-based adventuring-day calculations
-- saved encounter-plan budget reads through the encounter public boundary
-- generation previews through `SessionGenerationApi`
-- generated-plan batch import through Encounter's public boundary
-- session-local workflow mutations
-- publication of immutable, revisioned planner API state
+`SessionPlan` is the sole Session Planner write model and aggregate root. It
+owns:
 
-- planner state is exposed only through `SessionPlannerApi`
-- the application boundary remains orchestration only while `SessionPlan` owns the
-  authored planning truth
-- party and encounter rules stay in their owning contexts
-
-## Aggregate Model
-
-Aggregate Root: SessionPlan
-
-`SessionPlan` owns the persisted planning record for one session. It stores:
-
-- stable session identity
-- user-visible session display name
+- stable identity, display name, and revision
 - session-local participant references
-- exact `encounterDays` planning input
-- ordered session-owned scenes
-- optional encounter-plan reference for each scene
-- session-owned scene title, notes, and optional World Planner location
-  reference for each scene
-- per-scene budget allocations when an encounter plan is linked
-- selected scene context
-- placed rests and loot placeholders
-- ordered references from session scenes to generated rewards, consisting of
-  scene identity, typed generation-run identity, treasure identity, and a
-  last-known display label
-- session-local status and selection truth
+- exact encounter-day fraction
+- ordered scenes with title, notes, and optional World Planner location ID
+- optional Encounter plan ID and planner-owned allocation per scene
+- selected scene identity
+- rests between scenes
+- manual loot notes
+- ordered generated reward references consisting of scene ID, generation-run
+  ID, treasure ID, and a last-known display fallback
 
-It derives:
+It does not embed party details, Encounter rosters, creature details, World
+Planner records, generated item lines, packing rows, audits, or engine metadata.
+Preparation work that has not replaced the aggregate is transient derived
+state, never a second write model or authored truth.
 
-- total planned encounter XP from linked encounter-owned summaries
-- remaining and exceeded XP budget
-- recommended rest counts
-- importable saved encounter-plan budget summaries
-- whether the current generation preview fingerprint still matches the current
-  session and generation controls
+## Mutation Language And Invariants
 
-The aggregate does not embed party membership, encounter rosters, creature
-detail, generated encounter specifications, generated reward contents, packing
-rows, audits, engine versions, or catalog snapshots.
+Mutation language covers:
 
-`GenerationPreviewLock` is derived runtime state, not part of `SessionPlan`.
-Its fingerprint covers session identity and revision, resolved participant
-levels, adventure-day fraction, optional encounter count, and seed. It is
-`READY` only when those values still match the preview and all hard audits
-pass; otherwise it is `STALE` or non-applicable.
-
-## Commands And Invariants
-
-Commands entering the runtime model are:
-
-- create session plan
-- add or remove session participant reference
-- add or remove a session scene
-- attach or detach saved encounter-plan reference on a scene
-- update scene title, scene notes, and optional World Planner location
-  reference for a scene
-- reorder scenes
-- change scene allocation when an encounter plan is linked
-- set or clear a rest in one scene gap
-- add or remove a loot placeholder
-- select the current session scene context
-- accept one current generation preview after Encounter returns the complete
-  generated-plan import mapping
+- create, open, rename, or delete a session
+- add or remove a session participant reference
+- add, edit, remove, or reorder a scene
+- attach or detach one saved Encounter plan
+- change one linked-scene allocation
+- set or clear one rest in a scene gap
+- add or remove one manual loot note
+- select one scene
+- replace prepared content as one complete authored mutation
 
 Core invariants:
 
-- planner XP math is based on public party and encounter reads only
-- session participant count is the number of session participant references
-- the persistence model holds multiple session records and one current
-  session pointer
-- scenes keep the session-local order chosen by the planner
-- rests can exist only between adjacent scenes
-- each scene may refer to one encounter-owned saved plan, but scenes may also
-  have no linked encounter
-- each scene may reference one World Planner location by stable ID
-  without copying location detail
-- sessionplanner persists only references and planner-owned metadata, never
-  foreign encounter or party internals
-- loot placeholders do not contribute fake XP or fake gold values
-- a generation preview cannot mutate the aggregate before Apply
-- one Apply mutation adds imported encounter-plan references in generation
-  order and adds only stable generated-reward references
-- every generated reward reference names an existing session scene
-- every generated reward reference uses a non-blank typed generation-run
-  identity and positive treasure identity
-- encounter-channel rewards reference their generated encounter scene; quest
-  and environment rewards create encounter-free session scenes
-- removing a scene prunes its generated reward references
-- preview fingerprints and preview contents are derived runtime state and are
-  never persisted as authored session truth
+- the current pointer names one existing persisted session
+- a session revision changes for every authored mutation
+- participant references are unique within a session
+- scene identities and order are unique within a session
+- rests exist only between adjacent scenes
+- each scene references at most one Encounter plan and one World Planner
+  location
+- generated reward references name an existing session scene and one positive
+  treasure identity in one non-blank generation run
+- encounter-channel rewards reference their generated Encounter scene; quest
+  and environment rewards reference encounter-free scenes
+- manual loot notes never masquerade as generated reward detail
+- incomplete preparation never mutates `SessionPlan`
+- prepared-content replacement applies to the exact session identity and
+  revision it read; concurrent authored edits reject the replacement
+- removing a scene removes its planner-owned reward references without deleting
+  foreign generated runs or saved Encounter plans
 
-## Consistency Model
+## Derived State
 
-- reopening a session restores session-owned participant refs, scene order,
-  allocations, selection, rests, and placeholders
-- party, encounter, creature, and later loot truth are re-read through their
-  owning boundaries instead of being copied into session persistence
-- generated reward detail is re-read from Session Generation by run and
-  treasure identity; the last-known label remains a display fallback only
+Session Planner derives, without creating another write model:
+
+- participant summaries and planning readiness
+- budget, planned XP, remaining or exceeded XP, and rest guidance
+- ordered scene summaries and selected-scene detail
+- linked and attachable Encounter summaries
+- hydrated generated rewards and manual loot-note presentation
+- preparation lifecycle, stage, warnings, and retry availability
+
+All presentation sections for one published view describe the same source
+`SessionRevision`.
+
+## Consistency Boundary
+
+One `SessionPlan` mutation is the Session Planner consistency boundary. Foreign
+generated runs and saved Encounter plans remain immutable truth in their owning
+contexts even when a planner reference is absent or later removed. Session
+Planner never compensates by deleting that foreign truth.
 
 ## References
 
-- [Session Planner Requirements](../requirements/requirements-session-planner.md) (line 1)
-- [Session Planner Architecture](../architecture/architecture-session-planner.md) (line 1)
-- [Session Planner Persistence Contract](../contract/contract-session-planner-persistence.md) (line 1)
-- [Party Domain Model](../../party/domain/domain-party.md) (line 1)
-- [Encounter Domain Model](../../encounter/domain/domain-encounter.md) (line 1)
-- [Session Generation Domain Model](../../sessiongeneration/domain/domain-session-generation.md)
+- [Requirements](../requirements/requirements-session-planner.md)
+- [Persistence Contract](../contract/contract-session-planner-persistence.md)
+- [Architecture](../architecture/architecture-session-planner.md)
+- [Encounter Domain](../../encounter/domain/domain-encounter.md)
+- [Session Generation Domain](../../sessiongeneration/domain/domain-session-generation.md)
