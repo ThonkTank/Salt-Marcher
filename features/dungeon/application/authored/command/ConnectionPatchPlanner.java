@@ -12,9 +12,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 
-/** Converts one aggregate-owned corridor operation into exact room, corridor, and stair changes. */
-final class CorridorPatchPlanner {
-    private CorridorPatchPlanner() {
+/** Converts one connection-affecting aggregate operation into exact room, corridor, and stair changes. */
+final class ConnectionPatchPlanner {
+    private ConnectionPatchPlanner() {
     }
 
     static DungeonCommandResult plan(
@@ -37,7 +37,7 @@ final class CorridorPatchPlanner {
         DungeonMap expected = DungeonMapAuthoring.committedContent(after, patch.committedRevision());
         if (!patched.equals(expected)) {
             throw new IllegalStateException(
-                    "corridor patch must reproduce the exact aggregate result; mismatches="
+                    "connection patch must reproduce the exact aggregate result; mismatches="
                             + mismatches(patched, expected));
         }
         return DungeonCommandResult.Accepted.from(patch);

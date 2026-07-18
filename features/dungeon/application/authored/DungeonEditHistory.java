@@ -3,7 +3,6 @@ package features.dungeon.application.authored;
 import features.dungeon.application.authored.command.DungeonCompoundPatch;
 import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.domain.core.structure.DungeonMap;
-import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -20,12 +19,6 @@ final class DungeonEditHistory {
     static final long MAXIMUM_ESTIMATED_BYTES = 128L * 1024L * 1024L;
 
     private final Map<Long, MapHistory> histories = new HashMap<>();
-
-    void record(DungeonMap before, DungeonMap after) {
-        if (before != null && after != null && !before.equals(after)) {
-            recordEntry(new SnapshotEntry(before, after, estimatedBytes(before, after)));
-        }
-    }
 
     void recordPatch(DungeonPatch patch) {
         if (patch != null) {
@@ -171,20 +164,6 @@ final class DungeonEditHistory {
         }
     }
 
-    private static long estimatedBytes(DungeonMap before, DungeonMap after) {
-        return estimateMap(before) + estimateMap(after);
-    }
-
-    private static long estimateMap(DungeonMap map) {
-        long structuralObjects = 1L
-                + map.rooms().rooms().size()
-                + map.corridors().size()
-                + map.stairs().stairs().size()
-                + map.transitionCatalog().transitions().size()
-                + map.featureMarkers().markers().size();
-        return Math.max(4_096L, structuralObjects * 512L);
-    }
-
     record Step(@Nullable HistoryEntry entry, boolean undo) {
         static Step empty() {
             return new Step(null, false);
@@ -206,28 +185,12 @@ final class DungeonEditHistory {
         }
     }
 
-    private sealed interface HistoryEntry permits SnapshotEntry, PatchEntry, CompoundPatchEntry {
+    private sealed interface HistoryEntry permits PatchEntry, CompoundPatchEntry {
         Set<Long> mapIds();
 
         long encodedBytes();
 
         Map<Long, DungeonMap> applyTo(Map<Long, DungeonMap> currentMaps, boolean undo);
-    }
-
-    private record SnapshotEntry(DungeonMap before, DungeonMap after, long encodedBytes)
-            implements HistoryEntry {
-        @Override
-        public Set<Long> mapIds() {
-            return Set.of(after.metadata().mapId().value());
-        }
-
-        @Override
-        public Map<Long, DungeonMap> applyTo(Map<Long, DungeonMap> currentMaps, boolean undo) {
-            long mapId = after.metadata().mapId().value();
-            DungeonMap current = requiredMap(currentMaps, mapId);
-            DungeonMap target = undo ? before : after;
-            return Map.of(mapId, DungeonMapAuthoring.restoreContent(target, current.revision() + 1L));
-        }
     }
 
     private record PatchEntry(DungeonPatch forward, DungeonPatch inverse) implements HistoryEntry {

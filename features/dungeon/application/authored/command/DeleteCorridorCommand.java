@@ -20,7 +20,7 @@ public final class DeleteCorridorCommand {
             return new DungeonCommandResult.Rejected(
                     DungeonEditorCommandOutcome.RejectionReason.INVALID_TARGET);
         }
-        return CorridorPatchPlanner.plan(
+        return ConnectionPatchPlanner.plan(
                 current,
                 map -> authoring.deleteCorridor(map, target),
                 DungeonEditorCommandOutcome.RejectionReason.BLOCKED_ROUTE);
