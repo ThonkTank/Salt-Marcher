@@ -1,17 +1,28 @@
 Status: Active
 Owner: Catalog Feature
-Last Reviewed: 2026-07-17
+Last Reviewed: 2026-07-18
 Source of Truth: User-visible consolidated catalog behavior.
 
 # Catalog Requirements
 
 ## Goal
 
-Reference content MUST be reachable from one `Katalog` navigation entry rather
-than separate feature navigation tabs. The workspace serves game preparation
-and running-session lookup without taking ownership from provider features.
+The GM MUST be able to find, evaluate, and explicitly hand reference content
+to an active Encounter or Scene from one `Katalog` navigation entry. The
+workspace serves both game preparation and running-session lookup.
 
-## Required Behavior
+## Primary Flows
+
+1. The GM opens `Katalog`, chooses one of the seven visible sections, and uses
+   that section's search or filters.
+2. The GM opens a selected record in the Inspector without changing Encounter
+   or Scene state.
+3. The GM uses an explicit action when a Monster, NPC, faction, location, or
+   Encounter Table should affect the active Encounter or focused Scene.
+4. The GM switches sections and later returns without losing unfinished input
+   or the previous result position.
+
+## Target Behavior
 
 - The workspace MUST expose Monster, Items, Encounter, NPCs, Fraktionen, Orte,
   and Encounter-Tabellen as distinct visible sections.
@@ -20,7 +31,10 @@ and running-session lookup without taking ownership from provider features.
   and its results MUST appear in the main area.
 - Switching sections MUST preserve each section's filters, selection, paging,
   and unfinished input for the lifetime of the Catalog workspace.
-- Sections MUST use consistent tabular result chrome.
+- Sections MUST use consistent table, status, paging, keyboard, and selection
+  behavior while retaining section-specific columns, filters, and actions.
+- Every section MUST distinguish loading, empty, unavailable, invalid-input,
+  and failed outcomes whenever the underlying operation can produce them.
 - Monster search and encounter-builder controls MUST preserve their accepted
   behavior, including creature details and explicit add-to-Encounter and
   add-to-focused-Scene actions.
@@ -30,15 +44,15 @@ and running-session lookup without taking ownership from provider features.
 - Saved encounters MUST open in the global Encounter state tab. If the focused
   Encounter has unsaved roster changes, opening another plan MUST require an
   explicit discard confirmation.
-- NPC, faction, and location details and edit actions MUST open through
-  World-Planner-owned inspector content.
+- NPC, faction, and location details and edit actions MUST remain available in
+  the Inspector.
 - NPCs MUST support explicit Encounter and focused-Scene actions. Factions,
   locations, and Encounter tables MUST support explicit Encounter-source
   actions; locations MUST support assigning the focused Scene location.
 - Selecting or opening a row alone MUST NOT mutate Encounter or Scene state.
-- Creature pool filters remain Catalog-owned and constrain Encounter
-  generation. Difficulty, balance, amount, and diversity controls MUST live in
-  a collapsible section in the global Encounter state tab.
+- Changes to the visible Monster filters MUST also constrain Encounter
+  generation. Difficulty, balance, amount, and diversity controls MUST remain
+  in a collapsible section in the global Encounter state tab.
 - The separate World Planner navigation entry and local state-panel slot MUST
   not be registered. World data and edit capabilities remain available through
   Catalog and Inspector.
@@ -47,19 +61,28 @@ and running-session lookup without taking ownership from provider features.
 
 ## Non-Goals
 
-Catalog does not persist reference data, define dispositions, import external
-items, own encounter runtime state, or duplicate provider command logic.
+Catalog does not edit creature statblocks, import external items, replace the
+Encounter or Scene workspaces, or expose a second World Planner workspace.
 
 ## Acceptance Criteria
 
-Automated UI tests MUST prove one Catalog contribution contains all seven
-sections in the common controls/main structure, preserves section state,
-retains stable Monster columns and selection across result refreshes, routes
-saved-plan confirmation, renders explicit Items states, and remains unchanged
-when Scene initializes. They MUST also prove the explicit Encounter and Scene
-routes and that Encounter tuning is absent from Catalog controls.
-Architecture proof MUST reject Catalog imports from foreign adapters. Final
-visual and interaction acceptance remains owner manual testing.
+- One `Katalog` contribution shows all seven sections in the common controls
+  and main workspace.
+- Switching through every section and returning preserves each section's
+  current query, filter draft, selected record, page, and unfinished input.
+- Refreshing provider results preserves a still-present selected record by its
+  stable identity.
+- Each reachable result state renders a distinct visible outcome and leaves the
+  JavaFX event thread responsive.
+- Opening details changes only Inspector content.
+- Each explicit Encounter or Scene action changes only its named destination.
+- Opening a saved Encounter with unsaved roster changes requires confirmation
+  before replacement.
+- Encounter tuning controls are absent from Catalog and remain available in the
+  global Encounter state tab.
+- Activating or refreshing Scene does not change the visible Monster query,
+  rows, sort, page, selection, or loading state.
+- Final visual and interaction acceptance remains owner manual testing.
 
 ## References
 
