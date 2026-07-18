@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-16
+Last Reviewed: 2026-07-19
 Source of Truth: Persistence path and schema ownership rules for the
 `encounter` feature.
 
@@ -29,9 +29,10 @@ persistence path.
   - `generated_encounter_plan_origins`
 - `saved_encounter_plans` stores plan identity, display name, generated label,
   and timestamps.
-- `saved_encounter_plan_creatures` stores ordered creature identity and
-  quantity rows. Creature identity references the creature catalog; the
-  encounter feature does not duplicate statblocks.
+- `saved_encounter_plan_creatures` stores ordered creature identity, quantity,
+  and the last-known display name captured when the plan was saved. Creature
+  identity references the creature catalog; the encounter feature does not
+  duplicate statblocks.
 - `generated_encounter_plan_batches` stores the immutable source identity,
   normalized batch fingerprint, and declared encounter cardinality.
 - `generated_encounter_plan_origins` stores the stable batch order,
@@ -49,16 +50,20 @@ not persist:
 - defeated-result state
 - loot or XP-award resolution
 
-Optional generated origin consists only of engine version, generation-run
-identity, normalized batch fingerprint and cardinality, encounter order and
-number, normalized-spec fingerprint, and saved-plan reference. It does not
-copy a Session Generation result. Source-level batch uniqueness plus ordered
-origin uniqueness makes identical completed imports idempotent and makes
-subset, superset, and reordered retries distinguishable.
+Optional generated origin consists only of engine version, preparation and
+generation-run identities, normalized batch and roster fingerprints and
+cardinality, encounter order and number, normalized-intent fingerprint, and
+saved-plan reference. It does not copy a Session Generation result.
+Preparation-level uniqueness plus ordered origin uniqueness makes identical
+completed commits idempotent and makes subset, superset, reordered, relabeled,
+or changed-roster retries distinguishable.
 
 The Encounter SQLite adapter maps private rows into `EncounterPlan` aggregate
-values. Creature detail display is reloaded through `CreaturesApi` when a plan
-is opened.
+values. The stored name remains a last-known fallback; current creature facts
+are reloaded through one `CreaturesApi` ID-union snapshot when summaries are
+requested. Base XP, adjusted XP, and difficulty are derived for that read from
+the current active Party composition and current Creature facts. Those derived
+summary values are not persisted as historical truth.
 
 ## Validation And Error Behavior
 

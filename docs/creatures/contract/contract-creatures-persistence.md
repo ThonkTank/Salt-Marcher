@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-19
 Source of Truth: Persistence path and schema ownership rules for the `creatures`
 feature.
 
@@ -36,6 +36,9 @@ This document is normative for the `creatures` feature's persistence path.
 - Query construction and row mapping remain private SQLite-adapter concerns.
 - Shared SQL filter-clause and parameter-binding helpers stay local to that
   package and must not become public feature boundaries.
+- A direct facts query resolves the complete requested XP-value or creature-ID
+  union in one set-based adapter operation. It has no UI page size or hidden
+  result limit and returns stable creature-ID order.
 
 ## Validation And Error Behavior
 

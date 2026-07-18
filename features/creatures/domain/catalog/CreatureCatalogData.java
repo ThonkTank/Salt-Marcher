@@ -182,6 +182,25 @@ public final class CreatureCatalogData {
         }
     }
 
+    public record CreatureFactsSpec(FactsMode mode, List<Long> values) {
+        public enum FactsMode { XP_VALUES, CREATURE_IDS }
+
+        public CreatureFactsSpec {
+            if (mode == null) {
+                throw new IllegalArgumentException("mode is required");
+            }
+            values = values == null ? List.of() : List.copyOf(values);
+            if (values.isEmpty()) {
+                throw new IllegalArgumentException("values must not be empty");
+            }
+        }
+
+        @Override
+        public List<Long> values() {
+            return List.copyOf(values);
+        }
+    }
+
     public record CreatureIdentity(
             long id,
             String name,

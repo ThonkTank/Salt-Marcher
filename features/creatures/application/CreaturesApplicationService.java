@@ -31,6 +31,8 @@ import features.creatures.api.CreatureReferenceIndexStatus;
 import features.creatures.api.RefreshCreatureReferenceIndexCommand;
 import features.creatures.api.RefreshCreatureEncounterCandidatesCommand;
 import features.creatures.api.SelectCreatureDetailCommand;
+import features.creatures.api.CreatureFactsQuery;
+import features.creatures.api.CreatureFactsSnapshotResult;
 
 /**
  * Public backend facade for creature catalog publication.
@@ -265,6 +267,39 @@ public final class CreaturesApplicationService
     public void refreshEncounterCandidates(RefreshCreatureEncounterCandidatesCommand command) {
         EncounterCandidateRequest request = EncounterCandidateRequest.from(command);
         executionLane.execute(() -> refreshEncounterCandidatesInLane(request));
+    }
+
+    @Override
+    public CompletionStage<CreatureFactsSnapshotResult> loadFacts(CreatureFactsQuery query) {
+        CompletableFuture<CreatureFactsSnapshotResult> completion = new CompletableFuture<>();
+        if (query == null) {
+            completion.complete(CreatureFactsSnapshotResult.invalidRequest());
+            return completion;
+        }
+        try {
+            executionLane.execute(() -> completion.complete(loadFactsInLane(query)));
+        } catch (RuntimeException exception) {
+            diagnostics.failure(ENCOUNTER_CANDIDATES_FAILURE, exception.getClass());
+            completion.complete(CreatureFactsSnapshotResult.storageFailure());
+        }
+        return completion;
+    }
+
+    private CreatureFactsSnapshotResult loadFactsInLane(CreatureFactsQuery query) {
+        try {
+            var mode = query.mode() == CreatureFactsQuery.Mode.XP_VALUES
+                    ? CreatureCatalogData.CreatureFactsSpec.FactsMode.XP_VALUES
+                    : CreatureCatalogData.CreatureFactsSpec.FactsMode.CREATURE_IDS;
+            return CreatureFactsSnapshotResult.success(lookup.loadCreatureFacts(
+                    new CreatureCatalogData.CreatureFactsSpec(mode, query.values())).stream()
+                    .map(CreatureCatalogProjection::encounterCandidate)
+                    .toList());
+        } catch (IllegalArgumentException exception) {
+            return CreatureFactsSnapshotResult.invalidRequest();
+        } catch (IllegalStateException exception) {
+            diagnostics.failure(ENCOUNTER_CANDIDATES_FAILURE, exception.getClass());
+            return CreatureFactsSnapshotResult.storageFailure();
+        }
     }
 
     private void refreshEncounterCandidatesInLane(EncounterCandidateRequest request) {

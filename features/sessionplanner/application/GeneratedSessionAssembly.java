@@ -6,12 +6,13 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import features.encounter.api.GeneratedEncounterPlanImportCommand;
-import features.encounter.api.GeneratedEncounterPlanImportResult;
-import features.encounter.api.GeneratedEncounterPlanRole;
-import features.encounter.api.GeneratedEncounterPlanSlotSpec;
-import features.encounter.api.GeneratedEncounterPlanSource;
-import features.encounter.api.GeneratedEncounterPlanSpec;
+import features.encounter.api.CommittedGeneratedEncounterMapping;
+import features.encounter.api.GeneratedEncounterBlock;
+import features.encounter.api.GeneratedEncounterDifficulty;
+import features.encounter.api.GeneratedEncounterIntent;
+import features.encounter.api.GeneratedEncounterRole;
+import features.encounter.api.GeneratedEncounterSource;
+import features.encounter.api.PrepareGeneratedEncounterBatchCommand;
 import features.sessiongeneration.api.GenerationResult;
 import features.sessionplanner.domain.session.SessionEncounter;
 import features.sessionplanner.domain.session.SessionEncounterAllocation;
@@ -26,22 +27,32 @@ final class GeneratedSessionAssembly {
     private GeneratedSessionAssembly() {
     }
 
-    static GeneratedEncounterPlanImportCommand toImportCommand(GenerationResult result) {
-        List<GeneratedEncounterPlanSpec> plans = result.encounters().stream()
-                .map(encounter -> new GeneratedEncounterPlanSpec(
+    static PrepareGeneratedEncounterBatchCommand toPrepareCommand(GenerationResult result) {
+        List<GeneratedEncounterIntent> plans = result.encounters().stream()
+                .map(encounter -> new GeneratedEncounterIntent(
                         encounter.encounterNumber(),
                         "Generierter Encounter " + encounter.encounterNumber(),
-                        expandedSlots(encounter.blocks())))
+                        encounter.targetXp(),
+                        difficulty(encounter.difficulty()),
+                        encounter.blocks().stream()
+                                .map(block -> new GeneratedEncounterBlock(
+                                        block.id(),
+                                        role(block.requestedRole()),
+                                        block.challengeLabel(),
+                                        block.monsterXp(),
+                                        block.count()))
+                                .toList()))
                 .toList();
-        return new GeneratedEncounterPlanImportCommand(
-                new GeneratedEncounterPlanSource(result.engineVersion(), result.runId().value()),
+        return new PrepareGeneratedEncounterBatchCommand(
+                new GeneratedEncounterSource(
+                        result.engineVersion(), result.runId().value(), result.runId().value()),
                 plans);
     }
 
     static SessionPlan toSessionPlan(
             SessionPlan stable,
             GenerationResult result,
-            List<GeneratedEncounterPlanImportResult.ImportedPlan> importedPlans
+            List<CommittedGeneratedEncounterMapping> importedPlans
     ) {
         Map<Integer, Long> importedByNumber = new LinkedHashMap<>();
         importedPlans.forEach(plan -> importedByNumber.put(plan.encounterNumber(), plan.planId()));
@@ -101,17 +112,22 @@ final class GeneratedSessionAssembly {
         return stable.replaceGeneratedContent(scenes, rewards);
     }
 
-    private static List<GeneratedEncounterPlanSlotSpec> expandedSlots(
-            List<GenerationResult.EncounterBlock> blocks
-    ) {
-        List<GeneratedEncounterPlanSlotSpec> slots = new ArrayList<>();
-        for (GenerationResult.EncounterBlock block : blocks) {
-            for (int count = 0; count < block.count(); count++) {
-                slots.add(new GeneratedEncounterPlanSlotSpec(
-                        block.monsterXp(),
-                        GeneratedEncounterPlanRole.valueOf(block.requestedRole().name())));
-            }
-        }
-        return List.copyOf(slots);
+    private static GeneratedEncounterRole role(GenerationResult.EncounterRole role) {
+        return switch (role) {
+            case MINION -> GeneratedEncounterRole.MINION;
+            case SUPPORT -> GeneratedEncounterRole.SUPPORT;
+            case STANDARD -> GeneratedEncounterRole.STANDARD;
+            case ELITE -> GeneratedEncounterRole.ELITE;
+            case BOSS -> GeneratedEncounterRole.BOSS;
+        };
+    }
+
+    private static GeneratedEncounterDifficulty difficulty(GenerationResult.Difficulty difficulty) {
+        return switch (difficulty) {
+            case EASY -> GeneratedEncounterDifficulty.EASY;
+            case MEDIUM -> GeneratedEncounterDifficulty.MEDIUM;
+            case HARD -> GeneratedEncounterDifficulty.HARD;
+            case DEADLY -> GeneratedEncounterDifficulty.DEADLY;
+        };
     }
 }

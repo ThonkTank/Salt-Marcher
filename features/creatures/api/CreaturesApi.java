@@ -1,5 +1,7 @@
 package features.creatures.api;
 
+import java.util.concurrent.CompletionStage;
+
 public interface CreaturesApi {
 
     void refreshReferenceIndex(RefreshCreatureReferenceIndexCommand command);
@@ -7,4 +9,6 @@ public interface CreaturesApi {
     void selectCreatureDetail(SelectCreatureDetailCommand command);
 
     void refreshEncounterCandidates(RefreshCreatureEncounterCandidatesCommand command);
+
+    CompletionStage<CreatureFactsSnapshotResult> loadFacts(CreatureFactsQuery query);
 }

@@ -27,6 +27,7 @@ public final class SqliteCreatureCatalogLocalGateway {
     private final CreatureCatalogSearchSqliteStore catalogSearchStore = new CreatureCatalogSearchSqliteStore();
     private final CreatureDetailSqliteStore creatureDetailStore = new CreatureDetailSqliteStore();
     private final EncounterCandidateSqliteStore encounterCandidateStore = new EncounterCandidateSqliteStore();
+    private final CreatureFactsSqliteStore creatureFactsStore = new CreatureFactsSqliteStore();
 
     public SqliteCreatureCatalogLocalGateway() {
         this(SqliteDatabase.defaultDatabase(
@@ -75,6 +76,17 @@ public final class SqliteCreatureCatalogLocalGateway {
             return encounterCandidateStore.loadEncounterCandidates(connection, spec);
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to load encounter-ready creatures from SQLite.", exception);
+        }
+    }
+
+    public List<EncounterCandidateRecord> loadCreatureFacts(
+            features.creatures.domain.catalog.CreatureCatalogData.CreatureFactsSpec spec
+    ) {
+        Objects.requireNonNull(spec, "spec");
+        try (Connection connection = openReadyConnection()) {
+            return creatureFactsStore.load(connection, spec);
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load requested creature facts from SQLite.", exception);
         }
     }
 

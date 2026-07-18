@@ -1,6 +1,5 @@
 package features.sessionplanner.application;
 
-import features.encounter.api.GeneratedEncounterPlanImportResult;
 import features.sessiongeneration.api.GenerationResponse;
 
 final class SessionGenerationFailureMessages {
@@ -38,15 +37,4 @@ final class SessionGenerationFailureMessages {
         };
     }
 
-    static String forEncounterImport(GeneratedEncounterPlanImportResult result) {
-        if (result == null) {
-            return "Encounter-Pläne konnten nicht importiert werden. Bitte erneut versuchen.";
-        }
-        return switch (result.status()) {
-            case INVALID_REQUEST -> "Generierte Encounter-Daten sind ungültig. Bitte Vorschau neu erzeugen.";
-            case UNRESOLVABLE -> "Encounter-Pläne konnten nicht aufgelöst werden. Bitte erneut versuchen.";
-            case STORAGE_FAILURE -> "Encounter-Pläne konnten nicht gespeichert werden. Bitte erneut versuchen.";
-            case SUCCESS -> "Encounter-Pläne konnten nicht importiert werden. Bitte erneut versuchen.";
-        };
-    }
 }

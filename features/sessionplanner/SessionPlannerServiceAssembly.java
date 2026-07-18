@@ -13,8 +13,6 @@ import platform.ui.UiDispatcher;
 import shell.api.ShellContribution;
 import features.encounter.api.EncounterApi;
 import features.encounter.api.EncounterPlanBudgetModel;
-import features.encounter.api.GeneratedEncounterPlanImportApi;
-import features.encounter.api.GeneratedEncounterPlanImportResult;
 import features.encounter.api.SavedEncounterPlanListModel;
 import features.party.api.ActivePartyModel;
 import features.party.api.AdventuringDayCalculationModel;
@@ -72,7 +70,6 @@ public final class SessionPlannerServiceAssembly {
                 planBudget,
                 worldPlanner,
                 unavailableGeneration(),
-                unavailableEncounterImport(),
                 DirectExecutionLane.INSTANCE,
                 DirectUiDispatcher.INSTANCE,
                 NoopDiagnostics.INSTANCE);
@@ -101,7 +98,6 @@ public final class SessionPlannerServiceAssembly {
                 planBudget,
                 worldPlanner,
                 unavailableGeneration(),
-                unavailableEncounterImport(),
                 executionLane,
                 uiDispatcher,
                 diagnostics);
@@ -117,7 +113,6 @@ public final class SessionPlannerServiceAssembly {
             EncounterPlanBudgetModel planBudget,
             @Nullable WorldPlannerSnapshotModel worldPlanner,
             SessionGenerationApi generation,
-            GeneratedEncounterPlanImportApi generatedEncounterImport,
             ExecutionLane executionLane,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
@@ -132,7 +127,6 @@ public final class SessionPlannerServiceAssembly {
                 planBudget,
                 worldPlanner,
                 generation,
-                generatedEncounterImport,
                 executionLane,
                 uiDispatcher,
                 diagnostics);
@@ -161,7 +155,6 @@ public final class SessionPlannerServiceAssembly {
                 planBudget,
                 worldPlanner,
                 unavailableGeneration(),
-                unavailableEncounterImport(),
                 executionLane,
                 uiDispatcher,
                 diagnostics);
@@ -177,7 +170,6 @@ public final class SessionPlannerServiceAssembly {
             EncounterPlanBudgetModel planBudget,
             @Nullable WorldPlannerSnapshotModel worldPlanner,
             SessionGenerationApi generation,
-            GeneratedEncounterPlanImportApi generatedEncounterImport,
             ExecutionLane executionLane,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
@@ -200,7 +192,7 @@ public final class SessionPlannerServiceAssembly {
                 publishedState,
                 generationState,
                 Objects.requireNonNull(generation, "generation"),
-                Objects.requireNonNull(generatedEncounterImport, "generatedEncounterImport"),
+                Objects.requireNonNull(encounters, "encounters"),
                 safeExecutionLane,
                 safeDiagnostics);
         SessionPlannerApplicationService application = new SessionPlannerApplicationService(
@@ -302,12 +294,6 @@ public final class SessionPlannerServiceAssembly {
                         "Session generation is not configured."));
             }
         };
-    }
-
-    private static GeneratedEncounterPlanImportApi unavailableEncounterImport() {
-        return command -> CompletableFuture.completedFuture(
-                GeneratedEncounterPlanImportResult.invalidRequest(
-                        "Generated encounter import is not configured."));
     }
 
     private record Runtime(

@@ -479,7 +479,7 @@ public final class WorldPlannerEncounterTest {
             CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(components.creaturePort());
             EncounterTableServiceAssembly.Component tables =
                     EncounterTableServiceAssembly.create(components.tablePort());
-            EncounterPlanRepository plans = new InMemoryPlanRepository();
+            InMemoryPlanRepository plans = new InMemoryPlanRepository();
             EncounterServiceAssembly.Component encounter = EncounterServiceAssembly.create(
                     creatures.application(),
                     creatures.detail(),
@@ -594,7 +594,8 @@ public final class WorldPlannerEncounterTest {
     ) {
     }
 
-    private static final class InMemoryPlanRepository implements EncounterPlanRepository {
+    private static final class InMemoryPlanRepository implements EncounterPlanRepository,
+            GeneratedEncounterBatchRepository {
 
         private final Map<Long, EncounterPlan> plans = new LinkedHashMap<>();
         private long nextId = 1L;
@@ -621,6 +622,28 @@ public final class WorldPlannerEncounterTest {
                             plan.generatedLabel(),
                             plan.creatureCount()))
                     .toList();
+        }
+
+        @Override
+        public CommitOutcome commit(features.encounter.api.PreparedEncounterBatch batch) {
+            List<Mapping> mappings = new ArrayList<>();
+            for (var roster : batch.rosters()) {
+                EncounterPlan saved = save(new EncounterPlan(
+                        0L,
+                        roster.displayLabel(),
+                        roster.displayLabel(),
+                        roster.creatures().stream()
+                                .map(creature -> new features.encounter.domain.plan.EncounterPlanCreature(
+                                        creature.creatureId(), creature.quantity(), creature.displayName()))
+                                .toList()));
+                mappings.add(new Mapping(roster.encounterNumber(), saved.id()));
+            }
+            return new CommitOutcome(CommitOutcome.Status.COMMITTED, mappings);
+        }
+
+        @Override
+        public List<EncounterPlan> loadPlansByIds(List<Long> planIds) {
+            return planIds.stream().map(plans::get).filter(Objects::nonNull).toList();
         }
     }
 
@@ -657,6 +680,19 @@ public final class WorldPlannerEncounterTest {
                 }
             }
             return candidates.stream().limit(Math.max(0, spec.limit())).toList();
+        }
+
+        @Override
+        public List<CreatureCatalogData.EncounterCandidateProfile> loadCreatureFacts(
+                CreatureCatalogData.CreatureFactsSpec spec
+        ) {
+            return profiles.values().stream()
+                    .filter(profile -> spec.mode() == CreatureCatalogData.CreatureFactsSpec.FactsMode.CREATURE_IDS
+                            ? spec.values().contains(Long.valueOf(profile.id()))
+                            : spec.values().contains(Long.valueOf(profile.xp())))
+                    .map(FixtureCreatureCatalogPort::candidate)
+                    .sorted(java.util.Comparator.comparingLong(CreatureCatalogData.EncounterCandidateProfile::id))
+                    .toList();
         }
 
         private static CreatureCatalogData.CreatureProfile profile(long id, String name, int xp) {

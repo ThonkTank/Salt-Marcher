@@ -48,6 +48,8 @@ public final class AppBootstrap implements AutoCloseable {
     private final ExecutionLane executionLane;
     private final ExecutionLane sessionGenerationCpuLane;
     private final ExecutionLane sessionGenerationIoLane;
+    private final ExecutionLane encounterGeneratedCpuLane;
+    private final ExecutionLane encounterGeneratedIoLane;
     private final UiDispatcher uiDispatcher;
     private final SqliteDatabase database;
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -66,6 +68,11 @@ public final class AppBootstrap implements AutoCloseable {
                         "session-generation-cpu",
                         Math.max(2, Runtime.getRuntime().availableProcessors() - 1)),
                 new BoundedExecutionLane(diagnostics, "session-generation-io", 2),
+                new BoundedExecutionLane(
+                        diagnostics,
+                        "encounter-generated-cpu",
+                        Math.max(2, Runtime.getRuntime().availableProcessors() - 1)),
+                new BoundedExecutionLane(diagnostics, "encounter-generated-io", 2),
                 new JavaFxUiDispatcher(),
                 SqliteDatabase.defaultDatabase(SqliteDatabase.DEFAULT_DATABASE_FILE_NAME, diagnostics));
     }
@@ -81,6 +88,8 @@ public final class AppBootstrap implements AutoCloseable {
                 executionLane,
                 new BoundedExecutionLane(diagnostics, "session-generation-cpu", 2),
                 new BoundedExecutionLane(diagnostics, "session-generation-io", 2),
+                new BoundedExecutionLane(diagnostics, "encounter-generated-cpu", 2),
+                new BoundedExecutionLane(diagnostics, "encounter-generated-io", 2),
                 uiDispatcher,
                 database);
     }
@@ -93,12 +102,37 @@ public final class AppBootstrap implements AutoCloseable {
             UiDispatcher uiDispatcher,
             SqliteDatabase database
     ) {
+        this(
+                diagnostics,
+                executionLane,
+                sessionGenerationCpuLane,
+                sessionGenerationIoLane,
+                new BoundedExecutionLane(diagnostics, "encounter-generated-cpu", 2),
+                new BoundedExecutionLane(diagnostics, "encounter-generated-io", 2),
+                uiDispatcher,
+                database);
+    }
+
+    AppBootstrap(
+            Diagnostics diagnostics,
+            ExecutionLane executionLane,
+            ExecutionLane sessionGenerationCpuLane,
+            ExecutionLane sessionGenerationIoLane,
+            ExecutionLane encounterGeneratedCpuLane,
+            ExecutionLane encounterGeneratedIoLane,
+            UiDispatcher uiDispatcher,
+            SqliteDatabase database
+    ) {
         this.diagnostics = java.util.Objects.requireNonNull(diagnostics, "diagnostics");
         this.executionLane = java.util.Objects.requireNonNull(executionLane, "executionLane");
         this.sessionGenerationCpuLane = java.util.Objects.requireNonNull(
                 sessionGenerationCpuLane, "sessionGenerationCpuLane");
         this.sessionGenerationIoLane = java.util.Objects.requireNonNull(
                 sessionGenerationIoLane, "sessionGenerationIoLane");
+        this.encounterGeneratedCpuLane = java.util.Objects.requireNonNull(
+                encounterGeneratedCpuLane, "encounterGeneratedCpuLane");
+        this.encounterGeneratedIoLane = java.util.Objects.requireNonNull(
+                encounterGeneratedIoLane, "encounterGeneratedIoLane");
         this.uiDispatcher = java.util.Objects.requireNonNull(uiDispatcher, "uiDispatcher");
         this.database = java.util.Objects.requireNonNull(database, "database");
     }
@@ -151,6 +185,8 @@ public final class AppBootstrap implements AutoCloseable {
                 party.adventuringDaySummary(),
                 party.mutation(),
                 executionLane,
+                encounterGeneratedCpuLane,
+                encounterGeneratedIoLane,
                 uiDispatcher,
                 diagnostics);
 
@@ -175,7 +211,6 @@ public final class AppBootstrap implements AutoCloseable {
                 encounter.planBudget(),
                 world.snapshot(),
                 generation,
-                encounter.generatedPlanImport(),
                 executionLane,
                 uiDispatcher,
                 diagnostics);
@@ -463,6 +498,8 @@ public final class AppBootstrap implements AutoCloseable {
         }
         sessionGenerationCpuLane.close();
         sessionGenerationIoLane.close();
+        encounterGeneratedCpuLane.close();
+        encounterGeneratedIoLane.close();
         executionLane.close();
         database.close();
     }

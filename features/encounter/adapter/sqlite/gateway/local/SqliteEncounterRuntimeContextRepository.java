@@ -40,7 +40,8 @@ public final class SqliteEncounterRuntimeContextRepository implements EncounterR
                 "encounter",
                 new SqliteMigration(1, migrations::ensureSchema),
                 new SqliteMigration(2, migrations::ensureGeneratedPlanOrigins),
-                new SqliteMigration(3, migrations::ensureRuntimeContexts));
+                new SqliteMigration(3, migrations::ensureRuntimeContexts),
+                new SqliteMigration(4, migrations::ensureGeneratedBatchV4));
     }
 
     @Override

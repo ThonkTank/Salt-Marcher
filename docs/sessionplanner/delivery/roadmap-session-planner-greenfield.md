@@ -196,12 +196,12 @@ acceptance after the last UI diff.
 
 ## Current Migration Position
 
-- Current foundation: M0 and M1 are merged. Session Generation now publishes
-  the typed draft/commit/load/reward-read boundary, commits immutable semantic
-  drafts idempotently, and uses separately owned bounded CPU and I/O execution.
-- Current milestone: M2 replaces abstract generated Encounter slots with one
-  concrete deterministic prepare-and-commit batch before planner orchestration
-  changes.
+- Current foundation: M0 through M2 are complete. Session Generation publishes
+  the typed draft/commit/load/reward-read boundary, while Encounter now prepares
+  one concrete deterministic roster batch from one Creature facts snapshot,
+  commits it atomically and idempotently, and batch-hydrates current summaries.
+- Current milestone: M3 replaces the preview/Apply and generate/load workflow
+  transport with one in-memory Session preparation and final planner commit.
 - M0 closure: documentation whitespace, required `check`, and desktop install
   proof are green after the final owner-language diff.
 - M1 closure: the Golden fixture uses two level-3 and two level-4 characters,
@@ -211,6 +211,14 @@ acceptance after the last UI diff.
   reward batch read `0.320s`. Final `git diff --check`, focused production-route
   and architecture proof, required `check` (`4m 29s`), and desktop install
   (`14s`) are green after the last M1 code diff.
+- M2 closure: the production route passes structured CR/role blocks without
+  slot expansion, resolves diverse concrete rosters from one set-based
+  Creature snapshot, persists plan roots, roster rows, and canonical origins in
+  one Encounter transaction, and detects equal retries and stored-row drift.
+  Independent focused proof covered SQLite union reads, preparation, summary
+  hydration, migration, rollback, conflicts, concurrency, coordinator stale and
+  retry behavior, startup, and lane lifecycle (`1m 42s`). Required `check`
+  (`6m 37s`) and desktop install (`14s`) are green after the final M2 code diff.
 
 ## Delivery Rules
 
