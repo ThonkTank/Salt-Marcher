@@ -1,6 +1,7 @@
 package features.dungeon.application.editor;
 
 import java.util.Objects;
+import java.util.function.LongSupplier;
 import platform.execution.DirectExecutionLane;
 import platform.execution.ExecutionLane;
 import platform.ui.DirectUiDispatcher;
@@ -18,6 +19,7 @@ public record DungeonEditorRuntimeDependencies(
         DungeonEditorStateModel stateModel,
         DungeonEditorRuntimeApplicationService editorRuntimeApplicationService,
         CorridorRoutingPolicy corridorRoutingPolicy,
+        LongSupplier requestGeneration,
         ExecutionLane executionLane,
         UiDispatcher uiDispatcher
 ) {
@@ -29,6 +31,7 @@ public record DungeonEditorRuntimeDependencies(
     ) {
         this(controlsModel, mapSurfaceModel, stateModel, editorRuntimeApplicationService,
                 new OrthogonalCorridorRoutingPolicy(),
+                () -> 0L,
                 DirectExecutionLane.INSTANCE, DirectUiDispatcher.INSTANCE);
     }
 
@@ -41,7 +44,7 @@ public record DungeonEditorRuntimeDependencies(
             UiDispatcher uiDispatcher
     ) {
         this(controlsModel, mapSurfaceModel, stateModel, editorRuntimeApplicationService,
-                new OrthogonalCorridorRoutingPolicy(), executionLane, uiDispatcher);
+                new OrthogonalCorridorRoutingPolicy(), () -> 0L, executionLane, uiDispatcher);
     }
 
     public DungeonEditorRuntimeDependencies {
@@ -51,6 +54,7 @@ public record DungeonEditorRuntimeDependencies(
         editorRuntimeApplicationService =
                 Objects.requireNonNull(editorRuntimeApplicationService, "editorRuntimeApplicationService");
         corridorRoutingPolicy = Objects.requireNonNull(corridorRoutingPolicy, "corridorRoutingPolicy");
+        requestGeneration = Objects.requireNonNull(requestGeneration, "requestGeneration");
         executionLane = Objects.requireNonNull(executionLane, "executionLane");
         uiDispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
     }

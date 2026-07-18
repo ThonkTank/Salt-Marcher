@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
@@ -25,6 +26,9 @@ import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
 import features.dungeon.application.authored.port.DungeonChangeSet;
 import features.dungeon.application.authored.port.DungeonMapHeader;
+import features.dungeon.application.authored.port.DungeonWindow;
+import features.dungeon.application.authored.port.DungeonWindowRequest;
+import features.dungeon.application.authored.port.DungeonWindowStore;
 import features.dungeon.application.authored.command.DungeonCommandResult;
 import features.dungeon.application.authored.command.DungeonCompoundCommandResult;
 import features.dungeon.application.authored.command.DungeonCompoundPatch;
@@ -53,20 +57,17 @@ import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.DungeonMapOperationFeedbackRules;
 import features.dungeon.domain.core.structure.corridor.CorridorDeletionTarget;
-import features.dungeon.domain.core.structure.corridor.CorridorMapAuthoring;
 import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
 import features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy;
 import features.dungeon.domain.core.structure.corridor.DungeonCorridorEndpoint;
 import features.dungeon.domain.core.structure.feature.FeatureMarkerKind;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
-import features.dungeon.domain.core.structure.stair.Stair;
 import features.dungeon.domain.core.structure.stair.StairGeometrySpec;
 import features.dungeon.domain.core.structure.stair.StairShape;
 import features.dungeon.domain.core.structure.transition.TransitionAnchor;
 import features.dungeon.domain.core.structure.transition.TransitionCatalog;
 import features.dungeon.domain.core.structure.transition.TransitionDestination;
 import features.dungeon.application.editor.interaction.DungeonEditorHandleProjection;
-import features.dungeon.application.editor.interaction.DungeonEditorHandleMutation;
 import features.dungeon.api.DungeonEditorHandleKind;
 import features.dungeon.application.editor.session.DungeonEditorDungeonState;
 import features.dungeon.application.editor.session.DungeonEditorRoomNarrationInput;
@@ -74,7 +75,6 @@ import features.dungeon.application.editor.session.DungeonEditorSessionSnapshot;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceGeometry;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceHandleMovement;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapId;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
 import features.dungeon.application.editor.helper.DungeonEditorAuthoredOperationHelper;
@@ -95,12 +95,13 @@ import features.dungeon.api.authored.DungeonAuthoredApi;
 import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import features.dungeon.api.DungeonViewportRequest;
 import features.dungeon.api.DungeonViewportSnapshot;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import platform.execution.ExecutionLane;
 
 public final class DungeonAuthoredApplicationService implements DungeonAuthoredApi {
     private static final DungeonMapOperationFeedbackRules OPERATION_FEEDBACK_POLICY =
             new DungeonMapOperationFeedbackRules();
-    private static final DungeonEditorHandleMutation HANDLE_MUTATION = new DungeonEditorHandleMutation();
-    private static final long PREVIEW_STAIR_ID = Long.MAX_VALUE;
     private static final long ABSENT_ID = 0L;
     private static final long MIN_CLUSTER_ID = 0L;
     private static final String DEFAULT_MAP_NAME = "Dungeon Map";
@@ -110,23 +111,26 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
 
     private final DungeonCatalogStore catalogStore;
     private final DungeonMapRepository repository;
+    private final DungeonWindowStore windowStore;
     private final DungeonAuthoredPublishedState publishedState;
+    private final ExecutionLane executionLane;
     private final CorridorRoutingPolicy corridorRoutingPolicy;
-    private final CorridorMapAuthoring corridorAuthoring;
     private final CreateCorridorCommand createCorridorCommand;
     private final DeleteCorridorCommand deleteCorridorCommand;
     /* Pointer previews operate on this immutable authored workset. */
     private final ConcurrentMap<Long, DungeonMap> authoredWorkset = new ConcurrentHashMap<>();
     private final DungeonEditHistory editHistory = new DungeonEditHistory();
-    private final DungeonViewportProjection viewportProjection = new DungeonViewportProjection();
+    private final DungeonWindowProjection windowProjection = new DungeonWindowProjection();
+    private final AtomicLong windowRequestGeneration = new AtomicLong();
+    private final ConcurrentMap<Long, Long> acceptedPublicationRevisions = new ConcurrentHashMap<>();
+    private volatile long acceptedWindowRequestGeneration;
     private final DungeonDerivedStateProjection derivedStateProjection = new DungeonDerivedStateProjection();
     private final PublishDungeonEditorHandlesUseCase publishDungeonEditorHandles =
             new PublishDungeonEditorHandlesUseCase();
     private final AssembleDungeonSnapshotUseCase assembleDungeonSnapshot =
             new AssembleDungeonSnapshotUseCase(derivedStateProjection);
     private final InspectDungeonSelectionUseCase inspectDungeonSelection = new InspectDungeonSelectionUseCase();
-    private final PreviewDungeonEditorSurfaceMoveUseCase surfaceMovePreviewUseCase =
-            new PreviewDungeonEditorSurfaceMoveUseCase();
+    private final PreviewDungeonEditorSurfaceMoveUseCase surfaceMovePreviewUseCase;
     private final MutationPipeline mutationPipeline = new MutationPipeline();
     private final FeatureMarkerSemanticsCommand featureMarkerSemanticsCommand =
             new FeatureMarkerSemanticsCommand();
@@ -166,22 +170,29 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
     public DungeonAuthoredApplicationService(
             DungeonCatalogStore catalogStore,
             DungeonMapRepository repository,
+            DungeonWindowStore windowStore,
+            ExecutionLane executionLane,
             DungeonAuthoredPublishedState publishedState
     ) {
-        this(catalogStore, repository, publishedState, new OrthogonalCorridorRoutingPolicy());
+        this(catalogStore, repository, windowStore, executionLane, publishedState,
+                new OrthogonalCorridorRoutingPolicy());
     }
 
     public DungeonAuthoredApplicationService(
             DungeonCatalogStore catalogStore,
             DungeonMapRepository repository,
+            DungeonWindowStore windowStore,
+            ExecutionLane executionLane,
             DungeonAuthoredPublishedState publishedState,
             CorridorRoutingPolicy corridorRoutingPolicy
     ) {
         this.catalogStore = Objects.requireNonNull(catalogStore, "catalogStore");
         this.repository = Objects.requireNonNull(repository, "repository");
+        this.windowStore = Objects.requireNonNull(windowStore, "windowStore");
+        this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
         this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
         this.corridorRoutingPolicy = Objects.requireNonNull(corridorRoutingPolicy, "corridorRoutingPolicy");
-        corridorAuthoring = new CorridorMapAuthoring(this.corridorRoutingPolicy);
+        surfaceMovePreviewUseCase = new PreviewDungeonEditorSurfaceMoveUseCase(this.corridorRoutingPolicy);
         createCorridorCommand = new CreateCorridorCommand(this.corridorRoutingPolicy);
         deleteCorridorCommand = new DeleteCorridorCommand(this.corridorRoutingPolicy);
     }
@@ -211,16 +222,47 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
     }
 
     @Override
-    public DungeonViewportSnapshot viewport(DungeonViewportRequest request) {
+    public CompletionStage<DungeonViewportSnapshot> viewport(DungeonViewportRequest request) {
         DungeonViewportRequest safeRequest = Objects.requireNonNull(request, "request");
-        DungeonMap map = loadMap(new DungeonMapIdentity(safeRequest.mapId()));
-        DungeonDerivedState derived = derive(map);
-        return viewportProjection.project(
-                safeRequest,
-                map.revision(),
-                DungeonPublishedMapProjectionServiceAssembly.mapSnapshot(
-                        derived.map(),
-                        publishDungeonEditorHandles.execute(map)));
+        CompletableFuture<DungeonViewportSnapshot> completion = new CompletableFuture<>();
+        executionLane.execute(() -> {
+            try {
+                completion.complete(loadViewport(safeRequest));
+            } catch (RuntimeException failure) {
+                completion.completeExceptionally(failure);
+            }
+        });
+        return completion;
+    }
+
+    private DungeonViewportSnapshot loadViewport(DungeonViewportRequest safeRequest) {
+        DungeonWindowRequest windowRequest = new DungeonWindowRequest(
+                new DungeonMapIdentity(safeRequest.mapId()),
+                safeRequest.requestGeneration(),
+                List.copyOf(safeRequest.loadingChunks()));
+        DungeonWindow window = windowStore.loadWindow(windowRequest)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown Dungeon map: " + safeRequest.mapId()));
+        validateWindowResult(windowRequest, window);
+        return windowProjection.viewport(safeRequest, window);
+    }
+
+    public long currentWindowRequestGeneration() {
+        return acceptedWindowRequestGeneration;
+    }
+
+    private static void validateWindowResult(DungeonWindowRequest request, DungeonWindow window) {
+        if (!request.mapId().equals(window.mapHeader().mapId())) {
+            throw new IllegalStateException("Dungeon window returned a different map identity.");
+        }
+        if (request.requestGeneration() != window.requestGeneration()) {
+            throw new IllegalStateException("Dungeon window returned a different request generation.");
+        }
+        Set<features.dungeon.api.DungeonChunkKey> returnedChunks = window.chunkHeaders().stream()
+                .map(header -> header.key())
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+        if (!returnedChunks.equals(Set.copyOf(request.chunkKeys()))) {
+            throw new IllegalStateException("Dungeon window did not return the exact requested chunk headers.");
+        }
     }
 
     public DungeonMap loadMap(@Nullable DungeonMapIdentity mapId) {
@@ -462,21 +504,12 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
     private long stairIdForCorridor(
             DungeonMap current,
             DungeonCorridorEndpoint start,
-            DungeonCorridorEndpoint end,
-            boolean reservePersistentIds
+            DungeonCorridorEndpoint end
     ) {
         if (start.sameLevelAs(end)) {
             return 0L;
         }
-        return reservePersistentIds ? repository.nextStairId() : nextPreviewStairId(current);
-    }
-
-    private static long nextPreviewStairId(DungeonMap current) {
-        long highestStairId = 0L;
-        for (Stair stair : current.stairs().stairs()) {
-            highestStairId = Math.max(highestStairId, stair.stairId());
-        }
-        return highestStairId + 1L;
+        return repository.nextStairId();
     }
 
     private static DungeonCorridorEndpoint corridorEndpoint(
@@ -655,21 +688,6 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     DungeonEditorCommandOutcome.accepted(saved.revision()));
         }
 
-        private OperationResultData previewOperation(
-                @Nullable DungeonMapIdentity mapId,
-                @Nullable AuthoredMapMutation operation
-        ) {
-            DungeonMap current = loadMap(mapId);
-            DungeonMap mutated = applyOperation(current, operation);
-            DungeonDerivedState derived = derive(mutated);
-            return new OperationResultData(
-                    snapshotData(mutated, derived),
-                    !mutated.equals(current),
-                    OPERATION_FEEDBACK_POLICY.validationMessages(current, mutated),
-                    OPERATION_FEEDBACK_POLICY.reactionMessages(current, mutated),
-                    DungeonEditorCommandOutcome.idle());
-        }
-
         private LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshotData(DungeonMap dungeonMap) {
             return assembleDungeonSnapshot.execute(dungeonMap, publishDungeonEditorHandles.execute(dungeonMap));
         }
@@ -681,23 +699,37 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             return assembleDungeonSnapshot.execute(dungeonMap, derived, publishDungeonEditorHandles.execute(dungeonMap));
         }
 
-        private DungeonMap applyOperation(DungeonMap current, @Nullable AuthoredMapMutation operation) {
-            return operation == null ? current : operation.apply(current);
-        }
     }
 
     private final class PublicationOperations {
         private final PublicationAssembler assembler = new PublicationAssembler();
 
-        private void publishSnapshot(
+        private synchronized void publishSnapshot(
                 LoadDungeonSnapshotUseCase.@Nullable DungeonSnapshotData snapshot,
                 DungeonEditorDungeonState state
         ) {
             SnapshotPublication publication = snapshotPublication(snapshot);
-            state.replaceSnapshot(publication == null ? null : publication.stateFacts());
-            if (publication != null) {
+            if (publication == null) {
+                state.replaceSnapshot(null);
+                return;
+            }
+            if (acceptCommittedPublication(publication.stateFacts())) {
+                state.replaceSnapshot(publication.stateFacts());
                 publishedState.publishSnapshot(publication.publishedSnapshot());
             }
+        }
+
+        private synchronized boolean publishWindowSnapshot(
+                DungeonEditorDungeonState.SnapshotFacts snapshot,
+                DungeonEditorDungeonState state
+        ) {
+            DungeonEditorDungeonState.SnapshotFacts safeSnapshot =
+                    Objects.requireNonNull(snapshot, "snapshot");
+            if (!acceptCommittedPublication(safeSnapshot)) {
+                return false;
+            }
+            state.replaceSnapshot(safeSnapshot);
+            return true;
         }
 
         private void publishInspector(
@@ -711,23 +743,47 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             }
         }
 
-        private void publishMutation(
+        private synchronized void publishMutation(
                 @Nullable OperationResultData mutation,
                 DungeonEditorDungeonState state
         ) {
-            SnapshotPublication snapshotPublication = snapshotPublication(mutation == null ? null : mutation.snapshot());
+            if (mutation == null) {
+                return;
+            }
+            if (!mutation.changed()) {
+                state.replaceCommandOutcome(mutation.commandOutcome());
+                return;
+            }
+            SnapshotPublication snapshotPublication = snapshotPublication(mutation.snapshot());
             DungeonEditorDungeonState.SnapshotFacts snapshot = snapshotPublication == null
                     ? null
                     : snapshotPublication.stateFacts();
-            state.replaceMutation(snapshot == null
-                    ? null
-                    : new DungeonEditorDungeonState.MutationFacts(snapshot, mutation.commandOutcome()));
-            if (mutation != null && snapshotPublication != null) {
-                publishedState.publishMutation(new DungeonAuthoredPublication.Mutation(
-                        snapshotPublication.publishedSnapshot(),
-                        mutation.validationMessages(),
-                        mutation.reactionMessages()));
+            if (snapshot == null || !acceptCommittedPublication(snapshot)) {
+                return;
             }
+            state.replaceMutation(new DungeonEditorDungeonState.MutationFacts(
+                    snapshot,
+                    mutation.commandOutcome()));
+            publishedState.publishMutation(new DungeonAuthoredPublication.Mutation(
+                    snapshotPublication.publishedSnapshot(),
+                    mutation.validationMessages(),
+                    mutation.reactionMessages()));
+        }
+
+        private boolean acceptCommittedPublication(
+                DungeonEditorDungeonState.SnapshotFacts snapshot
+        ) {
+            if (snapshot.mapId() == null) {
+                return false;
+            }
+            long mapId = snapshot.mapId().value();
+            long revision = snapshot.acceptedRevision();
+            long acceptedRevision = acceptedPublicationRevisions.getOrDefault(mapId, 0L);
+            if (revision < acceptedRevision) {
+                return false;
+            }
+            acceptedPublicationRevisions.put(mapId, revision);
+            return true;
         }
 
         private @Nullable SnapshotPublication snapshotPublication(
@@ -737,6 +793,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                 return null;
             }
             return assembler.snapshot(
+                    snapshot.mapId(),
                     snapshot.mapName(),
                     snapshot.derived(),
                     snapshot.editorHandles(),
@@ -746,6 +803,49 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
     }
 
     private final class LoadOperations {
+
+        private boolean loadInitialWindow(
+                MapId mapId,
+                int projectionLevel,
+                DungeonEditorDungeonState state
+        ) {
+            long generation = windowRequestGeneration.incrementAndGet();
+            DungeonViewportRequest viewport = new DungeonViewportRequest(
+                    mapId.value(), generation, projectionLevel, 0, 0, 63, 63);
+            DungeonWindowRequest request = new DungeonWindowRequest(
+                    domainMapId(mapId), generation, List.copyOf(viewport.loadingChunks()));
+            DungeonWindow window = windowStore.loadWindow(request).orElse(null);
+            if (window == null) {
+                rejectLatestWindow(generation, state);
+                return false;
+            }
+            try {
+                validateWindowResult(request, window);
+            } catch (IllegalStateException invalidWindow) {
+                rejectLatestWindow(generation, state);
+                return false;
+            }
+            long mapIdValue = mapId.value();
+            if (generation != windowRequestGeneration.get()
+                    || generation <= acceptedWindowRequestGeneration) {
+                return false;
+            }
+            if (!publicationOperations.publishWindowSnapshot(
+                    windowProjection.editorSnapshot(window, projectionLevel), state)) {
+                return false;
+            }
+            authoredWorkset.remove(mapIdValue);
+            acceptedWindowRequestGeneration = generation;
+            return true;
+        }
+
+        private void rejectLatestWindow(long generation, DungeonEditorDungeonState state) {
+            if (generation == windowRequestGeneration.get()) {
+                state.replaceSnapshot(null);
+                state.replaceInspector(null);
+                state.replacePreview(null);
+            }
+        }
 
         private LoadDungeonSnapshotUseCase.DungeonSnapshotData loadAuthoredMap(
                 MapId mapId,
@@ -757,7 +857,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             return snapshot;
         }
 
-        private LoadDungeonSnapshotUseCase.AuthoredSurfaceData loadAuthoredMapWithSelection(
+        private LoadDungeonSnapshotUseCase.InspectorSnapshotData loadInspectorWithSelection(
                 MapId mapId,
                 DungeonTopologyRef topologyRef,
                 long clusterId,
@@ -772,9 +872,8 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     topologyRef,
                     clusterId,
                     clusterSelection);
-            publicationOperations.publishSnapshot(snapshot, state);
             publicationOperations.publishInspector(inspector, state);
-            return new LoadDungeonSnapshotUseCase.AuthoredSurfaceData(snapshot, inspector);
+            return inspector;
         }
     }
 
@@ -792,7 +891,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     domainMapId(mapId),
                     current -> createCorridorCommand.plan(
                             current,
-                            stairIdForCorridor(current, startEndpoint, endEndpoint, true),
+                            stairIdForCorridor(current, startEndpoint, endEndpoint),
                             startEndpoint,
                             endEndpoint));
             publicationOperations.publishMutation(result, session.dungeonState());
@@ -1456,176 +1555,12 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
     }
 
     private final class PreviewOperations {
-
-        private boolean executeAuthoredDragPreview(
-                MapId mapId,
-                DungeonEditorSessionValues.Preview preview,
-                DungeonEditorDungeonState state
-        ) {
-            if (!(preview instanceof DungeonEditorSessionValues.MoveBoundaryStretchPreview
-                    || preview instanceof DungeonEditorSessionValues.MoveHandlePreview move
-                    && DungeonEditorSessionPreviewHelper.directClusterMoveCommitHandle(move.handleRef().kind()))) {
-                return false;
-            }
-            executePreview(mapId, preview, state);
-            return true;
-        }
-
         private void executeInMemoryPreview(
                 DungeonEditorSessionSnapshot.SurfaceData surface,
                 DungeonEditorSessionValues.Preview preview,
                 DungeonEditorDungeonState state
         ) {
             state.replacePreview(surfaceMovePreviewUseCase.execute(surface, preview));
-        }
-
-        private void executePreview(
-                MapId mapId,
-                DungeonEditorSessionValues.Preview preview,
-                DungeonEditorDungeonState state
-        ) {
-            state.replacePreview(previewFacts(dispatchPreview(mapId, preview)));
-        }
-
-        private DungeonEditorDungeonState.@Nullable PreviewFacts previewFacts(
-                @Nullable OperationResultData preview
-        ) {
-            SnapshotPublication publication =
-                    publicationOperations.snapshotPublication(preview == null ? null : preview.snapshot());
-            if (publication == null) {
-                return null;
-            }
-            String status = "";
-            if (preview != null && !preview.reactionMessages().isEmpty()) {
-                status = preview.reactionMessages().getFirst();
-            } else if (preview != null && !preview.validationMessages().isEmpty()) {
-                status = preview.validationMessages().getFirst();
-            }
-            return new DungeonEditorDungeonState.PreviewFacts(publication.stateFacts(), status);
-        }
-
-        private @Nullable OperationResultData dispatchPreview(
-                @Nullable MapId mapId,
-                DungeonEditorSessionValues.Preview preview
-        ) {
-            if (mapId == null) {
-                return null;
-            }
-            DungeonMapIdentity domainMapId = new DungeonMapIdentity(mapId.value());
-            if (preview instanceof DungeonEditorSessionValues.StairCreatePreview stair) {
-                return stairPreview(domainMapId, stair);
-            }
-            OperationResultData roomWallPreview = roomWallPreview(domainMapId, preview);
-            if (roomWallPreview != null) {
-                return roomWallPreview;
-            }
-            OperationResultData corridorPreview = corridorPreview(domainMapId, preview);
-            if (corridorPreview != null) {
-                return corridorPreview;
-            }
-            return movePreview(domainMapId, preview);
-        }
-
-        private @Nullable OperationResultData roomWallPreview(
-                DungeonMapIdentity domainMapId,
-                DungeonEditorSessionValues.Preview preview
-        ) {
-            if (preview instanceof DungeonEditorSessionValues.RoomRectanglePreview room) {
-                return mutationPipeline.previewOperation(
-                        domainMapId,
-                        room.deleteMode()
-                                ? current -> current.deleteRoomRectangle(
-                                        room.start(),
-                                        room.end())
-                                : current -> current.paintRoomRectangle(
-                                        room.start(),
-                                        room.end()));
-            }
-            if (preview instanceof DungeonEditorSessionValues.ClusterBoundariesPreview boundaries
-                    && !boundaries.boundaryKind().isDoor()) {
-                return mutationPipeline.previewOperation(
-                        domainMapId,
-                        current -> current.editClusterBoundaries(
-                                boundaries.clusterId(),
-                                DungeonEditorWorkspaceGeometry.unitEdges(boundaries.edges()),
-                                boundaries.boundaryKind(),
-                                boundaries.deleteMode()));
-            }
-            return null;
-        }
-
-        private @Nullable OperationResultData corridorPreview(
-                DungeonMapIdentity domainMapId,
-                DungeonEditorSessionValues.Preview preview
-        ) {
-            if (preview instanceof DungeonEditorSessionValues.CorridorCreatePreview corridor) {
-                DungeonCorridorEndpoint startEndpoint = corridorEndpoint(corridor.start());
-                DungeonCorridorEndpoint endEndpoint = corridorEndpoint(corridor.end());
-                return mutationPipeline.previewOperation(
-                        domainMapId,
-                        current -> current.createCorridor(
-                                corridorRoutingPolicy,
-                                stairIdForCorridor(current, startEndpoint, endEndpoint, false),
-                                startEndpoint,
-                                endEndpoint));
-            }
-            if (preview instanceof DungeonEditorSessionValues.DeleteCorridorPreview corridor) {
-                return mutationPipeline.previewOperation(
-                        domainMapId,
-                        current -> corridorAuthoring.deleteCorridor(current, corridor.target()));
-            }
-            return null;
-        }
-
-        private @Nullable OperationResultData movePreview(
-                DungeonMapIdentity domainMapId,
-                DungeonEditorSessionValues.Preview preview
-        ) {
-            if (preview instanceof DungeonEditorSessionValues.MoveHandlePreview move
-                    && (move.handleRef().kind() == DungeonEditorHandleKind.STAIR_ANCHOR
-                    || DungeonEditorSessionPreviewHelper.directClusterMoveCommitHandle(move.handleRef().kind()))) {
-                return mutationPipeline.previewOperation(
-                        domainMapId,
-                        current -> HANDLE_MUTATION.apply(
-                                current,
-                                DungeonEditorWorkspaceHandleMovement.from(move.handleRef()),
-                                move.deltaQ(),
-                                move.deltaR(),
-                                move.deltaLevel()));
-            }
-            if (preview instanceof DungeonEditorSessionValues.MoveBoundaryStretchPreview stretch) {
-                return mutationPipeline.previewOperation(
-                        domainMapId,
-                        current -> current.moveBoundaryStretch(
-                                stretch.clusterId(),
-                                DungeonEditorWorkspaceGeometry.unitEdges(stretch.sourceEdges()),
-                                stretch.deltaQ(),
-                                stretch.deltaR(),
-                                stretch.deltaLevel()));
-            }
-            return null;
-        }
-
-        private @Nullable OperationResultData stairPreview(
-                DungeonMapIdentity domainMapId,
-                DungeonEditorSessionValues.StairCreatePreview stair
-        ) {
-            StairShape shape = StairShape.supportedEditorShape(stair.shapeName());
-            Direction direction = Direction.supportedCardinal(stair.directionName());
-            StairGeometrySpec spec = shape == null || direction == null
-                    ? null
-                    : new StairGeometrySpec(
-                            shape,
-                            stair.specAnchor(),
-                            direction,
-                            stair.dimension1(),
-                            stair.dimension2());
-            if (spec == null || !stair.valid()) {
-                return null;
-            }
-            return mutationPipeline.previewOperation(
-                    domainMapId,
-                    current -> current.previewStair(PREVIEW_STAIR_ID, spec));
         }
     }
 
@@ -1737,22 +1672,22 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             loadOperations.loadAuthoredMap(mapId, dungeonState);
         }
 
-        public void loadMapWithSelection(
+        public boolean loadInitialWindow(MapId mapId, int projectionLevel) {
+            return loadOperations.loadInitialWindow(mapId, projectionLevel, dungeonState);
+        }
+
+        public void loadInspectorWithSelection(
                 MapId mapId,
                 DungeonTopologyRef topologyRef,
                 long clusterId,
                 boolean clusterSelection
         ) {
-            loadOperations.loadAuthoredMapWithSelection(
+            loadOperations.loadInspectorWithSelection(
                     mapId,
                     topologyRef,
                     clusterId,
                     clusterSelection,
                     dungeonState);
-        }
-
-        public boolean executeAuthoredDragPreview(MapId mapId, DungeonEditorSessionValues.Preview preview) {
-            return previewOperations.executeAuthoredDragPreview(mapId, preview, dungeonState);
         }
 
         public void executeInMemoryPreview(
@@ -1762,9 +1697,6 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             previewOperations.executeInMemoryPreview(surface, preview, dungeonState);
         }
 
-        public void executePreview(MapId mapId, DungeonEditorSessionValues.Preview preview) {
-            previewOperations.executePreview(mapId, preview, dungeonState);
-        }
     }
 
     private record OperationResultData(
@@ -1791,10 +1723,6 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         }
     }
 
-    @FunctionalInterface
-    private interface AuthoredMapMutation {
-        DungeonMap apply(DungeonMap current);
-    }
 
     @FunctionalInterface
     private interface AuthoredPatchCommand {
@@ -1824,6 +1752,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                 new DungeonEditorWorkspaceHandleProjectionHelper();
 
         private SnapshotPublication snapshot(
+                long mapId,
                 String mapName,
                 @Nullable DungeonDerivedState derived,
                 List<DungeonEditorHandleProjection> editorHandles,
@@ -1833,7 +1762,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     ? List.of()
                     : List.copyOf(editorHandles);
             return new SnapshotPublication(
-                    stateFacts(mapName, derived, safeEditorHandles, revision),
+                    stateFacts(mapId, mapName, derived, safeEditorHandles, revision),
                     DungeonAuthoredPublication.snapshot(mapName, derived, safeEditorHandles, revision));
         }
 
@@ -1859,12 +1788,16 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         }
 
         private DungeonEditorDungeonState.SnapshotFacts stateFacts(
+                long mapId,
                 String mapName,
                 @Nullable DungeonDerivedState derived,
                 List<DungeonEditorHandleProjection> editorHandles,
                 long revision
         ) {
             return new DungeonEditorDungeonState.SnapshotFacts(
+                    new MapId(mapId),
+                    0L,
+                    revision,
                     mapName,
                     stateRevision(revision),
                     workspaceSnapshot(derived, editorHandles));

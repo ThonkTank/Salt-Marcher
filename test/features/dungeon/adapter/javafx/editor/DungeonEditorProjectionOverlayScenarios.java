@@ -60,6 +60,7 @@ final class DungeonEditorProjectionOverlayScenarios {
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
         DungeonMapStateProbe.Snapshot beforeProjectionSnapshot =
                 DungeonMapStateProbe.snapshot(binding.mapContentModel());
+        long beforeGeneration = runtime.editorApi().current().requestGeneration();
 
         click(button(controls, "+"));
 
@@ -67,6 +68,9 @@ final class DungeonEditorProjectionOverlayScenarios {
         DungeonEditorMapSurfaceSnapshot afterPlusSurface = runtime.mapSurfaceModel().current();
         assertEquals(1L, afterPlusControls.projectionLevel(), "DE-LVL-001 controls projection level increments");
         assertEquals(1L, afterPlusSurface.projectionLevel(), "DE-LVL-001 map surface projection level increments");
+        long plusGeneration = runtime.editorApi().current().requestGeneration();
+        assertTrue(plusGeneration > beforeGeneration,
+                "DE-LVL-001 level change advances the Window request generation");
         assertTrue(surfaceContainsLevel(afterPlusSurface, 1),
                 "DE-LVL-001 published map surface contains level 1 authored cells");
         assertTrue(labelVisible(controls, "Ebene z=1"),
@@ -86,6 +90,8 @@ final class DungeonEditorProjectionOverlayScenarios {
         DungeonEditorMapSurfaceSnapshot afterMinusSurface = runtime.mapSurfaceModel().current();
         assertEquals(0L, afterMinusControls.projectionLevel(), "DE-LVL-002 controls projection level decrements");
         assertEquals(0L, afterMinusSurface.projectionLevel(), "DE-LVL-002 map surface projection level decrements");
+        assertTrue(runtime.editorApi().current().requestGeneration() > plusGeneration,
+                "DE-LVL-002 reverse level change advances the Window request generation");
         assertTrue(surfaceContainsLevel(afterMinusSurface, 0),
                 "DE-LVL-002 published map surface contains level 0 authored cells");
         assertTrue(labelVisible(controls, "Ebene z=0"),
@@ -200,8 +206,8 @@ final class DungeonEditorProjectionOverlayScenarios {
         DungeonEditorMapSurfaceSnapshot afterESurface = runtime.mapSurfaceModel().current();
         assertEquals(1L, afterEControls.projectionLevel(), "DE-LVL-003 controls projection level increments");
         assertEquals(1L, afterESurface.projectionLevel(), "DE-LVL-003 map surface projection level increments");
-        assertTrue(afterEControls.reachableLevels().containsAll(List.of(0, 1, 2)),
-                "DE-LVL-003 fixture exposes F6 reachable levels");
+        assertTrue(afterEControls.reachableLevels().contains(1),
+                "DE-LVL-003 active Window exposes the selected reachable level");
         assertTrue(surfaceContainsLevel(afterESurface, 1),
                 "DE-LVL-003 published map surface contains level 1 authored cells");
         assertTrue(labelVisible(controls, "Ebene z=1"),
@@ -345,6 +351,7 @@ final class DungeonEditorProjectionOverlayScenarios {
         click(button(controls, "Auswahl"));
 
         RoomClusterIds ids = runtime.database().roomByComponent(mapId, 2, 2, 0);
+        String clusterNameBefore = runtime.database().clusterName(ids.clusterId());
         LabelCenter clusterLabelCenter = labelCenter(
                 binding.mapContentModel(),
                 "Cluster " + ids.clusterId(),
@@ -360,18 +367,21 @@ final class DungeonEditorProjectionOverlayScenarios {
         assertEquals("   View Mode Stale Draft   ",
                 binding.mapContentModel().currentInlineLabelEditState().text(),
                 "DE-VIEW-004 projects inline-label draft before view-mode change");
+        long generationBeforeViewModeChange = runtime.editorApi().current().requestGeneration();
 
         click(button(controls, "Graph"));
 
+        assertEquals(generationBeforeViewModeChange, runtime.editorApi().current().requestGeneration(),
+                "DE-VIEW-004 passive view-mode change does not reload the authored Window");
         assertTrue(!inlineEditor.isVisible(), "DE-VIEW-004 view-mode change hides inline label editor");
         assertTrue(!binding.mapContentModel().currentInlineLabelEditState().active(),
                 "DE-VIEW-004 view-mode change clears runtime inline-label projection");
-        assertEquals("", runtime.database().clusterName(ids.clusterId()),
+        assertEquals(clusterNameBefore, runtime.database().clusterName(ids.clusterId()),
                 "DE-VIEW-004 view-mode change does not persist inline-label draft");
 
         fireControlsShortcut(inlineEditor, KeyCode.ENTER);
 
-        assertEquals("", runtime.database().clusterName(ids.clusterId()),
+        assertEquals(clusterNameBefore, runtime.database().clusterName(ids.clusterId()),
                 "DE-VIEW-004 stale inline-label Enter after view-mode change writes nothing");
 
 

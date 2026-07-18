@@ -423,10 +423,12 @@ final class DungeonEditorCorridorScenarios {
                 "DE-COR-NET dependent first click");
         fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
                 viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
+        Set<String> expectedCanonicalCells = Set.of(
+                "4,2,0", "5,2,0", "6,2,0", "6,3,0", "6,4,0", "6,5,0");
         assertVisibleCorridorPreview(
                 runtime,
                 binding,
-                Set.of("4,2,0", "5,2,0", "6,2,0", "6,3,0", "6,4,0", "6,5,0"),
+                expectedCanonicalCells,
                 "DE-COR-NET dependent hover");
         fireMapMousePressed(mapView, MouseButton.PRIMARY,
                 viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
@@ -439,7 +441,7 @@ final class DungeonEditorCorridorScenarios {
                 runtime.mapSurfaceModel().current(),
                 binding.mapContentModel(),
                 dependentCorridorId,
-                Set.of("4,2,0", "5,2,0", "6,2,0", "6,3,0", "6,4,0", "6,5,0"),
+                expectedCanonicalCells,
                 "DE-COR-NET dependent created");
         return dependentCorridorId;
     }

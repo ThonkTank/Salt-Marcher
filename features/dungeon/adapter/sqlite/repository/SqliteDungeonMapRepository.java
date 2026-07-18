@@ -14,9 +14,6 @@ import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import features.dungeon.api.DungeonChunkKey;
-import features.dungeon.api.DungeonViewportRequest;
 
 public final class SqliteDungeonMapRepository implements DungeonCatalogStore, DungeonMapRepository {
 
@@ -107,11 +104,6 @@ public final class SqliteDungeonMapRepository implements DungeonCatalogStore, Du
         if (mapId != null) {
             gateway.deleteMap(mapId.value());
         }
-    }
-
-    @Override
-    public Set<DungeonChunkKey> findAvailableChunks(DungeonViewportRequest request) {
-        return gateway.findAvailableChunks(request);
     }
 
     private static DungeonMapHeader toHeader(DungeonMapRecord record) {

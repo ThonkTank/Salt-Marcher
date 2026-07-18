@@ -4,6 +4,7 @@ import java.util.Objects;
 import features.dungeon.adapter.javafx.editor.DungeonEditorContribution;
 import features.dungeon.adapter.javafx.travel.DungeonTravelContribution;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonMapRepository;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
 import features.dungeon.api.DungeonAuthoredMutationModel;
 import features.dungeon.api.DungeonAuthoredReadModel;
 import features.dungeon.api.DungeonEditorControlsModel;
@@ -18,6 +19,7 @@ import features.dungeon.application.authored.DungeonAuthoredApplicationService;
 import features.dungeon.application.authored.DungeonAuthoredPublishedState;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
 import features.dungeon.application.authored.port.DungeonMapRepository;
+import features.dungeon.application.authored.port.DungeonWindowStore;
 import features.dungeon.application.editor.DungeonEditorPublishedState;
 import features.dungeon.application.editor.DungeonEditorApiFacade;
 import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
@@ -58,9 +60,11 @@ public final class DungeonFeature {
         UiDispatcher dispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
         SqliteDungeonMapRepository stores =
                 new SqliteDungeonMapRepository(Objects.requireNonNull(database, "database"));
+        SqliteDungeonWindowStore windowStore = new SqliteDungeonWindowStore(database);
         Runtime runtime = createRuntime(
                 stores,
                 stores,
+                windowStore,
                 safeParty.activeParty(),
                 safeParty.travelPositions(),
                 safeParty,
@@ -72,6 +76,7 @@ public final class DungeonFeature {
                 runtime.editorControls(), runtime.editorMapSurface(), runtime.editorState(),
                 runtime.editor(),
                 runtime.corridorRoutingPolicy(),
+                runtime.authored()::currentWindowRequestGeneration,
                 lane,
                 dispatcher);
         DungeonEditorFeatureRuntimeRoot editorRuntimeRoot =
@@ -88,6 +93,7 @@ public final class DungeonFeature {
     static Runtime createRuntime(
             DungeonCatalogStore catalogStore,
             DungeonMapRepository repository,
+            DungeonWindowStore windowStore,
             ActivePartyModel activeParty,
             PartyTravelPositionsModel partyTravelPositions,
             PartyApi party,
@@ -105,6 +111,8 @@ public final class DungeonFeature {
         DungeonAuthoredApplicationService authoredMaps = new DungeonAuthoredApplicationService(
                 Objects.requireNonNull(catalogStore, "catalogStore"),
                 Objects.requireNonNull(repository, "repository"),
+                Objects.requireNonNull(windowStore, "windowStore"),
+                lane,
                 authoredPublishedState,
                 corridorRoutingPolicy);
         DungeonEditorRuntimeApplicationService editor =

@@ -84,7 +84,7 @@ final class DungeonCorridorConnectionReadMapperSupport {
             result.add(new CorridorDoorBinding(
                     record.roomId(),
                     record.clusterId(),
-                    new Cell(record.relativeCellX(), record.relativeCellY(), 0),
+                    new Cell(record.relativeCellX(), record.relativeCellY(), record.relativeCellZ()),
                     Direction.parse(record.edgeDirection()),
                     record.topologyElementId() == null
                             ? DungeonTopologyRef.empty()

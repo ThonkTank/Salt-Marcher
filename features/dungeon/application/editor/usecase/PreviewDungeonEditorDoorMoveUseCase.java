@@ -37,7 +37,13 @@ final class PreviewDungeonEditorDoorMoveUseCase {
             return null;
         }
         return new DungeonEditorDungeonState.PreviewFacts(
-                new DungeonEditorDungeonState.SnapshotFacts(surface.mapName(), surface.revision(), candidate),
+                new DungeonEditorDungeonState.SnapshotFacts(
+                        surface.mapId(),
+                        surface.requestGeneration(),
+                        surface.acceptedRevision(),
+                        surface.mapName(),
+                        surface.revision(),
+                        candidate),
                 "");
     }
 

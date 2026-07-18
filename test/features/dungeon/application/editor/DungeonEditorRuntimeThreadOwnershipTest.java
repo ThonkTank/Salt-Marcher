@@ -19,7 +19,13 @@ import platform.ui.UiDispatcher;
 import features.dungeon.DungeonTestAssembly;
 import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
+import features.dungeon.application.authored.port.DungeonIdentityClosureRequest;
+import features.dungeon.application.authored.port.DungeonIdentityClosureResult;
 import features.dungeon.application.authored.port.DungeonMapHeader;
+import features.dungeon.application.authored.port.DungeonWindow;
+import features.dungeon.application.authored.port.DungeonWindowChunkHeader;
+import features.dungeon.application.authored.port.DungeonWindowRequest;
+import features.dungeon.application.authored.port.DungeonWindowStore;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
@@ -378,7 +384,8 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
         }
     }
 
-    private static final class InMemoryDungeonRepository implements DungeonCatalogStore, DungeonMapRepository {
+    private static final class InMemoryDungeonRepository
+            implements DungeonCatalogStore, DungeonMapRepository, DungeonWindowStore {
         private final Map<Long, DungeonMap> maps = new LinkedHashMap<>();
         private int reads;
 
@@ -455,6 +462,45 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
         @Override
         public void delete(DungeonMapIdentity mapId) {
             maps.remove(mapId.value());
+        }
+
+        @Override
+        public Optional<DungeonWindow> loadWindow(DungeonWindowRequest request) {
+            reads++;
+            DungeonMap map = maps.get(request.mapId().value());
+            if (map == null) {
+                return Optional.empty();
+            }
+            return Optional.of(new DungeonWindow(
+                    header(map),
+                    request.requestGeneration(),
+                    request.chunkKeys().stream()
+                            .map(key -> new DungeonWindowChunkHeader(key, 0L))
+                            .toList(),
+                    List.of(),
+                    List.of()));
+        }
+
+        @Override
+        public DungeonIdentityClosureResult loadIdentityClosure(DungeonIdentityClosureRequest request) {
+            reads++;
+            DungeonMap map = maps.get(request.mapId().value());
+            if (map == null) {
+                return new DungeonIdentityClosureResult.Rejected(
+                        DungeonIdentityClosureResult.Reason.MAP_MISSING,
+                        request.entityRefs());
+            }
+            if (map.revision() != request.expectedMapRevision()) {
+                return new DungeonIdentityClosureResult.Rejected(
+                        DungeonIdentityClosureResult.Reason.STALE_REVISION,
+                        request.entityRefs());
+            }
+            if (!request.entityRefs().isEmpty()) {
+                return new DungeonIdentityClosureResult.Rejected(
+                        DungeonIdentityClosureResult.Reason.ENTITY_MISSING,
+                        request.entityRefs());
+            }
+            return new DungeonIdentityClosureResult.Complete(header(map), List.of());
         }
 
         private static DungeonMapHeader header(DungeonMap map) {

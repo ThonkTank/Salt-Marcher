@@ -10,6 +10,11 @@ import features.dungeon.api.TravelDungeonModel;
 import features.dungeon.application.authored.DungeonAuthoredApplicationService;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
 import features.dungeon.application.authored.port.DungeonMapRepository;
+import features.dungeon.application.authored.port.DungeonIdentityClosureRequest;
+import features.dungeon.application.authored.port.DungeonIdentityClosureResult;
+import features.dungeon.application.authored.port.DungeonWindow;
+import features.dungeon.application.authored.port.DungeonWindowRequest;
+import features.dungeon.application.authored.port.DungeonWindowStore;
 import features.dungeon.application.editor.DungeonEditorRuntimeApplicationService;
 import features.dungeon.application.travel.DungeonTravelRuntimeApplicationService;
 import features.party.api.ActivePartyModel;
@@ -60,9 +65,35 @@ public final class DungeonTestAssembly {
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
+        return create(
+                catalogStore,
+                repository,
+                repository instanceof DungeonWindowStore store ? store : emptyWindowStore(),
+                activeParty,
+                partyTravelPositions,
+                party,
+                partyMutation,
+                executionLane,
+                uiDispatcher,
+                diagnostics);
+    }
+
+    public static Component create(
+            DungeonCatalogStore catalogStore,
+            DungeonMapRepository repository,
+            DungeonWindowStore windowStore,
+            ActivePartyModel activeParty,
+            PartyTravelPositionsModel partyTravelPositions,
+            PartyApi party,
+            PartyMutationModel partyMutation,
+            ExecutionLane executionLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics
+    ) {
         DungeonFeature.Runtime runtime = DungeonFeature.createRuntime(
                 catalogStore,
                 repository,
+                windowStore,
                 activeParty,
                 partyTravelPositions,
                 party,
@@ -81,6 +112,22 @@ public final class DungeonTestAssembly {
                 runtime.editorControls(),
                 runtime.editorMapSurface(),
                 runtime.editorState());
+    }
+
+    public static DungeonWindowStore emptyWindowStore() {
+        return new DungeonWindowStore() {
+            @Override
+            public java.util.Optional<DungeonWindow> loadWindow(DungeonWindowRequest request) {
+                return java.util.Optional.empty();
+            }
+
+            @Override
+            public DungeonIdentityClosureResult loadIdentityClosure(DungeonIdentityClosureRequest request) {
+                return new DungeonIdentityClosureResult.Rejected(
+                        DungeonIdentityClosureResult.Reason.MAP_MISSING,
+                        request == null ? java.util.List.of() : request.entityRefs());
+            }
+        };
     }
 
     public record Component(

@@ -30,6 +30,7 @@ public final class DungeonEditorFeatureRuntimeRoot
                 safeDependencies.stateModel(),
                 interactionState,
                 context,
+                safeDependencies.requestGeneration(),
                 safeDependencies.executionLane());
     }
 
@@ -39,6 +40,7 @@ public final class DungeonEditorFeatureRuntimeRoot
             features.dungeon.api.DungeonEditorStateModel stateModel,
             DungeonEditorMainViewInteractionState interactionState,
             DungeonEditorRuntimeContext context,
+            java.util.function.LongSupplier requestGeneration,
             platform.execution.ExecutionLane executionLane
     ) {
         features.dungeon.api.DungeonEditorControlsModel safeControlsModel =
@@ -58,6 +60,7 @@ public final class DungeonEditorFeatureRuntimeRoot
                 safeMapSurfaceModel,
                 safeStateModel,
                 draftSession,
+                requestGeneration,
                 safeExecutionLane);
         DungeonEditorStairDraftRuntimeOperation stairDraftOperation =
                 new DungeonEditorStairDraftRuntimeOperation(safeContext);

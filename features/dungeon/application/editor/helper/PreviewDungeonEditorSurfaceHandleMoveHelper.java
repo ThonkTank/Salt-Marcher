@@ -13,6 +13,22 @@ import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.
 
 public final class PreviewDungeonEditorSurfaceHandleMoveHelper {
 
+    public List<Handle> movedActiveHandle(
+            List<Handle> handles,
+            HandleRef active,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        List<Handle> result = new ArrayList<>();
+        for (Handle handle : handles) {
+            result.add(sameHandleRef(handle.ref(), active)
+                    ? movedHandle(handle, deltaQ, deltaR, deltaLevel)
+                    : handle);
+        }
+        return List.copyOf(result);
+    }
+
     public List<Handle> movedClusterHandles(List<Handle> handles, long clusterId, int deltaQ, int deltaR, int deltaLevel) {
         List<Handle> result = new ArrayList<>();
         for (Handle handle : handles) {

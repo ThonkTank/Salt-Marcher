@@ -135,9 +135,9 @@ final class DungeonSqliteCorridorPersistence {
         }
         try (PreparedStatement insert = connection.prepareStatement(
                 INSERT_INTO + DungeonPersistenceSchema.CORRIDOR_DOOR_OVERRIDES_TABLE
-                        + "(corridor_id, room_id, cluster_id, relative_cell_x, relative_cell_y,"
+                        + "(corridor_id, room_id, cluster_id, relative_cell_x, relative_cell_y, relative_cell_z,"
                         + " edge_direction, topology_element_id, sort_order)"
-                        + " VALUES(?,?,?,?,?,?,?,?)")) {
+                        + " VALUES(?,?,?,?,?,?,?,?,?)")) {
             int sortOrder = 0;
             for (DungeonCorridorDoorBindingRecord binding : corridor.doorBindings()) {
                 insert.setLong(1, corridor.corridorId());
@@ -145,9 +145,10 @@ final class DungeonSqliteCorridorPersistence {
                 insert.setLong(3, binding.clusterId());
                 insert.setInt(4, binding.relativeCellX());
                 insert.setInt(5, binding.relativeCellY());
-                insert.setString(6, binding.edgeDirection());
-                DungeonSqliteStatementSupport.setNullableLong(insert, 7, binding.topologyElementId());
-                insert.setInt(8, sortOrder);
+                insert.setInt(6, binding.relativeCellZ());
+                insert.setString(7, binding.edgeDirection());
+                DungeonSqliteStatementSupport.setNullableLong(insert, 8, binding.topologyElementId());
+                insert.setInt(9, sortOrder);
                 sortOrder++;
                 insert.addBatch();
             }

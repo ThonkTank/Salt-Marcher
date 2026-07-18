@@ -79,6 +79,15 @@ whose stored authored geometry it intersects. Its key contains map id, entity
 kind, entity id, level, chunk q, and chunk r. It MUST NOT duplicate an entity's
 semantic facts or mint chunk-local entity identity.
 
+`dungeon_corridor_route_cells` is a replaceable source-local read index derived
+from the complete authored corridor controls and room geometry. It stores exact
+canonical route cells with corridor identity, segment order, cell order, and
+their containing chunk solely so explicit-chunk windows can read clipped route
+facts without hydrating off-window authored geometry. It MUST be rebuilt or
+updated atomically with `dungeon_entity_chunks` and `dungeon_chunks`, MUST NOT
+be treated as authored corridor truth, and MUST NOT be repaired independently
+of the authored controls that produced it.
+
 ## Window Reads And Identity Closure
 
 - a viewport read MUST address explicit chunk keys and return request

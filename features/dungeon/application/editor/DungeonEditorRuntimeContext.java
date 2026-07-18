@@ -154,7 +154,7 @@ final class DungeonEditorRuntimeContext {
     }
 
     Result shiftProjectionLevel(int levelShift) {
-        return fromSessionFrame(session.shiftProjectionLevel(levelShift));
+        return fromSnapshot(session.shiftProjectionLevel(levelShift));
     }
 
     Result setOverlay(DungeonOverlaySettings overlaySettings) {

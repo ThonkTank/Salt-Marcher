@@ -8,6 +8,7 @@ import java.util.Set;
 import features.dungeon.domain.core.component.CorridorWaypoint;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.corridor.Corridor;
+import features.dungeon.domain.core.structure.corridor.CorridorEndpointOrdering;
 import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
 import features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy;
 import features.dungeon.domain.core.structure.room.RoomCluster;
@@ -90,12 +91,30 @@ final class DungeonCorridorCellProjection {
             }
         }
         if (doorEndpoints.size() >= FULL_ROUTE_TERMINUS_COUNT) {
-            return List.of(doorEndpoints.getFirst(), doorEndpoints.getLast());
+            return canonicalPair(doorEndpoints.getFirst(), doorEndpoints.getLast());
         }
         if (allEndpoints.size() <= FULL_ROUTE_TERMINUS_COUNT) {
-            return List.copyOf(allEndpoints);
+            return allEndpoints.size() == FULL_ROUTE_TERMINUS_COUNT
+                    ? canonicalPair(allEndpoints.getFirst(), allEndpoints.getLast())
+                    : List.copyOf(allEndpoints);
         }
-        return List.of(allEndpoints.getFirst(), allEndpoints.getLast());
+        return canonicalPair(allEndpoints.getFirst(), allEndpoints.getLast());
+    }
+
+    private static List<DungeonCorridorEndpointResolver.CorridorEndpoint> canonicalPair(
+            DungeonCorridorEndpointResolver.CorridorEndpoint first,
+            DungeonCorridorEndpointResolver.CorridorEndpoint second
+    ) {
+        CorridorEndpointOrdering.EndpointRole firstRole = first.isDoor()
+                ? CorridorEndpointOrdering.EndpointRole.DOOR
+                : CorridorEndpointOrdering.EndpointRole.ANCHOR;
+        CorridorEndpointOrdering.EndpointRole secondRole = second.isDoor()
+                ? CorridorEndpointOrdering.EndpointRole.DOOR
+                : CorridorEndpointOrdering.EndpointRole.ANCHOR;
+        return CorridorEndpointOrdering.canonicalOrder(firstRole, secondRole)
+                == CorridorEndpointOrdering.InputOrder.KEEP
+                ? List.of(first, second)
+                : List.of(second, first);
     }
 
     private static List<Cell> corridorWaypoints(

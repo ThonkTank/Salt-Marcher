@@ -16,7 +16,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
+import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSpatialIndex;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonMapRepository;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
 import features.party.adapter.sqlite.model.PartyPersistenceSchema;
 import features.dungeon.DungeonTestAssembly;
 import features.dungeon.domain.core.geometry.Cell;
@@ -89,10 +91,14 @@ class DungeonEditorTestPersistence {
         return DungeonTestAssembly.create(
                 catalogStore,
                 repository,
+                new SqliteDungeonWindowStore(),
                 party.activeParty(),
                 party.travelPositions(),
                 party.application(),
-                party.mutation());
+                party.mutation(),
+                platform.execution.DirectExecutionLane.INSTANCE,
+                platform.ui.DirectUiDispatcher.INSTANCE,
+                platform.diagnostics.NoopDiagnostics.INSTANCE);
     }
 
     static DungeonEditorRuntimeDependencies editorDependencies(DungeonTestAssembly.Component dungeon) {
@@ -100,7 +106,11 @@ class DungeonEditorTestPersistence {
                 dungeon.editorControls(),
                 dungeon.editorMapSurface(),
                 dungeon.editorState(),
-                dungeon.editor());
+                dungeon.editor(),
+                new features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy(),
+                dungeon.authored()::currentWindowRequestGeneration,
+                platform.execution.DirectExecutionLane.INSTANCE,
+                platform.ui.DirectUiDispatcher.INSTANCE);
     }
 
     private static final class EmptyPartyRosterRepository implements PartyRosterRepository {
@@ -211,6 +221,10 @@ class DungeonEditorTestPersistence {
 
         long countChunksForMap(long mapId) {
             return count("SELECT COUNT(*) FROM dungeon_chunks WHERE dungeon_map_id=?", mapId);
+        }
+
+        void refreshWindowIndexesForFixture(long mapId) {
+            DungeonSqliteFixtureSpatialIndex.rebuild(databasePath, mapId);
         }
 
         long countRoomClustersForMap(long mapId) {
@@ -1355,6 +1369,7 @@ class DungeonEditorTestPersistence {
                 insertRectangularRoom(connection, mapId, "R2", 1, 1, 1);
                 insertRectangularRoom(connection, mapId, "R3", 2, 1, 1);
                 connection.commit();
+                refreshWindowIndexesForFixture(mapId);
             } catch (SQLException exception) {
                 throw new IllegalStateException("Failed to seed F6_MULTI_LEVEL_FLOORS fixture.", exception);
             }
@@ -1498,40 +1513,52 @@ class DungeonEditorTestPersistence {
         }
 
         void seedMalformedPartialAnchorCoordinateFixture(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                insertTransitionWithAnchor(
-                        connection,
-                        mapId,
-                        "Malformed partial coordinate anchor.",
-                        1,
-                        null,
-                        null,
-                        "CELL",
-                        null);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed malformed partial coordinate fixture.", exception);
-            }
+            seedMalformedCoordinateFixture(
+                    mapId,
+                    "Malformed partial coordinate anchor.",
+                    "UPDATE dungeon_transitions SET cell_y=NULL, level_z=NULL WHERE transition_id=?");
         }
 
         void seedMalformedNoneAnchorWithCoordinateFixture(long mapId) {
+            seedMalformedCoordinateFixture(
+                    mapId,
+                    "Malformed none coordinate anchor.",
+                    "UPDATE dungeon_transitions"
+                            + " SET cell_x=NULL, level_z=NULL, anchor_type='NONE' WHERE transition_id=?");
+        }
+
+        private void seedMalformedCoordinateFixture(long mapId, String description, String corruptionSql) {
+            long transitionId;
             try (Connection connection = open()) {
                 connection.setAutoCommit(false);
                 insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                insertTransitionWithAnchor(
+                transitionId = insertTransitionWithAnchor(
                         connection,
                         mapId,
-                        "Malformed none coordinate anchor.",
-                        null,
+                        description,
                         1,
+                        1,
+                        0,
+                        "CELL",
                         null,
-                        "NONE",
+                        "UNLINKED_ENTRANCE",
+                        null,
+                        null,
+                        null,
                         null);
                 connection.commit();
             } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed malformed none coordinate fixture.", exception);
+                throw new IllegalStateException("Failed to seed indexed transition fixture baseline.", exception);
+            }
+            refreshWindowIndexesForFixture(mapId);
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(corruptionSql)) {
+                statement.setLong(1, transitionId);
+                if (statement.executeUpdate() != 1) {
+                    throw new SQLException("Expected exactly one transition row to corrupt.");
+                }
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to corrupt indexed transition fixture.", exception);
             }
         }
 
@@ -1789,7 +1816,8 @@ class DungeonEditorTestPersistence {
                         connection,
                         "INSERT INTO dungeon_room_clusters(dungeon_map_id, name) VALUES(?, ?)",
                         mapId,
-                        "");
+                        "Cluster pending");
+                nameCluster(connection, clusterId);
                 long roomOneId = insertClusterRoom(connection, mapId, clusterId, "R1", 10, 10, 0);
                 long roomTwoId = insertClusterRoom(connection, mapId, clusterId, "R2", 11, 10, 0);
                 insertTopologyElement(connection, mapId, roomOneId, clusterId, "R1");
@@ -1903,7 +1931,7 @@ class DungeonEditorTestPersistence {
                                 + " VALUES(?, ?, ?, ?, ?, ?, ?)",
                         mapId,
                         "S1",
-                        "LADDER",
+                        "STRAIGHT",
                         0,
                         1,
                         1,
@@ -2098,6 +2126,7 @@ class DungeonEditorTestPersistence {
                 connection.setAutoCommit(false);
                 insertTwoByTwoRoom(connection, mapId, roomName, level, anchorX, anchorY);
                 connection.commit();
+                refreshWindowIndexesForFixture(mapId);
             } catch (SQLException exception) {
                 throw new IllegalStateException("Failed to seed two-by-two dungeon room fixture.", exception);
             }
@@ -2110,7 +2139,8 @@ class DungeonEditorTestPersistence {
                         connection,
                         "INSERT INTO dungeon_room_clusters(dungeon_map_id, name) VALUES(?, ?)",
                         mapId,
-                        "");
+                        "Cluster pending");
+                nameCluster(connection, clusterId);
                 long roomId = insertAndReturnId(
                         connection,
                         "INSERT INTO dungeon_rooms(dungeon_map_id, cluster_id, name, visual_description)"
@@ -2140,16 +2170,21 @@ class DungeonEditorTestPersistence {
                     connection,
                     "INSERT INTO dungeon_room_clusters(dungeon_map_id, name) VALUES(?, ?)",
                     mapId,
-                    "");
+                    "Cluster pending");
+            nameCluster(connection, clusterId);
             long roomId = insertAndReturnId(
                     connection,
                     "INSERT INTO dungeon_rooms(dungeon_map_id, cluster_id, name, visual_description)"
                             + " VALUES(?, ?, ?, ?)",
                     mapId,
                     clusterId,
-                    roomName,
+                    roomName == null || roomName.isBlank() ? "Fixture room pending" : roomName,
                     "");
-            insertTopologyElement(connection, mapId, roomId, clusterId, roomName);
+            if (roomName == null || roomName.isBlank()) {
+                nameRoom(connection, roomId);
+            }
+            insertTopologyElement(connection, mapId, roomId, clusterId,
+                    roomName == null || roomName.isBlank() ? "Raum " + roomId : roomName);
             insertRoomCells(connection, roomId, level, anchorX, anchorY, 2, 2);
             insertTwoByTwoPerimeterWalls(connection, mapId, clusterId, level, anchorX + 1, anchorY + 1);
         }
@@ -2166,16 +2201,21 @@ class DungeonEditorTestPersistence {
                     connection,
                     "INSERT INTO dungeon_room_clusters(dungeon_map_id, name) VALUES(?, ?)",
                     mapId,
-                    "");
+                    "Cluster pending");
+            nameCluster(connection, clusterId);
             long roomId = insertAndReturnId(
                     connection,
                     "INSERT INTO dungeon_rooms(dungeon_map_id, cluster_id, name, visual_description)"
                             + " VALUES(?, ?, ?, ?)",
                     mapId,
                     clusterId,
-                    roomName,
+                    roomName == null || roomName.isBlank() ? "Fixture room pending" : roomName,
                     "");
-            insertTopologyElement(connection, mapId, roomId, clusterId, roomName);
+            if (roomName == null || roomName.isBlank()) {
+                nameRoom(connection, roomId);
+            }
+            insertTopologyElement(connection, mapId, roomId, clusterId,
+                    roomName == null || roomName.isBlank() ? "Raum " + roomId : roomName);
             insertRoomCells(connection, roomId, level, anchorX, anchorY, 3, 3);
             insertPerimeterWalls(connection, mapId, clusterId, level, anchorX + 1, anchorY + 1);
             return roomId;
@@ -2198,6 +2238,22 @@ class DungeonEditorTestPersistence {
                     clusterId,
                     roomName,
                     "");
+        }
+
+        private static void nameCluster(Connection connection, long clusterId) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "UPDATE dungeon_room_clusters SET name=? WHERE cluster_id=?")) {
+                bind(statement, "Cluster " + clusterId, clusterId);
+                statement.executeUpdate();
+            }
+        }
+
+        private static void nameRoom(Connection connection, long roomId) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "UPDATE dungeon_rooms SET name=? WHERE room_id=?")) {
+                bind(statement, "Raum " + roomId, roomId);
+                statement.executeUpdate();
+            }
         }
 
         static void insertComplexClusterWalls(
