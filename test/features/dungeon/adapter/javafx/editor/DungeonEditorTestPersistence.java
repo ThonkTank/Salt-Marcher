@@ -24,6 +24,7 @@ import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.application.authored.port.DungeonMapRepository;
+import features.dungeon.application.authored.port.DungeonCatalogStore;
 import features.dungeon.api.DungeonEditorControlsModel;
 import features.dungeon.api.DungeonEditorMapSurfaceModel;
 import features.dungeon.api.DungeonEditorStateModel;
@@ -63,8 +64,8 @@ class DungeonEditorTestPersistence {
         static TestRuntime create() {
             DatabaseAssertions database = new DatabaseAssertions();
             database.clearDungeonData();
-            DungeonTestAssembly.Component dungeon =
-                    createDungeonServices(new SqliteDungeonMapRepository());
+            SqliteDungeonMapRepository stores = new SqliteDungeonMapRepository();
+            DungeonTestAssembly.Component dungeon = createDungeonServices(stores, stores);
             DungeonEditorRuntimeDependencies dependencies =
                     DungeonEditorTestPersistence.editorDependencies(dungeon);
             DungeonEditorApi api = new DungeonEditorApiFacade(
@@ -80,9 +81,13 @@ class DungeonEditorTestPersistence {
         }
     }
 
-    static DungeonTestAssembly.Component createDungeonServices(DungeonMapRepository repository) {
+    static DungeonTestAssembly.Component createDungeonServices(
+            DungeonCatalogStore catalogStore,
+            DungeonMapRepository repository
+    ) {
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(new EmptyPartyRosterRepository());
         return DungeonTestAssembly.create(
+                catalogStore,
                 repository,
                 party.activeParty(),
                 party.travelPositions(),

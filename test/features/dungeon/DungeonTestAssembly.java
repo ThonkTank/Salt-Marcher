@@ -8,6 +8,7 @@ import features.dungeon.api.DungeonEditorStateModel;
 import features.dungeon.api.DungeonMapCatalogModel;
 import features.dungeon.api.TravelDungeonModel;
 import features.dungeon.application.authored.DungeonAuthoredApplicationService;
+import features.dungeon.application.authored.port.DungeonCatalogStore;
 import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.editor.DungeonEditorRuntimeApplicationService;
 import features.dungeon.application.travel.DungeonTravelRuntimeApplicationService;
@@ -29,6 +30,7 @@ public final class DungeonTestAssembly {
     }
 
     public static Component create(
+            DungeonCatalogStore catalogStore,
             DungeonMapRepository repository,
             ActivePartyModel activeParty,
             PartyTravelPositionsModel partyTravelPositions,
@@ -36,6 +38,7 @@ public final class DungeonTestAssembly {
             PartyMutationModel partyMutation
     ) {
         return create(
+                catalogStore,
                 repository,
                 activeParty,
                 partyTravelPositions,
@@ -47,6 +50,7 @@ public final class DungeonTestAssembly {
     }
 
     public static Component create(
+            DungeonCatalogStore catalogStore,
             DungeonMapRepository repository,
             ActivePartyModel activeParty,
             PartyTravelPositionsModel partyTravelPositions,
@@ -57,6 +61,7 @@ public final class DungeonTestAssembly {
             Diagnostics diagnostics
     ) {
         DungeonFeature.Runtime runtime = DungeonFeature.createRuntime(
+                catalogStore,
                 repository,
                 activeParty,
                 partyTravelPositions,

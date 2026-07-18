@@ -2,6 +2,8 @@ package features.dungeon.application.authored;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import features.dungeon.application.authored.port.DungeonCatalogStore;
+import features.dungeon.application.authored.port.DungeonMapHeader;
 import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.editor.session.DungeonEditorDungeonState;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
@@ -20,6 +22,7 @@ final class DungeonAuthoredPreviewWorksetTest {
         CountingRepository repository = new CountingRepository();
         DungeonAuthoredApplicationService service = new DungeonAuthoredApplicationService(
                 repository,
+                repository,
                 new DungeonAuthoredPublishedState(DirectUiDispatcher.INSTANCE));
         DungeonAuthoredApplicationService.Session session = service.openSession(new DungeonEditorDungeonState());
         DungeonEditorWorkspaceValues.MapId mapId = new DungeonEditorWorkspaceValues.MapId(1L);
@@ -34,14 +37,9 @@ final class DungeonAuthoredPreviewWorksetTest {
         assertEquals(1, repository.findByIdCalls);
     }
 
-    private static final class CountingRepository implements DungeonMapRepository {
+    private static final class CountingRepository implements DungeonCatalogStore, DungeonMapRepository {
         private final DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(1L), "Map");
         private int findByIdCalls;
-
-        @Override
-        public DungeonMapIdentity nextMapId() {
-            return new DungeonMapIdentity(2L);
-        }
 
         @Override
         public long nextStairId() {
@@ -60,8 +58,18 @@ final class DungeonAuthoredPreviewWorksetTest {
         }
 
         @Override
-        public List<DungeonMap> searchByName(String query) {
-            return List.of(map);
+        public List<DungeonMapHeader> search(String query) {
+            return List.of(header(map));
+        }
+
+        @Override
+        public DungeonMapHeader create(String mapName) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public DungeonMapHeader rename(DungeonMapIdentity mapId, String mapName) {
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -81,6 +89,13 @@ final class DungeonAuthoredPreviewWorksetTest {
 
         @Override
         public void delete(DungeonMapIdentity mapId) {
+        }
+
+        private static DungeonMapHeader header(DungeonMap dungeonMap) {
+            return new DungeonMapHeader(
+                    dungeonMap.metadata().mapId(),
+                    dungeonMap.metadata().mapName(),
+                    dungeonMap.revision());
         }
     }
 }

@@ -18,6 +18,8 @@ import platform.ui.DirectUiDispatcher;
 import platform.ui.UiDispatcher;
 import features.dungeon.DungeonTestAssembly;
 import features.dungeon.application.authored.port.DungeonMapRepository;
+import features.dungeon.application.authored.port.DungeonCatalogStore;
+import features.dungeon.application.authored.port.DungeonMapHeader;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
@@ -246,7 +248,7 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
     }
 
     private static DungeonEditorFeatureRuntimeRoot createRuntime(
-            DungeonMapRepository repository,
+            InMemoryDungeonRepository repository,
             QueuedExecutionLane lane,
             UiDispatcher dispatcher
     ) {
@@ -254,6 +256,7 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
                 new InMemoryPartyRepository(), lane, dispatcher, (id, type) -> { });
         lane.runAll();
         DungeonTestAssembly.Component dungeon = DungeonTestAssembly.create(
+                repository,
                 repository,
                 party.activeParty(),
                 party.travelPositions(),
@@ -269,13 +272,14 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
                 dispatcher));
     }
 
-    private static DungeonEditorFeatureRuntimeRoot createRuntimeDirect(DungeonMapRepository repository) {
+    private static DungeonEditorFeatureRuntimeRoot createRuntimeDirect(InMemoryDungeonRepository repository) {
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(
                 new InMemoryPartyRepository(),
                 DirectExecutionLane.INSTANCE,
                 DirectUiDispatcher.INSTANCE,
                 (id, type) -> { });
         DungeonTestAssembly.Component dungeon = DungeonTestAssembly.create(
+                repository,
                 repository,
                 party.activeParty(),
                 party.travelPositions(),
@@ -374,7 +378,7 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
         }
     }
 
-    private static final class InMemoryDungeonRepository implements DungeonMapRepository {
+    private static final class InMemoryDungeonRepository implements DungeonCatalogStore, DungeonMapRepository {
         private final Map<Long, DungeonMap> maps = new LinkedHashMap<>();
         private int reads;
 
@@ -385,11 +389,6 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
 
         int size() {
             return maps.size();
-        }
-
-        @Override
-        public DungeonMapIdentity nextMapId() {
-            return new DungeonMapIdentity(maps.keySet().stream().mapToLong(Long::longValue).max().orElse(0L) + 1L);
         }
 
         @Override
@@ -409,12 +408,28 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
         }
 
         @Override
-        public List<DungeonMap> searchByName(String query) {
+        public List<DungeonMapHeader> search(String query) {
             reads++;
             String safeQuery = query == null ? "" : query.toLowerCase(java.util.Locale.ROOT);
             return maps.values().stream()
                     .filter(map -> map.metadata().mapName().toLowerCase(java.util.Locale.ROOT).contains(safeQuery))
+                    .map(InMemoryDungeonRepository::header)
                     .toList();
+        }
+
+        @Override
+        public DungeonMapHeader create(String mapName) {
+            long mapId = maps.keySet().stream().mapToLong(Long::longValue).max().orElse(0L) + 1L;
+            DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(mapId), mapName);
+            maps.put(mapId, map);
+            return header(map);
+        }
+
+        @Override
+        public DungeonMapHeader rename(DungeonMapIdentity mapId, String mapName) {
+            DungeonMap renamed = DungeonMapAuthoring.rename(maps.get(mapId.value()), mapName);
+            maps.put(mapId.value(), renamed);
+            return header(renamed);
         }
 
         @Override
@@ -440,6 +455,13 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
         @Override
         public void delete(DungeonMapIdentity mapId) {
             maps.remove(mapId.value());
+        }
+
+        private static DungeonMapHeader header(DungeonMap map) {
+            return new DungeonMapHeader(
+                    map.metadata().mapId(),
+                    map.metadata().mapName(),
+                    map.revision());
         }
     }
 }

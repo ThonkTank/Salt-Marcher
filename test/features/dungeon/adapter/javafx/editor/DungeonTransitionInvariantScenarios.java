@@ -9,6 +9,8 @@ import features.dungeon.DungeonTestAssembly;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.application.authored.port.DungeonMapRepository;
+import features.dungeon.application.authored.port.DungeonCatalogStore;
+import features.dungeon.application.authored.port.DungeonMapHeader;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.DungeonMapMetadata;
@@ -198,7 +200,7 @@ final class DungeonTransitionInvariantScenarios {
         MissingPreviousMapRepository repository =
                 new MissingPreviousMapRepository(sourceMap, targetMap, missingPreviousMapId);
         DungeonTestAssembly.Component services =
-                DungeonEditorTestPersistence.createDungeonServices(repository);
+                DungeonEditorTestPersistence.createDungeonServices(repository, repository);
         DungeonEditorDungeonState dungeonState = new DungeonEditorDungeonState();
         DungeonAuthoredApplicationService.OperationResult result = services
                 .editor()
@@ -330,7 +332,7 @@ final class DungeonTransitionInvariantScenarios {
         return List.copyOf(result);
     }
 
-    private static final class MissingPreviousMapRepository implements DungeonMapRepository {
+    private static final class MissingPreviousMapRepository implements DungeonCatalogStore, DungeonMapRepository {
         private final Map<Long, DungeonMap> mapsById = new LinkedHashMap<>();
         private final long missingPreviousMapId;
         private final List<Long> requestedMapIds = new ArrayList<>();
@@ -344,11 +346,6 @@ final class DungeonTransitionInvariantScenarios {
             mapsById.put(sourceMap.metadata().mapId().value(), sourceMap);
             mapsById.put(targetMap.metadata().mapId().value(), targetMap);
             this.missingPreviousMapId = missingPreviousMapId;
-        }
-
-        @Override
-        public DungeonMapIdentity nextMapId() {
-            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -371,8 +368,18 @@ final class DungeonTransitionInvariantScenarios {
         }
 
         @Override
-        public List<DungeonMap> searchByName(String query) {
+        public List<DungeonMapHeader> search(String query) {
             return List.of();
+        }
+
+        @Override
+        public DungeonMapHeader create(String mapName) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public DungeonMapHeader rename(DungeonMapIdentity mapId, String mapName) {
+            throw new UnsupportedOperationException();
         }
 
         @Override

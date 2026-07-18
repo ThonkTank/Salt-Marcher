@@ -22,7 +22,9 @@ import features.dungeon.domain.core.projection.DungeonDerivedState;
 import features.dungeon.domain.core.projection.DungeonDerivedStateProjection;
 import features.dungeon.domain.core.projection.DungeonMapFacts;
 import features.dungeon.application.authored.port.DungeonMapRepository;
+import features.dungeon.application.authored.port.DungeonCatalogStore;
 import features.dungeon.application.authored.port.DungeonChangeSet;
+import features.dungeon.application.authored.port.DungeonMapHeader;
 import features.dungeon.application.authored.command.DungeonCommandResult;
 import features.dungeon.application.authored.command.DungeonCompoundCommandResult;
 import features.dungeon.application.authored.command.DungeonCompoundPatch;
@@ -106,6 +108,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
     private static final String DEFAULT_DESCRIPTION = "";
     private static final String PREVIEW_ARGUMENT = "preview";
 
+    private final DungeonCatalogStore catalogStore;
     private final DungeonMapRepository repository;
     private final DungeonAuthoredPublishedState publishedState;
     private final CorridorRoutingPolicy corridorRoutingPolicy;
@@ -161,17 +164,20 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
     private final LoadOperations loadOperations = new LoadOperations();
 
     public DungeonAuthoredApplicationService(
+            DungeonCatalogStore catalogStore,
             DungeonMapRepository repository,
             DungeonAuthoredPublishedState publishedState
     ) {
-        this(repository, publishedState, new OrthogonalCorridorRoutingPolicy());
+        this(catalogStore, repository, publishedState, new OrthogonalCorridorRoutingPolicy());
     }
 
     public DungeonAuthoredApplicationService(
+            DungeonCatalogStore catalogStore,
             DungeonMapRepository repository,
             DungeonAuthoredPublishedState publishedState,
             CorridorRoutingPolicy corridorRoutingPolicy
     ) {
+        this.catalogStore = Objects.requireNonNull(catalogStore, "catalogStore");
         this.repository = Objects.requireNonNull(repository, "repository");
         this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
         this.corridorRoutingPolicy = Objects.requireNonNull(corridorRoutingPolicy, "corridorRoutingPolicy");
@@ -1117,33 +1123,31 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         }
 
         private DungeonMapIdentity createMap(String requestedMapName) {
-            DungeonMapIdentity mapIdentity = repository.nextMapId();
             String mapName = requestedMapName == null || requestedMapName.isBlank()
                     ? DEFAULT_MAP_NAME
                     : requestedMapName;
-            DungeonMap dungeonMap = DungeonMapAuthoring.empty(mapIdentity, mapName);
-            DungeonMap saved = repository.save(dungeonMap);
-            authoredWorkset.put(saved.metadata().mapId().value(), saved);
-            return saved.metadata().mapId();
+            DungeonMapHeader created = catalogStore.create(mapName);
+            DungeonMap emptyMap = DungeonMapAuthoring.committedContent(
+                    DungeonMapAuthoring.empty(created.mapId(), created.mapName()),
+                    created.revision());
+            authoredWorkset.put(created.mapId().value(), emptyMap);
+            return created.mapId();
         }
 
         private DungeonMapIdentity renameMap(DungeonMapIdentity mapIdentity, String requestedMapName) {
-            DungeonMap foundMap = loadMap(mapIdentity);
-            if (!foundMap.metadata().mapId().equals(mapIdentity)) {
-                throw new IllegalArgumentException("Unknown dungeon map: " + mapIdentity.value());
-            }
             String mapName = requestedMapName == null || requestedMapName.isBlank()
                     ? DEFAULT_MAP_NAME
                     : requestedMapName;
-            DungeonMap renamed = repository.saveChange(new DungeonChangeSet(
-                    foundMap,
-                    DungeonMapAuthoring.rename(foundMap, mapName)));
-            authoredWorkset.put(renamed.metadata().mapId().value(), renamed);
-            return renamed.metadata().mapId();
+            DungeonMapHeader renamed = catalogStore.rename(mapIdentity, mapName);
+            authoredWorkset.computeIfPresent(mapIdentity.value(), (ignored, current) ->
+                    DungeonMapAuthoring.committedContent(
+                            DungeonMapAuthoring.rename(current, renamed.mapName()),
+                            renamed.revision()));
+            return renamed.mapId();
         }
 
         private DungeonMapIdentity deleteMap(DungeonMapIdentity mapIdentity) {
-            repository.delete(mapIdentity);
+            catalogStore.delete(mapIdentity);
             authoredWorkset.remove(mapIdentity.value());
             editHistory.remove(mapIdentity);
             return mapIdentity;
@@ -1152,10 +1156,10 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         private CatalogResult searchCatalog(String query) {
             String effectiveQuery = query == null ? "" : query;
             List<MapSummaryData> summaries = new ArrayList<>();
-            for (DungeonMap map : repository.searchByName(effectiveQuery)) {
+            for (DungeonMapHeader map : catalogStore.search(effectiveQuery)) {
                 summaries.add(new MapSummaryData(
-                        map.metadata().mapId(),
-                        map.metadata().mapName(),
+                        map.mapId(),
+                        map.mapName(),
                         map.revision()));
             }
             summaries.sort(mapSummaryOrder);

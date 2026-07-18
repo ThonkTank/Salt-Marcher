@@ -97,33 +97,51 @@ and commit boundaries. M7 starts only after both are complete.
 
 ## Current Migration State
 
-- Current foundation: M0 through M2 and M3.1 through M3.8 are complete on
-  `main` through PR #507. Every authored Editor commit now enters history only
-  as an exact single-map or compound patch; snapshot history and its whole-map
-  operation route are deleted.
-- This slice: M3.9 closes the patch/history milestone. Production defaults
-  retain at most `200` committed commands or `128 MiB` of measured forward and
-  inverse patch bytes, while deterministic limit injection qualifies eviction
-  without changing the shipped limits.
-- The shared `MEDIUM` qualification dataset proves byte-budget enforcement with
-  a real `10,000`-cell room patch. Command-limit proof applies and undoes exact
-  patches after the oldest entry is evicted.
-- The real map-view shortcut route places tool change, selection, camera pan,
-  repository-free preview, and typed exterior-wall rejection between one
-  authored commit and undo. One shortcut undo still removes that commit,
-  proving that every intervening action creates no history entry.
-- The M3 architecture gate permits history entries to retain only forward and
-  inverse `DungeonPatch` or `DungeonCompoundPatch` payloads, rejects complete
-  `DungeonMap` fields in patch carriers, and prevents new application consumers
-  from adopting the temporary whole-map persistence bridge.
+- Current foundation: M0 through M3 are complete on `main` through PR #508.
+  Every authored Editor commit enters history only as an exact single-map or
+  compound patch, requirements-owned command and encoded-byte retention limits
+  are qualified, and non-committing production actions are history-free.
+- This slice: M4.1 introduces the metadata-only `DungeonCatalogStore` and moves
+  production map search, create, rename, and delete to it. Catalog reads return
+  stable headers without authored geometry; create and rename write only the
+  `dungeon_maps` row and advance the map revision exactly once where required.
+- M4.1 removes catalog identity allocation, full-map create, catalog search,
+  and delete methods from `DungeonMapRepository`. The remaining repository is
+  explicitly temporary and may serve only the M4 window/UoW migration.
 - `DungeonChangeSet(before, after)` remains only as the temporary whole-map
   persistence bridge used beneath accepted patches, history replay, transition
-  compounds, and catalog rename. M4 owns its replacement with incremental
-  `DungeonUnitOfWork`; no new caller may use it.
-- Next step after this slice merges: open M4 by replacing the temporary
-  repository boundary with explicit catalog, window-read, and incremental
-  unit-of-work ports, then move one production consumer at a time and delete
-  each replaced whole-map route in its owning slice.
+  compounds, and ordinary authored commits. M4 owns its replacement with
+  incremental `DungeonUnitOfWork`; no new caller may use it.
+- Next step after this slice merges: M4.2 installs the canonical Dungeon-only
+  schema and entity-to-chunk membership while keeping the current whole-map
+  bridge only long enough to prove equivalent production readback.
+
+### Active Slice Contract: M4.1 Catalog Store
+
+- **Goal and current evidence:** split catalog metadata from the umbrella
+  whole-map repository. Before this slice, search mapped header-only SQL rows
+  into synthetic `DungeonMap` values, create reserved and deleted an id before
+  writing a full empty map, and rename loaded then rewrote the full aggregate.
+- **Owners and implementation surface:** this roadmap plus the Dungeon
+  architecture, domain, and persistence contract govern
+  `DungeonCatalogStore`, `DungeonMapHeader`, the authored application service,
+  SQLite gateway/repository composition, and their application, architecture,
+  persistence, and production Editor tests.
+- **Invariants:** search returns stable id/name/revision headers without authored
+  geometry; create inserts one revision-one map header; rename changes only the
+  header and advances revision once; delete preserves SQLite cascade behavior;
+  a loaded workset remains aligned without another whole-map read.
+- **Later-slice exclusions:** M4.1 does not replace the schema, introduce window
+  or closure values, migrate patch writes, or remove whole-map reads needed by
+  commands and travel. M4.2 through M4.6 own those changes.
+- **Deletion boundary:** remove catalog id allocation, search, and delete from
+  `DungeonMapRepository`, and remove catalog create/rename full-map writes. The
+  remaining repository and combined SQLite adapter are temporary M4 surfaces.
+- **Acceptance and proof:** real Editor catalog create/search/rename/delete
+  remains observable across SQLite reload; create is revision one, rename is
+  revision two with unchanged geometry rows; an application test makes every
+  whole-map repository call fail; an architecture gate forbids `DungeonMap`
+  from the catalog port; final acceptance is literal green `./gradlew check`.
 
 ## M0: Target Lock And Baseline
 
@@ -342,6 +360,102 @@ Make sparse access and local writes real at the persistence boundary.
   successful write
 - reject malformed or incomplete identity closure instead of cloning or
   synthesizing authored entities
+
+### Target Model And Chosen Strategy
+
+M4 replaces the umbrella repository by responsibility and in dependency order:
+
+- `DungeonCatalogStore` owns metadata-only map headers and catalog mutations.
+  Its values contain map id, normalized name, and committed revision only.
+- `DungeonWindowStore` owns explicit chunk reads and command-specific identity
+  closure. A window result contains its map header, requested chunk content
+  revisions, each intersecting stable entity once, and explicit continuation
+  refs for geometry outside the loaded set. A closure result is revision-bound
+  and either complete for every requested stable identity or rejected as
+  incomplete/malformed; it never manufactures a partial `DungeonMap` that can
+  be mistaken for the whole aggregate.
+- `DungeonUnitOfWork` accepts `DungeonPatch` or `DungeonCompoundPatch`, validates
+  every expected map revision, and returns committed map/chunk revisions plus
+  the patch result facts already known by the command. Single-map and compound
+  writes share the same row-level mutation machinery and transaction owner.
+
+The SQLite adapter remains one implementation package but is split internally
+by these ports. Canonical entity rows remain the only authored owner;
+`dungeon_entity_chunks` and `dungeon_chunks` are replaceable source-local
+indexes. Command planning consumes a loaded window plus explicit closure, while
+preview consumes only that in-memory workset. Successful commit publication
+uses the returned patch facts and does not reload the map.
+
+Rejected alternatives:
+
+- keeping `DungeonMapRepository` and placing three target facades in front of
+  it would preserve the same hidden full-map dependency and is rejected
+- persisting patches by diffing two mapped full records would retain the
+  ordinary whole-map writer under a new name and is rejected
+- representing a loaded window as an unmarked partial `DungeonMap` would allow
+  commands to infer unseen truth and is rejected
+- replacing schema, reads, writes, and every consumer in one slice would make
+  rollback and operation-count failures hard to localize and is rejected
+
+### Surface Disposition
+
+| Surface | Decision | M4 consequence |
+| --- | --- | --- |
+| `DungeonPatch`, `DungeonCompoundPatch`, stable entity refs, chunk keys | Adopt | direct UoW input and spatial index keys |
+| SQLite gateway and entity-specific persistence helpers | Adapt | split into catalog, window/closure, and row-level commit paths |
+| `DungeonMapRepository`, `DungeonMapRecord`, full-record mapper/writer | Reject | temporary only; delete after the last consumer moves |
+| room anchors, duplicated cluster floor/vertices, inventory-only chunks | Reject | destructive Dungeon-only schema replacement in M4.2 |
+| command-specific closure requirements | Investigate | bounded M4.3 implementation inventory; every command family must name required refs before it moves |
+
+### Migration Slices
+
+1. **Catalog store:** publish `DungeonCatalogStore`, move real catalog CRUD and
+   search, prove metadata-only SQL and revision behavior, and delete catalog
+   methods from the umbrella repository.
+2. **Canonical schema and membership:** install one destructive Dungeon-only
+   schema migration with room-cell, cluster-boundary, chunk revision, and
+   entity-membership rows. Adapt the temporary full-map bridge to those rows so
+   production remains runnable, prove Party/Hex tables untouched, and delete
+   room-anchor plus duplicated cluster geometry tables and mappers.
+3. **Window and closure reads:** publish immutable window/header/continuation
+   and revision-bound closure values, query only explicit chunks through entity
+   membership, and move the Editor cold viewport/load path. Prove cross-chunk
+   identity uniqueness, negative chunks, stable ordering, no catalog hydration,
+   and typed malformed/incomplete closure rejection.
+4. **Single-map unit of work:** implement row-level insert/update/remove for
+   every patch change kind, entity membership, affected chunk revisions, and
+   map revision in one transaction. Move ordinary commits and undo/redo,
+   publish returned result facts without readback, and delete `DungeonChangeSet`
+   plus the single-map full-record writer.
+5. **Compound unit of work:** commit all map patches through the same row-level
+   machinery in one SQLite transaction. Move transition-link commit and shared
+   history replay, prove rollback from every failure point, and delete the
+   multi-map compatibility writer.
+6. **Read-path closure:** move remaining Editor command hydration and Dungeon
+   travel reads to windows/closures, delete full-map repository methods,
+   `DungeonMapRecord` and its full-record loader/mapper, then tighten the M4
+   architecture gate before M5 or M6 starts.
+
+Slice order follows the dependency chain: catalog has no geometry dependency;
+window and incremental write correctness require canonical rows and membership;
+compound writes reuse proven single-map mutations; the final read deletion is
+safe only after Editor and travel consumers both have window routes. A schema
+proof failure stops M4.2, and an entity family whose closure cannot be stated
+becomes a bounded M4.3 blocker rather than permission to load the whole map.
+
+### Milestone Verification Thesis
+
+- Catalog proof demonstrates zero authored-content hydration, not merely equal
+  catalog output.
+- Schema proof demonstrates canonical stored truth and Dungeon-only destructive
+  scope on the real SQLite migration path.
+- Window proof measures requested chunks, returned unique identities,
+  continuations, and repository round trips on the shared sparse datasets.
+- UoW proof observes exact affected rows, membership, chunk revisions, map
+  revisions, returned result facts, and transaction rollback; green aggregate
+  equality alone is insufficient.
+- Production Editor and travel routes remain the behavior oracle throughout;
+  focused adapter tests support but do not replace them.
 
 ### Exit Gate
 
