@@ -6,7 +6,6 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import features.creatures.api.CreatureFilterOptions;
 import features.creatures.api.CreatureFilterOptionsResult;
 import features.encounter.api.EncounterBuilderInputs;
-import features.encounter.api.EncounterTuningPreviewLabels;
 import features.encountertable.api.EncounterTableCatalogResult;
 import features.encountertable.api.EncounterTableReadStatus;
 import features.encountertable.api.EncounterTableSummary;
@@ -16,44 +15,9 @@ import features.worldplanner.api.WorldPlannerSnapshot;
 
 public final class CatalogControlsContentModel {
 
-    private static final double DEFAULT_DIFFICULTY_VALUE = 2.0;
-    private static final double DEFAULT_BALANCE_VALUE = 3.0;
-    private static final double DEFAULT_AMOUNT_VALUE = 3.0;
-    private static final double DEFAULT_DIVERSITY_VALUE = 3.0;
-    private static final double MIN_DIFFICULTY_VALUE = 1.0;
-    private static final double MAX_DIFFICULTY_VALUE = 4.0;
-    private static final double MIN_BALANCE_VALUE = 1.0;
-    private static final double MAX_BALANCE_VALUE = 5.0;
-    private static final double MIN_AMOUNT_VALUE = 1.0;
-    private static final double MAX_AMOUNT_VALUE = 5.0;
-    private static final double MIN_DIVERSITY_VALUE = 1.0;
-    private static final double MAX_DIVERSITY_VALUE = 4.0;
     private static final String SEARCH_CHIP_KEY = "search";
     private static final String CHALLENGE_RATING_CHIP_KEY = "cr";
     private static final String ENCOUNTER_TABLE_CHIP_PREFIX = "encounter-table:";
-    private static final List<PreviewLabel> DEFAULT_DIFFICULTY_LABELS = List.of(
-            new PreviewLabel(1.0, "25-49 XP"),
-            new PreviewLabel(2.0, "50-74 XP"),
-            new PreviewLabel(3.0, "75-99 XP"),
-            new PreviewLabel(4.0, "100-125 XP"));
-    private static final List<PreviewLabel> DEFAULT_BALANCE_LABELS = List.of(
-            new PreviewLabel(1.0, "Extreme++"),
-            new PreviewLabel(2.0, "Extreme+"),
-            new PreviewLabel(3.0, "Neutral"),
-            new PreviewLabel(4.0, "Durchschnitt+"),
-            new PreviewLabel(5.0, "Durchschnitt++"));
-    private static final List<PreviewLabel> DEFAULT_AMOUNT_LABELS = List.of(
-            new PreviewLabel(1.0, "Boss++"),
-            new PreviewLabel(2.0, "Boss+"),
-            new PreviewLabel(3.0, "Ausgeglichen"),
-            new PreviewLabel(4.0, "Minions+"),
-            new PreviewLabel(5.0, "Minions++"));
-    private static final List<PreviewLabel> DEFAULT_DIVERSITY_LABELS = List.of(
-            new PreviewLabel(1.0, "1 Typ"),
-            new PreviewLabel(2.0, "2 Typen"),
-            new PreviewLabel(3.0, "3 Typen"),
-            new PreviewLabel(4.0, "4 Typen"));
-
     private final ReadOnlyObjectWrapper<ControlsProjection> projection =
             new ReadOnlyObjectWrapper<>(ControlsProjection.initial());
     private final CatalogControlsContentState state = new CatalogControlsContentState();
@@ -85,11 +49,6 @@ public final class CatalogControlsContentModel {
 
     void applyWorldPlannerSnapshot(WorldPlannerSnapshot snapshot) {
         state.applyWorldPlannerSnapshot(snapshot);
-        refreshProjection();
-    }
-
-    void applyEncounterTuningPreview(EncounterTuningPreviewLabels labels) {
-        state.applyEncounterTuningPreview(labels);
         refreshProjection();
     }
 
@@ -257,11 +216,7 @@ public final class CatalogControlsContentModel {
             List<String> biomes,
             List<Long> encounterTableIds,
             List<Long> worldFactionIds,
-            long worldLocationId,
-            SliderProjection difficulty,
-            SliderProjection balance,
-            SliderProjection amount,
-            SliderProjection diversity
+            long worldLocationId
     ) {
         ControlsState {
             creatureTypes = Values.copiedList(creatureTypes);
@@ -270,10 +225,6 @@ public final class CatalogControlsContentModel {
             encounterTableIds = Values.copiedList(encounterTableIds);
             worldFactionIds = Values.copiedList(worldFactionIds);
             worldLocationId = Math.max(0L, worldLocationId);
-            difficulty = difficulty == null ? SliderProjection.empty() : difficulty;
-            balance = balance == null ? SliderProjection.empty() : balance;
-            amount = amount == null ? SliderProjection.empty() : amount;
-            diversity = diversity == null ? SliderProjection.empty() : diversity;
         }
 
         static ControlsState empty() {
@@ -283,11 +234,7 @@ public final class CatalogControlsContentModel {
                     List.of(),
                     List.of(),
                     List.of(),
-                    0L,
-                    SliderProjection.defaultDifficulty(),
-                    SliderProjection.defaultBalance(),
-                    SliderProjection.defaultAmount(),
-                    SliderProjection.defaultDiversity());
+                    0L);
         }
 
         static ControlsState from(ControlsState state) {
@@ -300,76 +247,20 @@ public final class CatalogControlsContentModel {
                     safeState.biomes(),
                     safeState.encounterTableIds(),
                     safeState.worldFactionIds(),
-                    safeState.worldLocationId(),
-                    SliderProjection.from(safeState.difficulty()),
-                    SliderProjection.from(safeState.balance()),
-                    SliderProjection.from(safeState.amount()),
-                    SliderProjection.from(safeState.diversity()));
+                    safeState.worldLocationId());
         }
 
-        static ControlsState fromBuilderInputs(EncounterBuilderInputs builderInputs, ControlsState source) {
+        static ControlsState fromBuilderInputs(EncounterBuilderInputs builderInputs) {
             EncounterBuilderInputs safeInputs = builderInputs == null
                     ? EncounterBuilderInputs.empty()
                     : builderInputs;
-            ControlsState safeSource = source == null ? empty() : source;
             return new ControlsState(
                     safeInputs.creatureTypes(),
                     safeInputs.creatureSubtypes(),
                     safeInputs.biomes(),
                     safeInputs.encounterTableIds(),
                     safeInputs.worldFactionIds(),
-                    safeInputs.worldLocationId(),
-                    SliderProjection.difficulty(
-                            safeInputs.autoDifficulty(),
-                            safeInputs.difficultyLevel(),
-                            safeSource.difficulty().labels()),
-                    SliderProjection.create(
-                            safeInputs.autoBalance(),
-                            safeInputs.autoBalance() ? DEFAULT_BALANCE_VALUE : safeInputs.balanceLevel(),
-                            safeSource.balance().labels(),
-                            DEFAULT_BALANCE_VALUE,
-                            DEFAULT_BALANCE_LABELS),
-                    SliderProjection.create(
-                            safeInputs.autoAmount(),
-                            safeInputs.autoAmount() ? DEFAULT_AMOUNT_VALUE : safeInputs.amountValue(),
-                            safeSource.amount().labels(),
-                            DEFAULT_AMOUNT_VALUE,
-                            DEFAULT_AMOUNT_LABELS),
-                    SliderProjection.create(
-                            safeInputs.autoDiversity(),
-                            safeInputs.autoDiversity() ? DEFAULT_DIVERSITY_VALUE : safeInputs.diversityLevel(),
-                            safeSource.diversity().labels(),
-                            DEFAULT_DIVERSITY_VALUE,
-                            DEFAULT_DIVERSITY_LABELS));
-        }
-
-        ControlsState withPreviewLabels(CatalogControlsPreviewLabels labels) {
-            CatalogControlsPreviewLabels safeLabels = labels == null
-                    ? CatalogControlsPreviewLabels.empty()
-                    : labels;
-            return new ControlsState(
-                    creatureTypes,
-                    creatureSubtypes,
-                    biomes,
-                    encounterTableIds,
-                    worldFactionIds,
-                    worldLocationId,
-                    difficulty.withPreviewLabels(
-                            safeLabels.difficultyLabels(),
-                            DEFAULT_DIFFICULTY_LABELS,
-                            DEFAULT_DIFFICULTY_VALUE),
-                    balance.withPreviewLabels(
-                            safeLabels.balanceLabels(),
-                            DEFAULT_BALANCE_LABELS,
-                            DEFAULT_BALANCE_VALUE),
-                    amount.withPreviewLabels(
-                            safeLabels.amountLabels(),
-                            DEFAULT_AMOUNT_LABELS,
-                            DEFAULT_AMOUNT_VALUE),
-                    diversity.withPreviewLabels(
-                            safeLabels.diversityLabels(),
-                            DEFAULT_DIVERSITY_LABELS,
-                            DEFAULT_DIVERSITY_VALUE));
+                    safeInputs.worldLocationId());
         }
 
         static boolean searchControlsChanged(ControlsState previous, ControlsState next) {
@@ -378,129 +269,6 @@ public final class CatalogControlsContentModel {
             return !safePrevious.creatureTypes().equals(safeNext.creatureTypes())
                     || !safePrevious.creatureSubtypes().equals(safeNext.creatureSubtypes())
                     || !safePrevious.biomes().equals(safeNext.biomes());
-        }
-    }
-
-    record SliderProjection(boolean auto, double value, List<PreviewLabel> labels) {
-        SliderProjection {
-            value = Double.isFinite(value) ? value : 0.0;
-            labels = Values.copiedList(labels);
-        }
-
-        static SliderProjection empty() {
-            return defaultDifficulty();
-        }
-
-        static SliderProjection from(SliderProjection projection) {
-            if (projection == null) {
-                return empty();
-            }
-            return new SliderProjection(
-                    projection.auto(),
-                    projection.value(),
-                    projection.labels().stream().map(PreviewLabel::from).toList());
-        }
-
-        static SliderProjection defaultDifficulty() {
-            return new SliderProjection(true, DEFAULT_DIFFICULTY_VALUE, DEFAULT_DIFFICULTY_LABELS);
-        }
-
-        static SliderProjection defaultBalance() {
-            return new SliderProjection(true, DEFAULT_BALANCE_VALUE, DEFAULT_BALANCE_LABELS);
-        }
-
-        static SliderProjection defaultAmount() {
-            return new SliderProjection(true, DEFAULT_AMOUNT_VALUE, DEFAULT_AMOUNT_LABELS);
-        }
-
-        static SliderProjection defaultDiversity() {
-            return new SliderProjection(true, DEFAULT_DIVERSITY_VALUE, DEFAULT_DIVERSITY_LABELS);
-        }
-
-        static SliderProjection draftDifficulty(boolean auto, double value, SliderProjection current) {
-            return create(
-                    auto,
-                    clamp(value, MIN_DIFFICULTY_VALUE, MAX_DIFFICULTY_VALUE, DEFAULT_DIFFICULTY_VALUE),
-                    current == null ? DEFAULT_DIFFICULTY_LABELS : current.labels(),
-                    DEFAULT_DIFFICULTY_VALUE,
-                    DEFAULT_DIFFICULTY_LABELS);
-        }
-
-        static SliderProjection draftBalance(boolean auto, double value, SliderProjection current) {
-            return create(
-                    auto,
-                    clamp(value, MIN_BALANCE_VALUE, MAX_BALANCE_VALUE, DEFAULT_BALANCE_VALUE),
-                    current == null ? DEFAULT_BALANCE_LABELS : current.labels(),
-                    DEFAULT_BALANCE_VALUE,
-                    DEFAULT_BALANCE_LABELS);
-        }
-
-        static SliderProjection draftAmount(boolean auto, double value, SliderProjection current) {
-            return create(
-                    auto,
-                    clamp(value, MIN_AMOUNT_VALUE, MAX_AMOUNT_VALUE, DEFAULT_AMOUNT_VALUE),
-                    current == null ? DEFAULT_AMOUNT_LABELS : current.labels(),
-                    DEFAULT_AMOUNT_VALUE,
-                    DEFAULT_AMOUNT_LABELS);
-        }
-
-        static SliderProjection draftDiversity(boolean auto, double value, SliderProjection current) {
-            return create(
-                    auto,
-                    clamp(value, MIN_DIVERSITY_VALUE, MAX_DIVERSITY_VALUE, DEFAULT_DIVERSITY_VALUE),
-                    current == null ? DEFAULT_DIVERSITY_LABELS : current.labels(),
-                    DEFAULT_DIVERSITY_VALUE,
-                    DEFAULT_DIVERSITY_LABELS);
-        }
-
-        static SliderProjection difficulty(boolean auto, int difficultyLevel, List<PreviewLabel> labels) {
-            double value = switch (difficultyLevel) {
-                case 1 -> 1.0;
-                case 3 -> 3.0;
-                case 4 -> 4.0;
-                default -> DEFAULT_DIFFICULTY_VALUE;
-            };
-            return create(auto, value, labels, DEFAULT_DIFFICULTY_VALUE, DEFAULT_DIFFICULTY_LABELS);
-        }
-
-        SliderProjection withPreviewLabels(
-                List<PreviewLabel> previewLabels,
-                List<PreviewLabel> fallback,
-                double defaultValue
-        ) {
-            List<PreviewLabel> labels = previewLabels == null || previewLabels.isEmpty()
-                    ? fallback
-                    : previewLabels;
-            return create(auto, value, labels, defaultValue, fallback);
-        }
-
-        private static SliderProjection create(
-                boolean auto,
-                double value,
-                List<PreviewLabel> labels,
-                double defaultValue,
-                List<PreviewLabel> fallback
-        ) {
-            double safeValue = Double.isFinite(value) ? value : defaultValue;
-            List<PreviewLabel> safeLabels = labels == null || labels.isEmpty() ? fallback : List.copyOf(labels);
-            return new SliderProjection(auto, auto ? defaultValue : safeValue, safeLabels);
-        }
-
-        private static double clamp(double value, double min, double max, double fallback) {
-            if (!Double.isFinite(value)) {
-                return fallback;
-            }
-            return Math.max(min, Math.min(max, value));
-        }
-    }
-
-    record PreviewLabel(double value, String label) {
-        PreviewLabel {
-            label = Values.safe(label);
-        }
-
-        static PreviewLabel from(PreviewLabel label) {
-            return label == null ? new PreviewLabel(0.0, "") : new PreviewLabel(label.value(), label.label());
         }
     }
 
@@ -779,7 +547,7 @@ public final class CatalogControlsContentModel {
             CatalogControlsContentModel.LocalFilterState previousLocal = localFilters;
             EncounterBuilderInputs safeInputs = builderInputs == null ? EncounterBuilderInputs.empty() : builderInputs;
             CatalogControlsContentModel.ControlsState next =
-                    CatalogControlsContentModel.ControlsState.fromBuilderInputs(safeInputs, previousAuthoritative);
+                    CatalogControlsContentModel.ControlsState.fromBuilderInputs(safeInputs);
             localFilters = new CatalogControlsContentModel.LocalFilterState(
                     safeInputs.nameQuery(), safeInputs.challengeRatingMin(), safeInputs.challengeRatingMax(),
                     safeInputs.sizes(), safeInputs.alignments()).retainAvailable(filterOptions);
@@ -811,12 +579,6 @@ public final class CatalogControlsContentModel {
             worldLocationOptions = snapshot.locations().stream()
                     .map(CatalogControlsContentState::worldLocationOption)
                     .toList();
-        }
-    
-        void applyEncounterTuningPreview(EncounterTuningPreviewLabels labels) {
-            CatalogControlsPreviewLabels previewLabels = CatalogControlsPreviewLabels.from(labels);
-            authoritativeControls = authoritativeControls.withPreviewLabels(previewLabels);
-            controlsState = controlsState.withPreviewLabels(previewLabels);
         }
     
         CatalogControlsContentModel.InteractionState interactionState() {
@@ -879,49 +641,4 @@ public final class CatalogControlsContentModel {
         }
     }
     
-    private record CatalogControlsPreviewLabels(
-            List<CatalogControlsContentModel.PreviewLabel> difficultyLabels,
-            List<CatalogControlsContentModel.PreviewLabel> balanceLabels,
-            List<CatalogControlsContentModel.PreviewLabel> amountLabels,
-            List<CatalogControlsContentModel.PreviewLabel> diversityLabels
-    ) {
-        CatalogControlsPreviewLabels {
-            difficultyLabels = copy(difficultyLabels);
-            balanceLabels = copy(balanceLabels);
-            amountLabels = copy(amountLabels);
-            diversityLabels = copy(diversityLabels);
-        }
-    
-        static CatalogControlsPreviewLabels empty() {
-            return new CatalogControlsPreviewLabels(List.of(), List.of(), List.of(), List.of());
-        }
-    
-        static CatalogControlsPreviewLabels from(EncounterTuningPreviewLabels previewLabels) {
-            if (previewLabels == null) {
-                return empty();
-            }
-            return new CatalogControlsPreviewLabels(
-                    previewLabels(previewLabels.difficultyLabels()),
-                    previewLabels(previewLabels.balanceLabels()),
-                    previewLabels(previewLabels.amountLabels()),
-                    previewLabels(previewLabels.diversityLabels()));
-        }
-    
-        private static List<CatalogControlsContentModel.PreviewLabel> previewLabels(
-                List<EncounterTuningPreviewLabels.PreviewLabel> labels
-        ) {
-            if (labels == null || labels.isEmpty()) {
-                return List.of();
-            }
-            return labels.stream()
-                    .map(label -> new CatalogControlsContentModel.PreviewLabel(label.value(), label.label()))
-                    .toList();
-        }
-    
-        private static List<CatalogControlsContentModel.PreviewLabel> copy(
-                List<CatalogControlsContentModel.PreviewLabel> labels
-        ) {
-            return labels == null ? List.of() : List.copyOf(labels);
-        }
-    }
 }

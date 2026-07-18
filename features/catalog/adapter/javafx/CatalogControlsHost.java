@@ -1,5 +1,6 @@
 package features.catalog.adapter.javafx;
 
+import features.catalog.application.CatalogSectionId;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +19,7 @@ final class CatalogControlsHost extends VBox {
 
     private final Map<CatalogSectionId, ToggleButton> buttons = new EnumMap<>(CatalogSectionId.class);
     private final VBox activeControls = new VBox();
-    private Consumer<CatalogSectionId> selectionHandler = ignored -> { };
+    private Consumer<CatalogSectionId> selectionHandler = id -> { };
 
     CatalogControlsHost(List<CatalogSection> sections) {
         getStyleClass().add("catalog-controls-host");
@@ -58,7 +59,7 @@ final class CatalogControlsHost extends VBox {
     }
 
     void onSectionSelected(Consumer<CatalogSectionId> handler) {
-        selectionHandler = handler == null ? ignored -> { } : handler;
+        selectionHandler = java.util.Objects.requireNonNull(handler, "handler");
     }
 
     void show(CatalogSection section) {

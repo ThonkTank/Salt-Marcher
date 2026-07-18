@@ -1,5 +1,6 @@
 package features.catalog.adapter.javafx;
 
+import features.catalog.application.CatalogSectionId;
 import javafx.scene.Node;
 
 interface CatalogSection {

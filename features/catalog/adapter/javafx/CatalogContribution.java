@@ -1,20 +1,29 @@
 package features.catalog.adapter.javafx;
 
-import features.encountertable.api.EncounterTableSummary;
-import features.encounter.api.ApplyEncounterStateCommand;
-import features.encounter.api.EncounterPoolFilters;
-import features.encounter.api.UpdateEncounterPoolFiltersCommand;
-import features.creatures.api.CreatureCatalogRow;
+import features.catalog.application.CatalogApplicationRoutes;
+import features.catalog.application.CatalogResultState;
+import features.catalog.application.CatalogSectionId;
+import features.catalog.application.CatalogWorkspaceController;
+import features.catalog.application.CatalogWorkspaceState;
 import features.creatures.api.CreatureReferenceIndexResult;
+import features.creatures.api.CreatureCatalogQueryApi;
+import features.encounter.api.EncounterBuilderInputs;
+import features.encounter.api.SavedEncounterPlanListResult;
+import features.encounter.api.SavedEncounterPlanStatus;
+import features.encountertable.api.EncounterTableCatalogResult;
+import features.encountertable.api.EncounterTableReadStatus;
+import features.encountertable.api.EncounterTableSummary;
+import features.items.api.ItemsCatalogApi;
 import features.worldplanner.api.WorldFactionSummary;
 import features.worldplanner.api.WorldLocationSummary;
 import features.worldplanner.api.WorldNpcSummary;
+import features.worldplanner.api.WorldPlannerReadStatus;
 import features.worldplanner.api.WorldPlannerSnapshot;
-import java.util.List;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 import shell.api.ContributionKey;
 import shell.api.NavigationGraphicResource;
 import shell.api.NavigationGroupSpec;
@@ -23,15 +32,38 @@ import shell.api.ShellContribution;
 import shell.api.ShellContributionSpec;
 import shell.api.ShellLeftBarTabMode;
 import shell.api.ShellLeftBarTabSpec;
+import shell.api.ShellSlot;
 
-public final class CatalogContribution implements ShellContribution {
+/** JavaFX renderer and raw-event translator for the application-owned Catalog workspace. */
+public final class CatalogContribution implements ShellContribution, AutoCloseable {
 
-    private final CatalogBindingData data;
-    private final CatalogBindingActions actions;
+    private final CatalogWorkspaceController controller;
+    private final CreatureCatalogQueryApi creatureQueries;
+    private final ItemsCatalogApi itemCatalog;
+    private final CatalogApplicationRoutes routes;
+    private final AtomicBoolean closed = new AtomicBoolean();
+    private Runnable unsubscribe = () -> { };
+    private CatalogWorkspaceView workspace;
+    private CatalogViewModel monsterViewModel;
+    private SavedEncounterCatalogSection savedEncounterSection;
+    private ReferenceCatalogSection<WorldNpcSummary> npcs;
+    private ReferenceCatalogSection<WorldFactionSummary> factions;
+    private ReferenceCatalogSection<WorldLocationSummary> locations;
+    private ReferenceCatalogSection<EncounterTableSummary> encounterTables;
+    private final Map<Long, String> creatureNames = new HashMap<>();
+    private final Map<Long, String> factionNames = new HashMap<>();
+    private final Map<Long, String> tableNames = new HashMap<>();
 
-    public CatalogContribution(CatalogBindingData data, CatalogBindingActions actions) {
-        this.data = Objects.requireNonNull(data, "data");
-        this.actions = Objects.requireNonNull(actions, "actions");
+    public CatalogContribution(
+            CatalogWorkspaceController controller,
+            CreatureCatalogQueryApi creatureQueries,
+            ItemsCatalogApi itemCatalog,
+            CatalogApplicationRoutes routes
+    ) {
+        this.controller = Objects.requireNonNull(controller, "controller");
+        this.creatureQueries = Objects.requireNonNull(creatureQueries, "creatureQueries");
+        this.itemCatalog = Objects.requireNonNull(itemCatalog, "itemCatalog");
+        this.routes = Objects.requireNonNull(routes, "routes");
     }
 
     @Override
@@ -47,138 +79,140 @@ public final class CatalogContribution implements ShellContribution {
 
     @Override
     public ShellBinding bind() {
-        CatalogViewModel viewModel = new CatalogViewModel(
-                data.creatures(), data.creatureQueries(), data.encounterTables(), data.encounters(),
-                actions.addCreatureToScene());
+        if (closed.get()) {
+            throw new IllegalStateException("Catalog contribution is closed.");
+        }
+        if (workspace != null) {
+            throw new IllegalStateException("Catalog contribution may only be bound once.");
+        }
         CatalogControlsView monsterControls = new CatalogControlsView();
         CatalogMainView monsters = new CatalogMainView();
-        bindMonster(viewModel, monsterControls, monsters);
+        monsterViewModel = new CatalogViewModel(
+                creatureQueries, routes.creatureInspector(), routes.encounter(), routes.scene(), controller);
+        bindMonster(monsterControls, monsters);
 
-        ItemsCatalogSection items = new ItemsCatalogSection(data.items(), actions.inspector());
-        SavedEncounterCatalogSection encounters =
-                new SavedEncounterCatalogSection(data.encounters(), data.savedPlans());
-        Map<Long, String> creatureNames = new HashMap<>();
-        Map<Long, String> factionNames = new HashMap<>();
-        Map<Long, String> tableNames = new HashMap<>();
-        AtomicReference<WorldPlannerSnapshot> currentWorld = new AtomicReference<>();
-        ReferenceCatalogSection<WorldNpcSummary> npcs = new ReferenceCatalogSection<>(
+        ItemsCatalogSection items = new ItemsCatalogSection(
+                itemCatalog, routes.itemInspector(), controller);
+        savedEncounterSection = new SavedEncounterCatalogSection(routes.encounter(), controller);
+        createReferenceSections();
+
+        workspace = new CatalogWorkspaceView(controller, List.of(
+                new MonsterCatalogSection(monsterControls, monsters, monsterViewModel::initialize),
+                items,
+                savedEncounterSection,
+                npcs,
+                factions,
+                locations,
+                encounterTables));
+        unsubscribe = controller.publication().subscribe(this::apply);
+        apply(controller.publication().current());
+        return new CatalogShellBinding(workspace);
+    }
+
+    private void bindMonster(CatalogControlsView controls, CatalogMainView monsters) {
+        controls.bind(monsterViewModel.controlsContentModel());
+        controls.onViewInputEvent(monsterViewModel::consume);
+        monsters.bind(monsterViewModel.mainContentModel());
+        monsters.onViewInputEvent(monsterViewModel::consume);
+    }
+
+    private void createReferenceSections() {
+        npcs = new ReferenceCatalogSection<>(
                 CatalogSectionId.NPCS,
                 "Keine NPCs verfügbar.",
                 WorldNpcSummary::displayName,
                 value -> reference(creatureNames, value.creatureStatblockId(), "Statblock") + " · "
                         + reference(factionNames, value.factionId(), "Keine Fraktion")
                         + " · " + value.disposition() + " · " + value.status(),
-                value -> actions.openNpcInspector().accept(value.npcId()),
+                value -> routes.worldInspectors().openNpc(value.npcId()),
                 "Öffne vorhandene NPCs im Inspector oder lege einen neuen Welt-Charakter an.",
                 "NPC anlegen",
-                actions.createNpc());
-        ReferenceCatalogSection<WorldFactionSummary> factions = new ReferenceCatalogSection<>(
+                routes.worldInspectors()::createNpc);
+        factions = new ReferenceCatalogSection<>(
                 CatalogSectionId.FACTIONS,
                 "Keine Fraktionen verfügbar.",
                 WorldFactionSummary::displayName,
                 value -> reference(tableNames, value.primaryEncounterTableId(), "Tabelle")
                         + " · Haltung " + value.disposition() + " · " + value.npcIds().size() + " NPCs",
-                value -> actions.openFactionInspector().accept(value.factionId()),
+                value -> routes.worldInspectors().openFaction(value.factionId()),
                 "Fraktionen bleiben World-Planner-Wahrheit und werden im Inspector bearbeitet.",
                 "Fraktion anlegen",
-                actions.createFaction());
-        ReferenceCatalogSection<WorldLocationSummary> locations = new ReferenceCatalogSection<>(
+                routes.worldInspectors()::createFaction);
+        locations = new ReferenceCatalogSection<>(
                 CatalogSectionId.LOCATIONS,
                 "Keine Orte verfügbar.",
                 WorldLocationSummary::displayName,
                 value -> joinedReferences(factionNames, value.factionIds(), "Fraktionen") + " · "
                         + joinedReferences(tableNames, value.encounterTableIds(), "Tabellen"),
-                value -> actions.openLocationInspector().accept(value.locationId()),
+                value -> routes.worldInspectors().openLocation(value.locationId()),
                 "Orte öffnen und bearbeiten sich im World-Planner-Inspector.",
                 "Ort anlegen",
-                actions.createLocation());
-        ReferenceCatalogSection<EncounterTableSummary> encounterTables = new ReferenceCatalogSection<>(
+                routes.worldInspectors()::createLocation);
+        encounterTables = new ReferenceCatalogSection<>(
                 CatalogSectionId.ENCOUNTER_TABLES,
                 "Keine Encounter-Tabellen verfügbar.",
                 EncounterTableSummary::name,
                 value -> "#" + value.tableId(),
-                ignored -> { },
-                "Encounter-Tabellen sind eine read-only Referenz für die Monster- und Encounter-Auswahl.",
-                "",
-                () -> { });
+                "Encounter-Tabellen sind eine read-only Referenz für die Monster- und Encounter-Auswahl.");
 
-        npcs.addAction("Encounter", "Zum Encounter", value -> data.encounters().applyState(
-                ApplyEncounterStateCommand.addWorldNpcCreature(value.creatureStatblockId(), value.npcId())));
-        npcs.addAction("Scene", "Zur Scene", value -> actions.addNpcToScene().accept(value.npcId()));
-        factions.addAction("Encounter", "Als Quelle", value -> data.encounters().updatePoolFilters(
-                new UpdateEncounterPoolFiltersCommand(withFaction(
-                        data.builderInputs().current().poolFilters(), value.factionId()))));
-        locations.addAction("Encounter", "Als Quelle", value -> data.encounters().updatePoolFilters(
-                new UpdateEncounterPoolFiltersCommand(withLocation(
-                        data.builderInputs().current().poolFilters(), value.locationId()))));
-        locations.addAction("Scene", "Als Ort", value -> actions.setSceneLocation().accept(value.locationId()));
-        encounterTables.addAction("Encounter", "Als Quelle", value -> data.encounters().updatePoolFilters(
-                new UpdateEncounterPoolFiltersCommand(withTable(
-                        data.builderInputs().current().poolFilters(), value.tableId()))));
-
-        data.creatureReferences().subscribe(result -> {
-            applyCreatureNames(result, creatureNames);
-            applyWorld(currentWorld.get(), npcs, factions, locations, factionNames);
-        });
-        applyCreatureNames(data.creatureReferences().current(), creatureNames);
-        data.encounterTableCatalog().subscribe(result -> {
-            List<EncounterTableSummary> values = result == null ? List.of() : result.tables();
-            applyTableNames(values, tableNames);
-            encounterTables.apply(values);
-            applyWorld(currentWorld.get(), npcs, factions, locations, factionNames);
-        });
-        List<EncounterTableSummary> initialTables = data.encounterTableCatalog().current().tables();
-        applyTableNames(initialTables, tableNames);
-        encounterTables.apply(initialTables);
-        if (data.worldPlanner() != null) {
-            data.worldPlanner().subscribe(snapshot -> {
-                currentWorld.set(snapshot);
-                applyWorld(snapshot, npcs, factions, locations, factionNames);
-            });
-            currentWorld.set(data.worldPlanner().current());
-            applyWorld(currentWorld.get(), npcs, factions, locations, factionNames);
-        }
-
-        CatalogWorkspace workspace = new CatalogWorkspace(List.of(
-                new MonsterCatalogSection(monsterControls, monsters),
-                items,
-                encounters,
-                npcs,
-                factions,
-                locations,
-                encounterTables));
-        return ShellBinding.cockpit("Katalog", workspace.controls(), workspace.content());
+        npcs.addAction("Encounter", "Zum Encounter",
+                value -> routes.encounter().addWorldNpc(value.creatureStatblockId(), value.npcId()));
+        npcs.addAction("Scene", "Zur Scene", value -> routes.scene().addNpc(value.npcId()));
+        factions.addAction("Encounter", "Als Quelle",
+                value -> routes.encounter().useFactionSource(value.factionId()));
+        locations.addAction("Encounter", "Als Quelle",
+                value -> routes.encounter().useLocationSource(value.locationId()));
+        locations.addAction("Scene", "Als Ort", value -> routes.scene().setLocation(value.locationId()));
+        encounterTables.addAction("Encounter", "Als Quelle",
+                value -> routes.encounter().useEncounterTableSource(value.tableId()));
     }
 
-    private void bindMonster(
-            CatalogViewModel viewModel,
-            CatalogControlsView controls,
-            CatalogMainView monsters
-    ) {
-        controls.bind(viewModel.controlsContentModel());
-        controls.onViewInputEvent(viewModel::consume);
-        monsters.bind(viewModel.mainContentModel());
-        monsters.onViewInputEvent(viewModel::consume);
-        viewModel.creatureDetailSelectionProperty().addListener((ignored, before, after) -> {
-            if (after != null && after.longValue() > 0L) {
-                actions.openCreatureInspector().accept(after.longValue());
-                viewModel.setCreatureDetailSelection(0L);
-            }
-        });
-        data.encounterTableCatalog().subscribe(viewModel.controlsContentModel()::applyEncounterTables);
-        data.tuningPreview().subscribe(result ->
-                viewModel.controlsContentModel().applyEncounterTuningPreview(result.labels()));
-        data.builderInputs().subscribe(viewModel::applyEncounterBuilderInputs);
-        if (data.worldPlanner() != null) {
-            data.worldPlanner().subscribe(viewModel.controlsContentModel()::applyWorldPlannerSnapshot);
+    private void apply(CatalogWorkspaceState state) {
+        if (workspace == null || closed.get()) {
+            return;
         }
-        viewModel.controlsContentModel().applyEncounterTables(data.encounterTableCatalog().current());
-        viewModel.controlsContentModel().applyEncounterTuningPreview(data.tuningPreview().current().labels());
-        if (data.worldPlanner() != null) {
-            viewModel.controlsContentModel().applyWorldPlannerSnapshot(data.worldPlanner().current());
-        }
-        viewModel.applyEncounterBuilderInputs(data.builderInputs().current());
-        viewModel.initialize();
+        workspace.apply(state);
+        EncounterTableCatalogResult tables = encounterTableResult(state);
+        WorldPlannerSnapshot world = worldSnapshot(state);
+        CreatureReferenceIndexResult creatures = state.worldReferences().creatures();
+        EncounterBuilderInputs encounterInputs = state.monsters().encounterPoolFilters();
+        SavedEncounterPlanListResult savedPlans = savedEncounterResult(state);
+
+        monsterViewModel.controlsContentModel().applyEncounterTables(tables);
+        monsterViewModel.controlsContentModel().applyWorldPlannerSnapshot(world);
+        monsterViewModel.applyEncounterBuilderInputs(encounterInputs);
+        savedEncounterSection.apply(savedPlans);
+        applyCreatureNames(creatures, creatureNames);
+        applyTableNames(tables.tables(), tableNames);
+        applyWorld(world, npcs, factions, locations, factionNames);
+        encounterTables.apply(tables.tables());
+    }
+
+    private static EncounterTableCatalogResult encounterTableResult(CatalogWorkspaceState state) {
+        CatalogResultState<EncounterTableSummary> result = state.encounterTables().results();
+        EncounterTableReadStatus status = result.status() == CatalogResultState.Status.READY
+                || result.status() == CatalogResultState.Status.EMPTY
+                ? EncounterTableReadStatus.SUCCESS : EncounterTableReadStatus.STORAGE_ERROR;
+        return new EncounterTableCatalogResult(status, result.rows());
+    }
+
+    private static SavedEncounterPlanListResult savedEncounterResult(CatalogWorkspaceState state) {
+        var result = state.savedEncounters().results();
+        SavedEncounterPlanStatus status = result.status() == CatalogResultState.Status.READY
+                || result.status() == CatalogResultState.Status.EMPTY
+                ? SavedEncounterPlanStatus.SUCCESS : SavedEncounterPlanStatus.STORAGE_ERROR;
+        return new SavedEncounterPlanListResult(status, result.rows(), result.message());
+    }
+
+    private static WorldPlannerSnapshot worldSnapshot(CatalogWorkspaceState state) {
+        var world = state.worldReferences();
+        boolean success = List.of(world.npcs().results(), world.factions().results(), world.locations().results())
+                .stream().allMatch(result -> result.status() == CatalogResultState.Status.READY
+                        || result.status() == CatalogResultState.Status.EMPTY);
+        return new WorldPlannerSnapshot(
+                success ? WorldPlannerReadStatus.SUCCESS : WorldPlannerReadStatus.STORAGE_ERROR,
+                world.npcs().results().rows(), world.factions().results().rows(), world.locations().results().rows(),
+                success ? "" : world.npcs().results().message());
     }
 
     private static void applyWorld(
@@ -188,9 +222,6 @@ public final class CatalogContribution implements ShellContribution {
             ReferenceCatalogSection<WorldLocationSummary> locations,
             Map<Long, String> factionNames
     ) {
-        if (snapshot == null) {
-            return;
-        }
         factionNames.clear();
         snapshot.factions().forEach(value -> factionNames.put(value.factionId(), value.displayName()));
         npcs.apply(snapshot.npcs());
@@ -200,9 +231,7 @@ public final class CatalogContribution implements ShellContribution {
 
     private static void applyCreatureNames(CreatureReferenceIndexResult result, Map<Long, String> names) {
         names.clear();
-        if (result != null) {
-            result.rows().forEach(value -> names.put(value.id(), value.name()));
-        }
+        result.rows().forEach(value -> names.put(value.id(), value.name()));
     }
 
     private static void applyTableNames(List<EncounterTableSummary> tables, Map<Long, String> names) {
@@ -226,26 +255,45 @@ public final class CatalogContribution implements ShellContribution {
                 .collect(java.util.stream.Collectors.joining(", "));
     }
 
-    private static EncounterPoolFilters withFaction(EncounterPoolFilters source, long factionId) {
-        EncounterPoolFilters safe = source == null ? EncounterPoolFilters.empty() : source;
-        return new EncounterPoolFilters(safe.nameQuery(), safe.challengeRatingMin(), safe.challengeRatingMax(),
-                safe.sizes(), safe.creatureTypes(), safe.creatureSubtypes(), safe.biomes(), safe.alignments(),
-                safe.encounterTableIds(), List.of(factionId), safe.worldLocationId());
+    @Override
+    public void close() {
+        if (!closed.compareAndSet(false, true)) {
+            return;
+        }
+        unsubscribe.run();
+        unsubscribe = () -> { };
+        if (workspace != null) {
+            workspace.deactivate();
+        }
     }
 
-    private static EncounterPoolFilters withLocation(EncounterPoolFilters source, long locationId) {
-        EncounterPoolFilters safe = source == null ? EncounterPoolFilters.empty() : source;
-        return new EncounterPoolFilters(safe.nameQuery(), safe.challengeRatingMin(), safe.challengeRatingMax(),
-                safe.sizes(), safe.creatureTypes(), safe.creatureSubtypes(), safe.biomes(), safe.alignments(),
-                safe.encounterTableIds(), safe.worldFactionIds(), locationId);
-    }
+    private final class CatalogShellBinding implements ShellBinding {
+        private final Map<ShellSlot, javafx.scene.Node> slots;
 
-    private static EncounterPoolFilters withTable(EncounterPoolFilters source, long tableId) {
-        EncounterPoolFilters safe = source == null ? EncounterPoolFilters.empty() : source;
-        java.util.LinkedHashSet<Long> ids = new java.util.LinkedHashSet<>(safe.encounterTableIds());
-        ids.add(tableId);
-        return new EncounterPoolFilters(safe.nameQuery(), safe.challengeRatingMin(), safe.challengeRatingMax(),
-                safe.sizes(), safe.creatureTypes(), safe.creatureSubtypes(), safe.biomes(), safe.alignments(),
-                List.copyOf(ids), safe.worldFactionIds(), safe.worldLocationId());
+        private CatalogShellBinding(CatalogWorkspaceView view) {
+            slots = Map.of(ShellSlot.COCKPIT_CONTROLS, view.controls(), ShellSlot.COCKPIT_MAIN, view.content());
+        }
+
+        @Override
+        public String title() {
+            return "Katalog";
+        }
+
+        @Override
+        public Map<ShellSlot, javafx.scene.Node> slotContent() {
+            return slots;
+        }
+
+        @Override
+        public void onActivate() {
+            controller.activate();
+            workspace.activate();
+        }
+
+        @Override
+        public void onDeactivate() {
+            workspace.deactivate();
+            controller.deactivate();
+        }
     }
 }

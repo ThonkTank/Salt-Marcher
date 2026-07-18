@@ -65,5 +65,8 @@ public final class ItemsServiceAssembly {
     }
 
     public record Component(ItemsCatalogApi catalog, ItemsImportApi importer) {
+        public void openInspector(shell.api.InspectorSink inspector, ItemsCatalogApi.ItemDetail detail) {
+            features.items.adapter.javafx.ItemDetailsView.openInspector(inspector, detail);
+        }
     }
 }

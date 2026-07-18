@@ -27,9 +27,9 @@ import shell.api.ShellSlot;
 import shell.api.ShellLeftBarTabSpec;
 import shell.api.ShellBinding;
 import shell.api.ShellLeftBarTabMode;
-import features.catalog.adapter.javafx.CatalogContribution;
-import features.catalog.CatalogServiceAssembly.CatalogActionRoutes;
-import features.catalog.CatalogServiceAssembly.CatalogDataSources;
+import features.catalog.CatalogFeature;
+import features.catalog.CatalogProviders;
+import features.catalog.CatalogRoutes;
 import features.dungeon.adapter.javafx.editor.DungeonEditorContribution;
 import features.dungeon.adapter.javafx.travel.DungeonTravelContribution;
 import features.hex.adapter.javafx.hexmap.HexMapContribution;
@@ -293,17 +293,53 @@ public final class SessionPlannerShellLayoutTest {
         return new DungeonEditorContribution(new DungeonEditorApiFacade(root, dependencies.uiDispatcher()));
     }
 
-    private static CatalogContribution catalog(LayoutServices services) {
-        return (CatalogContribution) features.catalog.CatalogServiceAssembly.contribution(
-                new CatalogDataSources(
-                        services.creatures().application(), services.creatures().catalogQueries(),
-                        services.tables().application(), services.encounter().application(),
-                        services.encounter().builderInputs(), services.tables().catalog(),
-                        services.encounter().tuningPreview(), services.encounter().savedPlans(),
-                        unavailableItems(), null),
-                new CatalogActionRoutes(
-                        EmptyInspectorSink.INSTANCE, ignored -> { }, ignored -> { }, ignored -> { }, ignored -> { },
-                        () -> { }, () -> { }, () -> { }));
+    private static shell.api.ShellContribution catalog(LayoutServices services) {
+        features.worldplanner.api.WorldPlannerSnapshotModel world =
+                new features.worldplanner.api.WorldPlannerSnapshotModel(
+                        () -> new features.worldplanner.api.WorldPlannerSnapshot(
+                                features.worldplanner.api.WorldPlannerReadStatus.SUCCESS,
+                                List.of(), List.of(), List.of(), ""),
+                        listener -> () -> { });
+        CatalogRoutes.WorldInspectorRoutes worldRoutes = new CatalogRoutes.WorldInspectorRoutes() {
+            @Override public void openNpc(long npcId) { }
+            @Override public void openFaction(long factionId) { }
+            @Override public void openLocation(long locationId) { }
+            @Override public void createNpc() { }
+            @Override public void createFaction() { }
+            @Override public void createLocation() { }
+        };
+        CatalogRoutes.EncounterHandoff encounterRoutes = new CatalogRoutes.EncounterHandoff() {
+            @Override public void updatePoolFilters(features.encounter.api.EncounterPoolFilters filters) { }
+            @Override public void addCreature(long creatureId) { }
+            @Override public void addWorldNpc(long creatureId, long npcId) { }
+            @Override public void useFactionSource(long factionId) { }
+            @Override public void useLocationSource(long locationId) { }
+            @Override public void useEncounterTableSource(long tableId) { }
+            @Override public java.util.concurrent.CompletionStage<features.encounter.api.OpenSavedEncounterPlanResult>
+                    openSavedEncounter(long planId, boolean discard) {
+                return java.util.concurrent.CompletableFuture.completedFuture(
+                        new features.encounter.api.OpenSavedEncounterPlanResult(
+                                features.encounter.api.OpenSavedEncounterPlanResult.Status.OPENED, planId, ""));
+            }
+        };
+        CatalogRoutes.SceneHandoff sceneRoutes = new CatalogRoutes.SceneHandoff() {
+            @Override public void addCreature(long creatureId) { }
+            @Override public void addNpc(long npcId) { }
+            @Override public void setLocation(long locationId) { }
+        };
+        return CatalogFeature.create(
+                new CatalogProviders(
+                        new CatalogProviders.MonsterProviders(
+                                services.creatures().catalogQueries(), services.encounter().builderInputs()),
+                        new CatalogProviders.ItemsProviders(unavailableItems()),
+                        new CatalogProviders.SavedEncounterProviders(services.encounter().savedPlans()),
+                        new CatalogProviders.WorldReferenceProviders(
+                                services.creatures().referenceIndex(), world),
+                        new CatalogProviders.EncounterTableProviders(
+                                services.tables().application(), services.tables().catalog()),
+                        platform.ui.DirectUiDispatcher.INSTANCE),
+                new CatalogRoutes(ignored -> { }, ignored -> { }, worldRoutes, encounterRoutes, sceneRoutes))
+                .contribution();
     }
 
     private static features.items.api.ItemsCatalogApi unavailableItems() {

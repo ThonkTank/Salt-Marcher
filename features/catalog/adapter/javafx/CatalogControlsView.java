@@ -16,9 +16,7 @@ import javafx.scene.control.ContextMenu;
 import javafx.scene.control.CustomMenuItem;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleButton;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
@@ -66,18 +64,6 @@ public class CatalogControlsView extends VBox {
     private final Tooltip encounterTableTooltip = new Tooltip("Mehrere Encounter-Tabellen können kombiniert werden.");
     private final ContextMenu encounterTableMenu = new ContextMenu();
     private final VBox encounterTableOptions = new VBox(2);
-    private final ToggleButton difficultyAuto = new ToggleButton("⚅");
-    private final ToggleButton balanceAuto = new ToggleButton("⚅");
-    private final ToggleButton amountAuto = new ToggleButton("⚅");
-    private final ToggleButton diversityAuto = new ToggleButton("⚅");
-    private final Slider difficultySlider = new Slider(1.0, 4.0, 2.0);
-    private final Slider balanceSlider = new Slider(1.0, 5.0, 3.0);
-    private final Slider amountSlider = new Slider(1.0, 5.0, 3.0);
-    private final Slider diversitySlider = new Slider(1.0, 4.0, 3.0);
-    private final Label difficultyValue = new Label();
-    private final Label balanceValue = new Label();
-    private final Label amountValue = new Label();
-    private final Label diversityValue = new Label();
     private final TextField searchField = new TextField();
     private final Button worldFactionButton = new Button("Fraktionen ▾");
     private final ContextMenu worldFactionMenu = new ContextMenu();
@@ -133,39 +119,6 @@ public class CatalogControlsView extends VBox {
                     encounterTableMenu,
                     encounterTableOptions,
                     this::publishSnapshot);
-    private final CatalogControlsTuningControl difficultyTuning = new CatalogControlsTuningControl(
-            "Schwierigkeit",
-            difficultyAuto,
-            difficultyValue,
-            difficultySlider,
-            true,
-            this::publishSnapshot);
-    private final CatalogControlsTuningControl balanceTuning = new CatalogControlsTuningControl(
-            "Balance",
-            balanceAuto,
-            balanceValue,
-            balanceSlider,
-            true,
-            this::publishSnapshot);
-    private final CatalogControlsTuningControl amountTuning = new CatalogControlsTuningControl(
-            "Menge",
-            amountAuto,
-            amountValue,
-            amountSlider,
-            false,
-            this::publishSnapshot);
-    private final CatalogControlsTuningControl diversityTuning = new CatalogControlsTuningControl(
-            "Diversität",
-            diversityAuto,
-            diversityValue,
-            diversitySlider,
-            true,
-            this::publishSnapshot);
-    private final CatalogControlsTuningControls tuningControls = new CatalogControlsTuningControls(
-            difficultyTuning,
-            balanceTuning,
-            amountTuning,
-            diversityTuning);
     private final CatalogControlsChipControls chipControls = new CatalogControlsChipControls(
             searchControls,
             filterPickers,
@@ -241,7 +194,6 @@ public class CatalogControlsView extends VBox {
                 controls.encounterTableIds(),
                 projection.encounterTableDropdownState().open());
         applyWorldSourceOptions(projection, controls);
-        tuningControls.apply(controls);
         chipControls.apply(projection.chips());
     }
 
@@ -276,14 +228,6 @@ public class CatalogControlsView extends VBox {
                 alignmentMenu.isShowing(),
                 rawText(alignmentSearch),
                 encounterTableMenu.isShowing(),
-                difficultyAuto.isSelected(),
-                difficultySlider.getValue(),
-                balanceAuto.isSelected(),
-                balanceSlider.getValue(),
-                amountAuto.isSelected(),
-                amountSlider.getValue(),
-                diversityAuto.isSelected(),
-                diversitySlider.getValue(),
                 rawSelectedEncounterTableIds(encounterTableOptions),
                 rawWorldFactionIds(),
                 rawWorldLocationId()));
@@ -1048,114 +992,6 @@ public class CatalogControlsView extends VBox {
             }
             button.setText("Tabellen (" + selectedCount + ")" + CLOSED_SUFFIX);
             tooltip.setText(DEFAULT_TABLE_TOOLTIP);
-        }
-    }
-
-    private static final class CatalogControlsTuningControl {
-    
-        private static final String STYLE_ACTIVE = "active";
-    
-        private final Label label;
-        private final ToggleButton autoButton;
-        private final Label valueLabel;
-        private final Slider slider;
-        private final Runnable publishSnapshot;
-    
-        CatalogControlsTuningControl(
-                String title,
-                ToggleButton autoButton,
-                Label valueLabel,
-                Slider slider,
-                boolean snapToTicks,
-                Runnable publishSnapshot
-        ) {
-            label = new Label(title);
-            this.autoButton = autoButton;
-            this.valueLabel = valueLabel;
-            this.slider = slider;
-            this.publishSnapshot = publishSnapshot;
-            configure(title, snapToTicks);
-        }
-    
-        Node node() {
-            label.getStyleClass().add("text-muted");
-            valueLabel.getStyleClass().add("text-secondary");
-            HBox box = new HBox(4, label, autoButton, valueLabel, slider);
-            HBox.setHgrow(slider, Priority.ALWAYS);
-            HBox.setHgrow(box, Priority.ALWAYS);
-            return box;
-        }
-    
-        void apply(CatalogControlsContentModel.SliderProjection projection) {
-            if (projection == null) {
-                return;
-            }
-            autoButton.setSelected(projection.auto());
-            slider.setValue(projection.value());
-            updateVisual();
-        }
-    
-        private void configure(String title, boolean snapToTicks) {
-            autoButton.getStyleClass().addAll(STYLE_COMPACT, "auto-dice-btn", STYLE_ACTIVE);
-            autoButton.setAccessibleText(title + " automatisch bestimmen");
-            autoButton.setSelected(true);
-            autoButton.setOnAction(event -> {
-                updateVisual();
-                publishSnapshot.run();
-            });
-            slider.setAccessibleText(title + " Wert");
-            slider.setShowTickLabels(true);
-            slider.setShowTickMarks(true);
-            slider.setSnapToTicks(snapToTicks);
-            slider.setMajorTickUnit(1.0);
-            slider.setMinorTickCount(0);
-            slider.valueProperty().addListener((obs, oldValue, newValue) -> {
-                updateVisual();
-                publishSnapshot.run();
-            });
-            HBox.setHgrow(slider, Priority.ALWAYS);
-            updateVisual();
-        }
-    
-        private void updateVisual() {
-            boolean auto = autoButton.isSelected();
-            slider.setDisable(auto);
-            autoButton.getStyleClass().remove(STYLE_ACTIVE);
-            if (auto) {
-                autoButton.getStyleClass().add(STYLE_ACTIVE);
-            }
-            valueLabel.setText(auto ? "" : String.valueOf((int) Math.round(slider.getValue())));
-        }
-    }
-
-    private static final class CatalogControlsTuningControls {
-    
-        private final CatalogControlsTuningControl difficulty;
-        private final CatalogControlsTuningControl balance;
-        private final CatalogControlsTuningControl amount;
-        private final CatalogControlsTuningControl diversity;
-    
-        CatalogControlsTuningControls(
-                CatalogControlsTuningControl difficulty,
-                CatalogControlsTuningControl balance,
-                CatalogControlsTuningControl amount,
-                CatalogControlsTuningControl diversity
-        ) {
-            this.difficulty = difficulty;
-            this.balance = balance;
-            this.amount = amount;
-            this.diversity = diversity;
-        }
-    
-        Node node() {
-            return new HBox(8, difficulty.node(), balance.node(), amount.node(), diversity.node());
-        }
-    
-        void apply(CatalogControlsContentModel.ControlsState controls) {
-            difficulty.apply(controls.difficulty());
-            balance.apply(controls.balance());
-            amount.apply(controls.amount());
-            diversity.apply(controls.diversity());
         }
     }
 

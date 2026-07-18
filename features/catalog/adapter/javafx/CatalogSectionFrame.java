@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
@@ -23,7 +24,7 @@ final class CatalogSectionFrame<T> extends BorderPane {
 
     private final String resultLabel;
     private final Function<T, String> searchableText;
-    private final Consumer<T> primaryAction;
+    private final @Nullable Consumer<T> primaryAction;
     private final Label count = new Label();
     private final Label status = new Label();
     private final TableView<T> table = new TableView<>();
@@ -66,6 +67,30 @@ final class CatalogSectionFrame<T> extends BorderPane {
             createButton.setOnAction(ignored -> create.run());
             header.getChildren().add(createButton);
         }
+        header.getStyleClass().add("catalog-main-topbar");
+        HBox footer = new HBox(8, status);
+        footer.setPadding(new Insets(8));
+        setTop(header);
+        setCenter(table);
+        setBottom(footer);
+    }
+
+    CatalogSectionFrame(
+            String resultLabel,
+            String emptyText,
+            Function<T, String> searchableText
+    ) {
+        this.resultLabel = resultLabel;
+        this.searchableText = searchableText;
+        primaryAction = null;
+        getStyleClass().add("surface-root");
+        count.getStyleClass().add("text-secondary");
+        status.getStyleClass().add("text-muted");
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setPlaceholder(new Label(emptyText));
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox header = new HBox(8, count, spacer);
         header.getStyleClass().add("catalog-main-topbar");
         HBox footer = new HBox(8, status);
         footer.setPadding(new Insets(8));
@@ -136,7 +161,7 @@ final class CatalogSectionFrame<T> extends BorderPane {
 
     private void openSelected() {
         T selected = table.getSelectionModel().getSelectedItem();
-        if (selected != null) {
+        if (selected != null && primaryAction != null) {
             primaryAction.accept(selected);
         }
     }

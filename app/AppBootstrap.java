@@ -3,6 +3,7 @@ package app;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.jspecify.annotations.Nullable;
 import platform.diagnostics.Diagnostics;
 import platform.diagnostics.SystemLoggerDiagnostics;
@@ -20,12 +21,15 @@ import shell.api.ShellTopBarSpec;
 import shell.host.AppShell;
 import features.creatures.CreaturesServiceAssembly;
 import features.creatures.api.RefreshCreatureReferenceIndexCommand;
-import features.catalog.CatalogServiceAssembly;
-import features.catalog.CatalogServiceAssembly.CatalogActionRoutes;
-import features.catalog.CatalogServiceAssembly.CatalogDataSources;
+import features.catalog.CatalogFeature;
+import features.catalog.CatalogProviders;
+import features.catalog.CatalogRoutes;
 import features.dungeon.DungeonFeature;
 import features.encounter.EncounterServiceAssembly;
 import features.encounter.api.ApplyEncounterStateCommand;
+import features.encounter.api.EncounterPoolFilters;
+import features.encounter.api.OpenSavedEncounterPlanCommand;
+import features.encounter.api.UpdateEncounterPoolFiltersCommand;
 import features.encountertable.EncounterTableServiceAssembly;
 import features.hex.HexServiceAssembly;
 import features.items.ItemsServiceAssembly;
@@ -43,6 +47,8 @@ public final class AppBootstrap implements AutoCloseable {
     private final ExecutionLane executionLane;
     private final UiDispatcher uiDispatcher;
     private final SqliteDatabase database;
+    private final AtomicBoolean closed = new AtomicBoolean();
+    private CatalogFeature.@Nullable Component catalogComponent;
 
     public AppBootstrap() {
         this(new SystemLoggerDiagnostics());
@@ -173,33 +179,25 @@ public final class AppBootstrap implements AutoCloseable {
                 (statblockId, npcId) -> encounter.application().applyState(
                         ApplyEncounterStateCommand.addWorldNpcCreature(statblockId, npcId));
 
+        CatalogFeature.Component catalog = CatalogFeature.create(
+                new CatalogProviders(
+                        new CatalogProviders.MonsterProviders(
+                                creatures.catalogQueries(), encounter.builderInputs()),
+                        new CatalogProviders.ItemsProviders(items.catalog()),
+                        new CatalogProviders.SavedEncounterProviders(encounter.savedPlans()),
+                        new CatalogProviders.WorldReferenceProviders(
+                                creatures.referenceIndex(), world.snapshot()),
+                        new CatalogProviders.EncounterTableProviders(
+                                tables.application(), tables.catalog()),
+                        uiDispatcher),
+                catalogRoutes(
+                        inspector, creatures, items, world, worldEncounter, tables, encounter, scene));
+        catalogComponent = catalog;
+
         List<ShellContribution> manifest = List.of(
                 party.adventuringDayTopBarContribution(),
                 party.partyTopBarContribution(),
-                CatalogServiceAssembly.contribution(
-                        new CatalogDataSources(
-                                creatures.application(), creatures.catalogQueries(), creatures.referenceIndex(),
-                                tables.application(),
-                                encounter.application(), encounter.builderInputs(), tables.catalog(),
-                                encounter.tuningPreview(), encounter.savedPlans(), items.catalog(), world.snapshot()),
-                        new CatalogActionRoutes(
-                                inspector,
-                                creatureId -> creatures.openInspector(inspector, creatureId),
-                                npcId -> world.openNpcInspector(
-                                        npcId, worldEncounter, creatures.referenceIndex(), tables.catalog(), inspector),
-                                factionId -> world.openFactionInspector(
-                                        factionId, worldEncounter, creatures.referenceIndex(), tables.catalog(), inspector),
-                                locationId -> world.openLocationInspector(
-                                        locationId, worldEncounter, creatures.referenceIndex(), tables.catalog(), inspector),
-                                () -> world.openNpcCreator(
-                                        worldEncounter, creatures.referenceIndex(), tables.catalog(), inspector),
-                                () -> world.openFactionCreator(
-                                        worldEncounter, creatures.referenceIndex(), tables.catalog(), inspector),
-                                () -> world.openLocationCreator(
-                                        worldEncounter, creatures.referenceIndex(), tables.catalog(), inspector),
-                        npcId -> assignNpcToFocusedScene(scene, npcId),
-                        locationId -> setFocusedSceneLocation(scene, locationId),
-                        creatureId -> assignMobToFocusedScene(scene, creatureId))),
+                catalog.contribution(),
                 dungeon.editorContribution(),
                 dungeon.travelContribution(),
                 hex.mapContribution(),
@@ -215,6 +213,138 @@ public final class AppBootstrap implements AutoCloseable {
             resolved.add(new ResolvedContribution(contribution.registrationSpec(), contribution.bind()));
         }
         return List.copyOf(resolved);
+    }
+
+    private static CatalogRoutes catalogRoutes(
+            shell.api.InspectorSink inspector,
+            CreaturesServiceAssembly.Component creatures,
+            ItemsServiceAssembly.Component items,
+            WorldPlannerServiceAssembly.Component world,
+            features.worldplanner.api.WorldPlannerEncounterSink worldEncounter,
+            EncounterTableServiceAssembly.Component tables,
+            EncounterServiceAssembly.Component encounter,
+            SceneFeature.Component scene
+    ) {
+        CatalogRoutes.WorldInspectorRoutes worldInspectors = new CatalogRoutes.WorldInspectorRoutes() {
+            @Override
+            public void openNpc(long npcId) {
+                world.openNpcInspector(npcId, worldEncounter, creatures.referenceIndex(), tables.catalog(), inspector);
+            }
+
+            @Override
+            public void openFaction(long factionId) {
+                world.openFactionInspector(
+                        factionId, worldEncounter, creatures.referenceIndex(), tables.catalog(), inspector);
+            }
+
+            @Override
+            public void openLocation(long locationId) {
+                world.openLocationInspector(
+                        locationId, worldEncounter, creatures.referenceIndex(), tables.catalog(), inspector);
+            }
+
+            @Override
+            public void createNpc() {
+                world.openNpcCreator(worldEncounter, creatures.referenceIndex(), tables.catalog(), inspector);
+            }
+
+            @Override
+            public void createFaction() {
+                world.openFactionCreator(worldEncounter, creatures.referenceIndex(), tables.catalog(), inspector);
+            }
+
+            @Override
+            public void createLocation() {
+                world.openLocationCreator(worldEncounter, creatures.referenceIndex(), tables.catalog(), inspector);
+            }
+        };
+        CatalogRoutes.EncounterHandoff encounterHandoff = new CatalogRoutes.EncounterHandoff() {
+            @Override
+            public void updatePoolFilters(EncounterPoolFilters filters) {
+                encounter.application().updatePoolFilters(new UpdateEncounterPoolFiltersCommand(filters));
+            }
+
+            @Override
+            public void addCreature(long creatureId) {
+                encounter.application().applyState(ApplyEncounterStateCommand.addCreature(creatureId));
+            }
+
+            @Override
+            public void addWorldNpc(long creatureId, long npcId) {
+                encounter.application().applyState(ApplyEncounterStateCommand.addWorldNpcCreature(creatureId, npcId));
+            }
+
+            @Override
+            public void useFactionSource(long factionId) {
+                updatePoolFilters(withFaction(encounter.builderInputs().current().poolFilters(), factionId));
+            }
+
+            @Override
+            public void useLocationSource(long locationId) {
+                updatePoolFilters(withLocation(encounter.builderInputs().current().poolFilters(), locationId));
+            }
+
+            @Override
+            public void useEncounterTableSource(long tableId) {
+                updatePoolFilters(withTable(encounter.builderInputs().current().poolFilters(), tableId));
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<features.encounter.api.OpenSavedEncounterPlanResult>
+                    openSavedEncounter(long planId, boolean discardUnsavedChanges) {
+                return encounter.application().openSavedPlan(
+                        new OpenSavedEncounterPlanCommand(planId, discardUnsavedChanges));
+            }
+        };
+        CatalogRoutes.SceneHandoff sceneHandoff = new CatalogRoutes.SceneHandoff() {
+            @Override
+            public void addCreature(long creatureId) {
+                assignMobToFocusedScene(scene, creatureId);
+            }
+
+            @Override
+            public void addNpc(long npcId) {
+                assignNpcToFocusedScene(scene, npcId);
+            }
+
+            @Override
+            public void setLocation(long locationId) {
+                setFocusedSceneLocation(scene, locationId);
+            }
+        };
+        return new CatalogRoutes(
+                creatureId -> {
+                    creatures.application().selectCreatureDetail(
+                            new features.creatures.api.SelectCreatureDetailCommand(creatureId));
+                    creatures.openInspector(inspector, creatureId);
+                },
+                detail -> items.openInspector(inspector, detail),
+                worldInspectors,
+                encounterHandoff,
+                sceneHandoff);
+    }
+
+    private static EncounterPoolFilters withFaction(EncounterPoolFilters source, long factionId) {
+        EncounterPoolFilters safe = source == null ? EncounterPoolFilters.empty() : source;
+        return new EncounterPoolFilters(safe.nameQuery(), safe.challengeRatingMin(), safe.challengeRatingMax(),
+                safe.sizes(), safe.creatureTypes(), safe.creatureSubtypes(), safe.biomes(), safe.alignments(),
+                safe.encounterTableIds(), List.of(factionId), safe.worldLocationId());
+    }
+
+    private static EncounterPoolFilters withLocation(EncounterPoolFilters source, long locationId) {
+        EncounterPoolFilters safe = source == null ? EncounterPoolFilters.empty() : source;
+        return new EncounterPoolFilters(safe.nameQuery(), safe.challengeRatingMin(), safe.challengeRatingMax(),
+                safe.sizes(), safe.creatureTypes(), safe.creatureSubtypes(), safe.biomes(), safe.alignments(),
+                safe.encounterTableIds(), safe.worldFactionIds(), locationId);
+    }
+
+    private static EncounterPoolFilters withTable(EncounterPoolFilters source, long tableId) {
+        EncounterPoolFilters safe = source == null ? EncounterPoolFilters.empty() : source;
+        java.util.LinkedHashSet<Long> ids = new java.util.LinkedHashSet<>(safe.encounterTableIds());
+        ids.add(tableId);
+        return new EncounterPoolFilters(safe.nameQuery(), safe.challengeRatingMin(), safe.challengeRatingMax(),
+                safe.sizes(), safe.creatureTypes(), safe.creatureSubtypes(), safe.biomes(), safe.alignments(),
+                List.copyOf(ids), safe.worldFactionIds(), safe.worldLocationId());
     }
 
     private static void assignNpcToFocusedScene(SceneFeature.Component scene, long npcId) {
@@ -297,6 +427,14 @@ public final class AppBootstrap implements AutoCloseable {
 
     @Override
     public void close() {
+        if (!closed.compareAndSet(false, true)) {
+            return;
+        }
+        CatalogFeature.Component catalog = catalogComponent;
+        if (catalog != null) {
+            catalog.close();
+            catalogComponent = null;
+        }
         executionLane.close();
         database.close();
     }

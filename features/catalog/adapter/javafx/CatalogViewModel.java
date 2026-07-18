@@ -1,10 +1,11 @@
 package features.catalog.adapter.javafx;
 
 import java.util.Objects;
-import javafx.application.Platform;
-import javafx.beans.property.ReadOnlyLongProperty;
-import javafx.beans.property.ReadOnlyLongWrapper;
-import features.creatures.api.CreaturesApi;
+import features.catalog.application.CatalogApplicationRoutes.CreatureInspectorRoute;
+import features.catalog.application.CatalogApplicationRoutes.EncounterHandoff;
+import features.catalog.application.CatalogApplicationRoutes.SceneHandoff;
+import features.catalog.application.CatalogRequestToken;
+import features.catalog.application.CatalogWorkspaceController;
 import features.creatures.api.CreatureCatalogPage;
 import features.creatures.api.CreatureCatalogPageResult;
 import features.creatures.api.CreatureCatalogQuery;
@@ -13,14 +14,8 @@ import features.creatures.api.CreatureFilterOptions;
 import features.creatures.api.CreatureFilterOptionsResult;
 import features.creatures.api.CreatureQueryStatus;
 import features.creatures.api.CreatureReadStatus;
-import features.creatures.api.SelectCreatureDetailCommand;
-import features.encounter.api.EncounterApi;
-import features.encounter.api.ApplyEncounterStateCommand;
 import features.encounter.api.EncounterBuilderInputs;
 import features.encounter.api.EncounterPoolFilters;
-import features.encounter.api.UpdateEncounterPoolFiltersCommand;
-import features.encountertable.api.EncounterTableApi;
-import features.encountertable.api.RefreshEncounterTableCatalogCommand;
 
 final class CatalogViewModel {
 
@@ -28,28 +23,24 @@ final class CatalogViewModel {
 
     private final CatalogMainContentModel mainContentModel = new CatalogMainContentModel();
     private final CatalogControlsContentModel controlsContentModel = new CatalogControlsContentModel();
-    private final ReadOnlyLongWrapper creatureDetailSelection = new ReadOnlyLongWrapper(0L);
-    private final CreaturesApi creatures;
     private final CreatureCatalogQueryApi creatureQueries;
-    private final EncounterTableApi encounterTables;
-    private final EncounterApi encounters;
-    private final java.util.function.LongConsumer addCreatureToScene;
-    private long searchRevision;
-    private long filterOptionsRevision;
+    private final CreatureInspectorRoute creatureInspector;
+    private final EncounterHandoff encounter;
+    private final SceneHandoff scene;
+    private final CatalogWorkspaceController controller;
 
     CatalogViewModel(
-            CreaturesApi creatures,
             CreatureCatalogQueryApi creatureQueries,
-            EncounterTableApi encounterTables,
-            EncounterApi encounters,
-            java.util.function.LongConsumer addCreatureToScene
+            CreatureInspectorRoute creatureInspector,
+            EncounterHandoff encounter,
+            SceneHandoff scene,
+            CatalogWorkspaceController controller
     ) {
-        this.creatures = Objects.requireNonNull(creatures, "creatures");
         this.creatureQueries = Objects.requireNonNull(creatureQueries, "creatureQueries");
-        this.encounterTables = Objects.requireNonNull(encounterTables, "encounterTables");
-        this.encounters = Objects.requireNonNull(encounters, "encounters");
-        this.addCreatureToScene = Objects.requireNonNull(addCreatureToScene, "addCreatureToScene");
-        encounterTables.refreshCatalog(new RefreshEncounterTableCatalogCommand());
+        this.creatureInspector = Objects.requireNonNull(creatureInspector, "creatureInspector");
+        this.encounter = Objects.requireNonNull(encounter, "encounter");
+        this.scene = Objects.requireNonNull(scene, "scene");
+        this.controller = Objects.requireNonNull(controller, "controller");
     }
 
     void initialize() {
@@ -63,14 +54,6 @@ final class CatalogViewModel {
 
     CatalogControlsContentModel controlsContentModel() {
         return controlsContentModel;
-    }
-
-    ReadOnlyLongProperty creatureDetailSelectionProperty() {
-        return creatureDetailSelection.getReadOnlyProperty();
-    }
-
-    void setCreatureDetailSelection(long creatureId) {
-        creatureDetailSelection.set(Math.max(0L, creatureId));
     }
 
     void consume(CatalogControlsViewInputEvent event) {
@@ -95,23 +78,7 @@ final class CatalogViewModel {
                         event.biomes(),
                         event.encounterTableIds(),
                         event.worldFactionIds(),
-                        event.worldLocationId(),
-                        CatalogControlsContentModel.SliderProjection.draftDifficulty(
-                                event.difficultyAuto(),
-                                event.difficultyValue(),
-                                previousDraftControls.difficulty()),
-                        CatalogControlsContentModel.SliderProjection.draftBalance(
-                                event.balanceAuto(),
-                                event.balanceValue(),
-                                previousDraftControls.balance()),
-                        CatalogControlsContentModel.SliderProjection.draftAmount(
-                                event.amountAuto(),
-                                event.amountValue(),
-                                previousDraftControls.amount()),
-                        CatalogControlsContentModel.SliderProjection.draftDiversity(
-                                event.diversityAuto(),
-                                event.diversityValue(),
-                                previousDraftControls.diversity())),
+                        event.worldLocationId()),
                 new CatalogControlsContentModel.FilterDropdownState(event.sizePopupOpen(), event.sizePopupQuery()),
                 new CatalogControlsContentModel.FilterDropdownState(event.typePopupOpen(), event.typePopupQuery()),
                 new CatalogControlsContentModel.FilterDropdownState(event.subtypePopupOpen(), event.subtypePopupQuery()),
@@ -130,7 +97,7 @@ final class CatalogViewModel {
                 || !previousDraftControls.equals(currentDraftControls);
         if (poolFiltersChanged) {
             CatalogControlsContentModel.LocalFilterState filters = currentState.localFilters();
-            encounters.updatePoolFilters(new UpdateEncounterPoolFiltersCommand(new EncounterPoolFilters(
+            encounter.updatePoolFilters(new EncounterPoolFilters(
                     filters.nameQuery(),
                     filters.challengeRatingMin(),
                     filters.challengeRatingMax(),
@@ -141,7 +108,7 @@ final class CatalogViewModel {
                     filters.alignments(),
                     currentDraftControls.encounterTableIds(),
                     currentDraftControls.worldFactionIds(),
-                    currentDraftControls.worldLocationId())));
+                    currentDraftControls.worldLocationId()));
         }
     }
 
@@ -162,16 +129,15 @@ final class CatalogViewModel {
             return;
         }
         if (event.openedCreatureId() > NO_CREATURE_ID) {
-            creatures.selectCreatureDetail(new SelectCreatureDetailCommand(event.openedCreatureId()));
-            setCreatureDetailSelection(event.openedCreatureId());
+            creatureInspector.openCreature(event.openedCreatureId());
             return;
         }
         if (event.actionCreatureId() > NO_CREATURE_ID) {
-            encounters.applyState(ApplyEncounterStateCommand.addCreature(event.actionCreatureId()));
+            encounter.addCreature(event.actionCreatureId());
             return;
         }
         if (event.sceneCreatureId() > NO_CREATURE_ID) {
-            addCreatureToScene.accept(event.sceneCreatureId());
+            scene.addCreature(event.sceneCreatureId());
         }
     }
 
@@ -183,7 +149,7 @@ final class CatalogViewModel {
 
     private void refreshCatalog() {
         CatalogControlsContentModel.CreatureFilters searchFilters = controlsContentModel.currentSearchFilters();
-        long revision = ++searchRevision;
+        CatalogRequestToken request = controller.beginMonsterSearch();
         creatureQueries.search(new CreatureCatalogQuery(
                 searchFilters.nameQuery(),
                 searchFilters.challengeRatingMin(),
@@ -196,10 +162,8 @@ final class CatalogViewModel {
                 mainContentModel.currentSortFieldName(),
                 mainContentModel.currentSortDirectionName(),
                 50,
-                mainContentModel.currentPageOffset())).whenComplete((result, failure) -> runOnFx(() -> {
-                    if (revision != searchRevision) {
-                        return;
-                    }
+                mainContentModel.currentPageOffset())).whenComplete((result, failure) -> controller.complete(request, () -> {
+                    controller.monsterSearchCompleted(result, failure);
                     mainContentModel.applySearchResult(failure == null && result != null
                             ? result
                             : new CreatureCatalogPageResult(
@@ -209,23 +173,13 @@ final class CatalogViewModel {
     }
 
     private void loadFilterOptions() {
-        long revision = ++filterOptionsRevision;
-        creatureQueries.loadFilterOptions().whenComplete((result, failure) -> runOnFx(() -> {
-            if (revision != filterOptionsRevision) {
-                return;
-            }
+        CatalogRequestToken request = controller.beginMonsterFilterOptions();
+        creatureQueries.loadFilterOptions().whenComplete((result, failure) -> controller.complete(request, () -> {
+            controller.monsterFilterOptionsCompleted(result, failure);
             controlsContentModel.applyCreatureFilterOptions(failure == null && result != null
                     ? result
                     : new CreatureFilterOptionsResult(CreatureReadStatus.STORAGE_ERROR, CreatureFilterOptions.empty()));
         }));
-    }
-
-    private static void runOnFx(Runnable action) {
-        if (Platform.isFxApplicationThread()) {
-            action.run();
-        } else {
-            Platform.runLater(action);
-        }
     }
 
 }

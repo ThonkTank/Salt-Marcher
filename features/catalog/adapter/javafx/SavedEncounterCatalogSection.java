@@ -1,13 +1,14 @@
 package features.catalog.adapter.javafx;
 
-import features.encounter.api.EncounterApi;
-import features.encounter.api.OpenSavedEncounterPlanCommand;
+import features.catalog.application.CatalogApplicationRoutes.EncounterHandoff;
+import features.catalog.application.CatalogRequestToken;
+import features.catalog.application.CatalogSectionId;
+import features.catalog.application.CatalogWorkspaceController;
 import features.encounter.api.OpenSavedEncounterPlanResult;
-import features.encounter.api.SavedEncounterPlanListModel;
 import features.encounter.api.SavedEncounterPlanListResult;
 import features.encounter.api.SavedEncounterPlanSummary;
 import java.util.List;
-import javafx.application.Platform;
+import java.util.Objects;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
@@ -22,14 +23,16 @@ import javafx.scene.layout.VBox;
 
 final class SavedEncounterCatalogSection implements CatalogSection {
 
-    private final EncounterApi encounters;
+    private final EncounterHandoff encounters;
+    private final CatalogWorkspaceController controller;
     private final TableView<SavedEncounterPlanSummary> plans = new TableView<>();
     private final Label status = new Label();
     private final VBox controls;
     private final BorderPane content = new BorderPane();
 
-    SavedEncounterCatalogSection(EncounterApi encounters, SavedEncounterPlanListModel savedPlans) {
-        this.encounters = encounters;
+    SavedEncounterCatalogSection(EncounterHandoff encounters, CatalogWorkspaceController controller) {
+        this.encounters = Objects.requireNonNull(encounters, "encounters");
+        this.controller = Objects.requireNonNull(controller, "controller");
         plans.setAccessibleText("Gespeicherte Encounter");
         plans.setPlaceholder(new Label("Keine gespeicherten Encounter verfügbar."));
         plans.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
@@ -53,8 +56,6 @@ final class SavedEncounterCatalogSection implements CatalogSection {
                 status);
         controls.getStyleClass().add("catalog-section-intro");
         content.setCenter(plans);
-        savedPlans.subscribe(this::apply);
-        apply(savedPlans.current());
     }
 
     @Override
@@ -72,7 +73,7 @@ final class SavedEncounterCatalogSection implements CatalogSection {
         return content;
     }
 
-    private void apply(SavedEncounterPlanListResult result) {
+    void apply(SavedEncounterPlanListResult result) {
         long selectedId = plans.getSelectionModel().getSelectedItem() == null
                 ? 0L : plans.getSelectionModel().getSelectedItem().planId();
         plans.getItems().setAll(result == null ? List.of() : result.plans());
@@ -87,8 +88,10 @@ final class SavedEncounterCatalogSection implements CatalogSection {
             status.setText("Wähle zuerst einen Encounter aus.");
             return;
         }
-        encounters.openSavedPlan(new OpenSavedEncounterPlanCommand(selected.planId(), confirmed))
-                .whenComplete((result, failure) -> runOnFx(() -> handleOpen(selected, result, failure)));
+        CatalogRequestToken request = controller.beginSavedEncounterOpen();
+        encounters.openSavedEncounter(selected.planId(), confirmed)
+                .whenComplete((result, failure) -> controller.complete(
+                        request, () -> handleOpen(selected, result, failure)));
     }
 
     private void handleOpen(
@@ -133,11 +136,4 @@ final class SavedEncounterCatalogSection implements CatalogSection {
         return label;
     }
 
-    private static void runOnFx(Runnable action) {
-        if (Platform.isFxApplicationThread()) {
-            action.run();
-        } else {
-            Platform.runLater(action);
-        }
-    }
 }

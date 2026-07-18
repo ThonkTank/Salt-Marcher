@@ -15,7 +15,6 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleButton;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import shell.api.InspectorEntrySpec;
@@ -227,28 +226,11 @@ public final class CatalogControlsRawInputTest {
         assertEquals(701L, event.worldLocationId(), "encounter-table removal must preserve world location");
     }
 
-    private void toggleDifficultyAutoAndSlide() {
-        applySelectedProjection();
-        events.clear();
-        ToggleButton auto = toggleButtonByAccessibleText(view(), "Schwierigkeit automatisch bestimmen");
-        Slider slider = sliderByAccessibleText(view(), "Schwierigkeit Wert");
-        assertTrue(auto.isSelected(), "difficulty starts in auto mode");
-        auto.fire();
-        slider.setValue(4.0);
-    }
-
-    private void assertDifficultyTuningPublishesRawInput() {
-        assertTrue(!events.isEmpty(), "difficulty tuning must publish raw input");
-        CatalogControlsViewInputEvent event = events.getLast();
-        assertTrue(!event.difficultyAuto(), "difficulty auto toggle must publish visible toggle state");
-        assertEquals(4.0, event.difficultyValue(), "difficulty slider must publish visible slider value");
-        assertEquals("aboleth", event.nameQuery(), "difficulty tuning must preserve search query");
-    }
-
     private static void assertProductionRoutePublishesSearchAndBuilderInputs() {
         CapturingCreatureCatalogPort creatureCatalog = new CapturingCreatureCatalogPort();
         CatalogTestRuntime runtime = productionCatalogServices(creatureCatalog);
         ShellBinding binding = runtime.contribution(EmptyInspectorSink.INSTANCE).bind();
+        binding.onActivate();
         Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
         Stage stage = new Stage();
         stage.setScene(new Scene(controls, 760.0, 520.0));
@@ -271,7 +253,14 @@ public final class CatalogControlsRawInputTest {
     }
 
     private static CatalogTestRuntime productionCatalogServices(CapturingCreatureCatalogPort creatureCatalog) {
-        return CatalogTestRuntime.create(creatureCatalog, new EmptyEncounterTableCatalogPort(), null);
+        return CatalogTestRuntime.create(
+                creatureCatalog,
+                new EmptyEncounterTableCatalogPort(),
+                new features.worldplanner.api.WorldPlannerSnapshotModel(
+                        () -> new features.worldplanner.api.WorldPlannerSnapshot(
+                                features.worldplanner.api.WorldPlannerReadStatus.SUCCESS,
+                                List.of(), List.of(), List.of(), ""),
+                        listener -> () -> { }));
     }
 
     private void applySelectedProjection() {
@@ -335,11 +324,7 @@ public final class CatalogControlsRawInputTest {
                         List.of(),
                         encounterTableIds,
                         worldFactionIds,
-                        worldLocationId,
-                        CatalogControlsContentModel.SliderProjection.defaultDifficulty(),
-                        CatalogControlsContentModel.SliderProjection.defaultBalance(),
-                        CatalogControlsContentModel.SliderProjection.defaultAmount(),
-                        CatalogControlsContentModel.SliderProjection.defaultDiversity()),
+                        worldLocationId),
                 CatalogControlsContentModel.FilterDropdownState.closed(),
                 CatalogControlsContentModel.FilterDropdownState.closed(),
                 CatalogControlsContentModel.FilterDropdownState.closed(),
@@ -442,24 +427,6 @@ public final class CatalogControlsRawInputTest {
             return checkBox.getText();
         }
         return "";
-    }
-
-    private static ToggleButton toggleButtonByAccessibleText(Parent parent, String accessibleText) {
-        return descendants(parent).stream()
-                .filter(ToggleButton.class::isInstance)
-                .map(ToggleButton.class::cast)
-                .filter(button -> accessibleText.equals(button.getAccessibleText()))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("Toggle button not found: " + accessibleText));
-    }
-
-    private static Slider sliderByAccessibleText(Parent parent, String accessibleText) {
-        return descendants(parent).stream()
-                .filter(Slider.class::isInstance)
-                .map(Slider.class::cast)
-                .filter(slider -> accessibleText.equals(slider.getAccessibleText()))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("Slider not found: " + accessibleText));
     }
 
     private static <T extends Node> T descendant(Parent parent, Class<T> type) {

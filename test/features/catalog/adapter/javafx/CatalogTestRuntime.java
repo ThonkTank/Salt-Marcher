@@ -1,7 +1,14 @@
 package features.catalog.adapter.javafx;
 
-import features.catalog.CatalogServiceAssembly.CatalogActionRoutes;
-import features.catalog.CatalogServiceAssembly.CatalogDataSources;
+import features.catalog.CatalogFeature;
+import features.catalog.CatalogProviders;
+import features.catalog.CatalogRoutes;
+import features.encounter.api.ApplyEncounterStateCommand;
+import features.encounter.api.EncounterPoolFilters;
+import features.encounter.api.OpenSavedEncounterPlanCommand;
+import features.encounter.api.UpdateEncounterPoolFiltersCommand;
+import platform.ui.DirectUiDispatcher;
+import shell.api.ShellContribution;
 import shell.api.InspectorSink;
 import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
 import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
@@ -48,11 +55,11 @@ final class CatalogTestRuntime {
         return new CatalogTestRuntime(creatures, tables, encounter, worldPlanner);
     }
 
-    CatalogContribution contribution(InspectorSink inspector) {
+    ShellContribution contribution(InspectorSink inspector) {
         return contribution(inspector, ignored -> { }, () -> { });
     }
 
-    CatalogContribution contribution(
+    ShellContribution contribution(
             InspectorSink inspector,
             java.util.function.LongConsumer openNpc,
             Runnable createNpc
@@ -60,22 +67,59 @@ final class CatalogTestRuntime {
         return contribution(inspector, openNpc, createNpc, ignored -> { });
     }
 
-    CatalogContribution contribution(
+    ShellContribution contribution(
             InspectorSink inspector,
             java.util.function.LongConsumer openNpc,
             Runnable createNpc,
             java.util.function.LongConsumer addCreatureToScene
     ) {
-        return (CatalogContribution) features.catalog.CatalogServiceAssembly.contribution(
-                new CatalogDataSources(
-                        creatures.application(), creatures.catalogQueries(), creatures.referenceIndex(),
-                        tables.application(),
-                        encounter.application(), encounter.builderInputs(), tables.catalog(),
-                        encounter.tuningPreview(), encounter.savedPlans(), unavailableItems(), worldPlanner),
-                new CatalogActionRoutes(
-                        inspector, ignored -> { }, openNpc, ignored -> { }, ignored -> { },
-                        createNpc, () -> { }, () -> { }, ignored -> { }, ignored -> { },
-                        addCreatureToScene));
+        CatalogRoutes.EncounterHandoff encounterRoute = new CatalogRoutes.EncounterHandoff() {
+            @Override public void updatePoolFilters(EncounterPoolFilters filters) {
+                encounter.application().updatePoolFilters(new UpdateEncounterPoolFiltersCommand(filters));
+            }
+            @Override public void addCreature(long creatureId) {
+                encounter.application().applyState(ApplyEncounterStateCommand.addCreature(creatureId));
+            }
+            @Override public void addWorldNpc(long creatureId, long npcId) {
+                encounter.application().applyState(ApplyEncounterStateCommand.addWorldNpcCreature(creatureId, npcId));
+            }
+            @Override public void useFactionSource(long factionId) { }
+            @Override public void useLocationSource(long locationId) { }
+            @Override public void useEncounterTableSource(long tableId) { }
+            @Override public java.util.concurrent.CompletionStage<features.encounter.api.OpenSavedEncounterPlanResult>
+                    openSavedEncounter(long planId, boolean discard) {
+                return encounter.application().openSavedPlan(new OpenSavedEncounterPlanCommand(planId, discard));
+            }
+        };
+        CatalogRoutes.WorldInspectorRoutes worldRoutes = new CatalogRoutes.WorldInspectorRoutes() {
+            @Override public void openNpc(long npcId) { openNpc.accept(npcId); }
+            @Override public void openFaction(long factionId) { }
+            @Override public void openLocation(long locationId) { }
+            @Override public void createNpc() { createNpc.run(); }
+            @Override public void createFaction() { }
+            @Override public void createLocation() { }
+        };
+        CatalogRoutes.SceneHandoff sceneRoute = new CatalogRoutes.SceneHandoff() {
+            @Override public void addCreature(long creatureId) { addCreatureToScene.accept(creatureId); }
+            @Override public void addNpc(long npcId) { }
+            @Override public void setLocation(long locationId) { }
+        };
+        CatalogFeature.Component catalog = CatalogFeature.create(
+                new CatalogProviders(
+                        new CatalogProviders.MonsterProviders(
+                                creatures.catalogQueries(), encounter.builderInputs()),
+                        new CatalogProviders.ItemsProviders(unavailableItems()),
+                        new CatalogProviders.SavedEncounterProviders(encounter.savedPlans()),
+                        new CatalogProviders.WorldReferenceProviders(creatures.referenceIndex(), worldPlanner),
+                        new CatalogProviders.EncounterTableProviders(tables.application(), tables.catalog()),
+                        DirectUiDispatcher.INSTANCE),
+                new CatalogRoutes(
+                        ignored -> { },
+                        detail -> features.items.adapter.javafx.ItemDetailsView.openInspector(inspector, detail),
+                        worldRoutes,
+                        encounterRoute,
+                        sceneRoute));
+        return catalog.contribution();
     }
 
     private static features.items.api.ItemsCatalogApi unavailableItems() {
