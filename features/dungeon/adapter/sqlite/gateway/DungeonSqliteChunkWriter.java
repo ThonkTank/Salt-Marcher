@@ -46,18 +46,18 @@ final class DungeonSqliteChunkWriter {
         replaceSpatialIndex(connection, map);
     }
 
-    static void updateChunkInventory(
-            Connection connection,
-            DungeonMapRecord ignoredBefore,
-            DungeonMapRecord after
-    ) throws SQLException {
-        replaceSpatialIndex(connection, after);
-    }
-
     private static void replaceSpatialIndex(Connection connection, DungeonMapRecord map) throws SQLException {
         List<CorridorRouteRow> routeCells = new ArrayList<>();
-        Map<EntityKey, Set<ChunkCoordinate>> memberships = authoredMemberships(map, routeCells);
+        List<CorridorDependencyRow> routeDependencies = new ArrayList<>();
+        Map<EntityKey, Set<ChunkCoordinate>> memberships = authoredMemberships(
+                map, routeCells, routeDependencies);
         List<ChunkCoordinate> chunks = orderedChunks(memberships);
+        try (PreparedStatement delete = connection.prepareStatement(
+                "DELETE FROM " + DungeonPersistenceSchema.CORRIDOR_ROUTE_DEPENDENCIES_TABLE
+                        + " WHERE dungeon_map_id=?")) {
+            delete.setLong(1, map.mapId());
+            delete.executeUpdate();
+        }
         try (PreparedStatement delete = connection.prepareStatement(
                 "DELETE FROM " + DungeonPersistenceSchema.CORRIDOR_ROUTE_CELLS_TABLE
                         + " WHERE dungeon_map_id=?")) {
@@ -72,6 +72,7 @@ final class DungeonSqliteChunkWriter {
         insertChunks(connection, map, chunks);
         insertMemberships(connection, map.mapId(), memberships);
         insertCorridorRouteCells(connection, map.mapId(), routeCells);
+        insertCorridorRouteDependencies(connection, map.mapId(), routeDependencies);
     }
 
     private static void insertChunks(
@@ -144,9 +145,32 @@ final class DungeonSqliteChunkWriter {
         }
     }
 
+    private static void insertCorridorRouteDependencies(
+            Connection connection,
+            long mapId,
+            List<CorridorDependencyRow> dependencies
+    ) throws SQLException {
+        List<CorridorDependencyRow> ordered = new ArrayList<>(dependencies);
+        ordered.sort(CorridorDependencyRow.ORDER);
+        try (PreparedStatement insert = connection.prepareStatement(
+                "INSERT INTO " + DungeonPersistenceSchema.CORRIDOR_ROUTE_DEPENDENCIES_TABLE
+                        + "(dungeon_map_id,corridor_id,level_z,cell_x,cell_y) VALUES(?,?,?,?,?)")) {
+            for (CorridorDependencyRow dependency : ordered) {
+                insert.setLong(1, mapId);
+                insert.setLong(2, dependency.corridorId());
+                insert.setInt(3, dependency.cell().level());
+                insert.setInt(4, dependency.cell().q());
+                insert.setInt(5, dependency.cell().r());
+                insert.addBatch();
+            }
+            insert.executeBatch();
+        }
+    }
+
     private static Map<EntityKey, Set<ChunkCoordinate>> authoredMemberships(
             DungeonMapRecord map,
-            List<CorridorRouteRow> routeCells
+            List<CorridorRouteRow> routeCells,
+            List<CorridorDependencyRow> routeDependencies
     ) {
         Map<EntityKey, Set<ChunkCoordinate>> memberships = new LinkedHashMap<>();
         for (DungeonRoomRecord room : map.rooms()) {
@@ -175,7 +199,8 @@ final class DungeonSqliteChunkWriter {
         for (DungeonCorridorRecord corridor : map.corridors()) {
             EntityKey entity = new EntityKey(CORRIDOR, corridor.corridorId());
             addCorridorMembership(
-                    memberships, entity, corridor, clustersById, anchorsByTopology, roomCells, routeCells);
+                    memberships, entity, corridor, clustersById, anchorsByTopology, roomCells,
+                    routeCells, routeDependencies);
         }
         for (DungeonFeatureMarkerRecord marker : map.featureMarkers()) {
             add(memberships, new EntityKey(FEATURE_MARKER, marker.markerId()),
@@ -206,7 +231,8 @@ final class DungeonSqliteChunkWriter {
             Map<Long, DungeonRoomClusterRecord> clustersById,
             Map<AnchorTopologyKey, DungeonCorridorAnchorBindingRecord> anchorsByTopology,
             Set<Cell> roomCells,
-            List<CorridorRouteRow> routeRows
+            List<CorridorRouteRow> routeRows,
+            List<CorridorDependencyRow> dependencyRows
     ) {
         List<Cell> waypoints = new ArrayList<>();
         for (DungeonCorridorWaypointRecord waypoint : corridor.waypoints()) {
@@ -249,6 +275,10 @@ final class DungeonSqliteChunkWriter {
                 add(memberships, entity, anchor.cellZ(), anchor.cellX(), anchor.cellY());
                 anchorEndpoints.add(new Cell(anchor.cellX(), anchor.cellY(), anchor.cellZ()));
             }
+        }
+        for (Cell cell : DungeonSqliteCorridorRouteFacts.dependencyCells(
+                waypoints, doorEndpoints, anchorEndpoints)) {
+            dependencyRows.add(new CorridorDependencyRow(corridor.corridorId(), cell));
         }
         for (DungeonSqliteCorridorRouteFacts.RouteCell routeCell
                 : DungeonSqliteCorridorRouteFacts.routeCells(
@@ -366,6 +396,14 @@ final class DungeonSqliteChunkWriter {
                 .comparingLong(CorridorRouteRow::corridorId)
                 .thenComparingInt(CorridorRouteRow::segmentOrder)
                 .thenComparingInt(CorridorRouteRow::cellOrder);
+    }
+
+    private record CorridorDependencyRow(long corridorId, Cell cell) {
+        private static final Comparator<CorridorDependencyRow> ORDER = Comparator
+                .comparingLong(CorridorDependencyRow::corridorId)
+                .thenComparingInt(value -> value.cell().level())
+                .thenComparingInt(value -> value.cell().r())
+                .thenComparingInt(value -> value.cell().q());
     }
 
     private record Membership(EntityKey entity, ChunkCoordinate chunk) {

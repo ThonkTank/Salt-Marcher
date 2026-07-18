@@ -149,8 +149,8 @@ final class DungeonEditorMapControlsScenarios {
                 "DE-HISTORY-001 shortcut undo restores the prior authored map");
         assertEquals(3L, runtime.database().mapRevision(mapId),
                 "DE-HISTORY-001 undo restores content as a new revision");
-        assertEquals(0L, runtime.database().countChunksForMap(mapId),
-                "DE-HISTORY-001 undo removes obsolete chunk inventory");
+        assertEquals(1L, runtime.database().countChunksForMap(mapId),
+                "DE-HISTORY-001 undo retains the revisioned empty chunk tombstone");
 
         fireMapShortcut(mapView, KeyCode.Y, true, false);
         assertEquals(1L, runtime.database().countRoomsForMap(mapId),

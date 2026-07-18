@@ -192,8 +192,9 @@ final class DungeonEditHistoryTest {
         DungeonEditHistory.Step step = undo
                 ? history.peekUndo(current.metadata().mapId())
                 : history.peekRedo(current.metadata().mapId());
-        DungeonMap changed = step.applyTo(Map.of(current.metadata().mapId().value(), current))
-                .get(current.metadata().mapId().value());
+        DungeonPatch replay = step.rebasedSinglePatch(current.revision());
+        assertTrue(replay != null, "single-map history exposes its rebased patch directly");
+        DungeonMap changed = replay.applyTo(current);
         history.complete(step);
         return changed;
     }

@@ -574,11 +574,6 @@ final class DungeonRuntimeProjectionInvariantScenarios {
             }
 
             @Override
-            public DungeonMap save(DungeonMap dungeonMap) {
-                return dungeonMap;
-            }
-
-            @Override
             public List<DungeonMap> saveAll(List<DungeonMap> dungeonMaps) {
                 return dungeonMaps == null ? List.of() : List.copyOf(dungeonMaps);
             }
@@ -670,10 +665,14 @@ final class DungeonRuntimeProjectionInvariantScenarios {
         DungeonTestAssembly.Component dungeon = DungeonTestAssembly.create(
                 repository,
                 repository,
+                DungeonTestAssembly.inMemoryUnitOfWork(),
                 party.activeParty(),
                 party.travelPositions(),
                 party.application(),
-                party.mutation());
+                party.mutation(),
+                platform.execution.DirectExecutionLane.INSTANCE,
+                platform.ui.DirectUiDispatcher.INSTANCE,
+                platform.diagnostics.NoopDiagnostics.INSTANCE);
         return new TravelRuntimeFixture(dungeon, party);
     }
 

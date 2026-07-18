@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.dungeon.api.DungeonMapCatalogResponse;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
-import features.dungeon.application.authored.port.DungeonChangeSet;
 import features.dungeon.application.authored.port.DungeonMapHeader;
 import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.editor.session.DungeonEditorDungeonState;
@@ -30,6 +29,7 @@ final class DungeonCatalogStoreApplicationTest {
                 catalog,
                 new FailingWholeMapRepository(),
                 features.dungeon.DungeonTestAssembly.emptyWindowStore(),
+                features.dungeon.DungeonTestAssembly.inMemoryUnitOfWork(),
                 DirectExecutionLane.INSTANCE,
                 publishedState);
         DungeonAuthoredApplicationService.Session session =
@@ -117,16 +117,6 @@ final class DungeonCatalogStoreApplicationTest {
 
         @Override
         public Optional<DungeonMap> firstMap() {
-            throw unexpectedCall();
-        }
-
-        @Override
-        public DungeonMap save(DungeonMap dungeonMap) {
-            throw unexpectedCall();
-        }
-
-        @Override
-        public DungeonMap saveChange(DungeonChangeSet changeSet) {
             throw unexpectedCall();
         }
 

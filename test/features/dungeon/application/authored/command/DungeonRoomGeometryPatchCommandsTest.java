@@ -1,6 +1,7 @@
 package features.dungeon.application.authored.command;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -12,12 +13,45 @@ import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
+import features.dungeon.domain.core.structure.corridor.DungeonCorridorEndpoint;
+import features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 final class DungeonRoomGeometryPatchCommandsTest {
+
+    @Test
+    void roomPaintCarriesExactDependentCorridorChange() {
+        DungeonMap rooms = emptyMap()
+                .paintRoomRectangle(new Cell(1, 1, 0), new Cell(2, 2, 0))
+                .paintRoomRectangle(new Cell(7, 1, 0), new Cell(8, 2, 0));
+        var first = rooms.rooms().rooms().getFirst();
+        var second = rooms.rooms().rooms().getLast();
+        DungeonMap connected = rooms.createCorridor(
+                new OrthogonalCorridorRoutingPolicy(),
+                0L,
+                DungeonCorridorEndpoint.door(
+                        first.roomId(), first.clusterId(), new Cell(2, 1, 0), Direction.EAST,
+                        DungeonTopologyRef.empty()),
+                DungeonCorridorEndpoint.door(
+                        second.roomId(), second.clusterId(), new Cell(7, 1, 0), Direction.WEST,
+                        DungeonTopologyRef.empty()));
+
+        DungeonCommandResult.Accepted result = accepted(new RoomRectangleCommand().plan(
+                connected,
+                new Cell(3, 1, 0),
+                new Cell(3, 1, 0),
+                false));
+
+        assertFalse(result.patch().changes().stream().anyMatch(CorridorChange.class::isInstance),
+                "a derived route impact must not become an invented authored corridor change");
+        assertEquals(
+                connected.paintRoomRectangle(new Cell(3, 1, 0), new Cell(3, 1, 0)),
+                result.patch().applyTo(connected));
+    }
 
     @Test
     void roomPaintAndDeleteCarryExactCreateUpdateAndDeleteChanges() {

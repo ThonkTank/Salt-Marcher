@@ -26,19 +26,6 @@ final class DungeonSqliteTransitionPersistence {
         DungeonSqliteRetainedIdCleanup.deleteObsoleteTransitions(connection, record.mapId(), transitionIds);
     }
 
-    static void persistChange(Connection connection, DungeonMapRecord before, DungeonMapRecord after)
-            throws SQLException {
-        for (DungeonTransitionRecord transition : DungeonSqliteChangedRecords.changed(
-                before.transitions(), after.transitions(), DungeonTransitionRecord::transitionId)) {
-            upsertTransition(connection, transition);
-        }
-        DungeonSqliteRetainedIdCleanup.deleteObsoleteTransitions(
-                connection,
-                after.mapId(),
-                DungeonSqliteChangedRecords.identities(
-                        after.transitions(), DungeonTransitionRecord::transitionId));
-    }
-
     private static void upsertTransition(Connection connection, DungeonTransitionRecord transition) throws SQLException {
         try (PreparedStatement update = connection.prepareStatement(
                 "UPDATE " + DungeonPersistenceSchema.TRANSITIONS_TABLE

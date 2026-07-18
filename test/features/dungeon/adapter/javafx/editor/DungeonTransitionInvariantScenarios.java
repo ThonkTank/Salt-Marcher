@@ -199,8 +199,11 @@ final class DungeonTransitionInvariantScenarios {
                         null));
         MissingPreviousMapRepository repository =
                 new MissingPreviousMapRepository(sourceMap, targetMap, missingPreviousMapId);
-        DungeonTestAssembly.Component services =
-                DungeonEditorTestPersistence.createDungeonServices(repository, repository);
+        DungeonTestAssembly.Component services = DungeonEditorTestPersistence.createDungeonServices(
+                repository,
+                repository,
+                DungeonTestAssembly.emptyWindowStore(),
+                DungeonTestAssembly.inMemoryUnitOfWork());
         DungeonEditorDungeonState dungeonState = new DungeonEditorDungeonState();
         DungeonAuthoredApplicationService.OperationResult result = services
                 .editor()
@@ -385,11 +388,6 @@ final class DungeonTransitionInvariantScenarios {
         @Override
         public Optional<DungeonMap> firstMap() {
             return mapsById.values().stream().findFirst();
-        }
-
-        @Override
-        public DungeonMap save(DungeonMap dungeonMap) {
-            return dungeonMap;
         }
 
         @Override

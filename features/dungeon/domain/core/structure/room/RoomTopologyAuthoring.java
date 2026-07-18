@@ -126,10 +126,12 @@ public final class RoomTopologyAuthoring {
         return new DungeonMap(
                 dungeonMap.metadata(),
                 resolvedTopology,
+                dungeonMap.topologyIndex(),
                 rebuild.rooms(),
                 dungeonMap.corridors(),
                 dungeonMap.stairs(),
                 dungeonMap.transitionCatalog(),
+                dungeonMap.featureMarkers(),
                 dungeonMap.revision() + 1L);
     }
 }

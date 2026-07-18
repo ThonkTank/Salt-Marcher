@@ -42,7 +42,8 @@ public final class DungeonSqliteGateway {
                 new SqliteMigration(2, schemaManager::ensureSchema),
                 new SqliteMigration(3, schemaManager::replaceWithCanonicalSchema),
                 new SqliteMigration(4, schemaManager::addCorridorDoorLevel),
-                new SqliteMigration(5, schemaManager::addCorridorRouteCellIndex));
+                new SqliteMigration(5, schemaManager::addCorridorRouteCellIndex),
+                new SqliteMigration(6, schemaManager::addCorridorRouteDependencyIndex));
         connectionSupport = new DungeonSqliteConnectionSupport(connections);
         batchGateway = new DungeonSqliteMapBatchGateway(connections);
         identityReservation = new DungeonSqliteIdentityReservation(connections);
@@ -137,20 +138,8 @@ public final class DungeonSqliteGateway {
         }
     }
 
-    public DungeonMapRecord saveMap(DungeonMapRecord record) {
-        if (record == null) {
-            throw new IllegalArgumentException("record must not be null");
-        }
-        List<DungeonMapRecord> savedRecords = batchGateway.saveMaps(List.of(record));
-        return savedRecords.isEmpty() ? record : savedRecords.get(0);
-    }
-
     public List<DungeonMapRecord> saveMaps(List<DungeonMapRecord> records) {
         return batchGateway.saveMaps(records);
-    }
-
-    public DungeonMapRecord saveChange(DungeonMapRecord before, DungeonMapRecord after) {
-        return batchGateway.saveChange(before, after);
     }
 
     public void deleteMap(long mapId) {

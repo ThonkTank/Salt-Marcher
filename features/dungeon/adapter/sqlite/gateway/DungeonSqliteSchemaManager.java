@@ -12,10 +12,11 @@ import platform.persistence.SqliteSchemaColumnSupport;
 
 final class DungeonSqliteSchemaManager {
 
-    static final int CANONICAL_SCHEMA_VERSION = 5;
+    static final int CANONICAL_SCHEMA_VERSION = 6;
 
     private static final List<String> REPLACED_DUNGEON_TABLES = List.of(
             DungeonPersistenceSchema.CORRIDOR_ROUTE_CELLS_TABLE,
+            DungeonPersistenceSchema.CORRIDOR_ROUTE_DEPENDENCIES_TABLE,
             DungeonPersistenceSchema.ENTITY_CHUNKS_TABLE,
             DungeonPersistenceSchema.CHUNKS_TABLE,
             DungeonPersistenceSchema.CORRIDOR_ANCHOR_REFS_TABLE,
@@ -70,6 +71,10 @@ final class DungeonSqliteSchemaManager {
             statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_ROOMS_CLUSTER_LOOKUP_INDEX_SQL);
         }
         rebuildDerivedSpatialIndexes(connection);
+    }
+
+    void addCorridorRouteDependencyIndex(Connection connection) throws SQLException {
+        replaceWithCanonicalSchema(connection);
     }
 
     private static void rebuildDerivedSpatialIndexes(Connection connection) throws SQLException {

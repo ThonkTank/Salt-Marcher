@@ -3,7 +3,6 @@ package features.dungeon.application.authored.command;
 import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
-import features.dungeon.domain.core.structure.corridor.Corridor;
 import features.dungeon.domain.core.structure.stair.Stair;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -27,7 +26,6 @@ final class ConnectionPatchPlanner {
             return new DungeonCommandResult.Rejected(noEffectReason);
         }
         List<DungeonPatchChange> changes = new ArrayList<>(RoomGeometryPatchPlanner.changes(current, after));
-        changes.addAll(corridorChanges(current, after));
         changes.addAll(stairChanges(current, after));
         if (changes.isEmpty()) {
             throw new IllegalStateException("corridor operation changed unencoded authored truth");
@@ -63,29 +61,6 @@ final class ConnectionPatchPlanner {
         }
     }
 
-    private static List<DungeonPatchChange> corridorChanges(DungeonMap before, DungeonMap after) {
-        Map<Long, Corridor> remaining = corridorsById(after.corridors());
-        List<DungeonPatchChange> result = new ArrayList<>();
-        for (Corridor corridor : before.corridors()) {
-            Corridor next = remaining.remove(corridor.corridorId());
-            if (!corridor.equals(next)) {
-                result.add(new CorridorChange(
-                        corridor,
-                        next,
-                        CorridorPatchChunks.touchedChunks(before, after, corridor.corridorId())));
-            }
-        }
-        for (Corridor corridor : after.corridors()) {
-            if (remaining.containsKey(corridor.corridorId())) {
-                result.add(new CorridorChange(
-                        null,
-                        corridor,
-                        CorridorPatchChunks.touchedChunks(before, after, corridor.corridorId())));
-            }
-        }
-        return List.copyOf(result);
-    }
-
     private static List<DungeonPatchChange> stairChanges(DungeonMap before, DungeonMap after) {
         Map<Long, Stair> remaining = stairsById(after.stairs().stairs());
         List<DungeonPatchChange> result = new ArrayList<>();
@@ -101,14 +76,6 @@ final class ConnectionPatchPlanner {
             }
         }
         return List.copyOf(result);
-    }
-
-    private static Map<Long, Corridor> corridorsById(List<Corridor> corridors) {
-        Map<Long, Corridor> result = new LinkedHashMap<>();
-        for (Corridor corridor : corridors) {
-            result.put(corridor.corridorId(), corridor);
-        }
-        return result;
     }
 
     private static Map<Long, Stair> stairsById(List<Stair> stairs) {

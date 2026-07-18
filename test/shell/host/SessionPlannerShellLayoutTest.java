@@ -41,6 +41,9 @@ import features.sessionplanner.adapter.javafx.SessionPlannerTimelineMainView;
 import platform.ui.catalogcrud.CatalogCrudControlsView;
 import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonMapRepository;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
+import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
 import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
 import features.encountertable.adapter.sqlite.query.SqliteEncounterTableCatalogAdapter;
 import features.hex.adapter.sqlite.repository.SqliteHexMapRepository;
@@ -56,6 +59,10 @@ import features.sessionplanner.SessionPlannerServiceAssembly;
 import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
 import features.dungeon.application.editor.DungeonEditorApiFacade;
 import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
+import platform.diagnostics.NoopDiagnostics;
+import platform.execution.DirectExecutionLane;
+import platform.persistence.SqliteDatabase;
+import platform.ui.DirectUiDispatcher;
 
 @org.junit.jupiter.api.Tag("ui")
 public final class SessionPlannerShellLayoutTest {
@@ -219,10 +226,22 @@ public final class SessionPlannerShellLayoutTest {
                 encounter.planBudget(), null);
         HexServiceAssembly hex = new HexServiceAssembly(
                 new SqliteHexMapRepository(), party.travelPositions(), party.application());
-        SqliteDungeonMapRepository dungeonStores = new SqliteDungeonMapRepository();
+        SqliteDatabase dungeonDatabase = SqliteDatabase.defaultDatabase(
+                DungeonPersistenceSchema.DATABASE_FILE_NAME,
+                NoopDiagnostics.INSTANCE);
+        SqliteDungeonMapRepository dungeonStores = new SqliteDungeonMapRepository(dungeonDatabase);
         DungeonTestAssembly.Component dungeon = DungeonTestAssembly.create(
-                dungeonStores, dungeonStores, party.activeParty(), party.travelPositions(),
-                party.application(), party.mutation());
+                dungeonStores,
+                dungeonStores,
+                new SqliteDungeonWindowStore(dungeonDatabase),
+                new SqliteDungeonUnitOfWork(dungeonDatabase),
+                party.activeParty(),
+                party.travelPositions(),
+                party.application(),
+                party.mutation(),
+                DirectExecutionLane.INSTANCE,
+                DirectUiDispatcher.INSTANCE,
+                NoopDiagnostics.INSTANCE);
         return new LayoutServices(party, creatures, tables, encounter, session, hex, dungeon);
     }
 

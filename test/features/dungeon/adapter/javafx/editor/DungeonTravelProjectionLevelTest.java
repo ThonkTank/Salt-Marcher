@@ -9,6 +9,8 @@ import javafx.stage.Stage;
 import shell.api.ShellBinding;
 import shell.api.ShellSlot;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonMapRepository;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
 import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
 import features.dungeon.DungeonTestAssembly;
 import features.dungeon.application.travel.DungeonTravelRuntimeApplicationService;
@@ -34,6 +36,10 @@ import features.dungeon.adapter.javafx.map.DungeonMapView;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import platform.diagnostics.NoopDiagnostics;
+import platform.execution.DirectExecutionLane;
+import platform.persistence.SqliteDatabase;
+import platform.ui.DirectUiDispatcher;
 
 @org.junit.jupiter.api.Tag("ui")
 public final class DungeonTravelProjectionLevelTest {
@@ -440,14 +446,22 @@ public final class DungeonTravelProjectionLevelTest {
             database.clearPartyData();
             PartyServiceAssembly.Component party =
                     PartyServiceAssembly.create(new SqlitePartyRosterRepository());
-            SqliteDungeonMapRepository dungeonStores = new SqliteDungeonMapRepository();
+            SqliteDatabase dungeonDatabase = new SqliteDatabase(
+                    database.databasePath,
+                    NoopDiagnostics.INSTANCE);
+            SqliteDungeonMapRepository dungeonStores = new SqliteDungeonMapRepository(dungeonDatabase);
             DungeonTestAssembly.Component dungeon = DungeonTestAssembly.create(
                     dungeonStores,
                     dungeonStores,
+                    new SqliteDungeonWindowStore(dungeonDatabase),
+                    new SqliteDungeonUnitOfWork(dungeonDatabase),
                     party.activeParty(),
                     party.travelPositions(),
                     party.application(),
-                    party.mutation());
+                    party.mutation(),
+                    DirectExecutionLane.INSTANCE,
+                    DirectUiDispatcher.INSTANCE,
+                    NoopDiagnostics.INSTANCE);
             return new TestRuntime(
                     dungeon.travel(),
                     dungeon.mapCatalog(),

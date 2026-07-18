@@ -18,6 +18,7 @@ import java.util.Set;
 import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
 import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSpatialIndex;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonMapRepository;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
 import features.party.adapter.sqlite.model.PartyPersistenceSchema;
 import features.dungeon.DungeonTestAssembly;
@@ -27,6 +28,8 @@ import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
+import features.dungeon.application.authored.port.DungeonUnitOfWork;
+import features.dungeon.application.authored.port.DungeonWindowStore;
 import features.dungeon.api.DungeonEditorControlsModel;
 import features.dungeon.api.DungeonEditorMapSurfaceModel;
 import features.dungeon.api.DungeonEditorStateModel;
@@ -37,6 +40,7 @@ import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
 import features.dungeon.application.editor.DungeonEditorApiFacade;
 import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
 import features.dungeon.api.editor.DungeonEditorApi;
+import platform.persistence.SqliteDatabase;
 
 class DungeonEditorTestPersistence {
 
@@ -66,8 +70,15 @@ class DungeonEditorTestPersistence {
         static TestRuntime create() {
             DatabaseAssertions database = new DatabaseAssertions();
             database.clearDungeonData();
-            SqliteDungeonMapRepository stores = new SqliteDungeonMapRepository();
-            DungeonTestAssembly.Component dungeon = createDungeonServices(stores, stores);
+            SqliteDatabase sqliteDatabase = new SqliteDatabase(
+                    database.databasePath,
+                    platform.diagnostics.NoopDiagnostics.INSTANCE);
+            SqliteDungeonMapRepository stores = new SqliteDungeonMapRepository(sqliteDatabase);
+            DungeonTestAssembly.Component dungeon = createDungeonServices(
+                    stores,
+                    stores,
+                    new SqliteDungeonWindowStore(sqliteDatabase),
+                    new SqliteDungeonUnitOfWork(sqliteDatabase));
             DungeonEditorRuntimeDependencies dependencies =
                     DungeonEditorTestPersistence.editorDependencies(dungeon);
             DungeonEditorApi api = new DungeonEditorApiFacade(
@@ -85,13 +96,16 @@ class DungeonEditorTestPersistence {
 
     static DungeonTestAssembly.Component createDungeonServices(
             DungeonCatalogStore catalogStore,
-            DungeonMapRepository repository
+            DungeonMapRepository repository,
+            DungeonWindowStore windowStore,
+            DungeonUnitOfWork unitOfWork
     ) {
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(new EmptyPartyRosterRepository());
         return DungeonTestAssembly.create(
                 catalogStore,
                 repository,
-                new SqliteDungeonWindowStore(),
+                windowStore,
+                unitOfWork,
                 party.activeParty(),
                 party.travelPositions(),
                 party.application(),

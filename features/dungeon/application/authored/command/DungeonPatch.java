@@ -33,13 +33,17 @@ public record DungeonPatch(
         }
         Set<DungeonChunkKey> derivedChunks = derivedChunks(changes);
         touchedChunks = touchedChunks == null ? derivedChunks : Set.copyOf(touchedChunks);
-        if (!touchedChunks.equals(derivedChunks)) {
-            throw new IllegalArgumentException("touched chunks must match the encoded changes");
+        boolean foreignChunk = false;
+        for (DungeonChunkKey chunk : touchedChunks) {
+            foreignChunk |= chunk.mapId() != mapId.value();
+        }
+        if (!touchedChunks.containsAll(derivedChunks) || foreignChunk) {
+            throw new IllegalArgumentException("touched chunks must contain every direct change chunk for the map");
         }
         DungeonPatchResultFacts derivedFacts = derivedFacts(changes);
         resultFacts = resultFacts == null ? derivedFacts : resultFacts;
-        if (!resultFacts.equals(derivedFacts)) {
-            throw new IllegalArgumentException("result facts must match the encoded changes");
+        if (!resultFacts.affectedEntities().containsAll(derivedFacts.affectedEntities())) {
+            throw new IllegalArgumentException("result facts must contain every directly changed entity");
         }
         long derivedBytes = derivedBytes(changes);
         encodedBytes = encodedBytes <= 0L ? derivedBytes : encodedBytes;
@@ -68,14 +72,40 @@ public record DungeonPatch(
     }
 
     public DungeonPatch inverse() {
-        return DungeonPatch.of(
+        return new DungeonPatch(
                 mapId,
                 committedRevision(),
-                changes.reversed().stream().map(DungeonPatchChange::inverse).toList());
+                changes.reversed().stream().map(DungeonPatchChange::inverse).toList(),
+                touchedChunks,
+                resultFacts,
+                encodedBytes);
     }
 
     public DungeonPatch rebased(long nextExpectedRevision) {
-        return DungeonPatch.of(mapId, nextExpectedRevision, changes);
+        return new DungeonPatch(
+                mapId, nextExpectedRevision, changes, touchedChunks, resultFacts, encodedBytes);
+    }
+
+    /** Adds command-planned derived impact without inventing another authored change. */
+    public DungeonPatch withImpact(
+            Set<DungeonChunkKey> impactedChunks,
+            List<DungeonPatchEntityRef> impactedEntities
+    ) {
+        Set<DungeonChunkKey> chunks = new LinkedHashSet<>(touchedChunks);
+        if (impactedChunks != null) {
+            chunks.addAll(impactedChunks);
+        }
+        List<DungeonPatchEntityRef> entities = new java.util.ArrayList<>(resultFacts.affectedEntities());
+        if (impactedEntities != null) {
+            entities.addAll(impactedEntities);
+        }
+        return new DungeonPatch(
+                mapId,
+                expectedRevision,
+                changes,
+                Set.copyOf(chunks),
+                new DungeonPatchResultFacts(entities),
+                encodedBytes);
     }
 
     public DungeonMap applyTo(DungeonMap current) {

@@ -207,7 +207,7 @@ final class SqliteDungeonWindowStoreTest {
     }
 
     @Test
-    void versionFiveMigrationBackfillsPopulatedCorridorRoutesBeforeWindowRead(@TempDir Path tempDir)
+    void versionSixMigrationDiscardsPreDependencyDungeonRowsBeforeWindowRead(@TempDir Path tempDir)
             throws Exception {
         Path path = tempDir.resolve("populated-v4-route-upgrade.db");
         try (SqliteDatabase ignored = savedGraphDatabase(path, 1)) {
@@ -219,25 +219,19 @@ final class SqliteDungeonWindowStoreTest {
         }
 
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            DungeonWindow window = new SqliteDungeonWindowStore(database).loadWindow(new DungeonWindowRequest(
+            assertTrue(new SqliteDungeonWindowStore(database).loadWindow(new DungeonWindowRequest(
                     new DungeonMapIdentity(MAP_ID),
                     23L,
                     List.of(key(0, 0, -1))))
-                    .orElseThrow();
-            DungeonWindowEntityFragment.Corridor corridor = fragment(
-                    window,
-                    DungeonPatchEntityRef.corridor(302L),
-                    DungeonWindowEntityFragment.Corridor.class);
-
-            assertFalse(corridor.routeCells().isEmpty(),
-                    "v4 to v5 migration must not leave a populated corridor route index empty");
+                    .isEmpty(),
+                    "owner-approved v6 replacement must not publish pre-dependency Dungeon rows");
         }
         try (Connection connection = open(path)) {
-            assertEquals(5, scalarInt(connection,
+            assertEquals(6, scalarInt(connection,
                     "SELECT version FROM sm_schema_versions WHERE owner='dungeon'"));
-            assertTrue(scalarInt(connection,
-                    "SELECT COUNT(*) FROM dungeon_corridor_route_cells WHERE dungeon_map_id=77"
-                            + " AND corridor_id=302") > 0);
+            assertEquals(0, scalarInt(connection, "SELECT COUNT(*) FROM dungeon_maps"));
+            assertEquals(0, scalarInt(connection,
+                    "SELECT COUNT(*) FROM dungeon_corridor_route_dependencies"));
         }
     }
 
@@ -257,7 +251,7 @@ final class SqliteDungeonWindowStoreTest {
                         corridorId, 1L, corridorId, 6, 5, 0, topologyId)),
                 List.of(new DungeonCorridorAnchorRefRecord(corridorId, corridorId, topologyId)));
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            new DungeonSqliteGateway(database).saveMap(new DungeonMapRecord(
+            new DungeonSqliteGateway(database).saveMaps(List.of(new DungeonMapRecord(
                     MAP_ID,
                     "Anchor-only corridor",
                     REVISION,
@@ -268,7 +262,7 @@ final class SqliteDungeonWindowStoreTest {
                     List.of(corridor),
                     List.of(),
                     List.of(),
-                    List.of()));
+                    List.of())));
             DungeonWindow window = new SqliteDungeonWindowStore(database).loadWindow(new DungeonWindowRequest(
                     new DungeonMapIdentity(MAP_ID), 20L, List.of(key(0, 0, 0))))
                     .orElseThrow();
@@ -734,13 +728,13 @@ final class SqliteDungeonWindowStoreTest {
 
     private static SqliteDatabase savedDatabase(Path path, int markerCount) {
         SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE);
-        new DungeonSqliteGateway(database).saveMap(authoredMap(markerCount, 1));
+        new DungeonSqliteGateway(database).saveMaps(List.of(authoredMap(markerCount, 1)));
         return database;
     }
 
     private static SqliteDatabase savedGraphDatabase(Path path, int corridorCount) {
         SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE);
-        new DungeonSqliteGateway(database).saveMap(authoredMap(1, corridorCount));
+        new DungeonSqliteGateway(database).saveMaps(List.of(authoredMap(1, corridorCount)));
         return database;
     }
 

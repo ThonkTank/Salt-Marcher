@@ -4,6 +4,7 @@ import java.util.Objects;
 import features.dungeon.adapter.javafx.editor.DungeonEditorContribution;
 import features.dungeon.adapter.javafx.travel.DungeonTravelContribution;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonMapRepository;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
 import features.dungeon.api.DungeonAuthoredMutationModel;
 import features.dungeon.api.DungeonAuthoredReadModel;
@@ -19,6 +20,7 @@ import features.dungeon.application.authored.DungeonAuthoredApplicationService;
 import features.dungeon.application.authored.DungeonAuthoredPublishedState;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
 import features.dungeon.application.authored.port.DungeonMapRepository;
+import features.dungeon.application.authored.port.DungeonUnitOfWork;
 import features.dungeon.application.authored.port.DungeonWindowStore;
 import features.dungeon.application.editor.DungeonEditorPublishedState;
 import features.dungeon.application.editor.DungeonEditorApiFacade;
@@ -61,10 +63,12 @@ public final class DungeonFeature {
         SqliteDungeonMapRepository stores =
                 new SqliteDungeonMapRepository(Objects.requireNonNull(database, "database"));
         SqliteDungeonWindowStore windowStore = new SqliteDungeonWindowStore(database);
+        SqliteDungeonUnitOfWork unitOfWork = new SqliteDungeonUnitOfWork(database);
         Runtime runtime = createRuntime(
                 stores,
                 stores,
                 windowStore,
+                unitOfWork,
                 safeParty.activeParty(),
                 safeParty.travelPositions(),
                 safeParty,
@@ -94,6 +98,7 @@ public final class DungeonFeature {
             DungeonCatalogStore catalogStore,
             DungeonMapRepository repository,
             DungeonWindowStore windowStore,
+            DungeonUnitOfWork unitOfWork,
             ActivePartyModel activeParty,
             PartyTravelPositionsModel partyTravelPositions,
             PartyApi party,
@@ -112,6 +117,7 @@ public final class DungeonFeature {
                 Objects.requireNonNull(catalogStore, "catalogStore"),
                 Objects.requireNonNull(repository, "repository"),
                 Objects.requireNonNull(windowStore, "windowStore"),
+                Objects.requireNonNull(unitOfWork, "unitOfWork"),
                 lane,
                 authoredPublishedState,
                 corridorRoutingPolicy);

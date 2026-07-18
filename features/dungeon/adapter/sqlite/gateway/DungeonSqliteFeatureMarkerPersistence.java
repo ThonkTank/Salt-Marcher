@@ -25,19 +25,6 @@ final class DungeonSqliteFeatureMarkerPersistence {
         DungeonSqliteRetainedIdCleanup.deleteObsoleteFeatureMarkers(connection, record.mapId(), markerIds);
     }
 
-    static void persistChange(Connection connection, DungeonMapRecord before, DungeonMapRecord after)
-            throws SQLException {
-        for (DungeonFeatureMarkerRecord marker : DungeonSqliteChangedRecords.changed(
-                before.featureMarkers(), after.featureMarkers(), DungeonFeatureMarkerRecord::markerId)) {
-            upsertFeatureMarker(connection, marker);
-        }
-        DungeonSqliteRetainedIdCleanup.deleteObsoleteFeatureMarkers(
-                connection,
-                after.mapId(),
-                DungeonSqliteChangedRecords.identities(
-                        after.featureMarkers(), DungeonFeatureMarkerRecord::markerId));
-    }
-
     private static void upsertFeatureMarker(
             Connection connection,
             DungeonFeatureMarkerRecord marker

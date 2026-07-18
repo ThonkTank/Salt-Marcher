@@ -19,13 +19,6 @@ public interface DungeonMapRepository {
 
     Optional<DungeonMap> firstMap();
 
-    DungeonMap save(DungeonMap dungeonMap);
-
-    /** Persists one revision-checked authored delta without requiring readback. */
-    default DungeonMap saveChange(DungeonChangeSet changeSet) {
-        return save(changeSet.after());
-    }
-
     /**
      * Persists the supplied authored maps as one all-or-none multi-map boundary
      * and returns the saved readback for each committed map.
