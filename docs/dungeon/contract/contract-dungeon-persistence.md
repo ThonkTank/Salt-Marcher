@@ -138,6 +138,12 @@ authored room creation, the target stored perimeter is explicit
 reads use room-owned cells plus cluster boundary rows as the only room-cluster
 geometry source.
 
+The `level_z`, `cell_x`, and `cell_y` columns identify the absolute authored
+boundary cell. They MUST NOT depend on a persisted cluster anchor, center, or
+centroid. SQLite adapters derive the domain cluster center from the ordered
+union of member-room cells and translate boundary values only at the adapter
+boundary where the current domain value still uses center-relative storage.
+
 `dungeon_room_floors`, `dungeon_room_cluster_floor_cells`, and
 `dungeon_room_cluster_vertices` are not part of the target schema. The automatic
 Dungeon schema replacement removes them rather than translating their duplicate

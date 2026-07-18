@@ -9,13 +9,11 @@ public record DungeonRoomClusterRecord(
         int centerX,
         int centerY,
         int levelZ,
-        List<DungeonRoomClusterFloorCellRecord> floorCells,
         List<DungeonClusterBoundaryRecord> boundaries
 ) {
 
     public DungeonRoomClusterRecord {
         name = name == null || name.isBlank() ? "Cluster " + clusterId : name.trim();
-        floorCells = floorCells == null ? List.of() : List.copyOf(floorCells);
         boundaries = boundaries == null ? List.of() : List.copyOf(boundaries);
     }
 }

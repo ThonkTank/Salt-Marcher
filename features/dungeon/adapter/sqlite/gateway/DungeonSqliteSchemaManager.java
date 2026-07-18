@@ -1,93 +1,75 @@
 package features.dungeon.adapter.sqlite.gateway;
 
+import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import platform.persistence.SqliteSchemaColumnSupport;
-import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
 
 final class DungeonSqliteSchemaManager {
 
-    private static final DungeonSqliteTopologyBackfill TOPOLOGY_BACKFILL =
-            new DungeonSqliteTopologyBackfill();
-    private static final String TRANSITION_ANCHOR_TYPE_COLUMN = "anchor_type";
-    private static final String TRANSITION_ANCHOR_EDGE_DIRECTION_COLUMN = "anchor_edge_direction";
-    private static final String ADD_TRANSITION_ANCHOR_TYPE_COLUMN_SQL =
-            "ALTER TABLE " + DungeonPersistenceSchema.TRANSITIONS_TABLE + " ADD COLUMN "
-                    + TRANSITION_ANCHOR_TYPE_COLUMN + " TEXT";
-    private static final String ADD_TRANSITION_ANCHOR_EDGE_DIRECTION_COLUMN_SQL =
-            "ALTER TABLE " + DungeonPersistenceSchema.TRANSITIONS_TABLE + " ADD COLUMN "
-                    + TRANSITION_ANCHOR_EDGE_DIRECTION_COLUMN + " TEXT";
-    private static final String MAP_REVISION_COLUMN = "revision";
-    private static final String ADD_MAP_REVISION_COLUMN_SQL =
-            "ALTER TABLE " + DungeonPersistenceSchema.MAPS_TABLE
-                    + " ADD COLUMN " + MAP_REVISION_COLUMN + " INTEGER NOT NULL DEFAULT 1";
+    static final int CANONICAL_SCHEMA_VERSION = 3;
+
+    private static final List<String> REPLACED_DUNGEON_TABLES = List.of(
+            DungeonPersistenceSchema.ENTITY_CHUNKS_TABLE,
+            DungeonPersistenceSchema.CHUNKS_TABLE,
+            DungeonPersistenceSchema.CORRIDOR_ANCHOR_REFS_TABLE,
+            DungeonPersistenceSchema.CORRIDOR_ANCHORS_TABLE,
+            DungeonPersistenceSchema.CORRIDOR_DOOR_OVERRIDES_TABLE,
+            DungeonPersistenceSchema.CORRIDOR_WAYPOINTS_TABLE,
+            DungeonPersistenceSchema.CORRIDOR_MEMBERS_TABLE,
+            DungeonPersistenceSchema.STAIR_EXITS_TABLE,
+            DungeonPersistenceSchema.STAIR_PATH_NODES_TABLE,
+            DungeonPersistenceSchema.TRANSITIONS_TABLE,
+            DungeonPersistenceSchema.FEATURE_MARKERS_TABLE,
+            DungeonPersistenceSchema.ROOM_EXIT_DESCRIPTIONS_TABLE,
+            DungeonPersistenceSchema.ROOM_CELLS_TABLE,
+            "dungeon_room_floors",
+            "dungeon_room_cluster_vertices",
+            DungeonPersistenceSchema.ROOM_CLUSTER_EDGES_TABLE,
+            "dungeon_room_cluster_floor_cells",
+            DungeonPersistenceSchema.TOPOLOGY_ELEMENTS_TABLE,
+            DungeonPersistenceSchema.STAIRS_TABLE,
+            DungeonPersistenceSchema.CORRIDORS_TABLE,
+            DungeonPersistenceSchema.ROOMS_TABLE,
+            DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE,
+            DungeonPersistenceSchema.MAPS_TABLE);
 
     void ensureSchema(Connection connection) throws SQLException {
-        boolean topologyTableExisted = SqliteSchemaColumnSupport.hasTable(
-                connection,
-                DungeonPersistenceSchema.TOPOLOGY_ELEMENTS_TABLE);
-        createTables(connection);
-        ensureMapRevisionColumn(connection);
-        ensureTransitionAnchorColumns(connection);
-        TOPOLOGY_BACKFILL.apply(connection, topologyTableExisted);
+        createCanonicalSchema(connection);
     }
 
-    private static void createTables(Connection connection) throws SQLException {
-        try (Statement statement = connection.createStatement()) {
-            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_MAPS_TABLE_SQL);
-            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_CHUNKS_TABLE_SQL);
-            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_ROOM_CLUSTERS_TABLE_SQL);
-            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_ROOMS_TABLE_SQL);
-            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_CORRIDORS_TABLE_SQL);
-            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_CORRIDOR_MEMBERS_TABLE_SQL);
-            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_ROOM_CLUSTER_FLOOR_CELLS_TABLE_SQL);
-            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_ROOM_CLUSTER_EDGES_TABLE_SQL);
-            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_ROOM_FLOORS_TABLE_SQL);
-            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_TOPOLOGY_ELEMENTS_TABLE_SQL);
-            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_CORRIDOR_DOOR_OVERRIDES_TABLE_SQL);
-            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_CORRIDOR_ANCHORS_TABLE_SQL);
-            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_CORRIDOR_ANCHOR_REFS_TABLE_SQL);
-            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_CORRIDOR_WAYPOINTS_TABLE_SQL);
-            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_ROOM_EXIT_DESCRIPTIONS_TABLE_SQL);
-            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_STAIRS_TABLE_SQL);
-            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_STAIR_PATH_NODES_TABLE_SQL);
-            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_STAIR_EXITS_TABLE_SQL);
-            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_TRANSITIONS_TABLE_SQL);
-            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_FEATURE_MARKERS_TABLE_SQL);
-        }
+    void replaceWithCanonicalSchema(Connection connection) throws SQLException {
+        discardDungeonRows(connection);
+        dropReplacedDungeonTables(connection);
+        createCanonicalSchema(connection);
     }
 
-    private static void ensureMapRevisionColumn(Connection connection) throws SQLException {
-        if (!SqliteSchemaColumnSupport.hasColumn(
-                connection,
-                DungeonPersistenceSchema.MAPS_TABLE,
-                MAP_REVISION_COLUMN)) {
-            try (Statement statement = connection.createStatement()) {
-                statement.execute(ADD_MAP_REVISION_COLUMN_SQL);
-            }
+    private static void discardDungeonRows(Connection connection) throws SQLException {
+        if (!SqliteSchemaColumnSupport.hasTable(connection, DungeonPersistenceSchema.MAPS_TABLE)) {
+            return;
         }
         try (Statement statement = connection.createStatement()) {
-            statement.executeUpdate(
-                    "UPDATE " + DungeonPersistenceSchema.MAPS_TABLE + " SET revision=1 WHERE revision<1");
+            statement.executeUpdate("DELETE FROM " + DungeonPersistenceSchema.MAPS_TABLE);
         }
     }
 
-    private static void ensureTransitionAnchorColumns(Connection connection) throws SQLException {
-        if (!SqliteSchemaColumnSupport.hasColumn(
-                connection,
-                DungeonPersistenceSchema.TRANSITIONS_TABLE,
-                TRANSITION_ANCHOR_TYPE_COLUMN)) {
-            try (Statement statement = connection.createStatement()) {
-                statement.execute(ADD_TRANSITION_ANCHOR_TYPE_COLUMN_SQL);
+    private static void dropReplacedDungeonTables(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            for (String table : REPLACED_DUNGEON_TABLES) {
+                statement.execute("DROP TABLE IF EXISTS " + table);
             }
         }
-        if (!SqliteSchemaColumnSupport.hasColumn(
-                connection,
-                DungeonPersistenceSchema.TRANSITIONS_TABLE,
-                TRANSITION_ANCHOR_EDGE_DIRECTION_COLUMN)) {
-            try (Statement statement = connection.createStatement()) {
-                statement.execute(ADD_TRANSITION_ANCHOR_EDGE_DIRECTION_COLUMN_SQL);
+    }
+
+    private static void createCanonicalSchema(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            for (String createTableSql : DungeonPersistenceSchema.CREATE_TABLE_SQL) {
+                statement.execute(createTableSql);
+            }
+            for (String createIndexSql : DungeonPersistenceSchema.CREATE_INDEX_SQL) {
+                statement.execute(createIndexSql);
             }
         }
     }

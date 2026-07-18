@@ -502,8 +502,8 @@ final class DungeonEditorCorridorScenarios {
                 viewport.sceneToScreenY(clusterLabelR),
                 false);
 
-        assertEquals(movedRoomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 4, 2, 0),
-                "DE-CLUSTER-COR-001 cluster move persists translated cluster center at (4,2,0)");
+        assertEquals(movedRoomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 3, 1, 0),
+                "DE-CLUSTER-COR-001 cluster move persists translated derived anchor at (3,1,0)");
         List<String> anchorRowsAfterMove = runtime.database().corridorAnchorState(mapId);
         assertTrue(anchorRowsAfterMove.stream().anyMatch(row ->
                         row.contains("anchor_id=1")
@@ -1162,20 +1162,20 @@ final class DungeonEditorCorridorScenarios {
         assertEquals(1L, runtime.database().countDoorBoundariesAt(mapId, 1, 0, "EAST"),
                 "DE-COR-013 generic-room materializes exactly one east-facing door on R1");
         assertTrue(doorRowsAfter.stream().anyMatch(row ->
-                        row.startsWith("door_edges|cluster_id=" + roomIds.clusterId() + "|")
-                                && row.contains("|cell_x=1|")
-                                && row.contains("|cell_y=0|")
+                row.startsWith("door_edges|cluster_id=" + roomIds.clusterId() + "|")
+                                && row.contains("|cell_x=3|")
+                                && row.contains("|cell_y=2|")
                                 && row.contains("|edge_direction=EAST|")
                                 && row.contains("|edge_type=DOOR|")
                                 && row.contains("|topology_element_id=" + materializedDoorRef)),
-                "DE-COR-013 generic-room materialized door row is the R1 east edge: " + doorRowsAfter);
+                "DE-COR-013 generic-room materialized door row uses the absolute R1 east edge: " + doorRowsAfter);
         assertTrue(stableState.stream().anyMatch(row ->
                         row.startsWith("dungeon_corridor_door_overrides|corridor_id=" + newCorridorId + "|")
-                                && row.contains("|relative_cell_x=1|")
-                                && row.contains("|relative_cell_y=0|")
+                                && row.contains("|relative_cell_x=2|")
+                                && row.contains("|relative_cell_y=1|")
                                 && row.contains("|edge_direction=EAST|")
                                 && row.contains("|topology_element_id=" + materializedDoorRef)),
-                "DE-COR-013 generic-room endpoint binds the materialized east-facing door edge");
+                "DE-COR-013 generic-room endpoint binds the materialized east-facing door edge: " + stableState);
         assertCorridorCreatedInSnapshot(
                 runtime.mapSurfaceModel().current(),
                 binding.mapContentModel(),

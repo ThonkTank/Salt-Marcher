@@ -27,7 +27,8 @@ public final class DungeonSqliteMapBatchGateway {
                 Objects.requireNonNull(database, "database").connections(
                         "dungeon",
                         new SqliteMigration(1, schemaManager::ensureSchema),
-                        new SqliteMigration(2, schemaManager::ensureSchema)));
+                        new SqliteMigration(2, schemaManager::ensureSchema),
+                        new SqliteMigration(3, schemaManager::replaceWithCanonicalSchema)));
     }
 
     DungeonSqliteMapBatchGateway(SqliteConnectionSource connections) {

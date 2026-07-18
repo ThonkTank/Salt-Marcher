@@ -7,6 +7,7 @@ import java.util.Map;
 import features.dungeon.adapter.sqlite.model.DungeonClusterBoundaryRecord;
 import features.dungeon.adapter.sqlite.model.DungeonRoomClusterRecord;
 import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.CellOrdering;
 import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
@@ -18,15 +19,19 @@ final class DungeonClusterRecordMapperSupport {
     private DungeonClusterRecordMapperSupport() {
     }
 
-    static List<RoomCluster> toClusters(List<DungeonRoomClusterRecord> records) {
+    static List<RoomCluster> toClusters(
+            List<DungeonRoomClusterRecord> records,
+            List<RoomRegion> rooms
+    ) {
         List<RoomCluster> result = new ArrayList<>();
         for (DungeonRoomClusterRecord record : records == null ? List.<DungeonRoomClusterRecord>of() : records) {
+            Cell center = derivedCenter(record.clusterId(), rooms);
             result.add(RoomCluster.authored(
                     record.clusterId(),
                     record.mapId(),
                     record.name(),
-                    new Cell(record.centerX(), record.centerY(), record.levelZ()),
-                    boundariesByLevel(record.boundaries())));
+                    center,
+                    boundariesByLevel(record.boundaries(), center)));
         }
         return List.copyOf(result);
     }
@@ -44,14 +49,14 @@ final class DungeonClusterRecordMapperSupport {
                     cluster.center().q(),
                     cluster.center().r(),
                     cluster.center().level(),
-                    DungeonClusterFloorCellRecordMapperSupport.toFloorCellRecords(cluster.clusterId(), rooms),
                     toBoundaryRecords(cluster)));
         }
         return List.copyOf(result);
     }
 
     private static Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel(
-            List<DungeonClusterBoundaryRecord> records
+            List<DungeonClusterBoundaryRecord> records,
+            Cell center
     ) {
         Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
         for (DungeonClusterBoundaryRecord record
@@ -60,7 +65,10 @@ final class DungeonClusterRecordMapperSupport {
                     .add(new DungeonClusterBoundary(
                             record.clusterId(),
                             record.levelZ(),
-                            new Cell(record.cellX(), record.cellY(), record.levelZ()),
+                            new Cell(
+                                    record.cellX() - center.q(),
+                                    record.cellY() - center.r(),
+                                    record.levelZ()),
                             Direction.parse(record.edgeDirection()),
                             BoundaryKind.parse(record.edgeType()),
                             DungeonTopologyElementRecordMapperSupport.topologyRef(
@@ -70,14 +78,26 @@ final class DungeonClusterRecordMapperSupport {
         return DungeonNestedListMaps.immutableCopy(result);
     }
 
+    private static Cell derivedCenter(long clusterId, List<RoomRegion> rooms) {
+        List<Cell> cells = new ArrayList<>();
+        for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
+            if (room.clusterId() == clusterId) {
+                cells.addAll(room.floorCells());
+            }
+        }
+        List<Cell> ordered = CellOrdering.sortedCells(cells);
+        return ordered.isEmpty() ? new Cell(0, 0, 0) : ordered.getFirst();
+    }
+
     private static List<DungeonClusterBoundaryRecord> toBoundaryRecords(RoomCluster cluster) {
         List<DungeonClusterBoundaryRecord> result = new ArrayList<>();
         for (DungeonClusterBoundary boundary : cluster.orderedBoundariesForWriteback()) {
+            Cell absoluteCell = boundary.absoluteCell(cluster.center());
             result.add(new DungeonClusterBoundaryRecord(
                     cluster.clusterId(),
                     boundary.level(),
-                    boundary.relativeCell().q(),
-                    boundary.relativeCell().r(),
+                    absoluteCell.q(),
+                    absoluteCell.r(),
                     boundary.direction().name(),
                     boundary.kind().name(),
                     boundary.kind().renderable() ? boundary.resolvedTopologyRef(cluster.center()).id() : null));

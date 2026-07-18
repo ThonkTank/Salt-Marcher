@@ -3,8 +3,8 @@ package features.dungeon.adapter.sqlite.gateway;
 import features.dungeon.adapter.sqlite.model.DungeonMapRecord;
 import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
 import features.dungeon.adapter.sqlite.model.DungeonRoomClusterRecord;
+import features.dungeon.adapter.sqlite.model.DungeonRoomCellRecord;
 import features.dungeon.adapter.sqlite.model.DungeonRoomExitDescriptionRecord;
-import features.dungeon.adapter.sqlite.model.DungeonRoomFloorRecord;
 import features.dungeon.adapter.sqlite.model.DungeonRoomRecord;
 
 import java.sql.Connection;
@@ -96,8 +96,8 @@ final class DungeonSqliteMapRecordWriter {
         Set<Long> roomIds = new LinkedHashSet<>();
         for (DungeonRoomRecord room : record.rooms()) {
             roomIds.add(room.roomId());
-            upsertRoomPosition(connection, room);
-            replaceRoomFloors(connection, room);
+            upsertRoom(connection, room);
+            replaceRoomCells(connection, room);
             replaceRoomExitDescriptions(connection, room);
         }
         DungeonSqliteRetainedIdCleanup.deleteObsoleteRooms(connection, record.mapId(), roomIds);
@@ -122,8 +122,8 @@ final class DungeonSqliteMapRecordWriter {
         for (DungeonRoomRecord room : after.rooms()) {
             retainedRoomIds.add(room.roomId());
             if (!room.equals(previousRooms.get(room.roomId()))) {
-                upsertRoomPosition(connection, room);
-                replaceRoomFloors(connection, room);
+                upsertRoom(connection, room);
+                replaceRoomCells(connection, room);
                 replaceRoomExitDescriptions(connection, room);
             }
         }
@@ -148,53 +148,47 @@ final class DungeonSqliteMapRecordWriter {
         return result;
     }
 
-    private static void upsertRoomPosition(Connection connection, DungeonRoomRecord room) throws SQLException {
+    private static void upsertRoom(Connection connection, DungeonRoomRecord room) throws SQLException {
         try (PreparedStatement update = connection.prepareStatement(
                 "UPDATE " + DungeonPersistenceSchema.ROOMS_TABLE
-                        + " SET cluster_id=?, name=?, visual_description=?, component_x=?, component_y=?, level_z=?"
+                        + " SET cluster_id=?, name=?, visual_description=?"
                         + SQL_WHERE + "room_id=? AND dungeon_map_id=?")) {
             update.setLong(1, room.clusterId());
             update.setString(2, room.name());
             update.setString(3, room.visualDescription());
-            update.setInt(4, room.componentX());
-            update.setInt(5, room.componentY());
-            update.setInt(6, room.levelZ());
-            update.setLong(7, room.roomId());
-            update.setLong(8, room.mapId());
+            update.setLong(4, room.roomId());
+            update.setLong(5, room.mapId());
             if (update.executeUpdate() > 0) {
                 return;
             }
         }
         try (PreparedStatement insert = connection.prepareStatement(
                 INSERT_INTO + DungeonPersistenceSchema.ROOMS_TABLE
-                        + "(room_id, dungeon_map_id, cluster_id, name, visual_description, component_x, component_y, level_z)"
-                        + " VALUES(?,?,?,?,?,?,?,?)")) {
+                        + "(room_id, dungeon_map_id, cluster_id, name, visual_description)"
+                        + " VALUES(?,?,?,?,?)")) {
             insert.setLong(1, room.roomId());
             insert.setLong(2, room.mapId());
             insert.setLong(3, room.clusterId());
             insert.setString(4, room.name());
             insert.setString(5, room.visualDescription());
-            insert.setInt(6, room.componentX());
-            insert.setInt(7, room.componentY());
-            insert.setInt(8, room.levelZ());
             insert.executeUpdate();
         }
     }
 
-    private static void replaceRoomFloors(Connection connection, DungeonRoomRecord room) throws SQLException {
+    private static void replaceRoomCells(Connection connection, DungeonRoomRecord room) throws SQLException {
         try (PreparedStatement delete = connection.prepareStatement(
-                DELETE_FROM + DungeonPersistenceSchema.ROOM_FLOORS_TABLE + SQL_WHERE + "room_id=?")) {
+                DELETE_FROM + DungeonPersistenceSchema.ROOM_CELLS_TABLE + SQL_WHERE + "room_id=?")) {
             delete.setLong(1, room.roomId());
             delete.executeUpdate();
         }
         try (PreparedStatement insert = connection.prepareStatement(
-                INSERT_INTO + DungeonPersistenceSchema.ROOM_FLOORS_TABLE
-                        + "(room_id, level_z, anchor_x, anchor_y) VALUES(?,?,?,?)")) {
-            for (DungeonRoomFloorRecord floor : room.floors()) {
+                INSERT_INTO + DungeonPersistenceSchema.ROOM_CELLS_TABLE
+                        + "(room_id, level_z, cell_x, cell_y) VALUES(?,?,?,?)")) {
+            for (DungeonRoomCellRecord floor : room.floorCells()) {
                 insert.setLong(1, room.roomId());
                 insert.setInt(2, floor.levelZ());
-                insert.setInt(3, floor.anchorX());
-                insert.setInt(4, floor.anchorY());
+                insert.setInt(3, floor.cellX());
+                insert.setInt(4, floor.cellY());
                 insert.addBatch();
             }
             insert.executeBatch();
@@ -209,16 +203,17 @@ final class DungeonSqliteMapRecordWriter {
         }
         try (PreparedStatement insert = connection.prepareStatement(
                 INSERT_INTO + DungeonPersistenceSchema.ROOM_EXIT_DESCRIPTIONS_TABLE
-                        + "(room_id, cell_x, cell_y, edge_direction, description, sort_order)"
-                        + " VALUES(?,?,?,?,?,?)")) {
+                        + "(room_id, level_z, cell_x, cell_y, edge_direction, description, sort_order)"
+                        + " VALUES(?,?,?,?,?,?,?)")) {
             int sortOrder = 0;
             for (DungeonRoomExitDescriptionRecord exitDescription : room.exitDescriptions()) {
                 insert.setLong(1, room.roomId());
-                insert.setInt(2, exitDescription.cellX());
-                insert.setInt(3, exitDescription.cellY());
-                insert.setString(4, exitDescription.edgeDirection());
-                insert.setString(5, exitDescription.description());
-                insert.setInt(6, sortOrder);
+                insert.setInt(2, exitDescription.levelZ());
+                insert.setInt(3, exitDescription.cellX());
+                insert.setInt(4, exitDescription.cellY());
+                insert.setString(5, exitDescription.edgeDirection());
+                insert.setString(6, exitDescription.description());
+                insert.setInt(7, sortOrder);
                 sortOrder++;
                 insert.addBatch();
             }

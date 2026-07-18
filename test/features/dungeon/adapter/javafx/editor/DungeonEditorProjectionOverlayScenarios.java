@@ -170,7 +170,7 @@ final class DungeonEditorProjectionOverlayScenarios {
         assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(cellRect(6, 6, 7, 7, -1)),
                 "DE-LVL-007 render shows newly authored negative-level room cells");
         assertTrue(runtime.database().authoredGeometryState(mapId).stream().anyMatch(row ->
-                        row.startsWith("dungeon_room_cluster_floor_cells|") && row.contains("|level_z=-1")),
+                        row.startsWith("dungeon_room_cells|") && row.contains("|level_z=-1")),
                 "DE-LVL-007 SQLite floor cells persist at z=-1");
         assertTrue(runtime.database().countAuthoredGeometryRows(mapId) > geometryRowsBefore,
                 "DE-LVL-007 writes authored geometry on the selected negative level");

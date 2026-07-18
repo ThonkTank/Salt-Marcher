@@ -97,51 +97,62 @@ and commit boundaries. M7 starts only after both are complete.
 
 ## Current Migration State
 
-- Current foundation: M0 through M3 are complete on `main` through PR #508.
-  Every authored Editor commit enters history only as an exact single-map or
-  compound patch, requirements-owned command and encoded-byte retention limits
-  are qualified, and non-committing production actions are history-free.
-- This slice: M4.1 introduces the metadata-only `DungeonCatalogStore` and moves
-  production map search, create, rename, and delete to it. Catalog reads return
-  stable headers without authored geometry; create and rename write only the
-  `dungeon_maps` row and advance the map revision exactly once where required.
-- M4.1 removes catalog identity allocation, full-map create, catalog search,
-  and delete methods from `DungeonMapRepository`. The remaining repository is
-  explicitly temporary and may serve only the M4 window/UoW migration.
-- `DungeonChangeSet(before, after)` remains only as the temporary whole-map
-  persistence bridge used beneath accepted patches, history replay, transition
-  compounds, and ordinary authored commits. M4 owns its replacement with
-  incremental `DungeonUnitOfWork`; no new caller may use it.
-- Next step after this slice merges: M4.2 installs the canonical Dungeon-only
-  schema and entity-to-chunk membership while keeping the current whole-map
-  bridge only long enough to prove equivalent production readback.
+- Current foundation: M0 through M3 are complete through PR #508; M4.1 is
+  complete on `main` through PR #509. Production catalog CRUD now uses the
+  metadata-only `DungeonCatalogStore`, and the remaining whole-map repository
+  is explicitly temporary M4 migration infrastructure.
+- This slice: M4.2 installs schema version 3 as the single destructive
+  Dungeon-only replacement. It makes room-owned cells, absolute cluster
+  boundaries, chunk content revisions, and entity-to-chunk membership the
+  canonical SQLite shape while discarding pre-v3 Dungeon rows.
+- The temporary whole-map bridge moves to those canonical rows so production
+  Editor and travel behavior remain runnable. `DungeonChangeSet(before, after)`
+  still owns only the later M4 write migration and may not recreate deleted
+  storage shapes.
+- Next step after this slice merges: M4.3 publishes `DungeonWindowStore` and
+  moves the Editor cold viewport/load path to explicit chunk and identity-
+  closure reads over the new membership index.
 
-### Active Slice Contract: M4.1 Catalog Store
+### Active Slice Contract: M4.2 Canonical Schema And Membership
 
-- **Goal and current evidence:** split catalog metadata from the umbrella
-  whole-map repository. Before this slice, search mapped header-only SQL rows
-  into synthetic `DungeonMap` values, create reserved and deleted an id before
-  writing a full empty map, and rename loaded then rewrote the full aggregate.
-- **Owners and implementation surface:** this roadmap plus the Dungeon
-  architecture, domain, and persistence contract govern
-  `DungeonCatalogStore`, `DungeonMapHeader`, the authored application service,
-  SQLite gateway/repository composition, and their application, architecture,
-  persistence, and production Editor tests.
-- **Invariants:** search returns stable id/name/revision headers without authored
-  geometry; create inserts one revision-one map header; rename changes only the
-  header and advances revision once; delete preserves SQLite cascade behavior;
-  a loaded workset remains aligned without another whole-map read.
-- **Later-slice exclusions:** M4.1 does not replace the schema, introduce window
-  or closure values, migrate patch writes, or remove whole-map reads needed by
-  commands and travel. M4.2 through M4.6 own those changes.
-- **Deletion boundary:** remove catalog id allocation, search, and delete from
-  `DungeonMapRepository`, and remove catalog create/rename full-map writes. The
-  remaining repository and combined SQLite adapter are temporary M4 surfaces.
-- **Acceptance and proof:** real Editor catalog create/search/rename/delete
-  remains observable across SQLite reload; create is revision one, rename is
-  revision two with unchanged geometry rows; an application test makes every
-  whole-map repository call fail; an architecture gate forbids `DungeonMap`
-  from the catalog port; final acceptance is literal green `./gradlew check`.
+- **Goal and current evidence:** replace the additive legacy schema that stores
+  room anchors and reconstructs room ownership from duplicated cluster-floor
+  rows. The domain already owns exact `RoomRegion.floorCells`; current SQLite
+  loading partitions `dungeon_room_cluster_floor_cells` back into rooms and
+  stores cluster centers independently.
+- **Owners and implementation surface:** the Dungeon persistence contract owns
+  stored semantics; this roadmap owns sequencing. The slice changes the schema
+  declaration and migration plan, room/cluster source records and mappers, the
+  temporary map loader/writer, chunk/membership indexing, and focused SQLite
+  plus production Editor proof.
+- **Invariants:** migration version 3 drops and recreates only named Dungeon
+  tables, retains no historical Dungeon rows, and leaves Party, Hex, and every
+  non-Dungeon table and row byte-for-byte untouched. Room cells are unique per
+  room and coordinate; cluster centers and authored bounds derive
+  deterministically; boundary cells are absolute; membership contains one row
+  per stable entity and intersecting chunk using floor division for negatives;
+  chunk rows equal the membership chunk union and carry committed content
+  revision.
+- **Later-slice exclusions:** M4.2 does not publish window/closure APIs, perform
+  row-level patch commits, remove whole-map command/travel reads, or qualify M5
+  latency. The full-map bridge may temporarily rebuild canonical rows and
+  membership until M4.4 replaces its writer.
+- **Deletion boundary:** remove `dungeon_room_floors`,
+  `dungeon_room_cluster_floor_cells`, `dungeon_room_cluster_vertices`, stored
+  room/cluster position columns, their records and mapping helpers, and every
+  loader/writer query that references them. No compatibility view or backfill
+  survives.
+- **Acceptance and proof:** a real v2-shaped database upgrades automatically to
+  v3 with empty canonical Dungeon tables and unchanged non-Dungeon sentinels;
+  a production-authored multi-entity map round-trips exact room cells,
+  boundaries, revisions, negative chunks, and membership; existing Editor and
+  travel behavior remain green; final acceptance is literal green
+  `./gradlew check` followed by the desktop install proof.
+- **Local candidate evidence (2026-07-18):** the two focused canonical SQLite
+  migration/index tests are green; the complete `DungeonEditorBehaviorSuiteTest`
+  plus `DungeonTravelProjectionLevelTest` UI route is green; `architectureTest`
+  is green; `./gradlew check` is green; and `./gradlew installDesktopApp` is
+  green. Publication and required CI remain the slice's open handoff gates.
 
 ## M0: Target Lock And Baseline
 
