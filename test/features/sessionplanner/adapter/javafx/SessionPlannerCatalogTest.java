@@ -681,6 +681,11 @@ public final class SessionPlannerCatalogTest {
                     listener.accept(savedEncounterPlans());
                     return () -> {
                     };
+                },
+                listener -> {
+                    listener.accept(savedEncounterPlans());
+                    return () -> {
+                    };
                 });
         EncounterPlanBudgetModel planBudget = new EncounterPlanBudgetModel(
                 SessionPlannerCatalogTest::encounterPlanBudget,

@@ -10,10 +10,4 @@ public interface CatalogSection {
     Node controls();
 
     Node content();
-
-    default void activate() {
-    }
-
-    default void deactivate() {
-    }
 }

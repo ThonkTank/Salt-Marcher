@@ -130,7 +130,8 @@ public final class CatalogInitialLoadTest {
         runOnFxThread(() -> {
             WorldPlannerSnapshotModel world = new WorldPlannerSnapshotModel(
                     CatalogInitialLoadTest::worldPlannerSnapshotWithNpc,
-                    listener -> () -> { });
+                    listener -> () -> { },
+                    listener -> { listener.accept(worldPlannerSnapshotWithNpc()); return () -> { }; });
             CatalogTestRuntime runtime = CatalogTestRuntime.create(
                     new SqliteCreatureCatalogQueryAdapter(),
                     new SqliteEncounterTableCatalogAdapter(),
@@ -181,7 +182,9 @@ public final class CatalogInitialLoadTest {
                             return List.of();
                         }
                     },
-                    new WorldPlannerSnapshotModel(CatalogInitialLoadTest::m4WorldSnapshot, ignored -> () -> { }));
+                    new WorldPlannerSnapshotModel(
+                            CatalogInitialLoadTest::m4WorldSnapshot, ignored -> () -> { },
+                            listener -> { listener.accept(m4WorldSnapshot()); return () -> { }; }));
             ShellBinding binding = runtime.contribution(routes.routes()).bind();
             binding.onActivate();
             CatalogControlsHost controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, CatalogControlsHost.class);
@@ -194,14 +197,16 @@ public final class CatalogInitialLoadTest {
             org.junit.jupiter.api.Assertions.assertEquals(
                     List.of("Monster", "Items", "Encounter", "NPCs", "Fraktionen", "Orte", "Encounter-Tabellen"),
                     controls.sectionTitles());
-            for (CatalogSectionId id : List.of(
-                    CatalogSectionId.NPCS, CatalogSectionId.FACTIONS,
-                    CatalogSectionId.LOCATIONS, CatalogSectionId.ENCOUNTER_TABLES)) {
+            for (CatalogSectionId id : List.of(CatalogSectionId.values())) {
                 controls.select(id);
                 root.applyCss();
                 root.layout();
                 assertTrue(content.getCenter() instanceof CatalogTableScaffold<?, ?>,
                         id + " does not use the native shared scaffold");
+                CatalogTableScaffold<?, ?> scaffold = (CatalogTableScaffold<?, ?>) content.getCenter();
+                boolean paged = id == CatalogSectionId.MONSTERS || id == CatalogSectionId.ITEMS;
+                assertTrue((scaffold.getBottom() != null) == paged,
+                        id + " has the wrong paging capability");
             }
 
             controls.select(CatalogSectionId.NPCS);
@@ -342,7 +347,9 @@ public final class CatalogInitialLoadTest {
         return CatalogTestRuntime.create(
                 new SqliteCreatureCatalogQueryAdapter(),
                 new SqliteEncounterTableCatalogAdapter(),
-                new WorldPlannerSnapshotModel(CatalogInitialLoadTest::worldPlannerSnapshot, listener -> () -> { }));
+                new WorldPlannerSnapshotModel(
+                        CatalogInitialLoadTest::worldPlannerSnapshot, listener -> () -> { },
+                        listener -> { listener.accept(worldPlannerSnapshot()); return () -> { }; }));
     }
 
     private static void assertWorldPlannerSourceControls(CatalogTestRuntime runtime, Parent controls, String label) {

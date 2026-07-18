@@ -10,13 +10,16 @@ public final class EncounterPoolFiltersModel {
 
     private final Supplier<EncounterPoolFilters> currentSupplier;
     private final Function<Consumer<EncounterPoolFilters>, Runnable> subscribeAction;
+    private final Function<Consumer<EncounterPoolFilters>, Runnable> observeLatestAction;
 
     public EncounterPoolFiltersModel(
             Supplier<EncounterPoolFilters> currentSupplier,
-            Function<Consumer<EncounterPoolFilters>, Runnable> subscribeAction
+            Function<Consumer<EncounterPoolFilters>, Runnable> subscribeAction,
+            Function<Consumer<EncounterPoolFilters>, Runnable> observeLatestAction
     ) {
         this.currentSupplier = Objects.requireNonNull(currentSupplier, "currentSupplier");
         this.subscribeAction = Objects.requireNonNull(subscribeAction, "subscribeAction");
+        this.observeLatestAction = Objects.requireNonNull(observeLatestAction, "observeLatestAction");
     }
 
     public EncounterPoolFilters current() {
@@ -28,4 +31,10 @@ public final class EncounterPoolFiltersModel {
                 subscribeAction.apply(Objects.requireNonNull(listener, "listener")),
                 "unsubscribe");
     }
+
+    public Runnable observeLatest(Consumer<EncounterPoolFilters> observer) {
+        return Objects.requireNonNull(observeLatestAction.apply(Objects.requireNonNull(observer, "observer")),
+                "unsubscribe");
+    }
+
 }

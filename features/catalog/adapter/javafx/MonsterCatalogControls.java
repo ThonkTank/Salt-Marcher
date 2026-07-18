@@ -32,30 +32,34 @@ final class MonsterCatalogControls extends VBox {
     private final TextField search = new TextField();
     private final ComboBox<String> crMinimum = new ComboBox<>();
     private final ComboBox<String> crMaximum = new ComboBox<>();
-    private final MultiSelect<String> sizes = new MultiSelect<>("Größe", Function.identity());
-    private final MultiSelect<String> types = new MultiSelect<>("Typ", Function.identity());
-    private final MultiSelect<String> subtypes = new MultiSelect<>("Unterart", Function.identity());
-    private final MultiSelect<String> biomes = new MultiSelect<>("Umgebung", Function.identity());
-    private final MultiSelect<String> alignments = new MultiSelect<>("Gesinnung", Function.identity());
-    private final MultiSelect<CatalogReferenceOption> encounterTables =
-            new MultiSelect<>("Tabelle", CatalogReferenceOption::label);
-    private final MultiSelect<CatalogReferenceOption> factions =
-            new MultiSelect<>("Fraktionen", CatalogReferenceOption::label);
+    private final MultiSelect<String> sizes;
+    private final MultiSelect<String> types;
+    private final MultiSelect<String> subtypes;
+    private final MultiSelect<String> biomes;
+    private final MultiSelect<String> alignments;
+    private final MultiSelect<CatalogReferenceOption> encounterTables;
+    private final MultiSelect<CatalogReferenceOption> factions;
     private final ComboBox<CatalogReferenceOption> location = new ComboBox<>();
     private final FlowPane chips = new FlowPane(4, 2);
     private final Button clear = new Button("Leeren");
-    private Consumer<MonsterCatalogIntent> intent = ignored -> { };
+    private final Consumer<MonsterCatalogIntent> intent;
     private boolean rendering;
 
-    MonsterCatalogControls() {
+    MonsterCatalogControls(Consumer<MonsterCatalogIntent> intent) {
+        this.intent = Objects.requireNonNull(intent, "intent");
+        sizes = new MultiSelect<>("Größe", Function.identity(), this::publishFilters);
+        types = new MultiSelect<>("Typ", Function.identity(), this::publishFilters);
+        subtypes = new MultiSelect<>("Unterart", Function.identity(), this::publishFilters);
+        biomes = new MultiSelect<>("Umgebung", Function.identity(), this::publishFilters);
+        alignments = new MultiSelect<>("Gesinnung", Function.identity(), this::publishFilters);
+        encounterTables = new MultiSelect<>("Tabelle", CatalogReferenceOption::label, this::publishFilters);
+        factions = new MultiSelect<>("Fraktionen", CatalogReferenceOption::label, this::publishFilters);
         setMaxHeight(Double.MAX_VALUE);
         search.setPromptText("Monster suchen...");
         search.setAccessibleText("Monster suchen");
         HBox.setHgrow(search, Priority.ALWAYS);
         search.textProperty().addListener((ignored, before, after) -> publishFilters());
         configureChallengeRatings();
-        List.of(sizes, types, subtypes, biomes, alignments, encounterTables, factions)
-                .forEach(picker -> picker.onChanged(this::publishFilters));
         location.setAccessibleText("Location");
         location.setConverter(new StringConverter<>() {
             @Override public String toString(CatalogReferenceOption value) {
@@ -83,10 +87,6 @@ final class MonsterCatalogControls extends VBox {
         Label title = new Label("FILTER");
         title.getStyleClass().add("catalog-controls-section-title");
         getChildren().setAll(title, surface);
-    }
-
-    void onIntent(Consumer<MonsterCatalogIntent> handler) {
-        intent = Objects.requireNonNull(handler, "handler");
     }
 
     void render(MonsterCatalogState state, MonsterCatalogAuxiliaryOptions auxiliary) {
@@ -237,11 +237,12 @@ final class MonsterCatalogControls extends VBox {
         private final Button button;
         private final ContextMenu menu = new ContextMenu();
         private final VBox options = new VBox(2);
-        private Runnable changed = () -> { };
+        private final Runnable changed;
 
-        MultiSelect(String label, Function<T, String> labeler) {
+        MultiSelect(String label, Function<T, String> labeler, Runnable changed) {
             this.label = label;
             this.labeler = labeler;
+            this.changed = Objects.requireNonNull(changed, "changed");
             button = new Button(label + " ▾");
             button.getStyleClass().addAll("compact", "filter-trigger");
             ScrollPane scroll = new ScrollPane(options);
@@ -260,10 +261,6 @@ final class MonsterCatalogControls extends VBox {
 
         Button button() {
             return button;
-        }
-
-        void onChanged(Runnable handler) {
-            changed = handler;
         }
 
         void render(List<T> values, List<T> selected) {

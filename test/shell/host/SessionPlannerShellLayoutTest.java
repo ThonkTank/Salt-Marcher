@@ -299,7 +299,13 @@ public final class SessionPlannerShellLayoutTest {
                         () -> new features.worldplanner.api.WorldPlannerSnapshot(
                                 features.worldplanner.api.WorldPlannerReadStatus.SUCCESS,
                                 List.of(), List.of(), List.of(), ""),
-                        listener -> () -> { });
+                        listener -> () -> { },
+                        listener -> {
+                            listener.accept(new features.worldplanner.api.WorldPlannerSnapshot(
+                                    features.worldplanner.api.WorldPlannerReadStatus.SUCCESS,
+                                    List.of(), List.of(), List.of(), ""));
+                            return () -> { };
+                        });
         CatalogRoutes.WorldInspectorRoutes worldRoutes = new CatalogRoutes.WorldInspectorRoutes() {
             @Override public void openNpc(long npcId) { }
             @Override public void openFaction(long factionId) { }

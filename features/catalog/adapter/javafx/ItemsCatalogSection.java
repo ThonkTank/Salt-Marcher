@@ -1,6 +1,5 @@
 package features.catalog.adapter.javafx;
 
-import features.catalog.application.CatalogResultState;
 import features.catalog.application.CatalogSectionId;
 import features.catalog.application.ItemsCatalogFilterDraft;
 import features.catalog.application.ItemsCatalogIntent;
@@ -8,6 +7,7 @@ import features.catalog.application.ItemsCatalogState;
 import features.items.api.ItemsCatalogApi;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -59,15 +59,13 @@ public final class ItemsCatalogSection implements CatalogSection {
                         new CatalogTableScaffold.ColumnSpec<>("Kosten",
                                 item -> shown(item.costDisplay()))),
                 row -> this.intents.accept(new ItemsCatalogIntent.OpenItem(row.sourceKey())),
-                key -> {
-                    String selectedKey = key == null ? "" : key;
-                    this.intents.accept(new ItemsCatalogIntent.SelectItem(selectedKey));
-                },
+                key -> this.intents.accept(new ItemsCatalogIntent.SelectItem(key.orElse(""))),
                 List.of(),
-                pageDirection -> this.intents.accept(new ItemsCatalogIntent.ShiftPage(pageDirection)));
+                new CatalogTableScaffold.Paging(
+                        pageDirection -> this.intents.accept(new ItemsCatalogIntent.ShiftPage(pageDirection))));
         content.configurePaging(
                 "Zurück", "Vorherige Item-Seite", "Weiter", "Nächste Item-Seite", "Item-Seite", " von ");
-        status.setAccessibleText("Item-Status");
+        status.setAccessibleText("Item-Aktionsstatus");
         status.getStyleClass().add("text-secondary");
         open.setAccessibleText("Ausgewähltes Item im Inspector öffnen");
         open.disableProperty().bind(content.table().getSelectionModel().selectedItemProperty().isNull());
@@ -96,11 +94,6 @@ public final class ItemsCatalogSection implements CatalogSection {
         return content;
     }
 
-    @Override
-    public void activate() {
-        intents.accept(new ItemsCatalogIntent.Refresh());
-    }
-
     public void render(ItemsCatalogState next) {
         state = Objects.requireNonNull(next, "next");
         if (state.revision() == renderedRevision) {
@@ -115,9 +108,10 @@ public final class ItemsCatalogSection implements CatalogSection {
             applyDraft(state.filterDraft());
             content.render(
                     state.results(),
-                    state.selectedSourceKey().isBlank() ? null : state.selectedSourceKey(),
+                    state.selectedSourceKey().isBlank()
+                            ? Optional.empty() : Optional.of(state.selectedSourceKey()),
                     state.totalCount(), state.pageSize(), state.pageOffset(), "Items");
-            status.setText(visibleStatus(state));
+            status.setText(state.actionMessage());
         } finally {
             rendering = false;
         }
@@ -181,18 +175,6 @@ public final class ItemsCatalogSection implements CatalogSection {
         maximumCost.setText(draft.maximumCostCp());
         sort.setValue(draft.sortField());
         direction.setValue(draft.ascending() ? SortDirection.ASCENDING : SortDirection.DESCENDING);
-    }
-
-    private static String visibleStatus(ItemsCatalogState state) {
-        if (!state.actionMessage().isBlank()) {
-            return state.actionMessage();
-        }
-        return switch (state.results().status()) {
-            case LOADING -> "Items werden geladen …";
-            case READY -> state.totalCount() + " Items gefunden.";
-            case EMPTY -> "Keine Items gefunden.";
-            case INVALID_INPUT, UNAVAILABLE, FAILED -> state.results().message();
-        };
     }
 
     private static VBox field(String label, Node control) {

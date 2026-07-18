@@ -6,6 +6,7 @@ import features.catalog.application.WorldReferenceCatalogState;
 import features.catalog.application.WorldReferenceCatalogState.FactionRow;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import javafx.scene.Node;
 import javafx.scene.control.TextField;
@@ -41,13 +42,11 @@ public final class FactionCatalogSection implements CatalogSection {
                         new CatalogTableScaffold.ColumnSpec<>("Name", FactionRow::displayName),
                         new CatalogTableScaffold.ColumnSpec<>("Details", FactionRow::details)),
                 row -> this.intents.accept(new WorldReferenceCatalogIntent.OpenFaction(row.factionId())),
-                id -> this.intents.accept(new WorldReferenceCatalogIntent.SelectFaction(id == null ? 0L : id)),
+                id -> this.intents.accept(new WorldReferenceCatalogIntent.SelectFaction(id.orElse(0L))),
                 List.of(new CatalogTableScaffold.ActionSpec<>(
                         "Als Quelle", "Fraktion als Encounter-Quelle verwenden", "Als Encounter-Quelle",
                         List.of("accent", "compact"), row -> this.intents.accept(
-                                new WorldReferenceCatalogIntent.UseFactionAsEncounterSource(row.factionId())))),
-                ignored -> { });
-        content.setPagingVisible(false);
+                                new WorldReferenceCatalogIntent.UseFactionAsEncounterSource(row.factionId())))));
     }
 
     @Override public CatalogSectionId id() { return CatalogSectionId.FACTIONS; }
@@ -66,12 +65,14 @@ public final class FactionCatalogSection implements CatalogSection {
         } finally {
             rendering = false;
         }
-        content.render(state.factions().results(), selected(state.factions().selectedId()),
+        content.render(state.factions().results(), optionalId(state.factions().selectedId()),
                 state.factions().results().rows().size(), Math.max(1, state.factions().results().rows().size()),
                 0, "Fraktionen");
     }
 
-    private static Long selected(long id) { return id > 0L ? id : null; }
+    private static Optional<Long> optionalId(long id) {
+        return id > 0L ? Optional.of(id) : Optional.empty();
+    }
 
     private static TextField queryField() {
         TextField field = new TextField();

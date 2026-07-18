@@ -91,17 +91,17 @@ final class MonsterCatalogControllerTest {
         fixture.queries.searches.getLast().complete(page(7L, "Seven", 50, 100));
         assertEquals(7L, fixture.controller.state().selectedCreatureId());
 
-        fixture.controller.accept(new MonsterCatalogIntent.Refresh());
+        fixture.controller.accept(new MonsterCatalogIntent.ChangeFilters(draft("empty", List.of())));
         fixture.queries.searches.getLast().complete(new CreatureCatalogPageResult(
-                CreatureQueryStatus.SUCCESS, CreatureCatalogPage.empty(50, 50)));
+                CreatureQueryStatus.SUCCESS, CreatureCatalogPage.empty(50, 0)));
         assertEquals(CatalogResultState.Status.EMPTY, fixture.controller.state().results().status());
 
-        fixture.controller.accept(new MonsterCatalogIntent.Refresh());
+        fixture.controller.accept(new MonsterCatalogIntent.ChangeFilters(draft("invalid", List.of())));
         fixture.queries.searches.getLast().complete(new CreatureCatalogPageResult(
-                CreatureQueryStatus.INVALID_QUERY, CreatureCatalogPage.empty(50, 50)));
+                CreatureQueryStatus.INVALID_QUERY, CreatureCatalogPage.empty(50, 0)));
         assertEquals(CatalogResultState.Status.INVALID_INPUT, fixture.controller.state().results().status());
 
-        fixture.controller.accept(new MonsterCatalogIntent.Refresh());
+        fixture.controller.accept(new MonsterCatalogIntent.ChangeFilters(draft("failed", List.of())));
         fixture.queries.searches.getLast().completeExceptionally(new IllegalStateException("storage"));
         assertEquals(CatalogResultState.Status.FAILED, fixture.controller.state().results().status());
     }
@@ -152,6 +152,11 @@ final class MonsterCatalogControllerTest {
                 () -> current,
                 next -> {
                     listener = next;
+                    return () -> listener = ignored -> { };
+                },
+                next -> {
+                    listener = next;
+                    next.accept(current);
                     return () -> listener = ignored -> { };
                 });
         void emit(EncounterPoolFilters filters) {

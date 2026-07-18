@@ -91,20 +91,21 @@ M0 Target Lock And Documentation
 
 ## Current Migration Position
 
-- Current foundation: M0 through M3 are merged. PR #515 moved Items and saved
-  Encounters to application-owned async lifecycles and the shared scaffold,
-  then removed the workspace request-token bridge.
-- Current milestone: M4 is delivered by PR #516. Its final candidate moves NPC,
-  faction, location and Encounter Table query, stable selection, label joins and
-  semantic handoffs into their application controllers. All seven sections are
-  native scaffold renderers; the compatibility adapter is empty and inert, and
-  the obsolete World Planner workspace is deleted while its Inspector/editor
-  path remains provider-owned. Local `./gradlew architectureTest`,
-  `./gradlew check`, desktop install and diff whitespace proof are green. It
-  merges only after required PR CI is green.
-- Next step after PR #516 merges: M5 deletes the empty compatibility adapter,
-  removes remaining obsolete compatibility surfaces, closes enforcement and
-  proof gaps, and prepares the complete Catalog for owner acceptance.
+- Current foundation: M0 through M4 are merged. PR #516 completed the seven
+  native section renderers, moved World Reference and Encounter Table work into
+  application controllers, and deleted the obsolete World Planner workspace
+  while retaining its provider-owned Inspector/editor path.
+- Current milestone: M5 has a complete candidate in PR #517.
+  It deletes `LegacyCatalogBindingAdapter`, moves publication and lifecycle
+  ownership out of JavaFX, requires atomic provider observation, converges the
+  seven section interaction contracts, and closes selection, stale-result, and
+  cleanup failure paths with production-route proof. The final independent
+  architecture and quality review cycle is clean. `./gradlew architectureTest`,
+  `./gradlew check`, desktop installation, diff whitespace proof, and required
+  PR CI are green after the final technical diff. The owner approved the
+  complete visual and interaction behavior on 2026-07-18.
+- Remaining gates: merge PR #517 with required CI green, then delete this
+  temporary roadmap and its Catalog README link in a documentation cleanup PR.
 
 ## Delivery Rules
 

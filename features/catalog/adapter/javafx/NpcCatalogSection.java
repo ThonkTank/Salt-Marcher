@@ -6,6 +6,7 @@ import features.catalog.application.WorldReferenceCatalogState;
 import features.catalog.application.WorldReferenceCatalogState.NpcRow;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import javafx.scene.Node;
 import javafx.scene.control.TextField;
@@ -40,14 +41,12 @@ public final class NpcCatalogSection implements CatalogSection {
                         new CatalogTableScaffold.ColumnSpec<>("Name", NpcRow::displayName),
                         new CatalogTableScaffold.ColumnSpec<>("Details", NpcRow::details)),
                 row -> this.intents.accept(new WorldReferenceCatalogIntent.OpenNpc(row.npcId())),
-                id -> this.intents.accept(new WorldReferenceCatalogIntent.SelectNpc(id == null ? 0L : id)),
+                id -> this.intents.accept(new WorldReferenceCatalogIntent.SelectNpc(id.orElse(0L))),
                 List.of(
                         action("Zum Encounter", "NPC zum Encounter hinzufügen", "Zum Encounter",
                                 row -> new WorldReferenceCatalogIntent.AddNpcToEncounter(row.npcId())),
                         action("Zur Scene", "NPC zur fokussierten Scene hinzufügen", "Zur Scene",
-                                row -> new WorldReferenceCatalogIntent.AddNpcToScene(row.npcId()))),
-                ignored -> { });
-        content.setPagingVisible(false);
+                                row -> new WorldReferenceCatalogIntent.AddNpcToScene(row.npcId()))));
     }
 
     @Override public CatalogSectionId id() { return CatalogSectionId.NPCS; }
@@ -66,7 +65,7 @@ public final class NpcCatalogSection implements CatalogSection {
         } finally {
             rendering = false;
         }
-        content.render(state.npcs().results(), selected(state.npcs().selectedId()),
+        content.render(state.npcs().results(), optionalId(state.npcs().selectedId()),
                 state.npcs().results().rows().size(), Math.max(1, state.npcs().results().rows().size()),
                 0, "NPCs");
     }
@@ -81,7 +80,9 @@ public final class NpcCatalogSection implements CatalogSection {
                 List.of("accent", "compact"), row -> intents.accept(intent.apply(row)));
     }
 
-    private static Long selected(long id) { return id > 0L ? id : null; }
+    private static Optional<Long> optionalId(long id) {
+        return id > 0L ? Optional.of(id) : Optional.empty();
+    }
 
     private static TextField queryField(String accessible, String prompt) {
         TextField field = new TextField();

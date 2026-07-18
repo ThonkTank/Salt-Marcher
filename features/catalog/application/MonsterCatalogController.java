@@ -28,7 +28,7 @@ public final class MonsterCatalogController implements CatalogLifecycle {
     private final UiDispatcher dispatcher;
     private final Runnable changed;
     private MonsterCatalogState state = MonsterCatalogState.initial();
-    private Runnable unsubscribe = () -> { };
+    private Runnable unsubscribe;
     private boolean applyingInitialReadback;
 
     MonsterCatalogController(
@@ -65,7 +65,6 @@ public final class MonsterCatalogController implements CatalogLifecycle {
             case MonsterCatalogIntent.OpenCreature open -> open(open.creatureId());
             case MonsterCatalogIntent.AddToEncounter add -> addToEncounter(add.creatureId());
             case MonsterCatalogIntent.AddToScene add -> addToScene(add.creatureId());
-            case MonsterCatalogIntent.Refresh ignored -> beginSearch();
         }
     }
 
@@ -80,17 +79,27 @@ public final class MonsterCatalogController implements CatalogLifecycle {
                 MonsterCatalogState.Lifecycle.ACTIVE,
                 state.filterDraft(), state.filterOptions(), state.sort(), state.pageOffset(),
                 state.totalCount(), state.selectedCreatureId(), state.results());
+        Runnable acquired = null;
         applyingInitialReadback = true;
         try {
-            unsubscribe = CurrentFirstSubscription.open(
-                    poolFilters::current,
-                    poolFilters::subscribe,
-                    this::reconcileReadback);
+            acquired = poolFilters.observeLatest(this::reconcileReadback);
+            unsubscribe = acquired;
+            loadFilterOptions();
+            beginSearch();
+        } catch (RuntimeException | Error failure) {
+            if (acquired != null) {
+                try {
+                    acquired.run();
+                } catch (RuntimeException | Error cleanupFailure) {
+                    failure.addSuppressed(cleanupFailure);
+                }
+            }
+            unsubscribe = null;
+            rollbackActivation();
+            throw failure;
         } finally {
             applyingInitialReadback = false;
         }
-        loadFilterOptions();
-        beginSearch();
     }
 
     @Override
@@ -98,8 +107,18 @@ public final class MonsterCatalogController implements CatalogLifecycle {
         if (state.lifecycle() != MonsterCatalogState.Lifecycle.ACTIVE) {
             return;
         }
-        unsubscribe.run();
-        unsubscribe = () -> { };
+        Runnable current = unsubscribe;
+        unsubscribe = null;
+        try {
+            if (current != null) {
+                current.run();
+            }
+        } finally {
+            rollbackActivation();
+        }
+    }
+
+    private void rollbackActivation() {
         replace(
                 state.lifecycleRevision() + 1L,
                 state.requestRevision() + 1L,

@@ -254,7 +254,9 @@ class SceneApplicationServiceTest {
                 1L,
                 List.of(new CreatureCatalogRow(
                         101L, "Goblin", "Klein", "Humanoid", "neutral böse", "1/4", 50, 7, 15)));
-        return new CreatureReferenceIndexModel(() -> result, ignored -> () -> { });
+        return new CreatureReferenceIndexModel(
+                () -> result, ignored -> () -> { },
+                listener -> { listener.accept(result); return () -> { }; });
     }
 
     private static PartyFacts party(long... ids) {
@@ -270,7 +272,9 @@ class SceneApplicationServiceTest {
                 List.of(),
                 List.of(new WorldLocationSummary(20L, "Torhaus", "", List.of(), List.of())),
                 "");
-        return new WorldPlannerSnapshotModel(() -> snapshot, ignored -> () -> { });
+        return new WorldPlannerSnapshotModel(
+                () -> snapshot, ignored -> () -> { },
+                listener -> { listener.accept(snapshot); return () -> { }; });
     }
 
     private static PreparedSceneCatalogModel prepared() {

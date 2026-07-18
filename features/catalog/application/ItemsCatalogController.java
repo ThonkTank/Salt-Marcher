@@ -15,7 +15,6 @@ public final class ItemsCatalogController implements CatalogLifecycle {
     private final UiDispatcher dispatcher;
     private final Runnable changed;
     private ItemsCatalogState state = ItemsCatalogState.initial();
-    private boolean initialized;
 
     ItemsCatalogController(
             ItemsCatalogApi provider,
@@ -43,7 +42,6 @@ public final class ItemsCatalogController implements CatalogLifecycle {
             case ItemsCatalogIntent.ShiftPage shift -> shiftPage(shift.direction());
             case ItemsCatalogIntent.SelectItem select -> select(select.sourceKey());
             case ItemsCatalogIntent.OpenItem open -> open(open.sourceKey());
-            case ItemsCatalogIntent.Refresh ignored -> ensureLoaded();
         }
     }
 
@@ -56,10 +54,21 @@ public final class ItemsCatalogController implements CatalogLifecycle {
                 state.detailRequestRevision(), ItemsCatalogState.Lifecycle.ACTIVE, state.filterDraft(),
                 state.filterOptions(), state.query(), state.results(), state.selectedSourceKey(),
                 state.pageOffset(), state.totalCount(), state.actionMessage());
-        if (initialized) {
+        try {
             loadFilterOptions();
             beginSearch(state.pageOffset());
+        } catch (RuntimeException | Error failure) {
+            rollbackActivation();
+            throw failure;
         }
+    }
+
+    private void rollbackActivation() {
+        replace(state.lifecycleRevision() + 1L, state.optionsRequestRevision() + 1L,
+                state.pageRequestRevision() + 1L, state.detailRequestRevision() + 1L,
+                ItemsCatalogState.Lifecycle.INACTIVE, state.filterDraft(), state.filterOptions(), state.query(),
+                state.results(), state.selectedSourceKey(), state.pageOffset(), state.totalCount(),
+                state.actionMessage());
     }
 
     @Override
@@ -97,15 +106,6 @@ public final class ItemsCatalogController implements CatalogLifecycle {
 
     private void searchFirstPage() {
         beginSearch(0);
-    }
-
-    private void ensureLoaded() {
-        if (initialized || state.lifecycle() != ItemsCatalogState.Lifecycle.ACTIVE) {
-            return;
-        }
-        initialized = true;
-        loadFilterOptions();
-        beginSearch(state.pageOffset());
     }
 
     private void shiftPage(int direction) {
@@ -201,7 +201,7 @@ public final class ItemsCatalogController implements CatalogLifecycle {
     private void open(String sourceKey) {
         if (state.lifecycle() != ItemsCatalogState.Lifecycle.ACTIVE
                 || sourceKey == null || sourceKey.isBlank()
-                || !sourceKey.equals(state.selectedSourceKey())) {
+                || !isVisible(sourceKey)) {
             return;
         }
         long lifecycleRevision = state.lifecycleRevision();
@@ -254,7 +254,12 @@ public final class ItemsCatalogController implements CatalogLifecycle {
         return state.lifecycle() == ItemsCatalogState.Lifecycle.ACTIVE
                 && state.lifecycleRevision() == lifecycleRevision
                 && state.detailRequestRevision() == requestRevision
-                && sourceKey.equals(state.selectedSourceKey());
+                && isVisible(sourceKey);
+    }
+
+    private boolean isVisible(String sourceKey) {
+        return state.results().rows().stream()
+                .anyMatch(row -> sourceKey.equals(row.sourceKey()));
     }
 
     private ItemsCatalogApi.ItemQuery query(ItemsCatalogFilterDraft draft, int pageOffset) {

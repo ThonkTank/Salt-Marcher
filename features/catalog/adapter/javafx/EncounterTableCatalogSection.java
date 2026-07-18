@@ -41,13 +41,11 @@ public final class EncounterTableCatalogSection implements CatalogSection {
                         new CatalogTableScaffold.ColumnSpec<>("Name", EncounterTableRow::name),
                         new CatalogTableScaffold.ColumnSpec<>("Details", EncounterTableRow::details)),
                 Optional.empty(),
-                id -> this.intents.accept(new EncounterTableCatalogIntent.SelectTable(id == null ? 0L : id)),
+                id -> this.intents.accept(new EncounterTableCatalogIntent.SelectTable(id.orElse(0L))),
                 List.of(new CatalogTableScaffold.ActionSpec<>(
                         "Als Quelle", "Encounter-Tabelle als Encounter-Quelle verwenden", "Als Encounter-Quelle",
                         List.of("accent", "compact"), row -> this.intents.accept(
-                                new EncounterTableCatalogIntent.UseAsEncounterSource(row.tableId())))),
-                ignored -> { });
-        content.setPagingVisible(false);
+                                new EncounterTableCatalogIntent.UseAsEncounterSource(row.tableId())))));
     }
 
     @Override public CatalogSectionId id() { return CatalogSectionId.ENCOUNTER_TABLES; }
@@ -66,12 +64,14 @@ public final class EncounterTableCatalogSection implements CatalogSection {
         } finally {
             rendering = false;
         }
-        content.render(state.results(), selected(state.selectedTableId()),
+        content.render(state.results(), optionalId(state.selectedTableId()),
                 state.results().rows().size(), Math.max(1, state.results().rows().size()),
                 0, "Encounter-Tabellen");
     }
 
-    private static Long selected(long id) { return id > 0L ? id : null; }
+    private static Optional<Long> optionalId(long id) {
+        return id > 0L ? Optional.of(id) : Optional.empty();
+    }
 
     private static TextField queryField() {
         TextField field = new TextField();

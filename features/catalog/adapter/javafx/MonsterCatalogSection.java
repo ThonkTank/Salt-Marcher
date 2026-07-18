@@ -9,6 +9,7 @@ import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import javafx.scene.Node;
 import javafx.scene.control.ComboBox;
@@ -16,7 +17,7 @@ import javafx.scene.control.ComboBox;
 /** First production adopter of the passive Catalog table scaffold. */
 final class MonsterCatalogSection implements CatalogSection {
 
-    private final MonsterCatalogControls controls = new MonsterCatalogControls();
+    private final MonsterCatalogControls controls;
     private final CatalogTableScaffold<CreatureCatalogRow, Long> content;
     private final ComboBox<MonsterCatalogSort> sort = new ComboBox<>();
     private MonsterCatalogState state;
@@ -26,7 +27,7 @@ final class MonsterCatalogSection implements CatalogSection {
 
     MonsterCatalogSection(Consumer<MonsterCatalogIntent> intents) {
         Consumer<MonsterCatalogIntent> requiredIntents = Objects.requireNonNull(intents, "intents");
-        controls.onIntent(requiredIntents);
+        controls = new MonsterCatalogControls(requiredIntents);
         content = new CatalogTableScaffold<>(
                 "Monster-Ergebnisse",
                 CreatureCatalogRow::id,
@@ -39,7 +40,7 @@ final class MonsterCatalogSection implements CatalogSection {
                         new CatalogTableScaffold.ColumnSpec<>("XP", row ->
                                 NumberFormat.getIntegerInstance(Locale.US).format(row.xp()))),
                 row -> requiredIntents.accept(new MonsterCatalogIntent.OpenCreature(row.id())),
-                id -> requiredIntents.accept(new MonsterCatalogIntent.SelectCreature(id == null ? 0L : id)),
+                id -> requiredIntents.accept(new MonsterCatalogIntent.SelectCreature(id.orElse(0L))),
                 List.of(
                         new CatalogTableScaffold.ActionSpec<>(
                                 "+ Encounter", "Zum Encounter hinzufügen", "+ Encounter",
@@ -49,7 +50,8 @@ final class MonsterCatalogSection implements CatalogSection {
                                 "+ Scene", "Zur fokussierten Scene hinzufügen", "+ Scene",
                                 List.of("compact"),
                                 row -> requiredIntents.accept(new MonsterCatalogIntent.AddToScene(row.id())))),
-                direction -> requiredIntents.accept(new MonsterCatalogIntent.ShiftPage(direction)));
+                new CatalogTableScaffold.Paging(
+                        direction -> requiredIntents.accept(new MonsterCatalogIntent.ShiftPage(direction))));
         sort.setAccessibleText("Monster sortieren");
         sort.getItems().setAll(MonsterCatalogSort.values());
         sort.valueProperty().addListener((ignored, before, after) -> {
@@ -87,7 +89,8 @@ final class MonsterCatalogSection implements CatalogSection {
             controls.render(state, auxiliary);
             content.render(
                     state.results(),
-                    state.selectedCreatureId() > 0L ? state.selectedCreatureId() : null,
+                    state.selectedCreatureId() > 0L
+                            ? Optional.of(state.selectedCreatureId()) : Optional.empty(),
                     state.totalCount(), state.pageSize(), state.pageOffset(), "Monster");
         } finally {
             rendering = false;

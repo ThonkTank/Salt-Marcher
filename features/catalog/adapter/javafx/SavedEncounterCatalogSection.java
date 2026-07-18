@@ -6,6 +6,7 @@ import features.catalog.application.SavedEncounterCatalogState;
 import features.encounter.api.SavedEncounterPlanSummary;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -39,11 +40,8 @@ public final class SavedEncounterCatalogSection implements CatalogSection {
                         new CatalogTableScaffold.ColumnSpec<>(
                                 "Zusammenfassung", SavedEncounterPlanSummary::summaryText)),
                 plan -> this.intents.accept(new SavedEncounterCatalogIntent.OpenPlan(plan.planId())),
-                planId -> this.intents.accept(new SavedEncounterCatalogIntent.SelectPlan(
-                        planId == null ? 0L : planId)),
-                List.of(),
-                ignored -> { });
-        content.setPagingVisible(false);
+                planId -> this.intents.accept(new SavedEncounterCatalogIntent.SelectPlan(planId.orElse(0L))),
+                List.of());
         open.getStyleClass().add("accent");
         open.setAccessibleText("Ausgewählten Encounter im globalen Encounter öffnen");
         open.disableProperty().bind(content.table().getSelectionModel().selectedItemProperty().isNull());
@@ -58,7 +56,7 @@ public final class SavedEncounterCatalogSection implements CatalogSection {
         cancel.setAccessibleText("Öffnen abbrechen");
         cancel.setOnAction(ignored -> cancelPending());
         status.setWrapText(true);
-        status.setAccessibleText("Gespeicherte-Encounter-Status");
+        status.setAccessibleText("Gespeicherte-Encounter-Aktionsstatus");
         status.getStyleClass().add("text-secondary");
         confirmation.setWrapText(true);
         confirmation.setAccessibleText("Ungespeicherte Änderungen bestätigen");
@@ -96,10 +94,10 @@ public final class SavedEncounterCatalogSection implements CatalogSection {
         renderedRevision = state.revision();
         content.render(
                 state.results(),
-                state.selectedPlanId() > 0L ? state.selectedPlanId() : null,
+                state.selectedPlanId() > 0L ? Optional.of(state.selectedPlanId()) : Optional.empty(),
                 state.results().rows().size(), Math.max(1, state.results().rows().size()), 0,
                 "Encounter");
-        status.setText(state.actionMessage().isBlank() ? state.results().message() : state.actionMessage());
+        status.setText(state.actionMessage());
         SavedEncounterCatalogState.Confirmation pending = state.confirmation();
         showConfirmation(pending.required());
         confirmation.setText(pending.required()

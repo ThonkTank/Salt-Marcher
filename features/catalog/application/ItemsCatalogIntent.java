@@ -27,6 +27,4 @@ public sealed interface ItemsCatalogIntent {
         }
     }
 
-    record Refresh() implements ItemsCatalogIntent {
-    }
 }

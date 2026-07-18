@@ -46,9 +46,11 @@ public final class EncounterPublishedState {
         builderInputsModel = new EncounterBuilderInputsModel(builderInputs::current, builderInputs::subscribe);
         poolFiltersModel = new EncounterPoolFiltersModel(
                 () -> builderInputs.current().poolFilters(),
-                listener -> builderInputs.subscribe(inputs -> listener.accept(inputs.poolFilters())));
+                listener -> builderInputs.subscribe(inputs -> listener.accept(inputs.poolFilters())),
+                listener -> builderInputs.observeLatest(inputs -> listener.accept(inputs.poolFilters())));
         tuningPreviewModel = new EncounterTuningPreviewModel(tuningPreview::current, tuningPreview::subscribe);
-        savedPlansModel = new SavedEncounterPlanListModel(savedPlans::current, savedPlans::subscribe);
+        savedPlansModel = new SavedEncounterPlanListModel(
+                savedPlans::current, savedPlans::subscribe, savedPlans::observeLatest);
         planBudgetModel = new EncounterPlanBudgetModel(planBudget::current, planBudget::subscribe);
     }
 

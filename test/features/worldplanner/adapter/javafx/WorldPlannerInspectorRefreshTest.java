@@ -253,6 +253,10 @@ public final class WorldPlannerInspectorRefreshTest {
             return new WorldPlannerSnapshotModel(() -> current, listener -> {
                 listeners.add(listener);
                 return () -> listeners.remove(listener);
+            }, listener -> {
+                listener.accept(current);
+                listeners.add(listener);
+                return () -> listeners.remove(listener);
             });
         }
 

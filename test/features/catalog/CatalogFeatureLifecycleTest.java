@@ -2,9 +2,16 @@ package features.catalog;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import features.catalog.application.CatalogWorkspaceState;
+import features.catalog.application.EncounterTableCatalogState;
+import features.catalog.application.ItemsCatalogState;
+import features.catalog.application.MonsterCatalogState;
+import features.catalog.application.SavedEncounterCatalogState;
+import features.catalog.application.WorldReferenceCatalogState;
 import features.creatures.api.CreatureCatalogPage;
 import features.creatures.api.CreatureCatalogPageResult;
 import features.creatures.api.CreatureCatalogQuery;
@@ -47,11 +54,14 @@ import java.util.function.Consumer;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
+import javafx.scene.layout.BorderPane;
+import javafx.stage.Stage;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -72,7 +82,7 @@ final class CatalogFeatureLifecycleTest {
     }
 
     @Test
-    void productionBindingBalancesCurrentFirstSubscriptionsAcrossReactivationAndClose() throws Exception {
+    void productionBindingBalancesAtomicObservationsAcrossReactivationAndClose() throws Exception {
         runOnFx(() -> {
             TrackingSubscription<EncounterBuilderInputs> builder = new TrackingSubscription<>(
                     EncounterBuilderInputs.empty(),
@@ -92,12 +102,15 @@ final class CatalogFeatureLifecycleTest {
             ControllableItemsApi items = new ControllableItemsApi();
             CatalogFeature.Component component = create(
                     queries, items, builder, saved, creatures, world, tables, new RecordingItemRoute());
-            LegacyCatalogBindingAdapter budgetProbe = new LegacyCatalogBindingAdapter();
-            assertTrue(budgetProbe.sections().isEmpty(), "M4 leaves no production section behind the adapter");
-            budgetProbe.close();
             ShellBinding binding = component.contribution().bind();
 
             binding.onActivate();
+            assertEquals(1, queries.filterOptions.size());
+            assertEquals(1, queries.searches.size());
+            assertEquals(1, items.filterOptions.size(),
+                    "Catalog activation must load Items options without selecting the section");
+            assertEquals(1, items.searches.size(),
+                    "Catalog activation must load the first Items page without selecting the section");
             assertTracker(builder, 1, 1);
             assertTracker(saved, 1, 1);
             assertTracker(creatures, 1, 1);
@@ -105,8 +118,8 @@ final class CatalogFeatureLifecycleTest {
             assertTracker(tables, 1, 1);
             CatalogWorkspaceState current = component.controller().publication().current();
             assertEquals("published", current.monsters().filterDraft().nameQuery(),
-                    "provider publication buffered during subscribe must apply only after current snapshot");
-            assertEquals(1, builder.currentCalls.get());
+                    "atomic provider observation must expose its latest snapshot");
+            assertEquals(0, builder.currentCalls.get(), "Catalog must not split atomic observation into current plus subscribe");
             long monsterRevision = current.monsters().revision();
             creatures.emit(new CreatureReferenceIndexResult(
                     CreatureReferenceIndexStatus.SUCCESS, 2L, List.of()));
@@ -123,6 +136,10 @@ final class CatalogFeatureLifecycleTest {
             assertActive(tables, 0);
 
             binding.onActivate();
+            assertEquals(2, queries.filterOptions.size());
+            assertEquals(2, queries.searches.size());
+            assertEquals(2, items.filterOptions.size());
+            assertEquals(2, items.searches.size());
             assertTracker(builder, 2, 1);
             assertTracker(saved, 2, 1);
             assertTracker(creatures, 2, 1);
@@ -136,6 +153,86 @@ final class CatalogFeatureLifecycleTest {
             assertActive(creatures, 0);
             assertActive(world, 0);
             assertActive(tables, 0);
+        });
+    }
+
+    @Test
+    void activationFailureReleasesPartialSectionAndWorkspaceAcquisitions() throws Exception {
+        runOnFx(() -> {
+            TrackingSubscription<EncounterBuilderInputs> builder =
+                    new TrackingSubscription<>(EncounterBuilderInputs.empty(), null);
+            TrackingSubscription<SavedEncounterPlanListResult> saved = new TrackingSubscription<>(
+                    new SavedEncounterPlanListResult(SavedEncounterPlanStatus.SUCCESS, List.of(), ""), null);
+            TrackingSubscription<CreatureReferenceIndexResult> creatures = new TrackingSubscription<>(
+                    new CreatureReferenceIndexResult(CreatureReferenceIndexStatus.SUCCESS, 1L, List.of()), null);
+            TrackingSubscription<WorldPlannerSnapshot> world = new TrackingSubscription<>(emptyWorld(), null);
+            TrackingSubscription<EncounterTableCatalogResult> tables = new TrackingSubscription<>(
+                    new EncounterTableCatalogResult(EncounterTableReadStatus.SUCCESS, List.of()), null);
+            world.observationFailure = new IllegalStateException("world observation failed");
+            CatalogFeature.Component component = create(
+                    new ControllableCreatureQueries(), new ControllableItemsApi(), builder, saved,
+                    creatures, world, tables, new RecordingItemRoute());
+            ShellBinding binding = component.contribution().bind();
+
+            assertThrows(IllegalStateException.class, binding::onActivate);
+            assertActive(builder, 0);
+            assertActive(saved, 0);
+            assertActive(creatures, 0);
+            assertActive(world, 0);
+            assertActive(tables, 0);
+            component.close();
+        });
+    }
+
+    @Test
+    void componentCloseAttemptsEveryProviderCleanupAndRemainsClosedAfterFailures() throws Exception {
+        runOnFx(() -> {
+            TrackingSubscription<EncounterBuilderInputs> builder =
+                    new TrackingSubscription<>(EncounterBuilderInputs.empty(), null);
+            TrackingSubscription<SavedEncounterPlanListResult> saved = new TrackingSubscription<>(
+                    new SavedEncounterPlanListResult(SavedEncounterPlanStatus.SUCCESS, List.of(), ""), null);
+            TrackingSubscription<CreatureReferenceIndexResult> creatures = new TrackingSubscription<>(
+                    new CreatureReferenceIndexResult(CreatureReferenceIndexStatus.SUCCESS, 1L, List.of()), null);
+            TrackingSubscription<WorldPlannerSnapshot> world = new TrackingSubscription<>(emptyWorld(), null);
+            TrackingSubscription<EncounterTableCatalogResult> tables = new TrackingSubscription<>(
+                    new EncounterTableCatalogResult(EncounterTableReadStatus.SUCCESS, List.of()), null);
+            builder.unsubscribeFailure = new IllegalStateException("pool cleanup");
+            saved.unsubscribeFailure = new IllegalStateException("saved cleanup");
+            creatures.unsubscribeFailure = new AssertionError("creature cleanup");
+            world.unsubscribeFailure = new IllegalStateException("world cleanup");
+            tables.unsubscribeFailure = new IllegalStateException("table cleanup");
+            CatalogFeature.Component component = create(
+                    new ControllableCreatureQueries(), new ControllableItemsApi(), builder, saved,
+                    creatures, world, tables, new RecordingItemRoute());
+            ShellBinding shellBinding = component.contribution().bind();
+            shellBinding.onActivate();
+
+            RuntimeException failure = assertThrows(RuntimeException.class, component::close);
+
+            for (TrackingSubscription<?> provider : List.of(builder, saved, creatures, world, tables)) {
+                assertEquals(1, provider.unsubscribeAttempts.get(), "every provider cleanup must be attempted");
+                assertEquals(0, provider.active.get(), "a throwing cleanup must still release its fake resource");
+            }
+            assertTrue(failure.getSuppressed().length > 0, "later cleanup failures must remain suppressed");
+            List<String> messages = failureMessages(failure);
+            assertTrue(messages.containsAll(List.of(
+                    "pool cleanup", "saved cleanup", "creature cleanup", "world cleanup", "table cleanup")));
+
+            CatalogWorkspaceState closed = component.controller().publication().current();
+            assertEquals(MonsterCatalogState.Lifecycle.CLOSED, closed.monsters().lifecycle());
+            assertEquals(ItemsCatalogState.Lifecycle.CLOSED, closed.items().lifecycle());
+            assertEquals(SavedEncounterCatalogState.Lifecycle.CLOSED, closed.savedEncounters().lifecycle());
+            assertEquals(WorldReferenceCatalogState.Lifecycle.CLOSED, closed.worldReferences().lifecycle());
+            assertEquals(EncounterTableCatalogState.Lifecycle.CLOSED, closed.encounterTables().lifecycle());
+            long closedRevision = closed.revision();
+
+            component.close();
+            shellBinding.onActivate();
+            assertEquals(closedRevision, component.controller().publication().current().revision(),
+                    "closed component must ignore later activation and repeated close");
+            for (TrackingSubscription<?> provider : List.of(builder, saved, creatures, world, tables)) {
+                assertEquals(1, provider.unsubscribeAttempts.get(), "repeated close must be idempotent");
+            }
         });
     }
 
@@ -162,6 +259,8 @@ final class CatalogFeatureLifecycleTest {
 
             binding.onActivate();
             assertEquals(1, queries.searches.size());
+            assertEquals(1, items.filterOptions.size());
+            assertEquals(1, items.searches.size());
             TextField monsterQuery = descendants(controls).stream()
                     .filter(TextField.class::isInstance).map(TextField.class::cast).findFirst().orElseThrow();
             monsterQuery.setText("newer");
@@ -180,10 +279,12 @@ final class CatalogFeatureLifecycleTest {
                     .monsters().filterOptions().types());
 
             toggle(controls, "Katalogbereich Items").fire();
-            assertEquals(1, items.searches.size());
-            button(controls, "Items suchen").fire();
             assertEquals(2, items.searches.size());
-            items.searches.get(1).complete(itemPage("new"));
+            assertEquals(2, items.filterOptions.size());
+            button(controls, "Items suchen").fire();
+            assertEquals(3, items.searches.size());
+            items.searches.get(2).complete(itemPage("new"));
+            items.searches.get(1).complete(itemPage("stale-reactivation"));
             items.searches.get(0).complete(itemPage("stale"));
             assertEquals(List.of("new"), component.controller().publication().current()
                     .items().results().rows().stream().map(ItemsCatalogApi.ItemRow::sourceKey).toList());
@@ -207,18 +308,20 @@ final class CatalogFeatureLifecycleTest {
             assertEquals(List.of("newer-detail"), itemRoute.opened);
 
             binding.onActivate();
-            assertEquals(2, items.filterOptions.size());
-            items.filterOptions.get(1).complete(itemOptions("New"));
+            assertEquals(3, items.filterOptions.size());
+            assertEquals(4, items.searches.size());
+            items.filterOptions.get(2).complete(itemOptions("New"));
+            items.filterOptions.get(1).complete(itemOptions("Stale reactivation"));
             items.filterOptions.get(0).complete(itemOptions("Stale"));
             assertEquals(List.of("New"), component.controller().publication().current()
                     .items().filterOptions().categories());
             binding.onDeactivate();
 
             binding.onActivate();
-            assertEquals(3, items.filterOptions.size());
-            assertEquals(4, items.searches.size());
-            CompletableFuture<ItemsCatalogApi.FilterOptionsResult> rejectedOptions = items.filterOptions.get(2);
-            CompletableFuture<ItemsCatalogApi.PageResult> rejectedItemSearch = items.searches.get(3);
+            assertEquals(4, items.filterOptions.size());
+            assertEquals(5, items.searches.size());
+            CompletableFuture<ItemsCatalogApi.FilterOptionsResult> rejectedOptions = items.filterOptions.get(3);
+            CompletableFuture<ItemsCatalogApi.PageResult> rejectedItemSearch = items.searches.get(4);
 
             int monsterOptionsBeforeSelection = queries.filterOptions.size();
             int monsterSearchesBeforeSelection = queries.searches.size();
@@ -246,7 +349,7 @@ final class CatalogFeatureLifecycleTest {
     }
 
     @Test
-    void savedEncounterConfirmationIsRenderedAndConfirmedOnceThroughProductionIntents() throws Exception {
+    void savedEncounterRowLinkOpensUnselectedPlanAndConfirmsOnceThroughProductionRoute() throws Exception {
         runOnFx(() -> {
             TrackingSubscription<EncounterBuilderInputs> builder =
                     new TrackingSubscription<>(EncounterBuilderInputs.empty(), null);
@@ -267,23 +370,42 @@ final class CatalogFeatureLifecycleTest {
             ShellBinding binding = component.contribution().bind();
             Parent controls = (Parent) binding.slotContent().get(ShellSlot.COCKPIT_CONTROLS);
             Parent main = (Parent) binding.slotContent().get(ShellSlot.COCKPIT_MAIN);
+            BorderPane host = new BorderPane(main);
+            host.setLeft(controls);
+            Stage stage = new Stage();
+            stage.setScene(new Scene(host, 1_180.0, 720.0));
+            stage.show();
             binding.onActivate();
             toggle(controls, "Katalogbereich Encounter").fire();
+            host.applyCss();
+            host.layout();
             TableView<?> plans = descendants(main).stream()
                     .filter(TableView.class::isInstance).map(TableView.class::cast)
                     .filter(table -> "Gespeicherte Encounter".equals(table.getAccessibleText()))
                     .findFirst().orElseThrow();
-            plans.getSelectionModel().selectFirst();
-            button(controls, "Ausgewählten Encounter im globalen Encounter öffnen").fire();
+            assertNull(plans.getSelectionModel().getSelectedItem());
+
+            button(main, "Öffnen: Proof plan").fire();
+
             assertEquals(List.of(false), savedOpen.discardFlags());
+            assertEquals(List.of(41L), savedOpen.planIds());
+            assertNull(plans.getSelectionModel().getSelectedItem(),
+                    "saved-plan row link must not mutate Catalog selection");
             savedOpen.requests.getFirst().complete(new OpenSavedEncounterPlanResult(
                     OpenSavedEncounterPlanResult.Status.CONFIRMATION_REQUIRED, 41L, "Discard?"));
+            assertTrue(component.controller().publication().current()
+                    .savedEncounters().confirmation().required());
+            assertEquals(0L, component.controller().publication().current()
+                    .savedEncounters().selectedPlanId());
             Button confirm = button(controls, "Verwerfen und öffnen");
             assertTrue(confirm.isVisible());
             confirm.fire();
             confirm.fire();
             assertEquals(List.of(false, true), savedOpen.discardFlags());
+            assertEquals(List.of(41L, 41L), savedOpen.planIds());
+            assertNull(plans.getSelectionModel().getSelectedItem());
             component.close();
+            stage.close();
         });
     }
 
@@ -319,15 +441,18 @@ final class CatalogFeatureLifecycleTest {
                 new CatalogProviders.MonsterProviders(
                         queries, new EncounterPoolFiltersModel(
                                 () -> builder.current().poolFilters(),
-                                listener -> builder.subscribe(inputs -> listener.accept(inputs.poolFilters())))),
+                                listener -> builder.subscribe(inputs -> listener.accept(inputs.poolFilters())),
+                                listener -> builder.observeLatest(inputs -> listener.accept(inputs.poolFilters())))),
                 new CatalogProviders.ItemsProviders(items),
                 new CatalogProviders.SavedEncounterProviders(
-                        new SavedEncounterPlanListModel(saved::current, saved::subscribe)),
+                        new SavedEncounterPlanListModel(saved::current, saved::subscribe, saved::observeLatest)),
                 new CatalogProviders.WorldReferenceProviders(
-                        new CreatureReferenceIndexModel(creatures::current, creatures::subscribe),
-                        new WorldPlannerSnapshotModel(world::current, world::subscribe)),
+                        new CreatureReferenceIndexModel(
+                                creatures::current, creatures::subscribe, creatures::observeLatest),
+                        new WorldPlannerSnapshotModel(world::current, world::subscribe, world::observeLatest)),
                 new CatalogProviders.EncounterTableProviders(
-                        tableCommands, new EncounterTableCatalogModel(tables::current, tables::subscribe)),
+                        tableCommands, new EncounterTableCatalogModel(
+                                tables::current, tables::subscribe, tables::observeLatest)),
                 DirectUiDispatcher.INSTANCE);
         return CatalogFeature.create(providers, routes(itemRoute, encounter));
     }
@@ -416,6 +541,15 @@ final class CatalogFeatureLifecycleTest {
         assertEquals(active, tracker.active.get());
     }
 
+    private static List<String> failureMessages(Throwable failure) {
+        List<String> messages = new ArrayList<>();
+        messages.add(failure.getMessage());
+        for (Throwable suppressed : failure.getSuppressed()) {
+            messages.addAll(failureMessages(suppressed));
+        }
+        return List.copyOf(messages);
+    }
+
     private static ToggleButton toggle(Parent root, String accessibleText) {
         return descendants(root).stream().filter(ToggleButton.class::isInstance).map(ToggleButton.class::cast)
                 .filter(button -> accessibleText.equals(button.getAccessibleText())).findFirst().orElseThrow();
@@ -448,6 +582,7 @@ final class CatalogFeatureLifecycleTest {
         Throwable[] failure = new Throwable[1];
         Runnable wrapped = () -> {
             try {
+                Platform.setImplicitExit(false);
                 action.run();
             } catch (Throwable throwable) {
                 failure[0] = throwable;
@@ -472,7 +607,10 @@ final class CatalogFeatureLifecycleTest {
         private final AtomicInteger subscriptions = new AtomicInteger();
         private final AtomicInteger active = new AtomicInteger();
         private final AtomicInteger currentCalls = new AtomicInteger();
+        private final AtomicInteger unsubscribeAttempts = new AtomicInteger();
         private Consumer<T> listener = ignored -> { };
+        private RuntimeException observationFailure;
+        private Throwable unsubscribeFailure;
 
         private TrackingSubscription(T current, T synchronousPublication) {
             this.current = current;
@@ -496,6 +634,30 @@ final class CatalogFeatureLifecycleTest {
                 if (open.compareAndSet(true, false)) {
                     active.decrementAndGet();
                     this.listener = ignored -> { };
+                }
+            };
+        }
+
+        Runnable observeLatest(Consumer<T> next) {
+            if (observationFailure != null) {
+                throw observationFailure;
+            }
+            subscriptions.incrementAndGet();
+            active.incrementAndGet();
+            listener = next;
+            next.accept(synchronousPublication == null ? current : synchronousPublication);
+            AtomicBoolean open = new AtomicBoolean(true);
+            return () -> {
+                if (open.compareAndSet(true, false)) {
+                    unsubscribeAttempts.incrementAndGet();
+                    active.decrementAndGet();
+                    listener = ignored -> { };
+                    if (unsubscribeFailure instanceof RuntimeException runtimeFailure) {
+                        throw runtimeFailure;
+                    }
+                    if (unsubscribeFailure instanceof Error error) {
+                        throw error;
+                    }
                 }
             };
         }
@@ -553,10 +715,15 @@ final class CatalogFeatureLifecycleTest {
 
     private static final class RecordingSavedOpen implements CatalogRoutes.EncounterHandoff {
         private final List<Boolean> flags = new ArrayList<>();
+        private final List<Long> planIds = new ArrayList<>();
         private final List<CompletableFuture<OpenSavedEncounterPlanResult>> requests = new ArrayList<>();
 
         private List<Boolean> discardFlags() {
             return List.copyOf(flags);
+        }
+
+        private List<Long> planIds() {
+            return List.copyOf(planIds);
         }
 
         @Override public CompletionStage<OpenSavedEncounterPlanResult> openSavedEncounter(
@@ -564,6 +731,7 @@ final class CatalogFeatureLifecycleTest {
                 boolean discardUnsavedChanges
         ) {
             flags.add(discardUnsavedChanges);
+            planIds.add(planId);
             CompletableFuture<OpenSavedEncounterPlanResult> future = new CompletableFuture<>();
             requests.add(future);
             return future;

@@ -74,6 +74,26 @@ final class SavedEncounterCatalogControllerTest {
     }
 
     @Test
+    void unselectedVisiblePlanOpensExactlyOnceAndMissingPlanIsRejected() {
+        PlanSource source = new PlanSource(plans(plan(7L, "Seven")));
+        RecordingEncounter encounter = new RecordingEncounter();
+        SavedEncounterCatalogController controller = controller(source, encounter);
+        controller.activate();
+        assertEquals(0L, controller.state().selectedPlanId());
+
+        controller.accept(new SavedEncounterCatalogIntent.OpenPlan(7L));
+        controller.accept(new SavedEncounterCatalogIntent.OpenPlan(99L));
+
+        assertEquals(List.of(new OpenCall(7L, false)), encounter.calls());
+        assertEquals(0L, controller.state().selectedPlanId(),
+                "row open must preserve the independent Catalog selection");
+        encounter.requests.getFirst().future.complete(new OpenSavedEncounterPlanResult(
+                OpenSavedEncounterPlanResult.Status.OPENED, 7L, "Opened"));
+        assertEquals("Opened", controller.state().actionMessage());
+        assertEquals(0L, controller.state().selectedPlanId());
+    }
+
+    @Test
     void cancelNewOpenAndLifecycleInvalidatePendingOrLateResults() {
         PlanSource source = new PlanSource(plans(plan(5L, "Five")));
         RecordingEncounter encounter = new RecordingEncounter();
@@ -104,7 +124,7 @@ final class SavedEncounterCatalogControllerTest {
 
     private static SavedEncounterCatalogController controller(PlanSource source, RecordingEncounter encounter) {
         return new SavedEncounterCatalogController(
-                new SavedEncounterPlanListModel(source::current, source::subscribe), encounter,
+                new SavedEncounterPlanListModel(source::current, source::subscribe, source::observeLatest), encounter,
                 DirectUiDispatcher.INSTANCE, () -> { });
     }
 
@@ -143,6 +163,12 @@ final class SavedEncounterCatalogControllerTest {
                 activeSubscriptions--;
                 listener = ignored -> { };
             };
+        }
+
+        private Runnable observeLatest(Consumer<SavedEncounterPlanListResult> next) {
+            Runnable close = subscribe(next);
+            next.accept(current);
+            return close;
         }
 
         private void publish(SavedEncounterPlanListResult next) {

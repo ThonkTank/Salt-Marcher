@@ -32,7 +32,8 @@ public final class CreaturesPublishedState {
         encounterCandidates = new PublishedState<>(
                 new CreatureEncounterCandidatesResult(CreatureQueryStatus.STORAGE_ERROR, List.of()),
                 dispatcher);
-        referenceIndexModel = new CreatureReferenceIndexModel(referenceIndex::current, referenceIndex::subscribe);
+        referenceIndexModel = new CreatureReferenceIndexModel(
+                referenceIndex::current, referenceIndex::subscribe, referenceIndex::observeLatest);
         detailModel = new CreatureDetailModel(detail::current, detail::subscribe);
         encounterCandidatesModel = new CreatureEncounterCandidatesModel(
                 encounterCandidates::current, encounterCandidates::subscribe);

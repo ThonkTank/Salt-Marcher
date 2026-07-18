@@ -8,6 +8,7 @@ import features.encounter.api.SavedEncounterPlanStatus;
 import features.encounter.api.SavedEncounterPlanSummary;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import platform.ui.UiDispatcher;
 
 /** Owns saved-plan subscription, stable selection, opening, and confirmation. */
@@ -18,7 +19,7 @@ public final class SavedEncounterCatalogController implements CatalogLifecycle {
     private final UiDispatcher dispatcher;
     private final Runnable changed;
     private SavedEncounterCatalogState state = SavedEncounterCatalogState.initial();
-    private Runnable unsubscribe = () -> { };
+    private Runnable unsubscribe;
 
     SavedEncounterCatalogController(
             SavedEncounterPlanListModel plans,
@@ -57,15 +58,18 @@ public final class SavedEncounterCatalogController implements CatalogLifecycle {
                 SavedEncounterCatalogState.Lifecycle.ACTIVE, state.results(), state.selectedPlanId(),
                 state.confirmation(), state.actionMessage());
         long lifecycleRevision = state.lifecycleRevision();
-        unsubscribe = CurrentFirstSubscription.open(
-                plans::current,
-                plans::subscribe,
-                result -> dispatcher.dispatch(() -> {
+        try {
+            unsubscribe = plans.observeLatest(result -> dispatcher.dispatch(() -> {
                     if (state.lifecycle() == SavedEncounterCatalogState.Lifecycle.ACTIVE
                             && state.lifecycleRevision() == lifecycleRevision) {
                         apply(result);
                     }
                 }));
+        } catch (RuntimeException | Error failure) {
+            unsubscribe = null;
+            rollbackActivation();
+            throw failure;
+        }
     }
 
     @Override
@@ -73,8 +77,18 @@ public final class SavedEncounterCatalogController implements CatalogLifecycle {
         if (state.lifecycle() != SavedEncounterCatalogState.Lifecycle.ACTIVE) {
             return;
         }
-        unsubscribe.run();
-        unsubscribe = () -> { };
+        Runnable current = unsubscribe;
+        unsubscribe = null;
+        try {
+            if (current != null) {
+                current.run();
+            }
+        } finally {
+            rollbackActivation();
+        }
+    }
+
+    private void rollbackActivation() {
         replace(state.lifecycleRevision() + 1L, state.openRequestRevision() + 1L,
                 SavedEncounterCatalogState.Lifecycle.INACTIVE, state.results(), state.selectedPlanId(),
                 state.confirmation().clear(), state.actionMessage());
@@ -118,13 +132,14 @@ public final class SavedEncounterCatalogController implements CatalogLifecycle {
 
     private void beginOpen(long planId, boolean discardUnsavedChanges) {
         if (state.lifecycle() != SavedEncounterCatalogState.Lifecycle.ACTIVE
-                || planId <= 0L || planId != state.selectedPlanId()) {
+                || planId <= 0L) {
             return;
         }
-        SavedEncounterPlanSummary plan = selectedPlan(planId);
-        if (plan == null) {
+        Optional<SavedEncounterPlanSummary> visiblePlan = visiblePlan(planId);
+        if (visiblePlan.isEmpty()) {
             return;
         }
+        SavedEncounterPlanSummary plan = visiblePlan.orElseThrow();
         long lifecycleRevision = state.lifecycleRevision();
         long requestRevision = state.openRequestRevision() + 1L;
         replace(lifecycleRevision, requestRevision, state.lifecycle(), state.results(), state.selectedPlanId(),
@@ -190,19 +205,18 @@ public final class SavedEncounterCatalogController implements CatalogLifecycle {
         SavedEncounterCatalogState.Confirmation confirmation = state.confirmation();
         return confirmation.required()
                 && confirmation.revision() == confirmationRevision
-                && confirmation.planId() == planId
-                && state.selectedPlanId() == planId;
+                && confirmation.planId() == planId;
     }
 
     private boolean acceptsOpen(long lifecycleRevision, long requestRevision, long planId) {
         return state.lifecycle() == SavedEncounterCatalogState.Lifecycle.ACTIVE
                 && state.lifecycleRevision() == lifecycleRevision
                 && state.openRequestRevision() == requestRevision
-                && state.selectedPlanId() == planId;
+                && visiblePlan(planId).isPresent();
     }
 
-    private SavedEncounterPlanSummary selectedPlan(long planId) {
-        return state.results().rows().stream().filter(plan -> plan.planId() == planId).findFirst().orElse(null);
+    private Optional<SavedEncounterPlanSummary> visiblePlan(long planId) {
+        return state.results().rows().stream().filter(plan -> plan.planId() == planId).findFirst();
     }
 
     private void replaceKeepingLifecycle(

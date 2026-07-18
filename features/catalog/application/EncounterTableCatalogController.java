@@ -24,7 +24,7 @@ public final class EncounterTableCatalogController implements CatalogLifecycle {
     private final Runnable changed;
     private EncounterTableCatalogState state = EncounterTableCatalogState.initial();
     private List<EncounterTableSummary> tableSnapshot = List.of();
-    private Runnable unsubscribe = () -> { };
+    private Runnable unsubscribe;
 
     EncounterTableCatalogController(
             EncounterTableApi commands,
@@ -66,10 +66,24 @@ public final class EncounterTableCatalogController implements CatalogLifecycle {
         replace(state.lifecycleRevision() + 1L, EncounterTableCatalogState.Lifecycle.ACTIVE,
                 state.results(), state.selectedTableId(), state.query(), state.options());
         long lifecycleRevision = state.lifecycleRevision();
-        unsubscribe = CurrentFirstSubscription.open(
-                catalog::current, catalog::subscribe,
-                result -> dispatcher.dispatch(() -> apply(lifecycleRevision, result)));
-        commands.refreshCatalog(new RefreshEncounterTableCatalogCommand());
+        Runnable acquired = null;
+        try {
+            acquired = catalog.observeLatest(
+                    result -> dispatcher.dispatch(() -> apply(lifecycleRevision, result)));
+            unsubscribe = acquired;
+            commands.refreshCatalog(new RefreshEncounterTableCatalogCommand());
+        } catch (RuntimeException | Error failure) {
+            if (acquired != null) {
+                try {
+                    acquired.run();
+                } catch (RuntimeException | Error cleanupFailure) {
+                    failure.addSuppressed(cleanupFailure);
+                }
+            }
+            unsubscribe = null;
+            rollbackActivation();
+            throw failure;
+        }
     }
 
     @Override
@@ -77,8 +91,18 @@ public final class EncounterTableCatalogController implements CatalogLifecycle {
         if (state.lifecycle() != EncounterTableCatalogState.Lifecycle.ACTIVE) {
             return;
         }
-        unsubscribe.run();
-        unsubscribe = () -> { };
+        Runnable current = unsubscribe;
+        unsubscribe = null;
+        try {
+            if (current != null) {
+                current.run();
+            }
+        } finally {
+            rollbackActivation();
+        }
+    }
+
+    private void rollbackActivation() {
         replace(state.lifecycleRevision() + 1L, EncounterTableCatalogState.Lifecycle.INACTIVE,
                 state.results(), state.selectedTableId(), state.query(), state.options());
     }

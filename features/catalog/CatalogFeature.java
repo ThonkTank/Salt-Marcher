@@ -1,8 +1,8 @@
 package features.catalog;
 
 import features.catalog.application.CatalogWorkspaceController;
+import features.catalog.application.CatalogWorkspaceBinding;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 import shell.api.ShellContribution;
 
 /** The only production composition entry point for Catalog. */
@@ -25,26 +25,26 @@ public final class CatalogFeature {
                 requiredProviders.encounterTables().catalog(),
                 requiredProviders.publicationDispatcher(),
                 requiredRoutes);
-        LegacyCatalogBindingAdapter legacy = new LegacyCatalogBindingAdapter();
+        CatalogWorkspaceBinding binding = new CatalogWorkspaceBinding(controller.publication());
         features.catalog.adapter.javafx.CatalogContribution contribution =
-                new features.catalog.adapter.javafx.CatalogContribution(controller, legacy.sections());
-        return new Component(controller, contribution, legacy);
+                new features.catalog.adapter.javafx.CatalogContribution(controller, binding);
+        return new Component(controller, binding, contribution);
     }
 
     public static final class Component implements AutoCloseable {
         private final CatalogWorkspaceController controller;
+        private final CatalogWorkspaceBinding binding;
         private final features.catalog.adapter.javafx.CatalogContribution contribution;
-        private final LegacyCatalogBindingAdapter legacy;
-        private final AtomicBoolean closed = new AtomicBoolean();
+        private boolean closed;
 
         private Component(
                 CatalogWorkspaceController controller,
-                features.catalog.adapter.javafx.CatalogContribution contribution,
-                LegacyCatalogBindingAdapter legacy
+                CatalogWorkspaceBinding binding,
+                features.catalog.adapter.javafx.CatalogContribution contribution
         ) {
             this.controller = controller;
+            this.binding = binding;
             this.contribution = contribution;
-            this.legacy = legacy;
         }
 
         CatalogWorkspaceController controller() {
@@ -56,13 +56,48 @@ public final class CatalogFeature {
         }
 
         @Override
-        public void close() {
-            if (!closed.compareAndSet(false, true)) {
+        public synchronized void close() {
+            if (closed) {
                 return;
             }
-            contribution.close();
-            legacy.close();
-            controller.close();
+            Throwable failure = null;
+            try {
+                try {
+                    binding.close();
+                } catch (RuntimeException | Error bindingFailure) {
+                    failure = accumulate(failure, bindingFailure);
+                }
+                try {
+                    contribution.close();
+                } catch (RuntimeException | Error contributionFailure) {
+                    failure = accumulate(failure, contributionFailure);
+                }
+                try {
+                    controller.close();
+                } catch (RuntimeException | Error controllerFailure) {
+                    failure = accumulate(failure, controllerFailure);
+                }
+            } finally {
+                closed = true;
+            }
+            rethrow(failure);
+        }
+
+        private static Throwable accumulate(Throwable current, Throwable next) {
+            if (current == null) {
+                return next;
+            }
+            current.addSuppressed(next);
+            return current;
+        }
+
+        private static void rethrow(Throwable failure) {
+            if (failure instanceof RuntimeException runtimeFailure) {
+                throw runtimeFailure;
+            }
+            if (failure instanceof Error error) {
+                throw error;
+            }
         }
     }
 }

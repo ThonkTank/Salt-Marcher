@@ -4,6 +4,7 @@ import features.catalog.application.CatalogSectionId;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import javafx.scene.Node;
 import javafx.scene.control.ToggleButton;
@@ -19,9 +20,11 @@ final class CatalogControlsHost extends VBox {
 
     private final Map<CatalogSectionId, ToggleButton> buttons = new EnumMap<>(CatalogSectionId.class);
     private final VBox activeControls = new VBox();
-    private Consumer<CatalogSectionId> selectionHandler = id -> { };
+    private final Consumer<CatalogSectionId> selectionHandler;
+    private boolean applyingState;
 
-    CatalogControlsHost(List<CatalogSection> sections) {
+    CatalogControlsHost(List<CatalogSection> sections, Consumer<CatalogSectionId> selectionHandler) {
+        this.selectionHandler = Objects.requireNonNull(selectionHandler, "selectionHandler");
         getStyleClass().add("catalog-controls-host");
         ToggleGroup group = new ToggleGroup();
         FlowPane rail = new FlowPane();
@@ -32,17 +35,17 @@ final class CatalogControlsHost extends VBox {
             button.setAccessibleText("Katalogbereich " + section.id().label());
             button.setUserData(section.id());
             button.setToggleGroup(group);
-            button.setOnAction(ignored -> {
-                if (!button.isSelected()) {
-                    button.setSelected(true);
-                }
-                selectionHandler.accept(section.id());
-            });
             buttons.put(section.id(), button);
             rail.getChildren().add(button);
         }
         group.selectedToggleProperty().addListener((ignored, before, after) -> {
+            if (applyingState) {
+                return;
+            }
             if (after == null) {
+                if (before != null) {
+                    before.setSelected(true);
+                }
                 return;
             }
             selectionHandler.accept((CatalogSectionId) after.getUserData());
@@ -58,10 +61,6 @@ final class CatalogControlsHost extends VBox {
         VBox.setVgrow(scroll, Priority.ALWAYS);
     }
 
-    void onSectionSelected(Consumer<CatalogSectionId> handler) {
-        selectionHandler = java.util.Objects.requireNonNull(handler, "handler");
-    }
-
     void show(CatalogSection section) {
         Node controls = section.controls();
         if (controls instanceof Region region) {
@@ -72,7 +71,12 @@ final class CatalogControlsHost extends VBox {
         VBox.setVgrow(controls, Priority.ALWAYS);
         ToggleButton button = buttons.get(section.id());
         if (button != null && !button.isSelected()) {
-            button.setSelected(true);
+            applyingState = true;
+            try {
+                button.setSelected(true);
+            } finally {
+                applyingState = false;
+            }
         }
     }
 
@@ -82,7 +86,6 @@ final class CatalogControlsHost extends VBox {
             return;
         }
         button.setSelected(true);
-        selectionHandler.accept(id);
     }
 
     List<String> sectionTitles() {

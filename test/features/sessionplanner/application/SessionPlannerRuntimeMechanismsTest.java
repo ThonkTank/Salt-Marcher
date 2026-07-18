@@ -238,7 +238,12 @@ final class SessionPlannerRuntimeMechanismsTest {
     ) {
         SavedEncounterPlanListModel savedPlans = new SavedEncounterPlanListModel(
                 () -> new SavedEncounterPlanListResult(SavedEncounterPlanStatus.SUCCESS, List.of(), ""),
-                listener -> () -> { });
+                listener -> () -> { },
+                listener -> {
+                    listener.accept(new SavedEncounterPlanListResult(
+                            SavedEncounterPlanStatus.SUCCESS, List.of(), ""));
+                    return () -> { };
+                });
         EncounterPlanBudgetModel planBudget = new EncounterPlanBudgetModel(
                 () -> new EncounterPlanBudgetResult(EncounterPlanBudgetStatus.STORAGE_ERROR, null, ""),
                 listener -> () -> { });

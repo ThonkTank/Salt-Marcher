@@ -51,7 +51,12 @@ public final class LatestState<T> {
         Consumer<StateSnapshot<T>> safeSubscriber = Objects.requireNonNull(subscriber, "subscriber");
         long id = ++subscriberId;
         subscribers.put(id, safeSubscriber);
-        safeSubscriber.accept(current);
+        try {
+            safeSubscriber.accept(current);
+        } catch (RuntimeException | Error failure) {
+            subscribers.remove(id);
+            throw failure;
+        }
         return () -> unsubscribe(id);
     }
 

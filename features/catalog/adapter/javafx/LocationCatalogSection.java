@@ -6,6 +6,7 @@ import features.catalog.application.WorldReferenceCatalogState;
 import features.catalog.application.WorldReferenceCatalogState.LocationRow;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import javafx.scene.Node;
 import javafx.scene.control.TextField;
@@ -40,14 +41,12 @@ public final class LocationCatalogSection implements CatalogSection {
                         new CatalogTableScaffold.ColumnSpec<>("Name", LocationRow::displayName),
                         new CatalogTableScaffold.ColumnSpec<>("Details", LocationRow::details)),
                 row -> this.intents.accept(new WorldReferenceCatalogIntent.OpenLocation(row.locationId())),
-                id -> this.intents.accept(new WorldReferenceCatalogIntent.SelectLocation(id == null ? 0L : id)),
+                id -> this.intents.accept(new WorldReferenceCatalogIntent.SelectLocation(id.orElse(0L))),
                 List.of(
                         action("Als Quelle", "Ort als Encounter-Quelle verwenden", "Als Encounter-Quelle",
                                 row -> new WorldReferenceCatalogIntent.UseLocationAsEncounterSource(row.locationId())),
                         action("Als Ort", "Ort der fokussierten Scene zuweisen", "Als Scene-Ort",
-                                row -> new WorldReferenceCatalogIntent.SetFocusedSceneLocation(row.locationId()))),
-                ignored -> { });
-        content.setPagingVisible(false);
+                                row -> new WorldReferenceCatalogIntent.SetFocusedSceneLocation(row.locationId()))));
     }
 
     @Override public CatalogSectionId id() { return CatalogSectionId.LOCATIONS; }
@@ -66,7 +65,7 @@ public final class LocationCatalogSection implements CatalogSection {
         } finally {
             rendering = false;
         }
-        content.render(state.locations().results(), selected(state.locations().selectedId()),
+        content.render(state.locations().results(), optionalId(state.locations().selectedId()),
                 state.locations().results().rows().size(), Math.max(1, state.locations().results().rows().size()),
                 0, "Orte");
     }
@@ -81,7 +80,9 @@ public final class LocationCatalogSection implements CatalogSection {
                 List.of("accent", "compact"), row -> intents.accept(intent.apply(row)));
     }
 
-    private static Long selected(long id) { return id > 0L ? id : null; }
+    private static Optional<Long> optionalId(long id) {
+        return id > 0L ? Optional.of(id) : Optional.empty();
+    }
 
     private static TextField queryField() {
         TextField field = new TextField();
