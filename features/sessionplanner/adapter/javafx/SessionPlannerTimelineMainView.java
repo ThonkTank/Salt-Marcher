@@ -2,12 +2,10 @@ package features.sessionplanner.adapter.javafx;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.LongConsumer;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -16,8 +14,14 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -25,27 +29,35 @@ import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
 /**
- * Szenen-Board als Single-Open-Akkordeon. Zu jedem Zeitpunkt ist höchstens eine Szene aufgeklappt
- * und damit editierbar; alle anderen sind read-only Zeilen. Aktualisierungen der Projektion werden
- * per {@code sceneToken} reconziliert (kein {@code setAll}-Vollneubau bei jedem Readback), sodass die
- * geöffnete Editor-Karte inklusive Fokus/Cursor über Mutationen hinweg stabil bleibt.
+ * Master-Detail-Ansicht des Session Planners im {@code COCKPIT_MAIN}-Slot. Links eine kompakte,
+ * per Drag&amp;Drop umsortierbare Szenenliste (Master) mit Rast-Verbindern; rechts der
+ * mechanik-zentrierte Szenen-Inspector (Detail) für die aktuell gewählte Szene. Auswahl (nicht
+ * Aufklappen) treibt den Inspector. Aktualisierungen werden per {@code sceneToken} reconziliert,
+ * sodass Fokus/Cursor und unbestätigte Eingaben über Mutationen hinweg stabil bleiben. Es gibt nur
+ * ein Speichermodell: Editorfelder committen automatisch bei Fokusverlust bzw. Szenenwechsel.
  */
-public final class SessionPlannerTimelineMainView extends ScrollPane {
+public final class SessionPlannerTimelineMainView extends SplitPane {
 
     private static final String STYLE_TEXT_SECONDARY = "text-secondary";
     private static final String STYLE_COMPACT = "compact";
     private static final String STYLE_ACCENT = "accent";
     private static final String STYLE_FLAT = "flat";
     private static final BigDecimal ALLOCATION_STEP = BigDecimal.TEN;
+    private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
 
-    private final VBox rows = new VBox(8);
-    private final Label emptyLabel = styledLabel("Noch keine Szenen.", STYLE_TEXT_SECONDARY, "session-planner-empty");
-    private final Button addSceneButton = compactButton("Szene hinzufuegen", STYLE_ACCENT);
-    private final Map<Long, SceneCard> sceneCards = new LinkedHashMap<>();
+    private final VBox rows = new VBox(6);
+    private final Label emptyLabel = styledLabel(
+            "Noch keine Szenen. Lege eine Szene an oder generiere eine Session.",
+            STYLE_TEXT_SECONDARY, "session-planner-empty");
+    private final Button addSceneButton = compactButton("+ Szene", STYLE_ACCENT);
+    private final ProgressBar overallBudgetBar = new ProgressBar(0);
+    private final Label overallBudgetLabel = styledLabel("", STYLE_TEXT_SECONDARY);
+    private final Map<Long, SceneRow> sceneRows = new LinkedHashMap<>();
     private final Map<Integer, RestSeparator> restSeparators = new LinkedHashMap<>();
+    private final SceneInspector inspector = new SceneInspector();
 
-    private long openSceneToken;
-    private SceneCard openCard;
+    private List<SessionPlannerViewModel.TimelineProjection.SceneModel> currentScenes = List.of();
+    private boolean sessionActive;
 
     private Runnable addSceneHandler = () -> { };
     private LongConsumer selectSceneHandler = ignored -> { };
@@ -60,13 +72,28 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     private LongConsumer removeLootHandler = ignored -> { };
 
     public SessionPlannerTimelineMainView() {
-        VBox content = new VBox(12, rows);
-        content.getStyleClass().add("session-planner-main");
         addSceneButton.setOnAction(event -> addSceneHandler.run());
-        setContent(content);
-        getStyleClass().add("session-planner-main-scroll");
-        setFitToWidth(true);
-        setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+
+        VBox listContent = new VBox(6, rows);
+        listContent.getStyleClass().add("session-planner-scene-list");
+        ScrollPane listScroll = new ScrollPane(listContent);
+        listScroll.getStyleClass().add("session-planner-main-scroll");
+        listScroll.setFitToWidth(true);
+        listScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+
+        overallBudgetBar.getStyleClass().addAll("session-planner-budget-bar", "session-planner-budget-ok");
+        overallBudgetBar.setMaxWidth(Double.MAX_VALUE);
+        VBox footer = new VBox(3, overallBudgetLabel, overallBudgetBar);
+        footer.getStyleClass().add("session-planner-budget-footer");
+
+        BorderPane masterPane = new BorderPane(listScroll);
+        masterPane.setBottom(footer);
+        masterPane.getStyleClass().add("session-planner-master");
+
+        getStyleClass().add("session-planner-master-detail");
+        getItems().setAll(masterPane, inspector);
+        setDividerPositions(0.54);
+        SplitPane.setResizableWithParent(inspector, Boolean.TRUE);
     }
 
     // --- typed callbacks -------------------------------------------------------------------
@@ -120,7 +147,9 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
             return;
         }
         viewModel.timelineProjectionProperty().addListener((ignored, before, after) -> render(after));
+        viewModel.summaryProjectionProperty().addListener((ignored, before, after) -> renderSummary(after));
         render(viewModel.timelineProjectionProperty().get());
+        renderSummary(viewModel.summaryProjectionProperty().get());
     }
 
     // --- rendering / reconciliation --------------------------------------------------------
@@ -130,27 +159,20 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
             return;
         }
         boolean disabled = projection.sessionActionsDisabled();
+        sessionActive = !disabled;
         List<SessionPlannerViewModel.TimelineProjection.SceneModel> scenes = projection.scenes();
         List<SessionPlannerViewModel.TimelineProjection.RestGapModel> restGaps = projection.restGaps();
-
-        Set<Long> presentTokens = new HashSet<>();
-        for (var scene : scenes) {
-            presentTokens.add(scene.sceneToken());
-        }
-        if (openSceneToken != 0L && !presentTokens.contains(openSceneToken)) {
-            openSceneToken = 0L;
-            openCard = null;
-        }
+        currentScenes = scenes;
 
         List<Node> desired = new ArrayList<>();
         if (scenes.isEmpty()) {
-            desired.add(emptyLabel);
+            desired.add(disabled ? sessionPrompt() : emptyLabel);
         } else {
             for (int index = 0; index < scenes.size(); index++) {
                 var scene = scenes.get(index);
-                SceneCard card = sceneCards.computeIfAbsent(scene.sceneToken(), SceneCard::new);
-                card.update(scene, index + 1, scene.sceneToken() == openSceneToken, disabled);
-                desired.add(card);
+                SceneRow row = sceneRows.computeIfAbsent(scene.sceneToken(), SceneRow::new);
+                row.update(scene, index + 1, scene.selected(), disabled);
+                desired.add(row);
                 if (index < restGaps.size()) {
                     var gap = restGaps.get(index);
                     RestSeparator separator = restSeparators.computeIfAbsent(gap.gapIndex(), ignored -> new RestSeparator());
@@ -160,218 +182,402 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
             }
         }
         addSceneButton.setDisable(disabled);
-        desired.add(addSceneButton);
+        if (!disabled) {
+            desired.add(addSceneButton);
+        }
 
-        sceneCards.keySet().removeIf(token -> !presentTokens.contains(token));
+        java.util.Set<Long> presentTokens = new java.util.HashSet<>();
+        scenes.forEach(scene -> presentTokens.add(scene.sceneToken()));
+        sceneRows.keySet().removeIf(token -> !presentTokens.contains(token));
         restSeparators.keySet().removeIf(gapIndex -> gapIndex >= restGaps.size());
 
         if (!rows.getChildren().equals(desired)) {
             rows.getChildren().setAll(desired);
         }
+
+        inspector.showSelection(selectedScene(scenes), disabled);
     }
 
-    private void toggle(SceneCard card) {
-        if (openCard == card) {
-            collapse(card);
+    private void renderSummary(SessionPlannerViewModel.SummaryProjection summary) {
+        if (summary == null || !summary.budgetAvailable()) {
+            overallBudgetLabel.setText("");
+            overallBudgetBar.setProgress(0);
+            overallBudgetBar.setVisible(false);
+            overallBudgetBar.setManaged(false);
             return;
         }
-        if (openCard != null) {
-            collapse(openCard);
+        overallBudgetBar.setVisible(true);
+        overallBudgetBar.setManaged(true);
+        overallBudgetBar.setProgress(clampFraction(summary.progressFraction()));
+        overallBudgetBar.getStyleClass().removeAll("session-planner-budget-ok", "session-planner-budget-over");
+        overallBudgetBar.getStyleClass().add(summary.overBudget()
+                ? "session-planner-budget-over" : "session-planner-budget-ok");
+        overallBudgetLabel.setText(summary.overBudget()
+                ? "Budget: " + formatXp(summary.plannedEncounterXp()) + " / " + formatXp(summary.totalBudgetXp())
+                        + " XP · " + formatXp(summary.overBudgetXp()) + " XP über Budget"
+                : "Budget: " + formatXp(summary.plannedEncounterXp()) + " / " + formatXp(summary.totalBudgetXp())
+                        + " XP · " + formatXp(summary.remainingXp()) + " XP frei");
+    }
+
+    private static SessionPlannerViewModel.TimelineProjection.SceneModel selectedScene(
+            List<SessionPlannerViewModel.TimelineProjection.SceneModel> scenes
+    ) {
+        for (var scene : scenes) {
+            if (scene.selected()) {
+                return scene;
+            }
         }
-        expand(card);
+        return null;
     }
 
-    private void expand(SceneCard card) {
-        openCard = card;
-        openSceneToken = card.sceneToken;
-        card.setExpanded(true);
-        card.loadEditorFromModel();
-        selectSceneHandler.accept(card.sceneToken);
+    private Node sessionPrompt() {
+        Label headline = styledLabel("Keine Session gewählt.", "session-planner-plan-name");
+        Label hint = styledLabel(
+                "Wähle links oben eine Session oder lege eine neue an.",
+                STYLE_TEXT_SECONDARY, "session-planner-empty");
+        VBox box = new VBox(6, headline, hint);
+        box.setAlignment(Pos.TOP_LEFT);
+        return box;
     }
 
-    private void collapse(SceneCard card) {
-        card.commitIfDirty();
-        card.setExpanded(false);
-        if (openCard == card) {
-            openCard = null;
-            openSceneToken = 0L;
+    private int indexOfToken(long sceneToken) {
+        for (int index = 0; index < currentScenes.size(); index++) {
+            if (currentScenes.get(index).sceneToken() == sceneToken) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    /** Übersetzt eine Drop-Reihenfolge in eine Folge von Ein-Schritt-Moves (die API kennt nur
+     * hoch/runter). Jeder Move re-published synchron; das {@code sceneToken} bleibt stabil. */
+    private void reorderScene(long sourceToken, int targetIndex) {
+        int sourceIndex = indexOfToken(sourceToken);
+        if (sourceIndex < 0 || targetIndex < 0 || sourceIndex == targetIndex) {
+            return;
+        }
+        boolean up = targetIndex < sourceIndex;
+        int steps = Math.abs(targetIndex - sourceIndex);
+        for (int step = 0; step < steps; step++) {
+            moveHandler.handle(sourceToken, up);
         }
     }
 
-    // --- scene card ------------------------------------------------------------------------
+    // --- master row ------------------------------------------------------------------------
 
-    private final class SceneCard extends VBox {
+    private final class SceneRow extends HBox {
 
         private final long sceneToken;
-        private final Button toggleButton = compactButton("▶", STYLE_FLAT);
-        private final Label headerTitle = styledLabel("", "session-planner-encounter-title");
-        private final Label headerBudget = styledLabel("", STYLE_TEXT_SECONDARY);
-        private final ProgressBar headerBar = new ProgressBar(0);
-        private final Label headerLocation = styledLabel("", STYLE_TEXT_SECONDARY);
-        private final Button removeButton = compactButton("X", STYLE_FLAT);
+        private final Label dragHandle = styledLabel("⠿", STYLE_TEXT_SECONDARY, "session-planner-drag-handle");
+        private final Label positionLabel = styledLabel("", "session-planner-scene-position");
+        private final Label titleLabel = styledLabel("", "session-planner-encounter-title");
+        private final ProgressBar miniBar = new ProgressBar(0);
+        private final Label budgetLabel = styledLabel("", STYLE_TEXT_SECONDARY);
+        private final Label locationChip = styledLabel("", STYLE_TEXT_SECONDARY, "session-planner-location-chip");
 
-        private final Label encounterName = styledLabel("", "session-planner-plan-name");
-        private final Label encounterDetail = styledLabel("", STYLE_TEXT_SECONDARY);
-        private final Label encounterBudget = styledLabel("", "session-planner-encounter-budget");
-        private final Label encounterComparison = styledLabel("", STYLE_TEXT_SECONDARY);
-        private final Label encounterBase = styledLabel("", STYLE_TEXT_SECONDARY);
-        private final VBox encounterSummary = new VBox(4);
-
-        private final TextField titleField = new TextField();
-        private final LocationComboBox locationBox = new LocationComboBox();
-        private final TextArea notesField = new TextArea();
-        private final Label allocationLabel = styledLabel("", STYLE_TEXT_SECONDARY);
-        private final Button decreaseAllocation = compactButton("-10%", STYLE_FLAT);
-        private final Button increaseAllocation = compactButton("+10%", STYLE_FLAT);
-        private final Button moveUp = compactButton("Hoch", STYLE_FLAT);
-        private final Button moveDown = compactButton("Runter", STYLE_FLAT);
-        private final VBox lootRows = new VBox(6);
-        private final Button addLoot = compactButton("Loot-Platzhalter", STYLE_ACCENT);
-        private final VBox editor = new VBox(6);
-
-        private SessionPlannerViewModel.TimelineProjection.SceneModel model;
-        private String loadedTitle = "";
-        private String loadedNotes = "";
-        private long loadedLocationId;
-
-        private SceneCard(long sceneToken) {
+        private SceneRow(long sceneToken) {
+            super(8);
             this.sceneToken = sceneToken;
-            getStyleClass().add("session-planner-encounter-card");
-            setSpacing(6);
-
-            headerBar.getStyleClass().addAll("session-planner-budget-bar", "session-planner-budget-ok");
-            headerBar.setPrefWidth(80);
-            headerBar.setMaxWidth(80);
-            toggleButton.getStyleClass().add("session-planner-scene-toggle");
-            toggleButton.setOnAction(event -> toggle(this));
-            HBox header = new HBox(8, toggleButton, headerTitle, headerBar, headerBudget, spacer(), headerLocation, removeButton);
-            header.setAlignment(Pos.CENTER_LEFT);
-            header.getStyleClass().add("session-planner-encounter-header");
-            header.setOnMouseClicked(event -> toggle(this));
-            removeButton.setOnAction(event -> removeSceneHandler.accept(sceneToken));
-
-            encounterSummary.getChildren().setAll(
-                    encounterName, encounterDetail, encounterBudget, encounterComparison, encounterBase);
-            encounterSummary.getStyleClass().add("session-planner-scene-encounter-summary");
-
-            titleField.setPromptText("Szenentitel");
-            titleField.getStyleClass().add(STYLE_COMPACT);
-            notesField.setPromptText("Szenennotizen");
-            notesField.setPrefRowCount(2);
-            notesField.getStyleClass().add(STYLE_COMPACT);
-            Button save = compactButton("Szene speichern", STYLE_ACCENT);
-            save.setOnAction(event -> saveNow());
-
-            decreaseAllocation.setOnAction(event -> adjustAllocation(ALLOCATION_STEP.negate()));
-            increaseAllocation.setOnAction(event -> adjustAllocation(ALLOCATION_STEP));
-            moveUp.setOnAction(event -> moveHandler.handle(sceneToken, true));
-            moveDown.setOnAction(event -> moveHandler.handle(sceneToken, false));
-            addLoot.setOnAction(event -> addLootHandler.accept(sceneToken));
-
-            editor.getChildren().setAll(
-                    encounterSummary,
-                    titleField,
-                    actionRow(locationBox, save),
-                    notesField,
-                    actionRow(allocationLabel, decreaseAllocation, increaseAllocation),
-                    actionRow(moveUp, moveDown),
-                    new VBox(6, new HBox(8, styledLabel("Loot", "session-planner-gap-title"), addLoot), lootRows));
-            editor.setVisible(false);
-            editor.setManaged(false);
-
-            getChildren().setAll(header, editor);
+            setAlignment(Pos.CENTER_LEFT);
+            getStyleClass().add("session-planner-scene-row");
+            miniBar.getStyleClass().addAll("session-planner-budget-bar", "session-planner-budget-ok");
+            miniBar.setPrefWidth(56);
+            miniBar.setMaxWidth(56);
+            getChildren().setAll(dragHandle, positionLabel, titleLabel, spacer(), miniBar, budgetLabel, locationChip);
+            setOnMouseClicked(event -> select());
+            configureDragAndDrop();
         }
 
         private void update(
                 SessionPlannerViewModel.TimelineProjection.SceneModel scene,
                 int position,
-                boolean expanded,
+                boolean selected,
                 boolean disabled
         ) {
-            this.model = scene;
-            headerTitle.setText("Szene " + position + ": " + scene.displayTitle());
-            headerBudget.setText(scene.budgetPercentageText());
-            headerBar.setProgress(clampFraction(scene.budgetFraction()));
-            headerLocation.setText(scene.locationLabel());
-            removeButton.setDisable(disabled);
+            positionLabel.setText(position + ".");
+            titleLabel.setText(scene.displayTitle());
+            boolean linked = scene.linkedEncounterPlan();
+            miniBar.setProgress(clampFraction(scene.budgetFraction()));
+            show(miniBar, linked);
+            budgetLabel.setText(linked ? scene.budgetPercentageText() : "—");
+            String location = scene.locationLabel();
+            boolean hasLocation = location != null && !location.isBlank() && !"Keine Location".equals(location);
+            locationChip.setText(hasLocation ? location : "");
+            show(locationChip, hasLocation);
+            getStyleClass().remove("session-planner-scene-row-selected");
+            if (selected) {
+                getStyleClass().add("session-planner-scene-row-selected");
+            }
+            dragHandle.setDisable(disabled);
+        }
 
+        private void select() {
+            inspector.commitIfDirty();
+            selectSceneHandler.accept(sceneToken);
+        }
+
+        private void configureDragAndDrop() {
+            setOnDragDetected(event -> {
+                if (!sessionActive) {
+                    return;
+                }
+                Dragboard dragboard = startDragAndDrop(TransferMode.MOVE);
+                ClipboardContent content = new ClipboardContent();
+                content.putString(Long.toString(sceneToken));
+                dragboard.setContent(content);
+                event.consume();
+            });
+            setOnDragOver(event -> {
+                if (event.getGestureSource() != this && event.getDragboard().hasString()) {
+                    event.acceptTransferModes(TransferMode.MOVE);
+                }
+                event.consume();
+            });
+            setOnDragEntered(event -> {
+                if (event.getGestureSource() != this && event.getDragboard().hasString()) {
+                    getStyleClass().add("session-planner-scene-row-drop");
+                }
+                event.consume();
+            });
+            setOnDragExited(event -> {
+                getStyleClass().remove("session-planner-scene-row-drop");
+                event.consume();
+            });
+            setOnDragDropped(event -> {
+                boolean completed = false;
+                if (event.getDragboard().hasString()) {
+                    long sourceToken = parseToken(event.getDragboard().getString());
+                    if (sourceToken > 0L && sourceToken != sceneToken) {
+                        reorderScene(sourceToken, indexOfToken(sceneToken));
+                        completed = true;
+                    }
+                }
+                getStyleClass().remove("session-planner-scene-row-drop");
+                event.setDropCompleted(completed);
+                event.consume();
+            });
+        }
+    }
+
+    // --- scene inspector (detail) ----------------------------------------------------------
+
+    private final class SceneInspector extends ScrollPane {
+
+        private final Label headerTitle = styledLabel("", "session-planner-inspector-title");
+        private final Button removeButton = iconButton("✕", "Szene entfernen", "Szene entfernen");
+
+        private final Label encounterName = styledLabel("", "session-planner-plan-name");
+        private final Label encounterDetail = styledLabel("", STYLE_TEXT_SECONDARY);
+        private final Label encounterComparison = styledLabel("", STYLE_TEXT_SECONDARY);
+        private final Label encounterBase = styledLabel("", STYLE_TEXT_SECONDARY);
+        private final VBox encounterSummary = new VBox(3, encounterName, encounterDetail, encounterComparison, encounterBase);
+
+        private final TextField budgetField = new TextField();
+        private final Button decreaseAllocation = compactButton("-10", STYLE_FLAT);
+        private final Button increaseAllocation = compactButton("+10", STYLE_FLAT);
+        private final ProgressBar budgetBar = new ProgressBar(0);
+        private final VBox budgetSection = new VBox(4);
+
+        private final TextField titleField = new TextField();
+        private final LocationComboBox locationBox = new LocationComboBox();
+        private final TextArea notesField = new TextArea();
+
+        private final VBox lootRows = new VBox(4);
+        private final Button addLoot = compactButton("+ Loot-Platzhalter", STYLE_FLAT);
+
+        private final VBox editor = new VBox(12);
+        private final Label placeholder = styledLabel(
+                "Wähle links eine Szene, um sie zu bearbeiten.",
+                STYLE_TEXT_SECONDARY, "session-planner-empty");
+        private final VBox content = new VBox(12);
+
+        private SessionPlannerViewModel.TimelineProjection.SceneModel model;
+        private long loadedToken;
+        private String loadedTitle = "";
+        private String loadedNotes = "";
+        private long loadedLocationId;
+
+        private SceneInspector() {
+            getStyleClass().add("session-planner-inspector-scroll");
+            setFitToWidth(true);
+            setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+
+            HBox header = new HBox(8, headerTitle, spacer(), removeButton);
+            header.setAlignment(Pos.CENTER_LEFT);
+            header.getStyleClass().add("session-planner-inspector-header");
+            removeButton.setOnAction(event -> {
+                if (loadedToken > 0L) {
+                    removeSceneHandler.accept(loadedToken);
+                }
+            });
+
+            encounterSummary.getStyleClass().add("session-planner-scene-encounter-summary");
+
+            budgetField.setPromptText("%");
+            budgetField.setPrefColumnCount(4);
+            budgetField.getStyleClass().add(STYLE_COMPACT);
+            budgetField.setOnAction(event -> commitBudgetFromField());
+            budgetField.focusedProperty().addListener((observable, was, focused) -> {
+                if (!focused) {
+                    commitBudgetFromField();
+                }
+            });
+            decreaseAllocation.setOnAction(event -> adjustAllocation(ALLOCATION_STEP.negate()));
+            increaseAllocation.setOnAction(event -> adjustAllocation(ALLOCATION_STEP));
+            budgetBar.getStyleClass().addAll("session-planner-budget-bar", "session-planner-budget-ok");
+            budgetBar.setMaxWidth(Double.MAX_VALUE);
+            HBox budgetRow = new HBox(6,
+                    styledLabel("Budget", "session-planner-card-title"), budgetField,
+                    styledLabel("%", STYLE_TEXT_SECONDARY), decreaseAllocation, increaseAllocation);
+            budgetRow.setAlignment(Pos.CENTER_LEFT);
+            budgetSection.getChildren().setAll(budgetRow, budgetBar);
+
+            titleField.setPromptText("Szenentitel");
+            titleField.getStyleClass().add(STYLE_COMPACT);
+            titleField.setOnAction(event -> commitIfDirty());
+            titleField.focusedProperty().addListener((observable, was, focused) -> {
+                if (!focused) {
+                    commitIfDirty();
+                }
+            });
+            locationBox.getSelectionModel().selectedItemProperty().addListener((observable, before, after) -> commitIfDirty());
+            notesField.setPromptText("Szenennotizen");
+            notesField.setPrefRowCount(3);
+            notesField.setWrapText(true);
+            notesField.getStyleClass().add(STYLE_COMPACT);
+            notesField.focusedProperty().addListener((observable, was, focused) -> {
+                if (!focused) {
+                    commitIfDirty();
+                }
+            });
+            VBox detailsSection = new VBox(6,
+                    styledLabel("Details", "session-planner-card-title"),
+                    titleField, locationBox, notesField);
+
+            addLoot.setOnAction(event -> {
+                if (loadedToken > 0L) {
+                    addLootHandler.accept(loadedToken);
+                }
+            });
+            VBox lootSection = new VBox(6,
+                    new HBox(8, styledLabel("Loot", "session-planner-card-title"), spacer(), addLoot),
+                    lootRows);
+
+            editor.getChildren().setAll(header, card(encounterSummary), card(budgetSection),
+                    card(detailsSection), card(lootSection));
+            content.getChildren().setAll(placeholder);
+            content.getStyleClass().add("session-planner-inspector");
+            setContent(content);
+        }
+
+        private void showSelection(
+                SessionPlannerViewModel.TimelineProjection.SceneModel scene,
+                boolean disabled
+        ) {
+            if (scene == null) {
+                if (loadedToken != 0L) {
+                    loadedToken = 0L;
+                }
+                if (!content.getChildren().equals(List.of(placeholder))) {
+                    content.getChildren().setAll(placeholder);
+                }
+                return;
+            }
+            boolean tokenChanged = scene.sceneToken() != loadedToken;
+            this.model = scene;
+            if (!content.getChildren().equals(List.of(editor))) {
+                content.getChildren().setAll(editor);
+            }
+            if (tokenChanged) {
+                loadEditorFromModel(scene);
+            }
+            updateReadOnly(scene, disabled);
+        }
+
+        private void loadEditorFromModel(SessionPlannerViewModel.TimelineProjection.SceneModel scene) {
+            loadedToken = scene.sceneToken();
+            titleField.setText(scene.sceneTitle());
+            notesField.setText(scene.sceneNotes());
+            locationBox.setChoices(scene.locationChoices(), scene.locationId());
+            loadedTitle = scene.sceneTitle();
+            loadedNotes = scene.sceneNotes();
+            loadedLocationId = scene.locationId();
+        }
+
+        private void updateReadOnly(
+                SessionPlannerViewModel.TimelineProjection.SceneModel scene,
+                boolean disabled
+        ) {
+            headerTitle.setText("Szene: " + scene.displayTitle());
+            removeButton.setDisable(disabled);
             boolean linked = scene.linkedEncounterPlan();
             if (linked) {
                 encounterName.setText(scene.linkedEncounterName());
-                encounterDetail.setText(scene.linkedEncounterCreatureCount() + " Kreaturen" + generatedSuffix(scene));
-                encounterBudget.setText(scene.budgetPercentageText() + " Budget · Ziel " + scene.targetXpText() + " XP");
-                encounterComparison.setText(scene.comparisonText() + " · " + scene.linkedEncounterDifficultyLabel());
+                encounterDetail.setText(scene.linkedEncounterCreatureCount() + " Kreaturen · "
+                        + scene.linkedEncounterDifficultyLabel() + generatedSuffix(scene));
+                encounterComparison.setText(scene.comparisonText());
                 encounterBase.setText("Base " + scene.linkedEncounterTotalBaseXp() + " XP · Multiplikator x"
                         + String.format(Locale.US, "%.2f", scene.linkedEncounterXpMultiplier()));
             } else {
-                encounterName.setText("Keine Begegnung verknuepft.");
-                encounterDetail.setText("");
-                encounterBudget.setText("");
+                encounterName.setText("Keine Begegnung verknüpft.");
+                encounterDetail.setText("Hänge links eine gespeicherte Begegnung an, um XP zu verplanen.");
                 encounterComparison.setText("");
                 encounterBase.setText("");
             }
-            show(encounterDetail, linked);
-            show(encounterBudget, linked);
             show(encounterComparison, linked);
             show(encounterBase, linked);
 
-            allocationLabel.setText("Budget " + scene.budgetPercentageText());
+            if (!budgetField.isFocused()) {
+                budgetField.setText(plainPercent(scene.budgetPercentage()));
+            }
+            budgetBar.setProgress(clampFraction(scene.budgetFraction()));
+            budgetField.setDisable(disabled || !linked);
             decreaseAllocation.setDisable(disabled || !linked);
             increaseAllocation.setDisable(disabled || !linked);
-            moveUp.setDisable(disabled || !scene.canMoveUp());
-            moveDown.setDisable(disabled || !scene.canMoveDown());
+
+            titleField.setDisable(disabled);
+            locationBox.setDisable(disabled);
+            notesField.setDisable(disabled);
             addLoot.setDisable(disabled);
             renderLoot(scene, disabled);
-            setExpanded(expanded);
-        }
-
-        private void setExpanded(boolean expanded) {
-            toggleButton.setText(expanded ? "▼" : "▶");
-            editor.setVisible(expanded);
-            editor.setManaged(expanded);
-        }
-
-        /** Lädt die Editor-Felder aus dem Modell. Nur beim Aufklappen aufrufen — nie bei jedem Readback,
-         * damit unbestätigte Eingaben nicht überschrieben werden. */
-        private void loadEditorFromModel() {
-            if (model == null) {
-                return;
-            }
-            titleField.setText(model.sceneTitle());
-            notesField.setText(model.sceneNotes());
-            locationBox.setChoices(model.locationChoices(), model.locationId());
-            loadedTitle = model.sceneTitle();
-            loadedNotes = model.sceneNotes();
-            loadedLocationId = model.locationId();
-        }
-
-        private void saveNow() {
-            loadedTitle = titleField.getText().trim();
-            loadedNotes = notesField.getText().trim();
-            loadedLocationId = locationBox.selectedLocationId();
-            saveSceneHandler.handle(sceneToken, loadedTitle, loadedNotes, loadedLocationId);
         }
 
         private void commitIfDirty() {
-            if (!editor.isVisible()) {
+            if (loadedToken <= 0L) {
                 return;
             }
             String title = titleField.getText().trim();
             String notes = notesField.getText().trim();
             long locationId = locationBox.selectedLocationId();
             if (!title.equals(loadedTitle) || !notes.equals(loadedNotes) || locationId != loadedLocationId) {
-                saveSceneHandler.handle(sceneToken, title, notes, locationId);
+                saveSceneHandler.handle(loadedToken, title, notes, locationId);
                 loadedTitle = title;
                 loadedNotes = notes;
                 loadedLocationId = locationId;
             }
         }
 
-        private void adjustAllocation(BigDecimal delta) {
-            if (model == null) {
+        private void commitBudgetFromField() {
+            if (model == null || loadedToken <= 0L || !model.linkedEncounterPlan()) {
                 return;
             }
-            allocationHandler.handle(sceneToken, model.budgetPercentage().add(delta));
+            BigDecimal parsed = SessionPlannerVocabulary.parsePositiveDecimal(budgetField.getText());
+            if (parsed == null) {
+                budgetField.setText(plainPercent(model.budgetPercentage()));
+                return;
+            }
+            BigDecimal clamped = parsed.min(HUNDRED).max(BigDecimal.ZERO);
+            if (clamped.compareTo(model.budgetPercentage()) != 0) {
+                allocationHandler.handle(loadedToken, clamped);
+            }
+        }
+
+        private void adjustAllocation(BigDecimal delta) {
+            if (model == null || loadedToken <= 0L) {
+                return;
+            }
+            BigDecimal next = model.budgetPercentage().add(delta).min(HUNDRED).max(BigDecimal.ZERO);
+            allocationHandler.handle(loadedToken, next);
         }
 
         private void renderLoot(
@@ -380,11 +586,11 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         ) {
             List<Node> cards = new ArrayList<>();
             if (scene.lootPlaceholders().isEmpty()) {
-                cards.add(styledLabel("Keine Loot-Platzhalter fuer diese Szene.",
+                cards.add(styledLabel("Keine Loot-Platzhalter für diese Szene.",
                         STYLE_TEXT_SECONDARY, "session-planner-empty"));
             } else {
                 for (var loot : scene.lootPlaceholders()) {
-                    Button remove = compactButton("Entfernen", STYLE_FLAT);
+                    Button remove = iconButton("✕", "Loot-Platzhalter entfernen", "Entfernen");
                     remove.setDisable(disabled);
                     remove.setOnAction(event -> removeLootHandler.accept(loot.token()));
                     HBox row = new HBox(8, styledLabel(loot.label()), spacer(), remove);
@@ -432,8 +638,8 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         ) {
             this.leftSceneToken = gap.leftSceneToken();
             this.rightSceneToken = gap.rightSceneToken();
-            label.setText(gap.hasAssignedRest() ? "Rast: " + gap.label() : "Keine Rast zwischen den Szenen");
-            label.getStyleClass().removeAll("session-planner-gap-active");
+            label.setText(gap.hasAssignedRest() ? "Rast: " + gap.label() : "Keine Rast");
+            label.getStyleClass().remove("session-planner-gap-active");
             if (gap.hasAssignedRest()) {
                 label.getStyleClass().add("session-planner-gap-active");
             }
@@ -450,6 +656,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
 
         private LocationComboBox() {
             setPromptText("Location");
+            setMaxWidth(Double.MAX_VALUE);
             getStyleClass().add(STYLE_COMPACT);
             setConverter(new StringConverter<>() {
                 @Override
@@ -489,6 +696,23 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
 
     // --- shared helpers --------------------------------------------------------------------
 
+    private static long parseToken(String value) {
+        try {
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException exception) {
+            return 0L;
+        }
+    }
+
+    private static String plainPercent(BigDecimal percentage) {
+        BigDecimal safe = percentage == null ? BigDecimal.ZERO : percentage.stripTrailingZeros();
+        return safe.toPlainString();
+    }
+
+    private static String formatXp(int value) {
+        return java.text.NumberFormat.getIntegerInstance(Locale.GERMANY).format(Math.max(0, value));
+    }
+
     private static double clampFraction(double value) {
         if (value < 0) {
             return 0;
@@ -501,10 +725,10 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         node.setManaged(visible);
     }
 
-    private static HBox actionRow(Node... actions) {
-        HBox row = new HBox(6, actions);
-        row.setAlignment(Pos.CENTER_LEFT);
-        return row;
+    private static VBox card(Node body) {
+        VBox card = new VBox(6, body);
+        card.getStyleClass().add("session-planner-card");
+        return card;
     }
 
     private static Region spacer() {
@@ -523,6 +747,14 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         Button button = new Button(text);
         button.getStyleClass().add(STYLE_COMPACT);
         button.getStyleClass().addAll(emphasisStyles);
+        return button;
+    }
+
+    private static Button iconButton(String glyph, String tooltip, String accessibleText) {
+        Button button = new Button(glyph);
+        button.getStyleClass().addAll(STYLE_COMPACT, STYLE_FLAT, "session-planner-icon-button");
+        button.setTooltip(new Tooltip(tooltip));
+        button.setAccessibleText(accessibleText);
         return button;
     }
 

@@ -1760,3 +1760,79 @@
     -fx-shape: "";
     -fx-padding: 0;
 }
+
+/* --- Session Planner: Master-Detail redesign ---------------------------------------- */
+.session-planner-master-detail {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+.session-planner-master-detail > .split-pane-divider {
+    -fx-padding: 0 1 0 1;
+    -fx-background-color: -sm-border-subtle;
+}
+.session-planner-master {
+    -fx-background-color: transparent;
+}
+.session-planner-scene-list {
+    -fx-padding: 4 6 4 6;
+    -fx-spacing: 6;
+}
+.session-planner-budget-footer {
+    -fx-padding: 8 10 8 10;
+    -fx-spacing: 4;
+    -fx-background-color: rgba(255, 255, 255, 0.03);
+    -fx-border-color: -sm-border-subtle transparent transparent transparent;
+}
+.session-planner-scene-row {
+    -fx-padding: 7 10 7 10;
+    -fx-spacing: 8;
+    -fx-background-color: rgba(255, 255, 255, 0.04);
+    -fx-background-radius: 8;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 8;
+    -fx-cursor: hand;
+}
+.session-planner-scene-row-selected {
+    -fx-background-color: rgba(83, 169, 140, 0.16);
+    -fx-border-color: -sm-accent;
+}
+.session-planner-scene-row-drop {
+    -fx-border-color: -sm-accent-hover;
+    -fx-border-style: segments(4, 4);
+}
+.session-planner-drag-handle {
+    -fx-cursor: open-hand;
+    -fx-opacity: 0.6;
+}
+.session-planner-scene-position {
+    -fx-font-weight: bold;
+    -fx-text-fill: -sm-text-primary;
+    -fx-min-width: 20;
+}
+.session-planner-location-chip {
+    -fx-padding: 1 7 1 7;
+    -fx-background-color: rgba(255, 255, 255, 0.06);
+    -fx-background-radius: 999;
+}
+.session-planner-inspector-scroll {
+    -fx-background-color: transparent;
+}
+.session-planner-inspector-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+.session-planner-inspector {
+    -fx-padding: 10 12 10 12;
+    -fx-spacing: 12;
+    -fx-background-color: rgba(255, 255, 255, 0.02);
+}
+.session-planner-inspector-header {
+    -fx-padding: 0 0 2 0;
+}
+.session-planner-inspector-title {
+    -fx-font-weight: bold;
+    -fx-font-size: 1.05em;
+}
+.session-planner-icon-button {
+    -fx-min-width: 26;
+    -fx-padding: 2 6 2 6;
+}

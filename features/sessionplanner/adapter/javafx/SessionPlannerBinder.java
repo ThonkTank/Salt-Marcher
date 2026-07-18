@@ -100,6 +100,7 @@ final class SessionPlannerBinder {
         generationPanel.onDraftChanged(() -> planner.generatedSessionDraftChanged(
                 new SessionGenerationDraftChangedCommand()));
         generationPanel.onApply(planner::applyGeneratedSession);
+        generationPanel.setExistingContentSupplier(viewModel::hasScenes);
         generationPanel.bind(generationPreviewModel);
 
         timelineView.onAddScene(() -> ifSession(viewModel, () -> planner.addScene(new AddSessionSceneCommand())));

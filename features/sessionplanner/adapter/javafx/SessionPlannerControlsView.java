@@ -11,15 +11,17 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 /**
- * Linke Steuerspalte: Session-Setup (Teilnehmer hinzufügen/entfernen, Encounter-Tage),
- * Generierungs-Panel und die Liste gespeicherter Encounter-Pläne. Die Setup-Eingabefelder sind
- * persistent, damit Combobox-Auswahl und Tippen nicht bei jedem Readback zurückgesetzt werden.
+ * Steuerspalte des Session Planners im {@code COCKPIT_CONTROLS}-Slot: kompaktes Session-Setup
+ * (Teilnehmer, Encounter-Tage), die prominente Ein-Klick-Generierung und die Liste gespeicherter
+ * Encounter-Pläne zum Anhängen an die gewählte Szene. Die Setup-Eingabefelder sind persistent,
+ * damit Combobox-Auswahl und Tippen nicht bei jedem Readback zurückgesetzt werden.
  */
 public final class SessionPlannerControlsView extends ScrollPane {
 
@@ -28,10 +30,11 @@ public final class SessionPlannerControlsView extends ScrollPane {
     private static final String STYLE_FLAT = "flat";
     private static final String STYLE_TEXT_SECONDARY = "text-secondary";
 
+    private final SessionGenerationPanel generationPanel;
     private final Label statusLabel = statusLabel();
     private final ComboBox<SessionPlannerViewModel.ControlsProjection.ParticipantChoiceModel> partyMemberSelector =
             new ComboBox<>();
-    private final Button addParticipantButton = button("Hinzufuegen", STYLE_ACCENT);
+    private final Button addParticipantButton = button("Hinzufügen", STYLE_ACCENT);
     private final TextField encounterDaysField = new TextField();
     private final Button setEncounterDaysButton = button("Setzen", STYLE_FLAT);
     private final VBox participantRows = new VBox(4);
@@ -46,8 +49,10 @@ public final class SessionPlannerControlsView extends ScrollPane {
         this(null);
     }
 
-    SessionPlannerControlsView(Node generationPanel) {
+    SessionPlannerControlsView(SessionGenerationPanel generationPanel) {
+        this.generationPanel = generationPanel;
         partyMemberSelector.setPromptText("Spieler");
+        partyMemberSelector.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(partyMemberSelector, Priority.ALWAYS);
         addParticipantButton.setOnAction(event -> {
             var choice = partyMemberSelector.getValue();
@@ -60,7 +65,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         HBox.setHgrow(encounterDaysField, Priority.ALWAYS);
         setEncounterDaysButton.setOnAction(event -> setEncounterDaysHandler.accept(encounterDaysField.getText()));
 
-        setContent(content(generationPanel));
+        setContent(content());
         getStyleClass().add("session-planner-controls-scroll");
         setFitToWidth(true);
         setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -90,7 +95,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         show(viewModel.controlsProjectionProperty().get());
     }
 
-    private VBox content(Node generationPanel) {
+    private VBox content() {
         VBox content = new VBox(12);
         content.getStyleClass().add("session-planner-controls");
         content.getChildren().add(statusLabel);
@@ -121,6 +126,9 @@ public final class SessionPlannerControlsView extends ScrollPane {
 
     private void applySetup(SessionPlannerViewModel.ControlsProjection.SetupModel setup) {
         boolean disabled = setup.sessionActionsDisabled();
+        if (generationPanel != null) {
+            generationPanel.setSessionActive(!disabled);
+        }
 
         long previousSelection = partyMemberSelector.getValue() == null ? 0L : partyMemberSelector.getValue().characterId();
         partyMemberSelector.getItems().setAll(setup.partyMemberChoices());
@@ -157,7 +165,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
             rows.add(label("Keine Session-Teilnehmer.", STYLE_TEXT_SECONDARY, "session-planner-empty"));
         } else {
             for (var participant : participants) {
-                Button remove = button("X", STYLE_FLAT);
+                Button remove = iconButton("✕", "Teilnehmer entfernen");
                 remove.setDisable(disabled);
                 remove.setOnAction(event -> removeParticipantHandler.accept(participant.characterId()));
                 Label name = label(participant.name(), "session-planner-plan-name");
@@ -173,7 +181,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
     private void showPlans(List<SessionPlannerViewModel.ControlsProjection.AvailablePlanModel> plans) {
         if (plans.isEmpty()) {
             plansBox.getChildren().setAll(label(
-                    "Keine gespeicherten Encounter-Plaene.",
+                    "Keine gespeicherten Encounter-Pläne.",
                     STYLE_TEXT_SECONDARY,
                     "session-planner-empty"));
             return;
@@ -231,6 +239,14 @@ public final class SessionPlannerControlsView extends ScrollPane {
         Button button = new Button(text);
         button.getStyleClass().add(STYLE_COMPACT);
         button.getStyleClass().addAll(styleClasses);
+        return button;
+    }
+
+    private static Button iconButton(String glyph, String tooltip) {
+        Button button = new Button(glyph);
+        button.getStyleClass().addAll(STYLE_COMPACT, STYLE_FLAT, "session-planner-icon-button");
+        button.setTooltip(new Tooltip(tooltip));
+        button.setAccessibleText(tooltip);
         return button;
     }
 }

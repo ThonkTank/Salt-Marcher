@@ -99,29 +99,13 @@ public final class SessionPlannerCatalogTest {
     }
 
     @Test
-    void generationDraftEditWhilePendingUsesApplicationInvalidationRoute() throws Exception {
-        CompletableFuture<GenerationResponse> pending = new CompletableFuture<>();
-        SessionGenerationApi delayedGeneration = new SessionGenerationApi() {
-            @Override
-            public java.util.concurrent.CompletionStage<GenerationResponse> generate(GenerationRequest request) {
-                return pending;
-            }
-
-            @Override
-            public java.util.concurrent.CompletionStage<GenerationResponse> load(GenerationRunId runId) {
-                return pending;
-            }
-        };
-        runOnFxThread(() -> assertPendingDraftInvalidation(delayedGeneration));
-    }
-
-    @Test
     void generationInputsAreDisabledWhileApplyIsInFlight() throws Exception {
         runOnFxThread(SessionPlannerCatalogTest::assertApplyingInputsDisabled);
     }
 
     private static void assertApplyingInputsDisabled() {
         SessionGenerationPanel panel = new SessionGenerationPanel();
+        panel.setSessionActive(true);
         SessionGenerationPreviewSnapshot applying = new SessionGenerationPreviewSnapshot(
                 SessionGenerationPreviewStatus.APPLYING,
                 "Generierte Session wird angewandt …",
@@ -138,36 +122,7 @@ public final class SessionPlannerCatalogTest {
         panel.bind(new SessionGenerationPreviewModel(() -> applying, listener -> () -> { }));
 
         assertTrue(textField(panel, "Auto").isDisabled(), "encounter-count input is disabled while applying");
-        assertTrue(textField(panel, "Seed").isDisabled(), "seed input is disabled while applying");
-        assertTrue(button(panel, "Vorschau erzeugen").isDisabled(), "preview action is disabled while applying");
-    }
-
-    private static void assertPendingDraftInvalidation(SessionGenerationApi generation) {
-        SessionPlannerTestServices services = services(generation);
-        seedActiveParty(services);
-        SessionPlannerServiceAssembly planner = services.planner();
-        ShellBinding binding = new SessionPlannerContribution(
-                planner.application(), planner.currentSessionModel(), planner.catalogModel(),
-                planner.participantsModel(), planner.sceneTimelineModel(), planner.statePanelModel(),
-                planner.generationPreviewModel()).bind();
-        Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
-        Stage stage = new Stage();
-        stage.setScene(new Scene(controls, 420.0, 720.0));
-        stage.show();
-        planner.application().createSession(new SessionPlannerCatalogCommand.CreateSessionCommand("Pending"));
-        layout(controls);
-
-        button(controls, "Vorschau erzeugen").fire();
-        assertEquals(features.sessionplanner.api.SessionGenerationPreviewStatus.GENERATING,
-                planner.generationPreviewModel().current().status(),
-                "preview remains pending until provider completion");
-
-        textField(controls, "Seed").setText("179975");
-
-        assertEquals(features.sessionplanner.api.SessionGenerationPreviewStatus.STALE,
-                planner.generationPreviewModel().current().status(),
-                "seed edit invalidates pending attempt through application state");
-        assertTrue(button(controls, "Anwenden").isDisabled(), "pending draft edit keeps Apply disabled");
+        assertTrue(button(panel, "Session generieren").isDisabled(), "generate action is disabled while applying");
     }
 
     private static void runTest() {
@@ -214,19 +169,19 @@ public final class SessionPlannerCatalogTest {
         button(controls, "Setzen").fire();
         assertEquals("2", current.current().session().encounterDaysText(), "session content mutation before rename");
 
-        button(main, "Szene hinzufuegen").fire();
+        button(main, "+ Szene").fire();
         layout(main);
         assertEquals(Integer.valueOf(1), Integer.valueOf(sceneTimeline.current().sessionScenes().size()),
                 "add scene creates one session scene");
         assertEquals(Long.valueOf(0L),
                 Long.valueOf(sceneTimeline.current().sessionScenes().getFirst().linkedEncounterPlanId()),
                 "added scene has no linked encounter plan");
-        expandScene(main, 0);
-        assertTrue(hasLabel(main, "Keine Begegnung verknuepft."), "expanded blank scene shows no false encounter data");
-        button(main, "X").fire();
+        selectScene(main, 0);
+        assertTrue(hasLabel(main, "Keine Begegnung verknüpft."), "selected blank scene shows no false encounter data");
+        buttonByAccessibleText(main, "Szene entfernen").fire();
         layout(main);
         assertEquals(Integer.valueOf(0), Integer.valueOf(sceneTimeline.current().sessionScenes().size()),
-                "scene X removes only the session scene representation");
+                "scene remove clears the session scene representation");
 
         renameSelectedSession(controls, "Alpha Prime");
         SessionPlannerSessionSnapshot renamedCurrent = current.current();
@@ -311,23 +266,36 @@ public final class SessionPlannerCatalogTest {
                 .filter(ComboBox.class::isInstance)
                 .count();
         assertTrue(selectorCount >= 1L, "controls expose the party selector alongside the catalog selector");
-        assertTrue(button(controls, "Hinzufuegen").isDisabled(), "party add button starts disabled");
+        assertTrue(button(controls, "Hinzufügen").isDisabled(), "party add button starts disabled");
         assertTrue(hasLabel(controls, "Session-Setup"), "controls expose the session setup section");
     }
 
-    private static void expandScene(Parent main, int index) {
-        List<Button> toggles = descendants(main).stream()
+    private static void selectScene(Parent main, int index) {
+        List<Node> rows = descendants(main).stream()
+                .filter(node -> node.getStyleClass().contains("session-planner-scene-row"))
+                .toList();
+        if (index >= rows.size()) {
+            throw new AssertionError("Scene row not found at index " + index);
+        }
+        clickNode(rows.get(index));
+        layout(main);
+    }
+
+    private static void clickNode(Node node) {
+        javafx.event.Event.fireEvent(node, new javafx.scene.input.MouseEvent(
+                javafx.scene.input.MouseEvent.MOUSE_CLICKED,
+                0.0, 0.0, 0.0, 0.0, javafx.scene.input.MouseButton.PRIMARY, 1,
+                false, false, false, false,
+                false, false, false, false, false, false, null));
+    }
+
+    private static Button buttonByAccessibleText(Parent parent, String accessibleText) {
+        return descendants(parent).stream()
                 .filter(Button.class::isInstance)
                 .map(Button.class::cast)
-                .filter(button -> button.getStyleClass().contains("session-planner-scene-toggle"))
-                .toList();
-        if (index >= toggles.size()) {
-            throw new AssertionError("Scene toggle not found at index " + index);
-        }
-        if ("▶".equals(toggles.get(index).getText())) {
-            toggles.get(index).fire();
-        }
-        layout(main);
+                .filter(button -> accessibleText.equals(button.getAccessibleText()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Button not found by accessible text: " + accessibleText));
     }
 
     private static void assertSceneLootTargetsSceneCards() {
@@ -418,77 +386,74 @@ public final class SessionPlannerCatalogTest {
         comboBoxContaining(controls, "Cora - Level 4");
 
         comboBoxByPrompt(controls, "Spieler").getSelectionModel().selectFirst();
-        button(controls, "Hinzufuegen").fire();
+        button(controls, "Hinzufügen").fire();
         layout(controls);
         assertEquals(Integer.valueOf(1), Integer.valueOf(participants.current().participants().size()),
                 "participant add through setup section publishes one participant");
         assertEquals("Cora", participants.current().participants().getFirst().name(),
                 "participant add through setup section resolves active party member");
         assertTrue(hasLabel(controls, "Cora"), "participant add renders selected player in controls");
-        button(controls, "X").fire();
+        buttonByAccessibleText(controls, "Teilnehmer entfernen").fire();
         layout(controls);
         assertEquals(Integer.valueOf(0), Integer.valueOf(participants.current().participants().size()),
                 "participant remove through setup section publishes empty participants");
 
-        button(controls, "An Session anhaengen").fire();
+        button(controls, "An Session anhängen").fire();
         layout(main);
-        button(controls, "An Session anhaengen").fire();
+        button(controls, "An Session anhängen").fire();
         layout(main);
         SessionPlannerSceneTimelineProjection afterAttach = sceneTimeline.current();
         assertEquals(Integer.valueOf(2), Integer.valueOf(afterAttach.sessionScenes().size()),
-                "saved encounter attach through controls creates two scene cards");
+                "saved encounter attach through controls creates two scene rows");
         assertEquals(Long.valueOf(SAVED_ENCOUNTER_PLAN_ID),
                 Long.valueOf(afterAttach.sessionScenes().getFirst().linkedEncounterPlanId()),
                 "saved encounter attach publishes linked plan id");
-        expandScene(main, 0);
-        assertTrue(hasLabel(main, "Ash Gate Ambush"), "expanded scene card renders linked plan name");
+        selectScene(main, 0);
+        assertTrue(hasLabel(main, "Ash Gate Ambush"), "selected scene inspector renders linked plan name");
 
-        long firstScene = afterAttach.sessionScenes().get(0).sceneToken();
         long secondScene = afterAttach.sessionScenes().get(1).sceneToken();
         textField(main, "Szenentitel").setText("Gate Alarm");
         textArea(main, "Szenennotizen").setText("ring twice");
         selectComboBoxItem(main, "#" + locationId + " | Old Gate");
-        button(main, "Szene speichern").fire();
         layout(main);
         SessionPlannerSceneTimelineProjection afterSave = sceneTimeline.current();
         assertEquals("Gate Alarm", afterSave.sessionScenes().getFirst().sceneTitle(),
-                "scene save through card stores title");
+                "scene edit auto-commits title");
         assertEquals("ring twice", afterSave.sessionScenes().getFirst().sceneNotes(),
-                "scene save through card stores notes");
+                "scene edit auto-commits notes");
         assertEquals(Long.valueOf(locationId), Long.valueOf(afterSave.sessionScenes().getFirst().locationId()),
-                "scene save through card stores location id");
-        assertTrue(hasLabel(main, "Old Gate"), "scene header renders saved location label");
+                "scene edit auto-commits location id");
+        assertTrue(hasLabel(main, "Old Gate"), "scene row renders saved location label");
 
-        expandScene(main, 0);
-        buttons(main, "Loot-Platzhalter").getFirst().fire();
+        button(main, "+ Loot-Platzhalter").fire();
         layout(main);
         assertEquals(Integer.valueOf(1),
                 Integer.valueOf(sceneTimeline.current().sessionScenes().getFirst().lootPlaceholders().size()),
-                "loot add through scene card publishes placeholder");
+                "loot add through inspector publishes placeholder");
         assertTrue(hasLabel(main, "Loot-Platzhalter 1"), "loot add renders placeholder label");
-        button(main, "Entfernen").fire();
+        buttonByAccessibleText(main, "Entfernen").fire();
         layout(main);
         assertEquals(Integer.valueOf(0),
                 Integer.valueOf(sceneTimeline.current().sessionScenes().getFirst().lootPlaceholders().size()),
-                "loot remove through scene card clears placeholder");
+                "loot remove through inspector clears placeholder");
 
-        buttons(main, "+10%").getFirst().fire();
+        buttons(main, "+10").getFirst().fire();
         layout(main);
         assertEquals("60", sceneTimeline.current().sessionScenes().getFirst()
                         .budgetPercentage().stripTrailingZeros().toPlainString(),
-                "allocation increase through scene card raises first scene");
-        buttons(main, "-10%").getFirst().fire();
+                "allocation increase through inspector raises first scene");
+        buttons(main, "-10").getFirst().fire();
         layout(main);
         assertEquals("50", sceneTimeline.current().sessionScenes().getFirst()
                         .budgetPercentage().stripTrailingZeros().toPlainString(),
-                "allocation decrease through scene card restores first scene");
+                "allocation decrease through inspector restores first scene");
 
-        expandScene(main, 1);
+        selectScene(main, 1);
         assertEquals(Long.valueOf(secondScene), Long.valueOf(current.current().session().selectedEncounterId()),
-                "expanding a scene card selects it as the current scene");
+                "selecting a scene row selects it as the current scene");
         assertTrue(sceneTimeline.current().sessionScenes().stream()
                         .anyMatch(scene -> scene.sceneToken() == secondScene && scene.selected()),
-                "expanding a scene card publishes the selected scene");
+                "selecting a scene row publishes the selected scene");
 
         button(main, "Kurze Rast").fire();
         layout(main);
@@ -500,22 +465,11 @@ public final class SessionPlannerCatalogTest {
         assertEquals(SessionPlannerRestKind.NONE, sceneTimeline.current().restGaps().getFirst().restKind(),
                 "rest clear through gap separator publishes no rest");
 
-        expandScene(main, 0);
-        enabledButtons(main, "Runter").getFirst().fire();
-        layout(main);
-        assertEquals(Long.valueOf(secondScene),
-                Long.valueOf(sceneTimeline.current().sessionScenes().getFirst().sceneToken()),
-                "scene move down through card reorders first scene");
-        enabledButtons(main, "Hoch").getFirst().fire();
-        layout(main);
-        assertEquals(Long.valueOf(firstScene),
-                Long.valueOf(sceneTimeline.current().sessionScenes().getFirst().sceneToken()),
-                "scene move up through card restores order");
-
-        buttons(main, "X").getFirst().fire();
+        selectScene(main, 0);
+        buttonByAccessibleText(main, "Szene entfernen").fire();
         layout(main);
         assertEquals(Integer.valueOf(1), Integer.valueOf(sceneTimeline.current().sessionScenes().size()),
-                "scene remove through linked scene card removes one scene");
+                "scene remove through inspector removes one scene");
     }
 
     private static void assertProductionRouteGeneratedSession(
@@ -525,54 +479,28 @@ public final class SessionPlannerCatalogTest {
             features.sessionplanner.api.SessionPlannerSceneTimelineModel sceneTimeline
     ) {
         comboBoxByPrompt(controls, "Spieler").getSelectionModel().selectFirst();
-        button(controls, "Hinzufuegen").fire();
+        button(controls, "Hinzufügen").fire();
         layout(controls);
         assertEquals(Integer.valueOf(1), Integer.valueOf(participants.current().participants().size()),
                 "generation route has one resolved session participant");
-        int scenesBeforePreview = sceneTimeline.current().sessionScenes().size();
+        assertTrue(sceneTimeline.current().sessionScenes().size() >= 1,
+                "session carries existing scenes before generation");
 
-        button(controls, "Vorschau erzeugen").fire();
+        button(controls, "Session generieren").fire();
         layout(controls);
+        Button replace = button(controls, "Ersetzen");
+        assertTrue(isEffectivelyVisible(replace),
+                "one-click generation on a session with content reveals the replace confirmation");
+        assertTrue(!hasLabelContaining(controls, "saltmarcher-v1"), "generation exposes no ruleset label");
 
-        assertEquals(Integer.valueOf(scenesBeforePreview), Integer.valueOf(sceneTimeline.current().sessionScenes().size()),
-                "preview performs no Session mutation");
-        assertTrue(hasLabelContaining(controls, "Seed 179974"), "preview renders seed provenance");
-        assertTrue(!hasLabelContaining(controls, "saltmarcher-v1"), "preview exposes no ruleset label");
-        assertTrue(!button(controls, "Anwenden").isDisabled(), "green preview enables Apply");
-
-        button(controls, "Anwenden").fire();
-        assertTrue(hasLabelContaining(controls, "Alle aktuellen Szenen"), "Apply reveals replacement warning");
-        Button confirmation = button(controls, "Ersetzen bestätigen");
-        textField(controls, "Auto").setText("1");
-        layout(controls);
-        assertTrue(button(controls, "Anwenden").isDisabled(),
-                "encounter-count edit invalidates the ready preview");
-        assertTrue(!isEffectivelyVisible(confirmation), "encounter-count edit closes Apply confirmation");
-
-        button(controls, "Vorschau erzeugen").fire();
-        layout(controls);
-        button(controls, "Anwenden").fire();
-        confirmation = button(controls, "Ersetzen bestätigen");
-        textField(controls, "Seed").setText("179975");
-        layout(controls);
-        assertTrue(button(controls, "Anwenden").isDisabled(), "seed edit invalidates the ready preview");
-        assertTrue(!isEffectivelyVisible(confirmation), "seed edit closes Apply confirmation");
-
-        textField(controls, "Seed").setText("179974");
-        button(controls, "Vorschau erzeugen").fire();
-        layout(controls);
-        button(controls, "Anwenden").fire();
-        button(controls, "Ersetzen bestätigen").fire();
+        replace.fire();
         layout(main);
 
         assertEquals(Integer.valueOf(1), Integer.valueOf(sceneTimeline.current().sessionScenes().size()),
-                "confirmed Apply replaces the timeline");
+                "confirmed generation replaces the timeline");
         assertEquals(Long.valueOf(901L),
                 Long.valueOf(sceneTimeline.current().sessionScenes().getFirst().linkedEncounterPlanId()),
-                "confirmed Apply attaches imported Encounter plan");
-        expandScene(main, 0);
-        assertTrue(hasLabel(main, "ENCOUNTER · Generated cache"),
-                "applied generated reward reopens through the normal timeline projection");
+                "confirmed generation attaches imported Encounter plan");
     }
 
     private static void seedActiveParty(SessionPlannerTestServices services) {

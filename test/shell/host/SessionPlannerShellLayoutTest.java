@@ -119,14 +119,11 @@ public final class SessionPlannerShellLayoutTest {
                 "planner scroll controls stay inside the shell controls panel");
         assertTrue(plannerControls.getVbarPolicy() != ScrollPane.ScrollBarPolicy.NEVER,
                 "planner controls keep vertical scrolling available");
-        assertTrue(plannerMain.getVbarPolicy() != ScrollPane.ScrollBarPolicy.NEVER,
-                "planner main keeps vertical scrolling available");
-        assertTrue(plannerMain.isFitToWidth(), "planner main scroll content fits available width");
+        assertTrue(plannerMain.getItems().size() == 2,
+                "planner main hosts the master-detail split (scene list + inspector)");
         assertTrue(descendants(plannerMain).stream()
-                        .filter(javafx.scene.control.Button.class::isInstance)
-                        .map(javafx.scene.control.Button.class::cast)
-                        .anyMatch(button -> "Szene hinzufuegen".equals(button.getText())),
-                "planner main renders the scene board in the main slot");
+                        .anyMatch(node -> node.getStyleClass().contains("session-planner-scene-list")),
+                "planner main renders the master scene list in the main slot");
         assertTrue(descendants(plannerControls).stream()
                         .filter(Label.class::isInstance)
                         .map(Label.class::cast)

@@ -79,6 +79,10 @@ final class SessionPlannerViewModel {
         return latestSession.session().sessionId() > 0L;
     }
 
+    boolean hasScenes() {
+        return !latestSceneTimeline.sessionScenes().isEmpty();
+    }
+
     void updateSelectorFilter(String nextFilterText) {
         catalogContentModel.updateSelectorFilter(nextFilterText);
     }
@@ -230,7 +234,7 @@ final class SessionPlannerViewModel {
                         plan.name(),
                         plan.summaryText(),
                         plan.statusText(),
-                        "An Session anhaengen",
+                        "An Session anhängen",
                         "accent",
                         !importEnabled);
             }
