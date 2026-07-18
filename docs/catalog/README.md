@@ -16,10 +16,6 @@ Items, saved Encounters, World Planner records, and Encounter Tables inside one
    user-visible behavior and acceptance criteria.
 2. Read [Catalog Architecture](architecture/architecture-catalog.md) for the
    durable target structure, ownership, and dependency direction.
-3. Read the temporary
-   [Catalog Greenfield Roadmap](delivery/roadmap-catalog-greenfield.md) only
-   when implementing or reviewing the migration. It owns sequencing and
-   deletion gates, not durable behavior or architecture.
 
 ## Document Set
 
@@ -30,7 +26,3 @@ Items, saved Encounters, World Planner records, and Encounter Tables inside one
 ### Architecture
 
 - [Catalog Architecture](architecture/architecture-catalog.md)
-
-### Temporary Delivery
-
-- [Catalog Greenfield Roadmap](delivery/roadmap-catalog-greenfield.md)
