@@ -97,19 +97,21 @@ and commit boundaries. M7 starts only after both are complete.
 
 ## Current Migration State
 
-- Current foundation: M0 through M2 are complete on `main` through PR #499.
-- This slice: M3.1 introduces `DungeonCommandResult`, revision-checked
+- Current foundation: M0 through M2 and M3.1 are complete on `main` through
+  PR #500. M3.1 established `DungeonCommandResult`, revision-checked
   `DungeonPatch`, stable-entity changes, touched chunks, result facts, exact
   encoded-weight bounds, and generated inverse patches.
-- Feature-marker semantic edits are the first real production command moved to
-  that vocabulary. Their former direct aggregate-mutation route is deleted;
-  deterministic proof covers forward and inverse application, stale revision,
-  negative chunk identity, result facts, byte weight, and typed rejection.
+- This slice: M3.2 moves feature-marker create, semantic update, and delete to
+  exact patches and one shared patch executor. The former direct aggregate and
+  catalog create/delete mutation routes are deleted.
+- Deterministic command proof covers create, update, delete, exact forward and
+  inverse application, collision and missing-target rejection, stale revision,
+  negative chunk identity, result facts, and encoded byte weight. The Dungeon
+  Editor behavior suite remains the production-route proof.
 - `DungeonChangeSet` persistence and full-map session history remain temporary
   M3/M4 boundaries; no second persistence contract is introduced in this slice.
-- Next step after this slice merges: M3.2 moves the remaining ordinary
-  single-map authored commands to exact patches and removes unchanged-map
-  inference from their commit results.
+- Next step after this slice merges: M3.3 moves room and cluster semantic
+  commands to exact stable-entity patches and the shared patch executor.
 
 ## M0: Target Lock And Baseline
 

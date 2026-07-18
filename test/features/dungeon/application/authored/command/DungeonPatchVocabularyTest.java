@@ -2,6 +2,7 @@ package features.dungeon.application.authored.command;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -73,14 +74,76 @@ final class DungeonPatchVocabularyTest {
         assertEquals(2L, current.revision());
     }
 
+    @Test
+    void featureMarkerCreateAndDeleteUseExactForwardAndInversePatches() {
+        DungeonMap empty = DungeonMapAuthoring.empty(new DungeonMapIdentity(91L), "Patch Vocabulary");
+        Cell anchor = new Cell(-1, 64, -2);
+        CreateFeatureMarkerCommand createCommand = new CreateFeatureMarkerCommand();
+
+        DungeonCommandResult.Accepted createdResult = assertInstanceOf(
+                DungeonCommandResult.Accepted.class,
+                createCommand.plan(empty, 7L, FeatureMarkerKind.POI, anchor, "Fundort", "Hinweis"));
+        DungeonPatch createPatch = createdResult.patch();
+        assertEquals(Set.of(new DungeonChunkKey(91L, -2, -1, 1)), createPatch.touchedChunks());
+
+        DungeonMap created = createPatch.applyTo(empty);
+        FeatureMarker createdMarker = created.featureMarkers().marker(7L);
+        assertEquals(new FeatureMarker(
+                7L,
+                empty.metadata().mapId(),
+                FeatureMarkerKind.POI,
+                anchor,
+                "Fundort",
+                "Hinweis"), createdMarker);
+        DungeonMap createUndone = createdResult.inverse().applyTo(created);
+        assertNull(createUndone.featureMarkers().marker(7L));
+        assertEquals(empty.revision() + 2L, createUndone.revision());
+
+        DeleteFeatureMarkerCommand deleteCommand = new DeleteFeatureMarkerCommand();
+        DungeonCommandResult.Accepted deletedResult = assertInstanceOf(
+                DungeonCommandResult.Accepted.class,
+                deleteCommand.plan(created, 7L));
+        DungeonMap deleted = deletedResult.patch().applyTo(created);
+        assertNull(deleted.featureMarkers().marker(7L));
+        DungeonMap deleteUndone = deletedResult.inverse().applyTo(deleted);
+        assertEquals(createdMarker, deleteUndone.featureMarkers().marker(7L));
+        assertEquals(created.revision() + 2L, deleteUndone.revision());
+    }
+
+    @Test
+    void featureMarkerCreateCollisionAndMissingDeleteRejectWithoutMutation() {
+        DungeonMap current = mapWithMarker();
+        CreateFeatureMarkerCommand createCommand = new CreateFeatureMarkerCommand();
+        DeleteFeatureMarkerCommand deleteCommand = new DeleteFeatureMarkerCommand();
+
+        DungeonCommandResult.Rejected collision = assertInstanceOf(
+                DungeonCommandResult.Rejected.class,
+                createCommand.plan(
+                        current,
+                        7L,
+                        FeatureMarkerKind.OBJECT,
+                        new Cell(0, 0, 0),
+                        "Kollision",
+                        ""));
+        DungeonCommandResult.Rejected missing = assertInstanceOf(
+                DungeonCommandResult.Rejected.class,
+                deleteCommand.plan(current, 99L));
+
+        assertEquals(DungeonEditorCommandOutcome.RejectionReason.INVALID_TARGET, collision.reason());
+        assertEquals(DungeonEditorCommandOutcome.RejectionReason.INVALID_TARGET, missing.reason());
+        assertEquals(1, current.featureMarkers().markers().size());
+        assertEquals(2L, current.revision());
+    }
+
     private static DungeonMap mapWithMarker() {
         DungeonMap base = DungeonMapAuthoring.empty(new DungeonMapIdentity(91L), "Patch Vocabulary");
-        return base.withFeatureMarkers(base.featureMarkers().withCreated(
+        FeatureMarker marker = new FeatureMarker(
                 7L,
                 base.metadata().mapId(),
                 FeatureMarkerKind.POI,
                 new Cell(-1, 64, -2),
                 "Alter Name",
-                "Alte Beschreibung"));
+                "Alte Beschreibung");
+        return base.withFeatureMarkers(base.featureMarkers().withExactChange(null, marker));
     }
 }

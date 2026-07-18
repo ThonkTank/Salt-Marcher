@@ -23,6 +23,8 @@ import features.dungeon.domain.core.projection.DungeonMapFacts;
 import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.authored.port.DungeonChangeSet;
 import features.dungeon.application.authored.command.DungeonCommandResult;
+import features.dungeon.application.authored.command.CreateFeatureMarkerCommand;
+import features.dungeon.application.authored.command.DeleteFeatureMarkerCommand;
 import features.dungeon.application.authored.command.FeatureMarkerSemanticsCommand;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
@@ -105,6 +107,10 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
     private final MutationPipeline mutationPipeline = new MutationPipeline();
     private final FeatureMarkerSemanticsCommand featureMarkerSemanticsCommand =
             new FeatureMarkerSemanticsCommand();
+    private final CreateFeatureMarkerCommand createFeatureMarkerCommand =
+            new CreateFeatureMarkerCommand();
+    private final DeleteFeatureMarkerCommand deleteFeatureMarkerCommand =
+            new DeleteFeatureMarkerCommand();
     private final PublicationOperations publicationOperations = new PublicationOperations();
     private final PreviewOperations previewOperations = new PreviewOperations();
     private final DetailSaveOperations detailSaveOperations = new DetailSaveOperations();
@@ -573,15 +579,12 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             return executeOperation(mapId, operation, DungeonEditorCommandOutcome.RejectionReason.NO_EFFECT);
         }
 
-        private OperationResultData executeFeatureMarkerSemantics(
+        private OperationResultData executePatchCommand(
                 DungeonMapIdentity mapId,
-                long markerId,
-                String label,
-                String description
+                AuthoredPatchCommand command
         ) {
             DungeonMap current = loadMap(mapId);
-            DungeonCommandResult commandResult = featureMarkerSemanticsCommand.plan(
-                    current, markerId, label, description);
+            DungeonCommandResult commandResult = command.plan(current);
             if (commandResult instanceof DungeonCommandResult.Rejected rejected) {
                 return new OperationResultData(
                         snapshotData(current, derive(current)),
@@ -789,17 +792,17 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             Objects.requireNonNull(anchor, "anchor");
             DungeonMap currentMap = loadMap(domainMapId(mapId));
             long markerId = currentMap.nextFeatureMarkerId();
-            OperationResultData result = mutationPipeline.executeOperation(
+            OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
-                    current -> current.withFeatureMarkers(current.featureMarkers().withCreated(
+                    current -> createFeatureMarkerCommand.plan(
+                            current,
                             markerId,
-                            current.metadata().mapId(),
                             kind,
                             anchor,
                             DEFAULT_LABEL,
-                            DEFAULT_DESCRIPTION)));
+                            DEFAULT_DESCRIPTION));
             publicationOperations.publishMutation(result, session.dungeonState());
-            return markerId;
+            return result.changed() ? markerId : 0L;
         }
 
         private boolean canCreateFeatureMarker(MapId mapId, FeatureMarkerKind kind, Cell anchor) {
@@ -810,15 +813,11 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             if (mapId == null || markerId <= 0L) {
                 return false;
             }
-            DungeonMapIdentity mapIdentity = domainMapId(mapId);
-            DungeonMap currentMap = loadMap(mapIdentity);
-            if (!currentMap.canDeleteFeatureMarker(markerId)) {
-                return false;
-            }
-            OperationResultData result =
-                    mutationPipeline.executeOperation(mapIdentity, current -> current.deleteFeatureMarker(markerId));
+            OperationResultData result = mutationPipeline.executePatchCommand(
+                    domainMapId(mapId),
+                    current -> deleteFeatureMarkerCommand.plan(current, markerId));
             publicationOperations.publishMutation(result, session.dungeonState());
-            return true;
+            return result.changed();
         }
     }
 
@@ -1390,8 +1389,10 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             if (mapId == null || markerId <= 0L || label == null || label.isBlank()) {
                 return;
             }
-            OperationResultData result = mutationPipeline.executeFeatureMarkerSemantics(
-                    domainMapId(mapId), markerId, label, description);
+            OperationResultData result = mutationPipeline.executePatchCommand(
+                    domainMapId(mapId),
+                    current -> featureMarkerSemanticsCommand.plan(
+                            current, markerId, label, description));
             publicationOperations.publishMutation(result, state);
         }
 
@@ -1802,6 +1803,11 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
     @FunctionalInterface
     private interface AuthoredMapMutation {
         DungeonMap apply(DungeonMap current);
+    }
+
+    @FunctionalInterface
+    private interface AuthoredPatchCommand {
+        DungeonCommandResult plan(DungeonMap current);
     }
 
     private record SnapshotPublication(
