@@ -17,7 +17,7 @@ import shell.api.ShellLeftBarTabMode;
 import shell.api.ShellLeftBarTabSpec;
 import shell.api.ShellSlot;
 
-/** Target Catalog host: Monster, Items, and saved Encounters are native. */
+/** Passive target Catalog host for all seven native sections. */
 public final class CatalogContribution implements ShellContribution, AutoCloseable {
 
     private final CatalogWorkspaceController controller;
@@ -28,6 +28,10 @@ public final class CatalogContribution implements ShellContribution, AutoCloseab
     private MonsterCatalogSection monsters;
     private ItemsCatalogSection items;
     private SavedEncounterCatalogSection savedEncounters;
+    private NpcCatalogSection npcs;
+    private FactionCatalogSection factions;
+    private LocationCatalogSection locations;
+    private EncounterTableCatalogSection encounterTables;
     private long renderedWorkspaceRevision = -1L;
 
     public CatalogContribution(
@@ -60,10 +64,18 @@ public final class CatalogContribution implements ShellContribution, AutoCloseab
         monsters = new MonsterCatalogSection(controller::acceptMonsterIntent);
         items = new ItemsCatalogSection(controller::acceptItemsIntent);
         savedEncounters = new SavedEncounterCatalogSection(controller::acceptSavedEncounterIntent);
+        npcs = new NpcCatalogSection(controller::acceptWorldReferenceIntent);
+        factions = new FactionCatalogSection(controller::acceptWorldReferenceIntent);
+        locations = new LocationCatalogSection(controller::acceptWorldReferenceIntent);
+        encounterTables = new EncounterTableCatalogSection(controller::acceptEncounterTableIntent);
         List<CatalogSection> sections = new ArrayList<>();
         sections.add(monsters);
         sections.add(items);
         sections.add(savedEncounters);
+        sections.add(npcs);
+        sections.add(factions);
+        sections.add(locations);
+        sections.add(encounterTables);
         sections.addAll(legacySections);
         workspace = new CatalogWorkspaceView(controller, sections);
         unsubscribe = controller.publication().subscribe(this::apply);
@@ -84,6 +96,10 @@ public final class CatalogContribution implements ShellContribution, AutoCloseab
         monsters.renderAuxiliary(monsterAuxiliary(state));
         items.render(state.items());
         savedEncounters.render(state.savedEncounters());
+        npcs.render(state.worldReferences());
+        factions.render(state.worldReferences());
+        locations.render(state.worldReferences());
+        encounterTables.render(state.encounterTables());
     }
 
     @Override
@@ -100,9 +116,9 @@ public final class CatalogContribution implements ShellContribution, AutoCloseab
 
     private static MonsterCatalogAuxiliaryOptions monsterAuxiliary(CatalogWorkspaceState state) {
         return new MonsterCatalogAuxiliaryOptions(
-                state.encounterTables().results().rows(),
-                state.worldReferences().factions().results().rows(),
-                state.worldReferences().locations().results().rows());
+                state.encounterTables().options(),
+                state.worldReferences().factionOptions(),
+                state.worldReferences().locationOptions());
     }
 
     private final class CatalogShellBinding implements ShellBinding {

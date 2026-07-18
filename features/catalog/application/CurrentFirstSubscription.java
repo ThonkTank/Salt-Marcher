@@ -30,7 +30,7 @@ final class CurrentFirstSubscription {
             apply.accept(value);
         };
         Runnable unsubscribe = Objects.requireNonNull(subscribe.apply(listener), "unsubscribe");
-        apply.accept(Objects.requireNonNull(current.get(), "current snapshot"));
+        apply.accept(current.get());
         while (true) {
             List<T> delayed;
             synchronized (lock) {

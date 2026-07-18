@@ -104,6 +104,15 @@ final class CatalogTestRuntime {
             @Override public void addNpc(long npcId) { }
             @Override public void setLocation(long locationId) { }
         };
+        return contribution(new CatalogRoutes(
+                ignored -> { },
+                detail -> features.items.adapter.javafx.ItemDetailsView.openInspector(inspector, detail),
+                worldRoutes,
+                encounterRoute,
+                sceneRoute));
+    }
+
+    ShellContribution contribution(CatalogRoutes routes) {
         CatalogFeature.Component catalog = CatalogFeature.create(
                 new CatalogProviders(
                         new CatalogProviders.MonsterProviders(
@@ -113,12 +122,7 @@ final class CatalogTestRuntime {
                         new CatalogProviders.WorldReferenceProviders(creatures.referenceIndex(), worldPlanner),
                         new CatalogProviders.EncounterTableProviders(tables.application(), tables.catalog()),
                         DirectUiDispatcher.INSTANCE),
-                new CatalogRoutes(
-                        ignored -> { },
-                        detail -> features.items.adapter.javafx.ItemDetailsView.openInspector(inspector, detail),
-                        worldRoutes,
-                        encounterRoute,
-                        sceneRoute));
+                routes);
         return catalog.contribution();
     }
 

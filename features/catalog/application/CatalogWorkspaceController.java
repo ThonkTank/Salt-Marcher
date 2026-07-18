@@ -53,9 +53,12 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
                 itemCatalog, requiredRoutes.itemInspector(), dispatcher, this::sectionChanged);
         savedEncounters = new SavedEncounterCatalogController(
                 savedPlans, requiredRoutes.encounter(), dispatcher, this::sectionChanged);
-        worldReferences = new WorldReferenceCatalogController(creatureReferences, world, this::sectionChanged);
+        worldReferences = new WorldReferenceCatalogController(
+                creatureReferences, world, requiredRoutes.worldInspectors(), requiredRoutes.encounter(),
+                requiredRoutes.scene(), dispatcher, this::sectionChanged);
         encounterTables = new EncounterTableCatalogController(
-                encounterTableCommands, encounterTableCatalog, this::sectionChanged);
+                encounterTableCommands, encounterTableCatalog, requiredRoutes.encounter(),
+                worldReferences, dispatcher, this::sectionChanged);
         sections = List.of(monsters, items, savedEncounters, worldReferences, encounterTables);
         publication = new CatalogWorkspacePublication(snapshot(), dispatcher);
     }
@@ -83,6 +86,14 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
 
     public void acceptSavedEncounterIntent(SavedEncounterCatalogIntent intent) {
         savedEncounters.accept(intent);
+    }
+
+    public void acceptWorldReferenceIntent(WorldReferenceCatalogIntent intent) {
+        worldReferences.accept(intent);
+    }
+
+    public void acceptEncounterTableIntent(EncounterTableCatalogIntent intent) {
+        encounterTables.accept(intent);
     }
 
     @Override

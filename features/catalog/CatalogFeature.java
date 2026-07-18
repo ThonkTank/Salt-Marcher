@@ -25,7 +25,7 @@ public final class CatalogFeature {
                 requiredProviders.encounterTables().catalog(),
                 requiredProviders.publicationDispatcher(),
                 requiredRoutes);
-        LegacyCatalogBindingAdapter legacy = new LegacyCatalogBindingAdapter(controller, requiredRoutes);
+        LegacyCatalogBindingAdapter legacy = new LegacyCatalogBindingAdapter();
         features.catalog.adapter.javafx.CatalogContribution contribution =
                 new features.catalog.adapter.javafx.CatalogContribution(controller, legacy.sections());
         return new Component(controller, contribution, legacy);

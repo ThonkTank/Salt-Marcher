@@ -3,10 +3,8 @@ package features.catalog.adapter.javafx;
 import features.catalog.application.MonsterCatalogFilterDraft;
 import features.catalog.application.MonsterCatalogIntent;
 import features.catalog.application.MonsterCatalogState;
+import features.catalog.application.CatalogReferenceOption;
 import features.creatures.api.CreatureFilterOptions;
-import features.encountertable.api.EncounterTableSummary;
-import features.worldplanner.api.WorldFactionSummary;
-import features.worldplanner.api.WorldLocationSummary;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -39,11 +37,11 @@ final class MonsterCatalogControls extends VBox {
     private final MultiSelect<String> subtypes = new MultiSelect<>("Unterart", Function.identity());
     private final MultiSelect<String> biomes = new MultiSelect<>("Umgebung", Function.identity());
     private final MultiSelect<String> alignments = new MultiSelect<>("Gesinnung", Function.identity());
-    private final MultiSelect<EncounterTableSummary> encounterTables =
-            new MultiSelect<>("Tabelle", EncounterTableSummary::name);
-    private final MultiSelect<WorldFactionSummary> factions =
-            new MultiSelect<>("Fraktionen", WorldFactionSummary::displayName);
-    private final ComboBox<WorldLocationSummary> location = new ComboBox<>();
+    private final MultiSelect<CatalogReferenceOption> encounterTables =
+            new MultiSelect<>("Tabelle", CatalogReferenceOption::label);
+    private final MultiSelect<CatalogReferenceOption> factions =
+            new MultiSelect<>("Fraktionen", CatalogReferenceOption::label);
+    private final ComboBox<CatalogReferenceOption> location = new ComboBox<>();
     private final FlowPane chips = new FlowPane(4, 2);
     private final Button clear = new Button("Leeren");
     private Consumer<MonsterCatalogIntent> intent = ignored -> { };
@@ -60,12 +58,12 @@ final class MonsterCatalogControls extends VBox {
                 .forEach(picker -> picker.onChanged(this::publishFilters));
         location.setAccessibleText("Location");
         location.setConverter(new StringConverter<>() {
-            @Override public String toString(WorldLocationSummary value) {
-                return value == null || value.locationId() <= 0L
+            @Override public String toString(CatalogReferenceOption value) {
+                return value == null || value.id() <= 0L
                         ? "(Alle Locations)"
-                        : "#" + value.locationId() + " | " + value.displayName();
+                        : "#" + value.id() + " | " + value.label();
             }
-            @Override public WorldLocationSummary fromString(String value) {
+            @Override public CatalogReferenceOption fromString(String value) {
                 return null;
             }
         });
@@ -103,8 +101,8 @@ final class MonsterCatalogControls extends VBox {
             subtypes.render(options.subtypes(), draft.creatureSubtypes());
             biomes.render(options.biomes(), draft.biomes());
             alignments.render(options.alignments(), draft.alignments());
-            encounterTables.render(auxiliary.encounterTables(), draft.encounterTableIds(), EncounterTableSummary::tableId);
-            factions.render(auxiliary.factions(), draft.worldFactionIds(), WorldFactionSummary::factionId);
+            encounterTables.render(auxiliary.encounterTables(), draft.encounterTableIds(), CatalogReferenceOption::id);
+            factions.render(auxiliary.factions(), draft.worldFactionIds(), CatalogReferenceOption::id);
             renderLocations(auxiliary.locations(), draft.worldLocationId());
             renderChips(draft, auxiliary.encounterTables());
         } finally {
@@ -129,18 +127,17 @@ final class MonsterCatalogControls extends VBox {
         crMaximum.setValue(choices.contains(maximum) ? maximum : "");
     }
 
-    private void renderLocations(List<WorldLocationSummary> values, long selectedId) {
-        WorldLocationSummary all = new WorldLocationSummary(0L, "(Alle Locations)", "", List.of(), List.of());
-        List<WorldLocationSummary> choices = new ArrayList<>();
+    private void renderLocations(List<CatalogReferenceOption> values, long selectedId) {
+        CatalogReferenceOption all = new CatalogReferenceOption(0L, "(Alle Locations)");
+        List<CatalogReferenceOption> choices = new ArrayList<>();
         choices.add(all);
         choices.addAll(values);
-        WorldLocationSummary selected = choices.stream()
-                .filter(value -> value.locationId() == selectedId)
+        CatalogReferenceOption selected = choices.stream()
+                .filter(value -> value.id() == selectedId)
                 .findFirst()
                 .orElseGet(() -> selectedId <= 0L
                         ? all
-                        : new WorldLocationSummary(
-                                selectedId, "Location #" + selectedId, "", List.of(), List.of()));
+                        : new CatalogReferenceOption(selectedId, "Location #" + selectedId));
         if (!choices.contains(selected)) {
             choices.add(selected);
         }
@@ -159,17 +156,17 @@ final class MonsterCatalogControls extends VBox {
         if (rendering) {
             return;
         }
-        long locationId = location.getValue() == null ? 0L : location.getValue().locationId();
+        long locationId = location.getValue() == null ? 0L : location.getValue().id();
         intent.accept(new MonsterCatalogIntent.ChangeFilters(new MonsterCatalogFilterDraft(
                 search.getText(), value(crMinimum), value(crMaximum),
                 sizes.selectedValues(), types.selectedValues(), subtypes.selectedValues(),
                 biomes.selectedValues(), alignments.selectedValues(),
-                encounterTables.selectedKeys(EncounterTableSummary::tableId),
-                factions.selectedKeys(WorldFactionSummary::factionId),
+                encounterTables.selectedKeys(CatalogReferenceOption::id),
+                factions.selectedKeys(CatalogReferenceOption::id),
                 locationId)));
     }
 
-    private void renderChips(MonsterCatalogFilterDraft draft, List<EncounterTableSummary> tables) {
+    private void renderChips(MonsterCatalogFilterDraft draft, List<CatalogReferenceOption> tables) {
         chips.getChildren().clear();
         addChip("Suche: " + draft.nameQuery(), !draft.nameQuery().isBlank(),
                 () -> publish(draftWithName(draft, "")));
@@ -177,8 +174,8 @@ final class MonsterCatalogControls extends VBox {
             addChip(type, true, () -> publish(without(draft, type, true)));
         }
         for (Long tableId : draft.encounterTableIds()) {
-            String label = tables.stream().filter(table -> table.tableId() == tableId)
-                    .map(EncounterTableSummary::name).findFirst().orElse("Tabelle " + tableId);
+            String label = tables.stream().filter(table -> table.id() == tableId)
+                    .map(CatalogReferenceOption::label).findFirst().orElse("Tabelle " + tableId);
             addChip(label, true, () -> publish(withoutTable(draft, tableId)));
         }
     }

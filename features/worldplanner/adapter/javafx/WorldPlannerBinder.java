@@ -2,16 +2,12 @@ package features.worldplanner.adapter.javafx;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import javafx.scene.Node;
 import javafx.scene.layout.VBox;
 import org.jspecify.annotations.Nullable;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
-import shell.api.ShellBinding;
-import shell.api.ShellControls;
-import shell.api.ShellSlot;
 import features.creatures.api.CreatureReferenceIndexModel;
 import features.encountertable.api.EncounterTableCatalogModel;
 import features.worldplanner.api.WorldPlannerApi;
@@ -37,8 +33,6 @@ import features.worldplanner.api.RemoveWorldLocationEncounterTableCommand;
 import features.worldplanner.api.DeleteWorldLocationCommand;
 import features.worldplanner.api.WorldPlannerSnapshotModel;
 import features.worldplanner.api.WorldPlannerEncounterSink;
-import platform.ui.searchfilter.SearchFilterControlsView;
-import platform.ui.searchfilter.SearchFilterControlsViewInputEvent;
 
 final class WorldPlannerBinder {
 
@@ -73,55 +67,6 @@ final class WorldPlannerBinder {
 
     Runnable subscribeToInspectorSnapshots() {
         return snapshotModel.subscribe(this::applyInspectorSnapshot);
-    }
-
-    ShellBinding bind() {
-        WorldPlannerViewModel viewModel = new WorldPlannerViewModel(encounter != null);
-        WorldPlannerControlsView controlsView = new WorldPlannerControlsView();
-        SearchFilterControlsView searchFilterView = new SearchFilterControlsView();
-        WorldPlannerNpcMainView npcMainView = new WorldPlannerNpcMainView();
-        WorldPlannerFactionMainView factionMainView = new WorldPlannerFactionMainView();
-        WorldPlannerLocationMainView locationMainView = new WorldPlannerLocationMainView();
-        WorldPlannerSourceMainView sourceMainView = new WorldPlannerSourceMainView();
-        WorldPlannerMainView mainView = new WorldPlannerMainView(
-                npcMainView,
-                factionMainView,
-                locationMainView,
-                sourceMainView);
-        controlsView.bind(viewModel);
-        viewModel.bindSearchFilters(searchFilterView);
-        npcMainView.bind(viewModel);
-        factionMainView.bind(viewModel);
-        locationMainView.bind(viewModel);
-        sourceMainView.bind(viewModel);
-        mainView.bind(viewModel);
-        viewModel.onControlsInput(controlsView, event ->
-                viewModel.consumeControls(event, worldPlanner::refresh, () -> openDetails(viewModel)));
-        searchFilterView.onViewInputEvent(event -> consumeSearch(viewModel, event));
-        npcMainView.onViewInputEvent(event -> {
-            viewModel.selectNpc(event.selectedNpcIndex());
-            openDetails(viewModel);
-        });
-        factionMainView.onViewInputEvent(event -> {
-            viewModel.selectFaction(event.selectedFactionIndex());
-            openDetails(viewModel);
-        });
-        locationMainView.onViewInputEvent(event -> {
-            viewModel.selectLocation(event.selectedLocationIndex());
-            openDetails(viewModel);
-        });
-        snapshotModel.subscribe(viewModel::applySnapshot);
-        if (creatureCatalog != null) {
-            creatureCatalog.subscribe(viewModel::applyCreatureCatalog);
-            viewModel.applyCreatureCatalog(creatureCatalog.current());
-        }
-        if (encounterTableCatalog != null) {
-            encounterTableCatalog.subscribe(viewModel::applyEncounterTables);
-            viewModel.applyEncounterTables(encounterTableCatalog.current());
-        }
-        viewModel.applySnapshot(snapshotModel.current());
-        viewModel.activateRoot(worldPlanner::refresh, () -> openDetails(viewModel));
-        return new Binding(ShellControls.stack(controlsView, searchFilterView), mainView);
     }
 
     void openNpc(long npcId) {
@@ -191,15 +136,6 @@ final class WorldPlannerBinder {
             viewModel.applyEncounterTables(encounterTableCatalog.current());
         }
         return viewModel;
-    }
-
-    private void consumeSearch(
-            WorldPlannerViewModel viewModel,
-            SearchFilterControlsViewInputEvent event
-    ) {
-        SearchFilterControlsViewInputEvent safeEvent = Objects.requireNonNull(event, "event");
-        viewModel.applySearchFilters(safeEvent.searchQuery(), selectedFiltersByGroup(safeEvent));
-        openDetails(viewModel);
     }
 
     private void consumeState(
@@ -475,14 +411,6 @@ final class WorldPlannerBinder {
                 || actions.removeTableRequested();
     }
 
-    private static Map<String, List<String>> selectedFiltersByGroup(SearchFilterControlsViewInputEvent event) {
-        Map<String, List<String>> filters = new java.util.HashMap<>();
-        for (SearchFilterControlsViewInputEvent.SelectedFilter selected : event.selectedFilters()) {
-            filters.computeIfAbsent(selected.groupKey(), ignored -> new ArrayList<>()).add(selected.optionKey());
-        }
-        return filters;
-    }
-
     private static int parseQuantity(String value) {
         try {
             return Math.max(0, Integer.parseInt(value == null ? "" : value.trim()));
@@ -554,21 +482,4 @@ final class WorldPlannerBinder {
         }
     }
 
-    private record Binding(
-            Node controls,
-            Node main
-    ) implements ShellBinding {
-
-        @Override
-        public String title() {
-            return "World Planner";
-        }
-
-        @Override
-        public Map<ShellSlot, Node> slotContent() {
-            return Map.of(
-                    ShellSlot.COCKPIT_CONTROLS, controls,
-                    ShellSlot.COCKPIT_MAIN, main);
-        }
-    }
 }
