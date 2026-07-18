@@ -179,10 +179,6 @@ final class DungeonClusterInvariantScenarios {
         assertEquals("North Hall", defaultCluster.withName("  North Hall  ").name(),
                 "DGI-CLUSTER-005 custom cluster name trims");
 
-        DungeonMap map = twoByTwoMap();
-        long clusterId = firstClusterId(map);
-        DungeonMap renamed = map.saveClusterName(clusterId, "  Gallery Cluster  ");
-        assertEquals("Gallery Cluster", firstClusterName(renamed), "DGI-CLUSTER-005 aggregate saves cluster name");
     }
 
     private static DungeonMap twoByTwoMap() {

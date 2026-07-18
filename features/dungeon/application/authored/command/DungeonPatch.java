@@ -4,7 +4,6 @@ import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
-import features.dungeon.domain.core.structure.feature.FeatureMarkerCatalog;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -84,13 +83,17 @@ public record DungeonPatch(
         if (!mapId.equals(safeCurrent.metadata().mapId()) || safeCurrent.revision() != expectedRevision) {
             throw new IllegalArgumentException("patch map and expected revision must match current authored truth");
         }
-        FeatureMarkerCatalog featureMarkers = safeCurrent.featureMarkers();
+        DungeonMap changed = safeCurrent;
         for (DungeonPatchChange change : changes) {
-            featureMarkers = switch (change) {
-                case FeatureMarkerChange featureMarkerChange -> featureMarkerChange.applyTo(featureMarkers);
+            changed = switch (change) {
+                case FeatureMarkerChange featureMarkerChange -> changed.withFeatureMarkers(
+                        featureMarkerChange.applyTo(changed.featureMarkers()));
+                case RoomRegionChange roomRegionChange -> changed.withExactRoomRegionChange(
+                        roomRegionChange.before(), roomRegionChange.after());
+                case RoomClusterChange roomClusterChange -> changed.withExactRoomClusterChange(
+                        roomClusterChange.before(), roomClusterChange.after());
             };
         }
-        DungeonMap changed = safeCurrent.withFeatureMarkers(featureMarkers);
         if (changed.equals(safeCurrent)) {
             throw new IllegalStateException("accepted patch must change authored truth");
         }
@@ -120,7 +123,7 @@ public record DungeonPatch(
     private static DungeonPatchResultFacts derivedFacts(List<DungeonPatchChange> changes) {
         return new DungeonPatchResultFacts(changes.stream()
                 .filter(Objects::nonNull)
-                .map(DungeonPatchChange::topologyRef)
+                .map(DungeonPatchChange::entityRef)
                 .distinct()
                 .toList());
     }

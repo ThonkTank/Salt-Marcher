@@ -10,7 +10,6 @@ import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
-import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.RoomClusterGeometry;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import features.dungeon.domain.core.structure.room.RoomClusterRoomPartition;
@@ -35,7 +34,7 @@ final class DungeonRoomInvariantScenarios {
     private static void assertRoomIdentityAndNarrationSurviveClusterEdits() {
         DungeonMap map = twoByTwoMap();
         RoomRegion original = firstRoom(map).withNarration(new DungeonRoomNarration("Quiet room", List.of()));
-        DungeonMap narrated = map.saveRoomNarration(original.roomId(), original.narration());
+        DungeonMap narrated = withNarration(map, original.roomId(), original.narration());
         DungeonMap moved = narrated.moveCluster(original.clusterId(), 1, 0, 0);
         RoomRegion movedRoom = firstRoom(moved);
         assertEquals(original.roomId(), movedRoom.roomId(), "DGI-ROOM-001 room id survives cluster move");
@@ -62,9 +61,10 @@ final class DungeonRoomInvariantScenarios {
         RoomRegion right = roomByAnchor(partitioned, new Cell(2, 1, 0));
         DungeonRoomNarration leftNarration = new DungeonRoomNarration("Left identity", List.of());
         DungeonRoomNarration rightNarration = new DungeonRoomNarration("Right identity", List.of());
-        DungeonMap narratedTwoRooms = partitioned
-                .saveRoomNarration(left.roomId(), leftNarration)
-                .saveRoomNarration(right.roomId(), rightNarration);
+        DungeonMap narratedTwoRooms = withNarration(
+                withNarration(partitioned, left.roomId(), leftNarration),
+                right.roomId(),
+                rightNarration);
         DungeonMap expanded = narratedTwoRooms.paintRoomRectangle(new Cell(1, 1, 0), new Cell(1, 2, 0));
         assertEquals(leftNarration, roomById(expanded, left.roomId()).narration(),
                 "DGI-ROOM-001 partition-preserving paint keeps left room narration");
@@ -121,10 +121,6 @@ final class DungeonRoomInvariantScenarios {
         RoomRegion defaultRoom = new RoomRegion(12L, 4L, 3L, "", Map.of(0, new Cell(1, 1, 0)), null);
         assertEquals("Raum 12", defaultRoom.name(), "DGI-ROOM-003 default room name");
         assertEquals("Library", defaultRoom.withName("  Library  ").name(), "DGI-ROOM-003 custom room name trims");
-        DungeonMap map = twoByTwoMap();
-        long roomId = firstRoom(map).roomId();
-        DungeonMap renamed = map.saveRoomName(roomId, "  Blue Room  ");
-        assertEquals("Blue Room", firstRoom(renamed).name(), "DGI-ROOM-003 aggregate saves room name");
     }
 
     private static void assertRoomLabelFloorAndAnchorFacts() {
@@ -143,6 +139,15 @@ final class DungeonRoomInvariantScenarios {
     private static DungeonMap twoByTwoMap() {
         return DungeonMapAuthoring.empty(new DungeonMapIdentity(10L), "Room Test")
                 .paintRoomRectangle(new Cell(1, 1, 0), new Cell(2, 2, 0));
+    }
+
+    private static DungeonMap withNarration(
+            DungeonMap map,
+            long roomId,
+            DungeonRoomNarration narration
+    ) {
+        RoomRegion before = map.rooms().findRoom(roomId).orElseThrow();
+        return map.withExactRoomRegionChange(before, before.withNarration(narration));
     }
 
     private static RoomRegion firstRoom(DungeonMap map) {
