@@ -1,137 +1,101 @@
 Status: Active Target
-Owner: SaltMarcher Team
-Last Reviewed: 2026-07-16
-Source of Truth: Session Generation domain language, immutable aggregate,
-deterministic policies, and invariants.
+Owner: Session Generation Feature
+Last Reviewed: 2026-07-18
+Source of Truth: Generation language, deterministic policies, immutable runs,
+and invariants.
 
 # Session Generation Domain Model
 
 ## Context Role And Ownership
 
-Context Name: SessionGeneration
+Context Name: `SessionGeneration`
 
 Context Role: Generated Proposal Context
 
-`sessiongeneration` owns generation requests translated into domain input,
-deterministic generation policy, immutable generated runs, audits, and the
-versioned reference catalog used by those runs. It does not own Session Planner
-records, party-character identity, creature statblocks, or Encounter saved-plan
-rosters.
-
-The application boundary accepts public request carriers, translates them into
-domain values, selects one complete catalog snapshot, invokes the engine, and
-stores a completed aggregate. Session Planner and Encounter translation remains
-outside this domain.
+The context owns normalized generation input, deterministic generation policy,
+encounter intents, rewards, packing, warnings, audits, immutable generated
+runs, and the versioned reference-catalog meaning recorded by those runs. It
+owns neither authored sessions nor concrete creatures, Encounter rosters, or
+saved Encounter plans.
 
 ## Published Language
 
-The public language uses typed values for:
+The public language contains typed values for:
 
-- `GenerationRunId`, `GenerationRequest`, `GenerationResponse`, and
-  `GenerationStatus`
-- `PartyLevelCount`, `AdventureDayFraction`, `EncounterCount`, and `Seed`
-- `SessionSummary`, `EncounterTarget`, `GeneratedEncounter`,
-  `SelectedEncounterBlock`, `TreasurePlan`, `LootItemLine`, `PackingRow`,
-  `RewardSummary`, and `GenerationAudit`
-- `EncounterDifficulty`, `EncounterRole`, `StockClass`, `RewardChannel`,
-  `LootRole`, `MagicRarity`, `DecisionType`, and `AuditStatus`
-- `EngineVersion`, `CatalogVersion`, and `CatalogContentHash`
+- `GenerationRunId`, normalized generation input, and seed
+- session summary, encounter target, encounter intent, and CR-and-role block
+- treasure plan, loot item line, packing row, and reward summary
+- warning and audit outcome
+- engine version, catalog version, and catalog content hash
 
-Closed vocabularies cross boundaries as enums or value types, not string
-round-trips. Unknown imported catalog vocabulary is rejected or translated by
-the catalog adapter before domain generation; it does not create a second
-domain enum.
+Closed vocabulary crosses the boundary as enums or value types. Versions are
+audit metadata, not user-selectable ruleset labels.
 
-Engine and catalog versions are audit and reproducibility metadata. They are
-not user-selectable ruleset labels.
+## Write Model And Derived State
 
-## Immutable Aggregate
+`GeneratedRun` is the immutable Session Generation write model. It owns:
 
-Aggregate Root: `GeneratedRun`
+- stable run identity and normalized input
+- catalog and engine identity
+- ordered encounter targets and encounter intents
+- ordered treasures, item lines, packing rows, and reward summary
+- optional formatted output, typed warnings, and audits
 
-A successful run is immutable after creation and owns:
+There is no update command. A changed request produces a different run.
 
-- stable generation identity, seed, engine version, catalog version, and
-  catalog content hash
-- normalized level counts and session context
-- ordered encounter targets and selected encounters with their selected blocks
-- ordered treasure plans, loot lines, packing rows, reward summary, and
-  formatted output
-- ordered audit outcomes and warnings
+`GeneratedRunDraft` is transient derived state containing the same semantic
+generation result before it becomes durable. It is complete and immutable but
+is not stored truth and cannot be observed as a partial `GeneratedRun`.
 
-The aggregate stores generated facts, not foreign entities. Encounter entries
-describe generation slots and roles; they do not become saved Encounter plans
-until Encounter imports them. Reward entries remain Session Generation truth;
-Session Planner stores only stable references to them.
+Encounter intents describe CR, role, XP, and quantity requirements. They do not
+contain selected creature identity and never claim to be a concrete Encounter.
+Reward detail remains Session Generation truth; consumers retain stable
+references and resolve detail through Session Generation.
 
-There is no update command for a completed run. A changed request creates a new
-run. Load is a read of the same immutable aggregate.
+## Deterministic Engine
 
-The complete encounter candidate search space is derived generation-stage
-state. The engine constructs and ranks it deterministically, selects the
-encounter and blocks needed by the result, records candidate coverage through
-the audit vocabulary, and then discards the remaining candidates. Candidate
-enumeration order and unselected candidates are not durable aggregate truth.
+`GenerationEngine` is a pure policy over normalized `GenerationInput` and one
+immutable `ReferenceCatalogSnapshot`. Its named stages are:
 
-## Deterministic Engine And Catalog
+1. session context
+2. encounter target allocation
+3. encounter intent construction and selection
+4. treasure planning
+5. non-magic and magic item resolution
+6. packing
+7. reward aggregation and formatting
+8. warnings and hard audits
 
-`GenerationEngine` is a pure domain policy over `GenerationInput` and one
-`ReferenceCatalogSnapshot`. The snapshot is immutable, has one stable ordered
-row sequence per catalog family, and is identified by version plus content
-hash.
+The same normalized input, engine version, and catalog content hash produce the
+same domain values. Wall-clock time, locale defaults, database order, hash
+iteration, and volatile randomness cannot influence output.
 
-Determinism means the same normalized input, engine version, and catalog
-content hash produce the same domain values before run identity and storage
-metadata are attached. Seeded choices use positive modulo semantics and stable
-tie-breakers. Hash-map iteration, wall-clock time, locale defaults, database
-row accidents, or volatile randomness MUST NOT affect a run.
-
-The reference catalog owns progression, CR, role-band, encounter-pattern,
-loot, modifier, relation, theme, magic, variant, decision-type, spell,
-enspelling, curse, container, and source vocabulary. Catalog rows are reference
-facts, not mutable members of a `GeneratedRun`.
-
-## Commands And Invariants
-
-Commands are:
-
-- generate a new run from normalized inputs
-- load an existing run by stable identity
-
-Core invariants are:
+## Invariants
 
 - party levels are unique and from 1 through 20; counts are non-negative and
-  their sum is positive
-- explicit encounter count is from 1 through 10
+  total count is positive
+- explicit encounter count is 1 through 10
 - encounter numbers and targets are contiguous and ordered from 1
 - encounter targets sum exactly to the session XP target
-- every selected encounter refers to one target and retains the ordered blocks
-  that form its generated composition
-- treasure, loot-line, packing-row, and audit identities are unique within the
-  run
-- candidate coverage is at least one for every encounter target before the
-  transient candidate set is discarded, and that outcome is retained as an
-  audit fact
-- at most one quest treasure and at most one treasure per encounter anchor
-  exist; encounter anchors are unique
-- non-magic slot totals and magic counts equal the session-context targets
-- magic lines contribute zero gold value and remain additional to gold budget
-- every loot line has one packing result and every packing result is valid
-  before a run is applicable
-- no hard audit is failed in a successful applicable run
-- exact reference-catalog row selections are not cross-catalog invariants
+- every encounter target has one non-empty structured intent
+- treasure, item-line, packing-row, and audit identities are unique within a
+  run or draft
+- at most one quest treasure and at most one treasure per Encounter anchor
+  exist
+- non-magic slot totals and magic counts equal the calculated targets
+- every item line has one valid packing result
+- hard audit failure prevents an applicable draft or run
+- one run identity denotes exactly one normalized semantic result
+- exact catalog-row selection is not a cross-version invariant
 
-Fallbacks that still produce a valid reference result add typed warnings.
-Missing candidate coverage, invalid catalog references, or any failed hard
-invariant prevents successful aggregate creation.
+The complete encounter candidate search space is transient stage state. Only
+selected intents and candidate-coverage audits become run truth.
 
 ## Consistency Boundary
 
-One generated run and all of its owned children are committed atomically. The
-shipped catalog artifact is a separate read-only consistency boundary: a run
-pins the catalog version and content hash it used, and its structured result is
-self-contained, so a later artifact version cannot reinterpret historical
-output.
+One `GeneratedRun` and all of its owned values form one immutable consistency
+boundary. A run pins engine version, catalog version, and catalog content hash
+and remains self-contained after creation.
 
 ## Sources
 

@@ -1,47 +1,36 @@
-Status: Draft
-Owner: SaltMarcher Team
-Last Reviewed: 2026-07-16
-Source of Truth: Entry point and document map for the session planner feature.
+Status: Active Target
+Owner: Session Planner Feature
+Last Reviewed: 2026-07-18
+Source of Truth: Entry point and document map for the Session Planner feature.
 
-# Session Planner Feature Docs
+# Session Planner Feature
 
-## Purpose
+## Reading Order
 
-The `sessionplanner` feature owns the authored planning record for one
-adventure session. It combines session-local participant references, ordered
-encounter references, budget allocations, encounter-day assumptions, and
-selection state into one persisted session record.
-
-It does not own party truth, encounter-plan roster truth, creature truth,
-generated reward truth, loot truth, or generation rules.
+1. Read [Requirements](requirements/requirements-session-planner.md) for the
+   observable preparation flow and compact workspace.
+2. Read [Domain](domain/domain-session-planner.md) for authored truth and
+   invariants.
+3. Read [Persistence Contract](contract/contract-session-planner-persistence.md)
+   for stored references and write behavior.
+4. Read [Architecture](architecture/architecture-session-planner.md) for the
+   preparation workflow, workspace snapshot, concurrency, and performance
+   decisions.
+5. Read the temporary
+   [Greenfield Roadmap](delivery/roadmap-session-planner-greenfield.md) only
+   while implementing or reviewing the replacement. It owns sequence and
+   deletion gates, not durable behavior or architecture.
 
 ## Document Set
 
-### Requirements
+- [Requirements](requirements/requirements-session-planner.md)
+- [Domain](domain/domain-session-planner.md)
+- [Persistence Contract](contract/contract-session-planner-persistence.md)
+- [Architecture](architecture/architecture-session-planner.md)
+- [Temporary Greenfield Roadmap](delivery/roadmap-session-planner-greenfield.md)
 
-- [Session Planner Requirements](./requirements/requirements-session-planner.md)
+## Neighboring Owners
 
-### Architecture
-
-- [Session Planner Architecture](./architecture/architecture-session-planner.md)
-
-### Contract
-
-- [Session Planner Persistence Contract](./contract/contract-session-planner-persistence.md)
-
-### Domain
-
-- [Session Planner Domain Model](./domain/domain-session-planner.md)
-
-## Integrations
-
-- [Session Generation Feature](../sessiongeneration/README.md)
-- [Encounter Generated Import](../encounter/contract/contract-encounter-generated-import.md)
-- Session Planner publishes every prepared scene through a revisioned,
-  I/O-free catalog. Scene imports create independent copies; later planner
-  edits do not mutate running scenes.
-
-## References
-
-- [Party Feature Overview](../party/README.md) (line 1)
-- [Encounter Feature Overview](../encounter/README.md) (line 1)
+- [Session Generation](../sessiongeneration/README.md)
+- [Encounter](../encounter/README.md)
+- [Party](../party/README.md)

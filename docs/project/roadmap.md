@@ -1,6 +1,6 @@
 Status: Active
 Owner: Aaron (Product Owner)
-Last Reviewed: 2026-07-17
+Last Reviewed: 2026-07-18
 Source of Truth: Owner-confirmed SaltMarcher Now, Next, and Later direction
 linked to GitHub issues.
 
@@ -9,7 +9,9 @@ linked to GitHub issues.
 ## Now
 
 - Build encounter planning and management for preparation and table play
-  ([#433](https://github.com/ThonkTank/Salt-Marcher/issues/433)).
+  ([#433](https://github.com/ThonkTank/Salt-Marcher/issues/433)); the ordered
+  Session preparation replacement lives in the temporary
+  [Session Planner Greenfield Roadmap](../sessionplanner/delivery/roadmap-session-planner-greenfield.md).
 - Manage scenes as the current in-game state with relevant NPCs, places, and
   context in one place
   ([#434](https://github.com/ThonkTank/Salt-Marcher/issues/434)).

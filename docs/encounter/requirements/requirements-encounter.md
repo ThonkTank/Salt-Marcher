@@ -1,6 +1,6 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-16
+Last Reviewed: 2026-07-18
 Source of Truth: User-facing behavior and acceptance criteria for the
 encounter feature.
 
@@ -17,8 +17,9 @@ Provide a runtime encounter builder that:
 - lets catalog creature rows build a manual encounter roster
 - saves and opens created encounter rosters as persistent encounter plans
 - can use selected encounter tables as curated generator sources
-- atomically imports one applied Session Generation encounter batch as
-  Encounter-owned saved plans
+- resolves one ordered group of Session Generation intents into concrete
+  creature rosters
+  and publishes it as Encounter-owned saved plans
 
 ## Non-Goals
 
@@ -41,14 +42,13 @@ Provide a runtime encounter builder that:
    plan into the builder.
 7. The user starts initiative and combat from the current builder roster.
 
-Generated import is a separate Session Planner-driven flow:
+Generated preparation is a separate Session Planner-driven flow:
 
-1. Session Planner applies one current Session Generation preview.
-2. Encounter validates the generated source and all ordered encounter specs.
-3. Encounter resolves every typed XP-and-role slot through current creature
-   facts.
-4. Encounter saves the entire generated batch or none of it and returns the
-   complete encounter-number-to-plan-id mapping.
+1. Session Planner requests a complete ordered group of generated encounters.
+2. Encounter resolves every requested encounter into a concrete roster while
+   preserving request order.
+3. Success makes the complete group available as saved plans; failure leaves
+   the previously visible saved-plan set unchanged.
 
 ## Expected Capabilities
 
@@ -80,15 +80,12 @@ Generated import is a separate Session Planner-driven flow:
 - list saved encounter plans from the encounter title row
 - open a saved encounter plan into Creation mode and clear initiative, combat,
   result, and generated-alternative runtime state
-- accept a non-blocking typed generated-origin import without exposing
-  repositories or persistence rows
-- preserve generated origin for idempotent retry while treating every imported
-  roster as ordinary Encounter-owned saved-plan truth
+- return concrete creature identities, quantities, display names, total count,
+  adjusted XP, and difficulty in every prepared roster summary
+- treat every generated roster as ordinary Encounter-owned saved-plan truth
 
 ## Acceptance Criteria
 
-- the encounter feature depends only on public party, creature, and
-  encounter-table APIs for generation
 - saved encounter plans persist only creature identity, quantity, display name,
   and generated label; creature statblocks remain creature-owned
 - generated alternatives remain derived runtime output until explicitly saved
@@ -106,13 +103,13 @@ Generated import is a separate Session Planner-driven flow:
   generated statblock counts from exceeding finite faction stock caps
 - opening a saved plan replaces the builder roster and returns the state tab to
   Creation mode
-- one generated import returns either every requested plan mapping in encounter
-  order or no mapping and no newly saved plan
-- an invalid or unresolvable member prevents the entire generated batch from
-  being persisted
-- retrying an identical completed generated origin does not create duplicate
+- generated preparation publishes every concrete roster in request order or
+  publishes none of them
+- invalid, unresolvable, or failed generated preparation leaves the previously
+  visible saved-plan set unchanged
+- retrying an identical completed preparation creates no visible duplicate
   plans
-- generated import stores no reward, packing, audit, session-scene, or copied
+- generated preparation stores no reward, packing, audit, session-scene, or copied
   creature-detail truth
 
 ## References
@@ -121,4 +118,5 @@ Generated import is a separate Session Planner-driven flow:
 - [Encounter Domain Model](../domain/domain-encounter.md) (line 1)
 - [Encounter Persistence Contract](../contract/contract-encounter-persistence.md) (line 1)
 - [Encounter Table Feature Spec](../../encountertable/requirements/requirements-encountertable.md) (line 1)
-- [Generated Import Contract](../contract/contract-encounter-generated-import.md)
+- [Generated Preparation Contract](../contract/contract-encounter-generated-import.md)
+- [Architecture](../architecture/architecture-encounter.md)

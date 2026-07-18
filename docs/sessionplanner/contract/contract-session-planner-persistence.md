@@ -1,134 +1,146 @@
-Status: Draft
-Owner: SaltMarcher Team
-Last Reviewed: 2026-07-16
-Source of Truth: Persistence path, reference rules, and error behavior for the
-`sessionplanner` session record.
+Status: Active Target
+Owner: Session Planner Feature
+Last Reviewed: 2026-07-18
+Source of Truth: Session Planner stored truth, reference semantics, writes, and
+error behavior.
 
 # Session Planner Persistence Contract
 
-## Purpose
+## Owner And Boundary
 
-This contract defines the persisted storage boundary for the `sessionplanner`
-feature.
+The Session Planner SQLite adapter is the only writer of planner-owned session
+records. It implements a feature-owned application port and remains private to
+`SessionPlannerFeature`. SQL records, schema carriers, repositories, and
+adapter failures never cross `SessionPlannerApi`.
 
-Current state persists multiple session records with stable
-  session identity, user-visible display names, and a current-session pointer
-and exposes create/open/rename/delete operations through a planner-owned
-boundary.
+## Final Prepared-Session Commit Operation
 
-Target state:
+The application port exposes one final replacement operation:
 
-- `sessionplanner` keeps persisting its own session record without storing
-  foreign domain internals
+```text
+commitPreparedSession(CommitPreparedSessionCommand)
+  -> CommitPreparedSessionResult
+```
 
-## Adapter Boundary
+`CommitPreparedSessionCommand` contains:
 
-- The session-planner SQLite adapter satisfies planner-owned application ports
-  and remains private to the session-planner composition entry point.
-- The application composition supplies `SessionPlannerApi` explicitly;
-  registry, discovery, mutable published models, repositories, gateways,
-  mappers, and schema types are not public boundaries.
-- SQL records and adapter failures MUST NOT cross `SessionPlannerApi`.
+- target `SessionPlanId` and `expectedRevision`
+- stable preparation identity and normalized prepared-content fingerprint
+- the complete replacement scene order, rests, selection, manual loot notes,
+  and generated reward references
+- already-committed generation-run identity and the complete ordered mapping of
+  generated Encounter numbers to Encounter-plan identities
+
+It contains no foreign domain object, repository carrier, progress state, or
+partially prepared content.
+
+`CommitPreparedSessionResult` is exactly one of:
+
+- `SUCCESS(previousRevision, committedRevision, committedSession)`
+- `INVALID(validationErrors)`
+- `STALE(expectedRevision, currentRevision)`
+- `NOT_FOUND(sessionPlanId)`
+- `STORAGE_FAILURE(displaySafeMessage)`
+
+`SUCCESS` advances the revision exactly once. Every non-success result writes
+nothing. In particular, `STALE` is the optimistic-revision outcome and never
+silently retries against `currentRevision`.
 
 ## Stored Truth
 
-The persisted session record stores only sessionplanner-owned truth:
+The normalized session record stores:
 
-- stable session identity
-- user-visible session display name
-- session-local participant references to party characters
-- exact `encounterDays` planning input
-- ordered session-owned scenes
-- optional references from a scene to an encounter-owned saved plan
-- session-owned scene title and scene notes per scene
-- optional stable World Planner location reference per scene
-- per-scene budget percentages or equivalent planner-owned allocation data
-  when an encounter plan is linked
-- selected scene context
-- session-local rests, placeholders, and planner status or selection truth
-- ordered generated reward references containing session scene identity, typed
-  Session Generation run identity, treasure identity, and a last-known display
-  label
+- stable session identity, display name, and revision
+- the current-session pointer
+- session-local participant references
+- exact adventure-day fraction
+- ordered scenes with title, notes, optional World Planner location ID, and
+  optional Encounter-plan ID
+- allocation data for encounter-linked scenes
+- selected scene identity
+- rests between scenes
+- manual loot notes
+- ordered generated reward references with scene ID, typed generation-run ID,
+  treasure ID, and last-known display label
 
-The session record does not persist:
+It MUST NOT store party membership or character detail, Encounter rosters,
+creature facts, copied World Planner detail, generated item lines, reward
+values, packing rows, audits, catalog rows, generation drafts, preparation
+fingerprints, or progress state.
 
-- party membership truth
-- party character details beyond stable references
-- encounter rosters or copied encounter creature rows
-- creature statblocks or creature lifecycle truth
-- copied World Planner location details
-- loot-object internals or fake gold-budget fields
-- generation previews, preview fingerprints, engine or catalog metadata,
-  encounter-generation specifications, generated reward contents, packing, or
-  audit rows
+`lastKnownLabel` is a display fallback for an unavailable foreign reward. It is
+not reward truth and MUST NOT replace a successful typed reward projection.
 
 ## Reference Rules
 
-- party characters are stored only as stable session participant references
-- scene entries are session-owned truth; their encounter reference is optional
-  and, when present, is stored only as a stable reference to an
-  encounter-owned saved plan
-- World Planner locations are stored only as stable references; location
-  display/detail truth remains World Planner-owned
-- foreign truth must be re-read through the owning public boundary when a
-  session is opened
-- session-owned scene ordering, allocations, rests, placeholders, and selection
-  state remain in sessionplanner persistence even when foreign source data is
-  reloaded
-- every generated reward reference MUST name an existing session-owned scene.
-  Quest and environment rewards use encounter-free scenes; encounter-channel
-  rewards use their generated encounter scene. Run and treasure identities
-  remain foreign stable references and are not SQLite foreign keys into another
-  feature's tables
-- `lastKnownLabel` is a planner-owned display fallback and MUST NOT be treated
-  as generated reward truth
+- foreign identities are stored as typed stable references, not cross-feature
+  SQLite foreign keys
+- every reward reference names an existing scene in the same session
+- Encounter-channel rewards reference their generated encounter scene
+- quest and environment rewards reference encounter-free scenes
+- a missing foreign object remains visibly unavailable; Session Planner does
+  not recreate it from copied data
+- deleting or editing a scene removes or changes only planner-owned references
+- Session Planner never cascades deletion into Party, Encounter, World Planner,
+  or Session Generation storage
 
-## Validation And Error Behavior
+## Writes And Revisions
 
-- session-plan writes MUST reject malformed session identity, participant
-  reference, encounter reference, or allocation payloads instead of silently
-  persisting partial planner truth
-- `encounterDays` MUST be stored as an exact decimal value, not a lossy
-  floating-point approximation
-- persistence payloads MUST reject copied foreign rosters, character detail,
-  creature detail, and loot internals
-- generated reward writes MUST reject non-positive scene or treasure
-  identities, blank generation-run identities, orphaned session-scene
-  references, duplicate ordered references, and malformed labels
-- storage and schema failures MUST surface through Session Planner API result
-  statuses instead of leaking adapter exceptions to consumers
-- failed writes MUST keep the last stable planner-owned current session state
-  visible instead of publishing a half-persisted mutation
-- applying one generation MUST persist all new scene and generated reward
-  references in the same Session Planner transaction
+Every authored command uses optimistic revision validation. A successful write
+replaces the root and affected child collections in one Session Planner
+transaction, advances the revision once, and returns the committed snapshot.
+A stale revision or invalid payload writes nothing.
 
-## Stability Rules
+`commitPreparedSession` is one replacement write. It preserves session
+identity, display name, participants, and adventure-day fraction while
+atomically replacing generated scenes, rests, manual loot notes, reward
+references, selection, and revision. The command accepts only already-persisted
+generation-run and Encounter-plan identities returned by their owning APIs.
 
-- session-plan persistence remains behind a feature-owned application port
-  implemented by the Session Planner SQLite adapter and wired by the feature
-  composition entry point
-- sessionplanner persistence stays the canonical home for session-owned
-  allocations and selection state even when later workflows trigger encounter
-  or loot mutations through foreign boundaries
-- the current pointer model identifies the active persisted session and does
-  not collapse the persisted catalog back to a single-session domain limit
-- the canonical normalized generated-reward child table is introduced by a
-  contiguous Session Planner feature migration and is replaced atomically with
-  the other child collections for one session
+Before any write, the adapter validates target identity and revision, the
+prepared-content fingerprint, exact decimals, contiguous ordering, positive
+foreign identities, unique scene and reward keys, valid rest gaps,
+scene-local reward references, a complete Encounter-number mapping, and all
+optional reference shapes. Partial child replacement is forbidden.
 
-## Verification Notes
+## Cross-Feature Retry
 
-- This contract is currently `Review-Owned`.
-- Review must reject persisted fields that duplicate encounter rosters, party
-  character internals, creature detail, or loot internals.
-- Review must reject persisted preview fingerprints or copied Session
-  Generation result rows.
-- Review must reject persistence types or internal collaborators crossing
-  `SessionPlannerApi`.
+Session Generation and Encounter commits precede the Session Planner write and
+are idempotent by deterministic origin plus content fingerprint. If the planner
+write fails, their immutable artifacts remain valid foreign truth. Retrying the
+same preparation reuses them; it does not create duplicates or delete them as
+compensation.
+
+This contract deliberately does not create a cross-feature transaction or a
+workflow journal in Session Planner persistence. In-flight preparation state is
+runtime state. A process restart may require the user to request preparation
+again; idempotency makes that retry safe.
+
+## Migration And Compatibility
+
+Feature migrations remain contiguous under the existing Session Planner owner
+key. New columns or child tables are added by a new migration and never by
+rewriting an applied migration.
+
+Existing canonical sessions remain readable throughout the replacement.
+Legacy manual loot-placeholder rows migrate losslessly to manual loot notes.
+Existing generated reward references retain their run and treasure identities.
+No migration copies foreign reward or roster detail into Session Planner.
+
+Real user data is never deleted or rewritten destructively without the
+owner-approved backup boundary.
+
+## Error Contract
+
+Validation errors identify the invalid command field or invariant without
+echoing authored content. Failure messages are display-safe and contain no SQL,
+exception text, paths, generated item payloads, or authored notes. A failure
+leaves the last stable workspace revision visible.
 
 ## References
 
-- [Session Planner Domain Model](../domain/domain-session-planner.md) (line 1)
-- [Session Planner Architecture](../architecture/architecture-session-planner.md) (line 1)
-- [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)
+- [Domain](../domain/domain-session-planner.md)
+- [Architecture](../architecture/architecture-session-planner.md)
+- [Shared Persistence Lifecycle](../../project/contract/persistence-lifecycle.md)
 - [Session Generation Contract](../../sessiongeneration/contract/contract-session-generation.md)
+- [Encounter Generated Preparation](../../encounter/contract/contract-encounter-generated-import.md)
