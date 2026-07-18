@@ -81,6 +81,69 @@ final class DungeonEditorMapControlsScenarios {
         assertEquals(1L, runtime.database().countChunksForMap(mapId),
                 "DE-HISTORY-001 committed edit persists the affected chunk inventory");
 
+        click(button(controls, "Auswahl"));
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_PRESSED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(2.5),
+                viewport.sceneToScreenY(2.5),
+                false);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_RELEASED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(2.5),
+                viewport.sceneToScreenY(2.5),
+                false);
+        assertTrue(runtime.stateModel().current().selection().topologyRef().id() > 0L,
+                "DE-HISTORY-003 room selection reaches a stable authored target");
+        dragMap(mapView, MouseButton.MIDDLE, 300, 300, 330, 320);
+        viewport = binding.mapContentModel().currentViewport();
+
+        click(button(controls, "Raum"));
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_PRESSED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(5.5),
+                viewport.sceneToScreenY(5.5),
+                false);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_DRAGGED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(6.5),
+                viewport.sceneToScreenY(6.5),
+                false);
+        assertTrue(runtime.mapSurfaceModel().current().preview()
+                        instanceof DungeonEditorPreview.RoomRectanglePreview,
+                "DE-HISTORY-003 preview is active before cancellation");
+        fireMapShortcut(mapView, KeyCode.ESCAPE);
+
+        click(button(controls, "Wand"));
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_PRESSED,
+                MouseButton.SECONDARY,
+                viewport.sceneToScreenX(2.5),
+                viewport.sceneToScreenY(1.0),
+                false);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_RELEASED,
+                MouseButton.SECONDARY,
+                viewport.sceneToScreenX(2.5),
+                viewport.sceneToScreenY(1.0),
+                false);
+        assertEquals(
+                features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.PROTECTED_EXTERIOR_WALL,
+                ((features.dungeon.api.editor.DungeonEditorCommandOutcome.Rejected)
+                        runtime.controlsModel().current().commandOutcome()).reason(),
+                "DE-HISTORY-003 exterior-wall delete reaches the typed rejection route");
+        assertEquals(2L, runtime.database().mapRevision(mapId),
+                "DE-HISTORY-003 tool, selection, camera, preview, and rejection do not commit a revision");
+
         fireMapShortcut(mapView, KeyCode.Z, true, false);
         assertEquals(0L, runtime.database().countRoomsForMap(mapId),
                 "DE-HISTORY-001 shortcut undo restores the prior authored map");

@@ -16,9 +16,26 @@ import org.jspecify.annotations.Nullable;
 /** Per-running-editor-session authored undo/redo history. */
 final class DungeonEditHistory {
     static final int MAXIMUM_COMMANDS = 200;
-    static final long MAXIMUM_ESTIMATED_BYTES = 128L * 1024L * 1024L;
+    static final long MAXIMUM_ENCODED_BYTES = 128L * 1024L * 1024L;
 
     private final Map<Long, MapHistory> histories = new HashMap<>();
+    private final int maximumCommands;
+    private final long maximumEncodedBytes;
+
+    DungeonEditHistory() {
+        this(MAXIMUM_COMMANDS, MAXIMUM_ENCODED_BYTES);
+    }
+
+    DungeonEditHistory(int maximumCommands, long maximumEncodedBytes) {
+        if (maximumCommands < 1) {
+            throw new IllegalArgumentException("history command limit must be positive");
+        }
+        if (maximumEncodedBytes < 1L) {
+            throw new IllegalArgumentException("history encoded-byte limit must be positive");
+        }
+        this.maximumCommands = maximumCommands;
+        this.maximumEncodedBytes = maximumEncodedBytes;
+    }
 
     void recordPatch(DungeonPatch patch) {
         if (patch != null) {
@@ -134,8 +151,8 @@ final class DungeonEditHistory {
         do {
             trimmed = false;
             for (MapHistory history : histories.values()) {
-                if (history.undo.size() > MAXIMUM_COMMANDS
-                        || history.estimatedBytes > MAXIMUM_ESTIMATED_BYTES) {
+                if (history.undo.size() > maximumCommands
+                        || history.encodedBytes > maximumEncodedBytes) {
                     HistoryEntry oldest = history.undo.peekFirst();
                     if (oldest != null) {
                         removeFromAll(oldest, true);
@@ -159,7 +176,7 @@ final class DungeonEditHistory {
 
     private void recalculateAll() {
         for (MapHistory history : histories.values()) {
-            history.estimatedBytes = history.undo.stream().mapToLong(HistoryEntry::encodedBytes).sum()
+            history.encodedBytes = history.undo.stream().mapToLong(HistoryEntry::encodedBytes).sum()
                     + history.redo.stream().mapToLong(HistoryEntry::encodedBytes).sum();
         }
     }
@@ -252,6 +269,6 @@ final class DungeonEditHistory {
     private static final class MapHistory {
         private final Deque<HistoryEntry> undo = new ArrayDeque<>();
         private final Deque<HistoryEntry> redo = new ArrayDeque<>();
-        private long estimatedBytes;
+        private long encodedBytes;
     }
 }
