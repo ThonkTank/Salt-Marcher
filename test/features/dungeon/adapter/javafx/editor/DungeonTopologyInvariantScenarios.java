@@ -170,7 +170,10 @@ final class DungeonTopologyInvariantScenarios {
         assertPresent(map, linkedRef, "linked transition topology identity is published after create");
         assertPresent(map, deletableRef, "deletable transition topology identity is published after create");
 
-        DungeonMap described = map.saveTransitionDescription(40L, "A linked passage.");
+        Transition beforeDescription = transitionById(map, 40L);
+        DungeonMap described = map.withExactTransitionChange(
+                beforeDescription,
+                beforeDescription.withDescription("A linked passage."));
         assertEquals(
                 "A linked passage.",
                 transitionById(described, 40L).description(),
@@ -193,10 +196,14 @@ final class DungeonTopologyInvariantScenarios {
         assertPresent(linked, firstRef, "transition topology identity survives link source update");
         assertPresent(linked, linkedRef, "transition topology identity survives link target update");
 
-        DungeonMap rejectedDelete = linked.deleteTransition(40L);
+        if (linked.transitionCatalog().canDelete(40L)) {
+            throw new IllegalStateException("transition topology identity rejects protected delete");
+        }
+        DungeonMap rejectedDelete = linked;
         assertPresent(rejectedDelete, firstRef, "transition topology identity survives protected delete reject");
 
-        DungeonMap deleted = rejectedDelete.deleteTransition(42L);
+        Transition deletable = transitionById(rejectedDelete, 42L);
+        DungeonMap deleted = rejectedDelete.withExactTransitionChange(deletable, null);
         assertAbsent(deleted, deletableRef, "transition topology identity is released after successful delete");
         assertPresent(deleted, firstRef, "unrelated transition topology identity survives another transition delete");
     }
@@ -256,11 +263,14 @@ final class DungeonTopologyInvariantScenarios {
             Cell anchor,
             TransitionDestination destination
     ) {
-        return map.withTransitionCatalog(map.transitionCatalog().withCreated(
+        Transition transition = new Transition(
                 transitionId,
                 map.metadata().mapId().value(),
+                "",
                 TransitionAnchor.cell(anchor),
-                destination));
+                destination,
+                null);
+        return map.withExactTransitionChange(null, transition);
     }
 
     private static Transition transitionById(DungeonMap map, long transitionId) {

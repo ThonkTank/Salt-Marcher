@@ -6,7 +6,7 @@ import java.util.Set;
 
 /** One stable-identity authored entity delta carried by a Dungeon patch. */
 public sealed interface DungeonPatchChange permits FeatureMarkerChange, RoomRegionChange, RoomClusterChange,
-        StairChange {
+        StairChange, TransitionChange {
 
     DungeonMapIdentity mapId();
 

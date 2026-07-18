@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.OptionalLong;
 import org.jspecify.annotations.Nullable;
 
@@ -26,31 +27,16 @@ public record TransitionCatalog(List<Transition> transitions) {
         return safeAnchor.isPlaced() && destination != null && destination.isValid();
     }
 
-    public TransitionCatalog withCreated(
-            long transitionId,
-            long mapId,
-            @Nullable TransitionAnchor anchor,
-            @Nullable TransitionDestination destination
-    ) {
-        if (!canCreate(anchor, destination)) {
-            return this;
-        }
-        TransitionAnchor safeAnchor = anchor == null ? TransitionAnchor.none() : anchor;
-        List<Transition> result = new ArrayList<>(transitions);
-        result.add(new Transition(transitionId, mapId, "", safeAnchor, destination, null));
-        return new TransitionCatalog(result);
-    }
-
     public boolean canDelete(long transitionId) {
-        return transitionById(transitionId) != null && !protectedTransition(transitionId);
+        return transition(transitionId) != null && !protectedTransition(transitionId);
     }
 
     public boolean containsTransition(long transitionId) {
-        return transitionById(transitionId) != null;
+        return transition(transitionId) != null;
     }
 
     public @Nullable TransitionDestination destinationByTransitionId(long transitionId) {
-        Transition transition = transitionById(transitionId);
+        Transition transition = transition(transitionId);
         return transition == null ? null : transition.destination();
     }
 
@@ -69,35 +55,6 @@ public record TransitionCatalog(List<Transition> transitions) {
                 targetTransitionId,
                 bidirectional);
         return new AuthoredTransitionLinkRewritePlanner(loadedMaps).rewrite(link);
-    }
-
-    public TransitionCatalog withoutTransition(long transitionId) {
-        if (!canDelete(transitionId)) {
-            return this;
-        }
-        List<Transition> result = new ArrayList<>();
-        for (Transition transition : transitions) {
-            if (transition.transitionId() != transitionId) {
-                result.add(transition);
-            }
-        }
-        return new TransitionCatalog(result);
-    }
-
-    public TransitionCatalog withDescription(long transitionId, String description) {
-        if (transitionId <= NO_TRANSITION_ID) {
-            return this;
-        }
-        List<Transition> result = new ArrayList<>();
-        boolean changed = false;
-        for (Transition transition : transitions) {
-            Transition nextTransition = transition.transitionId() == transitionId
-                    ? transition.withDescription(description)
-                    : transition;
-            result.add(nextTransition);
-            changed = changed || !nextTransition.equals(transition);
-        }
-        return changed ? new TransitionCatalog(result) : this;
     }
 
     public TransitionCatalog withMapLocalAuthoredTransitionLink(AuthoredTransitionLink link) {
@@ -176,7 +133,7 @@ public record TransitionCatalog(List<Transition> transitions) {
         return false;
     }
 
-    private @Nullable Transition transitionById(long transitionId) {
+    public @Nullable Transition transition(long transitionId) {
         if (transitionId <= NO_TRANSITION_ID) {
             return null;
         }
@@ -186,6 +143,33 @@ public record TransitionCatalog(List<Transition> transitions) {
             }
         }
         return null;
+    }
+
+    public TransitionCatalog withExactChange(
+            @Nullable Transition before,
+            @Nullable Transition after
+    ) {
+        Transition identity = after == null ? before : after;
+        if (identity == null) {
+            throw new IllegalArgumentException("transition change requires identity");
+        }
+        if (!Objects.equals(transition(identity.transitionId()), before)) {
+            throw new IllegalStateException("transition patch does not match current authored truth");
+        }
+        List<Transition> nextTransitions = new ArrayList<>();
+        for (Transition transition : transitions) {
+            if (transition.transitionId() == identity.transitionId()) {
+                if (after != null) {
+                    nextTransitions.add(after);
+                }
+            } else {
+                nextTransitions.add(transition);
+            }
+        }
+        if (before == null && after != null) {
+            nextTransitions.add(after);
+        }
+        return new TransitionCatalog(nextTransitions);
     }
 
     private static List<Transition> nonNullTransitions(List<Transition> source) {

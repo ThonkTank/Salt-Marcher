@@ -1,11 +1,18 @@
 package features.dungeon.application.authored;
 
+import features.dungeon.application.authored.command.DungeonCompoundPatch;
+import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.domain.core.structure.DungeonMap;
+import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 /** Per-running-editor-session authored undo/redo history. */
 final class DungeonEditHistory {
@@ -15,57 +22,153 @@ final class DungeonEditHistory {
     private final Map<Long, MapHistory> histories = new HashMap<>();
 
     void record(DungeonMap before, DungeonMap after) {
-        if (before == null || after == null || before.equals(after)) {
-            return;
+        if (before != null && after != null && !before.equals(after)) {
+            recordEntry(new SnapshotEntry(before, after, estimatedBytes(before, after)));
         }
-        long mapId = after.metadata().mapId().value();
-        MapHistory history = histories.computeIfAbsent(mapId, ignored -> new MapHistory());
-        history.redo.clear();
-        history.undo.addLast(new Change(before, after, estimatedBytes(before, after)));
-        history.recalculateBytes();
-        history.trim();
     }
 
-    DungeonMap undo(DungeonMap current) {
-        MapHistory history = history(current);
-        if (history == null || history.undo.isEmpty()) {
-            return current;
+    void recordPatch(DungeonPatch patch) {
+        if (patch != null) {
+            recordEntry(new PatchEntry(patch, patch.inverse()));
         }
-        Change change = history.undo.removeLast();
-        history.redo.addLast(change);
-        history.recalculateBytes();
-        return change.before();
     }
 
-    DungeonMap redo(DungeonMap current) {
-        MapHistory history = history(current);
-        if (history == null || history.redo.isEmpty()) {
-            return current;
+    void recordCompoundPatch(DungeonCompoundPatch patch) {
+        if (patch != null) {
+            recordEntry(new CompoundPatchEntry(patch, patch.inverse()));
         }
-        Change change = history.redo.removeLast();
-        history.undo.addLast(change);
-        history.recalculateBytes();
-        return change.after();
+    }
+
+    Step peekUndo(DungeonMapIdentity mapId) {
+        return peek(mapId, true);
+    }
+
+    Step peekRedo(DungeonMapIdentity mapId) {
+        return peek(mapId, false);
     }
 
     boolean canUndo(DungeonMapIdentity mapId) {
-        MapHistory history = mapId == null ? null : histories.get(mapId.value());
-        return history != null && !history.undo.isEmpty();
+        return peekUndo(mapId).present();
     }
 
     boolean canRedo(DungeonMapIdentity mapId) {
-        MapHistory history = mapId == null ? null : histories.get(mapId.value());
-        return history != null && !history.redo.isEmpty();
+        return peekRedo(mapId).present();
+    }
+
+    void complete(Step step) {
+        if (step == null || !step.present()) {
+            return;
+        }
+        HistoryEntry entry = step.entry();
+        for (long mapId : entry.mapIds()) {
+            MapHistory history = histories.get(mapId);
+            Deque<HistoryEntry> source = step.undo() ? history.undo : history.redo;
+            Deque<HistoryEntry> target = step.undo() ? history.redo : history.undo;
+            if (source.peekLast() != entry) {
+                throw new IllegalStateException("history entry is no longer current for every affected map");
+            }
+            source.removeLast();
+            target.addLast(entry);
+        }
+        recalculateAll();
     }
 
     void remove(DungeonMapIdentity mapId) {
-        if (mapId != null) {
-            histories.remove(mapId.value());
+        if (mapId == null) {
+            return;
+        }
+        MapHistory history = histories.get(mapId.value());
+        if (history == null) {
+            return;
+        }
+        for (HistoryEntry entry : Set.copyOf(history.undo)) {
+            removeFromAll(entry, true);
+        }
+        for (HistoryEntry entry : Set.copyOf(history.redo)) {
+            removeFromAll(entry, false);
+        }
+        histories.remove(mapId.value());
+        recalculateAll();
+    }
+
+    private Step peek(DungeonMapIdentity mapId, boolean undo) {
+        if (mapId == null) {
+            return Step.empty();
+        }
+        MapHistory history = histories.get(mapId.value());
+        Deque<HistoryEntry> stack = history == null ? null : undo ? history.undo : history.redo;
+        HistoryEntry entry = stack == null ? null : stack.peekLast();
+        return entry != null && currentForEveryAffectedMap(entry, undo)
+                ? new Step(entry, undo)
+                : Step.empty();
+    }
+
+    private boolean currentForEveryAffectedMap(HistoryEntry entry, boolean undo) {
+        for (long mapId : entry.mapIds()) {
+            MapHistory history = histories.get(mapId);
+            Deque<HistoryEntry> stack = history == null ? null : undo ? history.undo : history.redo;
+            if (stack == null || stack.peekLast() != entry) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void recordEntry(HistoryEntry entry) {
+        for (long mapId : entry.mapIds()) {
+            clearRedoForMap(mapId);
+        }
+        for (long mapId : entry.mapIds()) {
+            MapHistory history = histories.computeIfAbsent(mapId, ignored -> new MapHistory());
+            history.undo.addLast(entry);
+        }
+        recalculateAll();
+        trimAll();
+    }
+
+    private void clearRedoForMap(long mapId) {
+        MapHistory history = histories.get(mapId);
+        if (history == null) {
+            return;
+        }
+        for (HistoryEntry entry : Set.copyOf(history.redo)) {
+            removeFromAll(entry, false);
         }
     }
 
-    private MapHistory history(DungeonMap current) {
-        return current == null ? null : histories.get(current.metadata().mapId().value());
+    private void trimAll() {
+        boolean trimmed;
+        do {
+            trimmed = false;
+            for (MapHistory history : histories.values()) {
+                if (history.undo.size() > MAXIMUM_COMMANDS
+                        || history.estimatedBytes > MAXIMUM_ESTIMATED_BYTES) {
+                    HistoryEntry oldest = history.undo.peekFirst();
+                    if (oldest != null) {
+                        removeFromAll(oldest, true);
+                        recalculateAll();
+                        trimmed = true;
+                        break;
+                    }
+                }
+            }
+        } while (trimmed);
+    }
+
+    private void removeFromAll(HistoryEntry entry, boolean undo) {
+        for (long mapId : entry.mapIds()) {
+            MapHistory history = histories.get(mapId);
+            if (history != null) {
+                (undo ? history.undo : history.redo).remove(entry);
+            }
+        }
+    }
+
+    private void recalculateAll() {
+        for (MapHistory history : histories.values()) {
+            history.estimatedBytes = history.undo.stream().mapToLong(HistoryEntry::encodedBytes).sum()
+                    + history.redo.stream().mapToLong(HistoryEntry::encodedBytes).sum();
+        }
     }
 
     private static long estimatedBytes(DungeonMap before, DungeonMap after) {
@@ -82,24 +185,110 @@ final class DungeonEditHistory {
         return Math.max(4_096L, structuralObjects * 512L);
     }
 
-    private record Change(DungeonMap before, DungeonMap after, long estimatedBytes) {
+    record Step(@Nullable HistoryEntry entry, boolean undo) {
+        static Step empty() {
+            return new Step(null, false);
+        }
+
+        boolean present() {
+            return entry != null;
+        }
+
+        Set<Long> mapIds() {
+            return entry == null ? Set.of() : entry.mapIds();
+        }
+
+        Map<Long, DungeonMap> applyTo(Map<Long, DungeonMap> currentMaps) {
+            if (entry == null) {
+                return Map.of();
+            }
+            return entry.applyTo(currentMaps, undo);
+        }
+    }
+
+    private sealed interface HistoryEntry permits SnapshotEntry, PatchEntry, CompoundPatchEntry {
+        Set<Long> mapIds();
+
+        long encodedBytes();
+
+        Map<Long, DungeonMap> applyTo(Map<Long, DungeonMap> currentMaps, boolean undo);
+    }
+
+    private record SnapshotEntry(DungeonMap before, DungeonMap after, long encodedBytes)
+            implements HistoryEntry {
+        @Override
+        public Set<Long> mapIds() {
+            return Set.of(after.metadata().mapId().value());
+        }
+
+        @Override
+        public Map<Long, DungeonMap> applyTo(Map<Long, DungeonMap> currentMaps, boolean undo) {
+            long mapId = after.metadata().mapId().value();
+            DungeonMap current = requiredMap(currentMaps, mapId);
+            DungeonMap target = undo ? before : after;
+            return Map.of(mapId, DungeonMapAuthoring.restoreContent(target, current.revision() + 1L));
+        }
+    }
+
+    private record PatchEntry(DungeonPatch forward, DungeonPatch inverse) implements HistoryEntry {
+        @Override
+        public Set<Long> mapIds() {
+            return Set.of(forward.mapId().value());
+        }
+
+        @Override
+        public long encodedBytes() {
+            return forward.encodedBytes() + inverse.encodedBytes();
+        }
+
+        @Override
+        public Map<Long, DungeonMap> applyTo(Map<Long, DungeonMap> currentMaps, boolean undo) {
+            long mapId = forward.mapId().value();
+            DungeonMap current = requiredMap(currentMaps, mapId);
+            DungeonPatch selected = (undo ? inverse : forward).rebased(current.revision());
+            return Map.of(mapId, selected.applyTo(current));
+        }
+    }
+
+    private record CompoundPatchEntry(DungeonCompoundPatch forward, DungeonCompoundPatch inverse)
+            implements HistoryEntry {
+        @Override
+        public Set<Long> mapIds() {
+            Set<Long> result = new LinkedHashSet<>();
+            for (DungeonPatch patch : forward.patches()) {
+                result.add(patch.mapId().value());
+            }
+            return Set.copyOf(result);
+        }
+
+        @Override
+        public long encodedBytes() {
+            return forward.encodedBytes() + inverse.encodedBytes();
+        }
+
+        @Override
+        public Map<Long, DungeonMap> applyTo(Map<Long, DungeonMap> currentMaps, boolean undo) {
+            Map<DungeonMapIdentity, Long> revisions = new LinkedHashMap<>();
+            for (long mapId : mapIds()) {
+                DungeonMap current = requiredMap(currentMaps, mapId);
+                revisions.put(current.metadata().mapId(), current.revision());
+            }
+            DungeonCompoundPatch selected = (undo ? inverse : forward).rebased(revisions);
+            return selected.applyTo(currentMaps);
+        }
+    }
+
+    private static DungeonMap requiredMap(Map<Long, DungeonMap> maps, long mapId) {
+        DungeonMap map = maps == null ? null : maps.get(mapId);
+        if (map == null) {
+            throw new IllegalArgumentException("history step requires every affected map");
+        }
+        return map;
     }
 
     private static final class MapHistory {
-        private final Deque<Change> undo = new ArrayDeque<>();
-        private final Deque<Change> redo = new ArrayDeque<>();
+        private final Deque<HistoryEntry> undo = new ArrayDeque<>();
+        private final Deque<HistoryEntry> redo = new ArrayDeque<>();
         private long estimatedBytes;
-
-        private void recalculateBytes() {
-            estimatedBytes = undo.stream().mapToLong(Change::estimatedBytes).sum()
-                    + redo.stream().mapToLong(Change::estimatedBytes).sum();
-        }
-
-        private void trim() {
-            while (undo.size() > MAXIMUM_COMMANDS || estimatedBytes > MAXIMUM_ESTIMATED_BYTES) {
-                Change removed = undo.removeFirst();
-                estimatedBytes -= removed.estimatedBytes();
-            }
-        }
     }
 }
