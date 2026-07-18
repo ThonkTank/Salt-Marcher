@@ -13,13 +13,12 @@ import javafx.scene.Node;
 final class CatalogWorkspaceView {
 
     private final Map<CatalogSectionId, CatalogSection> sections = new EnumMap<>(CatalogSectionId.class);
-    private final CatalogWorkspaceController controller;
     private final CatalogControlsHost controls;
     private final CatalogContentHost content = new CatalogContentHost();
     private CatalogSection shown;
 
     CatalogWorkspaceView(CatalogWorkspaceController controller, List<CatalogSection> sections) {
-        this.controller = Objects.requireNonNull(controller, "controller");
+        CatalogWorkspaceController requiredController = Objects.requireNonNull(controller, "controller");
         List<CatalogSection> ordered = List.copyOf(Objects.requireNonNull(sections, "sections"));
         if (ordered.isEmpty()) {
             throw new IllegalArgumentException("Catalog requires at least one section.");
@@ -30,7 +29,7 @@ final class CatalogWorkspaceView {
                 throw new IllegalArgumentException("Duplicate Catalog section: " + section.id());
             }
         }
-        controls = new CatalogControlsHost(ordered, controller::selectSection);
+        controls = new CatalogControlsHost(ordered, requiredController::selectSection);
     }
 
     Node controls() {

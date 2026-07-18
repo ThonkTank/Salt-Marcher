@@ -7,7 +7,6 @@ import features.catalog.application.EncounterTableCatalogState.EncounterTableRow
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Optional;
 import java.util.function.Consumer;
 import javafx.scene.Node;
 import javafx.scene.control.TextField;

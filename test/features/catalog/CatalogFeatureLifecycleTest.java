@@ -2,6 +2,7 @@ package features.catalog;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -53,11 +54,14 @@ import java.util.function.Consumer;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
+import javafx.scene.layout.BorderPane;
+import javafx.stage.Stage;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -345,7 +349,7 @@ final class CatalogFeatureLifecycleTest {
     }
 
     @Test
-    void savedEncounterConfirmationIsRenderedAndConfirmedOnceThroughProductionIntents() throws Exception {
+    void savedEncounterRowLinkOpensUnselectedPlanAndConfirmsOnceThroughProductionRoute() throws Exception {
         runOnFx(() -> {
             TrackingSubscription<EncounterBuilderInputs> builder =
                     new TrackingSubscription<>(EncounterBuilderInputs.empty(), null);
@@ -366,23 +370,42 @@ final class CatalogFeatureLifecycleTest {
             ShellBinding binding = component.contribution().bind();
             Parent controls = (Parent) binding.slotContent().get(ShellSlot.COCKPIT_CONTROLS);
             Parent main = (Parent) binding.slotContent().get(ShellSlot.COCKPIT_MAIN);
+            BorderPane host = new BorderPane(main);
+            host.setLeft(controls);
+            Stage stage = new Stage();
+            stage.setScene(new Scene(host, 1_180.0, 720.0));
+            stage.show();
             binding.onActivate();
             toggle(controls, "Katalogbereich Encounter").fire();
+            host.applyCss();
+            host.layout();
             TableView<?> plans = descendants(main).stream()
                     .filter(TableView.class::isInstance).map(TableView.class::cast)
                     .filter(table -> "Gespeicherte Encounter".equals(table.getAccessibleText()))
                     .findFirst().orElseThrow();
-            plans.getSelectionModel().selectFirst();
-            button(controls, "Ausgewählten Encounter im globalen Encounter öffnen").fire();
+            assertNull(plans.getSelectionModel().getSelectedItem());
+
+            button(main, "Öffnen: Proof plan").fire();
+
             assertEquals(List.of(false), savedOpen.discardFlags());
+            assertEquals(List.of(41L), savedOpen.planIds());
+            assertNull(plans.getSelectionModel().getSelectedItem(),
+                    "saved-plan row link must not mutate Catalog selection");
             savedOpen.requests.getFirst().complete(new OpenSavedEncounterPlanResult(
                     OpenSavedEncounterPlanResult.Status.CONFIRMATION_REQUIRED, 41L, "Discard?"));
+            assertTrue(component.controller().publication().current()
+                    .savedEncounters().confirmation().required());
+            assertEquals(0L, component.controller().publication().current()
+                    .savedEncounters().selectedPlanId());
             Button confirm = button(controls, "Verwerfen und öffnen");
             assertTrue(confirm.isVisible());
             confirm.fire();
             confirm.fire();
             assertEquals(List.of(false, true), savedOpen.discardFlags());
+            assertEquals(List.of(41L, 41L), savedOpen.planIds());
+            assertNull(plans.getSelectionModel().getSelectedItem());
             component.close();
+            stage.close();
         });
     }
 
@@ -559,6 +582,7 @@ final class CatalogFeatureLifecycleTest {
         Throwable[] failure = new Throwable[1];
         Runnable wrapped = () -> {
             try {
+                Platform.setImplicitExit(false);
                 action.run();
             } catch (Throwable throwable) {
                 failure[0] = throwable;
@@ -691,10 +715,15 @@ final class CatalogFeatureLifecycleTest {
 
     private static final class RecordingSavedOpen implements CatalogRoutes.EncounterHandoff {
         private final List<Boolean> flags = new ArrayList<>();
+        private final List<Long> planIds = new ArrayList<>();
         private final List<CompletableFuture<OpenSavedEncounterPlanResult>> requests = new ArrayList<>();
 
         private List<Boolean> discardFlags() {
             return List.copyOf(flags);
+        }
+
+        private List<Long> planIds() {
+            return List.copyOf(planIds);
         }
 
         @Override public CompletionStage<OpenSavedEncounterPlanResult> openSavedEncounter(
@@ -702,6 +731,7 @@ final class CatalogFeatureLifecycleTest {
                 boolean discardUnsavedChanges
         ) {
             flags.add(discardUnsavedChanges);
+            planIds.add(planId);
             CompletableFuture<OpenSavedEncounterPlanResult> future = new CompletableFuture<>();
             requests.add(future);
             return future;

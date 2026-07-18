@@ -6,6 +6,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -29,56 +32,90 @@ public final class SmokeStartupTest {
     }
 
     @AfterAll
-    static void shutdownFx() {
-        testsupport.JavaFxRuntime.shutdown();
+    static void shutdownFx() throws Exception {
+        runOnFx(testsupport.JavaFxRuntime::shutdown);
     }
 
     @Test
     void SMOKE_STARTUP_001() throws Exception {
         Instant deadline = Instant.now().plus(TIMEOUT);
-        testsupport.JavaFxRuntime.startup(() -> {
+        runOnFx(() -> {
+            try (AppBootstrap bootstrap = new AppBootstrap()) {
+                AppShell shell = bootstrap.createShell();
+                new Scene(shell, 1150, 700);
+                shell.applyCss();
+                shell.layout();
+                List<ToggleButton> navigation = navigationButtons(shell);
+                require(
+                        navigation.stream().map(Node::getAccessibleText).toList().equals(List.of(
+                                "Szenen",
+                                "Session Planner",
+                                "Dungeon-Editor",
+                                "Dungeon-Reise",
+                                "Hex-Karte",
+                                "Katalog")),
+                        "Expected exact explicit navigation manifest in shell order.");
+                require(
+                        shell.lookup(".title-large") instanceof Label title
+                                && "Dungeon-Editor".equals(title.getText()),
+                        "Expected Dungeon-Editor as explicit default landing.");
+                require(
+                        navigation.stream().filter(ToggleButton::isSelected).map(Node::getAccessibleText).toList()
+                                .equals(List.of("Dungeon-Editor")),
+                        "Expected only the default landing navigation entry to be selected.");
+                require(
+                        shell.lookup(".toolbar") instanceof Pane toolbar && toolbar.getChildren().size() == 4,
+                        "Expected title, spacer, and exactly two explicit top-bar contributions.");
+                List<String> topBarTooltips = shell.lookupAll(".toolbar .button").stream()
+                        .filter(Button.class::isInstance)
+                        .map(Button.class::cast)
+                        .map(Button::getTooltip)
+                        .filter(java.util.Objects::nonNull)
+                        .map(javafx.scene.control.Tooltip::getText)
+                        .sorted()
+                        .toList();
+                require(topBarTooltips.equals(List.of(
+                                "Adventuring-Day-Rechner öffnen",
+                                "Party-Panel öffnen (Alt+P)")),
+                        "Expected distinct Adventuring Day and Party top-bar surfaces, but was "
+                                + topBarTooltips + ".");
+                assertStateTabManifest(shell, navigation);
+                require(Instant.now().isBefore(deadline), "Smoke startup exceeded timeout.");
+            }
         });
-        try (AppBootstrap bootstrap = new AppBootstrap()) {
-            AppShell shell = bootstrap.createShell();
-            new Scene(shell, 1150, 700);
-            shell.applyCss();
-            shell.layout();
-            List<ToggleButton> navigation = navigationButtons(shell);
-            require(
-                    navigation.stream().map(Node::getAccessibleText).toList().equals(List.of(
-                            "Szenen",
-                            "Session Planner",
-                            "Dungeon-Editor",
-                            "Dungeon-Reise",
-                            "Hex-Karte",
-                            "Katalog")),
-                    "Expected exact explicit navigation manifest in shell order.");
-            require(
-                    shell.lookup(".title-large") instanceof Label title && "Dungeon-Editor".equals(title.getText()),
-                    "Expected Dungeon-Editor as explicit default landing.");
-            require(
-                    navigation.stream().filter(ToggleButton::isSelected).map(Node::getAccessibleText).toList()
-                            .equals(List.of("Dungeon-Editor")),
-                    "Expected only the default landing navigation entry to be selected.");
-            require(
-                    shell.lookup(".toolbar") instanceof Pane toolbar && toolbar.getChildren().size() == 4,
-                    "Expected title, spacer, and exactly two explicit top-bar contributions.");
-            List<String> topBarTooltips = shell.lookupAll(".toolbar .button").stream()
-                    .filter(Button.class::isInstance)
-                    .map(Button.class::cast)
-                    .map(Button::getTooltip)
-                    .filter(java.util.Objects::nonNull)
-                    .map(javafx.scene.control.Tooltip::getText)
-                    .sorted()
-                    .toList();
-            require(topBarTooltips.equals(List.of(
-                            "Adventuring-Day-Rechner öffnen",
-                            "Party-Panel öffnen (Alt+P)")),
-                    "Expected distinct Adventuring Day and Party top-bar surfaces, but was " + topBarTooltips + ".");
-            assertStateTabManifest(shell, navigation);
-            require(Instant.now().isBefore(deadline), "Smoke startup exceeded timeout.");
-        }
         openTempSqliteConnection();
+    }
+
+    private static void runOnFx(ThrowingRunnable action) throws Exception {
+        if (Platform.isFxApplicationThread()) {
+            action.run();
+            return;
+        }
+        CountDownLatch completed = new CountDownLatch(1);
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        testsupport.JavaFxRuntime.startup(() -> {
+            try {
+                Platform.setImplicitExit(false);
+                action.run();
+            } catch (Throwable throwable) {
+                failure.set(throwable);
+            } finally {
+                completed.countDown();
+            }
+        });
+        if (!completed.await(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)) {
+            throw new IllegalStateException("Timed out waiting for JavaFX smoke startup work.");
+        }
+        Throwable thrown = failure.get();
+        if (thrown instanceof Exception exception) {
+            throw exception;
+        }
+        if (thrown instanceof Error error) {
+            throw error;
+        }
+        if (thrown != null) {
+            throw new IllegalStateException("JavaFX smoke startup work failed.", thrown);
+        }
     }
 
     private static List<ToggleButton> navigationButtons(AppShell shell) {
@@ -125,5 +162,10 @@ public final class SmokeStartupTest {
         if (!condition) {
             throw new IllegalStateException(message);
         }
+    }
+
+    @FunctionalInterface
+    private interface ThrowingRunnable {
+        void run() throws Exception;
     }
 }
