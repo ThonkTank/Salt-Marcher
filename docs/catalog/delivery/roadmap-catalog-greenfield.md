@@ -95,17 +95,17 @@ M0 Target Lock And Documentation
   native section renderers, moved World Reference and Encounter Table work into
   application controllers, and deleted the obsolete World Planner workspace
   while retaining its provider-owned Inspector/editor path.
-- Current milestone: M5 has a locally green technical candidate in draft PR
-  #517. It deletes `LegacyCatalogBindingAdapter`, removes presentation-owned
-  section lifecycle work and no-op interaction fallbacks, makes application
-  controllers own activation and initial loading, models paging as an explicit
-  optional scaffold capability, and adds target-architecture enforcement.
-  `./gradlew architectureTest`, `./gradlew check`, desktop installation, and
-  diff whitespace proof are green after the final technical diff.
-- Remaining gates: complete the independent post-M5 review cycle, repair and
-  re-prove any findings, obtain owner visual and interaction acceptance, merge
-  PR #517 with required CI green, then delete this temporary roadmap and its
-  Catalog README link in a documentation cleanup PR.
+- Current milestone: M5 has a technically complete candidate in draft PR #517.
+  It deletes `LegacyCatalogBindingAdapter`, moves publication and lifecycle
+  ownership out of JavaFX, requires atomic provider observation, converges the
+  seven section interaction contracts, and closes selection, stale-result, and
+  cleanup failure paths with production-route proof. The final independent
+  architecture and quality review cycle is clean. `./gradlew architectureTest`,
+  `./gradlew check`, desktop installation, diff whitespace proof, and required
+  PR CI are green after the final technical diff.
+- Remaining gates: obtain owner visual and interaction acceptance, integrate
+  current `main` with required CI green, merge PR #517, then delete this
+  temporary roadmap and its Catalog README link in a documentation cleanup PR.
 
 ## Delivery Rules
 
