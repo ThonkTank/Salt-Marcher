@@ -5,26 +5,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Consumer;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import features.creatures.api.CreatureCatalogRow;
 import features.creatures.api.CreatureReferenceIndexResult;
 import features.encountertable.api.EncounterTableCatalogResult;
 import features.encountertable.api.EncounterTableSummary;
-import features.worldplanner.api.RefreshWorldPlannerCommand;
 import features.worldplanner.api.WorldFactionInventoryLimitSummary;
 import features.worldplanner.api.WorldFactionSummary;
 import features.worldplanner.api.WorldLocationSummary;
 import features.worldplanner.api.WorldNpcLifecycleStatus;
 import features.worldplanner.api.WorldNpcSummary;
 import features.worldplanner.api.WorldPlannerSnapshot;
-import platform.ui.searchfilter.SearchFilterControlsContentModel;
-import platform.ui.searchfilter.SearchFilterControlsView;
 
 final class WorldPlannerViewModel {
 
-    private static final String VIEW_PARAMETER = "view";
     static final int NPCS = 0;
     static final int FACTIONS = 1;
     static final int LOCATIONS = 2;
@@ -32,9 +27,6 @@ final class WorldPlannerViewModel {
     static final String FINITE_STOCK_KEY = "finite";
     static final String UNLIMITED_STOCK_KEY = "unlimited";
 
-    private final SearchFilterControlsContentModel searchFilterContentModel = new SearchFilterControlsContentModel();
-    private final ReadOnlyObjectWrapper<ControlsProjection> controlsProjection =
-            new ReadOnlyObjectWrapper<>(ControlsProjection.empty());
     private final ReadOnlyObjectWrapper<NpcProjection> npcProjection =
             new ReadOnlyObjectWrapper<>(NpcProjection.empty());
     private final ReadOnlyObjectWrapper<FactionProjection> factionProjection =
@@ -45,7 +37,6 @@ final class WorldPlannerViewModel {
             new ReadOnlyObjectWrapper<>(SourceProjection.empty());
     private final ReadOnlyObjectWrapper<StateProjection> stateProjection =
             new ReadOnlyObjectWrapper<>(StateProjection.empty());
-    private final Map<Integer, ModuleFilterState> filterStates = new HashMap<>();
     private int activeModuleIndex = NPCS;
     private WorldPlannerSnapshot snapshot;
     private List<WorldPlannerVocabulary.Option<Long>> statblockOptions = List.of();
@@ -62,55 +53,8 @@ final class WorldPlannerViewModel {
         refreshProjections();
     }
 
-    ReadOnlyObjectProperty<ControlsProjection> controlsProjectionProperty() {
-        return controlsProjection.getReadOnlyProperty();
-    }
-
-    ReadOnlyObjectProperty<NpcProjection> npcProjectionProperty() {
-        return npcProjection.getReadOnlyProperty();
-    }
-
-    ReadOnlyObjectProperty<FactionProjection> factionProjectionProperty() {
-        return factionProjection.getReadOnlyProperty();
-    }
-
-    ReadOnlyObjectProperty<LocationProjection> locationProjectionProperty() {
-        return locationProjection.getReadOnlyProperty();
-    }
-
-    ReadOnlyObjectProperty<SourceProjection> sourceProjectionProperty() {
-        return sourceProjection.getReadOnlyProperty();
-    }
-
     ReadOnlyObjectProperty<StateProjection> stateProjectionProperty() {
         return stateProjection.getReadOnlyProperty();
-    }
-
-    void bindSearchFilters(SearchFilterControlsView view) {
-        Objects.requireNonNull(view, VIEW_PARAMETER).bind(searchFilterContentModel);
-    }
-
-    void onControlsInput(WorldPlannerControlsView view, Consumer<ControlsInput> sink) {
-        Objects.requireNonNull(view, VIEW_PARAMETER).onViewInputEvent(sink);
-    }
-
-    void activateRoot(Consumer<RefreshWorldPlannerCommand> refreshSink, Runnable detailOpener) {
-        Objects.requireNonNull(refreshSink, "refreshSink");
-        refreshSink.accept(new RefreshWorldPlannerCommand());
-        Objects.requireNonNull(detailOpener, "detailOpener").run();
-    }
-
-    void consumeControls(
-            ControlsInput input,
-            Consumer<RefreshWorldPlannerCommand> refreshSink,
-            Runnable detailOpener
-    ) {
-        ControlsInput safeInput = input == null ? new ControlsInput(0, false) : input;
-        activate(safeInput.selectedModuleIndex());
-        if (safeInput.refreshRequested()) {
-            Objects.requireNonNull(refreshSink, "refreshSink").accept(new RefreshWorldPlannerCommand());
-        }
-        Objects.requireNonNull(detailOpener, "detailOpener").run();
     }
 
     void activate(int moduleIndex) {
@@ -157,11 +101,6 @@ final class WorldPlannerViewModel {
                         WorldPlannerVocabulary.idLabel(table.tableId(), table.name()),
                         table.tableId()))
                 .toList();
-        refreshProjections();
-    }
-
-    void applySearchFilters(String query, Map<String, List<String>> filters) {
-        filterStates.put(activeModuleIndex, new ModuleFilterState(query, filters));
         refreshProjections();
     }
 
@@ -297,28 +236,15 @@ final class WorldPlannerViewModel {
         factionProjection.set(faction);
         locationProjection.set(location);
         sourceProjection.set(source);
-        controlsProjection.set(new ControlsProjection(activeModuleIndex));
         stateProjection.set(new WorldPlannerStateProjectionBuilder(input).stateProjection(
                 npc,
                 faction,
                 location,
                 source));
-        refreshSearchProjection();
-    }
-
-    private void refreshSearchProjection() {
-        WorldPlannerSearchProjectionBuilder.apply(
-                searchFilterContentModel,
-                activeModuleIndex,
-                activeFilterState(),
-                statblockOptions,
-                encounterTableOptions,
-                npcReferenceOptions,
-                factionReferenceOptions);
     }
 
     private ModuleFilterState activeFilterState() {
-        return filterStates.getOrDefault(activeModuleIndex, ModuleFilterState.empty());
+        return ModuleFilterState.empty();
     }
 
     private static int normalizedModule(int moduleIndex) {
@@ -395,40 +321,6 @@ final class WorldPlannerViewModel {
             copied.put(entry.getKey(), entry.getValue() == null ? List.of() : List.copyOf(entry.getValue()));
         }
         return Map.copyOf(copied);
-    }
-}
-
-record ControlsInput(int selectedModuleIndex, boolean refreshRequested) {
-    ControlsInput {
-        selectedModuleIndex = Math.max(0, selectedModuleIndex);
-    }
-}
-
-record ControlsProjection(int activeModuleIndex) {
-    ControlsProjection {
-        activeModuleIndex = Math.max(0, activeModuleIndex);
-    }
-
-    static ControlsProjection empty() {
-        return new ControlsProjection(0);
-    }
-}
-
-record NpcMainInput(int selectedNpcIndex) {
-    NpcMainInput {
-        selectedNpcIndex = Math.max(-1, selectedNpcIndex);
-    }
-}
-
-record FactionMainInput(int selectedFactionIndex) {
-    FactionMainInput {
-        selectedFactionIndex = Math.max(-1, selectedFactionIndex);
-    }
-}
-
-record LocationMainInput(int selectedLocationIndex) {
-    LocationMainInput {
-        selectedLocationIndex = Math.max(-1, selectedLocationIndex);
     }
 }
 
@@ -890,152 +782,6 @@ record WorldPlannerDetailSelection(
             return DetailProjection.sources(safeSource.summary(), safeSource.rows());
         }
         return DetailProjection.npc(npc);
-    }
-}
-
-final class WorldPlannerSearchProjectionBuilder {
-    private WorldPlannerSearchProjectionBuilder() {
-    }
-
-    static void apply(
-            SearchFilterControlsContentModel contentModel,
-            int activeModuleIndex,
-            ModuleFilterState state,
-            List<WorldPlannerVocabulary.Option<Long>> statblockOptions,
-            List<WorldPlannerVocabulary.Option<Long>> encounterTableOptions,
-            List<WorldPlannerVocabulary.Option<Long>> npcReferenceOptions,
-            List<WorldPlannerVocabulary.Option<Long>> factionReferenceOptions
-    ) {
-        if (activeModuleIndex == WorldPlannerViewModel.FACTIONS) {
-            applyProjection(contentModel, "Fraktionen suchen", state.query(),
-                    factionFilterGroups(state.filters(), encounterTableOptions, npcReferenceOptions, statblockOptions));
-        } else if (activeModuleIndex == WorldPlannerViewModel.LOCATIONS) {
-            applyProjection(contentModel, "Locations suchen", state.query(),
-                    locationFilterGroups(state.filters(), factionReferenceOptions, encounterTableOptions));
-        } else if (activeModuleIndex == WorldPlannerViewModel.SOURCES) {
-            applyProjection(contentModel, "Quellen suchen", state.query(), sourceFilterGroups(state.filters()));
-        } else {
-            applyProjection(contentModel, "NPCs suchen", state.query(), npcFilterGroups(state.filters(), statblockOptions));
-        }
-    }
-
-    private static void applyProjection(
-            SearchFilterControlsContentModel contentModel,
-            String searchPrompt,
-            String searchQuery,
-            List<SearchFilterControlsContentModel.FilterGroup> groups
-    ) {
-        contentModel.applyProjection(new SearchFilterControlsContentModel.Projection(
-                searchPrompt,
-                searchQuery,
-                groups,
-                filterChips(groups)));
-    }
-
-    private static List<SearchFilterControlsContentModel.FilterGroup> npcFilterGroups(
-            Map<String, List<String>> filters,
-            List<WorldPlannerVocabulary.Option<Long>> statblockOptions
-    ) {
-        return List.of(
-                new SearchFilterControlsContentModel.FilterGroup(
-                        WorldPlannerVocabulary.STATUS_FILTER,
-                        "Status",
-                        List.of(
-                                option("ACTIVE", "Aktiv",
-                                        selected(filters, WorldPlannerVocabulary.STATUS_FILTER, "ACTIVE")),
-                                option("DEFEATED", "Besiegt",
-                                        selected(filters, WorldPlannerVocabulary.STATUS_FILTER, "DEFEATED")))),
-                new SearchFilterControlsContentModel.FilterGroup(
-                        WorldPlannerVocabulary.STATBLOCK_FILTER,
-                        "Statblock",
-                        statblockOptions.stream()
-                                .map(option -> option(
-                                        option.key(),
-                                        option.label(),
-                                        selected(filters, WorldPlannerVocabulary.STATBLOCK_FILTER, option.key())))
-                                .toList()));
-    }
-
-    private static List<SearchFilterControlsContentModel.FilterGroup> factionFilterGroups(
-            Map<String, List<String>> filters,
-            List<WorldPlannerVocabulary.Option<Long>> encounterTableOptions,
-            List<WorldPlannerVocabulary.Option<Long>> npcReferenceOptions,
-            List<WorldPlannerVocabulary.Option<Long>> statblockOptions
-    ) {
-        return List.of(
-                optionsGroup(WorldPlannerVocabulary.TABLE_FILTER, "Tabelle", encounterTableOptions, filters),
-                optionsGroup(WorldPlannerVocabulary.NPC_FILTER, "NPC", npcReferenceOptions, filters),
-                new SearchFilterControlsContentModel.FilterGroup(
-                        WorldPlannerVocabulary.STOCK_FILTER,
-                        "Bestand",
-                        List.of(
-                                option(WorldPlannerViewModel.FINITE_STOCK_KEY, "Limitiert",
-                                        selected(filters, WorldPlannerVocabulary.STOCK_FILTER,
-                                                WorldPlannerViewModel.FINITE_STOCK_KEY)),
-                                option(WorldPlannerViewModel.UNLIMITED_STOCK_KEY, "Unlimitiert",
-                                        selected(filters, WorldPlannerVocabulary.STOCK_FILTER,
-                                                WorldPlannerViewModel.UNLIMITED_STOCK_KEY)))));
-    }
-
-    private static List<SearchFilterControlsContentModel.FilterGroup> locationFilterGroups(
-            Map<String, List<String>> filters,
-            List<WorldPlannerVocabulary.Option<Long>> factionReferenceOptions,
-            List<WorldPlannerVocabulary.Option<Long>> encounterTableOptions
-    ) {
-        return List.of(
-                optionsGroup(WorldPlannerVocabulary.FACTION_FILTER, "Fraktion", factionReferenceOptions, filters),
-                optionsGroup(WorldPlannerVocabulary.TABLE_FILTER, "Tabelle", encounterTableOptions, filters));
-    }
-
-    private static List<SearchFilterControlsContentModel.FilterGroup> sourceFilterGroups(
-            Map<String, List<String>> filters
-    ) {
-        return List.of(new SearchFilterControlsContentModel.FilterGroup(
-                WorldPlannerVocabulary.TYPE_FILTER,
-                "Typ",
-                List.of(
-                        option(WorldPlannerVocabulary.FACTION_FILTER, "Faction",
-                                selected(filters, WorldPlannerVocabulary.TYPE_FILTER,
-                                        WorldPlannerVocabulary.FACTION_FILTER)),
-                        option("location", "Location",
-                                selected(filters, WorldPlannerVocabulary.TYPE_FILTER, "location")))));
-    }
-
-    private static SearchFilterControlsContentModel.FilterGroup optionsGroup(
-            String key,
-            String label,
-            List<WorldPlannerVocabulary.Option<Long>> options,
-            Map<String, List<String>> filters
-    ) {
-        return new SearchFilterControlsContentModel.FilterGroup(key, label, options.stream()
-                .map(option -> option(option.key(), option.label(), selected(filters, key, option.key())))
-                .toList());
-    }
-
-    private static List<SearchFilterControlsContentModel.FilterChip> filterChips(
-            List<SearchFilterControlsContentModel.FilterGroup> groups
-    ) {
-        return groups.stream()
-                .flatMap(group -> group.options().stream()
-                        .filter(SearchFilterControlsContentModel.FilterOption::selected)
-                        .map(option -> new SearchFilterControlsContentModel.FilterChip(
-                                group.key(),
-                                option.key(),
-                                group.label() + ": " + option.label())))
-                .toList();
-    }
-
-    private static SearchFilterControlsContentModel.FilterOption option(
-            String key,
-            String label,
-            boolean selected
-    ) {
-        return new SearchFilterControlsContentModel.FilterOption(key, label, selected);
-    }
-
-    private static boolean selected(Map<String, List<String>> filters, String group, String key) {
-        List<String> selected = filters == null ? List.of() : filters.get(group);
-        return selected != null && selected.contains(key);
     }
 }
 

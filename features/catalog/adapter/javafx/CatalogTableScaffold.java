@@ -3,6 +3,7 @@ package features.catalog.adapter.javafx;
 import features.catalog.application.CatalogResultState;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -25,7 +26,7 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
 
     private final Function<Row, Id> idReader;
     private final Function<Row, String> accessibleLabel;
-    private final Consumer<Row> primaryAction;
+    private final Optional<Consumer<Row>> primaryAction;
     private final Consumer<Id> selectionAction;
     private final Label count = new Label();
     private final Label status = new Label();
@@ -47,6 +48,20 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
             List<ActionSpec<Row>> actions,
             Consumer<Integer> pageAction
     ) {
+        this(accessibleTableName, idReader, accessibleLabel, columns, Optional.of(primaryAction),
+                selectionAction, actions, pageAction);
+    }
+
+    public CatalogTableScaffold(
+            String accessibleTableName,
+            Function<Row, Id> idReader,
+            Function<Row, String> accessibleLabel,
+            List<ColumnSpec<Row>> columns,
+            Optional<Consumer<Row>> primaryAction,
+            Consumer<Id> selectionAction,
+            List<ActionSpec<Row>> actions,
+            Consumer<Integer> pageAction
+    ) {
         this.idReader = Objects.requireNonNull(idReader, "idReader");
         this.accessibleLabel = Objects.requireNonNull(accessibleLabel, "accessibleLabel");
         this.primaryAction = Objects.requireNonNull(primaryAction, "primaryAction");
@@ -64,17 +79,19 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
                 selectionAction.accept(selected == null ? null : idReader.apply(selected));
             }
         });
-        table.setOnMouseClicked(event -> {
-            if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
-                openSelected();
-            }
-        });
-        table.setOnKeyPressed(event -> {
-            if (event.getCode() == KeyCode.ENTER) {
-                openSelected();
-                event.consume();
-            }
-        });
+        if (primaryAction.isPresent()) {
+            table.setOnMouseClicked(event -> {
+                if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
+                    openSelected();
+                }
+            });
+            table.setOnKeyPressed(event -> {
+                if (event.getCode() == KeyCode.ENTER) {
+                    openSelected();
+                    event.consume();
+                }
+            });
+        }
         previous.setOnAction(ignored -> pageAction.accept(-1));
         next.setOnAction(ignored -> pageAction.accept(1));
         Region spacer = new Region();
@@ -156,7 +173,7 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
     private void openSelected() {
         Row selected = table.getSelectionModel().getSelectedItem();
         if (selected != null) {
-            primaryAction.accept(selected);
+            primaryAction.ifPresent(action -> action.accept(selected));
         }
     }
 
@@ -168,7 +185,7 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
         List<ColumnSpec<Row>> safeColumns = List.copyOf(columns);
         for (int index = 0; index < safeColumns.size(); index++) {
             ColumnSpec<Row> spec = safeColumns.get(index);
-            result.add(index == 0 ? primaryColumn(spec) : textColumn(spec));
+            result.add(index == 0 && primaryAction.isPresent() ? primaryColumn(spec) : textColumn(spec));
         }
         if (!actions.isEmpty()) {
             result.add(actionColumn(List.copyOf(actions)));
@@ -193,7 +210,7 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
                     Row row = getItem();
                     if (row != null) {
                         table.getSelectionModel().select(row);
-                        primaryAction.accept(row);
+                        primaryAction.orElseThrow().accept(row);
                     }
                 });
             }

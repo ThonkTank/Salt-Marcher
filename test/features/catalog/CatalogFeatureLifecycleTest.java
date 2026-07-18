@@ -92,16 +92,8 @@ final class CatalogFeatureLifecycleTest {
             ControllableItemsApi items = new ControllableItemsApi();
             CatalogFeature.Component component = create(
                     queries, items, builder, saved, creatures, world, tables, new RecordingItemRoute());
-            LegacyCatalogBindingAdapter budgetProbe = new LegacyCatalogBindingAdapter(
-                    component.controller(), routes(new RecordingItemRoute()));
-            assertEquals(
-                    List.of(
-                            features.catalog.application.CatalogSectionId.NPCS,
-                            features.catalog.application.CatalogSectionId.FACTIONS,
-                            features.catalog.application.CatalogSectionId.LOCATIONS,
-                            features.catalog.application.CatalogSectionId.ENCOUNTER_TABLES),
-                    budgetProbe.sections().stream().map(
-                            features.catalog.adapter.javafx.CatalogSection::id).toList());
+            LegacyCatalogBindingAdapter budgetProbe = new LegacyCatalogBindingAdapter();
+            assertTrue(budgetProbe.sections().isEmpty(), "M4 leaves no production section behind the adapter");
             budgetProbe.close();
             ShellBinding binding = component.contribution().bind();
 

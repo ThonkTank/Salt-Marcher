@@ -10,6 +10,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -40,7 +42,13 @@ import features.worldplanner.api.WorldPlannerSnapshotModel;
 import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
 import features.creatures.api.CreatureCatalogRow;
 import features.catalog.application.CatalogSectionId;
+import features.catalog.CatalogRoutes;
+import features.encounter.api.EncounterPoolFilters;
+import features.encounter.api.OpenSavedEncounterPlanResult;
 import features.encountertable.adapter.sqlite.query.SqliteEncounterTableCatalogAdapter;
+import features.encountertable.domain.catalog.EncounterTableCandidateData;
+import features.encountertable.domain.catalog.EncounterTableSummaryData;
+import features.encountertable.domain.catalog.port.EncounterTableCatalogPort;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -153,6 +161,88 @@ public final class CatalogInitialLoadTest {
 
             assertTrue(createRequested.get(), "NPC creation route was not reachable from an empty Catalog section.");
             assertTrue(openedNpc.get() == 77L, "Enter did not open the selected provider-owned NPC inspector.");
+        });
+    }
+
+    @Test
+    void CATALOG_M4_001_routesSevenNativeSectionsAndOnlyExplicitHandoffs() throws Exception {
+        seedCreatureCatalog();
+        runOnFxThread(() -> {
+            RecordingCatalogRoutes routes = new RecordingCatalogRoutes();
+            CatalogTestRuntime runtime = CatalogTestRuntime.create(
+                    new SqliteCreatureCatalogQueryAdapter(),
+                    new EncounterTableCatalogPort() {
+                        @Override public List<EncounterTableSummaryData> loadSummaries() {
+                            return List.of(new EncounterTableSummaryData(301L, "Forest Ambush", null));
+                        }
+                        @Override public List<EncounterTableCandidateData> loadGenerationCandidates(
+                                List<Long> ids, int maximumXp
+                        ) {
+                            return List.of();
+                        }
+                    },
+                    new WorldPlannerSnapshotModel(CatalogInitialLoadTest::m4WorldSnapshot, ignored -> () -> { }));
+            ShellBinding binding = runtime.contribution(routes.routes()).bind();
+            binding.onActivate();
+            CatalogControlsHost controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, CatalogControlsHost.class);
+            CatalogContentHost content = slot(binding, ShellSlot.COCKPIT_MAIN, CatalogContentHost.class);
+            Stage stage = new Stage();
+            HBox root = new HBox(controls, content);
+            stage.setScene(new Scene(root, 1_150.0, 700.0));
+            stage.show();
+
+            org.junit.jupiter.api.Assertions.assertEquals(
+                    List.of("Monster", "Items", "Encounter", "NPCs", "Fraktionen", "Orte", "Encounter-Tabellen"),
+                    controls.sectionTitles());
+            for (CatalogSectionId id : List.of(
+                    CatalogSectionId.NPCS, CatalogSectionId.FACTIONS,
+                    CatalogSectionId.LOCATIONS, CatalogSectionId.ENCOUNTER_TABLES)) {
+                controls.select(id);
+                root.applyCss();
+                root.layout();
+                assertTrue(content.getCenter() instanceof CatalogTableScaffold<?, ?>,
+                        id + " does not use the native shared scaffold");
+            }
+
+            controls.select(CatalogSectionId.NPCS);
+            root.applyCss();
+            root.layout();
+            TableView<?> npcTable = descendant(content, TableView.class);
+            npcTable.getSelectionModel().selectFirst();
+            npcTable.fireEvent(enter());
+            assertTrue(routes.openedNpc.get() == 77L, "NPC Enter did not open only its Inspector route");
+            assertTrue(routes.handoffs.isEmpty(), "default NPC open performed a handoff");
+            button(content, "Zum Encounter").fire();
+            button(content, "Zur Scene").fire();
+
+            controls.select(CatalogSectionId.FACTIONS);
+            root.applyCss();
+            root.layout();
+            descendant(content, TableView.class).getSelectionModel().selectFirst();
+            button(content, "Als Quelle").fire();
+
+            controls.select(CatalogSectionId.LOCATIONS);
+            root.applyCss();
+            root.layout();
+            descendant(content, TableView.class).getSelectionModel().selectFirst();
+            button(content, "Als Quelle").fire();
+            button(content, "Als Ort").fire();
+
+            controls.select(CatalogSectionId.ENCOUNTER_TABLES);
+            root.applyCss();
+            root.layout();
+            TableView<?> table = descendant(content, TableView.class);
+            table.getSelectionModel().selectFirst();
+            table.fireEvent(enter());
+            assertTrue(table.getOnKeyPressed() == null && table.getOnMouseClicked() == null,
+                    "read-only Encounter Table scaffold installed a primary open action");
+            button(content, "Als Quelle").fire();
+
+            org.junit.jupiter.api.Assertions.assertEquals(
+                    List.of("npc-encounter:7:77", "npc-scene:77", "faction:11", "location:21",
+                            "scene-location:21", "table:301"),
+                    routes.handoffs);
+            stage.close();
         });
     }
 
@@ -288,6 +378,21 @@ public final class CatalogInitialLoadTest {
                 List.of(),
                 List.of(),
                 "");
+    }
+
+    private static WorldPlannerSnapshot m4WorldSnapshot() {
+        return new WorldPlannerSnapshot(
+                WorldPlannerReadStatus.SUCCESS,
+                List.of(new WorldNpcSummary(
+                        77L, "Mira", 7L, "", "", "", "", WorldNpcLifecycleStatus.ACTIVE)),
+                List.of(new WorldFactionSummary(11L, "Scarlet Knives", "", 301L, List.of(77L), List.of())),
+                List.of(new WorldLocationSummary(21L, "Old Gate", "", List.of(11L), List.of(301L))),
+                "");
+    }
+
+    private static KeyEvent enter() {
+        return new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.ENTER,
+                false, false, false, false);
     }
 
     private static void seedCreatureCatalog() throws Exception {
@@ -489,5 +594,37 @@ public final class CatalogInitialLoadTest {
         public boolean isShowing(Object entryKey) {
             return false;
         }
+    }
+
+    private static final class RecordingCatalogRoutes
+            implements CatalogRoutes.WorldInspectorRoutes, CatalogRoutes.EncounterHandoff, CatalogRoutes.SceneHandoff {
+        private final AtomicLong openedNpc = new AtomicLong();
+        private final List<String> handoffs = new java.util.ArrayList<>();
+
+        private CatalogRoutes routes() {
+            return new CatalogRoutes(ignored -> { }, ignored -> { }, this, this, this);
+        }
+
+        @Override public void openNpc(long npcId) { openedNpc.set(npcId); }
+        @Override public void openFaction(long factionId) { }
+        @Override public void openLocation(long locationId) { }
+        @Override public void createNpc() { }
+        @Override public void createFaction() { }
+        @Override public void createLocation() { }
+        @Override public void updatePoolFilters(EncounterPoolFilters filters) { }
+        @Override public void addCreature(long creatureId) { }
+        @Override public void addWorldNpc(long creatureId, long npcId) {
+            handoffs.add("npc-encounter:" + creatureId + ":" + npcId);
+        }
+        @Override public void useFactionSource(long factionId) { handoffs.add("faction:" + factionId); }
+        @Override public void useLocationSource(long locationId) { handoffs.add("location:" + locationId); }
+        @Override public void useEncounterTableSource(long tableId) { handoffs.add("table:" + tableId); }
+        @Override public CompletionStage<OpenSavedEncounterPlanResult> openSavedEncounter(
+                long planId, boolean discard
+        ) {
+            return CompletableFuture.completedFuture(null);
+        }
+        @Override public void addNpc(long npcId) { handoffs.add("npc-scene:" + npcId); }
+        @Override public void setLocation(long locationId) { handoffs.add("scene-location:" + locationId); }
     }
 }

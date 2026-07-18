@@ -1,14 +1,12 @@
 package features.catalog.adapter.javafx;
 
-import features.encountertable.api.EncounterTableSummary;
-import features.worldplanner.api.WorldFactionSummary;
-import features.worldplanner.api.WorldLocationSummary;
+import features.catalog.application.CatalogReferenceOption;
 import java.util.List;
 
 record MonsterCatalogAuxiliaryOptions(
-        List<EncounterTableSummary> encounterTables,
-        List<WorldFactionSummary> factions,
-        List<WorldLocationSummary> locations
+        List<CatalogReferenceOption> encounterTables,
+        List<CatalogReferenceOption> factions,
+        List<CatalogReferenceOption> locations
 ) {
     MonsterCatalogAuxiliaryOptions {
         encounterTables = encounterTables == null ? List.of() : List.copyOf(encounterTables);
