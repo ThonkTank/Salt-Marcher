@@ -288,17 +288,6 @@ public record DungeonMap(
         return featureMarkers.nextMarkerId();
     }
 
-    public boolean canDeleteFeatureMarker(long markerId) {
-        return featureMarkers.canDelete(markerId);
-    }
-
-    public DungeonMap deleteFeatureMarker(long markerId) {
-        if (!canDeleteFeatureMarker(markerId)) {
-            return this;
-        }
-        return withFeatureMarkers(featureMarkers.withoutMarker(markerId));
-    }
-
     public boolean canDeleteStair(long stairId) {
         return stairId > 0L && stairs.canDeleteUnboundStair(stairId);
     }
