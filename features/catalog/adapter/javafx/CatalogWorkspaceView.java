@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 import javafx.scene.Node;
 
-/** Persistent legacy section host driven by the application-owned workspace state. */
+/** Passive host that keeps all section roots alive while rendering application-owned workspace state. */
 final class CatalogWorkspaceView {
 
     private final Map<CatalogSectionId, CatalogSection> sections = new EnumMap<>(CatalogSectionId.class);
@@ -17,7 +17,6 @@ final class CatalogWorkspaceView {
     private final CatalogControlsHost controls;
     private final CatalogContentHost content = new CatalogContentHost();
     private CatalogSection shown;
-    private boolean active;
 
     CatalogWorkspaceView(CatalogWorkspaceController controller, List<CatalogSection> sections) {
         this.controller = Objects.requireNonNull(controller, "controller");
@@ -31,8 +30,7 @@ final class CatalogWorkspaceView {
                 throw new IllegalArgumentException("Duplicate Catalog section: " + section.id());
             }
         }
-        controls = new CatalogControlsHost(ordered);
-        controls.onSectionSelected(controller::selectSection);
+        controls = new CatalogControlsHost(ordered, controller::selectSection);
     }
 
     Node controls() {
@@ -48,34 +46,8 @@ final class CatalogWorkspaceView {
         if (next == null || next == shown) {
             return;
         }
-        if (active && shown != null) {
-            shown.deactivate();
-        }
         shown = next;
         controls.show(next);
         content.show(next);
-        if (active) {
-            shown.activate();
-        }
-    }
-
-    void activate() {
-        if (active) {
-            return;
-        }
-        active = true;
-        if (shown != null) {
-            shown.activate();
-        }
-    }
-
-    void deactivate() {
-        if (!active) {
-            return;
-        }
-        active = false;
-        if (shown != null) {
-            shown.deactivate();
-        }
     }
 }

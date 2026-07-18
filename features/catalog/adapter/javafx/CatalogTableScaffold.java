@@ -28,6 +28,7 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
     private final Function<Row, String> accessibleLabel;
     private final Optional<Consumer<Row>> primaryAction;
     private final Consumer<Id> selectionAction;
+    private final Optional<Paging> paging;
     private final Label count = new Label();
     private final Label status = new Label();
     private final Label page = new Label();
@@ -46,10 +47,23 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
             Consumer<Row> primaryAction,
             Consumer<Id> selectionAction,
             List<ActionSpec<Row>> actions,
-            Consumer<Integer> pageAction
+            Paging paging
     ) {
         this(accessibleTableName, idReader, accessibleLabel, columns, Optional.of(primaryAction),
-                selectionAction, actions, pageAction);
+                selectionAction, actions, Optional.of(paging));
+    }
+
+    public CatalogTableScaffold(
+            String accessibleTableName,
+            Function<Row, Id> idReader,
+            Function<Row, String> accessibleLabel,
+            List<ColumnSpec<Row>> columns,
+            Consumer<Row> primaryAction,
+            Consumer<Id> selectionAction,
+            List<ActionSpec<Row>> actions
+    ) {
+        this(accessibleTableName, idReader, accessibleLabel, columns, Optional.of(primaryAction),
+                selectionAction, actions, Optional.empty());
     }
 
     public CatalogTableScaffold(
@@ -59,13 +73,27 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
             List<ColumnSpec<Row>> columns,
             Optional<Consumer<Row>> primaryAction,
             Consumer<Id> selectionAction,
+            List<ActionSpec<Row>> actions
+    ) {
+        this(accessibleTableName, idReader, accessibleLabel, columns, primaryAction,
+                selectionAction, actions, Optional.empty());
+    }
+
+    private CatalogTableScaffold(
+            String accessibleTableName,
+            Function<Row, Id> idReader,
+            Function<Row, String> accessibleLabel,
+            List<ColumnSpec<Row>> columns,
+            Optional<Consumer<Row>> primaryAction,
+            Consumer<Id> selectionAction,
             List<ActionSpec<Row>> actions,
-            Consumer<Integer> pageAction
+            Optional<Paging> paging
     ) {
         this.idReader = Objects.requireNonNull(idReader, "idReader");
         this.accessibleLabel = Objects.requireNonNull(accessibleLabel, "accessibleLabel");
         this.primaryAction = Objects.requireNonNull(primaryAction, "primaryAction");
         this.selectionAction = Objects.requireNonNull(selectionAction, "selectionAction");
+        this.paging = Objects.requireNonNull(paging, "paging");
         getStyleClass().add("surface-root");
         count.getStyleClass().add("text-secondary");
         status.getStyleClass().add("text-muted");
@@ -92,8 +120,10 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
                 }
             });
         }
-        previous.setOnAction(ignored -> pageAction.accept(-1));
-        next.setOnAction(ignored -> pageAction.accept(1));
+        paging.ifPresent(capability -> {
+            previous.setOnAction(ignored -> capability.shift().accept(-1));
+            next.setOnAction(ignored -> capability.shift().accept(1));
+        });
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         header = new HBox(8, count, spacer, status);
@@ -102,7 +132,7 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
         footer.getStyleClass().add("catalog-main-pagination");
         setTop(header);
         setCenter(table);
-        setBottom(footer);
+        paging.ifPresent(ignored -> setBottom(footer));
     }
 
     public void render(
@@ -127,12 +157,15 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
         } finally {
             rendering = false;
         }
-        int currentPage = totalCount == 0 ? 1 : (pageOffset / pageSize) + 1;
-        int pageCount = totalCount == 0 ? 1 : (int) Math.ceil((double) totalCount / pageSize);
         count.setText(totalCount + " " + resultLabel + " gefunden");
-        page.setText("Seite " + currentPage + pageSeparator + pageCount);
-        previous.setDisable(pageOffset <= 0 || safe.status() == CatalogResultState.Status.LOADING);
-        next.setDisable(pageOffset + pageSize >= totalCount || safe.status() == CatalogResultState.Status.LOADING);
+        paging.ifPresent(ignored -> {
+            int currentPage = totalCount == 0 ? 1 : (pageOffset / pageSize) + 1;
+            int pageCount = totalCount == 0 ? 1 : (int) Math.ceil((double) totalCount / pageSize);
+            page.setText("Seite " + currentPage + pageSeparator + pageCount);
+            previous.setDisable(pageOffset <= 0 || safe.status() == CatalogResultState.Status.LOADING);
+            next.setDisable(pageOffset + pageSize >= totalCount
+                    || safe.status() == CatalogResultState.Status.LOADING);
+        });
         status.setText(statusText(safe));
         if (table.getPlaceholder() instanceof Label placeholder) {
             placeholder.setText(placeholderText(safe));
@@ -157,17 +190,15 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
             String pageAccessibleText,
             String separator
     ) {
+        if (paging.isEmpty()) {
+            throw new IllegalStateException("Paging can only be configured when the capability is present.");
+        }
         previous.setText(Objects.requireNonNull(previousText, "previousText"));
         previous.setAccessibleText(Objects.requireNonNull(previousAccessibleText, "previousAccessibleText"));
         next.setText(Objects.requireNonNull(nextText, "nextText"));
         next.setAccessibleText(Objects.requireNonNull(nextAccessibleText, "nextAccessibleText"));
         page.setAccessibleText(Objects.requireNonNull(pageAccessibleText, "pageAccessibleText"));
         pageSeparator = Objects.requireNonNull(separator, "separator");
-    }
-
-    public void setPagingVisible(boolean visible) {
-        getBottom().setVisible(visible);
-        getBottom().setManaged(visible);
     }
 
     private void openSelected() {
@@ -285,6 +316,12 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
         public ColumnSpec {
             label = Objects.requireNonNull(label, "label");
             value = Objects.requireNonNull(value, "value");
+        }
+    }
+
+    public record Paging(Consumer<Integer> shift) {
+        public Paging {
+            shift = Objects.requireNonNull(shift, "shift");
         }
     }
 

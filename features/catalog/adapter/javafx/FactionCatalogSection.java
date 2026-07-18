@@ -45,9 +45,7 @@ public final class FactionCatalogSection implements CatalogSection {
                 List.of(new CatalogTableScaffold.ActionSpec<>(
                         "Als Quelle", "Fraktion als Encounter-Quelle verwenden", "Als Encounter-Quelle",
                         List.of("accent", "compact"), row -> this.intents.accept(
-                                new WorldReferenceCatalogIntent.UseFactionAsEncounterSource(row.factionId())))),
-                ignored -> { });
-        content.setPagingVisible(false);
+                                new WorldReferenceCatalogIntent.UseFactionAsEncounterSource(row.factionId())))));
     }
 
     @Override public CatalogSectionId id() { return CatalogSectionId.FACTIONS; }

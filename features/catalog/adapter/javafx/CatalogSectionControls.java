@@ -11,10 +11,19 @@ final class CatalogSectionControls {
     }
 
     static Node intro(String title, String detail) {
-        return intro(title, detail, "", () -> { });
+        return body(title, detail);
     }
 
     static Node intro(String title, String detail, String actionLabel, Runnable action) {
+        VBox body = body(title, detail);
+        Button button = new Button(actionLabel);
+        button.getStyleClass().add("accent");
+        button.setOnAction(ignored -> action.run());
+        body.getChildren().add(button);
+        return body;
+    }
+
+    private static VBox body(String title, String detail) {
         Label heading = new Label(title);
         heading.getStyleClass().add("catalog-section-heading");
         Label description = new Label(detail);
@@ -22,12 +31,6 @@ final class CatalogSectionControls {
         description.getStyleClass().add("text-secondary");
         VBox body = new VBox(heading, description);
         body.getStyleClass().add("catalog-section-intro");
-        if (actionLabel != null && !actionLabel.isBlank()) {
-            Button button = new Button(actionLabel);
-            button.getStyleClass().add("accent");
-            button.setOnAction(ignored -> action.run());
-            body.getChildren().add(button);
-        }
         return body;
     }
 }

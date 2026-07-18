@@ -2,11 +2,11 @@ package features.catalog.adapter.javafx;
 
 import features.catalog.application.CatalogWorkspaceController;
 import features.catalog.application.CatalogWorkspaceState;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.jspecify.annotations.Nullable;
 import shell.api.ContributionKey;
 import shell.api.NavigationGraphicResource;
 import shell.api.NavigationGroupSpec;
@@ -21,9 +21,8 @@ import shell.api.ShellSlot;
 public final class CatalogContribution implements ShellContribution, AutoCloseable {
 
     private final CatalogWorkspaceController controller;
-    private final List<CatalogSection> legacySections;
     private final AtomicBoolean closed = new AtomicBoolean();
-    private Runnable unsubscribe = () -> { };
+    private @Nullable Runnable unsubscribe;
     private CatalogWorkspaceView workspace;
     private MonsterCatalogSection monsters;
     private ItemsCatalogSection items;
@@ -34,12 +33,8 @@ public final class CatalogContribution implements ShellContribution, AutoCloseab
     private EncounterTableCatalogSection encounterTables;
     private long renderedWorkspaceRevision = -1L;
 
-    public CatalogContribution(
-            CatalogWorkspaceController controller,
-            List<CatalogSection> legacySections
-    ) {
+    public CatalogContribution(CatalogWorkspaceController controller) {
         this.controller = Objects.requireNonNull(controller, "controller");
-        this.legacySections = List.copyOf(Objects.requireNonNull(legacySections, "legacySections"));
     }
 
     @Override
@@ -68,16 +63,9 @@ public final class CatalogContribution implements ShellContribution, AutoCloseab
         factions = new FactionCatalogSection(controller::acceptWorldReferenceIntent);
         locations = new LocationCatalogSection(controller::acceptWorldReferenceIntent);
         encounterTables = new EncounterTableCatalogSection(controller::acceptEncounterTableIntent);
-        List<CatalogSection> sections = new ArrayList<>();
-        sections.add(monsters);
-        sections.add(items);
-        sections.add(savedEncounters);
-        sections.add(npcs);
-        sections.add(factions);
-        sections.add(locations);
-        sections.add(encounterTables);
-        sections.addAll(legacySections);
-        workspace = new CatalogWorkspaceView(controller, sections);
+        workspace = new CatalogWorkspaceView(
+                controller,
+                List.of(monsters, items, savedEncounters, npcs, factions, locations, encounterTables));
         unsubscribe = controller.publication().subscribe(this::apply);
         apply(controller.publication().current());
         return new CatalogShellBinding(workspace);
@@ -107,10 +95,10 @@ public final class CatalogContribution implements ShellContribution, AutoCloseab
         if (!closed.compareAndSet(false, true)) {
             return;
         }
-        unsubscribe.run();
-        unsubscribe = () -> { };
-        if (workspace != null) {
-            workspace.deactivate();
+        Runnable currentSubscription = unsubscribe;
+        unsubscribe = null;
+        if (currentSubscription != null) {
+            currentSubscription.run();
         }
     }
 
@@ -138,11 +126,9 @@ public final class CatalogContribution implements ShellContribution, AutoCloseab
 
         @Override public void onActivate() {
             controller.activate();
-            workspace.activate();
         }
 
         @Override public void onDeactivate() {
-            workspace.deactivate();
             controller.deactivate();
         }
     }

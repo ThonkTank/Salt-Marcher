@@ -30,6 +30,4 @@ public sealed interface MonsterCatalogIntent {
     record AddToScene(long creatureId) implements MonsterCatalogIntent {
     }
 
-    record Refresh() implements MonsterCatalogIntent {
-    }
 }

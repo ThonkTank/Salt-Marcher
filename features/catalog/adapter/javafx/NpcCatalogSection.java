@@ -45,9 +45,7 @@ public final class NpcCatalogSection implements CatalogSection {
                         action("Zum Encounter", "NPC zum Encounter hinzufügen", "Zum Encounter",
                                 row -> new WorldReferenceCatalogIntent.AddNpcToEncounter(row.npcId())),
                         action("Zur Scene", "NPC zur fokussierten Scene hinzufügen", "Zur Scene",
-                                row -> new WorldReferenceCatalogIntent.AddNpcToScene(row.npcId()))),
-                ignored -> { });
-        content.setPagingVisible(false);
+                                row -> new WorldReferenceCatalogIntent.AddNpcToScene(row.npcId()))));
     }
 
     @Override public CatalogSectionId id() { return CatalogSectionId.NPCS; }

@@ -25,26 +25,22 @@ public final class CatalogFeature {
                 requiredProviders.encounterTables().catalog(),
                 requiredProviders.publicationDispatcher(),
                 requiredRoutes);
-        LegacyCatalogBindingAdapter legacy = new LegacyCatalogBindingAdapter();
         features.catalog.adapter.javafx.CatalogContribution contribution =
-                new features.catalog.adapter.javafx.CatalogContribution(controller, legacy.sections());
-        return new Component(controller, contribution, legacy);
+                new features.catalog.adapter.javafx.CatalogContribution(controller);
+        return new Component(controller, contribution);
     }
 
     public static final class Component implements AutoCloseable {
         private final CatalogWorkspaceController controller;
         private final features.catalog.adapter.javafx.CatalogContribution contribution;
-        private final LegacyCatalogBindingAdapter legacy;
         private final AtomicBoolean closed = new AtomicBoolean();
 
         private Component(
                 CatalogWorkspaceController controller,
-                features.catalog.adapter.javafx.CatalogContribution contribution,
-                LegacyCatalogBindingAdapter legacy
+                features.catalog.adapter.javafx.CatalogContribution contribution
         ) {
             this.controller = controller;
             this.contribution = contribution;
-            this.legacy = legacy;
         }
 
         CatalogWorkspaceController controller() {
@@ -61,7 +57,6 @@ public final class CatalogFeature {
                 return;
             }
             contribution.close();
-            legacy.close();
             controller.close();
         }
     }

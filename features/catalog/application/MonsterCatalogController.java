@@ -65,7 +65,6 @@ public final class MonsterCatalogController implements CatalogLifecycle {
             case MonsterCatalogIntent.OpenCreature open -> open(open.creatureId());
             case MonsterCatalogIntent.AddToEncounter add -> addToEncounter(add.creatureId());
             case MonsterCatalogIntent.AddToScene add -> addToScene(add.creatureId());
-            case MonsterCatalogIntent.Refresh ignored -> beginSearch();
         }
     }
 

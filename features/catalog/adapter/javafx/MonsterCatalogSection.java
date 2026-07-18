@@ -16,7 +16,7 @@ import javafx.scene.control.ComboBox;
 /** First production adopter of the passive Catalog table scaffold. */
 final class MonsterCatalogSection implements CatalogSection {
 
-    private final MonsterCatalogControls controls = new MonsterCatalogControls();
+    private final MonsterCatalogControls controls;
     private final CatalogTableScaffold<CreatureCatalogRow, Long> content;
     private final ComboBox<MonsterCatalogSort> sort = new ComboBox<>();
     private MonsterCatalogState state;
@@ -26,7 +26,7 @@ final class MonsterCatalogSection implements CatalogSection {
 
     MonsterCatalogSection(Consumer<MonsterCatalogIntent> intents) {
         Consumer<MonsterCatalogIntent> requiredIntents = Objects.requireNonNull(intents, "intents");
-        controls.onIntent(requiredIntents);
+        controls = new MonsterCatalogControls(requiredIntents);
         content = new CatalogTableScaffold<>(
                 "Monster-Ergebnisse",
                 CreatureCatalogRow::id,
@@ -49,7 +49,8 @@ final class MonsterCatalogSection implements CatalogSection {
                                 "+ Scene", "Zur fokussierten Scene hinzufügen", "+ Scene",
                                 List.of("compact"),
                                 row -> requiredIntents.accept(new MonsterCatalogIntent.AddToScene(row.id())))),
-                direction -> requiredIntents.accept(new MonsterCatalogIntent.ShiftPage(direction)));
+                new CatalogTableScaffold.Paging(
+                        direction -> requiredIntents.accept(new MonsterCatalogIntent.ShiftPage(direction))));
         sort.setAccessibleText("Monster sortieren");
         sort.getItems().setAll(MonsterCatalogSort.values());
         sort.valueProperty().addListener((ignored, before, after) -> {

@@ -45,9 +45,7 @@ public final class EncounterTableCatalogSection implements CatalogSection {
                 List.of(new CatalogTableScaffold.ActionSpec<>(
                         "Als Quelle", "Encounter-Tabelle als Encounter-Quelle verwenden", "Als Encounter-Quelle",
                         List.of("accent", "compact"), row -> this.intents.accept(
-                                new EncounterTableCatalogIntent.UseAsEncounterSource(row.tableId())))),
-                ignored -> { });
-        content.setPagingVisible(false);
+                                new EncounterTableCatalogIntent.UseAsEncounterSource(row.tableId())))));
     }
 
     @Override public CatalogSectionId id() { return CatalogSectionId.ENCOUNTER_TABLES; }

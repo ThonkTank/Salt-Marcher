@@ -45,9 +45,7 @@ public final class LocationCatalogSection implements CatalogSection {
                         action("Als Quelle", "Ort als Encounter-Quelle verwenden", "Als Encounter-Quelle",
                                 row -> new WorldReferenceCatalogIntent.UseLocationAsEncounterSource(row.locationId())),
                         action("Als Ort", "Ort der fokussierten Scene zuweisen", "Als Scene-Ort",
-                                row -> new WorldReferenceCatalogIntent.SetFocusedSceneLocation(row.locationId()))),
-                ignored -> { });
-        content.setPagingVisible(false);
+                                row -> new WorldReferenceCatalogIntent.SetFocusedSceneLocation(row.locationId()))));
     }
 
     @Override public CatalogSectionId id() { return CatalogSectionId.LOCATIONS; }

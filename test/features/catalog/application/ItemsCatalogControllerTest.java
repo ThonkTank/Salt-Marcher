@@ -19,7 +19,6 @@ final class ItemsCatalogControllerTest {
         List<String> opened = new ArrayList<>();
         ItemsCatalogController controller = controller(provider, opened);
         controller.activate();
-        controller.accept(new ItemsCatalogIntent.Refresh());
         assertEquals(1, provider.searches.size());
 
         controller.accept(new ItemsCatalogIntent.ChangeDraft(new ItemsCatalogFilterDraft(
@@ -51,7 +50,6 @@ final class ItemsCatalogControllerTest {
         List<String> opened = new ArrayList<>();
         ItemsCatalogController controller = controller(provider, opened);
         controller.activate();
-        controller.accept(new ItemsCatalogIntent.Refresh());
         provider.options.getFirst().complete(options("Old"));
         provider.searches.getFirst().future.complete(page(ItemsCatalogApi.CatalogStatus.SUCCESS, "initial"));
 

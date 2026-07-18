@@ -15,7 +15,6 @@ public final class ItemsCatalogController implements CatalogLifecycle {
     private final UiDispatcher dispatcher;
     private final Runnable changed;
     private ItemsCatalogState state = ItemsCatalogState.initial();
-    private boolean initialized;
 
     ItemsCatalogController(
             ItemsCatalogApi provider,
@@ -43,7 +42,6 @@ public final class ItemsCatalogController implements CatalogLifecycle {
             case ItemsCatalogIntent.ShiftPage shift -> shiftPage(shift.direction());
             case ItemsCatalogIntent.SelectItem select -> select(select.sourceKey());
             case ItemsCatalogIntent.OpenItem open -> open(open.sourceKey());
-            case ItemsCatalogIntent.Refresh ignored -> ensureLoaded();
         }
     }
 
@@ -56,10 +54,8 @@ public final class ItemsCatalogController implements CatalogLifecycle {
                 state.detailRequestRevision(), ItemsCatalogState.Lifecycle.ACTIVE, state.filterDraft(),
                 state.filterOptions(), state.query(), state.results(), state.selectedSourceKey(),
                 state.pageOffset(), state.totalCount(), state.actionMessage());
-        if (initialized) {
-            loadFilterOptions();
-            beginSearch(state.pageOffset());
-        }
+        loadFilterOptions();
+        beginSearch(state.pageOffset());
     }
 
     @Override
@@ -97,15 +93,6 @@ public final class ItemsCatalogController implements CatalogLifecycle {
 
     private void searchFirstPage() {
         beginSearch(0);
-    }
-
-    private void ensureLoaded() {
-        if (initialized || state.lifecycle() != ItemsCatalogState.Lifecycle.ACTIVE) {
-            return;
-        }
-        initialized = true;
-        loadFilterOptions();
-        beginSearch(state.pageOffset());
     }
 
     private void shiftPage(int direction) {

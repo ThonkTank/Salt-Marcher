@@ -1,0 +1,72 @@
+package architecture.catalog;
+
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import architecture.AnalyzeMainClasses;
+import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.lang.ArchCondition;
+import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
+import features.catalog.adapter.javafx.CatalogSection;
+import features.catalog.adapter.javafx.CatalogTableScaffold;
+import java.lang.reflect.Field;
+import java.util.List;
+import java.util.Set;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
+@AnalyzeMainClasses
+@Tag("architecture")
+public final class CatalogTargetArchitectureTest {
+
+    private static final Set<String> RETIRED_TYPES = Set.of(
+            "LegacyCatalogBindingAdapter", "CatalogDataSources", "CatalogActionRoutes");
+    private static final List<String> NATIVE_SECTION_NAMES = List.of(
+            "features.catalog.adapter.javafx.MonsterCatalogSection",
+            "features.catalog.adapter.javafx.ItemsCatalogSection",
+            "features.catalog.adapter.javafx.SavedEncounterCatalogSection",
+            "features.catalog.adapter.javafx.NpcCatalogSection",
+            "features.catalog.adapter.javafx.FactionCatalogSection",
+            "features.catalog.adapter.javafx.LocationCatalogSection",
+            "features.catalog.adapter.javafx.EncounterTableCatalogSection");
+
+    private CatalogTargetArchitectureTest() {
+    }
+
+    @ArchTest
+    static final ArchRule retiredCatalogTypesCannotReturn =
+            classes()
+                    .that()
+                    .resideInAPackage("features.catalog..")
+                    .should(notHaveRetiredName());
+
+    @Test
+    void exactlySevenNativeSectionsUseTheCommonContractAndScaffold() throws ClassNotFoundException {
+        assertEquals(7, NATIVE_SECTION_NAMES.size());
+        for (String sectionName : NATIVE_SECTION_NAMES) {
+            Class<?> section = Class.forName(sectionName);
+            assertTrue(CatalogSection.class.isAssignableFrom(section),
+                    () -> section.getName() + " does not implement CatalogSection");
+            assertTrue(List.of(section.getDeclaredFields()).stream()
+                            .map(Field::getType)
+                            .anyMatch(CatalogTableScaffold.class::isAssignableFrom),
+                    () -> section.getName() + " does not own CatalogTableScaffold");
+        }
+    }
+
+    private static ArchCondition<JavaClass> notHaveRetiredName() {
+        return new ArchCondition<>("not restore retired Catalog migration types") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                if (RETIRED_TYPES.contains(item.getSimpleName())) {
+                    events.add(SimpleConditionEvent.violated(
+                            item, item.getName() + " is a retired Catalog migration type"));
+                }
+            }
+        };
+    }
+}

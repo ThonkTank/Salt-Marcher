@@ -92,12 +92,15 @@ final class CatalogFeatureLifecycleTest {
             ControllableItemsApi items = new ControllableItemsApi();
             CatalogFeature.Component component = create(
                     queries, items, builder, saved, creatures, world, tables, new RecordingItemRoute());
-            LegacyCatalogBindingAdapter budgetProbe = new LegacyCatalogBindingAdapter();
-            assertTrue(budgetProbe.sections().isEmpty(), "M4 leaves no production section behind the adapter");
-            budgetProbe.close();
             ShellBinding binding = component.contribution().bind();
 
             binding.onActivate();
+            assertEquals(1, queries.filterOptions.size());
+            assertEquals(1, queries.searches.size());
+            assertEquals(1, items.filterOptions.size(),
+                    "Catalog activation must load Items options without selecting the section");
+            assertEquals(1, items.searches.size(),
+                    "Catalog activation must load the first Items page without selecting the section");
             assertTracker(builder, 1, 1);
             assertTracker(saved, 1, 1);
             assertTracker(creatures, 1, 1);
@@ -123,6 +126,10 @@ final class CatalogFeatureLifecycleTest {
             assertActive(tables, 0);
 
             binding.onActivate();
+            assertEquals(2, queries.filterOptions.size());
+            assertEquals(2, queries.searches.size());
+            assertEquals(2, items.filterOptions.size());
+            assertEquals(2, items.searches.size());
             assertTracker(builder, 2, 1);
             assertTracker(saved, 2, 1);
             assertTracker(creatures, 2, 1);
@@ -162,6 +169,8 @@ final class CatalogFeatureLifecycleTest {
 
             binding.onActivate();
             assertEquals(1, queries.searches.size());
+            assertEquals(1, items.filterOptions.size());
+            assertEquals(1, items.searches.size());
             TextField monsterQuery = descendants(controls).stream()
                     .filter(TextField.class::isInstance).map(TextField.class::cast).findFirst().orElseThrow();
             monsterQuery.setText("newer");
@@ -180,10 +189,12 @@ final class CatalogFeatureLifecycleTest {
                     .monsters().filterOptions().types());
 
             toggle(controls, "Katalogbereich Items").fire();
-            assertEquals(1, items.searches.size());
-            button(controls, "Items suchen").fire();
             assertEquals(2, items.searches.size());
-            items.searches.get(1).complete(itemPage("new"));
+            assertEquals(2, items.filterOptions.size());
+            button(controls, "Items suchen").fire();
+            assertEquals(3, items.searches.size());
+            items.searches.get(2).complete(itemPage("new"));
+            items.searches.get(1).complete(itemPage("stale-reactivation"));
             items.searches.get(0).complete(itemPage("stale"));
             assertEquals(List.of("new"), component.controller().publication().current()
                     .items().results().rows().stream().map(ItemsCatalogApi.ItemRow::sourceKey).toList());
@@ -207,18 +218,20 @@ final class CatalogFeatureLifecycleTest {
             assertEquals(List.of("newer-detail"), itemRoute.opened);
 
             binding.onActivate();
-            assertEquals(2, items.filterOptions.size());
-            items.filterOptions.get(1).complete(itemOptions("New"));
+            assertEquals(3, items.filterOptions.size());
+            assertEquals(4, items.searches.size());
+            items.filterOptions.get(2).complete(itemOptions("New"));
+            items.filterOptions.get(1).complete(itemOptions("Stale reactivation"));
             items.filterOptions.get(0).complete(itemOptions("Stale"));
             assertEquals(List.of("New"), component.controller().publication().current()
                     .items().filterOptions().categories());
             binding.onDeactivate();
 
             binding.onActivate();
-            assertEquals(3, items.filterOptions.size());
-            assertEquals(4, items.searches.size());
-            CompletableFuture<ItemsCatalogApi.FilterOptionsResult> rejectedOptions = items.filterOptions.get(2);
-            CompletableFuture<ItemsCatalogApi.PageResult> rejectedItemSearch = items.searches.get(3);
+            assertEquals(4, items.filterOptions.size());
+            assertEquals(5, items.searches.size());
+            CompletableFuture<ItemsCatalogApi.FilterOptionsResult> rejectedOptions = items.filterOptions.get(3);
+            CompletableFuture<ItemsCatalogApi.PageResult> rejectedItemSearch = items.searches.get(4);
 
             int monsterOptionsBeforeSelection = queries.filterOptions.size();
             int monsterSearchesBeforeSelection = queries.searches.size();

@@ -64,7 +64,8 @@ public final class ItemsCatalogSection implements CatalogSection {
                     this.intents.accept(new ItemsCatalogIntent.SelectItem(selectedKey));
                 },
                 List.of(),
-                pageDirection -> this.intents.accept(new ItemsCatalogIntent.ShiftPage(pageDirection)));
+                new CatalogTableScaffold.Paging(
+                        pageDirection -> this.intents.accept(new ItemsCatalogIntent.ShiftPage(pageDirection))));
         content.configurePaging(
                 "Zurück", "Vorherige Item-Seite", "Weiter", "Nächste Item-Seite", "Item-Seite", " von ");
         status.setAccessibleText("Item-Status");
@@ -94,11 +95,6 @@ public final class ItemsCatalogSection implements CatalogSection {
     @Override
     public Node content() {
         return content;
-    }
-
-    @Override
-    public void activate() {
-        intents.accept(new ItemsCatalogIntent.Refresh());
     }
 
     public void render(ItemsCatalogState next) {

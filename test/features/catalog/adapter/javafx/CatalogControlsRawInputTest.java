@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.catalog.application.CatalogResultState;
+import features.catalog.application.CatalogSectionId;
 import features.catalog.application.MonsterCatalogFilterDraft;
 import features.catalog.application.MonsterCatalogIntent;
 import features.catalog.application.MonsterCatalogSort;
@@ -35,6 +36,7 @@ import javafx.scene.control.Slider;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.Pane;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
@@ -69,9 +71,8 @@ public final class CatalogControlsRawInputTest {
     @Test
     void passiveRenderPublishesNoIntentAndOneEditPublishesOneTypedIntent() throws Exception {
         runOnFx(() -> {
-            MonsterCatalogControls controls = new MonsterCatalogControls();
             List<MonsterCatalogIntent> intents = new ArrayList<>();
-            controls.onIntent(intents::add);
+            MonsterCatalogControls controls = new MonsterCatalogControls(intents::add);
             controls.render(state("aboleth"), MonsterCatalogAuxiliaryOptions.empty());
             assertTrue(intents.isEmpty(), "render must not publish an input intent");
 
@@ -82,6 +83,30 @@ public final class CatalogControlsRawInputTest {
             assertEquals("lich", change.filters().nameQuery());
             assertTrue(descendants(controls).stream().noneMatch(Slider.class::isInstance),
                     "Encounter tuning must stay outside Catalog controls");
+        });
+    }
+
+    @Test
+    void workspaceRenderPublishesNoSelectionAndOneUserTogglePublishesOneSelection() throws Exception {
+        runOnFx(() -> {
+            List<CatalogSectionId> selections = new ArrayList<>();
+            CatalogSection monsters = section(CatalogSectionId.MONSTERS);
+            CatalogSection items = section(CatalogSectionId.ITEMS);
+            CatalogControlsHost controls = new CatalogControlsHost(List.of(monsters, items), selections::add);
+
+            controls.show(monsters);
+            assertTrue(selections.isEmpty(), "application render must not publish a section selection");
+
+            descendants(controls).stream()
+                    .filter(javafx.scene.control.ToggleButton.class::isInstance)
+                    .map(javafx.scene.control.ToggleButton.class::cast)
+                    .filter(button -> "Katalogbereich Items".equals(button.getAccessibleText()))
+                    .findFirst()
+                    .orElseThrow()
+                    .fire();
+
+            assertEquals(List.of(CatalogSectionId.ITEMS), selections,
+                    "one user toggle must publish exactly one semantic section selection");
         });
     }
 
@@ -172,6 +197,16 @@ public final class CatalogControlsRawInputTest {
                 new CreatureFilterOptions(
                         List.of("Medium"), List.of("Undead"), List.of(), List.of(), List.of(), List.of("1")),
                 MonsterCatalogSort.NAME_ASC, 50, 0, 0, 0L, CatalogResultState.ready(List.of()));
+    }
+
+    private static CatalogSection section(CatalogSectionId id) {
+        Pane controls = new Pane();
+        Pane content = new Pane();
+        return new CatalogSection() {
+            @Override public CatalogSectionId id() { return id; }
+            @Override public Node controls() { return controls; }
+            @Override public Node content() { return content; }
+        };
     }
 
     private static CatalogTestRuntime runtime(CreatureCatalogPort creatures) {

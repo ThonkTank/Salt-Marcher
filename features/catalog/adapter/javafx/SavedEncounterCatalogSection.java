@@ -41,9 +41,7 @@ public final class SavedEncounterCatalogSection implements CatalogSection {
                 plan -> this.intents.accept(new SavedEncounterCatalogIntent.OpenPlan(plan.planId())),
                 planId -> this.intents.accept(new SavedEncounterCatalogIntent.SelectPlan(
                         planId == null ? 0L : planId)),
-                List.of(),
-                ignored -> { });
-        content.setPagingVisible(false);
+                List.of());
         open.getStyleClass().add("accent");
         open.setAccessibleText("Ausgewählten Encounter im globalen Encounter öffnen");
         open.disableProperty().bind(content.table().getSelectionModel().selectedItemProperty().isNull());

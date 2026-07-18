@@ -194,14 +194,16 @@ public final class CatalogInitialLoadTest {
             org.junit.jupiter.api.Assertions.assertEquals(
                     List.of("Monster", "Items", "Encounter", "NPCs", "Fraktionen", "Orte", "Encounter-Tabellen"),
                     controls.sectionTitles());
-            for (CatalogSectionId id : List.of(
-                    CatalogSectionId.NPCS, CatalogSectionId.FACTIONS,
-                    CatalogSectionId.LOCATIONS, CatalogSectionId.ENCOUNTER_TABLES)) {
+            for (CatalogSectionId id : List.of(CatalogSectionId.values())) {
                 controls.select(id);
                 root.applyCss();
                 root.layout();
                 assertTrue(content.getCenter() instanceof CatalogTableScaffold<?, ?>,
                         id + " does not use the native shared scaffold");
+                CatalogTableScaffold<?, ?> scaffold = (CatalogTableScaffold<?, ?>) content.getCenter();
+                boolean paged = id == CatalogSectionId.MONSTERS || id == CatalogSectionId.ITEMS;
+                assertTrue((scaffold.getBottom() != null) == paged,
+                        id + " has the wrong paging capability");
             }
 
             controls.select(CatalogSectionId.NPCS);
