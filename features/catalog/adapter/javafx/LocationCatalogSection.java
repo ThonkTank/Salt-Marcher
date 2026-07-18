@@ -6,6 +6,7 @@ import features.catalog.application.WorldReferenceCatalogState;
 import features.catalog.application.WorldReferenceCatalogState.LocationRow;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import javafx.scene.Node;
 import javafx.scene.control.TextField;
@@ -64,7 +65,7 @@ public final class LocationCatalogSection implements CatalogSection {
         } finally {
             rendering = false;
         }
-        content.render(state.locations().results(), selected(state.locations().selectedId()),
+        content.render(state.locations().results(), optionalId(state.locations().selectedId()),
                 state.locations().results().rows().size(), Math.max(1, state.locations().results().rows().size()),
                 0, "Orte");
     }
@@ -79,7 +80,9 @@ public final class LocationCatalogSection implements CatalogSection {
                 List.of("accent", "compact"), row -> intents.accept(intent.apply(row)));
     }
 
-    private static Long selected(long id) { return id > 0L ? id : null; }
+    private static Optional<Long> optionalId(long id) {
+        return id > 0L ? Optional.of(id) : Optional.empty();
+    }
 
     private static TextField queryField() {
         TextField field = new TextField();

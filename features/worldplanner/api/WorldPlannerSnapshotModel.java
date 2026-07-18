@@ -1,6 +1,5 @@
 package features.worldplanner.api;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -13,22 +12,11 @@ public final class WorldPlannerSnapshotModel {
     private final Function<Consumer<WorldPlannerSnapshot>, Runnable> observeLatestAction;
     public WorldPlannerSnapshotModel(
             Supplier<WorldPlannerSnapshot> currentSupplier,
-            Function<Consumer<WorldPlannerSnapshot>, Runnable> subscribeAction
-    ) {
-        this(currentSupplier, subscribeAction, unsupportedAtomicObservation());
-    }
-
-    public WorldPlannerSnapshotModel(
-            Supplier<WorldPlannerSnapshot> currentSupplier,
             Function<Consumer<WorldPlannerSnapshot>, Runnable> subscribeAction,
             Function<Consumer<WorldPlannerSnapshot>, Runnable> observeLatestAction
     ) {
-        this.currentSupplier = currentSupplier == null
-                ? WorldPlannerSnapshotModel::emptySnapshot
-                : currentSupplier;
-        this.subscribeAction = subscribeAction == null
-                ? listener -> () -> { }
-                : subscribeAction;
+        this.currentSupplier = Objects.requireNonNull(currentSupplier, "currentSupplier");
+        this.subscribeAction = Objects.requireNonNull(subscribeAction, "subscribeAction");
         this.observeLatestAction = Objects.requireNonNull(observeLatestAction, "observeLatestAction");
     }
 
@@ -37,20 +25,12 @@ public final class WorldPlannerSnapshotModel {
                 "unsubscribe");
     }
 
-    private static Function<Consumer<WorldPlannerSnapshot>, Runnable> unsupportedAtomicObservation() {
-        return ignored -> { throw new IllegalStateException("Atomic world observation is not configured."); };
-    }
-
     public WorldPlannerSnapshot current() {
-        return currentSupplier.get();
+        return Objects.requireNonNull(currentSupplier.get(), "current world snapshot");
     }
 
     public Runnable subscribe(Consumer<WorldPlannerSnapshot> listener) {
-        return subscribeAction.apply(Objects.requireNonNull(listener, "listener"));
+        return Objects.requireNonNull(
+                subscribeAction.apply(Objects.requireNonNull(listener, "listener")), "unsubscribe");
     }
-
-    private static WorldPlannerSnapshot emptySnapshot() {
-        return new WorldPlannerSnapshot(WorldPlannerReadStatus.STORAGE_ERROR, List.of(), List.of(), List.of(), "");
-    }
-
 }

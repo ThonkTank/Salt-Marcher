@@ -13,20 +13,11 @@ public final class CreatureReferenceIndexModel {
 
     public CreatureReferenceIndexModel(
             Supplier<CreatureReferenceIndexResult> currentSupplier,
-            Function<Consumer<CreatureReferenceIndexResult>, Runnable> subscribeAction
-    ) {
-        this(currentSupplier, subscribeAction, unsupportedAtomicObservation());
-    }
-
-    public CreatureReferenceIndexModel(
-            Supplier<CreatureReferenceIndexResult> currentSupplier,
             Function<Consumer<CreatureReferenceIndexResult>, Runnable> subscribeAction,
             Function<Consumer<CreatureReferenceIndexResult>, Runnable> observeLatestAction
     ) {
-        this.currentSupplier = currentSupplier == null
-                ? CreatureReferenceIndexModel::empty
-                : currentSupplier;
-        this.subscribeAction = subscribeAction == null ? ignored -> () -> { } : subscribeAction;
+        this.currentSupplier = Objects.requireNonNull(currentSupplier, "currentSupplier");
+        this.subscribeAction = Objects.requireNonNull(subscribeAction, "subscribeAction");
         this.observeLatestAction = Objects.requireNonNull(observeLatestAction, "observeLatestAction");
     }
 
@@ -35,19 +26,12 @@ public final class CreatureReferenceIndexModel {
                 "unsubscribe");
     }
 
-    private static Function<Consumer<CreatureReferenceIndexResult>, Runnable> unsupportedAtomicObservation() {
-        return ignored -> { throw new IllegalStateException("Atomic creature-index observation is not configured."); };
-    }
-
     public CreatureReferenceIndexResult current() {
-        return currentSupplier.get();
+        return Objects.requireNonNull(currentSupplier.get(), "current creature index");
     }
 
     public Runnable subscribe(Consumer<CreatureReferenceIndexResult> listener) {
-        return subscribeAction.apply(Objects.requireNonNull(listener, "listener"));
-    }
-
-    private static CreatureReferenceIndexResult empty() {
-        return new CreatureReferenceIndexResult(CreatureReferenceIndexStatus.LOADING, 0L, java.util.List.of());
+        return Objects.requireNonNull(
+                subscribeAction.apply(Objects.requireNonNull(listener, "listener")), "unsubscribe");
     }
 }

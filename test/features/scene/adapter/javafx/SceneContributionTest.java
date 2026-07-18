@@ -140,7 +140,9 @@ final class SceneContributionTest {
         ActivePartyModel partyModel = new ActivePartyModel(() -> party, ignored -> () -> { });
         WorldPlannerSnapshot world = new WorldPlannerSnapshot(
                 WorldPlannerReadStatus.SUCCESS, List.of(), List.of(), List.of(), "");
-        WorldPlannerSnapshotModel worldModel = new WorldPlannerSnapshotModel(() -> world, ignored -> () -> { });
+        WorldPlannerSnapshotModel worldModel = new WorldPlannerSnapshotModel(
+                () -> world, ignored -> () -> { },
+                listener -> { listener.accept(world); return () -> { }; });
         PreparedSceneCatalogModel prepared = new PreparedSceneCatalogModel(
                 PreparedSceneCatalogSnapshot::empty, ignored -> { });
         EncounterRuntimeContextApi encounters = command -> CompletableFuture.completedFuture(
@@ -166,7 +168,9 @@ final class SceneContributionTest {
                 1L,
                 List.of(new CreatureCatalogRow(
                         101L, "Goblin", "Klein", "Humanoid", "neutral böse", "1/4", 50, 7, 15)));
-        return new CreatureReferenceIndexModel(() -> result, ignored -> () -> { });
+        return new CreatureReferenceIndexModel(
+                () -> result, ignored -> () -> { },
+                listener -> { listener.accept(result); return () -> { }; });
     }
 
     private static TextField textField(Parent root, String prompt) {

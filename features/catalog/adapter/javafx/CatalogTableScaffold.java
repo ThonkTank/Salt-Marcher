@@ -139,23 +139,23 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
 
     public void render(
             CatalogResultState<Row> results,
-            Id selectedId,
+            Optional<Id> selectedId,
             int totalCount,
             int pageSize,
             int pageOffset,
             String resultLabel
     ) {
         CatalogResultState<Row> safe = Objects.requireNonNull(results, "results");
+        Optional<Id> safeSelection = Objects.requireNonNull(selectedId, "selectedId");
         rendering = true;
         try {
             table.getItems().setAll(safe.rows());
             table.getSelectionModel().clearSelection();
-            if (selectedId != null) {
+            safeSelection.ifPresent(id ->
                 table.getItems().stream()
-                        .filter(row -> selectedId.equals(idReader.apply(row)))
+                        .filter(row -> id.equals(idReader.apply(row)))
                         .findFirst()
-                        .ifPresent(table.getSelectionModel()::select);
-            }
+                        .ifPresent(table.getSelectionModel()::select));
         } finally {
             rendering = false;
         }
@@ -242,7 +242,6 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
                 open.setOnAction(ignoredEvent -> {
                     Row row = getItem();
                     if (row != null) {
-                        table.getSelectionModel().select(row);
                         primaryAction.orElseThrow().accept(row);
                     }
                 });
@@ -274,7 +273,6 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
                     button.setOnAction(ignoredEvent -> {
                         Row row = getItem();
                         if (row != null) {
-                            table.getSelectionModel().select(row);
                             action.action().accept(row);
                         }
                     });

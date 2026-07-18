@@ -3,7 +3,6 @@ package features.catalog;
 import features.catalog.application.CatalogWorkspaceController;
 import features.catalog.application.CatalogWorkspaceBinding;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 import shell.api.ShellContribution;
 
 /** The only production composition entry point for Catalog. */
@@ -36,7 +35,7 @@ public final class CatalogFeature {
         private final CatalogWorkspaceController controller;
         private final CatalogWorkspaceBinding binding;
         private final features.catalog.adapter.javafx.CatalogContribution contribution;
-        private final AtomicBoolean closed = new AtomicBoolean();
+        private boolean closed;
 
         private Component(
                 CatalogWorkspaceController controller,
@@ -57,13 +56,48 @@ public final class CatalogFeature {
         }
 
         @Override
-        public void close() {
-            if (!closed.compareAndSet(false, true)) {
+        public synchronized void close() {
+            if (closed) {
                 return;
             }
-            binding.close();
-            contribution.close();
-            controller.close();
+            Throwable failure = null;
+            try {
+                try {
+                    binding.close();
+                } catch (RuntimeException | Error bindingFailure) {
+                    failure = accumulate(failure, bindingFailure);
+                }
+                try {
+                    contribution.close();
+                } catch (RuntimeException | Error contributionFailure) {
+                    failure = accumulate(failure, contributionFailure);
+                }
+                try {
+                    controller.close();
+                } catch (RuntimeException | Error controllerFailure) {
+                    failure = accumulate(failure, controllerFailure);
+                }
+            } finally {
+                closed = true;
+            }
+            rethrow(failure);
+        }
+
+        private static Throwable accumulate(Throwable current, Throwable next) {
+            if (current == null) {
+                return next;
+            }
+            current.addSuppressed(next);
+            return current;
+        }
+
+        private static void rethrow(Throwable failure) {
+            if (failure instanceof RuntimeException runtimeFailure) {
+                throw runtimeFailure;
+            }
+            if (failure instanceof Error error) {
+                throw error;
+            }
         }
     }
 }

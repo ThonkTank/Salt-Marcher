@@ -9,6 +9,7 @@ import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import javafx.scene.Node;
 import javafx.scene.control.ComboBox;
@@ -88,7 +89,8 @@ final class MonsterCatalogSection implements CatalogSection {
             controls.render(state, auxiliary);
             content.render(
                     state.results(),
-                    state.selectedCreatureId() > 0L ? state.selectedCreatureId() : null,
+                    state.selectedCreatureId() > 0L
+                            ? Optional.of(state.selectedCreatureId()) : Optional.empty(),
                     state.totalCount(), state.pageSize(), state.pageOffset(), "Monster");
         } finally {
             rendering = false;

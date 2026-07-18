@@ -14,13 +14,6 @@ public final class EncounterPoolFiltersModel {
 
     public EncounterPoolFiltersModel(
             Supplier<EncounterPoolFilters> currentSupplier,
-            Function<Consumer<EncounterPoolFilters>, Runnable> subscribeAction
-    ) {
-        this(currentSupplier, subscribeAction, unsupportedAtomicObservation());
-    }
-
-    public EncounterPoolFiltersModel(
-            Supplier<EncounterPoolFilters> currentSupplier,
             Function<Consumer<EncounterPoolFilters>, Runnable> subscribeAction,
             Function<Consumer<EncounterPoolFilters>, Runnable> observeLatestAction
     ) {
@@ -44,7 +37,4 @@ public final class EncounterPoolFiltersModel {
                 "unsubscribe");
     }
 
-    private static Function<Consumer<EncounterPoolFilters>, Runnable> unsupportedAtomicObservation() {
-        return ignored -> { throw new IllegalStateException("Atomic pool-filter observation is not configured."); };
-    }
 }

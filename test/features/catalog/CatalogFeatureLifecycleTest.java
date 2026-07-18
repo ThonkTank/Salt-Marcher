@@ -6,6 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import features.catalog.application.CatalogWorkspaceState;
+import features.catalog.application.EncounterTableCatalogState;
+import features.catalog.application.ItemsCatalogState;
+import features.catalog.application.MonsterCatalogState;
+import features.catalog.application.SavedEncounterCatalogState;
+import features.catalog.application.WorldReferenceCatalogState;
 import features.creatures.api.CreatureCatalogPage;
 import features.creatures.api.CreatureCatalogPageResult;
 import features.creatures.api.CreatureCatalogQuery;
@@ -172,6 +177,58 @@ final class CatalogFeatureLifecycleTest {
             assertActive(world, 0);
             assertActive(tables, 0);
             component.close();
+        });
+    }
+
+    @Test
+    void componentCloseAttemptsEveryProviderCleanupAndRemainsClosedAfterFailures() throws Exception {
+        runOnFx(() -> {
+            TrackingSubscription<EncounterBuilderInputs> builder =
+                    new TrackingSubscription<>(EncounterBuilderInputs.empty(), null);
+            TrackingSubscription<SavedEncounterPlanListResult> saved = new TrackingSubscription<>(
+                    new SavedEncounterPlanListResult(SavedEncounterPlanStatus.SUCCESS, List.of(), ""), null);
+            TrackingSubscription<CreatureReferenceIndexResult> creatures = new TrackingSubscription<>(
+                    new CreatureReferenceIndexResult(CreatureReferenceIndexStatus.SUCCESS, 1L, List.of()), null);
+            TrackingSubscription<WorldPlannerSnapshot> world = new TrackingSubscription<>(emptyWorld(), null);
+            TrackingSubscription<EncounterTableCatalogResult> tables = new TrackingSubscription<>(
+                    new EncounterTableCatalogResult(EncounterTableReadStatus.SUCCESS, List.of()), null);
+            builder.unsubscribeFailure = new IllegalStateException("pool cleanup");
+            saved.unsubscribeFailure = new IllegalStateException("saved cleanup");
+            creatures.unsubscribeFailure = new AssertionError("creature cleanup");
+            world.unsubscribeFailure = new IllegalStateException("world cleanup");
+            tables.unsubscribeFailure = new IllegalStateException("table cleanup");
+            CatalogFeature.Component component = create(
+                    new ControllableCreatureQueries(), new ControllableItemsApi(), builder, saved,
+                    creatures, world, tables, new RecordingItemRoute());
+            ShellBinding shellBinding = component.contribution().bind();
+            shellBinding.onActivate();
+
+            RuntimeException failure = assertThrows(RuntimeException.class, component::close);
+
+            for (TrackingSubscription<?> provider : List.of(builder, saved, creatures, world, tables)) {
+                assertEquals(1, provider.unsubscribeAttempts.get(), "every provider cleanup must be attempted");
+                assertEquals(0, provider.active.get(), "a throwing cleanup must still release its fake resource");
+            }
+            assertTrue(failure.getSuppressed().length > 0, "later cleanup failures must remain suppressed");
+            List<String> messages = failureMessages(failure);
+            assertTrue(messages.containsAll(List.of(
+                    "pool cleanup", "saved cleanup", "creature cleanup", "world cleanup", "table cleanup")));
+
+            CatalogWorkspaceState closed = component.controller().publication().current();
+            assertEquals(MonsterCatalogState.Lifecycle.CLOSED, closed.monsters().lifecycle());
+            assertEquals(ItemsCatalogState.Lifecycle.CLOSED, closed.items().lifecycle());
+            assertEquals(SavedEncounterCatalogState.Lifecycle.CLOSED, closed.savedEncounters().lifecycle());
+            assertEquals(WorldReferenceCatalogState.Lifecycle.CLOSED, closed.worldReferences().lifecycle());
+            assertEquals(EncounterTableCatalogState.Lifecycle.CLOSED, closed.encounterTables().lifecycle());
+            long closedRevision = closed.revision();
+
+            component.close();
+            shellBinding.onActivate();
+            assertEquals(closedRevision, component.controller().publication().current().revision(),
+                    "closed component must ignore later activation and repeated close");
+            for (TrackingSubscription<?> provider : List.of(builder, saved, creatures, world, tables)) {
+                assertEquals(1, provider.unsubscribeAttempts.get(), "repeated close must be idempotent");
+            }
         });
     }
 
@@ -461,6 +518,15 @@ final class CatalogFeatureLifecycleTest {
         assertEquals(active, tracker.active.get());
     }
 
+    private static List<String> failureMessages(Throwable failure) {
+        List<String> messages = new ArrayList<>();
+        messages.add(failure.getMessage());
+        for (Throwable suppressed : failure.getSuppressed()) {
+            messages.addAll(failureMessages(suppressed));
+        }
+        return List.copyOf(messages);
+    }
+
     private static ToggleButton toggle(Parent root, String accessibleText) {
         return descendants(root).stream().filter(ToggleButton.class::isInstance).map(ToggleButton.class::cast)
                 .filter(button -> accessibleText.equals(button.getAccessibleText())).findFirst().orElseThrow();
@@ -517,8 +583,10 @@ final class CatalogFeatureLifecycleTest {
         private final AtomicInteger subscriptions = new AtomicInteger();
         private final AtomicInteger active = new AtomicInteger();
         private final AtomicInteger currentCalls = new AtomicInteger();
+        private final AtomicInteger unsubscribeAttempts = new AtomicInteger();
         private Consumer<T> listener = ignored -> { };
         private RuntimeException observationFailure;
+        private Throwable unsubscribeFailure;
 
         private TrackingSubscription(T current, T synchronousPublication) {
             this.current = current;
@@ -557,8 +625,15 @@ final class CatalogFeatureLifecycleTest {
             AtomicBoolean open = new AtomicBoolean(true);
             return () -> {
                 if (open.compareAndSet(true, false)) {
+                    unsubscribeAttempts.incrementAndGet();
                     active.decrementAndGet();
                     listener = ignored -> { };
+                    if (unsubscribeFailure instanceof RuntimeException runtimeFailure) {
+                        throw runtimeFailure;
+                    }
+                    if (unsubscribeFailure instanceof Error error) {
+                        throw error;
+                    }
                 }
             };
         }

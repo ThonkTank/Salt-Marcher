@@ -3,6 +3,7 @@ package features.catalog.adapter.javafx;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.items.api.ItemsCatalogApi;
@@ -163,6 +164,26 @@ public final class ItemsCatalogUiTest {
                     KeyEvent.KEY_PRESSED, "", "", KeyCode.ENTER,
                     false, false, false, false));
             assertNotNull(inspector.entry, "Enter must invoke the same accessible primary detail action");
+        });
+    }
+
+    @Test
+    void ITEMS_CATALOG_UI_005_rowPrimaryLinkOpensExactVisibleItemWithoutSelectingIt() throws Exception {
+        runOnFxThread(() -> {
+            FakeItemsApi api = new FakeItemsApi();
+            RecordingInspector inspector = new RecordingInspector();
+            ItemsFixture fixture = show(api, inspector);
+            Parent pane = fixture.host();
+            TableView<?> results = table(pane, "Item-Ergebnisse");
+            assertNull(results.getSelectionModel().getSelectedItem());
+
+            button(pane, "Öffnen: Rapier of Proof").fire();
+
+            assertEquals("equipment:rapier", api.lastDetailKey);
+            assertEquals(1, api.detailCalls);
+            assertNotNull(inspector.entry);
+            assertNull(results.getSelectionModel().getSelectedItem(),
+                    "row primary action must not mutate Catalog selection");
         });
     }
 
@@ -464,6 +485,7 @@ public final class ItemsCatalogUiTest {
         private CatalogStatus nextStatus = CatalogStatus.SUCCESS;
         private CompletableFuture<PageResult> deferred;
         private String lastDetailKey;
+        private int detailCalls;
 
         @Override
         public CompletionStage<FilterOptionsResult> loadFilterOptions() {
@@ -488,6 +510,7 @@ public final class ItemsCatalogUiTest {
         @Override
         public CompletionStage<DetailResult> loadDetail(String sourceKey) {
             lastDetailKey = sourceKey;
+            detailCalls++;
             return CompletableFuture.completedFuture(new DetailResult(CatalogStatus.SUCCESS, detail()));
         }
 

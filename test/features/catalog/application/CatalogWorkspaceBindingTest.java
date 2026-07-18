@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import platform.ui.UiDispatcher;
 
@@ -29,6 +30,23 @@ final class CatalogWorkspaceBindingTest {
         dispatcher.runAll();
         assertEquals(List.of(2L), rendered);
         binding.close();
+    }
+
+    @Test
+    void closeCommitsClosedStateWhenDetachThrowsAndDoesNotRetry() {
+        AtomicInteger detachAttempts = new AtomicInteger();
+        CatalogWorkspaceBinding binding = new CatalogWorkspaceBinding(observer -> () -> {
+            detachAttempts.incrementAndGet();
+            throw new IllegalStateException("detach failed");
+        });
+        binding.attach(ignored -> { });
+
+        assertThrows(IllegalStateException.class, binding::close);
+        assertEquals(1, detachAttempts.get());
+        assertThrows(IllegalStateException.class, () -> binding.attach(ignored -> { }));
+
+        binding.close();
+        assertEquals(1, detachAttempts.get(), "closed binding must not retry a failed detach");
     }
 
     private static CatalogWorkspaceState state(long revision) {

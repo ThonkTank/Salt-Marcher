@@ -188,6 +188,63 @@ public final class CatalogControlsRawInputTest {
         });
     }
 
+    @Test
+    void scaffoldDeselectionEmitsOneSemanticClearSelectionIntent() throws Exception {
+        runOnFx(() -> {
+            List<MonsterCatalogIntent> intents = new ArrayList<>();
+            MonsterCatalogSection section = new MonsterCatalogSection(intents::add);
+            CreatureCatalogRow row = creature(41L, "Owlbear");
+            section.render(monsterState(41L, List.of(row)));
+            Parent content = (Parent) section.content();
+            Stage stage = show(content);
+            TableView<?> table = descendants(content).stream().filter(TableView.class::isInstance)
+                    .map(TableView.class::cast).findFirst().orElseThrow();
+            assertTrue(intents.isEmpty(), "rendered selection must not echo an intent");
+
+            table.getSelectionModel().clearSelection();
+
+            assertEquals(List.of(new MonsterCatalogIntent.SelectCreature(0L)), intents,
+                    "one explicit deselection must emit the existing clear-selection intent exactly once");
+            stage.close();
+        });
+    }
+
+    @Test
+    void rowButtonsEmitOnlyTheirNamedIntentAndLeaveSelectionUnchanged() throws Exception {
+        runOnFx(() -> {
+            List<MonsterCatalogIntent> intents = new ArrayList<>();
+            MonsterCatalogSection section = new MonsterCatalogSection(intents::add);
+            CreatureCatalogRow selected = creature(41L, "Owlbear");
+            CreatureCatalogRow actedOn = creature(42L, "Troll");
+            section.render(monsterState(41L, List.of(selected, actedOn)));
+            Parent content = (Parent) section.content();
+            Stage stage = show(content);
+            TableView<?> table = descendants(content).stream().filter(TableView.class::isInstance)
+                    .map(TableView.class::cast).findFirst().orElseThrow();
+
+            buttonAccessible(content, "Öffnen: Troll").fire();
+            assertEquals(List.of(new MonsterCatalogIntent.OpenCreature(42L)), intents);
+            assertEquals(selected, table.getSelectionModel().getSelectedItem());
+
+            intents.clear();
+            buttonAccessible(content, "+ Encounter: Troll").fire();
+            assertEquals(List.of(new MonsterCatalogIntent.AddToEncounter(42L)), intents);
+            assertEquals(selected, table.getSelectionModel().getSelectedItem());
+            stage.close();
+        });
+    }
+
+    private static CreatureCatalogRow creature(long id, String name) {
+        return new CreatureCatalogRow(id, name, "Large", "Monstrosity", "", "3", 700, 59, 13);
+    }
+
+    private static MonsterCatalogState monsterState(long selectedId, List<CreatureCatalogRow> rows) {
+        return new MonsterCatalogState(
+                1L, 1L, 1L, MonsterCatalogState.Lifecycle.ACTIVE,
+                MonsterCatalogFilterDraft.empty(), CreatureFilterOptions.empty(), MonsterCatalogSort.NAME_ASC,
+                50, 0, rows.size(), selectedId, CatalogResultState.ready(rows));
+    }
+
     private static MonsterCatalogState state(String name) {
         return new MonsterCatalogState(
                 1L, 1L, 1L, MonsterCatalogState.Lifecycle.ACTIVE,
@@ -241,6 +298,11 @@ public final class CatalogControlsRawInputTest {
     private static Button button(Parent root, String text) {
         return descendants(root).stream().filter(Button.class::isInstance).map(Button.class::cast)
                 .filter(button -> text.equals(button.getText())).findFirst().orElseThrow();
+    }
+
+    private static Button buttonAccessible(Parent root, String accessibleText) {
+        return descendants(root).stream().filter(Button.class::isInstance).map(Button.class::cast)
+                .filter(button -> accessibleText.equals(button.getAccessibleText())).findFirst().orElseThrow();
     }
 
     private static List<Node> descendants(Node root) {

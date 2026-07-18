@@ -15,9 +15,19 @@ import com.tngtech.archunit.lang.SimpleConditionEvent;
 import features.catalog.adapter.javafx.CatalogSection;
 import features.catalog.adapter.javafx.CatalogTableScaffold;
 import features.catalog.application.CatalogWorkspacePublication;
+import features.creatures.api.CreatureReferenceIndexModel;
+import features.encounter.api.EncounterPoolFiltersModel;
+import features.encounter.api.SavedEncounterPlanListModel;
+import features.encountertable.api.EncounterTableCatalogModel;
+import features.worldplanner.api.WorldPlannerSnapshotModel;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -35,6 +45,12 @@ public final class CatalogTargetArchitectureTest {
             "features.catalog.adapter.javafx.FactionCatalogSection",
             "features.catalog.adapter.javafx.LocationCatalogSection",
             "features.catalog.adapter.javafx.EncounterTableCatalogSection");
+    private static final List<Class<?>> REQUIRED_ATOMIC_MODELS = List.of(
+            CreatureReferenceIndexModel.class,
+            EncounterPoolFiltersModel.class,
+            SavedEncounterPlanListModel.class,
+            EncounterTableCatalogModel.class,
+            WorldPlannerSnapshotModel.class);
 
     private CatalogTargetArchitectureTest() {
     }
@@ -74,6 +90,32 @@ public final class CatalogTargetArchitectureTest {
         Field selectionAction = CatalogTableScaffold.class.getDeclaredField("selectionAction");
         assertEquals("java.util.function.Consumer<java.util.Optional<Id>>",
                 selectionAction.getGenericType().getTypeName());
+        Method render = List.of(CatalogTableScaffold.class.getDeclaredMethods()).stream()
+                .filter(method -> method.getName().equals("render"))
+                .findFirst()
+                .orElseThrow();
+        assertEquals("java.util.Optional<Id>", render.getGenericParameterTypes()[1].getTypeName());
+    }
+
+    @Test
+    void catalogProviderModelsRequireAtomicObservationAtConstruction() {
+        Supplier<Object> current = Object::new;
+        Function<Object, Runnable> observation = ignored -> () -> { };
+        for (Class<?> model : REQUIRED_ATOMIC_MODELS) {
+            Constructor<?>[] constructors = model.getConstructors();
+            assertEquals(1, constructors.length, () -> model.getName() + " exposes compatibility constructors");
+            Constructor<?> constructor = constructors[0];
+            assertEquals(3, constructor.getParameterCount(),
+                    () -> model.getName() + " does not require atomic observation");
+            for (int missing = 0; missing < constructor.getParameterCount(); missing++) {
+                Object[] arguments = {current, observation, observation};
+                arguments[missing] = null;
+                InvocationTargetException failure = org.junit.jupiter.api.Assertions.assertThrows(
+                        InvocationTargetException.class, () -> constructor.newInstance(arguments));
+                assertTrue(failure.getCause() instanceof NullPointerException,
+                        () -> model.getName() + " accepts a missing constructor collaborator");
+            }
+        }
     }
 
     private static ArchCondition<JavaClass> notHaveRetiredName() {

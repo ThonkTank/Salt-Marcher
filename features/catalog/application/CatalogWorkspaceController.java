@@ -131,10 +131,19 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
         if (!active) {
             return;
         }
-        for (int index = sections.size() - 1; index >= 0; index--) {
-            sections.get(index).deactivate();
+        Throwable failure = null;
+        try {
+            for (int index = sections.size() - 1; index >= 0; index--) {
+                try {
+                    sections.get(index).deactivate();
+                } catch (RuntimeException | Error cleanupFailure) {
+                    failure = accumulate(failure, cleanupFailure);
+                }
+            }
+        } finally {
+            active = false;
         }
-        active = false;
+        rethrow(failure);
     }
 
     @Override
@@ -142,9 +151,29 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
         if (closed) {
             return;
         }
-        deactivate();
-        sections.forEach(CatalogLifecycle::close);
-        closed = true;
+        Throwable failure = null;
+        try {
+            try {
+                deactivate();
+            } catch (RuntimeException | Error deactivateFailure) {
+                failure = accumulate(failure, deactivateFailure);
+            }
+            for (CatalogLifecycle section : sections) {
+                try {
+                    section.close();
+                } catch (RuntimeException | Error closeFailure) {
+                    failure = accumulate(failure, closeFailure);
+                }
+            }
+        } finally {
+            closed = true;
+        }
+        try {
+            publish();
+        } catch (RuntimeException | Error publicationFailure) {
+            failure = accumulate(failure, publicationFailure);
+        }
+        rethrow(failure);
     }
 
     private void sectionChanged() {
@@ -161,5 +190,22 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
         return new CatalogWorkspaceState(
                 ++revision, activeSection, monsters.state(), items.state(), savedEncounters.state(),
                 worldReferences.state(), encounterTables.state());
+    }
+
+    private static Throwable accumulate(Throwable current, Throwable next) {
+        if (current == null) {
+            return next;
+        }
+        current.addSuppressed(next);
+        return current;
+    }
+
+    private static void rethrow(Throwable failure) {
+        if (failure instanceof RuntimeException runtimeFailure) {
+            throw runtimeFailure;
+        }
+        if (failure instanceof Error error) {
+            throw error;
+        }
     }
 }

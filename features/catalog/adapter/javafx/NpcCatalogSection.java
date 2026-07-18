@@ -6,6 +6,7 @@ import features.catalog.application.WorldReferenceCatalogState;
 import features.catalog.application.WorldReferenceCatalogState.NpcRow;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import javafx.scene.Node;
 import javafx.scene.control.TextField;
@@ -64,7 +65,7 @@ public final class NpcCatalogSection implements CatalogSection {
         } finally {
             rendering = false;
         }
-        content.render(state.npcs().results(), selected(state.npcs().selectedId()),
+        content.render(state.npcs().results(), optionalId(state.npcs().selectedId()),
                 state.npcs().results().rows().size(), Math.max(1, state.npcs().results().rows().size()),
                 0, "NPCs");
     }
@@ -79,7 +80,9 @@ public final class NpcCatalogSection implements CatalogSection {
                 List.of("accent", "compact"), row -> intents.accept(intent.apply(row)));
     }
 
-    private static Long selected(long id) { return id > 0L ? id : null; }
+    private static Optional<Long> optionalId(long id) {
+        return id > 0L ? Optional.of(id) : Optional.empty();
+    }
 
     private static TextField queryField(String accessible, String prompt) {
         TextField field = new TextField();

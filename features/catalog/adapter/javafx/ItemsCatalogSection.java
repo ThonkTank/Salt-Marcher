@@ -7,6 +7,7 @@ import features.catalog.application.ItemsCatalogState;
 import features.items.api.ItemsCatalogApi;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -107,7 +108,8 @@ public final class ItemsCatalogSection implements CatalogSection {
             applyDraft(state.filterDraft());
             content.render(
                     state.results(),
-                    state.selectedSourceKey().isBlank() ? null : state.selectedSourceKey(),
+                    state.selectedSourceKey().isBlank()
+                            ? Optional.empty() : Optional.of(state.selectedSourceKey()),
                     state.totalCount(), state.pageSize(), state.pageOffset(), "Items");
             status.setText(state.actionMessage());
         } finally {

@@ -137,11 +137,11 @@ public final class WorldReferenceCatalogController implements CatalogLifecycle {
     }
 
     private void releaseSubscriptions() {
-        RuntimeException failure = null;
+        Throwable failure = null;
         for (int index = unsubscribe.size() - 1; index >= 0; index--) {
             try {
                 unsubscribe.get(index).run();
-            } catch (RuntimeException cleanupFailure) {
+            } catch (RuntimeException | Error cleanupFailure) {
                 if (failure == null) {
                     failure = cleanupFailure;
                 } else {
@@ -150,8 +150,11 @@ public final class WorldReferenceCatalogController implements CatalogLifecycle {
             }
         }
         unsubscribe.clear();
-        if (failure != null) {
-            throw failure;
+        if (failure instanceof RuntimeException runtimeFailure) {
+            throw runtimeFailure;
+        }
+        if (failure instanceof Error error) {
+            throw error;
         }
     }
 

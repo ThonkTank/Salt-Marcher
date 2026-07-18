@@ -7,6 +7,7 @@ import features.catalog.application.EncounterTableCatalogState.EncounterTableRow
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Optional;
 import java.util.function.Consumer;
 import javafx.scene.Node;
 import javafx.scene.control.TextField;
@@ -64,12 +65,14 @@ public final class EncounterTableCatalogSection implements CatalogSection {
         } finally {
             rendering = false;
         }
-        content.render(state.results(), selected(state.selectedTableId()),
+        content.render(state.results(), optionalId(state.selectedTableId()),
                 state.results().rows().size(), Math.max(1, state.results().rows().size()),
                 0, "Encounter-Tabellen");
     }
 
-    private static Long selected(long id) { return id > 0L ? id : null; }
+    private static Optional<Long> optionalId(long id) {
+        return id > 0L ? Optional.of(id) : Optional.empty();
+    }
 
     private static TextField queryField() {
         TextField field = new TextField();

@@ -201,7 +201,7 @@ public final class ItemsCatalogController implements CatalogLifecycle {
     private void open(String sourceKey) {
         if (state.lifecycle() != ItemsCatalogState.Lifecycle.ACTIVE
                 || sourceKey == null || sourceKey.isBlank()
-                || !sourceKey.equals(state.selectedSourceKey())) {
+                || !isVisible(sourceKey)) {
             return;
         }
         long lifecycleRevision = state.lifecycleRevision();
@@ -254,7 +254,12 @@ public final class ItemsCatalogController implements CatalogLifecycle {
         return state.lifecycle() == ItemsCatalogState.Lifecycle.ACTIVE
                 && state.lifecycleRevision() == lifecycleRevision
                 && state.detailRequestRevision() == requestRevision
-                && sourceKey.equals(state.selectedSourceKey());
+                && isVisible(sourceKey);
+    }
+
+    private boolean isVisible(String sourceKey) {
+        return state.results().rows().stream()
+                .anyMatch(row -> sourceKey.equals(row.sourceKey()));
     }
 
     private ItemsCatalogApi.ItemQuery query(ItemsCatalogFilterDraft draft, int pageOffset) {

@@ -45,7 +45,7 @@ final class ItemsCatalogControllerTest {
     }
 
     @Test
-    void newerPagesAndDetailsWinAndLifecycleOrSelectionChangesRejectLateDetail() {
+    void newerPagesAndDetailsWinAndLifecycleOrPageChangesRejectLateDetail() {
         ControllableItems provider = new ControllableItems();
         List<String> opened = new ArrayList<>();
         ItemsCatalogController controller = controller(provider, opened);
@@ -74,15 +74,16 @@ final class ItemsCatalogControllerTest {
         controller.accept(new ItemsCatalogIntent.OpenItem("newer"));
         CompletableFuture<ItemsCatalogApi.DetailResult> changedSelection = provider.details.getLast();
         controller.accept(new ItemsCatalogIntent.SelectItem("different"));
-        changedSelection.complete(detail("wrong-selection"));
-        assertEquals(List.of("newer-response"), opened);
+        changedSelection.complete(detail("row-action-response"));
+        assertEquals(List.of("newer-response", "row-action-response"), opened,
+                "opening a visible row must not depend on Catalog selection");
 
         controller.accept(new ItemsCatalogIntent.SelectItem("newer"));
         controller.accept(new ItemsCatalogIntent.OpenItem("newer"));
         CompletableFuture<ItemsCatalogApi.DetailResult> postDeactivate = provider.details.getLast();
         controller.deactivate();
         postDeactivate.complete(detail("post-deactivate"));
-        assertEquals(List.of("newer-response"), opened);
+        assertEquals(List.of("newer-response", "row-action-response"), opened);
 
         controller.activate();
         assertEquals(2, provider.options.size());
