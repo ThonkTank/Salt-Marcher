@@ -34,6 +34,7 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
     private final Button next = new Button("Weiter ▶");
     private final TableView<Row> table = new TableView<>();
     private final HBox header;
+    private String pageSeparator = " / ";
     private boolean rendering;
 
     public CatalogTableScaffold(
@@ -112,7 +113,7 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
         int currentPage = totalCount == 0 ? 1 : (pageOffset / pageSize) + 1;
         int pageCount = totalCount == 0 ? 1 : (int) Math.ceil((double) totalCount / pageSize);
         count.setText(totalCount + " " + resultLabel + " gefunden");
-        page.setText("Seite " + currentPage + " / " + pageCount);
+        page.setText("Seite " + currentPage + pageSeparator + pageCount);
         previous.setDisable(pageOffset <= 0 || safe.status() == CatalogResultState.Status.LOADING);
         next.setDisable(pageOffset + pageSize >= totalCount || safe.status() == CatalogResultState.Status.LOADING);
         status.setText(statusText(safe));
@@ -129,6 +130,27 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
         if (control != null && !header.getChildren().contains(control)) {
             header.getChildren().add(control);
         }
+    }
+
+    public void configurePaging(
+            String previousText,
+            String previousAccessibleText,
+            String nextText,
+            String nextAccessibleText,
+            String pageAccessibleText,
+            String separator
+    ) {
+        previous.setText(Objects.requireNonNull(previousText, "previousText"));
+        previous.setAccessibleText(Objects.requireNonNull(previousAccessibleText, "previousAccessibleText"));
+        next.setText(Objects.requireNonNull(nextText, "nextText"));
+        next.setAccessibleText(Objects.requireNonNull(nextAccessibleText, "nextAccessibleText"));
+        page.setAccessibleText(Objects.requireNonNull(pageAccessibleText, "pageAccessibleText"));
+        pageSeparator = Objects.requireNonNull(separator, "separator");
+    }
+
+    public void setPagingVisible(boolean visible) {
+        getBottom().setVisible(visible);
+        getBottom().setManaged(visible);
     }
 
     private void openSelected() {

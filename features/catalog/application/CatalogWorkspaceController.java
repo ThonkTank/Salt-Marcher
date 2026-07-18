@@ -3,10 +3,8 @@ package features.catalog.application;
 import features.creatures.api.CreatureCatalogQueryApi;
 import features.creatures.api.CreatureReferenceIndexModel;
 import features.encounter.api.EncounterPoolFiltersModel;
-import features.encounter.api.SavedEncounterPlanListModel;
 import features.encountertable.api.EncounterTableApi;
 import features.encountertable.api.EncounterTableCatalogModel;
-import features.items.api.ItemsCatalogApi;
 import features.worldplanner.api.WorldPlannerSnapshotModel;
 import java.util.List;
 import java.util.Objects;
@@ -16,7 +14,6 @@ import platform.ui.UiDispatcher;
 public final class CatalogWorkspaceController implements CatalogLifecycle {
 
     private final UiDispatcher dispatcher;
-    private final CatalogRequestEpoch requestEpoch = new CatalogRequestEpoch();
     private final MonsterCatalogController monsters;
     private final ItemsCatalogController items;
     private final SavedEncounterCatalogController savedEncounters;
@@ -33,8 +30,8 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
     public CatalogWorkspaceController(
             CreatureCatalogQueryApi creatureQueries,
             EncounterPoolFiltersModel encounterPoolFilters,
-            ItemsCatalogApi itemCatalog,
-            SavedEncounterPlanListModel savedPlans,
+            features.items.api.ItemsCatalogApi itemCatalog,
+            features.encounter.api.SavedEncounterPlanListModel savedPlans,
             CreatureReferenceIndexModel creatureReferences,
             WorldPlannerSnapshotModel world,
             EncounterTableApi encounterTableCommands,
@@ -52,8 +49,10 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
                 requiredRoutes.scene(),
                 dispatcher,
                 this::sectionChanged);
-        items = new ItemsCatalogController(itemCatalog, this::sectionChanged);
-        savedEncounters = new SavedEncounterCatalogController(savedPlans, this::sectionChanged);
+        items = new ItemsCatalogController(
+                itemCatalog, requiredRoutes.itemInspector(), dispatcher, this::sectionChanged);
+        savedEncounters = new SavedEncounterCatalogController(
+                savedPlans, requiredRoutes.encounter(), dispatcher, this::sectionChanged);
         worldReferences = new WorldReferenceCatalogController(creatureReferences, world, this::sectionChanged);
         encounterTables = new EncounterTableCatalogController(
                 encounterTableCommands, encounterTableCatalog, this::sectionChanged);
@@ -63,10 +62,6 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
 
     public CatalogWorkspacePublication publication() {
         return publication;
-    }
-
-    public ItemsCatalogApi itemCatalog() {
-        return items.provider();
     }
 
     public void selectSection(CatalogSectionId section) {
@@ -82,41 +77,12 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
         monsters.accept(intent);
     }
 
-    public CatalogRequestToken beginItemsFilterOptions() {
-        return requestEpoch.begin(CatalogRequestToken.RequestKind.ITEMS_FILTER_OPTIONS);
+    public void acceptItemsIntent(ItemsCatalogIntent intent) {
+        items.accept(intent);
     }
 
-    public CatalogRequestToken beginItemsSearch() {
-        return requestEpoch.begin(CatalogRequestToken.RequestKind.ITEMS_SEARCH);
-    }
-
-    public void itemsSearchStarted(ItemsCatalogApi.ItemQuery query) {
-        items.beginSearch(query);
-    }
-
-    public void itemsInvalidQuery() {
-        items.applyInvalidQuery();
-    }
-
-    public CatalogRequestToken beginItemsDetail() {
-        return requestEpoch.begin(CatalogRequestToken.RequestKind.ITEMS_DETAIL);
-    }
-
-    public CatalogRequestToken beginSavedEncounterOpen() {
-        return requestEpoch.begin(CatalogRequestToken.RequestKind.SAVED_ENCOUNTER_OPEN);
-    }
-
-    public void complete(CatalogRequestToken token, Runnable acceptedResult) {
-        Objects.requireNonNull(acceptedResult, "acceptedResult");
-        dispatcher.dispatch(() -> requestEpoch.runIfAccepted(token, acceptedResult));
-    }
-
-    public void itemsFilterOptionsCompleted(ItemsCatalogApi.FilterOptionsResult result, Throwable failure) {
-        items.applyFilterOptions(result, failure);
-    }
-
-    public void itemsPageCompleted(ItemsCatalogApi.PageResult result, Throwable failure) {
-        items.applyPage(result, failure);
+    public void acceptSavedEncounterIntent(SavedEncounterCatalogIntent intent) {
+        savedEncounters.accept(intent);
     }
 
     @Override
@@ -125,7 +91,6 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
             return;
         }
         active = true;
-        requestEpoch.activate();
         activating = true;
         sections.forEach(CatalogLifecycle::activate);
         activating = false;
@@ -137,7 +102,6 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
         if (!active) {
             return;
         }
-        requestEpoch.deactivate();
         for (int index = sections.size() - 1; index >= 0; index--) {
             sections.get(index).deactivate();
         }

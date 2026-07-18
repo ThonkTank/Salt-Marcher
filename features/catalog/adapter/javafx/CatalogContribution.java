@@ -17,7 +17,7 @@ import shell.api.ShellLeftBarTabMode;
 import shell.api.ShellLeftBarTabSpec;
 import shell.api.ShellSlot;
 
-/** Target Catalog host: Monster is native; only later milestones remain behind one adapter. */
+/** Target Catalog host: Monster, Items, and saved Encounters are native. */
 public final class CatalogContribution implements ShellContribution, AutoCloseable {
 
     private final CatalogWorkspaceController controller;
@@ -26,6 +26,9 @@ public final class CatalogContribution implements ShellContribution, AutoCloseab
     private Runnable unsubscribe = () -> { };
     private CatalogWorkspaceView workspace;
     private MonsterCatalogSection monsters;
+    private ItemsCatalogSection items;
+    private SavedEncounterCatalogSection savedEncounters;
+    private long renderedWorkspaceRevision = -1L;
 
     public CatalogContribution(
             CatalogWorkspaceController controller,
@@ -55,8 +58,12 @@ public final class CatalogContribution implements ShellContribution, AutoCloseab
             throw new IllegalStateException("Catalog contribution may only be bound once.");
         }
         monsters = new MonsterCatalogSection(controller::acceptMonsterIntent);
+        items = new ItemsCatalogSection(controller::acceptItemsIntent);
+        savedEncounters = new SavedEncounterCatalogSection(controller::acceptSavedEncounterIntent);
         List<CatalogSection> sections = new ArrayList<>();
         sections.add(monsters);
+        sections.add(items);
+        sections.add(savedEncounters);
         sections.addAll(legacySections);
         workspace = new CatalogWorkspaceView(controller, sections);
         unsubscribe = controller.publication().subscribe(this::apply);
@@ -65,12 +72,18 @@ public final class CatalogContribution implements ShellContribution, AutoCloseab
     }
 
     private void apply(CatalogWorkspaceState state) {
-        if (workspace == null || closed.get()) {
+        if (workspace == null || closed.get() || state.revision() <= renderedWorkspaceRevision) {
             return;
         }
+        renderedWorkspaceRevision = state.revision();
         workspace.apply(state);
+        if (state.revision() != renderedWorkspaceRevision) {
+            return;
+        }
         monsters.render(state.monsters());
         monsters.renderAuxiliary(monsterAuxiliary(state));
+        items.render(state.items());
+        savedEncounters.render(state.savedEncounters());
     }
 
     @Override

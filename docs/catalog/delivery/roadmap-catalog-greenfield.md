@@ -91,19 +91,20 @@ M0 Target Lock And Documentation
 
 ## Current Migration Position
 
-- Current foundation: M0 and M1 are merged. PR #513 established the production
-  Catalog application seam, immutable workspace publication, provider-owned
-  subscriptions and component lifecycle behind
-  `CatalogFeature.create(CatalogProviders, CatalogRoutes)`.
-- Current milestone: M2 is delivered by PR #514. Its final candidate moves the
-  complete Monster query, filter, sort, paging, stable selection, Inspector and
-  Encounter pool-filter paths to the application controller; Monster is the
-  first production adopter of `CatalogTableScaffold`. Local
-  `./gradlew architectureTest`, `./gradlew check`, desktop install and diff
-  whitespace proof are green. It merges only after required PR CI is green.
-- Next step after PR #514 merges: M3 migrates Items and Saved Encounters from the
-  single compatibility adapter, including their async result lifecycles,
-  stable-id selection, confirmation intent and shared table scaffold.
+- Current foundation: M0 through M2 are merged. PR #514 moved the complete
+  Monster lifecycle, stable selection, Inspector and Encounter pool-filter
+  paths to the application controller and introduced `CatalogTableScaffold`.
+- Current milestone: M3 is delivered by PR #515. Its final candidate moves
+  Items draft validation, async paging/detail requests and Inspector routing,
+  plus saved-Encounter subscription, stable selection and discard confirmation,
+  into their application controllers. Both sections use the shared scaffold;
+  the workspace request-token bridge is deleted and the compatibility adapter
+  contains only the four M4 sections. Local `./gradlew architectureTest`,
+  `./gradlew check`, desktop install and diff whitespace proof are green. It
+  merges only after required PR CI is green.
+- Next step after PR #515 merges: M4 migrates NPC, faction, location and
+  Encounter Table state, stable-id selection, label joins and semantic
+  handoffs, leaving no production section behind the compatibility adapter.
 
 ## Delivery Rules
 

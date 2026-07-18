@@ -1,61 +1,76 @@
 package features.catalog.adapter.javafx;
 
-import features.catalog.application.CatalogApplicationRoutes.EncounterHandoff;
-import features.catalog.application.CatalogRequestToken;
 import features.catalog.application.CatalogSectionId;
-import features.catalog.application.CatalogWorkspaceController;
-import features.encounter.api.OpenSavedEncounterPlanResult;
-import features.encounter.api.SavedEncounterPlanListResult;
+import features.catalog.application.SavedEncounterCatalogIntent;
+import features.catalog.application.SavedEncounterCatalogState;
 import features.encounter.api.SavedEncounterPlanSummary;
 import java.util.List;
 import java.util.Objects;
-import javafx.beans.property.SimpleStringProperty;
+import java.util.function.Consumer;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.input.MouseButton;
-import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
+/** Passive saved-Encounter renderer backed only by immutable application state. */
 public final class SavedEncounterCatalogSection implements CatalogSection {
 
-    private final EncounterHandoff encounters;
-    private final CatalogWorkspaceController controller;
-    private final TableView<SavedEncounterPlanSummary> plans = new TableView<>();
+    private final Consumer<SavedEncounterCatalogIntent> intents;
+    private final Button open = new Button("Im Encounter öffnen");
+    private final Button confirm = new Button("Verwerfen und öffnen");
+    private final Button cancel = new Button("Abbrechen");
     private final Label status = new Label();
+    private final Label confirmation = new Label();
+    private final HBox confirmationActions = new HBox(8, confirm, cancel);
     private final VBox controls;
-    private final BorderPane content = new BorderPane();
+    private final CatalogTableScaffold<SavedEncounterPlanSummary, Long> content;
+    private SavedEncounterCatalogState state;
+    private long renderedRevision = -1L;
 
-    public SavedEncounterCatalogSection(EncounterHandoff encounters, CatalogWorkspaceController controller) {
-        this.encounters = Objects.requireNonNull(encounters, "encounters");
-        this.controller = Objects.requireNonNull(controller, "controller");
-        plans.setAccessibleText("Gespeicherte Encounter");
-        plans.setPlaceholder(new Label("Keine gespeicherten Encounter verfügbar."));
-        plans.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        plans.getColumns().setAll(
-                textColumn("Name", SavedEncounterPlanSummary::name),
-                textColumn("Zusammenfassung", SavedEncounterPlanSummary::summaryText));
-        plans.setOnMouseClicked(event -> {
-            if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
-                open(false);
+    public SavedEncounterCatalogSection(Consumer<SavedEncounterCatalogIntent> intents) {
+        this.intents = Objects.requireNonNull(intents, "intents");
+        content = new CatalogTableScaffold<>(
+                "Gespeicherte Encounter",
+                SavedEncounterPlanSummary::planId,
+                SavedEncounterPlanSummary::name,
+                List.of(
+                        new CatalogTableScaffold.ColumnSpec<>("Name", SavedEncounterPlanSummary::name),
+                        new CatalogTableScaffold.ColumnSpec<>(
+                                "Zusammenfassung", SavedEncounterPlanSummary::summaryText)),
+                plan -> this.intents.accept(new SavedEncounterCatalogIntent.OpenPlan(plan.planId())),
+                planId -> this.intents.accept(new SavedEncounterCatalogIntent.SelectPlan(
+                        planId == null ? 0L : planId)),
+                List.of(),
+                ignored -> { });
+        content.setPagingVisible(false);
+        open.getStyleClass().add("accent");
+        open.setAccessibleText("Ausgewählten Encounter im globalen Encounter öffnen");
+        open.disableProperty().bind(content.table().getSelectionModel().selectedItemProperty().isNull());
+        open.setOnAction(ignored -> {
+            if (state != null) {
+                this.intents.accept(new SavedEncounterCatalogIntent.OpenPlan(state.selectedPlanId()));
             }
         });
-        Button open = new Button("Im Encounter öffnen");
-        open.getStyleClass().add("accent");
-        open.setOnAction(ignored -> open(false));
+        confirm.getStyleClass().add("accent");
+        confirm.setAccessibleText("Verwerfen und öffnen");
+        confirm.setOnAction(ignored -> confirmPending());
+        cancel.setAccessibleText("Öffnen abbrechen");
+        cancel.setOnAction(ignored -> cancelPending());
         status.setWrapText(true);
+        status.setAccessibleText("Gespeicherte-Encounter-Status");
         status.getStyleClass().add("text-secondary");
+        confirmation.setWrapText(true);
+        confirmation.setAccessibleText("Ungespeicherte Änderungen bestätigen");
         controls = new VBox(
                 heading("Gespeicherte Encounter"),
                 description("Wähle einen gespeicherten Plan und öffne ihn im globalen Encounter-Bereich."),
                 open,
-                status);
+                status,
+                confirmation,
+                confirmationActions);
         controls.getStyleClass().add("catalog-section-intro");
-        content.setCenter(plans);
+        showConfirmation(false);
     }
 
     @Override
@@ -73,45 +88,45 @@ public final class SavedEncounterCatalogSection implements CatalogSection {
         return content;
     }
 
-    public void apply(SavedEncounterPlanListResult result) {
-        long selectedId = plans.getSelectionModel().getSelectedItem() == null
-                ? 0L : plans.getSelectionModel().getSelectedItem().planId();
-        plans.getItems().setAll(result == null ? List.of() : result.plans());
-        plans.getItems().stream().filter(plan -> plan.planId() == selectedId).findFirst()
-                .ifPresent(plan -> plans.getSelectionModel().select(plan));
-        status.setText(result == null ? "" : result.message());
+    public void render(SavedEncounterCatalogState next) {
+        state = Objects.requireNonNull(next, "next");
+        if (state.revision() == renderedRevision) {
+            return;
+        }
+        renderedRevision = state.revision();
+        content.render(
+                state.results(),
+                state.selectedPlanId() > 0L ? state.selectedPlanId() : null,
+                state.results().rows().size(), Math.max(1, state.results().rows().size()), 0,
+                "Encounter");
+        status.setText(state.actionMessage().isBlank() ? state.results().message() : state.actionMessage());
+        SavedEncounterCatalogState.Confirmation pending = state.confirmation();
+        showConfirmation(pending.required());
+        confirmation.setText(pending.required()
+                ? pending.planName() + " öffnen und ungespeicherte Änderungen verwerfen?" : "");
     }
 
-    private void open(boolean confirmed) {
-        SavedEncounterPlanSummary selected = plans.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            status.setText("Wähle zuerst einen Encounter aus.");
+    private void confirmPending() {
+        if (state == null || !state.confirmation().required()) {
             return;
         }
-        CatalogRequestToken request = controller.beginSavedEncounterOpen();
-        encounters.openSavedEncounter(selected.planId(), confirmed)
-                .whenComplete((result, failure) -> controller.complete(
-                        request, () -> handleOpen(selected, result, failure)));
+        SavedEncounterCatalogState.Confirmation pending = state.confirmation();
+        intents.accept(new SavedEncounterCatalogIntent.ConfirmOpen(pending.revision(), pending.planId()));
     }
 
-    private void handleOpen(
-            SavedEncounterPlanSummary selected,
-            OpenSavedEncounterPlanResult result,
-            Throwable failure
-    ) {
-        if (failure != null || result == null) {
-            status.setText("Encounter konnte nicht geöffnet werden.");
+    private void cancelPending() {
+        if (state == null || !state.confirmation().required()) {
             return;
         }
-        status.setText(result.message());
-        if (result.status() != OpenSavedEncounterPlanResult.Status.CONFIRMATION_REQUIRED) {
-            return;
-        }
-        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmation.setTitle("Ungespeicherte Änderungen");
-        confirmation.setHeaderText("Aktuellen Encounter verwerfen?");
-        confirmation.setContentText(selected.name() + " öffnen und ungespeicherte Änderungen verwerfen?");
-        confirmation.showAndWait().filter(ButtonType.OK::equals).ifPresent(ignored -> open(true));
+        SavedEncounterCatalogState.Confirmation pending = state.confirmation();
+        intents.accept(new SavedEncounterCatalogIntent.CancelOpen(pending.revision(), pending.planId()));
+    }
+
+    private void showConfirmation(boolean visible) {
+        confirmation.setVisible(visible);
+        confirmation.setManaged(visible);
+        confirmationActions.setVisible(visible);
+        confirmationActions.setManaged(visible);
     }
 
     private static Label heading(String text) {
@@ -120,20 +135,10 @@ public final class SavedEncounterCatalogSection implements CatalogSection {
         return label;
     }
 
-    private static TableColumn<SavedEncounterPlanSummary, String> textColumn(
-            String title,
-            java.util.function.Function<SavedEncounterPlanSummary, String> value
-    ) {
-        TableColumn<SavedEncounterPlanSummary, String> column = new TableColumn<>(title);
-        column.setCellValueFactory(cell -> new SimpleStringProperty(value.apply(cell.getValue())));
-        return column;
-    }
-
     private static Label description(String text) {
         Label label = new Label(text);
         label.setWrapText(true);
         label.getStyleClass().add("text-secondary");
         return label;
     }
-
 }
