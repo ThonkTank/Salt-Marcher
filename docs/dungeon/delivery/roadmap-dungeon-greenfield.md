@@ -97,21 +97,24 @@ and commit boundaries. M7 starts only after both are complete.
 
 ## Current Migration State
 
-- Current foundation: M0 through M2 and M3.1 are complete on `main` through
-  PR #500. M3.1 established `DungeonCommandResult`, revision-checked
-  `DungeonPatch`, stable-entity changes, touched chunks, result facts, exact
-  encoded-weight bounds, and generated inverse patches.
-- This slice: M3.2 moves feature-marker create, semantic update, and delete to
-  exact patches and one shared patch executor. The former direct aggregate and
-  catalog create/delete mutation routes are deleted.
-- Deterministic command proof covers create, update, delete, exact forward and
-  inverse application, collision and missing-target rejection, stale revision,
-  negative chunk identity, result facts, and encoded byte weight. The Dungeon
-  Editor behavior suite remains the production-route proof.
+- Current foundation: M0 through M2, M3.1, and M3.2 are complete on `main`
+  through PR #501. Feature-marker create, semantic update, and delete use exact
+  patches and one shared patch executor; their former direct mutation routes
+  are deleted.
+- This slice: M3.3 moves room name, room narration, and room-cluster name to
+  exact stable-entity patches and the shared executor. Direct aggregate save
+  routes for those semantics are deleted.
+- Patch result facts now identify a stable authored entity and carry its
+  topology ref only where that entity owns one. This preserves independent
+  cluster identity without fabricating a room topology ref.
+- Deterministic proof covers exact room and cluster identity, chunk membership,
+  forward and inverse application, monotonic revision, encoded byte weight,
+  missing-target and no-effect rejection, and the Dungeon Editor production
+  route.
 - `DungeonChangeSet` persistence and full-map session history remain temporary
   M3/M4 boundaries; no second persistence contract is introduced in this slice.
-- Next step after this slice merges: M3.3 moves room and cluster semantic
-  commands to exact stable-entity patches and the shared patch executor.
+- Next step after this slice merges: M3.4 moves the stair create, geometry
+  update, and delete command family to exact patches.
 
 ## M0: Target Lock And Baseline
 

@@ -35,7 +35,9 @@ final class DungeonPatchVocabularyTest {
         assertEquals(current.revision() + 1L, patch.committedRevision());
         assertEquals(1, patch.changes().size());
         assertEquals(Set.of(new DungeonChunkKey(91L, -2, -1, 1)), patch.touchedChunks());
-        assertEquals(before.topologyRef(), patch.resultFacts().affectedTopologyRefs().getFirst());
+        assertEquals(
+                DungeonPatchEntityRef.featureMarker(before.markerId()),
+                patch.resultFacts().affectedEntities().getFirst());
         long changedTextBytes = "Neuer NameNeue Beschreibung"
                 .getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
         assertTrue(patch.encodedBytes() >= changedTextBytes);

@@ -2,7 +2,6 @@ package features.dungeon.application.authored.command;
 
 import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.domain.core.geometry.Cell;
-import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.feature.FeatureMarker;
 import features.dungeon.domain.core.structure.feature.FeatureMarkerCatalog;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
@@ -35,8 +34,8 @@ public record FeatureMarkerChange(FeatureMarker before, FeatureMarker after) imp
     }
 
     @Override
-    public DungeonTopologyRef topologyRef() {
-        return state().topologyRef();
+    public DungeonPatchEntityRef entityRef() {
+        return DungeonPatchEntityRef.featureMarker(state().markerId());
     }
 
     @Override

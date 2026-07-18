@@ -1,6 +1,8 @@
 package features.dungeon.domain.core.structure.topology;
 
 import java.util.List;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.DungeonTopology;
 import features.dungeon.domain.core.structure.room.RoomCluster;
 
@@ -19,8 +21,6 @@ public record SpatialTopology(
         int roomAnchorR,
         List<RoomCluster> roomClusters
 ) {
-    private static final long NO_CLUSTER_ID = 0L;
-
     public SpatialTopology(
             DungeonTopology topology,
             int width,
@@ -52,22 +52,40 @@ public record SpatialTopology(
         return new SpatialTopology(topology, width, height, roomAnchorQ, roomAnchorR, clusters);
     }
 
-    public SpatialTopology withRoomClusterName(long clusterId, String name) {
-        if (clusterId <= NO_CLUSTER_ID) {
-            return this;
-        }
-        List<RoomCluster> nextClusters = new java.util.ArrayList<>();
-        boolean changed = false;
+    public @Nullable RoomCluster roomCluster(long clusterId) {
         for (RoomCluster cluster : roomClusters) {
             if (cluster.clusterId() == clusterId) {
-                RoomCluster renamed = cluster.withName(name);
-                nextClusters.add(renamed);
-                changed = changed || !renamed.equals(cluster);
+                return cluster;
+            }
+        }
+        return null;
+    }
+
+    public SpatialTopology withExactRoomClusterChange(
+            @Nullable RoomCluster before,
+            @Nullable RoomCluster after
+    ) {
+        RoomCluster identity = after == null ? before : after;
+        if (identity == null) {
+            throw new IllegalArgumentException("room cluster change requires identity");
+        }
+        if (!Objects.equals(roomCluster(identity.clusterId()), before)) {
+            throw new IllegalStateException("room cluster patch does not match current authored truth");
+        }
+        List<RoomCluster> nextClusters = new java.util.ArrayList<>();
+        for (RoomCluster cluster : roomClusters) {
+            if (cluster.clusterId() == identity.clusterId()) {
+                if (after != null) {
+                    nextClusters.add(after);
+                }
             } else {
                 nextClusters.add(cluster);
             }
         }
-        return changed ? withRoomClusters(nextClusters) : this;
+        if (before == null && after != null) {
+            nextClusters.add(after);
+        }
+        return withRoomClusters(nextClusters);
     }
 
     public boolean hasAuthoredRooms() {

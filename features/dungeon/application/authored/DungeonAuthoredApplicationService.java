@@ -26,6 +26,9 @@ import features.dungeon.application.authored.command.DungeonCommandResult;
 import features.dungeon.application.authored.command.CreateFeatureMarkerCommand;
 import features.dungeon.application.authored.command.DeleteFeatureMarkerCommand;
 import features.dungeon.application.authored.command.FeatureMarkerSemanticsCommand;
+import features.dungeon.application.authored.command.RoomClusterNameCommand;
+import features.dungeon.application.authored.command.RoomNameCommand;
+import features.dungeon.application.authored.command.RoomNarrationCommand;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
@@ -111,6 +114,9 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             new CreateFeatureMarkerCommand();
     private final DeleteFeatureMarkerCommand deleteFeatureMarkerCommand =
             new DeleteFeatureMarkerCommand();
+    private final RoomNarrationCommand roomNarrationCommand = new RoomNarrationCommand();
+    private final RoomNameCommand roomNameCommand = new RoomNameCommand();
+    private final RoomClusterNameCommand roomClusterNameCommand = new RoomClusterNameCommand();
     private final PublicationOperations publicationOperations = new PublicationOperations();
     private final PreviewOperations previewOperations = new PreviewOperations();
     private final DetailSaveOperations detailSaveOperations = new DetailSaveOperations();
@@ -1334,9 +1340,10 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             if (roomNarration == null || !DungeonEditorWorkspaceValues.hasId(roomNarration.roomId())) {
                 return;
             }
-            OperationResultData result = mutationPipeline.executeOperation(
+            OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
-                    current -> current.saveRoomNarration(
+                    current -> roomNarrationCommand.plan(
+                            current,
                             roomNarration.roomId(),
                             DungeonEditorAuthoredOperationHelper.roomNarration(roomNarration)));
             publicationOperations.publishMutation(result, state);
@@ -1354,13 +1361,18 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             }
             LabelTargetKind safeTargetType = targetType == null ? LabelTargetKind.EMPTY : targetType;
             String trimmedName = name.trim();
-            OperationResultData result = mutationPipeline.executeOperation(
-                    domainMapId(mapId),
-                    current -> switch (safeTargetType) {
-                        case CLUSTER -> current.saveClusterName(targetId, trimmedName);
-                        case ROOM -> current.saveRoomName(targetId, trimmedName);
-                        case EMPTY -> current;
-                    });
+            OperationResultData result = switch (safeTargetType) {
+                case CLUSTER -> mutationPipeline.executePatchCommand(
+                        domainMapId(mapId),
+                        current -> roomClusterNameCommand.plan(current, targetId, trimmedName));
+                case ROOM -> mutationPipeline.executePatchCommand(
+                        domainMapId(mapId),
+                        current -> roomNameCommand.plan(current, targetId, trimmedName));
+                case EMPTY -> null;
+            };
+            if (result == null) {
+                return;
+            }
             publicationOperations.publishMutation(result, state);
         }
 

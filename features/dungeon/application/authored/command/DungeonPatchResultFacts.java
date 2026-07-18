@@ -1,19 +1,18 @@
 package features.dungeon.application.authored.command;
 
-import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import java.util.List;
 
 /** Stable authored facts needed by post-commit publication. */
-public record DungeonPatchResultFacts(List<DungeonTopologyRef> affectedTopologyRefs) {
+public record DungeonPatchResultFacts(List<DungeonPatchEntityRef> affectedEntities) {
 
     public DungeonPatchResultFacts {
-        affectedTopologyRefs = affectedTopologyRefs == null
+        affectedEntities = affectedEntities == null
                 ? List.of()
-                : List.copyOf(affectedTopologyRefs);
+                : List.copyOf(affectedEntities);
     }
 
     @Override
-    public List<DungeonTopologyRef> affectedTopologyRefs() {
-        return List.copyOf(affectedTopologyRefs);
+    public List<DungeonPatchEntityRef> affectedEntities() {
+        return List.copyOf(affectedEntities);
     }
 }

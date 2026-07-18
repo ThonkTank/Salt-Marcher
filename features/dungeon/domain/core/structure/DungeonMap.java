@@ -1,6 +1,5 @@
 package features.dungeon.domain.core.structure;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.Cell;
@@ -10,8 +9,9 @@ import features.dungeon.domain.core.structure.corridor.Corridor;
 import features.dungeon.domain.core.structure.corridor.DungeonCorridorEndpoint;
 import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
 import features.dungeon.domain.core.structure.feature.FeatureMarkerCatalog;
-import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
 import features.dungeon.domain.core.structure.room.RoomCatalog;
+import features.dungeon.domain.core.structure.room.RoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import features.dungeon.domain.core.structure.stair.StairCollection;
 import features.dungeon.domain.core.structure.stair.StairGeometrySpec;
@@ -34,8 +34,6 @@ public record DungeonMap(
         long revision
 ) {
     private static final long NO_TRANSITION_ID = 0L;
-    private static final long NO_ROOM_ID = 0L;
-    private static final long NO_CLUSTER_ID = 0L;
 
     public DungeonMap(
             DungeonMapMetadata metadata,
@@ -189,80 +187,6 @@ public record DungeonMap(
         return ROOM_AUTHORING.moveBoundaryStretch(this, clusterId, sourceEdges, deltaQ, deltaR, deltaLevel);
     }
 
-    public DungeonMap saveRoomNarration(long roomId, DungeonRoomNarration narration) {
-        if (roomId <= 0L || narration == null) {
-            return this;
-        }
-        var nextRooms = new ArrayList<>(rooms.rooms());
-        boolean changed = false;
-        for (int index = 0; index < nextRooms.size(); index++) {
-            var room = nextRooms.get(index);
-            if (room.roomId() == roomId) {
-                nextRooms.set(index, room.withNarration(narration));
-                changed = true;
-            }
-        }
-        return changed
-                ? new DungeonMap(
-                        metadata,
-                        topology,
-                        topologyIndex,
-                        new RoomCatalog(nextRooms),
-                        corridors,
-                        stairs,
-                        transitionCatalog,
-                        featureMarkers,
-                        revision + 1L)
-                : this;
-    }
-
-    public DungeonMap saveRoomName(long roomId, String name) {
-        if (roomId <= NO_ROOM_ID) {
-            return this;
-        }
-        var nextRooms = new ArrayList<>(rooms.rooms());
-        boolean changed = false;
-        for (int index = 0; index < nextRooms.size(); index++) {
-            var room = nextRooms.get(index);
-            if (room.roomId() == roomId) {
-                var renamed = room.withName(name);
-                nextRooms.set(index, renamed);
-                changed = changed || !renamed.equals(room);
-            }
-        }
-        return changed
-                ? new DungeonMap(
-                        metadata,
-                        topology,
-                        topologyIndex,
-                        new RoomCatalog(nextRooms),
-                        corridors,
-                        stairs,
-                        transitionCatalog,
-                        featureMarkers,
-                        revision + 1L)
-                : this;
-    }
-
-    public DungeonMap saveClusterName(long clusterId, String name) {
-        if (clusterId <= NO_CLUSTER_ID) {
-            return this;
-        }
-        SpatialTopology renamedTopology = topology.withRoomClusterName(clusterId, name);
-        return !renamedTopology.equals(topology)
-                ? new DungeonMap(
-                        metadata,
-                        renamedTopology,
-                        topologyIndex,
-                        rooms,
-                        corridors,
-                        stairs,
-                        transitionCatalog,
-                        featureMarkers,
-                        revision + 1L)
-                : this;
-    }
-
     public DungeonMap saveTransitionDescription(long transitionId, String description) {
         if (transitionId <= NO_TRANSITION_ID) {
             return this;
@@ -382,6 +306,40 @@ public record DungeonMap(
                 stairs,
                 transitionCatalog,
                 resolvedFeatureMarkers,
+                revision + 1L);
+    }
+
+    public DungeonMap withExactRoomRegionChange(
+            @Nullable RoomRegion before,
+            @Nullable RoomRegion after
+    ) {
+        RoomCatalog nextRooms = rooms.withExactChange(before, after);
+        return new DungeonMap(
+                metadata,
+                topology,
+                null,
+                nextRooms,
+                corridors,
+                stairs,
+                transitionCatalog,
+                featureMarkers,
+                revision + 1L);
+    }
+
+    public DungeonMap withExactRoomClusterChange(
+            @Nullable RoomCluster before,
+            @Nullable RoomCluster after
+    ) {
+        SpatialTopology nextTopology = topology.withExactRoomClusterChange(before, after);
+        return new DungeonMap(
+                metadata,
+                nextTopology,
+                null,
+                rooms,
+                corridors,
+                stairs,
+                transitionCatalog,
+                featureMarkers,
                 revision + 1L);
     }
 
