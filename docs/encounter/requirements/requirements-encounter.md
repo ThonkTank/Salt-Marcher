@@ -18,8 +18,7 @@ Provide a runtime encounter builder that:
 - saves and opens created encounter rosters as persistent encounter plans
 - can use selected encounter tables as curated generator sources
 - resolves one ordered group of Session Generation intents into concrete
-  creature rosters
-  and publishes it as Encounter-owned saved plans
+  creature rosters and makes the complete group available as saved plans
 
 ## Non-Goals
 
@@ -55,14 +54,11 @@ Generated preparation is a separate Session Planner-driven flow:
 - show active-party thresholds for easy, medium, hard, and deadly encounters
 - show daily-budget context from the party feature
 - generate multiple ranked alternatives instead of one opaque result
-- expose a runtime budget load path so the state UI can show thresholds before
-  generation
 - support multi-select creature filters with visible active-filter chips
 - support generator tuning for creature amount, XP-spread balance, and
   statblock diversity
 - support Auto difficulty and Auto tuning for amount, XP-spread balance, and
-  statblock diversity; Auto values are sent as sentinel request values and are
-  resolved by the generator for each generation pass
+  statblock diversity, with the resolved choices visible in diagnostics
 - return compact generation diagnostics with resolved difficulty, resolved
   tuning, solution quality, search stop category, candidate-pool size,
   attempt count, and candidate-evaluation count
@@ -82,12 +78,13 @@ Generated preparation is a separate Session Planner-driven flow:
   result, and generated-alternative runtime state
 - return concrete creature identities, quantities, display names, total count,
   adjusted XP, and difficulty in every prepared roster summary
-- treat every generated roster as ordinary Encounter-owned saved-plan truth
+- list and open generated rosters through the same saved-plan interaction as
+  manually saved rosters
 
 ## Acceptance Criteria
 
-- saved encounter plans persist only creature identity, quantity, display name,
-  and generated label; creature statblocks remain creature-owned
+- saved encounter plans reopen with the same creature identities, quantities,
+  display names, and generated label while showing current creature detail
 - generated alternatives remain derived runtime output until explicitly saved
 - a party with no active members yields a clear empty-state message
 - generator output includes adjusted XP and a difficulty-band label
@@ -109,8 +106,6 @@ Generated preparation is a separate Session Planner-driven flow:
   visible saved-plan set unchanged
 - retrying an identical completed preparation creates no visible duplicate
   plans
-- generated preparation stores no reward, packing, audit, session-scene, or copied
-  creature-detail truth
 
 ## References
 
