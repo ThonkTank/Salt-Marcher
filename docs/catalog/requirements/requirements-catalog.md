@@ -29,6 +29,15 @@ workspace serves both game preparation and running-session lookup.
 - One persistent section selector MUST remain at the top of the Catalog
   controls area. The selected section's controls MUST always appear below it,
   and its results MUST appear in the main area.
+- Every section MUST use the same compact control hierarchy: a full-width
+  primary search row when search is available, wrapping filters, removable
+  active-filter chips, compact actions, and one feedback area when those
+  capabilities exist. Sections without filters MUST retain the same hierarchy
+  without rendering empty placeholder controls.
+- The controls area MUST remain bounded to the compact Monster-panel height so
+  switching sections does not consume the result workspace. Overflowing
+  controls scroll vertically without hiding the persistent section selector or
+  introducing horizontal scrolling.
 - Switching sections MUST preserve each section's filters, selection, paging,
   and unfinished input for the lifetime of the Catalog workspace.
 - Sections MUST use consistent table, status, paging, keyboard, and selection
@@ -68,6 +77,11 @@ Encounter or Scene workspaces, or expose a second World Planner workspace.
 
 - One `Katalog` contribution shows all seven sections in the common controls
   and main workspace.
+- At 1150×700 and 900×650, every section retains the persistent selector,
+  the shared compact control hierarchy, and a visible result workspace; filter
+  controls wrap without horizontal scrolling.
+- Equivalent search, filter, clear, sort, action, chip, and feedback controls
+  have the same visual treatment and placement across sections.
 - Switching through every section and returning preserves each section's
   current query, filter draft, selected record, page, and unfinished input.
 - Refreshing provider results preserves a still-present selected record by its

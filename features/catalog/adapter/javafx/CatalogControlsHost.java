@@ -6,13 +6,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
-import javafx.scene.Node;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 /** Fixed typed section rail plus the active section's persistent controls. */
@@ -62,11 +60,7 @@ final class CatalogControlsHost extends VBox {
     }
 
     void show(CatalogSection section) {
-        Node controls = section.controls();
-        if (controls instanceof Region region) {
-            region.setMinHeight(0.0);
-            region.setMaxHeight(Double.MAX_VALUE);
-        }
+        CatalogControlsScaffold controls = section.controls();
         activeControls.getChildren().setAll(controls);
         VBox.setVgrow(controls, Priority.ALWAYS);
         ToggleButton button = buttons.get(section.id());

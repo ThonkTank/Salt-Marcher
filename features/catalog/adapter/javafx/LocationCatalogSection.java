@@ -9,15 +9,15 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.VBox;
 
 /** Passive location Catalog renderer. */
 public final class LocationCatalogSection implements CatalogSection {
 
     private final Consumer<WorldReferenceCatalogIntent> intents;
     private final TextField query = queryField();
-    private final VBox controls;
+    private final CatalogControlsScaffold controls;
     private final CatalogTableScaffold<LocationRow, Long> content;
     private boolean rendering;
     private long renderedRevision = -1L;
@@ -29,12 +29,12 @@ public final class LocationCatalogSection implements CatalogSection {
                 this.intents.accept(new WorldReferenceCatalogIntent.ChangeLocationQuery(after));
             }
         });
-        controls = new VBox(
-                CatalogSectionControls.intro(
-                        "Orte", "Orte öffnen und bearbeiten sich im World-Planner-Inspector.",
-                        "Ort anlegen", () -> this.intents.accept(new WorldReferenceCatalogIntent.CreateLocation())),
-                query);
-        controls.getStyleClass().add("catalog-section-intro");
+        Button create = new Button("Ort anlegen");
+        create.getStyleClass().add("accent");
+        create.setOnAction(ignored -> this.intents.accept(new WorldReferenceCatalogIntent.CreateLocation()));
+        controls = new CatalogControlsScaffold("FILTER");
+        controls.setSearch(query);
+        controls.setActions(create);
         content = new CatalogTableScaffold<>(
                 "Ortskatalog", LocationRow::locationId, LocationRow::displayName,
                 List.of(
@@ -50,7 +50,7 @@ public final class LocationCatalogSection implements CatalogSection {
     }
 
     @Override public CatalogSectionId id() { return CatalogSectionId.LOCATIONS; }
-    @Override public Node controls() { return controls; }
+    @Override public CatalogControlsScaffold controls() { return controls; }
     @Override public Node content() { return content; }
 
     public void render(WorldReferenceCatalogState state) {

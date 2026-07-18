@@ -68,7 +68,7 @@ final class MonsterCatalogSection implements CatalogSection {
     }
 
     @Override
-    public Node controls() {
+    public CatalogControlsScaffold controls() {
         return controls;
     }
 

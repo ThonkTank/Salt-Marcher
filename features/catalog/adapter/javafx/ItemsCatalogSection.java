@@ -5,6 +5,7 @@ import features.catalog.application.ItemsCatalogFilterDraft;
 import features.catalog.application.ItemsCatalogIntent;
 import features.catalog.application.ItemsCatalogState;
 import features.items.api.ItemsCatalogApi;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -14,7 +15,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
 /** Passive Items renderer backed only by immutable application state. */
@@ -35,7 +35,7 @@ public final class ItemsCatalogSection implements CatalogSection {
     private final ComboBox<SortDirection> direction = directionBox();
     private final Button open = new Button("Details öffnen");
     private final Label status = new Label();
-    private final VBox controls;
+    private final CatalogControlsScaffold controls;
     private final CatalogTableScaffold<ItemsCatalogApi.ItemRow, String> content;
     private ItemsCatalogState state;
     private long renderedRevision = -1L;
@@ -76,6 +76,7 @@ public final class ItemsCatalogSection implements CatalogSection {
         });
         content.setHeaderControl(open);
         content.setHeaderControl(status);
+        content.setHeaderControl(CatalogControlsScaffold.field("Sortieren", sort, direction));
         installDraftListeners();
     }
 
@@ -85,7 +86,7 @@ public final class ItemsCatalogSection implements CatalogSection {
     }
 
     @Override
-    public Node controls() {
+    public CatalogControlsScaffold controls() {
         return controls;
     }
 
@@ -106,18 +107,21 @@ public final class ItemsCatalogSection implements CatalogSection {
             applyOptions(subcategory, state.filterOptions().subcategories());
             applyOptions(rarity, state.filterOptions().rarities());
             applyDraft(state.filterDraft());
+            renderChips(state.filterDraft());
             content.render(
                     state.results(),
                     state.selectedSourceKey().isBlank()
                             ? Optional.empty() : Optional.of(state.selectedSourceKey()),
                     state.totalCount(), state.pageSize(), state.pageOffset(), "Items");
             status.setText(state.actionMessage());
+            status.setVisible(!state.actionMessage().isBlank());
+            status.setManaged(!state.actionMessage().isBlank());
         } finally {
             rendering = false;
         }
     }
 
-    private VBox configureFilters() {
+    private CatalogControlsScaffold configureFilters() {
         Button find = new Button("Items suchen");
         find.getStyleClass().add("accent");
         find.setAccessibleText("Items suchen");
@@ -125,20 +129,21 @@ public final class ItemsCatalogSection implements CatalogSection {
         search.setOnAction(ignored -> intents.accept(new ItemsCatalogIntent.Search()));
         minimumCost.setOnAction(ignored -> intents.accept(new ItemsCatalogIntent.Search()));
         maximumCost.setOnAction(ignored -> intents.accept(new ItemsCatalogIntent.Search()));
-        VBox filters = new VBox(
-                field("Name", search),
-                field("Kategorie", category),
-                field("Unterkategorie", subcategory),
-                field("Seltenheit", rarity),
-                field("Magisch", magic),
-                field("Attunement", attunement),
-                field("Kosten ab (CP)", minimumCost),
-                field("Kosten bis (CP)", maximumCost),
-                field("Sortieren nach", sort),
-                field("Richtung", direction),
-                find);
-        filters.getStyleClass().add("catalog-item-filters");
-        return filters;
+        Button clear = new Button("Leeren");
+        clear.getStyleClass().addAll("compact", "flat");
+        clear.setAccessibleText("Item-Suche und Filter leeren");
+        clear.setOnAction(ignored -> intents.accept(new ItemsCatalogIntent.ClearFilters()));
+        CatalogControlsScaffold scaffold = new CatalogControlsScaffold("FILTER");
+        scaffold.setSearch(search, find);
+        scaffold.setFilters(
+                CatalogControlsScaffold.field("Kategorie", category),
+                CatalogControlsScaffold.field("Unterkategorie", subcategory),
+                CatalogControlsScaffold.field("Seltenheit", rarity),
+                CatalogControlsScaffold.field("Magisch", magic),
+                CatalogControlsScaffold.field("Attunement", attunement),
+                CatalogControlsScaffold.rangeField("Kosten", minimumCost, maximumCost),
+                clear);
+        return scaffold;
     }
 
     private void installDraftListeners() {
@@ -177,10 +182,49 @@ public final class ItemsCatalogSection implements CatalogSection {
         direction.setValue(draft.ascending() ? SortDirection.ASCENDING : SortDirection.DESCENDING);
     }
 
-    private static VBox field(String label, Node control) {
-        VBox field = new VBox(new Label(label), control);
-        field.getStyleClass().add("catalog-filter-field");
-        return field;
+    private void renderChips(ItemsCatalogFilterDraft draft) {
+        List<Node> rendered = new ArrayList<>();
+        addChip(rendered, "Suche: " + draft.name(), !draft.name().isBlank(),
+                () -> editDraft(() -> search.setText("")));
+        addChip(rendered, "Kategorie: " + draft.category(), !draft.category().isBlank(),
+                () -> editDraft(() -> category.setValue(ALL)));
+        addChip(rendered, "Unterkategorie: " + draft.subcategory(), !draft.subcategory().isBlank(),
+                () -> editDraft(() -> subcategory.setValue(ALL)));
+        addChip(rendered, "Seltenheit: " + draft.rarity(), !draft.rarity().isBlank(),
+                () -> editDraft(() -> rarity.setValue(ALL)));
+        addChip(rendered, "Magisch: " + yesNo(Boolean.TRUE.equals(draft.magic())), draft.magic() != null,
+                () -> editDraft(() -> magic.setValue(BooleanChoice.ALL)));
+        addChip(rendered, "Attunement: " + yesNo(Boolean.TRUE.equals(draft.attunement())),
+                draft.attunement() != null, () -> editDraft(() -> attunement.setValue(BooleanChoice.ALL)));
+        addChip(rendered, costLabel(draft),
+                !draft.minimumCostCp().isBlank() || !draft.maximumCostCp().isBlank(),
+                () -> editDraft(() -> {
+                    minimumCost.setText("");
+                    maximumCost.setText("");
+                }));
+        controls.setChips(rendered);
+    }
+
+    private void editDraft(Runnable edit) {
+        rendering = true;
+        try {
+            edit.run();
+        } finally {
+            rendering = false;
+        }
+        publishDraft();
+    }
+
+    private static void addChip(List<Node> target, String label, boolean visible, Runnable removeAction) {
+        if (visible) {
+            target.add(CatalogControlsScaffold.chip(label, removeAction));
+        }
+    }
+
+    private static String costLabel(ItemsCatalogFilterDraft draft) {
+        String minimum = draft.minimumCostCp().isBlank() ? "…" : draft.minimumCostCp();
+        String maximum = draft.maximumCostCp().isBlank() ? "…" : draft.maximumCostCp();
+        return "Kosten: " + minimum + "–" + maximum + " CP";
     }
 
     private static TextField textField(String accessibleText, String promptText) {

@@ -12,6 +12,9 @@ public sealed interface ItemsCatalogIntent {
     record Search() implements ItemsCatalogIntent {
     }
 
+    record ClearFilters() implements ItemsCatalogIntent {
+    }
+
     record ShiftPage(int direction) implements ItemsCatalogIntent {
     }
 

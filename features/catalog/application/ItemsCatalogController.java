@@ -39,10 +39,16 @@ public final class ItemsCatalogController implements CatalogLifecycle {
         switch (intent) {
             case ItemsCatalogIntent.ChangeDraft change -> changeDraft(change.draft());
             case ItemsCatalogIntent.Search ignored -> searchFirstPage();
+            case ItemsCatalogIntent.ClearFilters ignored -> clearFilters();
             case ItemsCatalogIntent.ShiftPage shift -> shiftPage(shift.direction());
             case ItemsCatalogIntent.SelectItem select -> select(select.sourceKey());
             case ItemsCatalogIntent.OpenItem open -> open(open.sourceKey());
         }
+    }
+
+    private void clearFilters() {
+        changeDraft(ItemsCatalogFilterDraft.empty());
+        searchFirstPage();
     }
 
     @Override

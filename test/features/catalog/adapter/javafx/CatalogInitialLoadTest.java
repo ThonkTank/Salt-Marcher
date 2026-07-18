@@ -201,6 +201,10 @@ public final class CatalogInitialLoadTest {
                 controls.select(id);
                 root.applyCss();
                 root.layout();
+                CatalogControlsScaffold controlScaffold = descendant(
+                        controls, CatalogControlsScaffold.class);
+                assertTrue(controlScaffold.getStyleClass().contains("catalog-controls-scaffold"),
+                        id + " does not use the shared controls scaffold");
                 assertTrue(content.getCenter() instanceof CatalogTableScaffold<?, ?>,
                         id + " does not use the native shared scaffold");
                 CatalogTableScaffold<?, ?> scaffold = (CatalogTableScaffold<?, ?>) content.getCenter();
@@ -208,6 +212,8 @@ public final class CatalogInitialLoadTest {
                 assertTrue((scaffold.getBottom() != null) == paged,
                         id + " has the wrong paging capability");
             }
+            assertTrue(controls.getMaxHeight() <= 230.0,
+                    "Catalog controls are not bounded to the compact Monster-panel height");
 
             controls.select(CatalogSectionId.NPCS);
             root.applyCss();

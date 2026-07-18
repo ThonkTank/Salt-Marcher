@@ -117,6 +117,15 @@ the action-column layout. Section renderers supply columns, filters, and the
 available typed actions. The seven section roots remain alive for the active
 Catalog binding so switching sections does not discard local view state.
 
+`CatalogControlsScaffold` owns the fixed control hierarchy, responsive
+wrapping, compact field and chip treatment, action placement, feedback
+placement, and the bounded controls height. `CatalogSection.controls()` returns
+this concrete scaffold instead of an arbitrary JavaFX node. Section renderers
+may supply controls and intents to its named regions but do not construct a
+parallel controls layout. Catalog-specific range, multi-select, action, and
+confirmation needs remain in the Catalog adapter; they do not justify a
+feature-neutral dynamic form or filter schema.
+
 ## Lifecycle And Concurrency
 
 Activating Catalog registers provider subscriptions and applies each current
@@ -148,9 +157,11 @@ the JavaFX adapter mutates controls.
 ## Enforcement And Verification Ownership
 
 `architectureTest` mechanically enforces valid feature roles, foreign API-only
-dependencies, and the absence of JavaFX dependencies from Catalog application
-code. UI behavior tests own the seven-section workspace, state preservation,
-stable-id selection, visible result states, and explicit handoff behavior.
+dependencies, the shared control and table scaffolds for all seven sections,
+and the absence of JavaFX dependencies from Catalog application code. UI
+behavior tests own the seven-section workspace, compact control composition,
+state preservation, stable-id selection, visible result states, and explicit
+handoff behavior.
 Lifecycle tests own balanced subscription and request invalidation behavior.
 Final visual and interaction acceptance remains owner manual testing.
 

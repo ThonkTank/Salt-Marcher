@@ -213,6 +213,28 @@ public final class ItemsCatalogUiTest {
         });
     }
 
+    @Test
+    void ITEMS_CATALOG_UI_006_clearUsesOneIntentAndLoadsTheUnfilteredCatalog() throws Exception {
+        runOnFxThread(() -> {
+            FakeItemsApi api = new FakeItemsApi();
+            ItemsFixture fixture = show(api, new RecordingInspector());
+            Parent pane = fixture.host();
+            text(pane, "Item-Name").setText("blade");
+            select(combo(pane, "Item-Kategorie"), "Weapon");
+            button(pane, "Items suchen").fire();
+            int callsBeforeClear = api.queries.size();
+
+            button(pane, "Item-Suche und Filter leeren").fire();
+
+            assertEquals(callsBeforeClear + 1, api.queries.size());
+            ItemsCatalogApi.ItemQuery query = api.queries.getLast();
+            assertNull(query.name());
+            assertNull(query.category());
+            assertEquals("", text(pane, "Item-Name").getText());
+            assertEquals("Alle", combo(pane, "Item-Kategorie").getValue());
+        });
+    }
+
     private static void assertState(
             Parent pane,
             FakeItemsApi api,

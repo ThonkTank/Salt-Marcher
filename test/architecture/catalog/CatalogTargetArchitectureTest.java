@@ -13,6 +13,7 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import features.catalog.adapter.javafx.CatalogSection;
+import features.catalog.adapter.javafx.CatalogControlsScaffold;
 import features.catalog.adapter.javafx.CatalogTableScaffold;
 import features.catalog.application.CatalogWorkspacePublication;
 import features.creatures.api.CreatureReferenceIndexModel;
@@ -82,6 +83,10 @@ public final class CatalogTargetArchitectureTest {
                             .map(Field::getType)
                             .anyMatch(CatalogTableScaffold.class::isAssignableFrom),
                     () -> section.getName() + " does not own CatalogTableScaffold");
+            assertTrue(List.of(section.getDeclaredFields()).stream()
+                            .map(Field::getType)
+                            .anyMatch(CatalogControlsScaffold.class::isAssignableFrom),
+                    () -> section.getName() + " does not own CatalogControlsScaffold");
         }
     }
 

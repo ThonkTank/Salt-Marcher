@@ -1,13 +1,11 @@
 package features.catalog.adapter.javafx;
 
 import features.catalog.application.CatalogSectionId;
-import javafx.scene.Node;
-
 public interface CatalogSection {
 
     CatalogSectionId id();
 
-    Node controls();
+    CatalogControlsScaffold controls();
 
-    Node content();
+    javafx.scene.Node content();
 }

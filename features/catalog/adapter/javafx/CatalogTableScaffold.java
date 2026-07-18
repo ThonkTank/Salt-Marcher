@@ -102,7 +102,8 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
         page.getStyleClass().add("text-secondary");
         table.setAccessibleText(accessibleTableName);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        table.setPlaceholder(new Label("Lade Einträge..."));
+        Label placeholder = new Label("Lade Einträge...");
+        table.setPlaceholder(placeholder);
         table.getColumns().setAll(createColumns(columns, actions));
         table.getSelectionModel().selectedItemProperty().addListener((ignored, before, selected) -> {
             if (!rendering) {
@@ -128,9 +129,9 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
         });
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        header = new HBox(8, count, spacer, status);
+        header = new HBox(count, spacer, status);
         header.getStyleClass().add("catalog-main-topbar");
-        HBox footer = new HBox(8, previous, page, next);
+        HBox footer = new HBox(previous, page, next);
         footer.getStyleClass().add("catalog-main-pagination");
         setTop(header);
         setCenter(table);
@@ -170,7 +171,7 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
         });
         status.setText(statusText(safe));
         if (table.getPlaceholder() instanceof Label placeholder) {
-            placeholder.setText(placeholderText(safe));
+            placeholder.setText("");
         }
     }
 
@@ -264,8 +265,9 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
         column.setSortable(false);
         column.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue()));
         column.setCellFactory(ignored -> new TableCell<>() {
-            private final HBox buttons = new HBox(4);
+            private final HBox buttons = new HBox();
             {
+                buttons.getStyleClass().add("catalog-table-actions");
                 for (ActionSpec<Row> action : actions) {
                     Button button = new Button(action.label());
                     button.getStyleClass().addAll(action.styleClasses());
@@ -305,11 +307,6 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
             case UNAVAILABLE -> result.message().isBlank() ? "Quelle ist nicht verfügbar." : result.message();
             case FAILED -> result.message().isBlank() ? "Fehler beim Laden." : result.message();
         };
-    }
-
-    private static String placeholderText(CatalogResultState<?> result) {
-        String status = statusText(result);
-        return status.isBlank() ? "Keine Einträge gefunden." : status;
     }
 
     public record ColumnSpec<Row>(String label, Function<Row, String> value) {

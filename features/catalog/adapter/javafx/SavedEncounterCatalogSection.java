@@ -12,7 +12,6 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
 
 /** Passive saved-Encounter renderer backed only by immutable application state. */
 public final class SavedEncounterCatalogSection implements CatalogSection {
@@ -23,8 +22,8 @@ public final class SavedEncounterCatalogSection implements CatalogSection {
     private final Button cancel = new Button("Abbrechen");
     private final Label status = new Label();
     private final Label confirmation = new Label();
-    private final HBox confirmationActions = new HBox(8, confirm, cancel);
-    private final VBox controls;
+    private final HBox confirmationActions = new HBox(confirm, cancel);
+    private final CatalogControlsScaffold controls;
     private final CatalogTableScaffold<SavedEncounterPlanSummary, Long> content;
     private SavedEncounterCatalogState state;
     private long renderedRevision = -1L;
@@ -60,14 +59,11 @@ public final class SavedEncounterCatalogSection implements CatalogSection {
         status.getStyleClass().add("text-secondary");
         confirmation.setWrapText(true);
         confirmation.setAccessibleText("Ungespeicherte Änderungen bestätigen");
-        controls = new VBox(
-                heading("Gespeicherte Encounter"),
-                description("Wähle einen gespeicherten Plan und öffne ihn im globalen Encounter-Bereich."),
-                open,
-                status,
-                confirmation,
-                confirmationActions);
-        controls.getStyleClass().add("catalog-section-intro");
+        confirmationActions.getStyleClass().add("catalog-confirmation-actions");
+        controls = new CatalogControlsScaffold("AKTIONEN");
+        controls.setActions(open);
+        controls.setFeedback(status, confirmation, confirmationActions);
+        showStatus(false);
         showConfirmation(false);
     }
 
@@ -77,7 +73,7 @@ public final class SavedEncounterCatalogSection implements CatalogSection {
     }
 
     @Override
-    public Node controls() {
+    public CatalogControlsScaffold controls() {
         return controls;
     }
 
@@ -98,6 +94,7 @@ public final class SavedEncounterCatalogSection implements CatalogSection {
                 state.results().rows().size(), Math.max(1, state.results().rows().size()), 0,
                 "Encounter");
         status.setText(state.actionMessage());
+        showStatus(!state.actionMessage().isBlank());
         SavedEncounterCatalogState.Confirmation pending = state.confirmation();
         showConfirmation(pending.required());
         confirmation.setText(pending.required()
@@ -127,16 +124,8 @@ public final class SavedEncounterCatalogSection implements CatalogSection {
         confirmationActions.setManaged(visible);
     }
 
-    private static Label heading(String text) {
-        Label label = new Label(text);
-        label.getStyleClass().add("catalog-section-heading");
-        return label;
-    }
-
-    private static Label description(String text) {
-        Label label = new Label(text);
-        label.setWrapText(true);
-        label.getStyleClass().add("text-secondary");
-        return label;
+    private void showStatus(boolean visible) {
+        status.setVisible(visible);
+        status.setManaged(visible);
     }
 }

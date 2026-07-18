@@ -9,15 +9,15 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.VBox;
 
 /** Passive NPC Catalog renderer. */
 public final class NpcCatalogSection implements CatalogSection {
 
     private final Consumer<WorldReferenceCatalogIntent> intents;
     private final TextField query = queryField("NPCs suchen", "NPCs suchen …");
-    private final VBox controls;
+    private final CatalogControlsScaffold controls;
     private final CatalogTableScaffold<NpcRow, Long> content;
     private boolean rendering;
     private long renderedRevision = -1L;
@@ -29,12 +29,12 @@ public final class NpcCatalogSection implements CatalogSection {
                 this.intents.accept(new WorldReferenceCatalogIntent.ChangeNpcQuery(after));
             }
         });
-        controls = new VBox(
-                CatalogSectionControls.intro(
-                        "NPCs", "Öffne NPCs im Inspector oder übergib sie explizit an Encounter und Scene.",
-                        "NPC anlegen", () -> this.intents.accept(new WorldReferenceCatalogIntent.CreateNpc())),
-                query);
-        controls.getStyleClass().add("catalog-section-intro");
+        Button create = new Button("NPC anlegen");
+        create.getStyleClass().add("accent");
+        create.setOnAction(ignored -> this.intents.accept(new WorldReferenceCatalogIntent.CreateNpc()));
+        controls = new CatalogControlsScaffold("FILTER");
+        controls.setSearch(query);
+        controls.setActions(create);
         content = new CatalogTableScaffold<>(
                 "NPC-Katalog", NpcRow::npcId, NpcRow::displayName,
                 List.of(
@@ -50,7 +50,7 @@ public final class NpcCatalogSection implements CatalogSection {
     }
 
     @Override public CatalogSectionId id() { return CatalogSectionId.NPCS; }
-    @Override public Node controls() { return controls; }
+    @Override public CatalogControlsScaffold controls() { return controls; }
     @Override public Node content() { return content; }
 
     public void render(WorldReferenceCatalogState state) {

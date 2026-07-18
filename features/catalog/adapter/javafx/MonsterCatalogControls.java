@@ -17,17 +17,13 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.CustomMenuItem;
-import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.FlowPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
 /** Passive typed Monster controls; renders state and emits one filter intent per edit. */
-final class MonsterCatalogControls extends VBox {
+final class MonsterCatalogControls extends CatalogControlsScaffold {
 
     private final TextField search = new TextField();
     private final ComboBox<String> crMinimum = new ComboBox<>();
@@ -40,12 +36,12 @@ final class MonsterCatalogControls extends VBox {
     private final MultiSelect<CatalogReferenceOption> encounterTables;
     private final MultiSelect<CatalogReferenceOption> factions;
     private final ComboBox<CatalogReferenceOption> location = new ComboBox<>();
-    private final FlowPane chips = new FlowPane(4, 2);
     private final Button clear = new Button("Leeren");
     private final Consumer<MonsterCatalogIntent> intent;
     private boolean rendering;
 
     MonsterCatalogControls(Consumer<MonsterCatalogIntent> intent) {
+        super("FILTER");
         this.intent = Objects.requireNonNull(intent, "intent");
         sizes = new MultiSelect<>("Größe", Function.identity(), this::publishFilters);
         types = new MultiSelect<>("Typ", Function.identity(), this::publishFilters);
@@ -54,10 +50,8 @@ final class MonsterCatalogControls extends VBox {
         alignments = new MultiSelect<>("Gesinnung", Function.identity(), this::publishFilters);
         encounterTables = new MultiSelect<>("Tabelle", CatalogReferenceOption::label, this::publishFilters);
         factions = new MultiSelect<>("Fraktionen", CatalogReferenceOption::label, this::publishFilters);
-        setMaxHeight(Double.MAX_VALUE);
         search.setPromptText("Monster suchen...");
         search.setAccessibleText("Monster suchen");
-        HBox.setHgrow(search, Priority.ALWAYS);
         search.textProperty().addListener((ignored, before, after) -> publishFilters());
         configureChallengeRatings();
         location.setAccessibleText("Location");
@@ -74,19 +68,12 @@ final class MonsterCatalogControls extends VBox {
         location.valueProperty().addListener((ignored, before, after) -> publishFilters());
         clear.getStyleClass().addAll("compact", "flat");
         clear.setOnAction(ignored -> clearFilters());
-
-        VBox surface = new VBox(6,
-                search,
-                new FlowPane(4, 4,
-                        new Label("CR"), crMinimum, new Label("-"), crMaximum,
-                        sizes.button(), types.button(), subtypes.button(), biomes.button(),
-                        alignments.button(), encounterTables.button(), clear),
-                new FlowPane(4, 4, factions.button(), new Label("Location"), location),
-                chips);
-        surface.getStyleClass().add("catalog-controls-surface");
-        Label title = new Label("FILTER");
-        title.getStyleClass().add("catalog-controls-section-title");
-        getChildren().setAll(title, surface);
+        setSearch(search);
+        setFilters(
+                rangeField("CR", crMinimum, crMaximum),
+                sizes.button(), types.button(), subtypes.button(), biomes.button(),
+                alignments.button(), encounterTables.button(), factions.button(),
+                field("Location", location), clear);
     }
 
     void render(MonsterCatalogState state, MonsterCatalogAuxiliaryOptions auxiliary) {
@@ -104,7 +91,7 @@ final class MonsterCatalogControls extends VBox {
             encounterTables.render(auxiliary.encounterTables(), draft.encounterTableIds(), CatalogReferenceOption::id);
             factions.render(auxiliary.factions(), draft.worldFactionIds(), CatalogReferenceOption::id);
             renderLocations(auxiliary.locations(), draft.worldLocationId());
-            renderChips(draft, auxiliary.encounterTables());
+            renderChips(draft, auxiliary);
         } finally {
             rendering = false;
         }
@@ -166,65 +153,76 @@ final class MonsterCatalogControls extends VBox {
                 locationId)));
     }
 
-    private void renderChips(MonsterCatalogFilterDraft draft, List<CatalogReferenceOption> tables) {
-        chips.getChildren().clear();
-        addChip("Suche: " + draft.nameQuery(), !draft.nameQuery().isBlank(),
-                () -> publish(draftWithName(draft, "")));
-        for (String type : draft.creatureTypes()) {
-            addChip(type, true, () -> publish(without(draft, type, true)));
-        }
+    private void renderChips(MonsterCatalogFilterDraft draft, MonsterCatalogAuxiliaryOptions auxiliary) {
+        List<Node> rendered = new ArrayList<>();
+        addChip(rendered, "Suche: " + draft.nameQuery(), !draft.nameQuery().isBlank(),
+                () -> editFilters(() -> search.setText("")));
+        addChip(rendered, rangeLabel("CR", draft.challengeRatingMin(), draft.challengeRatingMax()),
+                !draft.challengeRatingMin().isBlank() || !draft.challengeRatingMax().isBlank(),
+                () -> editFilters(() -> {
+                    crMinimum.setValue("");
+                    crMaximum.setValue("");
+                }));
+        addValues(rendered, "Größe", draft.sizes(),
+                value -> editFilters(() -> sizes.deselectValue(value)));
+        addValues(rendered, "Typ", draft.creatureTypes(),
+                value -> editFilters(() -> types.deselectValue(value)));
+        addValues(rendered, "Unterart", draft.creatureSubtypes(),
+                value -> editFilters(() -> subtypes.deselectValue(value)));
+        addValues(rendered, "Umgebung", draft.biomes(),
+                value -> editFilters(() -> biomes.deselectValue(value)));
+        addValues(rendered, "Gesinnung", draft.alignments(),
+                value -> editFilters(() -> alignments.deselectValue(value)));
         for (Long tableId : draft.encounterTableIds()) {
-            String label = tables.stream().filter(table -> table.id() == tableId)
-                    .map(CatalogReferenceOption::label).findFirst().orElse("Tabelle " + tableId);
-            addChip(label, true, () -> publish(withoutTable(draft, tableId)));
+            String label = optionLabel(auxiliary.encounterTables(), tableId, "Tabelle");
+            rendered.add(chip("Tabelle: " + label,
+                    () -> editFilters(() -> encounterTables.deselectKey(tableId, CatalogReferenceOption::id))));
+        }
+        for (Long factionId : draft.worldFactionIds()) {
+            String label = optionLabel(auxiliary.factions(), factionId, "Fraktion");
+            rendered.add(chip("Fraktion: " + label,
+                    () -> editFilters(() -> factions.deselectKey(factionId, CatalogReferenceOption::id))));
+        }
+        if (draft.worldLocationId() > 0L) {
+            String label = optionLabel(auxiliary.locations(), draft.worldLocationId(), "Location");
+            rendered.add(chip("Location: " + label, () -> editFilters(() -> location.getItems().stream()
+                    .filter(option -> option.id() == 0L).findFirst().ifPresent(location::setValue))));
+        }
+        setChips(rendered);
+    }
+
+    private void editFilters(Runnable edit) {
+        rendering = true;
+        try {
+            edit.run();
+        } finally {
+            rendering = false;
+        }
+        publishFilters();
+    }
+
+    private static void addChip(List<Node> target, String label, boolean visible, Runnable removeAction) {
+        if (visible) {
+            target.add(chip(label, removeAction));
         }
     }
 
-    private void addChip(String label, boolean visible, Runnable removeAction) {
-        if (!visible) {
-            return;
-        }
-        Button remove = new Button("×");
-        remove.getStyleClass().addAll("flat", "compact", "chip-remove-btn");
-        remove.setAccessibleText("Entfernen: " + label);
-        remove.setOnAction(ignored -> removeAction.run());
-        HBox chip = new HBox(2, new Label(label), remove);
-        chip.getStyleClass().add("chip");
-        chips.getChildren().add(chip);
-    }
-
-    private void publish(MonsterCatalogFilterDraft draft) {
-        intent.accept(new MonsterCatalogIntent.ChangeFilters(draft));
-    }
-
-    private static MonsterCatalogFilterDraft draftWithName(MonsterCatalogFilterDraft source, String name) {
-        return copy(source, name, source.creatureTypes(), source.encounterTableIds());
-    }
-
-    private static MonsterCatalogFilterDraft without(
-            MonsterCatalogFilterDraft source,
-            String type,
-            boolean ignored
+    private static void addValues(
+            List<Node> target,
+            String prefix,
+            List<String> values,
+            Consumer<String> remove
     ) {
-        return copy(source, source.nameQuery(), source.creatureTypes().stream()
-                .filter(value -> !value.equals(type)).toList(), source.encounterTableIds());
+        values.forEach(value -> target.add(chip(prefix + ": " + value, () -> remove.accept(value))));
     }
 
-    private static MonsterCatalogFilterDraft withoutTable(MonsterCatalogFilterDraft source, long tableId) {
-        return copy(source, source.nameQuery(), source.creatureTypes(), source.encounterTableIds().stream()
-                .filter(value -> value != tableId).toList());
+    private static String rangeLabel(String prefix, String minimum, String maximum) {
+        return prefix + ": " + (minimum.isBlank() ? "…" : minimum) + "–" + (maximum.isBlank() ? "…" : maximum);
     }
 
-    private static MonsterCatalogFilterDraft copy(
-            MonsterCatalogFilterDraft source,
-            String name,
-            List<String> types,
-            List<Long> tables
-    ) {
-        return new MonsterCatalogFilterDraft(
-                name, source.challengeRatingMin(), source.challengeRatingMax(), source.sizes(), types,
-                source.creatureSubtypes(), source.biomes(), source.alignments(), tables,
-                source.worldFactionIds(), source.worldLocationId());
+    private static String optionLabel(List<CatalogReferenceOption> options, long id, String fallback) {
+        return options.stream().filter(option -> option.id() == id).map(CatalogReferenceOption::label)
+                .findFirst().orElse(fallback + " " + id);
     }
 
     private static String value(ComboBox<String> comboBox) {
@@ -236,18 +234,19 @@ final class MonsterCatalogControls extends VBox {
         private final Function<T, String> labeler;
         private final Button button;
         private final ContextMenu menu = new ContextMenu();
-        private final VBox options = new VBox(2);
+        private final VBox options = new VBox();
         private final Runnable changed;
 
         MultiSelect(String label, Function<T, String> labeler, Runnable changed) {
             this.label = label;
             this.labeler = labeler;
             this.changed = Objects.requireNonNull(changed, "changed");
+            options.getStyleClass().add("catalog-filter-dropdown-options");
             button = new Button(label + " ▾");
             button.getStyleClass().addAll("compact", "filter-trigger");
             ScrollPane scroll = new ScrollPane(options);
             scroll.setFitToWidth(true);
-            VBox dropdown = new VBox(2, scroll);
+            VBox dropdown = new VBox(scroll);
             dropdown.getStyleClass().add("filter-dropdown");
             menu.getItems().setAll(new CustomMenuItem(dropdown, false));
             button.setOnAction(ignored -> {
@@ -291,10 +290,22 @@ final class MonsterCatalogControls extends VBox {
             return selectedValues().stream().map(key).toList();
         }
 
+        void deselectValue(T value) {
+            deselectKey(value, Function.identity());
+        }
+
+        <K> void deselectKey(K value, Function<T, K> key) {
+            options.getChildren().stream().map(CheckBox.class::cast)
+                    .filter(checkBox -> Objects.equals(value, key.apply((T) checkBox.getUserData())))
+                    .findFirst().ifPresent(checkBox -> checkBox.setSelected(false));
+            updateButton();
+        }
+
         private void updateButton() {
             long selected = options.getChildren().stream().map(CheckBox.class::cast)
                     .filter(CheckBox::isSelected).count();
             button.setText(selected == 0L ? label + " ▾" : label + " (" + selected + ") ▾");
         }
     }
+
 }

@@ -87,6 +87,22 @@ public final class CatalogControlsRawInputTest {
     }
 
     @Test
+    void oneSharedFilterChipRemovalPublishesOneTypedIntent() throws Exception {
+        runOnFx(() -> {
+            List<MonsterCatalogIntent> intents = new ArrayList<>();
+            MonsterCatalogControls controls = new MonsterCatalogControls(intents::add);
+            controls.render(state("aboleth"), MonsterCatalogAuxiliaryOptions.empty());
+
+            buttonAccessible(controls, "Entfernen: Suche: aboleth").fire();
+
+            assertEquals(1, intents.size());
+            MonsterCatalogIntent.ChangeFilters change =
+                    assertInstanceOf(MonsterCatalogIntent.ChangeFilters.class, intents.getFirst());
+            assertEquals("", change.filters().nameQuery());
+        });
+    }
+
+    @Test
     void workspaceRenderPublishesNoSelectionAndOneUserTogglePublishesOneSelection() throws Exception {
         runOnFx(() -> {
             List<CatalogSectionId> selections = new ArrayList<>();
@@ -257,11 +273,11 @@ public final class CatalogControlsRawInputTest {
     }
 
     private static CatalogSection section(CatalogSectionId id) {
-        Pane controls = new Pane();
+        CatalogControlsScaffold controls = new CatalogControlsScaffold("FILTER");
         Pane content = new Pane();
         return new CatalogSection() {
             @Override public CatalogSectionId id() { return id; }
-            @Override public Node controls() { return controls; }
+            @Override public CatalogControlsScaffold controls() { return controls; }
             @Override public Node content() { return content; }
         };
     }

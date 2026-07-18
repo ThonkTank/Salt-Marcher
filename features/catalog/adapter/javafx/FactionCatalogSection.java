@@ -9,15 +9,15 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.VBox;
 
 /** Passive faction Catalog renderer. */
 public final class FactionCatalogSection implements CatalogSection {
 
     private final Consumer<WorldReferenceCatalogIntent> intents;
     private final TextField query = queryField();
-    private final VBox controls;
+    private final CatalogControlsScaffold controls;
     private final CatalogTableScaffold<FactionRow, Long> content;
     private boolean rendering;
     private long renderedRevision = -1L;
@@ -29,13 +29,12 @@ public final class FactionCatalogSection implements CatalogSection {
                 this.intents.accept(new WorldReferenceCatalogIntent.ChangeFactionQuery(after));
             }
         });
-        controls = new VBox(
-                CatalogSectionControls.intro(
-                        "Fraktionen", "Fraktionen bleiben World-Planner-Wahrheit und werden im Inspector bearbeitet.",
-                        "Fraktion anlegen",
-                        () -> this.intents.accept(new WorldReferenceCatalogIntent.CreateFaction())),
-                query);
-        controls.getStyleClass().add("catalog-section-intro");
+        Button create = new Button("Fraktion anlegen");
+        create.getStyleClass().add("accent");
+        create.setOnAction(ignored -> this.intents.accept(new WorldReferenceCatalogIntent.CreateFaction()));
+        controls = new CatalogControlsScaffold("FILTER");
+        controls.setSearch(query);
+        controls.setActions(create);
         content = new CatalogTableScaffold<>(
                 "Fraktionskatalog", FactionRow::factionId, FactionRow::displayName,
                 List.of(
@@ -50,7 +49,7 @@ public final class FactionCatalogSection implements CatalogSection {
     }
 
     @Override public CatalogSectionId id() { return CatalogSectionId.FACTIONS; }
-    @Override public Node controls() { return controls; }
+    @Override public CatalogControlsScaffold controls() { return controls; }
     @Override public Node content() { return content; }
 
     public void render(WorldReferenceCatalogState state) {
