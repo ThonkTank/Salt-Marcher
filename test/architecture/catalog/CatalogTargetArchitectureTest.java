@@ -72,6 +72,28 @@ public final class CatalogTargetArchitectureTest {
                     .dependOnClassesThat()
                     .areAssignableTo(CatalogWorkspacePublication.class);
 
+    @ArchTest
+    static final ArchRule nativeCatalogSectionsUseTheSharedControlKit =
+            classes()
+                    .that()
+                    .resideInAPackage("features.catalog.adapter.javafx..")
+                    .and()
+                    .haveSimpleNameEndingWith("CatalogSection")
+                    .and()
+                    .areNotInterfaces()
+                    .should()
+                    .dependOnClassesThat()
+                    .haveSimpleName("CatalogControlKit");
+
+    @ArchTest
+    static final ArchRule monsterControlsUseTheSharedControlKit =
+            classes()
+                    .that()
+                    .haveSimpleName("MonsterCatalogControls")
+                    .should()
+                    .dependOnClassesThat()
+                    .haveSimpleName("CatalogControlKit");
+
     @Test
     void exactlySevenNativeSectionsUseTheCommonContractAndScaffold() throws ClassNotFoundException {
         assertEquals(7, NATIVE_SECTION_NAMES.size());

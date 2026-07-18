@@ -16,7 +16,7 @@ import javafx.scene.control.TextField;
 public final class FactionCatalogSection implements CatalogSection {
 
     private final Consumer<WorldReferenceCatalogIntent> intents;
-    private final TextField query = queryField();
+    private final TextField query = CatalogControlKit.search("Fraktionen suchen", "Fraktionen suchen …");
     private final CatalogControlsScaffold controls;
     private final CatalogTableScaffold<FactionRow, Long> content;
     private boolean rendering;
@@ -29,10 +29,9 @@ public final class FactionCatalogSection implements CatalogSection {
                 this.intents.accept(new WorldReferenceCatalogIntent.ChangeFactionQuery(after));
             }
         });
-        Button create = new Button("Fraktion anlegen");
-        create.getStyleClass().add("accent");
+        Button create = CatalogControlKit.action("Fraktion anlegen", "Fraktion anlegen", true);
         create.setOnAction(ignored -> this.intents.accept(new WorldReferenceCatalogIntent.CreateFaction()));
-        controls = new CatalogControlsScaffold("FILTER");
+        controls = new CatalogControlsScaffold();
         controls.setSearch(query);
         controls.setActions(create);
         content = new CatalogTableScaffold<>(
@@ -73,10 +72,4 @@ public final class FactionCatalogSection implements CatalogSection {
         return id > 0L ? Optional.of(id) : Optional.empty();
     }
 
-    private static TextField queryField() {
-        TextField field = new TextField();
-        field.setAccessibleText("Fraktionen suchen");
-        field.setPromptText("Fraktionen suchen …");
-        return field;
-    }
 }

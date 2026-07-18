@@ -19,7 +19,8 @@ final class MonsterCatalogSection implements CatalogSection {
 
     private final MonsterCatalogControls controls;
     private final CatalogTableScaffold<CreatureCatalogRow, Long> content;
-    private final ComboBox<MonsterCatalogSort> sort = new ComboBox<>();
+    private final ComboBox<MonsterCatalogSort> sort = CatalogControlKit.select(
+            "Sortierung", "Monster sortieren", MonsterCatalogSort::label);
     private MonsterCatalogState state;
     private MonsterCatalogAuxiliaryOptions auxiliary = MonsterCatalogAuxiliaryOptions.empty();
     private long renderedRevision = -1L;
@@ -52,7 +53,6 @@ final class MonsterCatalogSection implements CatalogSection {
                                 row -> requiredIntents.accept(new MonsterCatalogIntent.AddToScene(row.id())))),
                 new CatalogTableScaffold.Paging(
                         direction -> requiredIntents.accept(new MonsterCatalogIntent.ShiftPage(direction))));
-        sort.setAccessibleText("Monster sortieren");
         sort.getItems().setAll(MonsterCatalogSort.values());
         sort.valueProperty().addListener((ignored, before, after) -> {
             if (!rendering && after != null) {

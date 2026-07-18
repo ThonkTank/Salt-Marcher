@@ -19,11 +19,17 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Control;
 import javafx.scene.control.Label;
+import javafx.scene.control.Labeled;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextInputControl;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import shell.api.InspectorEntrySpec;
@@ -258,6 +264,15 @@ public final class CatalogInitialLoadTest {
     }
 
     @Test
+    void CATALOG_VISUAL_CONTRACT_001_usesOneInsideLabeledControlRhythmAtSupportedSizes() throws Exception {
+        seedCreatureCatalog();
+        runOnFxThread(() -> {
+            assertVisualContract(1_150.0, 700.0);
+            assertVisualContract(900.0, 650.0);
+        });
+    }
+
+    @Test
     void CATALOG_WORKSPACE_001_usesOneSectionRailAndPreservesSectionState() throws Exception {
         seedCreatureCatalog();
         runOnFxThread(() -> {
@@ -333,6 +348,83 @@ public final class CatalogInitialLoadTest {
         root.applyCss();
         root.layout();
         return new CatalogFixture(runtime, controls, workspace, main);
+    }
+
+    private static void assertVisualContract(double width, double height) {
+        CatalogTestRuntime runtime = services();
+        ShellBinding binding = runtime.contribution(EmptyInspectorSink.INSTANCE).bind();
+        binding.onActivate();
+        CatalogControlsHost controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, CatalogControlsHost.class);
+        CatalogContentHost content = slot(binding, ShellSlot.COCKPIT_MAIN, CatalogContentHost.class);
+        VBox root = new VBox(controls, content);
+        VBox.setVgrow(content, Priority.ALWAYS);
+        Stage stage = new Stage();
+        Scene scene = new Scene(root, width, height);
+        scene.getStylesheets().add(Path.of("resources", "salt-marcher.css").toUri().toString());
+        stage.setScene(scene);
+        stage.show();
+
+        for (CatalogSectionId id : CatalogSectionId.values()) {
+            controls.select(id);
+            root.applyCss();
+            root.layout();
+
+            List<Control> interactive = descendants(root).stream()
+                    .filter(Control.class::isInstance)
+                    .map(Control.class::cast)
+                    .filter(control -> control.getStyleClass().contains("catalog-control"))
+                    .filter(Node::isVisible)
+                    .toList();
+            assertTrue(!interactive.isEmpty(), id + " has no Catalog controls");
+            interactive.forEach(control -> assertControlRhythm(id, control));
+
+            descendants(controls).stream()
+                    .filter(TextInputControl.class::isInstance)
+                    .map(TextInputControl.class::cast)
+                    .forEach(input -> assertTrue(!input.getPromptText().isBlank(),
+                            id + " has an externally labeled text input"));
+            descendants(controls).stream()
+                    .filter(ComboBox.class::isInstance)
+                    .map(ComboBox.class::cast)
+                    .forEach(combo -> assertTrue(combo.getButtonCell() != null
+                                    && !combo.getButtonCell().getText().isBlank(),
+                            id + " has a select without an inside label"));
+            boolean hasObsoleteHeading = descendants(controls).stream()
+                    .filter(Label.class::isInstance)
+                    .map(Label.class::cast)
+                    .map(Label::getText)
+                    .anyMatch(text -> "FILTER".equals(text) || "AKTIONEN".equals(text));
+            assertTrue(!hasObsoleteHeading, id + " still renders a redundant group heading");
+            assertTrue(descendant(content, TableView.class).getHeight() > 200.0,
+                    id + " loses the result workspace at " + width + "×" + height);
+        }
+
+        ScrollPane controlsScroll = descendant(controls, ScrollPane.class);
+        org.junit.jupiter.api.Assertions.assertEquals(
+                ScrollPane.ScrollBarPolicy.NEVER, controlsScroll.getHbarPolicy());
+        stage.close();
+        binding.onDeactivate();
+    }
+
+    private static void assertControlRhythm(CatalogSectionId id, Control control) {
+        org.junit.jupiter.api.Assertions.assertEquals(28.0, control.getMinHeight(), 0.1,
+                id + " min height: " + control);
+        org.junit.jupiter.api.Assertions.assertEquals(28.0, control.getPrefHeight(), 0.1,
+                id + " preferred height: " + control);
+        org.junit.jupiter.api.Assertions.assertEquals(28.0, control.getMaxHeight(), 0.1,
+                id + " max height: " + control);
+        org.junit.jupiter.api.Assertions.assertEquals(28.0, control.getHeight(), 0.75,
+                id + " rendered height: " + control);
+        if (control instanceof Labeled labeled) {
+            org.junit.jupiter.api.Assertions.assertEquals(12.0, labeled.getFont().getSize(), 0.1,
+                    id + " labeled font: " + control);
+        } else if (control instanceof TextInputControl input) {
+            org.junit.jupiter.api.Assertions.assertEquals(12.0, input.getFont().getSize(), 0.1,
+                    id + " input font: " + control);
+        } else if (control instanceof ComboBox<?> combo && combo.getButtonCell() != null) {
+            org.junit.jupiter.api.Assertions.assertEquals(12.0, combo.getButtonCell().getFont().getSize(), 0.1,
+                    id + " select font: " + control);
+        }
     }
 
     private static void assertInitialCatalogRows(Parent main, String label) {

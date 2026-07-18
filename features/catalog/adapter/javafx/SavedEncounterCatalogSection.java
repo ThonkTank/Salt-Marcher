@@ -17,9 +17,11 @@ import javafx.scene.layout.HBox;
 public final class SavedEncounterCatalogSection implements CatalogSection {
 
     private final Consumer<SavedEncounterCatalogIntent> intents;
-    private final Button open = new Button("Im Encounter öffnen");
-    private final Button confirm = new Button("Verwerfen und öffnen");
-    private final Button cancel = new Button("Abbrechen");
+    private final Button open = CatalogControlKit.action(
+            "Im Encounter öffnen", "Ausgewählten Encounter im globalen Encounter öffnen", true);
+    private final Button confirm = CatalogControlKit.action(
+            "Verwerfen und öffnen", "Verwerfen und öffnen", true);
+    private final Button cancel = CatalogControlKit.action("Abbrechen", "Öffnen abbrechen", false);
     private final Label status = new Label();
     private final Label confirmation = new Label();
     private final HBox confirmationActions = new HBox(confirm, cancel);
@@ -41,18 +43,13 @@ public final class SavedEncounterCatalogSection implements CatalogSection {
                 plan -> this.intents.accept(new SavedEncounterCatalogIntent.OpenPlan(plan.planId())),
                 planId -> this.intents.accept(new SavedEncounterCatalogIntent.SelectPlan(planId.orElse(0L))),
                 List.of());
-        open.getStyleClass().add("accent");
-        open.setAccessibleText("Ausgewählten Encounter im globalen Encounter öffnen");
         open.disableProperty().bind(content.table().getSelectionModel().selectedItemProperty().isNull());
         open.setOnAction(ignored -> {
             if (state != null) {
                 this.intents.accept(new SavedEncounterCatalogIntent.OpenPlan(state.selectedPlanId()));
             }
         });
-        confirm.getStyleClass().add("accent");
-        confirm.setAccessibleText("Verwerfen und öffnen");
         confirm.setOnAction(ignored -> confirmPending());
-        cancel.setAccessibleText("Öffnen abbrechen");
         cancel.setOnAction(ignored -> cancelPending());
         status.setWrapText(true);
         status.setAccessibleText("Gespeicherte-Encounter-Aktionsstatus");
@@ -60,7 +57,7 @@ public final class SavedEncounterCatalogSection implements CatalogSection {
         confirmation.setWrapText(true);
         confirmation.setAccessibleText("Ungespeicherte Änderungen bestätigen");
         confirmationActions.getStyleClass().add("catalog-confirmation-actions");
-        controls = new CatalogControlsScaffold("AKTIONEN");
+        controls = new CatalogControlsScaffold();
         controls.setActions(open);
         controls.setFeedback(status, confirmation, confirmationActions);
         showStatus(false);

@@ -15,7 +15,8 @@ import javafx.scene.control.TextField;
 public final class EncounterTableCatalogSection implements CatalogSection {
 
     private final Consumer<EncounterTableCatalogIntent> intents;
-    private final TextField query = queryField();
+    private final TextField query = CatalogControlKit.search(
+            "Encounter-Tabellen suchen", "Encounter-Tabellen suchen …");
     private final CatalogControlsScaffold controls;
     private final CatalogTableScaffold<EncounterTableRow, Long> content;
     private boolean rendering;
@@ -28,7 +29,7 @@ public final class EncounterTableCatalogSection implements CatalogSection {
                 this.intents.accept(new EncounterTableCatalogIntent.ChangeQuery(after));
             }
         });
-        controls = new CatalogControlsScaffold("FILTER");
+        controls = new CatalogControlsScaffold();
         controls.setSearch(query);
         content = new CatalogTableScaffold<>(
                 "Encounter-Tabellen-Katalog", EncounterTableRow::tableId, EncounterTableRow::name,
@@ -68,10 +69,4 @@ public final class EncounterTableCatalogSection implements CatalogSection {
         return id > 0L ? Optional.of(id) : Optional.empty();
     }
 
-    private static TextField queryField() {
-        TextField field = new TextField();
-        field.setAccessibleText("Encounter-Tabellen suchen");
-        field.setPromptText("Encounter-Tabellen suchen …");
-        return field;
-    }
 }

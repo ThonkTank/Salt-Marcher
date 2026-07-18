@@ -16,7 +16,7 @@ import javafx.scene.control.TextField;
 public final class NpcCatalogSection implements CatalogSection {
 
     private final Consumer<WorldReferenceCatalogIntent> intents;
-    private final TextField query = queryField("NPCs suchen", "NPCs suchen …");
+    private final TextField query = CatalogControlKit.search("NPCs suchen", "NPCs suchen …");
     private final CatalogControlsScaffold controls;
     private final CatalogTableScaffold<NpcRow, Long> content;
     private boolean rendering;
@@ -29,10 +29,9 @@ public final class NpcCatalogSection implements CatalogSection {
                 this.intents.accept(new WorldReferenceCatalogIntent.ChangeNpcQuery(after));
             }
         });
-        Button create = new Button("NPC anlegen");
-        create.getStyleClass().add("accent");
+        Button create = CatalogControlKit.action("NPC anlegen", "NPC anlegen", true);
         create.setOnAction(ignored -> this.intents.accept(new WorldReferenceCatalogIntent.CreateNpc()));
-        controls = new CatalogControlsScaffold("FILTER");
+        controls = new CatalogControlsScaffold();
         controls.setSearch(query);
         controls.setActions(create);
         content = new CatalogTableScaffold<>(
@@ -84,10 +83,4 @@ public final class NpcCatalogSection implements CatalogSection {
         return id > 0L ? Optional.of(id) : Optional.empty();
     }
 
-    private static TextField queryField(String accessible, String prompt) {
-        TextField field = new TextField();
-        field.setAccessibleText(accessible);
-        field.setPromptText(prompt);
-        return field;
-    }
 }

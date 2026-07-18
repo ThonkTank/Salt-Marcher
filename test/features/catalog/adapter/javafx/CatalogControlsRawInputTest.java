@@ -273,7 +273,7 @@ public final class CatalogControlsRawInputTest {
     }
 
     private static CatalogSection section(CatalogSectionId id) {
-        CatalogControlsScaffold controls = new CatalogControlsScaffold("FILTER");
+        CatalogControlsScaffold controls = new CatalogControlsScaffold();
         Pane content = new Pane();
         return new CatalogSection() {
             @Override public CatalogSectionId id() { return id; }
@@ -308,7 +308,7 @@ public final class CatalogControlsRawInputTest {
 
     private static TextField textField(Parent root) {
         return descendants(root).stream().filter(TextField.class::isInstance).map(TextField.class::cast)
-                .filter(field -> "Monster suchen...".equals(field.getPromptText())).findFirst().orElseThrow();
+                .filter(field -> "Monster suchen …".equals(field.getPromptText())).findFirst().orElseThrow();
     }
 
     private static Button button(Parent root, String text) {

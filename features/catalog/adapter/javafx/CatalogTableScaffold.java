@@ -32,8 +32,8 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
     private final Label count = new Label();
     private final Label status = new Label();
     private final Label page = new Label();
-    private final Button previous = new Button("◀ Zurück");
-    private final Button next = new Button("Weiter ▶");
+    private final Button previous = CatalogControlKit.action("◀ Zurück", "Vorherige Seite", false);
+    private final Button next = CatalogControlKit.action("Weiter ▶", "Nächste Seite", false);
     private final TableView<Row> table = new TableView<>();
     private final HBox header;
     private String pageSeparator = " / ";
@@ -102,7 +102,7 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
         page.getStyleClass().add("text-secondary");
         table.setAccessibleText(accessibleTableName);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        Label placeholder = new Label("Lade Einträge...");
+        Label placeholder = new Label("Lade Einträge …");
         table.setPlaceholder(placeholder);
         table.getColumns().setAll(createColumns(columns, actions));
         table.getSelectionModel().selectedItemProperty().addListener((ignored, before, selected) -> {
@@ -269,7 +269,8 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
             {
                 buttons.getStyleClass().add("catalog-table-actions");
                 for (ActionSpec<Row> action : actions) {
-                    Button button = new Button(action.label());
+                    Button button = CatalogControlKit.action(
+                            action.label(), action.accessiblePrefix(), false);
                     button.getStyleClass().addAll(action.styleClasses());
                     button.setTooltip(new Tooltip(action.tooltip()));
                     button.setOnAction(ignoredEvent -> {
@@ -300,7 +301,7 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
 
     private static String statusText(CatalogResultState<?> result) {
         return switch (result.status()) {
-            case LOADING -> "Lade...";
+            case LOADING -> "Lade …";
             case READY -> "";
             case EMPTY -> "Keine Einträge gefunden.";
             case INVALID_INPUT -> result.message().isBlank() ? "Eingabe ist ungültig." : result.message();

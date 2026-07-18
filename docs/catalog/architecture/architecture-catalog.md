@@ -117,13 +117,19 @@ the action-column layout. Section renderers supply columns, filters, and the
 available typed actions. The seven section roots remain alive for the active
 Catalog binding so switching sections does not discard local view state.
 
-`CatalogControlsScaffold` owns the fixed control hierarchy, responsive
-wrapping, compact field and chip treatment, action placement, feedback
-placement, and the bounded controls height. `CatalogSection.controls()` returns
-this concrete scaffold instead of an arbitrary JavaFX node. Section renderers
-may supply controls and intents to its named regions but do not construct a
-parallel controls layout. Catalog-specific range, multi-select, action, and
-confirmation needs remain in the Catalog adapter; they do not justify a
+`CatalogControlsScaffold` owns the fixed toolbar, responsive filter and chip
+wrapping, feedback placement, and bounded controls height.
+`CatalogControlKit` is the only Catalog owner for constructing and assigning
+visual roles to section tabs, search inputs, labeled selections, sort controls,
+and actions. Labels are rendered by the interactive control, not by adjacent
+layout nodes. `CatalogMultiSelect` owns the one reusable checkable filter
+popup. `CatalogTableScaffold` obtains paging and row actions from the same kit.
+
+`CatalogSection.controls()` returns the concrete scaffold instead of an
+arbitrary JavaFX root. Section renderers retain typed control references for
+state rendering and intent translation, but they neither style those controls
+nor construct parallel control layouts. These Catalog-specific presentation
+primitives remain in the Catalog JavaFX adapter; they do not justify a
 feature-neutral dynamic form or filter schema.
 
 ## Lifecycle And Concurrency
@@ -157,11 +163,11 @@ the JavaFX adapter mutates controls.
 ## Enforcement And Verification Ownership
 
 `architectureTest` mechanically enforces valid feature roles, foreign API-only
-dependencies, the shared control and table scaffolds for all seven sections,
-and the absence of JavaFX dependencies from Catalog application code. UI
-behavior tests own the seven-section workspace, compact control composition,
-state preservation, stable-id selection, visible result states, and explicit
-handoff behavior.
+dependencies, the shared control kit and control/table scaffolds for all seven
+sections, and the absence of JavaFX dependencies from Catalog application
+code. UI behavior tests own the seven-section workspace, measured control
+rhythm, inside-label composition, responsive result space, state preservation,
+stable-id selection, visible result states, and explicit handoff behavior.
 Lifecycle tests own balanced subscription and request invalidation behavior.
 Final visual and interaction acceptance remains owner manual testing.
 

@@ -80,11 +80,10 @@ public final class ItemsCatalogUiTest {
             select(combo(pane, "Item-Unterkategorie"), "Martial");
             select(combo(pane, "Item-Seltenheit"), "Rare");
             select(combo(pane, "Item-Magie"), "Ja");
-            select(combo(pane, "Item-Attunement"), "Nein");
+            select(combo(pane, "Item-Einstimmung"), "Nein");
             text(pane, "Item-Minimalkosten").setText("100");
             text(pane, "Item-Maximalkosten").setText("900");
-            select(combo(pane, "Item-Sortierfeld"), "Kosten");
-            select(combo(pane, "Item-Sortierrichtung"), "Absteigend");
+            select(combo(pane, "Items sortieren"), "Kosten (absteigend)");
             button(pane, "Items suchen").fire();
 
             ItemsCatalogApi.ItemQuery query = api.queries.getLast();
@@ -121,7 +120,7 @@ public final class ItemsCatalogUiTest {
 
             api.deferNextSearch();
             button(pane, "Items suchen").fire();
-            assertEquals("Lade...", label(pane, "Item-Ergebnisse Status").getText());
+            assertEquals("Lade …", label(pane, "Item-Ergebnisse Status").getText());
             api.completeDeferred(ItemsCatalogApi.CatalogStatus.SUCCESS, List.of(), 0);
             assertEquals("Keine Einträge gefunden.", label(pane, "Item-Ergebnisse Status").getText());
 

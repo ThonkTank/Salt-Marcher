@@ -288,15 +288,13 @@
     -fx-spacing: 6;
     -fx-padding: 2 2 8 2;
 }
-.catalog-controls-search-row,
-.catalog-control-field,
+.catalog-controls-toolbar,
 .catalog-confirmation-actions {
     -fx-spacing: 6;
     -fx-alignment: center-left;
 }
 .catalog-controls-filter-row,
-.catalog-controls-chip-row,
-.catalog-controls-action-row {
+.catalog-controls-chip-row {
     -fx-hgap: 4;
     -fx-vgap: 4;
     -fx-alignment: center-left;
@@ -304,15 +302,6 @@
 .catalog-controls-feedback {
     -fx-spacing: 6;
     -fx-padding: 4 0 0 0;
-}
-.catalog-control-field {
-    -fx-padding: 0 2 0 0;
-}
-.catalog-control-field-label {
-    -fx-text-fill: -sm-text-secondary;
-}
-.catalog-control-range-separator {
-    -fx-text-fill: -sm-text-muted;
 }
 .catalog-filter-dropdown-options {
     -fx-spacing: 2;
@@ -1214,23 +1203,6 @@
     -fx-padding: 8;
     -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 8, 0, 0, 2);
 }
-.filter-trigger {
-    -fx-background-color: -sm-bg-elevated;
-    -fx-text-fill: -sm-text-secondary;
-    -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 3;
-    -fx-background-radius: 3;
-    -fx-padding: 3 8;
-    -fx-font-size: 11px;
-}
-.filter-trigger:hover {
-    -fx-text-fill: -sm-text-primary;
-    -fx-background-color: -sm-bg-card;
-}
-.filter-trigger-active {
-    -fx-border-color: -sm-accent;
-    -fx-text-fill: -sm-accent-hover;
-}
 .auto-dice-btn {
     -fx-background-color: -sm-bg-elevated;
     -fx-border-color: -sm-border-subtle;
@@ -1767,4 +1739,61 @@
 .scroll-bar .decrement-arrow {
     -fx-shape: "";
     -fx-padding: 0;
+}
+
+/* ---- Catalog interaction rhythm ---- */
+.catalog-control {
+    -fx-min-height: 28;
+    -fx-pref-height: 28;
+    -fx-max-height: 28;
+    -fx-font-family: "SansSerif";
+    -fx-font-size: 12px;
+    -fx-font-weight: normal;
+}
+.button.catalog-control,
+.toggle-button.catalog-control {
+    -fx-padding: 3 8 3 8;
+    -fx-font-family: "SansSerif";
+    -fx-font-size: 12px;
+    -fx-font-weight: normal;
+}
+.text-field.catalog-control {
+    -fx-padding: 3 8 3 8;
+    -fx-font-family: "SansSerif";
+    -fx-font-size: 12px;
+    -fx-font-weight: normal;
+}
+.combo-box.catalog-control,
+.combo-box.catalog-control > .list-cell,
+.catalog-select-button-cell,
+.catalog-select-option {
+    -fx-font-family: "SansSerif";
+    -fx-font-size: 12px;
+    -fx-font-weight: normal;
+}
+.combo-box.catalog-control > .list-cell,
+.catalog-select-button-cell {
+    -fx-padding: 3 8 3 8;
+}
+.catalog-section-button.catalog-control {
+    -fx-padding: 3 8 3 8;
+}
+.catalog-cost-control {
+    -fx-pref-width: 124;
+}
+.chip {
+    -fx-min-height: 22;
+    -fx-pref-height: 22;
+    -fx-max-height: 22;
+    -fx-font-family: "SansSerif";
+    -fx-font-size: 11px;
+    -fx-font-weight: normal;
+}
+.chip-remove-btn {
+    -fx-min-height: 22;
+    -fx-pref-height: 22;
+    -fx-max-height: 22;
+    -fx-font-family: "SansSerif";
+    -fx-font-size: 11px;
+    -fx-font-weight: normal;
 }

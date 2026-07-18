@@ -28,9 +28,8 @@ final class CatalogControlsHost extends VBox {
         FlowPane rail = new FlowPane();
         rail.getStyleClass().add("catalog-section-rail");
         for (CatalogSection section : sections) {
-            ToggleButton button = new ToggleButton(section.id().label());
-            button.getStyleClass().add("catalog-section-button");
-            button.setAccessibleText("Katalogbereich " + section.id().label());
+            ToggleButton button = CatalogControlKit.section(
+                    section.id().label(), "Katalogbereich " + section.id().label());
             button.setUserData(section.id());
             button.setToggleGroup(group);
             buttons.put(section.id(), button);

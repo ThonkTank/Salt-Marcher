@@ -10,70 +10,54 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import javafx.geometry.Side;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.ContextMenu;
-import javafx.scene.control.CustomMenuItem;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.VBox;
-import javafx.util.StringConverter;
 
 /** Passive typed Monster controls; renders state and emits one filter intent per edit. */
 final class MonsterCatalogControls extends CatalogControlsScaffold {
 
-    private final TextField search = new TextField();
-    private final ComboBox<String> crMinimum = new ComboBox<>();
-    private final ComboBox<String> crMaximum = new ComboBox<>();
-    private final MultiSelect<String> sizes;
-    private final MultiSelect<String> types;
-    private final MultiSelect<String> subtypes;
-    private final MultiSelect<String> biomes;
-    private final MultiSelect<String> alignments;
-    private final MultiSelect<CatalogReferenceOption> encounterTables;
-    private final MultiSelect<CatalogReferenceOption> factions;
-    private final ComboBox<CatalogReferenceOption> location = new ComboBox<>();
-    private final Button clear = new Button("Leeren");
+    private final TextField search = CatalogControlKit.search("Monster suchen", "Monster suchen …");
+    private final ComboBox<String> crMinimum = CatalogControlKit.select(
+            "CR ab", "Minimale Challenge Rating", Function.identity());
+    private final ComboBox<String> crMaximum = CatalogControlKit.select(
+            "CR bis", "Maximale Challenge Rating", Function.identity());
+    private final CatalogMultiSelect<String> sizes;
+    private final CatalogMultiSelect<String> types;
+    private final CatalogMultiSelect<String> subtypes;
+    private final CatalogMultiSelect<String> biomes;
+    private final CatalogMultiSelect<String> alignments;
+    private final CatalogMultiSelect<CatalogReferenceOption> encounterTables;
+    private final CatalogMultiSelect<CatalogReferenceOption> factions;
+    private final ComboBox<CatalogReferenceOption> location = CatalogControlKit.select(
+            "Ort", "Ort auswählen", MonsterCatalogControls::locationLabel);
+    private final Button clear = CatalogControlKit.clear("Monster-Suche und Filter leeren");
     private final Consumer<MonsterCatalogIntent> intent;
     private boolean rendering;
 
     MonsterCatalogControls(Consumer<MonsterCatalogIntent> intent) {
-        super("FILTER");
+        super();
         this.intent = Objects.requireNonNull(intent, "intent");
-        sizes = new MultiSelect<>("Größe", Function.identity(), this::publishFilters);
-        types = new MultiSelect<>("Typ", Function.identity(), this::publishFilters);
-        subtypes = new MultiSelect<>("Unterart", Function.identity(), this::publishFilters);
-        biomes = new MultiSelect<>("Umgebung", Function.identity(), this::publishFilters);
-        alignments = new MultiSelect<>("Gesinnung", Function.identity(), this::publishFilters);
-        encounterTables = new MultiSelect<>("Tabelle", CatalogReferenceOption::label, this::publishFilters);
-        factions = new MultiSelect<>("Fraktionen", CatalogReferenceOption::label, this::publishFilters);
-        search.setPromptText("Monster suchen...");
-        search.setAccessibleText("Monster suchen");
+        sizes = new CatalogMultiSelect<>("Größe", Function.identity(), this::publishFilters);
+        types = new CatalogMultiSelect<>("Typ", Function.identity(), this::publishFilters);
+        subtypes = new CatalogMultiSelect<>("Unterart", Function.identity(), this::publishFilters);
+        biomes = new CatalogMultiSelect<>("Umgebung", Function.identity(), this::publishFilters);
+        alignments = new CatalogMultiSelect<>("Gesinnung", Function.identity(), this::publishFilters);
+        encounterTables = new CatalogMultiSelect<>(
+                "Tabelle", CatalogReferenceOption::label, this::publishFilters);
+        factions = new CatalogMultiSelect<>(
+                "Fraktionen", CatalogReferenceOption::label, this::publishFilters);
         search.textProperty().addListener((ignored, before, after) -> publishFilters());
         configureChallengeRatings();
-        location.setAccessibleText("Location");
-        location.setConverter(new StringConverter<>() {
-            @Override public String toString(CatalogReferenceOption value) {
-                return value == null || value.id() <= 0L
-                        ? "(Alle Locations)"
-                        : "#" + value.id() + " | " + value.label();
-            }
-            @Override public CatalogReferenceOption fromString(String value) {
-                return null;
-            }
-        });
         location.valueProperty().addListener((ignored, before, after) -> publishFilters());
-        clear.getStyleClass().addAll("compact", "flat");
         clear.setOnAction(ignored -> clearFilters());
         setSearch(search);
         setFilters(
-                rangeField("CR", crMinimum, crMaximum),
+                crMinimum, crMaximum,
                 sizes.button(), types.button(), subtypes.button(), biomes.button(),
                 alignments.button(), encounterTables.button(), factions.button(),
-                field("Location", location), clear);
+                location, clear);
     }
 
     void render(MonsterCatalogState state, MonsterCatalogAuxiliaryOptions auxiliary) {
@@ -115,7 +99,7 @@ final class MonsterCatalogControls extends CatalogControlsScaffold {
     }
 
     private void renderLocations(List<CatalogReferenceOption> values, long selectedId) {
-        CatalogReferenceOption all = new CatalogReferenceOption(0L, "(Alle Locations)");
+        CatalogReferenceOption all = new CatalogReferenceOption(0L, "Alle");
         List<CatalogReferenceOption> choices = new ArrayList<>();
         choices.add(all);
         choices.addAll(values);
@@ -124,7 +108,7 @@ final class MonsterCatalogControls extends CatalogControlsScaffold {
                 .findFirst()
                 .orElseGet(() -> selectedId <= 0L
                         ? all
-                        : new CatalogReferenceOption(selectedId, "Location #" + selectedId));
+                        : new CatalogReferenceOption(selectedId, "Ort #" + selectedId));
         if (!choices.contains(selected)) {
             choices.add(selected);
         }
@@ -184,8 +168,8 @@ final class MonsterCatalogControls extends CatalogControlsScaffold {
                     () -> editFilters(() -> factions.deselectKey(factionId, CatalogReferenceOption::id))));
         }
         if (draft.worldLocationId() > 0L) {
-            String label = optionLabel(auxiliary.locations(), draft.worldLocationId(), "Location");
-            rendered.add(chip("Location: " + label, () -> editFilters(() -> location.getItems().stream()
+            String label = optionLabel(auxiliary.locations(), draft.worldLocationId(), "Ort");
+            rendered.add(chip("Ort: " + label, () -> editFilters(() -> location.getItems().stream()
                     .filter(option -> option.id() == 0L).findFirst().ifPresent(location::setValue))));
         }
         setChips(rendered);
@@ -229,83 +213,10 @@ final class MonsterCatalogControls extends CatalogControlsScaffold {
         return comboBox.getValue() == null ? "" : comboBox.getValue();
     }
 
-    private static final class MultiSelect<T> {
-        private final String label;
-        private final Function<T, String> labeler;
-        private final Button button;
-        private final ContextMenu menu = new ContextMenu();
-        private final VBox options = new VBox();
-        private final Runnable changed;
-
-        MultiSelect(String label, Function<T, String> labeler, Runnable changed) {
-            this.label = label;
-            this.labeler = labeler;
-            this.changed = Objects.requireNonNull(changed, "changed");
-            options.getStyleClass().add("catalog-filter-dropdown-options");
-            button = new Button(label + " ▾");
-            button.getStyleClass().addAll("compact", "filter-trigger");
-            ScrollPane scroll = new ScrollPane(options);
-            scroll.setFitToWidth(true);
-            VBox dropdown = new VBox(scroll);
-            dropdown.getStyleClass().add("filter-dropdown");
-            menu.getItems().setAll(new CustomMenuItem(dropdown, false));
-            button.setOnAction(ignored -> {
-                if (menu.isShowing()) {
-                    menu.hide();
-                } else {
-                    menu.show(button, Side.BOTTOM, 0.0, 2.0);
-                }
-            });
+    private static String locationLabel(CatalogReferenceOption value) {
+        if (value == null || value.id() <= 0L) {
+            return "Alle";
         }
-
-        Button button() {
-            return button;
-        }
-
-        void render(List<T> values, List<T> selected) {
-            render(values, selected, Function.identity());
-        }
-
-        <K> void render(List<T> values, List<K> selected, Function<T, K> key) {
-            options.getChildren().clear();
-            for (T value : values) {
-                CheckBox checkBox = new CheckBox(labeler.apply(value));
-                checkBox.setUserData(value);
-                checkBox.setSelected(selected.contains(key.apply(value)));
-                checkBox.setOnAction(ignored -> {
-                    updateButton();
-                    changed.run();
-                });
-                options.getChildren().add(checkBox);
-            }
-            updateButton();
-        }
-
-        List<T> selectedValues() {
-            return options.getChildren().stream().map(CheckBox.class::cast)
-                    .filter(CheckBox::isSelected).map(checkBox -> (T) checkBox.getUserData()).toList();
-        }
-
-        <K> List<K> selectedKeys(Function<T, K> key) {
-            return selectedValues().stream().map(key).toList();
-        }
-
-        void deselectValue(T value) {
-            deselectKey(value, Function.identity());
-        }
-
-        <K> void deselectKey(K value, Function<T, K> key) {
-            options.getChildren().stream().map(CheckBox.class::cast)
-                    .filter(checkBox -> Objects.equals(value, key.apply((T) checkBox.getUserData())))
-                    .findFirst().ifPresent(checkBox -> checkBox.setSelected(false));
-            updateButton();
-        }
-
-        private void updateButton() {
-            long selected = options.getChildren().stream().map(CheckBox.class::cast)
-                    .filter(CheckBox::isSelected).count();
-            button.setText(selected == 0L ? label + " ▾" : label + " (" + selected + ") ▾");
-        }
+        return "#" + value.id() + " | " + value.label();
     }
-
 }

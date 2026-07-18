@@ -17,36 +17,33 @@ import javafx.scene.layout.VBox;
 /** Shared compact control composition for every Catalog section. */
 public class CatalogControlsScaffold extends VBox {
 
-    private final Label purpose = new Label();
-    private final HBox search = new HBox();
+    private final HBox toolbar = new HBox();
     private final FlowPane filters = new FlowPane();
     private final FlowPane chips = new FlowPane();
-    private final FlowPane actions = new FlowPane();
     private final VBox feedback = new VBox();
+    private List<Node> searchControls = List.of();
+    private List<Node> actionControls = List.of();
 
-    public CatalogControlsScaffold(String purposeText) {
-        purpose.setText(Objects.requireNonNull(purposeText, "purposeText"));
-        purpose.getStyleClass().add("catalog-controls-section-title");
+    public CatalogControlsScaffold() {
         getStyleClass().add("catalog-controls-scaffold");
-        search.getStyleClass().add("catalog-controls-search-row");
+        toolbar.getStyleClass().add("catalog-controls-toolbar");
         filters.getStyleClass().add("catalog-controls-filter-row");
         chips.getStyleClass().add("catalog-controls-chip-row");
-        actions.getStyleClass().add("catalog-controls-action-row");
         feedback.getStyleClass().add("catalog-controls-feedback");
-        getChildren().setAll(purpose, search, filters, chips, actions, feedback);
-        hideWhenEmpty(search);
+        getChildren().setAll(toolbar, filters, chips, feedback);
+        hideWhenEmpty(toolbar);
         hideWhenEmpty(filters);
         hideWhenEmpty(chips);
-        hideWhenEmpty(actions);
         hideWhenEmpty(feedback);
     }
 
     public final void setSearch(Node primary, Node... trailing) {
         Node requiredPrimary = Objects.requireNonNull(primary, "primary");
-        search.getChildren().setAll(requiredPrimary);
-        search.getChildren().addAll(nonNullNodes(trailing));
-        HBox.setHgrow(requiredPrimary, Priority.ALWAYS);
-        show(search, true);
+        java.util.ArrayList<Node> next = new java.util.ArrayList<>();
+        next.add(requiredPrimary);
+        next.addAll(nonNullNodes(trailing));
+        searchControls = List.copyOf(next);
+        refreshToolbar();
     }
 
     public final void setFilters(Node... controls) {
@@ -54,7 +51,8 @@ public class CatalogControlsScaffold extends VBox {
     }
 
     public final void setActions(Node... controls) {
-        setRow(actions, Arrays.asList(controls));
+        actionControls = List.copyOf(nonNullNodes(controls));
+        refreshToolbar();
     }
 
     public final void setChips(List<? extends Node> controls) {
@@ -76,23 +74,6 @@ public class CatalogControlsScaffold extends VBox {
         feedback.managedProperty().bind(hasVisibleContent);
     }
 
-    public static Node field(String labelText, Node... controls) {
-        Label label = new Label(Objects.requireNonNull(labelText, "labelText"));
-        label.getStyleClass().add("catalog-control-field-label");
-        HBox field = new HBox();
-        field.getStyleClass().add("catalog-control-field");
-        field.getChildren().add(label);
-        field.getChildren().addAll(nonNullNodes(controls));
-        return field;
-    }
-
-    public static Node rangeField(String labelText, Node minimum, Node maximum) {
-        Label separator = new Label("–");
-        separator.getStyleClass().add("catalog-control-range-separator");
-        return field(labelText, Objects.requireNonNull(minimum, "minimum"), separator,
-                Objects.requireNonNull(maximum, "maximum"));
-    }
-
     public static Node chip(String labelText, Runnable removeAction) {
         String requiredLabel = Objects.requireNonNull(labelText, "labelText");
         Button remove = new Button("×");
@@ -108,6 +89,16 @@ public class CatalogControlsScaffold extends VBox {
     private static void setRow(Pane row, List<? extends Node> controls) {
         row.getChildren().setAll(nonNullNodes(controls.toArray(Node[]::new)));
         show(row, !row.getChildren().isEmpty());
+    }
+
+    private void refreshToolbar() {
+        java.util.ArrayList<Node> next = new java.util.ArrayList<>(searchControls);
+        next.addAll(actionControls);
+        toolbar.getChildren().setAll(next);
+        if (!searchControls.isEmpty()) {
+            HBox.setHgrow(searchControls.get(0), Priority.ALWAYS);
+        }
+        show(toolbar, !next.isEmpty());
     }
 
     private static List<Node> nonNullNodes(Node... nodes) {

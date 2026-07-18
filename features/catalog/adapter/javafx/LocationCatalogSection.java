@@ -16,7 +16,7 @@ import javafx.scene.control.TextField;
 public final class LocationCatalogSection implements CatalogSection {
 
     private final Consumer<WorldReferenceCatalogIntent> intents;
-    private final TextField query = queryField();
+    private final TextField query = CatalogControlKit.search("Orte suchen", "Orte suchen …");
     private final CatalogControlsScaffold controls;
     private final CatalogTableScaffold<LocationRow, Long> content;
     private boolean rendering;
@@ -29,10 +29,9 @@ public final class LocationCatalogSection implements CatalogSection {
                 this.intents.accept(new WorldReferenceCatalogIntent.ChangeLocationQuery(after));
             }
         });
-        Button create = new Button("Ort anlegen");
-        create.getStyleClass().add("accent");
+        Button create = CatalogControlKit.action("Ort anlegen", "Ort anlegen", true);
         create.setOnAction(ignored -> this.intents.accept(new WorldReferenceCatalogIntent.CreateLocation()));
-        controls = new CatalogControlsScaffold("FILTER");
+        controls = new CatalogControlsScaffold();
         controls.setSearch(query);
         controls.setActions(create);
         content = new CatalogTableScaffold<>(
@@ -84,10 +83,4 @@ public final class LocationCatalogSection implements CatalogSection {
         return id > 0L ? Optional.of(id) : Optional.empty();
     }
 
-    private static TextField queryField() {
-        TextField field = new TextField();
-        field.setAccessibleText("Orte suchen");
-        field.setPromptText("Orte suchen …");
-        return field;
-    }
 }

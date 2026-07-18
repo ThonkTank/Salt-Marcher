@@ -15,7 +15,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.util.StringConverter;
 
 /** Passive Items renderer backed only by immutable application state. */
 public final class ItemsCatalogSection implements CatalogSection {
@@ -23,17 +22,19 @@ public final class ItemsCatalogSection implements CatalogSection {
     private static final String ALL = "Alle";
 
     private final Consumer<ItemsCatalogIntent> intents;
-    private final TextField search = textField("Item-Name", "Name enthält …");
-    private final ComboBox<String> category = filterBox("Item-Kategorie");
-    private final ComboBox<String> subcategory = filterBox("Item-Unterkategorie");
-    private final ComboBox<String> rarity = filterBox("Item-Seltenheit");
-    private final ComboBox<BooleanChoice> magic = booleanBox("Item-Magie");
-    private final ComboBox<BooleanChoice> attunement = booleanBox("Item-Attunement");
-    private final TextField minimumCost = textField("Item-Minimalkosten", "Min. CP");
-    private final TextField maximumCost = textField("Item-Maximalkosten", "Max. CP");
-    private final ComboBox<ItemsCatalogApi.SortField> sort = sortBox();
-    private final ComboBox<SortDirection> direction = directionBox();
-    private final Button open = new Button("Details öffnen");
+    private final TextField search = CatalogControlKit.search("Item-Name", "Items suchen …");
+    private final ComboBox<String> category = filterBox("Kategorie", "Item-Kategorie");
+    private final ComboBox<String> subcategory = filterBox("Unterkategorie", "Item-Unterkategorie");
+    private final ComboBox<String> rarity = filterBox("Seltenheit", "Item-Seltenheit");
+    private final ComboBox<BooleanChoice> magic = booleanBox("Magisch", "Item-Magie");
+    private final ComboBox<BooleanChoice> attunement = booleanBox("Einstimmung", "Item-Einstimmung");
+    private final TextField minimumCost = CatalogControlKit.filterText(
+            "Item-Minimalkosten", "Kosten ab (CP)");
+    private final TextField maximumCost = CatalogControlKit.filterText(
+            "Item-Maximalkosten", "Kosten bis (CP)");
+    private final ComboBox<SortChoice> sorting = sortBox();
+    private final Button open = CatalogControlKit.action(
+            "Details öffnen", "Ausgewähltes Item im Inspector öffnen", false);
     private final Label status = new Label();
     private final CatalogControlsScaffold controls;
     private final CatalogTableScaffold<ItemsCatalogApi.ItemRow, String> content;
@@ -43,6 +44,8 @@ public final class ItemsCatalogSection implements CatalogSection {
 
     public ItemsCatalogSection(Consumer<ItemsCatalogIntent> intents) {
         this.intents = Objects.requireNonNull(intents, "intents");
+        minimumCost.getStyleClass().add("catalog-cost-control");
+        maximumCost.getStyleClass().add("catalog-cost-control");
         controls = configureFilters();
         content = new CatalogTableScaffold<>(
                 "Item-Ergebnisse",
@@ -67,7 +70,6 @@ public final class ItemsCatalogSection implements CatalogSection {
                 "Zurück", "Vorherige Item-Seite", "Weiter", "Nächste Item-Seite", "Item-Seite", " von ");
         status.setAccessibleText("Item-Aktionsstatus");
         status.getStyleClass().add("text-secondary");
-        open.setAccessibleText("Ausgewähltes Item im Inspector öffnen");
         open.disableProperty().bind(content.table().getSelectionModel().selectedItemProperty().isNull());
         open.setOnAction(ignored -> {
             if (state != null) {
@@ -76,7 +78,7 @@ public final class ItemsCatalogSection implements CatalogSection {
         });
         content.setHeaderControl(open);
         content.setHeaderControl(status);
-        content.setHeaderControl(CatalogControlsScaffold.field("Sortieren", sort, direction));
+        content.setHeaderControl(sorting);
         installDraftListeners();
     }
 
@@ -122,26 +124,17 @@ public final class ItemsCatalogSection implements CatalogSection {
     }
 
     private CatalogControlsScaffold configureFilters() {
-        Button find = new Button("Items suchen");
-        find.getStyleClass().add("accent");
-        find.setAccessibleText("Items suchen");
+        Button find = CatalogControlKit.action("Suchen", "Items suchen", true);
         find.setOnAction(ignored -> intents.accept(new ItemsCatalogIntent.Search()));
         search.setOnAction(ignored -> intents.accept(new ItemsCatalogIntent.Search()));
         minimumCost.setOnAction(ignored -> intents.accept(new ItemsCatalogIntent.Search()));
         maximumCost.setOnAction(ignored -> intents.accept(new ItemsCatalogIntent.Search()));
-        Button clear = new Button("Leeren");
-        clear.getStyleClass().addAll("compact", "flat");
-        clear.setAccessibleText("Item-Suche und Filter leeren");
+        Button clear = CatalogControlKit.clear("Item-Suche und Filter leeren");
         clear.setOnAction(ignored -> intents.accept(new ItemsCatalogIntent.ClearFilters()));
-        CatalogControlsScaffold scaffold = new CatalogControlsScaffold("FILTER");
+        CatalogControlsScaffold scaffold = new CatalogControlsScaffold();
         scaffold.setSearch(search, find);
         scaffold.setFilters(
-                CatalogControlsScaffold.field("Kategorie", category),
-                CatalogControlsScaffold.field("Unterkategorie", subcategory),
-                CatalogControlsScaffold.field("Seltenheit", rarity),
-                CatalogControlsScaffold.field("Magisch", magic),
-                CatalogControlsScaffold.field("Attunement", attunement),
-                CatalogControlsScaffold.rangeField("Kosten", minimumCost, maximumCost),
+                category, subcategory, rarity, magic, attunement, minimumCost, maximumCost,
                 clear);
         return scaffold;
     }
@@ -155,18 +148,18 @@ public final class ItemsCatalogSection implements CatalogSection {
         rarity.valueProperty().addListener((ignored, before, after) -> publishDraft());
         magic.valueProperty().addListener((ignored, before, after) -> publishDraft());
         attunement.valueProperty().addListener((ignored, before, after) -> publishDraft());
-        sort.valueProperty().addListener((ignored, before, after) -> publishDraft());
-        direction.valueProperty().addListener((ignored, before, after) -> publishDraft());
+        sorting.valueProperty().addListener((ignored, before, after) -> publishDraft());
     }
 
     private void publishDraft() {
         if (rendering) {
             return;
         }
+        SortChoice selectedSort = sorting.getValue() == null ? SortChoice.defaultChoice() : sorting.getValue();
         intents.accept(new ItemsCatalogIntent.ChangeDraft(new ItemsCatalogFilterDraft(
                 search.getText(), selectedFilter(category), selectedFilter(subcategory), selectedFilter(rarity),
                 booleanValue(magic), booleanValue(attunement), minimumCost.getText(), maximumCost.getText(),
-                sort.getValue(), direction.getValue() != SortDirection.DESCENDING)));
+                selectedSort.field(), selectedSort.ascending())));
     }
 
     private void applyDraft(ItemsCatalogFilterDraft draft) {
@@ -178,8 +171,7 @@ public final class ItemsCatalogSection implements CatalogSection {
         attunement.setValue(BooleanChoice.from(draft.attunement()));
         minimumCost.setText(draft.minimumCostCp());
         maximumCost.setText(draft.maximumCostCp());
-        sort.setValue(draft.sortField());
-        direction.setValue(draft.ascending() ? SortDirection.ASCENDING : SortDirection.DESCENDING);
+        sorting.setValue(SortChoice.forDraft(draft.sortField(), draft.ascending()));
     }
 
     private void renderChips(ItemsCatalogFilterDraft draft) {
@@ -194,7 +186,7 @@ public final class ItemsCatalogSection implements CatalogSection {
                 () -> editDraft(() -> rarity.setValue(ALL)));
         addChip(rendered, "Magisch: " + yesNo(Boolean.TRUE.equals(draft.magic())), draft.magic() != null,
                 () -> editDraft(() -> magic.setValue(BooleanChoice.ALL)));
-        addChip(rendered, "Attunement: " + yesNo(Boolean.TRUE.equals(draft.attunement())),
+        addChip(rendered, "Einstimmung: " + yesNo(Boolean.TRUE.equals(draft.attunement())),
                 draft.attunement() != null, () -> editDraft(() -> attunement.setValue(BooleanChoice.ALL)));
         addChip(rendered, costLabel(draft),
                 !draft.minimumCostCp().isBlank() || !draft.maximumCostCp().isBlank(),
@@ -227,56 +219,26 @@ public final class ItemsCatalogSection implements CatalogSection {
         return "Kosten: " + minimum + "–" + maximum + " CP";
     }
 
-    private static TextField textField(String accessibleText, String promptText) {
-        TextField field = new TextField();
-        field.setAccessibleText(accessibleText);
-        field.setPromptText(promptText);
-        return field;
-    }
-
-    private static ComboBox<String> filterBox(String accessibleText) {
-        ComboBox<String> box = new ComboBox<>();
-        box.setAccessibleText(accessibleText);
+    private static ComboBox<String> filterBox(String insideLabel, String accessibleText) {
+        ComboBox<String> box = CatalogControlKit.select(insideLabel, accessibleText, value -> value);
         box.getItems().setAll(ALL);
         box.setValue(ALL);
         return box;
     }
 
-    private static ComboBox<BooleanChoice> booleanBox(String accessibleText) {
-        ComboBox<BooleanChoice> box = new ComboBox<>();
-        box.setAccessibleText(accessibleText);
+    private static ComboBox<BooleanChoice> booleanBox(String insideLabel, String accessibleText) {
+        ComboBox<BooleanChoice> box = CatalogControlKit.select(
+                insideLabel, accessibleText, choice -> choice.label);
         box.getItems().setAll(BooleanChoice.values());
         box.setValue(BooleanChoice.ALL);
         return box;
     }
 
-    private static ComboBox<ItemsCatalogApi.SortField> sortBox() {
-        ComboBox<ItemsCatalogApi.SortField> box = new ComboBox<>();
-        box.setAccessibleText("Item-Sortierfeld");
-        box.getItems().setAll(ItemsCatalogApi.SortField.values());
-        box.setConverter(new StringConverter<>() {
-            @Override public String toString(ItemsCatalogApi.SortField value) {
-                return value == null ? "" : switch (value) {
-                    case NAME -> "Name";
-                    case CATEGORY -> "Kategorie";
-                    case RARITY -> "Seltenheit";
-                    case COST -> "Kosten";
-                };
-            }
-
-            @Override public ItemsCatalogApi.SortField fromString(String value) {
-                throw new UnsupportedOperationException("Item sort fields are selected, not parsed.");
-            }
-        });
-        box.setValue(ItemsCatalogApi.SortField.NAME);
-        return box;
-    }
-
-    private static ComboBox<SortDirection> directionBox() {
-        ComboBox<SortDirection> box = new ComboBox<>();
-        box.setAccessibleText("Item-Sortierrichtung");
-        box.getItems().setAll(SortDirection.values());
-        box.setValue(SortDirection.ASCENDING);
+    private static ComboBox<SortChoice> sortBox() {
+        ComboBox<SortChoice> box = CatalogControlKit.select(
+                "Sortierung", "Items sortieren", SortChoice::label);
+        box.getItems().setAll(SortChoice.values());
+        box.setValue(SortChoice.defaultChoice());
         return box;
     }
 
@@ -339,17 +301,33 @@ public final class ItemsCatalogSection implements CatalogSection {
         }
     }
 
-    private enum SortDirection {
-        ASCENDING("Aufsteigend"), DESCENDING("Absteigend");
+    private record SortChoice(ItemsCatalogApi.SortField field, boolean ascending, String label) {
+        private static final List<SortChoice> VALUES = List.of(
+                choice(ItemsCatalogApi.SortField.NAME, true, "Name (A–Z)"),
+                choice(ItemsCatalogApi.SortField.NAME, false, "Name (Z–A)"),
+                choice(ItemsCatalogApi.SortField.CATEGORY, true, "Kategorie (A–Z)"),
+                choice(ItemsCatalogApi.SortField.CATEGORY, false, "Kategorie (Z–A)"),
+                choice(ItemsCatalogApi.SortField.RARITY, true, "Seltenheit (aufsteigend)"),
+                choice(ItemsCatalogApi.SortField.RARITY, false, "Seltenheit (absteigend)"),
+                choice(ItemsCatalogApi.SortField.COST, true, "Kosten (aufsteigend)"),
+                choice(ItemsCatalogApi.SortField.COST, false, "Kosten (absteigend)"));
 
-        private final String label;
-
-        SortDirection(String label) {
-            this.label = label;
+        private static List<SortChoice> values() {
+            return VALUES;
         }
 
-        @Override public String toString() {
-            return label;
+        private static SortChoice defaultChoice() {
+            return values().get(0);
+        }
+
+        private static SortChoice forDraft(ItemsCatalogApi.SortField field, boolean ascending) {
+            return values().stream()
+                    .filter(choice -> choice.field == field && choice.ascending == ascending)
+                    .findFirst().orElseGet(SortChoice::defaultChoice);
+        }
+
+        private static SortChoice choice(ItemsCatalogApi.SortField field, boolean ascending, String label) {
+            return new SortChoice(field, ascending, label);
         }
     }
 }

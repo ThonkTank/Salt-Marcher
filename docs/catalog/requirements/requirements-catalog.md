@@ -29,11 +29,18 @@ workspace serves both game preparation and running-session lookup.
 - One persistent section selector MUST remain at the top of the Catalog
   controls area. The selected section's controls MUST always appear below it,
   and its results MUST appear in the main area.
-- Every section MUST use the same compact control hierarchy: a full-width
-  primary search row when search is available, wrapping filters, removable
-  active-filter chips, compact actions, and one feedback area when those
-  capabilities exist. Sections without filters MUST retain the same hierarchy
-  without rendering empty placeholder controls.
+- Every section MUST use the same compact control hierarchy: one toolbar for
+  search and section actions, wrapping filters, removable active-filter chips,
+  and one feedback area when those capabilities exist. Empty regions MUST not
+  render placeholders or consume space.
+- Section tabs, search, filters, sort controls, paging, and actions MUST use one
+  28-pixel control height and one 12-pixel regular-weight control type style.
+  Color and state, rather than a different size or font weight, communicate
+  action hierarchy. Removable filter chips use their own compact 22-pixel and
+  11-pixel information style.
+- Search and filter meaning MUST appear inside the interactive element through
+  its prompt or displayed value. Catalog controls MUST not place field labels
+  beside controls or render redundant `FILTER` and `AKTIONEN` headings.
 - The controls area MUST remain bounded to the compact Monster-panel height so
   switching sections does not consume the result workspace. Overflowing
   controls scroll vertically without hiding the persistent section selector or
@@ -80,8 +87,11 @@ Encounter or Scene workspaces, or expose a second World Planner workspace.
 - At 1150×700 and 900×650, every section retains the persistent selector,
   the shared compact control hierarchy, and a visible result workspace; filter
   controls wrap without horizontal scrolling.
-- Equivalent search, filter, clear, sort, action, chip, and feedback controls
-  have the same visual treatment and placement across sections.
+- Equivalent section, search, filter, clear, sort, paging, and action controls
+  render at 28 pixels high with the same 12-pixel regular-weight type style.
+  Filter chips render at 22 pixels high with the same 11-pixel type style.
+- Every search and filter remains identifiable from text inside the element;
+  no field-side label or redundant control-group heading is visible.
 - Switching through every section and returning preserves each section's
   current query, filter draft, selected record, page, and unfinished input.
 - Refreshing provider results preserves a still-present selected record by its
