@@ -82,6 +82,9 @@ final class DungeonEditorMapCatalogScenarios {
                 .findFirst()
                 .orElseThrow();
         assertTrue(selected.mapId().value() > 0L, "DE-MAP-001 selected Gamma map has a stable id");
+        assertEquals(1L, selected.revision(), "DE-MAP-001 created catalog header starts at revision one");
+        assertEquals(1L, runtime.database().mapRevision(selected.mapId().value()),
+                "DE-MAP-001 metadata-only create persists revision one");
         assertEquals(selected.mapId(), controlsSnapshot.selectedMapId(), "DE-MAP-001 controls snapshot selects Gamma");
         assertPreparedSelectedMapAligned(
                 runtime,
@@ -125,12 +128,16 @@ final class DungeonEditorMapCatalogScenarios {
                 "DE-MAP-002 old selected dungeon_maps name is gone");
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(alphaMapId),
                 "DE-MAP-002 leaves authored geometry rows unchanged");
+        assertEquals(2L, runtime.database().mapRevision(alphaMapId),
+                "DE-MAP-002 metadata-only rename advances the map revision once");
         DungeonEditorControlsSnapshot controlsSnapshot = runtime.controlsModel().current();
         assertEquals(alphaMapId, controlsSnapshot.selectedMapId().value(),
                 "DE-MAP-002 selection remains on the renamed map id");
         assertTrue(
                 controlsSnapshot.maps().stream().anyMatch(map ->
-                        map.mapId().value() == alphaMapId && "Alpha Prime".equals(map.mapName())),
+                        map.mapId().value() == alphaMapId
+                                && "Alpha Prime".equals(map.mapName())
+                                && map.revision() == 2L),
                 "DE-MAP-002 published catalog contains renamed map");
         assertPreparedCatalogEntries(
                 controls,

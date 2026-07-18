@@ -440,8 +440,10 @@ public final class DungeonTravelProjectionLevelTest {
             database.clearPartyData();
             PartyServiceAssembly.Component party =
                     PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+            SqliteDungeonMapRepository dungeonStores = new SqliteDungeonMapRepository();
             DungeonTestAssembly.Component dungeon = DungeonTestAssembly.create(
-                    new SqliteDungeonMapRepository(),
+                    dungeonStores,
+                    dungeonStores,
                     party.activeParty(),
                     party.travelPositions(),
                     party.application(),

@@ -219,8 +219,9 @@ public final class SessionPlannerShellLayoutTest {
                 encounter.planBudget(), null);
         HexServiceAssembly hex = new HexServiceAssembly(
                 new SqliteHexMapRepository(), party.travelPositions(), party.application());
+        SqliteDungeonMapRepository dungeonStores = new SqliteDungeonMapRepository();
         DungeonTestAssembly.Component dungeon = DungeonTestAssembly.create(
-                new SqliteDungeonMapRepository(), party.activeParty(), party.travelPositions(),
+                dungeonStores, dungeonStores, party.activeParty(), party.travelPositions(),
                 party.application(), party.mutation());
         return new LayoutServices(party, creatures, tables, encounter, session, hex, dungeon);
     }

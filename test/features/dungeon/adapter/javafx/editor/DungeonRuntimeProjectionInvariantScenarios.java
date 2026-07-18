@@ -37,6 +37,8 @@ import features.dungeon.application.travel.projection.TravelSurfaceProjection;
 import features.dungeon.application.travel.projection.TravelTransitionTarget;
 import features.dungeon.application.travel.session.TravelDungeonSessionSurface.LocationKind;
 import features.dungeon.application.authored.port.DungeonMapRepository;
+import features.dungeon.application.authored.port.DungeonCatalogStore;
+import features.dungeon.application.authored.port.DungeonMapHeader;
 import features.dungeon.domain.core.structure.DungeonMapMetadata;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
@@ -226,7 +228,7 @@ final class DungeonRuntimeProjectionInvariantScenarios {
             TravelActionFacts unlinkedTransition,
             SelectedAction selectedAction
     ) {
-        DungeonMapRepository repository = repositoryOf(
+        DungeonTestStore repository = repositoryOf(
                 unlinkedMap,
                 DungeonMapAuthoring.empty(new DungeonMapIdentity(99L), "Unused Target"));
         TravelPositionFacts transitionPosition = java.util.Objects.requireNonNull(
@@ -437,7 +439,7 @@ final class DungeonRuntimeProjectionInvariantScenarios {
                 List.of(new Cell(9, 9, 0)),
                 0L,
                 null);
-        DungeonMapRepository repository = repositoryOf(firstMap, selectedMap);
+        DungeonTestStore repository = repositoryOf(firstMap, selectedMap);
         TravelRuntimeFixture services = travelServices(repository);
         DungeonTravelRuntimeApplicationService travel = services.dungeon().travel();
 
@@ -528,16 +530,14 @@ final class DungeonRuntimeProjectionInvariantScenarios {
         return map.withExactTransitionChange(null, transition);
     }
 
-    private static DungeonMapRepository repositoryOf(DungeonMap firstMap, DungeonMap secondMap) {
+    private interface DungeonTestStore extends DungeonCatalogStore, DungeonMapRepository {
+    }
+
+    private static DungeonTestStore repositoryOf(DungeonMap firstMap, DungeonMap secondMap) {
         Map<Long, DungeonMap> mapsById = Map.of(
                 firstMap.metadata().mapId().value(), firstMap,
                 secondMap.metadata().mapId().value(), secondMap);
-        return new DungeonMapRepository() {
-            @Override
-            public DungeonMapIdentity nextMapId() {
-                throw new UnsupportedOperationException();
-            }
-
+        return new DungeonTestStore() {
             @Override
             public long nextStairId() {
                 throw new UnsupportedOperationException();
@@ -554,8 +554,18 @@ final class DungeonRuntimeProjectionInvariantScenarios {
             }
 
             @Override
-            public List<DungeonMap> searchByName(String query) {
+            public List<DungeonMapHeader> search(String query) {
                 return List.of();
+            }
+
+            @Override
+            public DungeonMapHeader create(String mapName) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public DungeonMapHeader rename(DungeonMapIdentity mapId, String mapName) {
+                throw new UnsupportedOperationException();
             }
 
             @Override
@@ -654,10 +664,11 @@ final class DungeonRuntimeProjectionInvariantScenarios {
                 .orElse(DungeonMapAuthoring.empty(new DungeonMapIdentity(1L), "Dungeon Map"));
     }
 
-    private static TravelRuntimeFixture travelServices(DungeonMapRepository repository) {
+    private static TravelRuntimeFixture travelServices(DungeonTestStore repository) {
         PartyServiceAssembly.Component party =
                 PartyServiceAssembly.create(new InMemoryPartyRosterRepository());
         DungeonTestAssembly.Component dungeon = DungeonTestAssembly.create(
+                repository,
                 repository,
                 party.activeParty(),
                 party.travelPositions(),

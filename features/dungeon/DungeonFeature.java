@@ -16,6 +16,7 @@ import features.dungeon.api.editor.DungeonEditorApi;
 import features.dungeon.api.travel.DungeonTravelApi;
 import features.dungeon.application.authored.DungeonAuthoredApplicationService;
 import features.dungeon.application.authored.DungeonAuthoredPublishedState;
+import features.dungeon.application.authored.port.DungeonCatalogStore;
 import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.editor.DungeonEditorPublishedState;
 import features.dungeon.application.editor.DungeonEditorApiFacade;
@@ -55,8 +56,11 @@ public final class DungeonFeature {
         PartyApi safeParty = Objects.requireNonNull(party, "party");
         ExecutionLane lane = Objects.requireNonNull(executionLane, "executionLane");
         UiDispatcher dispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
+        SqliteDungeonMapRepository stores =
+                new SqliteDungeonMapRepository(Objects.requireNonNull(database, "database"));
         Runtime runtime = createRuntime(
-                new SqliteDungeonMapRepository(Objects.requireNonNull(database, "database")),
+                stores,
+                stores,
                 safeParty.activeParty(),
                 safeParty.travelPositions(),
                 safeParty,
@@ -82,6 +86,7 @@ public final class DungeonFeature {
     }
 
     static Runtime createRuntime(
+            DungeonCatalogStore catalogStore,
             DungeonMapRepository repository,
             ActivePartyModel activeParty,
             PartyTravelPositionsModel partyTravelPositions,
@@ -98,7 +103,10 @@ public final class DungeonFeature {
         DungeonAuthoredPublishedState authoredPublishedState = new DungeonAuthoredPublishedState(dispatcher);
         CorridorRoutingPolicy corridorRoutingPolicy = new OrthogonalCorridorRoutingPolicy();
         DungeonAuthoredApplicationService authoredMaps = new DungeonAuthoredApplicationService(
-                Objects.requireNonNull(repository, "repository"), authoredPublishedState, corridorRoutingPolicy);
+                Objects.requireNonNull(catalogStore, "catalogStore"),
+                Objects.requireNonNull(repository, "repository"),
+                authoredPublishedState,
+                corridorRoutingPolicy);
         DungeonEditorRuntimeApplicationService editor =
                 new DungeonEditorRuntimeApplicationService(authoredMaps, editorPublishedState);
         DungeonTravelPartyGateway partyGateway = new DungeonTravelPartyGateway(

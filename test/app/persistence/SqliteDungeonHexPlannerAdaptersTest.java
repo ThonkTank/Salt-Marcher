@@ -35,7 +35,7 @@ final class SqliteDungeonHexPlannerAdaptersTest {
                     "session-planner", 2,
                     "world-planner", 2);
 
-            assertTrue(dungeons.searchByName("").isEmpty());
+            assertTrue(dungeons.search("").isEmpty());
             assertTrue(hexMaps.listMaps().isEmpty());
             assertTrue(sessions.listSessions().isEmpty());
             assertTrue(world.load().npcs().isEmpty());

@@ -3,9 +3,12 @@ package features.dungeon.adapter.sqlite.repository;
 import platform.persistence.SqliteDatabase;
 import features.dungeon.adapter.sqlite.gateway.DungeonSqliteGateway;
 import features.dungeon.adapter.sqlite.mapper.DungeonMapRecordMapper;
+import features.dungeon.adapter.sqlite.model.DungeonMapRecord;
 import features.dungeon.domain.core.structure.DungeonMap;
+import features.dungeon.application.authored.port.DungeonCatalogStore;
 import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.authored.port.DungeonChangeSet;
+import features.dungeon.application.authored.port.DungeonMapHeader;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 
 import java.util.List;
@@ -15,7 +18,7 @@ import java.util.Set;
 import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.api.DungeonViewportRequest;
 
-public final class SqliteDungeonMapRepository implements DungeonMapRepository {
+public final class SqliteDungeonMapRepository implements DungeonCatalogStore, DungeonMapRepository {
 
     private final DungeonSqliteGateway gateway;
 
@@ -29,11 +32,6 @@ public final class SqliteDungeonMapRepository implements DungeonMapRepository {
 
     SqliteDungeonMapRepository(DungeonSqliteGateway gateway) {
         this.gateway = Objects.requireNonNull(gateway, "gateway");
-    }
-
-    @Override
-    public DungeonMapIdentity nextMapId() {
-        return new DungeonMapIdentity(gateway.nextMapId());
     }
 
     @Override
@@ -55,10 +53,22 @@ public final class SqliteDungeonMapRepository implements DungeonMapRepository {
     }
 
     @Override
-    public List<DungeonMap> searchByName(String query) {
-        return gateway.searchMaps(query).stream()
-                .map(DungeonMapRecordMapper::toDomain)
+    public List<DungeonMapHeader> search(String query) {
+        return gateway.searchMapHeaders(query).stream()
+                .map(SqliteDungeonMapRepository::toHeader)
                 .toList();
+    }
+
+    @Override
+    public DungeonMapHeader create(String mapName) {
+        return toHeader(gateway.createMapHeader(mapName));
+    }
+
+    @Override
+    public DungeonMapHeader rename(DungeonMapIdentity mapId, String mapName) {
+        return toHeader(gateway.renameMapHeader(
+                Objects.requireNonNull(mapId, "mapId").value(),
+                mapName));
     }
 
     @Override
@@ -102,5 +112,12 @@ public final class SqliteDungeonMapRepository implements DungeonMapRepository {
     @Override
     public Set<DungeonChunkKey> findAvailableChunks(DungeonViewportRequest request) {
         return gateway.findAvailableChunks(request);
+    }
+
+    private static DungeonMapHeader toHeader(DungeonMapRecord record) {
+        return new DungeonMapHeader(
+                new DungeonMapIdentity(record.mapId()),
+                record.name(),
+                record.revision());
     }
 }
