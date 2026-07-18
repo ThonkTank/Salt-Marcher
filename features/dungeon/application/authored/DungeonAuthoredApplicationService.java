@@ -24,11 +24,14 @@ import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.authored.port.DungeonChangeSet;
 import features.dungeon.application.authored.command.DungeonCommandResult;
 import features.dungeon.application.authored.command.CreateFeatureMarkerCommand;
+import features.dungeon.application.authored.command.CreateStairCommand;
 import features.dungeon.application.authored.command.DeleteFeatureMarkerCommand;
+import features.dungeon.application.authored.command.DeleteStairCommand;
 import features.dungeon.application.authored.command.FeatureMarkerSemanticsCommand;
 import features.dungeon.application.authored.command.RoomClusterNameCommand;
 import features.dungeon.application.authored.command.RoomNameCommand;
 import features.dungeon.application.authored.command.RoomNarrationCommand;
+import features.dungeon.application.authored.command.UpdateStairGeometryCommand;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
@@ -117,6 +120,10 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
     private final RoomNarrationCommand roomNarrationCommand = new RoomNarrationCommand();
     private final RoomNameCommand roomNameCommand = new RoomNameCommand();
     private final RoomClusterNameCommand roomClusterNameCommand = new RoomClusterNameCommand();
+    private final CreateStairCommand createStairCommand = new CreateStairCommand();
+    private final DeleteStairCommand deleteStairCommand = new DeleteStairCommand();
+    private final UpdateStairGeometryCommand updateStairGeometryCommand =
+            new UpdateStairGeometryCommand();
     private final PublicationOperations publicationOperations = new PublicationOperations();
     private final PreviewOperations previewOperations = new PreviewOperations();
     private final DetailSaveOperations detailSaveOperations = new DetailSaveOperations();
@@ -833,10 +840,9 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             Objects.requireNonNull(mapId, "mapId");
             Objects.requireNonNull(spec, "spec");
             long stairId = repository.nextStairId();
-            OperationResultData result = mutationPipeline.executeOperation(
+            OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
-                    current -> current.createStair(stairId, spec),
-                    DungeonEditorCommandOutcome.RejectionReason.INVALID_STAIR_GEOMETRY);
+                    current -> createStairCommand.plan(current, stairId, spec));
             publicationOperations.publishMutation(result, session.dungeonState());
         }
 
@@ -848,17 +854,11 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             if (mapId == null || stairId <= 0L) {
                 return false;
             }
-            DungeonMapIdentity mapIdentity = domainMapId(mapId);
-            if (!loadMap(mapIdentity).canDeleteStair(stairId)) {
-                return false;
-            }
-            OperationResultData result =
-                    mutationPipeline.executeOperation(
-                            mapIdentity,
-                            current -> current.deleteStair(stairId),
-                            DungeonEditorCommandOutcome.RejectionReason.REFERENCED_CONNECTION);
+            OperationResultData result = mutationPipeline.executePatchCommand(
+                    domainMapId(mapId),
+                    current -> deleteStairCommand.plan(current, stairId));
             publicationOperations.publishMutation(result, session.dungeonState());
-            return true;
+            return result.changed();
         }
 
         private void createTransition(
@@ -1441,10 +1441,9 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             if (mapId == null || stairId <= 0L || spec == null) {
                 return;
             }
-            OperationResultData result = mutationPipeline.executeOperation(
+            OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
-                    current -> current.saveStairGeometry(stairId, spec),
-                    DungeonEditorCommandOutcome.RejectionReason.INVALID_STAIR_GEOMETRY);
+                    current -> updateStairGeometryCommand.plan(current, stairId, spec));
             publicationOperations.publishMutation(result, state);
         }
 
@@ -1646,7 +1645,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             }
             return mutationPipeline.previewOperation(
                     domainMapId,
-                    current -> current.createStair(PREVIEW_STAIR_ID, spec));
+                    current -> current.previewStair(PREVIEW_STAIR_ID, spec));
         }
     }
 

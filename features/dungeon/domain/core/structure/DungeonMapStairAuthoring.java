@@ -10,12 +10,12 @@ final class DungeonMapStairAuthoring {
         return stairAuthoring.moveAnchor(dungeonMap, stairId, handleIndex, deltaQ, deltaR, deltaLevel);
     }
 
-    DungeonMap createStair(
+    DungeonMap previewStair(
             DungeonMap dungeonMap,
             long stairId,
             StairGeometrySpec spec
     ) {
-        var nextStairs = stairAuthoring.withAuthoredStair(dungeonMap, stairId, spec);
+        var nextStairs = stairAuthoring.withPreviewAuthoredStair(dungeonMap, stairId, spec);
         return nextStairs.equals(dungeonMap.stairs()) ? dungeonMap : dungeonMap.withStairs(nextStairs);
     }
 
@@ -37,15 +37,4 @@ final class DungeonMapStairAuthoring {
                 spec);
     }
 
-    DungeonMap saveStairGeometry(
-            DungeonMap dungeonMap,
-            long stairId,
-            StairGeometrySpec spec
-    ) {
-        var nextStairs = stairAuthoring.withSavedStairGeometry(
-                dungeonMap,
-                stairId,
-                spec);
-        return nextStairs.equals(dungeonMap.stairs()) ? dungeonMap : dungeonMap.withStairs(nextStairs);
-    }
 }

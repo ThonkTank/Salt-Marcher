@@ -40,12 +40,6 @@ final class DungeonStairInvariantScenarios {
 
         assertFalse(map.stairs().canDeleteUnboundStair(STAIR_ID),
                 "stair binding owner rejects direct delete eligibility for corridor-bound stair");
-        assertEquals(map.stairs(), map.stairs().withoutUnboundStair(STAIR_ID),
-                "stair binding owner keeps corridor-bound stair on direct delete request");
-        assertFalse(map.canDeleteStair(STAIR_ID),
-                "DungeonMap aggregate rejects direct corridor-bound stair delete");
-        assertEquals(map, map.deleteStair(STAIR_ID),
-                "DungeonMap direct delete leaves corridor-bound stair map unchanged");
 
         DungeonMap corridorDeleted = CORRIDOR_AUTHORING.deleteCorridor(
                 map,

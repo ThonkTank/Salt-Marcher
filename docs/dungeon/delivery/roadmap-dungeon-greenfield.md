@@ -97,24 +97,28 @@ and commit boundaries. M7 starts only after both are complete.
 
 ## Current Migration State
 
-- Current foundation: M0 through M2, M3.1, and M3.2 are complete on `main`
-  through PR #501. Feature-marker create, semantic update, and delete use exact
-  patches and one shared patch executor; their former direct mutation routes
-  are deleted.
-- This slice: M3.3 moves room name, room narration, and room-cluster name to
-  exact stable-entity patches and the shared executor. Direct aggregate save
-  routes for those semantics are deleted.
+- Current foundation: M0 through M2 and M3.1 through M3.3 are complete on
+  `main` through PR #502. Feature-marker and room or cluster semantic commands
+  use exact patches and one shared patch executor; their former direct mutation
+  routes are deleted.
+- This slice: M3.4 moves editor-authored stair create, full geometry recompute,
+  and delete to exact stable-entity patches and the shared executor. The
+  history-free preview mutation is named explicitly; replaced commit mutation
+  routes are deleted.
 - Patch result facts now identify a stable authored entity and carry its
   topology ref only where that entity owns one. This preserves independent
   cluster identity without fabricating a room topology ref.
-- Deterministic proof covers exact room and cluster identity, chunk membership,
-  forward and inverse application, monotonic revision, encoded byte weight,
-  missing-target and no-effect rejection, and the Dungeon Editor production
-  route.
+- Deterministic proof covers exact stair identity and topology ref, generated
+  geometry, chunk membership, forward and inverse application, monotonic
+  revision, encoded byte weight, and typed rejection of invalid geometry, room
+  collisions, id collisions, no-effect updates, and corridor-bound deletion.
+- Direct stair-handle movement and corridor-owned stair segments remain owned
+  by later geometry and corridor patch slices; M3.4 does not create a second
+  route for either behavior.
 - `DungeonChangeSet` persistence and full-map session history remain temporary
   M3/M4 boundaries; no second persistence contract is introduced in this slice.
-- Next step after this slice merges: M3.4 moves the stair create, geometry
-  update, and delete command family to exact patches.
+- Next step after this slice merges: M3.5 introduces exact transition changes,
+  compound cross-map patches, and atomic transition-link history.
 
 ## M0: Target Lock And Baseline
 
