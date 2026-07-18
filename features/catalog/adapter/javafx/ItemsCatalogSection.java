@@ -1,8 +1,12 @@
 package features.catalog.adapter.javafx;
 
+import features.catalog.application.CatalogApplicationRoutes.ItemInspectorRoute;
+import features.catalog.application.CatalogRequestToken;
+import features.catalog.application.CatalogSectionId;
+import features.catalog.application.CatalogWorkspaceController;
 import features.items.api.ItemsCatalogApi;
 import java.util.List;
-import javafx.application.Platform;
+import java.util.Objects;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -18,8 +22,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
-import shell.api.InspectorEntrySpec;
-import shell.api.InspectorSink;
 
 /** Persistent Items query controls and result surface. */
 final class ItemsCatalogSection implements CatalogSection {
@@ -28,7 +30,8 @@ final class ItemsCatalogSection implements CatalogSection {
     private static final String ALL = "Alle";
 
     private final ItemsCatalogApi items;
-    private final InspectorSink inspector;
+    private final ItemInspectorRoute itemInspector;
+    private final CatalogWorkspaceController controller;
     private final TextField search = textField("Item-Name", "Name enthält …");
     private final ComboBox<String> category = filterBox("Item-Kategorie");
     private final ComboBox<String> subcategory = filterBox("Item-Unterkategorie");
@@ -49,13 +52,16 @@ final class ItemsCatalogSection implements CatalogSection {
     private final BorderPane content = new BorderPane();
     private int pageOffset;
     private int totalCount;
-    private long requestRevision;
-    private long detailRequestRevision;
     private boolean activated;
 
-    ItemsCatalogSection(ItemsCatalogApi items, InspectorSink inspector) {
-        this.items = items;
-        this.inspector = inspector;
+    ItemsCatalogSection(
+            ItemsCatalogApi items,
+            ItemInspectorRoute itemInspector,
+            CatalogWorkspaceController controller
+    ) {
+        this.items = Objects.requireNonNull(items, "items");
+        this.itemInspector = Objects.requireNonNull(itemInspector, "itemInspector");
+        this.controller = Objects.requireNonNull(controller, "controller");
         controls = configureFilters();
         configureRows();
         configurePaging();
@@ -83,6 +89,11 @@ final class ItemsCatalogSection implements CatalogSection {
         }
         activated = true;
         refresh();
+    }
+
+    @Override
+    public void deactivate() {
+        activated = false;
     }
 
     void refresh() {
@@ -158,7 +169,9 @@ final class ItemsCatalogSection implements CatalogSection {
     }
 
     private void loadFilterOptions() {
-        items.loadFilterOptions().whenComplete((options, failure) -> runOnFx(() -> {
+        CatalogRequestToken request = controller.beginItemsFilterOptions();
+        items.loadFilterOptions().whenComplete((options, failure) -> controller.complete(request, () -> {
+            controller.itemsFilterOptionsCompleted(options, failure);
             if (failure != null || options == null
                     || options.status() != ItemsCatalogApi.CatalogStatus.SUCCESS) {
                 return;
@@ -189,20 +202,25 @@ final class ItemsCatalogSection implements CatalogSection {
     }
 
     private void searchPage() {
-        long revision = ++requestRevision;
+        CatalogRequestToken request = controller.beginItemsSearch();
         ItemsCatalogApi.ItemQuery query;
         try {
             query = query();
         } catch (NumberFormatException exception) {
+            controller.itemsInvalidQuery();
             applyFailureState("Ungültige Item-Suche.");
             return;
         }
+        controller.itemsSearchStarted(query);
         status.setText("Items werden geladen …");
         page.setText("Seite …");
         rows.getItems().clear();
         previous.setDisable(true);
         next.setDisable(true);
-        items.search(query).whenComplete((result, failure) -> runOnFx(() -> applyPage(revision, result, failure)));
+        items.search(query).whenComplete((result, failure) -> controller.complete(request, () -> {
+            controller.itemsPageCompleted(result, failure);
+            applyPage(result, failure);
+        }));
     }
 
     private ItemsCatalogApi.ItemQuery query() {
@@ -213,10 +231,7 @@ final class ItemsCatalogSection implements CatalogSection {
                 direction.getValue() == SortDirection.ASCENDING, PAGE_SIZE, pageOffset);
     }
 
-    private void applyPage(long revision, ItemsCatalogApi.PageResult result, Throwable failure) {
-        if (revision != requestRevision) {
-            return;
-        }
+    private void applyPage(ItemsCatalogApi.PageResult result, Throwable failure) {
         if (failure != null || result == null) {
             applyFailureState("Item-Suche konnte nicht ausgeführt werden.");
             return;
@@ -256,12 +271,9 @@ final class ItemsCatalogSection implements CatalogSection {
         if (selected == null) {
             return;
         }
-        long revision = ++detailRequestRevision;
+        CatalogRequestToken request = controller.beginItemsDetail();
         status.setText("Item-Details werden geladen …");
-        items.loadDetail(selected.sourceKey()).whenComplete((result, failure) -> runOnFx(() -> {
-            if (revision != detailRequestRevision) {
-                return;
-            }
+        items.loadDetail(selected.sourceKey()).whenComplete((result, failure) -> controller.complete(request, () -> {
             if (failure != null || result == null) {
                 status.setText("Item-Details konnten nicht geladen werden.");
             } else if (result.status() != ItemsCatalogApi.CatalogStatus.SUCCESS) {
@@ -270,34 +282,10 @@ final class ItemsCatalogSection implements CatalogSection {
                 status.setText("Item-Details nicht verfügbar.");
             } else {
                 ItemsCatalogApi.ItemDetail detail = result.detail();
-                inspector.push(new InspectorEntrySpec(
-                        detail.name(), "item:" + detail.sourceKey(), () -> itemDetails(detail), null));
+                itemInspector.openItem(detail);
                 status.setText("Item-Details geöffnet.");
             }
         }));
-    }
-
-    private static Node itemDetails(ItemsCatalogApi.ItemDetail detail) {
-        VBox content = new VBox(
-                fact("Kategorie", joined(detail.category(), detail.subcategory())),
-                fact("Magisch", yesNo(detail.magic())),
-                fact("Seltenheit", shown(detail.rarity())),
-                fact("Attunement", yesNo(detail.attunement())),
-                fact("Kosten", costText(detail)),
-                fact("Gewicht", detail.weight() == null ? "–" : detail.weight().toString()),
-                fact("Eigenschaften", detail.properties().isEmpty() ? "–" : String.join(", ", detail.properties())),
-                fact("Schaden", shown(detail.damage())),
-                fact("Rüstungsklasse", shown(detail.armorClass())),
-                fact("Beschreibung", shown(detail.description())),
-                fact("Quelle", joined(detail.sourceVersion(), detail.sourceUrl())));
-        content.getStyleClass().add("catalog-item-details");
-        return content;
-    }
-
-    private static Label fact(String label, String value) {
-        Label fact = new Label(label + ": " + value);
-        fact.setWrapText(true);
-        return fact;
     }
 
     private static VBox field(String label, Node control) {
@@ -390,11 +378,6 @@ final class ItemsCatalogSection implements CatalogSection {
         return column;
     }
 
-    private static String costText(ItemsCatalogApi.ItemDetail detail) {
-        String display = shown(detail.costDisplay());
-        return detail.costCp() == null ? display : display + " (" + detail.costCp() + " CP)";
-    }
-
     private static String joined(String first, String second) {
         if (first == null || first.isBlank()) {
             return shown(second);
@@ -419,14 +402,6 @@ final class ItemsCatalogSection implements CatalogSection {
             case STORAGE_ERROR -> "Item-Katalog konnte nicht gelesen werden.";
             case EXECUTION_ERROR -> "Item-Suche konnte nicht ausgeführt werden.";
         };
-    }
-
-    private static void runOnFx(Runnable action) {
-        if (Platform.isFxApplicationThread()) {
-            action.run();
-        } else {
-            Platform.runLater(action);
-        }
     }
 
     private enum BooleanChoice {

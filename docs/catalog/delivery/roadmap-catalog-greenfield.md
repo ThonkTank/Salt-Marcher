@@ -91,15 +91,17 @@ M0 Target Lock And Documentation
 
 ## Current Migration Position
 
-- Current foundation: the shipped Catalog exposes all seven accepted sections
-  through persistent JavaFX roots, uses provider APIs, and has green focused UI
-  and architecture proof. Query, subscription, projection, and handoff
-  coordination remain split across the JavaFX adapter and bespoke sections.
-- Current milestone: M0 target lock is delivered by the documentation change
-  that introduces this roadmap and aligns Catalog requirements and architecture.
-- Next step after M0 merges: M1 publishes the application seam and lifecycle
-  while preserving the existing production UI through the one permitted
-  temporary adapter.
+- Current foundation: M0 is merged. M1 moves the production Catalog composition,
+  immutable workspace publication, provider subscriptions, request epochs, and
+  component lifecycle behind `CatalogFeature.create(CatalogProviders,
+  CatalogRoutes)` while retaining the seven existing views through the one
+  permitted `LegacyCatalogBindingAdapter`.
+- Current milestone: M1 is delivered by PR #513. Its final candidate has green
+  local `./gradlew check` and desktop-install proof and merges only after
+  required PR CI is green.
+- Next step after PR #513 merges: M2 moves the complete Monster query, filter,
+  paging, selection, Inspector, and Encounter-filter path out of the temporary
+  adapter and adopts the shared table scaffold.
 
 ## Delivery Rules
 

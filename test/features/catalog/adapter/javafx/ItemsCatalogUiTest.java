@@ -6,6 +6,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.items.api.ItemsCatalogApi;
+import features.catalog.CatalogFeature;
+import features.catalog.CatalogProviders;
+import features.catalog.CatalogRoutes;
+import features.creatures.api.CreatureCatalogPage;
+import features.creatures.api.CreatureCatalogPageResult;
+import features.creatures.api.CreatureFilterOptions;
+import features.creatures.api.CreatureFilterOptionsResult;
+import features.creatures.api.CreatureQueryStatus;
+import features.creatures.api.CreatureReadStatus;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -25,6 +34,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.control.ToggleButton;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.junit.jupiter.api.AfterAll;
@@ -33,6 +43,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
+import shell.api.ShellBinding;
+import shell.api.ShellSlot;
 
 @Tag("ui")
 public final class ItemsCatalogUiTest {
@@ -60,7 +72,6 @@ public final class ItemsCatalogUiTest {
         runOnFxThread(() -> {
             FakeItemsApi api = new FakeItemsApi();
             ItemsFixture fixture = show(api, new RecordingInspector());
-            fixture.section().refresh();
             Parent pane = fixture.host();
 
             text(pane, "Item-Name").setText("  blade  ");
@@ -105,7 +116,6 @@ public final class ItemsCatalogUiTest {
         runOnFxThread(() -> {
             FakeItemsApi api = new FakeItemsApi();
             ItemsFixture fixture = show(api, new RecordingInspector());
-            fixture.section().refresh();
             Parent pane = fixture.host();
 
             api.deferNextSearch();
@@ -136,7 +146,6 @@ public final class ItemsCatalogUiTest {
             FakeItemsApi api = new FakeItemsApi();
             RecordingInspector inspector = new RecordingInspector();
             ItemsFixture fixture = show(api, inspector);
-            fixture.section().refresh();
             Parent pane = fixture.host();
             TableView<?> results = table(pane, "Item-Ergebnisse");
             results.getSelectionModel().selectFirst();
@@ -190,15 +199,106 @@ public final class ItemsCatalogUiTest {
     }
 
     private static ItemsFixture show(ItemsCatalogApi api, InspectorSink inspector) {
-        ItemsCatalogSection section = new ItemsCatalogSection(api, inspector);
-        BorderPane pane = new BorderPane(section.content());
-        pane.setLeft(section.controls());
+        CatalogFeature.Component component = CatalogFeature.create(
+                providers(api), routes(inspector));
+        ShellBinding binding = component.contribution().bind();
+        BorderPane pane = new BorderPane(binding.slotContent().get(ShellSlot.COCKPIT_MAIN));
+        pane.setLeft(binding.slotContent().get(ShellSlot.COCKPIT_CONTROLS));
         Stage stage = new Stage();
         stage.setScene(new Scene(pane, 1_180.0, 720.0));
         stage.show();
         pane.applyCss();
         pane.layout();
-        return new ItemsFixture(section, pane);
+        binding.onActivate();
+        node(pane, ToggleButton.class, "Katalogbereich Items").fire();
+        pane.applyCss();
+        pane.layout();
+        return new ItemsFixture(component, binding, pane);
+    }
+
+    private static CatalogProviders providers(ItemsCatalogApi items) {
+        features.creatures.api.CreatureCatalogQueryApi creatures =
+                new features.creatures.api.CreatureCatalogQueryApi() {
+                    @Override
+                    public CompletionStage<CreatureCatalogPageResult> search(
+                            features.creatures.api.CreatureCatalogQuery query
+                    ) {
+                        return CompletableFuture.completedFuture(new CreatureCatalogPageResult(
+                                CreatureQueryStatus.SUCCESS, CreatureCatalogPage.empty(50, 0)));
+                    }
+
+                    @Override
+                    public CompletionStage<CreatureFilterOptionsResult> loadFilterOptions() {
+                        return CompletableFuture.completedFuture(new CreatureFilterOptionsResult(
+                                CreatureReadStatus.SUCCESS, CreatureFilterOptions.empty()));
+                    }
+                };
+        var encounterInputs = new features.encounter.api.EncounterBuilderInputsModel(
+                features.encounter.api.EncounterBuilderInputs::empty, listener -> () -> { });
+        var savedPlans = new features.encounter.api.SavedEncounterPlanListModel(
+                () -> new features.encounter.api.SavedEncounterPlanListResult(
+                        features.encounter.api.SavedEncounterPlanStatus.SUCCESS, List.of(), ""),
+                listener -> () -> { });
+        var creatureReferences = new features.creatures.api.CreatureReferenceIndexModel(
+                () -> new features.creatures.api.CreatureReferenceIndexResult(
+                        features.creatures.api.CreatureReferenceIndexStatus.SUCCESS, 1L, List.of()),
+                listener -> () -> { });
+        var world = new features.worldplanner.api.WorldPlannerSnapshotModel(
+                () -> new features.worldplanner.api.WorldPlannerSnapshot(
+                        features.worldplanner.api.WorldPlannerReadStatus.SUCCESS,
+                        List.of(), List.of(), List.of(), ""),
+                listener -> () -> { });
+        var tableModel = new features.encountertable.api.EncounterTableCatalogModel(
+                () -> new features.encountertable.api.EncounterTableCatalogResult(
+                        features.encountertable.api.EncounterTableReadStatus.SUCCESS, List.of()),
+                listener -> () -> { });
+        features.encountertable.api.EncounterTableApi tableCommands =
+                new features.encountertable.api.EncounterTableApi() {
+                    @Override public void refreshCatalog(
+                            features.encountertable.api.RefreshEncounterTableCatalogCommand command) { }
+                    @Override public void refreshCandidates(
+                            features.encountertable.api.RefreshEncounterTableCandidatesCommand command) { }
+                };
+        return new CatalogProviders(
+                new CatalogProviders.MonsterProviders(creatures, encounterInputs),
+                new CatalogProviders.ItemsProviders(items),
+                new CatalogProviders.SavedEncounterProviders(savedPlans),
+                new CatalogProviders.WorldReferenceProviders(creatureReferences, world),
+                new CatalogProviders.EncounterTableProviders(tableCommands, tableModel),
+                platform.ui.DirectUiDispatcher.INSTANCE);
+    }
+
+    private static CatalogRoutes routes(InspectorSink inspector) {
+        CatalogRoutes.WorldInspectorRoutes world = new CatalogRoutes.WorldInspectorRoutes() {
+            @Override public void openNpc(long npcId) { }
+            @Override public void openFaction(long factionId) { }
+            @Override public void openLocation(long locationId) { }
+            @Override public void createNpc() { }
+            @Override public void createFaction() { }
+            @Override public void createLocation() { }
+        };
+        CatalogRoutes.EncounterHandoff encounter = new CatalogRoutes.EncounterHandoff() {
+            @Override public void updatePoolFilters(features.encounter.api.EncounterPoolFilters filters) { }
+            @Override public void addCreature(long creatureId) { }
+            @Override public void addWorldNpc(long creatureId, long npcId) { }
+            @Override public void useFactionSource(long factionId) { }
+            @Override public void useLocationSource(long locationId) { }
+            @Override public void useEncounterTableSource(long tableId) { }
+            @Override public CompletionStage<features.encounter.api.OpenSavedEncounterPlanResult>
+                    openSavedEncounter(long planId, boolean discard) {
+                return CompletableFuture.completedFuture(new features.encounter.api.OpenSavedEncounterPlanResult(
+                        features.encounter.api.OpenSavedEncounterPlanResult.Status.OPENED, planId, ""));
+            }
+        };
+        CatalogRoutes.SceneHandoff scene = new CatalogRoutes.SceneHandoff() {
+            @Override public void addCreature(long creatureId) { }
+            @Override public void addNpc(long npcId) { }
+            @Override public void setLocation(long locationId) { }
+        };
+        return new CatalogRoutes(
+                ignored -> { },
+                detail -> features.items.adapter.javafx.ItemDetailsView.openInspector(inspector, detail),
+                world, encounter, scene);
     }
 
     private static TextField text(Parent root, String accessibleText) {
@@ -264,7 +364,7 @@ public final class ItemsCatalogUiTest {
         }
     }
 
-    private record ItemsFixture(ItemsCatalogSection section, Parent host) {
+    private record ItemsFixture(CatalogFeature.Component component, ShellBinding binding, Parent host) {
     }
 
     private static void runOnFxThread(ThrowingRunnable action) throws Exception {

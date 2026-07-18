@@ -1,5 +1,6 @@
 package features.catalog.adapter.javafx;
 
+import features.catalog.application.CatalogSectionId;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -37,6 +38,26 @@ final class ReferenceCatalogSection<T> implements CatalogSection {
                 ? CatalogSectionControls.intro(id.label(), description)
                 : CatalogSectionControls.intro(id.label(), description, createLabel, create);
         controls = new VBox(intro, query);
+        controls.getStyleClass().add("catalog-section-intro");
+    }
+
+    ReferenceCatalogSection(
+            CatalogSectionId id,
+            String emptyText,
+            Function<T, String> label,
+            Function<T, String> detail,
+            String description
+    ) {
+        this.id = id;
+        content = new CatalogSectionFrame<>(id.label(), emptyText,
+                value -> label.apply(value) + " " + detail.apply(value));
+        content.addTextColumn("Name", 240.0, label);
+        content.addTextColumn("Details", 420.0, detail);
+        TextField query = new TextField();
+        query.setAccessibleText(id.label() + " suchen");
+        query.setPromptText(id.label() + " suchen …");
+        query.textProperty().addListener((ignored, before, after) -> content.setQuery(after));
+        controls = new VBox(CatalogSectionControls.intro(id.label(), description), query);
         controls.getStyleClass().add("catalog-section-intro");
     }
 

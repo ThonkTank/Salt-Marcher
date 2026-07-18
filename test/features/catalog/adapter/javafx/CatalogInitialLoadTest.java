@@ -38,6 +38,7 @@ import features.worldplanner.api.WorldPlannerReadStatus;
 import features.worldplanner.api.WorldPlannerSnapshot;
 import features.worldplanner.api.WorldPlannerSnapshotModel;
 import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
+import features.catalog.application.CatalogSectionId;
 import features.encountertable.adapter.sqlite.query.SqliteEncounterTableCatalogAdapter;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -130,6 +131,7 @@ public final class CatalogInitialLoadTest {
                     EmptyInspectorSink.INSTANCE,
                     openedNpc::set,
                     () -> createRequested.set(true)).bind();
+            binding.onActivate();
             CatalogControlsHost controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, CatalogControlsHost.class);
             CatalogContentHost content = slot(binding, ShellSlot.COCKPIT_MAIN, CatalogContentHost.class);
             Stage stage = new Stage();
@@ -199,6 +201,7 @@ public final class CatalogInitialLoadTest {
             CatalogTestRuntime runtime = services();
             ShellBinding binding = runtime.contribution(
                     EmptyInspectorSink.INSTANCE, ignored -> { }, () -> { }, addedCreature::set).bind();
+            binding.onActivate();
             CatalogContentHost workspace = slot(binding, ShellSlot.COCKPIT_MAIN, CatalogContentHost.class);
             CatalogMainView monsters = descendant(workspace, CatalogMainView.class);
             Stage stage = new Stage();
@@ -217,6 +220,7 @@ public final class CatalogInitialLoadTest {
     private static CatalogFixture setupCatalog() {
         CatalogTestRuntime runtime = services();
         ShellBinding binding = runtime.contribution(EmptyInspectorSink.INSTANCE).bind();
+        binding.onActivate();
         CatalogControlsHost controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, CatalogControlsHost.class);
         CatalogContentHost workspace = slot(binding, ShellSlot.COCKPIT_MAIN, CatalogContentHost.class);
         CatalogMainView main = descendant(workspace, CatalogMainView.class);

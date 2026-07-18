@@ -1,6 +1,6 @@
-package features.catalog.adapter.javafx;
+package features.catalog.application;
 
-enum CatalogSectionId {
+public enum CatalogSectionId {
     MONSTERS("Monster"),
     ITEMS("Items"),
     SAVED_ENCOUNTERS("Encounter"),
@@ -15,7 +15,7 @@ enum CatalogSectionId {
         this.label = label;
     }
 
-    String label() {
+    public String label() {
         return label;
     }
 }
