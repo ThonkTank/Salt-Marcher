@@ -438,3 +438,11 @@ Every milestone, including documentation-only M0, MUST:
 - The open master-detail frontend may merge before or during backend work. Its
   observable layout is adopted, but M6 rebases it onto the target workspace
   snapshot rather than retaining its internal models.
+
+## References
+
+- [Session Planner Owners](../README.md)
+- [Session Generation Owners](../../sessiongeneration/README.md)
+- [Encounter Owners](../../encounter/README.md)
+- [Source Architecture](../../project/architecture/source-architecture.md)
+- [Documentation Placement](../../project/documentation.md)
