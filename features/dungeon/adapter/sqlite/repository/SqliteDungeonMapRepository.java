@@ -7,7 +7,6 @@ import features.dungeon.adapter.sqlite.model.DungeonMapRecord;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
 import features.dungeon.application.authored.port.DungeonMapRepository;
-import features.dungeon.application.authored.port.DungeonChangeSet;
 import features.dungeon.application.authored.port.DungeonMapHeader;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 
@@ -71,19 +70,6 @@ public final class SqliteDungeonMapRepository implements DungeonCatalogStore, Du
     @Override
     public Optional<DungeonMap> firstMap() {
         return gateway.firstMap().map(DungeonMapRecordMapper::toDomain);
-    }
-
-    @Override
-    public DungeonMap save(DungeonMap dungeonMap) {
-        return DungeonMapRecordMapper.toDomain(gateway.saveMap(DungeonMapRecordMapper.toRecord(dungeonMap)));
-    }
-
-    @Override
-    public DungeonMap saveChange(DungeonChangeSet changeSet) {
-        DungeonChangeSet safeChangeSet = Objects.requireNonNull(changeSet, "changeSet");
-        return DungeonMapRecordMapper.toDomain(gateway.saveChange(
-                DungeonMapRecordMapper.toRecord(safeChangeSet.before()),
-                DungeonMapRecordMapper.toRecord(safeChangeSet.after())));
     }
 
     @Override

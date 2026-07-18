@@ -10,6 +10,8 @@ import features.dungeon.api.TravelDungeonModel;
 import features.dungeon.application.authored.DungeonAuthoredApplicationService;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
 import features.dungeon.application.authored.port.DungeonMapRepository;
+import features.dungeon.application.authored.port.DungeonUnitOfWork;
+import features.dungeon.application.authored.port.DungeonUnitOfWorkResult;
 import features.dungeon.application.authored.port.DungeonIdentityClosureRequest;
 import features.dungeon.application.authored.port.DungeonIdentityClosureResult;
 import features.dungeon.application.authored.port.DungeonWindow;
@@ -45,6 +47,7 @@ public final class DungeonTestAssembly {
         return create(
                 catalogStore,
                 repository,
+                inMemoryUnitOfWork(),
                 activeParty,
                 partyTravelPositions,
                 party,
@@ -68,7 +71,33 @@ public final class DungeonTestAssembly {
         return create(
                 catalogStore,
                 repository,
+                inMemoryUnitOfWork(),
+                activeParty,
+                partyTravelPositions,
+                party,
+                partyMutation,
+                executionLane,
+                uiDispatcher,
+                diagnostics);
+    }
+
+    public static Component create(
+            DungeonCatalogStore catalogStore,
+            DungeonMapRepository repository,
+            DungeonUnitOfWork unitOfWork,
+            ActivePartyModel activeParty,
+            PartyTravelPositionsModel partyTravelPositions,
+            PartyApi party,
+            PartyMutationModel partyMutation,
+            ExecutionLane executionLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics
+    ) {
+        return create(
+                catalogStore,
+                repository,
                 repository instanceof DungeonWindowStore store ? store : emptyWindowStore(),
+                unitOfWork,
                 activeParty,
                 partyTravelPositions,
                 party,
@@ -90,10 +119,38 @@ public final class DungeonTestAssembly {
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
+        return create(
+                catalogStore,
+                repository,
+                windowStore,
+                inMemoryUnitOfWork(),
+                activeParty,
+                partyTravelPositions,
+                party,
+                partyMutation,
+                executionLane,
+                uiDispatcher,
+                diagnostics);
+    }
+
+    public static Component create(
+            DungeonCatalogStore catalogStore,
+            DungeonMapRepository repository,
+            DungeonWindowStore windowStore,
+            DungeonUnitOfWork unitOfWork,
+            ActivePartyModel activeParty,
+            PartyTravelPositionsModel partyTravelPositions,
+            PartyApi party,
+            PartyMutationModel partyMutation,
+            ExecutionLane executionLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics
+    ) {
         DungeonFeature.Runtime runtime = DungeonFeature.createRuntime(
                 catalogStore,
                 repository,
                 windowStore,
+                unitOfWork,
                 activeParty,
                 partyTravelPositions,
                 party,
@@ -128,6 +185,16 @@ public final class DungeonTestAssembly {
                         request == null ? java.util.List.of() : request.entityRefs());
             }
         };
+    }
+
+    public static DungeonUnitOfWork inMemoryUnitOfWork() {
+        return patch -> new DungeonUnitOfWorkResult.Committed(
+                patch.mapId(),
+                patch.committedRevision(),
+                patch.touchedChunks().stream().collect(java.util.stream.Collectors.toUnmodifiableMap(
+                        key -> key,
+                        ignored -> patch.committedRevision())),
+                patch.resultFacts());
     }
 
     public record Component(

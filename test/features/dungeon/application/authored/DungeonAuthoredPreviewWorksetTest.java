@@ -46,6 +46,7 @@ final class DungeonAuthoredPreviewWorksetTest {
                 repository,
                 repository,
                 windowStore,
+                features.dungeon.DungeonTestAssembly.inMemoryUnitOfWork(),
                 DirectExecutionLane.INSTANCE,
                 new DungeonAuthoredPublishedState(DirectUiDispatcher.INSTANCE));
         DungeonEditorDungeonState dungeonState = new DungeonEditorDungeonState();
@@ -165,6 +166,7 @@ final class DungeonAuthoredPreviewWorksetTest {
                 repository,
                 repository,
                 windowStore,
+                features.dungeon.DungeonTestAssembly.inMemoryUnitOfWork(),
                 DirectExecutionLane.INSTANCE,
                 new DungeonAuthoredPublishedState(DirectUiDispatcher.INSTANCE));
         DungeonEditorDungeonState state = new DungeonEditorDungeonState();
@@ -259,11 +261,6 @@ final class DungeonAuthoredPreviewWorksetTest {
         public Optional<DungeonMap> firstMap() {
             firstMapCalls++;
             return Optional.of(map);
-        }
-
-        @Override
-        public DungeonMap save(DungeonMap dungeonMap) {
-            return dungeonMap;
         }
 
         @Override

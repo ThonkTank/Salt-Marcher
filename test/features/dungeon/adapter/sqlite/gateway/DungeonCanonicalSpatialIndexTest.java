@@ -50,7 +50,7 @@ final class DungeonCanonicalSpatialIndexTest {
 
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
             DungeonSqliteGateway gateway = new DungeonSqliteGateway(database);
-            gateway.saveMap(authored);
+            gateway.saveMaps(List.of(authored));
 
             DungeonMapRecord loaded = gateway.findMap(authored.mapId()).orElseThrow();
             assertEquals(authored.rooms().getFirst().floorCells(), loaded.rooms().getFirst().floorCells());

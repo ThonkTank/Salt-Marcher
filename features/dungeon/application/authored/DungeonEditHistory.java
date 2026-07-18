@@ -194,6 +194,17 @@ final class DungeonEditHistory {
             return entry == null ? Set.of() : entry.mapIds();
         }
 
+        boolean singlePatchEntry() {
+            return entry instanceof PatchEntry;
+        }
+
+        @Nullable DungeonPatch rebasedSinglePatch(long expectedRevision) {
+            if (!(entry instanceof PatchEntry patchEntry)) {
+                return null;
+            }
+            return patchEntry.selected(undo).rebased(expectedRevision);
+        }
+
         Map<Long, DungeonMap> applyTo(Map<Long, DungeonMap> currentMaps) {
             if (entry == null) {
                 return Map.of();
@@ -211,6 +222,10 @@ final class DungeonEditHistory {
     }
 
     private record PatchEntry(DungeonPatch forward, DungeonPatch inverse) implements HistoryEntry {
+        private DungeonPatch selected(boolean undo) {
+            return undo ? inverse : forward;
+        }
+
         @Override
         public Set<Long> mapIds() {
             return Set.of(forward.mapId().value());
@@ -225,7 +240,7 @@ final class DungeonEditHistory {
         public Map<Long, DungeonMap> applyTo(Map<Long, DungeonMap> currentMaps, boolean undo) {
             long mapId = forward.mapId().value();
             DungeonMap current = requiredMap(currentMaps, mapId);
-            DungeonPatch selected = (undo ? inverse : forward).rebased(current.revision());
+            DungeonPatch selected = selected(undo).rebased(current.revision());
             return Map.of(mapId, selected.applyTo(current));
         }
     }

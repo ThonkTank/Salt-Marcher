@@ -1,6 +1,7 @@
 package features.dungeon.adapter.sqlite.gateway;
 
 import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.Route;
 import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
 import features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy;
 import java.util.ArrayList;
@@ -53,6 +54,31 @@ final class DungeonSqliteCorridorRouteFacts {
             }
         }
         return List.copyOf(result);
+    }
+
+    static Set<Cell> dependencyCells(
+            List<Cell> waypoints,
+            List<Cell> doorEndpoints,
+            List<Cell> anchorEndpoints
+    ) {
+        List<Cell> safeWaypoints = copyCells(waypoints);
+        List<Cell> safeDoorEndpoints = copyCells(doorEndpoints);
+        List<Cell> endpoints = new ArrayList<>(safeDoorEndpoints);
+        endpoints.addAll(copyCells(anchorEndpoints));
+        List<Cell> nodes = safeWaypoints.isEmpty()
+                ? List.copyOf(endpoints)
+                : authoredRouteNodes(safeWaypoints, routeTermini(safeDoorEndpoints, endpoints));
+        Set<Cell> result = new LinkedHashSet<>();
+        if (nodes.size() == 1) {
+            result.add(nodes.getFirst());
+        }
+        for (int segment = 1; segment < nodes.size(); segment++) {
+            Cell start = nodes.get(segment - 1);
+            Cell end = nodes.get(segment);
+            result.addAll(Route.horizontalFirst(start, end));
+            result.addAll(Route.verticalFirst(start, end));
+        }
+        return Set.copyOf(result);
     }
 
     private static void append(

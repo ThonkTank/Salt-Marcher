@@ -114,6 +114,7 @@ final class DungeonEditorWindowLoadIntegrationTest {
                 catalog,
                 repository,
                 windows,
+                features.dungeon.DungeonTestAssembly.inMemoryUnitOfWork(),
                 DirectExecutionLane.INSTANCE,
                 new DungeonAuthoredPublishedState(DirectUiDispatcher.INSTANCE));
         DungeonEditorDungeonState state = new DungeonEditorDungeonState();
@@ -190,6 +191,7 @@ final class DungeonEditorWindowLoadIntegrationTest {
                 catalog,
                 repository,
                 windows,
+                features.dungeon.DungeonTestAssembly.inMemoryUnitOfWork(),
                 lane,
                 new DungeonAuthoredPublishedState(DirectUiDispatcher.INSTANCE));
 
@@ -425,7 +427,6 @@ final class DungeonEditorWindowLoadIntegrationTest {
             firstMapCalls++;
             throw new AssertionError("cold Editor route hydrated the first whole map");
         }
-        @Override public DungeonMap save(DungeonMap map) { throw new UnsupportedOperationException(); }
         @Override public List<DungeonMap> saveAll(List<DungeonMap> maps) { throw new UnsupportedOperationException(); }
     }
 
@@ -444,7 +445,6 @@ final class DungeonEditorWindowLoadIntegrationTest {
             firstMapCalls++;
             return Optional.of(aggregate);
         }
-        @Override public DungeonMap save(DungeonMap map) { return map; }
         @Override public List<DungeonMap> saveAll(List<DungeonMap> maps) { return List.copyOf(maps); }
     }
 
@@ -459,10 +459,6 @@ final class DungeonEditorWindowLoadIntegrationTest {
             return mapId.value() == 1L ? Optional.of(aggregate) : Optional.empty();
         }
         @Override public Optional<DungeonMap> firstMap() { return Optional.of(aggregate); }
-        @Override public DungeonMap save(DungeonMap map) {
-            aggregate = map;
-            return aggregate;
-        }
         @Override public List<DungeonMap> saveAll(List<DungeonMap> maps) {
             if (!maps.isEmpty()) {
                 aggregate = maps.getFirst();

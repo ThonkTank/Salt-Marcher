@@ -33,7 +33,7 @@ final class DungeonCanonicalSchemaMigrationTest {
         }
 
         try (Connection connection = open(databasePath)) {
-            assertEquals(5, scalarInt(connection,
+            assertEquals(6, scalarInt(connection,
                     "SELECT version FROM sm_schema_versions WHERE owner='dungeon'"));
             assertEquals("party-kept", scalarText(connection, "SELECT payload FROM party_guard"));
             assertEquals("hex-kept", scalarText(connection, "SELECT payload FROM hex_guard"));
@@ -44,6 +44,7 @@ final class DungeonCanonicalSchemaMigrationTest {
             assertTrue(tableExists(connection, "dungeon_room_cells"));
             assertTrue(tableExists(connection, "dungeon_entity_chunks"));
             assertTrue(tableExists(connection, "dungeon_corridor_route_cells"));
+            assertTrue(tableExists(connection, "dungeon_corridor_route_dependencies"));
             assertEquals(
                     Set.of("dungeon_map_id", "level_z", "chunk_q", "chunk_r", "content_revision"),
                     columns(connection, "dungeon_chunks"));
@@ -60,7 +61,7 @@ final class DungeonCanonicalSchemaMigrationTest {
     }
 
     @Test
-    void versionsFourAndFiveAddDerivedIndexesWithoutDiscardingVersionThreeRows(@TempDir Path tempDir)
+    void versionSixReplacesEarlierDungeonRowsWithTheEmptyDependencySchema(@TempDir Path tempDir)
             throws Exception {
         Path databasePath = tempDir.resolve("v3-door-level.db");
         createVersionThreeDoorTable(databasePath);
@@ -73,27 +74,33 @@ final class DungeonCanonicalSchemaMigrationTest {
                      new SqliteMigration(2, schemaManager::ensureSchema),
                      new SqliteMigration(3, schemaManager::replaceWithCanonicalSchema),
                      new SqliteMigration(4, schemaManager::addCorridorDoorLevel),
-                     new SqliteMigration(5, schemaManager::addCorridorRouteCellIndex))
+                     new SqliteMigration(5, schemaManager::addCorridorRouteCellIndex),
+                     new SqliteMigration(6, schemaManager::addCorridorRouteDependencyIndex))
                      .openConnection()) {
-            // Opening the owner connection applies the additive migration.
+            // Opening the owner connection applies the owner-approved destructive v6 migration.
         }
 
         try (Connection connection = open(databasePath)) {
-            assertEquals(5, scalarInt(connection,
+            assertEquals(6, scalarInt(connection,
                     "SELECT version FROM sm_schema_versions WHERE owner='dungeon'"));
             assertTrue(columns(connection, "dungeon_corridor_door_overrides").contains("relative_cell_z"));
-            assertEquals(1, scalarInt(connection,
+            assertEquals(0, scalarInt(connection,
                     "SELECT COUNT(*) FROM dungeon_corridor_door_overrides WHERE corridor_id=31"));
             assertEquals(0, scalarInt(connection,
-                    "SELECT relative_cell_z FROM dungeon_corridor_door_overrides WHERE corridor_id=31"));
+                    "SELECT COUNT(*) FROM dungeon_maps"));
             assertTrue(tableExists(connection, "dungeon_corridor_route_cells"));
             assertTrue(indexExists(connection, "idx_dungeon_corridor_route_cells_by_chunk"));
             assertTrue(indexExists(connection, "idx_dungeon_rooms_by_cluster"));
+            assertTrue(tableExists(connection, "dungeon_corridor_route_dependencies"));
+            assertTrue(indexExists(connection, "idx_dungeon_corridor_route_dependencies_by_cell"));
+            assertEquals(0, scalarInt(connection,
+                    "SELECT COUNT(*) FROM dungeon_corridor_route_dependencies"));
         }
     }
 
     @Test
-    void versionFiveIsAdditiveIdempotentAndRetainsVersionFourRows(@TempDir Path tempDir) throws Exception {
+    void versionSixReplacementIsIdempotentAndPreservesOnlyTheCanonicalEmptySchema(@TempDir Path tempDir)
+            throws Exception {
         Path databasePath = tempDir.resolve("v4-route-index.db");
         createVersionFourDatabase(databasePath);
 
@@ -105,24 +112,32 @@ final class DungeonCanonicalSchemaMigrationTest {
                      new SqliteMigration(2, schemaManager::ensureSchema),
                      new SqliteMigration(3, schemaManager::replaceWithCanonicalSchema),
                      new SqliteMigration(4, schemaManager::addCorridorDoorLevel),
-                     new SqliteMigration(5, schemaManager::addCorridorRouteCellIndex))
+                     new SqliteMigration(5, schemaManager::addCorridorRouteCellIndex),
+                     new SqliteMigration(6, schemaManager::addCorridorRouteDependencyIndex))
                      .openConnection()) {
             schemaManager.addCorridorRouteCellIndex(connection);
             schemaManager.addCorridorRouteCellIndex(connection);
+            schemaManager.addCorridorRouteDependencyIndex(connection);
+            schemaManager.addCorridorRouteDependencyIndex(connection);
         }
 
         try (Connection connection = open(databasePath)) {
-            assertEquals(5, scalarInt(connection,
+            assertEquals(6, scalarInt(connection,
                     "SELECT version FROM sm_schema_versions WHERE owner='dungeon'"));
-            assertEquals(1, scalarInt(connection,
+            assertEquals(0, scalarInt(connection,
                     "SELECT COUNT(*) FROM dungeon_corridor_door_overrides WHERE corridor_id=31"));
-            assertEquals(7, scalarInt(connection,
-                    "SELECT relative_cell_z FROM dungeon_corridor_door_overrides WHERE corridor_id=31"));
+            assertEquals(0, scalarInt(connection, "SELECT COUNT(*) FROM dungeon_maps"));
             assertEquals(Set.of(
                     "dungeon_map_id", "corridor_id", "segment_order", "cell_order",
                     "level_z", "cell_x", "cell_y", "chunk_q", "chunk_r"),
                     columns(connection, "dungeon_corridor_route_cells"));
             assertTrue(indexExists(connection, "idx_dungeon_corridor_route_cells_by_chunk"));
+            assertEquals(Set.of("dungeon_map_id", "corridor_id", "level_z", "cell_x", "cell_y"),
+                    columns(connection, "dungeon_corridor_route_dependencies"));
+            assertTrue(indexExists(connection, "idx_dungeon_corridor_route_dependencies_by_cell"));
+            assertEquals(0, scalarInt(connection,
+                    "SELECT COUNT(*) FROM dungeon_corridor_route_dependencies"),
+                    "v6 replaces nonexistent legacy Dungeon data with an internally complete empty schema");
         }
     }
 

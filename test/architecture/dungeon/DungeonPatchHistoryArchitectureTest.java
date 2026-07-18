@@ -29,11 +29,6 @@ public final class DungeonPatchHistoryArchitectureTest {
             "features.dungeon.application.authored.command.DungeonCompoundPatch";
     private static final String DUNGEON_MAP =
             "features.dungeon.domain.core.structure.DungeonMap";
-    private static final String CHANGE_SET =
-            "features.dungeon.application.authored.port.DungeonChangeSet";
-    private static final String AUTHORED_SERVICE =
-            "features.dungeon.application.authored.DungeonAuthoredApplicationService";
-
     private DungeonPatchHistoryArchitectureTest() {
     }
 
@@ -54,13 +49,6 @@ public final class DungeonPatchHistoryArchitectureTest {
                     .haveFullyQualifiedName(COMPOUND_PATCH)
                     .should(notStoreCompleteDungeonMaps())
                     .allowEmptyShould(false);
-
-    @ArchTest
-    static final ArchRule temporaryWholeMapPersistenceBridgeHasOneApplicationConsumer =
-            classes()
-                    .that()
-                    .resideInAPackage("features.dungeon.application.authored..")
-                    .should(keepChangeSetAtItsTemporaryOwner());
 
     private static ArchCondition<JavaClass> retainOnlyExactPatchPayloads() {
         Map<String, String> allowedPayloads = Map.of(
@@ -95,24 +83,6 @@ public final class DungeonPatchHistoryArchitectureTest {
                                 field,
                                 field.getFullName() + " must not carry a complete DungeonMap"));
                     }
-                }
-            }
-        };
-    }
-
-    private static ArchCondition<JavaClass> keepChangeSetAtItsTemporaryOwner() {
-        return new ArchCondition<>("keep DungeonChangeSet at its temporary M4 deletion owner") {
-            @Override
-            public void check(JavaClass item, ConditionEvents events) {
-                boolean dependsOnChangeSet = item.getDirectDependenciesFromSelf().stream()
-                        .anyMatch(dependency -> dependency.getTargetClass().getName().equals(CHANGE_SET));
-                if (dependsOnChangeSet
-                        && !item.getName().equals(AUTHORED_SERVICE)
-                        && !item.getName().startsWith(AUTHORED_SERVICE + "$")
-                        && !item.getPackageName().equals("features.dungeon.application.authored.port")) {
-                    events.add(SimpleConditionEvent.violated(
-                            item,
-                            item.getName() + " must not become another DungeonChangeSet consumer"));
                 }
             }
         };

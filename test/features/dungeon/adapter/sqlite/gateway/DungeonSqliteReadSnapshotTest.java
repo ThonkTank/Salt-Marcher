@@ -90,7 +90,7 @@ final class DungeonSqliteReadSnapshotTest {
 
     private static SqliteDatabase savedDatabase(Path path) {
         SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE);
-        new DungeonSqliteGateway(database).saveMap(new DungeonMapRecord(
+        new DungeonSqliteGateway(database).saveMaps(List.of(new DungeonMapRecord(
                 MAP_ID,
                 "Snapshot map",
                 OLD_REVISION,
@@ -103,7 +103,7 @@ final class DungeonSqliteReadSnapshotTest {
                 List.of(),
                 List.of(new DungeonFeatureMarkerRecord(
                         MARKER_ID, MAP_ID, "OBJECT", 64, 0, 0,
-                        "old marker", "old description"))));
+                        "old marker", "old description")))));
         return database;
     }
 

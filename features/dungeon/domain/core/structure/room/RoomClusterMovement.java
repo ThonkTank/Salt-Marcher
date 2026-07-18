@@ -34,6 +34,7 @@ public final class RoomClusterMovement {
                 target.corridors(),
                 target.stairs(),
                 target.transitionCatalog(),
+                target.featureMarkers(),
                 target.revision() + 1L);
         return CORRIDOR_MOVEMENT.moveAffectedCorridors(target, clusterMovedMap);
     }

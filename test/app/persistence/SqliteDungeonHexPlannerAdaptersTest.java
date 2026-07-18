@@ -30,7 +30,7 @@ final class SqliteDungeonHexPlannerAdaptersTest {
             SqliteSessionPlanRepository sessions = new SqliteSessionPlanRepository(database);
             SqliteWorldPlannerRepository world = new SqliteWorldPlannerRepository(database);
             Map<String, Integer> expectedVersions = Map.of(
-                    "dungeon", 5,
+                "dungeon", 6,
                     "hex", 1,
                     "session-planner", 2,
                     "world-planner", 2);

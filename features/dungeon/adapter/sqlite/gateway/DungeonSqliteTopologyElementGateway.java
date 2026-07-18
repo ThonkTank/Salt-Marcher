@@ -87,16 +87,6 @@ final class DungeonSqliteTopologyElementGateway {
         }
     }
 
-    static void persistChange(Connection connection, DungeonMapRecord before, DungeonMapRecord after)
-            throws SQLException {
-        if (before.topologyElements().equals(after.topologyElements())
-                && before.roomClusters().equals(after.roomClusters())
-                && before.corridors().equals(after.corridors())) {
-            return;
-        }
-        persist(connection, after);
-    }
-
     private static Set<TopologyElementKey> openOnlyBoundaryKeys(List<DungeonRoomClusterRecord> clusters) {
         Set<TopologyElementKey> openKeys = new LinkedHashSet<>();
         Set<TopologyElementKey> renderableKeys = new LinkedHashSet<>();

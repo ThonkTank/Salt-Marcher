@@ -30,7 +30,8 @@ public final class DungeonSqliteMapBatchGateway {
                         new SqliteMigration(2, schemaManager::ensureSchema),
                         new SqliteMigration(3, schemaManager::replaceWithCanonicalSchema),
                         new SqliteMigration(4, schemaManager::addCorridorDoorLevel),
-                        new SqliteMigration(5, schemaManager::addCorridorRouteCellIndex)));
+                        new SqliteMigration(5, schemaManager::addCorridorRouteCellIndex),
+                        new SqliteMigration(6, schemaManager::addCorridorRouteDependencyIndex)));
     }
 
     DungeonSqliteMapBatchGateway(SqliteConnectionSource connections) {
@@ -47,32 +48,6 @@ public final class DungeonSqliteMapBatchGateway {
             return saveInSingleTransaction(connection, safeRecords);
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to save dungeon maps to SQLite.", exception);
-        }
-    }
-
-    public DungeonMapRecord saveChange(DungeonMapRecord before, DungeonMapRecord after) {
-        DungeonMapRecord safeBefore = Objects.requireNonNull(before, "before");
-        DungeonMapRecord safeAfter = Objects.requireNonNull(after, "after");
-        if (safeBefore.mapId() != safeAfter.mapId()) {
-            throw new IllegalArgumentException("before and after must identify the same dungeon map");
-        }
-        try (Connection connection = connectionSupport.openReadyConnection()) {
-            boolean previousAutoCommit = connection.getAutoCommit();
-            connection.setAutoCommit(false);
-            try {
-                DungeonSqliteMapRecordWriter.persistChange(connection, safeBefore, safeAfter);
-                DungeonSqliteConnectionPersistence.persistChange(connection, safeBefore, safeAfter);
-                DungeonSqliteTopologyElementGateway.persistChange(connection, safeBefore, safeAfter);
-                connection.commit();
-                return safeAfter;
-            } catch (SQLException exception) {
-                rollbackQuietly(connection);
-                throw exception;
-            } finally {
-                connection.setAutoCommit(previousAutoCommit);
-            }
-        } catch (SQLException exception) {
-            throw new IllegalStateException("Failed to save dungeon map change to SQLite.", exception);
         }
     }
 
