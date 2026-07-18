@@ -118,6 +118,9 @@ final class DungeonEditorSelectedHandleRuntimeOperation {
                 InterpretDungeonEditorMainViewInputUseCase.PointerAction.RELEASE,
                 input,
                 null);
+        if (effect.isNoop()) {
+            return context.publishCurrent();
+        }
         return context.fromPublication(
                 currentGrid.snapshot(),
                 context.applyEffectPublication(effect, commitFor(effect.getApplyPreview())));

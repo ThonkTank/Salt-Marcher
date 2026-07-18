@@ -35,6 +35,7 @@ public final class AssembleDungeonSnapshotUseCase {
             List<DungeonEditorHandleProjection> editorHandles
     ) {
         return LoadDungeonSnapshotUseCase.snapshotData(
+                dungeonMap.metadata().mapId().value(),
                 dungeonMap.metadata().mapName(),
                 derived,
                 editorHandles,

@@ -41,6 +41,10 @@ public final class CorridorMapAuthoring {
         if (!validCreateEndpoints(start, end) || ENDPOINT_MATCHING.sameClusterOnly(dungeonMap, start, end)) {
             return dungeonMap;
         }
+        CorridorEndpointOrdering.OrderedEndpoints orderedEndpoints =
+                CorridorEndpointOrdering.canonical(start, end);
+        start = orderedEndpoints.start();
+        end = orderedEndpoints.end();
         CorridorHostCells initialHostCells = hostCells(dungeonMap, dungeonMap.corridors());
         RouteValidation routeValidation = this.routeValidation.validate(dungeonMap, start, end, initialHostCells);
         if (!routeValidation.hasValidRoute()) {

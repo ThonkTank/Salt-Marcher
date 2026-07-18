@@ -71,6 +71,7 @@ final class DungeonCorridorConnectionWriteMapperSupport {
                     binding.clusterId(),
                     binding.relativeCell().q(),
                     binding.relativeCell().r(),
+                    binding.relativeCell().level(),
                     binding.direction().name(),
                     binding.topologyRef().present() ? binding.topologyRef().id() : null));
         }

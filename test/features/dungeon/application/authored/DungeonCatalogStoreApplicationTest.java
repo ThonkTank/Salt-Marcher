@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import platform.ui.DirectUiDispatcher;
+import platform.execution.DirectExecutionLane;
 
 final class DungeonCatalogStoreApplicationTest {
 
@@ -28,6 +29,8 @@ final class DungeonCatalogStoreApplicationTest {
         DungeonAuthoredApplicationService service = new DungeonAuthoredApplicationService(
                 catalog,
                 new FailingWholeMapRepository(),
+                features.dungeon.DungeonTestAssembly.emptyWindowStore(),
+                DirectExecutionLane.INSTANCE,
                 publishedState);
         DungeonAuthoredApplicationService.Session session =
                 service.openSession(new DungeonEditorDungeonState());

@@ -16,11 +16,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import platform.diagnostics.NoopDiagnostics;
 import platform.persistence.SqliteDatabase;
+import platform.persistence.SqliteMigration;
 
 final class DungeonCanonicalSchemaMigrationTest {
 
     @Test
-    void versionThreeDiscardsOnlyDungeonRowsAndInstallsTheCanonicalSchema(@TempDir Path tempDir)
+    void currentVersionDiscardsOnlyPreCanonicalDungeonRowsAndInstallsTheCanonicalSchema(@TempDir Path tempDir)
             throws Exception {
         Path databasePath = tempDir.resolve("migration.db");
         createVersionTwoDatabase(databasePath);
@@ -32,7 +33,7 @@ final class DungeonCanonicalSchemaMigrationTest {
         }
 
         try (Connection connection = open(databasePath)) {
-            assertEquals(3, scalarInt(connection,
+            assertEquals(5, scalarInt(connection,
                     "SELECT version FROM sm_schema_versions WHERE owner='dungeon'"));
             assertEquals("party-kept", scalarText(connection, "SELECT payload FROM party_guard"));
             assertEquals("hex-kept", scalarText(connection, "SELECT payload FROM hex_guard"));
@@ -42,6 +43,7 @@ final class DungeonCanonicalSchemaMigrationTest {
             assertFalse(tableExists(connection, "dungeon_room_cluster_vertices"));
             assertTrue(tableExists(connection, "dungeon_room_cells"));
             assertTrue(tableExists(connection, "dungeon_entity_chunks"));
+            assertTrue(tableExists(connection, "dungeon_corridor_route_cells"));
             assertEquals(
                     Set.of("dungeon_map_id", "level_z", "chunk_q", "chunk_r", "content_revision"),
                     columns(connection, "dungeon_chunks"));
@@ -51,8 +53,76 @@ final class DungeonCanonicalSchemaMigrationTest {
             assertEquals(
                     Set.of("cluster_id", "dungeon_map_id", "name"),
                     columns(connection, "dungeon_room_clusters"));
+            assertTrue(columns(connection, "dungeon_corridor_door_overrides").contains("relative_cell_z"));
             assertEquals(0, scalarInt(connection, "SELECT COUNT(*) FROM dungeon_maps"));
             assertFalse(connection.createStatement().executeQuery("PRAGMA foreign_key_check").next());
+        }
+    }
+
+    @Test
+    void versionsFourAndFiveAddDerivedIndexesWithoutDiscardingVersionThreeRows(@TempDir Path tempDir)
+            throws Exception {
+        Path databasePath = tempDir.resolve("v3-door-level.db");
+        createVersionThreeDoorTable(databasePath);
+
+        DungeonSqliteSchemaManager schemaManager = new DungeonSqliteSchemaManager();
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE);
+             Connection ignored = database.connections(
+                     "dungeon",
+                     new SqliteMigration(1, schemaManager::ensureSchema),
+                     new SqliteMigration(2, schemaManager::ensureSchema),
+                     new SqliteMigration(3, schemaManager::replaceWithCanonicalSchema),
+                     new SqliteMigration(4, schemaManager::addCorridorDoorLevel),
+                     new SqliteMigration(5, schemaManager::addCorridorRouteCellIndex))
+                     .openConnection()) {
+            // Opening the owner connection applies the additive migration.
+        }
+
+        try (Connection connection = open(databasePath)) {
+            assertEquals(5, scalarInt(connection,
+                    "SELECT version FROM sm_schema_versions WHERE owner='dungeon'"));
+            assertTrue(columns(connection, "dungeon_corridor_door_overrides").contains("relative_cell_z"));
+            assertEquals(1, scalarInt(connection,
+                    "SELECT COUNT(*) FROM dungeon_corridor_door_overrides WHERE corridor_id=31"));
+            assertEquals(0, scalarInt(connection,
+                    "SELECT relative_cell_z FROM dungeon_corridor_door_overrides WHERE corridor_id=31"));
+            assertTrue(tableExists(connection, "dungeon_corridor_route_cells"));
+            assertTrue(indexExists(connection, "idx_dungeon_corridor_route_cells_by_chunk"));
+            assertTrue(indexExists(connection, "idx_dungeon_rooms_by_cluster"));
+        }
+    }
+
+    @Test
+    void versionFiveIsAdditiveIdempotentAndRetainsVersionFourRows(@TempDir Path tempDir) throws Exception {
+        Path databasePath = tempDir.resolve("v4-route-index.db");
+        createVersionFourDatabase(databasePath);
+
+        DungeonSqliteSchemaManager schemaManager = new DungeonSqliteSchemaManager();
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE);
+             Connection connection = database.connections(
+                     "dungeon",
+                     new SqliteMigration(1, schemaManager::ensureSchema),
+                     new SqliteMigration(2, schemaManager::ensureSchema),
+                     new SqliteMigration(3, schemaManager::replaceWithCanonicalSchema),
+                     new SqliteMigration(4, schemaManager::addCorridorDoorLevel),
+                     new SqliteMigration(5, schemaManager::addCorridorRouteCellIndex))
+                     .openConnection()) {
+            schemaManager.addCorridorRouteCellIndex(connection);
+            schemaManager.addCorridorRouteCellIndex(connection);
+        }
+
+        try (Connection connection = open(databasePath)) {
+            assertEquals(5, scalarInt(connection,
+                    "SELECT version FROM sm_schema_versions WHERE owner='dungeon'"));
+            assertEquals(1, scalarInt(connection,
+                    "SELECT COUNT(*) FROM dungeon_corridor_door_overrides WHERE corridor_id=31"));
+            assertEquals(7, scalarInt(connection,
+                    "SELECT relative_cell_z FROM dungeon_corridor_door_overrides WHERE corridor_id=31"));
+            assertEquals(Set.of(
+                    "dungeon_map_id", "corridor_id", "segment_order", "cell_order",
+                    "level_z", "cell_x", "cell_y", "chunk_q", "chunk_r"),
+                    columns(connection, "dungeon_corridor_route_cells"));
+            assertTrue(indexExists(connection, "idx_dungeon_corridor_route_cells_by_chunk"));
         }
     }
 
@@ -101,6 +171,63 @@ final class DungeonCanonicalSchemaMigrationTest {
         }
     }
 
+    private static void createVersionThreeDoorTable(Path databasePath) throws Exception {
+        Class.forName("org.sqlite.JDBC");
+        try (Connection connection = open(databasePath);
+             Statement statement = connection.createStatement()) {
+            statement.execute("PRAGMA user_version=1");
+            statement.execute("CREATE TABLE sm_schema_versions ("
+                    + "owner TEXT PRIMARY KEY, version INTEGER NOT NULL CHECK(version >= 0))");
+            statement.execute("INSERT INTO sm_schema_versions(owner, version) VALUES('dungeon', 3)");
+            statement.execute("CREATE TABLE dungeon_maps("
+                    + "dungeon_map_id INTEGER PRIMARY KEY, name TEXT NOT NULL, revision INTEGER NOT NULL)");
+            statement.execute("CREATE TABLE dungeon_chunks("
+                    + "dungeon_map_id INTEGER NOT NULL, level_z INTEGER NOT NULL, chunk_q INTEGER NOT NULL,"
+                    + "chunk_r INTEGER NOT NULL, content_revision INTEGER NOT NULL DEFAULT 0,"
+                    + "PRIMARY KEY(dungeon_map_id,level_z,chunk_q,chunk_r))");
+            statement.execute("CREATE TABLE dungeon_rooms("
+                    + "room_id INTEGER PRIMARY KEY, dungeon_map_id INTEGER NOT NULL, cluster_id INTEGER NOT NULL,"
+                    + "name TEXT NOT NULL, visual_description TEXT)");
+            statement.execute("CREATE TABLE dungeon_corridor_door_overrides ("
+                    + "corridor_id INTEGER NOT NULL, room_id INTEGER NOT NULL, cluster_id INTEGER NOT NULL,"
+                    + "relative_cell_x INTEGER NOT NULL, relative_cell_y INTEGER NOT NULL,"
+                    + "edge_direction TEXT NOT NULL, topology_element_id INTEGER,"
+                    + "sort_order INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(corridor_id, room_id))");
+            statement.execute("INSERT INTO dungeon_corridor_door_overrides"
+                    + "(corridor_id, room_id, cluster_id, relative_cell_x, relative_cell_y,"
+                    + " edge_direction, topology_element_id) VALUES(31,11,21,4,5,'EAST',41)");
+        }
+    }
+
+    private static void createVersionFourDatabase(Path databasePath) throws Exception {
+        Class.forName("org.sqlite.JDBC");
+        try (Connection connection = open(databasePath);
+             Statement statement = connection.createStatement()) {
+            statement.execute("PRAGMA user_version=1");
+            statement.execute("CREATE TABLE sm_schema_versions ("
+                    + "owner TEXT PRIMARY KEY, version INTEGER NOT NULL CHECK(version >= 0))");
+            statement.execute("INSERT INTO sm_schema_versions(owner, version) VALUES('dungeon', 4)");
+            statement.execute("CREATE TABLE dungeon_maps("
+                    + "dungeon_map_id INTEGER PRIMARY KEY, name TEXT NOT NULL, revision INTEGER NOT NULL)");
+            statement.execute("CREATE TABLE dungeon_chunks("
+                    + "dungeon_map_id INTEGER NOT NULL, level_z INTEGER NOT NULL, chunk_q INTEGER NOT NULL,"
+                    + "chunk_r INTEGER NOT NULL, content_revision INTEGER NOT NULL DEFAULT 0,"
+                    + "PRIMARY KEY(dungeon_map_id,level_z,chunk_q,chunk_r))");
+            statement.execute("CREATE TABLE dungeon_rooms("
+                    + "room_id INTEGER PRIMARY KEY, dungeon_map_id INTEGER NOT NULL, cluster_id INTEGER NOT NULL,"
+                    + "name TEXT NOT NULL, visual_description TEXT)");
+            statement.execute("CREATE TABLE dungeon_corridor_door_overrides ("
+                    + "corridor_id INTEGER NOT NULL, room_id INTEGER NOT NULL, cluster_id INTEGER NOT NULL,"
+                    + "relative_cell_x INTEGER NOT NULL, relative_cell_y INTEGER NOT NULL,"
+                    + "relative_cell_z INTEGER NOT NULL DEFAULT 0, edge_direction TEXT NOT NULL,"
+                    + "topology_element_id INTEGER, sort_order INTEGER NOT NULL DEFAULT 0,"
+                    + "PRIMARY KEY(corridor_id, room_id))");
+            statement.execute("INSERT INTO dungeon_corridor_door_overrides"
+                    + "(corridor_id, room_id, cluster_id, relative_cell_x, relative_cell_y, relative_cell_z,"
+                    + " edge_direction, topology_element_id) VALUES(31,11,21,4,5,7,'EAST',41)");
+        }
+    }
+
     private static Connection open(Path databasePath) throws SQLException {
         Connection connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath.toAbsolutePath());
         try (Statement statement = connection.createStatement()) {
@@ -113,6 +240,16 @@ final class DungeonCanonicalSchemaMigrationTest {
         try (var statement = connection.prepareStatement(
                 "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?")) {
             statement.setString(1, table);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        }
+    }
+
+    private static boolean indexExists(Connection connection, String index) throws SQLException {
+        try (var statement = connection.prepareStatement(
+                "SELECT 1 FROM sqlite_master WHERE type='index' AND name=?")) {
+            statement.setString(1, index);
             try (ResultSet resultSet = statement.executeQuery()) {
                 return resultSet.next();
             }

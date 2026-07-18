@@ -7,6 +7,7 @@ import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.corridor.CorridorEndpointResolution.ResolvedEndpointResult;
 import features.dungeon.domain.core.structure.stair.StairCollection;
+import features.dungeon.domain.core.structure.stair.CorridorBoundStairGeometry;
 
 final class CorridorCreationBinding {
     private static final long NO_ROOM_ID = 0L;
@@ -37,16 +38,14 @@ final class CorridorCreationBinding {
     ) {
         StairCollection nextStairs = endResolved.map().stairs();
         if (!start.sameLevelAs(end)) {
-            Cell upperExit = new Cell(
-                    routeCells.getLast().q(),
-                    routeCells.getLast().r(),
-                    end.level());
-            return nextStairs.withCorridorBoundStair(
-                    stairId,
-                    endResolved.map().metadata().mapId().value(),
-                    corridor.corridorId(),
-                    routeCells,
-                    upperExit);
+            return CorridorBoundStairGeometry.fromRoute(routeCells, end.level())
+                    .map(geometry -> nextStairs.withCorridorBoundStair(
+                            stairId,
+                            endResolved.map().metadata().mapId().value(),
+                            corridor.corridorId(),
+                            geometry.path(),
+                            geometry.upperExit()))
+                    .orElse(nextStairs);
         }
         return nextStairs;
     }

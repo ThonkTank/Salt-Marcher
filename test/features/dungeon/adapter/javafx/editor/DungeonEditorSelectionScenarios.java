@@ -296,9 +296,8 @@ final class DungeonEditorSelectionScenarios {
                         .anyMatch(feature -> feature.cells().stream()
                                 .anyMatch(cell -> cell.q() == 2 && cell.r() == 2 && cell.level() == 0)),
                 "DE-SEL-003 published stair feature includes anchor coordinate");
-        assertTrue(stairFeature.cells().stream()
-                        .anyMatch(cell -> cell.q() == 2 && cell.r() == 0 && cell.level() == 1),
-                "DE-SEL-003 published stair feature includes upper exit coordinate");
+        assertTrue(stairFeature.cells().stream().noneMatch(cell -> cell.level() != 0),
+                "DE-SEL-003 active-level authored window excludes off-level stair exit geometry");
         assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(),
                                 glyphCenterForRef(binding.mapContentModel(), stairRef).getX(),
                                 glyphCenterForRef(binding.mapContentModel(), stairRef).getY())

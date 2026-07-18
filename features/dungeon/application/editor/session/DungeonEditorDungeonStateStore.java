@@ -26,7 +26,7 @@ final class DungeonEditorDungeonStateStore {
     }
 
     void replaceSnapshot(DungeonEditorDungeonState.@Nullable SnapshotFacts nextSnapshot) {
-        snapshot = nextSnapshot;
+        snapshot = nextSnapshot == null ? null : retainedRequestGeneration(nextSnapshot);
     }
 
     void replaceInspector(@Nullable Inspector nextInspector) {
@@ -34,7 +34,20 @@ final class DungeonEditorDungeonStateStore {
     }
 
     void replaceMutation(DungeonEditorDungeonState.@Nullable MutationFacts nextMutation) {
-        mutation = nextMutation;
+        if (nextMutation == null) {
+            mutation = null;
+            return;
+        }
+        DungeonEditorDungeonState.SnapshotFacts committed =
+                retainedRequestGeneration(nextMutation.snapshot());
+        snapshot = committed;
+        mutation = new DungeonEditorDungeonState.MutationFacts(
+                committed,
+                nextMutation.commandOutcome());
+    }
+
+    void replaceCommandOutcome(DungeonEditorCommandOutcome commandOutcome) {
+        mutation = new DungeonEditorDungeonState.MutationFacts(snapshot, commandOutcome);
     }
 
     void replacePreview(DungeonEditorDungeonState.@Nullable PreviewFacts nextPreview) {
@@ -46,11 +59,12 @@ final class DungeonEditorDungeonStateStore {
             DungeonEditorSessionValues.Selection selection,
             DungeonEditorSessionValues.Preview preview
     ) {
+        DungeonEditorDungeonState.SnapshotFacts ownedSnapshot = ownedSnapshot(mapId);
         return new DungeonEditorDungeonFacts(
                 catalog,
                 mutationMapId,
-                snapshot == null ? null : snapshot.map(),
-                currentSurface(mapId, selection, preview),
+                ownedSnapshot == null ? null : ownedSnapshot.map(),
+                currentSurface(ownedSnapshot, selection, preview),
                 mutation == null ? DungeonEditorCommandOutcome.idle() : mutation.commandOutcome(),
                 preview == DungeonEditorSessionValues.Preview.none() || this.preview == null
                         ? ""
@@ -58,30 +72,59 @@ final class DungeonEditorDungeonStateStore {
     }
 
     private DungeonEditorSessionSnapshot.@Nullable SurfaceData currentSurface(
-            @Nullable MapId mapId,
+            DungeonEditorDungeonState.@Nullable SnapshotFacts ownedSnapshot,
             DungeonEditorSessionValues.Selection selection,
             DungeonEditorSessionValues.Preview preview
     ) {
-        if (mapId == null || snapshot == null) {
+        if (ownedSnapshot == null) {
             return null;
         }
         return new DungeonEditorSessionSnapshot.SurfaceData(
-                snapshot.mapName(),
-                snapshot.revision(),
-                snapshot.map(),
-                previewMap(preview, snapshot.map(), this.preview),
+                ownedSnapshot.mapId(),
+                ownedSnapshot.requestGeneration(),
+                ownedSnapshot.acceptedRevision(),
+                ownedSnapshot.mapName(),
+                ownedSnapshot.revision(),
+                ownedSnapshot.map(),
+                previewMap(preview, ownedSnapshot, this.preview),
                 selectedInspector(selection, inspector));
+    }
+
+    private DungeonEditorDungeonState.@Nullable SnapshotFacts ownedSnapshot(@Nullable MapId mapId) {
+        return snapshot != null && snapshot.ownedBy(mapId) ? snapshot : null;
+    }
+
+    private DungeonEditorDungeonState.SnapshotFacts retainedRequestGeneration(
+            DungeonEditorDungeonState.SnapshotFacts candidate
+    ) {
+        if (candidate.requestGeneration() > 0L
+                || snapshot == null
+                || !snapshot.ownedBy(candidate.mapId())) {
+            return candidate;
+        }
+        return candidate.withRequestGeneration(snapshot.requestGeneration());
     }
 
     private static @Nullable MapSnapshot previewMap(
             DungeonEditorSessionValues.Preview preview,
-            MapSnapshot committedMap,
+            DungeonEditorDungeonState.SnapshotFacts committed,
             DungeonEditorDungeonState.@Nullable PreviewFacts previewFacts
     ) {
-        MapSnapshot candidate = preview == DungeonEditorSessionValues.Preview.none() || previewFacts == null
+        MapSnapshot candidate = preview == DungeonEditorSessionValues.Preview.none()
+                || previewFacts == null
+                || !sameOwner(committed, previewFacts.snapshot())
                 ? null
                 : previewFacts.snapshot().map();
-        return candidate != null && candidate.equals(committedMap) ? null : candidate;
+        return candidate != null && candidate.equals(committed.map()) ? null : candidate;
+    }
+
+    private static boolean sameOwner(
+            DungeonEditorDungeonState.SnapshotFacts committed,
+            DungeonEditorDungeonState.SnapshotFacts candidate
+    ) {
+        return java.util.Objects.equals(committed.mapId(), candidate.mapId())
+                && committed.requestGeneration() == candidate.requestGeneration()
+                && committed.acceptedRevision() == candidate.acceptedRevision();
     }
 
     private static @Nullable Inspector selectedInspector(

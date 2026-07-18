@@ -25,6 +25,7 @@ public final class DungeonPersistenceSchema {
     public static final String FEATURE_MARKERS_TABLE = "dungeon_feature_markers";
     public static final String CHUNKS_TABLE = "dungeon_chunks";
     public static final String ENTITY_CHUNKS_TABLE = "dungeon_entity_chunks";
+    public static final String CORRIDOR_ROUTE_CELLS_TABLE = "dungeon_corridor_route_cells";
 
     public static final String CREATE_DUNGEON_MAPS_TABLE_SQL =
             "CREATE TABLE IF NOT EXISTS dungeon_maps ("
@@ -59,6 +60,32 @@ public final class DungeonPersistenceSchema {
     public static final String CREATE_DUNGEON_ENTITY_CHUNKS_LOOKUP_INDEX_SQL =
             "CREATE INDEX IF NOT EXISTS idx_dungeon_entity_chunks_by_chunk "
                     + "ON dungeon_entity_chunks(dungeon_map_id, level_z, chunk_q, chunk_r, entity_kind, entity_id)";
+
+    public static final String CREATE_DUNGEON_CORRIDOR_ROUTE_CELLS_TABLE_SQL =
+            "CREATE TABLE IF NOT EXISTS dungeon_corridor_route_cells ("
+                    + "dungeon_map_id INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                    + "corridor_id    INTEGER NOT NULL,"
+                    + "segment_order  INTEGER NOT NULL,"
+                    + "cell_order     INTEGER NOT NULL,"
+                    + "level_z        INTEGER NOT NULL,"
+                    + "cell_x         INTEGER NOT NULL,"
+                    + "cell_y         INTEGER NOT NULL,"
+                    + "chunk_q        INTEGER NOT NULL,"
+                    + "chunk_r        INTEGER NOT NULL,"
+                    + "PRIMARY KEY (dungeon_map_id, corridor_id, segment_order, cell_order),"
+                    + "UNIQUE (dungeon_map_id, corridor_id, level_z, cell_x, cell_y),"
+                    + "FOREIGN KEY (dungeon_map_id, level_z, chunk_q, chunk_r)"
+                    + " REFERENCES dungeon_chunks(dungeon_map_id, level_z, chunk_q, chunk_r) ON DELETE CASCADE"
+                    + ")";
+
+    public static final String CREATE_DUNGEON_CORRIDOR_ROUTE_CELLS_LOOKUP_INDEX_SQL =
+            "CREATE INDEX IF NOT EXISTS idx_dungeon_corridor_route_cells_by_chunk "
+                    + "ON dungeon_corridor_route_cells("
+                    + "dungeon_map_id, level_z, chunk_q, chunk_r, corridor_id, segment_order, cell_order)";
+
+    public static final String CREATE_DUNGEON_ROOMS_CLUSTER_LOOKUP_INDEX_SQL =
+            "CREATE INDEX IF NOT EXISTS idx_dungeon_rooms_by_cluster "
+                    + "ON dungeon_rooms(cluster_id, room_id)";
 
     public static final String CREATE_DUNGEON_ROOM_CLUSTERS_TABLE_SQL =
             "CREATE TABLE IF NOT EXISTS dungeon_room_clusters ("
@@ -120,6 +147,7 @@ public final class DungeonPersistenceSchema {
                     + "cluster_id      INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
                     + "relative_cell_x INTEGER NOT NULL,"
                     + "relative_cell_y INTEGER NOT NULL,"
+                    + "relative_cell_z INTEGER NOT NULL DEFAULT 0,"
                     + "edge_direction  TEXT NOT NULL,"
                     + "topology_element_id INTEGER,"
                     + "sort_order      INTEGER NOT NULL DEFAULT 0,"
@@ -250,6 +278,7 @@ public final class DungeonPersistenceSchema {
             CREATE_DUNGEON_MAPS_TABLE_SQL,
             CREATE_DUNGEON_CHUNKS_TABLE_SQL,
             CREATE_DUNGEON_ENTITY_CHUNKS_TABLE_SQL,
+            CREATE_DUNGEON_CORRIDOR_ROUTE_CELLS_TABLE_SQL,
             CREATE_DUNGEON_ROOM_CLUSTERS_TABLE_SQL,
             CREATE_DUNGEON_ROOMS_TABLE_SQL,
             CREATE_DUNGEON_ROOM_CELLS_TABLE_SQL,
@@ -270,7 +299,9 @@ public final class DungeonPersistenceSchema {
     );
 
     public static final List<String> CREATE_INDEX_SQL = List.of(
-            CREATE_DUNGEON_ENTITY_CHUNKS_LOOKUP_INDEX_SQL
+            CREATE_DUNGEON_ENTITY_CHUNKS_LOOKUP_INDEX_SQL,
+            CREATE_DUNGEON_CORRIDOR_ROUTE_CELLS_LOOKUP_INDEX_SQL,
+            CREATE_DUNGEON_ROOMS_CLUSTER_LOOKUP_INDEX_SQL
     );
 
     private DungeonPersistenceSchema() {

@@ -11,6 +11,7 @@ final class DungeonEditorStateAssembler {
 
     DungeonEditorState assemble(
             long publicationRevision,
+            long requestGeneration,
             DungeonEditorControlsSnapshot controls,
             DungeonEditorMapSurfaceSnapshot mapSurface,
             DungeonEditorStateSnapshot state,
@@ -30,7 +31,7 @@ final class DungeonEditorStateAssembler {
                 : drafts;
         return new DungeonEditorState(
                 publicationRevision,
-                0L,
+                requestGeneration,
                 safeControls.maps(),
                 safeControls.selectedMapId(),
                 safeMapSurface.surface(),

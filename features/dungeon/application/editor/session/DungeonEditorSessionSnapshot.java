@@ -57,6 +57,9 @@ public final class DungeonEditorSessionSnapshot {
     }
 
     public record SurfaceData(
+            DungeonEditorWorkspaceValues.@Nullable MapId mapId,
+            long requestGeneration,
+            long acceptedRevision,
             String mapName,
             int revision,
             MapSnapshot map,
@@ -64,6 +67,8 @@ public final class DungeonEditorSessionSnapshot {
             @Nullable Inspector inspector
     ) {
         public SurfaceData {
+            requestGeneration = Math.max(0L, requestGeneration);
+            acceptedRevision = Math.max(0L, acceptedRevision);
             mapName = mapName == null || mapName.isBlank() ? "Dungeon" : mapName;
             map = map == null ? DungeonEditorWorkspaceValues.MapSnapshot.empty() : map;
         }

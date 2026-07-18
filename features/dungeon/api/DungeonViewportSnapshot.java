@@ -3,6 +3,8 @@ package features.dungeon.api;
 import java.util.List;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 /** Immutable authored facts for the currently loaded sparse-map workset. */
@@ -13,6 +15,7 @@ public record DungeonViewportSnapshot(
         int level,
         DungeonTopologyKind topology,
         Set<DungeonChunkKey> loadedChunks,
+        Map<DungeonChunkKey, Long> chunkRevisions,
         List<DungeonAreaSnapshot> areas,
         List<DungeonBoundarySnapshot> boundaries,
         List<DungeonFeatureSnapshot> features,
@@ -30,6 +33,9 @@ public record DungeonViewportSnapshot(
         loadedChunks = loadedChunks == null
                 ? Set.of()
                 : Collections.unmodifiableSet(new LinkedHashSet<>(loadedChunks));
+        chunkRevisions = chunkRevisions == null
+                ? Map.of()
+                : Collections.unmodifiableMap(new LinkedHashMap<>(chunkRevisions));
         areas = areas == null ? List.of() : List.copyOf(areas);
         boundaries = boundaries == null ? List.of() : List.copyOf(boundaries);
         features = features == null ? List.of() : List.copyOf(features);

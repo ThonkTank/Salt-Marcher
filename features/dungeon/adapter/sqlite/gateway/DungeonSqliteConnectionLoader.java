@@ -156,7 +156,7 @@ final class DungeonSqliteConnectionLoader {
             long mapId
     ) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT corridor_id, room_id, cluster_id, relative_cell_x, relative_cell_y,"
+                "SELECT corridor_id, room_id, cluster_id, relative_cell_x, relative_cell_y, relative_cell_z,"
                         + " edge_direction, topology_element_id"
                         + SQL_FROM + DungeonPersistenceSchema.CORRIDOR_DOOR_OVERRIDES_TABLE
                         + WHERE_CORRIDOR_ID_IN_SELECT
@@ -175,6 +175,7 @@ final class DungeonSqliteConnectionLoader {
                                     resultSet.getLong("cluster_id"),
                                     resultSet.getInt("relative_cell_x"),
                                     resultSet.getInt("relative_cell_y"),
+                                    resultSet.getInt("relative_cell_z"),
                                     resultSet.getString("edge_direction"),
                                     DungeonSqliteStatementSupport.nullableLong(resultSet, "topology_element_id")));
                 }

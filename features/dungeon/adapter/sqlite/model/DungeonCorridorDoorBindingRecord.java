@@ -8,6 +8,7 @@ public record DungeonCorridorDoorBindingRecord(
         long clusterId,
         int relativeCellX,
         int relativeCellY,
+        int relativeCellZ,
         String edgeDirection,
         @Nullable Long topologyElementId
 ) {

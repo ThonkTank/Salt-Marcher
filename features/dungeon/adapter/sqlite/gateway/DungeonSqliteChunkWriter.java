@@ -2,6 +2,7 @@ package features.dungeon.adapter.sqlite.gateway;
 
 import features.dungeon.adapter.sqlite.model.DungeonClusterBoundaryRecord;
 import features.dungeon.adapter.sqlite.model.DungeonCorridorAnchorBindingRecord;
+import features.dungeon.adapter.sqlite.model.DungeonCorridorAnchorRefRecord;
 import features.dungeon.adapter.sqlite.model.DungeonCorridorDoorBindingRecord;
 import features.dungeon.adapter.sqlite.model.DungeonCorridorRecord;
 import features.dungeon.adapter.sqlite.model.DungeonCorridorWaypointRecord;
@@ -16,6 +17,8 @@ import features.dungeon.adapter.sqlite.model.DungeonStairPathNodeRecord;
 import features.dungeon.adapter.sqlite.model.DungeonStairRecord;
 import features.dungeon.adapter.sqlite.model.DungeonTransitionRecord;
 import features.dungeon.api.DungeonChunkKey;
+import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.Direction;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -52,8 +55,15 @@ final class DungeonSqliteChunkWriter {
     }
 
     private static void replaceSpatialIndex(Connection connection, DungeonMapRecord map) throws SQLException {
-        Map<EntityKey, Set<ChunkCoordinate>> memberships = authoredMemberships(map);
+        List<CorridorRouteRow> routeCells = new ArrayList<>();
+        Map<EntityKey, Set<ChunkCoordinate>> memberships = authoredMemberships(map, routeCells);
         List<ChunkCoordinate> chunks = orderedChunks(memberships);
+        try (PreparedStatement delete = connection.prepareStatement(
+                "DELETE FROM " + DungeonPersistenceSchema.CORRIDOR_ROUTE_CELLS_TABLE
+                        + " WHERE dungeon_map_id=?")) {
+            delete.setLong(1, map.mapId());
+            delete.executeUpdate();
+        }
         try (PreparedStatement delete = connection.prepareStatement(
                 "DELETE FROM " + DungeonPersistenceSchema.CHUNKS_TABLE + " WHERE dungeon_map_id=?")) {
             delete.setLong(1, map.mapId());
@@ -61,6 +71,7 @@ final class DungeonSqliteChunkWriter {
         }
         insertChunks(connection, map, chunks);
         insertMemberships(connection, map.mapId(), memberships);
+        insertCorridorRouteCells(connection, map.mapId(), routeCells);
     }
 
     private static void insertChunks(
@@ -106,7 +117,37 @@ final class DungeonSqliteChunkWriter {
         }
     }
 
-    private static Map<EntityKey, Set<ChunkCoordinate>> authoredMemberships(DungeonMapRecord map) {
+    private static void insertCorridorRouteCells(
+            Connection connection,
+            long mapId,
+            List<CorridorRouteRow> routeCells
+    ) throws SQLException {
+        List<CorridorRouteRow> ordered = new ArrayList<>(routeCells);
+        ordered.sort(CorridorRouteRow.ORDER);
+        try (PreparedStatement insert = connection.prepareStatement(
+                "INSERT INTO " + DungeonPersistenceSchema.CORRIDOR_ROUTE_CELLS_TABLE
+                        + "(dungeon_map_id, corridor_id, segment_order, cell_order,"
+                        + " level_z, cell_x, cell_y, chunk_q, chunk_r) VALUES(?,?,?,?,?,?,?,?,?)")) {
+            for (CorridorRouteRow routeCell : ordered) {
+                insert.setLong(1, mapId);
+                insert.setLong(2, routeCell.corridorId());
+                insert.setInt(3, routeCell.segmentOrder());
+                insert.setInt(4, routeCell.cellOrder());
+                insert.setInt(5, routeCell.cell().level());
+                insert.setInt(6, routeCell.cell().q());
+                insert.setInt(7, routeCell.cell().r());
+                insert.setInt(8, routeCell.chunk().q());
+                insert.setInt(9, routeCell.chunk().r());
+                insert.addBatch();
+            }
+            insert.executeBatch();
+        }
+    }
+
+    private static Map<EntityKey, Set<ChunkCoordinate>> authoredMemberships(
+            DungeonMapRecord map,
+            List<CorridorRouteRow> routeCells
+    ) {
         Map<EntityKey, Set<ChunkCoordinate>> memberships = new LinkedHashMap<>();
         for (DungeonRoomRecord room : map.rooms()) {
             EntityKey entity = new EntityKey(ROOM, room.roomId());
@@ -116,14 +157,25 @@ final class DungeonSqliteChunkWriter {
         }
         for (DungeonRoomClusterRecord cluster : map.roomClusters()) {
             EntityKey entity = new EntityKey(ROOM_CLUSTER, cluster.clusterId());
+            for (DungeonRoomRecord room : map.rooms()) {
+                if (room.clusterId() == cluster.clusterId()) {
+                    for (DungeonRoomCellRecord cell : room.floorCells()) {
+                        add(memberships, entity, cell.levelZ(), cell.cellX(), cell.cellY());
+                    }
+                }
+            }
             for (DungeonClusterBoundaryRecord boundary : cluster.boundaries()) {
                 add(memberships, entity, boundary.levelZ(), boundary.cellX(), boundary.cellY());
             }
         }
         Map<Long, DungeonRoomClusterRecord> clustersById = clustersById(map.roomClusters());
+        Map<AnchorTopologyKey, DungeonCorridorAnchorBindingRecord> anchorsByTopology =
+                anchorsByTopology(map.corridors());
+        Set<Cell> roomCells = roomCells(map.rooms());
         for (DungeonCorridorRecord corridor : map.corridors()) {
             EntityKey entity = new EntityKey(CORRIDOR, corridor.corridorId());
-            addCorridorMembership(memberships, entity, corridor, clustersById);
+            addCorridorMembership(
+                    memberships, entity, corridor, clustersById, anchorsByTopology, roomCells, routeCells);
         }
         for (DungeonFeatureMarkerRecord marker : map.featureMarkers()) {
             add(memberships, new EntityKey(FEATURE_MARKER, marker.markerId()),
@@ -151,29 +203,91 @@ final class DungeonSqliteChunkWriter {
             Map<EntityKey, Set<ChunkCoordinate>> memberships,
             EntityKey entity,
             DungeonCorridorRecord corridor,
-            Map<Long, DungeonRoomClusterRecord> clustersById
+            Map<Long, DungeonRoomClusterRecord> clustersById,
+            Map<AnchorTopologyKey, DungeonCorridorAnchorBindingRecord> anchorsByTopology,
+            Set<Cell> roomCells,
+            List<CorridorRouteRow> routeRows
     ) {
+        List<Cell> waypoints = new ArrayList<>();
         for (DungeonCorridorWaypointRecord waypoint : corridor.waypoints()) {
             DungeonRoomClusterRecord cluster = clustersById.get(waypoint.clusterId());
             if (cluster != null) {
-                add(memberships, entity,
-                        waypoint.relativeZ(),
+                Cell cell = new Cell(
                         cluster.centerX() + waypoint.relativeX(),
-                        cluster.centerY() + waypoint.relativeY());
+                        cluster.centerY() + waypoint.relativeY(),
+                        waypoint.relativeZ());
+                waypoints.add(cell);
+                add(memberships, entity,
+                        cell.level(), cell.q(), cell.r());
             }
         }
+        List<Cell> doorEndpoints = new ArrayList<>();
         for (DungeonCorridorDoorBindingRecord door : corridor.doorBindings()) {
             DungeonRoomClusterRecord cluster = clustersById.get(door.clusterId());
             if (cluster != null) {
-                add(memberships, entity,
-                        cluster.levelZ(),
+                Cell doorCell = new Cell(
                         cluster.centerX() + door.relativeCellX(),
-                        cluster.centerY() + door.relativeCellY());
+                        cluster.centerY() + door.relativeCellY(),
+                        door.relativeCellZ());
+                add(memberships, entity,
+                        doorCell.level(), doorCell.q(), doorCell.r());
+                doorEndpoints.add(Direction.valueOf(
+                        door.edgeDirection().trim().toUpperCase(java.util.Locale.ROOT)).neighborOf(doorCell));
             }
         }
         for (DungeonCorridorAnchorBindingRecord anchor : corridor.anchorBindings()) {
             add(memberships, entity, anchor.cellZ(), anchor.cellX(), anchor.cellY());
         }
+        List<Cell> anchorEndpoints = new ArrayList<>();
+        for (DungeonCorridorAnchorRefRecord ref : corridor.anchorRefs()) {
+            if (ref.topologyElementId() == null) {
+                continue;
+            }
+            DungeonCorridorAnchorBindingRecord anchor = anchorsByTopology.get(
+                    new AnchorTopologyKey(ref.hostCorridorId(), ref.topologyElementId()));
+            if (anchor != null) {
+                add(memberships, entity, anchor.cellZ(), anchor.cellX(), anchor.cellY());
+                anchorEndpoints.add(new Cell(anchor.cellX(), anchor.cellY(), anchor.cellZ()));
+            }
+        }
+        for (DungeonSqliteCorridorRouteFacts.RouteCell routeCell
+                : DungeonSqliteCorridorRouteFacts.routeCells(
+                        waypoints, doorEndpoints, anchorEndpoints, roomCells)) {
+            Cell cell = routeCell.cell();
+            add(memberships, entity, cell.level(), cell.q(), cell.r());
+            routeRows.add(new CorridorRouteRow(
+                    corridor.corridorId(),
+                    routeCell.segmentOrder(),
+                    routeCell.cellOrder(),
+                    cell,
+                    ChunkCoordinate.containing(cell)));
+        }
+    }
+
+    private static Set<Cell> roomCells(List<DungeonRoomRecord> rooms) {
+        Set<Cell> result = new LinkedHashSet<>();
+        for (DungeonRoomRecord room : rooms) {
+            for (DungeonRoomCellRecord cell : room.floorCells()) {
+                result.add(new Cell(cell.cellX(), cell.cellY(), cell.levelZ()));
+            }
+        }
+        return Set.copyOf(result);
+    }
+
+    private static Map<AnchorTopologyKey, DungeonCorridorAnchorBindingRecord> anchorsByTopology(
+            List<DungeonCorridorRecord> corridors
+    ) {
+        Map<AnchorTopologyKey, DungeonCorridorAnchorBindingRecord> result = new LinkedHashMap<>();
+        for (DungeonCorridorRecord corridor : corridors) {
+            for (DungeonCorridorAnchorBindingRecord anchor : corridor.anchorBindings()) {
+                if (anchor.topologyElementId() != null) {
+                    result.put(
+                            new AnchorTopologyKey(anchor.hostCorridorId(), anchor.topologyElementId()),
+                            anchor);
+                }
+            }
+        }
+        return Map.copyOf(result);
     }
 
     private static Map<Long, DungeonRoomClusterRecord> clustersById(List<DungeonRoomClusterRecord> clusters) {
@@ -224,11 +338,34 @@ final class DungeonSqliteChunkWriter {
     private record EntityKey(String kind, long id) {
     }
 
+    private record AnchorTopologyKey(long hostCorridorId, long topologyElementId) {
+    }
+
     private record ChunkCoordinate(int level, int q, int r) {
         private static final Comparator<ChunkCoordinate> ORDER = Comparator
                 .comparingInt(ChunkCoordinate::level)
                 .thenComparingInt(ChunkCoordinate::r)
                 .thenComparingInt(ChunkCoordinate::q);
+
+        private static ChunkCoordinate containing(Cell cell) {
+            return new ChunkCoordinate(
+                    cell.level(),
+                    Math.floorDiv(cell.q(), DungeonChunkKey.CHUNK_SIZE),
+                    Math.floorDiv(cell.r(), DungeonChunkKey.CHUNK_SIZE));
+        }
+    }
+
+    private record CorridorRouteRow(
+            long corridorId,
+            int segmentOrder,
+            int cellOrder,
+            Cell cell,
+            ChunkCoordinate chunk
+    ) {
+        private static final Comparator<CorridorRouteRow> ORDER = Comparator
+                .comparingLong(CorridorRouteRow::corridorId)
+                .thenComparingInt(CorridorRouteRow::segmentOrder)
+                .thenComparingInt(CorridorRouteRow::cellOrder);
     }
 
     private record Membership(EntityKey entity, ChunkCoordinate chunk) {

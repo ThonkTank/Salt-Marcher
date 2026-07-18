@@ -15,6 +15,8 @@ import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.
 import features.dungeon.application.editor.helper.PreviewDungeonEditorSurfaceAreaMoveHelper;
 import features.dungeon.application.editor.helper.PreviewDungeonEditorSurfaceBoundaryMoveHelper;
 import features.dungeon.application.editor.helper.PreviewDungeonEditorSurfaceHandleMoveHelper;
+import features.dungeon.application.editor.helper.PreviewDungeonEditorSurfaceCreateHelper;
+import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
 
 public final class PreviewDungeonEditorSurfaceMoveUseCase {
     private final PreviewDungeonEditorDoorMoveUseCase doorMovePreviewUseCase =
@@ -23,6 +25,11 @@ public final class PreviewDungeonEditorSurfaceMoveUseCase {
     private final PreviewDungeonEditorSurfaceBoundaryMoveHelper boundaries =
             new PreviewDungeonEditorSurfaceBoundaryMoveHelper();
     private final PreviewDungeonEditorSurfaceHandleMoveHelper handles = new PreviewDungeonEditorSurfaceHandleMoveHelper();
+    private final PreviewDungeonEditorSurfaceCreateHelper creations;
+
+    public PreviewDungeonEditorSurfaceMoveUseCase(CorridorRoutingPolicy corridorRoutingPolicy) {
+        creations = new PreviewDungeonEditorSurfaceCreateHelper(corridorRoutingPolicy);
+    }
 
     public DungeonEditorDungeonState.@Nullable PreviewFacts execute(
             DungeonEditorSessionSnapshot.@Nullable SurfaceData surface,
@@ -37,20 +44,28 @@ public final class PreviewDungeonEditorSurfaceMoveUseCase {
             return null;
         }
         return new DungeonEditorDungeonState.PreviewFacts(
-                new DungeonEditorDungeonState.SnapshotFacts(surface.mapName(), surface.revision(), candidate),
+                new DungeonEditorDungeonState.SnapshotFacts(
+                        surface.mapId(),
+                        surface.requestGeneration(),
+                        surface.acceptedRevision(),
+                        surface.mapName(),
+                        surface.revision(),
+                        candidate),
                 "");
     }
 
     private @Nullable MapSnapshot candidateMap(MapSnapshot committed, DungeonEditorSessionValues.Preview preview) {
         return switch (preview) {
             case DungeonEditorSessionValues.NoPreview ignored -> null;
-            case DungeonEditorSessionValues.RoomRectanglePreview ignored -> null;
-            case DungeonEditorSessionValues.ClusterBoundariesPreview ignored -> null;
+            case DungeonEditorSessionValues.RoomRectanglePreview room -> creations.roomRectangle(committed, room);
+            case DungeonEditorSessionValues.ClusterBoundariesPreview cluster ->
+                    creations.clusterBoundaries(committed, cluster);
             case DungeonEditorSessionValues.MoveHandlePreview move -> moveHandlePreview(committed, move);
             case DungeonEditorSessionValues.MoveBoundaryStretchPreview stretch -> stretchPreview(committed, stretch);
-            case DungeonEditorSessionValues.StairCreatePreview ignored -> null;
-            case DungeonEditorSessionValues.CorridorCreatePreview ignored -> null;
-            case DungeonEditorSessionValues.DeleteCorridorPreview ignored -> null;
+            case DungeonEditorSessionValues.StairCreatePreview stair -> creations.stair(committed, stair);
+            case DungeonEditorSessionValues.CorridorCreatePreview corridor -> creations.corridor(committed, corridor);
+            case DungeonEditorSessionValues.DeleteCorridorPreview deletion ->
+                    creations.deleteCorridor(committed, deletion);
             case null -> null;
         };
     }
@@ -66,9 +81,34 @@ public final class PreviewDungeonEditorSurfaceMoveUseCase {
         if (kind == DungeonEditorHandleKind.CLUSTER_CORNER) {
             return cornerMovePreview(committed, preview);
         }
-        return kind == DungeonEditorHandleKind.CLUSTER_WALL_RUN
-                ? sourceEdgeMovePreview(committed, preview)
-                : null;
+        if (kind == DungeonEditorHandleKind.CLUSTER_WALL_RUN) {
+            return sourceEdgeMovePreview(committed, preview);
+        }
+        if (kind == DungeonEditorHandleKind.STAIR_ANCHOR
+                || kind == DungeonEditorHandleKind.CORRIDOR_ANCHOR
+                || kind == DungeonEditorHandleKind.CORRIDOR_WAYPOINT) {
+            return activeHandlePreview(committed, preview);
+        }
+        return null;
+    }
+
+    private MapSnapshot activeHandlePreview(
+            MapSnapshot committed,
+            DungeonEditorSessionValues.MoveHandlePreview preview
+    ) {
+        return new MapSnapshot(
+                committed.topology(),
+                committed.width(),
+                committed.height(),
+                committed.areas(),
+                committed.boundaries(),
+                committed.features(),
+                handles.movedActiveHandle(
+                        committed.editorHandles(),
+                        preview.handleRef(),
+                        preview.deltaQ(),
+                        preview.deltaR(),
+                        preview.deltaLevel()));
     }
 
     private MapSnapshot clusterMovePreview(

@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import platform.execution.ExecutionLane;
 
 /** Execution-lane owner for immutable atomic Dungeon Editor state publications. */
@@ -18,6 +19,7 @@ final class DungeonEditorStatePublisher {
     private final DungeonEditorMapSurfaceModel mapSurfaceModel;
     private final DungeonEditorStateModel stateModel;
     private final DungeonEditorRuntimeDraftSession draftSession;
+    private final LongSupplier requestGeneration;
     private final ExecutionLane executionLane;
     private final DungeonEditorStateAssembler assembler = new DungeonEditorStateAssembler();
     private final List<Consumer<DungeonEditorState>> subscribers = new ArrayList<>();
@@ -29,12 +31,14 @@ final class DungeonEditorStatePublisher {
             DungeonEditorMapSurfaceModel mapSurfaceModel,
             DungeonEditorStateModel stateModel,
             DungeonEditorRuntimeDraftSession draftSession,
+            LongSupplier requestGeneration,
             ExecutionLane executionLane
     ) {
         this.controlsModel = Objects.requireNonNull(controlsModel, "controlsModel");
         this.mapSurfaceModel = Objects.requireNonNull(mapSurfaceModel, "mapSurfaceModel");
         this.stateModel = Objects.requireNonNull(stateModel, "stateModel");
         this.draftSession = Objects.requireNonNull(draftSession, "draftSession");
+        this.requestGeneration = Objects.requireNonNull(requestGeneration, "requestGeneration");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
         latestState = assembleCurrentState();
     }
@@ -83,6 +87,7 @@ final class DungeonEditorStatePublisher {
                 controlsModel, mapSurfaceModel, stateModel);
         return assembler.assemble(
                 publicationRevision,
+                requestGeneration.getAsLong(),
                 readback.controls(),
                 readback.mapSurface(),
                 readback.state(),

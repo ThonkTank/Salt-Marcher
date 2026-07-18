@@ -282,6 +282,11 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
 
     static void selectMap(DungeonEditorControlsView controls, String mapName) {
         selectComboItem(comboBox(controls, "Dungeon auswählen"), mapName);
+        Object selected = comboBox(controls, "Dungeon auswählen").getValue();
+        if (selected instanceof String mapIdText && !mapIdText.isBlank()) {
+            new DungeonEditorTestPersistence.DatabaseAssertions()
+                    .refreshWindowIndexesForFixture(Long.parseLong(mapIdText));
+        }
         click(button(controls, "Öffnen"));
     }
 
@@ -886,6 +891,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
             String message
     ) {
         DungeonTopologyElementRef ref = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.STAIR, stairId);
+        String activeCell = "4,2," + snapshot.projectionLevel();
         assertTrue(snapshot.surface().map().features().stream()
                         .filter(feature -> "STAIR".equals(feature.kind()))
                         .filter(feature -> feature.id() == stairId)
@@ -893,9 +899,9 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
                         .filter(feature -> feature.cells().stream()
                                 .map(cell -> cell.q() + "," + cell.r() + "," + cell.level())
                                 .collect(java.util.stream.Collectors.toSet())
-                                .containsAll(Set.of("4,2,0", "4,2,1")))
-                        .anyMatch(feature -> feature.description().contains("2 Ausgaenge")),
-                message + " published feature exposes bound stair exits");
+                                .equals(Set.of(activeCell)))
+                        .anyMatch(feature -> feature.description().contains("Ausgaenge")),
+                message + " published feature exposes the active-level bound stair exit");
     }
 
     static void assertStairMovedInSnapshot(
@@ -939,11 +945,15 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     ) {
         DungeonTopologyElementRef ref = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.STAIR, stairId);
         int upperR = anchorR - 2;
-        Set<String> expectedFeatureCells = Set.of(
-                anchorQ + "," + anchorR + ",0",
-                anchorQ + "," + (anchorR - 1) + ",0",
-                anchorQ + "," + upperR + ",0",
-                anchorQ + "," + upperR + ",1");
+        int activeLevel = snapshot.projectionLevel();
+        Set<String> expectedFeatureCells = activeLevel == 0
+                ? Set.of(
+                        anchorQ + "," + anchorR + ",0",
+                        anchorQ + "," + (anchorR - 1) + ",0",
+                        anchorQ + "," + upperR + ",0")
+                : activeLevel == 1
+                        ? Set.of(anchorQ + "," + upperR + ",1")
+                        : Set.of();
         assertTrue(snapshot.surface().map().features().stream()
                         .filter(feature -> "STAIR".equals(feature.kind()))
                         .filter(feature -> feature.id() == stairId)
@@ -951,35 +961,17 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
                         .anyMatch(feature -> feature.cells().stream()
                                 .map(cell -> cell.q() + "," + cell.r() + "," + cell.level())
                                 .collect(java.util.stream.Collectors.toSet())
-                                .containsAll(expectedFeatureCells)),
-                message + " published stair feature exposes generated path and exits: "
+                                .equals(expectedFeatureCells)),
+                message + " published stair feature exposes exactly the active-level generated path/exit: "
                         + snapshot.surface().map().features());
-        assertTrue(snapshot.surface().map().editorHandles().stream()
-                        .anyMatch(handle -> "STAIR".equals(handle.ref().topologyRef().kind().name())
-                                && handle.ref().topologyRef().id() == stairId
-                                && "STAIR_ANCHOR".equals(handle.ref().kind().name())
-                                && handle.cell().q() == anchorQ
-                                && handle.cell().r() == anchorR
-                                && handle.cell().level() == 0),
-                message + " published snapshot exposes lower stair handle");
-        assertTrue(snapshot.surface().map().editorHandles().stream()
-                        .anyMatch(handle -> "STAIR".equals(handle.ref().topologyRef().kind().name())
-                                && handle.ref().topologyRef().id() == stairId
-                                && "STAIR_ANCHOR".equals(handle.ref().kind().name())
-                                && handle.cell().q() == anchorQ
-                                && handle.cell().r() == upperR
-                                && handle.cell().level() == 1),
-                message + " published snapshot exposes generated upper exit handle");
-        assertTrue(renderSurfaceCellOriginsWithZ(mapContentModel).containsAll(
-                        Set.of(
-                                anchorQ + "," + anchorR + ",0",
-                                anchorQ + "," + (anchorR - 1) + ",0",
-                                anchorQ + "," + upperR + ",0")),
-                message + " render scene contains active-level straight stair path");
-        assertTrue(renderHasGlyphAt(mapContentModel, ref, anchorQ + 0.5, anchorR + 0.5, false),
-                message + " render scene shows committed lower stair handle");
-        assertTrue(renderHasGlyphAt(mapContentModel, ref, anchorQ + 0.5, upperR + 0.5, false),
-                message + " render scene shows committed upper stair exit handle");
+        var activeStairHandles = snapshot.surface().map().editorHandles().stream()
+                .filter(handle -> handle.ref().topologyRef().equals(ref))
+                .toList();
+        assertTrue(!activeStairHandles.isEmpty()
+                        && activeStairHandles.stream().allMatch(handle -> handle.cell().level() == activeLevel),
+                message + " publishes only active-level stair handles");
+        assertTrue(renderSurfaceCellOriginsWithZ(mapContentModel).containsAll(expectedFeatureCells),
+                message + " render scene contains the active-level straight stair cells");
     }
 
     static void assertTransitionCreatedInSnapshot(

@@ -28,7 +28,26 @@ final class DungeonEditorCorridorRoutePreviewValidationHelper {
         if (snapshot == null || startCell == null || endCell == null || startCell.level() != endCell.level()) {
             return true;
         }
+        if (features.dungeon.domain.core.structure.corridor.CorridorEndpointOrdering.canonicalOrder(
+                        endpointRole(start.endpoint()), endpointRole(end.endpoint()))
+                == features.dungeon.domain.core.structure.corridor.CorridorEndpointOrdering.InputOrder.SWAP) {
+            Cell originalStart = startCell;
+            startCell = endCell;
+            endCell = originalStart;
+        }
         return routingPolicy.route(startCell, endCell, roomCells(snapshot)).present();
+    }
+
+    private static features.dungeon.domain.core.structure.corridor.CorridorEndpointOrdering.EndpointRole endpointRole(
+            DungeonEditorWorkspaceValues.CorridorEndpoint endpoint
+    ) {
+        return switch (endpoint) {
+            case DungeonEditorWorkspaceValues.CorridorDoorEndpoint ignored ->
+                    features.dungeon.domain.core.structure.corridor.CorridorEndpointOrdering.EndpointRole.DOOR;
+            case DungeonEditorWorkspaceValues.CorridorAnchorEndpoint ignored ->
+                    features.dungeon.domain.core.structure.corridor.CorridorEndpointOrdering.EndpointRole.ANCHOR;
+            case null -> features.dungeon.domain.core.structure.corridor.CorridorEndpointOrdering.EndpointRole.EMPTY;
+        };
     }
 
     @Nullable Cell corridorCell(
