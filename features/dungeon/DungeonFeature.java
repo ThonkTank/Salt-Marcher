@@ -84,7 +84,7 @@ public final class DungeonFeature {
                 lane,
                 dispatcher);
         DungeonEditorFeatureRuntimeRoot editorRuntimeRoot =
-                DungeonEditorFeatureRuntimeRoot.create(editorDependencies);
+                DungeonEditorFeatureRuntimeRoot.createUnstarted(editorDependencies);
         DungeonEditorApi editorApi = new DungeonEditorApiFacade(editorRuntimeRoot, dispatcher);
         return new Component(
                 new DungeonEditorContribution(editorApi),
@@ -155,6 +155,10 @@ public final class DungeonFeature {
             authoredApi = Objects.requireNonNull(authoredApi, "authoredApi");
             editorApi = Objects.requireNonNull(editorApi, "editorApi");
             travelApi = Objects.requireNonNull(travelApi, "travelApi");
+        }
+
+        public void start() {
+            ((DungeonEditorApiFacade) editorApi).initialize();
         }
     }
 

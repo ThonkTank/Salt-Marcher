@@ -60,8 +60,11 @@ from refreshed `origin/main`.
   persistence-backed work through shared global lifecycle mechanisms.
 - Completed milestone: M0 locked the replacement target, persistence contract,
   user-visible behavior, migration order, and deletion gates on 2026-07-19.
-- Next milestone: M1 replaces global migration execution and the startup race with
-  owner-scoped readiness before moving any Catalog provider.
+- Locally completed milestone: M1 replaced global migration execution with owner-scoped
+  definitions, readiness, and handles and passed literal `./gradlew check` on 2026-07-19.
+- Publication state: the M1 pull request and required CI are pending; M2 must start only
+  after that pull request merges.
+- Next milestone: M2 migrates both supported Items predecessor shapes.
 - No Greenfield production route has been implemented yet.
 
 ## M0: Target Lock And Baseline
@@ -103,12 +106,32 @@ from refreshed `origin/main`.
 - retain the current `SqliteConnectionSource` shape only as an internal adapter within M1;
   delete it before M1 exits if no unchanged provider still requires it
 
+The temporary adapter is concretely `SqliteDatabase.connections(...)` returning
+`SqliteConnectionSource`. It remains only for unchanged Encounter, Encounter Table,
+Party, World Planner, Dungeon, Hex, Session Planner, Session Generation, and Scene
+SQLite adapters. Creatures and Items use `FeatureStoreHandle` directly. The adapter
+is deleted with the last unchanged provider during the final compatibility cleanup.
+
 ### Exit Gate
 
 - a newer unrelated owner cannot block a Creature or Item connection
 - no production startup task can race migration registration
 - owner migration failure rolls back that owner and leaves other ready owners usable
 - focused persistence/startup tests and `./gradlew check` are green
+
+### M1 Implementation Evidence
+
+- `SqliteDatabase` prepares immutable owner definitions independently and no longer
+  iterates all registered plans when a handle opens.
+- Creatures and Items consume `FeatureStoreHandle`; unchanged providers remain behind
+  the named temporary adapter above.
+- production composition prepares all eleven registered stores before explicitly
+  starting Creature, Party, World Planner, Encounter, Dungeon, and Hex work.
+- the startup guard failed on the former Encounter and Dungeon constructor work and is
+  green only after both moved behind the explicit start phase.
+- focused `SqliteDatabaseTest` and `SmokeStartupTest` routes are green.
+- literal merge-blocking proof: `./gradlew check --console=plain` returned
+  `BUILD SUCCESSFUL in 6m 29s` after rebasing onto the Encounter batch M2 merge.
 
 ## M2: Provider Compatibility And Items Migration
 

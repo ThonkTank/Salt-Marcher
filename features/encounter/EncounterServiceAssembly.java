@@ -98,7 +98,8 @@ public final class EncounterServiceAssembly {
                 generatedIoLane,
                 planRepository,
                 uiDispatcher,
-                diagnostics);
+                diagnostics,
+                false);
     }
 
     public static Component create(
@@ -150,7 +151,8 @@ public final class EncounterServiceAssembly {
                 executionLane,
                 planRepository,
                 uiDispatcher,
-                diagnostics);
+                diagnostics,
+                true);
     }
 
     private static Component create(
@@ -172,7 +174,8 @@ public final class EncounterServiceAssembly {
             ExecutionLane generatedIoLane,
             GeneratedEncounterBatchRepository generatedRepository,
             UiDispatcher uiDispatcher,
-            Diagnostics diagnostics
+            Diagnostics diagnostics,
+            boolean start
     ) {
         EncounterPublishedState publishedState = new EncounterPublishedState(
                 java.util.Objects.requireNonNull(uiDispatcher, "uiDispatcher"));
@@ -198,7 +201,7 @@ public final class EncounterServiceAssembly {
                 contextRepository,
                 java.util.Objects.requireNonNull(executionLane, "executionLane"),
                 generatedBatches);
-        return new Component(
+        Component component = new Component(
                 application,
                 application.runtimeContexts(),
                 publishedState.stateModel(),
@@ -207,6 +210,10 @@ public final class EncounterServiceAssembly {
                 publishedState.tuningPreviewModel(),
                 publishedState.savedPlansModel(),
                 publishedState.planBudgetModel());
+        if (start) {
+            component.start();
+        }
+        return component;
     }
 
     public record Component(
@@ -219,6 +226,10 @@ public final class EncounterServiceAssembly {
             features.encounter.api.SavedEncounterPlanListModel savedPlans,
             features.encounter.api.EncounterPlanBudgetModel planBudget
     ) {
+
+        public void start() {
+            ((EncounterApplicationService) application).initialize();
+        }
 
         public ShellContribution stateContribution(
                 CreaturesApi creatures,

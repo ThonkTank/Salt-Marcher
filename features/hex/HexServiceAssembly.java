@@ -60,7 +60,8 @@ public final class HexServiceAssembly {
                 party,
                 executionLane,
                 uiDispatcher,
-                diagnostics);
+                diagnostics,
+                false);
         return new Component(assembly);
     }
 
@@ -71,6 +72,25 @@ public final class HexServiceAssembly {
             ExecutionLane executionLane,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
+    ) {
+        this(
+                repository,
+                partyTravelPositions,
+                partyApplicationService,
+                executionLane,
+                uiDispatcher,
+                diagnostics,
+                true);
+    }
+
+    private HexServiceAssembly(
+            HexMapRepository repository,
+            PartyTravelPositionsModel partyTravelPositions,
+            PartyApi partyApplicationService,
+            ExecutionLane executionLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics,
+            boolean startReadback
     ) {
         HexMapRepository safeRepository = Objects.requireNonNull(repository, "repository");
         ExecutionLane lane = Objects.requireNonNull(executionLane, "executionLane");
@@ -92,7 +112,12 @@ public final class HexServiceAssembly {
                 travelState,
                 lane,
                 safeDiagnostics);
-        registerTravelReadback(Objects.requireNonNull(partyTravelPositions, "partyTravelPositions"));
+        PartyTravelPositionsModel safeTravelPositions = Objects.requireNonNull(
+                partyTravelPositions, "partyTravelPositions");
+        this.partyTravelPositions = safeTravelPositions;
+        if (startReadback) {
+            start();
+        }
     }
 
     public HexEditorApi editorApplication() {
@@ -114,6 +139,17 @@ public final class HexServiceAssembly {
     private void registerTravelReadback(PartyTravelPositionsModel partyTravelPositions) {
         travelApplicationService.acceptPartyTravelPosition(partyTravelPositions.current());
         partyTravelPositions.subscribe(travelApplicationService::acceptPartyTravelPosition);
+    }
+
+    private final PartyTravelPositionsModel partyTravelPositions;
+    private boolean started;
+
+    private synchronized void start() {
+        if (started) {
+            return;
+        }
+        started = true;
+        registerTravelReadback(partyTravelPositions);
     }
 
     public static final class Component {
@@ -138,6 +174,10 @@ public final class HexServiceAssembly {
 
         public HexTravelModel travelModel() {
             return assembly.travelModel;
+        }
+
+        public void start() {
+            assembly.start();
         }
 
         public ShellContribution mapContribution() {

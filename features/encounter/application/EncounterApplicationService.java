@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import platform.execution.DirectExecutionLane;
 import platform.execution.ExecutionLane;
 import features.encounter.domain.generation.EncounterGenerationInputs;
@@ -75,6 +76,7 @@ public final class EncounterApplicationService implements features.encounter.api
     private final ExecutionLane executionLane;
     private final EncounterRuntimeContextApi runtimeContexts;
     private final GeneratedEncounterBatchService generatedBatches;
+    private final AtomicBoolean initializationRequested = new AtomicBoolean();
 
     public EncounterApplicationService(
             EncounterSessionRuntimeAccess runtimeAccess,
@@ -129,7 +131,12 @@ public final class EncounterApplicationService implements features.encounter.api
                         0L,
                         "Encounter runtime contexts are unavailable."));
         this.generatedBatches = generatedBatches;
-        this.executionLane.execute(commands::initialize);
+    }
+
+    public void initialize() {
+        if (initializationRequested.compareAndSet(false, true)) {
+            executionLane.execute(commands::initialize);
+        }
     }
 
     @Override

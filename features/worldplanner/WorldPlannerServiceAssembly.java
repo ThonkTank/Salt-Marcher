@@ -64,7 +64,10 @@ public final class WorldPlannerServiceAssembly {
                 executionLane,
                 uiDispatcher,
                 diagnostics);
-        return new Component(assembly.createApplicationService(), assembly.snapshotModel());
+        return new Component(
+                assembly,
+                assembly.createApplicationServiceWithoutStarting(),
+                assembly.snapshotModelWithoutStarting());
     }
 
     public WorldPlannerServiceAssembly(
@@ -83,6 +86,10 @@ public final class WorldPlannerServiceAssembly {
 
     public WorldPlannerApplicationService createApplicationService() {
         scheduleInitialSnapshot();
+        return createApplicationServiceWithoutStarting();
+    }
+
+    private WorldPlannerApplicationService createApplicationServiceWithoutStarting() {
         return new WorldPlannerApplicationService(
                 repository,
                 referenceValidator,
@@ -93,6 +100,10 @@ public final class WorldPlannerServiceAssembly {
 
     public WorldPlannerSnapshotModel snapshotModel() {
         scheduleInitialSnapshot();
+        return snapshotModelWithoutStarting();
+    }
+
+    private WorldPlannerSnapshotModel snapshotModelWithoutStarting() {
         return publishedState.snapshotModel();
     }
 
@@ -117,12 +128,15 @@ public final class WorldPlannerServiceAssembly {
 
         private final WorldPlannerApplicationService application;
         private final WorldPlannerSnapshotModel snapshot;
+        private final WorldPlannerServiceAssembly assembly;
         private @Nullable WorldPlannerInspectorController activeInspectorController;
 
         private Component(
+                WorldPlannerServiceAssembly assembly,
                 WorldPlannerApplicationService application,
                 WorldPlannerSnapshotModel snapshot
         ) {
+            this.assembly = Objects.requireNonNull(assembly, "assembly");
             this.application = Objects.requireNonNull(application, "application");
             this.snapshot = Objects.requireNonNull(snapshot, "snapshot");
         }
@@ -133,6 +147,10 @@ public final class WorldPlannerServiceAssembly {
 
         public WorldPlannerSnapshotModel snapshot() {
             return snapshot;
+        }
+
+        public void start() {
+            assembly.scheduleInitialSnapshot();
         }
 
         public void openNpcInspector(
