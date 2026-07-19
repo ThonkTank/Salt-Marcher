@@ -2,6 +2,7 @@ package features.sessionplanner.qualification;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.creatures.CreaturesServiceAssembly;
@@ -53,6 +54,7 @@ import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
 import platform.diagnostics.Measurement;
 import platform.execution.BoundedExecutionLane;
+import platform.execution.ExecutionLane;
 import platform.execution.SerialExecutionLane;
 import platform.persistence.SqliteDatabase;
 import platform.ui.DirectUiDispatcher;
@@ -228,6 +230,87 @@ final class SessionPreparationProductionRouteTest {
 
         assertEquals(committed, reopenCurrentSession(path, diagnostics),
                 "post-boundary Planner revision and prepared content survive close and reopen");
+    }
+
+    @Test
+    void authoredMutationQueuedBeforeFinalPlannerTaskWinsFifoAndRemainsSolePlannerWrite() throws Exception {
+        RecordingDiagnostics diagnostics = new RecordingDiagnostics();
+        HoldingForeignCommitCompletion delayed = new HoldingForeignCommitCompletion();
+        SubmissionObservingExecutionLane observedAuthoredLane = new SubmissionObservingExecutionLane();
+        Path path = temporaryDirectory.resolve("session-preparation-authored-fifo.sqlite");
+        SessionPlan persisted;
+        try (ProductionFixture fixture = ProductionFixture.open(
+                path,
+                diagnostics,
+                delayed::wrap,
+                UnaryOperator.identity(),
+                DirectUiDispatcher.INSTANCE,
+                observedAuthoredLane::wrap)) {
+            assertSame(observedAuthoredLane, fixture.authored,
+                    "application mutations and final preparation commit must receive the same lane instance");
+            SessionPlan original = fixture.repository.loadCurrent().orElseThrow();
+            CountDownLatch blockerEntered = new CountDownLatch(1);
+            CountDownLatch releaseBlocker = new CountDownLatch(1);
+            fixture.authored.execute(() -> {
+                blockerEntered.countDown();
+                awaitLatch(releaseBlocker, "timed out waiting to release authored-lane blocker");
+            });
+            assertTrue(blockerEntered.await(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS),
+                    "authored-lane blocker was not entered");
+
+            long initialPublication = fixture.planner.workspaceModel().current().publicationRevision();
+            fixture.planner.application().prepareSession(new PrepareSessionCommand(
+                    OptionalInt.of(3), 179974L, false));
+            delayed.entered.get(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+            SessionPlannerWorkspaceSnapshot saving = awaitWorkspace(
+                    fixture.planner.workspaceModel(),
+                    initialPublication,
+                    workspace -> workspace.preparation().status() == SessionPreparationStatus.SAVING
+                            && workspace.preparation().cancelEnabled());
+
+            CountDownLatch mutationSubmitted = observedAuthoredLane.observeNextSubmission();
+            fixture.planner.application().renameSession(
+                    new SessionPlannerCatalogCommand.RenameSessionCommand(
+                            original.sessionId(), "FIFO authored mutation"));
+            assertTrue(mutationSubmitted.await(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS),
+                    "authored mutation was not submitted");
+
+            CopyOnWriteArrayList<SessionPreparationStatus> statusesAfterForeignRelease =
+                    new CopyOnWriteArrayList<>();
+            Runnable unsubscribe = fixture.planner.workspaceModel().subscribe(workspace ->
+                    statusesAfterForeignRelease.add(workspace.preparation().status()));
+            CountDownLatch finalPlannerTaskSubmitted = observedAuthoredLane.observeNextSubmission();
+            delayed.release.complete(null);
+            delayed.finished.get(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+            assertTrue(finalPlannerTaskSubmitted.await(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS),
+                    "final Planner task was not submitted to the authored lane");
+
+            CountDownLatch sentinel = new CountDownLatch(1);
+            fixture.authored.execute(sentinel::countDown);
+            releaseBlocker.countDown();
+            assertTrue(sentinel.await(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS),
+                    "authored-lane sentinel did not drain");
+            unsubscribe.run();
+
+            persisted = fixture.repository.loadCurrent().orElseThrow();
+            assertEquals("FIFO authored mutation", persisted.displayName());
+            assertEquals(original.revision().next(), persisted.revision(),
+                    "only the earlier authored mutation may advance the Planner revision");
+            assertTrue(persisted.encounters().isEmpty(), "prepared Planner scenes must not be committed");
+            assertTrue(persisted.generatedRewards().isEmpty(), "prepared Planner rewards must not be committed");
+            assertFalse(statusesAfterForeignRelease.contains(SessionPreparationStatus.READY),
+                    "the stale preparation must never publish a late READY");
+            assertEquals(1L, rowCount(path, "session_generation_runs"),
+                    "the immutable generation artifact may remain");
+            assertEquals(3L, rowCount(path, "generated_encounter_plan_origins"),
+                    "the immutable Encounter artifacts may remain");
+            assertEquals(SessionPreparationStatus.IDLE,
+                    fixture.planner.workspaceModel().current().preparation().status());
+            assertTrue(saving.preparation().cancelEnabled());
+        }
+
+        assertEquals(persisted, reopenCurrentSession(path, diagnostics),
+                "the sole authored mutation must remain durable after reopen");
     }
 
     private static BoundedExecutionLane lane(Diagnostics diagnostics, String name) {
@@ -473,7 +556,7 @@ final class SessionPreparationProductionRouteTest {
 
     static final class ProductionFixture implements AutoCloseable {
         private final SqliteDatabase database;
-        private final SerialExecutionLane authored;
+        final ExecutionLane authored;
         private final BoundedExecutionLane generationCpu;
         private final BoundedExecutionLane generationIo;
         private final BoundedExecutionLane encounterCpu;
@@ -488,7 +571,7 @@ final class SessionPreparationProductionRouteTest {
 
         private ProductionFixture(
                 SqliteDatabase database,
-                SerialExecutionLane authored,
+                ExecutionLane authored,
                 BoundedExecutionLane generationCpu,
                 BoundedExecutionLane generationIo,
                 BoundedExecutionLane encounterCpu,
@@ -540,7 +623,7 @@ final class SessionPreparationProductionRouteTest {
                 UnaryOperator<SessionPreparedSessionStore> preparedSessionStoreDecorator
         ) throws Exception {
             return open(path, diagnostics, generationDecorator, preparedSessionStoreDecorator,
-                    DirectUiDispatcher.INSTANCE);
+                    DirectUiDispatcher.INSTANCE, UnaryOperator.identity());
         }
 
         private static ProductionFixture open(
@@ -550,8 +633,20 @@ final class SessionPreparationProductionRouteTest {
                 UnaryOperator<SessionPreparedSessionStore> preparedSessionStoreDecorator,
                 platform.ui.UiDispatcher uiDispatcher
         ) throws Exception {
+            return open(path, diagnostics, generationDecorator, preparedSessionStoreDecorator,
+                    uiDispatcher, UnaryOperator.identity());
+        }
+
+        private static ProductionFixture open(
+                Path path,
+                RecordingDiagnostics diagnostics,
+                UnaryOperator<SessionGenerationApi> generationDecorator,
+                UnaryOperator<SessionPreparedSessionStore> preparedSessionStoreDecorator,
+                platform.ui.UiDispatcher uiDispatcher,
+                UnaryOperator<ExecutionLane> authoredLaneDecorator
+        ) throws Exception {
             SqliteDatabase database = new SqliteDatabase(path, diagnostics);
-            SerialExecutionLane authored = new SerialExecutionLane(diagnostics);
+            ExecutionLane authored = authoredLaneDecorator.apply(new SerialExecutionLane(diagnostics));
             BoundedExecutionLane generationCpu = lane(diagnostics, "qualification-generation-cpu");
             BoundedExecutionLane generationIo = lane(diagnostics, "qualification-generation-io");
             BoundedExecutionLane encounterCpu = lane(diagnostics, "qualification-encounter-cpu");
@@ -640,6 +735,76 @@ final class SessionPreparationProductionRouteTest {
                     return delayed;
                 }
             };
+        }
+    }
+
+    private static final class SubmissionObservingExecutionLane implements ExecutionLane {
+        private final Object submissionLock = new Object();
+        private final List<SubmissionWaiter> waiters = new ArrayList<>();
+        private ExecutionLane delegate;
+        private long submissions;
+
+        private ExecutionLane wrap(ExecutionLane wrapped) {
+            synchronized (submissionLock) {
+                if (delegate != null) {
+                    throw new IllegalStateException("authored lane already wrapped");
+                }
+                delegate = wrapped;
+            }
+            return this;
+        }
+
+        private CountDownLatch observeNextSubmission() {
+            synchronized (submissionLock) {
+                CountDownLatch observed = new CountDownLatch(1);
+                waiters.add(new SubmissionWaiter(submissions + 1L, observed));
+                return observed;
+            }
+        }
+
+        @Override
+        public void execute(Runnable work) {
+            ExecutionLane target;
+            synchronized (submissionLock) {
+                target = delegate;
+                if (target == null) {
+                    throw new IllegalStateException("authored lane is not wrapped");
+                }
+                submissions++;
+                waiters.removeIf(waiter -> {
+                    if (waiter.targetSubmission() <= submissions) {
+                        waiter.observed().countDown();
+                        return true;
+                    }
+                    return false;
+                });
+            }
+            target.execute(work);
+        }
+
+        @Override
+        public void close() {
+            ExecutionLane target;
+            synchronized (submissionLock) {
+                target = delegate;
+            }
+            if (target != null) {
+                target.close();
+            }
+        }
+
+        private record SubmissionWaiter(long targetSubmission, CountDownLatch observed) {
+        }
+    }
+
+    private static void awaitLatch(CountDownLatch latch, String failureMessage) {
+        try {
+            if (!latch.await(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS)) {
+                throw new IllegalStateException(failureMessage);
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("interrupted while awaiting test latch", exception);
         }
     }
 

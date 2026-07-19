@@ -245,9 +245,11 @@ acceptance after the last UI diff.
   `git diff --check`, required `check` (`7m 27s`), and desktop install (`25s`)
   are green after the final M4 code diff.
 - M5 closure: Session preparation now owns bounded two-worker
-  `session-preparation-cpu` and `session-preparation-io` lanes; authored commands
-  alone retain the global serial lane. Party and Creature preparation reads use
-  the preparation I/O lane, while JDBC-observed diagnostics report two prepared
+  `session-preparation-cpu` and `session-preparation-io` lanes. Authored commands
+  and only preparation's final active/revision recheck, point of no return, and
+  Planner commit share the authored FIFO writer lane; orchestration and foreign
+  I/O remain outside it. Party and Creature preparation reads use the
+  preparation I/O lane, while JDBC-observed diagnostics report two prepared
   statement families for each owner read and seven for one complete planner
   workspace capture. Architecture gates enforce passive JavaFX, the sole
   workspace publication, dependency direction, and absence of the retired

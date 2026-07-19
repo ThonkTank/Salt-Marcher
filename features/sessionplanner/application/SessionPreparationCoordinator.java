@@ -68,6 +68,7 @@ public final class SessionPreparationCoordinator {
     private final EncounterApi encounters;
     private final ExecutionLane cpuLane;
     private final ExecutionLane ioLane;
+    private final ExecutionLane authoredWriterLane;
     private final Diagnostics diagnostics;
     private long attemptSequence;
     private Attempt active;
@@ -81,6 +82,7 @@ public final class SessionPreparationCoordinator {
             EncounterApi encounters,
             ExecutionLane cpuLane,
             ExecutionLane ioLane,
+            ExecutionLane authoredWriterLane,
             Diagnostics diagnostics
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
@@ -91,6 +93,7 @@ public final class SessionPreparationCoordinator {
         this.encounters = Objects.requireNonNull(encounters, "encounters");
         this.cpuLane = Objects.requireNonNull(cpuLane, "cpuLane");
         this.ioLane = Objects.requireNonNull(ioLane, "ioLane");
+        this.authoredWriterLane = Objects.requireNonNull(authoredWriterLane, "authoredWriterLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
@@ -399,10 +402,13 @@ public final class SessionPreparationCoordinator {
             return;
         }
         attempt.plannerCommitStartedNanos = System.nanoTime();
-        dispatchIo(attempt, () -> commitPlanner(attempt, command), "Session konnte nicht gespeichert werden.");
+        scheduleAuthoredCommit(attempt, () -> commitPlanner(attempt, command));
     }
 
     private void commitPlanner(Attempt attempt, CommitPreparedSessionCommand command) {
+        if (!isActive(attempt)) {
+            return;
+        }
         CommitPreparedSessionResult result;
         try {
             Optional<SessionPlan> current = repository.loadCurrent();
@@ -424,6 +430,14 @@ public final class SessionPreparationCoordinator {
             return;
         }
         scheduleCpu(attempt, () -> completePlannerCommit(attempt, result), "Session konnte nicht gespeichert werden.");
+    }
+
+    private void scheduleAuthoredCommit(Attempt attempt, Runnable work) {
+        try {
+            authoredWriterLane.execute(work);
+        } catch (RuntimeException exception) {
+            fail(attempt, "Session konnte nicht gespeichert werden.", exception);
+        }
     }
 
     private synchronized void completePlannerCommit(Attempt attempt, CommitPreparedSessionResult result) {

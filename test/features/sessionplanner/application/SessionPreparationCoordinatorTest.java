@@ -392,6 +392,26 @@ final class SessionPreparationCoordinatorTest {
         }
     }
 
+    @Test
+    void authoredWriterLaneRejectionBeforePointOfNoReturnFailsWithoutPlannerWrite() {
+        try (Fixture fixture = fixture(
+                "authored-writer-rejection.db",
+                generationResult(),
+                new RejectAllExecutionLane(),
+                DirectExecutionLane.INSTANCE,
+                DirectExecutionLane.INSTANCE)) {
+            fixture.prepare();
+
+            assertEquals(SessionPreparationStatus.FAILED,
+                    fixture.planner.workspaceModel().current().preparation().status());
+            assertFalse(fixture.planner.workspaceModel().current().preparation().cancelEnabled());
+            assertEquals(1, fixture.generation.commitCalls);
+            assertEquals(1, fixture.encounters.commitCalls);
+            assertEquals(0, fixture.preparedSessions.commitCalls);
+            assertEquals(1L, fixture.repository.loadCurrent().orElseThrow().revision().value());
+        }
+    }
+
     private Fixture fixture(String databaseName) {
         return fixture(databaseName, generationResult(), DirectExecutionLane.INSTANCE);
     }
@@ -400,6 +420,16 @@ final class SessionPreparationCoordinatorTest {
             String databaseName,
             GenerationResult result,
             ExecutionLane lane
+    ) {
+        return fixture(databaseName, result, lane, lane, lane);
+    }
+
+    private Fixture fixture(
+            String databaseName,
+            GenerationResult result,
+            ExecutionLane authoredLane,
+            ExecutionLane cpuLane,
+            ExecutionLane ioLane
     ) {
         SqliteDatabase database = new SqliteDatabase(
                 temporaryDirectory.resolve(databaseName), NoopDiagnostics.INSTANCE);
@@ -421,9 +451,9 @@ final class SessionPreparationCoordinatorTest {
                 emptySavedPlans(),
                 null,
                 generation,
-                lane,
-                lane,
-                lane,
+                authoredLane,
+                cpuLane,
+                ioLane,
                 DirectUiDispatcher.INSTANCE,
                 NoopDiagnostics.INSTANCE);
         planner.application().initialize();
@@ -690,6 +720,18 @@ final class SessionPreparationCoordinatorTest {
                 throw new IllegalStateException("simulated callback scheduling rejection");
             }
             work.run();
+        }
+
+        @Override
+        public void close() {
+        }
+    }
+
+    private static final class RejectAllExecutionLane implements ExecutionLane {
+
+        @Override
+        public void execute(Runnable work) {
+            throw new IllegalStateException("simulated authored writer scheduling rejection");
         }
 
         @Override

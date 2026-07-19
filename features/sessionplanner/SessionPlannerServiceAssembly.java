@@ -96,6 +96,7 @@ public final class SessionPlannerServiceAssembly {
                 safeEncounters,
                 cpuLane,
                 ioLane,
+                authoredLane,
                 diagnostics);
         SessionPlannerApplicationService application = new SessionPlannerApplicationService(
                 safeRepository, publication, preparation, authoredLane, diagnostics);

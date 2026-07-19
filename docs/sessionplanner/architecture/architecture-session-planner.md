@@ -160,6 +160,10 @@ implementation package or repository.
 - resource and SQLite work run on I/O execution; database transactions remain
   short and contain no generation search
 - no global serial lane encloses the whole preparation workflow
+- only the final active-attempt check, current Session identity/revision
+  recheck, synchronized Planner-commit point of no return, and
+  `commitPreparedSession` share the authored FIFO writer lane with ordinary
+  Planner mutations; command assembly and all foreign work remain outside it
 - each request has a cancellation token and captured fingerprint
 - a newer request, session switch, or relevant authored revision cancels or
   invalidates older work
@@ -168,9 +172,11 @@ implementation package or repository.
 - `saving` remains cancellable while the two immutable, idempotent foreign
   commits finish; cancellation retains those artifacts and skips the Planner
   write without compensation
-- after both foreign commits and command assembly, the coordinator rechecks the
-  current Session identity and revision, then enters one synchronized final
-  Planner-commit point of no return immediately before `commitPreparedSession`
+- after both foreign commits and command assembly, the coordinator submits the
+  final task to the authored writer lane; on that lane it first rechecks the
+  active attempt and current Session identity and revision, then enters one
+  synchronized final Planner-commit point of no return immediately before
+  `commitPreparedSession`
 - entering that boundary atomically verifies the attempt is still latest,
   marks it non-cancellable, and republishes the same attempt and Session as
   `saving` with cancellation disabled; failure to enter skips the Planner store
