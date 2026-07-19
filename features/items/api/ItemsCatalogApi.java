@@ -17,6 +17,7 @@ public interface ItemsCatalogApi {
         SUCCESS,
         INVALID_QUERY,
         UNAVAILABLE,
+        INCOMPATIBLE,
         NOT_FOUND,
         STORAGE_ERROR,
         EXECUTION_ERROR

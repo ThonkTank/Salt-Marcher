@@ -24,7 +24,8 @@ assignment, crafting, and authored item editing are non-goals.
   attunement, damage or armor facts when available, and source attribution in
   the Inspector.
 - Empty, invalid-filter, loading, unavailable-data, and storage-error states
-  are explicit.
+  are explicit; an incompatible local Items schema is distinguished from a
+  missing import.
 - The surface contains no create, edit, delete, loot generation, assignment,
   or inventory action.
 
@@ -46,4 +47,6 @@ assignment, crafting, and authored item editing are non-goals.
   imported projection
 - a missing import is an isolated Items unavailable state and does not break
   other Catalog contents
+- an incompatible Items schema is an isolated Items failure and does not break
+  Monster or other provider-backed Catalog contents
 - no Item UI or application command mutates imported item truth

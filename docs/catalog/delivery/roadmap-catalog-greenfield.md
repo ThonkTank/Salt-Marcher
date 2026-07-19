@@ -62,9 +62,11 @@ from refreshed `origin/main`.
   user-visible behavior, migration order, and deletion gates on 2026-07-19.
 - Locally completed milestone: M1 replaced global migration execution with owner-scoped
   definitions, readiness, and handles and passed literal `./gradlew check` on 2026-07-19.
-- Publication state: the M1 pull request and required CI are pending; M2 must start only
+- M1 publication: PR #530 merged with required CI green.
+- Locally completed milestone: M2 migrates both supported Items predecessor shapes into
+  the unambiguous version-2 target and passed literal `./gradlew check` on 2026-07-19.
+- Publication state: the M2 pull request and required CI are pending; M3 starts only
   after that pull request merges.
-- Next milestone: M2 migrates both supported Items predecessor shapes.
 - No Greenfield production route has been implemented yet.
 
 ## M0: Target Lock And Baseline
@@ -162,6 +164,20 @@ is deleted with the last unchanged provider during the final compatibility clean
 - failed validation leaves the complete before-state unchanged
 - Items failure does not affect Creature search
 - focused provider tests and `./gradlew check` are green
+
+### M2 Implementation Evidence
+
+- target tables are `items_catalog_entries` and `items_catalog_tags` under owner version `2`.
+- the released v1 step remains unchanged; v2 classifies the exact legacy, intermediate,
+  or target signature before mutation.
+- the legacy fixture preserves `legacy:<slug>` identity, numeric provenance, semantic
+  fields, normalized tags, raw source-property text, and nullable attribution.
+- the intermediate fixture preserves canonical source keys, details, tags, and attribution.
+- both fixtures reopen at version `2` without predecessor tables or repeat migration.
+- the unknown fixture retains its original schema, row, and owner version; Items reports
+  `INCOMPATIBLE` while a Creature production adapter remains `READY` and readable.
+- all Items tests are green; literal `./gradlew check --console=plain` returned
+  `BUILD SUCCESSFUL in 5m 43s` on the final code and documentation diff.
 
 ## M3: Catalog Browse Runtime
 
