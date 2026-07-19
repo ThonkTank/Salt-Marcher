@@ -226,7 +226,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         private final Button moveUp = compactButton("Hoch", STYLE_FLAT);
         private final Button moveDown = compactButton("Runter", STYLE_FLAT);
         private final VBox lootRows = new VBox(6);
-        private final Button addLoot = compactButton("Loot-Platzhalter", STYLE_ACCENT);
+        private final Button addLoot = compactButton("Beutenotiz", STYLE_ACCENT);
         private final VBox editor = new VBox(6);
 
         private SessionPlannerViewModel.TimelineProjection.SceneModel model;
@@ -379,15 +379,16 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 boolean disabled
         ) {
             List<Node> cards = new ArrayList<>();
-            if (scene.lootPlaceholders().isEmpty()) {
-                cards.add(styledLabel("Keine Loot-Platzhalter fuer diese Szene.",
+            if (scene.lootEntries().isEmpty()) {
+                cards.add(styledLabel("Keine Beutenotizen oder generierten Belohnungen.",
                         STYLE_TEXT_SECONDARY, "session-planner-empty"));
             } else {
-                for (var loot : scene.lootPlaceholders()) {
+                for (var loot : scene.lootEntries()) {
                     Button remove = compactButton("Entfernen", STYLE_FLAT);
-                    remove.setDisable(disabled);
+                    remove.setDisable(disabled || !loot.manualNote());
                     remove.setOnAction(event -> removeLootHandler.accept(loot.token()));
-                    HBox row = new HBox(8, styledLabel(loot.label()), spacer(), remove);
+                    String prefix = loot.manualNote() ? "Notiz: " : "Generierte Belohnung: ";
+                    HBox row = new HBox(8, styledLabel(prefix + loot.label()), spacer(), remove);
                     row.setAlignment(Pos.CENTER_LEFT);
                     row.getStyleClass().add("session-planner-loot-card");
                     cards.add(row);

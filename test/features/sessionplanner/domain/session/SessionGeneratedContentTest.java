@@ -22,7 +22,7 @@ final class SessionGeneratedContentTest {
         SessionPlan original = SessionPlan.seeded(7L, List.of(11L, 12L), new EncounterDays(new BigDecimal("0.6")))
                 .rename("Moon Vault")
                 .addScene()
-                .addLootPlaceholder(1L);
+                .addManualLootNote(1L);
         List<SessionEncounter> scenes = List.of(
                 new SessionEncounter(1L, 101L, new SessionEncounterAllocation(new BigDecimal("40"))),
                 new SessionEncounter(2L, 102L, new SessionEncounterAllocation(new BigDecimal("60"))));
@@ -36,7 +36,7 @@ final class SessionGeneratedContentTest {
         assertEquals("Moon Vault", replaced.displayName());
         assertEquals(List.of(11L, 12L), replaced.participantRefs());
         assertEquals(new BigDecimal("0.6"), replaced.encounterDays().value());
-        assertTrue(replaced.lootPlaceholders().isEmpty());
+        assertTrue(replaced.manualLootNotes().isEmpty());
         assertEquals(rewards, replaced.generatedRewards());
         assertTrue(replaced.restPlacements().isEmpty());
     }
@@ -59,11 +59,11 @@ final class SessionGeneratedContentTest {
                                 3L,
                                 "Vault reward")));
 
-        repository.save(plan);
+        repository.insert(plan);
         SessionPlan loaded = repository.loadById(8L).orElseThrow();
 
         assertEquals(plan.generatedRewards(), loaded.generatedRewards());
-        assertTrue(loaded.lootPlaceholders().isEmpty());
+        assertTrue(loaded.manualLootNotes().isEmpty());
         database.close();
     }
 }

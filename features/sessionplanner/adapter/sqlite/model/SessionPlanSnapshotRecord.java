@@ -7,7 +7,7 @@ public record SessionPlanSnapshotRecord(
         List<SessionParticipantRecord> participants,
         List<SessionEncounterRecord> encounters,
         List<SessionRestPlacementRecord> rests,
-        List<SessionLootPlaceholderRecord> lootPlaceholders,
+        List<SessionManualLootNoteRecord> manualLootNotes,
         List<SessionGeneratedRewardRecord> generatedRewards
 ) {
 
@@ -15,7 +15,7 @@ public record SessionPlanSnapshotRecord(
         participants = participants == null ? List.of() : List.copyOf(participants);
         encounters = encounters == null ? List.of() : List.copyOf(encounters);
         rests = rests == null ? List.of() : List.copyOf(rests);
-        lootPlaceholders = lootPlaceholders == null ? List.of() : List.copyOf(lootPlaceholders);
+        manualLootNotes = manualLootNotes == null ? List.of() : List.copyOf(manualLootNotes);
         generatedRewards = generatedRewards == null ? List.of() : List.copyOf(generatedRewards);
     }
 }

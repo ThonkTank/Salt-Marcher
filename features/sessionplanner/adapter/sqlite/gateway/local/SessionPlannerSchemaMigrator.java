@@ -58,6 +58,36 @@ final class SessionPlannerSchemaMigrator {
         }
     }
 
+    void addRevisionAndManualLootNotes(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            if (!SqliteSchemaColumnSupport.hasColumn(
+                    connection,
+                    SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE,
+                    "revision")) {
+                statement.execute(ALTER_TABLE
+                        + SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE
+                        + ADD_COLUMN
+                        + "revision INTEGER NOT NULL DEFAULT 1");
+            }
+            statement.execute("UPDATE " + SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE
+                    + " SET revision = 1 WHERE revision < 1");
+            statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_MANUAL_LOOT_NOTES_SQL);
+            statement.execute("INSERT INTO "
+                    + SessionPlannerPersistenceSchema.SESSION_MANUAL_LOOT_NOTES_TABLE
+                    + " (session_id, note_id, scene_id, note_text, sort_order) "
+                    + "SELECT legacy.session_id, legacy.loot_id, "
+                    + "CASE WHEN legacy.encounter_id > 0 THEN legacy.encounter_id ELSE ("
+                    + "SELECT scene.encounter_id FROM "
+                    + SessionPlannerPersistenceSchema.SESSION_ENCOUNTERS_TABLE
+                    + " scene WHERE scene.session_id = legacy.session_id "
+                    + "ORDER BY scene.sort_order, scene.encounter_id LIMIT 1) END, "
+                    + "legacy.label, legacy.sort_order FROM "
+                    + SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE
+                    + " legacy ORDER BY legacy.session_id, legacy.sort_order, legacy.loot_id");
+            statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_MANUAL_LOOT_NOTES_ORDER_INDEX_SQL);
+        }
+    }
+
     private static void addSceneTitleColumnIfMissing(Connection connection, Statement statement) throws SQLException {
         if (!SqliteSchemaColumnSupport.hasColumn(
                 connection,

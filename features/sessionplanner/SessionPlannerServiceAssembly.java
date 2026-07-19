@@ -1,107 +1,42 @@
 package features.sessionplanner;
 
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import org.jspecify.annotations.Nullable;
-import platform.diagnostics.Diagnostics;
-import platform.diagnostics.NoopDiagnostics;
-import platform.execution.DirectExecutionLane;
-import platform.execution.ExecutionLane;
-import platform.persistence.SqliteDatabase;
-import platform.ui.DirectUiDispatcher;
-import platform.ui.UiDispatcher;
-import shell.api.ShellContribution;
 import features.encounter.api.EncounterApi;
 import features.encounter.api.EncounterPlanBudgetModel;
 import features.encounter.api.SavedEncounterPlanListModel;
 import features.party.api.ActivePartyModel;
 import features.party.api.AdventuringDayCalculationModel;
 import features.party.api.PartyApi;
-import features.sessiongeneration.api.GenerationRequest;
-import features.sessiongeneration.api.GenerationResponse;
-import features.sessiongeneration.api.CommitGenerationRunCommand;
-import features.sessiongeneration.api.GenerationDraftResponse;
-import features.sessiongeneration.api.GenerationRewardBatchQuery;
-import features.sessiongeneration.api.GenerationRewardBatchResponse;
-import features.sessiongeneration.api.GenerationRunResponse;
-import features.sessiongeneration.api.GenerationRunId;
-import features.sessiongeneration.api.GenerationStatus;
 import features.sessiongeneration.api.SessionGenerationApi;
 import features.sessionplanner.adapter.javafx.SessionPlannerContribution;
 import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
-import features.sessionplanner.api.SessionGenerationPreviewModel;
+import features.sessionplanner.api.PreparedSceneCatalogModel;
 import features.sessionplanner.api.SessionPlannerApi;
 import features.sessionplanner.api.SessionPlannerCatalogModel;
 import features.sessionplanner.api.SessionPlannerCurrentSessionModel;
 import features.sessionplanner.api.SessionPlannerParticipantsModel;
 import features.sessionplanner.api.SessionPlannerSceneTimelineModel;
 import features.sessionplanner.api.SessionPlannerStatePanelModel;
-import features.sessionplanner.api.PreparedSceneCatalogModel;
-import features.sessionplanner.application.SessionGenerationCoordinator;
-import features.sessionplanner.application.SessionGenerationPublishedState;
+import features.sessionplanner.api.SessionPreparationModel;
 import features.sessionplanner.application.SessionPlannerApplicationService;
 import features.sessionplanner.application.SessionPlannerForeignFacts;
 import features.sessionplanner.application.SessionPlannerProjection;
 import features.sessionplanner.application.SessionPlannerPublishedState;
+import features.sessionplanner.application.SessionPreparationCoordinator;
+import features.sessionplanner.application.SessionPreparationPublishedState;
+import features.sessionplanner.application.SessionPreparedSessionStore;
 import features.sessionplanner.domain.session.repository.SessionPlanRepository;
 import features.worldplanner.api.WorldPlannerSnapshotModel;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
+import platform.diagnostics.Diagnostics;
+import platform.execution.ExecutionLane;
+import platform.persistence.SqliteDatabase;
+import platform.ui.UiDispatcher;
+import shell.api.ShellContribution;
 
 public final class SessionPlannerServiceAssembly {
 
     private final Runtime runtime;
-
-    public SessionPlannerServiceAssembly(
-            SessionPlanRepository repository,
-            PartyApi party,
-            ActivePartyModel activeParty,
-            AdventuringDayCalculationModel dayCalculation,
-            EncounterApi encounters,
-            SavedEncounterPlanListModel savedPlans,
-            EncounterPlanBudgetModel planBudget,
-            @Nullable WorldPlannerSnapshotModel worldPlanner
-    ) {
-        this(
-                repository,
-                party,
-                activeParty,
-                dayCalculation,
-                encounters,
-                savedPlans,
-                planBudget,
-                worldPlanner,
-                unavailableGeneration(),
-                DirectExecutionLane.INSTANCE,
-                DirectUiDispatcher.INSTANCE,
-                NoopDiagnostics.INSTANCE);
-    }
-
-    public static SessionPlannerServiceAssembly create(
-            SqliteDatabase database,
-            PartyApi party,
-            ActivePartyModel activeParty,
-            AdventuringDayCalculationModel dayCalculation,
-            EncounterApi encounters,
-            SavedEncounterPlanListModel savedPlans,
-            EncounterPlanBudgetModel planBudget,
-            @Nullable WorldPlannerSnapshotModel worldPlanner,
-            ExecutionLane executionLane,
-            UiDispatcher uiDispatcher,
-            Diagnostics diagnostics
-    ) {
-        return create(
-                database,
-                party,
-                activeParty,
-                dayCalculation,
-                encounters,
-                savedPlans,
-                planBudget,
-                worldPlanner,
-                unavailableGeneration(),
-                executionLane,
-                uiDispatcher,
-                diagnostics);
-    }
 
     public static SessionPlannerServiceAssembly create(
             SqliteDatabase database,
@@ -117,51 +52,16 @@ public final class SessionPlannerServiceAssembly {
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
+        SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(
+                Objects.requireNonNull(database, "database"));
         return new SessionPlannerServiceAssembly(
-                new SqliteSessionPlanRepository(Objects.requireNonNull(database, "database")),
-                party,
-                activeParty,
-                dayCalculation,
-                encounters,
-                savedPlans,
-                planBudget,
-                worldPlanner,
-                generation,
-                executionLane,
-                uiDispatcher,
-                diagnostics);
+                repository, repository, party, activeParty, dayCalculation, encounters,
+                savedPlans, planBudget, worldPlanner, generation, executionLane, uiDispatcher, diagnostics);
     }
 
     public SessionPlannerServiceAssembly(
             SessionPlanRepository repository,
-            PartyApi party,
-            ActivePartyModel activeParty,
-            AdventuringDayCalculationModel dayCalculation,
-            EncounterApi encounters,
-            SavedEncounterPlanListModel savedPlans,
-            EncounterPlanBudgetModel planBudget,
-            @Nullable WorldPlannerSnapshotModel worldPlanner,
-            ExecutionLane executionLane,
-            UiDispatcher uiDispatcher,
-            Diagnostics diagnostics
-    ) {
-        this(
-                repository,
-                party,
-                activeParty,
-                dayCalculation,
-                encounters,
-                savedPlans,
-                planBudget,
-                worldPlanner,
-                unavailableGeneration(),
-                executionLane,
-                uiDispatcher,
-                diagnostics);
-    }
-
-    public SessionPlannerServiceAssembly(
-            SessionPlanRepository repository,
+            SessionPreparedSessionStore preparedSessions,
             PartyApi party,
             ActivePartyModel activeParty,
             AdventuringDayCalculationModel dayCalculation,
@@ -178,33 +78,27 @@ public final class SessionPlannerServiceAssembly {
         ExecutionLane safeExecutionLane = Objects.requireNonNull(executionLane, "executionLane");
         Diagnostics safeDiagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
         UiDispatcher safeUiDispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
+        EncounterApi safeEncounters = Objects.requireNonNull(encounters, "encounters");
         SessionPlannerForeignFacts facts = new SessionPlannerForeignFacts(
-                party, activeParty, dayCalculation, encounters, savedPlans, planBudget, worldPlanner);
+                party, activeParty, dayCalculation, safeEncounters, savedPlans, planBudget, worldPlanner);
         SessionPlannerPublishedState publishedState = new SessionPlannerPublishedState(
+                safeRepository, facts, new SessionPlannerProjection(), safeUiDispatcher);
+        SessionPreparationPublishedState preparationState = new SessionPreparationPublishedState(safeUiDispatcher);
+        SessionPreparationCoordinator coordinator = new SessionPreparationCoordinator(
                 safeRepository,
-                facts,
-                new SessionPlannerProjection(),
-                safeUiDispatcher);
-        SessionGenerationPublishedState generationState = new SessionGenerationPublishedState(safeUiDispatcher);
-        SessionGenerationCoordinator generationCoordinator = new SessionGenerationCoordinator(
-                safeRepository,
+                Objects.requireNonNull(preparedSessions, "preparedSessions"),
                 facts,
                 publishedState,
-                generationState,
+                preparationState,
                 Objects.requireNonNull(generation, "generation"),
-                Objects.requireNonNull(encounters, "encounters"),
+                safeEncounters,
                 safeExecutionLane,
                 safeDiagnostics);
         SessionPlannerApplicationService application = new SessionPlannerApplicationService(
-                safeRepository,
-                facts,
-                publishedState,
-                generationCoordinator,
-                safeExecutionLane,
-                safeDiagnostics);
+                safeRepository, facts, publishedState, coordinator, safeExecutionLane, safeDiagnostics);
         facts.subscribeLocationRefresh(application::refreshForeignFacts);
         facts.subscribePartyRefresh(application::refreshPartyFacts);
-        runtime = new Runtime(publishedState, generationState, application);
+        runtime = new Runtime(publishedState, preparationState, application);
     }
 
     public SessionPlannerApi application() {
@@ -231,8 +125,8 @@ public final class SessionPlannerServiceAssembly {
         return runtime.publishedState().statePanelModel();
     }
 
-    public SessionGenerationPreviewModel generationPreviewModel() {
-        return runtime.generationState().model();
+    public SessionPreparationModel preparationModel() {
+        return runtime.preparationState().model();
     }
 
     public PreparedSceneCatalogModel preparedScenes() {
@@ -241,64 +135,13 @@ public final class SessionPlannerServiceAssembly {
 
     public ShellContribution contribution() {
         return new SessionPlannerContribution(
-                runtime.applicationService(),
-                currentSessionModel(),
-                catalogModel(),
-                participantsModel(),
-                sceneTimelineModel(),
-                statePanelModel(),
-                generationPreviewModel());
-    }
-
-    private static SessionGenerationApi unavailableGeneration() {
-        return new SessionGenerationApi() {
-            @Override
-            public java.util.concurrent.CompletionStage<GenerationDraftResponse> draft(GenerationRequest request) {
-                return CompletableFuture.completedFuture(GenerationDraftResponse.failure(
-                        GenerationStatus.CATALOG_FAILURE, "Session generation is not configured."));
-            }
-
-            @Override
-            public java.util.concurrent.CompletionStage<GenerationRunResponse> commit(
-                    CommitGenerationRunCommand command
-            ) {
-                return CompletableFuture.completedFuture(GenerationRunResponse.failure(
-                        GenerationStatus.STORAGE_FAILURE, "Session generation is not configured."));
-            }
-
-            @Override
-            public java.util.concurrent.CompletionStage<GenerationRunResponse> loadRun(GenerationRunId runId) {
-                return CompletableFuture.completedFuture(GenerationRunResponse.failure(
-                        GenerationStatus.NOT_FOUND, "Session generation is not configured."));
-            }
-
-            @Override
-            public java.util.concurrent.CompletionStage<GenerationRewardBatchResponse> loadRewards(
-                    GenerationRewardBatchQuery query
-            ) {
-                return CompletableFuture.completedFuture(GenerationRewardBatchResponse.failure(
-                        GenerationStatus.STORAGE_FAILURE, "Session generation is not configured."));
-            }
-
-            @Override
-            public java.util.concurrent.CompletionStage<GenerationResponse> generate(GenerationRequest request) {
-                return CompletableFuture.completedFuture(GenerationResponse.failure(
-                        GenerationStatus.CATALOG_FAILURE,
-                        "Session generation is not configured."));
-            }
-
-            @Override
-            public java.util.concurrent.CompletionStage<GenerationResponse> load(GenerationRunId runId) {
-                return CompletableFuture.completedFuture(GenerationResponse.failure(
-                        GenerationStatus.NOT_FOUND,
-                        "Session generation is not configured."));
-            }
-        };
+                runtime.applicationService(), currentSessionModel(), catalogModel(), participantsModel(),
+                sceneTimelineModel(), statePanelModel(), preparationModel());
     }
 
     private record Runtime(
             SessionPlannerPublishedState publishedState,
-            SessionGenerationPublishedState generationState,
+            SessionPreparationPublishedState preparationState,
             SessionPlannerApplicationService applicationService
     ) {
     }

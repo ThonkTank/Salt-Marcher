@@ -85,13 +85,9 @@ public final class SqliteEncounterLocalGateway {
             boolean previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {
-                Optional<GeneratedEncounterBatchSqliteStore.StoredBatch> existing =
-                        generatedBatches.load(connection, batch);
-                if (existing.isPresent()) {
-                    GeneratedEncounterBatchRepository.CommitOutcome outcome = retryOutcome(batch, existing.orElseThrow());
-                    connection.rollback();
-                    return outcome;
-                }
+                // Insert-first acquires SQLite write intent before any read snapshot exists.
+                // A concurrent canonical identity is resolved after rollback by rereading
+                // the winner's committed semantic batch.
                 generatedBatches.insertBatch(connection, batch);
                 List<GeneratedEncounterBatchRepository.Mapping> mappings =
                         store.insertGeneratedPlans(connection, batch.rosters());

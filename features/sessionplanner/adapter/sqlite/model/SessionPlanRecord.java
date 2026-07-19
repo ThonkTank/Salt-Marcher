@@ -2,6 +2,7 @@ package features.sessionplanner.adapter.sqlite.model;
 
 public record SessionPlanRecord(
         long sessionId,
+        long revision,
         String displayName,
         String encounterDays,
         long selectedEncounterId,
@@ -12,6 +13,9 @@ public record SessionPlanRecord(
 
     public SessionPlanRecord {
         sessionId = Math.max(1L, sessionId);
+        if (revision < 1L) {
+            throw new IllegalArgumentException("session revision must be positive");
+        }
         displayName = displayName == null || displayName.isBlank()
                 ? "Session #" + sessionId
                 : displayName.trim();

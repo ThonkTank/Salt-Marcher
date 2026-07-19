@@ -43,7 +43,7 @@ public record SessionPlannerSceneTimelineProjection(
             String sceneTitle,
             String sceneNotes,
             long locationId,
-            List<LootPlaceholder> lootPlaceholders
+            List<LootEntry> lootEntries
     ) {
 
         public SessionScene {
@@ -63,12 +63,12 @@ public record SessionPlannerSceneTimelineProjection(
             sceneTitle = sceneTitle == null ? "" : sceneTitle.trim();
             sceneNotes = sceneNotes == null ? "" : sceneNotes.trim();
             locationId = Math.max(0L, locationId);
-            lootPlaceholders = copy(lootPlaceholders);
+            lootEntries = copy(lootEntries);
         }
 
         @Override
-        public List<LootPlaceholder> lootPlaceholders() {
-            return List.copyOf(lootPlaceholders);
+        public List<LootEntry> lootEntries() {
+            return List.copyOf(lootEntries);
         }
     }
 
@@ -87,14 +87,21 @@ public record SessionPlannerSceneTimelineProjection(
         }
     }
 
-    public record LootPlaceholder(
+    public record LootEntry(
+            Kind kind,
             long token,
             String label
     ) {
 
-        public LootPlaceholder {
+        public LootEntry {
+            kind = kind == null ? Kind.MANUAL_NOTE : kind;
             token = Math.max(0L, token);
             label = label == null ? "" : label.trim();
+        }
+
+        public enum Kind {
+            MANUAL_NOTE,
+            GENERATED_REWARD
         }
     }
 

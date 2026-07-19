@@ -406,8 +406,11 @@ final class SessionPlannerViewModel {
                     locationId,
                     locationLabel(locationId, locationOptions),
                     locationChoices(locationId, locationOptions),
-                    scene.lootPlaceholders().stream()
-                            .map(loot -> new LootModel(loot.token(), loot.label()))
+                    scene.lootEntries().stream()
+                            .map(entry -> new LootModel(
+                                    entry.token(),
+                                    entry.label(),
+                                    entry.kind() == SessionPlannerSceneTimelineProjection.LootEntry.Kind.MANUAL_NOTE))
                             .toList());
         }
 
@@ -469,7 +472,7 @@ final class SessionPlannerViewModel {
                 long locationId,
                 String locationLabel,
                 List<LocationChoice> locationChoices,
-                List<LootModel> lootPlaceholders
+                List<LootModel> lootEntries
         ) {
 
             SceneModel {
@@ -486,7 +489,7 @@ final class SessionPlannerViewModel {
                 locationId = Math.max(0L, locationId);
                 locationLabel = SessionPlannerVocabulary.text(locationLabel);
                 locationChoices = safeCopy(locationChoices);
-                lootPlaceholders = safeCopy(lootPlaceholders);
+                lootEntries = safeCopy(lootEntries);
             }
 
             String displayTitle() {
@@ -524,7 +527,7 @@ final class SessionPlannerViewModel {
             }
         }
 
-        record LootModel(long token, String label) {
+        record LootModel(long token, String label, boolean manualNote) {
 
             LootModel {
                 token = Math.max(0L, token);

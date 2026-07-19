@@ -11,6 +11,7 @@ public final class SessionPlannerPersistenceSchema {
     public static final String SESSION_ENCOUNTERS_TABLE = "session_planner_encounters";
     public static final String SESSION_RESTS_TABLE = "session_planner_rests";
     public static final String SESSION_LOOT_PLACEHOLDERS_TABLE = "session_planner_loot_placeholders";
+    public static final String SESSION_MANUAL_LOOT_NOTES_TABLE = "session_planner_manual_loot_notes";
     public static final String SESSION_GENERATED_REWARDS_TABLE = "session_planner_generated_rewards";
     public static final String SESSION_LOOT_ENCOUNTER_ID_COLUMN = "encounter_id";
     public static final String SESSION_ENCOUNTER_SCENE_TITLE_COLUMN = "scene_title";
@@ -27,6 +28,7 @@ public final class SessionPlannerPersistenceSchema {
     public static final String CREATE_SESSION_PLANS_SQL =
             CREATE_TABLE_IF_NOT_EXISTS + SESSION_PLANS_TABLE + " ("
                     + "session_id INTEGER PRIMARY KEY, "
+                    + "revision INTEGER NOT NULL DEFAULT 1, "
                     + "display_name TEXT NOT NULL DEFAULT '', "
                     + "encounter_days TEXT NOT NULL, "
                     + "selected_encounter_id INTEGER NOT NULL DEFAULT 0, "
@@ -97,6 +99,19 @@ public final class SessionPlannerPersistenceSchema {
                     + "(session_id, encounter_id) ON DELETE CASCADE"
                     + ")";
 
+    public static final String CREATE_SESSION_MANUAL_LOOT_NOTES_SQL =
+            CREATE_TABLE_IF_NOT_EXISTS + SESSION_MANUAL_LOOT_NOTES_TABLE + " ("
+                    + REQUIRED_SESSION_REFERENCE
+                    + "note_id INTEGER NOT NULL, "
+                    + "scene_id INTEGER NOT NULL, "
+                    + "note_text TEXT NOT NULL, "
+                    + SORT_ORDER_COLUMN_DECLARATION
+                    + "PRIMARY KEY(session_id, note_id), "
+                    + "FOREIGN KEY(session_id, scene_id) REFERENCES "
+                    + SESSION_ENCOUNTERS_TABLE
+                    + "(session_id, encounter_id) ON DELETE CASCADE"
+                    + ")";
+
     public static final String CREATE_SESSION_PARTICIPANTS_ORDER_INDEX_SQL =
             "CREATE INDEX IF NOT EXISTS idx_session_planner_participants_order ON "
                     + SESSION_PARTICIPANTS_TABLE + SESSION_ORDER_INDEX_COLUMNS;
@@ -116,6 +131,10 @@ public final class SessionPlannerPersistenceSchema {
     public static final String CREATE_SESSION_GENERATED_REWARDS_ORDER_INDEX_SQL =
             "CREATE INDEX IF NOT EXISTS idx_session_planner_generated_rewards_order ON "
                     + SESSION_GENERATED_REWARDS_TABLE + SESSION_ORDER_INDEX_COLUMNS;
+
+    public static final String CREATE_SESSION_MANUAL_LOOT_NOTES_ORDER_INDEX_SQL =
+            "CREATE INDEX IF NOT EXISTS idx_session_planner_manual_loot_notes_order ON "
+                    + SESSION_MANUAL_LOOT_NOTES_TABLE + SESSION_ORDER_INDEX_COLUMNS;
 
     private SessionPlannerPersistenceSchema() {
     }

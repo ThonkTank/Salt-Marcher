@@ -10,6 +10,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
@@ -32,8 +33,18 @@ import features.sessionplanner.domain.session.EncounterDays;
 import features.sessionplanner.domain.session.SessionPlan;
 import features.sessionplanner.domain.session.SessionPlanSummary;
 import features.sessionplanner.domain.session.repository.SessionPlanRepository;
+import features.sessionplanner.domain.session.repository.SessionPlanSaveResult;
 import features.sessionplanner.api.SessionPlannerCatalogCommand;
 import features.sessionplanner.api.SetSessionEncounterDaysCommand;
+import features.sessiongeneration.api.CommitGenerationRunCommand;
+import features.sessiongeneration.api.GenerationDraftResponse;
+import features.sessiongeneration.api.GenerationRequest;
+import features.sessiongeneration.api.GenerationRewardBatchQuery;
+import features.sessiongeneration.api.GenerationRewardBatchResponse;
+import features.sessiongeneration.api.GenerationRunId;
+import features.sessiongeneration.api.GenerationRunResponse;
+import features.sessiongeneration.api.GenerationStatus;
+import features.sessiongeneration.api.SessionGenerationApi;
 
 final class SessionPlannerRuntimeMechanismsTest {
 
@@ -249,6 +260,7 @@ final class SessionPlannerRuntimeMechanismsTest {
                 listener -> () -> { });
         return new SessionPlannerServiceAssembly(
                 repository,
+                (SessionPreparedSessionStore) repository,
                 party.application(),
                 party.activeParty(),
                 party.adventuringDayCalculation(),
@@ -256,9 +268,42 @@ final class SessionPlannerRuntimeMechanismsTest {
                 savedPlans,
                 planBudget,
                 null,
+                unavailableGeneration(),
                 lane,
                 dispatcher,
                 diagnostics);
+    }
+
+    private static SessionGenerationApi unavailableGeneration() {
+        return new SessionGenerationApi() {
+            @Override
+            public java.util.concurrent.CompletionStage<GenerationDraftResponse> draft(GenerationRequest request) {
+                return CompletableFuture.completedFuture(GenerationDraftResponse.failure(
+                        GenerationStatus.GENERATION_FAILURE, "not used"));
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<GenerationRunResponse> commit(
+                    CommitGenerationRunCommand command
+            ) {
+                return CompletableFuture.completedFuture(GenerationRunResponse.failure(
+                        GenerationStatus.STORAGE_FAILURE, "not used"));
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<GenerationRunResponse> load(GenerationRunId runId) {
+                return CompletableFuture.completedFuture(GenerationRunResponse.failure(
+                        GenerationStatus.NOT_FOUND, "not used"));
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<GenerationRewardBatchResponse> loadRewards(
+                    GenerationRewardBatchQuery query
+            ) {
+                return CompletableFuture.completedFuture(GenerationRewardBatchResponse.failure(
+                        GenerationStatus.NOT_FOUND, "not used"));
+            }
+        };
     }
 
     private static final class InMemoryPartyRepository implements PartyRosterRepository {
@@ -276,7 +321,8 @@ final class SessionPlannerRuntimeMechanismsTest {
         }
     }
 
-    private static final class RecordingSessionRepository implements SessionPlanRepository {
+    private static final class RecordingSessionRepository
+            implements SessionPlanRepository, SessionPreparedSessionStore {
 
         private SessionPlan current;
         private int reads;
@@ -321,20 +367,31 @@ final class SessionPlannerRuntimeMechanismsTest {
         }
 
         @Override
-        public SessionPlan save(SessionPlan sessionPlan) {
+        public SessionPlanSaveResult insert(SessionPlan sessionPlan) {
+            return store(sessionPlan);
+        }
+
+        @Override
+        public SessionPlanSaveResult save(SessionPlan sessionPlan) {
+            return store(sessionPlan);
+        }
+
+        private SessionPlanSaveResult store(SessionPlan sessionPlan) {
             saves++;
             if (failSaves) {
                 throw storageFailure();
             }
-            current = sessionPlan;
-            return current;
-        }
-
-        @Override
-        public void rename(long sessionId, String displayName) {
-            if (current != null && current.sessionId() == sessionId) {
-                current = current.rename(displayName);
-            }
+            current = new SessionPlan(
+                    sessionPlan.sessionId(), sessionPlan.revision().next(), sessionPlan.displayName(),
+                    sessionPlan.participantRefs(), sessionPlan.encounterDays(), sessionPlan.encounters(),
+                    sessionPlan.restPlacements(), sessionPlan.manualLootNotes(), sessionPlan.generatedRewards(),
+                    sessionPlan.selectedEncounterId(), sessionPlan.statusText(), sessionPlan.nextEncounterId(),
+                    sessionPlan.nextLootId());
+            return new SessionPlanSaveResult(
+                    SessionPlanSaveResult.Status.SUCCESS,
+                    sessionPlan.revision(),
+                    Optional.of(current.revision()),
+                    Optional.of(current));
         }
 
         @Override
@@ -354,6 +411,11 @@ final class SessionPlannerRuntimeMechanismsTest {
 
         @Override
         public void setCurrentSessionId(long sessionId) {
+        }
+
+        @Override
+        public CommitPreparedSessionResult commitPreparedSession(CommitPreparedSessionCommand command) {
+            return new CommitPreparedSessionResult.StorageFailure("not used");
         }
 
         private void failIfRequested() {

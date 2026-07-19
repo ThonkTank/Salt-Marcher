@@ -13,9 +13,9 @@ public interface SessionPlanRepository {
 
     List<SessionPlanSummary> listSessions();
 
-    SessionPlan save(SessionPlan sessionPlan);
+    SessionPlanSaveResult insert(SessionPlan sessionPlan);
 
-    void rename(long sessionId, String displayName);
+    SessionPlanSaveResult save(SessionPlan sessionPlan);
 
     void delete(long sessionId);
 

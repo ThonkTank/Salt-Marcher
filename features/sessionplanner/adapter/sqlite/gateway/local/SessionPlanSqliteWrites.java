@@ -7,7 +7,7 @@ import java.sql.SQLException;
 import java.util.List;
 import features.sessionplanner.adapter.sqlite.model.SessionEncounterRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionGeneratedRewardRecord;
-import features.sessionplanner.adapter.sqlite.model.SessionLootPlaceholderRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionManualLootNoteRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionParticipantRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionPlanRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionRestPlacementRecord;
@@ -30,17 +30,6 @@ final class SessionPlanSqliteWrites {
         }
     }
 
-    void renameSession(Connection connection, long sessionId, String displayName) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "UPDATE "
-                        + SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE
-                        + " SET display_name = ?, updated_at = CURRENT_TIMESTAMP WHERE session_id = ?")) {
-            statement.setString(1, displayName == null ? "" : displayName.trim());
-            statement.setLong(2, sessionId);
-            statement.executeUpdate();
-        }
-    }
-
     void deleteSession(Connection connection, long sessionId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
                 "DELETE FROM "
@@ -51,12 +40,12 @@ final class SessionPlanSqliteWrites {
         }
     }
 
-    void savePlan(Connection connection, SessionPlanRecord plan) throws SQLException {
-        if (existsPlan(connection, plan.sessionId())) {
-            updatePlan(connection, plan);
-        } else {
-            insertPlan(connection, plan);
-        }
+    boolean insertPlan(Connection connection, SessionPlanRecord plan) throws SQLException {
+        return insertPlanRow(connection, plan) == 1;
+    }
+
+    boolean updatePlan(Connection connection, SessionPlanRecord plan) throws SQLException {
+        return updatePlanRow(connection, plan) == 1;
     }
 
     void replaceParticipants(Connection connection, long sessionId, List<SessionParticipantRecord> participants)
@@ -74,12 +63,12 @@ final class SessionPlanSqliteWrites {
         childTableWrites.replaceRests(connection, sessionId, rests);
     }
 
-    void replaceLootPlaceholders(
+    void replaceManualLootNotes(
             Connection connection,
             long sessionId,
-            List<SessionLootPlaceholderRecord> lootPlaceholders
+            List<SessionManualLootNoteRecord> manualLootNotes
     ) throws SQLException {
-        childTableWrites.replaceLootPlaceholders(connection, sessionId, lootPlaceholders);
+        childTableWrites.replaceManualLootNotes(connection, sessionId, manualLootNotes);
     }
 
     void replaceGeneratedRewards(
@@ -90,44 +79,33 @@ final class SessionPlanSqliteWrites {
         childTableWrites.replaceGeneratedRewards(connection, sessionId, generatedRewards);
     }
 
-    private static boolean existsPlan(Connection connection, long sessionId) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT 1 FROM "
-                        + SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE
-                        + " WHERE session_id = ?")) {
-            statement.setLong(1, sessionId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                return resultSet.next();
-            }
-        }
-    }
-
-    private static void insertPlan(Connection connection, SessionPlanRecord plan) throws SQLException {
+    private static int insertPlanRow(Connection connection, SessionPlanRecord plan) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
                 INSERT_INTO
                         + SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE
                         + " "
-                        + "(session_id, display_name, encounter_days, selected_encounter_id, status_text, "
-                        + "next_encounter_id, next_loot_id) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
+                        + "(session_id, revision, display_name, encounter_days, selected_encounter_id, status_text, "
+                        + "next_encounter_id, next_loot_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
             statement.setLong(1, plan.sessionId());
-            statement.setString(2, plan.displayName());
-            statement.setString(3, plan.encounterDays());
-            statement.setLong(4, plan.selectedEncounterId());
-            statement.setString(5, plan.statusText());
-            statement.setLong(6, plan.nextEncounterId());
-            statement.setLong(7, plan.nextLootId());
-            statement.executeUpdate();
+            statement.setLong(2, plan.revision());
+            statement.setString(3, plan.displayName());
+            statement.setString(4, plan.encounterDays());
+            statement.setLong(5, plan.selectedEncounterId());
+            statement.setString(6, plan.statusText());
+            statement.setLong(7, plan.nextEncounterId());
+            statement.setLong(8, plan.nextLootId());
+            return statement.executeUpdate();
         }
     }
 
-    private static void updatePlan(Connection connection, SessionPlanRecord plan) throws SQLException {
+    private static int updatePlanRow(Connection connection, SessionPlanRecord plan) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
                 "UPDATE "
                         + SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE
                         + " "
-                        + "SET display_name = ?, encounter_days = ?, selected_encounter_id = ?, status_text = ?, "
-                        + "next_encounter_id = ?, next_loot_id = ?, updated_at = CURRENT_TIMESTAMP "
-                        + "WHERE session_id = ?")) {
+                        + "SET revision = revision + 1, display_name = ?, encounter_days = ?, "
+                        + "selected_encounter_id = ?, status_text = ?, next_encounter_id = ?, next_loot_id = ?, "
+                        + "updated_at = CURRENT_TIMESTAMP WHERE session_id = ? AND revision = ?")) {
             statement.setString(1, plan.displayName());
             statement.setString(2, plan.encounterDays());
             statement.setLong(3, plan.selectedEncounterId());
@@ -135,7 +113,8 @@ final class SessionPlanSqliteWrites {
             statement.setLong(5, plan.nextEncounterId());
             statement.setLong(6, plan.nextLootId());
             statement.setLong(7, plan.sessionId());
-            statement.executeUpdate();
+            statement.setLong(8, plan.revision());
+            return statement.executeUpdate();
         }
     }
 }
