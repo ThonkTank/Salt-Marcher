@@ -14,6 +14,8 @@ import features.sessionplanner.api.AttachSessionEncounterCommand;
 import features.sessionplanner.api.ClearSessionRestGapCommand;
 import features.sessionplanner.api.DetachSessionEncounterCommand;
 import features.sessionplanner.api.RemoveSessionManualLootNoteCommand;
+import features.sessionplanner.api.UpdateSessionManualLootNoteCommand;
+import features.sessionplanner.api.SessionPlannerAuthoredTarget;
 import features.sessionplanner.api.SearchSessionEncounterPlansCommand;
 import features.sessionplanner.api.SessionPlannerCatalogCommand;
 import features.sessionplanner.api.SessionPlannerEncounterAllocationCommand;
@@ -63,7 +65,7 @@ final class SessionPlannerBinder {
         timelineView.bind(viewModel);
         stateView.bind(viewModel);
 
-        catalogView.onViewInputEvent(event -> consumeCatalog(planner, viewModel, event));
+        catalogView.onViewInputEvent(event -> consumeCatalog(planner, viewModel, timelineView, event));
 
         controlsView.onAddParticipant(characterId -> ifSession(viewModel, () -> {
             if (characterId > 0L) {
@@ -105,10 +107,11 @@ final class SessionPlannerBinder {
                 planner.removeEncounter(SessionPlannerEncounterCommand.remove(sceneToken));
             }
         }));
-        timelineView.onSaveScene((sceneToken, title, notes, locationId) -> ifSession(viewModel, () -> {
-            if (sceneToken > 0L) {
+        timelineView.onSaveScene(draft -> ifSession(viewModel, () -> {
+            if (draft.sceneToken() > 0L) {
                 planner.updateEncounterScene(new UpdateSessionEncounterSceneCommand(
-                        sceneToken, title.trim(), notes.trim(), locationId));
+                        target(draft.sessionId(), draft.expectedRevision()),
+                        draft.sceneToken(), draft.title(), draft.notes(), draft.locationId()));
             }
         }));
         timelineView.onShortRest((left, right) ->
@@ -120,14 +123,25 @@ final class SessionPlannerBinder {
                 planner.clearRestGap(new ClearSessionRestGapCommand(left, right));
             }
         }));
-        timelineView.onAddLoot(sceneToken -> ifSession(viewModel, () -> {
-            if (sceneToken > 0L) {
-                planner.addManualLootNote(new AddSessionManualLootNoteCommand(sceneToken));
+        timelineView.onAddLoot(draft -> ifSession(viewModel, () -> {
+            if (draft.sceneToken() > 0L) {
+                planner.addManualLootNote(new AddSessionManualLootNoteCommand(
+                        target(draft.sessionId(), draft.expectedRevision()),
+                        draft.sceneToken(), draft.authoredText()));
             }
         }));
-        timelineView.onRemoveLoot(lootToken -> ifSession(viewModel, () -> {
-            if (lootToken > 0L) {
-                planner.removeManualLootNote(new RemoveSessionManualLootNoteCommand(lootToken));
+        timelineView.onUpdateLoot(draft -> ifSession(viewModel, () -> {
+            if (draft.noteId() > 0L) {
+                planner.updateManualLootNote(new UpdateSessionManualLootNoteCommand(
+                        target(draft.sessionId(), draft.expectedRevision()),
+                        draft.sceneToken(), draft.noteId(), draft.authoredText()));
+            }
+        }));
+        timelineView.onRemoveLoot(draft -> ifSession(viewModel, () -> {
+            if (draft.noteId() > 0L) {
+                planner.removeManualLootNote(new RemoveSessionManualLootNoteCommand(
+                        target(draft.sessionId(), draft.expectedRevision()),
+                        draft.sceneToken(), draft.noteId()));
             }
         }));
         timelineView.onAttachPlan((sceneToken, planId) -> ifSession(viewModel, () -> {
@@ -197,6 +211,7 @@ final class SessionPlannerBinder {
     private static void consumeCatalog(
             SessionPlannerApi planner,
             SessionPlannerViewModel viewModel,
+            SessionPlannerTimelineMainView timelineView,
             CatalogCrudControlsViewInputEvent event
     ) {
         if (event == null) {
@@ -210,11 +225,24 @@ final class SessionPlannerBinder {
             viewModel.selectCatalogItem(itemId);
             if (!openItemId.isBlank()) {
                 planner.selectSession(new SessionPlannerCatalogCommand.SelectSessionCommand(
-                        SessionPlannerVocabulary.parsePositiveLong(openItemId)));
+                        SessionPlannerVocabulary.parsePositiveLong(openItemId),
+                        timelineView.pendingSceneEdit().map(SessionPlannerBinder::sceneCommand)));
             }
             return;
         }
         consumeCatalogMutation(planner, viewModel, event);
+    }
+
+    private static UpdateSessionEncounterSceneCommand sceneCommand(
+            SessionPlannerTimelineMainView.SceneEditDraft draft
+    ) {
+        return new UpdateSessionEncounterSceneCommand(
+                target(draft.sessionId(), draft.expectedRevision()), draft.sceneToken(),
+                draft.title(), draft.notes(), draft.locationId());
+    }
+
+    private static SessionPlannerAuthoredTarget target(long sessionId, long revision) {
+        return new SessionPlannerAuthoredTarget(sessionId, revision);
     }
 
     private static void consumeCatalogMutation(

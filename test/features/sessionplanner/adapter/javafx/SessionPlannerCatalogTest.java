@@ -443,9 +443,9 @@ public final class SessionPlannerCatalogTest {
                 .addScene()
                 .selectEncounter(2L)
                 .attachEncounter(2L, 202L)
-                .addManualLootNote(1L)
-                .addManualLootNote(2L)
-                .addManualLootNote(1L);
+                .addManualLootNote(1L, "First")
+                .addManualLootNote(2L, "Second")
+                .addManualLootNote(1L, "Third");
         assertEquals(Integer.valueOf(3), Integer.valueOf(plan.manualLootNotes().size()),
                 "manual notes are stored on the session plan");
         assertEquals(Long.valueOf(1L), Long.valueOf(plan.manualLootNotes().get(0).sceneId()),
@@ -588,12 +588,32 @@ public final class SessionPlannerCatalogTest {
         assertTrue(hasLabel(main, "Old Gate"), "scene header renders saved location label");
 
         expandScene(main, 0);
-        buttons(main, "Beutenotiz").getFirst().fire();
+        visibleTextField(main, "Neue Beutenotiz").setText("Hidden cache beneath the altar");
+        buttons(main, "Hinzufügen").getFirst().fire();
         layout(main);
         assertEquals(Integer.valueOf(1),
                 Integer.valueOf(workspace.current().selectedScene().manualLootNotes().size()),
                 "manual note add through scene card publishes note");
-        assertTrue(hasLabel(main, "Beutenotiz 1"), "manual note renders as authored content");
+        assertEquals("Hidden cache beneath the altar",
+                workspace.current().selectedScene().manualLootNotes().getFirst().authoredText(),
+                "manual note renders the exact authored content");
+        TextField manualNote = manualNoteField(main);
+        manualNote.setText("Edited cache beneath the altar");
+        manualNote.requestFocus();
+        manualNote.selectRange(2, 8);
+        services.planner().application().setEncounterDays(
+                new features.sessionplanner.api.SetSessionEncounterDaysCommand(new BigDecimal("1.1")));
+        layout(main);
+        assertEquals("Edited cache beneath the altar", manualNote.getText(),
+                "same-scene publication preserves a keyed dirty manual-note editor");
+        assertTrue(manualNote.isFocused() && manualNote.getAnchor() == 2
+                        && manualNote.getCaretPosition() == 8,
+                "same-scene publication preserves manual-note focus and caret selection");
+        button(main, "Speichern").fire();
+        layout(main);
+        assertEquals("Edited cache beneath the altar",
+                workspace.current().selectedScene().manualLootNotes().getFirst().authoredText(),
+                "existing authored note update flows through the real inspector contribution");
         button(main, "Entfernen").fire();
         layout(main);
         assertEquals(Integer.valueOf(0),
@@ -743,7 +763,8 @@ public final class SessionPlannerCatalogTest {
 
         textField(main, "Szenentitel").setText("UNSAVED OLD TITLE");
         textArea(main, "Szenennotizen").setText("unsaved old notes");
-        button(main, "Beutenotiz").fire();
+        visibleTextField(main, "Neue Beutenotiz").setText("Keep draft alive");
+        button(main, "Hinzufügen").fire();
         layout(main);
         assertEquals("UNSAVED OLD TITLE", textField(main, "Szenentitel").getText(),
                 "workspace refresh does not overwrite focused unconfirmed title input");
@@ -761,8 +782,10 @@ public final class SessionPlannerCatalogTest {
 
         selectSession(controls, firstSessionId);
         layout(main);
-        assertEquals("First persisted", planner.workspaceModel().current().selectedScene().sceneTitle(),
-                "session switch reset performs no dirty commit into the old session either");
+        assertEquals("UNSAVED OLD TITLE", planner.workspaceModel().current().selectedScene().sceneTitle(),
+                "catalog switch atomically commits the old dirty scene before returning to it");
+        assertEquals("unsaved old notes", planner.workspaceModel().current().selectedScene().sceneNotes(),
+                "the switched-away scene notes remain durable without copying into the target session");
     }
 
     private static void assertEncounterSearchIsDemandDrivenAndBounded() {
@@ -843,7 +866,7 @@ public final class SessionPlannerCatalogTest {
         SessionPlannerViewModel viewModel = new SessionPlannerViewModel();
         view.bind(viewModel);
         List<String> events = new java.util.ArrayList<>();
-        view.onSaveScene((token, title, notes, locationId) -> events.add("save:" + token + ":" + title));
+        view.onSaveScene(draft -> events.add("save:" + draft.sceneToken() + ":" + draft.title()));
         view.onSelectScene(token -> events.add("select:" + token));
         Stage stage = new Stage();
         stage.setScene(new Scene(view, 820.0, 500.0));
@@ -1071,6 +1094,16 @@ public final class SessionPlannerCatalogTest {
                 .filter(SessionPlannerCatalogTest::isEffectivelyVisible)
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Visible text field not found: " + promptText));
+    }
+
+    private static TextField manualNoteField(Parent parent) {
+        return descendants(parent).stream()
+                .filter(TextField.class::isInstance)
+                .map(TextField.class::cast)
+                .filter(field -> field.getAccessibleText() != null
+                        && field.getAccessibleText().startsWith("Text der manuellen Beutenotiz "))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Manual note editor not found."));
     }
 
     private static ComboBox<?> locationCombo(Parent parent) {

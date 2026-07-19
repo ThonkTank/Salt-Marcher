@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.LongConsumer;
 import javafx.geometry.Pos;
@@ -48,12 +49,13 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     private AllocationHandler allocationHandler = (token, percentage) -> { };
     private MoveHandler moveHandler = (token, up) -> { };
     private LongConsumer removeSceneHandler = ignored -> { };
-    private SceneEditHandler saveSceneHandler = (token, title, notes, locationId) -> { };
+    private SceneEditHandler saveSceneHandler = draft -> { };
     private RestHandler shortRestHandler = (left, right) -> { };
     private RestHandler longRestHandler = (left, right) -> { };
     private RestHandler clearRestHandler = (left, right) -> { };
-    private LongConsumer addLootHandler = ignored -> { };
-    private LongConsumer removeLootHandler = ignored -> { };
+    private ManualNoteAddHandler addLootHandler = draft -> { };
+    private ManualNoteEditHandler updateLootHandler = draft -> { };
+    private ManualNoteRemoveHandler removeLootHandler = draft -> { };
     private AttachPlanHandler attachPlanHandler = (sceneToken, planId) -> { };
     private LongConsumer detachPlanHandler = ignored -> { };
     private PlanSearchHandler planSearchHandler = (sceneToken, query) -> { };
@@ -74,12 +76,13 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     public void onSetAllocation(AllocationHandler handler) { allocationHandler = handler == null ? (t, p) -> { } : handler; }
     public void onMoveScene(MoveHandler handler) { moveHandler = handler == null ? (t, u) -> { } : handler; }
     public void onRemoveScene(LongConsumer handler) { removeSceneHandler = handler == null ? ignored -> { } : handler; }
-    public void onSaveScene(SceneEditHandler handler) { saveSceneHandler = handler == null ? (t, a, b, l) -> { } : handler; }
+    public void onSaveScene(SceneEditHandler handler) { saveSceneHandler = handler == null ? draft -> { } : handler; }
     public void onShortRest(RestHandler handler) { shortRestHandler = handler == null ? (l, r) -> { } : handler; }
     public void onLongRest(RestHandler handler) { longRestHandler = handler == null ? (l, r) -> { } : handler; }
     public void onClearRest(RestHandler handler) { clearRestHandler = handler == null ? (l, r) -> { } : handler; }
-    public void onAddLoot(LongConsumer handler) { addLootHandler = handler == null ? ignored -> { } : handler; }
-    public void onRemoveLoot(LongConsumer handler) { removeLootHandler = handler == null ? ignored -> { } : handler; }
+    public void onAddLoot(ManualNoteAddHandler handler) { addLootHandler = handler == null ? draft -> { } : handler; }
+    public void onUpdateLoot(ManualNoteEditHandler handler) { updateLootHandler = handler == null ? draft -> { } : handler; }
+    public void onRemoveLoot(ManualNoteRemoveHandler handler) { removeLootHandler = handler == null ? draft -> { } : handler; }
     public void onAttachPlan(AttachPlanHandler handler) { attachPlanHandler = handler == null ? (s, p) -> { } : handler; }
     public void onDetachPlan(LongConsumer handler) { detachPlanHandler = handler == null ? ignored -> { } : handler; }
     public void onSearchPlans(PlanSearchHandler handler) { planSearchHandler = handler == null ? (s, q) -> { } : handler; }
@@ -96,11 +99,16 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         return materializedUnitCount;
     }
 
+    Optional<SceneEditDraft> pendingSceneEdit() {
+        return selectedInspector.pendingSceneEdit();
+    }
+
     private void render(SessionPlannerViewModel.TimelineProjection projection) {
         if (projection == null) {
             return;
         }
         boolean sessionChanged = projection.sessionId() != currentSessionId;
+        selectedInspector.captureFocus();
         if (sessionChanged) {
             currentSessionId = projection.sessionId();
             sceneCards.clear();
@@ -120,7 +128,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 desired.add(card);
                 if (scene.selected() && projection.selectedScene().available()
                         && projection.selectedScene().sceneToken() == scene.sceneToken()) {
-                    selectedInspector.update(projection.sessionId(), projection.selectedScene(),
+                    selectedInspector.update(projection.sessionId(), projection.sourceSessionRevision(), projection.selectedScene(),
                             projection.sessionActionsDisabled());
                     desired.add(selectedInspector);
                 }
@@ -137,7 +145,6 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         desired.add(addSceneButton);
         sceneCards.keySet().removeIf(token -> !present.contains(token));
         restSeparators.keySet().removeIf(index -> index >= projection.restGaps().size());
-        selectedInspector.captureFocus();
         if (!rows.getChildren().equals(desired)) {
             rows.getChildren().setAll(desired);
         }
@@ -227,8 +234,14 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         private final Button moveDown = button("Runter", FLAT);
         private final VBox manualLootRows = new VBox(5);
         private final VBox generatedRewardRows = new VBox(7);
-        private final Button addLoot = button("Beutenotiz", ACCENT);
+        private final TextField newLootDraft = new TextField();
+        private final Button addLoot = button("Hinzufügen", ACCENT);
+        private final Map<Long, ManualNoteEditor> manualNoteEditors = new LinkedHashMap<>();
+        private String pendingNewNoteText = "";
+        private Set<Long> noteIdsBeforeAdd = Set.of();
         private long sessionId;
+        private long sourceRevision;
+        private long authoritativeRevision;
         private long sceneToken;
         private String loadedTitle = "";
         private String loadedNotes = "";
@@ -254,6 +267,9 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
             titleField.getStyleClass().add(COMPACT);
             notesField.getStyleClass().add(COMPACT);
             planSearch.getStyleClass().add(COMPACT);
+            newLootDraft.setPromptText("Neue Beutenotiz");
+            newLootDraft.setAccessibleText("Text einer neuen manuellen Beutenotiz");
+            newLootDraft.getStyleClass().add(COMPACT);
             Button save = button("Szene speichern", ACCENT);
             save.setAccessibleText("Änderungen der ausgewählten Szene speichern");
             save.setOnAction(event -> saveNow());
@@ -261,7 +277,8 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
             increaseAllocation.setOnAction(event -> adjustAllocation(ALLOCATION_STEP));
             moveUp.setOnAction(event -> moveHandler.handle(sceneToken, true));
             moveDown.setOnAction(event -> moveHandler.handle(sceneToken, false));
-            addLoot.setOnAction(event -> addLootHandler.accept(sceneToken));
+            addLoot.setAccessibleText("Manuelle Beutenotiz hinzufügen");
+            addLoot.setOnAction(event -> addManualNote());
             detachPlan.setOnAction(event -> detachPlanHandler.accept(sceneToken));
             planSearch.textProperty().addListener((ignored, before, after) -> {
                 if (!loadingSearch && sceneToken > 0L) {
@@ -276,7 +293,8 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                     titleField, actionRow(locationBox, save), notesField,
                     actionRow(allocationLabel, decreaseAllocation, increaseAllocation),
                     actionRow(moveUp, moveDown),
-                    new VBox(6, new HBox(8, label("Manuelle Notizen", "session-planner-gap-title"), addLoot),
+                    new VBox(6, label("Manuelle Notizen", "session-planner-gap-title"),
+                            actionRow(newLootDraft, addLoot),
                             manualLootRows),
                     new VBox(6, label("Generierte Belohnungen", "session-planner-gap-title"),
                             generatedRewardRows));
@@ -284,6 +302,8 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
 
         private void resetForSession() {
             sessionId = 0L;
+            sourceRevision = 0L;
+            authoritativeRevision = 0L;
             sceneToken = 0L;
             loadedTitle = "";
             loadedNotes = "";
@@ -291,6 +311,11 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
             titleField.clear();
             notesField.clear();
             locationBox.getItems().clear();
+            newLootDraft.clear();
+            pendingNewNoteText = "";
+            noteIdsBeforeAdd = Set.of();
+            manualNoteEditors.clear();
+            manualLootRows.getChildren().clear();
             loadingSearch = true;
             planSearch.clear();
             loadingSearch = false;
@@ -298,23 +323,30 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
 
         private void update(
                 long nextSessionId,
+                long nextSourceRevision,
                 SessionPlannerViewModel.TimelineProjection.SelectedSceneModel next,
                 boolean disabled
         ) {
             boolean identityChanged = nextSessionId != sessionId || next.sceneToken() != sceneToken;
+            long previousRevision = sourceRevision;
+            authoritativeRevision = nextSourceRevision;
             sessionId = nextSessionId;
             sceneToken = next.sceneToken();
             model = next;
             if (identityChanged) {
+                resetSceneScopedNotes();
                 titleField.setText(next.sceneTitle());
                 notesField.setText(next.sceneNotes());
                 locationBox.setChoices(next.locationChoices(), next.locationId());
                 loadedTitle = next.sceneTitle();
                 loadedNotes = next.sceneNotes();
                 loadedLocationId = next.locationId();
+                sourceRevision = nextSourceRevision;
                 loadingSearch = true;
                 planSearch.setText(next.planSearch().query());
                 loadingSearch = false;
+            } else {
+                rebaseSceneEditor(nextSourceRevision, previousRevision, next);
             }
             boolean linked = next.linkedEncounterPlan();
             encounterName.setText(linked ? value(next.linkedEncounterName()) : "Keine Begegnung verknüpft.");
@@ -347,6 +379,14 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
             planSearch.setDisable(disabled);
         }
 
+        private void resetSceneScopedNotes() {
+            newLootDraft.clear();
+            pendingNewNoteText = "";
+            noteIdsBeforeAdd = Set.of();
+            manualNoteEditors.clear();
+            manualLootRows.getChildren().clear();
+        }
+
         private SessionPlannerViewModel.TimelineProjection.SceneModel header(long token) {
             SceneCard card = sceneCards.get(token);
             if (card == null || card.model == null) {
@@ -356,10 +396,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         }
 
         private void saveNow() {
-            loadedTitle = titleField.getText().trim();
-            loadedNotes = notesField.getText().trim();
-            loadedLocationId = locationBox.selectedLocationId();
-            saveSceneHandler.handle(sceneToken, loadedTitle, loadedNotes, loadedLocationId);
+            pendingSceneEdit().ifPresent(saveSceneHandler::handle);
         }
 
         private void commitIfDirty() {
@@ -370,10 +407,52 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
             String notes = notesField.getText().trim();
             long locationId = locationBox.selectedLocationId();
             if (!title.equals(loadedTitle) || !notes.equals(loadedNotes) || locationId != loadedLocationId) {
-                saveSceneHandler.handle(sceneToken, title, notes, locationId);
-                loadedTitle = title;
-                loadedNotes = notes;
-                loadedLocationId = locationId;
+                saveSceneHandler.handle(new SceneEditDraft(
+                        sessionId, sourceRevision, sceneToken, title, notes, locationId));
+            }
+        }
+
+        private Optional<SceneEditDraft> pendingSceneEdit() {
+            if (sessionId <= 0L || sourceRevision <= 0L || sceneToken <= 0L) {
+                return Optional.empty();
+            }
+            String title = titleField.getText().trim();
+            String notes = notesField.getText().trim();
+            long locationId = locationBox.selectedLocationId();
+            if (title.equals(loadedTitle) && notes.equals(loadedNotes) && locationId == loadedLocationId) {
+                return Optional.empty();
+            }
+            return Optional.of(new SceneEditDraft(
+                    sessionId, sourceRevision, sceneToken, title, notes, locationId));
+        }
+
+        private void rebaseSceneEditor(
+                long nextRevision,
+                long previousRevision,
+                SessionPlannerViewModel.TimelineProjection.SelectedSceneModel authoritative
+        ) {
+            String currentTitle = titleField.getText().trim();
+            String currentNotes = notesField.getText().trim();
+            long currentLocation = locationBox.selectedLocationId();
+            boolean dirty = !currentTitle.equals(loadedTitle) || !currentNotes.equals(loadedNotes)
+                    || currentLocation != loadedLocationId;
+            boolean authoritativeUnchanged = authoritative.sceneTitle().equals(loadedTitle)
+                    && authoritative.sceneNotes().equals(loadedNotes)
+                    && authoritative.locationId() == loadedLocationId;
+            boolean matchingSuccess = authoritative.sceneTitle().equals(currentTitle)
+                    && authoritative.sceneNotes().equals(currentNotes)
+                    && authoritative.locationId() == currentLocation;
+            if (!dirty || matchingSuccess) {
+                titleField.setText(authoritative.sceneTitle());
+                notesField.setText(authoritative.sceneNotes());
+                locationBox.setChoices(authoritative.locationChoices(), authoritative.locationId());
+                loadedTitle = authoritative.sceneTitle();
+                loadedNotes = authoritative.sceneNotes();
+                loadedLocationId = authoritative.locationId();
+                sourceRevision = nextRevision;
+            } else if (authoritativeUnchanged && nextRevision >= previousRevision) {
+                locationBox.setChoices(authoritative.locationChoices(), currentLocation);
+                sourceRevision = nextRevision;
             }
         }
 
@@ -427,20 +506,101 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 SessionPlannerViewModel.TimelineProjection.SelectedSceneModel selected,
                 boolean disabled
         ) {
-            List<Node> materialized = new ArrayList<>();
-            if (selected.manualLootNotes().isEmpty()) {
+            Set<Long> authoritativeIds = selected.manualLootNotes().stream()
+                    .map(SessionPlannerSelectedSceneSnapshot.ManualLootNote::noteId)
+                    .collect(java.util.stream.Collectors.toSet());
+            if (!pendingNewNoteText.isBlank()) {
+                boolean added = selected.manualLootNotes().stream().anyMatch(note ->
+                        !noteIdsBeforeAdd.contains(note.noteId())
+                                && note.authoredText().equals(pendingNewNoteText));
+                if (added) {
+                    newLootDraft.clear();
+                    pendingNewNoteText = "";
+                    noteIdsBeforeAdd = Set.of();
+                }
+            }
+            selected.manualLootNotes().forEach(note -> manualNoteEditors
+                    .computeIfAbsent(note.noteId(), ManualNoteEditor::new)
+                    .update(note.authoredText(), authoritativeRevision, disabled));
+            manualNoteEditors.entrySet().removeIf(entry -> !authoritativeIds.contains(entry.getKey())
+                    && (entry.getValue().pendingRemoval || !entry.getValue().isDirty()));
+            List<Node> materialized = new ArrayList<>(manualNoteEditors.values());
+            if (materialized.isEmpty()) {
                 materialized.add(label("Keine manuellen Notizen.", SECONDARY, "session-planner-empty"));
             }
-            for (var note : selected.manualLootNotes()) {
-                Button remove = button("Entfernen", FLAT);
-                remove.setDisable(disabled);
-                remove.setAccessibleText("Manuelle Beutenotiz entfernen");
-                remove.setOnAction(event -> removeLootHandler.accept(note.noteId()));
-                HBox row = new HBox(8, label(note.authoredText()), spacer(), remove);
-                row.getStyleClass().add("session-planner-manual-note");
-                materialized.add(row);
-            }
             manualLootRows.getChildren().setAll(materialized);
+        }
+
+        private void addManualNote() {
+            String text = newLootDraft.getText().trim();
+            if (text.isBlank() || sessionId <= 0L || authoritativeRevision <= 0L || sceneToken <= 0L) {
+                return;
+            }
+            pendingNewNoteText = text;
+            noteIdsBeforeAdd = Set.copyOf(manualNoteEditors.keySet());
+            addLootHandler.handle(new ManualNoteAddDraft(sessionId, authoritativeRevision, sceneToken, text));
+        }
+
+        private final class ManualNoteEditor extends HBox {
+            private final long noteId;
+            private final TextField text = new TextField();
+            private final Button save = button("Speichern", ACCENT);
+            private final Button remove = button("Entfernen", FLAT);
+            private String loadedText = "";
+            private long guardRevision;
+            private boolean pendingRemoval;
+
+            private ManualNoteEditor(long noteId) {
+                super(8);
+                this.noteId = noteId;
+                getStyleClass().add("session-planner-manual-note");
+                text.getStyleClass().add(COMPACT);
+                text.setAccessibleText("Text der manuellen Beutenotiz " + noteId);
+                save.setAccessibleText("Manuelle Beutenotiz " + noteId + " speichern");
+                remove.setAccessibleText("Manuelle Beutenotiz " + noteId + " entfernen");
+                save.setOnAction(event -> save());
+                remove.setOnAction(event -> remove());
+                HBox.setHgrow(text, Priority.ALWAYS);
+                setAlignment(Pos.CENTER_LEFT);
+                getChildren().setAll(text, save, remove);
+            }
+
+            private void update(String authoritativeText, long nextRevision, boolean disabled) {
+                String current = text.getText().trim();
+                boolean dirty = !current.equals(loadedText);
+                if (guardRevision == 0L || !dirty || authoritativeText.equals(current)) {
+                    text.setText(authoritativeText);
+                    loadedText = authoritativeText;
+                    guardRevision = nextRevision;
+                    pendingRemoval = false;
+                } else if (authoritativeText.equals(loadedText)) {
+                    guardRevision = nextRevision;
+                }
+                save.setDisable(disabled);
+                remove.setDisable(disabled);
+            }
+
+            private boolean isDirty() {
+                return !text.getText().trim().equals(loadedText);
+            }
+
+            private void save() {
+                String authored = text.getText().trim();
+                if (authored.isBlank() || guardRevision <= 0L) {
+                    return;
+                }
+                updateLootHandler.handle(new ManualNoteEditDraft(
+                        sessionId, guardRevision, sceneToken, noteId, authored));
+            }
+
+            private void remove() {
+                if (guardRevision <= 0L) {
+                    return;
+                }
+                pendingRemoval = true;
+                removeLootHandler.handle(new ManualNoteRemoveDraft(
+                        sessionId, guardRevision, sceneToken, noteId));
+            }
         }
 
         private void renderRewards(SessionPlannerViewModel.TimelineProjection.SelectedSceneModel selected) {
@@ -600,7 +760,25 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
 
     @FunctionalInterface public interface AllocationHandler { void handle(long sceneToken, BigDecimal newPercentage); }
     @FunctionalInterface public interface MoveHandler { void handle(long sceneToken, boolean up); }
-    @FunctionalInterface public interface SceneEditHandler { void handle(long sceneToken, String title, String notes, long locationId); }
+    record SceneEditDraft(
+            long sessionId,
+            long expectedRevision,
+            long sceneToken,
+            String title,
+            String notes,
+            long locationId
+    ) { }
+
+    record ManualNoteAddDraft(long sessionId, long expectedRevision, long sceneToken, String authoredText) { }
+    record ManualNoteEditDraft(
+            long sessionId, long expectedRevision, long sceneToken, long noteId, String authoredText
+    ) { }
+    record ManualNoteRemoveDraft(long sessionId, long expectedRevision, long sceneToken, long noteId) { }
+
+    @FunctionalInterface public interface SceneEditHandler { void handle(SceneEditDraft draft); }
+    @FunctionalInterface public interface ManualNoteAddHandler { void handle(ManualNoteAddDraft draft); }
+    @FunctionalInterface public interface ManualNoteEditHandler { void handle(ManualNoteEditDraft draft); }
+    @FunctionalInterface public interface ManualNoteRemoveHandler { void handle(ManualNoteRemoveDraft draft); }
     @FunctionalInterface public interface RestHandler { void handle(long leftSceneToken, long rightSceneToken); }
     @FunctionalInterface public interface AttachPlanHandler { void handle(long sceneToken, long planId); }
     @FunctionalInterface public interface PlanSearchHandler { void handle(long sceneToken, String query); }

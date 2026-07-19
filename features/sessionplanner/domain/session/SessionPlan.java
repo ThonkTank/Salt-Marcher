@@ -171,7 +171,7 @@ public record SessionPlan(
         List<SessionEncounter> nextEncounters = new ArrayList<>(encounters);
         nextEncounters.set(index, existing.withEncounterPlan(encounterPlanId));
         return copy(participantRefs, encounterDays, nextEncounters, restPlacements, manualLootNotes,
-                pruneGeneratedRewards(sceneId), selectedEncounterId,
+                generatedRewards, selectedEncounterId,
                 existing.encounterPlanId() > UNRESOLVED_ID
                         ? "Encounter-Verknüpfung ersetzt." : "Encounter verknüpft.",
                 nextEncounterId, nextLootId);
@@ -186,7 +186,7 @@ public record SessionPlan(
         List<SessionEncounter> nextEncounters = new ArrayList<>(encounters);
         nextEncounters.set(index, encounters.get(index).withEncounterPlan(UNRESOLVED_ID));
         return copy(participantRefs, encounterDays, nextEncounters, restPlacements, manualLootNotes,
-                pruneGeneratedRewards(sceneId), selectedEncounterId, "Encounter-Verknüpfung entfernt.",
+                generatedRewards, selectedEncounterId, "Encounter-Verknüpfung entfernt.",
                 nextEncounterId, nextLootId);
     }
 
@@ -271,8 +271,13 @@ public record SessionPlan(
         if (targetIndex < 0) {
             return this;
         }
+        SessionEncounter existing = encounters.get(targetIndex);
+        SessionEncounter updated = existing.withScene(sceneTitle, sceneNotes, locationId);
+        if (existing.equals(updated)) {
+            return this;
+        }
         List<SessionEncounter> nextEncounters = new ArrayList<>(encounters);
-        nextEncounters.set(targetIndex, nextEncounters.get(targetIndex).withScene(sceneTitle, sceneNotes, locationId));
+        nextEncounters.set(targetIndex, updated);
         return copy(participantRefs, encounterDays, nextEncounters, restPlacements, manualLootNotes, generatedRewards, selectedEncounterId,
                 "Szene aktualisiert.", nextEncounterId, nextLootId);
     }
@@ -312,15 +317,15 @@ public record SessionPlan(
                 : this;
     }
 
-    public SessionPlan addManualLootNote(long sceneId) {
-        if (encounterIndex(encounters, sceneId) < 0) {
+    public SessionPlan addManualLootNote(long sceneId, String authoredText) {
+        if (encounterIndex(encounters, sceneId) < 0 || authoredText == null || authoredText.isBlank()) {
             return this;
         }
         List<SessionManualLootNote> nextManualLootNotes = new ArrayList<>(manualLootNotes);
         nextManualLootNotes.add(new SessionManualLootNote(
                 nextLootId,
                 sceneId,
-                "Beutenotiz " + (manualNoteCountForScene(sceneId) + 1)));
+                authoredText));
         return copy(
                 participantRefs,
                 encounterDays,
@@ -334,12 +339,34 @@ public record SessionPlan(
                 nextLootId + 1);
     }
 
-    public SessionPlan removeManualLootNote(long noteId) {
+    public SessionPlan updateManualLootNote(long sceneId, long noteId, String authoredText) {
+        if (encounterIndex(encounters, sceneId) < 0 || authoredText == null || authoredText.isBlank()) {
+            return this;
+        }
+        List<SessionManualLootNote> nextManualLootNotes = new ArrayList<>(manualLootNotes);
+        for (int index = 0; index < nextManualLootNotes.size(); index++) {
+            SessionManualLootNote note = nextManualLootNotes.get(index);
+            if (note.noteId() == noteId && note.sceneId() == sceneId) {
+                String normalized = authoredText.trim();
+                if (note.authoredText().equals(normalized)) {
+                    return this;
+                }
+                nextManualLootNotes.set(index, new SessionManualLootNote(noteId, sceneId, normalized));
+                return copy(participantRefs, encounterDays, encounters, restPlacements,
+                        nextManualLootNotes, generatedRewards, selectedEncounterId,
+                        "Beutenotiz aktualisiert.", nextEncounterId, nextLootId);
+            }
+        }
+        return this;
+    }
+
+    public SessionPlan removeManualLootNote(long sceneId, long noteId) {
         List<SessionManualLootNote> nextManualLootNotes = new ArrayList<>(manualLootNotes);
         boolean removed = false;
         Iterator<SessionManualLootNote> iterator = nextManualLootNotes.iterator();
         while (iterator.hasNext()) {
-            if (iterator.next().noteId() == noteId) {
+            SessionManualLootNote note = iterator.next();
+            if (note.noteId() == noteId && note.sceneId() == sceneId) {
                 iterator.remove();
                 removed = true;
             }
@@ -506,12 +533,6 @@ public record SessionPlan(
                 "Generierte Session angewandt.",
                 Math.max(1L, nextSceneId),
                 1L);
-    }
-
-    private long manualNoteCountForScene(long sceneId) {
-        return manualLootNotes.stream()
-                .filter(note -> note.sceneId() == sceneId)
-                .count();
     }
 
     private static List<SessionEncounter> rebalanceAllocationsEvenly(List<SessionEncounter> encounters) {

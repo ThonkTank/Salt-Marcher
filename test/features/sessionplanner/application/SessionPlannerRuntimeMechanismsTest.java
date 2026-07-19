@@ -32,6 +32,11 @@ import features.sessionplanner.domain.session.SessionPlanSummary;
 import features.sessionplanner.domain.session.repository.SessionPlanRepository;
 import features.sessionplanner.domain.session.repository.SessionPlanSaveResult;
 import features.sessionplanner.api.SessionPlannerCatalogCommand;
+import features.sessionplanner.api.SessionPlannerAuthoredTarget;
+import features.sessionplanner.api.UpdateSessionEncounterSceneCommand;
+import features.sessionplanner.api.AddSessionManualLootNoteCommand;
+import features.sessionplanner.api.UpdateSessionManualLootNoteCommand;
+import features.sessionplanner.api.RemoveSessionManualLootNoteCommand;
 import features.sessionplanner.api.SetSessionEncounterDaysCommand;
 import features.sessiongeneration.api.CommitGenerationRunCommand;
 import features.sessiongeneration.api.GenerationDraftResponse;
@@ -282,6 +287,135 @@ final class SessionPlannerRuntimeMechanismsTest {
                 "the last coherent workspace remains visible on mismatch failure");
     }
 
+    @Test
+    void guardedAuthoredCommandsExecuteOnceInLaneAndRejectStaleOrMissingReferences() {
+        ReentrantRecordingLane lane = new ReentrantRecordingLane();
+        RecordingDispatcher dispatcher = new RecordingDispatcher();
+        PartyServiceAssembly.Component party = createParty(lane, dispatcher);
+        RecordingSessionRepository repository = new RecordingSessionRepository(
+                SessionPlan.seeded(7L, List.of(1L), EncounterDays.one()).addScene());
+        SessionPlannerServiceAssembly planner = createPlanner(
+                repository, party, lane, dispatcher, (id, type) -> { });
+        planner.application().initialize();
+        lane.runAll();
+
+        planner.application().updateEncounterScene(new UpdateSessionEncounterSceneCommand(
+                new SessionPlannerAuthoredTarget(7L, 1L), 1L, "Guarded", "draft", 0L));
+        assertEquals(1, lane.pending(), "one authored command enters the serial lane once");
+        assertEquals(0, repository.saves);
+        lane.runAll();
+
+        assertEquals(1, repository.saves);
+        assertEquals("Guarded", repository.current.encounters().getFirst().sceneTitle());
+        planner.application().addManualLootNote(new AddSessionManualLootNoteCommand(
+                new SessionPlannerAuthoredTarget(7L, 2L), 1L, "Hidden cache"));
+        lane.runAll();
+        assertEquals(2, repository.saves);
+        long noteId = repository.current.manualLootNotes().getFirst().noteId();
+
+        planner.application().updateManualLootNote(new UpdateSessionManualLootNoteCommand(
+                new SessionPlannerAuthoredTarget(7L, 2L), 1L, noteId, "stale overwrite"));
+        planner.application().removeManualLootNote(new RemoveSessionManualLootNoteCommand(
+                new SessionPlannerAuthoredTarget(7L, 3L), 99L, noteId));
+        lane.runAll();
+
+        assertEquals(2, repository.saves, "stale and missing-scene note commands never reach save");
+        assertEquals("Hidden cache", repository.current.manualLootNotes().getFirst().authoredText());
+    }
+
+    @Test
+    void dirtyCatalogSwitchSavesSourceThenSwitchesWithoutIntermediateSourcePublication() {
+        ReentrantRecordingLane lane = new ReentrantRecordingLane();
+        RecordingDispatcher dispatcher = new RecordingDispatcher();
+        PartyServiceAssembly.Component party = createParty(lane, dispatcher);
+        SessionPlan first = SessionPlan.seeded(7L, List.of(1L), EncounterDays.one()).addScene();
+        SessionPlan second = SessionPlan.seeded(8L, List.of(1L), EncounterDays.one()).addScene()
+                .updateEncounterScene(1L, "Target", "untouched", 0L);
+        RecordingSessionRepository repository = new RecordingSessionRepository(first, second);
+        SessionPlannerServiceAssembly planner = createPlanner(
+                repository, party, lane, dispatcher, (id, type) -> { });
+        planner.application().initialize();
+        lane.runAll();
+        dispatcher.runAll();
+        List<Long> applied = new ArrayList<>();
+        planner.workspaceModel().subscribe(snapshot -> applied.add(snapshot.sourceSessionId()));
+
+        planner.application().selectSession(new SessionPlannerCatalogCommand.SelectSessionCommand(
+                8L, Optional.of(new UpdateSessionEncounterSceneCommand(
+                        new SessionPlannerAuthoredTarget(7L, 1L), 1L,
+                        "Durable before switch", "saved once", 0L))));
+        assertEquals(1, lane.pending());
+        lane.runAll();
+        dispatcher.runAll();
+
+        assertEquals(1, repository.saves);
+        assertEquals(1, repository.pointerSwitches);
+        assertEquals(8L, repository.current.sessionId());
+        assertEquals("Durable before switch", repository.other.encounters().getFirst().sceneTitle());
+        assertEquals(List.of(8L), applied,
+                "the authored lane publishes only the coherent target workspace after the guarded save");
+    }
+
+    @Test
+    void failedPointerSwitchKeepsDurableSourceEditAndOldSessionVisible() {
+        ReentrantRecordingLane lane = new ReentrantRecordingLane();
+        RecordingDispatcher dispatcher = new RecordingDispatcher();
+        PartyServiceAssembly.Component party = createParty(lane, dispatcher);
+        RecordingSessionRepository repository = new RecordingSessionRepository(
+                SessionPlan.seeded(7L, List.of(1L), EncounterDays.one()).addScene(),
+                SessionPlan.seeded(8L, List.of(1L), EncounterDays.one()).addScene());
+        SessionPlannerServiceAssembly planner = createPlanner(
+                repository, party, lane, dispatcher, (id, type) -> { });
+        planner.application().initialize();
+        lane.runAll();
+        repository.failPointerSwitch = true;
+
+        planner.application().selectSession(new SessionPlannerCatalogCommand.SelectSessionCommand(
+                8L, Optional.of(new UpdateSessionEncounterSceneCommand(
+                        new SessionPlannerAuthoredTarget(7L, 1L), 1L,
+                        "Saved despite pointer failure", "durable", 0L))));
+        lane.runAll();
+
+        assertEquals(7L, repository.current.sessionId());
+        assertEquals("Saved despite pointer failure", repository.current.encounters().getFirst().sceneTitle());
+        assertEquals("Szenenänderung gespeichert; Ziel-Session konnte nicht geöffnet werden.",
+                planner.workspaceModel().current().currentSession().status());
+    }
+
+    @Test
+    void staleOrMissingPendingSceneAbortsCatalogSwitchBeforeSaveAndPointerChange() {
+        ReentrantRecordingLane lane = new ReentrantRecordingLane();
+        RecordingDispatcher dispatcher = new RecordingDispatcher();
+        PartyServiceAssembly.Component party = createParty(lane, dispatcher);
+        RecordingSessionRepository repository = new RecordingSessionRepository(
+                SessionPlan.seeded(7L, List.of(1L), EncounterDays.one()).addScene(),
+                SessionPlan.seeded(8L, List.of(1L), EncounterDays.one()).addScene());
+        SessionPlannerServiceAssembly planner = createPlanner(
+                repository, party, lane, dispatcher, (id, type) -> { });
+        planner.application().initialize();
+        lane.runAll();
+
+        planner.application().selectSession(new SessionPlannerCatalogCommand.SelectSessionCommand(
+                8L, Optional.of(new UpdateSessionEncounterSceneCommand(
+                        new SessionPlannerAuthoredTarget(7L, 2L), 1L,
+                        "STALE", "must not persist", 0L))));
+        lane.runAll();
+        assertEquals(0, repository.saves);
+        assertEquals(0, repository.pointerSwitches);
+        assertEquals(7L, repository.current.sessionId());
+        assertEquals(7L, planner.workspaceModel().current().sourceSessionId());
+
+        planner.application().selectSession(new SessionPlannerCatalogCommand.SelectSessionCommand(
+                8L, Optional.of(new UpdateSessionEncounterSceneCommand(
+                        new SessionPlannerAuthoredTarget(7L, 1L), 99L,
+                        "MISSING", "must not persist", 0L))));
+        lane.runAll();
+        assertEquals(0, repository.saves);
+        assertEquals(0, repository.pointerSwitches);
+        assertEquals(7L, repository.current.sessionId());
+        assertEquals(7L, planner.workspaceModel().current().sourceSessionId());
+    }
+
     private static PartyServiceAssembly.Component createParty(
             ReentrantRecordingLane lane,
             RecordingDispatcher dispatcher
@@ -377,6 +511,7 @@ final class SessionPlannerRuntimeMechanismsTest {
             implements SessionPlanRepository, SessionPreparedSessionStore, SessionPlannerWorkspaceSource {
 
         private SessionPlan current;
+        private SessionPlan other;
         private SessionPlan previous;
         private int reads;
         private int workspaceReads;
@@ -389,9 +524,16 @@ final class SessionPlannerRuntimeMechanismsTest {
         private boolean stripPersistedStatus;
         private int lagWorkspaceReadsAfterSave;
         private int staleWorkspaceReads;
+        private int pointerSwitches;
+        private boolean failPointerSwitch;
 
         private RecordingSessionRepository(SessionPlan current) {
             this.current = current;
+        }
+
+        private RecordingSessionRepository(SessionPlan current, SessionPlan other) {
+            this.current = current;
+            this.other = other;
         }
 
         @Override
@@ -416,14 +558,18 @@ final class SessionPlannerRuntimeMechanismsTest {
             staleWorkspaceReads = Math.max(0, staleWorkspaceReads - 1);
             return captured == null
                     ? new SessionPlannerReadCapture(0L, List.of(), 0)
-                    : new SessionPlannerReadCapture(captured.sessionId(), List.of(captured), 0);
+                    : new SessionPlannerReadCapture(captured.sessionId(),
+                            other == null ? List.of(captured) : List.of(captured, other), 0);
         }
 
         @Override
         public Optional<SessionPlan> loadById(long sessionId) {
             reads++;
             failIfRequested();
-            return current != null && current.sessionId() == sessionId ? Optional.of(current) : Optional.empty();
+            if (current != null && current.sessionId() == sessionId) {
+                return Optional.of(current);
+            }
+            return other != null && other.sessionId() == sessionId ? Optional.of(other) : Optional.empty();
         }
 
         @Override
@@ -433,9 +579,15 @@ final class SessionPlannerRuntimeMechanismsTest {
                 throw storageFailure();
             }
             failIfRequested();
-            return current == null
-                    ? List.of()
-                    : List.of(new SessionPlanSummary(current.sessionId(), current.displayName()));
+            if (current == null) {
+                return List.of();
+            }
+            List<SessionPlanSummary> summaries = new ArrayList<>();
+            summaries.add(new SessionPlanSummary(current.sessionId(), current.displayName()));
+            if (other != null) {
+                summaries.add(new SessionPlanSummary(other.sessionId(), other.displayName()));
+            }
+            return summaries;
         }
 
         @Override
@@ -459,9 +611,13 @@ final class SessionPlannerRuntimeMechanismsTest {
                     sessionPlan.restPlacements(), sessionPlan.manualLootNotes(), sessionPlan.generatedRewards(),
                     sessionPlan.selectedEncounterId(), sessionPlan.statusText(), sessionPlan.nextEncounterId(),
                     sessionPlan.nextLootId());
-            previous = current;
-            current = stripPersistedStatus ? committed.clearStatus() : committed;
-            staleWorkspaceReads = lagWorkspaceReadsAfterSave;
+            if (current != null && current.sessionId() == committed.sessionId()) {
+                previous = current;
+                current = stripPersistedStatus ? committed.clearStatus() : committed;
+                staleWorkspaceReads = lagWorkspaceReadsAfterSave;
+            } else if (other != null && other.sessionId() == committed.sessionId()) {
+                other = stripPersistedStatus ? committed.clearStatus() : committed;
+            }
             return new SessionPlanSaveResult(
                     SessionPlanSaveResult.Status.SUCCESS,
                     sessionPlan.revision(),
@@ -481,11 +637,20 @@ final class SessionPlannerRuntimeMechanismsTest {
             if (failNextId) {
                 throw storageFailure();
             }
-            return current == null ? 1L : current.sessionId() + 1L;
+            return current == null ? 1L : Math.max(current.sessionId(), other == null ? 0L : other.sessionId()) + 1L;
         }
 
         @Override
         public void setCurrentSessionId(long sessionId) {
+            pointerSwitches++;
+            if (failPointerSwitch) {
+                throw storageFailure();
+            }
+            if (other != null && other.sessionId() == sessionId) {
+                SessionPlan previousCurrent = current;
+                current = other;
+                other = previousCurrent;
+            }
         }
 
         @Override

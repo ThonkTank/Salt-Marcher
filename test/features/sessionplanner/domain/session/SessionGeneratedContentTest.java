@@ -22,7 +22,7 @@ final class SessionGeneratedContentTest {
         SessionPlan original = SessionPlan.seeded(7L, List.of(11L, 12L), new EncounterDays(new BigDecimal("0.6")))
                 .rename("Moon Vault")
                 .addScene()
-                .addManualLootNote(1L);
+                .addManualLootNote(1L, "Moon key");
         List<SessionEncounter> scenes = List.of(
                 new SessionEncounter(1L, 101L, new SessionEncounterAllocation(new BigDecimal("40"))),
                 new SessionEncounter(2L, 102L, new SessionEncounterAllocation(new BigDecimal("60"))));
@@ -77,7 +77,7 @@ final class SessionGeneratedContentTest {
                         List.of(
                                 new SessionGeneratedRewardReference(1L, "run-9", 1L, "first reward"),
                                 new SessionGeneratedRewardReference(2L, "run-9", 2L, "second reward")))
-                .addManualLootNote(1L)
+                .addManualLootNote(1L, "First cache")
                 .setRestPlacement(SessionRestPlacement.shortRestBetween(1L, 2L));
 
         SessionPlan replaced = plan.attachEncounter(1L, 303L);
@@ -89,9 +89,9 @@ final class SessionGeneratedContentTest {
                 .map(scene -> scene.allocation().budgetPercentage().stripTrailingZeros().toPlainString()).toList());
         assertEquals(plan.manualLootNotes(), replaced.manualLootNotes());
         assertEquals(plan.restPlacements(), replaced.restPlacements());
-        assertEquals(List.of(2L), replaced.generatedRewards().stream()
+        assertEquals(List.of(1L, 2L), replaced.generatedRewards().stream()
                 .map(SessionGeneratedRewardReference::sceneId).toList(),
-                "generated truth for the replaced link is removed, never converted into a manual note");
+                "replacing an encounter link preserves generated reward references");
 
         SessionPlan detached = replaced.detachEncounter(1L);
 
@@ -101,5 +101,10 @@ final class SessionGeneratedContentTest {
         assertEquals(replaced.manualLootNotes(), detached.manualLootNotes());
         assertEquals(replaced.restPlacements(), detached.restPlacements());
         assertEquals(replaced.generatedRewards(), detached.generatedRewards());
+
+        SessionPlan deleted = detached.removeEncounter(1L);
+        assertEquals(List.of(2L), deleted.generatedRewards().stream()
+                .map(SessionGeneratedRewardReference::sceneId).toList(),
+                "only deleting the owning scene prunes its generated reward references");
     }
 }

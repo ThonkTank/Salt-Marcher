@@ -44,6 +44,8 @@ public interface SessionPlannerApi {
 
     void addManualLootNote(AddSessionManualLootNoteCommand command);
 
+    void updateManualLootNote(UpdateSessionManualLootNoteCommand command);
+
     void removeManualLootNote(RemoveSessionManualLootNoteCommand command);
 
     void prepareSession(PrepareSessionCommand command);

@@ -1,5 +1,7 @@
 package features.sessionplanner.api;
 
+import java.util.Optional;
+
 public sealed interface SessionPlannerCatalogCommand permits
         SessionPlannerCatalogCommand.CreateSessionCommand,
         SessionPlannerCatalogCommand.SelectSessionCommand,
@@ -12,9 +14,19 @@ public sealed interface SessionPlannerCatalogCommand permits
         }
     }
 
-    record SelectSessionCommand(long sessionId) implements SessionPlannerCatalogCommand {
+    record SelectSessionCommand(
+            long sessionId,
+            Optional<UpdateSessionEncounterSceneCommand> pendingSceneEdit
+    ) implements SessionPlannerCatalogCommand {
         public SelectSessionCommand {
-            sessionId = Math.max(0L, sessionId);
+            if (sessionId <= 0L) {
+                throw new IllegalArgumentException("session id must be positive");
+            }
+            pendingSceneEdit = pendingSceneEdit == null ? Optional.empty() : pendingSceneEdit;
+        }
+
+        public SelectSessionCommand(long sessionId) {
+            this(sessionId, Optional.empty());
         }
     }
 

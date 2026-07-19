@@ -86,6 +86,8 @@ not reward truth and MUST NOT replace a successful typed reward projection.
 - a missing foreign object remains visibly unavailable; Session Planner does
   not recreate it from copied data
 - deleting or editing a scene removes or changes only planner-owned references
+- attaching, replacing, and detaching an Encounter reference preserve generated
+  reward references; only deletion of their owning scene prunes them
 - Session Planner never cascades deletion into Party, Encounter, World Planner,
   or Session Generation storage
 
@@ -95,6 +97,20 @@ Every authored command uses optimistic revision validation. A successful write
 replaces the root and affected child collections in one Session Planner
 transaction, advances the revision once, and returns the committed snapshot.
 A stale revision or invalid payload writes nothing.
+
+Scene and manual-note commands carry one authored target consisting of Session
+identity and expected revision. Manual-note update and removal additionally
+carry the owning scene identity because note IDs are session-local. The adapter
+loads that exact Session root, validates the referenced scene or note and any
+World Planner location, and compare-and-swap saves it; it never substitutes the
+current-session pointer as the write target.
+
+A catalog switch with a dirty scene draft is one authored-lane operation. It
+prevalidates the target Session, compare-and-swap saves the source draft, then
+switches the pointer and publishes only the target workspace. Any source
+validation or save failure leaves the pointer unchanged. If pointer switching
+fails after the source save, the source edit remains durable and the source
+workspace remains visible with a display-safe failure.
 
 `commitPreparedSession` is one replacement write. It preserves session
 identity, display name, participants, and adventure-day fraction while

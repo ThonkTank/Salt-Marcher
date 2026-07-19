@@ -27,7 +27,8 @@ The user can:
 - see session XP budget, planned XP, remaining or exceeded XP, and recommended
   rests
 - place short and long rests only between adjacent scenes
-- record manual loot notes without presenting them as generated loot
+- create, edit, and remove authored manual loot notes without presenting them
+  as generated loot
 - select a scene and edit all planner-owned fields after generation
 
 Scenes exist independently of encounters. Encounter rosters, creature details,
@@ -57,6 +58,13 @@ The Session Planner is one master-detail workspace:
 - the state slot shows a compact budget and selection summary
 - generated rewards appear as structured reward cards in their owning scene;
   manual loot notes remain visually and semantically distinct
+- attaching, replacing, or detaching a saved Encounter changes only that scene's
+  Encounter reference; generated reward references remain until their owning
+  scene is deleted
+- opening another catalog Session atomically saves a dirty selected-scene draft
+  against its displayed Session revision before switching. A stale, removed, or
+  invalid source keeps the old Session and draft visible with an actionable
+  failure; the draft is never copied into the target Session
 
 The Generate action MUST remain available without exposing a ruleset selector,
 engine version, catalog version, or an intermediate Apply button.

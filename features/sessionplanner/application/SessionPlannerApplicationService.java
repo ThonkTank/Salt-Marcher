@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
@@ -30,6 +31,8 @@ import features.sessionplanner.api.SessionPlannerRestKind;
 import features.sessionplanner.api.SetSessionEncounterDaysCommand;
 import features.sessionplanner.api.SetSessionRestGapCommand;
 import features.sessionplanner.api.UpdateSessionEncounterSceneCommand;
+import features.sessionplanner.api.UpdateSessionManualLootNoteCommand;
+import features.sessionplanner.api.SessionPlannerAuthoredTarget;
 import features.sessionplanner.api.PrepareSessionCommand;
 import features.sessionplanner.api.SearchSessionEncounterPlansCommand;
 
@@ -189,12 +192,30 @@ public final class SessionPlannerApplicationService implements features.sessionp
 
     public void addManualLootNote(AddSessionManualLootNoteCommand command) {
         Objects.requireNonNull(command, COMMAND_PARAMETER);
-        executeStorageCommand(() -> mutateCurrent(session -> session.addManualLootNote(command.sceneId())));
+        executeStorageCommand(() -> guardedMutation(
+                command.target(),
+                session -> containsScene(session, command.sceneId()),
+                "Szene wurde entfernt. Beutenotiz wurde nicht gespeichert.",
+                session -> session.addManualLootNote(command.sceneId(), command.authoredText())));
+    }
+
+    public void updateManualLootNote(UpdateSessionManualLootNoteCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeStorageCommand(() -> guardedMutation(
+                command.target(),
+                session -> containsNote(session, command.sceneId(), command.noteId()),
+                "Beutenotiz wurde entfernt. Änderung wurde nicht gespeichert.",
+                session -> session.updateManualLootNote(
+                        command.sceneId(), command.noteId(), command.authoredText())));
     }
 
     public void removeManualLootNote(RemoveSessionManualLootNoteCommand command) {
         Objects.requireNonNull(command, COMMAND_PARAMETER);
-        executeStorageCommand(() -> mutateCurrent(session -> session.removeManualLootNote(command.noteId())));
+        executeStorageCommand(() -> guardedMutation(
+                command.target(),
+                session -> containsNote(session, command.sceneId(), command.noteId()),
+                "Beutenotiz wurde bereits entfernt.",
+                session -> session.removeManualLootNote(command.sceneId(), command.noteId())));
     }
 
     @Override
@@ -223,9 +244,43 @@ public final class SessionPlannerApplicationService implements features.sessionp
 
     private void selectSessionOnLane(SessionPlannerCatalogCommand.SelectSessionCommand command) {
         long sessionId = command.sessionId();
-        if (sessionId > NO_SESSION_ID) {
-            repository.loadById(sessionId).ifPresent(this::selectLoadedSession);
+        Optional<SessionPlan> requested;
+        try {
+            requested = repository.loadById(sessionId);
+        } catch (IllegalStateException exception) {
+            reportStorageFailure(exception);
+            publishFailure("Session konnte nicht geöffnet werden.", workspace.current().sourceSessionId());
+            return;
         }
+        if (requested.isEmpty()) {
+            publishFailure("Ziel-Session wurde nicht gefunden.", workspace.current().sourceSessionId());
+            return;
+        }
+        SessionPlan sourceAfterEdit = null;
+        if (command.pendingSceneEdit().isPresent()) {
+            GuardedSave guarded = saveGuardedScene(command.pendingSceneEdit().orElseThrow());
+            if (!guarded.success()) {
+                publishFailure(guarded.message(), guarded.sessionId());
+                return;
+            }
+            sourceAfterEdit = guarded.saved();
+        }
+        SessionPlan target = sourceAfterEdit != null && sourceAfterEdit.sessionId() == sessionId
+                ? sourceAfterEdit : requested.orElseThrow();
+        try {
+            repository.setCurrentSessionId(sessionId);
+        } catch (IllegalStateException exception) {
+            reportStorageFailure(exception);
+            if (sourceAfterEdit != null) {
+                workspace.authoredMutation(sourceAfterEdit.withStatus(
+                        "Szenenänderung gespeichert; Ziel-Session konnte nicht geöffnet werden."));
+            } else {
+                publishFailure("Ziel-Session konnte nicht geöffnet werden.", workspace.current().sourceSessionId());
+            }
+            return;
+        }
+        preparation.invalidate();
+        workspace.authoredMutation(target.clearStatus().withStatus("Session geoeffnet."));
     }
 
     private void renameSessionOnLane(SessionPlannerCatalogCommand.RenameSessionCommand command) {
@@ -252,13 +307,95 @@ public final class SessionPlannerApplicationService implements features.sessionp
     }
 
     private void updateEncounterSceneOnLane(UpdateSessionEncounterSceneCommand command) {
-        mutateCurrent(session -> {
-            if (command.locationId() > 0L && !workspace.locationExists(command.locationId())) {
-                return session.withStatus("Location nicht gefunden.");
+        if (command.locationId() > 0L && !workspace.locationExists(command.locationId())) {
+            publishFailure("Location wurde entfernt. Szene wurde nicht gespeichert.", command.target().sessionId());
+            return;
+        }
+        guardedMutation(
+                command.target(),
+                session -> containsScene(session, command.encounterId()),
+                "Szene wurde entfernt. Änderung wurde nicht gespeichert.",
+                session -> session.updateEncounterScene(
+                        command.encounterId(), command.sceneTitle(), command.sceneNotes(), command.locationId()));
+    }
+
+    private GuardedSave saveGuardedScene(UpdateSessionEncounterSceneCommand command) {
+        if (command.locationId() > 0L && !workspace.locationExists(command.locationId())) {
+            return GuardedSave.failure(command.target().sessionId(),
+                    "Location wurde entfernt. Session-Wechsel wurde abgebrochen.");
+        }
+        return saveGuarded(
+                command.target(),
+                session -> containsScene(session, command.encounterId()),
+                "Szene wurde entfernt. Session-Wechsel wurde abgebrochen.",
+                session -> session.updateEncounterScene(
+                        command.encounterId(), command.sceneTitle(), command.sceneNotes(), command.locationId()));
+    }
+
+    private void guardedMutation(
+            SessionPlannerAuthoredTarget target,
+            Predicate<SessionPlan> referenceExists,
+            String missingMessage,
+            UnaryOperator<SessionPlan> mutation
+    ) {
+        GuardedSave guarded = saveGuarded(target, referenceExists, missingMessage, mutation);
+        if (!guarded.success()) {
+            publishFailure(guarded.message(), guarded.sessionId());
+            return;
+        }
+        preparation.invalidate();
+        workspace.authoredMutation(guarded.saved());
+    }
+
+    private GuardedSave saveGuarded(
+            SessionPlannerAuthoredTarget target,
+            Predicate<SessionPlan> referenceExists,
+            String missingMessage,
+            UnaryOperator<SessionPlan> mutation
+    ) {
+        SessionPlan stable;
+        try {
+            Optional<SessionPlan> loaded = repository.loadById(target.sessionId());
+            if (loaded.isEmpty()) {
+                return GuardedSave.failure(target.sessionId(), "Session wurde entfernt. Änderung wurde nicht gespeichert.");
             }
-            return session.updateEncounterScene(
-                    command.encounterId(), command.sceneTitle(), command.sceneNotes(), command.locationId());
-        });
+            stable = loaded.orElseThrow().clearStatus();
+        } catch (IllegalStateException exception) {
+            reportStorageFailure(exception);
+            return GuardedSave.failure(target.sessionId(), SAVE_FAILURE_STATUS);
+        }
+        if (stable.revision().value() != target.expectedRevision()) {
+            return GuardedSave.failure(target.sessionId(),
+                    "Session wurde zwischenzeitlich geändert. Bitte Änderung erneut prüfen.");
+        }
+        if (!referenceExists.test(stable)) {
+            return GuardedSave.failure(target.sessionId(), missingMessage);
+        }
+        SessionPlan candidate = mutation.apply(stable);
+        if (candidate.equals(stable)) {
+            return GuardedSave.success(stable);
+        }
+        try {
+            SessionPlanSaveResult result = repository.save(candidate);
+            if (result.status() != SessionPlanSaveResult.Status.SUCCESS) {
+                return GuardedSave.failure(target.sessionId(), result.status() == SessionPlanSaveResult.Status.STALE
+                        ? "Session wurde zwischenzeitlich geändert. Bitte Änderung erneut prüfen."
+                        : SAVE_FAILURE_STATUS);
+            }
+            return GuardedSave.success(result.committedSession().orElseThrow());
+        } catch (IllegalStateException exception) {
+            reportStorageFailure(exception);
+            return GuardedSave.failure(target.sessionId(), SAVE_FAILURE_STATUS);
+        }
+    }
+
+    private static boolean containsScene(SessionPlan session, long sceneId) {
+        return session.encounters().stream().anyMatch(scene -> scene.encounterId() == sceneId);
+    }
+
+    private static boolean containsNote(SessionPlan session, long sceneId, long noteId) {
+        return session.manualLootNotes().stream()
+                .anyMatch(note -> note.sceneId() == sceneId && note.noteId() == noteId);
     }
 
     private void executeStorageCommand(Runnable command) {
@@ -270,12 +407,6 @@ public final class SessionPlannerApplicationService implements features.sessionp
                 reportStorageFailure(exception);
             }
         });
-    }
-
-    private void selectLoadedSession(SessionPlan sessionPlan) {
-        repository.setCurrentSessionId(sessionPlan.sessionId());
-        preparation.invalidate();
-        workspace.authoredMutation(sessionPlan.clearStatus().withStatus("Session geoeffnet."));
     }
 
     private void selectFallback(SessionPlan sessionPlan) {
@@ -382,5 +513,15 @@ public final class SessionPlannerApplicationService implements features.sessionp
             case LONG_REST -> SessionRestPlacement.longRestBetween(leftEncounterId, rightEncounterId);
             case NONE -> throw new IllegalArgumentException("Rest kind has no placement.");
         };
+    }
+
+    private record GuardedSave(boolean success, long sessionId, SessionPlan saved, String message) {
+        private static GuardedSave success(SessionPlan saved) {
+            return new GuardedSave(true, saved.sessionId(), saved, "");
+        }
+
+        private static GuardedSave failure(long sessionId, String message) {
+            return new GuardedSave(false, sessionId, null, message);
+        }
     }
 }

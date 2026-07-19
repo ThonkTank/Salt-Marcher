@@ -69,6 +69,17 @@ Publication is latest-revision-wins. One authored mutation or foreign-provider
 revision schedules at most one coalesced assembly. Scene, participant, controls,
 and state-panel views do not subscribe to separate planner projections.
 
+The reusable selected-scene inspector carries the published source Session
+revision into scene and manual-note drafts. Dirty scene and keyed note editors
+survive same-scene publications, including focus and caret. A control rebases its
+guard only while authoritative text still equals its loaded baseline; conflicting
+truth preserves the older guard so the next save rejects as stale. Matching
+coherent publication alone clears a submitted draft.
+
+Catalog switching sends at most one typed select command. When a scene draft is
+dirty, that command carries the guarded source edit; the authored lane saves it
+and switches the pointer without publishing an intermediate source workspace.
+
 Saved-plan search follows the same single-writer rule. JavaFX dispatches a
 typed query and only renders the search state inside
 `SessionPlannerWorkspaceSnapshot`; it does not filter cached plans. The

@@ -43,6 +43,7 @@ final class SessionPlannerViewModel {
             SessionPlannerSceneTimelineProjection.empty();
     private SessionPreparationSnapshot latestPreparation = SessionPreparationSnapshot.idle();
     private SessionPlannerSelectedSceneSnapshot latestSelectedScene = SessionPlannerSelectedSceneSnapshot.empty();
+    private long latestSourceSessionRevision;
 
     ReadOnlyObjectProperty<ControlsProjection> controlsProjectionProperty() {
         return controlsProjection.getReadOnlyProperty();
@@ -68,6 +69,7 @@ final class SessionPlannerViewModel {
         latestSceneTimeline = safe.sceneTimeline();
         latestPreparation = safe.preparation();
         latestSelectedScene = safe.selectedScene();
+        latestSourceSessionRevision = safe.sourceSessionRevision();
         showCatalog(safe.catalog());
         refreshControlsProjection();
         refreshTimelineProjection();
@@ -128,7 +130,7 @@ final class SessionPlannerViewModel {
 
     private void refreshTimelineProjection() {
         timelineProjection.set(TimelineProjection.from(
-                latestSession.session().sessionId(), latestSceneTimeline,
+                latestSession.session().sessionId(), latestSourceSessionRevision, latestSceneTimeline,
                 latestSelectedScene, sessionActionsDisabled()));
     }
 
@@ -260,6 +262,7 @@ final class SessionPlannerViewModel {
 
     record TimelineProjection(
             long sessionId,
+            long sourceSessionRevision,
             boolean sessionActionsDisabled,
             List<SceneModel> scenes,
             List<RestGapModel> restGaps,
@@ -268,17 +271,19 @@ final class SessionPlannerViewModel {
 
         TimelineProjection {
             sessionId = Math.max(0L, sessionId);
+            sourceSessionRevision = Math.max(0L, sourceSessionRevision);
             scenes = safeCopy(scenes);
             restGaps = safeCopy(restGaps);
             selectedScene = selectedScene == null ? SelectedSceneModel.empty() : selectedScene;
         }
 
         static TimelineProjection empty() {
-            return new TimelineProjection(0L, true, List.of(), List.of(), SelectedSceneModel.empty());
+            return new TimelineProjection(0L, 0L, true, List.of(), List.of(), SelectedSceneModel.empty());
         }
 
         static TimelineProjection from(
                 long sessionId,
+                long sourceSessionRevision,
                 SessionPlannerSceneTimelineProjection projection,
                 SessionPlannerSelectedSceneSnapshot selected,
                 boolean sessionActionsDisabled
@@ -286,7 +291,7 @@ final class SessionPlannerViewModel {
             SessionPlannerSceneTimelineProjection safe =
                     projection == null ? SessionPlannerSceneTimelineProjection.empty() : projection;
             return new TimelineProjection(
-                    sessionId, sessionActionsDisabled,
+                    sessionId, sourceSessionRevision, sessionActionsDisabled,
                     safe.sceneHeaders().stream().map(SceneModel::from).toList(),
                     safe.restGaps().stream().map(gap -> new RestGapModel(
                             gap.gapIndex(), gap.leftSceneToken(), gap.rightSceneToken(),
