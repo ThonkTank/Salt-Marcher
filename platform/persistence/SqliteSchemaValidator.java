@@ -57,7 +57,14 @@ public final class SqliteSchemaValidator implements FeatureStoreDefinition.Valid
         if (!expected.columns().isEmpty()) {
             Set<String> actualNames = new LinkedHashSet<>();
             actual.forEach(column -> actualNames.add(column.name()));
-            if (!actualNames.equals(new LinkedHashSet<>(expected.columns()))) {
+            Set<String> expectedNames = new LinkedHashSet<>(expected.columns());
+            boolean columnsMatch = expected.columnMatch() == ColumnMatch.EXACT
+                    ? actualNames.equals(expectedNames)
+                    : actualNames.containsAll(expectedNames);
+            if (!columnsMatch) {
+                if (expected.columnMatch() == ColumnMatch.REQUIRED_SUBSET) {
+                    throw invalid("owner table is missing required columns: " + expected.name());
+                }
                 throw invalid("owner table columns do not match the target signature: " + expected.name());
             }
         }
@@ -167,10 +174,31 @@ public final class SqliteSchemaValidator implements FeatureStoreDefinition.Valid
         }
 
         public Builder table(String name, String... columns) {
+            return table(name, ColumnMatch.EXACT, columns);
+        }
+
+        /** Requires named columns while permitting additional provider-owned columns. */
+        public Builder tableContaining(String name, String... requiredColumns) {
+            List<String> safeColumns = identifiers(requiredColumns);
+            if (safeColumns.isEmpty()) {
+                throw new IllegalArgumentException("required owner table columns must not be empty");
+            }
+            return table(name, ColumnMatch.REQUIRED_SUBSET, safeColumns.toArray(String[]::new));
+        }
+
+        public Builder tableContaining(SqliteTableSpec table) {
+            SqliteTableSpec safeTable = Objects.requireNonNull(table, "table");
+            return tableContaining(safeTable.name(), safeTable.columns().stream()
+                    .map(SqliteTableSpec.ColumnSpec::name).toArray(String[]::new));
+        }
+
+        private Builder table(String name, ColumnMatch columnMatch, String... columns) {
             String safeName = identifier(name);
             List<String> safeColumns = identifiers(columns);
-            MutableTable previous = tables.putIfAbsent(safeName, new MutableTable(safeName, safeColumns));
-            if (previous != null && !previous.columns.equals(safeColumns)) {
+            MutableTable previous = tables.putIfAbsent(
+                    safeName, new MutableTable(safeName, safeColumns, columnMatch));
+            if (previous != null
+                    && (!previous.columns.equals(safeColumns) || previous.columnMatch != columnMatch)) {
                 throw new IllegalArgumentException("conflicting owner table signature");
             }
             return this;
@@ -214,7 +242,7 @@ public final class SqliteSchemaValidator implements FeatureStoreDefinition.Valid
             Map<String, TableSignature> immutableTables = new LinkedHashMap<>();
             tables.forEach((name, table) -> immutableTables.put(
                     name,
-                    new TableSignature(name, table.columns, table.primaryKey)));
+                    new TableSignature(name, table.columns, table.primaryKey, table.columnMatch)));
             return new SqliteSchemaValidator(immutableTables, foreignKeys, indexes);
         }
 
@@ -253,7 +281,17 @@ public final class SqliteSchemaValidator implements FeatureStoreDefinition.Valid
         return Arrays.stream(values).map(SqliteSchemaValidator::identifier).toList();
     }
 
-    private record TableSignature(String name, List<String> columns, List<String> primaryKey) {
+    private enum ColumnMatch {
+        EXACT,
+        REQUIRED_SUBSET
+    }
+
+    private record TableSignature(
+            String name,
+            List<String> columns,
+            List<String> primaryKey,
+            ColumnMatch columnMatch
+    ) {
         private TableSignature {
             columns = List.copyOf(columns);
             primaryKey = List.copyOf(primaryKey);
@@ -263,11 +301,13 @@ public final class SqliteSchemaValidator implements FeatureStoreDefinition.Valid
     private static final class MutableTable {
         private final String name;
         private final List<String> columns;
+        private final ColumnMatch columnMatch;
         private List<String> primaryKey = List.of();
 
-        private MutableTable(String name, List<String> columns) {
+        private MutableTable(String name, List<String> columns, ColumnMatch columnMatch) {
             this.name = name;
             this.columns = List.copyOf(columns);
+            this.columnMatch = Objects.requireNonNull(columnMatch, "columnMatch");
         }
     }
 

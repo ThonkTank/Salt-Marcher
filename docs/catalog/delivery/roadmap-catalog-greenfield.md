@@ -335,14 +335,35 @@ from refreshed `origin/main`.
   execution. Hardlink and resolved-path aliases into installed application data are rejected;
   backup/archive/extraction failures block the updater before installation, while failure to
   prune older retained archives is explicitly non-blocking and leaves the restore-tested backup
-  intact. No real user data was opened or changed.
+  intact. This synthetic qualification opened or changed no installed user data.
+- the owner-approved installed-data gate created and retained a protected archive before
+  extracting a fresh rehearsal copy. Its first run correctly stopped before installation:
+  the installed ledger already recorded two historical v1 shapes that the synthetic fixtures
+  had not modeled. Creatures contained the complete read projection plus additional immutable
+  provider columns; its validator now opts into a required-column superset contract without
+  touching rows or advancing the ledger. Hex contained the released hybrid v1 map/tile shape
+  plus external legacy foreign keys; additive Hex v2 validates representability, retains the
+  referenced v1 rows in immutable archives, lets SQLite retarget those foreign keys atomically,
+  and installs the canonical target tables. Unknown or non-representable Hex truth rolls back
+  with the owner ledger and every legacy row unchanged.
+- a second freshly extracted copy proved the Hex external-reference guard by stopping on the
+  previously unmodeled cross-owner foreign keys. After adding archive preservation and its
+  regression fixture, the final fresh extraction returned
+  `CATALOG_REHEARSAL_READY owners=11 creatures=2526 items=1329 saved_encounters=5 npcs=0
+  factions=0 locations=0 encounter_tables=5`. The installed source database remained
+  unmigrated; only isolated restored copies were changed.
 - the final code and document diff is integrated with current `origin/main` (`0b094e121`).
   Literal pre-review qualification returned `BUILD SUCCESSFUL in 11m 29s` for `test`,
   `2m 43s` for `uiTest`, and `1m 54s` for `architectureTest`. The corrected Encounter, Dungeon,
   and shared persistence routes returned `BUILD SUCCESSFUL in 1m 34s`. Final independent
   architecture and quality re-review reported no remaining findings. Literal merge-blocking
-  `./gradlew check --console=plain` returned `BUILD SUCCESSFUL in 11m 50s` on the final code
-  and documentation diff. The owner-approved installed-data copy remains the M5 gate.
+  `./gradlew check --console=plain` returned `BUILD SUCCESSFUL in 11m 50s` before the real-data
+  compatibility findings. The final Hex inbound-schema regression route returned
+  `BUILD SUCCESSFUL in 30s`, and the post-review fresh restore copy returned the complete
+  `CATALOG_REHEARSAL_READY` result in 46s. Final architecture and quality re-review reported
+  no remaining findings; renewed literal `./gradlew check --console=plain` returned
+  `BUILD SUCCESSFUL in 10m 32s` on the complete real-data compatibility diff. Desktop
+  installation and visible owner acceptance remain M5 gates.
 
 ### Finish Criteria
 

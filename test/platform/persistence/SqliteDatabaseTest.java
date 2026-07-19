@@ -463,6 +463,41 @@ final class SqliteDatabaseTest {
     }
 
     @Test
+    void tableColumnValidationDistinguishesExactTargetsFromRequiredProviderProjections() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("column-signatures.db");
+        Class.forName("org.sqlite.JDBC");
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath)) {
+            connection.createStatement().execute(
+                    "CREATE TABLE provider_rows(id INTEGER PRIMARY KEY, label TEXT NOT NULL, provider_payload TEXT)");
+
+            SqliteSchemaValidator.builder()
+                    .tableContaining("provider_rows", "id", "label")
+                    .primaryKey("provider_rows", "id")
+                    .build()
+                    .validate(connection);
+
+            SqliteSchemaValidator exact = SqliteSchemaValidator.builder()
+                    .table("provider_rows", "id", "label")
+                    .primaryKey("provider_rows", "id")
+                    .build();
+            SQLException extraColumn = assertThrows(SQLException.class, () -> exact.validate(connection));
+            assertEquals(
+                    "owner table columns do not match the target signature: provider_rows",
+                    extraColumn.getMessage());
+
+            SqliteSchemaValidator missingRequiredColumn = SqliteSchemaValidator.builder()
+                    .tableContaining("provider_rows", "id", "label", "required_value")
+                    .primaryKey("provider_rows", "id")
+                    .build();
+            SQLException missingColumn = assertThrows(
+                    SQLException.class, () -> missingRequiredColumn.validate(connection));
+            assertEquals(
+                    "owner table is missing required columns: provider_rows",
+                    missingColumn.getMessage());
+        }
+    }
+
+    @Test
     void migrationFailureRollsBackSchemaAndVersion() throws Exception {
         Path databasePath = temporaryDirectory.resolve("rollback.db");
         RecordingDiagnostics diagnostics = new RecordingDiagnostics();

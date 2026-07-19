@@ -40,11 +40,11 @@ public final class SqliteCreatureCatalogLocalGateway {
     public static FeatureStoreDefinition storeDefinition() {
         CreaturesSchemaMigrator schemaMigrator = new CreaturesSchemaMigrator();
         SqliteSchemaValidator targetSchema = SqliteSchemaValidator.builder()
-                .table(CreaturesPersistenceSchema.CREATURES)
+                .tableContaining(CreaturesPersistenceSchema.CREATURES)
                 .primaryKey("creatures", "id")
-                .table(CreaturesPersistenceSchema.CREATURE_BIOMES)
-                .table(CreaturesPersistenceSchema.CREATURE_SUBTYPES)
-                .table(CreaturesPersistenceSchema.CREATURE_ACTIONS)
+                .tableContaining(CreaturesPersistenceSchema.CREATURE_BIOMES)
+                .tableContaining(CreaturesPersistenceSchema.CREATURE_SUBTYPES)
+                .tableContaining(CreaturesPersistenceSchema.CREATURE_ACTIONS)
                 .index("idx_creatures_type", "creatures", false, "creature_type")
                 .index("idx_creatures_alignment", "creatures", false, "alignment")
                 .index("idx_creatures_xp", "creatures", false, "xp")

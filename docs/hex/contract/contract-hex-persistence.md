@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-19
+Last Reviewed: 2026-07-19
 Source of Truth: Hex SQLite persistence contract for authored maps, tiles,
 terrain overrides, and markers.
 
@@ -99,15 +99,57 @@ Owner startup readiness validates the feature-declared target schema signature; 
 ## Compatibility And Migration
 
 V1 has no compatibility promise with Dungeon feature-marker tables and no Hex
-runtime travel-state payload. Future migrations that rename tables, marker
-types, or the stable Hex tile-id convention MUST preserve domain meaning or
-document the incompatible migration in this contract before implementation
-relies on it.
+runtime travel-state payload. A released V1 installation can contain a hybrid
+schema in which legacy `hex_maps` and `hex_tiles` tables coexist with the V1
+current-map, terrain-override, and marker tables. The V2 migration owns the
+only automatic conversion of that hybrid form.
+
+V2 MUST accept only the declared V1 target signature or the known hybrid V1
+signature. An unknown table signature MUST fail without advancing the Hex
+schema ledger. For the hybrid form, V2 preserves stable map ids, nonblank map
+names, bounded radii, axial coordinates, current-map selection, compatible
+terrain overrides, and markers. Legacy terrain values normalize as follows:
+
+- `grassland` becomes the implicit `GRASSLAND` default and is not stored as an
+  override
+- `forest`, `water`, `desert`, and `swamp` become their uppercase Hex terrain
+  values
+- `mountain` and `mountains` become `MOUNTAINS`
+
+The hybrid migration MUST fail atomically when a map is unbounded, a name or
+radius is invalid, tile coordinates do not completely cover the bounded map,
+terrain sources conflict, a terrain or marker value is unknown, or legacy
+elevation, biome, exploration, faction, or note truth cannot be represented by
+the V2 schema. Failure MUST preserve the V1 schema, rows, and owner-ledger
+version. Because released cross-owner tables can still reference the V1
+surrogate `tile_id`, a successful hybrid migration MUST retain the legacy map
+and tile rows under the immutable `sm_hex_v1_maps_archive` and
+`sm_hex_v1_tiles_archive` names. SQLite foreign keys from those legacy
+consumers MUST be rewritten to the archives by the same transaction; the
+canonical `hex_maps` and `hex_tiles` names then belong only to V2. The archives
+MUST NOT be treated as current Hex provider truth or mutated through Hex APIs.
+Before creating staging tables, V2 MUST inventory every inbound foreign key to
+all five V1 Hex tables. Only the released, code-ownerless
+`world_locations`, `tile_faction_influence`, and `campaign_state` table
+signatures may reference the archived map and tile tables; an external reference
+to a Hex child table that V2 drops is never supported. Their complete columns, primary keys,
+defaults, indexes, foreign-key columns, targets, and update/delete semantics
+MUST match the released signatures. An unknown inbound table, an additional
+foreign key, or any signature deviation MUST fail without staging, archive
+rename, or owner-ledger advancement. Because SQLite also rewrites dependent
+schema SQL during table rename, every view and trigger definition MUST be
+inventoried before staging. V2 supports none that reference a V1 Hex table; any
+such view or trigger fails closed without changing its definition.
+Future migrations that rename tables, marker types, or the stable Hex tile-id
+convention MUST likewise preserve domain meaning or document an incompatible
+migration here before implementation relies on it.
 
 ## Verification Notes
 
-Hex editor tests MUST verify persisted map, terrain, and marker
-rows through a production persistence route.
+Hex editor tests MUST verify persisted map, terrain, and marker rows through a
+production persistence route. Migration proof MUST include the released hybrid
+V1 signature with authored rows, typed repository readback after conversion,
+idempotent V2 reopen, and rollback of non-representable V1 truth.
 
 ## References
 

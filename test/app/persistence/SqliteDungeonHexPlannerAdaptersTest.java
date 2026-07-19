@@ -47,7 +47,7 @@ final class SqliteDungeonHexPlannerAdaptersTest {
             SqliteWorldPlannerRepository world = new SqliteWorldPlannerRepository(stores.get("world-planner"));
             Map<String, Integer> expectedVersions = Map.of(
                 "dungeon", 7,
-                    "hex", 1,
+                    "hex", 2,
                     "session-planner", 4,
                     "world-planner", 2);
 

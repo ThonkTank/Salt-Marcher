@@ -74,6 +74,12 @@ not prevent unrelated ready handles from opening connections. Physical database
 corruption and a newer platform version remain global because no safe shared
 file access exists.
 
+A table declaration is exact by default. A read-only provider MAY instead
+declare a required column projection when additional provider-owned columns are
+compatible and must remain untouched. That opt-in still fails on every missing
+required column and on mismatched declared keys or indexes; it does not weaken
+exact declarations for application-owned schemas.
+
 No feature may enqueue a persistence operation before its readiness is known.
 An unavailable feature exposes its existing typed storage or availability
 result and performs no write.
@@ -95,6 +101,17 @@ Each migration:
 - recognizes every supported predecessor through explicit structural validation
 - aborts before destructive work when the stored signature is unknown
 - copies and validates replacement rows before dropping or renaming predecessor tables
+
+One narrow legacy-compatibility case is permitted: renaming an owner table may
+let SQLite retarget inbound foreign keys from documented, code-ownerless legacy
+tables to an immutable archive of that table. Before any mutation, the migration
+MUST inventory every inbound foreign key plus every view and trigger definition
+that a rename could rewrite, match the complete legacy table signatures and
+complete foreign-key sets, and reject every unknown, additional, or
+registered-owner reference. The transaction MUST retain
+all referenced rows and payloads, keep global foreign-key integrity, and leave the
+archives outside current provider APIs. This exception does not permit writing a
+registered feature owner's schema or interpreting its domain truth.
 
 The coordinator records the new owner version only after the migration action
 and final target-signature validator succeed. Failure rolls back schema, rows,
