@@ -35,6 +35,7 @@ import features.party.api.CreateCharacterCommand;
 import features.party.api.DeleteCharacterCommand;
 import features.party.api.MembershipState;
 import features.party.api.MovePartyCharactersCommand;
+import features.party.api.MutationResult;
 import features.party.api.PartyDungeonTravelLocationSnapshot;
 import features.party.api.PartyMutationModel;
 import features.party.api.PartyPlanningFactsQuery;
@@ -134,11 +135,20 @@ public final class PartyApplicationService implements features.party.api.PartyAp
                 command == null ? PartyRestType.SHORT_REST : restType(command.restType()))));
     }
 
-    public void moveCharacters(MovePartyCharactersCommand command) {
-        executionLane.execute(() -> runRosterMutation(roster -> roster.moveCharacters(
-                command == null ? List.of() : command.characterIds(),
-                travelLocation(command == null ? null : command.target()),
-                command == null || command.attachToPartyToken())));
+    public CompletionStage<MutationResult> moveCharacters(MovePartyCharactersCommand command) {
+        CompletableFuture<MutationResult> completion = new CompletableFuture<>();
+        try {
+            executionLane.execute(() -> completion.complete(runRosterMutation(roster -> roster.moveCharacters(
+                    command == null ? List.of() : command.characterIds(),
+                    travelLocation(command == null ? null : command.target()),
+                    command == null || command.attachToPartyToken()))));
+        } catch (RuntimeException exception) {
+            diagnostics.failure(STORAGE_FAILURE, exception.getClass());
+            MutationResult result = PartyPublishedProjection.storageErrorMutationResult();
+            publishedState.publishMutation(result);
+            completion.complete(result);
+        }
+        return completion;
     }
 
     public void calculateAdventuringDay(CalculateAdventuringDayCommand command) {
@@ -213,18 +223,21 @@ public final class PartyApplicationService implements features.party.api.PartyAp
         }
     }
 
-    private void runRosterMutation(RosterMutationAction action) {
+    private MutationResult runRosterMutation(RosterMutationAction action) {
+        MutationResult result;
         try {
             PartyRosterMutation mutation = action.apply(repository.load());
             if (mutation.successful()) {
                 repository.save(mutation.roster());
                 publishRepositoryBackedState(mutation.roster());
             }
-            publishedState.publishMutation(PartyPublishedProjection.mutationResult(mutation.status()));
+            result = PartyPublishedProjection.mutationResult(mutation.status());
         } catch (IllegalStateException exception) {
             diagnostics.failure(STORAGE_FAILURE, exception.getClass());
-            publishedState.publishMutation(PartyPublishedProjection.storageErrorMutationResult());
+            result = PartyPublishedProjection.storageErrorMutationResult();
         }
+        publishedState.publishMutation(result);
+        return result;
     }
 
     private void publishRepositoryBackedState(PartyRoster roster) {

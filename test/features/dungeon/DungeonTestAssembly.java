@@ -133,7 +133,6 @@ public final class DungeonTestAssembly {
                 activeParty,
                 partyTravelPositions,
                 party,
-                partyMutation,
                 executionLane,
                 uiDispatcher,
                 diagnostics);

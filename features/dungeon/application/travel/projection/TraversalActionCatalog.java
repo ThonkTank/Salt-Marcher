@@ -10,6 +10,7 @@ import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.application.travel.session.TravelDungeonSessionSurface.AreaKind;
 import features.dungeon.application.travel.session.TravelDungeonSessionSurface.AreaData;
 import features.dungeon.application.travel.session.TravelDungeonSessionSurface.LocationKind;
+import features.dungeon.api.DungeonTravelActionId;
 
 final class TraversalActionCatalog {
 
@@ -56,7 +57,9 @@ final class TraversalActionCatalog {
                     doorNumber++;
                 }
                 actions.add(new TravelActionFacts(
-                        candidate.link().directionalActionId(candidate.source().tile()),
+                        DungeonTravelActionId.fromStableFacts(
+                                authoredSurface.header().mapId(),
+                                candidate.link().directionalActionId(candidate.source().tile())),
                         TravelActionKind.TRAVERSAL,
                         label,
                         destinationLabel,

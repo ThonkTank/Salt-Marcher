@@ -39,6 +39,7 @@ import features.scene.SceneFeature;
 import features.sessionplanner.SessionPlannerServiceAssembly;
 import features.sessiongeneration.SessionGenerationServiceAssembly;
 import features.sessiongeneration.api.SessionGenerationApi;
+import features.travel.TravelFeature;
 import features.worldplanner.WorldPlannerServiceAssembly;
 
 /** Explicit production composition root. */
@@ -174,6 +175,8 @@ public final class AppBootstrap implements AutoCloseable {
         HexServiceAssembly.Component hex = HexServiceAssembly.create(
                 database, party.travelPositions(), party.application(),
                 executionLane, uiDispatcher, diagnostics);
+        TravelFeature.Component travel = TravelFeature.create(
+                party.travelPositions(), dungeon.travelContext(), hex.travelModel(), uiDispatcher);
         SessionGenerationApi generation = SessionGenerationServiceAssembly.create(
                 database, sessionGenerationCpuLane, sessionGenerationIoLane);
         SessionPlannerServiceAssembly session = SessionPlannerServiceAssembly.create(
@@ -199,7 +202,7 @@ public final class AppBootstrap implements AutoCloseable {
                 uiDispatcher,
                 diagnostics);
         return new Components(
-                creatures, encounterTables, party, items, world, encounter, dungeon, hex, session, scene);
+                creatures, encounterTables, party, items, world, encounter, dungeon, hex, travel, session, scene);
     }
 
     private List<ResolvedContribution> bindContributions(AppShell shell, Components components) {
@@ -211,6 +214,7 @@ public final class AppBootstrap implements AutoCloseable {
         var encounter = components.encounter();
         var dungeon = components.dungeon();
         var hex = components.hex();
+        var travel = components.travel();
         var session = components.session();
         var scene = components.scene();
         var inspector = shell.inspector();
@@ -245,7 +249,7 @@ public final class AppBootstrap implements AutoCloseable {
                 encounter.stateContribution(
                         creatures.application(), world.application(),
                         creatureId -> creatures.openInspector(inspector, creatureId)),
-                hex.travelStateContribution());
+                travel.contribution());
 
         List<ResolvedContribution> resolved = new ArrayList<>(manifest.size());
         for (ShellContribution contribution : manifest) {
@@ -452,6 +456,7 @@ public final class AppBootstrap implements AutoCloseable {
             EncounterServiceAssembly.Component encounter,
             DungeonFeature.Component dungeon,
             HexServiceAssembly.Component hex,
+            TravelFeature.Component travel,
             SessionPlannerServiceAssembly session,
             SceneFeature.Component scene
     ) {
@@ -462,6 +467,7 @@ public final class AppBootstrap implements AutoCloseable {
             encounter.start();
             dungeon.start();
             hex.start();
+            travel.start();
         }
     }
 

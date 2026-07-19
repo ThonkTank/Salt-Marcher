@@ -11,6 +11,7 @@ import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.api.DungeonEditorHandleRef;
+import features.dungeon.api.DungeonCellRef;
 import features.dungeon.api.TravelDungeonSnapshot;
 import features.dungeon.api.editor.DungeonEditorDraftState;
 import features.dungeon.api.editor.DungeonEditorPointerInput;
@@ -103,6 +104,19 @@ public final class DungeonMapContentModel {
         return hitsAt(sceneX, sceneY).stream()
                 .map(DungeonMapHitIndex.CanvasHit::pointerTarget)
                 .toList();
+    }
+
+    public boolean partyTokenTargetAt(double sceneX, double sceneY) {
+        return pointerTargetsAt(sceneX, sceneY).stream().anyMatch(PointerTarget::isPartyTokenTarget);
+    }
+
+    public Optional<DungeonCellRef> exactDungeonCellAt(double sceneX, double sceneY) {
+        return pointerTargetsAt(sceneX, sceneY).stream()
+                .filter(PointerTarget::isCellTarget)
+                .map(PointerTarget::cellRef)
+                .filter(CellTarget::exact)
+                .map(cell -> new DungeonCellRef(cell.q(), cell.r(), cell.level()))
+                .findFirst();
     }
 
     public PointerTarget syntheticHoverTarget(
@@ -1348,6 +1362,22 @@ public final class DungeonMapContentModel {
                     VertexTarget.empty());
         }
 
+        static PointerTarget partyToken() {
+            return new PointerTarget(
+                    PreparedTargetKind.PARTY_TOKEN,
+                    PreparedLabelKind.EMPTY,
+                    PreparedElementKind.EMPTY,
+                    0L,
+                    0L,
+                    PreparedTopologyKind.EMPTY,
+                    0L,
+                    DungeonEditorHandleRef.empty(),
+                    BoundaryTarget.empty(),
+                    PreparedSyntheticHoverKind.NONE,
+                    CellTarget.empty(),
+                    VertexTarget.empty());
+        }
+
         public static PointerTarget target(
                 PreparedTargetKind targetKind,
                 PreparedLabelKind labelKind,
@@ -1500,6 +1530,10 @@ public final class DungeonMapContentModel {
 
         public boolean isCellTarget() {
             return targetKind == PreparedTargetKind.CELL;
+        }
+
+        public boolean isPartyTokenTarget() {
+            return targetKind == PreparedTargetKind.PARTY_TOKEN;
         }
 
         public boolean isHandleTarget() {

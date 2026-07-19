@@ -45,6 +45,7 @@ import features.party.api.ReadStatus;
 import features.party.api.SetPartyMembershipCommand;
 import features.party.api.UpdateCharacterCommand;
 import features.party.api.MovePartyCharactersCommand;
+import features.party.api.MutationResult;
 import features.sessiongeneration.api.CommitGenerationRunCommand;
 import features.sessiongeneration.api.GenerationDraftResponse;
 import features.sessiongeneration.api.GenerationRequest;
@@ -392,7 +393,7 @@ final class SessionPlannerWorkspaceAssemblerTest {
         @Override public void awardXp(AwardPartyXpCommand command) { throw new UnsupportedOperationException(); }
         @Override public void adjustXp(AdjustPartyXpCommand command) { throw new UnsupportedOperationException(); }
         @Override public void performRest(PerformPartyRestCommand command) { throw new UnsupportedOperationException(); }
-        @Override public void moveCharacters(MovePartyCharactersCommand command) { throw new UnsupportedOperationException(); }
+        @Override public CompletionStage<MutationResult> moveCharacters(MovePartyCharactersCommand command) { throw new UnsupportedOperationException(); }
         @Override public void calculateAdventuringDay(CalculateAdventuringDayCommand command) { throw new UnsupportedOperationException(); }
     }
 

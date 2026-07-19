@@ -1,6 +1,5 @@
 package features.dungeon.application.travel;
 
-import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.application.travel.DungeonTravelAuthoredReadResult.Loaded;
@@ -13,7 +12,6 @@ import features.dungeon.application.travel.session.TravelDungeonActiveState;
 import features.dungeon.application.travel.session.TravelDungeonActiveState.ActiveTravelStateData;
 import features.dungeon.application.travel.session.TravelDungeonActiveState.PartyLocationData;
 import features.dungeon.application.travel.session.TravelDungeonSessionSurface;
-import features.dungeon.application.travel.session.TravelDungeonSessionSurface.ContextKind;
 import features.dungeon.application.travel.session.TravelDungeonSessionSurface.PositionData;
 import features.dungeon.application.travel.session.TravelDungeonSessionSurface.SurfaceData;
 
@@ -43,6 +41,10 @@ public final class DungeonTravelSurfaceLoader {
         return loadRuntimeSurface(new Input(null, 0L), effectivePosition).surface();
     }
 
+    SurfaceData loadCommittedPosition() {
+        return loadOrInitialize(new Input(null, 0L));
+    }
+
     private SurfaceData loadOrInitialize(Input input) {
         Input safeInput = input == null ? new Input(null, 0L) : input;
         ActiveTravelStateData activeTravel = partyGateway.loadActiveTravelState();
@@ -53,14 +55,7 @@ public final class DungeonTravelSurfaceLoader {
         PositionData effectivePosition =
                 effectiveTravelPosition(safeInput, activeTravel.partyLocation());
         SurfaceLoad loaded = loadRuntimeSurface(safeInput, effectivePosition);
-        SurfaceData surface = loaded.surface();
-        if (loaded.available() && shouldSavePosition(safeInput, activeTravel)) {
-            boolean saved = partyGateway.saveDungeonPosition(
-                    surface.position(),
-                    activeTravel.travelCharacterIds());
-            return saved ? surface : failedInitialSaveSurface(surface);
-        }
-        return surface;
+        return loaded.surface();
     }
 
     private SurfaceLoad loadRuntimeSurface(
@@ -108,35 +103,6 @@ public final class DungeonTravelSurfaceLoader {
             return effectivePosition;
         }
         return null;
-    }
-
-    private static boolean shouldSavePosition(
-            Input input,
-            ActiveTravelStateData activeTravel
-    ) {
-        if (activeTravel.travelCharacterIds().isEmpty()) {
-            return false;
-        }
-        return input.requestedTravelPosition() != null
-                || input.hasSelectedMapId()
-                || activeTravel.partyLocation() == null;
-    }
-
-    private static SurfaceData failedInitialSaveSurface(SurfaceData surface) {
-        return new SurfaceData(
-                ContextKind.DUNGEON,
-                surface.mapName(),
-                surface.revision(),
-                surface.map(),
-                surface.position(),
-                surface.surfaceTitle(),
-                surface.areaLabel(),
-                surface.tileLabel(),
-                surface.headingLabel(),
-                "Position could not be saved.",
-                surface.visualDescription(),
-                List.of(),
-                false);
     }
 
     private record Input(

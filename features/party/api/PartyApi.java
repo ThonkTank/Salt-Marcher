@@ -1,5 +1,7 @@
 package features.party.api;
 
+import java.util.concurrent.CompletionStage;
+
 public interface PartyApi {
 
     java.util.concurrent.CompletionStage<PartyPlanningFactsResponse> loadPlanningFacts(
@@ -33,7 +35,7 @@ public interface PartyApi {
 
     void performRest(PerformPartyRestCommand command);
 
-    void moveCharacters(MovePartyCharactersCommand command);
+    CompletionStage<MutationResult> moveCharacters(MovePartyCharactersCommand command);
 
     void calculateAdventuringDay(CalculateAdventuringDayCommand command);
 }

@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-17
+Last Reviewed: 2026-07-19
 Source of Truth: User-facing behavior, capabilities, and acceptance criteria for
 the dungeon feature.
 
@@ -22,17 +22,6 @@ Provide one dungeon workflow that lets a GM:
 - shell-wide navigation policy
 - project-wide persistence rules
 - low-level geometry or routing algorithm design
-
-## Current State
-
-- SaltMarcher already ships a dungeon map surface, a dungeon travel surface,
-  and a dungeon editor surface over shared authored dungeon truth.
-- The current global runtime tab labeled `Reise` is wired through the Hex
-  travel contribution and does not yet select Dungeon context through the
-  feature-neutral Travel capability.
-- The sibling `salt-marcher` repo shows the richer visible target-state
-  behavior for dungeon runtime travel and advanced editor tool families such as
-  corridor, stair, and transition editing.
 
 ## Primary Surfaces
 

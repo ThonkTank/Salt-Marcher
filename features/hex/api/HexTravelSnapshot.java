@@ -3,6 +3,8 @@ package features.hex.api;
 import java.util.List;
 
 public record HexTravelSnapshot(
+        long sourceRevision,
+        long partyPositionRevision,
         boolean active,
         long mapId,
         int q,
@@ -17,6 +19,8 @@ public record HexTravelSnapshot(
 ) {
 
     public HexTravelSnapshot {
+        sourceRevision = Math.max(0L, sourceRevision);
+        partyPositionRevision = Math.max(0L, partyPositionRevision);
         locationText = safeText(locationText);
         statusText = safeText(statusText);
         weatherText = safeText(weatherText);
@@ -27,7 +31,13 @@ public record HexTravelSnapshot(
     }
 
     public static HexTravelSnapshot empty(String statusText) {
+        return empty(0L, statusText);
+    }
+
+    public static HexTravelSnapshot empty(long partyPositionRevision, String statusText) {
         return new HexTravelSnapshot(
+                0L,
+                partyPositionRevision,
                 false,
                 0L,
                 0,
@@ -39,6 +49,23 @@ public record HexTravelSnapshot(
                 "Normal",
                 "Hex-Reiseposition auswaehlen",
                 List.of());
+    }
+
+    public HexTravelSnapshot withSourceRevision(long revision) {
+        return new HexTravelSnapshot(
+                revision,
+                partyPositionRevision,
+                active,
+                mapId,
+                q,
+                r,
+                locationText,
+                statusText,
+                weatherText,
+                timeOfDayText,
+                paceText,
+                hintText,
+                partyTokenCharacterIds);
     }
 
     private static String safeText(String text) {

@@ -5,6 +5,7 @@ import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
+import features.dungeon.api.DungeonTravelActionId;
 
 final class DungeonTravelStateContentModel {
 
@@ -35,22 +36,30 @@ final class DungeonTravelStateContentModel {
 
     static final class ActionItem {
 
-        private final int rowIndex;
+        private final DungeonTravelActionId actionId;
         private final String buttonLabel;
         private final String descriptionText;
 
-        private ActionItem(int rowIndex, String buttonLabel, String descriptionText) {
-            this.rowIndex = rowIndex;
+        private ActionItem(
+                DungeonTravelActionId actionId,
+                String buttonLabel,
+                String descriptionText
+        ) {
+            this.actionId = java.util.Objects.requireNonNull(actionId, "actionId");
             this.buttonLabel = buttonLabel == null ? "" : buttonLabel;
             this.descriptionText = descriptionText == null ? "" : descriptionText;
         }
 
-        static ActionItem of(int rowIndex, String buttonLabel, String descriptionText) {
-            return new ActionItem(rowIndex, buttonLabel, descriptionText);
+        static ActionItem of(
+                DungeonTravelActionId actionId,
+                String buttonLabel,
+                String descriptionText
+        ) {
+            return new ActionItem(actionId, buttonLabel, descriptionText);
         }
 
-        int rowIndex() {
-            return rowIndex;
+        DungeonTravelActionId actionId() {
+            return actionId;
         }
 
         String buttonLabel() {

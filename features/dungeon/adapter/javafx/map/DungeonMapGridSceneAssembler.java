@@ -285,7 +285,7 @@ final class DungeonMapGridSceneAssembler {
             return;
         }
         actors.add(new MapCanvasPolygonPrimitive(
-                "",
+                DungeonMapSceneIdentity.partyTokenHitRef(token),
                 null,
                 token.z(),
                 DungeonMapSceneGeometry.Marker.partyTokenShape(token),

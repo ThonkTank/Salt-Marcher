@@ -14,8 +14,27 @@ public record DungeonTravelSurfaceSnapshot(
         String headingLabel,
         String statusLabel,
         String visualDescription,
-        List<DungeonTravelActionSnapshot> actions
+        List<DungeonTravelActionSnapshot> actions,
+        long partyPositionRevision
 ) {
+
+    public DungeonTravelSurfaceSnapshot(
+            DungeonTravelContextKind contextKind,
+            String mapName,
+            int revision,
+            DungeonMapSnapshot map,
+            DungeonTravelPosition position,
+            String surfaceTitle,
+            String areaLabel,
+            String tileLabel,
+            String headingLabel,
+            String statusLabel,
+            String visualDescription,
+            List<DungeonTravelActionSnapshot> actions
+    ) {
+        this(contextKind, mapName, revision, map, position, surfaceTitle, areaLabel, tileLabel,
+                headingLabel, statusLabel, visualDescription, actions, 0L);
+    }
 
     public DungeonTravelSurfaceSnapshot {
         contextKind = contextKind == null ? DungeonTravelContextKind.DUNGEON : contextKind;
@@ -37,5 +56,6 @@ public record DungeonTravelSurfaceSnapshot(
         statusLabel = statusLabel == null ? "" : statusLabel.trim();
         visualDescription = visualDescription == null ? "" : visualDescription.trim();
         actions = actions == null ? List.of() : List.copyOf(actions);
+        partyPositionRevision = Math.max(0L, partyPositionRevision);
     }
 }

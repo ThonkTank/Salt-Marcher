@@ -1,19 +1,19 @@
-package features.hex.adapter.javafx.travel;
+package features.travel.adapter.javafx;
 
-import org.jspecify.annotations.Nullable;
+import features.travel.api.TravelContextModel;
+import java.util.Objects;
 import shell.api.ContributionKey;
 import shell.api.ShellBinding;
 import shell.api.ShellContribution;
 import shell.api.ShellContributionSpec;
 import shell.api.ShellStateTabSpec;
-import features.hex.api.HexTravelModel;
 
 public final class TravelStateContribution implements ShellContribution {
 
-    private final @Nullable HexTravelModel hexTravelModel;
+    private final TravelContextModel contextModel;
 
-    public TravelStateContribution(@Nullable HexTravelModel hexTravelModel) {
-        this.hexTravelModel = hexTravelModel;
+    public TravelStateContribution(TravelContextModel contextModel) {
+        this.contextModel = Objects.requireNonNull(contextModel, "contextModel");
     }
 
     @Override
@@ -26,10 +26,8 @@ public final class TravelStateContribution implements ShellContribution {
         TravelStateViewModel viewModel = new TravelStateViewModel();
         TravelStateView state = new TravelStateView();
         state.bind(viewModel);
-        if (hexTravelModel != null) {
-            hexTravelModel.subscribe(viewModel::applyHexTravelSnapshot);
-            viewModel.applyHexTravelSnapshot(hexTravelModel.current());
-        }
+        contextModel.subscribe(viewModel::apply);
+        viewModel.apply(contextModel.current());
         return ShellBinding.state("Reise", state);
     }
 }

@@ -1,7 +1,7 @@
 package features.dungeon.adapter.javafx.map;
 
 enum PreparedTargetKind {
-    EMPTY, CELL, LABEL, MARKER, GRAPH_NODE, HANDLE, BOUNDARY, VERTEX
+    EMPTY, CELL, LABEL, MARKER, GRAPH_NODE, HANDLE, BOUNDARY, VERTEX, PARTY_TOKEN
 }
 
 enum PreparedLabelKind {

@@ -46,14 +46,14 @@ public final class TravelDungeonSessionProjectionMapper {
     }
 
     private static TravelDungeonSessionSurface.AvailableAction toRuntimeAction(
-            @Nullable TravelActionFacts action
+            TravelActionFacts action
     ) {
         return new TravelDungeonSessionSurface.AvailableAction(
-                action == null ? "" : action.actionId(),
-                action == null ? TravelActionKind.defaultKind() : action.kind(),
-                action == null ? "" : action.label(),
-                action == null ? "" : action.destinationLabel(),
-                action == null ? "" : action.description());
+                action.actionId(),
+                action.kind(),
+                action.label(),
+                action.destinationLabel(),
+                action.description());
     }
 
     private static PositionData toRuntimePosition(@Nullable TravelPositionFacts position) {

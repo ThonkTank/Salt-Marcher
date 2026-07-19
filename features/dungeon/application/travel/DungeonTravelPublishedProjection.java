@@ -12,8 +12,10 @@ import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.api.DungeonTravelActionKind;
 import features.dungeon.api.DungeonTravelActionSnapshot;
 import features.dungeon.api.DungeonTravelContextKind;
+import features.dungeon.api.DungeonTravelContextSnapshot;
 import features.dungeon.api.DungeonTravelHeading;
 import features.dungeon.api.DungeonTravelLocationKind;
+import features.dungeon.api.DungeonTravelMoveOutcome;
 import features.dungeon.api.DungeonTravelPosition;
 import features.dungeon.api.DungeonTravelSurfaceSnapshot;
 import features.dungeon.api.TravelDungeonAction;
@@ -25,16 +27,87 @@ final class DungeonTravelPublishedProjection {
     private DungeonTravelPublishedProjection() {
     }
 
-    static TravelDungeonSnapshot snapshot(TravelDungeonSessionSnapshot.SnapshotData snapshot) {
+    static TravelDungeonSnapshot snapshot(
+            TravelDungeonSessionSnapshot.SnapshotData snapshot,
+            DungeonTravelMoveOutcome moveOutcome,
+            long partyPositionRevision
+    ) {
         if (snapshot == null) {
             return TravelDungeonSnapshot.empty();
         }
         SurfaceData surface = snapshot.surface();
         return new TravelDungeonSnapshot(
                 workspaceState(surface),
-                surfaceSnapshot(surface),
+                surfaceSnapshot(surface, partyPositionRevision),
                 overlaySettings(snapshot.overlayState()),
-                snapshot.projectionLevel());
+                snapshot.projectionLevel(),
+                moveOutcome);
+    }
+
+    static DungeonTravelContextSnapshot context(
+            TravelDungeonSnapshot detailed,
+            long sourceRevision,
+            long partyPositionRevision
+    ) {
+        DungeonTravelSurfaceSnapshot surface = detailed == null ? null : detailed.travelSurface();
+        if (surface == null || surface.contextKind() != DungeonTravelContextKind.DUNGEON) {
+            return DungeonTravelContextSnapshot.empty(sourceRevision, partyPositionRevision);
+        }
+        DungeonTravelMoveOutcome outcome = detailed.moveOutcome();
+        return new DungeonTravelContextSnapshot(
+                sourceRevision,
+                partyPositionRevision,
+                true,
+                surface.position().mapId().value(),
+                surface.revision(),
+                surface.mapName(),
+                surface.areaLabel(),
+                surface.tileLabel(),
+                surface.headingLabel(),
+                contextStatus(surface, outcome),
+                contextHint(surface, outcome));
+    }
+
+    private static String contextStatus(
+            DungeonTravelSurfaceSnapshot surface,
+            DungeonTravelMoveOutcome outcome
+    ) {
+        return switch (outcome.status()) {
+            case MOVING -> "Bewegung laeuft";
+            case ACCEPTED -> "Bewegung abgeschlossen";
+            case REJECTED -> "Bewegung blockiert";
+            case IDLE -> surface.statusLabel();
+        };
+    }
+
+    private static String contextHint(
+            DungeonTravelSurfaceSnapshot surface,
+            DungeonTravelMoveOutcome outcome
+    ) {
+        return switch (outcome.status()) {
+            case MOVING -> "Dungeon-Bewegung wird aufgeloest.";
+            case ACCEPTED -> surface.visualDescription().isBlank()
+                    ? "Dungeon-Position aktualisiert."
+                    : surface.visualDescription();
+            case REJECTED -> rejectionHint(outcome.rejectionReason());
+            case IDLE -> surface.visualDescription().isBlank()
+                    ? "Dungeon-Reise im Reisearbeitsbereich steuern."
+                    : surface.visualDescription();
+        };
+    }
+
+    private static String rejectionHint(features.dungeon.api.DungeonTravelRejectionReason reason) {
+        return switch (reason) {
+            case OFF_WINDOW -> "Zielfeld liegt ausserhalb des geladenen Bereichs.";
+            case NON_TRAVERSABLE -> "Zielfeld ist nicht begehbar.";
+            case UNREACHABLE -> "Zielfeld ist nicht erreichbar.";
+            case STALE_PARTY_POSITION -> "Reiseposition wurde zwischenzeitlich aktualisiert.";
+            case PARTY_REJECTED -> "Party-Bewegung wurde abgelehnt.";
+            case PARTY_STORAGE_FAILURE, PARTY_FAILURE -> "Party-Bewegung konnte nicht gespeichert werden.";
+            case ACTION_UNAVAILABLE, TRANSITION_UNAVAILABLE -> "Reiseaktion ist nicht mehr verfuegbar.";
+            case AUTHORED_UNAVAILABLE -> "Dungeon-Daten sind nicht verfuegbar.";
+            case INVALID_INPUT, NO_ACTIVE_POSITION, NONE -> "Dungeon-Bewegung ist nicht verfuegbar.";
+        };
     }
 
     private static DungeonOverlaySettings overlaySettings(OverlayState overlayState) {
@@ -60,7 +133,10 @@ final class DungeonTravelPublishedProjection {
                 surface.actions().stream().map(DungeonTravelPublishedProjection::workspaceAction).toList());
     }
 
-    private static DungeonTravelSurfaceSnapshot surfaceSnapshot(SurfaceData surface) {
+    private static DungeonTravelSurfaceSnapshot surfaceSnapshot(
+            SurfaceData surface,
+            long partyPositionRevision
+    ) {
         if (surface == null) {
             return null;
         }
@@ -78,7 +154,8 @@ final class DungeonTravelPublishedProjection {
                 surface.headingLabel(),
                 surface.statusLabel(),
                 surface.visualDescription(),
-                surface.actions().stream().map(DungeonTravelPublishedProjection::surfaceAction).toList());
+                surface.actions().stream().map(DungeonTravelPublishedProjection::surfaceAction).toList(),
+                partyPositionRevision);
     }
 
     private static DungeonTravelPosition travelPosition(PositionData position) {
@@ -100,6 +177,7 @@ final class DungeonTravelPublishedProjection {
 
     private static DungeonTravelActionSnapshot surfaceAction(AvailableAction action) {
         return new DungeonTravelActionSnapshot(
+                action.actionId(),
                 action.kind() == features.dungeon.application.travel.projection.TravelActionKind.TRANSITION
                         ? DungeonTravelActionKind.TRANSITION
                         : DungeonTravelActionKind.TRAVERSAL,
@@ -110,6 +188,7 @@ final class DungeonTravelPublishedProjection {
 
     private static TravelDungeonAction workspaceAction(AvailableAction action) {
         return new TravelDungeonAction(
+                action.actionId(),
                 action.displayLabel(),
                 action.helpText());
     }

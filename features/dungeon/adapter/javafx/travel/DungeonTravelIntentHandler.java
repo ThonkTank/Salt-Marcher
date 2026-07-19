@@ -19,6 +19,7 @@ final class DungeonTravelIntentHandler {
     private double previousMiddleDragCanvasX;
     private double previousMiddleDragCanvasY;
     private boolean middleDragInProgress;
+    private boolean partyTokenDragInProgress;
 
     DungeonTravelIntentHandler(
             DungeonTravelContributionModel presentationModel,
@@ -36,7 +37,41 @@ final class DungeonTravelIntentHandler {
         if (event == null) {
             return;
         }
+        consumePartyTokenDrag(event);
         consumeLocalCameraInput(event);
+    }
+
+    private void consumePartyTokenDrag(DungeonMapViewInputEvent event) {
+        DungeonMapViewInputEvent.CanvasInput input = event.input();
+        if (event.buttons().middleButtonDown()
+                || event.buttons().secondaryButtonDown()
+                || input.mouseExited()
+                || input.scrolled()
+                || input.escapePressed()) {
+            partyTokenDragInProgress = false;
+            return;
+        }
+        if (input.mousePressed()) {
+            partyTokenDragInProgress = event.buttons().primaryButtonDown()
+                    && mapContentModel.partyTokenTargetAt(sceneX(event), sceneY(event));
+            return;
+        }
+        if (input.mouseDragged()) {
+            if (!event.buttons().primaryButtonDown()) {
+                partyTokenDragInProgress = false;
+            }
+            return;
+        }
+        if (!input.mouseReleased()) {
+            return;
+        }
+        boolean completesTokenDrag = partyTokenDragInProgress && event.buttons().primaryButtonDown();
+        partyTokenDragInProgress = false;
+        if (!completesTokenDrag) {
+            return;
+        }
+        mapContentModel.exactDungeonCellAt(sceneX(event), sceneY(event))
+                .ifPresent(travel::moveTo);
     }
 
     void consume(DungeonTravelControlsViewInputEvent event) {
@@ -80,7 +115,7 @@ final class DungeonTravelIntentHandler {
         if (event == null) {
             return;
         }
-        travel.performAction(event.selectedActionRowIndex());
+        travel.performAction(event.actionId());
     }
 
     private static List<Integer> parseLevels(String rawLevelsText) {
@@ -158,5 +193,13 @@ final class DungeonTravelIntentHandler {
                     event.position().canvasY(),
                     1.0 / zoomInFactor);
         }
+    }
+
+    private double sceneX(DungeonMapViewInputEvent event) {
+        return mapContentModel.currentViewport().screenToSceneX(event.position().canvasX());
+    }
+
+    private double sceneY(DungeonMapViewInputEvent event) {
+        return mapContentModel.currentViewport().screenToSceneY(event.position().canvasY());
     }
 }

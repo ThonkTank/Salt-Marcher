@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-17
+Last Reviewed: 2026-07-19
 Source of Truth: Compact dungeon-facing travel-state surface behavior for the
 runtime `Reise` tab, visible states, and acceptance criteria.
 
@@ -18,15 +18,6 @@ replacing the full interactive dungeon travel workspace.
 - dungeon editor behavior
 - shell-wide state-tab policy
 - shared canvas contract design
-
-## Current State
-
-- SaltMarcher currently registers the global runtime tab labeled `Reise`
-  through the Hex travel contribution.
-- That contribution establishes the compact visual pattern: icon, location row,
-  status badge, three detail rows, and an interaction hint.
-- It does not select Dungeon context or mirror the richer runtime facts that
-  already exist in the dedicated Dungeon travel surface.
 
 ## Visible Structure
 

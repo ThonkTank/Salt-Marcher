@@ -107,11 +107,102 @@ and commit boundaries. M7 starts only after both are complete.
   families are deleted.
 - M4.6 delivery proof is literal green `./gradlew check` plus
   `./gradlew installDesktopApp`. M5.1 is complete through PR #536, M5.2 through
-  PR #538, and M5.3 through PR #540. M5.4 is complete in this change with
-  literal green `./gradlew check` and `./gradlew installDesktopApp`; M6 is next
-  and begins from the M5.4 merge. No intermediate review panel runs; the single
+  PR #538, M5.3 through PR #540, and M5.4 through PR #543. M6 implementation is
+  complete on the isolated `codex/dungeon-travel-context-m6` branch with literal
+  green `./gradlew check` and `./gradlew installDesktopApp`; its PR/CI merge is
+  the remaining M6 delivery step. No intermediate review panel runs; the single
   independent cross-roadmap review runs only after all M7 implementation is
   complete.
+
+### Completed Slice Contract: M6 Travel Completion And Global Context
+
+#### Command Identity And Movement
+
+- Publish a typed stable `DungeonTravelActionId` derived from map identity and
+  stable directed topology or cell facts. Labels, sorting, and presentation-row
+  positions are not identity. Button input and every public action carrier use
+  this id; delete the complete row-index command path.
+- Publish typed Dungeon travel commands and accepted or rejected outcomes.
+  `performAction(DungeonTravelActionId)` and `moveTo(DungeonCellRef)` enter one
+  validation, Party mutation, refresh, and outcome pipeline.
+- Direct movement accepts only a reachable target cell in the already loaded
+  Dungeon workset. It traverses loaded passable cells without bypassing the
+  explicit semantics of doors, stairs, or transitions. Off-window,
+  non-traversable, and unreachable targets are typed rejections; no whole-map
+  load or unseen-reachability guess is permitted.
+- JavaFX starts primary drag only from the rendered Party actor token and
+  resolves release through exact Dungeon cell hit evidence. Middle drag remains
+  camera-only. Invalid release performs no Party or authored mutation.
+
+#### Party Completion And Revision Ordering
+
+- `PartyApi.moveCharacters` returns an operation-specific
+  `CompletionStage<MutationResult>`. The stage completes only after the domain
+  decision and repository result; a successful Party travel-position
+  publication happens before successful completion.
+- Party travel-position readback carries a monotone position revision. Dungeon
+  and Hex must not infer the result of their move by reading the shared mutable
+  `PartyMutationModel` immediately after dispatch.
+- Dungeon publishes moving state after validation, then publishes a resolved
+  accepted or rejected result only after the matching Party stage completes.
+  Late completions cannot replace a newer command or Party-position revision;
+  rejected or failed moves preserve the previous position and authored truth.
+
+#### Feature Readbacks And Global Travel Owner
+
+- Dungeon and Hex publish immutable compact readbacks containing source and
+  Party-position revisions. Dungeon readback includes active state, map/area,
+  tile, heading, status, and hint; it remains command-free and continues to
+  derive authored facts only through Catalog, Window, and Closure routes.
+- Add feature-neutral `features.travel` with immutable revisioned
+  `TravelContextSnapshot`, read-only selection, and the single global `Reise`
+  contribution. It consumes Party position plus Dungeon and Hex API readbacks;
+  it owns no movement, authored truth, persistence, or feature implementation
+  dependency.
+- Matching Dungeon position selects only a Dungeon readback with the same Party
+  revision and map. Matching overworld position selects Hex. Missing, failed,
+  mismatched, or stale facts publish explicit no-context state instead of an
+  old or different feature context.
+- App composition injects the three APIs explicitly. Delete the Hex-owned
+  global contribution, its view/view-model, its assembly factory, and its
+  bootstrap registration. Keep the detailed Dungeon travel workspace and Hex
+  movement semantics in their owning features.
+
+#### Implementation And Proof
+
+1. Add correlated Party move completion and monotone travel-position revision;
+   prove queued-lane completion, publication-before-completion, rejection, and
+   storage failure.
+2. Thread stable action ids through Dungeon projections, public state,
+   application lookup, JavaFX rows, and tests; remove `SelectedAction.atRow`,
+   integer execution, and every selected-action row index.
+3. Add the common Dungeon movement pipeline and loaded-workset reachability,
+   then bind real Party-token drag through existing canvas hit translation.
+   Prove Button and drag against production Window/SQLite/Party routes,
+   reordering stability, moving-before-resolved ordering, and no partial commit.
+4. Add revisioned Dungeon and Hex compact readbacks, compose the neutral Travel
+   selector and one global state-tab contribution, then prove transitions among
+   no-context, Hex, and Dungeon including stale-readback rejection.
+5. Add architecture gates for API-only cross-feature dependencies, absence of a
+   Travel SQLite adapter or movement commands, sole neutral ownership of the
+   global contribution, removal of row-index commands, and continued
+   Window-only Dungeon travel reads.
+
+Focused Party, Dungeon application, real JavaFX travel, global context,
+startup, SQLite, Window-read, architecture, M5.4 work-bound, and existing
+behavior tests precede literal green `./gradlew check` and
+`./gradlew installDesktopApp`. M6 merges without a review cycle; M7 starts from
+that merge.
+
+#### Delete Gate
+
+- Delete public/internal row-index action addressing and untyped action ids.
+- Delete immediate shared-mutation-status inference after Party movement.
+- Delete Hex ownership of `ContributionKey("travel")` and the Hex global
+  Travel state view family.
+- Do not add a whole-map Dungeon reader, duplicate global contribution,
+  movement command in feature-neutral Travel, or compatibility adapter that
+  survives M6.
 
 ### Completed Slice Contract: M5.4 Layered Canvas And Runtime Qualification
 

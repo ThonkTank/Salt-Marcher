@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import features.dungeon.api.DungeonTravelActionId;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.application.travel.projection.TravelAuthoredSurface.Transition;
 import features.dungeon.application.travel.projection.TravelAuthoredSurface.TransitionDestination;
@@ -175,7 +176,9 @@ public final class TravelSurfaceProjection {
                 }
                 String destinationLabel = destinationLabel(transition.destination());
                 result.add(new TravelActionFacts(
-                        "transition:" + transition.transitionId(),
+                        DungeonTravelActionId.fromStableFacts(
+                                authoredSurface.header().mapId(),
+                                "transition:" + transition.transitionId()),
                         TravelActionKind.TRANSITION,
                         transition.label(),
                         destinationLabel,

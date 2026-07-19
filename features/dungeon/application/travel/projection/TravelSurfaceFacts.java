@@ -4,7 +4,7 @@ package features.dungeon.application.travel.projection;
 import java.util.List;
 import java.util.Optional;
 import features.dungeon.domain.core.geometry.Cell;
-import features.dungeon.application.travel.projection.TravelActionFacts.SelectedAction;
+import features.dungeon.api.DungeonTravelActionId;
 import features.dungeon.application.travel.session.TravelDungeonSessionSurface;
 import features.dungeon.application.travel.session.TravelDungeonSessionSurface.LocationKind;
 
@@ -43,12 +43,13 @@ public record TravelSurfaceFacts(
         return immutableActions(actions);
     }
 
-    public Optional<TravelActionFacts> action(SelectedAction selectedAction) {
-        SelectedAction requestedAction = SelectedAction.safe(selectedAction);
-        if (!requestedAction.isWithin(actions)) {
+    public Optional<TravelActionFacts> action(DungeonTravelActionId actionId) {
+        if (actionId == null) {
             return Optional.empty();
         }
-        return Optional.of(actions.get(requestedAction.rowIndex()));
+        return actions.stream()
+                .filter(action -> actionId.equals(action.actionId()))
+                .findFirst();
     }
 
     private static TravelDungeonSessionSurface.MapData defaultMap(TravelDungeonSessionSurface.MapData map) {
