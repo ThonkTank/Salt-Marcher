@@ -22,7 +22,6 @@ import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
 import features.dungeon.domain.core.structure.stair.StairGeometrySpec;
 import features.dungeon.domain.core.structure.stair.StairShape;
 import features.dungeon.domain.core.structure.stair.CorridorBoundStairGeometry;
-import features.dungeon.domain.core.structure.stair.Stair;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -95,7 +94,7 @@ public final class PreviewDungeonEditorSurfaceCreateHelper {
         StairGeometrySpec spec = new StairGeometrySpec(
                 shape, preview.specAnchor(), direction, preview.dimension1(), preview.dimension2());
         LinkedHashSet<Cell> cells = new LinkedHashSet<>(spec.generatedPath());
-        spec.generatedExits(List.of()).forEach(exit -> cells.add(exit.position()));
+        cells.addAll(spec.generatedExitCells());
         if (cells.isEmpty()) {
             return null;
         }
@@ -156,7 +155,6 @@ public final class PreviewDungeonEditorSurfaceCreateHelper {
                 new DungeonTopologyRef(DungeonTopologyElementKind.CORRIDOR, PREVIEW_ID)));
         List<Feature> features = new ArrayList<>(committed.features());
         CorridorBoundStairGeometry.fromRoute(authoredRoute.cells(), end.level())
-                .map(geometry -> geometry.materialize(PREVIEW_ID, PREVIEW_ID, PREVIEW_ID))
                 .map(PreviewDungeonEditorSurfaceCreateHelper::corridorBoundStairFeature)
                 .ifPresent(features::add);
         return new MapSnapshot(
@@ -169,8 +167,10 @@ public final class PreviewDungeonEditorSurfaceCreateHelper {
                 committed.editorHandles());
     }
 
-    private static Feature corridorBoundStairFeature(Stair stair) {
-        List<Cell> cells = stair.occupiedCells().stream()
+    private static Feature corridorBoundStairFeature(CorridorBoundStairGeometry geometry) {
+        List<Cell> cells = java.util.stream.Stream.concat(
+                        geometry.path().stream(), java.util.stream.Stream.of(geometry.upperExit()))
+                .distinct()
                 .sorted(java.util.Comparator.comparingInt(Cell::level)
                         .thenComparingInt(Cell::r)
                         .thenComparingInt(Cell::q))

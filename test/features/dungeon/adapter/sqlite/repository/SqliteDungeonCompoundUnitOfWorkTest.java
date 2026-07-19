@@ -29,7 +29,7 @@ final class SqliteDungeonCompoundUnitOfWorkTest {
     void commitsEveryMapOnceAndReturnsExactResultsInMapOrder(@TempDir Path directory) throws Exception {
         Path path = directory.resolve("compound-uow.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            SqliteDungeonMapRepository catalog = new SqliteDungeonMapRepository(database);
+            SqliteDungeonCatalogStore catalog = new SqliteDungeonCatalogStore(database);
             DungeonMapHeader first = catalog.create("First compound map");
             DungeonMapHeader second = catalog.create("Second compound map");
             DungeonPatch firstPatch = markerPatch(first.mapId(), 1L, 1101L, 3);

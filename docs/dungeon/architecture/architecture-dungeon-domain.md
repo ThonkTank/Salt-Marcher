@@ -96,6 +96,9 @@ The application boundary is split by responsibility:
   continuations, then loads full command-specific identity closure on demand
 - `DungeonUnitOfWork` commits one patch or compound patch against expected map
   revisions
+- `DungeonIdentityAllocator` reserves bounded stable identity ranges for every
+  map-wide authored family created by commands without creating placeholder
+  authored entities
 
 Chunk membership is source-local indexing, never a second entity owner. One
 entity is returned once even when it intersects several requested chunks.
@@ -124,6 +127,10 @@ three Dungeon APIs without importing application, domain, or SQLite packages.
 three APIs and shell contributions, and exposes no internal repository or
 adapter. Its JavaFX adapter consumes the feature-neutral map-canvas mechanism;
 there is no `features.maps` dependency or composition lifecycle.
+
+Dungeon Travel reads authored facts through Catalog and Window capabilities.
+It does not hydrate a complete `DungeonMap` and does not depend on the Authored
+application service as a read facade.
 
 The global `Reise` state contribution is not owned by Dungeon or Hex. A
 feature-neutral Travel capability consumes party position plus feature-owned

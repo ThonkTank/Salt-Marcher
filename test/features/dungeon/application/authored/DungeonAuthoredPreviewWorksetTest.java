@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.dungeon.application.authored.port.DungeonCatalogStore;
 import features.dungeon.application.authored.port.DungeonMapHeader;
-import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.authored.port.DungeonIdentityClosureRequest;
 import features.dungeon.application.authored.port.DungeonIdentityClosureResult;
 import features.dungeon.application.authored.port.DungeonWindow;
@@ -40,13 +39,13 @@ import platform.execution.DirectExecutionLane;
 final class DungeonAuthoredPreviewWorksetTest {
     @Test
     void repeatedPointerPreviewsUseTheLoadedWorksetWithoutRepositoryReads() {
-        CountingRepository repository = new CountingRepository();
+        TestCatalog catalog = new TestCatalog();
         RecordingWindowStore windowStore = new RecordingWindowStore();
         DungeonAuthoredApplicationService service = new DungeonAuthoredApplicationService(
-                repository,
-                repository,
+                catalog,
                 windowStore,
                 features.dungeon.DungeonTestAssembly.inMemoryUnitOfWork(),
+                new TestDungeonIdentityAllocator(),
                 DirectExecutionLane.INSTANCE,
                 new DungeonAuthoredPublishedState(DirectUiDispatcher.INSTANCE));
         DungeonEditorDungeonState dungeonState = new DungeonEditorDungeonState();
@@ -66,8 +65,6 @@ final class DungeonAuthoredPreviewWorksetTest {
         session.executeInMemoryPreview(surface, new DungeonEditorSessionValues.RoomRectanglePreview(
                 new Cell(2, 2, 0), new Cell(3, 3, 0), false));
 
-        assertEquals(0, repository.findByIdCalls);
-        assertEquals(0, repository.firstMapCalls);
         assertEquals(1, windowStore.loadCalls);
     }
 
@@ -160,20 +157,20 @@ final class DungeonAuthoredPreviewWorksetTest {
     }
 
     private static Workset workset() {
-        CountingRepository repository = new CountingRepository();
+        TestCatalog catalog = new TestCatalog();
         RecordingWindowStore windowStore = new RecordingWindowStore();
         DungeonAuthoredApplicationService service = new DungeonAuthoredApplicationService(
-                repository,
-                repository,
+                catalog,
                 windowStore,
                 features.dungeon.DungeonTestAssembly.inMemoryUnitOfWork(),
+                new TestDungeonIdentityAllocator(),
                 DirectExecutionLane.INSTANCE,
                 new DungeonAuthoredPublishedState(DirectUiDispatcher.INSTANCE));
         DungeonEditorDungeonState state = new DungeonEditorDungeonState();
         DungeonAuthoredApplicationService.Session session = service.openSession(state);
         DungeonEditorWorkspaceValues.MapId mapId = new DungeonEditorWorkspaceValues.MapId(1L);
         session.loadInitialWindow(mapId, 0);
-        return new Workset(repository, windowStore, state, session, mapId);
+        return new Workset(windowStore, state, session, mapId);
     }
 
     private static DungeonEditorWorkspaceValues.MapSnapshot execute(
@@ -207,13 +204,10 @@ final class DungeonAuthoredPreviewWorksetTest {
     }
 
     private static void assertNoReads(Workset workset) {
-        assertEquals(0, workset.repository().findByIdCalls);
-        assertEquals(0, workset.repository().firstMapCalls);
         assertEquals(1, workset.windowStore().loadCalls);
     }
 
     private record Workset(
-            CountingRepository repository,
             RecordingWindowStore windowStore,
             DungeonEditorDungeonState state,
             DungeonAuthoredApplicationService.Session session,
@@ -221,26 +215,8 @@ final class DungeonAuthoredPreviewWorksetTest {
     ) {
     }
 
-    private static final class CountingRepository implements DungeonCatalogStore, DungeonMapRepository {
+    private static final class TestCatalog implements DungeonCatalogStore {
         private final DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(1L), "Map");
-        private int findByIdCalls;
-        private int firstMapCalls;
-
-        @Override
-        public long nextStairId() {
-            return 1L;
-        }
-
-        @Override
-        public long nextTransitionId() {
-            return 1L;
-        }
-
-        @Override
-        public Optional<DungeonMap> findById(DungeonMapIdentity mapId) {
-            findByIdCalls++;
-            return Optional.of(map);
-        }
 
         @Override
         public List<DungeonMapHeader> search(String query) {
@@ -255,12 +231,6 @@ final class DungeonAuthoredPreviewWorksetTest {
         @Override
         public DungeonMapHeader rename(DungeonMapIdentity mapId, String mapName) {
             throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Optional<DungeonMap> firstMap() {
-            firstMapCalls++;
-            return Optional.of(map);
         }
 
         @Override

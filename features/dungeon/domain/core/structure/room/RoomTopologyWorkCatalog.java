@@ -38,8 +38,13 @@ public final class RoomTopologyWorkCatalog {
         return Optional.empty();
     }
 
-    public IdAllocation newIdAllocation(SpatialTopology topology, RoomCatalog rooms) {
-        return new IdAllocation(topology, rooms);
+    public ReservedIdentities reservedIdentities(
+            long firstClusterId,
+            int clusterCount,
+            long firstRoomId,
+            int roomCount
+    ) {
+        return new ReservedIdentities(firstClusterId, clusterCount, firstRoomId, roomCount);
     }
 
     private static SpatialTopology safeTopology(SpatialTopology topology) {
@@ -60,41 +65,50 @@ public final class RoomTopologyWorkCatalog {
                 CELL_COVERAGE.cellsByLevel(cluster, rooms));
     }
 
-    public static final class IdAllocation {
+    public static final class ReservedIdentities {
 
-        private final long nextClusterId;
-        private final long nextRoomId;
+        private final long firstClusterId;
+        private final long clusterLimitExclusive;
+        private final long firstRoomId;
+        private final long roomLimitExclusive;
 
-        IdAllocation(SpatialTopology topology, RoomCatalog rooms) {
-            this.nextClusterId = nextClusterId(topology);
-            this.nextRoomId = nextRoomId(rooms);
+        public ReservedIdentities(
+                long firstClusterId,
+                int clusterCount,
+                long firstRoomId,
+                int roomCount
+        ) {
+            if (firstClusterId < 1L || clusterCount < 1 || firstRoomId < 1L || roomCount < 1) {
+                throw new IllegalArgumentException("room identity reservations must be positive");
+            }
+            this.firstClusterId = firstClusterId;
+            this.clusterLimitExclusive = Math.addExact(firstClusterId, clusterCount);
+            this.firstRoomId = firstRoomId;
+            this.roomLimitExclusive = Math.addExact(firstRoomId, roomCount);
         }
 
-        IdAllocation(long nextClusterId, long nextRoomId) {
-            this.nextClusterId = Math.max(1L, nextClusterId);
-            this.nextRoomId = Math.max(1L, nextRoomId);
+        public long firstClusterId() {
+            return firstClusterId;
         }
 
-        private static long nextClusterId(SpatialTopology topology) {
-            long result = 0L;
-            for (RoomCluster cluster : safeTopology(topology).roomClusters()) {
-                if (cluster != null && cluster.clusterId() > result) {
-                    result = cluster.clusterId();
+        public long firstRoomId() {
+            return firstRoomId;
+        }
+
+        long clusterLimitExclusive() {
+            return clusterLimitExclusive;
+        }
+
+        long roomLimitExclusive() {
+            return roomLimitExclusive;
+        }
+
+        void validateAllocatedRooms(List<RoomRegion> rooms) {
+            for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
+                if (room != null && room.roomId() >= firstRoomId && room.roomId() >= roomLimitExclusive) {
+                    throw new IllegalStateException("room identity reservation exhausted");
                 }
             }
-            return result + 1L;
-        }
-
-        private static long nextRoomId(RoomCatalog rooms) {
-            return safeRooms(rooms).nextRoomId();
-        }
-
-        public long nextClusterId() {
-            return nextClusterId;
-        }
-
-        public long nextRoomId() {
-            return nextRoomId;
         }
     }
 }

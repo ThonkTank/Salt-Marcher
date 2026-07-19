@@ -3,7 +3,8 @@ package features.dungeon;
 import java.util.Objects;
 import features.dungeon.adapter.javafx.editor.DungeonEditorContribution;
 import features.dungeon.adapter.javafx.travel.DungeonTravelContribution;
-import features.dungeon.adapter.sqlite.repository.SqliteDungeonMapRepository;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonIdentityAllocator;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
 import features.dungeon.api.DungeonAuthoredMutationModel;
@@ -19,7 +20,7 @@ import features.dungeon.api.travel.DungeonTravelApi;
 import features.dungeon.application.authored.DungeonAuthoredApplicationService;
 import features.dungeon.application.authored.DungeonAuthoredPublishedState;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
-import features.dungeon.application.authored.port.DungeonMapRepository;
+import features.dungeon.application.authored.port.DungeonIdentityAllocator;
 import features.dungeon.application.authored.port.DungeonUnitOfWork;
 import features.dungeon.application.authored.port.DungeonWindowStore;
 import features.dungeon.application.editor.DungeonEditorPublishedState;
@@ -30,6 +31,7 @@ import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
 import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
 import features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy;
 import features.dungeon.application.travel.DungeonTravelNavigator;
+import features.dungeon.application.travel.DungeonTravelAuthoredReader;
 import features.dungeon.application.travel.DungeonTravelPartyGateway;
 import features.dungeon.application.travel.DungeonTravelPublishedState;
 import features.dungeon.application.travel.DungeonTravelRuntimeApplicationService;
@@ -60,15 +62,16 @@ public final class DungeonFeature {
         PartyApi safeParty = Objects.requireNonNull(party, "party");
         ExecutionLane lane = Objects.requireNonNull(executionLane, "executionLane");
         UiDispatcher dispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
-        SqliteDungeonMapRepository stores =
-                new SqliteDungeonMapRepository(Objects.requireNonNull(database, "database"));
+        SqliteDungeonCatalogStore catalogStore =
+                new SqliteDungeonCatalogStore(Objects.requireNonNull(database, "database"));
         SqliteDungeonWindowStore windowStore = new SqliteDungeonWindowStore(database);
         SqliteDungeonUnitOfWork unitOfWork = new SqliteDungeonUnitOfWork(database);
+        SqliteDungeonIdentityAllocator identityAllocator = new SqliteDungeonIdentityAllocator(database);
         Runtime runtime = createRuntime(
-                stores,
-                stores,
+                catalogStore,
                 windowStore,
                 unitOfWork,
+                identityAllocator,
                 safeParty.activeParty(),
                 safeParty.travelPositions(),
                 safeParty,
@@ -96,9 +99,9 @@ public final class DungeonFeature {
 
     static Runtime createRuntime(
             DungeonCatalogStore catalogStore,
-            DungeonMapRepository repository,
             DungeonWindowStore windowStore,
             DungeonUnitOfWork unitOfWork,
+            DungeonIdentityAllocator identityAllocator,
             ActivePartyModel activeParty,
             PartyTravelPositionsModel partyTravelPositions,
             PartyApi party,
@@ -115,9 +118,9 @@ public final class DungeonFeature {
         CorridorRoutingPolicy corridorRoutingPolicy = new OrthogonalCorridorRoutingPolicy();
         DungeonAuthoredApplicationService authoredMaps = new DungeonAuthoredApplicationService(
                 Objects.requireNonNull(catalogStore, "catalogStore"),
-                Objects.requireNonNull(repository, "repository"),
                 Objects.requireNonNull(windowStore, "windowStore"),
                 Objects.requireNonNull(unitOfWork, "unitOfWork"),
+                Objects.requireNonNull(identityAllocator, "identityAllocator"),
                 lane,
                 authoredPublishedState,
                 corridorRoutingPolicy);
@@ -125,8 +128,9 @@ public final class DungeonFeature {
                 new DungeonEditorRuntimeApplicationService(authoredMaps, editorPublishedState);
         DungeonTravelPartyGateway partyGateway = new DungeonTravelPartyGateway(
                 activeParty, partyTravelPositions, party, partyMutation);
-        DungeonTravelSurfaceLoader surfaceLoader = new DungeonTravelSurfaceLoader(authoredMaps, partyGateway);
-        DungeonTravelNavigator navigator = new DungeonTravelNavigator(authoredMaps, partyGateway, surfaceLoader);
+        DungeonTravelAuthoredReader travelReader = new DungeonTravelAuthoredReader(catalogStore, windowStore);
+        DungeonTravelSurfaceLoader surfaceLoader = new DungeonTravelSurfaceLoader(travelReader, partyGateway);
+        DungeonTravelNavigator navigator = new DungeonTravelNavigator(travelReader, partyGateway, surfaceLoader);
         DungeonTravelPublishedState publishedState = new DungeonTravelPublishedState(dispatcher);
         return new Runtime(
                 corridorRoutingPolicy,

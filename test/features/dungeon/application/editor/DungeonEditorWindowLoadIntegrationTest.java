@@ -23,11 +23,13 @@ import features.dungeon.api.editor.DungeonEditorToolFamily;
 import features.dungeon.application.authored.command.DungeonPatchEntityRef;
 import features.dungeon.application.authored.DungeonAuthoredApplicationService;
 import features.dungeon.application.authored.DungeonAuthoredPublishedState;
+import features.dungeon.application.authored.TestDungeonCommandStore;
+import features.dungeon.application.authored.TestDungeonIdentityAllocator;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
 import features.dungeon.application.authored.port.DungeonIdentityClosureRequest;
 import features.dungeon.application.authored.port.DungeonIdentityClosureResult;
+import features.dungeon.application.authored.port.DungeonEntitySnapshot;
 import features.dungeon.application.authored.port.DungeonMapHeader;
-import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.authored.port.DungeonWindow;
 import features.dungeon.application.authored.port.DungeonWindowChunkHeader;
 import features.dungeon.application.authored.port.DungeonWindowContinuation;
@@ -43,6 +45,11 @@ import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.feature.FeatureMarkerKind;
+import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
+import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
+import features.dungeon.domain.core.structure.room.RoomCluster;
+import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.stair.StairShape;
 import features.dungeon.domain.core.structure.transition.TransitionAnchor;
 import features.dungeon.domain.core.structure.transition.TransitionDestination;
@@ -51,7 +58,9 @@ import features.party.domain.roster.PartyRoster;
 import features.party.domain.roster.repository.PartyRosterRepository;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import platform.diagnostics.NoopDiagnostics;
 import platform.execution.DirectExecutionLane;
@@ -63,9 +72,8 @@ final class DungeonEditorWindowLoadIntegrationTest {
     @Test
     void composedEditorInitialAndSelectMapPublishExactOriginRingWithoutWholeMapHydration() {
         Catalog catalog = new Catalog();
-        FailFastRepository repository = new FailFastRepository();
         RecordingWindowStore windows = new RecordingWindowStore();
-        DungeonTestAssembly.Component component = component(catalog, repository, windows);
+        DungeonTestAssembly.Component component = component(catalog, windows);
         DungeonEditorApi editor = editor(component);
 
         editor.dispatch(new DungeonEditorIntent.SelectMap(new DungeonMapId(1L)));
@@ -86,8 +94,6 @@ final class DungeonEditorWindowLoadIntegrationTest {
         assertEquals(List.of(1L, 2L), windows.requests.stream()
                 .map(DungeonWindowRequest::requestGeneration).toList());
         windows.requests.forEach(request -> assertOriginRing(request.chunkKeys(), request.mapId().value()));
-        assertEquals(0, repository.findByIdCalls);
-        assertEquals(0, repository.firstMapCalls);
     }
 
     @Test
@@ -108,13 +114,15 @@ final class DungeonEditorWindowLoadIntegrationTest {
     @Test
     void lateOlderWindowCannotOverwriteTheAcceptedMutationPublication() {
         Catalog catalog = new Catalog();
-        RevisionedRepository repository = new RevisionedRepository();
-        RecordingWindowStore windows = new RecordingWindowStore();
+        TestDungeonCommandStore windows = new TestDungeonCommandStore(
+                DungeonMapAuthoring.committedContent(
+                        DungeonMapAuthoring.empty(new DungeonMapIdentity(1L), "Alpha"),
+                        7L));
         DungeonAuthoredApplicationService service = new DungeonAuthoredApplicationService(
                 catalog,
-                repository,
                 windows,
                 features.dungeon.DungeonTestAssembly.inMemoryUnitOfWork(),
+                new TestDungeonIdentityAllocator(),
                 DirectExecutionLane.INSTANCE,
                 new DungeonAuthoredPublishedState(DirectUiDispatcher.INSTANCE));
         DungeonEditorDungeonState state = new DungeonEditorDungeonState();
@@ -158,16 +166,16 @@ final class DungeonEditorWindowLoadIntegrationTest {
         assertEquals(committedMutation.map(), retained.map());
         assertEquals(1L, service.currentWindowRequestGeneration(),
                 "a rejected Window generation is never reported as accepted");
-        assertEquals(List.of(1L, 2L), windows.requests.stream()
+        assertEquals(List.of(1L, 1L, 2L), windows.windowRequests().stream()
                 .map(DungeonWindowRequest::requestGeneration)
-                .toList());
+                .toList(),
+                "the mutation reuses generation 1 for its bounded workset before generation 2 is rejected");
     }
 
     private static void assertRejectedSecondWindow(SecondWindowMode mode) {
         Catalog catalog = new Catalog();
-        FailFastRepository repository = new FailFastRepository();
         RecordingWindowStore windows = new RecordingWindowStore(mode);
-        DungeonEditorApi editor = editor(component(catalog, repository, windows));
+        DungeonEditorApi editor = editor(component(catalog, windows));
         editor.dispatch(new DungeonEditorIntent.SelectMap(new DungeonMapId(1L)));
         assertNotNull(editor.current().selectedWindow());
         assertEquals("Alpha", editor.current().selectedWindow().mapName());
@@ -176,22 +184,19 @@ final class DungeonEditorWindowLoadIntegrationTest {
 
         assertEquals(2L, editor.current().selectedMapId().value());
         assertNull(editor.current().selectedWindow());
-        assertEquals(0, repository.findByIdCalls);
-        assertEquals(0, repository.firstMapCalls);
         assertEquals(2, windows.requests.size());
     }
 
     @Test
     void publicViewportMapsWindowRevisionsIdentitiesAndContinuationsWithoutHydration() throws Exception {
         Catalog catalog = new Catalog();
-        FailFastRepository repository = new FailFastRepository();
         RecordingWindowStore windows = new RecordingWindowStore();
         RecordingExecutionLane lane = new RecordingExecutionLane();
         DungeonAuthoredApi authored = new DungeonAuthoredApplicationService(
                 catalog,
-                repository,
                 windows,
                 features.dungeon.DungeonTestAssembly.inMemoryUnitOfWork(),
+                new TestDungeonIdentityAllocator(),
                 lane,
                 new DungeonAuthoredPublishedState(DirectUiDispatcher.INSTANCE));
 
@@ -209,16 +214,13 @@ final class DungeonEditorWindowLoadIntegrationTest {
         assertEquals(1, snapshot.continuations().size());
         assertEquals("CORRIDOR", snapshot.continuations().getFirst().ownerKind());
         assertEquals(21L, snapshot.continuations().getFirst().ownerId());
-        assertEquals(0, repository.findByIdCalls);
-        assertEquals(0, repository.firstMapCalls);
     }
 
     @Test
     void handlePressHydratesInspectorOnceWhilePreviewLifecycleStaysOnCommittedWindow() {
         Catalog catalog = new Catalog();
-        CountingRepository repository = new CountingRepository();
         RecordingWindowStore windows = new RecordingWindowStore();
-        DungeonEditorApi editor = editor(component(catalog, repository, windows));
+        DungeonEditorApi editor = editor(component(catalog, windows));
         editor.dispatch(new DungeonEditorIntent.SelectMap(new DungeonMapId(1L)));
         var committedWindow = editor.current().selectedWindow();
         var door = committedWindow.map().editorHandles().stream()
@@ -229,9 +231,10 @@ final class DungeonEditorWindowLoadIntegrationTest {
 
         dispatchHandle(editor, door, DungeonEditorPointerInput.Action.PRESSED, door.markerQ(), door.markerR());
 
-        assertEquals(1, repository.findByIdCalls,
-                "handle selection performs exactly one aggregate compatibility read for the inspector");
-        assertEquals(1, windows.requests.size(), "handle selection does not reload the committed Window");
+        assertEquals(2, windows.requests.size(),
+                "handle selection reads one command-scoped Window in addition to the committed viewport");
+        assertEquals(1, windows.closureRequests.size(),
+                "handle selection resolves one exact inspector identity closure");
         assertEquals(committedWindow.map(), editor.current().selectedWindow().map());
         assertEquals(committedWindow.revision(), editor.current().selectedWindow().revision());
 
@@ -240,11 +243,10 @@ final class DungeonEditorWindowLoadIntegrationTest {
         dispatchHandle(editor, door, DungeonEditorPointerInput.Action.RELEASED, door.markerQ() + 2.0, door.markerR());
 
         assertInstanceOf(DungeonEditorCommandOutcome.Rejected.class, editor.current().commandStatus().outcome());
-        assertEquals(1, repository.findByIdCalls,
-                "move previews and rejected release reuse the selected aggregate workset");
-        assertEquals(0, repository.firstMapCalls);
-        assertEquals(1, windows.requests.size(),
-                "move previews and rejected release do not reload the Window");
+        assertEquals(3, windows.requests.size(),
+                "the release performs one bounded mutation Window read; previews remain in memory");
+        assertEquals(2, windows.closureRequests.size(),
+                "the release performs one additional exact identity closure");
         assertEquals(committedWindow.map(), editor.current().selectedWindow().map(),
                 "rejected release clears preview while preserving the committed Window map snapshot");
         assertEquals(committedWindow.revision(), editor.current().selectedWindow().revision());
@@ -253,9 +255,8 @@ final class DungeonEditorWindowLoadIntegrationTest {
     @Test
     void roomRectanglePointerPreviewUsesLoadedWindowWithoutAggregateFallback() {
         Catalog catalog = new Catalog();
-        FailFastRepository repository = new FailFastRepository();
         RecordingWindowStore windows = new RecordingWindowStore();
-        DungeonEditorApi editor = editor(component(catalog, repository, windows));
+        DungeonEditorApi editor = editor(component(catalog, windows));
         editor.dispatch(new DungeonEditorIntent.SelectMap(new DungeonMapId(1L)));
 
         dispatchRoomCell(editor, DungeonEditorPointerInput.Action.PRESSED, 1, 1);
@@ -265,8 +266,6 @@ final class DungeonEditorWindowLoadIntegrationTest {
         assertTrue(editor.current().selectedWindow().previewMap().areas().stream()
                 .filter(area -> area.kind().equals("ROOM"))
                 .anyMatch(area -> area.cells().stream().anyMatch(cell -> cell.q() == 3 && cell.r() == 3)));
-        assertEquals(0, repository.findByIdCalls);
-        assertEquals(0, repository.firstMapCalls);
         assertEquals(1, windows.requests.size());
     }
 
@@ -326,13 +325,11 @@ final class DungeonEditorWindowLoadIntegrationTest {
 
     private static DungeonTestAssembly.Component component(
             DungeonCatalogStore catalog,
-            DungeonMapRepository repository,
             DungeonWindowStore windows
     ) {
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(new EmptyPartyRepository());
         return DungeonTestAssembly.create(
                 catalog,
-                repository,
                 windows,
                 party.activeParty(),
                 party.travelPositions(),
@@ -413,66 +410,9 @@ final class DungeonEditorWindowLoadIntegrationTest {
         }
     }
 
-    private static final class FailFastRepository implements DungeonMapRepository {
-        private int findByIdCalls;
-        private int firstMapCalls;
-
-        @Override public long nextStairId() { return 1L; }
-        @Override public long nextTransitionId() { return 1L; }
-        @Override public Optional<DungeonMap> findById(DungeonMapIdentity mapId) {
-            findByIdCalls++;
-            throw new AssertionError("cold Editor route hydrated the whole map");
-        }
-        @Override public Optional<DungeonMap> firstMap() {
-            firstMapCalls++;
-            throw new AssertionError("cold Editor route hydrated the first whole map");
-        }
-    }
-
-    private static final class CountingRepository implements DungeonMapRepository {
-        private final DungeonMap aggregate = DungeonMapAuthoring.empty(new DungeonMapIdentity(1L), "Alpha");
-        private int findByIdCalls;
-        private int firstMapCalls;
-
-        @Override public long nextStairId() { return 1L; }
-        @Override public long nextTransitionId() { return 1L; }
-        @Override public Optional<DungeonMap> findById(DungeonMapIdentity mapId) {
-            findByIdCalls++;
-            return mapId.value() == 1L ? Optional.of(aggregate) : Optional.empty();
-        }
-        @Override public Optional<DungeonMap> firstMap() {
-            firstMapCalls++;
-            return Optional.of(aggregate);
-        }
-    }
-
-    private static final class RevisionedRepository implements DungeonMapRepository {
-        private DungeonMap aggregate = withRevision(
-                DungeonMapAuthoring.empty(new DungeonMapIdentity(1L), "Alpha"),
-                7L);
-
-        @Override public long nextStairId() { return 1L; }
-        @Override public long nextTransitionId() { return 1L; }
-        @Override public Optional<DungeonMap> findById(DungeonMapIdentity mapId) {
-            return mapId.value() == 1L ? Optional.of(aggregate) : Optional.empty();
-        }
-        @Override public Optional<DungeonMap> firstMap() { return Optional.of(aggregate); }
-        private static DungeonMap withRevision(DungeonMap map, long revision) {
-            return new DungeonMap(
-                    map.metadata(),
-                    map.topology(),
-                    map.topologyIndex(),
-                    map.rooms(),
-                    map.corridors(),
-                    map.stairs(),
-                    map.transitionCatalog(),
-                    map.featureMarkers(),
-                    revision);
-        }
-    }
-
     private static final class RecordingWindowStore implements DungeonWindowStore {
         private final List<DungeonWindowRequest> requests = new ArrayList<>();
+        private final List<DungeonIdentityClosureRequest> closureRequests = new ArrayList<>();
         private final SecondWindowMode secondWindowMode;
 
         private RecordingWindowStore() {
@@ -485,13 +425,18 @@ final class DungeonEditorWindowLoadIntegrationTest {
 
         @Override
         public Optional<DungeonWindow> loadWindow(DungeonWindowRequest request) {
+            boolean repeatedAcceptedGeneration = requests.stream().anyMatch(previous ->
+                    previous.mapId().equals(request.mapId())
+                            && previous.requestGeneration() == request.requestGeneration());
             requests.add(request);
             if (request.mapId().value() == 2L && secondWindowMode == SecondWindowMode.MISSING) {
                 return Optional.empty();
             }
             long revision = request.mapId().value() == 1L ? 7L : 8L;
             DungeonChunkKey origin = new DungeonChunkKey(request.mapId().value(), 0, 0, 0);
-            List<DungeonWindowEntityFragment> fragments = fragments(origin);
+            List<DungeonWindowEntityFragment> fragments = repeatedAcceptedGeneration
+                    ? fragments(origin).subList(0, 2)
+                    : fragments(origin);
             DungeonMapIdentity resultMapId = request.mapId().value() == 2L
                     && secondWindowMode == SecondWindowMode.MISMATCHED_MAP
                     ? new DungeonMapIdentity(1L)
@@ -505,16 +450,53 @@ final class DungeonEditorWindowLoadIntegrationTest {
                     resultGeneration,
                     request.chunkKeys().stream().map(key -> new DungeonWindowChunkHeader(key, revision)).toList(),
                     fragments,
-                    List.of(new DungeonWindowContinuation(
-                            DungeonPatchEntityRef.corridor(21L),
-                            List.of(new DungeonChunkKey(request.mapId().value(), 0, 2, 0))))));
+                    repeatedAcceptedGeneration
+                            ? List.of()
+                            : List.of(new DungeonWindowContinuation(
+                                    DungeonPatchEntityRef.corridor(21L),
+                                    List.of(new DungeonChunkKey(request.mapId().value(), 0, 2, 0))))));
         }
 
         @Override
         public DungeonIdentityClosureResult loadIdentityClosure(DungeonIdentityClosureRequest request) {
-            return new DungeonIdentityClosureResult.Rejected(
-                    DungeonIdentityClosureResult.Reason.ENTITY_MISSING,
-                    request.entityRefs());
+            closureRequests.add(request);
+            List<DungeonEntitySnapshot> snapshots = new ArrayList<>();
+            for (DungeonPatchEntityRef ref : request.entityRefs()) {
+                if (ref.equals(DungeonPatchEntityRef.room(11L))) {
+                    snapshots.add(new DungeonEntitySnapshot.Room(new RoomRegion(
+                            11L,
+                            request.mapId().value(),
+                            12L,
+                            "Raum Alpha",
+                            Set.of(new Cell(1, 1, 0), new Cell(2, 1, 0)),
+                            DungeonRoomNarration.empty())));
+                } else if (ref.equals(DungeonPatchEntityRef.roomCluster(12L))) {
+                    DungeonClusterBoundary door = new DungeonClusterBoundary(
+                            12L,
+                            0,
+                            new Cell(1, 0, 0),
+                            Direction.EAST,
+                            BoundaryKind.DOOR,
+                            DungeonTopologyRef.door(31L));
+                    snapshots.add(new DungeonEntitySnapshot.RoomClusterSnapshot(RoomCluster.authored(
+                            12L,
+                            request.mapId().value(),
+                            "Cluster Alpha",
+                            new Cell(1, 1, 0),
+                            DungeonClusterBoundary.orderedByLevel(List.of(door)))));
+                } else {
+                    return new DungeonIdentityClosureResult.Rejected(
+                            DungeonIdentityClosureResult.Reason.ENTITY_MISSING,
+                            request.entityRefs());
+                }
+            }
+            long revision = request.mapId().value() == 1L ? 7L : 8L;
+            return new DungeonIdentityClosureResult.Complete(
+                    new DungeonMapHeader(
+                            request.mapId(),
+                            request.mapId().value() == 1L ? "Alpha" : "Beta",
+                            revision),
+                    snapshots);
         }
 
         private static List<DungeonWindowEntityFragment> fragments(DungeonChunkKey origin) {

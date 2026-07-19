@@ -79,6 +79,7 @@ final class DungeonCorridorInvariantScenarios {
                 10L,
                 new Cell(3, 0, 0),
                 0L,
+                1L,
                 hostCells);
         assertTrue(created != null, "corridor anchor endpoint owner materializes known host corridor");
         created = java.util.Objects.requireNonNull(created);
@@ -91,6 +92,7 @@ final class DungeonCorridorInvariantScenarios {
                 10L,
                 new Cell(4, 0, 0),
                 1L,
+                2L,
                 hostCells);
         assertTrue(reused != null, "corridor anchor endpoint owner reuses preferred anchor");
         reused = java.util.Objects.requireNonNull(reused);
@@ -102,6 +104,7 @@ final class DungeonCorridorInvariantScenarios {
                         99L,
                         new Cell(3, 0, 0),
                         0L,
+                        3L,
                         hostCells) == null,
                 "corridor anchor endpoint owner rejects missing host without materialization");
     }

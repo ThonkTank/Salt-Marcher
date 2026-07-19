@@ -4,10 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import features.dungeon.adapter.sqlite.model.DungeonFeatureMarkerRecord;
-import features.dungeon.adapter.sqlite.model.DungeonGridBoundsRecord;
-import features.dungeon.adapter.sqlite.model.DungeonMapRecord;
+import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.command.DungeonPatchEntityRef;
+import features.dungeon.application.authored.command.FeatureMarkerChange;
 import features.dungeon.application.authored.port.DungeonEntitySnapshot;
 import features.dungeon.application.authored.port.DungeonIdentityClosureRequest;
 import features.dungeon.application.authored.port.DungeonIdentityClosureResult;
@@ -16,6 +15,9 @@ import features.dungeon.application.authored.port.DungeonWindowEntityFragment;
 import features.dungeon.application.authored.port.DungeonWindowRequest;
 import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
+import features.dungeon.domain.core.structure.feature.FeatureMarker;
+import features.dungeon.domain.core.structure.feature.FeatureMarkerKind;
+import features.dungeon.domain.core.geometry.Cell;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -90,20 +92,18 @@ final class DungeonSqliteReadSnapshotTest {
 
     private static SqliteDatabase savedDatabase(Path path) {
         SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE);
-        DungeonSqliteFixtureSeeder.seed(database, List.of(new DungeonMapRecord(
-                MAP_ID,
-                "Snapshot map",
-                OLD_REVISION,
-                DungeonGridBoundsRecord.defaultGrid(),
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of(new DungeonFeatureMarkerRecord(
-                        MARKER_ID, MAP_ID, "OBJECT", 64, 0, 0,
-                        "old marker", "old description")))));
+        DungeonMapIdentity map = new DungeonMapIdentity(MAP_ID);
+        DungeonSqliteFixtureSeeder.insertHeader(database, MAP_ID, "Snapshot map", OLD_REVISION - 1L);
+        DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(
+                map,
+                OLD_REVISION - 1L,
+                List.of(new FeatureMarkerChange(null, new FeatureMarker(
+                        MARKER_ID,
+                        map,
+                        FeatureMarkerKind.OBJECT,
+                        new Cell(64, 0, 0),
+                        "old marker",
+                        "old description")))));
         return database;
     }
 

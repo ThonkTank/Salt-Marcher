@@ -37,6 +37,7 @@ public sealed interface DungeonEditorCommandOutcome {
         REFERENCED_CONNECTION,
         INVALID_STAIR_GEOMETRY,
         STALE_REVISION,
+        INSUFFICIENT_LOADED_CLOSURE,
         MISSING_TRANSITION_DESTINATION,
         INVALID_TARGET,
         NO_EFFECT

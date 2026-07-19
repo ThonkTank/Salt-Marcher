@@ -1,10 +1,12 @@
 package features.dungeon.application.authored.command;
 
 import features.dungeon.api.editor.DungeonEditorCommandOutcome;
+import features.dungeon.application.authored.port.DungeonIdentityRange;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.corridor.Corridor;
 import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -14,6 +16,8 @@ import java.util.function.UnaryOperator;
 
 /** Converts one aggregate-owned room geometry operation into exact stable-identity changes. */
 final class RoomGeometryPatchPlanner {
+    private static final RoomTopologyWorkCatalog WORK_CATALOG = new RoomTopologyWorkCatalog();
+
     private RoomGeometryPatchPlanner() {
     }
 
@@ -38,6 +42,19 @@ final class RoomGeometryPatchPlanner {
                             + mismatches(patched, after));
         }
         return DungeonCommandResult.Accepted.from(patch);
+    }
+
+    static RoomTopologyWorkCatalog.ReservedIdentities reservedIds(
+            DungeonIdentityRange clusterIds,
+            DungeonIdentityRange roomIds
+    ) {
+        Objects.requireNonNull(clusterIds, "clusterIds");
+        Objects.requireNonNull(roomIds, "roomIds");
+        return WORK_CATALOG.reservedIdentities(
+                clusterIds.firstId(),
+                clusterIds.count(),
+                roomIds.firstId(),
+                roomIds.count());
     }
 
     static List<DungeonPatchChange> changes(DungeonMap before, DungeonMap after) {

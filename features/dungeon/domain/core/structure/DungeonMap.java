@@ -7,12 +7,11 @@ import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.corridor.Corridor;
 import features.dungeon.domain.core.structure.corridor.CorridorNetwork;
-import features.dungeon.domain.core.structure.corridor.DungeonCorridorEndpoint;
-import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
 import features.dungeon.domain.core.structure.feature.FeatureMarkerCatalog;
 import features.dungeon.domain.core.structure.room.RoomCatalog;
 import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import features.dungeon.domain.core.structure.stair.StairCollection;
 import features.dungeon.domain.core.structure.stair.Stair;
@@ -104,8 +103,15 @@ public record DungeonMap(
         return ROOM_AUTHORING.moveCluster(this, clusterId, deltaQ, deltaR, deltaLevel);
     }
 
-    public DungeonMap moveClusterCorner(long clusterId, Cell corner, int deltaQ, int deltaR, int deltaLevel) {
-        return ROOM_AUTHORING.moveClusterCorner(this, clusterId, corner, deltaQ, deltaR, deltaLevel);
+    public DungeonMap moveClusterCorner(
+            long clusterId,
+            Cell corner,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
+    ) {
+        return ROOM_AUTHORING.moveClusterCorner(this, clusterId, corner, deltaQ, deltaR, deltaLevel, ids);
     }
 
     public DungeonMap moveDoorBinding(
@@ -183,20 +189,11 @@ public record DungeonMap(
             List<Edge> sourceEdges,
             int deltaQ,
             int deltaR,
-            int deltaLevel
+            int deltaLevel,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
     ) {
-        return ROOM_AUTHORING.moveBoundaryStretch(this, clusterId, sourceEdges, deltaQ, deltaR, deltaLevel);
-    }
-
-    public long nextFeatureMarkerId() {
-        return featureMarkers.nextMarkerId();
-    }
-
-    public DungeonMap previewStair(
-            long stairId,
-            StairGeometrySpec spec
-    ) {
-        return STAIR_AUTHORING.previewStair(this, stairId, spec);
+        return ROOM_AUTHORING.moveBoundaryStretch(
+                this, clusterId, sourceEdges, deltaQ, deltaR, deltaLevel, ids);
     }
 
     public boolean canCreateStair(StairGeometrySpec spec) {
@@ -210,30 +207,31 @@ public record DungeonMap(
         return STAIR_AUTHORING.canSaveStairGeometry(this, stairId, spec);
     }
 
-    public DungeonMap paintRoomRectangle(Cell start, Cell end) {
-        return ROOM_AUTHORING.paintRoomRectangle(this, start, end);
+    public DungeonMap paintRoomRectangle(
+            Cell start,
+            Cell end,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
+    ) {
+        return ROOM_AUTHORING.paintRoomRectangle(this, start, end, ids);
     }
 
-    public DungeonMap deleteRoomRectangle(Cell start, Cell end) {
-        return ROOM_AUTHORING.deleteRoomRectangle(this, start, end);
+    public DungeonMap deleteRoomRectangle(
+            Cell start,
+            Cell end,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
+    ) {
+        return ROOM_AUTHORING.deleteRoomRectangle(this, start, end, ids);
     }
 
     public DungeonMap editClusterBoundaries(
             long clusterId,
             List<Edge> edges,
             BoundaryKind kind,
-            boolean deleteBoundary
+            boolean deleteBoundary,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
     ) {
-        return ROOM_AUTHORING.editClusterBoundaries(this, clusterId, edges, kind, deleteBoundary);
-    }
-
-    public DungeonMap createCorridor(
-            CorridorRoutingPolicy routingPolicy,
-            long stairId,
-            DungeonCorridorEndpoint start,
-            DungeonCorridorEndpoint end
-    ) {
-        return CONNECTION_AUTHORING.createCorridor(this, routingPolicy, stairId, start, end);
+        return ROOM_AUTHORING.editClusterBoundaries(
+                this, clusterId, edges, kind, deleteBoundary, ids);
     }
 
     DungeonMap withStairs(StairCollection nextStairs) {

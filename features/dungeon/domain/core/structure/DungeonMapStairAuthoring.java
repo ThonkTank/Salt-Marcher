@@ -10,15 +10,6 @@ final class DungeonMapStairAuthoring {
         return stairAuthoring.moveAnchor(dungeonMap, stairId, handleIndex, deltaQ, deltaR, deltaLevel);
     }
 
-    DungeonMap previewStair(
-            DungeonMap dungeonMap,
-            long stairId,
-            StairGeometrySpec spec
-    ) {
-        var nextStairs = stairAuthoring.withPreviewAuthoredStair(dungeonMap, stairId, spec);
-        return nextStairs.equals(dungeonMap.stairs()) ? dungeonMap : dungeonMap.withStairs(nextStairs);
-    }
-
     boolean canCreateStair(
             DungeonMap dungeonMap,
             StairGeometrySpec spec

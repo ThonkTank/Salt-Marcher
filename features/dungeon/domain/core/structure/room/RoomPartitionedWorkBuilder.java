@@ -62,9 +62,8 @@ final class RoomPartitionedWorkBuilder {
                 partitionWork,
                 nextCellsByLevel,
                 preservedBoundariesByLevel,
-                ids.nextRoomId(),
+                ids,
                 previousCellsByRoom);
-        ids.observeRooms(rooms);
         return new DungeonRoomTopologyClusterWork(
                 rebuiltCluster(partitionWork, preservedBoundariesByLevel, stretch),
                 rooms,

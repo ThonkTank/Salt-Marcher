@@ -9,6 +9,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
@@ -198,6 +199,16 @@ final class DungeonEditHistory {
             return entry instanceof PatchEntry;
         }
 
+        List<DungeonPatch> selectedPatches() {
+            if (entry instanceof PatchEntry patchEntry) {
+                return List.of(patchEntry.selected(undo));
+            }
+            if (entry instanceof CompoundPatchEntry compoundEntry) {
+                return compoundEntry.selected(undo).patches();
+            }
+            return List.of();
+        }
+
         @Nullable DungeonPatch rebasedSinglePatch(long expectedRevision) {
             if (!(entry instanceof PatchEntry patchEntry)) {
                 return null;
@@ -279,7 +290,11 @@ final class DungeonEditHistory {
                 DungeonMap current = requiredMap(currentMaps, mapId);
                 revisions.put(current.metadata().mapId(), current.revision());
             }
-            return (undo ? inverse : forward).rebased(revisions);
+            return selected(undo).rebased(revisions);
+        }
+
+        private DungeonCompoundPatch selected(boolean undo) {
+            return undo ? inverse : forward;
         }
     }
 

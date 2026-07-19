@@ -920,7 +920,8 @@ public final class DungeonEditorRuntimeApplicationService {
                     mapId,
                     inspectorRef,
                     inspectorClusterId,
-                    selection.clusterSelection());
+                    selection.clusterSelection(),
+                    handleRef);
         }
 
         private static @Nullable MapId resolveSelectedMapId(DungeonEditorSession state, List<MapSummary> maps) {

@@ -11,6 +11,7 @@ import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring.AuthoredContent;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.room.RoomCluster;
+import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;
 
 public final class DungeonCorridorDeletionOwnerProbe {
     private static final long CORRIDOR_ID = 20L;
@@ -24,7 +25,10 @@ public final class DungeonCorridorDeletionOwnerProbe {
         DungeonMap base = DungeonMapAuthoring.empty(
                 new DungeonMapIdentity(80L),
                 "Corridor Replacement Route Rejection");
-        base = base.paintRoomRectangle(new Cell(1, 0, 0), new Cell(1, 0, 0));
+        base = base.paintRoomRectangle(
+                new Cell(1, 0, 0),
+                new Cell(1, 0, 0),
+                reservedRoomIdentities());
         RoomCluster blocker = base.topology().roomClusters().getFirst();
         Corridor corridor = replacementRouteFixture(blocker);
         DungeonMap withCorridor = DungeonMapAuthoring.authored(
@@ -52,7 +56,10 @@ public final class DungeonCorridorDeletionOwnerProbe {
         DungeonMap base = DungeonMapAuthoring.empty(
                 new DungeonMapIdentity(81L),
                 "Injected Corridor Routing Policy");
-        base = base.paintRoomRectangle(new Cell(1, 0, 0), new Cell(1, 0, 0));
+        base = base.paintRoomRectangle(
+                new Cell(1, 0, 0),
+                new Cell(1, 0, 0),
+                reservedRoomIdentities());
         RoomCluster blocker = base.topology().roomClusters().getFirst();
         Corridor corridor = replacementRouteFixture(blocker);
         DungeonMap withCorridor = DungeonMapAuthoring.authored(
@@ -106,6 +113,10 @@ public final class DungeonCorridorDeletionOwnerProbe {
                         List.of(
                                 new CorridorAnchorRef(CORRIDOR_ID, 1L),
                                 new CorridorAnchorRef(CORRIDOR_ID, 2L))));
+    }
+
+    private static RoomTopologyWorkCatalog.ReservedIdentities reservedRoomIdentities() {
+        return new RoomTopologyWorkCatalog().reservedIdentities(1L, 8, 1L, 8);
     }
 
     private static void assertEquals(Object expected, Object actual, String message) {

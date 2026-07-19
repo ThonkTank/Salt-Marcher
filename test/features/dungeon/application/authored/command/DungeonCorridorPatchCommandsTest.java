@@ -18,6 +18,7 @@ import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.corridor.Corridor;
 import features.dungeon.domain.core.structure.corridor.CorridorBindings;
 import features.dungeon.domain.core.structure.corridor.CorridorDeletionTarget;
+import features.dungeon.domain.core.structure.corridor.CorridorMapAuthoring;
 import features.dungeon.domain.core.structure.corridor.CorridorRoomSet;
 import features.dungeon.domain.core.structure.corridor.DungeonCorridorEndpoint;
 import features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy;
@@ -32,10 +33,12 @@ final class DungeonCorridorPatchCommandsTest {
         DungeonMap current = endpointMap(0, 0);
         Endpoints endpoints = endpoints(current, 0, 0);
         CreateCorridorCommand create = new CreateCorridorCommand(new OrthogonalCorridorRoutingPolicy());
+        CreateCorridorCommand.ReservedIdentities identities = DungeonCommandTestIdentities.corridor(
+                91L, 100L, 0L, null, 80L, 80L);
 
         DungeonCommandResult.Accepted createdResult = accepted(create.plan(
                 current,
-                91L,
+                identities,
                 endpoints.start(),
                 endpoints.end()));
         assertTrue(createdResult.patch().changes().stream()
@@ -54,9 +57,10 @@ final class DungeonCorridorPatchCommandsTest {
                 corridorChange.entityRef());
         assertTrue(!createdResult.patch().touchedChunks().isEmpty());
         DungeonMap created = createdResult.patch().applyTo(current);
-        DungeonMap domainResult = current.createCorridor(
-                new OrthogonalCorridorRoutingPolicy(),
-                91L,
+        DungeonMap domainResult = new CorridorMapAuthoring(
+                new OrthogonalCorridorRoutingPolicy()).createCorridor(
+                current,
+                identities.toDomainReservation(),
                 endpoints.start(),
                 endpoints.end());
         assertEquals(
@@ -92,7 +96,13 @@ final class DungeonCorridorPatchCommandsTest {
         DungeonCommandResult.Accepted createdResult = accepted(new CreateCorridorCommand(
                 new OrthogonalCorridorRoutingPolicy()).plan(
                         current,
-                        92L,
+                        DungeonCommandTestIdentities.corridor(
+                                201L,
+                                210L,
+                                92L,
+                                DungeonCommandTestIdentities.range(220L, 4),
+                                240L,
+                                240L),
                         endpoints.start(),
                         endpoints.end()));
         StairChange stairCreated = createdResult.patch().changes().stream()
@@ -125,15 +135,17 @@ final class DungeonCorridorPatchCommandsTest {
 
     @Test
     void negativeCoordinatesUseFloorDividedTouchedChunks() {
-        DungeonMap current = emptyMap()
-                .paintRoomRectangle(new Cell(-130, -2, 0), new Cell(-129, -1, 0))
-                .paintRoomRectangle(new Cell(-124, -2, 0), new Cell(-123, -1, 0));
+        DungeonMap current = DungeonCommandTestIdentities.paint(
+                emptyMap(), new Cell(-130, -2, 0), new Cell(-129, -1, 0), 1L, 1L);
+        current = DungeonCommandTestIdentities.paint(
+                current, new Cell(-124, -2, 0), new Cell(-123, -1, 0), 40L, 40L);
         Endpoints endpoints = endpoints(current, 0, 0);
 
         DungeonCommandResult.Accepted created = accepted(new CreateCorridorCommand(
                 new OrthogonalCorridorRoutingPolicy()).plan(
                         current,
-                        93L,
+                        DungeonCommandTestIdentities.corridor(
+                                301L, 310L, 0L, null, 340L, 340L),
                         endpoints.start(),
                         endpoints.end()));
 
@@ -189,7 +201,7 @@ final class DungeonCorridorPatchCommandsTest {
                 DungeonCommandResult.Rejected.class,
                 new CreateCorridorCommand(new OrthogonalCorridorRoutingPolicy()).plan(
                         empty,
-                        0L,
+                        null,
                         null,
                         null));
         assertEquals(DungeonEditorCommandOutcome.RejectionReason.BLOCKED_ROUTE, protectedDelete.reason());
@@ -226,12 +238,18 @@ final class DungeonCorridorPatchCommandsTest {
     }
 
     private static DungeonMap endpointMap(int startLevel, int endLevel) {
-        DungeonMap map = emptyMap().paintRoomRectangle(
+        DungeonMap map = DungeonCommandTestIdentities.paint(
+                emptyMap(),
                 new Cell(1, 1, startLevel),
-                new Cell(2, 2, startLevel));
-        return map.paintRoomRectangle(
+                new Cell(2, 2, startLevel),
+                1L,
+                1L);
+        return DungeonCommandTestIdentities.paint(
+                map,
                 new Cell(7, 1, endLevel),
-                new Cell(8, 2, endLevel));
+                new Cell(8, 2, endLevel),
+                40L,
+                40L);
     }
 
     private static RoomRegion roomAtLevel(DungeonMap map, int level) {

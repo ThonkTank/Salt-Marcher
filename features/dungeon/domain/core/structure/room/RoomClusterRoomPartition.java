@@ -14,25 +14,25 @@ public final class RoomClusterRoomPartition {
     public static List<RoomRegion> roomsForBoundaryEdit(
             RoomClusterWork work,
             Map<Integer, ? extends Iterable<Edge>> closedBoundaryEdgesByLevel,
-            long nextRoomId
+            RoomTopologyWorkCatalog.ReservedIdentities identities
     ) {
         return RoomClusterRoomComponents.roomsForMutation(
                 safeWork(work),
                 closedBoundaryEdgesByLevel,
-                nextRoomId,
+                new RoomMutationIdCursor(identities),
                 null);
     }
 
-    public static List<RoomRegion> roomsForMutation(
+    static List<RoomRegion> roomsForMutation(
             RoomClusterWork work,
             Map<Integer, ? extends Iterable<Edge>> closedBoundaryEdgesByLevel,
-            long nextRoomId,
+            RoomMutationIdCursor ids,
             Map<Long, List<Cell>> previousCellsByRoom
     ) {
         return RoomClusterRoomComponents.roomsForMutation(
                 safeWork(work),
                 closedBoundaryEdgesByLevel,
-                nextRoomId,
+                ids,
                 previousCellsByRoom);
     }
 

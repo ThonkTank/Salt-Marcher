@@ -1,69 +1,82 @@
 package features.dungeon.adapter.sqlite.gateway;
 
-import features.dungeon.adapter.sqlite.model.DungeonMapRecord;
-import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
+import features.dungeon.application.authored.command.DungeonCompoundPatch;
+import features.dungeon.application.authored.command.DungeonPatch;
+import features.dungeon.application.authored.port.DungeonCompoundUnitOfWorkResult;
+import features.dungeon.application.authored.port.DungeonUnitOfWorkResult;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Objects;
 import platform.persistence.SqliteConnectionSource;
 import platform.persistence.SqliteDatabase;
 import platform.persistence.SqliteMigration;
 
-/** Test-only full-record seed route for persistence fixtures. */
+/** Test-only setup through explicit map headers and the real patch unit of work. */
 public final class DungeonSqliteFixtureSeeder {
 
     private DungeonSqliteFixtureSeeder() {
     }
 
-    public static void seed(SqliteDatabase database, DungeonMapRecord record) {
-        seed(database, List.of(Objects.requireNonNull(record, "record")));
+    public static void insertHeader(
+            SqliteDatabase database,
+            long mapId,
+            String name,
+            long revision
+    ) {
+        if (mapId <= 0L || revision < 1L) {
+            throw new IllegalArgumentException("fixture map identity and revision must be positive");
+        }
+        try (Connection connection = connections(database).openConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "INSERT INTO dungeon_maps(dungeon_map_id,name,revision) VALUES(?,?,?)")) {
+            statement.setLong(1, mapId);
+            statement.setString(2, name == null || name.isBlank() ? "Dungeon " + mapId : name.trim());
+            statement.setLong(3, revision);
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to insert Dungeon fixture header.", exception);
+        }
     }
 
-    public static void seed(SqliteDatabase database, List<DungeonMapRecord> records) {
-        List<DungeonMapRecord> safeRecords = List.copyOf(Objects.requireNonNull(records, "records"));
-        if (safeRecords.stream().anyMatch(Objects::isNull)) {
-            throw new IllegalArgumentException("records must not contain null");
+    public static DungeonUnitOfWorkResult.Committed commit(
+            SqliteDatabase database,
+            DungeonPatch patch
+    ) {
+        DungeonUnitOfWorkResult result = new SqliteDungeonUnitOfWork(
+                Objects.requireNonNull(database, "database")).commit(Objects.requireNonNull(patch, "patch"));
+        if (result instanceof DungeonUnitOfWorkResult.Committed committed) {
+            return committed;
         }
-        DungeonSqliteSchemaManager schemaManager = new DungeonSqliteSchemaManager();
-        SqliteConnectionSource connections = Objects.requireNonNull(database, "database").connections(
+        DungeonUnitOfWorkResult.Rejected rejected = (DungeonUnitOfWorkResult.Rejected) result;
+        throw new IllegalStateException("Dungeon fixture patch was rejected: " + rejected.reason());
+    }
+
+    public static DungeonCompoundUnitOfWorkResult.Committed commit(
+            SqliteDatabase database,
+            DungeonCompoundPatch patch
+    ) {
+        DungeonCompoundUnitOfWorkResult result = new SqliteDungeonUnitOfWork(
+                Objects.requireNonNull(database, "database")).commit(Objects.requireNonNull(patch, "patch"));
+        if (result instanceof DungeonCompoundUnitOfWorkResult.Committed committed) {
+            return committed;
+        }
+        DungeonCompoundUnitOfWorkResult.Rejected rejected = (DungeonCompoundUnitOfWorkResult.Rejected) result;
+        throw new IllegalStateException(
+                "Dungeon compound fixture patch was rejected for map "
+                        + rejected.mapId().value() + ": " + rejected.reason());
+    }
+
+    private static SqliteConnectionSource connections(SqliteDatabase database) {
+        DungeonSqliteSchemaManager schema = new DungeonSqliteSchemaManager();
+        return Objects.requireNonNull(database, "database").connections(
                 "dungeon",
-                new SqliteMigration(1, schemaManager::ensureSchema),
-                new SqliteMigration(2, schemaManager::ensureSchema),
-                new SqliteMigration(3, schemaManager::replaceWithCanonicalSchema),
-                new SqliteMigration(4, schemaManager::addCorridorDoorLevel),
-                new SqliteMigration(5, schemaManager::addCorridorRouteCellIndex),
-                new SqliteMigration(6, schemaManager::addCorridorRouteDependencyIndex));
-        try (Connection connection = connections.openConnection()) {
-            seed(connection, safeRecords);
-        } catch (SQLException exception) {
-            throw new IllegalStateException("Failed to seed Dungeon SQLite fixture.", exception);
-        }
-    }
-
-    private static void seed(Connection connection, List<DungeonMapRecord> records) throws SQLException {
-        boolean previousAutoCommit = connection.getAutoCommit();
-        connection.setAutoCommit(false);
-        try {
-            for (DungeonMapRecord record : records) {
-                DungeonSqliteMapRecordWriter.persist(connection, record);
-                DungeonSqliteConnectionPersistence.persist(connection, record);
-                DungeonSqliteFixtureTopologyWriter.persist(connection, record);
-            }
-            connection.commit();
-        } catch (SQLException exception) {
-            rollbackQuietly(connection);
-            throw exception;
-        } finally {
-            connection.setAutoCommit(previousAutoCommit);
-        }
-    }
-
-    private static void rollbackQuietly(Connection connection) {
-        try {
-            connection.rollback();
-        } catch (SQLException ignored) {
-            // Preserve the original fixture failure.
-        }
+                new SqliteMigration(1, schema::ensureSchema),
+                new SqliteMigration(2, schema::ensureSchema),
+                new SqliteMigration(3, schema::replaceWithCanonicalSchema),
+                new SqliteMigration(4, schema::addCorridorDoorLevel),
+                new SqliteMigration(5, schema::addCorridorRouteCellIndex),
+                new SqliteMigration(6, schema::addCorridorRouteDependencyIndex));
     }
 }

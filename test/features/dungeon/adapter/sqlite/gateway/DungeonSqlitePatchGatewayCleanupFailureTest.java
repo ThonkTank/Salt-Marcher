@@ -4,8 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import features.dungeon.adapter.sqlite.model.DungeonGridBoundsRecord;
-import features.dungeon.adapter.sqlite.model.DungeonMapRecord;
 import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.command.FeatureMarkerChange;
 import features.dungeon.domain.core.geometry.Cell;
@@ -37,8 +35,7 @@ final class DungeonSqlitePatchGatewayCleanupFailureTest {
         AtomicBoolean restoreAttempted = new AtomicBoolean();
         AtomicBoolean closeAttempted = new AtomicBoolean();
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            DungeonSqliteFixtureSeeder.seed(database, List.of(
-                    new DungeonMapRecord(MAP_ID, "Cleanup map", 1L, DungeonGridBoundsRecord.defaultGrid())));
+            DungeonSqliteFixtureSeeder.insertHeader(database, MAP_ID, "Cleanup map", 1L);
             DungeonSqlitePatchGateway gateway = new DungeonSqlitePatchGateway(
                     () -> cleanupFailingConnection(
                             DriverManager.getConnection("jdbc:sqlite:" + path),

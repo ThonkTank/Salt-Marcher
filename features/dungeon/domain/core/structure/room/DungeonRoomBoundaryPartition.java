@@ -14,12 +14,12 @@ public final class DungeonRoomBoundaryPartition {
     public List<RoomRegion> roomsForBoundaryEdit(
             DungeonRoomTopologyClusterWork work,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel,
-            RoomTopologyWorkCatalog.IdAllocation ids
+            RoomTopologyWorkCatalog.ReservedIdentities ids
     ) {
         List<RoomRegion> coreRooms = RoomClusterRoomPartition.roomsForBoundaryEdit(
                 work.partitionWork(),
                 closedBoundaryEdgesByLevel(DungeonBoundaryRehoming.flatten(boundariesByLevel), work.cluster().center()),
-                ids.nextRoomId());
+                ids);
         return authoredRooms(coreRooms, work);
     }
 
@@ -27,7 +27,7 @@ public final class DungeonRoomBoundaryPartition {
             DungeonRoomTopologyClusterWork work,
             Map<Integer, List<Cell>> nextCellsByLevel,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel,
-            long nextRoomId,
+            RoomMutationIdCursor ids,
             Map<Long, List<Cell>> previousCellsByRoom
     ) {
         RoomClusterWork coreWork = new RoomClusterWork(
@@ -36,7 +36,7 @@ public final class DungeonRoomBoundaryPartition {
         List<RoomRegion> coreRooms = RoomClusterRoomPartition.roomsForMutation(
                 coreWork,
                 closedBoundaryEdgesByLevel(DungeonBoundaryRehoming.flatten(boundariesByLevel), work.cluster().center()),
-                nextRoomId,
+                ids,
                 previousCellsByRoom);
         return authoredRooms(coreRooms, work);
     }

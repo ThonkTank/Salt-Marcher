@@ -71,13 +71,15 @@ public record StairCollection(List<Stair> stairs) {
             long mapId,
             long corridorId,
             @Nullable List<Cell> path,
-            @Nullable Cell upperExit
+            @Nullable Cell upperExit,
+            List<Long> reservedExitIds
     ) {
         if (!canCreateCorridorBoundStair(stairId, mapId, corridorId, path, upperExit) || path == null) {
             return this;
         }
         List<Stair> result = new ArrayList<>(stairs);
-        result.add(Stair.corridorBound(stairId, mapId, corridorId, path, upperExit));
+        result.add(Stair.corridorBound(
+                stairId, mapId, corridorId, path, upperExit, reservedExitIds));
         return new StairCollection(result);
     }
 
@@ -97,20 +99,6 @@ public record StairCollection(List<Stair> stairs) {
             @Nullable Set<Cell> roomCells
     ) {
         return supportedAuthoredSpec(spec) && spec.avoidsRoomInteriors(roomCells);
-    }
-
-    public StairCollection withPreviewAuthoredStair(
-            long stairId,
-            long mapId,
-            @Nullable StairGeometrySpec spec,
-            @Nullable Set<Cell> roomCells
-    ) {
-        if (!canCreateAuthoredStair(stairId, mapId, spec, roomCells)) {
-            return this;
-        }
-        List<Stair> result = new ArrayList<>(stairs);
-        result.add(Stair.authored(stairId, mapId, spec));
-        return new StairCollection(result);
     }
 
     public boolean canRecomputeStair(

@@ -17,7 +17,6 @@ import platform.execution.ExecutionLane;
 import platform.ui.DirectUiDispatcher;
 import platform.ui.UiDispatcher;
 import features.dungeon.DungeonTestAssembly;
-import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
 import features.dungeon.application.authored.port.DungeonIdentityClosureRequest;
 import features.dungeon.application.authored.port.DungeonIdentityClosureResult;
@@ -385,7 +384,7 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
     }
 
     private static final class InMemoryDungeonRepository
-            implements DungeonCatalogStore, DungeonMapRepository, DungeonWindowStore {
+            implements DungeonCatalogStore, DungeonWindowStore {
         private final Map<Long, DungeonMap> maps = new LinkedHashMap<>();
         private int reads;
 
@@ -396,22 +395,6 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
 
         int size() {
             return maps.size();
-        }
-
-        @Override
-        public long nextStairId() {
-            return 1L;
-        }
-
-        @Override
-        public long nextTransitionId() {
-            return 1L;
-        }
-
-        @Override
-        public Optional<DungeonMap> findById(DungeonMapIdentity mapId) {
-            reads++;
-            return Optional.ofNullable(maps.get(mapId.value()));
         }
 
         @Override
@@ -437,12 +420,6 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
             DungeonMap renamed = DungeonMapAuthoring.rename(maps.get(mapId.value()), mapName);
             maps.put(mapId.value(), renamed);
             return header(renamed);
-        }
-
-        @Override
-        public Optional<DungeonMap> firstMap() {
-            reads++;
-            return maps.values().stream().findFirst();
         }
 
         @Override

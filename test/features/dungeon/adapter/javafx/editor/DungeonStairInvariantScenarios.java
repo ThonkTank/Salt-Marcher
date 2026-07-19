@@ -65,7 +65,8 @@ final class DungeonStairInvariantScenarios {
                 90L,
                 CORRIDOR_ID,
                 List.of(new Cell(0, 0, 0), new Cell(0, 1, 0)),
-                new Cell(0, 1, 1));
+                new Cell(0, 1, 1),
+                List.of(101L, 102L));
         return DungeonMapAuthoring.authored(
                 base.metadata().mapId(),
                 base.metadata().mapName(),

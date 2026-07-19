@@ -17,6 +17,7 @@ import features.dungeon.domain.core.structure.room.RoomClusterGeometry;
 import features.dungeon.domain.core.structure.room.RoomClusterFloorMap;
 import features.dungeon.domain.core.structure.room.RoomClusterRoomPartition;
 import features.dungeon.domain.core.structure.room.RoomClusterWork;
+import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 
@@ -121,12 +122,12 @@ final class DungeonFloorInvariantScenarios {
         List<RoomRegion> splitRooms = RoomClusterRoomPartition.roomsForBoundaryEdit(
                 work,
                 Map.of(0, List.of(split)),
-                20L);
+                new RoomTopologyWorkCatalog.ReservedIdentities(100L, 1, 21L, 4));
         assertEquals(7L, splitRooms.getFirst().roomId(),
                 "floor owner reuses surviving room id when its anchor remains in a component");
         assertEquals(Map.of(0, lowerFirst), splitRooms.getFirst().floorAnchors(),
                 "floor owner preserves surviving room anchor after partition");
-        assertEquals(20L, splitRooms.get(1).roomId(),
+        assertEquals(21L, splitRooms.get(1).roomId(),
                 "floor owner allocates a deterministic room id for a new split component");
         assertEquals(Map.of(0, lowerLater), splitRooms.get(1).floorAnchors(),
                 "floor owner anchors new split component at sorted first cell");
@@ -171,7 +172,10 @@ final class DungeonFloorInvariantScenarios {
         assertEquals(projectedRooms, roomAreaCellSets(derived),
                 "rejected projection mutation leaves derived floor facts unchanged");
 
-        DungeonMap changed = map.paintRoomRectangle(new Cell(10, 1, 0), new Cell(10, 1, 0));
+        DungeonMap changed = map.paintRoomRectangle(
+                new Cell(10, 1, 0),
+                new Cell(10, 1, 0),
+                new RoomTopologyWorkCatalog.ReservedIdentities(300L, 16, 300L, 16));
         Set<Set<Cell>> changedRooms =
                 roomAreaCellSets(new DungeonDerivedStateProjection().project(changed));
         assertTrue(changedRooms.contains(Set.of(new Cell(10, 1, 0))),
@@ -181,9 +185,15 @@ final class DungeonFloorInvariantScenarios {
     }
 
     private static DungeonMap projectionMap() {
-        return DungeonMapAuthoring.empty(new DungeonMapIdentity(80L), "Floor Projection")
-                .paintRoomRectangle(new Cell(1, 1, 0), new Cell(2, 1, 0))
-                .paintRoomRectangle(new Cell(5, 1, 0), new Cell(6, 1, 0));
+        DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(80L), "Floor Projection")
+                .paintRoomRectangle(
+                        new Cell(1, 1, 0),
+                        new Cell(2, 1, 0),
+                        new RoomTopologyWorkCatalog.ReservedIdentities(10L, 16, 10L, 16));
+        return map.paintRoomRectangle(
+                new Cell(5, 1, 0),
+                new Cell(6, 1, 0),
+                new RoomTopologyWorkCatalog.ReservedIdentities(100L, 16, 100L, 16));
     }
 
     private static Set<Set<Cell>> roomAreaCellSets(DungeonDerivedState derived) {

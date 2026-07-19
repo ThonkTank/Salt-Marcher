@@ -3,7 +3,7 @@ package features.dungeon.adapter.sqlite.gateway;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import features.dungeon.adapter.sqlite.repository.SqliteDungeonMapRepository;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
 import features.dungeon.application.authored.command.DungeonCompoundPatch;
 import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.command.FeatureMarkerChange;
@@ -48,7 +48,7 @@ final class DungeonSqliteCompoundPatchGatewayRollbackTest {
             int failureOccurrence
     ) throws Exception {
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            SqliteDungeonMapRepository catalog = new SqliteDungeonMapRepository(database);
+            SqliteDungeonCatalogStore catalog = new SqliteDungeonCatalogStore(database);
             DungeonMapHeader first = catalog.create("First rollback map");
             DungeonMapHeader second = catalog.create("Second rollback map");
             AtomicInteger phaseCount = new AtomicInteger();

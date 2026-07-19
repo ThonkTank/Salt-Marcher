@@ -121,15 +121,15 @@ final class DungeonPathInvariantScenarios {
                 Direction.EAST,
                 3,
                 2);
-        Stair stair = Stair.authored(8L, 2L, spec);
+        Stair stair = Stair.authored(8L, 2L, spec, List.of(101L, 102L, 103L));
 
         assertEquals(List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),
                 spec.generatedPath(),
                 "stair path owner generates straight path cells");
         assertEquals(List.of(
-                        new StairExit(0L, new Cell(0, 0, 0), ""),
-                        new StairExit(0L, new Cell(1, 0, 1), ""),
-                        new StairExit(0L, new Cell(2, 0, 2), "")),
+                        new StairExit(101L, new Cell(0, 0, 0), ""),
+                        new StairExit(102L, new Cell(1, 0, 1), ""),
+                        new StairExit(103L, new Cell(2, 0, 2), "")),
                 stair.exits(),
                 "stair path owner derives level exits from generated path");
         assertTrue(stair.isReadable(), "stair path owner reports readable generated path");

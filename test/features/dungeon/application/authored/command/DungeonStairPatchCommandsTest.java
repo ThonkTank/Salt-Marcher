@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.api.editor.DungeonEditorCommandOutcome;
+import features.dungeon.application.authored.port.DungeonIdentityRange;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.domain.core.structure.DungeonMap;
@@ -26,6 +27,7 @@ final class DungeonStairPatchCommandsTest {
 
     private static final long MAP_ID = 95L;
     private static final long STAIR_ID = 17L;
+    private static final DungeonIdentityRange STAIR_EXIT_IDS = new DungeonIdentityRange(100L, 8);
 
     @Test
     void stairCreateUpdateAndDeleteProduceExactInvertiblePatches() {
@@ -39,7 +41,7 @@ final class DungeonStairPatchCommandsTest {
 
         DungeonCommandResult.Accepted createdResult = assertInstanceOf(
                 DungeonCommandResult.Accepted.class,
-                new CreateStairCommand().plan(empty, STAIR_ID, initialSpec));
+                new CreateStairCommand().plan(empty, STAIR_ID, STAIR_EXIT_IDS, initialSpec));
         assertEquals(
                 DungeonPatchEntityRef.stair(STAIR_ID),
                 createdResult.patch().resultFacts().affectedEntities().getFirst());
@@ -49,7 +51,11 @@ final class DungeonStairPatchCommandsTest {
                 new DungeonChunkKey(MAP_ID, 2, 0, 0)), createdResult.patch().touchedChunks());
         DungeonMap created = createdResult.patch().applyTo(empty);
         Stair initial = created.stairs().stair(STAIR_ID);
-        assertEquals(Stair.authored(STAIR_ID, MAP_ID, initialSpec), initial);
+        assertEquals(Stair.authored(
+                STAIR_ID,
+                MAP_ID,
+                initialSpec,
+                CreateStairCommand.reservedIds(STAIR_EXIT_IDS)), initial);
         DungeonMap createUndone = createdResult.inverse().applyTo(created);
         assertNull(createUndone.stairs().stair(STAIR_ID));
         assertEquals(empty.revision() + 2L, createUndone.revision());
@@ -62,7 +68,11 @@ final class DungeonStairPatchCommandsTest {
                 2);
         DungeonCommandResult.Accepted updatedResult = assertInstanceOf(
                 DungeonCommandResult.Accepted.class,
-                new UpdateStairGeometryCommand().plan(created, STAIR_ID, updatedSpec));
+                new UpdateStairGeometryCommand().plan(
+                        created,
+                        STAIR_ID,
+                        new DungeonIdentityRange(200L, 8),
+                        updatedSpec));
         DungeonMap updated = updatedResult.patch().applyTo(created);
         Stair recomputed = updated.stairs().stair(STAIR_ID);
         assertEquals(STAIR_ID, recomputed.stairId());
@@ -95,14 +105,18 @@ final class DungeonStairPatchCommandsTest {
                 2);
         DungeonMap created = assertInstanceOf(
                 DungeonCommandResult.Accepted.class,
-                new CreateStairCommand().plan(empty, STAIR_ID, valid)).patch().applyTo(empty);
+                new CreateStairCommand().plan(empty, STAIR_ID, STAIR_EXIT_IDS, valid)).patch().applyTo(empty);
 
         DungeonCommandResult.Rejected collision = assertInstanceOf(
                 DungeonCommandResult.Rejected.class,
-                new CreateStairCommand().plan(created, STAIR_ID, valid));
+                new CreateStairCommand().plan(created, STAIR_ID, STAIR_EXIT_IDS, valid));
         DungeonCommandResult.Rejected noEffect = assertInstanceOf(
                 DungeonCommandResult.Rejected.class,
-                new UpdateStairGeometryCommand().plan(created, STAIR_ID, valid));
+                new UpdateStairGeometryCommand().plan(
+                        created,
+                        STAIR_ID,
+                        new DungeonIdentityRange(200L, 8),
+                        valid));
         StairGeometrySpec unsupported = new StairGeometrySpec(
                 StairShape.LADDER,
                 new Cell(8, 8, 0),
@@ -111,7 +125,11 @@ final class DungeonStairPatchCommandsTest {
                 2);
         DungeonCommandResult.Rejected invalid = assertInstanceOf(
                 DungeonCommandResult.Rejected.class,
-                new CreateStairCommand().plan(empty, STAIR_ID + 1L, unsupported));
+                new CreateStairCommand().plan(
+                        empty,
+                        STAIR_ID + 1L,
+                        new DungeonIdentityRange(300L, 8),
+                        unsupported));
 
         assertEquals(DungeonEditorCommandOutcome.RejectionReason.INVALID_TARGET, collision.reason());
         assertEquals(DungeonEditorCommandOutcome.RejectionReason.NO_EFFECT, noEffect.reason());
@@ -121,7 +139,8 @@ final class DungeonStairPatchCommandsTest {
 
     @Test
     void roomInteriorAndCorridorBindingRejectAtomically() {
-        DungeonMap roomMap = emptyMap().paintRoomRectangle(new Cell(1, 1, 0), new Cell(5, 3, 0));
+        DungeonMap roomMap = DungeonCommandTestIdentities.paint(
+                emptyMap(), new Cell(1, 1, 0), new Cell(5, 3, 0), 1L, 1L);
         StairGeometrySpec crossing = new StairGeometrySpec(
                 StairShape.STRAIGHT,
                 new Cell(1, 1, 0),
@@ -130,7 +149,7 @@ final class DungeonStairPatchCommandsTest {
                 1);
         DungeonCommandResult.Rejected roomCollision = assertInstanceOf(
                 DungeonCommandResult.Rejected.class,
-                new CreateStairCommand().plan(roomMap, STAIR_ID, crossing));
+                new CreateStairCommand().plan(roomMap, STAIR_ID, STAIR_EXIT_IDS, crossing));
         DungeonMap boundMap = corridorBoundStairMap();
         DungeonCommandResult.Rejected boundDelete = assertInstanceOf(
                 DungeonCommandResult.Rejected.class,
@@ -152,7 +171,8 @@ final class DungeonStairPatchCommandsTest {
                 MAP_ID,
                 44L,
                 List.of(new Cell(0, 0, 0), new Cell(0, 1, 0)),
-                new Cell(0, 1, 1));
+                new Cell(0, 1, 1),
+                List.of(401L, 402L));
         return DungeonMapAuthoring.authored(
                 base.metadata().mapId(),
                 base.metadata().mapName(),

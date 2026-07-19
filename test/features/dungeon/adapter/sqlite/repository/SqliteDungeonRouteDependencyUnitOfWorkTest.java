@@ -5,22 +5,20 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSeeder;
-import features.dungeon.adapter.sqlite.model.DungeonCorridorRecord;
-import features.dungeon.adapter.sqlite.model.DungeonCorridorWaypointRecord;
-import features.dungeon.adapter.sqlite.model.DungeonGridBoundsRecord;
-import features.dungeon.adapter.sqlite.model.DungeonMapRecord;
-import features.dungeon.adapter.sqlite.model.DungeonRoomCellRecord;
-import features.dungeon.adapter.sqlite.model.DungeonRoomClusterRecord;
-import features.dungeon.adapter.sqlite.model.DungeonRoomRecord;
-import features.dungeon.adapter.sqlite.model.DungeonTopologyElementRecord;
+import features.dungeon.application.authored.command.CorridorChange;
 import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.command.DungeonPatchEntityRef;
+import features.dungeon.application.authored.command.RoomClusterChange;
 import features.dungeon.application.authored.command.RoomRegionChange;
 import features.dungeon.application.authored.port.DungeonUnitOfWorkResult;
 import features.dungeon.api.DungeonChunkKey;
+import features.dungeon.domain.core.component.CorridorWaypoint;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
+import features.dungeon.domain.core.structure.corridor.Corridor;
+import features.dungeon.domain.core.structure.corridor.CorridorBindings;
 import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import java.nio.file.Path;
 import java.sql.DriverManager;
@@ -46,7 +44,7 @@ final class SqliteDungeonRouteDependencyUnitOfWorkTest {
             throws Exception {
         Path path = directory.resolve("route-dependency.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            DungeonSqliteFixtureSeeder.seed(database, authoredMap());
+            seedAuthoredMap(database);
             SqliteDungeonUnitOfWork unitOfWork = new SqliteDungeonUnitOfWork(database);
             assertEquals(verticalRoute(), routeCells(path));
             assertEquals(candidateCells(), dependencyCells(path));
@@ -54,9 +52,9 @@ final class SqliteDungeonRouteDependencyUnitOfWorkTest {
 
             DungeonUnitOfWorkResult.Committed committed = assertInstanceOf(
                     DungeonUnitOfWorkResult.Committed.class,
-                    unitOfWork.commit(completePatch(1L, blockerAtOneZero(), emptyBlocker())));
+                    unitOfWork.commit(completePatch(2L, blockerAtOneZero(), emptyBlocker())));
 
-            assertEquals(2L, committed.committedRevision());
+            assertEquals(3L, committed.committedRevision());
             assertEquals(horizontalRoute(), routeCells(path));
             assertEquals(candidateCells(), dependencyCells(path));
             assertEquals(unrelatedBefore, unrelatedRows(path));
@@ -77,42 +75,33 @@ final class SqliteDungeonRouteDependencyUnitOfWorkTest {
     }
 
     private static DungeonPatch missingCorridorDeclarationPatch() {
-        return DungeonPatch.of(MAP, 2L, List.of(new RoomRegionChange(emptyBlocker(), blockerAtOneZero())))
+        return DungeonPatch.of(MAP, 3L, List.of(new RoomRegionChange(emptyBlocker(), blockerAtOneZero())))
                 .withImpact(Set.of(CHUNK), List.of(DungeonPatchEntityRef.roomCluster(BLOCKER_CLUSTER_ID)));
     }
 
-    private static DungeonMapRecord authoredMap() {
-        DungeonRoomClusterRecord blockerCluster = new DungeonRoomClusterRecord(
-                BLOCKER_CLUSTER_ID, MAP_ID, "Blocker cluster", 1, 0, 0, List.of());
-        DungeonRoomRecord blocker = new DungeonRoomRecord(
-                BLOCKER_ROOM_ID, MAP_ID, BLOCKER_CLUSTER_ID, "Blocker", "",
-                List.of(new DungeonRoomCellRecord(BLOCKER_ROOM_ID, 0, 1, 0)), List.of());
+    private static void seedAuthoredMap(SqliteDatabase database) {
+        RoomCluster blockerCluster = RoomCluster.authored(
+                BLOCKER_CLUSTER_ID, MAP_ID, "Blocker cluster", new Cell(1, 0, 0), java.util.Map.of());
+        RoomRegion blocker = blockerAtOneZero();
         long anchorClusterId = 21L;
         long anchorRoomId = 12L;
-        DungeonRoomClusterRecord anchorCluster = new DungeonRoomClusterRecord(
-                anchorClusterId, MAP_ID, "Stable cluster", -10, -10, 0, List.of());
-        DungeonRoomRecord anchorRoom = new DungeonRoomRecord(
-                anchorRoomId, MAP_ID, anchorClusterId, "Stable room", "",
-                List.of(new DungeonRoomCellRecord(anchorRoomId, 0, -10, -10)), List.of());
-        DungeonCorridorRecord corridor = new DungeonCorridorRecord(
-                CORRIDOR_ID, MAP_ID, 0, List.of(),
+        RoomCluster anchorCluster = RoomCluster.authored(
+                anchorClusterId, MAP_ID, "Stable cluster", new Cell(-10, -10, 0), java.util.Map.of());
+        RoomRegion anchorRoom = new RoomRegion(
+                anchorRoomId, MAP_ID, anchorClusterId, "Stable room",
+                Set.of(new Cell(-10, -10, 0)), DungeonRoomNarration.empty());
+        Corridor corridor = new Corridor(CORRIDOR_ID, MAP_ID, 0, List.of(), new CorridorBindings(
                 List.of(
-                        new DungeonCorridorWaypointRecord(CORRIDOR_ID, anchorClusterId, 10, 10, 0),
-                        new DungeonCorridorWaypointRecord(CORRIDOR_ID, anchorClusterId, 12, 12, 0)),
-                List.of(), List.of(), List.of());
-        return new DungeonMapRecord(
-                MAP_ID, "Route dependency", 1L, DungeonGridBoundsRecord.defaultGrid(),
-                List.of(blockerCluster, anchorCluster), List.of(blocker, anchorRoom),
-                List.of(
-                        topology("ROOM", BLOCKER_ROOM_ID, BLOCKER_CLUSTER_ID, null, "Blocker", 0),
-                        topology("ROOM", anchorRoomId, anchorClusterId, null, "Stable room", 1),
-                        topology("CORRIDOR", CORRIDOR_ID, null, CORRIDOR_ID, "Corridor 31", 2)),
-                List.of(corridor), List.of(), List.of(), List.of());
-    }
-
-    private static DungeonTopologyElementRecord topology(String kind, long id, Long clusterId, Long corridorId,
-            String label, int order) {
-        return new DungeonTopologyElementRecord(MAP_ID, kind, id, clusterId, corridorId, label, order);
+                        new CorridorWaypoint(anchorClusterId, new Cell(10, 10, 0), 0),
+                        new CorridorWaypoint(anchorClusterId, new Cell(12, 12, 0), 0)),
+                List.of(), List.of(), List.of()));
+        DungeonSqliteFixtureSeeder.insertHeader(database, MAP_ID, "Route dependency", 1L);
+        DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(MAP, 1L, List.of(
+                new RoomClusterChange(null, blockerCluster, Set.of(CHUNK)),
+                new RoomRegionChange(null, blocker),
+                new RoomClusterChange(null, anchorCluster, Set.of(CHUNK)),
+                new RoomRegionChange(null, anchorRoom),
+                new CorridorChange(null, corridor, Set.of(CHUNK)))));
     }
 
     private static RoomRegion blockerAtOneZero() {

@@ -4,11 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSeeder;
-import features.dungeon.adapter.sqlite.model.DungeonGridBoundsRecord;
-import features.dungeon.adapter.sqlite.model.DungeonMapRecord;
 import features.dungeon.application.authored.command.CorridorChange;
 import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.command.DungeonPatchChange;
+import features.dungeon.application.authored.command.DungeonPatchEntityRef;
 import features.dungeon.application.authored.command.FeatureMarkerChange;
 import features.dungeon.application.authored.command.RoomClusterChange;
 import features.dungeon.application.authored.command.RoomRegionChange;
@@ -59,8 +58,7 @@ final class SqliteDungeonUnitOfWorkTest {
     void insertsUpdatesAndRemovesEveryPatchFamilyWithoutFullMapReadback(@TempDir Path directory) throws Exception {
         Path path = directory.resolve("single-map-uow.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            DungeonSqliteFixtureSeeder.seed(database, List.of(
-                    new DungeonMapRecord(MAP_ID, "Patch map", 1L, DungeonGridBoundsRecord.defaultGrid())));
+            DungeonSqliteFixtureSeeder.insertHeader(database, MAP_ID, "Patch map", 1L);
             SqliteDungeonUnitOfWork unitOfWork = new SqliteDungeonUnitOfWork(database);
             SqliteDungeonWindowStore readStore = new SqliteDungeonWindowStore(database);
 
@@ -130,12 +128,20 @@ final class SqliteDungeonUnitOfWorkTest {
                 readStore.loadIdentityClosure(closureRequest(revision)));
         assertEquals(revision, closure.mapHeader().revision());
         assertEquals(List.of(
-                new DungeonEntitySnapshot.Room(expected.room()),
-                new DungeonEntitySnapshot.RoomClusterSnapshot(expected.cluster()),
+                new DungeonEntitySnapshot.Room(
+                        expected.room(),
+                        List.of(DungeonPatchEntityRef.roomCluster(expected.cluster().clusterId()))),
+                new DungeonEntitySnapshot.RoomClusterSnapshot(
+                        expected.cluster(),
+                        List.of(DungeonPatchEntityRef.room(expected.room().roomId()))),
                 new DungeonEntitySnapshot.FeatureMarkerSnapshot(expected.marker()),
                 new DungeonEntitySnapshot.StairSnapshot(expected.stair()),
                 new DungeonEntitySnapshot.TransitionSnapshot(expected.transition()),
-                new DungeonEntitySnapshot.CorridorSnapshot(expected.corridor())), closure.entities());
+                new DungeonEntitySnapshot.CorridorSnapshot(
+                        expected.corridor(),
+                        List.of(
+                                DungeonPatchEntityRef.room(expected.room().roomId()),
+                                DungeonPatchEntityRef.roomCluster(expected.cluster().clusterId())))), closure.entities());
 
         DungeonWindow window = readStore.loadWindow(new DungeonWindowRequest(
                 MAP, revision, List.of(LEVEL_ZERO, LEVEL_ONE))).orElseThrow();

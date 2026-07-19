@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.Set;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.room.RoomTopologyRebuilder.RebuildResult;
-import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog.IdAllocation;
+import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog.ReservedIdentities;
 import features.dungeon.domain.core.structure.topology.SpatialTopology;
 
 final class RoomPartitionPreservingDelete {
@@ -27,7 +27,7 @@ final class RoomPartitionPreservingDelete {
             List<DungeonRoomTopologyClusterWork> clusters,
             Cell start,
             Cell end,
-            IdAllocation allocation
+            ReservedIdentities allocation
     ) {
         Set<Cell> deletedCells = RoomClusterCells.rectangle(start, end);
         if (deletedCells.isEmpty()) {

@@ -35,18 +35,6 @@ public final class StairMapAuthoring {
                 : copyWithConnections(dungeonMap, dungeonMap.corridors(), nextStairs);
     }
 
-    public StairCollection withPreviewAuthoredStair(
-            DungeonMap dungeonMap,
-            long stairId,
-            StairGeometrySpec spec
-    ) {
-        return dungeonMap.stairs().withPreviewAuthoredStair(
-                stairId,
-                dungeonMap.metadata().mapId().value(),
-                spec,
-                roomInteriorCells(dungeonMap));
-    }
-
     public boolean canCreateAuthoredStair(
             DungeonMap dungeonMap,
             StairGeometrySpec spec

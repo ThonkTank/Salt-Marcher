@@ -51,7 +51,11 @@ final class DungeonConnectionHandlePatchCommandTest {
                 1,
                 2);
         DungeonMap empty = emptyMap();
-        DungeonMap current = accepted(new CreateStairCommand().plan(empty, 17L, spec)).patch().applyTo(empty);
+        DungeonMap current = accepted(new CreateStairCommand().plan(
+                empty,
+                17L,
+                DungeonCommandTestIdentities.range(100L, 8),
+                spec)).patch().applyTo(empty);
         MoveConnectionHandleCommand command = new MoveConnectionHandleCommand();
 
         DungeonCommandResult.Accepted result = accepted(command.planStairAnchor(current, 17L, 0, 1, 0, 0));
@@ -71,9 +75,10 @@ final class DungeonConnectionHandlePatchCommandTest {
     }
 
     private static DungeonMap corridorMap() {
-        DungeonMap rooms = emptyMap()
-                .paintRoomRectangle(new Cell(1, 1, 0), new Cell(2, 2, 0))
-                .paintRoomRectangle(new Cell(7, 1, 0), new Cell(8, 2, 0));
+        DungeonMap rooms = DungeonCommandTestIdentities.paint(
+                emptyMap(), new Cell(1, 1, 0), new Cell(2, 2, 0), 1L, 1L);
+        rooms = DungeonCommandTestIdentities.paint(
+                rooms, new Cell(7, 1, 0), new Cell(8, 2, 0), 40L, 40L);
         RoomRegion startRoom = rooms.rooms().rooms().getFirst();
         RoomRegion endRoom = rooms.rooms().rooms().getLast();
         Cell startCell = startRoom.floorCells().stream().max(Comparator.comparingInt(Cell::q)).orElseThrow();
@@ -92,7 +97,8 @@ final class DungeonConnectionHandlePatchCommandTest {
                 DungeonTopologyRef.empty());
         return accepted(new CreateCorridorCommand(new OrthogonalCorridorRoutingPolicy()).plan(
                 rooms,
-                91L,
+                DungeonCommandTestIdentities.corridor(
+                        91L, 100L, 0L, null, 80L, 80L),
                 start,
                 end)).patch().applyTo(rooms);
     }

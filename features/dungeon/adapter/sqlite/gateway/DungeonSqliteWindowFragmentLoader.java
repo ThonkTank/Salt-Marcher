@@ -532,9 +532,6 @@ final class DungeonSqliteWindowFragmentLoader {
                         throw new IllegalStateException("Malformed dungeon transition record " + id, exception);
                     }
                     List<DungeonPatchEntityRef> dependencies = new ArrayList<>();
-                    if (value.linkedTransitionId() != null) {
-                        dependencies.add(DungeonPatchEntityRef.transition(value.linkedTransitionId()));
-                    }
                     if (value.destination().isDungeonMap() && value.destination().mapId() == mapId
                             && value.destination().transitionId() != null) {
                         dependencies.add(DungeonPatchEntityRef.transition(value.destination().transitionId()));

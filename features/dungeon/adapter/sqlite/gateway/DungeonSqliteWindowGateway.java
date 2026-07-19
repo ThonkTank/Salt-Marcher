@@ -7,7 +7,13 @@ import features.dungeon.application.authored.command.DungeonPatchEntityRef;
 import features.dungeon.application.authored.port.DungeonEntitySnapshot;
 import features.dungeon.application.authored.port.DungeonIdentityClosureRequest;
 import features.dungeon.application.authored.port.DungeonIdentityClosureResult;
+import features.dungeon.application.authored.port.DungeonInboundReferenceRequest;
+import features.dungeon.application.authored.port.DungeonInboundReferenceResult;
 import features.dungeon.application.authored.port.DungeonMapHeader;
+import features.dungeon.application.authored.port.DungeonTravelChunkKeysRequest;
+import features.dungeon.application.authored.port.DungeonTravelChunkKeysResult;
+import features.dungeon.application.authored.port.DungeonTravelStartRequest;
+import features.dungeon.application.authored.port.DungeonTravelStartResult;
 import features.dungeon.application.authored.port.DungeonWindow;
 import features.dungeon.application.authored.port.DungeonWindowChunkHeader;
 import features.dungeon.application.authored.port.DungeonWindowContinuation;
@@ -103,6 +109,207 @@ public final class DungeonSqliteWindowGateway {
         } finally {
             lastStatementCount.set(queries.statements());
             lastStatementSql.set(queries.preparedSql());
+        }
+    }
+
+    public DungeonInboundReferenceResult discoverInboundReferences(DungeonInboundReferenceRequest request) {
+        DungeonInboundReferenceRequest safeRequest = Objects.requireNonNull(request, "request");
+        DungeonSqliteQueryCounter queries = new DungeonSqliteQueryCounter();
+        try (Connection connection = connectionSupport.openReadyConnection()) {
+            return DungeonSqliteReadSnapshot.read(connection, () -> {
+                Optional<DungeonMapHeader> header = loadMapHeader(
+                        connection, safeRequest.mapId().value(), queries);
+                if (header.isEmpty()) {
+                    return new DungeonInboundReferenceResult.Rejected(
+                            DungeonIdentityClosureResult.Reason.MAP_MISSING,
+                            safeRequest.targetRefs());
+                }
+                if (header.get().revision() != safeRequest.expectedMapRevision()) {
+                    return new DungeonInboundReferenceResult.Rejected(
+                            DungeonIdentityClosureResult.Reason.STALE_REVISION,
+                            safeRequest.targetRefs());
+                }
+                return new DungeonInboundReferenceResult.Complete(
+                        header.get(),
+                        DungeonSqliteInboundReferenceDiscovery.load(
+                                connection,
+                                safeRequest.mapId().value(),
+                                safeRequest.targetRefs(),
+                                queries));
+            });
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to discover Dungeon inbound references from SQLite.", exception);
+        } finally {
+            lastStatementCount.set(queries.statements());
+            lastStatementSql.set(queries.preparedSql());
+        }
+    }
+
+    public DungeonTravelStartResult locateTravelStart(DungeonTravelStartRequest request) {
+        DungeonTravelStartRequest safeRequest = Objects.requireNonNull(request, "request");
+        DungeonSqliteQueryCounter queries = new DungeonSqliteQueryCounter();
+        try (Connection connection = connectionSupport.openReadyConnection()) {
+            return DungeonSqliteReadSnapshot.read(
+                    connection,
+                    () -> locateTravelStartSnapshot(connection, safeRequest, queries));
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to locate Dungeon Travel start from SQLite.", exception);
+        } finally {
+            lastStatementCount.set(queries.statements());
+            lastStatementSql.set(queries.preparedSql());
+        }
+    }
+
+    public DungeonTravelChunkKeysResult discoverTravelChunkKeys(DungeonTravelChunkKeysRequest request) {
+        DungeonTravelChunkKeysRequest safeRequest = Objects.requireNonNull(request, "request");
+        DungeonSqliteQueryCounter queries = new DungeonSqliteQueryCounter();
+        try (Connection connection = connectionSupport.openReadyConnection()) {
+            return DungeonSqliteReadSnapshot.read(
+                    connection,
+                    () -> discoverTravelChunkKeysSnapshot(connection, safeRequest, queries));
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to discover Dungeon Travel chunk keys from SQLite.", exception);
+        } finally {
+            lastStatementCount.set(queries.statements());
+            lastStatementSql.set(queries.preparedSql());
+        }
+    }
+
+    private DungeonTravelChunkKeysResult discoverTravelChunkKeysSnapshot(
+            Connection connection,
+            DungeonTravelChunkKeysRequest request,
+            DungeonSqliteQueryCounter queries
+    ) throws SQLException {
+        Optional<DungeonMapHeader> header;
+        try {
+            header = loadMapHeader(connection, request.mapId().value(), queries);
+        } catch (MalformedMapHeaderException exception) {
+            return new DungeonTravelChunkKeysResult.Rejected(
+                    DungeonIdentityClosureResult.Reason.MALFORMED_ENTITY);
+        }
+        if (header.isEmpty()) {
+            return new DungeonTravelChunkKeysResult.Rejected(
+                    DungeonIdentityClosureResult.Reason.MAP_MISSING);
+        }
+        if (header.get().revision() != request.expectedMapRevision()) {
+            return new DungeonTravelChunkKeysResult.Rejected(
+                    DungeonIdentityClosureResult.Reason.STALE_REVISION);
+        }
+        afterHeaderRead.run();
+        return new DungeonTravelChunkKeysResult.Complete(
+                header.get(),
+                loadHorizontalTravelChunkRing(connection, request, queries));
+    }
+
+    private static List<DungeonChunkKey> loadHorizontalTravelChunkRing(
+            Connection connection,
+            DungeonTravelChunkKeysRequest request,
+            DungeonSqliteQueryCounter queries
+    ) throws SQLException {
+        String sql = "SELECT level_z, chunk_q, chunk_r FROM " + DungeonPersistenceSchema.CHUNKS_TABLE
+                + " WHERE dungeon_map_id=?"
+                + " AND chunk_q IN (?,?,?) AND chunk_r IN (?,?,?)"
+                + " ORDER BY level_z, chunk_r, chunk_q";
+        try (PreparedStatement statement = queries.prepare(connection, sql)) {
+            statement.setLong(1, request.mapId().value());
+            statement.setInt(2, request.centerChunkQ() - 1);
+            statement.setInt(3, request.centerChunkQ());
+            statement.setInt(4, request.centerChunkQ() + 1);
+            statement.setInt(5, request.centerChunkR() - 1);
+            statement.setInt(6, request.centerChunkR());
+            statement.setInt(7, request.centerChunkR() + 1);
+            try (ResultSet rows = statement.executeQuery()) {
+                List<DungeonChunkKey> keys = new ArrayList<>();
+                while (rows.next()) {
+                    keys.add(new DungeonChunkKey(
+                            request.mapId().value(),
+                            rows.getInt("level_z"),
+                            rows.getInt("chunk_q"),
+                            rows.getInt("chunk_r")));
+                }
+                return List.copyOf(keys);
+            }
+        }
+    }
+
+    private DungeonTravelStartResult locateTravelStartSnapshot(
+            Connection connection,
+            DungeonTravelStartRequest request,
+            DungeonSqliteQueryCounter queries
+    ) throws SQLException {
+        Optional<DungeonMapHeader> header = loadMapHeader(connection, request.mapId().value(), queries);
+        if (header.isEmpty()) {
+            return new DungeonTravelStartResult.Rejected(DungeonIdentityClosureResult.Reason.MAP_MISSING);
+        }
+        if (header.get().revision() != request.expectedMapRevision()) {
+            return new DungeonTravelStartResult.Rejected(DungeonIdentityClosureResult.Reason.STALE_REVISION);
+        }
+        afterHeaderRead.run();
+        Optional<DungeonTravelStartResult.Located> transition = firstPlacedTransition(
+                connection, header.get(), queries);
+        if (transition.isPresent()) {
+            return transition.get();
+        }
+        Optional<DungeonTravelStartResult.Located> chunk = firstAuthoredChunk(
+                connection, header.get(), queries);
+        return chunk.<DungeonTravelStartResult>map(value -> value)
+                .orElseGet(() -> new DungeonTravelStartResult.Empty(header.get()));
+    }
+
+    private static Optional<DungeonTravelStartResult.Located> firstPlacedTransition(
+            Connection connection,
+            DungeonMapHeader header,
+            DungeonSqliteQueryCounter queries
+    ) throws SQLException {
+        String sql = "SELECT t.transition_id, t.cell_x, t.cell_y, t.level_z"
+                + " FROM " + DungeonPersistenceSchema.ENTITY_CHUNKS_TABLE + " ec"
+                + " JOIN " + DungeonPersistenceSchema.TRANSITIONS_TABLE + " t"
+                + " ON t.dungeon_map_id=ec.dungeon_map_id AND t.transition_id=ec.entity_id"
+                + " WHERE ec.dungeon_map_id=? AND ec.entity_kind='TRANSITION'"
+                + " AND t.cell_x IS NOT NULL AND t.cell_y IS NOT NULL AND t.level_z IS NOT NULL"
+                + " GROUP BY t.transition_id, t.cell_x, t.cell_y, t.level_z"
+                + " ORDER BY t.transition_id LIMIT 1";
+        try (PreparedStatement statement = queries.prepare(connection, sql)) {
+            statement.setLong(1, header.mapId().value());
+            try (ResultSet row = statement.executeQuery()) {
+                if (!row.next()) {
+                    return Optional.empty();
+                }
+                return Optional.of(new DungeonTravelStartResult.Located(
+                        header,
+                        new features.dungeon.domain.core.geometry.Cell(
+                                row.getInt("cell_x"),
+                                row.getInt("cell_y"),
+                                row.getInt("level_z")),
+                        row.getLong("transition_id")));
+            }
+        }
+    }
+
+    private static Optional<DungeonTravelStartResult.Located> firstAuthoredChunk(
+            Connection connection,
+            DungeonMapHeader header,
+            DungeonSqliteQueryCounter queries
+    ) throws SQLException {
+        String sql = "SELECT level_z, chunk_q, chunk_r FROM " + DungeonPersistenceSchema.CHUNKS_TABLE
+                + " WHERE dungeon_map_id=? ORDER BY level_z, chunk_r, chunk_q LIMIT 1";
+        try (PreparedStatement statement = queries.prepare(connection, sql)) {
+            statement.setLong(1, header.mapId().value());
+            try (ResultSet row = statement.executeQuery()) {
+                if (!row.next()) {
+                    return Optional.empty();
+                }
+                DungeonChunkKey chunk = new DungeonChunkKey(
+                        header.mapId().value(),
+                        row.getInt("level_z"),
+                        row.getInt("chunk_q"),
+                        row.getInt("chunk_r"));
+                return Optional.of(new DungeonTravelStartResult.Located(
+                        header,
+                        new features.dungeon.domain.core.geometry.Cell(
+                                chunk.minimumQ(), chunk.minimumR(), chunk.level()),
+                        null));
+            }
         }
     }
 
