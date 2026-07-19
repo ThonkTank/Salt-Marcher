@@ -208,7 +208,7 @@ public final class SessionPlannerCatalogTest {
                 new SessionPlannerSessionSnapshot.SessionState(7L, "Session", BigDecimal.ONE, "1", 0L, false),
                 SessionPlannerSessionSnapshot.XpBudgetState.empty(),
                 SessionPlannerSessionSnapshot.RestAdviceState.empty(),
-                SessionPlannerSessionSnapshot.GoldBudgetState.manualNotes(0), "");
+                "");
         viewModel.applyWorkspace(new features.sessionplanner.api.SessionPlannerWorkspaceSnapshot(
                 1L, 7L, 1L, SessionPlannerCatalogSnapshot.empty(), session,
                 features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(),
@@ -470,7 +470,6 @@ public final class SessionPlannerCatalogTest {
                 new SessionPlannerSessionSnapshot.SessionState(7L, "Session", BigDecimal.ONE, "1", 1L, true),
                 SessionPlannerSessionSnapshot.XpBudgetState.empty(),
                 SessionPlannerSessionSnapshot.RestAdviceState.empty(),
-                SessionPlannerSessionSnapshot.GoldBudgetState.manualNotes(1),
                 "");
         SessionPlannerSelectedSceneSnapshot selected = new SessionPlannerSelectedSceneSnapshot(
                 true, 1L, "Gate Watch", "guards count torches", 7L,
@@ -804,7 +803,7 @@ public final class SessionPlannerCatalogTest {
                 new SessionPlannerSessionSnapshot.SessionState(31L, "Search", BigDecimal.ONE, "1", 1L, true),
                 SessionPlannerSessionSnapshot.XpBudgetState.empty(),
                 SessionPlannerSessionSnapshot.RestAdviceState.empty(),
-                SessionPlannerSessionSnapshot.GoldBudgetState.manualNotes(0), "");
+                "");
         viewModel.applyWorkspace(new features.sessionplanner.api.SessionPlannerWorkspaceSnapshot(
                 1L, 31L, 1L, SessionPlannerCatalogSnapshot.empty(), session,
                 features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(), timeline,
@@ -885,7 +884,7 @@ public final class SessionPlannerCatalogTest {
                 new SessionPlannerSessionSnapshot.SessionState(41L, "Master detail", BigDecimal.ONE, "1", 0L, false),
                 SessionPlannerSessionSnapshot.XpBudgetState.empty(),
                 SessionPlannerSessionSnapshot.RestAdviceState.empty(),
-                SessionPlannerSessionSnapshot.GoldBudgetState.manualNotes(0), "");
+                "");
         viewModel.applyWorkspace(new features.sessionplanner.api.SessionPlannerWorkspaceSnapshot(
                 1L, 41L, 1L, SessionPlannerCatalogSnapshot.empty(), session,
                 features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(), timeline,
@@ -920,7 +919,7 @@ public final class SessionPlannerCatalogTest {
                 selectedHeaders, timeline.restGaps());
         session = new SessionPlannerSessionSnapshot(
                 new SessionPlannerSessionSnapshot.SessionState(41L, "Master detail", BigDecimal.ONE, "1", 1L, true),
-                session.xpBudget(), session.restAdvice(), session.goldBudget(), "");
+                session.xpBudget(), session.restAdvice(), "");
         SessionPlannerSelectedSceneSnapshot first = selectedFixture(1L, "First title", 2);
         viewModel.applyWorkspace(new features.sessionplanner.api.SessionPlannerWorkspaceSnapshot(
                 2L, 41L, 1L, SessionPlannerCatalogSnapshot.empty(), session,
@@ -981,7 +980,7 @@ public final class SessionPlannerCatalogTest {
                 new BigDecimal("10"), 100, false, "Keine Location", true, true));
         SessionPlannerSessionSnapshot secondSessionState = new SessionPlannerSessionSnapshot(
                 new SessionPlannerSessionSnapshot.SessionState(41L, "Master detail", BigDecimal.ONE, "1", 2L, true),
-                session.xpBudget(), session.restAdvice(), session.goldBudget(), "");
+                session.xpBudget(), session.restAdvice(), "");
         viewModel.applyWorkspace(new features.sessionplanner.api.SessionPlannerWorkspaceSnapshot(
                 4L, 41L, 2L, SessionPlannerCatalogSnapshot.empty(), secondSessionState,
                 features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(),

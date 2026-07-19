@@ -547,8 +547,7 @@ public final class SessionPlannerWorkspaceAssembler {
                         session.sessionId(), session.displayName(), session.encounterDays().value(),
                         session.encounterDays().displayText(), session.selectedEncounterId(),
                         session.selectedEncounterId() > 0L),
-                xp, rests, SessionPlannerSessionSnapshot.GoldBudgetState.manualNotes(session.manualLootNotes().size()),
-                status);
+                xp, rests, status);
     }
 
     private static SessionPlannerSceneTimelineProjection timeline(

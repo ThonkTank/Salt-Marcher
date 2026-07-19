@@ -6,7 +6,6 @@ public record SessionPlannerSessionSnapshot(
         SessionState session,
         XpBudgetState xpBudget,
         RestAdviceState restAdvice,
-        GoldBudgetState goldBudget,
         String status
 ) {
 
@@ -14,7 +13,6 @@ public record SessionPlannerSessionSnapshot(
         session = session == null ? SessionState.empty() : session;
         xpBudget = xpBudget == null ? XpBudgetState.empty() : xpBudget;
         restAdvice = restAdvice == null ? RestAdviceState.empty() : restAdvice;
-        goldBudget = goldBudget == null ? GoldBudgetState.manualNotes(0) : goldBudget;
         status = status == null ? "" : status;
     }
 
@@ -23,7 +21,6 @@ public record SessionPlannerSessionSnapshot(
                 SessionState.empty(),
                 XpBudgetState.empty(),
                 RestAdviceState.empty(),
-                GoldBudgetState.manualNotes(0),
                 status);
     }
 
@@ -99,27 +96,6 @@ public record SessionPlannerSessionSnapshot(
 
         public static RestAdviceState empty() {
             return new RestAdviceState(false, 0, 0, 0, 0, "Keine Rastempfehlung verfuegbar.");
-        }
-    }
-
-    public record GoldBudgetState(
-            boolean available,
-            String headline,
-            String detail
-    ) {
-
-        public GoldBudgetState {
-            headline = headline == null ? "" : headline;
-            detail = detail == null ? "" : detail;
-        }
-
-        public static GoldBudgetState manualNotes(int manualNoteCount) {
-            return new GoldBudgetState(
-                    false,
-                    "Goldbudget offen",
-                    manualNoteCount <= 0
-                            ? "Keine manuelle Beutenotiz; ein Goldbudget wird noch nicht berechnet."
-                            : manualNoteCount + " manuelle Beutenotizen, Goldbudget weiterhin offen.");
         }
     }
 

@@ -148,6 +148,17 @@ Legacy manual loot-placeholder rows migrate losslessly to manual loot notes.
 Existing generated reward references retain their run and treasure identities.
 No migration copies foreign reward or roster detail into Session Planner.
 
+A fresh store reaches schema version 4 without creating the retired loot-
+placeholder table or index. Opening version 2 copies every legacy row into the
+canonical manual-note table in the same transaction that retires the legacy
+table; a zero encounter anchor resolves to the first scene by stored scene
+order. Opening version 3 does not copy or reconcile legacy rows again because
+canonical manual notes may have been edited or deleted since version 3; it only
+retires the stale legacy table. These migrations preserve the Session revision,
+the next manual-note identity, generated reward references, and ordering. A
+failed retirement rolls back the schema version, table, index, and data changes
+together.
+
 Real user data is never deleted or rewritten destructively without the
 owner-approved backup boundary.
 

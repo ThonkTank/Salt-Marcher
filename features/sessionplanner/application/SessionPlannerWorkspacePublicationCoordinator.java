@@ -282,8 +282,7 @@ public final class SessionPlannerWorkspacePublicationCoordinator {
         }
         var current = candidate.currentSession();
         var withStatus = new features.sessionplanner.api.SessionPlannerSessionSnapshot(
-                current.session(), current.xpBudget(), current.restAdvice(), current.goldBudget(),
-                statusOverlay);
+                current.session(), current.xpBudget(), current.restAdvice(), statusOverlay);
         var catalog = candidate.catalog();
         var catalogWithStatus = new features.sessionplanner.api.SessionPlannerCatalogSnapshot(
                 catalog.sessions(), catalog.selectedSessionId(), statusOverlay);

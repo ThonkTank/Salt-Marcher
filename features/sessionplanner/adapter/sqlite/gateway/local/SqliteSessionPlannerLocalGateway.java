@@ -40,7 +40,8 @@ public final class SqliteSessionPlannerLocalGateway {
                 "session-planner",
                 new SqliteMigration(1, schemaMigrator::ensureSchema),
                 new SqliteMigration(2, schemaMigrator::addGeneratedRewards),
-                new SqliteMigration(3, schemaMigrator::addRevisionAndManualLootNotes));
+                new SqliteMigration(3, schemaMigrator::addRevisionAndManualLootNotes),
+                new SqliteMigration(4, schemaMigrator::retireLegacyManualLoot));
         this.reads = Objects.requireNonNull(reads, "reads");
         this.writes = Objects.requireNonNull(writes, "writes");
     }
