@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-17
+Last Reviewed: 2026-07-19
 Source of Truth: Travel-facing dungeon behavior, visible states, and acceptance
 criteria.
 
@@ -18,20 +18,6 @@ truth plus party-owned runtime state.
 - editor lifecycle behavior
 - authored dungeon invariants
 - SQLite schema detail
-
-## Current State
-
-- SaltMarcher already exposes a dungeon travel surface with map identity,
-  refresh, reset-view, zoom, level, and overlay controls plus a state area for
-  location and action text.
-- The current SaltMarcher travel view resolves listed travel actions through
-  the dungeon application boundary and shows resulting status text.
-- Direct token drag to reachable dungeon tiles is part of the documented
-  target state but is not yet fully wired in the current SaltMarcher travel
-  binder.
-- The sibling `salt-marcher` repo shows the fuller visible runtime target:
-  token drag, centered runtime details, and action buttons for doors, stairs,
-  and transitions.
 
 ## Visible Structure
 

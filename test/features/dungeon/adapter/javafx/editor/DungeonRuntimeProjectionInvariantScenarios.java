@@ -27,7 +27,6 @@ import features.dungeon.domain.core.structure.transition.Transition;
 import features.dungeon.domain.core.structure.transition.TransitionDestination;
 import features.dungeon.domain.core.structure.transition.TransitionDestinationTarget;
 import features.dungeon.application.travel.projection.TravelActionFacts;
-import features.dungeon.application.travel.projection.TravelActionFacts.SelectedAction;
 import features.dungeon.application.travel.projection.TravelActionKind;
 import features.dungeon.application.travel.projection.TravelAuthoredSurface;
 import features.dungeon.application.travel.projection.TravelHeading;
@@ -63,6 +62,7 @@ import features.dungeon.domain.core.structure.topology.SpatialTopology;
 import features.dungeon.domain.core.structure.transition.TransitionCatalog;
 import features.dungeon.domain.core.structure.transition.TransitionAnchor;
 import features.dungeon.api.DungeonTravelLocationKind;
+import features.dungeon.api.DungeonTravelActionId;
 import features.dungeon.api.DungeonTravelPosition;
 import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.api.TravelDungeonAction;
@@ -234,13 +234,22 @@ final class DungeonRuntimeProjectionInvariantScenarios {
         assertUnlinkedTransitionMovementBlocked(
                 unlinkedMap,
                 unlinkedTransition,
-                SelectedAction.atRow(indexOfAction(unlinkedSurface, unlinkedTransition)));
+                unlinkedTransition.actionId());
+        DungeonMap multipleActionMap = withTransition(unlinkedMap, new Transition(
+                42L,
+                unlinkedMap.metadata().mapId().value(),
+                "Second transition.",
+                TransitionAnchor.cell(anchor),
+                TransitionDestination.overworldTile(7L, 8L),
+                null));
+        assertActionIdentitySurvivesPresentationReordering(
+                project(multipleActionMap, derived, new Cell(2, 0, 0)));
     }
 
     private static void assertUnlinkedTransitionMovementBlocked(
             DungeonMap unlinkedMap,
             TravelActionFacts unlinkedTransition,
-            SelectedAction selectedAction
+            DungeonTravelActionId actionId
     ) {
         DungeonTestStore repository = repositoryOf(
                 unlinkedMap,
@@ -265,13 +274,13 @@ final class DungeonRuntimeProjectionInvariantScenarios {
         TravelDungeonSnapshot beforeSnapshot = travelModel.current();
         TravelDungeonAction publishedAction = publishedActionAt(
                 beforeSnapshot,
-                selectedAction.rowIndex(),
+                actionId,
                 "runtime unlinked entrance public route exposes selected transition action");
         assertContains(publishedAction.label(), "Kein Ziel verknuepft",
                 "runtime unlinked entrance movement must report missing destination");
         PartyTravelPositionsResult partyBefore = partyPositions.current();
 
-        travel.performAction(selectedAction.rowIndex());
+        travel.performAction(actionId);
 
         TravelDungeonSnapshot afterSnapshot = travelModel.current();
         assertContains(afterSnapshot.workspaceState().statusLabel(), "Übergangsziel ist nicht verfügbar.",
@@ -283,6 +292,31 @@ final class DungeonRuntimeProjectionInvariantScenarios {
                 "runtime unlinked entrance must not save dungeon movement");
         assertEquals(partyBefore.partyTokenCharacterIds(), partyAfter.partyTokenCharacterIds(),
                 "runtime unlinked entrance must not save overworld movement");
+    }
+
+    private static void assertActionIdentitySurvivesPresentationReordering(TravelSurfaceFacts surface) {
+        assertTrue(surface.actions().size() > 1,
+                "runtime action reordering invariant requires multiple presentation rows");
+        List<TravelActionFacts> reversedActions = surface.actions().reversed();
+        TravelSurfaceFacts reordered = new TravelSurfaceFacts(
+                surface.mapId(),
+                surface.mapName(),
+                surface.revision(),
+                surface.map(),
+                surface.position(),
+                surface.surfaceTitle(),
+                surface.areaLabel(),
+                surface.tileLabel(),
+                surface.headingLabel(),
+                surface.statusLabel(),
+                surface.visualDescription(),
+                reversedActions);
+        for (TravelActionFacts expected : surface.actions()) {
+            assertEquals(expected, reordered.action(expected.actionId()).orElse(null),
+                    "runtime action identity selects the same action after presentation reordering");
+        }
+        assertTrue(reordered.action(new DungeonTravelActionId("map:4:stale:unknown")).isEmpty(),
+                "runtime action identity rejects an unknown or stale id");
     }
 
     private static void assertRuntimePositionProjectionDefaults() {
@@ -858,16 +892,6 @@ final class DungeonRuntimeProjectionInvariantScenarios {
         return null;
     }
 
-    private static int indexOfAction(TravelSurfaceFacts surface, TravelActionFacts expected) {
-        List<TravelActionFacts> actions = surface.actions();
-        for (int index = 0; index < actions.size(); index++) {
-            if (actions.get(index).equals(expected)) {
-                return index;
-            }
-        }
-        return -1;
-    }
-
     private static TravelRuntimeFixture travelServices(DungeonTestStore repository) {
         PartyServiceAssembly.Component party =
                 PartyServiceAssembly.create(new InMemoryPartyRosterRepository());
@@ -922,14 +946,18 @@ final class DungeonRuntimeProjectionInvariantScenarios {
 
     private static TravelDungeonAction publishedActionAt(
             TravelDungeonSnapshot snapshot,
-            int rowIndex,
+            DungeonTravelActionId actionId,
             String message
     ) {
         List<TravelDungeonAction> actions = snapshot == null || snapshot.workspaceState() == null
                 ? List.of()
                 : snapshot.workspaceState().actions();
-        assertTrue(rowIndex >= 0 && rowIndex < actions.size(), message);
-        return actions.get(rowIndex);
+        for (TravelDungeonAction action : actions) {
+            if (action.actionId().equals(actionId)) {
+                return action;
+            }
+        }
+        throw new IllegalStateException(message + " missing actionId=" + actionId);
     }
 
     private static void assertEquals(Object expected, Object actual, String message) {

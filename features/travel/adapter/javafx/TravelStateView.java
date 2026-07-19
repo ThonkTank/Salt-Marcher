@@ -1,7 +1,6 @@
-package features.hex.adapter.javafx.travel;
+package features.travel.adapter.javafx;
 
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
 import javafx.scene.layout.GridPane;
@@ -29,14 +28,13 @@ public final class TravelStateView extends VBox {
 
     public TravelStateView() {
         getStyleClass().add("travel-pane");
-
         getChildren().addAll(
                 buildLocationRow(),
                 buildStatusRow(),
                 new Separator(),
                 buildDetailsGrid(),
                 new Separator(),
-                buildActionSection());
+                new VBox(4, sectionHeaderLabel, sectionValueLabel));
     }
 
     public void bind(TravelStateViewModel viewModel) {
@@ -46,9 +44,9 @@ public final class TravelStateView extends VBox {
         contextLabel.textProperty().bind(viewModel.contextProperty());
         sectionHeaderLabel.textProperty().bind(viewModel.sectionHeaderProperty());
         sectionValueLabel.textProperty().bind(viewModel.sectionValueProperty());
-        bindDetail(detailKeyOneLabel, detailValueOneLabel, viewModel.weather());
-        bindDetail(detailKeyTwoLabel, detailValueTwoLabel, viewModel.timeOfDay());
-        bindDetail(detailKeyThreeLabel, detailValueThreeLabel, viewModel.pace());
+        bindDetail(detailKeyOneLabel, detailValueOneLabel, viewModel.firstDetail());
+        bindDetail(detailKeyTwoLabel, detailValueTwoLabel, viewModel.secondDetail());
+        bindDetail(detailKeyThreeLabel, detailValueThreeLabel, viewModel.thirdDetail());
     }
 
     private HBox buildLocationRow() {
@@ -76,16 +74,6 @@ public final class TravelStateView extends VBox {
         return grid;
     }
 
-    private VBox buildActionSection() {
-        VBox actionItems = new VBox(6);
-        actionItems.setFillWidth(true);
-        Button actionButton = new StyledButton("accent");
-        actionButton.setMaxWidth(Double.MAX_VALUE);
-        actionButton.setVisible(false);
-        actionButton.setManaged(false);
-        return new VBox(4, sectionHeaderLabel, sectionValueLabel, actionItems, actionButton);
-    }
-
     private static void bindDetail(
             Label keyLabel,
             Label valueLabel,
@@ -96,23 +84,11 @@ public final class TravelStateView extends VBox {
     }
 
     private static Label label(String... styles) {
-        return new StyledLabel(styles);
-    }
-
-    private static final class StyledLabel extends Label {
-
-        private StyledLabel(String... styles) {
-            if (styles.length > 0) {
-                getStyleClass().addAll(styles);
-            }
+        Label label = new Label();
+        if (styles.length > 0) {
+            label.getStyleClass().addAll(styles);
         }
-    }
-
-    private static final class StyledButton extends Button {
-
-        private StyledButton(String style) {
-            getStyleClass().add(style);
-        }
+        return label;
     }
 
     private static final class DetailsGrid extends GridPane {

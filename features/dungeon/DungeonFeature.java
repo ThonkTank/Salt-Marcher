@@ -10,6 +10,7 @@ import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
 import features.dungeon.api.DungeonAuthoredMutationModel;
 import features.dungeon.api.DungeonAuthoredReadModel;
 import features.dungeon.api.DungeonEditorControlsModel;
+import features.dungeon.api.DungeonTravelContextModel;
 import features.dungeon.api.DungeonEditorMapSurfaceModel;
 import features.dungeon.api.DungeonEditorStateModel;
 import features.dungeon.api.DungeonMapCatalogModel;
@@ -39,7 +40,6 @@ import features.dungeon.application.travel.DungeonTravelRuntimeApplicationServic
 import features.dungeon.application.travel.DungeonTravelSurfaceLoader;
 import features.party.api.ActivePartyModel;
 import features.party.api.PartyApi;
-import features.party.api.PartyMutationModel;
 import features.party.api.PartyTravelPositionsModel;
 import platform.diagnostics.Diagnostics;
 import platform.execution.ExecutionLane;
@@ -77,7 +77,6 @@ public final class DungeonFeature {
                 safeParty.activeParty(),
                 safeParty.travelPositions(),
                 safeParty,
-                safeParty.mutation(),
                 lane,
                 dispatcher,
                 Objects.requireNonNull(diagnostics, "diagnostics"));
@@ -96,7 +95,8 @@ public final class DungeonFeature {
                 new DungeonTravelContribution(runtime.travel(), runtime.mapCatalog(), runtime.travelModel()),
                 runtime.authored(),
                 editorApi,
-                runtime.travel());
+                runtime.travel(),
+                runtime.travelContextModel());
     }
 
     static Runtime createRuntime(
@@ -107,7 +107,6 @@ public final class DungeonFeature {
             ActivePartyModel activeParty,
             PartyTravelPositionsModel partyTravelPositions,
             PartyApi party,
-            PartyMutationModel partyMutation,
             ExecutionLane executionLane,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
@@ -129,7 +128,7 @@ public final class DungeonFeature {
         DungeonEditorRuntimeApplicationService editor =
                 new DungeonEditorRuntimeApplicationService(authoredMaps, editorPublishedState);
         DungeonTravelPartyGateway partyGateway = new DungeonTravelPartyGateway(
-                activeParty, partyTravelPositions, party, partyMutation);
+                activeParty, partyTravelPositions, party);
         DungeonTravelAuthoredReader travelReader = new DungeonTravelAuthoredReader(catalogStore, windowStore);
         DungeonTravelSurfaceLoader surfaceLoader = new DungeonTravelSurfaceLoader(travelReader, partyGateway);
         DungeonTravelNavigator navigator = new DungeonTravelNavigator(travelReader, partyGateway, surfaceLoader);
@@ -143,6 +142,7 @@ public final class DungeonFeature {
                 authoredPublishedState.authoredMutationModel(),
                 authoredPublishedState.mapCatalogModel(),
                 publishedState.travelModel(),
+                publishedState.travelContextModel(),
                 editorPublishedState.controlsModel(),
                 editorPublishedState.mapSurfaceModel(),
                 editorPublishedState.stateModel());
@@ -153,7 +153,8 @@ public final class DungeonFeature {
             ShellContribution travelContribution,
             DungeonAuthoredApi authoredApi,
             DungeonEditorApi editorApi,
-            DungeonTravelApi travelApi
+            DungeonTravelApi travelApi,
+            DungeonTravelContextModel travelContext
     ) {
         public Component {
             editorContribution = Objects.requireNonNull(editorContribution, "editorContribution");
@@ -161,6 +162,7 @@ public final class DungeonFeature {
             authoredApi = Objects.requireNonNull(authoredApi, "authoredApi");
             editorApi = Objects.requireNonNull(editorApi, "editorApi");
             travelApi = Objects.requireNonNull(travelApi, "travelApi");
+            travelContext = Objects.requireNonNull(travelContext, "travelContext");
         }
 
         public void start() {
@@ -177,6 +179,7 @@ public final class DungeonFeature {
             DungeonAuthoredMutationModel authoredMutation,
             DungeonMapCatalogModel mapCatalog,
             TravelDungeonModel travelModel,
+            DungeonTravelContextModel travelContextModel,
             DungeonEditorControlsModel editorControls,
             DungeonEditorMapSurfaceModel editorMapSurface,
             DungeonEditorStateModel editorState

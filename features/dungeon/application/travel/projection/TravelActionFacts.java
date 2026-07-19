@@ -1,10 +1,10 @@
 package features.dungeon.application.travel.projection;
 
-import java.util.List;
 import org.jspecify.annotations.Nullable;
+import features.dungeon.api.DungeonTravelActionId;
 
 public record TravelActionFacts(
-        String actionId,
+        DungeonTravelActionId actionId,
         TravelActionKind kind,
         String label,
         String destinationLabel,
@@ -14,7 +14,7 @@ public record TravelActionFacts(
 ) {
     public TravelActionFacts {
         kind = kind == null ? TravelActionKind.defaultKind() : kind;
-        actionId = cleanText(actionId);
+        actionId = java.util.Objects.requireNonNull(actionId, "actionId");
         label = label == null || label.isBlank() ? kind.name() : label.trim();
         destinationLabel = cleanText(destinationLabel);
         description = cleanText(description);
@@ -27,28 +27,5 @@ public record TravelActionFacts(
 
     private static String cleanText(String value) {
         return value == null ? "" : value.trim();
-    }
-
-    public record SelectedAction(int rowIndex) {
-
-        public SelectedAction {
-            rowIndex = Math.max(-1, rowIndex);
-        }
-
-        public static SelectedAction invalid() {
-            return new SelectedAction(-1);
-        }
-
-        public static SelectedAction atRow(int rowIndex) {
-            return new SelectedAction(rowIndex);
-        }
-
-        public static SelectedAction safe(SelectedAction selectedAction) {
-            return selectedAction == null ? invalid() : selectedAction;
-        }
-
-        public boolean isWithin(List<TravelActionFacts> actions) {
-            return rowIndex >= 0 && actions != null && rowIndex < actions.size();
-        }
     }
 }

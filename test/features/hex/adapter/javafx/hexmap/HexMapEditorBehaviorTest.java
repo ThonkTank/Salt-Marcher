@@ -956,6 +956,8 @@ public final class HexMapEditorBehaviorTest {
         assertEquals(beforeTravelDraws, tileDrawCount(tileCanvas),
                 "HEX-TRAVEL-005 first travel overlay update does not redraw tiles");
         viewModel.applyTravelSnapshot(new HexTravelSnapshot(
+                0L,
+                0L,
                 true,
                 selectedMapId(snapshot).value(),
                 0,

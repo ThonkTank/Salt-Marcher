@@ -98,6 +98,10 @@ final class DungeonMapSceneIdentity {
         return "graph-node:ROOM:" + node.id() + ":" + node.clusterId();
     }
 
+    static String partyTokenHitRef(DungeonMapRenderState.PartyToken token) {
+        return token == null || !token.visible() ? "" : "actor:PARTY_TOKEN";
+    }
+
     private static boolean featureMarkerTopology(DungeonMapRenderState.TopologyRef topologyRef) {
         return topologyRef.kind() == PreparedTopologyKind.TRANSITION
                 || topologyRef.kind() == PreparedTopologyKind.FEATURE_MARKER;

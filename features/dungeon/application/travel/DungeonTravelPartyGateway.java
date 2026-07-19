@@ -2,6 +2,8 @@ package features.dungeon.application.travel;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.application.travel.projection.TravelHeading;
@@ -14,10 +16,9 @@ import features.party.api.PartyApi;
 import features.party.api.ActivePartyModel;
 import features.party.api.ActivePartyResult;
 import features.party.api.MovePartyCharactersCommand;
-import features.party.api.MutationStatus;
+import features.party.api.MutationResult;
 import features.party.api.PartyDungeonTravelLocationKind;
 import features.party.api.PartyDungeonTravelLocationSnapshot;
-import features.party.api.PartyMutationModel;
 import features.party.api.PartyOverworldTravelLocationSnapshot;
 import features.party.api.PartyTravelHeading;
 import features.party.api.PartyTravelLocationSnapshot;
@@ -31,20 +32,17 @@ public final class DungeonTravelPartyGateway {
     private final ActivePartyModel activePartyModel;
     private final PartyTravelPositionsModel partyTravelPositionsModel;
     private final PartyApi party;
-    private final PartyMutationModel partyMutationModel;
 
     public DungeonTravelPartyGateway(
             ActivePartyModel activePartyModel,
             PartyTravelPositionsModel partyTravelPositionsModel,
-            PartyApi party,
-            PartyMutationModel partyMutationModel
+            PartyApi party
     ) {
         this.activePartyModel = Objects.requireNonNull(activePartyModel, "activePartyModel");
         this.partyTravelPositionsModel = Objects.requireNonNull(
                 partyTravelPositionsModel,
                 "partyTravelPositionsModel");
         this.party = Objects.requireNonNull(party, "party");
-        this.partyMutationModel = Objects.requireNonNull(partyMutationModel, "partyMutationModel");
     }
 
     ActiveTravelStateData loadActiveTravelState() {
@@ -58,17 +56,20 @@ public final class DungeonTravelPartyGateway {
                 : activeCharacterIds;
         return new ActiveTravelStateData(
                 travelCharacterIds,
-                toInternalPartyLocation(travelPositions.partyTokenLocation()));
+                toInternalPartyLocation(travelPositions.partyTokenLocation()),
+                travelPositions.revision());
     }
 
-    boolean saveDungeonPosition(PositionData position, List<Long> characterIds) {
+    CompletionStage<MutationResult> moveDungeonPosition(PositionData position, List<Long> characterIds) {
         if (position == null || characterIds == null || characterIds.isEmpty()) {
-            return false;
+            return CompletableFuture.completedFuture(
+                    new MutationResult(features.party.api.MutationStatus.INVALID_INPUT));
         }
         if (position.locationKind() == LocationKind.STAIR_EXIT) {
-            return false;
+            return CompletableFuture.completedFuture(
+                    new MutationResult(features.party.api.MutationStatus.INVALID_INPUT));
         }
-        party.moveCharacters(new MovePartyCharactersCommand(
+        return moveCharacters(new MovePartyCharactersCommand(
                 characterIds,
                 new PartyDungeonTravelLocationSnapshot(
                         position.mapId(),
@@ -79,18 +80,25 @@ public final class DungeonTravelPartyGateway {
                         new PartyTravelTile(position.tile().q(), position.tile().r(), position.tile().level()),
                         partyTravelHeading(position.heading())),
                 true));
-        return partyMutationModel.current().status() == MutationStatus.SUCCESS;
     }
 
-    boolean saveOverworldPosition(OverworldTarget target, List<Long> characterIds) {
+    CompletionStage<MutationResult> moveOverworldPosition(OverworldTarget target, List<Long> characterIds) {
         if (target == null || characterIds == null || characterIds.isEmpty()) {
-            return false;
+            return CompletableFuture.completedFuture(
+                    new MutationResult(features.party.api.MutationStatus.INVALID_INPUT));
         }
-        party.moveCharacters(new MovePartyCharactersCommand(
+        return moveCharacters(new MovePartyCharactersCommand(
                 characterIds,
                 new PartyOverworldTravelLocationSnapshot(target.mapId(), target.tileId()),
                 true));
-        return partyMutationModel.current().status() == MutationStatus.SUCCESS;
+    }
+
+    private CompletionStage<MutationResult> moveCharacters(MovePartyCharactersCommand command) {
+        try {
+            return Objects.requireNonNull(party.moveCharacters(command), "party move completion");
+        } catch (RuntimeException exception) {
+            return CompletableFuture.failedFuture(exception);
+        }
     }
 
     private static List<Long> attachedCharacterIds(
@@ -118,11 +126,13 @@ public final class DungeonTravelPartyGateway {
                                     dungeonLocation.tile().level()),
                             travelHeading(dungeonLocation.heading())),
                     0L,
+                    0L,
                     false);
         }
         if (location instanceof PartyOverworldTravelLocationSnapshot overworldLocation) {
             return new PartyLocationData(
                     null,
+                    overworldLocation.mapId(),
                     overworldLocation.tileId(),
                     true);
         }

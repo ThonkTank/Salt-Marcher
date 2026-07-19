@@ -2,6 +2,7 @@ package features.dungeon.qualification;
 
 import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.api.travel.DungeonTravelApi;
+import features.dungeon.api.DungeonTravelActionId;
 import features.dungeon.application.authored.command.DungeonCompoundPatch;
 import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.port.DungeonCompoundUnitOfWorkResult;
@@ -210,8 +211,13 @@ public final class DungeonRuntimeWorkProbe {
         }
 
         @Override
-        public void performAction(int selectedActionRowIndex) {
-            delegate.performAction(selectedActionRowIndex);
+        public void performAction(DungeonTravelActionId actionId) {
+            delegate.performAction(actionId);
+        }
+
+        @Override
+        public void moveTo(features.dungeon.api.DungeonCellRef target) {
+            delegate.moveTo(target);
         }
 
         @Override

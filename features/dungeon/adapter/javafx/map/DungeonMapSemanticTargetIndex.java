@@ -60,6 +60,12 @@ final class DungeonMapSemanticTargetIndex {
                         VertexTarget.empty()));
             }
         }
+        DungeonMapRenderState.PartyToken partyToken = state.partyToken();
+        String partyTokenHitRef = DungeonMapSceneIdentity.partyTokenHitRef(partyToken);
+        if (!partyTokenHitRef.isBlank()
+                && DungeonMapSceneIdentity.includeLevel(state, partyToken.z())) {
+            targets.put(partyTokenHitRef, PointerTarget.partyToken());
+        }
         return Map.copyOf(targets);
     }
 

@@ -7,6 +7,7 @@ import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.domain.core.structure.transition.TransitionDestinationTarget;
 import features.dungeon.application.travel.session.TravelDungeonSessionSurface.MapData;
+import features.dungeon.api.DungeonChunkKey;
 
 public final class TravelAuthoredSurface {
     private final Header header;
@@ -33,8 +34,12 @@ public final class TravelAuthoredSurface {
         return content.traversalLinks();
     }
 
-    MapData map() {
+    public MapData map() {
         return content.map();
+    }
+
+    public List<DungeonChunkKey> loadedChunks() {
+        return content.loadedChunks();
     }
 
     public static TravelAuthoredSurface empty() {
@@ -71,18 +76,30 @@ public final class TravelAuthoredSurface {
             List<Transition> transitions,
             List<TraversalLinkInput> traversalLinks,
             List<CorridorConnection> connections,
-            List<RoomNarration> roomNarrations
+            List<RoomNarration> roomNarrations,
+            List<DungeonChunkKey> loadedChunks
     ) {
+        public Content(
+                MapData map,
+                List<Transition> transitions,
+                List<TraversalLinkInput> traversalLinks,
+                List<CorridorConnection> connections,
+                List<RoomNarration> roomNarrations
+        ) {
+            this(map, transitions, traversalLinks, connections, roomNarrations, List.of());
+        }
+
         public Content {
             map = map == null ? MapData.empty() : map;
             transitions = transitions == null ? List.of() : List.copyOf(transitions);
             traversalLinks = traversalLinks == null ? List.of() : List.copyOf(traversalLinks);
             connections = connections == null ? List.of() : List.copyOf(connections);
             roomNarrations = roomNarrations == null ? List.of() : List.copyOf(roomNarrations);
+            loadedChunks = loadedChunks == null ? List.of() : List.copyOf(loadedChunks);
         }
 
         private static Content empty() {
-            return new Content(MapData.empty(), List.of(), List.of(), List.of(), List.of());
+            return new Content(MapData.empty(), List.of(), List.of(), List.of(), List.of(), List.of());
         }
 
     }

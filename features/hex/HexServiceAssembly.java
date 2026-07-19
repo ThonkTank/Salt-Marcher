@@ -10,7 +10,6 @@ import platform.ui.DirectUiDispatcher;
 import platform.ui.UiDispatcher;
 import shell.api.ShellContribution;
 import features.hex.adapter.javafx.hexmap.HexMapContribution;
-import features.hex.adapter.javafx.travel.TravelStateContribution;
 import features.hex.adapter.sqlite.repository.SqliteHexMapRepository;
 import features.hex.api.HexEditorApi;
 import features.hex.application.HexEditorWorkspace;
@@ -188,8 +187,5 @@ public final class HexServiceAssembly {
                     assembly.travelModel);
         }
 
-        public ShellContribution travelStateContribution() {
-            return new TravelStateContribution(assembly.travelModel);
-        }
     }
 }

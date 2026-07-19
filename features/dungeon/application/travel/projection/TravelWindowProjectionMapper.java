@@ -50,7 +50,8 @@ public final class TravelWindowProjectionMapper {
                         TravelAuthoredSurfaceTransitionProjectionMapper.toTransitions(state.transitions()),
                         state.traversalLinks(),
                         state.connections(),
-                        state.roomNarrations()));
+                        state.roomNarrations(),
+                        window.chunkHeaders().stream().map(headerValue -> headerValue.key()).toList()));
     }
 
     public static TravelAuthoredSurface empty(DungeonMapHeader header) {

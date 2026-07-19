@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-17
+Last Reviewed: 2026-07-19
 Source of Truth: Compact hex-facing travel-state surface behavior for the
 runtime `Reise` tab, visible states, and acceptance criteria.
 
@@ -17,19 +17,6 @@ Define the compact read-mostly travel-state surface shown in the runtime
 - hex editor behavior
 - dungeon-specific travel context
 - shared map-canvas contract design
-
-## Current State
-
-- SaltMarcher currently exposes a generic global placeholder in the runtime
-  tab labeled `Reise`.
-- The project-wide `Reise` state-tab requirements now allow a feature-owned
-  live travel readback to replace that placeholder while keeping the state tab
-  compact and read-mostly.
-- Hex runtime travel readback is implemented through the party-owned overworld
-  travel position when that position points at a valid Hex tile id.
-- The Hex editor can author maps, terrain, and markers, and the Hex travel
-  readback can publish the active party-token Hex location to the global state
-  tab.
 
 ## Visible Structure
 
@@ -61,7 +48,7 @@ Define the compact read-mostly travel-state surface shown in the runtime
 - no current location selected
 - active overworld or hex travel context
 - transient status change after movement
-- placeholder fallback while no approved Hex runtime readback exists
+- explicit no-context fallback while no matching Hex runtime readback exists
 
 ## Acceptance Criteria
 
@@ -69,8 +56,8 @@ Define the compact read-mostly travel-state surface shown in the runtime
   surface alone.
 - The surface remains clearly distinct from the full interactive travel view.
 - Lack of active hex travel context is shown explicitly.
-- The static `Reise` placeholder is replaced only when an approved Hex runtime
-  readback exists for the active party.
+- Hex context appears only when an approved Hex runtime readback matches the
+  active party position.
 
 ## References
 
