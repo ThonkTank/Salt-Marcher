@@ -41,7 +41,7 @@ public final class TestFeatureStores {
     /** Convenience for synthetic persistence tests that still own and close their lifecycle. */
     public static FeatureStoreHandle store(
             SqliteDatabase database, String owner, SqliteMigration... migrations) {
-        return store(database, FeatureStoreDefinition.of(owner, migrations));
+        return store(database, FeatureStoreDefinition.validated(owner, connection -> { }, migrations));
     }
 
     /** Registers every requested owner before the test-owned lifecycle is prepared exactly once. */

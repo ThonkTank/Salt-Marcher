@@ -18,8 +18,9 @@ mkdir -p "$backup_dir"
 restore_root="$(mktemp -d)"
 trap 'rm -rf "$restore_root"' EXIT
 snapshot_dir="$restore_root/snapshot/salt-marcher"
-rehearsal_copy="$restore_root/rehearsal/game.db"
-mkdir -p "$snapshot_dir" "$(dirname "$rehearsal_copy")"
+rehearsal_dir="$restore_root/rehearsal"
+rehearsal_copy="$rehearsal_dir/salt-marcher/game.db"
+mkdir -p "$snapshot_dir" "$rehearsal_dir"
 
 cd "$repo_root"
 ./gradlew snapshotCatalogData --console=plain \
@@ -28,7 +29,7 @@ cd "$repo_root"
 tar -czf "$backup" -C "$restore_root/snapshot" salt-marcher
 chmod 600 "$backup"
 tar -tzf "$backup" >/dev/null
-cp "$snapshot_dir/game.db" "$rehearsal_copy"
+tar -xzf "$backup" -C "$rehearsal_dir"
 
 ./gradlew rehearseCatalogData --console=plain \
     "-PcatalogRehearsalDatabase=$rehearsal_copy"

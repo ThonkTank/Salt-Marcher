@@ -282,12 +282,13 @@ public final class SqliteDatabase implements AutoCloseable {
     }
 
     private void prepareExistingDatabase() throws SQLException {
+        Path inspection = databasePath;
         Path snapshot = null;
         try {
             try {
                 assertSQLiteHeader(databasePath);
-                snapshot = createPreflightSnapshot();
-                assertPhysicalIntegrity(snapshot);
+                inspection = createPreflightInspection();
+                assertPhysicalIntegrity(inspection);
             } catch (PreflightLockUnavailableException exception) {
                 diagnostics.failure(INTEGRITY_FAILURE, exception.getClass());
                 throw exception;
@@ -296,11 +297,17 @@ public final class SqliteDatabase implements AutoCloseable {
                 recoverFromLatestBackup(exception);
                 return;
             }
-            int version = platformVersion(snapshot);
+            int version = platformVersion(inspection);
             if (version > PLATFORM_SCHEMA_VERSION) {
                 throw new NewerPlatformSchemaException();
             }
             try {
+                assertForeignKeys(inspection);
+                if (!hasPendingMigration(inspection, version)) {
+                    return;
+                }
+                snapshot = createVacuumSnapshot(inspection);
+                assertPhysicalIntegrity(snapshot);
                 assertForeignKeys(snapshot);
                 restoreTest(snapshot);
             } catch (SQLException exception) {
@@ -312,6 +319,37 @@ public final class SqliteDatabase implements AutoCloseable {
         } finally {
             if (snapshot != null) {
                 deletePreflightSnapshot(snapshot);
+            }
+            if (!inspection.equals(databasePath)) {
+                deletePreflightSnapshot(inspection);
+            }
+        }
+    }
+
+    private boolean hasPendingMigration(Path inspection, int platformVersion) throws SQLException {
+        if (platformVersion < PLATFORM_SCHEMA_VERSION) {
+            return true;
+        }
+        try (Connection connection = openReadOnly(inspection)) {
+            if (!hasPlatformMetadata(connection)) {
+                return true;
+            }
+            for (StoreHandle store : stores.values()) {
+                int storedVersion = storedFeatureVersion(connection, store.definition.owner());
+                if (storedVersion < store.definition.supportedVersion()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    private static boolean hasPlatformMetadata(Connection connection) throws SQLException {
+        try (var statement = connection.prepareStatement(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?")) {
+            statement.setString(1, MIGRATIONS_TABLE);
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next();
             }
         }
     }
@@ -613,41 +651,39 @@ public final class SqliteDatabase implements AutoCloseable {
         }
     }
 
-    private Path createPreflightSnapshot() throws SQLException {
+    private Path createPreflightInspection() throws SQLException {
         if (Files.isRegularFile(journalPath(databasePath))) {
-            return createRollbackJournalSnapshot();
+            return createRollbackJournalInspection();
         }
-        return createVacuumSnapshot(databasePath);
+        return databasePath;
     }
 
-    private Path createRollbackJournalSnapshot() throws SQLException {
-        Path snapshot = null;
+    private Path createRollbackJournalInspection() throws SQLException {
+        Path recoveredCopy = null;
         try {
             Path directory = Files.createTempDirectory(
                     databasePath.getParent(), "." + databasePath.getFileName() + ".rollback-preflight-");
-            Path recoveredCopy = directory.resolve("recovered.db");
-            snapshot = directory.resolve("snapshot.db");
+            recoveredCopy = directory.resolve("recovered.db");
             copyRollbackFamilyUnderLock(recoveredCopy);
             try (Connection connection = DriverManager.getConnection(
                     "jdbc:sqlite:" + recoveredCopy.toAbsolutePath().normalize())) {
                 assertConnectionIntegrity(connection);
                 pragmaInt(connection, "PRAGMA user_version");
             }
-            vacuumInto(recoveredCopy, snapshot);
-            return snapshot;
+            return recoveredCopy;
         } catch (PreflightLockUnavailableException exception) {
-            if (snapshot != null) {
-                deletePreflightSnapshot(snapshot);
+            if (recoveredCopy != null) {
+                deletePreflightSnapshot(recoveredCopy);
             }
             throw exception;
         } catch (IOException | SQLException exception) {
-            if (snapshot != null) {
-                deletePreflightSnapshot(snapshot);
+            if (recoveredCopy != null) {
+                deletePreflightSnapshot(recoveredCopy);
             }
             if (exception instanceof SQLException sqlException) {
                 throw sqlException;
             }
-            throw new SQLException("Could not create SQLite rollback snapshot.", exception);
+            throw new SQLException("Could not create SQLite rollback inspection.", exception);
         }
     }
 

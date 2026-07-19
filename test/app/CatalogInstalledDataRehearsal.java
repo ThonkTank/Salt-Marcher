@@ -116,14 +116,22 @@ public final class CatalogInstalledDataRehearsal {
                     "Catalog rehearsal refuses the installed application-data directory.");
         }
         try {
-            if (Files.exists(installed) && candidate.toRealPath().equals(installed.toRealPath())) {
+            Path candidateReal = candidate.toRealPath();
+            Path installedDirectory = installed.getParent();
+            if (installedDirectory != null
+                    && Files.exists(installedDirectory)
+                    && candidateReal.startsWith(installedDirectory.toRealPath())) {
+                throw new IllegalArgumentException(
+                        "Catalog rehearsal refuses the installed application-data directory.");
+            }
+            if (Files.exists(installed) && Files.isSameFile(candidateReal, installed)) {
                 throw new IllegalArgumentException(
                         "Catalog rehearsal refuses the installed database.");
             }
+            return candidateReal;
         } catch (java.io.IOException exception) {
             throw new IllegalStateException("Catalog rehearsal could not resolve database paths.", exception);
         }
-        return candidate;
     }
 
 }

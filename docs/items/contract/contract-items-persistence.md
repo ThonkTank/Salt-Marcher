@@ -29,9 +29,12 @@ source-version change requires an explicit migration decision and full re-import
 
 Target owner version `2` has one structural signature: exact entry and tag
 columns, `source_key` and `(item_source_key, tag)` primary keys, a cascading tag
-foreign key, and a unique nullable `legacy_id`. Owner validation checks this
-signature, item identity, boolean domains, tag ownership, physical integrity,
-and foreign keys before the handle becomes `READY`.
+foreign key, and a unique nullable `legacy_id`. Owner readiness checks the
+declared target table, column, primary-key, required foreign-key, and named-index
+signature before the handle becomes `READY`; platform startup also checks global
+integrity and foreign keys. Semantic rows remain an Items provider read/write
+concern and fail closed through typed Items results rather than a startup corpus
+scan.
 
 ## Supported Upgrade Shapes
 

@@ -91,23 +91,32 @@ tmp_root="$(mktemp -d)"
 trap 'rm -rf "$tmp_root"' EXIT
 if [[ -f "$APP_DATA_DIR/game.db" ]]; then
     snapshot_dir="$tmp_root/snapshot/salt-marcher"
-    rehearsal_copy="$tmp_root/rehearsal/game.db"
-    mkdir -p "$snapshot_dir" "$(dirname "$rehearsal_copy")"
+    rehearsal_dir="$tmp_root/rehearsal"
+    rehearsal_copy="$rehearsal_dir/salt-marcher/game.db"
+    mkdir -p "$snapshot_dir" "$rehearsal_dir"
     backup="$BACKUP_DIR/data-${newest_tag}-$(date -u +%Y%m%dT%H%M%SZ).tar.gz"
     if ! tools/gradle/run-observable-gradle.sh snapshotCatalogData -- \
         "-PcatalogSnapshotSource=$APP_DATA_DIR/game.db" \
         "-PcatalogSnapshotTarget=$snapshot_dir/game.db"; then
         block_update "snapshot_failed"
     fi
-    tar -czf "$backup" -C "$tmp_root/snapshot" salt-marcher
-    chmod 600 "$backup"
-    tar -tzf "$backup" >/dev/null
-    cp "$snapshot_dir/game.db" "$rehearsal_copy"
+    if ! tar -czf "$backup" -C "$tmp_root/snapshot" salt-marcher \
+        || ! chmod 600 "$backup" \
+        || ! tar -tzf "$backup" >/dev/null \
+        || ! tar -xzf "$backup" -C "$rehearsal_dir" \
+        || [[ ! -f "$rehearsal_copy" ]]; then
+        block_update "backup_restore_failed"
+    fi
     if ! tools/gradle/run-observable-gradle.sh rehearseCatalogData -- \
         "-PcatalogRehearsalDatabase=$rehearsal_copy"; then
         block_update "rehearsal_failed"
     fi
-    find "$BACKUP_DIR" -name 'data-*.tar.gz' -type f | sort | head -n -5 | xargs -r rm -f
+    if ! find "$BACKUP_DIR" -name 'data-*.tar.gz' -type f \
+        | sort \
+        | head -n -5 \
+        | xargs -r rm -f; then
+        echo "Warning: old backup archives could not be pruned; continuing with the restore-tested backup."
+    fi
 fi
 
 if ! ./gradlew installDesktopApp --console=plain; then

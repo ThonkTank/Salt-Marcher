@@ -17,6 +17,8 @@ import org.jspecify.annotations.Nullable;
 import platform.persistence.FeatureStoreDefinition;
 import platform.persistence.FeatureStoreHandle;
 import platform.persistence.SqliteMigration;
+import platform.persistence.SqliteSchemaValidator;
+import features.creatures.adapter.sqlite.model.CreaturesPersistenceSchema;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
@@ -37,9 +39,24 @@ public final class SqliteCreatureCatalogLocalGateway {
 
     public static FeatureStoreDefinition storeDefinition() {
         CreaturesSchemaMigrator schemaMigrator = new CreaturesSchemaMigrator();
-        return FeatureStoreDefinition.of(
-                        "creatures",
-                        new SqliteMigration(1, schemaMigrator::ensureSchema));
+        SqliteSchemaValidator targetSchema = SqliteSchemaValidator.builder()
+                .table(CreaturesPersistenceSchema.CREATURES)
+                .primaryKey("creatures", "id")
+                .table(CreaturesPersistenceSchema.CREATURE_BIOMES)
+                .table(CreaturesPersistenceSchema.CREATURE_SUBTYPES)
+                .table(CreaturesPersistenceSchema.CREATURE_ACTIONS)
+                .index("idx_creatures_type", "creatures", false, "creature_type")
+                .index("idx_creatures_alignment", "creatures", false, "alignment")
+                .index("idx_creatures_xp", "creatures", false, "xp")
+                .index("idx_creatures_name", "creatures", false, "name")
+                .index("idx_creature_biomes_biome", "creature_biomes", false, "biome")
+                .index("idx_creature_biomes_creature", "creature_biomes", false, "creature_id")
+                .index("idx_creature_subtypes_subtype", "creature_subtypes", false, "subtype")
+                .index("idx_creature_subtypes_creature", "creature_subtypes", false, "creature_id")
+                .index("idx_creature_actions_creature", "creature_actions", false, "creature_id")
+                .build();
+        return FeatureStoreDefinition.validated(
+                "creatures", targetSchema, new SqliteMigration(1, schemaMigrator::ensureSchema));
     }
 
     public SqliteCreatureCatalogLocalGateway(FeatureStoreHandle store) {

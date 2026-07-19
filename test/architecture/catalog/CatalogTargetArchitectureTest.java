@@ -14,6 +14,7 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import features.catalog.application.CatalogSectionDefinition;
+import features.catalog.application.CatalogSectionDefinitions;
 import features.catalog.application.CatalogWorkspacePublication;
 import features.creatures.api.CreatureReferenceIndexModel;
 import features.encounter.api.EncounterPoolFiltersModel;
@@ -34,7 +35,11 @@ import org.junit.jupiter.api.Test;
 public final class CatalogTargetArchitectureTest {
 
     private static final Set<String> RETIRED_TYPES = Set.of(
-            "LegacyCatalogBindingAdapter", "CatalogDataSources", "CatalogActionRoutes");
+            "LegacyCatalogBindingAdapter", "CatalogDataSources", "CatalogActionRoutes",
+            "MonsterCatalogState", "ItemsCatalogState", "SavedEncounterCatalogState",
+            "WorldReferenceCatalogState", "EncounterTableCatalogState",
+            "MonsterCatalogIntent", "ItemsCatalogIntent", "SavedEncounterCatalogIntent",
+            "WorldReferenceCatalogIntent", "EncounterTableCatalogIntent");
     private static final List<String> RETIRED_PRESENTATION_TYPES = List.of(
             "features.catalog.adapter.javafx.MonsterCatalogSection",
             "features.catalog.adapter.javafx.ItemsCatalogSection",
@@ -81,6 +86,15 @@ public final class CatalogTargetArchitectureTest {
                     .should()
                     .dependOnClassesThat()
                     .areAssignableTo(CatalogWorkspacePublication.class);
+
+    @ArchTest
+    static final ArchRule catalogJavaFxMustNotKnowStaticSectionComposition =
+            noClasses()
+                    .that()
+                    .resideInAPackage("features.catalog.adapter.javafx..")
+                    .should()
+                    .dependOnClassesThat()
+                    .areAssignableTo(CatalogSectionDefinitions.class);
 
     @ArchTest
     static final ArchRule catalogApplicationMustRemainFrameworkNeutral =

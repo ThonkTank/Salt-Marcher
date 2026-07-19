@@ -1,6 +1,7 @@
 package app.persistence;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
 import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
@@ -11,10 +12,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.FeatureStoreReadiness;
+import platform.persistence.FeatureStoreUnavailableException;
 import platform.persistence.SqliteDatabase;
 import platform.persistence.TestFeatureStores;
 
 import java.nio.file.Path;
+import java.sql.DriverManager;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -42,7 +46,7 @@ final class SqliteFeatureAdaptersTest {
             SqliteEncounterPlanRepository encounters = new SqliteEncounterPlanRepository(stores.get("encounter"));
             Map<String, Integer> expectedVersions = Map.of(
                     "creatures", 1,
-                    "encounter", 4,
+                    "encounter", 5,
                     "encounter-table", 1,
                     "party", 1);
 
@@ -59,6 +63,33 @@ final class SqliteFeatureAdaptersTest {
             encounters.list();
 
             assertEquals(expectedVersions, featureVersions(creatureStore));
+        }
+    }
+
+    @Test
+    void malformedCurrentEncounterRuntimeSchemaFailsWithoutBlockingCreatures() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("malformed-encounter-runtime.db");
+        try (SqliteDatabase initial = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
+            TestFeatureStores.stores(
+                    initial,
+                    SqliteEncounterPlanRepository.storeDefinition(),
+                    SqliteCreatureCatalogQueryAdapter.storeDefinition());
+        }
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath)) {
+            connection.createStatement().execute("DROP TABLE encounter_runtime_result_enemies");
+            connection.createStatement().execute(
+                    "CREATE TABLE encounter_runtime_result_enemies(context_id TEXT PRIMARY KEY)");
+        }
+
+        try (SqliteDatabase current = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
+            var encounter = current.featureStore(SqliteEncounterPlanRepository.storeDefinition());
+            current.featureStore(SqliteCreatureCatalogQueryAdapter.storeDefinition());
+
+            var readiness = current.prepareRegisteredStores();
+
+            assertEquals(FeatureStoreReadiness.MIGRATION_FAILED, readiness.get("encounter"));
+            assertEquals(FeatureStoreReadiness.READY, readiness.get("creatures"));
+            assertThrows(FeatureStoreUnavailableException.class, encounter::openConnection);
         }
     }
 

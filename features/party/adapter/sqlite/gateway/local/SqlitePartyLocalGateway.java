@@ -6,10 +6,12 @@ import platform.diagnostics.Diagnostics;
 import platform.diagnostics.Measurement;
 import platform.persistence.SqliteQueryCounter;
 import features.party.adapter.sqlite.model.PartyRosterRecord;
+import features.party.adapter.sqlite.model.PartyPersistenceSchema;
 
 import platform.persistence.FeatureStoreDefinition;
 import platform.persistence.FeatureStoreHandle;
 import platform.persistence.SqliteMigration;
+import platform.persistence.SqliteSchemaValidator;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Objects;
@@ -25,9 +27,14 @@ public final class SqlitePartyLocalGateway {
 
     public static FeatureStoreDefinition storeDefinition() {
         PartyRosterSchemaMigrator schemaMigrator = new PartyRosterSchemaMigrator();
-        return FeatureStoreDefinition.of(
-                "party",
-                new SqliteMigration(1, schemaMigrator::ensureSchema));
+        SqliteSchemaValidator targetSchema = SqliteSchemaValidator.builder()
+                .table(PartyPersistenceSchema.PLAYER_CHARACTERS)
+                .primaryKey("player_characters", "id")
+                .table(PartyPersistenceSchema.PARTY_ROSTER_METADATA)
+                .primaryKey("party_roster_metadata", "singleton_id")
+                .build();
+        return FeatureStoreDefinition.validated(
+                "party", targetSchema, new SqliteMigration(1, schemaMigrator::ensureSchema));
     }
 
     public SqlitePartyLocalGateway(FeatureStoreHandle store) {

@@ -9,6 +9,7 @@ import features.scene.domain.SceneWorkspace;
 import platform.persistence.FeatureStoreDefinition;
 import platform.persistence.FeatureStoreHandle;
 import platform.persistence.SqliteMigration;
+import platform.persistence.SqliteSchemaValidator;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -34,11 +35,28 @@ public final class SqliteSceneWorkspaceRepository implements SceneWorkspaceRepos
     private final FeatureStoreHandle connections;
 
     public static FeatureStoreDefinition storeDefinition() {
-        return FeatureStoreDefinition.of(
-                        OWNER,
-                        new SqliteMigration(1, SqliteSceneWorkspaceRepository::createSchema),
-                        new SqliteMigration(2, SqliteSceneWorkspaceRepository::createMobSchema),
-                        new SqliteMigration(3, SqliteSceneWorkspaceRepository::createParticipantStateSchema));
+        SqliteSchemaValidator targetSchema = SqliteSchemaValidator.builder()
+                .table(WORKSPACE_TABLE, "workspace_id", "revision", "next_scene_id", "default_scene_id",
+                        "focused_scene_id", "encounter_synchronized", "status_text")
+                .primaryKey(WORKSPACE_TABLE, "workspace_id")
+                .table(SCENE_TABLE, "scene_id", "title", "notes", "source_session_id", "source_scene_id",
+                        "source_session_name", "initial_encounter_plan_id", "location_external_id", "sort_order")
+                .primaryKey(SCENE_TABLE, "scene_id")
+                .table(PC_TABLE, "scene_id", "party_member_external_id", "sort_order")
+                .primaryKey(PC_TABLE, "scene_id", "party_member_external_id")
+                .table(NPC_TABLE, "scene_id", "npc_external_id", "sort_order")
+                .primaryKey(NPC_TABLE, "scene_id", "npc_external_id")
+                .table(MOB_TABLE, "scene_id", "creature_external_id", "count", "sort_order")
+                .primaryKey(MOB_TABLE, "scene_id", "creature_external_id")
+                .table(STATE_TABLE, "scene_id", "participant_kind", "participant_ref_id",
+                        "defeated", "notes", "sort_order")
+                .primaryKey(STATE_TABLE, "scene_id", "participant_kind", "participant_ref_id")
+                .build();
+        return FeatureStoreDefinition.validated(
+                OWNER, targetSchema,
+                new SqliteMigration(1, SqliteSceneWorkspaceRepository::createSchema),
+                new SqliteMigration(2, SqliteSceneWorkspaceRepository::createMobSchema),
+                new SqliteMigration(3, SqliteSceneWorkspaceRepository::createParticipantStateSchema));
     }
 
     public SqliteSceneWorkspaceRepository(FeatureStoreHandle store) {

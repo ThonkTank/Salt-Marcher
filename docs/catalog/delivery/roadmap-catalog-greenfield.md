@@ -305,23 +305,44 @@ from refreshed `origin/main`.
   compatibility connection type and registration shortcut are deleted, duplicate
   owner registration is rejected, and architecture proof forbids feature dependency
   on the global lifecycle.
-- focused bootstrap and persistence proof is green. The stable pre-review diff returned
-  `BUILD SUCCESSFUL in 7m 36s` for `test`, `3m 33s` for `uiTest`, and `1m 29s`
-  for `architectureTest`; merge-blocking `check` follows the final review diff.
+- the five temporary M3 presentation projections and five UI-to-controller Intent
+  families are deleted. `CatalogWorkspaceState` publishes only the active, type-preserving
+  section binding; the passive contribution reaches the shared renderer through one generic
+  path and stale callbacks remain section- and confirmation-token guarded.
+- every production owner now supplies an explicit structural schema validator. `READY`
+  means the owner target signature plus global physical and foreign-key integrity succeeded;
+  semantic corpus validation remains on typed provider reads and writes instead of scanning
+  every Dungeon, Encounter, or Scene row at desktop startup. Encounter and Dungeon validate
+  every owned table's exact column set and ordered primary key plus all canonical foreign keys
+  and named indexes. A malformed target owner becomes `MIGRATION_FAILED` without blocking a
+  healthy owner; production-route negative tests prove this for both owners.
+- additive Dungeon v7, Encounter v5, and Session Planner v4 repairs resolve already recorded
+  target-signature gaps without redefining released migrations. Empty older Dungeon v6 stores
+  upgrade; an unexpectedly populated old-v6 store fails without deleting rows or advancing its
+  ledger. Encounter and Session Planner repairs are idempotent and preserve predecessor rows.
+- existing healthy databases are still checked read-only on every startup, but the verified
+  `VACUUM INTO` snapshot, restore probe, and versioned backup run only when platform metadata or
+  at least one supported owner migration is pending. Newer owners alone do not cause writes.
 - startup and rehearsal share one production store manifest. Rehearsal requires an explicit
   absolute copy path and rejects the installed application-data directory. The operator path
   creates a coherent, restore-tested, owner-only SQLite snapshot before rehearsal; the updater
   qualifies that copy before installing the candidate.
-- the earlier synthetic rehearsal prepared all eleven owners and completed semantic readback.
-  The final operator-path revision then returned `CATALOG_SNAPSHOT_READY`, followed by
+- the final synthetic archive roundtrip returned `CATALOG_SNAPSHOT_READY`; the retained
+  `tar.gz` was then extracted into a fresh restore directory and that restored copy returned
   `CATALOG_REHEARSAL_READY owners=11 creatures=0 items=0 saved_encounters=0 npcs=0
-  factions=0 locations=0 encounter_tables=0` on a second synthetic copy. Invoking
+  factions=0 locations=0 encounter_tables=0`. Invoking
   `rehearseCatalogData` without its required absolute copy property failed before Java
-  execution. No real user data was opened or changed.
-- focused Items, persistence, rehearsal-path, Dungeon/Encounter fixture, and architecture
-  proof is green on the current pre-integration diff. Final review, current-`main`
-  integration, merge-blocking `check`, and the owner-approved installed-data copy remain
-  M5 gates.
+  execution. Hardlink and resolved-path aliases into installed application data are rejected;
+  backup/archive/extraction failures block the updater before installation, while failure to
+  prune older retained archives is explicitly non-blocking and leaves the restore-tested backup
+  intact. No real user data was opened or changed.
+- the final code and document diff is integrated with current `origin/main` (`0b094e121`).
+  Literal pre-review qualification returned `BUILD SUCCESSFUL in 11m 29s` for `test`,
+  `2m 43s` for `uiTest`, and `1m 54s` for `architectureTest`. The corrected Encounter, Dungeon,
+  and shared persistence routes returned `BUILD SUCCESSFUL in 1m 34s`. Final independent
+  architecture and quality re-review reported no remaining findings. Literal merge-blocking
+  `./gradlew check --console=plain` returned `BUILD SUCCESSFUL in 11m 50s` on the final code
+  and documentation diff. The owner-approved installed-data copy remains the M5 gate.
 
 ### Finish Criteria
 

@@ -3,7 +3,6 @@ package features.catalog.application;
 import features.catalog.application.CatalogApplicationRoutes.EncounterHandoff;
 import features.catalog.application.CatalogApplicationRoutes.SceneHandoff;
 import features.catalog.application.CatalogApplicationRoutes.WorldInspectorRoutes;
-import features.catalog.application.WorldReferenceCatalogState.NpcRow;
 import features.creatures.api.CreatureReferenceIndexModel;
 import features.worldplanner.api.WorldNpcSummary;
 import features.worldplanner.api.WorldPlannerReadStatus;
@@ -17,7 +16,7 @@ import java.util.function.Consumer;
 import java.util.List;
 
 /** NPC provider projection and explicit NPC actions. */
-public final class NpcCatalogDefinition implements CatalogSectionDefinition<TextCatalogQuery, NpcRow, Long> {
+public final class NpcCatalogDefinition implements CatalogSectionDefinition<TextCatalogQuery, NpcCatalogRow, Long> {
 
     private final CreatureReferenceIndexModel creatures;
     private final WorldPlannerSnapshotModel world;
@@ -44,7 +43,7 @@ public final class NpcCatalogDefinition implements CatalogSectionDefinition<Text
     @Override public TextCatalogQuery initialQuery() { return TextCatalogQuery.empty(); }
 
     @Override
-    public CompletionStage<CatalogBrowseResult<TextCatalogQuery, NpcRow>> query(
+    public CompletionStage<CatalogBrowseResult<TextCatalogQuery, NpcCatalogRow>> query(
             CatalogBrowseRequest<TextCatalogQuery> request
     ) {
         return CompletableFuture.completedFuture(CatalogBrowseResult.firstPage(
@@ -53,16 +52,16 @@ public final class NpcCatalogDefinition implements CatalogSectionDefinition<Text
                 providerRevision.incrementAndGet()));
     }
 
-    @Override public Long key(NpcRow row) { return row.npcId(); }
+    @Override public Long key(NpcCatalogRow row) { return row.npcId(); }
 
     @Override
-    public CatalogPresentationSpec<TextCatalogQuery, NpcRow, Long> presentation() {
+    public CatalogPresentationSpec<TextCatalogQuery, NpcCatalogRow, Long> presentation() {
         return new CatalogPresentationSpec<>(
-                "NPC-Katalog", "NPCs", NpcRow::displayName,
+                "NPC-Katalog", "NPCs", NpcCatalogRow::displayName,
                 List.of(textFilter("NPCs suchen …", "NPCs suchen")),
                 List.of(
-                        new CatalogColumnSpec<>("Name", NpcRow::displayName),
-                        new CatalogColumnSpec<>("Details", NpcRow::details)),
+                        new CatalogColumnSpec<>("Name", NpcCatalogRow::displayName),
+                        new CatalogColumnSpec<>("Details", NpcCatalogRow::details)),
                 Optional.of(openAction()),
                 List.of(
                         new CatalogActionSpec(

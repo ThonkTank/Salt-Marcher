@@ -11,7 +11,7 @@ migration, integrity, backup, and recovery semantics.
 SaltMarcher uses one local SQLite database. Platform persistence owns physical
 file safety, connection configuration, the feature-version ledger, owner-scoped
 preparation, backup, and recovery. Feature SQLite adapters own their stored
-truth, table signatures, row validation, and migration bodies.
+truth, target schema signatures, semantic row validation, and migration bodies.
 
 `app` composes immutable `FeatureStoreDefinition` values before it constructs
 feature services. Preparation returns one `FeatureStoreReadiness` per owner.
@@ -56,12 +56,15 @@ Before feature services start, the coordinator:
 4. creates and restore-tests one verified pre-migration snapshot when any
    supported owner has pending work
 5. prepares owners in deterministic composition order, one transaction per owner
-6. validates owner rows, full physical integrity, and foreign keys before each commit
+6. validates the owner's declared target schema signature, full physical integrity,
+   and foreign keys before each commit
 7. returns immutable readiness for every owner
 
 Readiness is:
 
-- `READY`: the owner matches its supported target and validation succeeded
+- `READY`: the owner version and declared table, column, primary-key, required
+  foreign-key, and required-index signatures match the supported target, and
+  global physical and foreign-key integrity succeeded
 - `MIGRATION_FAILED`: a supported migration or owner validation rolled back
 - `NEWER_SCHEMA`: stored owner version is newer than this application
 - `CORRUPT`: physical integrity prevents safe access
@@ -74,6 +77,10 @@ file access exists.
 No feature may enqueue a persistence operation before its readiness is known.
 An unavailable feature exposes its existing typed storage or availability
 result and performs no write.
+
+Startup readiness does not scan the feature corpus for semantic row validity.
+Providers validate semantic rows on their normal typed read/write routes and
+fail closed through their feature-owned error contract.
 
 ## Migration Contract
 
@@ -90,8 +97,8 @@ Each migration:
 - copies and validates replacement rows before dropping or renaming predecessor tables
 
 The coordinator records the new owner version only after the migration action
-and owner validator succeed. Failure rolls back schema, rows, and owner version
-for that transaction.
+and final target-signature validator succeed. Failure rolls back schema, rows,
+and owner version for that transaction.
 
 An already recorded version never changes meaning. Supporting another legacy
 shape requires a new migration or an explicitly versioned predecessor
@@ -143,6 +150,8 @@ Automated proof uses isolated synthetic databases and covers:
 - each supported predecessor schema and repeated reopen
 - an unrelated owner with a newer version while a ready owner remains usable
 - owner migration and validation rollback with byte-equivalent owned rows
+- a target-version owner with a missing or wrong table signature becoming
+  `MIGRATION_FAILED` while an unrelated valid owner remains usable
 - startup that cannot execute feature storage work before readiness
 - verified backup, restore probe, physical corruption recovery, quarantine, and
   no-compatible-backup fail-closed behavior

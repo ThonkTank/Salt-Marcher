@@ -7,11 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import features.catalog.application.CatalogWorkspaceState;
-import features.catalog.application.EncounterTableCatalogState;
-import features.catalog.application.ItemsCatalogState;
-import features.catalog.application.MonsterCatalogState;
-import features.catalog.application.SavedEncounterCatalogState;
-import features.catalog.application.WorldReferenceCatalogState;
+import features.catalog.application.CatalogActiveSection;
+import features.catalog.application.CatalogSectionBinding;
+import features.catalog.application.ItemsCatalogQuery;
+import features.catalog.application.MonsterCatalogQuery;
 import features.creatures.api.CreatureCatalogPage;
 import features.creatures.api.CreatureCatalogPageResult;
 import features.creatures.api.CreatureCatalogQuery;
@@ -50,6 +49,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import javafx.application.Platform;
 import javafx.scene.Node;
@@ -115,7 +115,8 @@ final class CatalogFeatureLifecycleTest {
             assertTracker(world, 0, 0);
             assertTracker(tables, 0, 0);
             CatalogWorkspaceState current = component.controller().publication().current();
-            assertEquals("published", current.monsters().filterDraft().nameQuery(),
+            assertEquals("published", ((MonsterCatalogQuery) activeBinding(current).state().draft())
+                            .filters().nameQuery(),
                     "Encounter-owned filters must initialize the selected Monster draft");
 
             binding.onDeactivate();
@@ -175,7 +176,7 @@ final class CatalogFeatureLifecycleTest {
             items.filterOptions.getFirst().complete(itemOptions("Initial"));
             items.searches.getFirst().complete(itemPage("accepted"));
 
-            component.controller().acceptItemsIntent(new features.catalog.application.ItemsCatalogIntent.Search());
+            activeBinding(component.controller().publication().current()).commands().submit().run();
             CompletableFuture<ItemsCatalogApi.FilterOptionsResult> lateOptions = items.filterOptions.getLast();
             CompletableFuture<ItemsCatalogApi.PageResult> lateItems = items.searches.getLast();
             component.controller().selectSection(features.catalog.application.CatalogSectionId.MONSTERS);
@@ -190,10 +191,15 @@ final class CatalogFeatureLifecycleTest {
             queries.filterOptions.getFirst().complete(filterOptions("Stale"));
             queries.searches.getFirst().complete(creaturePage(1L, "Stale"));
 
-            assertEquals(List.of(2L), component.controller().publication().current()
-                    .monsters().results().rows().stream().map(CreatureCatalogRow::id).toList());
-            assertEquals(List.of("accepted"), component.controller().publication().current()
-                    .items().results().rows().stream().map(ItemsCatalogApi.ItemRow::sourceKey).toList());
+            assertEquals(List.of(2L), activeBinding(component.controller().publication().current())
+                    .state().result().rows().stream().map(CreatureCatalogRow.class::cast)
+                    .map(CreatureCatalogRow::id).toList());
+            component.controller().selectSection(features.catalog.application.CatalogSectionId.ITEMS);
+            CatalogSectionBinding<?, ?, ?> retainedItems = activeBinding(
+                    component.controller().publication().current());
+            assertTrue(retainedItems.state().draft() instanceof ItemsCatalogQuery);
+            assertEquals(List.of("accepted"), retainedItems.state().result().rows().stream()
+                    .map(ItemsCatalogApi.ItemRow.class::cast).map(ItemsCatalogApi.ItemRow::sourceKey).toList());
             component.close();
         });
     }
@@ -243,10 +249,9 @@ final class CatalogFeatureLifecycleTest {
                     "saved-plan row link must not mutate Catalog selection");
             savedOpen.requests.getFirst().complete(new OpenSavedEncounterPlanResult(
                     OpenSavedEncounterPlanResult.Status.CONFIRMATION_REQUIRED, 41L, "Discard?"));
-            assertTrue(component.controller().publication().current()
-                    .savedEncounters().confirmation().required());
-            assertEquals(0L, component.controller().publication().current()
-                    .savedEncounters().selectedPlanId());
+            CatalogSectionBinding<?, ?, ?> pending = activeBinding(component.controller().publication().current());
+            assertTrue(pending.confirmation().required());
+            assertTrue(pending.state().selectedKey().isEmpty());
             Button confirm = button(controls, "Verwerfen und öffnen");
             assertTrue(confirm.isVisible());
             confirm.fire();
@@ -270,6 +275,16 @@ final class CatalogFeatureLifecycleTest {
             RecordingItemRoute itemRoute
     ) {
         return create(queries, items, builder, saved, creatures, world, tables, itemRoute, defaultEncounter());
+    }
+
+    private static CatalogSectionBinding<?, ?, ?> activeBinding(CatalogWorkspaceState state) {
+        AtomicReference<CatalogSectionBinding<?, ?, ?>> binding = new AtomicReference<>();
+        state.activeSection().dispatch(new CatalogActiveSection.Receiver() {
+            @Override public <Q, R, K> void accept(CatalogSectionBinding<Q, R, K> active) {
+                binding.set(active);
+            }
+        });
+        return binding.get();
     }
 
     private static CatalogFeature.Component create(

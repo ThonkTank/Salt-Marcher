@@ -2,7 +2,6 @@ package features.catalog.application;
 
 import features.catalog.application.CatalogApplicationRoutes.EncounterHandoff;
 import features.catalog.application.CatalogApplicationRoutes.WorldInspectorRoutes;
-import features.catalog.application.WorldReferenceCatalogState.FactionRow;
 import features.encountertable.api.EncounterTableCatalogModel;
 import features.worldplanner.api.WorldFactionSummary;
 import features.worldplanner.api.WorldPlannerReadStatus;
@@ -17,7 +16,7 @@ import java.util.function.Consumer;
 
 /** Faction provider projection and explicit Faction actions. */
 public final class FactionCatalogDefinition
-        implements CatalogSectionDefinition<TextCatalogQuery, FactionRow, Long> {
+        implements CatalogSectionDefinition<TextCatalogQuery, FactionCatalogRow, Long> {
 
     private final WorldPlannerSnapshotModel world;
     private final EncounterTableCatalogModel tables;
@@ -41,7 +40,7 @@ public final class FactionCatalogDefinition
     @Override public TextCatalogQuery initialQuery() { return TextCatalogQuery.empty(); }
 
     @Override
-    public CompletionStage<CatalogBrowseResult<TextCatalogQuery, FactionRow>> query(
+    public CompletionStage<CatalogBrowseResult<TextCatalogQuery, FactionCatalogRow>> query(
             CatalogBrowseRequest<TextCatalogQuery> request
     ) {
         return CompletableFuture.completedFuture(CatalogBrowseResult.firstPage(
@@ -50,16 +49,16 @@ public final class FactionCatalogDefinition
                 providerRevision.incrementAndGet()));
     }
 
-    @Override public Long key(FactionRow row) { return row.factionId(); }
+    @Override public Long key(FactionCatalogRow row) { return row.factionId(); }
 
     @Override
-    public CatalogPresentationSpec<TextCatalogQuery, FactionRow, Long> presentation() {
+    public CatalogPresentationSpec<TextCatalogQuery, FactionCatalogRow, Long> presentation() {
         return new CatalogPresentationSpec<>(
-                "Fraktionskatalog", "Fraktionen", FactionRow::displayName,
+                "Fraktionskatalog", "Fraktionen", FactionCatalogRow::displayName,
                 List.of(textFilter("Fraktionen suchen …", "Fraktionen suchen")),
                 List.of(
-                        new CatalogColumnSpec<>("Name", FactionRow::displayName),
-                        new CatalogColumnSpec<>("Details", FactionRow::details)),
+                        new CatalogColumnSpec<>("Name", FactionCatalogRow::displayName),
+                        new CatalogColumnSpec<>("Details", FactionCatalogRow::details)),
                 Optional.of(openAction("Fraktion")),
                 List.of(new CatalogActionSpec(
                         CatalogActionId.USE_AS_ENCOUNTER_SOURCE, "Als Quelle",

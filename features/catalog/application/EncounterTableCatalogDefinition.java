@@ -1,7 +1,6 @@
 package features.catalog.application;
 
 import features.catalog.application.CatalogApplicationRoutes.EncounterHandoff;
-import features.catalog.application.EncounterTableCatalogState.EncounterTableRow;
 import features.encountertable.api.EncounterTableApi;
 import features.encountertable.api.EncounterTableCatalogModel;
 import features.encountertable.api.EncounterTableCatalogResult;
@@ -18,7 +17,7 @@ import java.util.Optional;
 
 /** Encounter Table provider translation and explicit Encounter-source action. */
 public final class EncounterTableCatalogDefinition
-        implements CatalogSectionDefinition<TextCatalogQuery, EncounterTableRow, Long> {
+        implements CatalogSectionDefinition<TextCatalogQuery, EncounterTableCatalogRow, Long> {
 
     private final EncounterTableApi commands;
     private final EncounterTableCatalogModel catalog;
@@ -48,17 +47,17 @@ public final class EncounterTableCatalogDefinition
     }
 
     @Override
-    public CompletionStage<CatalogBrowseResult<TextCatalogQuery, EncounterTableRow>> query(
+    public CompletionStage<CatalogBrowseResult<TextCatalogQuery, EncounterTableCatalogRow>> query(
             CatalogBrowseRequest<TextCatalogQuery> request
     ) {
         EncounterTableCatalogResult current = catalog.current();
-        CatalogResultState<EncounterTableRow> result;
+        CatalogResultState<EncounterTableCatalogRow> result;
         if (current.status() != EncounterTableReadStatus.SUCCESS) {
             result = CatalogResultState.failed("Encounter-Tabellen konnten nicht geladen werden.");
         } else {
             String search = normalized(request.query().text());
-            List<EncounterTableRow> rows = current.tables().stream()
-                    .map(table -> new EncounterTableRow(table.tableId(), table.name(), "#" + table.tableId()))
+            List<EncounterTableCatalogRow> rows = current.tables().stream()
+                    .map(table -> new EncounterTableCatalogRow(table.tableId(), table.name(), "#" + table.tableId()))
                     .filter(row -> search.isBlank()
                             || normalized(row.name() + " " + row.details()).contains(search))
                     .toList();
@@ -68,18 +67,18 @@ public final class EncounterTableCatalogDefinition
                 request.query(), result, providerRevision.incrementAndGet()));
     }
 
-    @Override public Long key(EncounterTableRow row) {
+    @Override public Long key(EncounterTableCatalogRow row) {
         return row.tableId();
     }
 
     @Override
-    public CatalogPresentationSpec<TextCatalogQuery, EncounterTableRow, Long> presentation() {
+    public CatalogPresentationSpec<TextCatalogQuery, EncounterTableCatalogRow, Long> presentation() {
         return new CatalogPresentationSpec<>(
-                "Encounter-Tabellen-Katalog", "Encounter-Tabellen", EncounterTableRow::name,
+                "Encounter-Tabellen-Katalog", "Encounter-Tabellen", EncounterTableCatalogRow::name,
                 List.of(textFilter("Encounter-Tabellen suchen …", "Encounter-Tabellen suchen")),
                 List.of(
-                        new CatalogColumnSpec<>("Name", EncounterTableRow::name),
-                        new CatalogColumnSpec<>("Details", EncounterTableRow::details)),
+                        new CatalogColumnSpec<>("Name", EncounterTableCatalogRow::name),
+                        new CatalogColumnSpec<>("Details", EncounterTableCatalogRow::details)),
                 Optional.empty(),
                 List.of(new CatalogActionSpec(
                         CatalogActionId.USE_AS_ENCOUNTER_SOURCE, "Als Quelle",

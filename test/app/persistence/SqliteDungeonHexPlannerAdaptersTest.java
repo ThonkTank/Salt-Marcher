@@ -1,6 +1,7 @@
 package app.persistence;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
@@ -12,10 +13,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.FeatureStoreReadiness;
+import platform.persistence.FeatureStoreUnavailableException;
 import platform.persistence.SqliteDatabase;
 import platform.persistence.TestFeatureStores;
 
 import java.nio.file.Path;
+import java.sql.DriverManager;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -42,9 +46,9 @@ final class SqliteDungeonHexPlannerAdaptersTest {
             SqliteSessionPlanRepository sessions = new SqliteSessionPlanRepository(stores.get("session-planner"));
             SqliteWorldPlannerRepository world = new SqliteWorldPlannerRepository(stores.get("world-planner"));
             Map<String, Integer> expectedVersions = Map.of(
-                "dungeon", 6,
+                "dungeon", 7,
                     "hex", 1,
-                    "session-planner", 3,
+                    "session-planner", 4,
                     "world-planner", 2);
 
             assertTrue(dungeons.search("").isEmpty());
@@ -59,6 +63,34 @@ final class SqliteDungeonHexPlannerAdaptersTest {
             world.load();
 
             assertEquals(expectedVersions, featureVersions(dungeonStore));
+        }
+    }
+
+    @Test
+    void malformedCurrentDungeonAuthoredSchemaFailsWithoutBlockingHex() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("malformed-dungeon-authored.db");
+        try (SqliteDatabase initial = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
+            TestFeatureStores.stores(
+                    initial,
+                    features.dungeon.adapter.sqlite.gateway.DungeonStoreDefinition.create(),
+                    SqliteHexMapRepository.storeDefinition());
+        }
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath)) {
+            connection.createStatement().execute("DROP TABLE dungeon_feature_markers");
+            connection.createStatement().execute(
+                    "CREATE TABLE dungeon_feature_markers(feature_marker_id INTEGER PRIMARY KEY)");
+        }
+
+        try (SqliteDatabase current = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
+            var dungeon = current.featureStore(
+                    features.dungeon.adapter.sqlite.gateway.DungeonStoreDefinition.create());
+            current.featureStore(SqliteHexMapRepository.storeDefinition());
+
+            var readiness = current.prepareRegisteredStores();
+
+            assertEquals(FeatureStoreReadiness.MIGRATION_FAILED, readiness.get("dungeon"));
+            assertEquals(FeatureStoreReadiness.READY, readiness.get("hex"));
+            assertThrows(FeatureStoreUnavailableException.class, dungeon::openConnection);
         }
     }
 

@@ -232,7 +232,7 @@ final class GeneratedEncounterBatchSqliteTest {
                                     "SELECT version FROM sm_schema_versions WHERE"
                                         + " owner='encounter'")) {
                 assertTrue(rows.next());
-                assertEquals(4, rows.getInt(1));
+                assertEquals(5, rows.getInt(1));
             }
         }
     }

@@ -42,6 +42,8 @@ This document is normative for the `creatures` feature's persistence path.
 
 ## Validation And Error Behavior
 
+Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
+
 - feature-local schema readiness MUST be verified before the catalog exposes a
   successful lookup result
 - malformed or incomplete source rows MUST be rejected or mapped to a clear

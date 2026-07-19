@@ -12,6 +12,7 @@ import features.sessiongeneration.domain.generation.GenerationRunRepository;
 import platform.persistence.FeatureStoreDefinition;
 import platform.persistence.FeatureStoreHandle;
 import platform.persistence.SqliteMigration;
+import platform.persistence.SqliteSchemaValidator;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -33,8 +34,45 @@ public final class SqliteGenerationRunRepository implements GenerationRunReposit
 
     public static FeatureStoreDefinition storeDefinition() {
         SessionGenerationSchema schema = new SessionGenerationSchema();
-        return FeatureStoreDefinition.of(
-                OWNER,
+        SqliteSchemaValidator targetSchema = SqliteSchemaValidator.builder()
+                .table(SessionGenerationSchema.RUNS,
+                        "run_id", "owner", "schema_version", "engine_version", "catalog_version", "catalog_hash",
+                        "seed", "adventure_fraction", "encounter_count", "party_count", "day_xp_budget",
+                        "session_xp_target", "average_level", "normal_budget_cp", "overstock_budget_cp",
+                        "nonmagic_slots", "normal_magic", "overstock_magic", "treasure_count", "normal_actual_cp",
+                        "overstock_actual_cp", "magic_count", "formatted_text", "created_at", "content_fingerprint")
+                .primaryKey(SessionGenerationSchema.RUNS, "run_id")
+                .table(SessionGenerationSchema.PARTY, "run_id", "level", "players", "sort_order")
+                .primaryKey(SessionGenerationSchema.PARTY, "run_id", "level")
+                .table(SessionGenerationSchema.TARGETS, "run_id", "encounter_no", "target_xp", "sort_order")
+                .primaryKey(SessionGenerationSchema.TARGETS, "run_id", "encounter_no")
+                .table(SessionGenerationSchema.ENCOUNTERS,
+                        "run_id", "encounter_no", "target_xp", "adjusted_xp", "difficulty", "candidate_id",
+                        "monster_summary", "monster_count", "multiplier", "max_challenge_code", "boss_score",
+                        "sort_order")
+                .primaryKey(SessionGenerationSchema.ENCOUNTERS, "run_id", "encounter_no")
+                .table(SessionGenerationSchema.ENCOUNTER_BLOCKS,
+                        "run_id", "encounter_no", "block_order", "block_id", "role", "challenge_code",
+                        "challenge_label", "unit_xp", "quantity")
+                .primaryKey(SessionGenerationSchema.ENCOUNTER_BLOCKS, "run_id", "encounter_no", "block_order")
+                .table(SessionGenerationSchema.TREASURES,
+                        "run_id", "treasure_id", "stock_class", "reward_channel", "anchor_encounter_no", "theme",
+                        "magic_type", "target_cp", "nonmagic_slots", "magic_slots", "sort_order")
+                .primaryKey(SessionGenerationSchema.TREASURES, "run_id", "treasure_id")
+                .table(SessionGenerationSchema.LOOT,
+                        "run_id", "line_id", "treasure_id", "role", "item_id", "display_text", "quantity",
+                        "unit_cp", "actual_cp", "total_capacity", "allowed_containers", "magic_rarity", "cursed",
+                        "sort_order")
+                .primaryKey(SessionGenerationSchema.LOOT, "run_id", "line_id")
+                .table(SessionGenerationSchema.PACKING,
+                        "run_id", "line_id", "treasure_id", "container_type", "container_count", "container_id",
+                        "valid", "sort_order")
+                .primaryKey(SessionGenerationSchema.PACKING, "run_id", "line_id")
+                .table(SessionGenerationSchema.AUDITS, "run_id", "audit_order", "code", "status", "detail")
+                .primaryKey(SessionGenerationSchema.AUDITS, "run_id", "audit_order")
+                .build();
+        return FeatureStoreDefinition.validated(
+                OWNER, targetSchema,
                 new SqliteMigration(1, schema::migrateV1),
                 new SqliteMigration(2, schema::migrateV2));
     }

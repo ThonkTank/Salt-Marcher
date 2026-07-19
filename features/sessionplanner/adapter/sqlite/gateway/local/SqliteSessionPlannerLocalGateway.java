@@ -2,10 +2,12 @@ package features.sessionplanner.adapter.sqlite.gateway.local;
 
 import features.sessionplanner.adapter.sqlite.model.SessionPlanRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionPlanSnapshotRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionPlannerPersistenceSchema;
 
 import platform.persistence.FeatureStoreDefinition;
 import platform.persistence.FeatureStoreHandle;
 import platform.persistence.SqliteMigration;
+import platform.persistence.SqliteSchemaValidator;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
@@ -21,11 +23,63 @@ public final class SqliteSessionPlannerLocalGateway {
 
     public static FeatureStoreDefinition storeDefinition() {
         SessionPlannerSchemaMigrator schemaMigrator = new SessionPlannerSchemaMigrator();
-        return FeatureStoreDefinition.of(
-                "session-planner",
+        SqliteSchemaValidator targetSchema = SqliteSchemaValidator.builder()
+                .table(SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE,
+                        "session_id", "revision", "display_name", "encounter_days", "selected_encounter_id",
+                        "status_text", "next_encounter_id", "next_loot_id", "updated_at")
+                .primaryKey(SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE, "session_id")
+                .table(SessionPlannerPersistenceSchema.CURRENT_SESSION_TABLE, "singleton_id", "session_id")
+                .primaryKey(SessionPlannerPersistenceSchema.CURRENT_SESSION_TABLE, "singleton_id")
+                .table(SessionPlannerPersistenceSchema.SESSION_PARTICIPANTS_TABLE,
+                        "session_id", "character_id", "sort_order")
+                .primaryKey(SessionPlannerPersistenceSchema.SESSION_PARTICIPANTS_TABLE,
+                        "session_id", "character_id")
+                .table(SessionPlannerPersistenceSchema.SESSION_ENCOUNTERS_TABLE,
+                        "session_id", "encounter_id", "encounter_plan_id", "budget_percentage", "scene_title",
+                        "scene_notes", "location_id", "sort_order")
+                .primaryKey(SessionPlannerPersistenceSchema.SESSION_ENCOUNTERS_TABLE,
+                        "session_id", "encounter_id")
+                .table(SessionPlannerPersistenceSchema.SESSION_RESTS_TABLE,
+                        "session_id", "left_encounter_id", "right_encounter_id", "rest_kind", "sort_order")
+                .primaryKey(SessionPlannerPersistenceSchema.SESSION_RESTS_TABLE,
+                        "session_id", "left_encounter_id", "right_encounter_id")
+                .table(SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE,
+                        "session_id", "loot_id", "encounter_id", "label", "sort_order")
+                .primaryKey(SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE,
+                        "session_id", "loot_id")
+                .table(SessionPlannerPersistenceSchema.SESSION_GENERATED_REWARDS_TABLE,
+                        "session_id", "scene_id", "generation_id", "treasure_id", "last_known_label", "sort_order")
+                .primaryKey(SessionPlannerPersistenceSchema.SESSION_GENERATED_REWARDS_TABLE,
+                        "session_id", "generation_id", "treasure_id")
+                .table(SessionPlannerPersistenceSchema.SESSION_MANUAL_LOOT_NOTES_TABLE,
+                        "session_id", "note_id", "scene_id", "note_text", "sort_order")
+                .primaryKey(SessionPlannerPersistenceSchema.SESSION_MANUAL_LOOT_NOTES_TABLE,
+                        "session_id", "note_id")
+                .index("idx_session_planner_participants_order",
+                        SessionPlannerPersistenceSchema.SESSION_PARTICIPANTS_TABLE,
+                        false, "session_id", "sort_order")
+                .index("idx_session_planner_encounters_order",
+                        SessionPlannerPersistenceSchema.SESSION_ENCOUNTERS_TABLE,
+                        false, "session_id", "sort_order")
+                .index("idx_session_planner_rests_order",
+                        SessionPlannerPersistenceSchema.SESSION_RESTS_TABLE,
+                        false, "session_id", "sort_order")
+                .index("idx_session_planner_loot_order",
+                        SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE,
+                        false, "session_id", "sort_order")
+                .index("idx_session_planner_generated_rewards_order",
+                        SessionPlannerPersistenceSchema.SESSION_GENERATED_REWARDS_TABLE,
+                        false, "session_id", "sort_order")
+                .index("idx_session_planner_manual_loot_notes_order",
+                        SessionPlannerPersistenceSchema.SESSION_MANUAL_LOOT_NOTES_TABLE,
+                        false, "session_id", "sort_order")
+                .build();
+        return FeatureStoreDefinition.validated(
+                "session-planner", targetSchema,
                 new SqliteMigration(1, schemaMigrator::ensureSchema),
                 new SqliteMigration(2, schemaMigrator::addGeneratedRewards),
-                new SqliteMigration(3, schemaMigrator::addRevisionAndManualLootNotes));
+                new SqliteMigration(3, schemaMigrator::addRevisionAndManualLootNotes),
+                new SqliteMigration(4, schemaMigrator::repairTargetSchema));
     }
 
     public SqliteSessionPlannerLocalGateway(FeatureStoreHandle store) {

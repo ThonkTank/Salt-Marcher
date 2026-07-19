@@ -25,10 +25,10 @@ public record FeatureStoreDefinition(
         validator = Objects.requireNonNull(validator, "validator");
     }
 
-    public static FeatureStoreDefinition of(String owner, SqliteMigration... migrations) {
+    public static FeatureStoreDefinition of(String owner) {
         return new FeatureStoreDefinition(
                 owner,
-                Arrays.asList(migrations == null ? new SqliteMigration[0] : migrations),
+                List.of(),
                 connection -> { });
     }
 

@@ -2,12 +2,15 @@ package features.dungeon.adapter.sqlite.gateway;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.FeatureStoreReadiness;
+import platform.persistence.FeatureStoreUnavailableException;
 import platform.persistence.SqliteDatabase;
 import platform.persistence.SqliteMigration;
 import platform.persistence.TestFeatureStores;
@@ -21,6 +24,73 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 final class DungeonCanonicalSchemaMigrationTest {
+
+    @Test
+    void versionSevenRejectsPopulatedOldVersionSixShapeWithoutDiscardingRows(
+            @TempDir Path tempDir
+    ) throws Exception {
+        Path databasePath = tempDir.resolve("v6-authored-bounds.db");
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE);
+             Connection connection = TestFeatureStores.store(database, DungeonStoreDefinition.create())
+                     .openConnection()) {
+            connection.createStatement().execute(
+                    "INSERT INTO dungeon_maps(dungeon_map_id,name,revision) VALUES(7,'kept',1)");
+            connection.createStatement().execute(
+                    "INSERT INTO dungeon_chunks(dungeon_map_id,level_z,chunk_q,chunk_r,content_revision) "
+                            + "VALUES(7,2,0,0,1)");
+            connection.createStatement().execute(
+                    "INSERT INTO dungeon_entity_chunks(dungeon_map_id,entity_kind,entity_id,level_z,"
+                            + "chunk_q,chunk_r,minimum_q,minimum_r,maximum_q,maximum_r,entity_chunk_count) "
+                            + "VALUES(7,'FEATURE_MARKER',11,2,0,0,3,4,8,9,1)");
+        }
+        try (Connection connection = open(databasePath)) {
+            connection.createStatement().execute("DROP TABLE dungeon_authored_level_bounds");
+            connection.createStatement().execute(
+                    "UPDATE sm_schema_versions SET version=6 WHERE owner='dungeon'");
+        }
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
+            var store = database.featureStore(DungeonStoreDefinition.create());
+            assertEquals(FeatureStoreReadiness.MIGRATION_FAILED,
+                    database.prepareRegisteredStores().get("dungeon"));
+            assertThrows(FeatureStoreUnavailableException.class, store::openConnection);
+        }
+
+        try (Connection connection = open(databasePath)) {
+            assertEquals(6, scalarInt(connection,
+                    "SELECT version FROM sm_schema_versions WHERE owner='dungeon'"));
+            assertEquals("kept", scalarText(connection,
+                    "SELECT name FROM dungeon_maps WHERE dungeon_map_id=7"));
+            assertFalse(tableExists(connection, "dungeon_authored_level_bounds"));
+        }
+    }
+
+    @Test
+    void versionSevenRepairsAnEmptyOldVersionSixShape(@TempDir Path tempDir) throws Exception {
+        Path databasePath = tempDir.resolve("empty-v6-authored-bounds.db");
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE);
+             Connection ignored = TestFeatureStores.store(database, DungeonStoreDefinition.create())
+                     .openConnection()) {
+            // Establish the current empty target before simulating the released v6 signature.
+        }
+        try (Connection connection = open(databasePath)) {
+            connection.createStatement().execute("DROP TABLE dungeon_authored_level_bounds");
+            connection.createStatement().execute(
+                    "UPDATE sm_schema_versions SET version=6 WHERE owner='dungeon'");
+        }
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE);
+             Connection ignored = TestFeatureStores.store(database, DungeonStoreDefinition.create())
+                     .openConnection()) {
+            // Opening the owner connection applies the fail-safe v7 repair.
+        }
+
+        try (Connection connection = open(databasePath)) {
+            assertEquals(7, scalarInt(connection,
+                    "SELECT version FROM sm_schema_versions WHERE owner='dungeon'"));
+            assertTrue(tableExists(connection, "dungeon_authored_level_bounds"));
+        }
+    }
 
     @Test
     void currentVersionDiscardsOnlyPreCanonicalDungeonRowsAndInstallsTheCanonicalSchema(@TempDir Path tempDir)
@@ -39,7 +109,7 @@ final class DungeonCanonicalSchemaMigrationTest {
         }
 
         try (Connection connection = open(databasePath)) {
-            assertEquals(6, scalarInt(connection,
+            assertEquals(7, scalarInt(connection,
                     "SELECT version FROM sm_schema_versions WHERE owner='dungeon'"));
             assertEquals("party-kept", scalarText(connection, "SELECT payload FROM party_guard"));
             assertEquals("hex-kept", scalarText(connection, "SELECT payload FROM hex_guard"));

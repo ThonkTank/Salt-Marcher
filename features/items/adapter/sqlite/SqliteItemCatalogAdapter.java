@@ -11,6 +11,7 @@ import platform.persistence.FeatureStoreHandle;
 import platform.persistence.FeatureStoreReadiness;
 import platform.persistence.FeatureStoreUnavailableException;
 import platform.persistence.SqliteMigration;
+import platform.persistence.SqliteSchemaValidator;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -40,9 +41,27 @@ public final class SqliteItemCatalogAdapter implements ItemCatalogPort {
 
     public static FeatureStoreDefinition storeDefinition() {
         ItemsSchema schema = new ItemsSchema();
+        SqliteSchemaValidator targetSchema = SqliteSchemaValidator.builder()
+                .table(ItemsSchema.ENTRIES_TABLE,
+                        "source_key", "legacy_id", "name", "category", "subcategory", "magic", "rarity",
+                        "attunement", "attunement_condition", "cost_cp", "cost_display", "weight", "damage",
+                        "armor_class", "description", "source_version", "source_url", "source_properties_text",
+                        "source_tags_text")
+                .primaryKey(ItemsSchema.ENTRIES_TABLE, "source_key")
+                .table(ItemsSchema.TAGS_TABLE, "item_source_key", "tag")
+                .primaryKey(ItemsSchema.TAGS_TABLE, "item_source_key", "tag")
+                .foreignKey(ItemsSchema.TAGS_TABLE, ItemsSchema.ENTRIES_TABLE, "CASCADE",
+                        SqliteSchemaValidator.reference("item_source_key", "source_key"))
+                .index("idx_items_catalog_name", ItemsSchema.ENTRIES_TABLE, false, "name")
+                .index("idx_items_catalog_category", ItemsSchema.ENTRIES_TABLE,
+                        false, "category", "subcategory")
+                .index("idx_items_catalog_rarity", ItemsSchema.ENTRIES_TABLE, false, "rarity")
+                .index("idx_items_catalog_cost", ItemsSchema.ENTRIES_TABLE, false, "cost_cp")
+                .index("idx_items_catalog_tag", ItemsSchema.TAGS_TABLE, false, "tag")
+                .build();
         return FeatureStoreDefinition.validated(
                 OWNER,
-                schema::validateTarget,
+                targetSchema,
                 new SqliteMigration(1, schema::migrateV1),
                 new SqliteMigration(SCHEMA_VERSION, schema::migrateV2));
     }

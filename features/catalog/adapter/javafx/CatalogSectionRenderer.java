@@ -3,10 +3,12 @@ package features.catalog.adapter.javafx;
 import features.catalog.application.CatalogActionSpec;
 import features.catalog.application.CatalogChoice;
 import features.catalog.application.CatalogColumnSpec;
+import features.catalog.application.CatalogConfirmation;
 import features.catalog.application.CatalogFilterSpec;
 import features.catalog.application.CatalogPresentationSpec;
 import features.catalog.application.CatalogResultState;
 import features.catalog.application.CatalogSectionDefinition;
+import features.catalog.application.CatalogSectionCommands;
 import features.catalog.application.CatalogSectionId;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -182,9 +184,9 @@ final class CatalogSectionRenderer {
             confirmationMessage.setAccessibleText("Ungespeicherte Änderungen bestätigen");
             Button confirm = controls.action(
                     "Verwerfen und öffnen", "Verwerfen und öffnen", true);
-            confirm.setOnAction(ignored -> this.commands.confirm().run());
+            confirm.setOnAction(ignored -> this.commands.confirm().accept(state.confirmation()));
             Button cancel = controls.action("Abbrechen", "Öffnen abbrechen", false);
-            cancel.setOnAction(ignored -> this.commands.cancel().run());
+            cancel.setOnAction(ignored -> this.commands.cancel().accept(state.confirmation()));
             confirmationActions.getChildren().setAll(confirm, cancel);
             controlPane.getStyleClass().add("catalog-section-surface");
             controlPane.getChildren().setAll(filterPane, chips, sectionActions, actionMessage,
@@ -300,7 +302,7 @@ final class CatalogSectionRenderer {
             }
         }
 
-        private void renderConfirmation(CatalogRenderState.Confirmation<K> confirmation) {
+        private void renderConfirmation(CatalogConfirmation<K> confirmation) {
             boolean visible = confirmation.required();
             confirmationMessage.setText(visible
                     ? confirmation.label() + " öffnen und ungespeicherte Änderungen verwerfen?" : "");

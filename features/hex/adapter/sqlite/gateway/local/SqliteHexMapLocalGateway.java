@@ -6,6 +6,8 @@ import features.hex.adapter.sqlite.model.HexMarkerRecord;
 import platform.persistence.FeatureStoreDefinition;
 import platform.persistence.FeatureStoreHandle;
 import platform.persistence.SqliteMigration;
+import platform.persistence.SqliteSchemaValidator;
+import features.hex.adapter.sqlite.model.HexPersistenceSchema;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -19,9 +21,26 @@ public final class SqliteHexMapLocalGateway {
 
     public static FeatureStoreDefinition storeDefinition() {
         HexSqliteSchemaMigrator schemaMigrator = new HexSqliteSchemaMigrator();
-        return FeatureStoreDefinition.of(
-                "hex",
-                new SqliteMigration(1, schemaMigrator::ensureSchema));
+        SqliteSchemaValidator targetSchema = SqliteSchemaValidator.builder()
+                .table(HexPersistenceSchema.MAPS_TABLE, "map_id", "display_name", "radius", "updated_at")
+                .primaryKey(HexPersistenceSchema.MAPS_TABLE, "map_id")
+                .table(HexPersistenceSchema.CURRENT_MAP_TABLE, "singleton_id", "map_id")
+                .primaryKey(HexPersistenceSchema.CURRENT_MAP_TABLE, "singleton_id")
+                .table(HexPersistenceSchema.TILES_TABLE, "map_id", "q", "r")
+                .primaryKey(HexPersistenceSchema.TILES_TABLE, "map_id", "q", "r")
+                .table(HexPersistenceSchema.TERRAIN_OVERRIDES_TABLE, "map_id", "q", "r", "terrain")
+                .primaryKey(HexPersistenceSchema.TERRAIN_OVERRIDES_TABLE, "map_id", "q", "r")
+                .table(HexPersistenceSchema.MARKERS_TABLE,
+                        "map_id", "marker_id", "q", "r", "name", "marker_type", "note")
+                .primaryKey(HexPersistenceSchema.MARKERS_TABLE, "map_id", "marker_id")
+                .index("idx_hex_tiles_order", HexPersistenceSchema.TILES_TABLE, false, "map_id", "q", "r")
+                .index("idx_hex_terrain_order", HexPersistenceSchema.TERRAIN_OVERRIDES_TABLE,
+                        false, "map_id", "q", "r")
+                .index("idx_hex_markers_tile", HexPersistenceSchema.MARKERS_TABLE,
+                        false, "map_id", "q", "r")
+                .build();
+        return FeatureStoreDefinition.validated(
+                "hex", targetSchema, new SqliteMigration(1, schemaMigrator::ensureSchema));
     }
 
     public SqliteHexMapLocalGateway(FeatureStoreHandle store) {

@@ -3,7 +3,6 @@ package features.catalog.application;
 import features.catalog.application.CatalogApplicationRoutes.EncounterHandoff;
 import features.catalog.application.CatalogApplicationRoutes.SceneHandoff;
 import features.catalog.application.CatalogApplicationRoutes.WorldInspectorRoutes;
-import features.catalog.application.WorldReferenceCatalogState.LocationRow;
 import features.encountertable.api.EncounterTableCatalogModel;
 import features.worldplanner.api.WorldLocationSummary;
 import features.worldplanner.api.WorldPlannerReadStatus;
@@ -18,7 +17,7 @@ import java.util.function.Consumer;
 
 /** Location provider projection and explicit Location actions. */
 public final class LocationCatalogDefinition
-        implements CatalogSectionDefinition<TextCatalogQuery, LocationRow, Long> {
+        implements CatalogSectionDefinition<TextCatalogQuery, LocationCatalogRow, Long> {
 
     private final WorldPlannerSnapshotModel world;
     private final EncounterTableCatalogModel tables;
@@ -45,7 +44,7 @@ public final class LocationCatalogDefinition
     @Override public TextCatalogQuery initialQuery() { return TextCatalogQuery.empty(); }
 
     @Override
-    public CompletionStage<CatalogBrowseResult<TextCatalogQuery, LocationRow>> query(
+    public CompletionStage<CatalogBrowseResult<TextCatalogQuery, LocationCatalogRow>> query(
             CatalogBrowseRequest<TextCatalogQuery> request
     ) {
         return CompletableFuture.completedFuture(CatalogBrowseResult.firstPage(
@@ -54,16 +53,16 @@ public final class LocationCatalogDefinition
                 providerRevision.incrementAndGet()));
     }
 
-    @Override public Long key(LocationRow row) { return row.locationId(); }
+    @Override public Long key(LocationCatalogRow row) { return row.locationId(); }
 
     @Override
-    public CatalogPresentationSpec<TextCatalogQuery, LocationRow, Long> presentation() {
+    public CatalogPresentationSpec<TextCatalogQuery, LocationCatalogRow, Long> presentation() {
         return new CatalogPresentationSpec<>(
-                "Ortskatalog", "Orte", LocationRow::displayName,
+                "Ortskatalog", "Orte", LocationCatalogRow::displayName,
                 List.of(textFilter("Orte suchen …", "Orte suchen")),
                 List.of(
-                        new CatalogColumnSpec<>("Name", LocationRow::displayName),
-                        new CatalogColumnSpec<>("Details", LocationRow::details)),
+                        new CatalogColumnSpec<>("Name", LocationCatalogRow::displayName),
+                        new CatalogColumnSpec<>("Details", LocationCatalogRow::details)),
                 Optional.of(new CatalogActionSpec(
                         CatalogActionId.OPEN, "Details öffnen", "Ort im Inspector öffnen", "Öffnen",
                         CatalogActionSpec.Emphasis.SECONDARY)),

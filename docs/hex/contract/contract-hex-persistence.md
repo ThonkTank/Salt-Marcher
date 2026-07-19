@@ -85,6 +85,8 @@ that absence MUST round-trip as "no note" and MUST NOT change marker identity.
 
 ## Validation And Error Behavior
 
+Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
+
 - Loading malformed marker type, blank marker name, invalid map radius, or
   out-of-radius tile coordinates MUST fail visibly to the caller instead of
   silently repairing stored truth.

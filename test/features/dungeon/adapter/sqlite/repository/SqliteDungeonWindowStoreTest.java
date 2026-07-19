@@ -274,7 +274,7 @@ final class SqliteDungeonWindowStoreTest {
                     "owner-approved v6 replacement must not publish pre-dependency Dungeon rows");
         }
         try (Connection connection = open(path)) {
-            assertEquals(6, scalarInt(connection,
+            assertEquals(7, scalarInt(connection,
                     "SELECT version FROM sm_schema_versions WHERE owner='dungeon'"));
             assertEquals(0, scalarInt(connection, "SELECT COUNT(*) FROM dungeon_maps"));
             assertEquals(0, scalarInt(connection,

@@ -1,6 +1,8 @@
 package features.catalog.adapter.javafx;
 
+import features.catalog.application.CatalogConfirmation;
 import features.catalog.application.CatalogResultState;
+import features.catalog.application.CatalogSectionState;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -14,7 +16,7 @@ record CatalogRenderState<Q, R, K>(
         int pageOffset,
         int totalCount,
         String actionMessage,
-        Confirmation<K> confirmation
+        CatalogConfirmation<K> confirmation
 ) {
     CatalogRenderState {
         revision = Math.max(0L, revision);
@@ -28,15 +30,14 @@ record CatalogRenderState<Q, R, K>(
         confirmation = Objects.requireNonNull(confirmation, "confirmation");
     }
 
-    record Confirmation<K>(long revision, Optional<K> key, String label, boolean required) {
-        Confirmation {
-            revision = Math.max(0L, revision);
-            key = Objects.requireNonNull(key, "key");
-            label = Objects.requireNonNullElse(label, "");
-        }
-
-        static <K> Confirmation<K> none() {
-            return new Confirmation<>(0L, Optional.empty(), "", false);
-        }
+    static <Q, R, K> CatalogRenderState<Q, R, K> from(
+            long workspaceRevision,
+            CatalogSectionState<Q, R, K> state,
+            String actionMessage,
+            CatalogConfirmation<K> confirmation
+    ) {
+        CatalogSectionState<Q, R, K> source = Objects.requireNonNull(state, "state");
+        return new CatalogRenderState<>(workspaceRevision, source.draft(), source.result(), source.selectedKey(),
+                source.pageSize(), source.pageOffset(), source.totalCount(), actionMessage, confirmation);
     }
 }
