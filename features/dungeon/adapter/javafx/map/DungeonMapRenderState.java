@@ -178,6 +178,82 @@ DungeonMapRenderState withSelectedTool(String nextSelectedTool) {
             partyToken);
 }
 
+DungeonMapRenderState baseLayerProjection() {
+    return withLayerPrimitives(
+            cells.stream().filter(cell -> !cell.preview()).map(DungeonMapRenderState::unselected).toList(),
+            edges.stream().filter(edge -> !edge.preview()).map(DungeonMapRenderState::unselected).toList(),
+            labels.stream().filter(label -> !label.preview()).map(DungeonMapRenderState::unselected).toList(),
+            markers.stream()
+                    .filter(marker -> !marker.preview() && marker.handle().ref() == null)
+                    .map(DungeonMapRenderState::unselected)
+                    .toList(),
+            graphNodes.stream().map(DungeonMapRenderState::unselected).toList(),
+            graphLinks.stream().map(DungeonMapRenderState::unselected).toList(),
+            null);
+}
+
+DungeonMapRenderState interactionLayerProjection() {
+    return withLayerPrimitives(
+            cells.stream().filter(cell -> cell.preview() || cell.selected()).toList(),
+            edges.stream().filter(edge -> edge.preview() || edge.selected()).toList(),
+            labels.stream().filter(label -> label.preview() || label.selected()).toList(),
+            markers.stream()
+                    .filter(marker -> marker.preview() || marker.selected() || marker.handle().ref() != null)
+                    .toList(),
+            graphNodes.stream().filter(GraphNode::selected).toList(),
+            graphLinks.stream().filter(GraphLink::selected).toList(),
+            null);
+}
+
+DungeonMapRenderState actorLayerProjection() {
+    return withLayerPrimitives(
+            List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), partyToken);
+}
+
+private DungeonMapRenderState withLayerPrimitives(
+        List<Cell> layerCells,
+        List<Edge> layerEdges,
+        List<Label> layerLabels,
+        List<Marker> layerMarkers,
+        List<GraphNode> layerGraphNodes,
+        List<GraphLink> layerGraphLinks,
+        PartyToken layerPartyToken
+) {
+    return new DungeonMapRenderState(
+            title, projectionAvailable, width, height, topology, viewMode, overlaySettings,
+            projectionLevel, editorMode, selectedTool, emptyMessage, layerCells, layerEdges,
+            layerLabels, layerMarkers, layerGraphNodes, layerGraphLinks, layerPartyToken);
+}
+
+private static Cell unselected(Cell cell) {
+    return new Cell(cell.q(), cell.r(), cell.z(), cell.label(), cell.kind(), cell.ownerId(),
+            cell.clusterId(), cell.topologyRef(), false, cell.overlay(), false, false);
+}
+
+private static Edge unselected(Edge edge) {
+    return new Edge(edge.startQ(), edge.startR(), edge.endQ(), edge.endR(), edge.z(), edge.kind(),
+            edge.label(), edge.ownerId(), edge.topologyRef(), false, false);
+}
+
+private static Label unselected(Label label) {
+    return new Label(label.label(), label.q(), label.r(), label.z(), label.ownerId(), label.clusterId(),
+            label.topologyRef(), label.labelKind(), false, false, label.availableWidthScene(),
+            label.rotationDegrees());
+}
+
+private static Marker unselected(Marker marker) {
+    return new Marker(marker.label(), marker.q(), marker.r(), marker.z(), marker.kind(), false,
+            marker.handle(), false, marker.sourceEdge(), marker.hoverLabel());
+}
+
+private static GraphNode unselected(GraphNode node) {
+    return new GraphNode(node.id(), node.clusterId(), node.label(), node.q(), node.r(), false);
+}
+
+private static GraphLink unselected(GraphLink link) {
+    return new GraphLink(link.fromId(), link.toId(), false);
+}
+
 static DungeonMapRenderState empty(String title, boolean editorMode) {
     return new DungeonMapRenderState(
             title,
