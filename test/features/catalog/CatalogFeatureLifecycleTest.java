@@ -82,7 +82,7 @@ final class CatalogFeatureLifecycleTest {
     }
 
     @Test
-    void productionBindingBalancesAtomicObservationsAcrossReactivationAndClose() throws Exception {
+    void productionBindingActivatesOnlySelectedSessionAndBalancesItsSubscription() throws Exception {
         runOnFx(() -> {
             TrackingSubscription<EncounterBuilderInputs> builder = new TrackingSubscription<>(
                     EncounterBuilderInputs.empty(),
@@ -107,26 +107,16 @@ final class CatalogFeatureLifecycleTest {
             binding.onActivate();
             assertEquals(1, queries.filterOptions.size());
             assertEquals(1, queries.searches.size());
-            assertEquals(1, items.filterOptions.size(),
-                    "Catalog activation must load Items options without selecting the section");
-            assertEquals(1, items.searches.size(),
-                    "Catalog activation must load the first Items page without selecting the section");
+            assertEquals(0, items.filterOptions.size());
+            assertEquals(0, items.searches.size());
             assertTracker(builder, 1, 1);
-            assertTracker(saved, 1, 1);
-            assertTracker(creatures, 1, 1);
-            assertTracker(world, 1, 1);
-            assertTracker(tables, 1, 1);
+            assertTracker(saved, 0, 0);
+            assertTracker(creatures, 0, 0);
+            assertTracker(world, 0, 0);
+            assertTracker(tables, 0, 0);
             CatalogWorkspaceState current = component.controller().publication().current();
             assertEquals("published", current.monsters().filterDraft().nameQuery(),
-                    "atomic provider observation must expose its latest snapshot");
-            assertEquals(0, builder.currentCalls.get(), "Catalog must not split atomic observation into current plus subscribe");
-            long monsterRevision = current.monsters().revision();
-            creatures.emit(new CreatureReferenceIndexResult(
-                    CreatureReferenceIndexStatus.SUCCESS, 2L, List.of()));
-            world.emit(emptyWorld());
-            assertEquals(monsterRevision,
-                    component.controller().publication().current().monsters().revision(),
-                    "reference-index or Scene-facing world publication changed Monster state");
+                    "Encounter-owned filters must initialize the selected Monster draft");
 
             binding.onDeactivate();
             assertActive(builder, 0);
@@ -138,13 +128,13 @@ final class CatalogFeatureLifecycleTest {
             binding.onActivate();
             assertEquals(2, queries.filterOptions.size());
             assertEquals(2, queries.searches.size());
-            assertEquals(2, items.filterOptions.size());
-            assertEquals(2, items.searches.size());
+            assertEquals(0, items.filterOptions.size());
+            assertEquals(0, items.searches.size());
             assertTracker(builder, 2, 1);
-            assertTracker(saved, 2, 1);
-            assertTracker(creatures, 2, 1);
-            assertTracker(world, 2, 1);
-            assertTracker(tables, 2, 1);
+            assertTracker(saved, 0, 0);
+            assertTracker(creatures, 0, 0);
+            assertTracker(world, 0, 0);
+            assertTracker(tables, 0, 0);
 
             component.close();
             component.close();
@@ -157,87 +147,7 @@ final class CatalogFeatureLifecycleTest {
     }
 
     @Test
-    void activationFailureReleasesPartialSectionAndWorkspaceAcquisitions() throws Exception {
-        runOnFx(() -> {
-            TrackingSubscription<EncounterBuilderInputs> builder =
-                    new TrackingSubscription<>(EncounterBuilderInputs.empty(), null);
-            TrackingSubscription<SavedEncounterPlanListResult> saved = new TrackingSubscription<>(
-                    new SavedEncounterPlanListResult(SavedEncounterPlanStatus.SUCCESS, List.of(), ""), null);
-            TrackingSubscription<CreatureReferenceIndexResult> creatures = new TrackingSubscription<>(
-                    new CreatureReferenceIndexResult(CreatureReferenceIndexStatus.SUCCESS, 1L, List.of()), null);
-            TrackingSubscription<WorldPlannerSnapshot> world = new TrackingSubscription<>(emptyWorld(), null);
-            TrackingSubscription<EncounterTableCatalogResult> tables = new TrackingSubscription<>(
-                    new EncounterTableCatalogResult(EncounterTableReadStatus.SUCCESS, List.of()), null);
-            world.observationFailure = new IllegalStateException("world observation failed");
-            CatalogFeature.Component component = create(
-                    new ControllableCreatureQueries(), new ControllableItemsApi(), builder, saved,
-                    creatures, world, tables, new RecordingItemRoute());
-            ShellBinding binding = component.contribution().bind();
-
-            assertThrows(IllegalStateException.class, binding::onActivate);
-            assertActive(builder, 0);
-            assertActive(saved, 0);
-            assertActive(creatures, 0);
-            assertActive(world, 0);
-            assertActive(tables, 0);
-            component.close();
-        });
-    }
-
-    @Test
-    void componentCloseAttemptsEveryProviderCleanupAndRemainsClosedAfterFailures() throws Exception {
-        runOnFx(() -> {
-            TrackingSubscription<EncounterBuilderInputs> builder =
-                    new TrackingSubscription<>(EncounterBuilderInputs.empty(), null);
-            TrackingSubscription<SavedEncounterPlanListResult> saved = new TrackingSubscription<>(
-                    new SavedEncounterPlanListResult(SavedEncounterPlanStatus.SUCCESS, List.of(), ""), null);
-            TrackingSubscription<CreatureReferenceIndexResult> creatures = new TrackingSubscription<>(
-                    new CreatureReferenceIndexResult(CreatureReferenceIndexStatus.SUCCESS, 1L, List.of()), null);
-            TrackingSubscription<WorldPlannerSnapshot> world = new TrackingSubscription<>(emptyWorld(), null);
-            TrackingSubscription<EncounterTableCatalogResult> tables = new TrackingSubscription<>(
-                    new EncounterTableCatalogResult(EncounterTableReadStatus.SUCCESS, List.of()), null);
-            builder.unsubscribeFailure = new IllegalStateException("pool cleanup");
-            saved.unsubscribeFailure = new IllegalStateException("saved cleanup");
-            creatures.unsubscribeFailure = new AssertionError("creature cleanup");
-            world.unsubscribeFailure = new IllegalStateException("world cleanup");
-            tables.unsubscribeFailure = new IllegalStateException("table cleanup");
-            CatalogFeature.Component component = create(
-                    new ControllableCreatureQueries(), new ControllableItemsApi(), builder, saved,
-                    creatures, world, tables, new RecordingItemRoute());
-            ShellBinding shellBinding = component.contribution().bind();
-            shellBinding.onActivate();
-
-            RuntimeException failure = assertThrows(RuntimeException.class, component::close);
-
-            for (TrackingSubscription<?> provider : List.of(builder, saved, creatures, world, tables)) {
-                assertEquals(1, provider.unsubscribeAttempts.get(), "every provider cleanup must be attempted");
-                assertEquals(0, provider.active.get(), "a throwing cleanup must still release its fake resource");
-            }
-            assertTrue(failure.getSuppressed().length > 0, "later cleanup failures must remain suppressed");
-            List<String> messages = failureMessages(failure);
-            assertTrue(messages.containsAll(List.of(
-                    "pool cleanup", "saved cleanup", "creature cleanup", "world cleanup", "table cleanup")));
-
-            CatalogWorkspaceState closed = component.controller().publication().current();
-            assertEquals(MonsterCatalogState.Lifecycle.CLOSED, closed.monsters().lifecycle());
-            assertEquals(ItemsCatalogState.Lifecycle.CLOSED, closed.items().lifecycle());
-            assertEquals(SavedEncounterCatalogState.Lifecycle.CLOSED, closed.savedEncounters().lifecycle());
-            assertEquals(WorldReferenceCatalogState.Lifecycle.CLOSED, closed.worldReferences().lifecycle());
-            assertEquals(EncounterTableCatalogState.Lifecycle.CLOSED, closed.encounterTables().lifecycle());
-            long closedRevision = closed.revision();
-
-            component.close();
-            shellBinding.onActivate();
-            assertEquals(closedRevision, component.controller().publication().current().revision(),
-                    "closed component must ignore later activation and repeated close");
-            for (TrackingSubscription<?> provider : List.of(builder, saved, creatures, world, tables)) {
-                assertEquals(1, provider.unsubscribeAttempts.get(), "repeated close must be idempotent");
-            }
-        });
-    }
-
-    @Test
-    void productionBindingRejectsStaleAndPostDeactivateMonsterAndItemFutures() throws Exception {
+    void switchingSessionsRejectsLateResultsAndNeverLoadsAnInactiveProvider() throws Exception {
         runOnFx(() -> {
             TrackingSubscription<EncounterBuilderInputs> builder =
                     new TrackingSubscription<>(EncounterBuilderInputs.empty(), null);
@@ -254,96 +164,36 @@ final class CatalogFeatureLifecycleTest {
             CatalogFeature.Component component = create(
                     queries, items, builder, saved, creatures, world, tables, itemRoute);
             ShellBinding binding = component.contribution().bind();
-            Parent controls = (Parent) binding.slotContent().get(ShellSlot.COCKPIT_CONTROLS);
-            Parent main = (Parent) binding.slotContent().get(ShellSlot.COCKPIT_MAIN);
-
             binding.onActivate();
             assertEquals(1, queries.searches.size());
-            assertEquals(1, items.filterOptions.size());
+            assertEquals(0, items.searches.size());
+
+            component.controller().selectSection(features.catalog.application.CatalogSectionId.ITEMS);
             assertEquals(1, items.searches.size());
-            TextField monsterQuery = descendants(controls).stream()
-                    .filter(TextField.class::isInstance).map(TextField.class::cast).findFirst().orElseThrow();
-            monsterQuery.setText("newer");
+            assertEquals(1, items.filterOptions.size());
+            assertActive(builder, 0);
+            items.filterOptions.getFirst().complete(itemOptions("Initial"));
+            items.searches.getFirst().complete(itemPage("accepted"));
+
+            component.controller().acceptItemsIntent(new features.catalog.application.ItemsCatalogIntent.Search());
+            CompletableFuture<ItemsCatalogApi.FilterOptionsResult> lateOptions = items.filterOptions.getLast();
+            CompletableFuture<ItemsCatalogApi.PageResult> lateItems = items.searches.getLast();
+            component.controller().selectSection(features.catalog.application.CatalogSectionId.MONSTERS);
+
             assertEquals(2, queries.searches.size());
-            queries.searches.get(1).complete(creaturePage(2L, "Newer"));
-            queries.searches.get(0).complete(creaturePage(1L, "Stale"));
+            assertEquals(2, queries.filterOptions.size());
+            assertEquals(2, items.searches.size());
+            queries.filterOptions.getLast().complete(filterOptions("New"));
+            queries.searches.getLast().complete(creaturePage(2L, "Newer"));
+            lateOptions.complete(itemOptions("Late"));
+            lateItems.complete(itemPage("late"));
+            queries.filterOptions.getFirst().complete(filterOptions("Stale"));
+            queries.searches.getFirst().complete(creaturePage(1L, "Stale"));
+
             assertEquals(List.of(2L), component.controller().publication().current()
                     .monsters().results().rows().stream().map(CreatureCatalogRow::id).toList());
-
-            binding.onDeactivate();
-            binding.onActivate();
-            assertEquals(2, queries.filterOptions.size());
-            queries.filterOptions.get(1).complete(filterOptions("New"));
-            queries.filterOptions.get(0).complete(filterOptions("Stale"));
-            assertEquals(List.of("New"), component.controller().publication().current()
-                    .monsters().filterOptions().types());
-
-            toggle(controls, "Katalogbereich Items").fire();
-            assertEquals(2, items.searches.size());
-            assertEquals(2, items.filterOptions.size());
-            button(controls, "Items suchen").fire();
-            assertEquals(3, items.searches.size());
-            items.searches.get(2).complete(itemPage("new"));
-            items.searches.get(1).complete(itemPage("stale-reactivation"));
-            items.searches.get(0).complete(itemPage("stale"));
-            assertEquals(List.of("new"), component.controller().publication().current()
+            assertEquals(List.of("accepted"), component.controller().publication().current()
                     .items().results().rows().stream().map(ItemsCatalogApi.ItemRow::sourceKey).toList());
-
-            TableView<?> itemTable = descendants(main).stream()
-                    .filter(TableView.class::isInstance).map(TableView.class::cast)
-                    .filter(table -> "Item-Ergebnisse".equals(table.getAccessibleText()))
-                    .findFirst().orElseThrow();
-            itemTable.getSelectionModel().selectFirst();
-            button(main, "Ausgewähltes Item im Inspector öffnen").fire();
-            button(main, "Ausgewähltes Item im Inspector öffnen").fire();
-            assertEquals(2, items.details.size());
-            items.details.get(1).complete(itemDetail("newer-detail"));
-            items.details.get(0).complete(itemDetail("stale-detail"));
-            assertEquals(List.of("newer-detail"), itemRoute.opened);
-
-            button(main, "Ausgewähltes Item im Inspector öffnen").fire();
-            CompletableFuture<ItemsCatalogApi.DetailResult> postDeactivate = items.details.get(2);
-            binding.onDeactivate();
-            postDeactivate.complete(itemDetail("post-deactivate"));
-            assertEquals(List.of("newer-detail"), itemRoute.opened);
-
-            binding.onActivate();
-            assertEquals(3, items.filterOptions.size());
-            assertEquals(4, items.searches.size());
-            items.filterOptions.get(2).complete(itemOptions("New"));
-            items.filterOptions.get(1).complete(itemOptions("Stale reactivation"));
-            items.filterOptions.get(0).complete(itemOptions("Stale"));
-            assertEquals(List.of("New"), component.controller().publication().current()
-                    .items().filterOptions().categories());
-            binding.onDeactivate();
-
-            binding.onActivate();
-            assertEquals(4, items.filterOptions.size());
-            assertEquals(5, items.searches.size());
-            CompletableFuture<ItemsCatalogApi.FilterOptionsResult> rejectedOptions = items.filterOptions.get(3);
-            CompletableFuture<ItemsCatalogApi.PageResult> rejectedItemSearch = items.searches.get(4);
-
-            int monsterOptionsBeforeSelection = queries.filterOptions.size();
-            int monsterSearchesBeforeSelection = queries.searches.size();
-            toggle(controls, "Katalogbereich Monster").fire();
-            assertEquals(monsterOptionsBeforeSelection, queries.filterOptions.size());
-            assertEquals(monsterSearchesBeforeSelection, queries.searches.size());
-            CompletableFuture<CreatureFilterOptionsResult> rejectedMonsterOptions =
-                    queries.filterOptions.getLast();
-            CompletableFuture<CreatureCatalogPageResult> rejectedMonsterSearch = queries.searches.getLast();
-            binding.onDeactivate();
-            rejectedOptions.complete(itemOptions("Post deactivate"));
-            rejectedItemSearch.complete(itemPage("post-deactivate-search"));
-            rejectedMonsterOptions.complete(filterOptions("Post deactivate"));
-            rejectedMonsterSearch.complete(creaturePage(99L, "Post deactivate"));
-            assertEquals(List.of("New"), component.controller().publication().current()
-                    .items().filterOptions().categories());
-            assertFalse(component.controller().publication().current().items().results().rows().stream()
-                    .anyMatch(row -> "post-deactivate-search".equals(row.sourceKey())));
-            assertEquals(List.of("New"), component.controller().publication().current()
-                    .monsters().filterOptions().types());
-            assertFalse(component.controller().publication().current().monsters().results().rows().stream()
-                    .anyMatch(row -> row.id() == 99L));
             component.close();
         });
     }

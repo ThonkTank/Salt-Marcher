@@ -298,7 +298,9 @@ public final class CatalogTableScaffold<Row, Id> extends BorderPane {
 
     private static String statusText(CatalogResultState<?> result) {
         return switch (result.status()) {
+            case UNINITIALIZED -> "";
             case LOADING -> "Lade...";
+            case REFRESHING -> "Aktualisiere...";
             case READY -> "";
             case EMPTY -> "Keine Einträge gefunden.";
             case INVALID_INPUT -> result.message().isBlank() ? "Eingabe ist ungültig." : result.message();

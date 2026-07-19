@@ -123,6 +123,7 @@ public final class CatalogControlsRawInputTest {
             EncounterTuningSettings tuningBefore = runtime.builderInputs().current().tuning();
 
             textField(controls).setText("lich");
+            textField(controls).fireEvent(new javafx.event.ActionEvent());
 
             assertEquals(searchesBefore + 1, creatures.searches.get());
             assertEquals("lich", runtime.builderInputs().current().poolFilters().nameQuery());
@@ -163,9 +164,10 @@ public final class CatalogControlsRawInputTest {
             CreatureCatalogRow row = new CreatureCatalogRow(
                     41L, "Owlbear", "Large", "Monstrosity", "", "3", 700, 59, 13);
             section.render(new MonsterCatalogState(
-                    1L, 1L, 1L, MonsterCatalogState.Lifecycle.ACTIVE,
+                    1L,
                     MonsterCatalogFilterDraft.empty(), CreatureFilterOptions.empty(), MonsterCatalogSort.NAME_ASC,
-                    50, 0, 1, 41L, CatalogResultState.ready(List.of(row))));
+                    50, 0, 1, 41L, CatalogResultState.ready(List.of(row)),
+                    List.of(), List.of(), List.of()));
             Parent content = (Parent) section.content();
             Stage stage = show(content);
             TableView<?> table = descendants(content).stream().filter(TableView.class::isInstance)
@@ -240,20 +242,22 @@ public final class CatalogControlsRawInputTest {
 
     private static MonsterCatalogState monsterState(long selectedId, List<CreatureCatalogRow> rows) {
         return new MonsterCatalogState(
-                1L, 1L, 1L, MonsterCatalogState.Lifecycle.ACTIVE,
+                1L,
                 MonsterCatalogFilterDraft.empty(), CreatureFilterOptions.empty(), MonsterCatalogSort.NAME_ASC,
-                50, 0, rows.size(), selectedId, CatalogResultState.ready(rows));
+                50, 0, rows.size(), selectedId, CatalogResultState.ready(rows),
+                List.of(), List.of(), List.of());
     }
 
     private static MonsterCatalogState state(String name) {
         return new MonsterCatalogState(
-                1L, 1L, 1L, MonsterCatalogState.Lifecycle.ACTIVE,
+                1L,
                 new MonsterCatalogFilterDraft(
                         name, "", "", List.of(), List.of(), List.of(), List.of(), List.of(),
                         List.of(), List.of(), 0L),
                 new CreatureFilterOptions(
                         List.of("Medium"), List.of("Undead"), List.of(), List.of(), List.of(), List.of("1")),
-                MonsterCatalogSort.NAME_ASC, 50, 0, 0, 0L, CatalogResultState.ready(List.of()));
+                MonsterCatalogSort.NAME_ASC, 50, 0, 0, 0L, CatalogResultState.ready(List.of()),
+                List.of(), List.of(), List.of());
     }
 
     private static CatalogSection section(CatalogSectionId id) {

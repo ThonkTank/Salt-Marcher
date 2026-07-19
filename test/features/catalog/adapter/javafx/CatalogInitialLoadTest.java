@@ -21,6 +21,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
@@ -358,6 +359,9 @@ public final class CatalogInitialLoadTest {
         CheckBox faction = popupDescendant(CheckBox.class, "Scarlet Knives");
         faction.fire();
         selectComboItem(comboBox(controls), "#501 | Old Gate");
+        TextField search = descendants(controls).stream()
+                .filter(TextField.class::isInstance).map(TextField.class::cast).findFirst().orElseThrow();
+        search.fireEvent(new javafx.event.ActionEvent());
 
         EncounterBuilderInputsModel inputsModel = runtime.builderInputs();
         assertTrue(inputsModel.current().worldFactionIds().equals(List.of(1L)),

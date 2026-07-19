@@ -121,7 +121,7 @@ public final class ItemsCatalogUiTest {
 
             api.deferNextSearch();
             button(pane, "Items suchen").fire();
-            assertEquals("Lade...", label(pane, "Item-Ergebnisse Status").getText());
+            assertEquals("Aktualisiere...", label(pane, "Item-Ergebnisse Status").getText());
             api.completeDeferred(ItemsCatalogApi.CatalogStatus.SUCCESS, List.of(), 0);
             assertEquals("Keine Einträge gefunden.", label(pane, "Item-Ergebnisse Status").getText());
 
@@ -208,8 +208,8 @@ public final class ItemsCatalogUiTest {
             assertEquals("  rapier draft  ", text(pane, "Item-Name").getText());
             assertEquals("Seite 2 von 3", label(pane, "Item-Seite").getText());
             assertEquals(selected, table(pane, "Item-Ergebnisse").getSelectionModel().getSelectedItem());
-            assertEquals(callsBeforeSwitch, api.queries.size(),
-                    "section switching must not trigger a replacement Items query");
+            assertEquals(callsBeforeSwitch + 1, api.queries.size(),
+                    "reactivating Items must refresh once while retaining its browse state");
         });
     }
 
@@ -345,7 +345,7 @@ public final class ItemsCatalogUiTest {
                 new CatalogProviders.SavedEncounterProviders(savedPlans),
                 new CatalogProviders.WorldReferenceProviders(creatureReferences, world),
                 new CatalogProviders.EncounterTableProviders(tableCommands, tableModel),
-                platform.ui.DirectUiDispatcher.INSTANCE);
+                new platform.ui.JavaFxUiDispatcher());
     }
 
     private static CatalogRoutes routes(InspectorSink inspector) {

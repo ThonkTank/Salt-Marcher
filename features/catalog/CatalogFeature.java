@@ -2,6 +2,14 @@ package features.catalog;
 
 import features.catalog.application.CatalogWorkspaceController;
 import features.catalog.application.CatalogWorkspaceBinding;
+import features.catalog.application.CatalogSectionDefinitions;
+import features.catalog.application.EncounterTableCatalogDefinition;
+import features.catalog.application.FactionCatalogDefinition;
+import features.catalog.application.ItemsCatalogDefinition;
+import features.catalog.application.LocationCatalogDefinition;
+import features.catalog.application.MonsterCatalogDefinition;
+import features.catalog.application.NpcCatalogDefinition;
+import features.catalog.application.SavedEncounterCatalogDefinition;
 import java.util.Objects;
 import shell.api.ShellContribution;
 
@@ -14,17 +22,29 @@ public final class CatalogFeature {
     public static Component create(CatalogProviders providers, CatalogRoutes routes) {
         CatalogProviders requiredProviders = Objects.requireNonNull(providers, "providers");
         CatalogRoutes requiredRoutes = Objects.requireNonNull(routes, "routes");
+        CatalogSectionDefinitions definitions = new CatalogSectionDefinitions(
+                new MonsterCatalogDefinition(
+                        requiredProviders.monsters().queries(), requiredProviders.monsters().poolFilters(),
+                        requiredProviders.worldReferences().world(), requiredProviders.encounterTables().catalog(),
+                        requiredRoutes.creatureInspector(), requiredRoutes.encounter(), requiredRoutes.scene()),
+                new ItemsCatalogDefinition(
+                        requiredProviders.items().catalog(), requiredRoutes.itemInspector()),
+                new SavedEncounterCatalogDefinition(
+                        requiredProviders.savedEncounters().plans(), requiredRoutes.encounter()),
+                new NpcCatalogDefinition(
+                        requiredProviders.worldReferences().creatures(), requiredProviders.worldReferences().world(),
+                        requiredRoutes.worldInspectors(), requiredRoutes.encounter(), requiredRoutes.scene()),
+                new FactionCatalogDefinition(
+                        requiredProviders.worldReferences().world(), requiredProviders.encounterTables().catalog(),
+                        requiredRoutes.worldInspectors(), requiredRoutes.encounter()),
+                new LocationCatalogDefinition(
+                        requiredProviders.worldReferences().world(), requiredProviders.encounterTables().catalog(),
+                        requiredRoutes.worldInspectors(), requiredRoutes.encounter(), requiredRoutes.scene()),
+                new EncounterTableCatalogDefinition(
+                        requiredProviders.encounterTables().commands(), requiredProviders.encounterTables().catalog(),
+                        requiredRoutes.encounter()));
         CatalogWorkspaceController controller = new CatalogWorkspaceController(
-                requiredProviders.monsters().queries(),
-                requiredProviders.monsters().poolFilters(),
-                requiredProviders.items().catalog(),
-                requiredProviders.savedEncounters().plans(),
-                requiredProviders.worldReferences().creatures(),
-                requiredProviders.worldReferences().world(),
-                requiredProviders.encounterTables().commands(),
-                requiredProviders.encounterTables().catalog(),
-                requiredProviders.publicationDispatcher(),
-                requiredRoutes);
+                definitions, requiredProviders.publicationDispatcher());
         CatalogWorkspaceBinding binding = new CatalogWorkspaceBinding(controller.publication());
         features.catalog.adapter.javafx.CatalogContribution contribution =
                 new features.catalog.adapter.javafx.CatalogContribution(controller, binding);

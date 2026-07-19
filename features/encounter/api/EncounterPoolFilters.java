@@ -3,7 +3,7 @@ package features.encounter.api;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 
-/** Catalog-owned creature and source constraints used by Encounter generation. */
+/** Encounter-owned creature and source constraints used by Encounter generation. */
 public record EncounterPoolFilters(
         String nameQuery,
         String challengeRatingMin,

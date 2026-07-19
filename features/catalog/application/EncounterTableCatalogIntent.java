@@ -4,6 +4,7 @@ package features.catalog.application;
 public sealed interface EncounterTableCatalogIntent {
 
     record ChangeQuery(String query) implements EncounterTableCatalogIntent { }
+    record SubmitQuery() implements EncounterTableCatalogIntent { }
     record SelectTable(long tableId) implements EncounterTableCatalogIntent { }
     record UseAsEncounterSource(long tableId) implements EncounterTableCatalogIntent { }
 }

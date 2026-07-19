@@ -65,9 +65,12 @@ from refreshed `origin/main`.
 - M1 publication: PR #530 merged with required CI green.
 - Locally completed milestone: M2 migrates both supported Items predecessor shapes into
   the unambiguous version-2 target and passed literal `./gradlew check` on 2026-07-19.
-- Publication state: the M2 pull request and required CI are pending; M3 starts only
-  after that pull request merges.
-- No Greenfield production route has been implemented yet.
+- M2 publication: PR #531 merged with required CI green.
+- Locally completed milestone: M3 replaces the five section-controller lifecycles with
+  one typed `BrowseSession`, seven explicit definitions, selected-only activation,
+  retained immutable section state, 200 ms debounce, immediate submit, and stale-result rejection.
+- M3 publication state: the milestone pull request and required CI are pending; M4 starts
+  only after that pull request merges.
 
 ## M0: Target Lock And Baseline
 
@@ -207,6 +210,25 @@ is deleted with the last unchanged provider during the final compatibility clean
 - only the newest debounced or immediate request may publish
 - explicit details and handoffs retain accepted behavior
 - focused application tests and `./gradlew check` are green
+
+### M3 Implementation Evidence
+
+- `CatalogFeature` explicitly composes exactly seven typed definitions; the workspace
+  receives that complete set and contains no Provider construction or discovery.
+- one `BrowseSession<Q, R, K>` owns activation, subscription release, draft and committed
+  query, 200 ms debounce, immediate submit, request epoch, paging, stable selection,
+  provider revision, staleness, and all eight result states.
+- the five former controller families and their controller-specific lifecycle and request
+  tests are deleted; one shared state-machine test now proves debounce, latest-result wins,
+  stable selection, inactive invalidation, and subscription release.
+- production-route lifecycle proof shows initial Catalog activation makes zero Items,
+  saved-Encounter, NPC, faction, location, or Encounter Table requests and switches only
+  the selected session into an active provider lifetime.
+- Monster draft commits update Encounter-owned pool filters; unchanged readback is ignored
+  as an echo, while external readback replaces the visible draft and refreshes the query.
+- literal merge-blocking proof: the complete M3 suite returned `BUILD SUCCESSFUL in 6m 30s`;
+  after the composition-only boundary cleanup, the final unchanged-task rerun returned
+  `BUILD SUCCESSFUL in 4s` on the final code and documentation diff.
 
 ## M4: Single JavaFX Renderer
 

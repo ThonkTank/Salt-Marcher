@@ -121,7 +121,7 @@ final class CatalogTestRuntime {
                         new CatalogProviders.SavedEncounterProviders(encounter.savedPlans()),
                         new CatalogProviders.WorldReferenceProviders(creatures.referenceIndex(), worldPlanner),
                         new CatalogProviders.EncounterTableProviders(tables.application(), tables.catalog()),
-                        DirectUiDispatcher.INSTANCE),
+                        new platform.ui.JavaFxUiDispatcher()),
                 routes);
         return catalog.contribution();
     }

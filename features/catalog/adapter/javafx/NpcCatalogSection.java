@@ -29,6 +29,7 @@ public final class NpcCatalogSection implements CatalogSection {
                 this.intents.accept(new WorldReferenceCatalogIntent.ChangeNpcQuery(after));
             }
         });
+        query.setOnAction(ignored -> this.intents.accept(new WorldReferenceCatalogIntent.SubmitNpcQuery()));
         controls = new VBox(
                 CatalogSectionControls.intro(
                         "NPCs", "Öffne NPCs im Inspector oder übergib sie explizit an Encounter und Scene.",
