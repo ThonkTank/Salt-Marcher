@@ -43,6 +43,11 @@ final class DungeonCanonicalSchemaMigrationTest {
             assertFalse(tableExists(connection, "dungeon_room_cluster_vertices"));
             assertTrue(tableExists(connection, "dungeon_room_cells"));
             assertTrue(tableExists(connection, "dungeon_entity_chunks"));
+            assertTrue(tableExists(connection, "dungeon_authored_level_bounds"));
+            assertTrue(indexExists(connection, "idx_dungeon_entity_chunks_continuation"));
+            assertEquals(Set.of("dungeon_map_id", "entity_kind", "entity_id", "level_z", "chunk_q", "chunk_r",
+                            "minimum_q", "minimum_r", "maximum_q", "maximum_r", "entity_chunk_count"),
+                    columns(connection, "dungeon_entity_chunks"));
             assertTrue(tableExists(connection, "dungeon_corridor_route_cells"));
             assertTrue(tableExists(connection, "dungeon_corridor_route_dependencies"));
             assertEquals(

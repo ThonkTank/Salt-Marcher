@@ -12,11 +12,24 @@ public record DungeonWindow(
         long requestGeneration,
         List<DungeonWindowChunkHeader> chunkHeaders,
         List<DungeonWindowEntityFragment> fragments,
-        List<DungeonWindowContinuation> continuations
+        List<DungeonEntityChunkExtent> entityExtents,
+        List<DungeonAuthoredLevelBounds> authoredBounds,
+        DungeonContinuationPage continuationPage
 ) {
     public static final Comparator<DungeonPatchEntityRef> ENTITY_ORDER = Comparator
             .comparing(DungeonPatchEntityRef::kind)
             .thenComparingLong(DungeonPatchEntityRef::id);
+
+    public DungeonWindow(
+            DungeonMapHeader mapHeader,
+            long requestGeneration,
+            List<DungeonWindowChunkHeader> chunkHeaders,
+            List<DungeonWindowEntityFragment> fragments,
+            List<DungeonWindowContinuation> continuations
+    ) {
+        this(mapHeader, requestGeneration, chunkHeaders, fragments, List.of(), List.of(),
+                new DungeonContinuationPage(continuations, java.util.Optional.empty()));
+    }
 
     public DungeonWindow {
         mapHeader = Objects.requireNonNull(mapHeader, "mapHeader");
@@ -34,9 +47,20 @@ public record DungeonWindow(
                 DungeonWindowEntityFragment::entityRef, ENTITY_ORDER));
         fragments = List.copyOf(orderedFragments);
 
-        List<DungeonWindowContinuation> orderedContinuations = new ArrayList<>(
-                continuations == null ? List.of() : continuations);
-        orderedContinuations.sort(Comparator.comparing(DungeonWindowContinuation::entityRef, ENTITY_ORDER));
-        continuations = List.copyOf(orderedContinuations);
+        List<DungeonEntityChunkExtent> orderedExtents = new ArrayList<>(
+                entityExtents == null ? List.of() : entityExtents);
+        orderedExtents.sort(Comparator.comparing(DungeonEntityChunkExtent::entityRef, ENTITY_ORDER)
+                .thenComparing(DungeonEntityChunkExtent::chunk, DungeonWindowRequest.CHUNK_ORDER));
+        entityExtents = List.copyOf(orderedExtents);
+        List<DungeonAuthoredLevelBounds> orderedBounds = new ArrayList<>(
+                authoredBounds == null ? List.of() : authoredBounds);
+        orderedBounds.sort(Comparator.comparingInt(DungeonAuthoredLevelBounds::level));
+        authoredBounds = List.copyOf(orderedBounds);
+        continuationPage = continuationPage == null ? DungeonContinuationPage.empty() : continuationPage;
+    }
+
+    /** Compatibility projection for consumers that only need the current typed page entries. */
+    public List<DungeonWindowContinuation> continuations() {
+        return continuationPage.entries();
     }
 }

@@ -9,6 +9,10 @@ public interface DungeonWindowContentSource {
     /** Returns empty when map or any expected revision changed between index and content reads. */
     Optional<DungeonWindow> loadContent(DungeonWindowContentRequest request);
 
+    default Optional<DungeonContinuationPage> loadContinuationPage(DungeonContinuationPageRequest request) {
+        return Optional.empty();
+    }
+
     DungeonIdentityClosureResult loadIdentityClosure(DungeonIdentityClosureRequest request);
 
     DungeonTravelStartResult locateTravelStart(DungeonTravelStartRequest request);

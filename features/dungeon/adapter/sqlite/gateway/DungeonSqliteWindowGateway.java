@@ -21,6 +21,11 @@ import features.dungeon.application.authored.port.DungeonWindowChunkHeader;
 import features.dungeon.application.authored.port.DungeonWindowContinuation;
 import features.dungeon.application.authored.port.DungeonWindowEntityFragment;
 import features.dungeon.application.authored.port.DungeonWindowRequest;
+import features.dungeon.application.authored.port.DungeonAuthoredLevelBounds;
+import features.dungeon.application.authored.port.DungeonContinuationCursor;
+import features.dungeon.application.authored.port.DungeonContinuationPage;
+import features.dungeon.application.authored.port.DungeonContinuationPageRequest;
+import features.dungeon.application.authored.port.DungeonEntityChunkExtent;
 import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import java.sql.Connection;
@@ -47,6 +52,7 @@ public final class DungeonSqliteWindowGateway {
 
     private final DungeonSqliteConnectionSupport connectionSupport;
     private final AtomicInteger lastStatementCount = new AtomicInteger();
+    private final AtomicInteger lastContinuationRowsRead = new AtomicInteger();
     private final AtomicReference<List<String>> lastStatementSql = new AtomicReference<>(List.of());
     private final Runnable afterHeaderRead;
 
@@ -85,9 +91,17 @@ public final class DungeonSqliteWindowGateway {
                     return Optional.empty();
                 }
                 afterHeaderRead.run();
+                List<DungeonAuthoredLevelBounds> bounds = loadLevelBounds(
+                        connection, safeRequest.mapId().value(), safeRequest.chunkKeys(), queries);
+                DungeonContinuationPage page = loadContinuationPageSnapshot(
+                        connection,
+                        new DungeonContinuationPageRequest(
+                                safeRequest.mapId(), header.get().revision(), safeRequest.requestGeneration(),
+                                safeRequest.chunkKeys(), Optional.empty()),
+                        queries);
                 return Optional.of(new DungeonWindowIndex(
                         header.get(), safeRequest.requestGeneration(),
-                        loadChunkHeaders(connection, safeRequest, queries)));
+                        loadChunkHeaders(connection, safeRequest, queries), bounds, page));
             });
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to load Dungeon window index from SQLite.", exception);
@@ -121,6 +135,27 @@ public final class DungeonSqliteWindowGateway {
         }
     }
 
+    public Optional<DungeonContinuationPage> loadContinuationPage(DungeonContinuationPageRequest request) {
+        DungeonContinuationPageRequest safeRequest = Objects.requireNonNull(request, "request");
+        DungeonSqliteQueryCounter queries = new DungeonSqliteQueryCounter();
+        try (Connection connection = connectionSupport.openReadyConnection()) {
+            return DungeonSqliteReadSnapshot.read(connection, () -> {
+                Optional<DungeonMapHeader> header = loadMapHeader(
+                        connection, safeRequest.mapId().value(), queries);
+                if (header.isEmpty() || header.get().revision() != safeRequest.expectedMapRevision()) {
+                    return Optional.empty();
+                }
+                afterHeaderRead.run();
+                return Optional.of(loadContinuationPageSnapshot(connection, safeRequest, queries));
+            });
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load Dungeon continuation page from SQLite.", exception);
+        } finally {
+            lastStatementCount.set(queries.statements());
+            lastStatementSql.set(queries.preparedSql());
+        }
+    }
+
     /** Last sparse-read statement count, excluding connection setup and migrations. */
     public int lastStatementCount() {
         return lastStatementCount.get();
@@ -129,6 +164,11 @@ public final class DungeonSqliteWindowGateway {
     /** Last sparse-read SQL shapes for bounded-query diagnostics. */
     public List<String> lastStatementSql() {
         return lastStatementSql.get();
+    }
+
+    /** Rows consumed by the last continuation query, including its one-row lookahead. */
+    public int lastContinuationRowsRead() {
+        return lastContinuationRowsRead.get();
     }
 
     public DungeonIdentityClosureResult loadIdentityClosure(DungeonIdentityClosureRequest request) {
@@ -360,30 +400,16 @@ public final class DungeonSqliteWindowGateway {
         List<DungeonWindowChunkHeader> chunkHeaders = loadChunkHeaders(connection, request, queries);
         Map<DungeonPatchEntityRef, List<DungeonChunkKey>> requestedMemberships =
                 loadRequestedMemberships(connection, request, queries);
+        List<DungeonEntityChunkExtent> extents = loadRequestedExtents(connection, request, queries);
         List<DungeonWindowEntityFragment> fragments = DungeonSqliteWindowFragmentLoader.loadAll(
                 connection,
                 request.mapId().value(),
                 request.chunkKeys(),
                 requestedMemberships,
                 queries);
-        Map<DungeonPatchEntityRef, List<DungeonChunkKey>> allMemberships = loadAllMemberships(
-                connection,
-                request.mapId().value(),
-                requestedMemberships.keySet(),
-                queries);
-        List<DungeonWindowContinuation> continuations = new ArrayList<>();
-        Set<DungeonChunkKey> requestedKeys = Set.copyOf(request.chunkKeys());
-        for (Map.Entry<DungeonPatchEntityRef, List<DungeonChunkKey>> entry : requestedMemberships.entrySet()) {
-            List<DungeonChunkKey> offWindow = allMemberships.getOrDefault(entry.getKey(), List.of())
-                    .stream()
-                    .filter(key -> !requestedKeys.contains(key))
-                    .toList();
-            if (!offWindow.isEmpty()) {
-                continuations.add(new DungeonWindowContinuation(entry.getKey(), offWindow));
-            }
-        }
         return Optional.of(new DungeonWindow(
-                header.get(), request.requestGeneration(), chunkHeaders, fragments, continuations));
+                header.get(), request.requestGeneration(), chunkHeaders, fragments,
+                extents, List.of(), DungeonContinuationPage.empty()));
     }
 
     private DungeonIdentityClosureResult loadClosureSnapshot(
@@ -552,52 +578,140 @@ public final class DungeonSqliteWindowGateway {
         }
     }
 
-    private static Map<DungeonPatchEntityRef, List<DungeonChunkKey>> loadAllMemberships(
+    private static List<DungeonEntityChunkExtent> loadRequestedExtents(
             Connection connection,
-            long mapId,
-            Set<DungeonPatchEntityRef> refs,
+            DungeonWindowRequest request,
             DungeonSqliteQueryCounter queries
     ) throws SQLException {
-        if (refs.isEmpty()) {
-            return Map.of();
+        if (request.chunkKeys().isEmpty()) {
+            return List.of();
         }
-        Map<DungeonPatchEntityRef.Kind, List<Long>> idsByKind = new java.util.EnumMap<>(
-                DungeonPatchEntityRef.Kind.class);
-        for (DungeonPatchEntityRef ref : refs) {
-            idsByKind.computeIfAbsent(ref.kind(), ignored -> new ArrayList<>()).add(ref.id());
-        }
-        String predicate = idsByKind.entrySet().stream()
-                .map(entry -> "(entity_kind=? AND entity_id IN (" + String.join(",",
-                        java.util.Collections.nCopies(entry.getValue().size(), "?")) + "))")
-                .collect(java.util.stream.Collectors.joining(" OR "));
-        try (PreparedStatement statement = queries.prepare(connection,
-                "SELECT entity_kind, entity_id, level_z, chunk_q, chunk_r FROM "
-                        + DungeonPersistenceSchema.ENTITY_CHUNKS_TABLE
-                        + " WHERE dungeon_map_id=? AND (" + predicate + ")"
-                        + " ORDER BY entity_kind, entity_id, level_z, chunk_r, chunk_q")) {
-            int parameter = 1;
-            statement.setLong(parameter++, mapId);
-            for (Map.Entry<DungeonPatchEntityRef.Kind, List<Long>> entry : idsByKind.entrySet()) {
-                statement.setString(parameter++, entry.getKey().name());
-                for (Long id : entry.getValue()) {
-                    statement.setLong(parameter++, id);
+        String sql = "SELECT entity_kind,entity_id,level_z,chunk_q,chunk_r,"
+                + "minimum_q,minimum_r,maximum_q,maximum_r,entity_chunk_count FROM "
+                + DungeonPersistenceSchema.ENTITY_CHUNKS_TABLE
+                + " WHERE dungeon_map_id=? AND (" + exactChunkPredicate(request.chunkKeys().size()) + ")"
+                + " ORDER BY entity_kind,entity_id,level_z,chunk_r,chunk_q";
+        try (PreparedStatement statement = queries.prepare(connection, sql)) {
+            bindExactChunks(statement, request.mapId().value(), request.chunkKeys());
+            try (ResultSet rows = statement.executeQuery()) {
+                List<DungeonEntityChunkExtent> result = new ArrayList<>();
+                while (rows.next()) {
+                    DungeonChunkKey chunk = new DungeonChunkKey(request.mapId().value(),
+                            rows.getInt("level_z"), rows.getInt("chunk_q"), rows.getInt("chunk_r"));
+                    result.add(new DungeonEntityChunkExtent(
+                            ref(rows.getString("entity_kind"), rows.getLong("entity_id")), chunk,
+                            rows.getInt("minimum_q"), rows.getInt("minimum_r"),
+                            rows.getInt("maximum_q"), rows.getInt("maximum_r"),
+                            rows.getInt("entity_chunk_count")));
                 }
+                return List.copyOf(result);
+            }
+        }
+    }
+
+    private static List<DungeonAuthoredLevelBounds> loadLevelBounds(
+            Connection connection,
+            long mapId,
+            List<DungeonChunkKey> requestedChunks,
+            DungeonSqliteQueryCounter queries
+    ) throws SQLException {
+        List<Integer> levels = requestedChunks.stream().map(DungeonChunkKey::level).distinct().sorted().toList();
+        if (levels.isEmpty()) {
+            return List.of();
+        }
+        String sql = "SELECT level_z,minimum_q,minimum_r,maximum_q,maximum_r FROM "
+                + DungeonPersistenceSchema.AUTHORED_LEVEL_BOUNDS_TABLE
+                + " WHERE dungeon_map_id=? AND level_z IN ("
+                + String.join(",", java.util.Collections.nCopies(levels.size(), "?")) + ") ORDER BY level_z";
+        Map<Integer, DungeonAuthoredLevelBounds> loaded = new LinkedHashMap<>();
+        try (PreparedStatement statement = queries.prepare(connection, sql)) {
+            statement.setLong(1, mapId);
+            for (int index = 0; index < levels.size(); index++) {
+                statement.setInt(index + 2, levels.get(index));
             }
             try (ResultSet rows = statement.executeQuery()) {
-                Map<DungeonPatchEntityRef, List<DungeonChunkKey>> mutable = new LinkedHashMap<>();
                 while (rows.next()) {
-                    DungeonPatchEntityRef ref = ref(rows.getString("entity_kind"), rows.getLong("entity_id"));
-                    mutable.computeIfAbsent(ref, ignored -> new ArrayList<>()).add(new DungeonChunkKey(
-                            mapId,
-                            rows.getInt("level_z"),
-                            rows.getInt("chunk_q"),
-                            rows.getInt("chunk_r")));
+                    int level = rows.getInt("level_z");
+                    loaded.put(level, new DungeonAuthoredLevelBounds(level, true,
+                            rows.getInt("minimum_q"), rows.getInt("minimum_r"),
+                            rows.getInt("maximum_q"), rows.getInt("maximum_r")));
                 }
-                Map<DungeonPatchEntityRef, List<DungeonChunkKey>> result = new LinkedHashMap<>();
-                mutable.forEach((ref, values) -> result.put(ref, List.copyOf(values)));
-                return Map.copyOf(result);
             }
         }
+        return levels.stream().map(level -> loaded.getOrDefault(level, DungeonAuthoredLevelBounds.empty(level)))
+                .toList();
+    }
+
+    private DungeonContinuationPage loadContinuationPageSnapshot(
+            Connection connection,
+            DungeonContinuationPageRequest request,
+            DungeonSqliteQueryCounter queries
+    ) throws SQLException {
+        if (request.requestedChunks().isEmpty()) {
+            lastContinuationRowsRead.set(0);
+            return DungeonContinuationPage.empty();
+        }
+        String requestedPredicate = exactChunkPredicate("seed", request.requestedChunks().size());
+        String excludedPredicate = exactChunkPredicate("off", request.requestedChunks().size());
+        String cursorPredicate = request.after().isPresent()
+                ? " AND (off.entity_kind,off.entity_id,off.level_z,off.chunk_r,off.chunk_q) > (?,?,?,?,?)"
+                : "";
+        String sql = "WITH requested_entities AS MATERIALIZED ("
+                + "SELECT DISTINCT seed.entity_kind,seed.entity_id FROM "
+                + DungeonPersistenceSchema.ENTITY_CHUNKS_TABLE + " seed WHERE seed.dungeon_map_id=? AND ("
+                + requestedPredicate + ")) SELECT DISTINCT off.entity_kind,off.entity_id,off.level_z,off.chunk_q,off.chunk_r"
+                + " FROM " + DungeonPersistenceSchema.ENTITY_CHUNKS_TABLE + " off"
+                + " JOIN requested_entities requested ON requested.entity_kind=off.entity_kind"
+                + " AND requested.entity_id=off.entity_id WHERE off.dungeon_map_id=?"
+                + " AND NOT (" + excludedPredicate + ")" + cursorPredicate
+                + " ORDER BY off.entity_kind,off.entity_id,off.level_z,off.chunk_r,off.chunk_q LIMIT 257";
+        try (PreparedStatement statement = queries.prepare(connection, sql)) {
+            int parameter = bindExactChunks(statement, request.mapId().value(), request.requestedChunks());
+            statement.setLong(parameter++, request.mapId().value());
+            parameter = bindExactChunks(statement, parameter, request.requestedChunks());
+            if (request.after().isPresent()) {
+                DungeonContinuationCursor cursor = request.after().get();
+                statement.setString(parameter++, cursor.entityRef().kind().name());
+                statement.setLong(parameter++, cursor.entityRef().id());
+                statement.setInt(parameter++, cursor.offWindowChunk().level());
+                statement.setInt(parameter++, cursor.offWindowChunk().chunkR());
+                statement.setInt(parameter, cursor.offWindowChunk().chunkQ());
+            }
+            List<ContinuationRow> rowsRead = new ArrayList<>();
+            try (ResultSet rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    rowsRead.add(new ContinuationRow(
+                            ref(rows.getString("entity_kind"), rows.getLong("entity_id")),
+                            new DungeonChunkKey(request.mapId().value(), rows.getInt("level_z"),
+                                    rows.getInt("chunk_q"), rows.getInt("chunk_r"))));
+                }
+            }
+            lastContinuationRowsRead.set(rowsRead.size());
+            boolean hasMore = rowsRead.size() > DungeonContinuationPageRequest.PAGE_SIZE;
+            List<ContinuationRow> pageRows = hasMore
+                    ? List.copyOf(rowsRead.subList(0, DungeonContinuationPageRequest.PAGE_SIZE))
+                    : List.copyOf(rowsRead);
+            Map<DungeonPatchEntityRef, List<DungeonChunkKey>> grouped = new LinkedHashMap<>();
+            pageRows.forEach(row -> grouped.computeIfAbsent(row.entityRef(), ignored -> new ArrayList<>())
+                    .add(row.offWindowChunk()));
+            List<DungeonWindowContinuation> entries = grouped.entrySet().stream()
+                    .map(entry -> new DungeonWindowContinuation(entry.getKey(), entry.getValue()))
+                    .toList();
+            Optional<DungeonContinuationCursor> next = Optional.empty();
+            if (hasMore) {
+                ContinuationRow last = pageRows.get(pageRows.size() - 1);
+                next = Optional.of(new DungeonContinuationCursor(
+                        request.mapId(), request.expectedMapRevision(), request.requestGeneration(),
+                        request.requestedChunks(), last.entityRef(), last.offWindowChunk()));
+            }
+            return new DungeonContinuationPage(entries, next);
+        }
+    }
+
+    private static String exactChunkPredicate(String alias, int chunkCount) {
+        return String.join(" OR ", java.util.Collections.nCopies(
+                chunkCount,
+                "(" + alias + ".level_z=? AND " + alias + ".chunk_q=? AND " + alias + ".chunk_r=?)"));
     }
 
     private static String exactChunkPredicate(int chunkCount) {
@@ -621,6 +735,19 @@ public final class DungeonSqliteWindowGateway {
         return parameter;
     }
 
+    private static int bindExactChunks(
+            PreparedStatement statement,
+            int parameter,
+            List<DungeonChunkKey> chunks
+    ) throws SQLException {
+        for (DungeonChunkKey chunk : chunks) {
+            statement.setInt(parameter++, chunk.level());
+            statement.setInt(parameter++, chunk.chunkQ());
+            statement.setInt(parameter++, chunk.chunkR());
+        }
+        return parameter;
+    }
+
     private static DungeonPatchEntityRef ref(String kind, long id) {
         try {
             return switch (DungeonPatchEntityRef.Kind.valueOf(kind)) {
@@ -635,4 +762,6 @@ public final class DungeonSqliteWindowGateway {
             throw new IllegalStateException("Unknown Dungeon entity membership kind: " + kind, exception);
         }
     }
+
+    private record ContinuationRow(DungeonPatchEntityRef entityRef, DungeonChunkKey offWindowChunk) { }
 }

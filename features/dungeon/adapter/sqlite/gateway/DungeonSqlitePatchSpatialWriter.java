@@ -68,17 +68,20 @@ final class DungeonSqlitePatchSpatialWriter {
             preliminaryMemberships.put(ref, record == null
                     ? Set.of()
                     : memberships(connection, patch.mapId().value(), record, Set.of(),
-                            preliminaryRoutes, preliminaryDependencies));
+                            preliminaryRoutes, preliminaryDependencies, new LinkedHashMap<>()));
         }
         Set<DungeonChunkKey> blockerChunks = blockerChunks(oldMemberships, preliminaryMemberships);
         Set<Cell> blockers = loadRoomCells(connection, patch.mapId().value(), blockerChunks);
         Map<DungeonPatchEntityRef, Set<DungeonChunkKey>> nextMemberships = new LinkedHashMap<>();
+        Map<DungeonPatchEntityRef, Map<DungeonChunkKey, CellExtent>> nextExtents = new LinkedHashMap<>();
         for (DungeonPatchEntityRef ref : refs) {
             DungeonWindowEntityRecord record = closure.records().get(ref);
+            Map<DungeonChunkKey, CellExtent> extents = new LinkedHashMap<>();
             nextMemberships.put(ref, record == null
                     ? Set.of()
                     : memberships(connection, patch.mapId().value(), record, blockers,
-                            nextRoutes, nextDependencies));
+                            nextRoutes, nextDependencies, extents));
+            nextExtents.put(ref, Map.copyOf(extents));
         }
 
         List<DungeonPatchEntityRef> affected = affectedRefs(
@@ -86,6 +89,7 @@ final class DungeonSqlitePatchSpatialWriter {
         assertDeclaredEntities(patch, affected);
         oldMemberships = membershipsFor(oldMemberships, affected);
         nextMemberships = membershipsFor(nextMemberships, affected);
+        nextExtents = extentsFor(nextExtents, affected);
         Set<Long> affectedCorridors = corridorIds(affected);
         oldRoutes = routesFor(oldRoutes, affectedCorridors);
         nextRoutes = routesFor(nextRoutes, affectedCorridors);
@@ -93,9 +97,11 @@ final class DungeonSqlitePatchSpatialWriter {
         nextDependencies = dependenciesFor(nextDependencies, affectedCorridors);
         assertExactChunks(patch, oldMemberships, nextMemberships, oldRoutes, nextRoutes);
         upsertTouchedChunks(connection, patch);
-        reconcileMembershipRows(connection, oldMemberships, nextMemberships);
+        Set<Integer> affectedLevels = affectedLevels(oldMemberships, nextExtents);
+        reconcileMembershipRows(connection, patch.mapId().value(), oldMemberships, nextExtents);
         reconcileRouteRows(connection, oldRoutes, nextRoutes);
         reconcileDependencyRows(connection, oldDependencies, nextDependencies);
+        recomputeLevelBounds(connection, patch.mapId().value(), affectedLevels);
         Map<DungeonChunkKey, Long> result = new LinkedHashMap<>();
         patch.touchedChunks().stream().sorted(DungeonChunkKeyOrder.ORDER)
                 .forEach(key -> result.put(key, patch.committedRevision()));
@@ -434,33 +440,35 @@ final class DungeonSqlitePatchSpatialWriter {
 
     private static Set<DungeonChunkKey> memberships(Connection connection, long mapId,
             DungeonWindowEntityRecord record, Set<Cell> blockers, Map<RouteKey, RouteRow> routes,
-            Map<DependencyKey, DependencyRow> dependencies)
+            Map<DependencyKey, DependencyRow> dependencies,
+            Map<DungeonChunkKey, CellExtent> extents)
             throws SQLException {
         Set<DungeonChunkKey> result = new LinkedHashSet<>();
         if (record instanceof DungeonWindowEntityRecord.Room room) {
-            room.value().floorCells().forEach(cell -> add(result, mapId, cell.levelZ(), cell.cellX(), cell.cellY()));
+            room.value().floorCells().forEach(cell -> add(result, extents, mapId, cell.levelZ(), cell.cellX(), cell.cellY()));
         } else if (record instanceof DungeonWindowEntityRecord.RoomCluster cluster) {
             cluster.memberRooms().forEach(room -> room.floorCells()
-                    .forEach(cell -> add(result, mapId, cell.levelZ(), cell.cellX(), cell.cellY())));
+                    .forEach(cell -> add(result, extents, mapId, cell.levelZ(), cell.cellX(), cell.cellY())));
             cluster.value().boundaries().forEach(boundary -> add(
-                    result, mapId, boundary.levelZ(), boundary.cellX(), boundary.cellY()));
+                    result, extents, mapId, boundary.levelZ(), boundary.cellX(), boundary.cellY()));
         } else if (record instanceof DungeonWindowEntityRecord.Corridor corridor) {
-            corridorMembership(connection, result, routes, dependencies, mapId, corridor, blockers);
+            corridorMembership(connection, result, extents, routes, dependencies, mapId, corridor, blockers);
         } else if (record instanceof DungeonWindowEntityRecord.Stair stair) {
-            stair.value().pathNodes().forEach(node -> add(result, mapId, node.cellZ(), node.cellX(), node.cellY()));
-            stair.value().exits().forEach(exit -> add(result, mapId, exit.cellZ(), exit.cellX(), exit.cellY()));
+            stair.value().pathNodes().forEach(node -> add(result, extents, mapId, node.cellZ(), node.cellX(), node.cellY()));
+            stair.value().exits().forEach(exit -> add(result, extents, mapId, exit.cellZ(), exit.cellX(), exit.cellY()));
         } else if (record instanceof DungeonWindowEntityRecord.Transition transition) {
             if (transition.value().cellX() != null && transition.value().cellY() != null
                     && transition.value().levelZ() != null) {
-                add(result, mapId, transition.value().levelZ(), transition.value().cellX(), transition.value().cellY());
+                add(result, extents, mapId, transition.value().levelZ(), transition.value().cellX(), transition.value().cellY());
             }
         } else if (record instanceof DungeonWindowEntityRecord.FeatureMarker marker) {
-            add(result, mapId, marker.value().levelZ(), marker.value().cellX(), marker.value().cellY());
+            add(result, extents, mapId, marker.value().levelZ(), marker.value().cellX(), marker.value().cellY());
         }
         return Set.copyOf(result);
     }
 
     private static void corridorMembership(Connection connection, Set<DungeonChunkKey> membership,
+            Map<DungeonChunkKey, CellExtent> extents,
             Map<RouteKey, RouteRow> routeRows, Map<DependencyKey, DependencyRow> dependencyRows,
             long mapId, DungeonWindowEntityRecord.Corridor graph,
             Set<Cell> blockers) throws SQLException {
@@ -472,7 +480,7 @@ final class DungeonSqlitePatchSpatialWriter {
             if (center != null) {
                 Cell cell = new Cell(center.q() + waypoint.relativeX(), center.r() + waypoint.relativeY(),
                         waypoint.relativeZ());
-                waypoints.add(cell); add(membership, mapId, cell.level(), cell.q(), cell.r());
+                waypoints.add(cell); add(membership, extents, mapId, cell.level(), cell.q(), cell.r());
             }
         });
         List<Cell> doors = new ArrayList<>();
@@ -481,7 +489,7 @@ final class DungeonSqlitePatchSpatialWriter {
             if (center != null) {
                 Cell cell = new Cell(center.q() + door.relativeCellX(), center.r() + door.relativeCellY(),
                         door.relativeCellZ());
-                add(membership, mapId, cell.level(), cell.q(), cell.r());
+                add(membership, extents, mapId, cell.level(), cell.q(), cell.r());
                 doors.add(Direction.parse(door.edgeDirection()).neighborOf(cell));
             }
         });
@@ -492,7 +500,7 @@ final class DungeonSqlitePatchSpatialWriter {
                     new AnchorTopologyKey(anchor.hostCorridorId(), anchor.topologyElementId()), anchor);
         }));
         corridor.anchorBindings().forEach(anchor -> add(
-                membership, mapId, anchor.cellZ(), anchor.cellX(), anchor.cellY()));
+                membership, extents, mapId, anchor.cellZ(), anchor.cellX(), anchor.cellY()));
         List<Cell> anchorEndpoints = new ArrayList<>();
         for (DungeonCorridorAnchorRefRecord ref : corridor.anchorRefs()) {
             if (ref.topologyElementId() == null) continue;
@@ -500,7 +508,7 @@ final class DungeonSqlitePatchSpatialWriter {
                     new AnchorTopologyKey(ref.hostCorridorId(), ref.topologyElementId()));
             if (anchor != null) {
                 Cell cell = new Cell(anchor.cellX(), anchor.cellY(), anchor.cellZ());
-                anchorEndpoints.add(cell); add(membership, mapId, cell.level(), cell.q(), cell.r());
+                anchorEndpoints.add(cell); add(membership, extents, mapId, cell.level(), cell.q(), cell.r());
             }
         }
         for (Cell cell : DungeonSqliteCorridorRouteFacts.dependencyCells(waypoints, doors, anchorEndpoints)) {
@@ -511,7 +519,7 @@ final class DungeonSqlitePatchSpatialWriter {
         for (DungeonSqliteCorridorRouteFacts.RouteCell route
                 : DungeonSqliteCorridorRouteFacts.routeCells(waypoints, doors, anchorEndpoints, blockers)) {
             Cell cell = route.cell(); DungeonChunkKey chunk = containing(mapId, cell.level(), cell.q(), cell.r());
-            membership.add(chunk);
+            add(membership, extents, mapId, cell.level(), cell.q(), cell.r());
             RouteRow row = new RouteRow(mapId, corridor.corridorId(), route.segmentOrder(), route.cellOrder(),
                     cell.level(), cell.q(), cell.r(), chunk.chunkQ(), chunk.chunkR());
             routeRows.put(row.key(), row);
@@ -558,6 +566,17 @@ final class DungeonSqlitePatchSpatialWriter {
         Map<DungeonPatchEntityRef, Set<DungeonChunkKey>> result = new LinkedHashMap<>();
         for (DungeonPatchEntityRef ref : refs) {
             result.put(ref, source.getOrDefault(ref, Set.of()));
+        }
+        return result;
+    }
+
+    private static Map<DungeonPatchEntityRef, Map<DungeonChunkKey, CellExtent>> extentsFor(
+            Map<DungeonPatchEntityRef, Map<DungeonChunkKey, CellExtent>> source,
+            List<DungeonPatchEntityRef> refs
+    ) {
+        Map<DungeonPatchEntityRef, Map<DungeonChunkKey, CellExtent>> result = new LinkedHashMap<>();
+        for (DungeonPatchEntityRef ref : refs) {
+            result.put(ref, source.getOrDefault(ref, Map.of()));
         }
         return result;
     }
@@ -620,29 +639,73 @@ final class DungeonSqlitePatchSpatialWriter {
         }
     }
 
-    private static void reconcileMembershipRows(Connection connection,
+    private static void reconcileMembershipRows(Connection connection, long mapId,
             Map<DungeonPatchEntityRef, Set<DungeonChunkKey>> oldRows,
-            Map<DungeonPatchEntityRef, Set<DungeonChunkKey>> nextRows) throws SQLException {
+            Map<DungeonPatchEntityRef, Map<DungeonChunkKey, CellExtent>> nextRows) throws SQLException {
         try (PreparedStatement delete = connection.prepareStatement(
-                "DELETE FROM dungeon_entity_chunks WHERE dungeon_map_id=? AND entity_kind=? AND entity_id=? "
-                        + "AND level_z=? AND chunk_q=? AND chunk_r=?");
+                "DELETE FROM dungeon_entity_chunks WHERE dungeon_map_id=? AND entity_kind=? AND entity_id=?");
              PreparedStatement insert = connection.prepareStatement(
-                     "INSERT INTO dungeon_entity_chunks(dungeon_map_id,entity_kind,entity_id,level_z,chunk_q,chunk_r) "
-                             + "VALUES(?,?,?,?,?,?)")) {
+                     "INSERT INTO dungeon_entity_chunks(dungeon_map_id,entity_kind,entity_id,level_z,chunk_q,chunk_r,"
+                             + "minimum_q,minimum_r,maximum_q,maximum_r,entity_chunk_count) "
+                             + "VALUES(?,?,?,?,?,?,?,?,?,?,?)")) {
             for (DungeonPatchEntityRef ref : oldRows.keySet()) {
-                Set<DungeonChunkKey> old = oldRows.getOrDefault(ref, Set.of());
-                Set<DungeonChunkKey> next = nextRows.getOrDefault(ref, Set.of());
-                for (DungeonChunkKey key : difference(old, next)) { bindMembership(delete, ref, key); delete.addBatch(); }
-                for (DungeonChunkKey key : difference(next, old)) { bindMembership(insert, ref, key); insert.addBatch(); }
+                delete.setLong(1, mapId);
+                delete.setString(2, ref.kind().name());
+                delete.setLong(3, ref.id());
+                delete.addBatch();
+                Map<DungeonChunkKey, CellExtent> next = nextRows.getOrDefault(ref, Map.of());
+                for (Map.Entry<DungeonChunkKey, CellExtent> entry : next.entrySet()) {
+                    bindMembership(insert, ref, entry.getKey(), entry.getValue(), next.size());
+                    insert.addBatch();
+                }
             }
             delete.executeBatch(); insert.executeBatch();
         }
     }
 
-    private static void bindMembership(PreparedStatement statement, DungeonPatchEntityRef ref, DungeonChunkKey key)
+    private static void bindMembership(PreparedStatement statement, DungeonPatchEntityRef ref, DungeonChunkKey key,
+            CellExtent extent, int entityChunkCount)
             throws SQLException {
         statement.setLong(1, key.mapId()); statement.setString(2, ref.kind().name()); statement.setLong(3, ref.id());
         statement.setInt(4, key.level()); statement.setInt(5, key.chunkQ()); statement.setInt(6, key.chunkR());
+        statement.setInt(7, extent.minimumQ()); statement.setInt(8, extent.minimumR());
+        statement.setInt(9, extent.maximumQ()); statement.setInt(10, extent.maximumR());
+        statement.setInt(11, entityChunkCount);
+    }
+
+    private static Set<Integer> affectedLevels(
+            Map<DungeonPatchEntityRef, Set<DungeonChunkKey>> oldRows,
+            Map<DungeonPatchEntityRef, Map<DungeonChunkKey, CellExtent>> nextRows
+    ) {
+        Set<Integer> levels = new LinkedHashSet<>();
+        oldRows.values().forEach(chunks -> chunks.forEach(chunk -> levels.add(chunk.level())));
+        nextRows.values().forEach(chunks -> chunks.keySet().forEach(chunk -> levels.add(chunk.level())));
+        return Set.copyOf(levels);
+    }
+
+    private static void recomputeLevelBounds(Connection connection, long mapId, Set<Integer> levels)
+            throws SQLException {
+        try (PreparedStatement delete = connection.prepareStatement(
+                    "DELETE FROM dungeon_authored_level_bounds WHERE dungeon_map_id=? AND level_z=?");
+             PreparedStatement extrema = connection.prepareStatement(
+                    "SELECT MIN(minimum_q),MIN(minimum_r),MAX(maximum_q),MAX(maximum_r) "
+                            + "FROM dungeon_entity_chunks WHERE dungeon_map_id=? AND level_z=?");
+             PreparedStatement insert = connection.prepareStatement(
+                    "INSERT INTO dungeon_authored_level_bounds(dungeon_map_id,level_z,minimum_q,minimum_r,maximum_q,maximum_r) "
+                            + "VALUES(?,?,?,?,?,?)")) {
+            for (int level : levels) {
+                delete.setLong(1, mapId); delete.setInt(2, level); delete.executeUpdate();
+                extrema.setLong(1, mapId); extrema.setInt(2, level);
+                try (ResultSet row = extrema.executeQuery()) {
+                    if (row.next() && row.getObject(1) != null) {
+                        insert.setLong(1, mapId); insert.setInt(2, level);
+                        insert.setInt(3, row.getInt(1)); insert.setInt(4, row.getInt(2));
+                        insert.setInt(5, row.getInt(3)); insert.setInt(6, row.getInt(4));
+                        insert.executeUpdate();
+                    }
+                }
+            }
+        }
     }
 
     private static void reconcileRouteRows(Connection connection, Map<RouteKey, RouteRow> oldRows,
@@ -718,8 +781,12 @@ final class DungeonSqlitePatchSpatialWriter {
         Set<T> result = new LinkedHashSet<>(left); result.removeAll(right); return result;
     }
 
-    private static void add(Set<DungeonChunkKey> result, long mapId, int level, int x, int y) {
-        result.add(containing(mapId, level, x, y));
+    private static void add(Set<DungeonChunkKey> result, Map<DungeonChunkKey, CellExtent> extents,
+            long mapId, int level, int x, int y) {
+        DungeonChunkKey chunk = containing(mapId, level, x, y);
+        result.add(chunk);
+        extents.compute(chunk, (ignored, extent) -> extent == null
+                ? CellExtent.at(x, y) : extent.include(x, y));
     }
 
     private static DungeonChunkKey containing(long mapId, int level, int x, int y) {
@@ -767,6 +834,16 @@ final class DungeonSqlitePatchSpatialWriter {
                     target.add(new DungeonChunkKey(mapId, level, q, r));
                 }
             }
+        }
+    }
+    private record CellExtent(int minimumQ, int minimumR, int maximumQ, int maximumR) {
+        static CellExtent at(int q, int r) {
+            return new CellExtent(q, r, q, r);
+        }
+
+        CellExtent include(int q, int r) {
+            return new CellExtent(Math.min(minimumQ, q), Math.min(minimumR, r),
+                    Math.max(maximumQ, q), Math.max(maximumR, r));
         }
     }
     private record RouteKey(long mapId, long corridorId, int segment, int order) { }

@@ -9,6 +9,10 @@ public interface DungeonWindowStore {
 
     Optional<DungeonWindow> loadWindow(DungeonWindowRequest request);
 
+    default Optional<DungeonContinuationPage> loadContinuationPage(DungeonContinuationPageRequest request) {
+        return Optional.empty();
+    }
+
     /** Replaces cache protection with the latest accepted visible chunks. */
     default void protectVisibleChunks(Collection<DungeonChunkKey> chunks) {
     }
