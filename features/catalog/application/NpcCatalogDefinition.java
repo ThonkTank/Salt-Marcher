@@ -60,8 +60,8 @@ public final class NpcCatalogDefinition implements CatalogSectionDefinition<Text
                 "NPC-Katalog", "NPCs", NpcCatalogRow::displayName,
                 List.of(textFilter("NPCs suchen …", "NPCs suchen")),
                 List.of(
-                        new CatalogColumnSpec<>("Name", NpcCatalogRow::displayName),
-                        new CatalogColumnSpec<>("Details", NpcCatalogRow::details)),
+                        new CatalogColumnSpec<>("name", "Name", NpcCatalogRow::displayName, true),
+                        new CatalogColumnSpec<>("details", "Details", NpcCatalogRow::details, false)),
                 Optional.of(openAction()),
                 List.of(
                         new CatalogActionSpec(
@@ -72,7 +72,8 @@ public final class NpcCatalogDefinition implements CatalogSectionDefinition<Text
                                 CatalogActionId.ADD_TO_SCENE, "Zur Scene",
                                 "NPC zur fokussierten Scene hinzufügen", "Zur Scene",
                                 CatalogActionSpec.Emphasis.SECONDARY)),
-                List.of(createAction("NPC anlegen")), false);
+                List.of(CatalogActionSpec.create()), false,
+                new CatalogSortOrder("name", CatalogSortOrder.Direction.ASCENDING), CatalogSortMode.LOCAL);
     }
 
     @Override
@@ -103,7 +104,9 @@ public final class NpcCatalogDefinition implements CatalogSectionDefinition<Text
     private static CatalogFilterSpec.Text<TextCatalogQuery> textFilter(String prompt, String accessible) {
         return new CatalogFilterSpec.Text<>(prompt, accessible, TextCatalogQuery::text,
                 (query, value) -> new TextCatalogQuery(value),
-                query -> query.text().isBlank() ? "" : "Suche: " + query.text(),
+                query -> CatalogFilterTokens.single(
+                        query.text().isBlank() ? "" : "Suche: " + query.text(),
+                        ignored -> TextCatalogQuery.empty()),
                 ignored -> TextCatalogQuery.empty());
     }
 
@@ -112,8 +115,4 @@ public final class NpcCatalogDefinition implements CatalogSectionDefinition<Text
                 "Öffnen", CatalogActionSpec.Emphasis.SECONDARY);
     }
 
-    private static CatalogActionSpec createAction(String label) {
-        return new CatalogActionSpec(CatalogActionId.CREATE, label, label, label,
-                CatalogActionSpec.Emphasis.PRIMARY);
-    }
 }

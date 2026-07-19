@@ -56,9 +56,12 @@ final class CatalogWorkspaceBindingTest {
         CatalogSectionDefinition<NoCatalogQuery, String, String> definition = new StubDefinition();
         CatalogSectionState<NoCatalogQuery, String, String> section = new CatalogSectionState<>(
                 revision, CatalogSectionState.Lifecycle.INACTIVE, NoCatalogQuery.INSTANCE, NoCatalogQuery.INSTANCE,
-                0L, 50, 0, 0, Optional.empty(), 0L, false, CatalogResultState.uninitialized());
+                0L, 50, 0, 0,
+                new CatalogSortOrder("value", CatalogSortOrder.Direction.ASCENDING),
+                Optional.empty(), 0L, false, CatalogResultState.uninitialized());
         CatalogSectionCommands<NoCatalogQuery, String> commands = new CatalogSectionCommands<>(
-                ignored -> { }, () -> { }, ignored -> { }, ignored -> { }, (ignored, key) -> { },
+                ignored -> { }, ignored -> { }, () -> { }, ignored -> { }, ignored -> { },
+                ignored -> { }, (ignored, key) -> { },
                 ignored -> { }, ignored -> { }, ignored -> { });
         return new CatalogWorkspaceState(revision, CatalogActiveSection.of(new CatalogSectionBinding<>(
                 definition, section, commands, "", CatalogConfirmation.none())));

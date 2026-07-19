@@ -61,8 +61,8 @@ public final class LocationCatalogDefinition
                 "Ortskatalog", "Orte", LocationCatalogRow::displayName,
                 List.of(textFilter("Orte suchen …", "Orte suchen")),
                 List.of(
-                        new CatalogColumnSpec<>("Name", LocationCatalogRow::displayName),
-                        new CatalogColumnSpec<>("Details", LocationCatalogRow::details)),
+                        new CatalogColumnSpec<>("name", "Name", LocationCatalogRow::displayName, true),
+                        new CatalogColumnSpec<>("details", "Details", LocationCatalogRow::details, false)),
                 Optional.of(new CatalogActionSpec(
                         CatalogActionId.OPEN, "Details öffnen", "Ort im Inspector öffnen", "Öffnen",
                         CatalogActionSpec.Emphasis.SECONDARY)),
@@ -75,9 +75,8 @@ public final class LocationCatalogDefinition
                                 CatalogActionId.SET_FOCUSED_SCENE_LOCATION, "Als Ort",
                                 "Ort der fokussierten Scene zuweisen", "Als Scene-Ort",
                                 CatalogActionSpec.Emphasis.SECONDARY)),
-                List.of(new CatalogActionSpec(
-                        CatalogActionId.CREATE, "Ort anlegen", "Ort anlegen", "Ort anlegen",
-                        CatalogActionSpec.Emphasis.PRIMARY)), false);
+                List.of(CatalogActionSpec.create()), false,
+                new CatalogSortOrder("name", CatalogSortOrder.Direction.ASCENDING), CatalogSortMode.LOCAL);
     }
 
     @Override
@@ -114,7 +113,9 @@ public final class LocationCatalogDefinition
     private static CatalogFilterSpec.Text<TextCatalogQuery> textFilter(String prompt, String accessible) {
         return new CatalogFilterSpec.Text<>(prompt, accessible, TextCatalogQuery::text,
                 (query, value) -> new TextCatalogQuery(value),
-                query -> query.text().isBlank() ? "" : "Suche: " + query.text(),
+                query -> CatalogFilterTokens.single(
+                        query.text().isBlank() ? "" : "Suche: " + query.text(),
+                        ignored -> TextCatalogQuery.empty()),
                 ignored -> TextCatalogQuery.empty());
     }
 }

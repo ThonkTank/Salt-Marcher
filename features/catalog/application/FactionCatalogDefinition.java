@@ -57,14 +57,15 @@ public final class FactionCatalogDefinition
                 "Fraktionskatalog", "Fraktionen", FactionCatalogRow::displayName,
                 List.of(textFilter("Fraktionen suchen …", "Fraktionen suchen")),
                 List.of(
-                        new CatalogColumnSpec<>("Name", FactionCatalogRow::displayName),
-                        new CatalogColumnSpec<>("Details", FactionCatalogRow::details)),
+                        new CatalogColumnSpec<>("name", "Name", FactionCatalogRow::displayName, true),
+                        new CatalogColumnSpec<>("details", "Details", FactionCatalogRow::details, false)),
                 Optional.of(openAction("Fraktion")),
                 List.of(new CatalogActionSpec(
                         CatalogActionId.USE_AS_ENCOUNTER_SOURCE, "Als Quelle",
                         "Fraktion als Encounter-Quelle verwenden", "Als Encounter-Quelle",
                         CatalogActionSpec.Emphasis.PRIMARY)),
-                List.of(createAction("Fraktion anlegen")), false);
+                List.of(CatalogActionSpec.create()), false,
+                new CatalogSortOrder("name", CatalogSortOrder.Direction.ASCENDING), CatalogSortMode.LOCAL);
     }
 
     @Override
@@ -98,7 +99,9 @@ public final class FactionCatalogDefinition
     private static CatalogFilterSpec.Text<TextCatalogQuery> textFilter(String prompt, String accessible) {
         return new CatalogFilterSpec.Text<>(prompt, accessible, TextCatalogQuery::text,
                 (query, value) -> new TextCatalogQuery(value),
-                query -> query.text().isBlank() ? "" : "Suche: " + query.text(),
+                query -> CatalogFilterTokens.single(
+                        query.text().isBlank() ? "" : "Suche: " + query.text(),
+                        ignored -> TextCatalogQuery.empty()),
                 ignored -> TextCatalogQuery.empty());
     }
 
@@ -107,8 +110,4 @@ public final class FactionCatalogDefinition
                 "Öffnen", CatalogActionSpec.Emphasis.SECONDARY);
     }
 
-    private static CatalogActionSpec createAction(String label) {
-        return new CatalogActionSpec(CatalogActionId.CREATE, label, label, label,
-                CatalogActionSpec.Emphasis.PRIMARY);
-    }
 }

@@ -72,7 +72,7 @@ public final class CatalogContribution implements ShellContribution, AutoCloseab
         private final Map<ShellSlot, javafx.scene.Node> slots;
 
         private CatalogShellBinding(CatalogWorkspaceView view) {
-            slots = Map.of(ShellSlot.COCKPIT_CONTROLS, view.controls(), ShellSlot.COCKPIT_MAIN, view.content());
+            slots = Map.of(ShellSlot.COCKPIT_MAIN, view.content());
         }
 
         @Override public String title() { return "Katalog"; }

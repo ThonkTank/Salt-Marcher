@@ -127,7 +127,8 @@ final class CatalogFeatureLifecycleTest {
             assertActive(tables, 0);
 
             binding.onActivate();
-            assertEquals(2, queries.filterOptions.size());
+            assertEquals(1, queries.filterOptions.size(),
+                    "reactivation must share the unresolved successful-only option load");
             assertEquals(2, queries.searches.size());
             assertEquals(0, items.filterOptions.size());
             assertEquals(0, items.searches.size());
@@ -182,7 +183,8 @@ final class CatalogFeatureLifecycleTest {
             component.controller().selectSection(features.catalog.application.CatalogSectionId.MONSTERS);
 
             assertEquals(2, queries.searches.size());
-            assertEquals(2, queries.filterOptions.size());
+            assertEquals(1, queries.filterOptions.size(),
+                    "returning to Monster must coalesce its still-pending option load");
             assertEquals(2, items.searches.size());
             queries.filterOptions.getLast().complete(filterOptions("New"));
             queries.searches.getLast().complete(creaturePage(2L, "Newer"));
@@ -224,10 +226,9 @@ final class CatalogFeatureLifecycleTest {
                     new ControllableCreatureQueries(), new ControllableItemsApi(), builder, saved,
                     creatures, world, tables, new RecordingItemRoute(), savedOpen);
             ShellBinding binding = component.contribution().bind();
-            Parent controls = (Parent) binding.slotContent().get(ShellSlot.COCKPIT_CONTROLS);
             Parent main = (Parent) binding.slotContent().get(ShellSlot.COCKPIT_MAIN);
+            Parent controls = main;
             BorderPane host = new BorderPane(main);
-            host.setLeft(controls);
             Stage stage = new Stage();
             stage.setScene(new Scene(host, 1_180.0, 720.0));
             stage.show();

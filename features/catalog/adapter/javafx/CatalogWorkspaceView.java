@@ -18,7 +18,6 @@ final class CatalogWorkspaceView implements CatalogActiveSection.Receiver {
         renderer = new CatalogSectionRenderer(requiredController::selectSection);
     }
 
-    Node controls() { return renderer.controls(); }
     Node content() { return renderer.content(); }
 
     void apply(CatalogWorkspaceState state) {

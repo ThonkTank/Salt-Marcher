@@ -51,6 +51,8 @@ public final class AppBootstrap implements AutoCloseable {
 
     private final Diagnostics diagnostics;
     private final ExecutionLane executionLane;
+    private final ExecutionLane creatureReadLane;
+    private final ExecutionLane itemReadLane;
     private final ExecutionLane sessionGenerationCpuLane;
     private final ExecutionLane sessionGenerationIoLane;
     private final ExecutionLane encounterGeneratedCpuLane;
@@ -70,6 +72,8 @@ public final class AppBootstrap implements AutoCloseable {
         this(
                 diagnostics,
                 new SerialExecutionLane(diagnostics),
+                new BoundedExecutionLane(diagnostics, "creatures-read", 2),
+                new BoundedExecutionLane(diagnostics, "items-read", 2),
                 new BoundedExecutionLane(
                         diagnostics,
                         "session-generation-cpu",
@@ -89,6 +93,8 @@ public final class AppBootstrap implements AutoCloseable {
     AppBootstrap(
             Diagnostics diagnostics,
             ExecutionLane executionLane,
+            ExecutionLane creatureReadLane,
+            ExecutionLane itemReadLane,
             ExecutionLane sessionGenerationCpuLane,
             ExecutionLane sessionGenerationIoLane,
             ExecutionLane encounterGeneratedCpuLane,
@@ -100,6 +106,8 @@ public final class AppBootstrap implements AutoCloseable {
     ) {
         this.diagnostics = java.util.Objects.requireNonNull(diagnostics, "diagnostics");
         this.executionLane = java.util.Objects.requireNonNull(executionLane, "executionLane");
+        this.creatureReadLane = java.util.Objects.requireNonNull(creatureReadLane, "creatureReadLane");
+        this.itemReadLane = java.util.Objects.requireNonNull(itemReadLane, "itemReadLane");
         this.sessionGenerationCpuLane = java.util.Objects.requireNonNull(
                 sessionGenerationCpuLane, "sessionGenerationCpuLane");
         this.sessionGenerationIoLane = java.util.Objects.requireNonNull(
@@ -135,14 +143,15 @@ public final class AppBootstrap implements AutoCloseable {
 
     private Components createComponents(FeatureStoreManifest.Stores stores) {
         CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(
-                stores.creatures(), executionLane, sessionPreparationIoLane, uiDispatcher, diagnostics);
+                stores.creatures(), executionLane, creatureReadLane, sessionPreparationIoLane,
+                uiDispatcher, diagnostics);
         EncounterTableServiceAssembly.Component encounterTables =
                 EncounterTableServiceAssembly.create(
                         stores.encounterTables(), executionLane, uiDispatcher, diagnostics);
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(
                 stores.party(), executionLane, sessionPreparationIoLane, uiDispatcher, diagnostics);
         ItemsServiceAssembly.CatalogComponent items = ItemsServiceAssembly.createCatalog(
-                stores.items(), executionLane, diagnostics);
+                stores.items(), itemReadLane, diagnostics);
 
         WorldPlannerServiceAssembly.Component world = WorldPlannerServiceAssembly.create(
                         stores.worldPlanner(),
@@ -489,13 +498,18 @@ public final class AppBootstrap implements AutoCloseable {
             catalog.close();
             catalogComponent = null;
         }
-        sessionGenerationCpuLane.close();
-        sessionGenerationIoLane.close();
-        encounterGeneratedCpuLane.close();
-        encounterGeneratedIoLane.close();
-        sessionPreparationCpuLane.close();
-        sessionPreparationIoLane.close();
-        executionLane.close();
+        java.util.Set<ExecutionLane> lanes = java.util.Collections.newSetFromMap(
+                new java.util.IdentityHashMap<>());
+        java.util.List.of(
+                sessionGenerationCpuLane,
+                sessionGenerationIoLane,
+                encounterGeneratedCpuLane,
+                encounterGeneratedIoLane,
+                sessionPreparationCpuLane,
+                sessionPreparationIoLane,
+                creatureReadLane,
+                itemReadLane,
+                executionLane).stream().filter(lanes::add).forEach(ExecutionLane::close);
         database.close();
     }
 

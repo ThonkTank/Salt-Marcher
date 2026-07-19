@@ -39,8 +39,10 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
     private final CatalogWorkspacePublication publication;
     private CatalogSectionId activeSection = CatalogSectionId.MONSTERS;
     private CatalogConfirmation<Long> savedConfirmation = CatalogConfirmation.none();
+    private String monsterActionMessage = "";
     private String savedActionMessage = "";
     private String itemsActionMessage = "";
+    private String encounterTableActionMessage = "";
     private long savedActionEpoch;
     private long itemsActionEpoch;
     private long revision;
@@ -71,16 +73,20 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
         encounterTables = session(encounterTableDefinition);
         EnumMap<CatalogSectionId, SectionRuntime> runtimes = new EnumMap<>(CatalogSectionId.class);
         add(runtimes, runtime(monsterDefinition, monsters,
-                () -> commands(CatalogSectionId.MONSTERS, monsters, this::monsterAction, ignored -> { },
+                () -> commands(CatalogSectionId.MONSTERS, monsters, this::monsterAction,
+                        action -> unavailableCreate(CatalogSectionId.MONSTERS, action),
                         ignored -> { }, ignored -> { }, () -> { }),
-                () -> "", CatalogConfirmation::none));
+                () -> monsterActionMessage, CatalogConfirmation::none));
         add(runtimes, runtime(itemsDefinition, items,
-                () -> commands(CatalogSectionId.ITEMS, items, this::itemAction, ignored -> { },
+                () -> commands(CatalogSectionId.ITEMS, items, this::itemAction,
+                        action -> unavailableCreate(CatalogSectionId.ITEMS, action),
                         ignored -> { }, ignored -> { }, this::itemSelectionChanged),
                 () -> itemsActionMessage, CatalogConfirmation::none));
         add(runtimes, runtime(savedEncounterDefinition, savedEncounters,
                 () -> commands(CatalogSectionId.SAVED_ENCOUNTERS, savedEncounters,
-                        this::savedEncounterAction, ignored -> { }, this::confirmSavedEncounter,
+                        this::savedEncounterAction,
+                        action -> unavailableCreate(CatalogSectionId.SAVED_ENCOUNTERS, action),
+                        this::confirmSavedEncounter,
                         this::cancelSavedEncounter, this::savedEncounterSelectionChanged),
                 () -> savedActionMessage, () -> savedConfirmation));
         add(runtimes, runtime(npcDefinition, npcs,
@@ -97,8 +103,10 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
                 () -> "", CatalogConfirmation::none));
         add(runtimes, runtime(encounterTableDefinition, encounterTables,
                 () -> commands(CatalogSectionId.ENCOUNTER_TABLES, encounterTables,
-                        this::encounterTableAction, ignored -> { }, ignored -> { }, ignored -> { }, () -> { }),
-                () -> "", CatalogConfirmation::none));
+                        this::encounterTableAction,
+                        action -> unavailableCreate(CatalogSectionId.ENCOUNTER_TABLES, action),
+                        ignored -> { }, ignored -> { }, () -> { }),
+                () -> encounterTableActionMessage, CatalogConfirmation::none));
         sections = Map.copyOf(runtimes);
         publication = new CatalogWorkspacePublication(snapshot(), dispatcher);
     }
@@ -315,6 +323,21 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
         }
     }
 
+    private void unavailableCreate(CatalogSectionId section, CatalogActionId action) {
+        if (action != CatalogActionId.CREATE) {
+            return;
+        }
+        String message = "Erstellen ist für " + section.label() + " noch nicht verfügbar.";
+        switch (section) {
+            case MONSTERS -> monsterActionMessage = message;
+            case ITEMS -> itemsActionMessage = message;
+            case SAVED_ENCOUNTERS -> savedActionMessage = message;
+            case ENCOUNTER_TABLES -> encounterTableActionMessage = message;
+            default -> throw new IllegalArgumentException("Create route is available for " + section);
+        }
+        publish();
+    }
+
     private void openItem(String sourceKey) {
         if (!isActive(CatalogSectionId.ITEMS) || items.find(sourceKey).isEmpty()) {
             return;
@@ -394,7 +417,9 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
     ) {
         return new CatalogSectionCommands<>(
                 draft -> runActive(id, () -> session.editDraft(draft)),
+                draft -> runActive(id, () -> session.commitDraft(draft)),
                 () -> runActive(id, session::submit),
+                sortOrder -> runActive(id, () -> session.sort(sortOrder)),
                 direction -> runActive(id, () -> session.shiftPage(direction)),
                 key -> runActive(id, () -> {
                     session.select(key.orElse(null));

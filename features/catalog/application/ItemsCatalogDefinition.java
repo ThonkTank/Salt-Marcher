@@ -17,6 +17,8 @@ public final class ItemsCatalogDefinition
     private final ItemsCatalogApi provider;
     private final ItemInspectorRoute inspector;
     private final AtomicLong providerRevision = new AtomicLong();
+    private final CatalogSuccessfulAsyncCache<ItemsCatalogApi.FilterOptionsResult> filterOptions =
+            new CatalogSuccessfulAsyncCache<>();
 
     public ItemsCatalogDefinition(ItemsCatalogApi provider, ItemInspectorRoute inspector) {
         this.provider = Objects.requireNonNull(provider, "provider");
@@ -38,7 +40,8 @@ public final class ItemsCatalogDefinition
         ItemsCatalogQuery query = request.query();
         ItemsCatalogApi.ItemQuery providerQuery;
         try {
-            providerQuery = providerQuery(query.filters(), request.pageSize(), request.pageOffset());
+            providerQuery = providerQuery(
+                    query.filters(), request.sortOrder(), request.pageSize(), request.pageOffset());
         } catch (IllegalArgumentException invalid) {
             return java.util.concurrent.CompletableFuture.completedFuture(new CatalogBrowseResult<>(
                     query,
@@ -46,18 +49,25 @@ public final class ItemsCatalogDefinition
                             "Ungültige Item-Suche."),
                     0, 0, providerRevision.incrementAndGet()));
         }
-        CompletionStage<ItemsCatalogApi.FilterOptionsResult> options = provider.loadFilterOptions()
-                .handle((result, failure) -> failure == null && result != null ? result
-                        : new ItemsCatalogApi.FilterOptionsResult(
-                                ItemsCatalogApi.CatalogStatus.EXECUTION_ERROR,
-                                List.of(), List.of(), List.of()));
+        CompletionStage<Optional<ItemsCatalogApi.FilterOptionsResult>> options = query.filterOptionsResolved()
+                ? java.util.concurrent.CompletableFuture.completedFuture(Optional.of(query.options()))
+                : filterOptions.resolve(() -> provider.loadFilterOptions().thenApply(result ->
+                        result != null && result.status() == ItemsCatalogApi.CatalogStatus.SUCCESS
+                                ? Optional.of(result) : Optional.empty()));
         return options.thenCombine(provider.search(providerQuery), (acceptedOptions, page) -> {
             CatalogResultState<ItemsCatalogApi.ItemRow> result = pageResult(page);
+            if (acceptedOptions.isEmpty()
+                    && (result.status() == CatalogResultState.Status.READY
+                            || result.status() == CatalogResultState.Status.EMPTY)) {
+                result = CatalogResultState.failed(
+                        result.rows(), "Item-Filter konnten nicht geladen werden.");
+            }
             int offset = page != null && page.status() == ItemsCatalogApi.CatalogStatus.SUCCESS
                     ? page.pageOffset() : 0;
             int total = page != null && page.status() == ItemsCatalogApi.CatalogStatus.SUCCESS
                     ? page.totalCount() : 0;
-            return new CatalogBrowseResult<>(query.withOptions(acceptedOptions), result, offset, total,
+            ItemsCatalogQuery acceptedQuery = acceptedOptions.map(query::withOptions).orElse(query);
+            return new CatalogBrowseResult<>(acceptedQuery, result, offset, total,
                     providerRevision.incrementAndGet());
         });
     }
@@ -72,7 +82,9 @@ public final class ItemsCatalogDefinition
                 new CatalogFilterSpec.Text<>(
                         "Name enthält …", "Item-Name", query -> query.filters().name(),
                         (query, value) -> query.withFilters(query.filters().withName(value)),
-                        query -> query.filters().name().isBlank() ? "" : "Name: " + query.filters().name(),
+                        query -> CatalogFilterTokens.single(
+                                query.filters().name().isBlank() ? "" : "Name: " + query.filters().name(),
+                                current -> current.withFilters(current.filters().withName(""))),
                         query -> query.withFilters(query.filters().withName(""))),
                 stringChoice("Kategorie", "Item-Kategorie", query -> query.options().categories(),
                         query -> query.filters().category(),
@@ -92,40 +104,30 @@ public final class ItemsCatalogDefinition
                         query -> query.filters().maximumCostCp(),
                         (query, minimum, maximum) -> query.withFilters(
                                 query.filters().withCostRange(minimum, maximum)),
-                        query -> query.filters().minimumCostCp().isBlank()
-                                && query.filters().maximumCostCp().isBlank() ? ""
-                                : "Kosten: " + query.filters().minimumCostCp() + "–"
-                                        + query.filters().maximumCostCp() + " CP",
-                        query -> query.withFilters(query.filters().withCostRange("", ""))),
-                new CatalogFilterSpec.Choice<>(
-                        "Sortierung", "Item-Sortierfeld",
-                        ignored -> List.of(
-                                new CatalogChoice<>(ItemsCatalogApi.SortField.NAME, "Name"),
-                                new CatalogChoice<>(ItemsCatalogApi.SortField.CATEGORY, "Kategorie"),
-                                new CatalogChoice<>(ItemsCatalogApi.SortField.RARITY, "Seltenheit"),
-                                new CatalogChoice<>(ItemsCatalogApi.SortField.COST, "Kosten")),
-                        query -> query.filters().sortField(),
-                        (query, value) -> query.withFilters(query.filters().withSortField(value)),
-                        ignored -> "", java.util.function.UnaryOperator.identity()),
-                new CatalogFilterSpec.Choice<>(
-                        "Richtung", "Item-Sortierrichtung",
-                        ignored -> List.of(new CatalogChoice<>(Boolean.TRUE, "Aufsteigend"),
-                                new CatalogChoice<>(Boolean.FALSE, "Absteigend")),
-                        query -> query.filters().ascending(),
-                        (query, value) -> query.withFilters(query.filters().withAscending(value)),
-                        ignored -> "", java.util.function.UnaryOperator.identity()));
+                        query -> CatalogFilterTokens.single(
+                                query.filters().minimumCostCp().isBlank()
+                                        && query.filters().maximumCostCp().isBlank() ? ""
+                                        : "Kosten: " + query.filters().minimumCostCp() + "–"
+                                                + query.filters().maximumCostCp() + " CP",
+                                current -> current.withFilters(current.filters().withCostRange("", ""))),
+                        query -> query.withFilters(query.filters().withCostRange("", ""))));
         return new CatalogPresentationSpec<>(
                 "Item-Ergebnisse", "Items", ItemsCatalogApi.ItemRow::name, filters,
                 List.of(
-                        new CatalogColumnSpec<>("Name", ItemsCatalogApi.ItemRow::name),
-                        new CatalogColumnSpec<>("Kategorie", row -> joined(row.category(), row.subcategory())),
-                        new CatalogColumnSpec<>("Seltenheit", row -> shown(row.rarity())),
-                        new CatalogColumnSpec<>("Magie", row -> row.magic() ? "Ja" : "Nein"),
-                        new CatalogColumnSpec<>("Kosten", row -> shown(row.costDisplay()))),
+                        new CatalogColumnSpec<>("name", "Name", ItemsCatalogApi.ItemRow::name, true),
+                        new CatalogColumnSpec<>("category", "Kategorie",
+                                row -> joined(row.category(), row.subcategory()), true),
+                        new CatalogColumnSpec<>("rarity", "Seltenheit", row -> shown(row.rarity()), true),
+                        new CatalogColumnSpec<>(
+                                "magic", "Magie", row -> row.magic() ? "Ja" : "Nein", false),
+                        new CatalogColumnSpec<>(
+                                "cost", "Kosten", row -> shown(row.costDisplay()), true)),
                 Optional.of(new CatalogActionSpec(
                         CatalogActionId.OPEN, "Details öffnen", "Item im Inspector öffnen", "Öffnen",
                         CatalogActionSpec.Emphasis.SECONDARY)),
-                List.of(), List.of(), true);
+                List.of(), List.of(CatalogActionSpec.create()), true,
+                new CatalogSortOrder("name", CatalogSortOrder.Direction.ASCENDING),
+                CatalogSortMode.PROVIDER);
     }
 
     public CompletionStage<String> open(String sourceKey) {
@@ -149,6 +151,7 @@ public final class ItemsCatalogDefinition
 
     private static ItemsCatalogApi.ItemQuery providerQuery(
             ItemsCatalogFilterDraft draft,
+            CatalogSortOrder sortOrder,
             int pageSize,
             int pageOffset
     ) {
@@ -162,7 +165,9 @@ public final class ItemsCatalogDefinition
         return new ItemsCatalogApi.ItemQuery(
                 trimmed(draft.name()), nullable(draft.category()), nullable(draft.subcategory()),
                 nullable(draft.rarity()), draft.magic(), draft.attunement(), minimum, maximum,
-                draft.sortField(), draft.ascending(), pageSize, Math.max(0, pageOffset));
+                itemSortField(sortOrder),
+                sortOrder.direction() == CatalogSortOrder.Direction.ASCENDING,
+                pageSize, Math.max(0, pageOffset));
     }
 
     private static @Nullable Integer cost(String value) {
@@ -223,7 +228,9 @@ public final class ItemsCatalogDefinition
         return new CatalogFilterSpec.Choice<>(
                 prompt, accessible, query -> CatalogPresentationChoices.strings(options.apply(query)),
                 selected, update,
-                query -> selected.apply(query).isBlank() ? "" : prompt + ": " + selected.apply(query),
+                query -> CatalogFilterTokens.single(
+                        selected.apply(query).isBlank() ? "" : prompt + ": " + selected.apply(query),
+                        current -> update.apply(current, "")),
                 query -> update.apply(query, ""));
     }
 
@@ -235,9 +242,22 @@ public final class ItemsCatalogDefinition
     ) {
         return new CatalogFilterSpec.TriState<>(
                 prompt, accessible, selected, update,
-                query -> selected.apply(query) == null ? ""
-                        : prompt + ": " + (selected.apply(query) ? "Ja" : "Nein"),
+                query -> CatalogFilterTokens.single(
+                        selected.apply(query) == null ? ""
+                                : prompt + ": " + (selected.apply(query) ? "Ja" : "Nein"),
+                        current -> update.apply(current, null)),
                 query -> update.apply(query, null));
+    }
+
+    private static ItemsCatalogApi.SortField itemSortField(CatalogSortOrder sortOrder) {
+        return switch (sortOrder.columnId()) {
+            case "name" -> ItemsCatalogApi.SortField.NAME;
+            case "category" -> ItemsCatalogApi.SortField.CATEGORY;
+            case "rarity" -> ItemsCatalogApi.SortField.RARITY;
+            case "cost" -> ItemsCatalogApi.SortField.COST;
+            default -> throw new IllegalArgumentException(
+                    "Unsupported Items provider sort: " + sortOrder.columnId());
+        };
     }
 
     private static String joined(String first, String second) {

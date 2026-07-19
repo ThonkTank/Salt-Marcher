@@ -90,6 +90,62 @@ final class BrowseSessionTest {
         assertEquals(3, definition.requests.size());
     }
 
+    @Test
+    void providerSortResetsPagingAndQueriesImmediately() {
+        Definition definition = new Definition(CatalogSectionId.MONSTERS, CatalogSortMode.PROVIDER);
+        BrowseSession<String, Row, Long> session = session(definition, Duration.ofSeconds(1));
+        session.activate();
+        definition.results.getFirst().complete(new CatalogBrowseResult<>(
+                "", CatalogResultState.ready(List.of(new Row(1L))), 0, 120, 1L));
+        session.shiftPage(1);
+        definition.results.getLast().complete(new CatalogBrowseResult<>(
+                "", CatalogResultState.ready(List.of(new Row(51L))), 50, 120, 2L));
+
+        session.editDraft("unfinished");
+        CatalogSortOrder descending = new CatalogSortOrder(
+                "id", CatalogSortOrder.Direction.DESCENDING);
+        session.sort(descending);
+
+        CatalogBrowseRequest<String> request = definition.requests.getLast();
+        assertEquals(0, request.pageOffset());
+        assertEquals("", request.query(), "sorting must not commit unfinished filter input");
+        assertEquals(descending, request.sortOrder());
+        assertEquals(3, definition.requests.size());
+    }
+
+    @Test
+    void localSortReordersAcceptedRowsWithoutProviderQuery() {
+        Definition definition = new Definition(CatalogSectionId.NPCS, CatalogSortMode.LOCAL);
+        BrowseSession<String, Row, Long> session = session(definition, Duration.ZERO);
+        session.activate();
+        definition.results.getFirst().complete(new CatalogBrowseResult<>(
+                "", CatalogResultState.ready(List.of(new Row(1L), new Row(3L), new Row(2L))),
+                0, 3, 1L));
+
+        session.sort(new CatalogSortOrder("id", CatalogSortOrder.Direction.DESCENDING));
+
+        assertEquals(1, definition.requests.size());
+        assertEquals(List.of(3L, 2L, 1L), session.state().result().rows().stream().map(Row::id).toList());
+        assertEquals(0, session.state().pageOffset());
+    }
+
+    @Test
+    void commitDraftAtomicallyCancelsDebounceAndQueriesTheSuppliedReset() throws InterruptedException {
+        Definition definition = new Definition(CatalogSectionId.ITEMS);
+        BrowseSession<String, Row, Long> session = session(definition, Duration.ofMillis(80));
+        session.activate();
+        definition.results.getFirst().complete(result("", 1L));
+        session.editDraft("pending");
+
+        session.commitDraft("");
+        Thread.sleep(120L);
+
+        assertEquals(2, definition.requests.size());
+        assertEquals("", definition.requests.getLast().query());
+        assertEquals("", session.state().draft());
+        assertEquals("", session.state().committedQuery());
+    }
+
     private BrowseSession<String, Row, Long> session(Definition definition, Duration debounce) {
         return new BrowseSession<>(
                 definition, DirectUiDispatcher.INSTANCE, scheduler, debounce, () -> { });
@@ -112,13 +168,19 @@ final class BrowseSessionTest {
 
     private static final class Definition implements CatalogSectionDefinition<String, Row, Long> {
         private final CatalogSectionId id;
+        private final CatalogSortMode sortMode;
         private final List<CatalogBrowseRequest<String>> requests = new ArrayList<>();
         private final List<CompletableFuture<CatalogBrowseResult<String, Row>>> results = new ArrayList<>();
         private Consumer<CatalogProviderChange<String>> listener = ignored -> { };
         private int subscriptions;
 
         private Definition(CatalogSectionId id) {
+            this(id, CatalogSortMode.PROVIDER);
+        }
+
+        private Definition(CatalogSectionId id, CatalogSortMode sortMode) {
             this.id = id;
+            this.sortMode = sortMode;
         }
 
         @Override public CatalogSectionId id() { return id; }
@@ -126,8 +188,10 @@ final class BrowseSessionTest {
         @Override public Long key(Row row) { return row.id(); }
         @Override public CatalogPresentationSpec<String, Row, Long> presentation() {
             return new CatalogPresentationSpec<>("Test", "Rows", row -> Long.toString(row.id()),
-                    List.of(), List.of(new CatalogColumnSpec<>("Id", row -> Long.toString(row.id()))),
-                    java.util.Optional.empty(), List.of(), List.of(), false);
+                    List.of(), List.of(new CatalogColumnSpec<>(
+                            "id", "Id", row -> Long.toString(row.id()), true)),
+                    java.util.Optional.empty(), List.of(), List.of(), false,
+                    new CatalogSortOrder("id", CatalogSortOrder.Direction.ASCENDING), sortMode);
         }
 
         @Override

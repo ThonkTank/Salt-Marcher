@@ -54,11 +54,23 @@ public final class CreaturesServiceAssembly {
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
+        return create(store, executionLane, executionLane, factsLane, uiDispatcher, diagnostics);
+    }
+
+    public static Component create(
+            FeatureStoreHandle store,
+            ExecutionLane executionLane,
+            ExecutionLane catalogReadLane,
+            ExecutionLane factsLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics
+    ) {
         return create(
                 new SqliteCreatureCatalogQueryAdapter(
                         Objects.requireNonNull(store, "store"),
                         Objects.requireNonNull(diagnostics, "diagnostics")),
                 executionLane,
+                catalogReadLane,
                 factsLane,
                 uiDispatcher,
                 diagnostics);
@@ -71,8 +83,20 @@ public final class CreaturesServiceAssembly {
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
+        return create(catalogPort, executionLane, executionLane, factsLane, uiDispatcher, diagnostics);
+    }
+
+    public static Component create(
+            CreatureCatalogPort catalogPort,
+            ExecutionLane executionLane,
+            ExecutionLane catalogReadLane,
+            ExecutionLane factsLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics
+    ) {
         CreatureCatalogPort safeCatalogPort = Objects.requireNonNull(catalogPort, "catalogPort");
         ExecutionLane safeExecutionLane = Objects.requireNonNull(executionLane, "executionLane");
+        ExecutionLane safeCatalogReadLane = Objects.requireNonNull(catalogReadLane, "catalogReadLane");
         UiDispatcher safeUiDispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
         Diagnostics safeDiagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
         CreaturesPublishedState publishedState = new CreaturesPublishedState(safeUiDispatcher);
@@ -81,7 +105,7 @@ public final class CreaturesServiceAssembly {
         CreatureDetailQueryApi detailQueries = creatureId -> {
             java.util.concurrent.CompletableFuture<CreatureDetailResult> result = new java.util.concurrent.CompletableFuture<>();
             try {
-                safeExecutionLane.execute(() -> result.complete(loadDetail(
+                safeCatalogReadLane.execute(() -> result.complete(loadDetail(
                         safeCatalogPort, safeDiagnostics, creatureId)));
             } catch (RuntimeException exception) {
                 safeDiagnostics.failure(REFERENCE_FAILURE, exception.getClass());
@@ -94,6 +118,7 @@ public final class CreaturesServiceAssembly {
                 safeCatalogPort,
                 publishedState,
                 safeExecutionLane,
+                safeCatalogReadLane,
                 Objects.requireNonNull(factsLane, "factsLane"),
                 safeDiagnostics);
         CreatureReferenceApi references = creatureId -> {

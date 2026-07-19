@@ -3,6 +3,7 @@ package features.catalog.adapter.javafx;
 import features.catalog.application.CatalogConfirmation;
 import features.catalog.application.CatalogResultState;
 import features.catalog.application.CatalogSectionState;
+import features.catalog.application.CatalogSortOrder;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -15,6 +16,7 @@ record CatalogRenderState<Q, R, K>(
         int pageSize,
         int pageOffset,
         int totalCount,
+        CatalogSortOrder sortOrder,
         String actionMessage,
         CatalogConfirmation<K> confirmation
 ) {
@@ -26,6 +28,7 @@ record CatalogRenderState<Q, R, K>(
         pageSize = Math.max(1, pageSize);
         pageOffset = Math.max(0, pageOffset);
         totalCount = Math.max(0, totalCount);
+        sortOrder = Objects.requireNonNull(sortOrder, "sortOrder");
         actionMessage = Objects.requireNonNullElse(actionMessage, "");
         confirmation = Objects.requireNonNull(confirmation, "confirmation");
     }
@@ -38,6 +41,7 @@ record CatalogRenderState<Q, R, K>(
     ) {
         CatalogSectionState<Q, R, K> source = Objects.requireNonNull(state, "state");
         return new CatalogRenderState<>(workspaceRevision, source.draft(), source.result(), source.selectedKey(),
-                source.pageSize(), source.pageOffset(), source.totalCount(), actionMessage, confirmation);
+                source.pageSize(), source.pageOffset(), source.totalCount(), source.sortOrder(), actionMessage,
+                confirmation);
     }
 }

@@ -77,14 +77,15 @@ public final class EncounterTableCatalogDefinition
                 "Encounter-Tabellen-Katalog", "Encounter-Tabellen", EncounterTableCatalogRow::name,
                 List.of(textFilter("Encounter-Tabellen suchen …", "Encounter-Tabellen suchen")),
                 List.of(
-                        new CatalogColumnSpec<>("Name", EncounterTableCatalogRow::name),
-                        new CatalogColumnSpec<>("Details", EncounterTableCatalogRow::details)),
+                        new CatalogColumnSpec<>("name", "Name", EncounterTableCatalogRow::name, true),
+                        new CatalogColumnSpec<>("details", "Details", EncounterTableCatalogRow::details, false)),
                 Optional.empty(),
                 List.of(new CatalogActionSpec(
                         CatalogActionId.USE_AS_ENCOUNTER_SOURCE, "Als Quelle",
                         "Encounter-Tabelle als Encounter-Quelle verwenden", "Als Encounter-Quelle",
                         CatalogActionSpec.Emphasis.PRIMARY)),
-                List.of(), false);
+                List.of(CatalogActionSpec.create()), false,
+                new CatalogSortOrder("name", CatalogSortOrder.Direction.ASCENDING), CatalogSortMode.LOCAL);
     }
 
     @Override
@@ -117,7 +118,9 @@ public final class EncounterTableCatalogDefinition
         return new CatalogFilterSpec.Text<>(
                 prompt, accessible, TextCatalogQuery::text,
                 (query, value) -> new TextCatalogQuery(value),
-                query -> query.text().isBlank() ? "" : "Suche: " + query.text(),
+                query -> CatalogFilterTokens.single(
+                        query.text().isBlank() ? "" : "Suche: " + query.text(),
+                        ignored -> TextCatalogQuery.empty()),
                 ignored -> TextCatalogQuery.empty());
     }
 }

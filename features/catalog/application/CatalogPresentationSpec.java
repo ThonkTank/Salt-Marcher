@@ -15,7 +15,9 @@ public record CatalogPresentationSpec<Q, R, K>(
         Optional<CatalogActionSpec> primaryAction,
         List<CatalogActionSpec> rowActions,
         List<CatalogActionSpec> sectionActions,
-        boolean paging
+        boolean paging,
+        CatalogSortOrder defaultSort,
+        CatalogSortMode sortMode
 ) {
     public CatalogPresentationSpec {
         accessibleTableName = Objects.requireNonNullElse(accessibleTableName, "");
@@ -26,8 +28,20 @@ public record CatalogPresentationSpec<Q, R, K>(
         primaryAction = Objects.requireNonNull(primaryAction, "primaryAction");
         rowActions = List.copyOf(rowActions);
         sectionActions = List.copyOf(sectionActions);
+        CatalogSortOrder requiredDefaultSort = Objects.requireNonNull(defaultSort, "defaultSort");
+        defaultSort = requiredDefaultSort;
+        sortMode = Objects.requireNonNull(sortMode, "sortMode");
         if (columns.isEmpty()) {
             throw new IllegalArgumentException("Catalog sections require at least one column.");
+        }
+        long matchingSortColumns = columns.stream()
+                .filter(column -> column.id().equals(requiredDefaultSort.columnId()) && column.sortable())
+                .count();
+        if (matchingSortColumns != 1L) {
+            throw new IllegalArgumentException("Default Catalog sort must name one sortable column.");
+        }
+        if (columns.stream().map(CatalogColumnSpec::id).distinct().count() != columns.size()) {
+            throw new IllegalArgumentException("Catalog column ids must be unique.");
         }
     }
 }

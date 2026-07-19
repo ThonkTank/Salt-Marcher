@@ -106,7 +106,7 @@ public final class CatalogTargetArchitectureTest {
                     .resideInAnyPackage("javafx..");
 
     @ArchTest
-    static final ArchRule onlySharedCatalogPresentationMayConstructJavaFxControls =
+    static final ArchRule onlyThreeSharedCatalogPresentationOwnersMayConstructJavaFxControls =
             classes()
                     .that()
                     .resideInAPackage("features.catalog.adapter.javafx..")
@@ -163,18 +163,19 @@ public final class CatalogTargetArchitectureTest {
     }
 
     private static ArchCondition<JavaClass> onlySharedPresentationDependsOnControls() {
-        Set<String> owners = Set.of("CatalogSectionRenderer", "CatalogControlFactory");
-        return new ArchCondition<>("construct JavaFX controls only in the shared renderer or factory") {
+        Set<String> owners = Set.of(
+                "features.catalog.adapter.javafx.CatalogSectionRenderer",
+                "features.catalog.adapter.javafx.CatalogControlFactory",
+                "features.catalog.adapter.javafx.CatalogPicker");
+        return new ArchCondition<>(
+                "depend on JavaFX controls only in the renderer, control factory, or section-neutral picker") {
             @Override
             public void check(JavaClass item, ConditionEvents events) {
                 boolean dependsOnControl = item.getDirectDependenciesFromSelf().stream()
                         .anyMatch(dependency -> dependency.getTargetClass().getPackageName()
                                 .startsWith("javafx.scene.control"));
-                boolean sharedOwner = owners.contains(item.getSimpleName())
-                        || item.getName().startsWith(
-                                "features.catalog.adapter.javafx.CatalogSectionRenderer$")
-                        || item.getName().startsWith(
-                                "features.catalog.adapter.javafx.CatalogControlFactory$");
+                boolean sharedOwner = owners.stream().anyMatch(owner ->
+                        item.getName().equals(owner) || item.getName().startsWith(owner + "$"));
                 if (dependsOnControl && !sharedOwner) {
                     events.add(SimpleConditionEvent.violated(
                             item, item.getName() + " constructs a parallel Catalog control path"));

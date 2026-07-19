@@ -13,7 +13,7 @@ public sealed interface CatalogFilterSpec<Q>
 
     String prompt();
     String accessibleText();
-    Function<Q, String> activeSummary();
+    Function<Q, List<CatalogFilterToken<Q>>> activeTokens();
     UnaryOperator<Q> clear();
 
     record Text<Q>(
@@ -21,11 +21,11 @@ public sealed interface CatalogFilterSpec<Q>
             String accessibleText,
             Function<Q, String> value,
             BiFunction<Q, String, Q> update,
-            Function<Q, String> activeSummary,
+            Function<Q, List<CatalogFilterToken<Q>>> activeTokens,
             UnaryOperator<Q> clear
     ) implements CatalogFilterSpec<Q> {
         public Text {
-            requireCommon(prompt, accessibleText, activeSummary, clear);
+            requireCommon(prompt, accessibleText, activeTokens, clear);
             value = Objects.requireNonNull(value, "value");
             update = Objects.requireNonNull(update, "update");
         }
@@ -37,11 +37,11 @@ public sealed interface CatalogFilterSpec<Q>
             Function<Q, List<CatalogChoice<V>>> choices,
             Function<Q, V> value,
             BiFunction<Q, V, Q> update,
-            Function<Q, String> activeSummary,
+            Function<Q, List<CatalogFilterToken<Q>>> activeTokens,
             UnaryOperator<Q> clear
     ) implements CatalogFilterSpec<Q> {
         public Choice {
-            requireCommon(prompt, accessibleText, activeSummary, clear);
+            requireCommon(prompt, accessibleText, activeTokens, clear);
             choices = Objects.requireNonNull(choices, "choices");
             value = Objects.requireNonNull(value, "value");
             update = Objects.requireNonNull(update, "update");
@@ -54,11 +54,11 @@ public sealed interface CatalogFilterSpec<Q>
             Function<Q, List<CatalogChoice<V>>> choices,
             Function<Q, List<V>> values,
             BiFunction<Q, List<V>, Q> update,
-            Function<Q, String> activeSummary,
+            Function<Q, List<CatalogFilterToken<Q>>> activeTokens,
             UnaryOperator<Q> clear
     ) implements CatalogFilterSpec<Q> {
         public MultiChoice {
-            requireCommon(prompt, accessibleText, activeSummary, clear);
+            requireCommon(prompt, accessibleText, activeTokens, clear);
             choices = Objects.requireNonNull(choices, "choices");
             values = Objects.requireNonNull(values, "values");
             update = Objects.requireNonNull(update, "update");
@@ -72,11 +72,11 @@ public sealed interface CatalogFilterSpec<Q>
             Function<Q, V> minimum,
             Function<Q, V> maximum,
             RangeUpdater<Q, V> update,
-            Function<Q, String> activeSummary,
+            Function<Q, List<CatalogFilterToken<Q>>> activeTokens,
             UnaryOperator<Q> clear
     ) implements CatalogFilterSpec<Q> {
         public ChoiceRange {
-            requireCommon(prompt, accessibleText, activeSummary, clear);
+            requireCommon(prompt, accessibleText, activeTokens, clear);
             choices = Objects.requireNonNull(choices, "choices");
             minimum = Objects.requireNonNull(minimum, "minimum");
             maximum = Objects.requireNonNull(maximum, "maximum");
@@ -90,11 +90,11 @@ public sealed interface CatalogFilterSpec<Q>
             Function<Q, String> minimum,
             Function<Q, String> maximum,
             RangeUpdater<Q, String> update,
-            Function<Q, String> activeSummary,
+            Function<Q, List<CatalogFilterToken<Q>>> activeTokens,
             UnaryOperator<Q> clear
     ) implements CatalogFilterSpec<Q> {
         public TextRange {
-            requireCommon(prompt, accessibleText, activeSummary, clear);
+            requireCommon(prompt, accessibleText, activeTokens, clear);
             minimum = Objects.requireNonNull(minimum, "minimum");
             maximum = Objects.requireNonNull(maximum, "maximum");
             update = Objects.requireNonNull(update, "update");
@@ -106,11 +106,11 @@ public sealed interface CatalogFilterSpec<Q>
             String accessibleText,
             Function<Q, Boolean> value,
             BiFunction<Q, Boolean, Q> update,
-            Function<Q, String> activeSummary,
+            Function<Q, List<CatalogFilterToken<Q>>> activeTokens,
             UnaryOperator<Q> clear
     ) implements CatalogFilterSpec<Q> {
         public TriState {
-            requireCommon(prompt, accessibleText, activeSummary, clear);
+            requireCommon(prompt, accessibleText, activeTokens, clear);
             value = Objects.requireNonNull(value, "value");
             update = Objects.requireNonNull(update, "update");
         }
@@ -124,12 +124,12 @@ public sealed interface CatalogFilterSpec<Q>
     private static <Q> void requireCommon(
             String prompt,
             String accessibleText,
-            Function<Q, String> activeSummary,
+            Function<Q, List<CatalogFilterToken<Q>>> activeTokens,
             UnaryOperator<Q> clear
     ) {
         Objects.requireNonNull(prompt, "prompt");
         Objects.requireNonNull(accessibleText, "accessibleText");
-        Objects.requireNonNull(activeSummary, "activeSummary");
+        Objects.requireNonNull(activeTokens, "activeTokens");
         Objects.requireNonNull(clear, "clear");
     }
 }

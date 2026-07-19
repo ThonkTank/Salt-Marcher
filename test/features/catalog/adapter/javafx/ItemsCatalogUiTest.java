@@ -24,12 +24,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javafx.application.Platform;
+import javafx.collections.ListChangeListener;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
@@ -76,15 +77,18 @@ public final class ItemsCatalogUiTest {
             Parent pane = fixture.host();
 
             text(pane, "Item-Name").setText("  blade  ");
-            select(combo(pane, "Item-Kategorie"), "Weapon");
-            select(combo(pane, "Item-Unterkategorie"), "Martial");
-            select(combo(pane, "Item-Seltenheit"), "Rare");
-            select(combo(pane, "Item-Magie"), "Ja");
-            select(combo(pane, "Item-Attunement"), "Nein");
+            select(picker(pane, "Item-Kategorie"), "Weapon");
+            select(picker(pane, "Item-Unterkategorie"), "Martial");
+            select(picker(pane, "Item-Seltenheit"), "Rare");
+            select(picker(pane, "Item-Magie"), "Ja");
+            select(picker(pane, "Item-Attunement"), "Nein");
             text(pane, "Item-Kosten Minimum").setText("100");
             text(pane, "Item-Kosten Maximum").setText("900");
-            select(combo(pane, "Item-Sortierfeld"), "Kosten");
-            select(combo(pane, "Item-Sortierrichtung"), "Absteigend");
+            TableView<?> itemTable = table(pane, "Item-Ergebnisse");
+            TableColumn<?, ?> cost = itemTable.getColumns().stream()
+                    .filter(column -> "Kosten".equals(column.getText())).findFirst().orElseThrow();
+            cost.setSortType(TableColumn.SortType.DESCENDING);
+            sort(itemTable, cost);
             submit(pane);
 
             ItemsCatalogApi.ItemQuery query = api.queries.getLast();
@@ -121,7 +125,7 @@ public final class ItemsCatalogUiTest {
 
             api.deferNextSearch();
             submit(pane);
-            assertEquals("Aktualisiere...", label(pane, "Item-Ergebnisse Status").getText());
+            assertEquals("Aktualisiere…", label(pane, "Item-Ergebnisse Status").getText());
             api.completeDeferred(ItemsCatalogApi.CatalogStatus.SUCCESS, List.of(), 0);
             assertEquals("Keine Einträge gefunden.", label(pane, "Item-Ergebnisse Status").getText());
 
@@ -142,7 +146,7 @@ public final class ItemsCatalogUiTest {
     }
 
     @Test
-    void ITEMS_CATALOG_UI_003_opensCompleteInspectorByButtonAndEnter() throws Exception {
+    void ITEMS_CATALOG_UI_003_opensCompleteInspectorByEnterWithoutRedundantDetailsButton() throws Exception {
         runOnFxThread(() -> {
             FakeItemsApi api = new FakeItemsApi();
             RecordingInspector inspector = new RecordingInspector();
@@ -153,9 +157,12 @@ public final class ItemsCatalogUiTest {
             assertEquals(1, results.getItems().size());
             results.getSelectionModel().selectFirst();
 
-            Button open = button(pane, "Item im Inspector öffnen");
-            assertFalse(open.isDisabled());
-            open.fire();
+            assertTrue(descendants(pane).stream().filter(Button.class::isInstance).map(Button.class::cast)
+                    .noneMatch(button -> "Item im Inspector öffnen".equals(button.getAccessibleText())),
+                    "redundant selected-row Details button must stay removed");
+            results.fireEvent(new KeyEvent(
+                    KeyEvent.KEY_PRESSED, "", "", KeyCode.ENTER,
+                    false, false, false, false));
             assertEquals("equipment:rapier", api.lastDetailKey);
             assertCompleteInspector(inspector.entry);
 
@@ -213,6 +220,77 @@ public final class ItemsCatalogUiTest {
         });
     }
 
+    @Test
+    void ITEMS_CATALOG_UI_006_providerSortUsesCommandWithoutLocallyReorderingVisiblePage() throws Exception {
+        runOnFxThread(() -> {
+            FakeItemsApi api = new FakeItemsApi();
+            api.rows = List.of(
+                    new ItemsCatalogApi.ItemRow(
+                            "equipment:zeta", "Zeta", "Weapon", "Martial",
+                            false, "Common", false, 20, "2 sp"),
+                    new ItemsCatalogApi.ItemRow(
+                            "equipment:alpha", "Alpha", "Weapon", "Simple",
+                            false, "Common", false, 10, "1 sp"));
+            Parent pane = show(api, new RecordingInspector()).host();
+            TableView<?> results = table(pane, "Item-Ergebnisse");
+            assertEquals(List.of("Zeta", "Alpha"), resultNames(results));
+
+            TableColumn<?, ?> name = results.getColumns().stream()
+                    .filter(column -> "Name".equals(column.getText())).findFirst().orElseThrow();
+            name.setSortType(TableColumn.SortType.DESCENDING);
+            sort(results, name);
+
+            assertEquals(ItemsCatalogApi.SortField.NAME, api.queries.getLast().sortField());
+            assertFalse(api.queries.getLast().ascending());
+            assertEquals(List.of("Zeta", "Alpha"), resultNames(results),
+                    "PROVIDER sort must not reorder only the currently visible JavaFX page");
+        });
+    }
+
+    @Test
+    void ITEMS_CATALOG_UI_007_exposesOptionFailureWithRowsAndRetriesOnNextQuery() throws Exception {
+        runOnFxThread(() -> {
+            FakeItemsApi api = new FakeItemsApi();
+            api.nextOptionStatus = ItemsCatalogApi.CatalogStatus.EXECUTION_ERROR;
+            Parent pane = show(api, new RecordingInspector()).host();
+
+            assertEquals("Item-Filter konnten nicht geladen werden.",
+                    label(pane, "Item-Ergebnisse Status").getText());
+            assertEquals(1, table(pane, "Item-Ergebnisse").getItems().size(),
+                    "option failure must not discard a successful result page");
+
+            submit(pane);
+            assertEquals("", label(pane, "Item-Ergebnisse Status").getText());
+            assertEquals(2, api.optionLoads);
+            assertTrue(picker(pane, "Item-Kategorie").isManaged());
+        });
+    }
+
+    @Test
+    void ITEMS_CATALOG_UI_008_statusOnlyRefreshDoesNotReplaceUnchangedRows() throws Exception {
+        runOnFxThread(() -> {
+            FakeItemsApi api = new FakeItemsApi();
+            Parent pane = show(api, new RecordingInspector()).host();
+            @SuppressWarnings("unchecked")
+            TableView<ItemsCatalogApi.ItemRow> results =
+                    (TableView<ItemsCatalogApi.ItemRow>) table(pane, "Item-Ergebnisse");
+            List<ItemsCatalogApi.ItemRow> unchanged = List.copyOf(results.getItems());
+            java.util.concurrent.atomic.AtomicInteger rowMutations = new java.util.concurrent.atomic.AtomicInteger();
+            results.getItems().addListener((ListChangeListener<ItemsCatalogApi.ItemRow>) ignored ->
+                    rowMutations.incrementAndGet());
+
+            api.deferNextSearch();
+            submit(pane);
+            assertEquals("Aktualisiere…", label(pane, "Item-Ergebnisse Status").getText());
+            assertEquals(0, rowMutations.get());
+
+            api.completeDeferred(ItemsCatalogApi.CatalogStatus.SUCCESS, unchanged, 120);
+            assertEquals("", label(pane, "Item-Ergebnisse Status").getText());
+            assertEquals(0, rowMutations.get(),
+                    "status-only refresh must not replace the unchanged TableView rows");
+        });
+    }
+
     private static void assertState(
             Parent pane,
             FakeItemsApi api,
@@ -256,7 +334,6 @@ public final class ItemsCatalogUiTest {
                 providers(api), routes(inspector));
         ShellBinding binding = component.contribution().bind();
         BorderPane pane = new BorderPane(binding.slotContent().get(ShellSlot.COCKPIT_MAIN));
-        pane.setLeft(binding.slotContent().get(ShellSlot.COCKPIT_CONTROLS));
         Stage stage = new Stage();
         stage.setScene(new Scene(pane, 1_180.0, 720.0));
         stage.show();
@@ -389,8 +466,8 @@ public final class ItemsCatalogUiTest {
         return node(root, TextField.class, accessibleText);
     }
 
-    private static ComboBox<?> combo(Parent root, String accessibleText) {
-        return node(root, ComboBox.class, accessibleText);
+    private static CatalogPicker<?> picker(Parent root, String accessibleText) {
+        return node(root, CatalogPicker.class, accessibleText);
     }
 
     private static Button button(Parent root, String accessibleText) {
@@ -405,6 +482,17 @@ public final class ItemsCatalogUiTest {
         return node(root, TableView.class, accessibleText);
     }
 
+    private static List<String> resultNames(TableView<?> table) {
+        return table.getItems().stream().map(ItemsCatalogApi.ItemRow.class::cast)
+                .map(ItemsCatalogApi.ItemRow::name).toList();
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static void sort(TableView table, TableColumn column) {
+        table.getSortOrder().setAll(column);
+        table.sort();
+    }
+
     private static <T extends Node> T node(Parent root, Class<T> type, String accessibleText) {
         return descendants(root).stream()
                 .filter(type::isInstance)
@@ -415,24 +503,18 @@ public final class ItemsCatalogUiTest {
                         type.getSimpleName() + " not found: " + accessibleText));
     }
 
-    private static void select(ComboBox<?> box, String displayText) {
-        for (Object item : box.getItems()) {
-            if (displayText.equals(itemText(box, item))) {
-                selectRaw(box, item);
+    private static void select(CatalogPicker<?> picker, String displayText) {
+        picker.show();
+        for (int index = 0; index < picker.optionList().getItems().size(); index++) {
+            if (displayText.equals(picker.optionList().getItems().get(index).label())) {
+                picker.optionList().getSelectionModel().select(index);
+                picker.optionList().fireEvent(new KeyEvent(
+                        KeyEvent.KEY_PRESSED, "", "", KeyCode.ENTER,
+                        false, false, false, false));
                 return;
             }
         }
-        throw new AssertionError("ComboBox item not found: " + displayText);
-    }
-
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    private static void selectRaw(ComboBox box, Object item) {
-        box.getSelectionModel().select(item);
-    }
-
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    private static String itemText(ComboBox box, Object item) {
-        return box.getConverter() == null ? String.valueOf(item) : box.getConverter().toString(item);
+        throw new AssertionError("CatalogPicker option not found: " + displayText);
     }
 
     private static List<Node> descendants(Node root) {
@@ -487,17 +569,23 @@ public final class ItemsCatalogUiTest {
     private static final class FakeItemsApi implements ItemsCatalogApi {
         private final List<ItemQuery> queries = new ArrayList<>();
         private CatalogStatus nextStatus = CatalogStatus.SUCCESS;
+        private CatalogStatus nextOptionStatus = CatalogStatus.SUCCESS;
         private CompletableFuture<PageResult> deferred;
+        private List<ItemRow> rows = List.of(row());
         private String lastDetailKey;
         private int detailCalls;
+        private int optionLoads;
 
         @Override
         public CompletionStage<FilterOptionsResult> loadFilterOptions() {
+            optionLoads++;
+            CatalogStatus status = nextOptionStatus;
+            nextOptionStatus = CatalogStatus.SUCCESS;
             return CompletableFuture.completedFuture(new FilterOptionsResult(
-                    CatalogStatus.SUCCESS,
-                    List.of("Armor", "Weapon"),
-                    List.of("Martial", "Simple"),
-                    List.of("Common", "Rare")));
+                    status,
+                    status == CatalogStatus.SUCCESS ? List.of("Armor", "Weapon") : List.of(),
+                    status == CatalogStatus.SUCCESS ? List.of("Martial", "Simple") : List.of(),
+                    status == CatalogStatus.SUCCESS ? List.of("Common", "Rare") : List.of()));
         }
 
         @Override
@@ -508,7 +596,7 @@ public final class ItemsCatalogUiTest {
             }
             CatalogStatus status = nextStatus;
             nextStatus = CatalogStatus.SUCCESS;
-            return CompletableFuture.completedFuture(page(status, List.of(row()), 120, query.pageOffset()));
+            return CompletableFuture.completedFuture(page(status, rows, 120, query.pageOffset()));
         }
 
         @Override

@@ -29,7 +29,9 @@ old runtime and the complete migration is qualified.
   implementation layers, tests, and non-user-visible documentation are not compatibility
   boundaries; only accepted observable behavior, provider and persisted truth, and data
   safety constrain the replacement.
-- Preserve the approved seven-section visual design and explicit handoff behavior.
+- Preserve the largely approved seven-section visual direction and explicit
+  handoff behavior; final visible acceptance remains open until the M5 follow-up
+  below is implemented and manually reviewed.
 - Use one physical SQLite database with owner-scoped readiness and connection handles.
 - Prepare storage before any feature starts background work.
 - Keep Provider truth in Creatures, Items, Encounter, World Planner, and Encounter Tables;
@@ -80,6 +82,12 @@ from refreshed `origin/main`.
 - Current milestone: M5 removes the remaining storage compatibility seam, qualifies the
   complete production cutover, and prepares the owner-controlled installed-data rehearsal
   and desktop acceptance.
+- Owner acceptance state: the consolidated visual direction is only largely
+  approved, not finally accepted. Header-only sorting, keyboard-selectable and
+  virtualized filters, individual chips plus reset, content-sized controls, one
+  main root, unified create behavior, removal of the Details button, shared
+  footer composition, and explicit responsiveness remain an open M5 acceptance
+  follow-up.
 
 ## M0: Target Lock And Baseline
 
@@ -291,6 +299,22 @@ from refreshed `origin/main`.
   responsive UI, and explicit-action qualification through production routes
 - perform independent architecture and quality review after the final code and document diff
 
+### Implemented Owner Acceptance Follow-up
+
+- make table headers the only sort controls and retain sort generically per section
+- support direct keyboard selection in virtualized filter pickers; retain only
+  successful option loads and retry failed loads with the next active query
+- render one removable chip per active value plus one whole-filter reset action
+- keep controls content-sized under the single Catalog main root
+- expose one consistent `Erstellen` control backed by the owning provider's real
+  route or an explicitly unavailable, side-effect-free capability
+- remove the dedicated Details button and keep Inspector details row-driven
+- consolidate count, current status, and optional pagination in the result footer
+- keep Creature and Item reads independent and satisfy the documented 100 ms
+  local-feedback responsiveness target
+- repeat owner manual visual and interaction review; the earlier response counts
+  only as largely approved and does not satisfy final acceptance
+
 ### M5 Cutover Evidence In Progress
 
 - `app` registers all eleven immutable owner definitions, prepares storage, constructs
@@ -369,6 +393,26 @@ from refreshed `origin/main`.
   findings. The renewed literal merge-blocking `./gradlew check --console=plain` returned
   `BUILD SUCCESSFUL in 7m 53s`. Desktop installation and visible owner acceptance remain M5
   gates.
+- the acceptance follow-up now uses header-only generic sort, one virtualized
+  keyboard picker, individual chips plus atomic reset, content-sized controls in
+  the sole main root, unified create behavior, row-driven details, and one shared
+  footer. Creature and Item stateless Catalog reads use independent bounded lanes;
+  Creature state publication remains on its serialized lane.
+- the post-follow-up adversarial review found and corrected three release blockers:
+  the initially over-broad Creature lane, overlapping option loads that were not
+  coalesced independently of request epochs, and unmatched picker input that could
+  commit a stale highlight. Option failures now retain successful page rows while
+  publishing visible failure feedback and retry on the next active query.
+- deterministic regression coverage now includes the separate Creature state/read
+  lanes, request-local Creature detail reads, the production AppBootstrap Creature/Item
+  lane composition, overlapping option futures, option failure and retry, an
+  installed-data-sized 2,526-option virtualized picker, unmatched prefix input, all
+  seven create outcomes, CR inside labels, individual chips, reset, footer, and both
+  acceptance sizes. Status-only refresh transitions no longer replace unchanged table rows.
+- renewed literal merge-blocking `./gradlew check --console=plain` returned
+  `BUILD SUCCESSFUL in 6m 3s` on the complete acceptance implementation and
+  review-fix diff. Desktop installation and visible owner acceptance remain
+  open gates.
 
 ### Finish Criteria
 

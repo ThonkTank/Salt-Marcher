@@ -99,24 +99,51 @@ public final class SmokeStartupTest {
     }
 
     @Test
-    void preparesEveryFeatureStoreBeforeFirstServiceWork(@TempDir Path temporaryDirectory) throws Exception {
+    void preparesStoresBeforeWorkAndKeepsProductionCatalogReadLanesIndependent(
+            @TempDir Path temporaryDirectory
+    ) throws Exception {
         runOnFx(() -> {
             Path databasePath = temporaryDirectory.resolve("startup-order.sqlite");
             try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-                StoragePreparedLane lane = new StoragePreparedLane(databasePath);
+                StoragePreparedLane orderedLane = new StoragePreparedLane(databasePath);
+                StoragePreparedLane creatureReadLane = new StoragePreparedLane(databasePath);
+                StoragePreparedLane itemReadLane = new StoragePreparedLane(databasePath);
                 try (AppBootstrap bootstrap = new AppBootstrap(
                         NoopDiagnostics.INSTANCE,
-                        lane,
-                        lane,
-                        lane,
-                        lane,
-                        lane,
-                        lane,
-                        lane,
+                        orderedLane,
+                        creatureReadLane,
+                        itemReadLane,
+                        orderedLane,
+                        orderedLane,
+                        orderedLane,
+                        orderedLane,
+                        orderedLane,
+                        orderedLane,
                         DirectUiDispatcher.INSTANCE,
                         database)) {
-                    bootstrap.createShell();
-                    require(lane.executions > 0, "Expected explicitly started service work.");
+                    AppShell shell = bootstrap.createShell();
+                    new Scene(shell, 1_150, 700);
+                    require(orderedLane.executions > 0, "Expected explicitly started service work.");
+                    require(creatureReadLane.executions == 0 && itemReadLane.executions == 0,
+                            "inactive Catalog providers performed startup reads");
+
+                    shell.navigateTo(new ContributionKey("catalog"));
+                    shell.applyCss();
+                    shell.layout();
+                    require(creatureReadLane.executions >= 2,
+                            "Monster activation did not use the production Creature read lane");
+                    require(itemReadLane.executions == 0,
+                            "inactive Items performed work on its production read lane");
+
+                    ToggleButton items = shell.lookupAll(".catalog-section-button").stream()
+                            .filter(ToggleButton.class::isInstance)
+                            .map(ToggleButton.class::cast)
+                            .filter(button -> "Katalogbereich Items".equals(button.getAccessibleText()))
+                            .findFirst()
+                            .orElseThrow(() -> new AssertionError("Items Catalog section missing"));
+                    items.fire();
+                    require(itemReadLane.executions >= 2,
+                            "Items activation did not use its independent production read lane");
                 }
             }
         });
