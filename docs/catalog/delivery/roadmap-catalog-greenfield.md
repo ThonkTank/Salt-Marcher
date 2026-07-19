@@ -352,7 +352,7 @@ from refreshed `origin/main`.
   `CATALOG_REHEARSAL_READY owners=11 creatures=2526 items=1329 saved_encounters=5 npcs=0
   factions=0 locations=0 encounter_tables=5`. The installed source database remained
   unmigrated; only isolated restored copies were changed.
-- the final code and document diff is integrated with current `origin/main` (`0b094e121`).
+- the final code and document diff is integrated with current `origin/main` (`dbcf4248d`).
   Literal pre-review qualification returned `BUILD SUCCESSFUL in 11m 29s` for `test`,
   `2m 43s` for `uiTest`, and `1m 54s` for `architectureTest`. The corrected Encounter, Dungeon,
   and shared persistence routes returned `BUILD SUCCESSFUL in 1m 34s`. Final independent
@@ -362,8 +362,13 @@ from refreshed `origin/main`.
   `BUILD SUCCESSFUL in 30s`, and the post-review fresh restore copy returned the complete
   `CATALOG_REHEARSAL_READY` result in 46s. Final architecture and quality re-review reported
   no remaining findings; renewed literal `./gradlew check --console=plain` returned
-  `BUILD SUCCESSFUL in 10m 32s` on the complete real-data compatibility diff. Desktop
-  installation and visible owner acceptance remain M5 gates.
+  `BUILD SUCCESSFUL in 10m 32s` on the complete real-data compatibility diff. After rebasing
+  onto `dbcf4248d`, the Dungeon production qualification was adapted to the owner-scoped store
+  handle without registering that owner twice. Its focused regression returned
+  `BUILD SUCCESSFUL in 1m 3s`; final architecture and quality re-review both reported no
+  findings. The renewed literal merge-blocking `./gradlew check --console=plain` returned
+  `BUILD SUCCESSFUL in 7m 53s`. Desktop installation and visible owner acceptance remain M5
+  gates.
 
 ### Finish Criteria
 

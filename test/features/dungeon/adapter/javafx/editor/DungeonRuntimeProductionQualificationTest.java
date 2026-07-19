@@ -49,6 +49,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import platform.diagnostics.NoopDiagnostics;
 import platform.execution.DirectExecutionLane;
+import platform.persistence.FeatureStoreHandle;
 import platform.persistence.SqliteDatabase;
 import platform.ui.DirectUiDispatcher;
 import platform.ui.mapcanvas.MapCanvasLayer;
@@ -79,8 +80,9 @@ final class DungeonRuntimeProductionQualificationTest {
         for (DungeonQualificationDataset dataset : DungeonQualificationDataset.values()) {
             Path databasePath = tempDir.resolve(dataset.name().toLowerCase() + ".db");
             try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-                DungeonSparseQualificationFixture.seedRuntime(database, databasePath, dataset);
-                evidence.put(dataset, runOnFxThread(() -> qualify(database, dataset)));
+                FeatureStoreHandle dungeonStore =
+                        DungeonSparseQualificationFixture.seedRuntime(database, databasePath, dataset);
+                evidence.put(dataset, runOnFxThread(() -> qualify(dungeonStore, dataset)));
             }
         }
 
@@ -97,20 +99,20 @@ final class DungeonRuntimeProductionQualificationTest {
     }
 
     private static QualificationEvidence qualify(
-            SqliteDatabase database,
+            FeatureStoreHandle dungeonStore,
             DungeonQualificationDataset dataset
     ) {
         DungeonRuntimeWorkProbe probe = new DungeonRuntimeWorkProbe();
         Snapshot beforeCold = probe.snapshot();
         long coldStarted = System.nanoTime();
         DungeonCachedWindowStore windowStore = new DungeonCachedWindowStore(
-                probe.count(new SqliteDungeonWindowStore(database)));
+                probe.count(new SqliteDungeonWindowStore(dungeonStore)));
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(new EmptyPartyRosterRepository());
         DungeonTestAssembly.Component dungeon = DungeonTestAssembly.create(
-                new SqliteDungeonCatalogStore(database),
+                new SqliteDungeonCatalogStore(dungeonStore),
                 windowStore,
-                probe.count(new SqliteDungeonUnitOfWork(database)),
-                new SqliteDungeonIdentityAllocator(database),
+                probe.count(new SqliteDungeonUnitOfWork(dungeonStore)),
+                new SqliteDungeonIdentityAllocator(dungeonStore),
                 party.activeParty(),
                 party.travelPositions(),
                 party.application(),

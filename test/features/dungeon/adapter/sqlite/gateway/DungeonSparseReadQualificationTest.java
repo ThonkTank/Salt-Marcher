@@ -16,6 +16,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.FeatureStoreHandle;
 import platform.persistence.SqliteDatabase;
 
 final class DungeonSparseReadQualificationTest {
@@ -26,11 +27,11 @@ final class DungeonSparseReadQualificationTest {
         for (DungeonQualificationDataset dataset : DungeonQualificationDataset.values()) {
             Path path = tempDir.resolve(dataset.name().toLowerCase() + ".db");
             try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-                var fixture = DungeonSqliteFixtureSeeder.prepare(database);
-                DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(fixture.store());
+                FeatureStoreHandle dungeonStore =
+                        DungeonSparseQualificationFixture.seed(database, path, dataset);
+                DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(dungeonStore);
                 gateway.loadIndex(new DungeonWindowRequest(
                         new DungeonMapIdentity(DungeonQualificationDataset.MAP_ID), 0L, List.of()));
-                DungeonSparseQualificationFixture.seed(database, path, dataset);
 
                 var viewport = dataset.qualificationViewport(dataset.ordinal() + 1L);
                 DungeonWindowRequest request = new DungeonWindowRequest(
