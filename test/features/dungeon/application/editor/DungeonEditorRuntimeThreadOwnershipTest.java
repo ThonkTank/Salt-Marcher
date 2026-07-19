@@ -261,7 +261,7 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
             UiDispatcher dispatcher
     ) {
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(
-                new InMemoryPartyRepository(), lane, dispatcher, (id, type) -> { });
+                new InMemoryPartyRepository(), lane, lane, dispatcher, (id, type) -> { });
         lane.runAll();
         DungeonTestAssembly.Component dungeon = DungeonTestAssembly.create(
                 repository,
@@ -283,6 +283,7 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
     private static DungeonEditorFeatureRuntimeRoot createRuntimeDirect(InMemoryDungeonRepository repository) {
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(
                 new InMemoryPartyRepository(),
+                DirectExecutionLane.INSTANCE,
                 DirectExecutionLane.INSTANCE,
                 DirectUiDispatcher.INSTANCE,
                 (id, type) -> { });

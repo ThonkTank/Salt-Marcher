@@ -125,7 +125,22 @@ public final class SessionPlannerCatalogTest {
             }
 
         };
-        runOnFxThread(() -> assertPendingDraftCancellation(delayedGeneration));
+        java.util.concurrent.atomic.AtomicReference<PendingPreparationUi> pendingUi =
+                new java.util.concurrent.atomic.AtomicReference<>();
+        runOnFxThread(() -> pendingUi.set(openPendingDraft(delayedGeneration)));
+        runOnFxThread(() -> {
+            PendingPreparationUi ui = pendingUi.get();
+            layout(ui.controls());
+            assertTrue(button(ui.controls(), "Session generieren").isDisabled(),
+                    "next JavaFX turn keeps duplicate generation disabled");
+            assertTrue(isEffectivelyVisible(button(ui.controls(), "Abbrechen")),
+                    "next JavaFX turn exposes cancellation while the provider remains pending");
+            button(ui.controls(), "Abbrechen").fire();
+        });
+        runOnFxThread(() -> assertEquals(
+                SessionPreparationStatus.CANCELLED,
+                pendingUi.get().planner().workspaceModel().current().preparation().status(),
+                "cancel intent is visible on the following JavaFX turn"));
     }
 
     @Test
@@ -145,7 +160,7 @@ public final class SessionPlannerCatalogTest {
                         return planner.workspaceModel().subscribe(listener);
                     });
 
-            new SessionPlannerContribution(planner.application(), counted).bind();
+            new SessionPlannerContribution(planner.application(), counted, ignored -> { }).bind();
 
             assertEquals(1, subscriptions[0],
                     "catalog, controls, timeline, summary, and preparation share one workspace subscription");
@@ -168,12 +183,12 @@ public final class SessionPlannerCatalogTest {
                 "saving state keeps cancellation visible");
     }
 
-    private static void assertPendingDraftCancellation(SessionGenerationApi generation) {
+    private static PendingPreparationUi openPendingDraft(SessionGenerationApi generation) {
         SessionPlannerTestServices services = services(generation);
         seedActiveParty(services);
         SessionPlannerServiceAssembly planner = services.planner();
         ShellBinding binding = new SessionPlannerContribution(
-                planner.application(), planner.workspaceModel()).bind();
+                planner.application(), planner.workspaceModel(), ignored -> { }).bind();
         Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
         Stage stage = new Stage();
         stage.setScene(new Scene(controls, 420.0, 720.0));
@@ -188,11 +203,10 @@ public final class SessionPlannerCatalogTest {
         assertTrue(button(controls, "Session generieren").isDisabled(),
                 "pending generation prevents duplicate submission");
 
-        button(controls, "Abbrechen").fire();
+        return new PendingPreparationUi(controls, planner);
+    }
 
-        assertEquals(SessionPreparationStatus.CANCELLED,
-                planner.workspaceModel().current().preparation().status(),
-                "cancel invalidates the pending preparation attempt");
+    private record PendingPreparationUi(Parent controls, SessionPlannerServiceAssembly planner) {
     }
 
     private static void runTest() {
@@ -200,7 +214,7 @@ public final class SessionPlannerCatalogTest {
         long locationId = seedLocation(services);
         SessionPlannerServiceAssembly planner = services.planner();
         ShellBinding binding = new SessionPlannerContribution(
-                planner.application(), planner.workspaceModel()).bind();
+                planner.application(), planner.workspaceModel(), ignored -> { }).bind();
         Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
         Parent main = slot(binding, ShellSlot.COCKPIT_MAIN, Parent.class);
         Parent state = slot(binding, ShellSlot.COCKPIT_STATE, Parent.class);
@@ -702,6 +716,8 @@ public final class SessionPlannerCatalogTest {
         SessionPlannerServiceAssembly planner = new SessionPlannerServiceAssembly(
                 sessionRepository, sessionRepository, sessionRepository, party.application(),
                 generatedEncounterApi(), savedPlans, world.snapshotModel(), generation,
+                platform.execution.DirectExecutionLane.INSTANCE,
+                platform.execution.DirectExecutionLane.INSTANCE,
                 platform.execution.DirectExecutionLane.INSTANCE,
                 platform.ui.DirectUiDispatcher.INSTANCE,
                 platform.diagnostics.NoopDiagnostics.INSTANCE);

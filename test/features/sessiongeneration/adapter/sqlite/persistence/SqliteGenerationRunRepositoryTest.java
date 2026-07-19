@@ -230,7 +230,11 @@ final class SqliteGenerationRunRepositoryTest {
         java.nio.file.Path databasePath = temporaryDirectory.resolve("load-query-bound.sqlite");
         GeneratedRunDraft draft = GeneratedRunDraft.from(generate(179974L));
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            new SqliteGenerationRunRepository(database).commit(draft);
+            SqliteGenerationRunRepository writer = new SqliteGenerationRunRepository(database);
+            writer.commit(draft);
+            for (long seed = 200_000L; seed < 200_032L; seed++) {
+                writer.commit(GeneratedRunDraft.from(generate(seed)));
+            }
             AtomicInteger queries = new AtomicInteger();
             SqliteGenerationRunRepository counted = new SqliteGenerationRunRepository(
                     () -> countingConnection(databasePath, queries));

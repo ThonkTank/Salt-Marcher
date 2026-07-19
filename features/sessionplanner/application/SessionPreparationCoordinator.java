@@ -40,12 +40,25 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
+import platform.diagnostics.Measurement;
 import platform.execution.ExecutionLane;
 
 public final class SessionPreparationCoordinator {
 
     private static final DiagnosticId PREPARATION_FAILURE =
             new DiagnosticId("sessionplanner.preparation-failure");
+    private static final DiagnosticId PARTY_READ =
+            new DiagnosticId("sessionplanner.preparation.party-read");
+    private static final DiagnosticId GENERATION_DRAFT =
+            new DiagnosticId("sessionplanner.preparation.generation-draft");
+    private static final DiagnosticId ENCOUNTER_PREPARE =
+            new DiagnosticId("sessionplanner.preparation.encounter-prepare");
+    private static final DiagnosticId PREPARED_ASSEMBLY =
+            new DiagnosticId("sessionplanner.preparation.prepared-assembly");
+    private static final DiagnosticId FOREIGN_COMMITS =
+            new DiagnosticId("sessionplanner.preparation.foreign-commits");
+    private static final DiagnosticId PLANNER_COMMIT =
+            new DiagnosticId("sessionplanner.preparation.planner-commit");
 
     private final SessionPlanRepository repository;
     private final SessionPreparedSessionStore preparedSessions;
@@ -53,7 +66,8 @@ public final class SessionPreparationCoordinator {
     private final SessionPlannerWorkspacePublicationCoordinator workspace;
     private final SessionGenerationApi generation;
     private final EncounterApi encounters;
-    private final ExecutionLane executionLane;
+    private final ExecutionLane cpuLane;
+    private final ExecutionLane ioLane;
     private final Diagnostics diagnostics;
     private long attemptSequence;
     private Attempt active;
@@ -65,7 +79,8 @@ public final class SessionPreparationCoordinator {
             SessionPlannerWorkspacePublicationCoordinator workspace,
             SessionGenerationApi generation,
             EncounterApi encounters,
-            ExecutionLane executionLane,
+            ExecutionLane cpuLane,
+            ExecutionLane ioLane,
             Diagnostics diagnostics
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
@@ -74,112 +89,99 @@ public final class SessionPreparationCoordinator {
         this.workspace = Objects.requireNonNull(workspace, "workspace");
         this.generation = Objects.requireNonNull(generation, "generation");
         this.encounters = Objects.requireNonNull(encounters, "encounters");
-        this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
+        this.cpuLane = Objects.requireNonNull(cpuLane, "cpuLane");
+        this.ioLane = Objects.requireNonNull(ioLane, "ioLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
-    void prepare(PrepareSessionCommand command) {
+    synchronized void prepare(PrepareSessionCommand command) {
         Objects.requireNonNull(command, "command");
-        executionLane.execute(() -> prepareOnLane(command));
+        Attempt attempt = new Attempt(++attemptSequence, command);
+        active = attempt;
+        publish(SessionPreparationStatus.GENERATING, "Session wird vorbereitet …",
+                workspace.current().sourceSessionId(), attempt.id, true);
+        dispatchIo(attempt, () -> loadSession(attempt), "Session konnte nicht geladen werden.");
     }
 
-    void cancel() {
-        executionLane.execute(() -> invalidateOnLane(
-                SessionPreparationStatus.CANCELLED, "Vorbereitung abgebrochen."));
+    synchronized void cancel() {
+        invalidateNow(SessionPreparationStatus.CANCELLED, "Vorbereitung abgebrochen.");
     }
 
-    void invalidate() {
-        executionLane.execute(() -> invalidateOnLane(SessionPreparationStatus.IDLE, ""));
+    synchronized void invalidate() {
+        invalidateNow(SessionPreparationStatus.IDLE, "");
     }
 
-    private void prepareOnLane(PrepareSessionCommand command) {
-        long attemptId = ++attemptSequence;
-        active = null;
+    private void loadSession(Attempt attempt) {
         Optional<SessionPlan> loaded;
         try {
             loaded = repository.loadCurrent();
         } catch (IllegalStateException exception) {
-            diagnostics.failure(PREPARATION_FAILURE, exception.getClass());
-            publish(SessionPreparationStatus.FAILED, "Session konnte nicht geladen werden.", 0L, attemptId, false);
+            scheduleCpu(attempt, () -> fail(attempt, "Session konnte nicht geladen werden.", exception),
+                    "Session konnte nicht geladen werden.");
+            return;
+        }
+        scheduleCpu(attempt, () -> completeSessionLoad(attempt, loaded), "Session konnte nicht geladen werden.");
+    }
+
+    private synchronized void completeSessionLoad(Attempt attempt, Optional<SessionPlan> loaded) {
+        if (!isActive(attempt)) {
             return;
         }
         if (loaded.isEmpty()) {
-            publish(SessionPreparationStatus.INVALID, "Keine Session verfügbar.", 0L, attemptId, false);
+            invalid(attempt, "Keine Session verfügbar.");
             return;
         }
         SessionPlan session = loaded.orElseThrow();
-        if (replacesAuthoredContent(session) && !command.replacementConfirmed()) {
+        attempt.session = session;
+        if (replacesAuthoredContent(session) && !attempt.command.replacementConfirmed()) {
+            active = null;
             publish(
                     SessionPreparationStatus.CONFIRMING_REPLACEMENT,
                     "Vorhandene Szenen, Rasten und Beutenotizen werden ersetzt.",
-                    session.sessionId(), attemptId, false);
+                    session.sessionId(), attempt.id, false);
             return;
         }
         publish(SessionPreparationStatus.GENERATING, "Session wird generiert …",
-                session.sessionId(), attemptId, true);
+                session.sessionId(), attempt.id, true);
         CompletionStage<PartyPlanningFactsResponse> planningStage;
+        attempt.partyReadStartedNanos = System.nanoTime();
         try {
             planningStage = party.loadPlanningFacts(new PartyPlanningFactsQuery(session.participantRefs(), 0));
         } catch (RuntimeException exception) {
-            diagnostics.failure(PREPARATION_FAILURE, exception.getClass());
-            publish(SessionPreparationStatus.FAILED, "Party-Planungsdaten konnten nicht geladen werden.",
-                    session.sessionId(), attemptId, false);
+            fail(attempt, "Party-Planungsdaten konnten nicht geladen werden.", exception);
             return;
         }
         if (planningStage == null) {
-            publish(SessionPreparationStatus.FAILED, "Party-Planungsdaten konnten nicht geladen werden.",
-                    session.sessionId(), attemptId, false);
+            fail(attempt, "Party-Planungsdaten konnten nicht geladen werden.", null);
             return;
         }
-        try {
-            planningStage.whenComplete((response, failure) -> {
-                try {
-                    executionLane.execute(() ->
-                            completePlanningFacts(attemptId, session, command, response, failure));
-                } catch (RuntimeException schedulingFailure) {
-                    diagnostics.failure(PREPARATION_FAILURE, schedulingFailure.getClass());
-                    if (attemptSequence == attemptId) {
-                        publish(SessionPreparationStatus.FAILED,
-                                "Party-Planungsdaten konnten nicht abgeschlossen werden.",
-                                session.sessionId(), attemptId, false);
-                    }
-                }
-            });
-        } catch (RuntimeException exception) {
-            diagnostics.failure(PREPARATION_FAILURE, exception.getClass());
-            publish(SessionPreparationStatus.FAILED, "Party-Planungsdaten konnten nicht geladen werden.",
-                    session.sessionId(), attemptId, false);
-        }
+        observe(planningStage, (response, failure) -> completePlanningFacts(attempt, response, failure), attempt,
+                "Party-Planungsdaten konnten nicht geladen werden.");
     }
 
-    private void completePlanningFacts(
-            long attemptId,
-            SessionPlan session,
-            PrepareSessionCommand command,
+    private synchronized void completePlanningFacts(
+            Attempt attempt,
             PartyPlanningFactsResponse facts,
             Throwable failure
     ) {
-        if (attemptSequence != attemptId) {
+        if (!isActive(attempt)) {
             return;
         }
+        measure(PARTY_READ, attempt, attempt.partyReadStartedNanos,
+                attempt.session.participantRefs().size(), 0);
         if (failure != null) {
-            diagnostics.failure(PREPARATION_FAILURE, failure.getClass());
-            publish(SessionPreparationStatus.FAILED, "Party-Planungsdaten konnten nicht geladen werden.",
-                    session.sessionId(), attemptId, false);
+            fail(attempt, "Party-Planungsdaten konnten nicht geladen werden.", failure);
             return;
         }
         Optional<SessionPreparationFingerprint> captured = SessionPreparationFingerprint.capture(
-                session, facts, command.encounterCount(), command.seed());
+                attempt.session, facts, attempt.command.encounterCount(), attempt.command.seed());
         if (captured.isEmpty()) {
-            publish(
-                    SessionPreparationStatus.INVALID,
-                    "Alle Session-Teilnehmer müssen mit gültigem Level verfügbar sein.",
-                    session.sessionId(), attemptId, false);
+            invalid(attempt, "Alle Session-Teilnehmer müssen mit gültigem Level verfügbar sein.");
             return;
         }
-        Attempt attempt = new Attempt(attemptId, captured.orElseThrow());
-        active = attempt;
+        attempt.fingerprint = captured.orElseThrow();
         CompletionStage<GenerationDraftResponse> stage;
+        attempt.generationDraftStartedNanos = System.nanoTime();
         try {
             stage = generation.draft(attempt.fingerprint.toGenerationRequest());
         } catch (RuntimeException exception) {
@@ -194,7 +196,7 @@ public final class SessionPreparationCoordinator {
                 "Session konnte nicht generiert werden.");
     }
 
-    private void completeGenerationDraft(
+    private synchronized void completeGenerationDraft(
             Attempt attempt,
             GenerationDraftResponse response,
             Throwable failure
@@ -202,6 +204,9 @@ public final class SessionPreparationCoordinator {
         if (!isLive(attempt)) {
             return;
         }
+        int encounterCount = response == null || response.draft().isEmpty()
+                ? 0 : response.draft().orElseThrow().result().encounters().size();
+        measure(GENERATION_DRAFT, attempt, attempt.generationDraftStartedNanos, encounterCount, 0);
         if (failure != null) {
             fail(attempt, "Session konnte nicht generiert werden.", failure);
             return;
@@ -226,6 +231,7 @@ public final class SessionPreparationCoordinator {
         publish(SessionPreparationStatus.RESOLVING_ENCOUNTERS, "Encounter werden aufgelöst …",
                 attempt.fingerprint.sessionId(), attempt.id, true);
         CompletionStage<PreparedGeneratedEncounterBatchResult> stage;
+        attempt.encounterPrepareStartedNanos = System.nanoTime();
         try {
             stage = encounters.prepareGeneratedBatch(command);
         } catch (RuntimeException exception) {
@@ -241,7 +247,7 @@ public final class SessionPreparationCoordinator {
                 attempt, "Encounter konnten nicht vorbereitet werden.");
     }
 
-    private void completeEncounterPrepare(
+    private synchronized void completeEncounterPrepare(
             Attempt attempt,
             PreparedGeneratedEncounterBatchResult response,
             Throwable failure
@@ -249,6 +255,9 @@ public final class SessionPreparationCoordinator {
         if (!isLive(attempt)) {
             return;
         }
+        int rosterCount = response == null || response.batch().isEmpty()
+                ? 0 : response.batch().orElseThrow().rosters().size();
+        measure(ENCOUNTER_PREPARE, attempt, attempt.encounterPrepareStartedNanos, rosterCount, 0);
         if (failure != null) {
             fail(attempt, "Encounter konnten nicht vorbereitet werden.", failure);
             return;
@@ -264,6 +273,7 @@ public final class SessionPreparationCoordinator {
             return;
         }
         PreparedSessionDraft prepared;
+        long assemblyStarted = System.nanoTime();
         try {
             prepared = PreparedSessionDraft.assemble(
                     attempt.fingerprint,
@@ -273,6 +283,7 @@ public final class SessionPreparationCoordinator {
             invalid(attempt, "Vorbereitete Session ist unvollständig oder widersprüchlich.");
             return;
         }
+        measure(PREPARED_ASSEMBLY, attempt, assemblyStarted, prepared.scenes().size(), 0);
         if (!isLive(attempt)) {
             return;
         }
@@ -282,9 +293,10 @@ public final class SessionPreparationCoordinator {
         startForeignCommits(attempt);
     }
 
-    private void startForeignCommits(Attempt attempt) {
+    private synchronized void startForeignCommits(Attempt attempt) {
         CompletionStage<GenerationRunResponse> generationStage;
         CompletionStage<CommittedGeneratedEncounterBatchResult> encounterStage;
+        attempt.foreignCommitsStartedNanos = System.nanoTime();
         try {
             generationStage = generation.commit(new CommitGenerationRunCommand(attempt.prepared.generationDraft()));
             if (generationStage == null) {
@@ -309,16 +321,24 @@ public final class SessionPreparationCoordinator {
         try {
             stage.whenComplete((result, failure) -> scheduleCallback(
                     attempt,
-                    () -> {
-                        attempt.generationCommit = result;
-                        attempt.generationCommitFailure = failure;
-                        completeForeignCommits(attempt);
-                    },
+                    () -> completeForeignGeneration(attempt, result, failure),
                     "Generierte Session konnte nicht abgeschlossen werden."));
         } catch (RuntimeException exception) {
-            attempt.generationCommitFailure = exception;
-            completeForeignCommits(attempt);
+            completeForeignGeneration(attempt, null, exception);
         }
+    }
+
+    private synchronized void completeForeignGeneration(
+            Attempt attempt,
+            GenerationRunResponse result,
+            Throwable failure
+    ) {
+        if (!isActive(attempt)) {
+            return;
+        }
+        attempt.generationCommit = result;
+        attempt.generationCommitFailure = failure;
+        completeForeignCommits(attempt);
     }
 
     private void observeForeignEncounters(
@@ -328,23 +348,32 @@ public final class SessionPreparationCoordinator {
         try {
             stage.whenComplete((result, failure) -> scheduleCallback(
                     attempt,
-                    () -> {
-                        attempt.encounterCommit = result;
-                        attempt.encounterCommitFailure = failure;
-                        completeForeignCommits(attempt);
-                    },
+                    () -> completeForeignEncounters(attempt, result, failure),
                     "Encounter-Speicherung konnte nicht abgeschlossen werden."));
         } catch (RuntimeException exception) {
-            attempt.encounterCommitFailure = exception;
-            completeForeignCommits(attempt);
+            completeForeignEncounters(attempt, null, exception);
         }
     }
 
-    private void completeForeignCommits(Attempt attempt) {
+    private synchronized void completeForeignEncounters(
+            Attempt attempt,
+            CommittedGeneratedEncounterBatchResult result,
+            Throwable failure
+    ) {
+        if (!isActive(attempt)) {
+            return;
+        }
+        attempt.encounterCommit = result;
+        attempt.encounterCommitFailure = failure;
+        completeForeignCommits(attempt);
+    }
+
+    private synchronized void completeForeignCommits(Attempt attempt) {
         attempt.foreignCompletions++;
         if (attempt.foreignCompletions < 2) {
             return;
         }
+        measure(FOREIGN_COMMITS, attempt, attempt.foreignCommitsStartedNanos, 2, 0);
         if (!isLive(attempt)) {
             return;
         }
@@ -366,13 +395,37 @@ public final class SessionPreparationCoordinator {
         if (!isLive(attempt)) {
             return;
         }
+        attempt.plannerCommitStartedNanos = System.nanoTime();
+        dispatchIo(attempt, () -> commitPlanner(attempt, command), "Session konnte nicht gespeichert werden.");
+    }
+
+    private void commitPlanner(Attempt attempt, CommitPreparedSessionCommand command) {
         CommitPreparedSessionResult result;
         try {
+            Optional<SessionPlan> current = repository.loadCurrent();
+            if (current.isEmpty()
+                    || current.orElseThrow().sessionId() != attempt.fingerprint.sessionId()
+                    || !current.orElseThrow().revision().equals(attempt.fingerprint.sourceRevision())) {
+                scheduleCpu(attempt, () -> invalid(
+                                attempt, "Session wurde geändert; die Vorbereitung wurde nicht übernommen."),
+                        "Session konnte nicht auf Änderungen geprüft werden.");
+                return;
+            }
             result = preparedSessions.commitPreparedSession(command);
         } catch (RuntimeException exception) {
-            fail(attempt, "Session konnte nicht gespeichert werden.", exception);
+            scheduleCpu(attempt, () -> fail(attempt, "Session konnte nicht gespeichert werden.", exception),
+                    "Session konnte nicht gespeichert werden.");
             return;
         }
+        scheduleCpu(attempt, () -> completePlannerCommit(attempt, result), "Session konnte nicht gespeichert werden.");
+    }
+
+    private synchronized void completePlannerCommit(Attempt attempt, CommitPreparedSessionResult result) {
+        if (!isActive(attempt)) {
+            return;
+        }
+        measure(PLANNER_COMMIT, attempt, attempt.plannerCommitStartedNanos,
+                attempt.prepared.scenes().size(), 0);
         if (result == null) {
             fail(attempt, "Session konnte nicht gespeichert werden.", null);
             return;
@@ -551,30 +604,10 @@ public final class SessionPreparationCoordinator {
     }
 
     private boolean isLive(Attempt attempt) {
-        if (!isActive(attempt)) {
-            return false;
-        }
-        Optional<SessionPlan> current;
-        try {
-            current = repository.loadCurrent();
-        } catch (IllegalStateException exception) {
-            fail(attempt, "Session konnte nicht auf Änderungen geprüft werden.", exception);
-            return false;
-        }
-        if (current.isEmpty()
-                || current.orElseThrow().sessionId() != attempt.fingerprint.sessionId()
-                || !current.orElseThrow().revision().equals(attempt.fingerprint.sourceRevision())) {
-            active = null;
-            attemptSequence++;
-            publish(SessionPreparationStatus.INVALID,
-                    "Session wurde geändert; die ältere Vorbereitung wurde verworfen.",
-                    attempt.fingerprint.sessionId(), attempt.id, false);
-            return false;
-        }
-        return true;
+        return isActive(attempt);
     }
 
-    private boolean isActive(Attempt attempt) {
+    private synchronized boolean isActive(Attempt attempt) {
         return active == attempt && attemptSequence == attempt.id;
     }
 
@@ -584,29 +617,60 @@ public final class SessionPreparationCoordinator {
             String failureMessage
     ) {
         try {
-            executionLane.execute(callback);
+            cpuLane.execute(callback);
         } catch (RuntimeException exception) {
             fail(attempt, failureMessage, exception);
         }
     }
 
-    private void invalidateOnLane(SessionPreparationStatus status, String message) {
+    private void invalidateNow(SessionPreparationStatus status, String message) {
         long sessionId = workspace.current().preparation().sessionId();
         long attemptId = ++attemptSequence;
         active = null;
         publish(status, message, sessionId, attemptId, false);
     }
 
-    private void invalid(Attempt attempt, String message) {
+    private void dispatchIo(Attempt attempt, Runnable work, String failureMessage) {
+        try {
+            ioLane.execute(work);
+        } catch (RuntimeException exception) {
+            fail(attempt, failureMessage, exception);
+        }
+    }
+
+    private void scheduleCpu(Attempt attempt, Runnable work, String failureMessage) {
+        try {
+            cpuLane.execute(work);
+        } catch (RuntimeException exception) {
+            fail(attempt, failureMessage, exception);
+        }
+    }
+
+    private void measure(
+            DiagnosticId id,
+            Attempt attempt,
+            long startedNanos,
+            int cardinality,
+            int queryCount
+    ) {
+        diagnostics.measurement(new Measurement(
+                id,
+                attempt.id,
+                Math.max(0L, System.nanoTime() - startedNanos),
+                cardinality,
+                queryCount));
+    }
+
+    private synchronized void invalid(Attempt attempt, String message) {
         if (active != attempt) {
             return;
         }
         active = null;
         publish(SessionPreparationStatus.INVALID, message,
-                attempt.fingerprint.sessionId(), attempt.id, false);
+                sessionId(attempt), attempt.id, false);
     }
 
-    private void fail(Attempt attempt, String message, Throwable failure) {
+    private synchronized void fail(Attempt attempt, String message, Throwable failure) {
         if (failure != null) {
             diagnostics.failure(PREPARATION_FAILURE, failure.getClass());
         }
@@ -615,7 +679,17 @@ public final class SessionPreparationCoordinator {
         }
         active = null;
         publish(SessionPreparationStatus.FAILED, message,
-                attempt.fingerprint.sessionId(), attempt.id, false);
+                sessionId(attempt), attempt.id, false);
+    }
+
+    private long sessionId(Attempt attempt) {
+        if (attempt.fingerprint != null) {
+            return attempt.fingerprint.sessionId();
+        }
+        if (attempt.session != null) {
+            return attempt.session.sessionId();
+        }
+        return workspace.current().sourceSessionId();
     }
 
     private void publish(
@@ -643,18 +717,25 @@ public final class SessionPreparationCoordinator {
 
     private static final class Attempt {
         private final long id;
-        private final SessionPreparationFingerprint fingerprint;
+        private final PrepareSessionCommand command;
+        private SessionPlan session;
+        private SessionPreparationFingerprint fingerprint;
         private GenerationDraft generationDraft;
         private PreparedSessionDraft prepared;
+        private long partyReadStartedNanos;
+        private long generationDraftStartedNanos;
+        private long encounterPrepareStartedNanos;
+        private long foreignCommitsStartedNanos;
+        private long plannerCommitStartedNanos;
         private int foreignCompletions;
         private GenerationRunResponse generationCommit;
         private Throwable generationCommitFailure;
         private CommittedGeneratedEncounterBatchResult encounterCommit;
         private Throwable encounterCommitFailure;
 
-        private Attempt(long id, SessionPreparationFingerprint fingerprint) {
+        private Attempt(long id, PrepareSessionCommand command) {
             this.id = id;
-            this.fingerprint = fingerprint;
+            this.command = Objects.requireNonNull(command, "command");
         }
     }
 }

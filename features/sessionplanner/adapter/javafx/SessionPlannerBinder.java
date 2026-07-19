@@ -36,13 +36,16 @@ final class SessionPlannerBinder {
 
     private final SessionPlannerApi planner;
     private final SessionPlannerWorkspaceModel workspace;
+    private final java.util.function.LongConsumer workspaceApplied;
 
     SessionPlannerBinder(
             SessionPlannerApi planner,
-            SessionPlannerWorkspaceModel workspace
+            SessionPlannerWorkspaceModel workspace,
+            java.util.function.LongConsumer workspaceApplied
     ) {
         this.planner = Objects.requireNonNull(planner, "planner");
         this.workspace = Objects.requireNonNull(workspace, "workspace");
+        this.workspaceApplied = Objects.requireNonNull(workspaceApplied, "workspaceApplied");
     }
 
     ShellBinding bind() {
@@ -129,12 +132,16 @@ final class SessionPlannerBinder {
         }));
 
         workspace.subscribe(snapshot -> {
+            long startedNanos = System.nanoTime();
             viewModel.applyWorkspace(snapshot);
             generationPanel.show(snapshot.preparation());
+            workspaceApplied.accept(Math.max(0L, System.nanoTime() - startedNanos));
         });
         SessionPlannerWorkspaceSnapshot initial = workspace.current();
+        long initialApplyStartedNanos = System.nanoTime();
         viewModel.applyWorkspace(initial);
         generationPanel.show(initial.preparation());
+        workspaceApplied.accept(Math.max(0L, System.nanoTime() - initialApplyStartedNanos));
         planner.initialize();
         return new Binding(ShellControls.stack(catalogView, controlsView), timelineView, summaryView);
     }

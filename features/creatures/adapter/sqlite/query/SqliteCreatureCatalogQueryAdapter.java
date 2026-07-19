@@ -2,6 +2,7 @@ package features.creatures.adapter.sqlite.query;
 
 import org.jspecify.annotations.Nullable;
 import platform.persistence.SqliteDatabase;
+import platform.diagnostics.Diagnostics;
 import features.creatures.adapter.sqlite.gateway.local.SqliteCreatureCatalogLocalGateway;
 import features.creatures.adapter.sqlite.mapper.CreatureCatalogQueryMappingFacade;
 import features.creatures.domain.catalog.CreatureCatalogData.CatalogPageData;
@@ -24,6 +25,10 @@ public final class SqliteCreatureCatalogQueryAdapter implements CreatureCatalogP
 
     public SqliteCreatureCatalogQueryAdapter(SqliteDatabase database) {
         this(new SqliteCreatureCatalogLocalGateway(database));
+    }
+
+    public SqliteCreatureCatalogQueryAdapter(SqliteDatabase database, Diagnostics diagnostics) {
+        this(new SqliteCreatureCatalogLocalGateway(database, diagnostics));
     }
 
     SqliteCreatureCatalogQueryAdapter(SqliteCreatureCatalogLocalGateway gateway) {

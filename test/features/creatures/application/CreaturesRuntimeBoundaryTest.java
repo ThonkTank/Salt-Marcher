@@ -29,7 +29,7 @@ final class CreaturesRuntimeBoundaryTest {
         RecordingDiagnostics diagnostics = new RecordingDiagnostics();
         RecordingPort port = new RecordingPort();
         CreaturesServiceAssembly.Component component =
-                CreaturesServiceAssembly.create(port, lane, ui, diagnostics);
+                CreaturesServiceAssembly.create(port, lane, lane, ui, diagnostics);
         CompletionStage<CreatureCatalogPageResult> older = component.catalogQueries().search(command("older"));
         CompletionStage<CreatureCatalogPageResult> newer = component.catalogQueries().search(command("newer"));
 

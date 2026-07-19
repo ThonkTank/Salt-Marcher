@@ -59,7 +59,7 @@ final class SessionPlanSqliteReads {
         if (selectedId > 0L && plans.stream().noneMatch(plan -> plan.sessionId() == selectedId)) {
             currentSessionId = 0L;
         }
-        return new SqliteSessionPlannerLocalGateway.WorkspaceRead(currentSessionId, sessions);
+        return new SqliteSessionPlannerLocalGateway.WorkspaceRead(currentSessionId, sessions, 0);
     }
 
     Optional<SessionPlanSnapshotRecord> loadSession(Connection connection, long sessionId) throws SQLException {

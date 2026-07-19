@@ -50,6 +50,8 @@ public final class AppBootstrap implements AutoCloseable {
     private final ExecutionLane sessionGenerationIoLane;
     private final ExecutionLane encounterGeneratedCpuLane;
     private final ExecutionLane encounterGeneratedIoLane;
+    private final ExecutionLane sessionPreparationCpuLane;
+    private final ExecutionLane sessionPreparationIoLane;
     private final UiDispatcher uiDispatcher;
     private final SqliteDatabase database;
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -73,44 +75,10 @@ public final class AppBootstrap implements AutoCloseable {
                         "encounter-generated-cpu",
                         Math.max(2, Runtime.getRuntime().availableProcessors() - 1)),
                 new BoundedExecutionLane(diagnostics, "encounter-generated-io", 2),
+                new BoundedExecutionLane(diagnostics, "session-preparation-cpu", 2),
+                new BoundedExecutionLane(diagnostics, "session-preparation-io", 2),
                 new JavaFxUiDispatcher(),
                 SqliteDatabase.defaultDatabase(SqliteDatabase.DEFAULT_DATABASE_FILE_NAME, diagnostics));
-    }
-
-    AppBootstrap(
-            Diagnostics diagnostics,
-            ExecutionLane executionLane,
-            UiDispatcher uiDispatcher,
-            SqliteDatabase database
-    ) {
-        this(
-                diagnostics,
-                executionLane,
-                new BoundedExecutionLane(diagnostics, "session-generation-cpu", 2),
-                new BoundedExecutionLane(diagnostics, "session-generation-io", 2),
-                new BoundedExecutionLane(diagnostics, "encounter-generated-cpu", 2),
-                new BoundedExecutionLane(diagnostics, "encounter-generated-io", 2),
-                uiDispatcher,
-                database);
-    }
-
-    AppBootstrap(
-            Diagnostics diagnostics,
-            ExecutionLane executionLane,
-            ExecutionLane sessionGenerationCpuLane,
-            ExecutionLane sessionGenerationIoLane,
-            UiDispatcher uiDispatcher,
-            SqliteDatabase database
-    ) {
-        this(
-                diagnostics,
-                executionLane,
-                sessionGenerationCpuLane,
-                sessionGenerationIoLane,
-                new BoundedExecutionLane(diagnostics, "encounter-generated-cpu", 2),
-                new BoundedExecutionLane(diagnostics, "encounter-generated-io", 2),
-                uiDispatcher,
-                database);
     }
 
     AppBootstrap(
@@ -120,6 +88,8 @@ public final class AppBootstrap implements AutoCloseable {
             ExecutionLane sessionGenerationIoLane,
             ExecutionLane encounterGeneratedCpuLane,
             ExecutionLane encounterGeneratedIoLane,
+            ExecutionLane sessionPreparationCpuLane,
+            ExecutionLane sessionPreparationIoLane,
             UiDispatcher uiDispatcher,
             SqliteDatabase database
     ) {
@@ -133,6 +103,10 @@ public final class AppBootstrap implements AutoCloseable {
                 encounterGeneratedCpuLane, "encounterGeneratedCpuLane");
         this.encounterGeneratedIoLane = java.util.Objects.requireNonNull(
                 encounterGeneratedIoLane, "encounterGeneratedIoLane");
+        this.sessionPreparationCpuLane = java.util.Objects.requireNonNull(
+                sessionPreparationCpuLane, "sessionPreparationCpuLane");
+        this.sessionPreparationIoLane = java.util.Objects.requireNonNull(
+                sessionPreparationIoLane, "sessionPreparationIoLane");
         this.uiDispatcher = java.util.Objects.requireNonNull(uiDispatcher, "uiDispatcher");
         this.database = java.util.Objects.requireNonNull(database, "database");
     }
@@ -155,12 +129,12 @@ public final class AppBootstrap implements AutoCloseable {
 
     private Components createComponents() {
         CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(
-                database, executionLane, uiDispatcher, diagnostics);
+                database, executionLane, sessionPreparationIoLane, uiDispatcher, diagnostics);
         EncounterTableServiceAssembly.Component encounterTables =
                 EncounterTableServiceAssembly.create(
                         database, executionLane, uiDispatcher, diagnostics);
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(
-                database, executionLane, uiDispatcher, diagnostics);
+                database, executionLane, sessionPreparationIoLane, uiDispatcher, diagnostics);
         ItemsServiceAssembly.Component items = ItemsServiceAssembly.create(
                 database, executionLane, diagnostics);
 
@@ -210,6 +184,8 @@ public final class AppBootstrap implements AutoCloseable {
                 world.snapshot(),
                 generation,
                 executionLane,
+                sessionPreparationCpuLane,
+                sessionPreparationIoLane,
                 uiDispatcher,
                 diagnostics);
         SceneFeature.Component scene = SceneFeature.create(
@@ -506,6 +482,8 @@ public final class AppBootstrap implements AutoCloseable {
         sessionGenerationIoLane.close();
         encounterGeneratedCpuLane.close();
         encounterGeneratedIoLane.close();
+        sessionPreparationCpuLane.close();
+        sessionPreparationIoLane.close();
         executionLane.close();
         database.close();
     }

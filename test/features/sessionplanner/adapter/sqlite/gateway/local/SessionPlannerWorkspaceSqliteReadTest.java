@@ -45,20 +45,22 @@ final class SessionPlannerWorkspaceSqliteReadTest {
     }
 
     @Test
-    void populatedV3WorkspaceReadsEveryChildFamilyWithCardinalityIndependentStatements() throws Exception {
+    void highCardinalityV3WorkspaceReadsEveryChildFamilyWithCardinalityIndependentStatements() throws Exception {
         Path path = temporaryDirectory.resolve("populated-workspace.db");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
             SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(database);
-            repository.insert(completePlan(7L, 1L, 11L, "run-7"));
-            repository.insert(completePlan(8L, 2L, 21L, "run-8"));
-            repository.setCurrentSessionId(8L);
+            for (long sessionId = 1L; sessionId <= 64L; sessionId++) {
+                repository.insert(completePlan(
+                        sessionId, sessionId * 100L, sessionId * 10L, "run-" + sessionId));
+            }
+            repository.setCurrentSessionId(64L);
 
             CountedRead counted = loadCounted(path);
 
             assertEquals(WORKSPACE_STATEMENT_FAMILIES, counted.statements(),
                     "pointer, roots, participants, scenes, rests, notes, and generated rewards");
-            assertEquals(8L, counted.workspace().currentSessionId());
-            assertEquals(2, counted.workspace().sessions().size());
+            assertEquals(64L, counted.workspace().currentSessionId());
+            assertEquals(64, counted.workspace().sessions().size());
             counted.workspace().sessions().forEach(snapshot -> {
                 assertEquals(2, snapshot.participants().size());
                 assertEquals(2, snapshot.encounters().size());

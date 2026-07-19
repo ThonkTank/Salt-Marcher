@@ -5,11 +5,14 @@ import java.util.List;
 import java.util.Optional;
 
 /** Complete Session Planner-owned read captured at one storage instant. */
-public record SessionPlannerReadCapture(long currentSessionId, List<SessionPlan> sessions) {
+public record SessionPlannerReadCapture(long currentSessionId, List<SessionPlan> sessions, int queryCount) {
 
     public SessionPlannerReadCapture {
         currentSessionId = Math.max(0L, currentSessionId);
         sessions = sessions == null ? List.of() : List.copyOf(sessions);
+        if (queryCount < 0) {
+            throw new IllegalArgumentException("query count must not be negative");
+        }
         if (sessions.stream().map(SessionPlan::sessionId).distinct().count() != sessions.size()) {
             throw new IllegalArgumentException("session ids must be unique");
         }

@@ -35,7 +35,7 @@ final class PartyRuntimeMechanismsTest {
         repository.seedOverworldTravel();
 
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(
-                repository, lane, dispatcher, new RecordingDiagnostics());
+                repository, lane, lane, dispatcher, new RecordingDiagnostics());
         List<Integer> observedActiveCounts = new ArrayList<>();
         List<PartyTravelPositionsResult> observedTravel = new ArrayList<>();
         party.snapshot().subscribe(result -> observedActiveCounts.add(
@@ -74,7 +74,7 @@ final class PartyRuntimeMechanismsTest {
         repository.failLoads = true;
 
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(
-                repository, lane, dispatcher, diagnostics);
+                repository, lane, lane, dispatcher, diagnostics);
         List<ReadStatus> snapshotStatuses = new ArrayList<>();
         List<ReadStatus> travelStatuses = new ArrayList<>();
         party.snapshot().subscribe(result -> snapshotStatuses.add(result.status()));
@@ -99,7 +99,7 @@ final class PartyRuntimeMechanismsTest {
         RecordingRepository repository = new RecordingRepository();
 
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(
-                repository, lane, dispatcher, diagnostics);
+                repository, lane, lane, dispatcher, diagnostics);
 
         assertEquals(0, repository.loads);
         assertEquals(1, lane.pending());
@@ -133,7 +133,7 @@ final class PartyRuntimeMechanismsTest {
         RecordingDiagnostics diagnostics = new RecordingDiagnostics();
         RecordingRepository repository = new RecordingRepository();
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(
-                repository, lane, update -> update.run(), diagnostics);
+                repository, lane, lane, update -> update.run(), diagnostics);
         lane.runNext();
         repository.failLoads = true;
 

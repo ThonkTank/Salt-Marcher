@@ -16,10 +16,16 @@ public final class SessionPlannerContribution implements ShellContribution {
 
     private final SessionPlannerApi planner;
     private final SessionPlannerWorkspaceModel workspace;
+    private final java.util.function.LongConsumer workspaceApplied;
 
-    public SessionPlannerContribution(SessionPlannerApi planner, SessionPlannerWorkspaceModel workspace) {
+    public SessionPlannerContribution(
+            SessionPlannerApi planner,
+            SessionPlannerWorkspaceModel workspace,
+            java.util.function.LongConsumer workspaceApplied
+    ) {
         this.planner = Objects.requireNonNull(planner, "planner");
         this.workspace = Objects.requireNonNull(workspace, "workspace");
+        this.workspaceApplied = Objects.requireNonNull(workspaceApplied, "workspaceApplied");
     }
 
     @Override
@@ -35,6 +41,6 @@ public final class SessionPlannerContribution implements ShellContribution {
 
     @Override
     public ShellBinding bind() {
-        return new SessionPlannerBinder(planner, workspace).bind();
+        return new SessionPlannerBinder(planner, workspace, workspaceApplied).bind();
     }
 }

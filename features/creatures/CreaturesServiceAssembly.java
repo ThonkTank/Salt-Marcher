@@ -35,6 +35,7 @@ public final class CreaturesServiceAssembly {
         return create(
                 catalogPort,
                 DirectExecutionLane.INSTANCE,
+                DirectExecutionLane.INSTANCE,
                 DirectUiDispatcher.INSTANCE,
                 NoopDiagnostics.INSTANCE);
     }
@@ -42,12 +43,16 @@ public final class CreaturesServiceAssembly {
     public static Component create(
             SqliteDatabase database,
             ExecutionLane executionLane,
+            ExecutionLane factsLane,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
         return create(
-                new SqliteCreatureCatalogQueryAdapter(Objects.requireNonNull(database, "database")),
+                new SqliteCreatureCatalogQueryAdapter(
+                        Objects.requireNonNull(database, "database"),
+                        Objects.requireNonNull(diagnostics, "diagnostics")),
                 executionLane,
+                factsLane,
                 uiDispatcher,
                 diagnostics);
     }
@@ -55,6 +60,7 @@ public final class CreaturesServiceAssembly {
     public static Component create(
             CreatureCatalogPort catalogPort,
             ExecutionLane executionLane,
+            ExecutionLane factsLane,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
@@ -81,6 +87,7 @@ public final class CreaturesServiceAssembly {
                 safeCatalogPort,
                 publishedState,
                 safeExecutionLane,
+                Objects.requireNonNull(factsLane, "factsLane"),
                 safeDiagnostics);
         CreatureReferenceApi references = creatureId -> {
             if (creatureId <= 0L) {

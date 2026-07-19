@@ -33,6 +33,7 @@ public final class PartyServiceAssembly {
         Component component = assemble(
                 repository,
                 DirectExecutionLane.INSTANCE,
+                DirectExecutionLane.INSTANCE,
                 DirectUiDispatcher.INSTANCE,
                 NoopDiagnostics.INSTANCE);
         start(component);
@@ -42,12 +43,16 @@ public final class PartyServiceAssembly {
     public static Component create(
             SqliteDatabase database,
             ExecutionLane executionLane,
+            ExecutionLane planningFactsLane,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
         return assemble(
-                new SqlitePartyRosterRepository(Objects.requireNonNull(database, "database")),
+                new SqlitePartyRosterRepository(
+                        Objects.requireNonNull(database, "database"),
+                        Objects.requireNonNull(diagnostics, "diagnostics")),
                 executionLane,
+                planningFactsLane,
                 uiDispatcher,
                 diagnostics);
     }
@@ -55,10 +60,11 @@ public final class PartyServiceAssembly {
     public static Component create(
             PartyRosterRepository repository,
             ExecutionLane executionLane,
+            ExecutionLane planningFactsLane,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
-        Component component = assemble(repository, executionLane, uiDispatcher, diagnostics);
+        Component component = assemble(repository, executionLane, planningFactsLane, uiDispatcher, diagnostics);
         start(component);
         return component;
     }
@@ -66,6 +72,7 @@ public final class PartyServiceAssembly {
     private static Component assemble(
             PartyRosterRepository repository,
             ExecutionLane executionLane,
+            ExecutionLane planningFactsLane,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
@@ -82,6 +89,7 @@ public final class PartyServiceAssembly {
                 Objects.requireNonNull(repository, "repository"),
                 publishedState,
                 Objects.requireNonNull(executionLane, "executionLane"),
+                Objects.requireNonNull(planningFactsLane, "planningFactsLane"),
                 Objects.requireNonNull(diagnostics, "diagnostics"));
         return new Component(
                 application,

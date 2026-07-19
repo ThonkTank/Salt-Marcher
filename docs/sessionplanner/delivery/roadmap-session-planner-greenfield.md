@@ -197,13 +197,13 @@ acceptance after the last UI diff.
 
 ## Current Migration Position
 
-- Current foundation: M0 through M4 are complete. Session Generation publishes
+- Current foundation: M0 through M5 are complete. Session Generation publishes
   the typed draft/commit/load/reward-read boundary, Encounter owns concrete
   deterministic roster batches and summary hydration, and Session Planner owns
   one confirmed preparation route, one revision-guarded final transaction, and
   one coherent revisioned workspace publication with typed foreign facts.
-- Current milestone: M5 enforces the delivered boundaries, removes remaining
-  migration compatibility, and proves production-route performance.
+- Current milestone: M6 compacts the passive frontend on the enforced workspace
+  boundary and closes owner-visible acceptance.
 - M0 closure: documentation whitespace, required `check`, and desktop install
   proof are green after the final owner-language diff.
 - M1 closure: the Golden fixture uses two level-3 and two level-4 characters,
@@ -244,6 +244,28 @@ acceptance after the last UI diff.
   child family. The final Session Planner and shell focused suite (`49s`),
   `git diff --check`, required `check` (`7m 27s`), and desktop install (`25s`)
   are green after the final M4 code diff.
+- M5 closure: Session preparation now owns bounded two-worker
+  `session-preparation-cpu` and `session-preparation-io` lanes; authored commands
+  alone retain the global serial lane. Party and Creature preparation reads use
+  the preparation I/O lane, while JDBC-observed diagnostics report two prepared
+  statement families for each owner read and seven for one complete planner
+  workspace capture. Architecture gates enforce passive JavaFX, the sole
+  workspace publication, dependency direction, and absence of the retired
+  preview, slot-import, and old publication types. The retire audit and runtime
+  composition proof close the compatibility-constructor and same-lane seams.
+  The real SQLite production route proves cancellation/latest-wins and
+  idempotent retry after a foreign storage failure, including one generation
+  run and three Encounter origins after retry. The final canonical fixture
+  recorded cold catalog `86043904ns`, cold store initialization `50522527ns`,
+  warm sorted
+  durations `[84420110, 85829566, 86106004, 87027889, 87097314, 87303342,
+  87359192, 88492792, 89082199, 92037925, 92670368, 93201598, 93448440,
+  93698531, 94468680, 96211973, 97054078, 97203380, 98094012, 101839373]ns`,
+  and p95 `98094012ns` over 20 runs. Focused production/cardinality proof (`21s`),
+  JavaFX next-turn Generate-to-Cancel proof (`22s`), architecture proof (`36s`),
+  the full M5 focused suite (`33s`), `git diff --check`, and required `check`
+  (`8m 6s`) are green after the final M5 backend diff; final roadmap whitespace,
+  `check` (`47s`), and desktop install (`8s`) are green.
 
 ## Delivery Rules
 

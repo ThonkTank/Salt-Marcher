@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
+import platform.diagnostics.Measurement;
 import platform.execution.ExecutionLane;
 import features.party.domain.roster.PartyCharacterDraft;
 import features.party.domain.roster.PartyDungeonTravelLocationKind;
@@ -55,10 +56,12 @@ import features.party.api.UpdateCharacterCommand;
 public final class PartyApplicationService implements features.party.api.PartyApi {
 
     private static final DiagnosticId STORAGE_FAILURE = new DiagnosticId("party.storage-failure");
+    private static final DiagnosticId PLANNING_FACTS_READ = new DiagnosticId("party.planning-facts.read");
 
     private final PartyRosterRepository repository;
     private final PartyPublishedState publishedState;
     private final ExecutionLane executionLane;
+    private final ExecutionLane planningFactsLane;
     private final Diagnostics diagnostics;
     private final AdventuringDayProgressCalculationHelper adventuringDayProgress =
             new AdventuringDayProgressCalculationHelper();
@@ -67,11 +70,13 @@ public final class PartyApplicationService implements features.party.api.PartyAp
             PartyRosterRepository repository,
             PartyPublishedState publishedState,
             ExecutionLane executionLane,
+            ExecutionLane planningFactsLane,
             Diagnostics diagnostics
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
+        this.planningFactsLane = Objects.requireNonNull(planningFactsLane, "planningFactsLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
@@ -148,7 +153,7 @@ public final class PartyApplicationService implements features.party.api.PartyAp
             return result;
         }
         try {
-            executionLane.execute(() -> completePlanningFacts(query, result));
+            planningFactsLane.execute(() -> completePlanningFacts(query, result));
         } catch (RuntimeException exception) {
             diagnostics.failure(STORAGE_FAILURE, exception.getClass());
             result.complete(PartyPlanningFactsResponse.failure(
@@ -161,6 +166,7 @@ public final class PartyApplicationService implements features.party.api.PartyAp
             PartyPlanningFactsQuery query,
             CompletableFuture<PartyPlanningFactsResponse> result
     ) {
+        long startedNanos = System.nanoTime();
         try {
             PartyRoster roster = repository.load();
             List<PartyMemberSummary> active = PartyPublishedProjection.activePartyResult(roster).members();
@@ -180,6 +186,12 @@ public final class PartyApplicationService implements features.party.api.PartyAp
                     PartyPublishedProjection.adventuringDayCalculationResult(
                             levels, query.plannedGroupXp(), adventuringDayProgress).planningSummary(),
                     ""));
+            diagnostics.measurement(new Measurement(
+                    PLANNING_FACTS_READ,
+                    0L,
+                    Math.max(0L, System.nanoTime() - startedNanos),
+                    query.participantIds().size(),
+                    0));
         } catch (RuntimeException exception) {
             diagnostics.failure(STORAGE_FAILURE, exception.getClass());
             result.complete(PartyPlanningFactsResponse.failure(
