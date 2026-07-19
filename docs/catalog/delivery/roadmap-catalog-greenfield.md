@@ -417,7 +417,10 @@ from refreshed `origin/main`.
   npcs=0 factions=0 locations=0 encounter_tables=5`, and left the installed database
   hash unchanged. `./gradlew installDesktopApp --console=plain` then returned
   `BUILD SUCCESSFUL in 17s`; the desktop shortcut now launches this candidate. Required
-  PR CI and visible owner acceptance remain open gates.
+  PR CI and visible owner acceptance remain open gates. After resolving the subsequent
+  two-commit `origin/main` advance without reverting its Dungeon travel changes, the
+  final rebase candidate returned `BUILD SUCCESSFUL in 12m 10s` for
+  `./gradlew check --console=plain`.
 
 ### Finish Criteria
 
