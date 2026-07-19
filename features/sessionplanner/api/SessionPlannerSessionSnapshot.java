@@ -8,7 +8,6 @@ public record SessionPlannerSessionSnapshot(
         XpBudgetState xpBudget,
         RestAdviceState restAdvice,
         GoldBudgetState goldBudget,
-        List<AvailableEncounterPlan> availableEncounterPlans,
         List<LocationReference> locationReferences,
         String status
 ) {
@@ -18,14 +17,8 @@ public record SessionPlannerSessionSnapshot(
         xpBudget = xpBudget == null ? XpBudgetState.empty() : xpBudget;
         restAdvice = restAdvice == null ? RestAdviceState.empty() : restAdvice;
         goldBudget = goldBudget == null ? GoldBudgetState.manualNotes(0) : goldBudget;
-        availableEncounterPlans = copy(availableEncounterPlans);
         locationReferences = copy(locationReferences);
         status = status == null ? "" : status;
-    }
-
-    @Override
-    public List<AvailableEncounterPlan> availableEncounterPlans() {
-        return List.copyOf(availableEncounterPlans);
     }
 
     @Override
@@ -39,7 +32,6 @@ public record SessionPlannerSessionSnapshot(
                 XpBudgetState.empty(),
                 RestAdviceState.empty(),
                 GoldBudgetState.manualNotes(0),
-                List.of(),
                 List.of(),
                 status);
     }
@@ -137,26 +129,6 @@ public record SessionPlannerSessionSnapshot(
                     manualNoteCount <= 0
                             ? "Keine manuelle Beutenotiz; ein Goldbudget wird noch nicht berechnet."
                             : manualNoteCount + " manuelle Beutenotizen, Goldbudget weiterhin offen.");
-        }
-    }
-
-    public record AvailableEncounterPlan(
-            long planId,
-            String name,
-            String summaryText,
-            int adjustedXp,
-            String difficultyLabel,
-            String statusText,
-            boolean importEnabled
-    ) {
-
-        public AvailableEncounterPlan {
-            planId = Math.max(0L, planId);
-            name = name == null ? "" : name.trim();
-            summaryText = summaryText == null ? "" : summaryText.trim();
-            adjustedXp = Math.max(0, adjustedXp);
-            difficultyLabel = difficultyLabel == null ? "" : difficultyLabel.trim();
-            statusText = statusText == null ? "" : statusText.trim();
         }
     }
 

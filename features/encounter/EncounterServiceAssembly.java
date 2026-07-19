@@ -38,7 +38,8 @@ import features.worldplanner.api.WorldPlannerApi;
 
 public final class EncounterServiceAssembly {
 
-    public static <T extends EncounterPlanRepository & GeneratedEncounterBatchRepository> Component create(
+    public static <T extends EncounterPlanRepository & GeneratedEncounterBatchRepository
+            & features.encounter.application.SavedEncounterPlanSearchRepository> Component create(
             CreaturesApi creatures,
             CreatureDetailModel creatureDetails,
             CreatureEncounterCandidatesModel creatureCandidates,
@@ -97,6 +98,7 @@ public final class EncounterServiceAssembly {
                 generatedCpuLane,
                 generatedIoLane,
                 planRepository,
+                planRepository,
                 uiDispatcher,
                 diagnostics,
                 false);
@@ -124,7 +126,8 @@ public final class EncounterServiceAssembly {
                 executionLane, executionLane, executionLane, uiDispatcher, diagnostics);
     }
 
-    public static <T extends EncounterPlanRepository & GeneratedEncounterBatchRepository> Component create(
+    public static <T extends EncounterPlanRepository & GeneratedEncounterBatchRepository
+            & features.encounter.application.SavedEncounterPlanSearchRepository> Component create(
             CreaturesApi creatures,
             CreatureDetailModel creatureDetails,
             CreatureEncounterCandidatesModel creatureCandidates,
@@ -150,6 +153,7 @@ public final class EncounterServiceAssembly {
                 executionLane,
                 executionLane,
                 planRepository,
+                planRepository,
                 uiDispatcher,
                 diagnostics,
                 true);
@@ -173,6 +177,7 @@ public final class EncounterServiceAssembly {
             ExecutionLane generatedCpuLane,
             ExecutionLane generatedIoLane,
             GeneratedEncounterBatchRepository generatedRepository,
+            features.encounter.application.SavedEncounterPlanSearchRepository searchRepository,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics,
             boolean start
@@ -193,14 +198,21 @@ public final class EncounterServiceAssembly {
                 activePartyComposition,
                 java.util.Objects.requireNonNull(generatedRepository, "generatedRepository"),
                 java.util.Objects.requireNonNull(generatedCpuLane, "generatedCpuLane"),
-                java.util.Objects.requireNonNull(generatedIoLane, "generatedIoLane"));
+                java.util.Objects.requireNonNull(generatedIoLane, "generatedIoLane"),
+                diagnostics);
+        features.encounter.application.SavedEncounterPlanSearchService savedPlanSearch =
+                new features.encounter.application.SavedEncounterPlanSearchService(
+                        java.util.Objects.requireNonNull(searchRepository, "searchRepository"),
+                        generatedIoLane,
+                        diagnostics);
         EncounterApplicationService application = new EncounterApplicationService(
                 runtime,
                 plans,
                 publishedState,
                 contextRepository,
                 java.util.Objects.requireNonNull(executionLane, "executionLane"),
-                generatedBatches);
+                generatedBatches,
+                savedPlanSearch);
         Component component = new Component(
                 application,
                 application.runtimeContexts(),

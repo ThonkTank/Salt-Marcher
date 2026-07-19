@@ -160,13 +160,13 @@ final class SqliteGenerationRunRepositoryTest {
             requested.add(present);
             requested.add(missing);
             requested.add(present);
-            for (int index = 1; index <= GenerationRewardSqliteReader.MAX_KEYS_PER_QUERY; index++) {
+            for (int index = 1; index <= 400; index++) {
                 requested.add(new GenerationRewardReference("missing-run-" + index, 1));
             }
 
-            AtomicInteger queries = new AtomicInteger();
+            AtomicInteger statements = new AtomicInteger();
             SqliteGenerationRunRepository counted = new SqliteGenerationRunRepository(
-                    () -> countingConnection(databasePath, queries));
+                    () -> executedStatementConnection(databasePath, statements));
             var batch = counted.loadRewards(requested);
 
             assertEquals(List.of(present, present), batch.resolved().stream()
@@ -177,7 +177,8 @@ final class SqliteGenerationRunRepositoryTest {
             assertEquals(
                     draft.run().loot().stream().filter(line -> line.treasureId() == 1).toList(),
                     batch.resolved().getFirst().loot());
-            assertEquals(2, queries.get());
+            assertEquals(5, statements.get(),
+                    "temp-table setup, insert, set-based select, and cleanup are counted honestly");
         }
     }
 
@@ -197,15 +198,96 @@ final class SqliteGenerationRunRepositoryTest {
             new SqliteGenerationRunRepository(database).commit(draft);
             GenerationRewardReference repeated = new GenerationRewardReference(draft.run().runId(), 1);
             List<GenerationRewardReference> requested = java.util.Collections.nCopies(
-                    GenerationRewardSqliteReader.MAX_KEYS_PER_QUERY + 1, repeated);
-            AtomicInteger queries = new AtomicInteger();
+                    401, repeated);
+            AtomicInteger statements = new AtomicInteger();
             SqliteGenerationRunRepository counted = new SqliteGenerationRunRepository(
-                    () -> countingConnection(databasePath, queries));
+                    () -> executedStatementConnection(databasePath, statements));
 
             var batch = counted.loadRewards(requested);
 
             assertEquals(requested.size(), batch.resolved().size());
-            assertEquals(1, queries.get());
+            assertEquals(5, statements.get());
+        }
+    }
+
+    @Test
+    void rewardBatchExecutesTheSameFiveStatementFamiliesForOneFourHundredOneAndEightHundredReferences() {
+        java.nio.file.Path databasePath = temporaryDirectory.resolve("reward-cardinality.sqlite");
+        GeneratedRunDraft draft = GeneratedRunDraft.from(generate(179974L));
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
+            new SqliteGenerationRunRepository(database).commit(draft);
+        }
+        GenerationRewardReference present = new GenerationRewardReference(draft.run().runId(), 1);
+        for (int cardinality : List.of(1, 401, 800)) {
+            List<GenerationRewardReference> requested = new ArrayList<>();
+            requested.add(present);
+            for (int index = 1; index < cardinality; index++) {
+                requested.add(new GenerationRewardReference("missing-" + cardinality + "-" + index, 1));
+            }
+            AtomicInteger statements = new AtomicInteger();
+            SqliteGenerationRunRepository counted = new SqliteGenerationRunRepository(
+                    () -> executedStatementConnection(databasePath, statements));
+
+            var batch = counted.loadRewards(requested);
+
+            assertEquals(1, batch.resolved().size());
+            assertEquals(cardinality - 1, batch.missing().size());
+            assertEquals(5, statements.get(), "cardinality=" + cardinality);
+        }
+    }
+
+    @Test
+    void rewardRequestTableIsClearedAfterPartialInsertFailureAndCanBeReused() throws Exception {
+        java.nio.file.Path databasePath = temporaryDirectory.resolve("reward-cleanup.sqlite");
+        GeneratedRunDraft draft = GeneratedRunDraft.from(generate(179974L));
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
+            new SqliteGenerationRunRepository(database).commit(draft);
+        }
+        GenerationRewardReference present = new GenerationRewardReference(draft.run().runId(), 1);
+        GenerationRewardReference missing = new GenerationRewardReference("missing-run", 1);
+        GenerationRewardSqliteReader reader = new GenerationRewardSqliteReader();
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath)) {
+            reader.load(connection, List.of(present));
+            try (var statement = connection.createStatement()) {
+                statement.execute("CREATE TEMP TRIGGER fail_second_reward_request BEFORE INSERT "
+                        + "ON temp_generation_reward_requests WHEN NEW.request_order=1 "
+                        + "BEGIN SELECT RAISE(ABORT, 'forced request failure'); END");
+            }
+
+            assertThrows(java.sql.SQLException.class, () -> reader.load(connection, List.of(present, missing)));
+            try (var rows = connection.createStatement().executeQuery(
+                    "SELECT COUNT(*) FROM temp_generation_reward_requests")) {
+                assertTrue(rows.next());
+                assertEquals(0, rows.getInt(1));
+            }
+            try (var statement = connection.createStatement()) {
+                statement.execute("DROP TRIGGER fail_second_reward_request");
+            }
+            assertEquals(1, reader.load(connection, List.of(present)).batch().resolved().size());
+        }
+    }
+
+    @Test
+    void connectionScopedRewardRequestsAreSafeAcrossConcurrentReads() throws Exception {
+        java.nio.file.Path databasePath = temporaryDirectory.resolve("reward-concurrent.sqlite");
+        GeneratedRunDraft draft = GeneratedRunDraft.from(generate(179974L));
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
+            new SqliteGenerationRunRepository(database).commit(draft);
+        }
+        GenerationRewardReference present = new GenerationRewardReference(draft.run().runId(), 1);
+        List<GenerationRewardReference> requested = new ArrayList<>();
+        requested.add(present);
+        for (int index = 1; index < 800; index++) {
+            requested.add(new GenerationRewardReference("concurrent-missing-" + index, 1));
+        }
+        SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(
+                () -> DriverManager.getConnection("jdbc:sqlite:" + databasePath));
+        try (var workers = Executors.newFixedThreadPool(2)) {
+            var first = workers.submit(() -> repository.loadRewards(requested));
+            var second = workers.submit(() -> repository.loadRewards(List.of(present, present)));
+
+            assertEquals(1, first.get().resolved().size());
+            assertEquals(2, second.get().resolved().size());
         }
     }
 
@@ -280,6 +362,67 @@ final class SqliteGenerationRunRepositoryTest {
                         throw exception.getCause();
                     }
                 });
+    }
+
+    private static java.sql.Connection executedStatementConnection(
+            java.nio.file.Path databasePath,
+            AtomicInteger statements
+    ) throws java.sql.SQLException {
+        java.sql.Connection delegate = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+        try (var statement = delegate.createStatement()) {
+            statement.execute("PRAGMA foreign_keys = ON");
+        }
+        return (java.sql.Connection) Proxy.newProxyInstance(
+                SqliteGenerationRunRepositoryTest.class.getClassLoader(),
+                new Class<?>[] {java.sql.Connection.class},
+                (proxy, method, arguments) -> {
+                    try {
+                        Object result = method.invoke(delegate, arguments);
+                        if (method.getName().equals("createStatement")) {
+                            return countedStatement((java.sql.Statement) result, statements);
+                        }
+                        if (method.getName().equals("prepareStatement")) {
+                            return countedPreparedStatement((java.sql.PreparedStatement) result, statements);
+                        }
+                        return result;
+                    } catch (InvocationTargetException exception) {
+                        throw exception.getCause();
+                    }
+                });
+    }
+
+    private static java.sql.Statement countedStatement(java.sql.Statement delegate, AtomicInteger statements) {
+        return (java.sql.Statement) Proxy.newProxyInstance(
+                SqliteGenerationRunRepositoryTest.class.getClassLoader(),
+                new Class<?>[] {java.sql.Statement.class},
+                (proxy, method, arguments) -> invokeCounted(delegate, method, arguments, statements));
+    }
+
+    private static java.sql.PreparedStatement countedPreparedStatement(
+            java.sql.PreparedStatement delegate,
+            AtomicInteger statements
+    ) {
+        return (java.sql.PreparedStatement) Proxy.newProxyInstance(
+                SqliteGenerationRunRepositoryTest.class.getClassLoader(),
+                new Class<?>[] {java.sql.PreparedStatement.class},
+                (proxy, method, arguments) -> invokeCounted(delegate, method, arguments, statements));
+    }
+
+    private static Object invokeCounted(
+            Object delegate,
+            java.lang.reflect.Method method,
+            Object[] arguments,
+            AtomicInteger statements
+    ) throws Throwable {
+        if (method.getName().equals("execute") || method.getName().equals("executeQuery")
+                || method.getName().equals("executeUpdate") || method.getName().equals("executeBatch")) {
+            statements.incrementAndGet();
+        }
+        try {
+            return method.invoke(delegate, arguments);
+        } catch (InvocationTargetException exception) {
+            throw exception.getCause();
+        }
     }
 
 }

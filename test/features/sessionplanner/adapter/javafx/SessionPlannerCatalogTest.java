@@ -202,12 +202,13 @@ public final class SessionPlannerCatalogTest {
                 new SessionPlannerSessionSnapshot.SessionState(7L, "Session", BigDecimal.ONE, "1", 0L, false),
                 SessionPlannerSessionSnapshot.XpBudgetState.empty(),
                 SessionPlannerSessionSnapshot.RestAdviceState.empty(),
-                SessionPlannerSessionSnapshot.GoldBudgetState.manualNotes(0), List.of(), List.of(), "");
+                SessionPlannerSessionSnapshot.GoldBudgetState.manualNotes(0), List.of(), "");
         viewModel.applyWorkspace(new features.sessionplanner.api.SessionPlannerWorkspaceSnapshot(
                 1L, 7L, 1L, SessionPlannerCatalogSnapshot.empty(), session,
                 features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(),
                 SessionPlannerSceneTimelineProjection.empty(),
-                features.sessionplanner.api.SessionPlannerStatePanelProjection.empty(), preCommitSaving, List.of()));
+                features.sessionplanner.api.SessionPlannerStatePanelProjection.empty(),
+                features.sessionplanner.api.SessionEncounterPlanSearchSnapshot.idle(), preCommitSaving, List.of()));
 
         Parent content = (Parent) controls.getContent();
         assertTrue(button(content, "Generieren").isDisabled(),
@@ -227,7 +228,8 @@ public final class SessionPlannerCatalogTest {
                 2L, 7L, 1L, SessionPlannerCatalogSnapshot.empty(), session,
                 features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(),
                 SessionPlannerSceneTimelineProjection.empty(),
-                features.sessionplanner.api.SessionPlannerStatePanelProjection.empty(), finalCommitSaving, List.of()));
+                features.sessionplanner.api.SessionPlannerStatePanelProjection.empty(),
+                features.sessionplanner.api.SessionEncounterPlanSearchSnapshot.idle(), finalCommitSaving, List.of()));
 
         assertTrue(button(content, "Generieren").isDisabled(),
                 "generation action remains disabled during final Planner commit");
@@ -483,7 +485,6 @@ public final class SessionPlannerCatalogTest {
                 SessionPlannerSessionSnapshot.XpBudgetState.empty(),
                 SessionPlannerSessionSnapshot.RestAdviceState.empty(),
                 SessionPlannerSessionSnapshot.GoldBudgetState.manualNotes(1),
-                List.of(),
                 List.of(new SessionPlannerSessionSnapshot.LocationReference(7L, "Old Gate"),
                         new SessionPlannerSessionSnapshot.LocationReference(10L, "Moonwell")),
                 "");
@@ -491,6 +492,7 @@ public final class SessionPlannerCatalogTest {
                 1L, 7L, 1L, SessionPlannerCatalogSnapshot.empty(), session,
                 features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(), projection,
                 features.sessionplanner.api.SessionPlannerStatePanelProjection.empty(),
+                features.sessionplanner.api.SessionEncounterPlanSearchSnapshot.idle(),
                 SessionPreparationSnapshot.idle(), List.of()));
         assertEquals(Integer.valueOf(1), Integer.valueOf(
                         viewModel.timelineProjectionProperty().get().scenes().getFirst().manualLootNotes().size()),
@@ -539,8 +541,8 @@ public final class SessionPlannerCatalogTest {
         TextField planSearch = visibleTextField(main, "Encounter suchen");
         planSearch.setText("unbekannte schwierigkeit");
         layout(main);
-        assertTrue(hasLabelContaining(main, "Kein Treffer"),
-                "selected-scene search reports a local no-match state without another provider read");
+        assertTrue(hasLabelContaining(main, "Keine gespeicherten Encounter gefunden"),
+                "selected-scene search reports a provider-backed no-match state");
         planSearch.setText("Medium");
         layout(main);
         assertTrue(hasLabel(main, "Ash Gate Ambush"),
@@ -567,6 +569,9 @@ public final class SessionPlannerCatalogTest {
                 "detach keeps the authored scene in the ordered timeline");
         assertEquals(Long.valueOf(0L), Long.valueOf(workspace.current().sceneTimeline().sessionScenes().getFirst()
                 .linkedEncounterPlanId()), "detach removes only the selected scene reference");
+        TextField reattachSearch = visibleTextField(main, "Encounter suchen");
+        reattachSearch.clear();
+        reattachSearch.setText("Medium");
         button(main, "Verknüpfen").fire();
         layout(main);
         assertEquals(Long.valueOf(SAVED_ENCOUNTER_PLAN_ID),
@@ -774,15 +779,8 @@ public final class SessionPlannerCatalogTest {
         SessionPlannerTimelineMainView view = new SessionPlannerTimelineMainView();
         SessionPlannerViewModel viewModel = new SessionPlannerViewModel();
         view.bind(viewModel);
-        List<SessionPlannerSessionSnapshot.AvailableEncounterPlan> plans =
-                java.util.stream.Stream.concat(
-                        java.util.stream.Stream.of(new SessionPlannerSessionSnapshot.AvailableEncounterPlan(
-                                999L, "Current saved", "Current summary", 100, "Medium", "", true)),
-                        java.util.stream.IntStream.rangeClosed(1, 11).mapToObj(index ->
-                                new SessionPlannerSessionSnapshot.AvailableEncounterPlan(
-                                        index, "Plan " + String.format(java.util.Locale.ROOT, "%02d", index),
-                                        "Summary " + index, 100 + index, "Medium", "", true)))
-                        .toList();
+        List<String> dispatchedQueries = new java.util.ArrayList<>();
+        view.onSearchPlans((sceneToken, query) -> dispatchedQueries.add(sceneToken + ":" + query));
         SessionPlannerSceneTimelineProjection timeline = new SessionPlannerSceneTimelineProjection(
                 List.of(
                         searchScene(1L, 999L, true),
@@ -793,11 +791,12 @@ public final class SessionPlannerCatalogTest {
                 new SessionPlannerSessionSnapshot.SessionState(31L, "Search", BigDecimal.ONE, "1", 1L, true),
                 SessionPlannerSessionSnapshot.XpBudgetState.empty(),
                 SessionPlannerSessionSnapshot.RestAdviceState.empty(),
-                SessionPlannerSessionSnapshot.GoldBudgetState.manualNotes(0), plans, List.of(), "");
+                SessionPlannerSessionSnapshot.GoldBudgetState.manualNotes(0), List.of(), "");
         viewModel.applyWorkspace(new features.sessionplanner.api.SessionPlannerWorkspaceSnapshot(
                 1L, 31L, 1L, SessionPlannerCatalogSnapshot.empty(), session,
                 features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(), timeline,
                 features.sessionplanner.api.SessionPlannerStatePanelProjection.empty(),
+                features.sessionplanner.api.SessionEncounterPlanSearchSnapshot.idle(),
                 SessionPreparationSnapshot.idle(), List.of()));
         Parent content = (Parent) view.getContent();
 
@@ -808,9 +807,38 @@ public final class SessionPlannerCatalogTest {
                 "empty search renders neither plan names nor attach actions");
         TextField search = textField(content, "Encounter suchen");
         search.setText("P");
+        assertEquals(List.of("1:P"), dispatchedQueries,
+                "the selected-scene field dispatches one typed demand intent instead of filtering local facts");
+        viewModel.applyWorkspace(new features.sessionplanner.api.SessionPlannerWorkspaceSnapshot(
+                2L, 31L, 1L, SessionPlannerCatalogSnapshot.empty(), session,
+                features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(), timeline,
+                features.sessionplanner.api.SessionPlannerStatePanelProjection.empty(),
+                new features.sessionplanner.api.SessionEncounterPlanSearchSnapshot(
+                        1L, 31L, 1L, 1L, "p",
+                        features.sessionplanner.api.SessionEncounterPlanSearchSnapshot.Status.TOO_SHORT,
+                        List.of(), false, "Mindestens 2 Zeichen eingeben."),
+                SessionPreparationSnapshot.idle(), List.of()));
         assertTrue(!hasLabel(content, "Plan 01"),
                 "one-character search still materializes no plan result nodes");
         search.setText("Medium");
+        List<features.sessionplanner.api.SessionEncounterPlanSearchSnapshot.Result> results =
+                java.util.stream.Stream.concat(
+                        java.util.stream.Stream.of(new features.sessionplanner.api.SessionEncounterPlanSearchSnapshot.Result(
+                                999L, "Current saved", "Current summary", 100, "MEDIUM", "", true)),
+                        java.util.stream.IntStream.rangeClosed(1, 7).mapToObj(index ->
+                                new features.sessionplanner.api.SessionEncounterPlanSearchSnapshot.Result(
+                                        index, "Plan " + String.format(java.util.Locale.ROOT, "%02d", index),
+                                        "Summary " + index, 100 + index, "MEDIUM", "", true)))
+                        .toList();
+        viewModel.applyWorkspace(new features.sessionplanner.api.SessionPlannerWorkspaceSnapshot(
+                3L, 31L, 1L, SessionPlannerCatalogSnapshot.empty(), session,
+                features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(), timeline,
+                features.sessionplanner.api.SessionPlannerStatePanelProjection.empty(),
+                new features.sessionplanner.api.SessionEncounterPlanSearchSnapshot(
+                        2L, 31L, 1L, 1L, "medium",
+                        features.sessionplanner.api.SessionEncounterPlanSearchSnapshot.Status.READY,
+                        results, true, ""),
+                SessionPreparationSnapshot.idle(), List.of()));
         assertEquals(Integer.valueOf(1), Integer.valueOf(buttons(content, "Verknüpft").size()),
                 "the already linked plan is visible once as a disabled current relation");
         assertTrue(button(content, "Verknüpft").isDisabled(),
@@ -1081,6 +1109,24 @@ public final class SessionPlannerCatalogTest {
                 }).toList();
                 return CompletableFuture.completedFuture(
                         features.encounter.api.GeneratedEncounterPlanSummaryBatchResult.success(entries));
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<features.encounter.api.SearchSavedEncounterPlansResult>
+                    searchSavedPlans(features.encounter.api.SearchSavedEncounterPlansQuery query) {
+                if (!query.normalizedQuery().contains("medium")
+                        && !query.normalizedQuery().contains("ash")
+                        && !query.normalizedQuery().contains("gate")) {
+                    return CompletableFuture.completedFuture(
+                            features.encounter.api.SearchSavedEncounterPlansResult.success(List.of(), false));
+                }
+                return CompletableFuture.completedFuture(
+                        features.encounter.api.SearchSavedEncounterPlansResult.success(
+                                List.of(new features.encounter.api.SavedEncounterPlanSearchHit(
+                                        SAVED_ENCOUNTER_PLAN_ID,
+                                        "Ash Gate Ambush",
+                                        "2 Kreaturen · Medium")),
+                                false));
             }
 
             @Override

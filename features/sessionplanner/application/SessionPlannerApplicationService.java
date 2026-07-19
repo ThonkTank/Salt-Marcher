@@ -31,6 +31,7 @@ import features.sessionplanner.api.SetSessionEncounterDaysCommand;
 import features.sessionplanner.api.SetSessionRestGapCommand;
 import features.sessionplanner.api.UpdateSessionEncounterSceneCommand;
 import features.sessionplanner.api.PrepareSessionCommand;
+import features.sessionplanner.api.SearchSessionEncounterPlansCommand;
 
 public final class SessionPlannerApplicationService implements features.sessionplanner.api.SessionPlannerApi {
 
@@ -132,6 +133,11 @@ public final class SessionPlannerApplicationService implements features.sessionp
     public void detachEncounter(DetachSessionEncounterCommand command) {
         Objects.requireNonNull(command, COMMAND_PARAMETER);
         executeStorageCommand(() -> mutateCurrent(session -> session.detachEncounter(command.sceneToken())));
+    }
+
+    @Override
+    public void searchEncounterPlans(SearchSessionEncounterPlansCommand command) {
+        workspace.searchEncounterPlans(Objects.requireNonNull(command, COMMAND_PARAMETER));
     }
 
     public void removeEncounter(SessionPlannerEncounterCommand command) {
@@ -256,6 +262,7 @@ public final class SessionPlannerApplicationService implements features.sessionp
     }
 
     private void executeStorageCommand(Runnable command) {
+        workspace.authoredIntent();
         executionLane.execute(() -> {
             try {
                 command.run();

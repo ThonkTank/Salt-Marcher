@@ -61,6 +61,34 @@ final class GeneratedEncounterBatchSqliteTest {
     }
 
     @Test
+    void savedPlanSearchUsesLiteralSafePersistedChooserTextAndDeterministicBoundedRoots() throws Exception {
+        Path path = directory.resolve("search.sqlite");
+        try (SqliteDatabase database = databaseWithCreatures(path, 11L)) {
+            SqliteEncounterPlanRepository repository = new SqliteEncounterPlanRepository(database);
+            for (int index = 1; index <= 10; index++) {
+                repository.save(new features.encounter.domain.plan.EncounterPlan(
+                        0L,
+                        index == 1 ? "Literal %_ Plan" : "Search Plan " + index,
+                        "Generated Label " + index,
+                        List.of(new features.encounter.domain.plan.EncounterPlanCreature(11L, 1, "Guard"))));
+            }
+
+            var bounded = repository.searchSavedPlans("plan", 9);
+            var literal = repository.searchSavedPlans("%_", 9);
+            var generated = repository.searchSavedPlans("generated label 7", 9);
+
+            assertEquals(9, bounded.plans().size());
+            assertEquals(List.of(10L, 9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L),
+                    bounded.plans().stream().map(features.encounter.domain.plan.EncounterPlanSummary::id).toList());
+            assertEquals(List.of("Literal %_ Plan"), literal.plans().stream()
+                    .map(features.encounter.domain.plan.EncounterPlanSummary::name).toList());
+            assertEquals(List.of(7L), generated.plans().stream()
+                    .map(features.encounter.domain.plan.EncounterPlanSummary::id).toList());
+            assertEquals(1, bounded.statementCount());
+        }
+    }
+
+    @Test
     void rejectsEveryIdentityContentAndCardinalityConflictWithoutWrites() throws Exception {
         Path path = directory.resolve("conflicts.sqlite");
         try (SqliteDatabase database = databaseWithCreatures(path, 11L, 12L, 13L)) {

@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: Session Planner Feature
-Last Reviewed: 2026-07-18
+Last Reviewed: 2026-07-19
 Source of Truth: Observable Session Planner behavior and acceptance criteria.
 
 # Session Planner Requirements
@@ -48,6 +48,12 @@ The Session Planner is one master-detail workspace:
   controls slot
 - saved Encounter plans are searched and attached from the selected scene;
   the controls slot does not render the full saved-plan catalog
+- blank and one-character saved-plan queries perform no Encounter read; a
+  qualifying query shows searching, ready-empty, bounded results, overflow, or
+  failure state in that inspector
+- at most eight saved-plan results are visible. Only those result identities
+  and already-linked plan identities may be hydrated with concrete Encounter
+  summaries; the global catalog is never joined into the workspace
 - the state slot shows a compact budget and selection summary
 - generated rewards appear as structured reward cards in their owning scene;
   manual loot notes remain visually and semantically distinct
@@ -128,6 +134,10 @@ The last stable workspace remains visible in every non-ready state.
   freeze editing, selection, scrolling, or cancellation while work continues.
 - A newer preparation request or relevant session edit remains authoritative;
   late completion from older work never replaces the visible workspace.
+- A saved-plan search result is published only while its request epoch, source
+  session and revision, and selected scene still match. A newer query, authored
+  intent, successful mutation, session switch, or selected-scene change makes
+  older completion ineligible to publish.
 - On the warmed reference desktop fixture, the canonical input of two level-3
   and two level-4 participants, `0.6` adventure days, and three encounters MUST
   publish the completed editable session within 2 seconds at p95 over 20 runs.
@@ -146,6 +156,9 @@ The last stable workspace remains visible in every non-ready state.
   changes no authored session content
 - retry does not expose duplicate or partial generated content
 - the UI stays responsive and meets the warmed reference-fixture target
+- selected-scene saved-plan search is demand-driven, publishes at most eight
+  results plus overflow, preserves the inspector field while revisions apply,
+  and never reintroduces a full-catalog workspace load
 
 ## References
 

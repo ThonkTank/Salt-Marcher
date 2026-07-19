@@ -14,7 +14,9 @@ import features.encounter.domain.plan.repository.EncounterPlanRepository;
 import features.encounter.domain.plan.EncounterPlanSummary;
 
 public final class SqliteEncounterPlanRepository
-        implements EncounterPlanRepository, features.encounter.application.GeneratedEncounterBatchRepository {
+        implements EncounterPlanRepository,
+        features.encounter.application.GeneratedEncounterBatchRepository,
+        features.encounter.application.SavedEncounterPlanSearchRepository {
 
     private final SqliteEncounterLocalGateway gateway;
 
@@ -68,6 +70,24 @@ public final class SqliteEncounterPlanRepository
         return gateway.loadPlansByIds(planIds).stream()
                 .map(EncounterPlanMapper::toDomainPlan)
                 .toList();
+    }
+
+    @Override
+    public features.encounter.application.GeneratedEncounterBatchRepository.PlanRead loadPlansByIdsWithCount(
+            List<Long> planIds
+    ) {
+        var read = gateway.loadPlansByIdsWithCount(planIds);
+        return new features.encounter.application.GeneratedEncounterBatchRepository.PlanRead(
+                read.plans().stream().map(EncounterPlanMapper::toDomainPlan).toList(),
+                read.statementCount());
+    }
+
+    @Override
+    public features.encounter.application.SavedEncounterPlanSearchRepository.SearchRead searchSavedPlans(
+            String normalizedQuery,
+            int rootLimit
+    ) {
+        return gateway.searchSavedPlans(normalizedQuery, rootLimit);
     }
 
     private static List<EncounterPlanCreatureRecord> toRecords(EncounterPlan plan) {

@@ -81,10 +81,10 @@ public final class SessionPlannerServiceAssembly {
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
                 Objects.requireNonNull(workspaceSource, "workspaceSource"), safeParty, safeEncounters,
-                safeSavedPlans, Objects.requireNonNull(generation, "generation"), worldPlanner, ioLane, diagnostics);
+                Objects.requireNonNull(generation, "generation"), worldPlanner, ioLane, diagnostics);
         SessionPlannerWorkspacePublicationCoordinator publication =
                 new SessionPlannerWorkspacePublicationCoordinator(
-                        assembler, Objects.requireNonNull(uiDispatcher, "uiDispatcher"),
+                        assembler, safeEncounters, Objects.requireNonNull(uiDispatcher, "uiDispatcher"),
                         diagnostics);
         SessionPreparationCoordinator preparation = new SessionPreparationCoordinator(
                 safeRepository,

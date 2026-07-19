@@ -14,6 +14,7 @@ import features.sessionplanner.api.AttachSessionEncounterCommand;
 import features.sessionplanner.api.ClearSessionRestGapCommand;
 import features.sessionplanner.api.DetachSessionEncounterCommand;
 import features.sessionplanner.api.RemoveSessionManualLootNoteCommand;
+import features.sessionplanner.api.SearchSessionEncounterPlansCommand;
 import features.sessionplanner.api.SessionPlannerCatalogCommand;
 import features.sessionplanner.api.SessionPlannerEncounterAllocationCommand;
 import features.sessionplanner.api.SessionPlannerEncounterCommand;
@@ -137,6 +138,11 @@ final class SessionPlannerBinder {
         timelineView.onDetachPlan(sceneToken -> ifSession(viewModel, () -> {
             if (sceneToken > 0L) {
                 planner.detachEncounter(new DetachSessionEncounterCommand(sceneToken));
+            }
+        }));
+        timelineView.onSearchPlans((sceneToken, query) -> ifSession(viewModel, () -> {
+            if (sceneToken > 0L) {
+                planner.searchEncounterPlans(new SearchSessionEncounterPlansCommand(sceneToken, query));
             }
         }));
 

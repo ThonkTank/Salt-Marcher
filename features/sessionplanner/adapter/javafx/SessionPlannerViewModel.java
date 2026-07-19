@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import features.sessionplanner.api.SessionPlannerCatalogSnapshot;
+import features.sessionplanner.api.SessionEncounterPlanSearchSnapshot;
 import features.sessionplanner.api.SessionPlannerParticipantsProjection;
 import features.sessionplanner.api.SessionPlannerRestKind;
 import features.sessionplanner.api.SessionPlannerSceneTimelineProjection;
@@ -43,6 +44,7 @@ final class SessionPlannerViewModel {
             SessionPlannerSceneTimelineProjection.empty();
     private SessionPreparationSnapshot latestPreparation = SessionPreparationSnapshot.idle();
     private SessionPlannerStatePanelProjection latestStatePanel = SessionPlannerStatePanelProjection.empty();
+    private SessionEncounterPlanSearchSnapshot latestEncounterPlanSearch = SessionEncounterPlanSearchSnapshot.idle();
 
     ReadOnlyObjectProperty<ControlsProjection> controlsProjectionProperty() {
         return controlsProjection.getReadOnlyProperty();
@@ -68,6 +70,7 @@ final class SessionPlannerViewModel {
         latestSceneTimeline = safe.sceneTimeline();
         latestPreparation = safe.preparation();
         latestStatePanel = safe.statePanel();
+        latestEncounterPlanSearch = safe.encounterPlanSearch();
         locationOptions = latestSession.locationReferences().stream()
                 .map(reference -> new TimelineProjection.LocationChoice(
                         reference.locationId(), reference.displayName()))
@@ -133,7 +136,7 @@ final class SessionPlannerViewModel {
     private void refreshTimelineProjection() {
         timelineProjection.set(TimelineProjection.from(
                 latestSession.session().sessionId(), latestSceneTimeline,
-                latestSession.availableEncounterPlans(), locationOptions, sessionActionsDisabled()));
+                latestEncounterPlanSearch, locationOptions, sessionActionsDisabled()));
     }
 
     private void refreshSummaryProjection() {
@@ -267,7 +270,7 @@ final class SessionPlannerViewModel {
             boolean sessionActionsDisabled,
             List<SceneModel> scenes,
             List<RestGapModel> restGaps,
-            List<AvailablePlanModel> availablePlans,
+            PlanSearchModel planSearch,
             List<LocationChoice> locationOptions
     ) {
 
@@ -275,18 +278,18 @@ final class SessionPlannerViewModel {
             sessionId = Math.max(0L, sessionId);
             scenes = safeCopy(scenes);
             restGaps = safeCopy(restGaps);
-            availablePlans = safeCopy(availablePlans);
+            planSearch = planSearch == null ? PlanSearchModel.idle() : planSearch;
             locationOptions = safeCopy(locationOptions);
         }
 
         static TimelineProjection empty() {
-            return new TimelineProjection(0L, true, List.of(), List.of(), List.of(), List.of());
+            return new TimelineProjection(0L, true, List.of(), List.of(), PlanSearchModel.idle(), List.of());
         }
 
         static TimelineProjection from(
                 long sessionId,
                 SessionPlannerSceneTimelineProjection projection,
-                List<SessionPlannerSessionSnapshot.AvailableEncounterPlan> availablePlans,
+                SessionEncounterPlanSearchSnapshot planSearch,
                 List<LocationChoice> locationOptions,
                 boolean sessionActionsDisabled
         ) {
@@ -305,7 +308,7 @@ final class SessionPlannerViewModel {
                                     SessionPlannerVocabulary.restLabel(gap.restKind()),
                                     gap.restKind() != null && gap.restKind() != SessionPlannerRestKind.NONE))
                             .toList(),
-                    safeCopy(availablePlans).stream().map(AvailablePlanModel::from).toList(),
+                    PlanSearchModel.from(planSearch),
                     safeLocations);
         }
 
@@ -469,16 +472,42 @@ final class SessionPlannerViewModel {
                 status = SessionPlannerVocabulary.text(status);
             }
 
-            static AvailablePlanModel from(SessionPlannerSessionSnapshot.AvailableEncounterPlan plan) {
+            static AvailablePlanModel from(SessionEncounterPlanSearchSnapshot.Result plan) {
                 return new AvailablePlanModel(
                         plan.planId(), plan.name(), plan.difficultyLabel(), plan.summaryText(),
-                        plan.statusText(), plan.importEnabled());
+                        plan.statusText(), plan.attachEnabled());
+            }
+        }
+
+        record PlanSearchModel(
+                long requestEpoch,
+                long sceneToken,
+                String query,
+                SessionEncounterPlanSearchSnapshot.Status status,
+                List<AvailablePlanModel> results,
+                boolean hasMore,
+                String message
+        ) {
+            PlanSearchModel {
+                requestEpoch = Math.max(0L, requestEpoch);
+                sceneToken = Math.max(0L, sceneToken);
+                query = SessionPlannerVocabulary.text(query);
+                status = status == null ? SessionEncounterPlanSearchSnapshot.Status.IDLE : status;
+                results = safeCopy(results);
+                message = SessionPlannerVocabulary.text(message);
             }
 
-            boolean matches(String query) {
-                String needle = SessionPlannerVocabulary.text(query).trim().toLowerCase(Locale.ROOT);
-                return needle.isBlank() || (name + " " + difficulty + " " + summary)
-                        .toLowerCase(Locale.ROOT).contains(needle);
+            static PlanSearchModel idle() {
+                return from(SessionEncounterPlanSearchSnapshot.idle());
+            }
+
+            static PlanSearchModel from(SessionEncounterPlanSearchSnapshot snapshot) {
+                SessionEncounterPlanSearchSnapshot safe = snapshot == null
+                        ? SessionEncounterPlanSearchSnapshot.idle() : snapshot;
+                return new PlanSearchModel(
+                        safe.requestEpoch(), safe.selectedSceneToken(), safe.normalizedQuery(), safe.status(),
+                        safe.results().stream().map(AvailablePlanModel::from).toList(),
+                        safe.hasMore(), safe.message());
             }
         }
 

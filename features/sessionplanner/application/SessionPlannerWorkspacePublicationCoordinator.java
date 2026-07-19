@@ -1,13 +1,28 @@
 package features.sessionplanner.application;
 
+import features.encounter.api.EncounterApi;
+import features.encounter.api.GeneratedEncounterBatchStatus;
+import features.encounter.api.GeneratedEncounterPlanSummary;
+import features.encounter.api.GeneratedEncounterPlanSummaryBatchQuery;
+import features.encounter.api.GeneratedEncounterPlanSummaryBatchResult;
+import features.encounter.api.GeneratedEncounterPlanSummaryEntry;
+import features.encounter.api.SavedEncounterPlanSearchHit;
+import features.encounter.api.SearchSavedEncounterPlansQuery;
+import features.encounter.api.SearchSavedEncounterPlansResult;
 import features.sessionplanner.api.PreparedSceneCatalogModel;
 import features.sessionplanner.api.PreparedSceneCatalogSnapshot;
 import features.sessionplanner.api.SessionPlannerWorkspaceModel;
 import features.sessionplanner.api.SessionPlannerWorkspaceSnapshot;
+import features.sessionplanner.api.SearchSessionEncounterPlansCommand;
+import features.sessionplanner.api.SessionEncounterPlanSearchSnapshot;
 import features.sessionplanner.api.SessionPreparationSnapshot;
 import features.sessionplanner.api.SessionPreparationStatus;
 import features.sessionplanner.domain.session.SessionPlan;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import platform.state.PublishedState;
@@ -21,6 +36,7 @@ public final class SessionPlannerWorkspacePublicationCoordinator {
     private static final DiagnosticId STORAGE_FAILURE = new DiagnosticId("sessionplanner.storage-failure");
 
     private final SessionPlannerWorkspaceAssembler assembler;
+    private final EncounterApi encounters;
     private final Diagnostics diagnostics;
     private final PublishedState<SessionPlannerWorkspaceSnapshot> workspace;
     private final PublishedState<PreparedSceneCatalogSnapshot> preparedScenes;
@@ -29,6 +45,7 @@ public final class SessionPlannerWorkspacePublicationCoordinator {
     private long epoch;
     private long publicationRevision;
     private long preparedSceneRevision;
+    private long searchEpoch;
     private boolean running;
     private boolean dirty;
     private boolean sourceMismatchRetried;
@@ -38,10 +55,12 @@ public final class SessionPlannerWorkspacePublicationCoordinator {
 
     public SessionPlannerWorkspacePublicationCoordinator(
             SessionPlannerWorkspaceAssembler assembler,
+            EncounterApi encounters,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
         this.assembler = Objects.requireNonNull(assembler, "assembler");
+        this.encounters = Objects.requireNonNull(encounters, "encounters");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
         UiDispatcher dispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
         workspace = new PublishedState<>(SessionPlannerWorkspaceSnapshot.empty(), dispatcher);
@@ -64,24 +83,78 @@ public final class SessionPlannerWorkspacePublicationCoordinator {
 
     public synchronized void initialize() {
         statusOverlay = "";
+        invalidateEncounterSearch();
         request(null, SessionPreparationSnapshot.idle());
     }
 
     public synchronized void authoredMutation(SessionPlan committed) {
         Objects.requireNonNull(committed, "committed");
         statusOverlay = committed.statusText();
+        invalidateEncounterSearch();
         request(new SourceStamp(committed.sessionId(), committed.revision().value()), SessionPreparationSnapshot.idle());
     }
 
     public synchronized void preparedCommit(SessionPlan committed, SessionPreparationSnapshot ready) {
         Objects.requireNonNull(committed, "committed");
         statusOverlay = committed.statusText();
+        invalidateEncounterSearch();
         request(new SourceStamp(committed.sessionId(), committed.revision().value()),
                 Objects.requireNonNull(ready, "ready"));
     }
 
     public synchronized void providerRefresh() {
+        invalidateEncounterSearch();
         request(expectedSource, workspace.current().preparation());
+    }
+
+    public synchronized void authoredIntent() {
+        invalidateEncounterSearch();
+    }
+
+    public synchronized void searchEncounterPlans(SearchSessionEncounterPlansCommand command) {
+        Objects.requireNonNull(command, "command");
+        SessionPlannerWorkspaceSnapshot stable = workspace.current();
+        long selectedScene = stable.currentSession().session().selectedEncounterId();
+        String normalized = command.query().trim().toLowerCase(Locale.ROOT);
+        long requestEpoch = ++searchEpoch;
+        if (stable.sourceSessionId() <= 0L || command.sceneToken() != selectedScene) {
+            publishEncounterSearch(new SessionEncounterPlanSearchSnapshot(
+                    requestEpoch, stable.sourceSessionId(), stable.sourceSessionRevision(), selectedScene,
+                    normalized, SessionEncounterPlanSearchSnapshot.Status.FAILED, List.of(), false,
+                    "Die ausgewählte Szene hat sich geändert."));
+            return;
+        }
+        if (normalized.isBlank()) {
+            publishEncounterSearch(new SessionEncounterPlanSearchSnapshot(
+                    requestEpoch, stable.sourceSessionId(), stable.sourceSessionRevision(), selectedScene,
+                    "", SessionEncounterPlanSearchSnapshot.Status.IDLE, List.of(), false, ""));
+            return;
+        }
+        if (normalized.length() < 2) {
+            publishEncounterSearch(new SessionEncounterPlanSearchSnapshot(
+                    requestEpoch, stable.sourceSessionId(), stable.sourceSessionRevision(), selectedScene,
+                    normalized, SessionEncounterPlanSearchSnapshot.Status.TOO_SHORT, List.of(), false,
+                    "Mindestens 2 Zeichen eingeben."));
+            return;
+        }
+        publishEncounterSearch(new SessionEncounterPlanSearchSnapshot(
+                requestEpoch, stable.sourceSessionId(), stable.sourceSessionRevision(), selectedScene,
+                normalized, SessionEncounterPlanSearchSnapshot.Status.SEARCHING, List.of(), false,
+                "Encounter werden gesucht …"));
+        final java.util.concurrent.CompletionStage<SearchSavedEncounterPlansResult> stage;
+        try {
+            stage = encounters.searchSavedPlans(new SearchSavedEncounterPlansQuery(normalized));
+        } catch (RuntimeException failure) {
+            failEncounterSearch(requestEpoch, stable, selectedScene);
+            return;
+        }
+        if (stage == null) {
+            failEncounterSearch(requestEpoch, stable, selectedScene);
+            return;
+        }
+        stage.whenComplete((result, failure) -> completeEncounterSearchRoots(
+                requestEpoch, stable.sourceSessionId(), stable.sourceSessionRevision(), selectedScene,
+                normalized, result, failure));
     }
 
     public synchronized void publishPreparation(SessionPreparationSnapshot preparation) {
@@ -167,6 +240,7 @@ public final class SessionPlannerWorkspacePublicationCoordinator {
 
     private void publish(SessionPlannerWorkspaceAssembly result) {
         SessionPlannerWorkspaceSnapshot candidate = applyStatusOverlay(result.workspace())
+                .withEncounterPlanSearch(workspace.current().encounterPlanSearch())
                 .withPreparation(acceptedPreparation)
                 .withPublicationRevision(++publicationRevision);
         workspace.publish(candidate);
@@ -209,14 +283,171 @@ public final class SessionPlannerWorkspacePublicationCoordinator {
         var current = candidate.currentSession();
         var withStatus = new features.sessionplanner.api.SessionPlannerSessionSnapshot(
                 current.session(), current.xpBudget(), current.restAdvice(), current.goldBudget(),
-                current.availableEncounterPlans(), current.locationReferences(), statusOverlay);
+                current.locationReferences(), statusOverlay);
         var catalog = candidate.catalog();
         var catalogWithStatus = new features.sessionplanner.api.SessionPlannerCatalogSnapshot(
                 catalog.sessions(), catalog.selectedSessionId(), statusOverlay);
         return new SessionPlannerWorkspaceSnapshot(
                 candidate.publicationRevision(), candidate.sourceSessionId(), candidate.sourceSessionRevision(),
                 catalogWithStatus, withStatus, candidate.participants(), candidate.sceneTimeline(),
-                candidate.statePanel(), candidate.preparation(), candidate.issues());
+                candidate.statePanel(), candidate.encounterPlanSearch(), candidate.preparation(), candidate.issues());
+    }
+
+    private synchronized void completeEncounterSearchRoots(
+            long requestEpoch,
+            long sessionId,
+            long sessionRevision,
+            long selectedScene,
+            String normalized,
+            SearchSavedEncounterPlansResult result,
+            Throwable failure
+    ) {
+        if (!searchCurrent(requestEpoch, sessionId, sessionRevision, selectedScene)) {
+            return;
+        }
+        if (failure != null || result == null || result.status() != SearchSavedEncounterPlansResult.Status.SUCCESS) {
+            failEncounterSearch(requestEpoch, workspace.current(), selectedScene);
+            return;
+        }
+        LinkedHashMap<Long, SavedEncounterPlanSearchHit> hits = new LinkedHashMap<>();
+        for (SavedEncounterPlanSearchHit hit : result.hits()) {
+            if (hit == null || hits.putIfAbsent(hit.planId(), hit) != null) {
+                failEncounterSearch(requestEpoch, workspace.current(), selectedScene);
+                return;
+            }
+        }
+        LinkedHashSet<Long> hydrateIds = new LinkedHashSet<>(hits.keySet());
+        workspace.current().sceneTimeline().sessionScenes().stream()
+                .map(features.sessionplanner.api.SessionPlannerSceneTimelineProjection.SessionScene::linkedEncounterPlanId)
+                .filter(id -> id > 0L)
+                .forEach(hydrateIds::add);
+        if (hydrateIds.isEmpty()) {
+            publishReadySearch(requestEpoch, sessionId, sessionRevision, selectedScene, normalized,
+                    hits, Map.of(), result.hasMore());
+            return;
+        }
+        final java.util.concurrent.CompletionStage<GeneratedEncounterPlanSummaryBatchResult> summaries;
+        try {
+            summaries = encounters.loadGeneratedPlanSummaries(
+                    new GeneratedEncounterPlanSummaryBatchQuery(List.copyOf(hydrateIds)));
+        } catch (RuntimeException summaryFailure) {
+            failEncounterSearch(requestEpoch, workspace.current(), selectedScene);
+            return;
+        }
+        if (summaries == null) {
+            failEncounterSearch(requestEpoch, workspace.current(), selectedScene);
+            return;
+        }
+        List<Long> requestedIds = List.copyOf(hydrateIds);
+        summaries.whenComplete((response, summaryFailure) -> completeEncounterSearchSummaries(
+                requestEpoch, sessionId, sessionRevision, selectedScene, normalized,
+                hits, result.hasMore(), requestedIds, response, summaryFailure));
+    }
+
+    private synchronized void completeEncounterSearchSummaries(
+            long requestEpoch,
+            long sessionId,
+            long sessionRevision,
+            long selectedScene,
+            String normalized,
+            Map<Long, SavedEncounterPlanSearchHit> hits,
+            boolean hasMore,
+            List<Long> requestedIds,
+            GeneratedEncounterPlanSummaryBatchResult response,
+            Throwable failure
+    ) {
+        if (!searchCurrent(requestEpoch, sessionId, sessionRevision, selectedScene)) {
+            return;
+        }
+        if (failure != null || response == null || response.status() != GeneratedEncounterBatchStatus.SUCCESS
+                || response.entries().size() != requestedIds.size()) {
+            failEncounterSearch(requestEpoch, workspace.current(), selectedScene);
+            return;
+        }
+        Map<Long, GeneratedEncounterPlanSummary> summaries = new LinkedHashMap<>();
+        for (int index = 0; index < requestedIds.size(); index++) {
+            long expectedId = requestedIds.get(index);
+            GeneratedEncounterPlanSummaryEntry entry = response.entries().get(index);
+            if (entry == null || entry.requestedPlanId() != expectedId) {
+                failEncounterSearch(requestEpoch, workspace.current(), selectedScene);
+                return;
+            }
+            if (entry.status() == GeneratedEncounterPlanSummaryEntry.Status.FOUND) {
+                GeneratedEncounterPlanSummary summary = entry.summary().orElse(null);
+                if (summary == null || summary.planId() != expectedId || summaries.put(expectedId, summary) != null) {
+                    failEncounterSearch(requestEpoch, workspace.current(), selectedScene);
+                    return;
+                }
+            }
+        }
+        publishReadySearch(requestEpoch, sessionId, sessionRevision, selectedScene, normalized,
+                hits, summaries, hasMore);
+    }
+
+    private void publishReadySearch(
+            long requestEpoch,
+            long sessionId,
+            long sessionRevision,
+            long selectedScene,
+            String normalized,
+            Map<Long, SavedEncounterPlanSearchHit> hits,
+            Map<Long, GeneratedEncounterPlanSummary> summaries,
+            boolean hasMore
+    ) {
+        List<SessionEncounterPlanSearchSnapshot.Result> results = hits.values().stream().map(hit -> {
+            GeneratedEncounterPlanSummary summary = summaries.get(hit.planId());
+            return summary == null
+                    ? new SessionEncounterPlanSearchSnapshot.Result(
+                            hit.planId(), hit.name(), hit.summaryText(), 0, "",
+                            "Encounter-Plan ist nicht verfügbar.", false)
+                    : new SessionEncounterPlanSearchSnapshot.Result(
+                            hit.planId(), summary.label().isBlank() ? hit.name() : summary.label(),
+                            summary.displaySummary().isBlank() ? hit.summaryText() : summary.displaySummary(),
+                            Math.toIntExact(summary.adjustedXp()), summary.difficulty().name(), "", true);
+        }).toList();
+        publishEncounterSearch(new SessionEncounterPlanSearchSnapshot(
+                requestEpoch, sessionId, sessionRevision, selectedScene, normalized,
+                SessionEncounterPlanSearchSnapshot.Status.READY, results, hasMore,
+                results.isEmpty() ? "Keine gespeicherten Encounter gefunden." : ""));
+    }
+
+    private synchronized void failEncounterSearch(
+            long requestEpoch,
+            SessionPlannerWorkspaceSnapshot source,
+            long selectedScene
+    ) {
+        if (!searchCurrent(requestEpoch, source.sourceSessionId(), source.sourceSessionRevision(), selectedScene)) {
+            return;
+        }
+        publishEncounterSearch(new SessionEncounterPlanSearchSnapshot(
+                requestEpoch, source.sourceSessionId(), source.sourceSessionRevision(), selectedScene,
+                source.encounterPlanSearch().normalizedQuery(), SessionEncounterPlanSearchSnapshot.Status.FAILED,
+                List.of(), false, "Encounter-Suche konnte nicht geladen werden."));
+    }
+
+    private boolean searchCurrent(long requestEpoch, long sessionId, long sessionRevision, long selectedScene) {
+        SessionPlannerWorkspaceSnapshot current = workspace.current();
+        return requestEpoch == searchEpoch
+                && current.sourceSessionId() == sessionId
+                && current.sourceSessionRevision() == sessionRevision
+                && current.currentSession().session().selectedEncounterId() == selectedScene;
+    }
+
+    private void publishEncounterSearch(SessionEncounterPlanSearchSnapshot search) {
+        workspace.publish(workspace.current()
+                .withEncounterPlanSearch(search)
+                .withPublicationRevision(++publicationRevision));
+    }
+
+    private void invalidateEncounterSearch() {
+        searchEpoch++;
+        if (workspace.current().encounterPlanSearch().status() == SessionEncounterPlanSearchSnapshot.Status.IDLE
+                && workspace.current().encounterPlanSearch().results().isEmpty()) {
+            return;
+        }
+        workspace.publish(workspace.current()
+                .withEncounterPlanSearch(SessionEncounterPlanSearchSnapshot.idle())
+                .withPublicationRevision(++publicationRevision));
     }
 
     private record SourceStamp(long sessionId, long revision) {

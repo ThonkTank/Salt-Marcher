@@ -10,6 +10,19 @@ public interface GeneratedEncounterBatchRepository {
 
     List<EncounterPlan> loadPlansByIds(List<Long> planIds);
 
+    default PlanRead loadPlansByIdsWithCount(List<Long> planIds) {
+        return new PlanRead(loadPlansByIds(planIds), 0);
+    }
+
+    record PlanRead(List<EncounterPlan> plans, int statementCount) {
+        public PlanRead {
+            plans = plans == null ? List.of() : List.copyOf(plans);
+            if (statementCount < 0) {
+                throw new IllegalArgumentException("statementCount must be nonnegative");
+            }
+        }
+    }
+
     record CommitOutcome(Status status, List<Mapping> mappings) {
         public enum Status { COMMITTED, EQUAL_RETRY, CONFLICT }
 

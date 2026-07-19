@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: Session Planner Feature
-Last Reviewed: 2026-07-18
+Last Reviewed: 2026-07-19
 Source of Truth: Session Planner structure, preparation orchestration,
 publication, concurrency, and quality decisions.
 
@@ -55,6 +55,7 @@ revision contains:
 - resolved participant summaries and budget
 - ordered scene summaries and selected-scene detail
 - linked Encounter summaries and structured generated rewards
+- the selected-scene saved-plan search request epoch and typed transient state
 - preparation status and stage progress
 - display-safe missing-reference and failure states
 
@@ -67,6 +68,16 @@ projection refresh.
 Publication is latest-revision-wins. One authored mutation or foreign-provider
 revision schedules at most one coalesced assembly. Scene, participant, controls,
 and state-panel views do not subscribe to separate planner projections.
+
+Saved-plan search follows the same single-writer rule. JavaFX dispatches a
+typed query and only renders the search state inside
+`SessionPlannerWorkspaceSnapshot`; it does not filter cached plans. The
+publication coordinator owns the query epoch, publishes searching and terminal
+states, and accepts a completion only when the captured session identity,
+source revision, and selected scene still match. Underlength input is resolved
+locally with zero provider calls. Valid search hydrates the union of at most
+eight returned hit identities and the already-linked plan identities in one
+Encounter summary batch, then restores exact result order in memory.
 
 ## Publication Semantics
 
@@ -193,6 +204,14 @@ Measurable architecture targets are:
 - one workspace assembly performs one planner read and at most one batch read
   each from Party, Encounter, Session Generation, and World Planner, independent
   of scene, saved-plan, reward, slot, and roster-member cardinality
+- ordinary workspace assembly never reads the global Encounter saved-plan
+  catalog. Search reads one bounded root statement and publishes at most eight
+  hits; Encounter summary hydration uses a fixed six-statement temp-relation
+  read independent of result and roster cardinality
+- Session Generation reward hydration uses one connection-scoped temporary
+  request relation and five actual statement executions for non-empty batches,
+  independent of 1, 401, or 800 reward references; caller order, duplicates,
+  and missing identities are reconstructed in memory
 - the warmed reference fixture is two level-3 and two level-4 participants,
   `0.6` adventure days, and three encounters over 20 runs; the complete editable
   publication must satisfy the 2-second p95 product target

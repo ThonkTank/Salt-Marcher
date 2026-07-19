@@ -37,8 +37,6 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     private static final String STYLE_ACCENT = "accent";
     private static final String STYLE_FLAT = "flat";
     private static final BigDecimal ALLOCATION_STEP = BigDecimal.TEN;
-    private static final int MIN_PLAN_QUERY_LENGTH = 2;
-    private static final int MAX_PLAN_RESULTS = 8;
 
     private final VBox rows = new VBox(8);
     private final Label emptyLabel = styledLabel("Noch keine Szenen.", STYLE_TEXT_SECONDARY, "session-planner-empty");
@@ -65,6 +63,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     private LongConsumer removeLootHandler = ignored -> { };
     private AttachPlanHandler attachPlanHandler = (sceneToken, planId) -> { };
     private LongConsumer detachPlanHandler = ignored -> { };
+    private PlanSearchHandler planSearchHandler = (sceneToken, query) -> { };
 
     public SessionPlannerTimelineMainView() {
         VBox content = new VBox(12, rows);
@@ -130,6 +129,10 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         detachPlanHandler = handler == null ? ignored -> { } : handler;
     }
 
+    public void onSearchPlans(PlanSearchHandler handler) {
+        planSearchHandler = handler == null ? (sceneToken, query) -> { } : handler;
+    }
+
     void bind(SessionPlannerViewModel viewModel) {
         if (viewModel == null) {
             return;
@@ -177,7 +180,8 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 var scene = scenes.get(index);
                 SceneCard card = sceneCards.computeIfAbsent(scene.sceneToken(), SceneCard::new);
                 card.update(scene, index + 1, scene.sceneToken() == openSceneToken, disabled,
-                        projection.availablePlans());
+                        scene.selected() ? projection.planSearch()
+                                : SessionPlannerViewModel.TimelineProjection.PlanSearchModel.idle());
                 if (scene.sceneToken() == openSceneToken) {
                     openCard = card;
                 }
@@ -271,7 +275,8 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         private String loadedTitle = "";
         private String loadedNotes = "";
         private long loadedLocationId;
-        private List<SessionPlannerViewModel.TimelineProjection.AvailablePlanModel> availablePlans = List.of();
+        private SessionPlannerViewModel.TimelineProjection.PlanSearchModel searchModel =
+                SessionPlannerViewModel.TimelineProjection.PlanSearchModel.idle();
 
         private SceneCard(long sceneToken) {
             this.sceneToken = sceneToken;
@@ -310,7 +315,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
             planSearch.getStyleClass().add(STYLE_COMPACT);
             planSearch.textProperty().addListener((ignored, before, after) -> {
                 if (editor.isVisible()) {
-                    renderPlanResults();
+                    planSearchHandler.handle(sceneToken, after == null ? "" : after);
                 }
             });
             detachPlan.setOnAction(event -> detachPlanHandler.accept(sceneToken));
@@ -342,10 +347,11 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 int position,
                 boolean expanded,
                 boolean disabled,
-                List<SessionPlannerViewModel.TimelineProjection.AvailablePlanModel> availablePlans
+                SessionPlannerViewModel.TimelineProjection.PlanSearchModel searchModel
         ) {
             this.model = scene;
-            this.availablePlans = availablePlans == null ? List.of() : List.copyOf(availablePlans);
+            this.searchModel = searchModel == null
+                    ? SessionPlannerViewModel.TimelineProjection.PlanSearchModel.idle() : searchModel;
             headerTitle.setText("Szene " + position + ": " + scene.displayTitle());
             headerBudget.setText(scene.budgetPercentageText());
             headerBar.setProgress(clampFraction(scene.budgetFraction()));
@@ -384,7 +390,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
             moveUp.setDisable(disabled || !scene.canMoveUp());
             moveDown.setDisable(disabled || !scene.canMoveDown());
             addLoot.setDisable(disabled);
-            planSearch.setDisable(disabled);
+            planSearch.setDisable(disabled || !scene.selected());
             detachPlan.setDisable(disabled || !linked);
             renderManualLoot(scene, disabled);
             renderGeneratedRewards(scene);
@@ -467,26 +473,31 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
             if (model == null) {
                 return;
             }
-            String query = planSearch.getText() == null ? "" : planSearch.getText().trim();
             List<Node> rows = new ArrayList<>();
-            if (query.length() < MIN_PLAN_QUERY_LENGTH) {
-                planResults.getChildren().setAll(styledLabel(
-                        "Ab 2 Zeichen nach Name, Schwierigkeit oder Zusammenfassung suchen.",
-                        STYLE_TEXT_SECONDARY));
+            if (searchModel.sceneToken() != 0L && searchModel.sceneToken() != sceneToken) {
+                planResults.getChildren().clear();
                 return;
             }
-            List<SessionPlannerViewModel.TimelineProjection.AvailablePlanModel> matches = availablePlans.stream()
-                    .filter(plan -> plan.matches(query))
-                    .limit(MAX_PLAN_RESULTS + 1L)
-                    .toList();
-            if (availablePlans.isEmpty()) {
-                rows.add(styledLabel("Keine gespeicherten Encounter-Pläne.", STYLE_TEXT_SECONDARY));
-            } else if (matches.isEmpty()) {
-                rows.add(styledLabel("Kein Treffer. Suche nach Name, Schwierigkeit oder Zusammenfassung.",
+            switch (searchModel.status()) {
+                case IDLE -> rows.add(styledLabel(
+                        "Ab 2 Zeichen nach Name oder generiertem Label suchen.", STYLE_TEXT_SECONDARY));
+                case TOO_SHORT -> rows.add(styledLabel(
+                        searchModel.message().isBlank() ? "Mindestens 2 Zeichen eingeben." : searchModel.message(),
                         STYLE_TEXT_SECONDARY));
-            } else {
-                boolean moreResults = matches.size() > MAX_PLAN_RESULTS;
-                for (var plan : matches.stream().limit(MAX_PLAN_RESULTS).toList()) {
+                case SEARCHING -> rows.add(styledLabel(
+                        searchModel.message().isBlank() ? "Encounter werden gesucht …" : searchModel.message(),
+                        STYLE_TEXT_SECONDARY));
+                case FAILED -> rows.add(styledLabel(
+                        searchModel.message().isBlank()
+                                ? "Encounter-Suche konnte nicht geladen werden." : searchModel.message(),
+                        "session-planner-gap-active"));
+                case READY -> {
+                    if (searchModel.results().isEmpty()) {
+                        rows.add(styledLabel(searchModel.message().isBlank()
+                                ? "Keine gespeicherten Encounter gefunden." : searchModel.message(),
+                                STYLE_TEXT_SECONDARY));
+                    }
+                    for (var plan : searchModel.results()) {
                     boolean alreadyLinked = model.linkedEncounterPlanId() == plan.planId();
                     String actionText = alreadyLinked
                             ? "Verknüpft" : model.linkedEncounterPlan() ? "Ersetzen" : "Verknüpfen";
@@ -503,11 +514,12 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                     row.setAlignment(Pos.CENTER_LEFT);
                     row.getStyleClass().add("session-planner-encounter-search-result");
                     rows.add(row);
-                }
-                if (moreResults) {
-                    rows.add(styledLabel(
-                            "Weitere Treffer vorhanden. Suche genauer, um sie einzugrenzen.",
-                            STYLE_TEXT_SECONDARY));
+                    }
+                    if (searchModel.hasMore()) {
+                        rows.add(styledLabel(
+                                "Weitere Treffer vorhanden. Suche genauer, um sie einzugrenzen.",
+                                STYLE_TEXT_SECONDARY));
+                    }
                 }
             }
             planResults.getChildren().setAll(rows);
@@ -746,5 +758,10 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     @FunctionalInterface
     public interface AttachPlanHandler {
         void handle(long sceneToken, long planId);
+    }
+
+    @FunctionalInterface
+    public interface PlanSearchHandler {
+        void handle(long sceneToken, String query);
     }
 }

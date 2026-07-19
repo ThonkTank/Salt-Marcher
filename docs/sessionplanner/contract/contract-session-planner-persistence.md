@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: Session Planner Feature
-Last Reviewed: 2026-07-18
+Last Reviewed: 2026-07-19
 Source of Truth: Session Planner stored truth, reference semantics, writes, and
 error behavior.
 
@@ -67,6 +67,11 @@ It MUST NOT store party membership or character detail, Encounter rosters,
 creature facts, copied World Planner detail, generated item lines, reward
 values, packing rows, audits, catalog rows, generation drafts, preparation
 fingerprints, or progress state.
+
+Saved-plan query text, request epochs, result identities, overflow state, and
+search failures are runtime publication state and are not persisted. The
+Session Planner store contains only the attached Encounter-plan reference; it
+does not cache or mirror the Encounter saved-plan catalog.
 
 `lastKnownLabel` is a display fallback for an unavailable foreign reward. It is
 not reward truth and MUST NOT replace a successful typed reward projection.
