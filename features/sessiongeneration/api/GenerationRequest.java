@@ -39,17 +39,6 @@ public record GenerationRequest(
         }
     }
 
-    /** Temporary constructor for the coordinator removed in M3. */
-    @Deprecated(forRemoval = true)
-    public GenerationRequest(
-            List<PartyLevel> party,
-            BigDecimal adventureDayFraction,
-            OptionalInt encounterCount,
-            long seed
-    ) {
-        this(GenerationPreparationIdentity.legacy(), party, adventureDayFraction, encounterCount, seed);
-    }
-
     public record PartyLevel(int level, int players) {
 
         public PartyLevel {

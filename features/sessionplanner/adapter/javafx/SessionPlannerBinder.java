@@ -8,11 +8,11 @@ import shell.api.ShellBinding;
 import shell.api.ShellControls;
 import shell.api.ShellSlot;
 import features.sessionplanner.api.SessionPlannerApi;
-import features.sessionplanner.api.AddSessionLootPlaceholderCommand;
+import features.sessionplanner.api.AddSessionManualLootNoteCommand;
 import features.sessionplanner.api.AddSessionSceneCommand;
 import features.sessionplanner.api.AttachSessionEncounterCommand;
 import features.sessionplanner.api.ClearSessionRestGapCommand;
-import features.sessionplanner.api.RemoveSessionLootPlaceholderCommand;
+import features.sessionplanner.api.RemoveSessionManualLootNoteCommand;
 import features.sessionplanner.api.SessionPlannerCatalogCommand;
 import features.sessionplanner.api.SessionPlannerCurrentSessionModel;
 import features.sessionplanner.api.SessionPlannerCatalogModel;
@@ -23,8 +23,7 @@ import features.sessionplanner.api.SessionPlannerParticipantsModel;
 import features.sessionplanner.api.SessionPlannerRestKind;
 import features.sessionplanner.api.SessionPlannerSceneTimelineModel;
 import features.sessionplanner.api.SessionPlannerStatePanelModel;
-import features.sessionplanner.api.SessionGenerationPreviewModel;
-import features.sessionplanner.api.SessionGenerationDraftChangedCommand;
+import features.sessionplanner.api.SessionPreparationModel;
 import features.sessionplanner.api.SetSessionEncounterDaysCommand;
 import features.sessionplanner.api.SetSessionRestGapCommand;
 import features.sessionplanner.api.UpdateSessionEncounterSceneCommand;
@@ -45,7 +44,7 @@ final class SessionPlannerBinder {
     private final SessionPlannerParticipantsModel participantsModel;
     private final SessionPlannerSceneTimelineModel sceneTimelineModel;
     private final SessionPlannerStatePanelModel statePanelModel;
-    private final SessionGenerationPreviewModel generationPreviewModel;
+    private final SessionPreparationModel preparationModel;
 
     SessionPlannerBinder(
             SessionPlannerApi planner,
@@ -54,7 +53,7 @@ final class SessionPlannerBinder {
             SessionPlannerParticipantsModel participantsModel,
             SessionPlannerSceneTimelineModel sceneTimelineModel,
             SessionPlannerStatePanelModel statePanelModel,
-            SessionGenerationPreviewModel generationPreviewModel
+            SessionPreparationModel preparationModel
     ) {
         this.planner = Objects.requireNonNull(planner, "planner");
         this.sessionModel = Objects.requireNonNull(sessionModel, "sessionModel");
@@ -64,7 +63,7 @@ final class SessionPlannerBinder {
         // Weiterhin Teil des publizierten Zustands, aber von der UI nicht mehr konsumiert:
         // die rechte Spalte ist jetzt die read-only Session-Übersicht (SummaryView).
         this.statePanelModel = Objects.requireNonNull(statePanelModel, "statePanelModel");
-        this.generationPreviewModel = Objects.requireNonNull(generationPreviewModel, "generationPreviewModel");
+        this.preparationModel = Objects.requireNonNull(preparationModel, "preparationModel");
     }
 
     ShellBinding bind() {
@@ -96,11 +95,9 @@ final class SessionPlannerBinder {
         }));
         controlsView.onSetEncounterDays(text -> setEncounterDays(planner, viewModel, text));
 
-        generationPanel.onPreview(planner::previewGeneratedSession);
-        generationPanel.onDraftChanged(() -> planner.generatedSessionDraftChanged(
-                new SessionGenerationDraftChangedCommand()));
-        generationPanel.onApply(planner::applyGeneratedSession);
-        generationPanel.bind(generationPreviewModel);
+        generationPanel.onPrepare(planner::prepareSession);
+        generationPanel.onCancel(planner::cancelPreparation);
+        generationPanel.bind(preparationModel);
 
         timelineView.onAddScene(() -> ifSession(viewModel, () -> planner.addScene(new AddSessionSceneCommand())));
         timelineView.onSelectScene(sceneToken -> ifSession(viewModel, () -> {
@@ -144,12 +141,12 @@ final class SessionPlannerBinder {
         }));
         timelineView.onAddLoot(sceneToken -> ifSession(viewModel, () -> {
             if (sceneToken > 0L) {
-                planner.addLootPlaceholder(new AddSessionLootPlaceholderCommand(sceneToken));
+                planner.addManualLootNote(new AddSessionManualLootNoteCommand(sceneToken));
             }
         }));
         timelineView.onRemoveLoot(lootToken -> ifSession(viewModel, () -> {
             if (lootToken > 0L) {
-                planner.removeLootPlaceholder(new RemoveSessionLootPlaceholderCommand(lootToken));
+                planner.removeManualLootNote(new RemoveSessionManualLootNoteCommand(lootToken));
             }
         }));
 

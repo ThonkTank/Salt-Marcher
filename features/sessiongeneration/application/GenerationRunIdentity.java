@@ -13,9 +13,6 @@ final class GenerationRunIdentity {
     }
 
     static String assign(GenerationPreparationIdentity preparationIdentity, GeneratedRun generated) {
-        if (preparationIdentity.equals(GenerationPreparationIdentity.legacy())) {
-            return generated.runId();
-        }
         String canonical = "session-generation-run-v1\n"
                 + preparationIdentity.value().replace("\r\n", "\n").replace('\r', '\n') + "\n"
                 + generated.engineVersion() + "\n"

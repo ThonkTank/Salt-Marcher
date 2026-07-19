@@ -40,13 +40,13 @@ final class SessionPlanSqliteReads {
                 detailReads.loadParticipants(connection, sessionId),
                 detailReads.loadEncounters(connection, sessionId),
                 detailReads.loadRests(connection, sessionId),
-                detailReads.loadLootPlaceholders(connection, sessionId),
+                detailReads.loadManualLootNotes(connection, sessionId),
                 detailReads.loadGeneratedRewards(connection, sessionId)));
     }
 
     List<SessionPlanRecord> listSessions(Connection connection) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT session_id, display_name, encounter_days, selected_encounter_id, status_text, "
+                "SELECT session_id, revision, display_name, encounter_days, selected_encounter_id, status_text, "
                         + "next_encounter_id, next_loot_id FROM "
                         + SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE
                         + " ORDER BY LOWER(display_name), session_id");
@@ -75,7 +75,7 @@ final class SessionPlanSqliteReads {
 
     private Optional<SessionPlanRecord> loadPlan(Connection connection, long sessionId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT session_id, display_name, encounter_days, selected_encounter_id, status_text, "
+                "SELECT session_id, revision, display_name, encounter_days, selected_encounter_id, status_text, "
                         + "next_encounter_id, next_loot_id "
                         + "FROM " + SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE + " WHERE session_id = ?")) {
             statement.setLong(1, sessionId);
@@ -91,6 +91,7 @@ final class SessionPlanSqliteReads {
     private static SessionPlanRecord planRecord(ResultSet resultSet) throws SQLException {
         return new SessionPlanRecord(
                 resultSet.getLong("session_id"),
+                resultSet.getLong("revision"),
                 resultSet.getString("display_name"),
                 resultSet.getString("encounter_days"),
                 resultSet.getLong("selected_encounter_id"),

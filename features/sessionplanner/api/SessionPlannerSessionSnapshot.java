@@ -17,7 +17,7 @@ public record SessionPlannerSessionSnapshot(
         session = session == null ? SessionState.empty() : session;
         xpBudget = xpBudget == null ? XpBudgetState.empty() : xpBudget;
         restAdvice = restAdvice == null ? RestAdviceState.empty() : restAdvice;
-        goldBudget = goldBudget == null ? GoldBudgetState.placeholder(0) : goldBudget;
+        goldBudget = goldBudget == null ? GoldBudgetState.manualNotes(0) : goldBudget;
         availableEncounterPlans = copy(availableEncounterPlans);
         locationReferences = copy(locationReferences);
         status = status == null ? "" : status;
@@ -38,7 +38,7 @@ public record SessionPlannerSessionSnapshot(
                 SessionState.empty(),
                 XpBudgetState.empty(),
                 RestAdviceState.empty(),
-                GoldBudgetState.placeholder(0),
+                GoldBudgetState.manualNotes(0),
                 List.of(),
                 List.of(),
                 status);
@@ -130,13 +130,13 @@ public record SessionPlannerSessionSnapshot(
             detail = detail == null ? "" : detail;
         }
 
-        public static GoldBudgetState placeholder(int lootPlaceholderCount) {
+        public static GoldBudgetState manualNotes(int manualNoteCount) {
             return new GoldBudgetState(
                     false,
                     "Goldbudget offen",
-                    lootPlaceholderCount <= 0
-                            ? "Loot-Platzhalter sind vorbereitet, aber Gold wird noch nicht berechnet."
-                            : lootPlaceholderCount + " Loot-Platzhalter sichtbar, Goldbudget weiterhin offen.");
+                    manualNoteCount <= 0
+                            ? "Keine manuelle Beutenotiz; ein Goldbudget wird noch nicht berechnet."
+                            : manualNoteCount + " manuelle Beutenotizen, Goldbudget weiterhin offen.");
         }
     }
 

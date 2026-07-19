@@ -38,13 +38,11 @@ public interface SessionPlannerApi {
 
     void clearRestGap(ClearSessionRestGapCommand command);
 
-    void addLootPlaceholder(AddSessionLootPlaceholderCommand command);
+    void addManualLootNote(AddSessionManualLootNoteCommand command);
 
-    void removeLootPlaceholder(RemoveSessionLootPlaceholderCommand command);
+    void removeManualLootNote(RemoveSessionManualLootNoteCommand command);
 
-    void previewGeneratedSession(PreviewGeneratedSessionCommand command);
+    void prepareSession(PrepareSessionCommand command);
 
-    void generatedSessionDraftChanged(SessionGenerationDraftChangedCommand command);
-
-    void applyGeneratedSession(ApplyGeneratedSessionCommand command);
+    void cancelPreparation();
 }

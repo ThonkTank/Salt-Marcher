@@ -54,16 +54,18 @@ final class SessionGenerationServiceTest {
     }
 
     @Test
-    void deprecatedGenerateExecutesRealDraftThenCommitsExactSuppliedSemanticValue() {
+    void commitPersistsExactSuppliedDraftSemanticValue() {
         QueuedLane cpu = new QueuedLane();
         QueuedLane io = new QueuedLane();
         RecordingRepository repository = new RecordingRepository();
         SessionGenerationService service = new SessionGenerationService(
                 new RecordingCatalog(), repository, new SessionGenerationEngine(), cpu, io);
 
-        var completion = service.generate(request()).toCompletableFuture();
+        var draftCompletion = service.draft(request()).toCompletableFuture();
         io.runNext();
         cpu.runNext();
+        var draft = draftCompletion.join().draft().orElseThrow();
+        var completion = service.commit(new CommitGenerationRunCommand(draft)).toCompletableFuture();
         assertFalse(completion.isDone());
         io.runNext();
 
@@ -100,7 +102,7 @@ final class SessionGenerationServiceTest {
         SessionGenerationService service = new SessionGenerationService(
                 new RecordingCatalog(), new ThrowingRepository(), new SessionGenerationEngine(), cpu, io);
 
-        var completion = service.loadRun(new GenerationRunId("broken-run")).toCompletableFuture();
+        var completion = service.load(new GenerationRunId("broken-run")).toCompletableFuture();
         assertEquals(0, cpu.size());
         io.runNext();
 

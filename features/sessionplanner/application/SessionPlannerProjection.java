@@ -12,7 +12,7 @@ import features.sessionplanner.domain.session.SessionEncounter;
 import features.sessionplanner.domain.session.SessionEncounterPlanFact;
 import features.sessionplanner.domain.session.SessionEncounterPlanListFact;
 import features.sessionplanner.domain.session.SessionLocationReference;
-import features.sessionplanner.domain.session.SessionLootPlaceholder;
+import features.sessionplanner.domain.session.SessionManualLootNote;
 import features.sessionplanner.domain.session.SessionGeneratedRewardReference;
 import features.sessionplanner.domain.session.SessionPartyMemberProfile;
 import features.sessionplanner.domain.session.SessionPlan;
@@ -67,7 +67,7 @@ public final class SessionPlannerProjection {
                         context.budgetFact(),
                         countShortRests(session.restPlacements()),
                         countLongRests(session.restPlacements())),
-                SessionPlannerSessionSnapshot.GoldBudgetState.placeholder(session.lootPlaceholders().size()),
+                SessionPlannerSessionSnapshot.GoldBudgetState.manualNotes(session.manualLootNotes().size()),
                 availablePlans,
                 buildLocationReferences(facts.availableLocations()),
                 resolveStatus(context.participants(), context.partyMembersFact(), encounterPlansFact, session.statusText()));
@@ -320,27 +320,30 @@ public final class SessionPlannerProjection {
                     encounter.sceneTitle(),
                     encounter.sceneNotes(),
                     encounter.locationId(),
-                    lootForScene(
-                            session.lootPlaceholders(),
+                    lootEntriesForScene(
+                            session.manualLootNotes(),
                             session.generatedRewards(),
                             encounter.encounterId())));
         }
         return List.copyOf(sessionScenes);
     }
 
-    private static List<SessionPlannerSceneTimelineProjection.LootPlaceholder> lootForScene(
-            List<SessionLootPlaceholder> lootPlaceholders,
+    private static List<SessionPlannerSceneTimelineProjection.LootEntry> lootEntriesForScene(
+            List<SessionManualLootNote> manualLootNotes,
             List<SessionGeneratedRewardReference> generatedRewards,
             long sceneId
     ) {
-        List<SessionPlannerSceneTimelineProjection.LootPlaceholder> rows = new ArrayList<>();
-        lootPlaceholders.stream()
-                .filter(loot -> loot.encounterId() == sceneId)
-                .map(loot -> new SessionPlannerSceneTimelineProjection.LootPlaceholder(loot.lootId(), loot.label()))
+        List<SessionPlannerSceneTimelineProjection.LootEntry> rows = new ArrayList<>();
+        manualLootNotes.stream()
+                .filter(note -> note.sceneId() == sceneId)
+                .map(note -> new SessionPlannerSceneTimelineProjection.LootEntry(
+                        SessionPlannerSceneTimelineProjection.LootEntry.Kind.MANUAL_NOTE,
+                        note.noteId(), note.authoredText()))
                 .forEach(rows::add);
         generatedRewards.stream()
                 .filter(reward -> reward.sceneId() == sceneId)
-                .map(reward -> new SessionPlannerSceneTimelineProjection.LootPlaceholder(
+                .map(reward -> new SessionPlannerSceneTimelineProjection.LootEntry(
+                        SessionPlannerSceneTimelineProjection.LootEntry.Kind.GENERATED_REWARD,
                         0L,
                         reward.lastKnownLabel()))
                 .forEach(rows::add);

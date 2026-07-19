@@ -21,6 +21,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HexFormat;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.RepetitionInfo;
 import org.junit.jupiter.api.io.TempDir;
 import platform.diagnostics.NoopDiagnostics;
 import platform.persistence.SqliteDatabase;
@@ -149,9 +151,11 @@ final class GeneratedEncounterBatchSqliteTest {
         }
     }
 
-    @Test
-    void concurrentCanonicalIdentityRaceReturnsOneCommitAndOneEqualRetry() throws Exception {
-        Path path = directory.resolve("race.sqlite");
+    @RepeatedTest(20)
+    void concurrentCanonicalIdentityRaceReturnsOneCommitAndOneEqualRetry(
+            RepetitionInfo repetition
+    ) throws Exception {
+        Path path = directory.resolve("race-" + repetition.getCurrentRepetition() + ".sqlite");
         try (SqliteDatabase database = databaseWithCreatures(path, 11L, 12L)) {
             SqliteEncounterPlanRepository first = new SqliteEncounterPlanRepository(database);
             SqliteEncounterPlanRepository second = new SqliteEncounterPlanRepository(database);

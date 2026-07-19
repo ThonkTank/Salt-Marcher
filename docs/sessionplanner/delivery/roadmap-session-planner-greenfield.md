@@ -1,6 +1,6 @@
 Status: Temporary Migration
 Owner: Session Planner Feature
-Last Reviewed: 2026-07-18
+Last Reviewed: 2026-07-19
 Source of Truth: Ordered replacement milestones, compatibility budget, deletion
 gates, and current migration position for Session preparation.
 
@@ -39,26 +39,27 @@ after M6 closes every named legacy boundary and the owner accepts the result.
 
 ## Current Structural Problem
 
-The current workflow models one click as a hidden preview followed by Apply.
-Session Generation saves and reloads the result before the workflow can
-continue. Encounter then resolves abstract XP-and-role slots through repeated
-creature lookups. Session Planner publishes several projections that rebuild
-overlapping context, hydrate saved plans and creatures repeatedly, and project
-generated reward truth mainly through fallback labels. One global serial
-execution lane can serialize CPU generation, I/O, projection, and unrelated
-commands.
+M1 through M3 have replaced the hidden preview/Apply transport. One confirmed
+`prepareSession` intent now drafts the complete generation result in memory,
+resolves concrete Encounter rosters from one candidate snapshot, commits both
+foreign artifact families idempotently, and advances the planner revision once
+through a final compare-and-swap transaction. Manual authored loot is stored as
+manual notes, while generated rewards remain typed references.
 
-The result can be technically persisted while still looking like generic text:
-Encounter composition is selected after generation with weak diversity, and
-the planner does not render the structured loot rows the generator already
-owns. Latency grows with saved plans, scenes, slots, and roster members instead
-of staying bounded by data family.
+The remaining structural problem is publication and presentation. Session
+Planner still publishes several projections that rebuild overlapping context,
+hydrate foreign detail repeatedly, and render generated reward truth through a
+fallback label instead of a structured reward read. Preparation also still
+shares the global serial execution lane, and the visually retained generation
+panel has not yet converged on the compact final toolbar. Latency therefore
+remains vulnerable to saved-plan, scene, reward, and roster cardinality even
+though generation and Encounter preparation now use bounded batch boundaries.
 
 The principal current evidence is
-`features/sessionplanner/application/SessionGenerationCoordinator.java`,
+`features/sessionplanner/application/SessionPreparationCoordinator.java`,
+`features/sessionplanner/application/PreparedSessionDraft.java`,
 `features/sessionplanner/application/SessionPlannerProjection.java`,
-`features/sessionplanner/application/SessionPlannerPublishedState.java`,
-`features/encounter/application/GeneratedEncounterPlanImportService.java`, and
+`features/sessionplanner/application/SessionPlannerPublishedState.java`, and
 `platform/execution/SerialExecutionLane.java`.
 
 PR #512 at reviewed commit `58660a1ec` is the visual and interaction donor for
@@ -196,12 +197,14 @@ acceptance after the last UI diff.
 
 ## Current Migration Position
 
-- Current foundation: M0 through M2 are complete. Session Generation publishes
+- Current foundation: M0 through M3 are complete. Session Generation publishes
   the typed draft/commit/load/reward-read boundary, while Encounter now prepares
   one concrete deterministic roster batch from one Creature facts snapshot,
   commits it atomically and idempotently, and batch-hydrates current summaries.
-- Current milestone: M3 replaces the preview/Apply and generate/load workflow
-  transport with one in-memory Session preparation and final planner commit.
+  Session Planner now owns one confirmed, cancellable, latest-wins preparation
+  route and one revision-guarded final transaction.
+- Current milestone: M4 replaces independent projection refreshes with one
+  coherent revisioned workspace snapshot and structured reward projection.
 - M0 closure: documentation whitespace, required `check`, and desktop install
   proof are green after the final owner-language diff.
 - M1 closure: the Golden fixture uses two level-3 and two level-4 characters,
@@ -219,6 +222,17 @@ acceptance after the last UI diff.
   hydration, migration, rollback, conflicts, concurrency, coordinator stale and
   retry behavior, startup, and lane lifecycle (`1m 42s`). Required `check`
   (`6m 37s`) and desktop install (`14s`) are green after the final M2 code diff.
+- M3 closure: one Generate intent now confirms destructive replacement before
+  work, fingerprints Session revision plus Party facts and generation inputs,
+  validates one complete `PreparedSessionDraft`, commits stable foreign
+  identities idempotently, and advances the planner revision exactly once.
+  SQLite schema v3 migrates every legacy manual placeholder into the canonical
+  manual-note table without dual writes; canonical generated reward references
+  reopen. Independent focused proof covers cancellation, latest-wins, stale
+  facts, malformed drafts, foreign and planner retry, exact CAS outcomes,
+  fingerprint mismatch, transaction rollback, migration, and the JavaFX
+  production route. The final 21-test M3 suite, `git diff --check`, required
+  `check`, and desktop install are green after the final M3 diff.
 
 ## Delivery Rules
 

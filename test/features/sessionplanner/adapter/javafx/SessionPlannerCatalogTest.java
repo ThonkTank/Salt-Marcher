@@ -31,7 +31,7 @@ import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanReposi
 import features.worldplanner.adapter.sqlite.repository.SqliteWorldPlannerRepository;
 import features.sessionplanner.adapter.sqlite.mapper.SessionPlanMapper;
 import features.sessionplanner.adapter.sqlite.model.SessionEncounterRecord;
-import features.sessionplanner.adapter.sqlite.model.SessionLootPlaceholderRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionManualLootNoteRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionPlanRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionPlanSnapshotRecord;
 import features.encounter.application.EncounterApplicationService;
@@ -61,13 +61,15 @@ import features.sessionplanner.api.SessionPlannerParticipantsModel;
 import features.sessionplanner.api.SessionPlannerRestKind;
 import features.sessionplanner.api.SessionPlannerSceneTimelineProjection;
 import features.sessionplanner.api.SessionPlannerSessionSnapshot;
-import features.sessionplanner.api.SessionGenerationPreviewModel;
-import features.sessionplanner.api.SessionGenerationPreviewSnapshot;
-import features.sessionplanner.api.SessionGenerationPreviewStatus;
+import features.sessionplanner.api.SessionPreparationModel;
+import features.sessionplanner.api.SessionPreparationSnapshot;
+import features.sessionplanner.api.SessionPreparationStatus;
+import features.sessiongeneration.api.GenerationDraft;
+import features.sessiongeneration.api.GenerationDraftResponse;
 import features.sessiongeneration.api.GenerationRequest;
-import features.sessiongeneration.api.GenerationResponse;
 import features.sessiongeneration.api.GenerationResult;
 import features.sessiongeneration.api.GenerationRunId;
+import features.sessiongeneration.api.GenerationRunResponse;
 import features.sessiongeneration.api.SessionGenerationApi;
 import features.worldplanner.application.WorldPlannerApplicationService;
 import features.worldplanner.WorldPlannerServiceAssembly;
@@ -99,14 +101,14 @@ public final class SessionPlannerCatalogTest {
     }
 
     @Test
-    void generationDraftEditWhilePendingUsesApplicationInvalidationRoute() throws Exception {
-        CompletableFuture<GenerationResponse> pending = new CompletableFuture<>();
+    void generationCanBeCancelledWhileDraftIsPending() throws Exception {
+        CompletableFuture<GenerationDraftResponse> pending = new CompletableFuture<>();
         SessionGenerationApi delayedGeneration = new SessionGenerationApi() {
             @Override
-            public java.util.concurrent.CompletionStage<features.sessiongeneration.api.GenerationDraftResponse> draft(
+            public java.util.concurrent.CompletionStage<GenerationDraftResponse> draft(
                     GenerationRequest request
             ) {
-                throw new UnsupportedOperationException();
+                return pending;
             }
 
             @Override
@@ -117,7 +119,7 @@ public final class SessionPlannerCatalogTest {
             }
 
             @Override
-            public java.util.concurrent.CompletionStage<features.sessiongeneration.api.GenerationRunResponse> loadRun(
+            public java.util.concurrent.CompletionStage<features.sessiongeneration.api.GenerationRunResponse> load(
                     GenerationRunId runId
             ) {
                 throw new UnsupportedOperationException();
@@ -129,54 +131,39 @@ public final class SessionPlannerCatalogTest {
                 throw new UnsupportedOperationException();
             }
 
-            @Override
-            public java.util.concurrent.CompletionStage<GenerationResponse> generate(GenerationRequest request) {
-                return pending;
-            }
-
-            @Override
-            public java.util.concurrent.CompletionStage<GenerationResponse> load(GenerationRunId runId) {
-                return pending;
-            }
         };
-        runOnFxThread(() -> assertPendingDraftInvalidation(delayedGeneration));
+        runOnFxThread(() -> assertPendingDraftCancellation(delayedGeneration));
     }
 
     @Test
-    void generationInputsAreDisabledWhileApplyIsInFlight() throws Exception {
-        runOnFxThread(SessionPlannerCatalogTest::assertApplyingInputsDisabled);
+    void generationActionIsDisabledWhileSavingIsInFlight() throws Exception {
+        runOnFxThread(SessionPlannerCatalogTest::assertSavingActionDisabled);
     }
 
-    private static void assertApplyingInputsDisabled() {
+    private static void assertSavingActionDisabled() {
         SessionGenerationPanel panel = new SessionGenerationPanel();
-        SessionGenerationPreviewSnapshot applying = new SessionGenerationPreviewSnapshot(
-                SessionGenerationPreviewStatus.APPLYING,
-                "Generierte Session wird angewandt …",
+        SessionPreparationSnapshot saving = new SessionPreparationSnapshot(
+                SessionPreparationStatus.SAVING,
+                "Session wird gespeichert …",
                 7L,
-                "run-179974",
-                179_974L,
-                "10e7b8c2f3d43c0868e2ce0c3bf8471b72ed4d5327fc633452e0245d32f416f6",
-                SessionGenerationPreviewSnapshot.Summary.empty(),
-                List.of(),
-                List.of(),
-                List.of(),
                 4L,
-                false);
-        panel.bind(new SessionGenerationPreviewModel(() -> applying, listener -> () -> { }));
+                true);
+        panel.bind(new SessionPreparationModel(() -> saving, listener -> () -> { }));
 
-        assertTrue(textField(panel, "Auto").isDisabled(), "encounter-count input is disabled while applying");
-        assertTrue(textField(panel, "Seed").isDisabled(), "seed input is disabled while applying");
-        assertTrue(button(panel, "Vorschau erzeugen").isDisabled(), "preview action is disabled while applying");
+        assertTrue(button(panel, "Session generieren").isDisabled(),
+                "generation action is disabled while saving");
+        assertTrue(isEffectivelyVisible(button(panel, "Abbrechen")),
+                "saving state keeps cancellation visible");
     }
 
-    private static void assertPendingDraftInvalidation(SessionGenerationApi generation) {
+    private static void assertPendingDraftCancellation(SessionGenerationApi generation) {
         SessionPlannerTestServices services = services(generation);
         seedActiveParty(services);
         SessionPlannerServiceAssembly planner = services.planner();
         ShellBinding binding = new SessionPlannerContribution(
                 planner.application(), planner.currentSessionModel(), planner.catalogModel(),
                 planner.participantsModel(), planner.sceneTimelineModel(), planner.statePanelModel(),
-                planner.generationPreviewModel()).bind();
+                planner.preparationModel()).bind();
         Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
         Stage stage = new Stage();
         stage.setScene(new Scene(controls, 420.0, 720.0));
@@ -184,17 +171,18 @@ public final class SessionPlannerCatalogTest {
         planner.application().createSession(new SessionPlannerCatalogCommand.CreateSessionCommand("Pending"));
         layout(controls);
 
-        button(controls, "Vorschau erzeugen").fire();
-        assertEquals(features.sessionplanner.api.SessionGenerationPreviewStatus.GENERATING,
-                planner.generationPreviewModel().current().status(),
-                "preview remains pending until provider completion");
+        button(controls, "Session generieren").fire();
+        assertEquals(SessionPreparationStatus.GENERATING,
+                planner.preparationModel().current().status(),
+                "generation remains pending until provider completion");
+        assertTrue(button(controls, "Session generieren").isDisabled(),
+                "pending generation prevents duplicate submission");
 
-        textField(controls, "Seed").setText("179975");
+        button(controls, "Abbrechen").fire();
 
-        assertEquals(features.sessionplanner.api.SessionGenerationPreviewStatus.STALE,
-                planner.generationPreviewModel().current().status(),
-                "seed edit invalidates pending attempt through application state");
-        assertTrue(button(controls, "Anwenden").isDisabled(), "pending draft edit keeps Apply disabled");
+        assertEquals(SessionPreparationStatus.IDLE,
+                planner.preparationModel().current().status(),
+                "cancel invalidates the pending preparation attempt");
     }
 
     private static void runTest() {
@@ -204,7 +192,7 @@ public final class SessionPlannerCatalogTest {
         ShellBinding binding = new SessionPlannerContribution(
                 planner.application(), planner.currentSessionModel(), planner.catalogModel(),
                 planner.participantsModel(), planner.sceneTimelineModel(), planner.statePanelModel(),
-                planner.generationPreviewModel()).bind();
+                planner.preparationModel()).bind();
         Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
         Parent main = slot(binding, ShellSlot.COCKPIT_MAIN, Parent.class);
         Parent state = slot(binding, ShellSlot.COCKPIT_STATE, Parent.class);
@@ -362,22 +350,21 @@ public final class SessionPlannerCatalogTest {
                 .addScene()
                 .attachEncounter(101L)
                 .attachEncounter(202L)
-                .addLootPlaceholder(1L)
-                .addLootPlaceholder(2L)
-                .addLootPlaceholder(1L);
-        assertEquals(Integer.valueOf(3), Integer.valueOf(plan.lootPlaceholders().size()),
-                "loot placeholders are stored on the session plan");
-        assertEquals(Long.valueOf(1L), Long.valueOf(plan.lootPlaceholders().get(0).encounterId()),
-                "first loot placeholder stores its encounter target");
-        assertEquals(Long.valueOf(2L), Long.valueOf(plan.lootPlaceholders().get(1).encounterId()),
-                "second loot placeholder stores its encounter target");
+                .addManualLootNote(1L)
+                .addManualLootNote(2L)
+                .addManualLootNote(1L);
+        assertEquals(Integer.valueOf(3), Integer.valueOf(plan.manualLootNotes().size()),
+                "manual notes are stored on the session plan");
+        assertEquals(Long.valueOf(1L), Long.valueOf(plan.manualLootNotes().get(0).sceneId()),
+                "first manual note stores its scene target");
+        assertEquals(Long.valueOf(2L), Long.valueOf(plan.manualLootNotes().get(1).sceneId()),
+                "second manual note stores its scene target");
 
         SessionPlan afterRemoval = plan.removeEncounter(1L);
-        assertEquals(Integer.valueOf(1), Integer.valueOf(afterRemoval.lootPlaceholders().size()),
-                "removing an encounter prunes its loot placeholders");
-        assertEquals(Long.valueOf(2L), Long.valueOf(afterRemoval.lootPlaceholders().getFirst().encounterId()),
-                "remaining loot placeholder keeps the surviving encounter target");
-        assertLegacyLootLoadsIntoFirstEncounter();
+        assertEquals(Integer.valueOf(1), Integer.valueOf(afterRemoval.manualLootNotes().size()),
+                "removing a scene prunes its manual notes");
+        assertEquals(Long.valueOf(2L), Long.valueOf(afterRemoval.manualLootNotes().getFirst().sceneId()),
+                "remaining manual note keeps the surviving scene target");
 
         SessionPlannerSceneTimelineProjection projection = new SessionPlannerSceneTimelineProjection(
                 List.of(new SessionPlannerSceneTimelineProjection.SessionScene(
@@ -397,7 +384,9 @@ public final class SessionPlannerCatalogTest {
                         "Gate Watch",
                         "guards count torches",
                         7L,
-                        List.of(new SessionPlannerSceneTimelineProjection.LootPlaceholder(10L, "Cache")))),
+                        List.of(new SessionPlannerSceneTimelineProjection.LootEntry(
+                                SessionPlannerSceneTimelineProjection.LootEntry.Kind.MANUAL_NOTE,
+                                10L, "Cache")))),
                 List.of());
         SessionPlannerViewModel viewModel = new SessionPlannerViewModel();
         viewModel.applyLocationReferences(List.of(
@@ -405,7 +394,7 @@ public final class SessionPlannerCatalogTest {
                 new SessionPlannerSessionSnapshot.LocationReference(10L, "Moonwell")));
         viewModel.applySceneTimeline(projection);
         assertEquals(Integer.valueOf(1), Integer.valueOf(
-                        viewModel.timelineProjectionProperty().get().scenes().getFirst().lootPlaceholders().size()),
+                        viewModel.timelineProjectionProperty().get().scenes().getFirst().lootEntries().size()),
                 "timeline model keeps loot inside the scene card");
         assertEquals("Old Gate", viewModel.timelineProjectionProperty().get().scenes().getFirst().locationLabel(),
                 "timeline model resolves scene location labels from World Planner locations");
@@ -415,18 +404,6 @@ public final class SessionPlannerCatalogTest {
         assertEquals("Gate Watch",
                 viewModel.timelineProjectionProperty().get().scenes().getFirst().sceneTitle(),
                 "timeline model exposes the persisted scene title directly without a draft layer");
-    }
-
-    private static void assertLegacyLootLoadsIntoFirstEncounter() {
-        SessionPlan loaded = SessionPlanMapper.toDomain(new SessionPlanSnapshotRecord(
-                new SessionPlanRecord(88L, "Legacy", "1.0", 1L, "", 3L, 2L),
-                List.of(),
-                List.of(new SessionEncounterRecord(1L, 101L, "100", "", "", 0L, 0)),
-                List.of(),
-                List.of(new SessionLootPlaceholderRecord(1L, 0L, "Legacy Cache", 0)),
-                List.of()));
-        assertEquals(Long.valueOf(1L), Long.valueOf(loaded.lootPlaceholders().getFirst().encounterId()),
-                "legacy loot without encounter id loads into the first encounter");
     }
 
     private static void assertProductionRouteTimelineInteractions(
@@ -487,17 +464,17 @@ public final class SessionPlannerCatalogTest {
         assertTrue(hasLabel(main, "Old Gate"), "scene header renders saved location label");
 
         expandScene(main, 0);
-        buttons(main, "Loot-Platzhalter").getFirst().fire();
+        buttons(main, "Beutenotiz").getFirst().fire();
         layout(main);
         assertEquals(Integer.valueOf(1),
-                Integer.valueOf(sceneTimeline.current().sessionScenes().getFirst().lootPlaceholders().size()),
-                "loot add through scene card publishes placeholder");
-        assertTrue(hasLabel(main, "Loot-Platzhalter 1"), "loot add renders placeholder label");
+                Integer.valueOf(sceneTimeline.current().sessionScenes().getFirst().lootEntries().size()),
+                "manual note add through scene card publishes note");
+        assertTrue(hasLabel(main, "Notiz: Beutenotiz 1"), "manual note renders as authored content");
         button(main, "Entfernen").fire();
         layout(main);
         assertEquals(Integer.valueOf(0),
-                Integer.valueOf(sceneTimeline.current().sessionScenes().getFirst().lootPlaceholders().size()),
-                "loot remove through scene card clears placeholder");
+                Integer.valueOf(sceneTimeline.current().sessionScenes().getFirst().lootEntries().size()),
+                "manual note remove through scene card clears note");
 
         buttons(main, "+10%").getFirst().fire();
         layout(main);
@@ -556,49 +533,35 @@ public final class SessionPlannerCatalogTest {
         layout(controls);
         assertEquals(Integer.valueOf(1), Integer.valueOf(participants.current().participants().size()),
                 "generation route has one resolved session participant");
-        int scenesBeforePreview = sceneTimeline.current().sessionScenes().size();
+        int scenesBeforePreparation = sceneTimeline.current().sessionScenes().size();
 
-        button(controls, "Vorschau erzeugen").fire();
+        button(controls, "Session generieren").fire();
         layout(controls);
 
-        assertEquals(Integer.valueOf(scenesBeforePreview), Integer.valueOf(sceneTimeline.current().sessionScenes().size()),
-                "preview performs no Session mutation");
-        assertTrue(hasLabelContaining(controls, "Seed 179974"), "preview renders seed provenance");
-        assertTrue(!hasLabelContaining(controls, "saltmarcher-v1"), "preview exposes no ruleset label");
-        assertTrue(!button(controls, "Anwenden").isDisabled(), "green preview enables Apply");
+        assertEquals(Integer.valueOf(scenesBeforePreparation),
+                Integer.valueOf(sceneTimeline.current().sessionScenes().size()),
+                "replacement confirmation performs no Session mutation");
+        assertTrue(hasLabelContaining(controls, "Vorhandene Szenen"),
+                "generation reveals the inline replacement warning");
+        assertTrue(isEffectivelyVisible(button(controls, "Ersetzen und generieren")),
+                "replacement requires explicit confirmation");
 
-        button(controls, "Anwenden").fire();
-        assertTrue(hasLabelContaining(controls, "Alle aktuellen Szenen"), "Apply reveals replacement warning");
-        Button confirmation = button(controls, "Ersetzen bestätigen");
-        textField(controls, "Auto").setText("1");
-        layout(controls);
-        assertTrue(button(controls, "Anwenden").isDisabled(),
-                "encounter-count edit invalidates the ready preview");
-        assertTrue(!isEffectivelyVisible(confirmation), "encounter-count edit closes Apply confirmation");
-
-        button(controls, "Vorschau erzeugen").fire();
-        layout(controls);
-        button(controls, "Anwenden").fire();
-        confirmation = button(controls, "Ersetzen bestätigen");
-        textField(controls, "Seed").setText("179975");
-        layout(controls);
-        assertTrue(button(controls, "Anwenden").isDisabled(), "seed edit invalidates the ready preview");
-        assertTrue(!isEffectivelyVisible(confirmation), "seed edit closes Apply confirmation");
-
-        textField(controls, "Seed").setText("179974");
-        button(controls, "Vorschau erzeugen").fire();
-        layout(controls);
-        button(controls, "Anwenden").fire();
-        button(controls, "Ersetzen bestätigen").fire();
+        button(controls, "Ersetzen und generieren").fire();
         layout(main);
 
         assertEquals(Integer.valueOf(1), Integer.valueOf(sceneTimeline.current().sessionScenes().size()),
-                "confirmed Apply replaces the timeline");
+                "confirmed generation replaces the timeline");
         assertEquals(Long.valueOf(901L),
                 Long.valueOf(sceneTimeline.current().sessionScenes().getFirst().linkedEncounterPlanId()),
-                "confirmed Apply attaches imported Encounter plan");
+                "confirmed generation attaches imported Encounter plan");
+        assertEquals(SessionPlannerSceneTimelineProjection.LootEntry.Kind.GENERATED_REWARD,
+                sceneTimeline.current().sessionScenes().getFirst().lootEntries().getFirst().kind(),
+                "reopened reward keeps its canonical generated kind");
+        assertEquals("Vault · 1 Positionen",
+                sceneTimeline.current().sessionScenes().getFirst().lootEntries().getFirst().label(),
+                "reopened reward keeps its canonical persisted fallback label");
         expandScene(main, 0);
-        assertTrue(hasLabel(main, "ENCOUNTER · Generated cache"),
+        assertTrue(hasLabel(main, "Generierte Belohnung: Vault · 1 Positionen"),
                 "applied generated reward reopens through the normal timeline projection");
     }
 
@@ -721,8 +684,9 @@ public final class SessionPlannerCatalogTest {
                     return () -> {
                     };
                 });
+        SqliteSessionPlanRepository sessionRepository = new SqliteSessionPlanRepository();
         SessionPlannerServiceAssembly planner = new SessionPlannerServiceAssembly(
-                new SqliteSessionPlanRepository(), party.application(), party.activeParty(),
+                sessionRepository, sessionRepository, party.application(), party.activeParty(),
                 party.adventuringDayCalculation(), generatedEncounterApi(), savedPlans,
                 planBudget, world.snapshotModel(), generation,
                 platform.execution.DirectExecutionLane.INSTANCE,
@@ -877,7 +841,7 @@ public final class SessionPlannerCatalogTest {
                 List.of(new GenerationResult.LootItem(
                         1, 1, GenerationResult.LootRole.USEFUL, "cache", "Generated cache",
                         1L, 100L, 100L, BigDecimal.ONE, "chest", "", false)),
-                List.of(),
+                List.of(new GenerationResult.Packing(1, 1, "none", 0, "none", true)),
                 new GenerationResult.RewardSummary(100L, 0L, 0),
                 "Generated output",
                 List.of(new GenerationResult.Audit(
@@ -887,37 +851,31 @@ public final class SessionPlannerCatalogTest {
             public java.util.concurrent.CompletionStage<features.sessiongeneration.api.GenerationDraftResponse> draft(
                     GenerationRequest request
             ) {
-                throw new UnsupportedOperationException();
+                return CompletableFuture.completedFuture(GenerationDraftResponse.success(
+                        new GenerationDraft(result, "v1:" + "2".repeat(64))));
             }
 
             @Override
             public java.util.concurrent.CompletionStage<features.sessiongeneration.api.GenerationRunResponse> commit(
                     features.sessiongeneration.api.CommitGenerationRunCommand command
             ) {
-                throw new UnsupportedOperationException();
+                return CompletableFuture.completedFuture(GenerationRunResponse.committed(
+                        command.draft().result(), GenerationRunResponse.CommitOutcome.INSERTED));
             }
 
             @Override
-            public java.util.concurrent.CompletionStage<features.sessiongeneration.api.GenerationRunResponse> loadRun(
+            public java.util.concurrent.CompletionStage<features.sessiongeneration.api.GenerationRunResponse> load(
                     GenerationRunId runId
             ) {
-                throw new UnsupportedOperationException();
+                return CompletableFuture.completedFuture(GenerationRunResponse.success(result));
             }
 
             @Override
             public java.util.concurrent.CompletionStage<features.sessiongeneration.api.GenerationRewardBatchResponse>
                     loadRewards(features.sessiongeneration.api.GenerationRewardBatchQuery query) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public java.util.concurrent.CompletionStage<GenerationResponse> generate(GenerationRequest request) {
-                return CompletableFuture.completedFuture(GenerationResponse.success(result));
-            }
-
-            @Override
-            public java.util.concurrent.CompletionStage<GenerationResponse> load(GenerationRunId runId) {
-                return CompletableFuture.completedFuture(GenerationResponse.success(result));
+                return CompletableFuture.completedFuture(
+                        features.sessiongeneration.api.GenerationRewardBatchResponse.success(
+                                List.of(), List.of()));
             }
         };
     }

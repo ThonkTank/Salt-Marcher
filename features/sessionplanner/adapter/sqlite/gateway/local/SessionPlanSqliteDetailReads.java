@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import features.sessionplanner.adapter.sqlite.model.SessionEncounterRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionGeneratedRewardRecord;
-import features.sessionplanner.adapter.sqlite.model.SessionLootPlaceholderRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionManualLootNoteRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionParticipantRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionRestPlacementRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionPlannerPersistenceSchema;
@@ -79,23 +79,23 @@ final class SessionPlanSqliteDetailReads {
         }
     }
 
-    List<SessionLootPlaceholderRecord> loadLootPlaceholders(Connection connection, long sessionId)
+    List<SessionManualLootNoteRecord> loadManualLootNotes(Connection connection, long sessionId)
             throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT loot_id, encounter_id, label, sort_order FROM "
-                        + SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE
-                        + " WHERE session_id = ? ORDER BY sort_order, loot_id")) {
+                "SELECT note_id, scene_id, note_text, sort_order FROM "
+                        + SessionPlannerPersistenceSchema.SESSION_MANUAL_LOOT_NOTES_TABLE
+                        + " WHERE session_id = ? ORDER BY sort_order, note_id")) {
             statement.setLong(1, sessionId);
             try (ResultSet resultSet = statement.executeQuery()) {
-                List<SessionLootPlaceholderRecord> lootPlaceholders = new ArrayList<>();
+                List<SessionManualLootNoteRecord> notes = new ArrayList<>();
                 while (resultSet.next()) {
-                    lootPlaceholders.add(new SessionLootPlaceholderRecord(
-                            resultSet.getLong("loot_id"),
-                            resultSet.getLong(SessionPlannerPersistenceSchema.SESSION_LOOT_ENCOUNTER_ID_COLUMN),
-                            resultSet.getString("label"),
+                    notes.add(new SessionManualLootNoteRecord(
+                            resultSet.getLong("note_id"),
+                            resultSet.getLong("scene_id"),
+                            resultSet.getString("note_text"),
                             resultSet.getInt(SORT_ORDER)));
                 }
-                return lootPlaceholders;
+                return notes;
             }
         }
     }

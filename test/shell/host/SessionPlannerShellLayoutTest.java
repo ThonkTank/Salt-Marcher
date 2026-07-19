@@ -56,6 +56,14 @@ import features.encountertable.EncounterTableServiceAssembly;
 import features.hex.HexServiceAssembly;
 import features.party.PartyServiceAssembly;
 import features.sessionplanner.SessionPlannerServiceAssembly;
+import features.sessiongeneration.api.CommitGenerationRunCommand;
+import features.sessiongeneration.api.GenerationDraftResponse;
+import features.sessiongeneration.api.GenerationRequest;
+import features.sessiongeneration.api.GenerationRewardBatchQuery;
+import features.sessiongeneration.api.GenerationRewardBatchResponse;
+import features.sessiongeneration.api.GenerationRunId;
+import features.sessiongeneration.api.GenerationRunResponse;
+import features.sessiongeneration.api.SessionGenerationApi;
 import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
 import features.dungeon.application.editor.DungeonEditorApiFacade;
 import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
@@ -220,10 +228,12 @@ public final class SessionPlannerShellLayoutTest {
                 tables.application(), tables.candidates(), null,
                 party.application(), party.activeParty(), party.activeComposition(),
                 party.adventuringDaySummary(), party.mutation(), new SqliteEncounterPlanRepository());
+        SqliteSessionPlanRepository sessionRepository = new SqliteSessionPlanRepository();
         SessionPlannerServiceAssembly session = new SessionPlannerServiceAssembly(
-                new SqliteSessionPlanRepository(), party.application(), party.activeParty(),
+                sessionRepository, sessionRepository, party.application(), party.activeParty(),
                 party.adventuringDayCalculation(), encounter.application(), encounter.savedPlans(),
-                encounter.planBudget(), null);
+                encounter.planBudget(), null, unsupportedGeneration(),
+                DirectExecutionLane.INSTANCE, DirectUiDispatcher.INSTANCE, NoopDiagnostics.INSTANCE);
         HexServiceAssembly hex = new HexServiceAssembly(
                 new SqliteHexMapRepository(), party.travelPositions(), party.application());
         SqliteDatabase dungeonDatabase = SqliteDatabase.defaultDatabase(
@@ -289,7 +299,36 @@ public final class SessionPlannerShellLayoutTest {
         return new SessionPlannerContribution(
                 services.session().application(), services.session().currentSessionModel(),
                 services.session().catalogModel(), services.session().participantsModel(),
-                services.session().sceneTimelineModel(), services.session().statePanelModel());
+                services.session().sceneTimelineModel(), services.session().statePanelModel(),
+                services.session().preparationModel());
+    }
+
+    private static SessionGenerationApi unsupportedGeneration() {
+        return new SessionGenerationApi() {
+            @Override
+            public java.util.concurrent.CompletionStage<GenerationDraftResponse> draft(GenerationRequest request) {
+                throw new UnsupportedOperationException("generation is not exercised by this layout test");
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<GenerationRunResponse> commit(
+                    CommitGenerationRunCommand command
+            ) {
+                throw new UnsupportedOperationException("generation is not exercised by this layout test");
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<GenerationRunResponse> load(GenerationRunId runId) {
+                throw new UnsupportedOperationException("generation is not exercised by this layout test");
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<GenerationRewardBatchResponse> loadRewards(
+                    GenerationRewardBatchQuery query
+            ) {
+                throw new UnsupportedOperationException("generation is not exercised by this layout test");
+            }
+        };
     }
 
     private static HexMapContribution hexMap(LayoutServices services) {

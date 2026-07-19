@@ -4,7 +4,6 @@ import features.sessiongeneration.api.CommitGenerationRunCommand;
 import features.sessiongeneration.api.GenerationDraft;
 import features.sessiongeneration.api.GenerationDraftResponse;
 import features.sessiongeneration.api.GenerationRequest;
-import features.sessiongeneration.api.GenerationResponse;
 import features.sessiongeneration.api.GenerationRewardBatchQuery;
 import features.sessiongeneration.api.GenerationRewardBatchResponse;
 import features.sessiongeneration.api.GenerationRewardReference;
@@ -92,7 +91,7 @@ public final class SessionGenerationService implements SessionGenerationApi {
     }
 
     @Override
-    public CompletionStage<GenerationRunResponse> loadRun(GenerationRunId runId) {
+    public CompletionStage<GenerationRunResponse> load(GenerationRunId runId) {
         CompletableFuture<GenerationRunResponse> response = new CompletableFuture<>();
         if (runId == null) {
             response.complete(GenerationRunResponse.failure(
@@ -115,30 +114,6 @@ public final class SessionGenerationService implements SessionGenerationApi {
         executeIo(response, () -> loadRewardsNow(query), () -> GenerationRewardBatchResponse.failure(
                 GenerationStatus.STORAGE_FAILURE, "Generation rewards could not be loaded."));
         return response;
-    }
-
-    @Deprecated(forRemoval = true)
-    @Override
-    public CompletionStage<GenerationResponse> generate(GenerationRequest request) {
-        return draft(request).thenCompose(draftResponse -> {
-            if (draftResponse.status() != GenerationStatus.SUCCESS || draftResponse.draft().isEmpty()) {
-                return CompletableFuture.completedFuture(GenerationResponse.failure(
-                        draftResponse.status(), draftResponse.message()));
-            }
-            GenerationDraft draft = draftResponse.draft().orElseThrow();
-            return commit(new CommitGenerationRunCommand(draft)).thenApply(commitResponse ->
-                    commitResponse.status() == GenerationStatus.SUCCESS
-                            ? GenerationResponse.success(draft.result())
-                            : GenerationResponse.failure(commitResponse.status(), commitResponse.message()));
-        });
-    }
-
-    @Deprecated(forRemoval = true)
-    @Override
-    public CompletionStage<GenerationResponse> load(GenerationRunId runId) {
-        return loadRun(runId).thenApply(response -> response.status() == GenerationStatus.SUCCESS
-                ? GenerationResponse.success(response.result().orElseThrow())
-                : GenerationResponse.failure(response.status(), response.message()));
     }
 
     private GenerationDraftResponse draftNow(GenerationRequest request, CatalogSnapshot snapshot) {
