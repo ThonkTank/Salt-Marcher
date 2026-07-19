@@ -26,7 +26,8 @@ final class DungeonSparseReadQualificationTest {
         for (DungeonQualificationDataset dataset : DungeonQualificationDataset.values()) {
             Path path = tempDir.resolve(dataset.name().toLowerCase() + ".db");
             try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-                DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(database);
+                var fixture = DungeonSqliteFixtureSeeder.prepare(database);
+                DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(fixture.store());
                 gateway.loadIndex(new DungeonWindowRequest(
                         new DungeonMapIdentity(DungeonQualificationDataset.MAP_ID), 0L, List.of()));
                 DungeonSparseQualificationFixture.seed(database, path, dataset);

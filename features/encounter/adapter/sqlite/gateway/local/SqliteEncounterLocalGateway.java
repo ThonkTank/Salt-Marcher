@@ -1,40 +1,40 @@
 package features.encounter.adapter.sqlite.gateway.local;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteConnectionSource;
-import platform.persistence.SqliteDatabase;
-import platform.persistence.SqliteMigration;
 import features.encounter.adapter.sqlite.model.EncounterPlanCreatureRecord;
 import features.encounter.adapter.sqlite.model.EncounterPlanRecord;
 import features.encounter.adapter.sqlite.model.EncounterPlanSnapshotRecord;
 import features.encounter.application.GeneratedEncounterBatchRepository;
 
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+import platform.persistence.SqliteMigration;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
 public final class SqliteEncounterLocalGateway {
 
-    private final SqliteConnectionSource connections;
+    private static final String OWNER = "encounter";
+    private final FeatureStoreHandle connections;
     private final EncounterPlanSqliteStore store;
     private final GeneratedEncounterBatchSqliteStore generatedBatches;
     private final EncounterPlanBatchReadSqliteStore batchReads;
 
-    public SqliteEncounterLocalGateway() {
-        this(SqliteDatabase.defaultDatabase(
-                SqliteDatabase.DEFAULT_DATABASE_FILE_NAME,
-                NoopDiagnostics.INSTANCE));
-    }
-
-    public SqliteEncounterLocalGateway(SqliteDatabase database) {
+    public static FeatureStoreDefinition storeDefinition() {
         EncounterSchemaMigrator schemaMigrator = new EncounterSchemaMigrator();
-        this.connections = Objects.requireNonNull(database, "database").connections(
-                "encounter",
+        return FeatureStoreDefinition.of(
+                OWNER,
                 new SqliteMigration(1, schemaMigrator::ensureSchema),
                 new SqliteMigration(2, schemaMigrator::ensureGeneratedPlanOrigins),
                 new SqliteMigration(3, schemaMigrator::ensureRuntimeContexts),
                 new SqliteMigration(4, schemaMigrator::ensureGeneratedBatchV4));
+    }
+
+    public SqliteEncounterLocalGateway(FeatureStoreHandle store) {
+        this.connections = FeatureStoreHandle.requireOwner(store, OWNER);
         this.store = new EncounterPlanSqliteStore();
         this.generatedBatches = new GeneratedEncounterBatchSqliteStore();
         this.batchReads = new EncounterPlanBatchReadSqliteStore();

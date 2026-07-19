@@ -1,46 +1,42 @@
 package features.sessionplanner.adapter.sqlite.gateway.local;
 
+import features.sessionplanner.adapter.sqlite.model.SessionPlanRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionPlanSnapshotRecord;
+
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+import platform.persistence.SqliteMigration;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteConnectionSource;
-import platform.persistence.SqliteDatabase;
-import platform.persistence.SqliteMigration;
 import platform.persistence.SqliteQueryCounter;
-import features.sessionplanner.adapter.sqlite.model.SessionPlanRecord;
-import features.sessionplanner.adapter.sqlite.model.SessionPlanSnapshotRecord;
-import features.sessionplanner.adapter.sqlite.model.SessionPlannerPersistenceSchema;
 
 public final class SqliteSessionPlannerLocalGateway {
 
-    private final SqliteConnectionSource connections;
+    private final FeatureStoreHandle connections;
     private final SessionPlanSqliteReads reads;
     private final SessionPlanSqliteWrites writes;
 
-    public SqliteSessionPlannerLocalGateway() {
-        this(SqliteDatabase.defaultDatabase(
-                SessionPlannerPersistenceSchema.DATABASE_FILE_NAME,
-                NoopDiagnostics.INSTANCE));
-    }
-
-    public SqliteSessionPlannerLocalGateway(SqliteDatabase database) {
-        this(database, new SessionPlanSqliteReads(), new SessionPlanSqliteWrites());
-    }
-
-    SqliteSessionPlannerLocalGateway(
-            SqliteDatabase database,
-            SessionPlanSqliteReads reads,
-            SessionPlanSqliteWrites writes
-    ) {
+    public static FeatureStoreDefinition storeDefinition() {
         SessionPlannerSchemaMigrator schemaMigrator = new SessionPlannerSchemaMigrator();
-        this.connections = Objects.requireNonNull(database, "database").connections(
+        return FeatureStoreDefinition.of(
                 "session-planner",
                 new SqliteMigration(1, schemaMigrator::ensureSchema),
                 new SqliteMigration(2, schemaMigrator::addGeneratedRewards),
                 new SqliteMigration(3, schemaMigrator::addRevisionAndManualLootNotes));
+    }
+
+    public SqliteSessionPlannerLocalGateway(FeatureStoreHandle store) {
+        this(store, new SessionPlanSqliteReads(), new SessionPlanSqliteWrites());
+    }
+
+    SqliteSessionPlannerLocalGateway(
+            FeatureStoreHandle store,
+            SessionPlanSqliteReads reads,
+            SessionPlanSqliteWrites writes) {
+        this.connections = FeatureStoreHandle.requireOwner(store, "session-planner");
         this.reads = Objects.requireNonNull(reads, "reads");
         this.writes = Objects.requireNonNull(writes, "writes");
     }

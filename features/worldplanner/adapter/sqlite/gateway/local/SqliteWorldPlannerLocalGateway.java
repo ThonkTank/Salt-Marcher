@@ -1,33 +1,31 @@
 package features.worldplanner.adapter.sqlite.gateway.local;
 
+import features.worldplanner.adapter.sqlite.model.WorldPlannerSnapshotRecord;
+
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+import platform.persistence.SqliteMigration;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Objects;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteConnectionSource;
-import platform.persistence.SqliteDatabase;
-import platform.persistence.SqliteMigration;
-import features.worldplanner.adapter.sqlite.model.WorldPlannerPersistenceSchema;
-import features.worldplanner.adapter.sqlite.model.WorldPlannerSnapshotRecord;
 
 public final class SqliteWorldPlannerLocalGateway {
 
-    private final SqliteConnectionSource connections;
+    private final FeatureStoreHandle connections;
     private final SqliteWorldPlannerReader reader = new SqliteWorldPlannerReader();
     private final SqliteWorldPlannerWriter writer = new SqliteWorldPlannerWriter();
 
-    public SqliteWorldPlannerLocalGateway() {
-        this(SqliteDatabase.defaultDatabase(
-                WorldPlannerPersistenceSchema.databaseFileName(),
-                NoopDiagnostics.INSTANCE));
-    }
-
-    public SqliteWorldPlannerLocalGateway(SqliteDatabase database) {
+    public static FeatureStoreDefinition storeDefinition() {
         WorldPlannerSchemaMigrator schemaMigrator = new WorldPlannerSchemaMigrator();
-        this.connections = Objects.requireNonNull(database, "database").connections(
+        return FeatureStoreDefinition.of(
                 "world-planner",
                 new SqliteMigration(1, schemaMigrator::ensureSchema),
                 new SqliteMigration(2, schemaMigrator::addDisposition));
+    }
+
+    public SqliteWorldPlannerLocalGateway(FeatureStoreHandle store) {
+        this.connections = FeatureStoreHandle.requireOwner(store, "world-planner");
     }
 
     public WorldPlannerSnapshotRecord load() {

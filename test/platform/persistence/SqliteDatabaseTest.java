@@ -6,6 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import platform.diagnostics.DiagnosticId;
+import platform.diagnostics.Diagnostics;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -19,10 +24,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import platform.diagnostics.DiagnosticId;
-import platform.diagnostics.Diagnostics;
 
 final class SqliteDatabaseTest {
 
@@ -46,16 +47,98 @@ final class SqliteDatabaseTest {
     }
 
     @Test
+    void createsVerifiedOwnerOnlySnapshotWithoutMigratingTheSource() throws Exception {
+        Path source = temporaryDirectory.resolve("source.db");
+        Path target = temporaryDirectory.resolve("snapshots").resolve("copy.db");
+        Class.forName("org.sqlite.JDBC");
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + source)) {
+            try (var statement = connection.createStatement()) {
+                statement.execute("PRAGMA journal_mode = WAL");
+                statement.execute("CREATE TABLE source_rows(id INTEGER PRIMARY KEY, value TEXT)");
+                statement.execute("INSERT INTO source_rows VALUES(1, 'preserved')");
+            }
+
+            SqliteDatabase.createVerifiedSnapshot(source, target);
+        }
+
+        assertTrue(Files.isRegularFile(target));
+        assertEquals(
+                java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"),
+                Files.getPosixFilePermissions(target));
+        try (var snapshot = DriverManager.getConnection("jdbc:sqlite:" + target);
+             var result = snapshot.createStatement()
+                     .executeQuery("SELECT value FROM source_rows WHERE id=1")) {
+            assertTrue(result.next());
+            assertEquals("preserved", result.getString(1));
+        }
+        assertThrows(SQLException.class, () -> SqliteDatabase.createVerifiedSnapshot(source, target));
+    }
+
+    @Test
+    void unpreparedHandleFailsClosedWithoutCreatingOrMigratingTheDatabase() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("unprepared.db");
+        AtomicInteger migrations = new AtomicInteger();
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> {})) {
+            FeatureStoreHandle handle =
+                    database.featureStore(
+                            FeatureStoreDefinition.of(
+                                    "unprepared",
+                                    new SqliteMigration(
+                                            1, connection -> migrations.incrementAndGet())));
+
+            assertThrows(FeatureStoreNotPreparedException.class, handle::openConnection);
+            FeatureStoreMaintenance maintenance = database.maintenanceFor(handle);
+            assertFalse(FeatureStoreMaintenance.class.isAssignableFrom(handle.getClass()));
+            assertThrows(FeatureStoreNotPreparedException.class, maintenance::createVerifiedBackup);
+            assertEquals(0, migrations.get());
+            assertFalse(Files.exists(databasePath));
+        }
+    }
+
+    @Test
+    void duplicateOwnerRegistrationIsRejectedEvenAtTheSameVersion() {
+        try (SqliteDatabase database =
+                new SqliteDatabase(
+                        temporaryDirectory.resolve("duplicate-owner.db"), (id, type) -> {})) {
+            database.featureStore(
+                    FeatureStoreDefinition.of(
+                            "duplicate", new SqliteMigration(1, connection -> {})));
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () ->
+                            database.featureStore(
+                                    FeatureStoreDefinition.validated(
+                                            "duplicate",
+                                            connection ->
+                                                    connection
+                                                            .createStatement()
+                                                            .execute("SELECT 1"),
+                                            new SqliteMigration(
+                                                    1,
+                                                    connection ->
+                                                            connection
+                                                                    .createStatement()
+                                                                    .execute(
+                                                                            "CREATE TABLE"
+                                                                                + " changed(id"
+                                                                                + " INTEGER)")))));
+        }
+    }
+
+    @Test
     void configuresConnectionsAndRunsVersionedMigrationExactlyOnce() throws Exception {
         Path databasePath = temporaryDirectory.resolve("game.db");
         RecordingDiagnostics diagnostics = new RecordingDiagnostics();
         AtomicInteger migrations = new AtomicInteger();
         SqliteMigration migration = new SqliteMigration(1, connection -> {
             migrations.incrementAndGet();
-            connection.createStatement().execute("CREATE TABLE owned_data(id INTEGER PRIMARY KEY, value TEXT)");
+            connection.createStatement().execute(
+                                            "CREATE TABLE owned_data(id INTEGER PRIMARY KEY, value"
+                                                + " TEXT)");
         });
         SqliteDatabase database = new SqliteDatabase(databasePath, diagnostics);
-        SqliteConnectionSource source = database.connections("test-feature", migration);
+        FeatureStoreHandle source = TestFeatureStores.store(database, "test-feature", migration);
 
         try (var connection = source.openConnection()) {
             assertEquals(1, pragmaInt(connection, "PRAGMA foreign_keys"));
@@ -78,10 +161,14 @@ final class SqliteDatabaseTest {
         AtomicInteger migrations = new AtomicInteger();
         try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { });
                 var workers = java.util.concurrent.Executors.newFixedThreadPool(2)) {
-            SqliteConnectionSource source = database.connections("concurrent", new SqliteMigration(1, connection -> {
+            FeatureStoreHandle source =
+                    TestFeatureStores.store(
+                            database,
+                            "concurrent", new SqliteMigration(1, connection -> {
                 migrations.incrementAndGet();
                 connection.createStatement().execute(
-                        "CREATE TABLE concurrent_rows(id INTEGER PRIMARY KEY, value TEXT NOT NULL)");
+                                                        "CREATE TABLE concurrent_rows(id INTEGER"
+                                                            + " PRIMARY KEY, value TEXT NOT NULL)");
             }));
             CountDownLatch ready = new CountDownLatch(2);
             CountDownLatch start = new CountDownLatch(1);
@@ -93,7 +180,8 @@ final class SqliteDatabaseTest {
                     start.await();
                     try (var connection = source.openConnection();
                             var statement = connection.prepareStatement(
-                                    "INSERT INTO concurrent_rows(id, value) VALUES(?, ?)")) {
+                                                            "INSERT INTO concurrent_rows(id, value)"
+                                                                + " VALUES(?, ?)")) {
                         statement.setInt(1, rowId);
                         statement.setString(2, "row-" + rowId);
                         statement.executeUpdate();
@@ -119,19 +207,21 @@ final class SqliteDatabaseTest {
     void maintenanceBackupIsIntegrityCheckedAndRestoreTestedBeforePublication() throws Exception {
         Path databasePath = temporaryDirectory.resolve("maintenance.db");
         SqliteMigration migration = seedMigration();
-        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { });
-             var connection = database.connections("seed", migration).openConnection()) {
-            connection.createStatement().execute(
-                    "INSERT INTO recovery_data(id, value) VALUES(1, 'recoverable')");
-            SqliteDatabase.MaintenanceBackup receipt =
-                    database.createVerifiedMaintenanceBackup("items");
-            assertEquals("items", receipt.owner());
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            FeatureStoreHandle store = TestFeatureStores.store(database, "seed", migration);
+            try (var connection = store.openConnection()) {
+                connection
+                        .createStatement()
+                        .execute("INSERT INTO recovery_data(id, value) VALUES(1, 'recoverable')");
+            }
+            FeatureStoreBackup receipt = database.maintenanceFor(store).createVerifiedBackup();
+            assertEquals("seed", receipt.owner());
         }
 
         Path backup;
         try (var files = Files.list(temporaryDirectory)) {
             backup = files.filter(path -> path.getFileName().toString()
-                            .startsWith("maintenance.db.maintenance-items-"))
+                            .startsWith("maintenance.db.maintenance-seed-"))
                     .findFirst()
                     .orElseThrow();
         }
@@ -151,13 +241,16 @@ final class SqliteDatabaseTest {
             initial.featureStore(FeatureStoreDefinition.of(
                     "future-owner",
                     new SqliteMigration(1, connection -> connection.createStatement().execute(
-                            "CREATE TABLE future_rows(id INTEGER PRIMARY KEY)")),
+                                                            "CREATE TABLE future_rows(id INTEGER"
+                                                                + " PRIMARY KEY)")),
                     new SqliteMigration(2, connection -> connection.createStatement().execute(
-                            "ALTER TABLE future_rows ADD COLUMN label TEXT"))));
+                                                            "ALTER TABLE future_rows ADD COLUMN"
+                                                                + " label TEXT"))));
             initial.featureStore(FeatureStoreDefinition.of(
                     "healthy-owner",
                     new SqliteMigration(1, connection -> connection.createStatement().execute(
-                            "CREATE TABLE healthy_rows(id INTEGER PRIMARY KEY)"))));
+                                                            "CREATE TABLE healthy_rows(id INTEGER"
+                                                                + " PRIMARY KEY)"))));
             assertEquals(
                     FeatureStoreReadiness.READY,
                     initial.prepareRegisteredStores().get("future-owner"));
@@ -167,11 +260,15 @@ final class SqliteDatabaseTest {
             FeatureStoreHandle future = current.featureStore(FeatureStoreDefinition.of(
                     "future-owner",
                     new SqliteMigration(1, connection -> connection.createStatement().execute(
-                            "CREATE TABLE future_rows(id INTEGER PRIMARY KEY)"))));
+                                                                    "CREATE TABLE future_rows(id"
+                                                                        + " INTEGER PRIMARY"
+                                                                        + " KEY)"))));
             FeatureStoreHandle healthy = current.featureStore(FeatureStoreDefinition.of(
                     "healthy-owner",
                     new SqliteMigration(1, connection -> connection.createStatement().execute(
-                            "CREATE TABLE healthy_rows(id INTEGER PRIMARY KEY)"))));
+                                                                    "CREATE TABLE healthy_rows(id"
+                                                                        + " INTEGER PRIMARY"
+                                                                        + " KEY)"))));
 
             var readiness = current.prepareRegisteredStores();
 
@@ -198,11 +295,14 @@ final class SqliteDatabaseTest {
                         throw new SQLException("private payload");
                     },
                     new SqliteMigration(1, connection -> connection.createStatement().execute(
-                            "CREATE TABLE partial_rows(id INTEGER)"))));
+                                                                    "CREATE TABLE partial_rows(id"
+                                                                        + " INTEGER)"))));
             FeatureStoreHandle healthy = database.featureStore(FeatureStoreDefinition.of(
                     "healthy-owner",
                     new SqliteMigration(1, connection -> connection.createStatement().execute(
-                            "CREATE TABLE complete_rows(id INTEGER PRIMARY KEY)"))));
+                                                                    "CREATE TABLE complete_rows(id"
+                                                                        + " INTEGER PRIMARY"
+                                                                        + " KEY)"))));
 
             var readiness = database.prepareRegisteredStores();
 
@@ -211,7 +311,8 @@ final class SqliteDatabaseTest {
             assertThrows(FeatureStoreUnavailableException.class, broken::openConnection);
             try (var connection = healthy.openConnection();
                     var partial = connection.prepareStatement(
-                            "SELECT name FROM sqlite_master WHERE type='table' AND name='partial_rows'");
+                                    "SELECT name FROM sqlite_master WHERE type='table' AND"
+                                        + " name='partial_rows'");
                     var partialResult = partial.executeQuery()) {
                 assertFalse(partialResult.next());
                 connection.createStatement().execute("INSERT INTO complete_rows(id) VALUES(1)");
@@ -225,7 +326,10 @@ final class SqliteDatabaseTest {
         Path databasePath = temporaryDirectory.resolve("rollback.db");
         RecordingDiagnostics diagnostics = new RecordingDiagnostics();
         SqliteDatabase database = new SqliteDatabase(databasePath, diagnostics);
-        SqliteConnectionSource source = database.connections("broken", new SqliteMigration(1, connection -> {
+        FeatureStoreHandle source =
+                TestFeatureStores.store(
+                        database,
+                        "broken", new SqliteMigration(1, connection -> {
             connection.createStatement().execute("CREATE TABLE partial_data(id INTEGER)");
             throw new SQLException("authored payload must not enter diagnostics");
         }));
@@ -250,7 +354,8 @@ final class SqliteDatabaseTest {
         createSeedDatabase(databasePath, migration);
 
         try (SqliteDatabase backupLifecycle = new SqliteDatabase(databasePath, (id, type) -> { });
-             var connection = backupLifecycle.connections("seed", migration).openConnection()) {
+             var connection =
+                        TestFeatureStores.store(backupLifecycle, "seed", migration).openConnection()) {
             assertEquals("kept", storedValue(connection));
         }
         Path backup = temporaryDirectory.resolve("recover.db.backup-v1.sqlite");
@@ -259,7 +364,8 @@ final class SqliteDatabaseTest {
         Files.write(databasePath, new byte[] {0x13, 0x37, 0x01, 0x02});
         RecordingDiagnostics diagnostics = new RecordingDiagnostics();
         try (SqliteDatabase recovered = new SqliteDatabase(databasePath, diagnostics);
-             var connection = recovered.connections("seed", migration).openConnection()) {
+             var connection =
+                        TestFeatureStores.store(recovered, "seed", migration).openConnection()) {
             assertEquals("kept", storedValue(connection));
         }
 
@@ -274,7 +380,8 @@ final class SqliteDatabaseTest {
         Path databasePath = temporaryDirectory.resolve("wal.db");
         SqliteMigration migration = seedMigration();
         SqliteDatabase writerLifecycle = new SqliteDatabase(databasePath, (id, type) -> { });
-        try (var writer = writerLifecycle.connections("seed", migration).openConnection()) {
+        try (var writer =
+                TestFeatureStores.store(writerLifecycle, "seed", migration).openConnection()) {
             writer.createStatement().execute("INSERT INTO recovery_data(id, value) VALUES(1, 'from-wal')");
         }
 
@@ -288,8 +395,10 @@ final class SqliteDatabaseTest {
                 for (int index = 0; index < 100; index++) {
                     try (var statement = concurrent.createStatement()) {
                         statement.execute(
-                                "INSERT INTO recovery_data(id, value) VALUES(2, 'checkpoint-" + index + "') "
-                                        + "ON CONFLICT(id) DO UPDATE SET value=excluded.value");
+                                                "INSERT INTO recovery_data(id, value) VALUES(2,"
+                                                    + " 'checkpoint-"
+                                                        + index + "') ON CONFLICT(id) DO UPDATE SET"
+                                                        + " value=excluded.value");
                     }
                     firstConcurrentCommit.countDown();
                     try (var statement = concurrent.createStatement()) {
@@ -305,7 +414,8 @@ final class SqliteDatabaseTest {
             throw new AssertionError("concurrent WAL writer did not commit", concurrentFailure.get());
         }
         try (SqliteDatabase backupLifecycle = new SqliteDatabase(databasePath, (id, type) -> { });
-             var reader = backupLifecycle.connections("seed", migration).openConnection()) {
+             var reader =
+                        TestFeatureStores.store(backupLifecycle, "seed", migration).openConnection()) {
             assertEquals("from-wal", storedValue(reader));
             assertTrue(storedValue(reader, 2).startsWith("checkpoint-"));
         }
@@ -317,7 +427,8 @@ final class SqliteDatabaseTest {
 
         Files.write(databasePath, new byte[] {0x55, 0x66});
         try (SqliteDatabase recovered = new SqliteDatabase(databasePath, (id, type) -> { });
-             var connection = recovered.connections("seed", migration).openConnection()) {
+             var connection =
+                        TestFeatureStores.store(recovered, "seed", migration).openConnection()) {
             assertEquals("from-wal", storedValue(connection));
             assertTrue(storedValue(connection, 2).startsWith("checkpoint-"));
         }
@@ -333,7 +444,8 @@ final class SqliteDatabaseTest {
 
         FeatureStoreUnavailableException unavailable = assertThrows(
                 FeatureStoreUnavailableException.class,
-                () -> database.connections("seed", seedMigration()).openConnection());
+                () ->
+                                TestFeatureStores.store(database, "seed", seedMigration()).openConnection());
 
         assertEquals(FeatureStoreReadiness.CORRUPT, unavailable.readiness());
         assertArrayEquals(corrupt, Files.readAllBytes(databasePath));
@@ -349,7 +461,8 @@ final class SqliteDatabaseTest {
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath)) {
             assertEquals("delete", pragmaText(connection, "PRAGMA journal_mode = DELETE"));
             connection.createStatement().execute(
-                    "CREATE TABLE authored_data(id INTEGER PRIMARY KEY, value TEXT NOT NULL)");
+                            "CREATE TABLE authored_data(id INTEGER PRIMARY KEY, value TEXT NOT"
+                                + " NULL)");
             connection.createStatement().execute(
                     "INSERT INTO authored_data(id, value) VALUES(1, 'kept')");
         }
@@ -368,7 +481,7 @@ final class SqliteDatabaseTest {
         SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { });
 
         assertThrows(SQLException.class,
-                () -> database.connections("seed", seedMigration()).openConnection());
+                () -> TestFeatureStores.store(database, "seed", seedMigration()).openConnection());
         assertArrayEquals(corrupt, Files.readAllBytes(databasePath));
         assertFalse(Files.exists(wal));
         assertFalse(Files.exists(shm));
@@ -387,7 +500,8 @@ final class SqliteDatabaseTest {
         createSeedDatabase(databasePath, migration);
         Path backup = databasePath.resolveSibling(databasePath.getFileName() + ".backup-v1.sqlite");
         try (SqliteDatabase backupLifecycle = new SqliteDatabase(databasePath, (id, type) -> { });
-             var ignored = backupLifecycle.connections("seed", migration).openConnection()) {
+             var ignored =
+                        TestFeatureStores.store(backupLifecycle, "seed", migration).openConnection()) {
             assertTrue(Files.isRegularFile(backup));
         }
 
@@ -412,7 +526,7 @@ final class SqliteDatabaseTest {
         });
 
         assertThrows(SQLException.class,
-                () -> database.connections("seed", migration).openConnection());
+                () -> TestFeatureStores.store(database, "seed", migration).openConnection());
 
         assertArrayEquals(corruptPrimary, Files.readAllBytes(databasePath));
         assertArrayEquals(originalWal, Files.readAllBytes(wal));
@@ -429,7 +543,7 @@ final class SqliteDatabaseTest {
         Files.delete(backup);
         SqliteDatabase retry = new SqliteDatabase(databasePath, (id, type) -> { });
         assertThrows(SQLException.class,
-                () -> retry.connections("seed", migration).openConnection());
+                () -> TestFeatureStores.store(retry, "seed", migration).openConnection());
         assertArrayEquals(corruptPrimary, Files.readAllBytes(databasePath));
         assertArrayEquals(originalWal, Files.readAllBytes(wal));
         assertArrayEquals(originalShm, Files.readAllBytes(shm));
@@ -442,7 +556,8 @@ final class SqliteDatabaseTest {
         SqliteMigration migration = seedMigration();
         createSeedDatabase(recoverable, migration);
         try (SqliteDatabase backupLifecycle = new SqliteDatabase(recoverable, (id, type) -> { });
-             var ignored = backupLifecycle.connections("seed", migration).openConnection()) {
+             var ignored =
+                        TestFeatureStores.store(backupLifecycle, "seed", migration).openConnection()) {
             assertTrue(Files.isRegularFile(
                     recoverable.resolveSibling(recoverable.getFileName() + ".backup-v1.sqlite")));
         }
@@ -451,7 +566,8 @@ final class SqliteDatabaseTest {
         byte[] corruptRecoverable = corruptHeader(recoverable);
 
         try (SqliteDatabase recovered = new SqliteDatabase(recoverable, (id, type) -> { });
-             var connection = recovered.connections("seed", migration).openConnection()) {
+             var connection =
+                        TestFeatureStores.store(recovered, "seed", migration).openConnection()) {
             assertEquals("kept", storedValue(connection));
         }
         Path quarantine;
@@ -475,7 +591,7 @@ final class SqliteDatabaseTest {
 
         SqliteDatabase failed = new SqliteDatabase(unrecoverable, (id, type) -> { });
         assertThrows(SQLException.class,
-                () -> failed.connections("seed", migration).openConnection());
+                () -> TestFeatureStores.store(failed, "seed", migration).openConnection());
         assertArrayEquals(corruptPrimary, Files.readAllBytes(unrecoverable));
         assertArrayEquals(journalBytes, Files.readAllBytes(unrecoverableJournal));
     }
@@ -498,7 +614,8 @@ final class SqliteDatabaseTest {
         assertTrue(Files.isRegularFile(backup));
         assertArrayEquals(primaryBeforePrepare, Files.readAllBytes(databasePath));
         assertArrayEquals(journalBeforePrepare, Files.readAllBytes(journal));
-        try (var connection = database.connections("seed", migration).openConnection()) {
+        try (var connection =
+                TestFeatureStores.store(database, "seed", migration).openConnection()) {
             assertEquals("kept", storedValue(connection));
             assertEquals(1, storedRowCount(connection));
         }
@@ -538,7 +655,8 @@ final class SqliteDatabaseTest {
         createSeedDatabase(databasePath, migration);
         Path backup = databasePath.resolveSibling(databasePath.getFileName() + ".backup-v1.sqlite");
         try (SqliteDatabase backupLifecycle = new SqliteDatabase(databasePath, (id, type) -> { });
-             var ignored = backupLifecycle.connections("seed", migration).openConnection()) {
+             var ignored =
+                        TestFeatureStores.store(backupLifecycle, "seed", migration).openConnection()) {
             assertTrue(Files.isRegularFile(backup));
         }
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + backup)) {
@@ -548,7 +666,7 @@ final class SqliteDatabaseTest {
 
         SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { });
         assertThrows(SQLException.class,
-                () -> database.connections("seed", migration).openConnection());
+                () -> TestFeatureStores.store(database, "seed", migration).openConnection());
 
         assertArrayEquals(corruptPrimary, Files.readAllBytes(databasePath));
         try (var files = Files.list(temporaryDirectory)) {
@@ -563,15 +681,17 @@ final class SqliteDatabaseTest {
         SqliteMigration migration = new SqliteMigration(1, connection -> {
             connection.createStatement().execute("CREATE TABLE parent(id INTEGER PRIMARY KEY)");
             connection.createStatement().execute(
-                    "CREATE TABLE child(id INTEGER PRIMARY KEY, parent_id INTEGER NOT NULL "
-                            + "REFERENCES parent(id))");
+                                            "CREATE TABLE child(id INTEGER PRIMARY KEY, parent_id"
+                                                + " INTEGER NOT NULL REFERENCES parent(id))");
         });
         try (SqliteDatabase initial = new SqliteDatabase(databasePath, (id, type) -> { });
-             var connection = initial.connections("seed", migration).openConnection()) {
+             var connection =
+                        TestFeatureStores.store(initial, "seed", migration).openConnection()) {
             connection.createStatement().execute("INSERT INTO parent(id) VALUES(1)");
         }
         try (SqliteDatabase backupLifecycle = new SqliteDatabase(databasePath, (id, type) -> { });
-             var ignored = backupLifecycle.connections("seed", migration).openConnection()) {
+             var ignored =
+                        TestFeatureStores.store(backupLifecycle, "seed", migration).openConnection()) {
             assertTrue(Files.isRegularFile(
                     temporaryDirectory.resolve("logical-inconsistency.db.backup-v1.sqlite")));
         }
@@ -583,7 +703,7 @@ final class SqliteDatabaseTest {
         SqliteDatabase database = new SqliteDatabase(databasePath, diagnostics);
 
         assertThrows(SQLException.class,
-                () -> database.connections("seed", migration).openConnection());
+                () -> TestFeatureStores.store(database, "seed", migration).openConnection());
 
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
              var result = connection.createStatement().executeQuery("SELECT parent_id FROM child WHERE id=1")) {
@@ -608,7 +728,8 @@ final class SqliteDatabaseTest {
 
         FeatureStoreUnavailableException unavailable = assertThrows(
                 FeatureStoreUnavailableException.class,
-                () -> database.connections("seed", seedMigration()).openConnection());
+                () ->
+                                TestFeatureStores.store(database, "seed", seedMigration()).openConnection());
 
         assertEquals(FeatureStoreReadiness.NEWER_SCHEMA, unavailable.readiness());
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath)) {
@@ -628,11 +749,12 @@ final class SqliteDatabaseTest {
         SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { });
 
         assertThrows(SQLException.class,
-                () -> database.connections("seed", migration).openConnection());
+                () -> TestFeatureStores.store(database, "seed", migration).openConnection());
 
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
              var result = connection.createStatement().executeQuery(
-                     "SELECT version FROM sm_schema_versions WHERE owner='seed'")) {
+                                        "SELECT version FROM sm_schema_versions WHERE"
+                                            + " owner='seed'")) {
             assertTrue(result.next());
             assertEquals(2, result.getInt(1));
         }
@@ -640,7 +762,8 @@ final class SqliteDatabaseTest {
 
     private void createSeedDatabase(Path databasePath, SqliteMigration migration) throws Exception {
         try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { });
-             var connection = database.connections("seed", migration).openConnection()) {
+             var connection =
+                        TestFeatureStores.store(database, "seed", migration).openConnection()) {
             connection.createStatement().execute("INSERT INTO recovery_data(id, value) VALUES(1, 'kept')");
         }
     }
@@ -696,7 +819,9 @@ final class SqliteDatabaseTest {
 
     private static SqliteMigration seedMigration() {
         return new SqliteMigration(1, connection -> connection.createStatement()
-                .execute("CREATE TABLE recovery_data(id INTEGER PRIMARY KEY, value TEXT NOT NULL)"));
+                .execute(
+                                        "CREATE TABLE recovery_data(id INTEGER PRIMARY KEY, value"
+                                            + " TEXT NOT NULL)"));
     }
 
     private static String storedValue(java.sql.Connection connection) throws SQLException {

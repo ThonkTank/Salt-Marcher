@@ -1,17 +1,24 @@
 package features.catalog.adapter.javafx;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.Statement;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import features.catalog.CatalogRoutes;
+import features.catalog.application.CatalogSectionId;
+import features.creatures.adapter.sqlite.model.CreaturesPersistenceSchema;
+import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
+import features.creatures.api.CreatureCatalogRow;
+import features.encounter.api.EncounterBuilderInputsModel;
+import features.encounter.api.EncounterPoolFilters;
+import features.encounter.api.OpenSavedEncounterPlanResult;
+import features.encountertable.adapter.sqlite.query.SqliteEncounterTableCatalogAdapter;
+import features.encountertable.domain.catalog.EncounterTableCandidateData;
+import features.encountertable.domain.catalog.EncounterTableSummaryData;
+import features.encountertable.domain.catalog.port.EncounterTableCatalogPort;
+import features.worldplanner.api.WorldFactionSummary;
+import features.worldplanner.api.WorldLocationSummary;
+import features.worldplanner.api.WorldNpcLifecycleStatus;
+import features.worldplanner.api.WorldNpcSummary;
+import features.worldplanner.api.WorldPlannerReadStatus;
+import features.worldplanner.api.WorldPlannerSnapshot;
+import features.worldplanner.api.WorldPlannerSnapshotModel;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -28,32 +35,29 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
+import platform.persistence.TestFeatureStores;
+
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
 import shell.api.ShellBinding;
 import shell.api.ShellSlot;
-import features.creatures.adapter.sqlite.model.CreaturesPersistenceSchema;
-import features.encounter.api.EncounterBuilderInputsModel;
-import features.worldplanner.api.WorldFactionSummary;
-import features.worldplanner.api.WorldLocationSummary;
-import features.worldplanner.api.WorldNpcLifecycleStatus;
-import features.worldplanner.api.WorldNpcSummary;
-import features.worldplanner.api.WorldPlannerReadStatus;
-import features.worldplanner.api.WorldPlannerSnapshot;
-import features.worldplanner.api.WorldPlannerSnapshotModel;
-import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
-import features.creatures.api.CreatureCatalogRow;
-import features.catalog.application.CatalogSectionId;
-import features.catalog.CatalogRoutes;
-import features.encounter.api.EncounterPoolFilters;
-import features.encounter.api.OpenSavedEncounterPlanResult;
-import features.encountertable.adapter.sqlite.query.SqliteEncounterTableCatalogAdapter;
-import features.encountertable.domain.catalog.EncounterTableCandidateData;
-import features.encountertable.domain.catalog.EncounterTableSummaryData;
-import features.encountertable.domain.catalog.port.EncounterTableCatalogPort;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 @org.junit.jupiter.api.Tag("ui")
 public final class CatalogInitialLoadTest {
@@ -135,8 +139,11 @@ public final class CatalogInitialLoadTest {
                     listener -> () -> { },
                     listener -> { listener.accept(worldPlannerSnapshotWithNpc()); return () -> { }; });
             CatalogTestRuntime runtime = CatalogTestRuntime.create(
-                    new SqliteCreatureCatalogQueryAdapter(),
-                    new SqliteEncounterTableCatalogAdapter(),
+                    new SqliteCreatureCatalogQueryAdapter(creatureStore()),
+                    new SqliteEncounterTableCatalogAdapter(
+                                            TestFeatureStores.current().store(
+                                                    SqliteEncounterTableCatalogAdapter
+                                                            .storeDefinition())),
                     world);
             ShellBinding binding = runtime.contribution(
                     EmptyInspectorSink.INSTANCE,
@@ -173,7 +180,7 @@ public final class CatalogInitialLoadTest {
         runOnFxThread(() -> {
             RecordingCatalogRoutes routes = new RecordingCatalogRoutes();
             CatalogTestRuntime runtime = CatalogTestRuntime.create(
-                    new SqliteCreatureCatalogQueryAdapter(),
+                    new SqliteCreatureCatalogQueryAdapter(creatureStore()),
                     new EncounterTableCatalogPort() {
                         @Override public List<EncounterTableSummaryData> loadSummaries() {
                             return List.of(new EncounterTableSummaryData(301L, "Forest Ambush", null));
@@ -289,7 +296,8 @@ public final class CatalogInitialLoadTest {
                     .findFirst()
                     .orElseThrow();
             assertTrue(restoredSearch != itemSearch && "rapier".equals(restoredSearch.getText()),
-                    "Items application state did not restore the draft into the rebuilt shared renderer.");
+                            "Items application state did not restore the draft into the rebuilt"
+                                + " shared renderer.");
         });
     }
 
@@ -348,8 +356,10 @@ public final class CatalogInitialLoadTest {
 
     private static CatalogTestRuntime services() {
         return CatalogTestRuntime.create(
-                new SqliteCreatureCatalogQueryAdapter(),
-                new SqliteEncounterTableCatalogAdapter(),
+                new SqliteCreatureCatalogQueryAdapter(creatureStore()),
+                new SqliteEncounterTableCatalogAdapter(
+                        TestFeatureStores.current().store(
+                                SqliteEncounterTableCatalogAdapter.storeDefinition())),
                 new WorldPlannerSnapshotModel(
                         CatalogInitialLoadTest::worldPlannerSnapshot, listener -> () -> { },
                         listener -> { listener.accept(worldPlannerSnapshot()); return () -> { }; }));
@@ -418,6 +428,11 @@ public final class CatalogInitialLoadTest {
                 false, false, false, false);
     }
 
+    private static platform.persistence.FeatureStoreHandle creatureStore() {
+        return TestFeatureStores.current().store(
+                SqliteCreatureCatalogQueryAdapter.storeDefinition());
+    }
+
     private static void seedCreatureCatalog() throws Exception {
         String xdgDataHome = System.getenv("XDG_DATA_HOME");
         if (xdgDataHome == null || xdgDataHome.isBlank()) {
@@ -434,11 +449,13 @@ public final class CatalogInitialLoadTest {
             statement.execute(CreaturesPersistenceSchema.CREATE_CREATURE_SUBTYPES_TABLE_SQL);
             statement.execute(CreaturesPersistenceSchema.CREATE_CREATURE_ACTIONS_TABLE_SQL);
             statement.execute(
-                    "INSERT INTO creatures (id, name, size, creature_type, alignment, cr, xp, hp, ac) "
-                            + "VALUES (1, 'Aboleth', 'Large', 'Aberration', 'Lawful Evil', '10', 5900, 135, 17)");
+                    "INSERT INTO creatures (id, name, size, creature_type, alignment, cr, xp, hp,"
+                        + " ac) VALUES (1, 'Aboleth', 'Large', 'Aberration', 'Lawful Evil', '10',"
+                        + " 5900, 135, 17)");
             statement.execute(
-                    "INSERT INTO creatures (id, name, size, creature_type, alignment, cr, xp, hp, ac) "
-                            + "VALUES (2, 'Acolyte', 'Medium', 'Humanoid', 'Any Alignment', '1/4', 50, 9, 10)");
+                    "INSERT INTO creatures (id, name, size, creature_type, alignment, cr, xp, hp,"
+                        + " ac) VALUES (2, 'Acolyte', 'Medium', 'Humanoid', 'Any Alignment', '1/4',"
+                        + " 50, 9, 10)");
         }
     }
 

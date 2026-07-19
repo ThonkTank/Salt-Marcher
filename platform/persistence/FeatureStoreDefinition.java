@@ -47,10 +47,6 @@ public record FeatureStoreDefinition(
         return migrations.isEmpty() ? 0 : migrations.getLast().version();
     }
 
-    List<Integer> versions() {
-        return migrations.stream().map(SqliteMigration::version).toList();
-    }
-
     private static String normalizeOwner(String owner) {
         String safeOwner = Objects.requireNonNull(owner, "owner").toLowerCase(Locale.ROOT);
         if (!OWNER_PATTERN.matcher(safeOwner).matches()) {

@@ -4,42 +4,38 @@ import platform.diagnostics.NoopDiagnostics;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
 import platform.diagnostics.Measurement;
-import platform.persistence.SqliteConnectionSource;
-import platform.persistence.SqliteDatabase;
-import platform.persistence.SqliteMigration;
 import platform.persistence.SqliteQueryCounter;
 import features.party.adapter.sqlite.model.PartyRosterRecord;
 
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+import platform.persistence.SqliteMigration;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Objects;
 
-/**
- * SQLite-backed local gateway for the party roster.
- */
+/** SQLite-backed local gateway for the party roster. */
 public final class SqlitePartyLocalGateway {
 
     private static final DiagnosticId ROSTER_READ = new DiagnosticId("party.sqlite.roster-read");
 
-    private final SqliteConnectionSource connections;
+    private final FeatureStoreHandle connections;
     private final PartyRosterSqliteStore store;
     private final Diagnostics diagnostics;
 
-    public SqlitePartyLocalGateway() {
-        this(SqliteDatabase.defaultDatabase(
-                SqliteDatabase.DEFAULT_DATABASE_FILE_NAME,
-                NoopDiagnostics.INSTANCE));
-    }
-
-    public SqlitePartyLocalGateway(SqliteDatabase database) {
-        this(database, NoopDiagnostics.INSTANCE);
-    }
-
-    public SqlitePartyLocalGateway(SqliteDatabase database, Diagnostics diagnostics) {
+    public static FeatureStoreDefinition storeDefinition() {
         PartyRosterSchemaMigrator schemaMigrator = new PartyRosterSchemaMigrator();
-        this.connections = Objects.requireNonNull(database, "database").connections(
+        return FeatureStoreDefinition.of(
                 "party",
                 new SqliteMigration(1, schemaMigrator::ensureSchema));
+    }
+
+    public SqlitePartyLocalGateway(FeatureStoreHandle store) {
+        this(store, NoopDiagnostics.INSTANCE);
+    }
+
+    public SqlitePartyLocalGateway(FeatureStoreHandle store, Diagnostics diagnostics) {
+        this.connections = FeatureStoreHandle.requireOwner(store, "party");
         this.store = new PartyRosterSqliteStore();
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }

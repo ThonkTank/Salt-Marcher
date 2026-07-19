@@ -13,10 +13,14 @@ file safety, connection configuration, the feature-version ledger, owner-scoped
 preparation, backup, and recovery. Feature SQLite adapters own their stored
 truth, table signatures, row validation, and migration bodies.
 
-`app` composes immutable `FeatureStoreDefinition` values before it starts any
-feature work. Preparation returns one `FeatureStoreReadiness` per owner. Ready
-features receive only their `FeatureStoreHandle`; they never receive the global
-registry or another owner's plan.
+`app` composes immutable `FeatureStoreDefinition` values before it constructs
+feature services. Preparation returns one `FeatureStoreReadiness` per owner.
+Ready features receive only their `FeatureStoreHandle`; they never receive the
+global registry or another owner's plan. An explicit reference-data maintenance
+route may additionally receive its owner's separate `FeatureStoreMaintenance`
+capability. That single capability creates the verified recovery point and opens the
+subsequent write connection from the same database lifecycle. It is never composed into
+normal desktop startup. Ordinary handles do not expose backup operations.
 
 API, domain, application, JavaFX, Catalog, and shell code do not access JDBC,
 database files, or migration types.
@@ -34,7 +38,8 @@ Connections are operation-scoped and closed by the owning adapter.
 
 Opening a handle connection validates only platform compatibility and that
 handle's prepared owner. It MUST NOT iterate, validate, or migrate other
-registered owners.
+registered owners. Opening an unprepared handle fails without creating or
+mutating the database.
 
 ## Definitions, Preparation, And Readiness
 
@@ -109,8 +114,12 @@ restored primary, and keeps the backup. Unknown newer versions are not
 corruption and never trigger recovery.
 
 An explicit feature maintenance operation that replaces reference data requests
-a feature-named maintenance backup immediately before its transaction. Startup
-does not perform external imports or paid/network work.
+a feature-named maintenance backup through its separately injected maintenance
+capability immediately before its transaction. The same capability supplies the later
+owner connection, so composition cannot back up one physical database and mutate another.
+It exposes only an opaque receipt; it cannot reveal the physical path or another owner's
+definition. Startup does not receive maintenance authority and does not perform external
+imports or paid/network work.
 
 ## Execution And Shutdown
 
@@ -140,7 +149,10 @@ Automated proof uses isolated synthetic databases and covers:
 
 Automated proof never opens, copies, migrates, corrupts, or restores real local
 user data. Real-data migration requires an owner-approved restore-tested backup
-and rehearsal against an isolated copy.
+and rehearsal against an isolated copy. The operator snapshot uses SQLite's online
+snapshot semantics, is stored with owner-only permissions, and is copied again for the
+destructive rehearsal. The rehearsal executable requires an explicit absolute copy path
+and rejects the installed application-data directory.
 
 ## References
 

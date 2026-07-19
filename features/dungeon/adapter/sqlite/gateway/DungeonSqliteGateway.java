@@ -1,12 +1,10 @@
 package features.dungeon.adapter.sqlite.gateway;
 
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteConnectionSource;
-import platform.persistence.SqliteDatabase;
-import platform.persistence.SqliteMigration;
 import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
 import features.dungeon.application.authored.port.DungeonMapHeader;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
+
+import platform.persistence.FeatureStoreHandle;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -16,7 +14,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Optional;
 
 public final class DungeonSqliteGateway {
@@ -27,23 +24,9 @@ public final class DungeonSqliteGateway {
 
     private final DungeonSqliteConnectionSupport connectionSupport;
 
-    public DungeonSqliteGateway() {
-        this(SqliteDatabase.defaultDatabase(
-                DungeonPersistenceSchema.DATABASE_FILE_NAME,
-                NoopDiagnostics.INSTANCE));
-    }
-
-    public DungeonSqliteGateway(SqliteDatabase database) {
-        DungeonSqliteSchemaManager schemaManager = new DungeonSqliteSchemaManager();
-        SqliteConnectionSource connections = Objects.requireNonNull(database, "database").connections(
-                "dungeon",
-                new SqliteMigration(1, schemaManager::ensureSchema),
-                new SqliteMigration(2, schemaManager::ensureSchema),
-                new SqliteMigration(3, schemaManager::replaceWithCanonicalSchema),
-                new SqliteMigration(4, schemaManager::addCorridorDoorLevel),
-                new SqliteMigration(5, schemaManager::addCorridorRouteCellIndex),
-                new SqliteMigration(6, schemaManager::addCorridorRouteDependencyIndex));
-        connectionSupport = new DungeonSqliteConnectionSupport(connections);
+    public DungeonSqliteGateway(FeatureStoreHandle store) {
+        connectionSupport = new DungeonSqliteConnectionSupport(
+                        FeatureStoreHandle.requireOwner(store, DungeonStoreDefinition.OWNER));
     }
 
     public List<DungeonMapHeader> searchMapHeaders(String query) {
@@ -72,7 +55,8 @@ public final class DungeonSqliteGateway {
         try (Connection connection = connectionSupport.openReadyConnection();
              PreparedStatement statement = connection.prepareStatement(
                      SELECT_MAP_COLUMNS + SQL_FROM + DungeonPersistenceSchema.MAPS_TABLE
-                             + " ORDER BY name COLLATE NOCASE, dungeon_map_id LIMIT 1")) {
+                             + " ORDER BY name COLLATE NOCASE, dungeon_map_id LIMIT"
+                                        + " 1")) {
             try (ResultSet resultSet = statement.executeQuery()) {
                 return resultSet.next()
                         ? Optional.of(header(resultSet))
@@ -116,7 +100,8 @@ public final class DungeonSqliteGateway {
         try (Connection connection = connectionSupport.openReadyConnection();
              PreparedStatement update = connection.prepareStatement(
                      "UPDATE " + DungeonPersistenceSchema.MAPS_TABLE
-                             + " SET name=?, revision=revision+1 WHERE dungeon_map_id=?")) {
+                             + " SET name=?, revision=revision+1 WHERE"
+                                        + " dungeon_map_id=?")) {
             update.setString(1, safeName);
             update.setLong(2, mapId);
             if (update.executeUpdate() == 0) {

@@ -4,14 +4,15 @@ import features.dungeon.adapter.sqlite.gateway.DungeonSqliteIdentityGateway;
 import features.dungeon.application.authored.port.DungeonIdentityAllocator;
 import features.dungeon.application.authored.port.DungeonIdentityKind;
 import features.dungeon.application.authored.port.DungeonIdentityRange;
+import platform.persistence.FeatureStoreHandle;
+
 import java.util.Objects;
-import platform.persistence.SqliteDatabase;
 
 public final class SqliteDungeonIdentityAllocator implements DungeonIdentityAllocator {
     private final DungeonSqliteIdentityGateway gateway;
 
-    public SqliteDungeonIdentityAllocator(SqliteDatabase database) {
-        this(new DungeonSqliteIdentityGateway(database));
+    public SqliteDungeonIdentityAllocator(FeatureStoreHandle store) {
+        this(new DungeonSqliteIdentityGateway(store));
     }
 
     SqliteDungeonIdentityAllocator(DungeonSqliteIdentityGateway gateway) {

@@ -1,8 +1,8 @@
 package features.dungeon;
 
-import java.util.Objects;
 import features.dungeon.adapter.javafx.editor.DungeonEditorContribution;
 import features.dungeon.adapter.javafx.travel.DungeonTravelContribution;
+import features.dungeon.adapter.sqlite.gateway.DungeonStoreDefinition;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonIdentityAllocator;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
@@ -25,27 +25,30 @@ import features.dungeon.application.authored.port.DungeonCatalogStore;
 import features.dungeon.application.authored.port.DungeonIdentityAllocator;
 import features.dungeon.application.authored.port.DungeonUnitOfWork;
 import features.dungeon.application.authored.port.DungeonWindowStore;
-import features.dungeon.application.editor.DungeonEditorPublishedState;
 import features.dungeon.application.editor.DungeonEditorApiFacade;
 import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
+import features.dungeon.application.editor.DungeonEditorPublishedState;
 import features.dungeon.application.editor.DungeonEditorRuntimeApplicationService;
 import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
-import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
-import features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy;
-import features.dungeon.application.travel.DungeonTravelNavigator;
 import features.dungeon.application.travel.DungeonTravelAuthoredReader;
+import features.dungeon.application.travel.DungeonTravelNavigator;
 import features.dungeon.application.travel.DungeonTravelPartyGateway;
 import features.dungeon.application.travel.DungeonTravelPublishedState;
 import features.dungeon.application.travel.DungeonTravelRuntimeApplicationService;
 import features.dungeon.application.travel.DungeonTravelSurfaceLoader;
+import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
+import features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy;
 import features.party.api.ActivePartyModel;
 import features.party.api.PartyApi;
 import features.party.api.PartyTravelPositionsModel;
 import platform.diagnostics.Diagnostics;
 import platform.execution.ExecutionLane;
-import platform.persistence.SqliteDatabase;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
 import platform.ui.UiDispatcher;
 import shell.api.ShellContribution;
+
+import java.util.Objects;
 
 /** Dungeon feature composition entry point used by the application root. */
 public final class DungeonFeature {
@@ -53,8 +56,12 @@ public final class DungeonFeature {
     private DungeonFeature() {
     }
 
+    public static FeatureStoreDefinition storeDefinition() {
+        return DungeonStoreDefinition.create();
+    }
+
     public static Component create(
-            SqliteDatabase database,
+            FeatureStoreHandle store,
             PartyApi party,
             ExecutionLane executionLane,
             UiDispatcher uiDispatcher,
@@ -64,11 +71,11 @@ public final class DungeonFeature {
         ExecutionLane lane = Objects.requireNonNull(executionLane, "executionLane");
         UiDispatcher dispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
         SqliteDungeonCatalogStore catalogStore =
-                new SqliteDungeonCatalogStore(Objects.requireNonNull(database, "database"));
+                new SqliteDungeonCatalogStore(store);
         DungeonCachedWindowStore windowStore = new DungeonCachedWindowStore(
-                new SqliteDungeonWindowStore(database));
-        SqliteDungeonUnitOfWork unitOfWork = new SqliteDungeonUnitOfWork(database);
-        SqliteDungeonIdentityAllocator identityAllocator = new SqliteDungeonIdentityAllocator(database);
+                new SqliteDungeonWindowStore(store));
+        SqliteDungeonUnitOfWork unitOfWork = new SqliteDungeonUnitOfWork(store);
+        SqliteDungeonIdentityAllocator identityAllocator = new SqliteDungeonIdentityAllocator(store);
         Runtime runtime = createRuntime(
                 catalogStore,
                 windowStore,

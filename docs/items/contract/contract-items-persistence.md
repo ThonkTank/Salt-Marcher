@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-16
+Last Reviewed: 2026-07-19
 Source of Truth: Local Items persistence, import compatibility, validation,
 failure, and recovery behavior.
 
@@ -19,8 +19,13 @@ Items owns the unambiguous target tables `items_catalog_entries` and
 `items_catalog_tags`. Stable source keys from the pinned `/api/2014` API are
 persisted as text identifiers. Schema migration is registered under the
 `items` owner and consumed through one prepared `FeatureStoreHandle`; Items
-does not open a parallel connection lifecycle. A source-version change requires
-an explicit migration decision and full re-import.
+does not open a parallel connection lifecycle. Desktop composition constructs only the
+catalog-read adapter and application service. The separately composed operator import
+constructs its own HTTP source, import application service, and write adapter from one
+owner-bound `FeatureStoreMaintenance` capability. That capability supplies both the
+whole-database backup and the later Items write connection; ordinary provider reads cannot
+request either maintenance operation. A
+source-version change requires an explicit migration decision and full re-import.
 
 Target owner version `2` has one structural signature: exact entry and tag
 columns, `source_key` and `(item_source_key, tag)` primary keys, a cascading tag

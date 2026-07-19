@@ -4,24 +4,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.file.Path;
-import java.sql.DriverManager;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteDatabase;
 import features.encounter.api.EncounterRuntimeContextId;
 import features.encounter.api.EncounterRuntimeContextSpec;
 import features.encounter.api.EncounterRuntimeNpcRole;
 import features.encounter.api.EncounterRuntimeNpcSpec;
 import features.encounter.application.EncounterRuntimeContextRepository;
 import features.encounter.domain.generation.EncounterGenerationInputs;
+import features.encounter.domain.generation.EncounterGenerationRequest;
 import features.encounter.domain.generation.EncounterRequestedDifficulty;
 import features.encounter.domain.generation.EncounterTuningIntent;
-import features.encounter.domain.generation.EncounterGenerationRequest;
 import features.encounter.domain.plan.EncounterPlan;
 import features.encounter.domain.session.AwardXpOutcome;
 import features.encounter.domain.session.BudgetData;
@@ -41,6 +32,19 @@ import features.encounter.domain.session.PartyMemberData;
 import features.encounter.domain.session.PlanOutcome;
 import features.encounter.domain.session.ResultEnemyData;
 import features.encounter.domain.session.ResultStateData;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
+
+import java.nio.file.Path;
+import java.sql.DriverManager;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 final class SqliteEncounterRuntimeContextRepositoryTest {
 
@@ -99,7 +103,10 @@ final class SqliteEncounterRuntimeContextRepositoryTest {
                 result);
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
             SqliteEncounterRuntimeContextRepository repository =
-                    new SqliteEncounterRuntimeContextRepository(database);
+                    new SqliteEncounterRuntimeContextRepository(
+                            TestFeatureStores.store(
+                                    database,
+                                    features.encounter.EncounterServiceAssembly.storeDefinition()));
             repository.replace(new EncounterRuntimeContextRepository.StoredRuntimeContexts(
                     9L,
                     id,
@@ -108,7 +115,10 @@ final class SqliteEncounterRuntimeContextRepositoryTest {
 
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
             SqliteEncounterRuntimeContextRepository repository =
-                    new SqliteEncounterRuntimeContextRepository(database);
+                    new SqliteEncounterRuntimeContextRepository(
+                            TestFeatureStores.store(
+                                    database,
+                                    features.encounter.EncounterServiceAssembly.storeDefinition()));
             var loaded = repository.load();
             assertEquals(9L, loaded.sourceRevision());
             assertEquals(id, loaded.focusedContextId());
@@ -132,7 +142,8 @@ final class SqliteEncounterRuntimeContextRepositoryTest {
 
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + path);
              var tables = connection.createStatement().executeQuery(
-                     "SELECT sql FROM sqlite_master WHERE type='table' AND name LIKE 'encounter_runtime_%'")) {
+                                        "SELECT sql FROM sqlite_master WHERE type='table' AND name"
+                                            + " LIKE 'encounter_runtime_%'")) {
             while (tables.next()) {
                 String definition = tables.getString(1).toLowerCase(java.util.Locale.ROOT);
                 assertFalse(definition.contains("payload") || definition.contains("codec"));

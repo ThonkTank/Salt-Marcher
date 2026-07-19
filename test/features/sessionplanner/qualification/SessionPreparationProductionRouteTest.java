@@ -49,6 +49,7 @@ import platform.diagnostics.Measurement;
 import platform.execution.BoundedExecutionLane;
 import platform.execution.SerialExecutionLane;
 import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
 import platform.ui.DirectUiDispatcher;
 
 final class SessionPreparationProductionRouteTest {
@@ -445,33 +446,50 @@ final class SessionPreparationProductionRouteTest {
             BoundedExecutionLane encounterIo = lane(diagnostics, "qualification-encounter-io");
             BoundedExecutionLane preparationCpu = lane(diagnostics, "session-preparation-cpu");
             BoundedExecutionLane preparationIo = lane(diagnostics, "session-preparation-io");
+            var generationDefinition = SessionGenerationServiceAssembly.storeDefinition();
+            var creaturesDefinition = CreaturesServiceAssembly.storeDefinition();
+            var tablesDefinition = EncounterTableServiceAssembly.storeDefinition();
+            var partyDefinition = PartyServiceAssembly.storeDefinition();
+            var encounterDefinition = EncounterServiceAssembly.storeDefinition();
+            var sessionDefinition = SessionPlannerServiceAssembly.storeDefinition();
+            long coldStoreStarted = System.nanoTime();
+            var stores = TestFeatureStores.stores(
+                    database,
+                    generationDefinition,
+                    creaturesDefinition,
+                    tablesDefinition,
+                    partyDefinition,
+                    encounterDefinition,
+                    sessionDefinition);
+            long coldStoreNanos = System.nanoTime() - coldStoreStarted;
             SessionGenerationApi generation = SessionGenerationServiceAssembly.create(
-                    database, generationCpu, generationIo);
+                    stores.get(generationDefinition.owner()), generationCpu, generationIo);
             long coldCatalogStarted = System.nanoTime();
             GenerationResult canonical = canonicalDraft(generation);
             long coldCatalogNanos = System.nanoTime() - coldCatalogStarted;
 
             CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(
-                    database, authored, preparationIo, DirectUiDispatcher.INSTANCE, diagnostics);
+                    stores.get(creaturesDefinition.owner()), authored, preparationIo,
+                    DirectUiDispatcher.INSTANCE, diagnostics);
             EncounterTableServiceAssembly.Component tables = EncounterTableServiceAssembly.create(
-                    database, authored, DirectUiDispatcher.INSTANCE, diagnostics);
+                    stores.get(tablesDefinition.owner()), authored, DirectUiDispatcher.INSTANCE,
+                    diagnostics);
             PartyServiceAssembly.Component party = PartyServiceAssembly.create(
-                    database, authored, preparationIo, DirectUiDispatcher.INSTANCE, diagnostics);
+                    stores.get(partyDefinition.owner()), authored, preparationIo,
+                    DirectUiDispatcher.INSTANCE, diagnostics);
             EncounterServiceAssembly.Component encounters = EncounterServiceAssembly.create(
-                    database,
+                    stores.get(encounterDefinition.owner()),
                     creatures.application(), creatures.detail(), creatures.encounterCandidates(),
                     tables.application(), tables.candidates(), null,
                     party.application(), party.activeParty(), party.activeComposition(),
                     party.adventuringDaySummary(), party.mutation(),
                     authored, encounterCpu, encounterIo, DirectUiDispatcher.INSTANCE, diagnostics);
             SessionPlannerServiceAssembly planner = SessionPlannerServiceAssembly.create(
-                    database, party.application(), encounters.application(), encounters.savedPlans(), null,
+                    stores.get(sessionDefinition.owner()), party.application(), encounters.application(),
+                    encounters.savedPlans(), null,
                     generationDecorator.apply(generation), authored, preparationCpu, preparationIo,
                     DirectUiDispatcher.INSTANCE, diagnostics);
 
-            long coldStoreStarted = System.nanoTime();
-            database.prepareRegisteredStores();
-            long coldStoreNanos = System.nanoTime() - coldStoreStarted;
             seedCreatures(path, canonical);
             PartyServiceAssembly.start(party);
             encounters.start();

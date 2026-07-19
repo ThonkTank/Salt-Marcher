@@ -1,5 +1,25 @@
 package app;
 
+import javafx.application.Platform;
+import javafx.scene.Node;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.layout.Pane;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import platform.diagnostics.NoopDiagnostics;
+import platform.execution.ExecutionLane;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
+import platform.ui.DirectUiDispatcher;
+
+import shell.api.ContributionKey;
+import shell.host.AppShell;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.DriverManager;
@@ -11,22 +31,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import javafx.application.Platform;
-import javafx.scene.Node;
-import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ToggleButton;
-import javafx.scene.layout.Pane;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import shell.api.ContributionKey;
-import shell.host.AppShell;
-import platform.diagnostics.NoopDiagnostics;
-import platform.execution.ExecutionLane;
-import platform.persistence.SqliteDatabase;
-import platform.ui.DirectUiDispatcher;
 
 @org.junit.jupiter.api.Tag("ui")
 public final class SmokeStartupTest {
@@ -67,10 +71,12 @@ public final class SmokeStartupTest {
                 require(
                         navigation.stream().filter(ToggleButton::isSelected).map(Node::getAccessibleText).toList()
                                 .equals(List.of("Dungeon-Editor")),
-                        "Expected only the default landing navigation entry to be selected.");
+                                "Expected only the default landing navigation entry to be"
+                                    + " selected.");
                 require(
                         shell.lookup(".toolbar") instanceof Pane toolbar && toolbar.getChildren().size() == 4,
-                        "Expected title, spacer, and exactly two explicit top-bar contributions.");
+                                "Expected title, spacer, and exactly two explicit top-bar"
+                                    + " contributions.");
                 List<String> topBarTooltips = shell.lookupAll(".toolbar .button").stream()
                         .filter(Button.class::isInstance)
                         .map(Button.class::cast)
@@ -82,8 +88,9 @@ public final class SmokeStartupTest {
                 require(topBarTooltips.equals(List.of(
                                 "Adventuring-Day-Rechner öffnen",
                                 "Party-Panel öffnen (Alt+P)")),
-                        "Expected distinct Adventuring Day and Party top-bar surfaces, but was "
-                                + topBarTooltips + ".");
+                                "Expected distinct Adventuring Day and Party top-bar surfaces, but"
+                                    + " was "
+                                        + topBarTooltips + ".");
                 assertStateTabManifest(shell, navigation);
                 require(Instant.now().isBefore(deadline), "Smoke startup exceeded timeout.");
             }
@@ -179,7 +186,8 @@ public final class SmokeStartupTest {
         Path database = Path.of(xdgDataHome, "salt-marcher", "game.db").toAbsolutePath().normalize();
         Files.createDirectories(database.getParent());
         try (SqliteDatabase lifecycle = new SqliteDatabase(database, NoopDiagnostics.INSTANCE);
-             var connection = lifecycle.connections("smoke").openConnection();
+             var connection = TestFeatureStores.store(
+                     lifecycle, FeatureStoreDefinition.of("smoke")).openConnection();
              var statement = connection.createStatement()) {
             try (var result = statement.executeQuery("PRAGMA integrity_check")) {
                 require(result.next() && "ok".equalsIgnoreCase(result.getString(1)), "SQLite integrity check failed.");

@@ -1,32 +1,30 @@
 package features.encountertable.adapter.sqlite.gateway.local;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Objects;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteConnectionSource;
-import platform.persistence.SqliteDatabase;
-import platform.persistence.SqliteMigration;
 import features.encountertable.adapter.sqlite.model.EncounterTableCandidateRecord;
 import features.encountertable.adapter.sqlite.model.EncounterTableSummaryRecord;
 
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+import platform.persistence.SqliteMigration;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.List;
+
 public final class SqliteEncounterTableLocalGateway {
 
-    private final SqliteConnectionSource connections;
+    private final FeatureStoreHandle connections;
     private final EncounterTableSqliteStore store = new EncounterTableSqliteStore();
 
-    public SqliteEncounterTableLocalGateway() {
-        this(SqliteDatabase.defaultDatabase(
-                SqliteDatabase.DEFAULT_DATABASE_FILE_NAME,
-                NoopDiagnostics.INSTANCE));
-    }
-
-    public SqliteEncounterTableLocalGateway(SqliteDatabase database) {
+    public static FeatureStoreDefinition storeDefinition() {
         EncounterTableSchemaMigrator schemaMigrator = new EncounterTableSchemaMigrator();
-        this.connections = Objects.requireNonNull(database, "database").connections(
+        return FeatureStoreDefinition.of(
                 "encounter-table",
                 new SqliteMigration(1, schemaMigrator::ensureSchema));
+    }
+
+    public SqliteEncounterTableLocalGateway(FeatureStoreHandle store) {
+        this.connections = FeatureStoreHandle.requireOwner(store, "encounter-table");
     }
 
     public List<EncounterTableSummaryRecord> loadSummaries() {

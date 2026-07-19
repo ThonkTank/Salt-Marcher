@@ -1,30 +1,35 @@
 package features.worldplanner;
 
-import java.util.Objects;
-import org.jspecify.annotations.Nullable;
-import platform.diagnostics.DiagnosticId;
-import platform.diagnostics.Diagnostics;
-import platform.diagnostics.NoopDiagnostics;
-import platform.execution.DirectExecutionLane;
-import platform.execution.ExecutionLane;
-import platform.persistence.SqliteDatabase;
-import platform.ui.DirectUiDispatcher;
-import platform.ui.UiDispatcher;
-import shell.api.InspectorSink;
-import features.creatures.api.CreatureReferenceIndexModel;
 import features.creatures.api.CreatureReferenceApi;
+import features.creatures.api.CreatureReferenceIndexModel;
 import features.encountertable.api.EncounterTableCatalogModel;
 import features.encountertable.api.EncounterTableReferenceApi;
 import features.worldplanner.adapter.javafx.WorldPlannerInspectorController;
 import features.worldplanner.adapter.sqlite.repository.SqliteWorldPlannerRepository;
 import features.worldplanner.api.WorldPlannerApi;
 import features.worldplanner.api.WorldPlannerEncounterSink;
-import features.worldplanner.domain.world.port.WorldPlannerReferencePort;
-import features.worldplanner.domain.world.repository.WorldPlannerRepository;
 import features.worldplanner.api.WorldPlannerSnapshotModel;
 import features.worldplanner.application.WorldPlannerApplicationService;
 import features.worldplanner.application.WorldPlannerPublishedState;
 import features.worldplanner.application.WorldPlannerSnapshotProjection;
+import features.worldplanner.domain.world.port.WorldPlannerReferencePort;
+import features.worldplanner.domain.world.repository.WorldPlannerRepository;
+
+import org.jspecify.annotations.Nullable;
+
+import platform.diagnostics.DiagnosticId;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.NoopDiagnostics;
+import platform.execution.DirectExecutionLane;
+import platform.execution.ExecutionLane;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+import platform.ui.DirectUiDispatcher;
+import platform.ui.UiDispatcher;
+
+import shell.api.InspectorSink;
+
+import java.util.Objects;
 
 public final class WorldPlannerServiceAssembly {
 
@@ -37,6 +42,10 @@ public final class WorldPlannerServiceAssembly {
     private final ExecutionLane executionLane;
     private final Diagnostics diagnostics;
     private boolean initialSnapshotScheduled;
+
+    public static FeatureStoreDefinition storeDefinition() {
+        return SqliteWorldPlannerRepository.storeDefinition();
+    }
 
     public WorldPlannerServiceAssembly(
             WorldPlannerRepository repository,
@@ -51,7 +60,7 @@ public final class WorldPlannerServiceAssembly {
     }
 
     public static Component create(
-            SqliteDatabase database,
+            FeatureStoreHandle store,
             CreatureReferenceApi creatures,
             EncounterTableReferenceApi encounterTables,
             ExecutionLane executionLane,
@@ -59,7 +68,7 @@ public final class WorldPlannerServiceAssembly {
             Diagnostics diagnostics
     ) {
         WorldPlannerServiceAssembly assembly = new WorldPlannerServiceAssembly(
-                new SqliteWorldPlannerRepository(Objects.requireNonNull(database, "database")),
+                new SqliteWorldPlannerRepository(store),
                 WorldPlannerReferenceAssembly.catalogReferences(creatures, encounterTables),
                 executionLane,
                 uiDispatcher,

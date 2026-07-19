@@ -1,30 +1,10 @@
 package app;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import org.jspecify.annotations.Nullable;
-import platform.diagnostics.Diagnostics;
-import platform.diagnostics.SystemLoggerDiagnostics;
-import platform.execution.ExecutionLane;
-import platform.execution.BoundedExecutionLane;
-import platform.execution.SerialExecutionLane;
-import platform.persistence.SqliteDatabase;
-import platform.ui.JavaFxUiDispatcher;
-import platform.ui.UiDispatcher;
-import shell.api.ShellBinding;
-import shell.api.ShellContribution;
-import shell.api.ShellContributionSpec;
-import shell.api.ShellLeftBarTabSpec;
-import shell.api.ShellStateTabSpec;
-import shell.api.ShellTopBarSpec;
-import shell.host.AppShell;
-import features.creatures.CreaturesServiceAssembly;
-import features.creatures.api.RefreshCreatureReferenceIndexCommand;
 import features.catalog.CatalogFeature;
 import features.catalog.CatalogProviders;
 import features.catalog.CatalogRoutes;
+import features.creatures.CreaturesServiceAssembly;
+import features.creatures.api.RefreshCreatureReferenceIndexCommand;
 import features.dungeon.DungeonFeature;
 import features.encounter.EncounterServiceAssembly;
 import features.encounter.api.ApplyEncounterStateCommand;
@@ -36,11 +16,35 @@ import features.hex.HexServiceAssembly;
 import features.items.ItemsServiceAssembly;
 import features.party.PartyServiceAssembly;
 import features.scene.SceneFeature;
-import features.sessionplanner.SessionPlannerServiceAssembly;
 import features.sessiongeneration.SessionGenerationServiceAssembly;
 import features.sessiongeneration.api.SessionGenerationApi;
+import features.sessionplanner.SessionPlannerServiceAssembly;
 import features.travel.TravelFeature;
 import features.worldplanner.WorldPlannerServiceAssembly;
+
+import org.jspecify.annotations.Nullable;
+
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.SystemLoggerDiagnostics;
+import platform.execution.BoundedExecutionLane;
+import platform.execution.ExecutionLane;
+import platform.execution.SerialExecutionLane;
+import platform.persistence.SqliteDatabase;
+import platform.ui.JavaFxUiDispatcher;
+import platform.ui.UiDispatcher;
+
+import shell.api.ShellBinding;
+import shell.api.ShellContribution;
+import shell.api.ShellContributionSpec;
+import shell.api.ShellLeftBarTabSpec;
+import shell.api.ShellStateTabSpec;
+import shell.api.ShellTopBarSpec;
+import shell.host.AppShell;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Explicit production composition root. */
 public final class AppBootstrap implements AutoCloseable {
@@ -114,8 +118,9 @@ public final class AppBootstrap implements AutoCloseable {
 
     public AppShell createShell() {
         AppShell shell = new AppShell(diagnostics);
-        Components components = createComponents();
+        FeatureStoreManifest.Stores stores = FeatureStoreManifest.register(database);
         database.prepareRegisteredStores();
+        Components components = createComponents(stores);
         components.start();
         List<ResolvedContribution> contributions = bindContributions(shell, components);
         contributions.stream()
@@ -128,19 +133,19 @@ public final class AppBootstrap implements AutoCloseable {
         return shell;
     }
 
-    private Components createComponents() {
+    private Components createComponents(FeatureStoreManifest.Stores stores) {
         CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(
-                database, executionLane, sessionPreparationIoLane, uiDispatcher, diagnostics);
+                stores.creatures(), executionLane, sessionPreparationIoLane, uiDispatcher, diagnostics);
         EncounterTableServiceAssembly.Component encounterTables =
                 EncounterTableServiceAssembly.create(
-                        database, executionLane, uiDispatcher, diagnostics);
+                        stores.encounterTables(), executionLane, uiDispatcher, diagnostics);
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(
-                database, executionLane, sessionPreparationIoLane, uiDispatcher, diagnostics);
-        ItemsServiceAssembly.Component items = ItemsServiceAssembly.create(
-                database, executionLane, diagnostics);
+                stores.party(), executionLane, sessionPreparationIoLane, uiDispatcher, diagnostics);
+        ItemsServiceAssembly.CatalogComponent items = ItemsServiceAssembly.createCatalog(
+                stores.items(), executionLane, diagnostics);
 
         WorldPlannerServiceAssembly.Component world = WorldPlannerServiceAssembly.create(
-                database,
+                        stores.worldPlanner(),
                 creatures.references(),
                 encounterTables.references(),
                 executionLane,
@@ -148,7 +153,7 @@ public final class AppBootstrap implements AutoCloseable {
                 diagnostics);
 
         EncounterServiceAssembly.Component encounter = EncounterServiceAssembly.create(
-                database,
+                        stores.encounter(),
                 creatures.application(),
                 creatures.detail(),
                 creatures.encounterCandidates(),
@@ -167,20 +172,20 @@ public final class AppBootstrap implements AutoCloseable {
                 diagnostics);
 
         DungeonFeature.Component dungeon = DungeonFeature.create(
-                database,
+                        stores.dungeon(),
                 party.application(),
                 executionLane,
                 uiDispatcher,
                 diagnostics);
         HexServiceAssembly.Component hex = HexServiceAssembly.create(
-                database, party.travelPositions(), party.application(),
+                        stores.hex(), party.travelPositions(), party.application(),
                 executionLane, uiDispatcher, diagnostics);
         TravelFeature.Component travel = TravelFeature.create(
                 party.travelPositions(), dungeon.travelContext(), hex.travelModel(), uiDispatcher);
         SessionGenerationApi generation = SessionGenerationServiceAssembly.create(
-                database, sessionGenerationCpuLane, sessionGenerationIoLane);
+                        stores.sessionGeneration(), sessionGenerationCpuLane, sessionGenerationIoLane);
         SessionPlannerServiceAssembly session = SessionPlannerServiceAssembly.create(
-                database,
+                        stores.sessionPlanner(),
                 party.application(),
                 encounter.application(),
                 encounter.savedPlans(),
@@ -192,7 +197,7 @@ public final class AppBootstrap implements AutoCloseable {
                 uiDispatcher,
                 diagnostics);
         SceneFeature.Component scene = SceneFeature.create(
-                database,
+                        stores.scene(),
                 party.activeParty(),
                 world.snapshot(),
                 session.preparedScenes(),
@@ -261,7 +266,7 @@ public final class AppBootstrap implements AutoCloseable {
     private static CatalogRoutes catalogRoutes(
             shell.api.InspectorSink inspector,
             CreaturesServiceAssembly.Component creatures,
-            ItemsServiceAssembly.Component items,
+            ItemsServiceAssembly.CatalogComponent items,
             WorldPlannerServiceAssembly.Component world,
             features.worldplanner.api.WorldPlannerEncounterSink worldEncounter,
             EncounterTableServiceAssembly.Component tables,
@@ -451,7 +456,7 @@ public final class AppBootstrap implements AutoCloseable {
             CreaturesServiceAssembly.Component creatures,
             EncounterTableServiceAssembly.Component encounterTables,
             PartyServiceAssembly.Component party,
-            ItemsServiceAssembly.Component items,
+            ItemsServiceAssembly.CatalogComponent items,
             WorldPlannerServiceAssembly.Component world,
             EncounterServiceAssembly.Component encounter,
             DungeonFeature.Component dungeon,

@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import platform.diagnostics.NoopDiagnostics;
 import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
 
 final class SessionPlannerWorkspaceSqliteReadTest {
 
@@ -34,7 +35,9 @@ final class SessionPlannerWorkspaceSqliteReadTest {
     void emptyV3WorkspaceUsesTheSameFixedStatementFamilies() throws Exception {
         Path path = temporaryDirectory.resolve("empty-workspace.db");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            new SqliteSessionPlanRepository(database).readWorkspace();
+            var store = TestFeatureStores.store(
+                    database, SqliteSessionPlanRepository.storeDefinition());
+            new SqliteSessionPlanRepository(store).readWorkspace();
 
             CountedRead counted = loadCounted(path);
 
@@ -48,7 +51,9 @@ final class SessionPlannerWorkspaceSqliteReadTest {
     void highCardinalityV3WorkspaceReadsEveryChildFamilyWithCardinalityIndependentStatements() throws Exception {
         Path path = temporaryDirectory.resolve("populated-workspace.db");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(database);
+            var store = TestFeatureStores.store(
+                    database, SqliteSessionPlanRepository.storeDefinition());
+            SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(store);
             for (long sessionId = 1L; sessionId <= 64L; sessionId++) {
                 repository.insert(completePlan(
                         sessionId, sessionId * 100L, sessionId * 10L, "run-" + sessionId));

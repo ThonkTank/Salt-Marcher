@@ -10,19 +10,25 @@ import features.scene.api.SceneModel;
 import features.scene.application.SceneApplicationService;
 import features.sessionplanner.api.PreparedSceneCatalogModel;
 import features.worldplanner.api.WorldPlannerSnapshotModel;
-import java.util.Objects;
 import platform.diagnostics.Diagnostics;
 import platform.execution.ExecutionLane;
-import platform.persistence.SqliteDatabase;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
 import platform.ui.UiDispatcher;
 import shell.api.ShellContribution;
+
+import java.util.Objects;
 
 public final class SceneFeature {
 
     private SceneFeature() { }
 
+    public static FeatureStoreDefinition storeDefinition() {
+        return SqliteSceneWorkspaceRepository.storeDefinition();
+    }
+
     public static Component create(
-            SqliteDatabase database,
+            FeatureStoreHandle store,
             ActivePartyModel party,
             WorldPlannerSnapshotModel world,
             PreparedSceneCatalogModel preparedScenes,
@@ -33,7 +39,7 @@ public final class SceneFeature {
             Diagnostics diagnostics
     ) {
         SceneApplicationService application = new SceneApplicationService(
-                new SqliteSceneWorkspaceRepository(Objects.requireNonNull(database, "database")),
+                new SqliteSceneWorkspaceRepository(store),
                 party,
                 world,
                 preparedScenes,

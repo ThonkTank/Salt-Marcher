@@ -5,15 +5,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import features.creatures.CreaturesServiceAssembly;
 import features.creatures.api.CreatureFactsQuery;
 import features.creatures.api.CreatureFactsSnapshotResult;
-import java.nio.file.Path;
-import java.sql.DriverManager;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import platform.diagnostics.NoopDiagnostics;
 import platform.execution.DirectExecutionLane;
 import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
 import platform.ui.DirectUiDispatcher;
+
+import java.nio.file.Path;
+import java.sql.DriverManager;
+import java.util.List;
 
 final class CreatureFactsSqliteTest {
 
@@ -25,7 +27,9 @@ final class CreatureFactsSqliteTest {
         Path path = directory.resolve("creature-facts.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
             CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(
-                    database, DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE,
+                    TestFeatureStores.store(database, CreaturesServiceAssembly.storeDefinition()),
+                    DirectExecutionLane.INSTANCE,
+                    DirectExecutionLane.INSTANCE,
                     DirectUiDispatcher.INSTANCE,
                     NoopDiagnostics.INSTANCE);
             creatures.catalogQueries().loadFilterOptions().toCompletableFuture().join();
@@ -53,8 +57,9 @@ final class CreatureFactsSqliteTest {
     private static void insert(Path path, long id, String name, String cr, int xp) throws Exception {
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + path);
                 var statement = connection.prepareStatement(
-                        "INSERT INTO creatures (id,name,size,creature_type,alignment,cr,xp,hp,ac) "
-                                + "VALUES (?,?,?,?,?,?,?,?,?)")) {
+                                "INSERT INTO creatures"
+                                    + " (id,name,size,creature_type,alignment,cr,xp,hp,ac) VALUES"
+                                    + " (?,?,?,?,?,?,?,?,?)")) {
             statement.setLong(1, id);
             statement.setString(2, name);
             statement.setString(3, "Medium");

@@ -1,5 +1,9 @@
 package platform.persistence;
 
+import org.sqlite.SQLiteConfig;
+
+import platform.diagnostics.DiagnosticId;
+import platform.diagnostics.Diagnostics;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -11,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -20,15 +25,12 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.List;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.sqlite.SQLiteConfig;
-import platform.diagnostics.DiagnosticId;
-import platform.diagnostics.Diagnostics;
 
 public final class SqliteDatabase implements AutoCloseable {
 
@@ -73,6 +75,62 @@ public final class SqliteDatabase implements AutoCloseable {
         return resolveDatabasePath(fileName, System.getenv("XDG_DATA_HOME"), System.getProperty("user.home"));
     }
 
+    /**
+     * Creates a coherent, restore-tested, owner-only copy of an existing SQLite database without
+     * running platform or feature migrations against the source.
+     */
+    public static void createVerifiedSnapshot(Path source, Path target) throws SQLException {
+        Path safeSource = Objects.requireNonNull(source, "source").toAbsolutePath().normalize();
+        Path safeTarget = Objects.requireNonNull(target, "target").toAbsolutePath().normalize();
+        Path temporarySnapshot = null;
+        boolean targetCreated = false;
+        boolean completed = false;
+        try {
+            if (!Files.isRegularFile(safeSource) || Files.size(safeSource) == 0L) {
+                throw new SQLException("SQLite snapshot source is missing or empty.");
+            }
+            Path realSource = safeSource.toRealPath();
+            if (realSource.equals(safeTarget) || Files.exists(safeTarget)) {
+                throw new SQLException("SQLite snapshot target must be a new file.");
+            }
+            Path parent = safeTarget.getParent();
+            if (parent == null) {
+                throw new SQLException("SQLite snapshot target must have a parent directory.");
+            }
+            Files.createDirectories(parent);
+            Path temporaryDirectory = Files.createTempDirectory(parent, ".sqlite-snapshot-");
+            temporarySnapshot = temporaryDirectory.resolve("snapshot.sqlite");
+
+            loadDriver();
+            vacuumInto(realSource, temporarySnapshot);
+            assertIntegrity(temporarySnapshot);
+
+            Path restoreProbe = temporaryDirectory.resolve("restore-probe.sqlite");
+            Files.copy(temporarySnapshot, restoreProbe);
+            assertIntegrity(restoreProbe);
+
+            try {
+                Files.move(temporarySnapshot, safeTarget, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException ignored) {
+                Files.move(temporarySnapshot, safeTarget);
+            }
+            targetCreated = true;
+            Files.setPosixFilePermissions(
+                    safeTarget, PosixFilePermissions.fromString("rw-------"));
+            assertIntegrity(safeTarget);
+            completed = true;
+        } catch (IOException | UnsupportedOperationException exception) {
+            throw new SQLException("Could not create verified SQLite snapshot.", exception);
+        } finally {
+            if (targetCreated && !completed) {
+                deleteIfExists(safeTarget);
+            }
+            if (temporarySnapshot != null) {
+                deletePreflightSnapshot(temporarySnapshot);
+            }
+        }
+    }
+
     static Path resolveDatabasePath(String fileName, String xdgDataHome, String userHome) {
         String safeFileName = Objects.requireNonNull(fileName, "fileName");
         if (safeFileName.isBlank() || Path.of(safeFileName).getNameCount() != 1) {
@@ -90,10 +148,10 @@ public final class SqliteDatabase implements AutoCloseable {
 
     /**
      * Creates and restore-tests a durable snapshot before an explicit maintenance operation.
-     * Callers still own their feature transaction; this method only establishes a verified
-     * recovery point for the complete database without exposing its local path.
+     * Callers still own their feature transaction; this method only establishes a verified recovery
+     * point for the complete database without exposing its local path.
      */
-    public synchronized MaintenanceBackup createVerifiedMaintenanceBackup(String owner) throws SQLException {
+    private synchronized FeatureStoreBackup createVerifiedMaintenanceBackup(String owner) throws SQLException {
         String safeOwner = requireOwner(owner);
         prepare();
         if (!Files.isRegularFile(databasePath) || fileSize(databasePath) == 0L) {
@@ -115,7 +173,7 @@ public final class SqliteDatabase implements AutoCloseable {
             replaceAtomically(snapshot, target);
             snapshot = null;
             assertIntegrity(target);
-            return new MaintenanceBackup(safeOwner, createdAt);
+            return new FeatureStoreBackup(safeOwner, createdAt);
         } catch (IOException exception) {
             throw new SQLException("Could not create SQLite maintenance backup.", exception);
         } finally {
@@ -134,11 +192,8 @@ public final class SqliteDatabase implements AutoCloseable {
     public synchronized FeatureStoreHandle featureStore(FeatureStoreDefinition definition) {
         FeatureStoreDefinition safeDefinition = Objects.requireNonNull(definition, "definition");
         StoreHandle existing = stores.get(safeDefinition.owner());
-        if (existing != null && !existing.definition.versions().equals(safeDefinition.versions())) {
-            throw new IllegalArgumentException("migration owner registered with a different version plan");
-        }
         if (existing != null) {
-            return existing;
+            throw new IllegalArgumentException("migration owner is already registered");
         }
         if (storesSealed) {
             throw new IllegalStateException("feature stores are already prepared");
@@ -148,14 +203,23 @@ public final class SqliteDatabase implements AutoCloseable {
         return registered;
     }
 
-    /** Temporary adapter for unchanged SQLite providers during the storage migration. */
-    public synchronized SqliteConnectionSource connections(String owner, SqliteMigration... migrations) {
-        return featureStore(FeatureStoreDefinition.of(owner, migrations));
+    /**
+     * Grants the explicit maintenance capability for a handle registered by this lifecycle. Normal
+     * feature composition receives only the connection handle.
+     */
+    public synchronized FeatureStoreMaintenance maintenanceFor(FeatureStoreHandle handle) {
+        FeatureStoreHandle safeHandle = Objects.requireNonNull(handle, "handle");
+        StoreHandle registered = stores.get(safeHandle.owner());
+        if (registered == null || registered != safeHandle) {
+            throw new IllegalArgumentException(
+                    "feature store handle is not registered by this lifecycle");
+        }
+        return registered.maintenance;
     }
 
     /**
-     * Seals registration and prepares every owner independently. A failed or newer owner
-     * does not prevent another owner from becoming ready.
+     * Seals registration and prepares every owner independently. A failed or newer owner does not
+     * prevent another owner from becoming ready.
      */
     public synchronized Map<String, FeatureStoreReadiness> prepareRegisteredStores() {
         storesSealed = true;
@@ -198,16 +262,7 @@ public final class SqliteDatabase implements AutoCloseable {
             synchronized (this) {
                 requireOpen();
                 if (store.readiness == null) {
-                    try {
-                        prepare();
-                    } catch (NewerPlatformSchemaException exception) {
-                        markAllStores(FeatureStoreReadiness.NEWER_SCHEMA);
-                    } catch (SQLException exception) {
-                        markAllStores(FeatureStoreReadiness.CORRUPT);
-                    }
-                    if (store.readiness == null) {
-                        prepareStore(store);
-                    }
+                    throw new FeatureStoreNotPreparedException();
                 }
                 if (store.readiness != FeatureStoreReadiness.READY) {
                     throw new FeatureStoreUnavailableException(store.readiness);
@@ -312,7 +367,8 @@ public final class SqliteDatabase implements AutoCloseable {
         }
         try (Statement statement = connection.createStatement()) {
             statement.execute("CREATE TABLE IF NOT EXISTS " + MIGRATIONS_TABLE
-                    + " (owner TEXT PRIMARY KEY, version INTEGER NOT NULL CHECK(version >= 0))");
+                    + " (owner TEXT PRIMARY KEY, version INTEGER NOT NULL CHECK(version >="
+                            + " 0))");
             if (version < PLATFORM_SCHEMA_VERSION) {
                 statement.execute("PRAGMA user_version = " + PLATFORM_SCHEMA_VERSION);
             }
@@ -403,7 +459,8 @@ public final class SqliteDatabase implements AutoCloseable {
                     return candidate;
                 }
             } catch (SQLException ignored) {
-                // Try the next older local backup; diagnostics remain payload-free at the caller boundary.
+                // Try the next older local backup; diagnostics remain payload-free at the caller
+                // boundary.
             }
         }
         return null;
@@ -459,12 +516,12 @@ public final class SqliteDatabase implements AutoCloseable {
         }
     }
 
-    private void assertIntegrity(Path path) throws SQLException {
+    private static void assertIntegrity(Path path) throws SQLException {
         assertPhysicalIntegrity(path);
         assertForeignKeys(path);
     }
 
-    private void assertPhysicalIntegrity(Path path) throws SQLException {
+    private static void assertPhysicalIntegrity(Path path) throws SQLException {
         if (!Files.isRegularFile(path) || fileSize(path) == 0L) {
             throw new SQLException("SQLite file is missing or empty.");
         }
@@ -690,6 +747,7 @@ public final class SqliteDatabase implements AutoCloseable {
     private final class StoreHandle implements FeatureStoreHandle {
 
         private final FeatureStoreDefinition definition;
+        private final StoreMaintenance maintenance = new StoreMaintenance(this);
         private volatile FeatureStoreReadiness readiness;
 
         private StoreHandle(FeatureStoreDefinition definition) {
@@ -709,6 +767,39 @@ public final class SqliteDatabase implements AutoCloseable {
         @Override
         public Connection openConnection() throws SQLException {
             return SqliteDatabase.this.openConnection(this);
+        }
+    }
+
+    private final class StoreMaintenance implements FeatureStoreMaintenance {
+
+        private final StoreHandle store;
+
+        private StoreMaintenance(StoreHandle store) {
+            this.store = store;
+        }
+
+    @Override
+    public String owner() {
+      return store.owner();
+    }
+
+    @Override
+    public Connection openConnection() throws SQLException {
+      return SqliteDatabase.this.openConnection(store);
+    }
+
+        @Override
+        public FeatureStoreBackup createVerifiedBackup() throws SQLException {
+            synchronized (SqliteDatabase.this) {
+                requireOpen();
+                if (store.readiness == null) {
+                    throw new FeatureStoreNotPreparedException();
+                }
+                if (store.readiness != FeatureStoreReadiness.READY) {
+                    throw new FeatureStoreUnavailableException(store.readiness);
+                }
+            }
+            return SqliteDatabase.this.createVerifiedMaintenanceBackup(owner());
         }
     }
 
@@ -819,7 +910,8 @@ public final class SqliteDatabase implements AutoCloseable {
         try {
             Files.deleteIfExists(path);
         } catch (IOException ignored) {
-            // A later create/move operation reports the actionable failure without exposing the path.
+            // A later create/move operation reports the actionable failure without exposing the
+            // path.
         }
     }
 
@@ -829,14 +921,6 @@ public final class SqliteDatabase implements AutoCloseable {
     }
 
     private record FileMove(Path source, Path target) { }
-
-    public record MaintenanceBackup(String owner, Instant createdAt) {
-
-        public MaintenanceBackup {
-            owner = requireOwner(owner);
-            createdAt = Objects.requireNonNull(createdAt, "createdAt");
-        }
-    }
 
     private static final class PreflightLockUnavailableException extends SQLException {
 

@@ -25,6 +25,10 @@ old runtime and the complete migration is qualified.
 ## Fixed Delivery Decisions
 
 - Start from current `origin/main`; do not merge the superseded Catalog controls branch.
+- Change internal architecture **as far as needed** (`so weit wie nötig`). Existing
+  implementation layers, tests, and non-user-visible documentation are not compatibility
+  boundaries; only accepted observable behavior, provider and persisted truth, and data
+  safety constrain the replacement.
 - Preserve the approved seven-section visual design and explicit handoff behavior.
 - Use one physical SQLite database with owner-scoped readiness and connection handles.
 - Prepare storage before any feature starts background work.
@@ -55,24 +59,27 @@ from refreshed `origin/main`.
 
 ## Current Migration State
 
-- Current foundation: the shipped Catalog has seven sections and typed provider APIs,
-  but eagerly activates every section, builds parallel JavaFX section trees, and runs
-  persistence-backed work through shared global lifecycle mechanisms.
+- Current foundation: M0 through M4 are merged. The shipped Catalog has seven typed,
+  selected-only browse sessions rendered through one JavaFX renderer; provider truth
+  remains feature-owned. M5 is replacing the final global storage-lifecycle seam and
+  qualifying the installed cutover.
 - Completed milestone: M0 locked the replacement target, persistence contract,
   user-visible behavior, migration order, and deletion gates on 2026-07-19.
-- Locally completed milestone: M1 replaced global migration execution with owner-scoped
+- Completed milestone: M1 replaced global migration execution with owner-scoped
   definitions, readiness, and handles and passed literal `./gradlew check` on 2026-07-19.
 - M1 publication: PR #530 merged with required CI green.
-- Locally completed milestone: M2 migrates both supported Items predecessor shapes into
+- Completed milestone: M2 migrates both supported Items predecessor shapes into
   the unambiguous version-2 target and passed literal `./gradlew check` on 2026-07-19.
 - M2 publication: PR #531 merged with required CI green.
-- Locally completed milestone: M3 replaces the five section-controller lifecycles with
+- Completed milestone: M3 replaces the five section-controller lifecycles with
   one typed `BrowseSession`, seven explicit definitions, selected-only activation,
   retained immutable section state, 200 ms debounce, immediate submit, and stale-result rejection.
 - M3 publication: PR #532 merged with required CI green.
-- Locally completed milestone: M4 replaces every section-specific JavaFX tree with one
-  typed renderer and one control factory. Full `uiTest`, `architectureTest`, and
-  merge-blocking `check` are green; publication remains pending.
+- Completed milestone: M4 replaces every section-specific JavaFX tree with one typed
+  renderer and one control factory. PR #535 merged with required CI green.
+- Current milestone: M5 removes the remaining storage compatibility seam, qualifies the
+  complete production cutover, and prepares the owner-controlled installed-data rehearsal
+  and desktop acceptance.
 
 ## M0: Target Lock And Baseline
 
@@ -108,16 +115,9 @@ from refreshed `origin/main`.
 
 ### Production Consumer And Deletion Gate
 
-- move Creatures and Items to prepared owner handles
+- move the first production consumers, Creatures and Items, to prepared owner handles
 - delete the all-registered-plans loop from connection opening and tests that require it
-- retain the current `SqliteConnectionSource` shape only as an internal adapter within M1;
-  delete it before M1 exits if no unchanged provider still requires it
-
-The temporary adapter is concretely `SqliteDatabase.connections(...)` returning
-`SqliteConnectionSource`. It remains only for unchanged Encounter, Encounter Table,
-Party, World Planner, Dungeon, Hex, Session Planner, Session Generation, and Scene
-SQLite adapters. Creatures and Items use `FeatureStoreHandle` directly. The adapter
-is deleted with the last unchanged provider during the final compatibility cleanup.
+- name the remaining provider compatibility seam and require its deletion at M5 cutover
 
 ### Exit Gate
 
@@ -130,8 +130,8 @@ is deleted with the last unchanged provider during the final compatibility clean
 
 - `SqliteDatabase` prepares immutable owner definitions independently and no longer
   iterates all registered plans when a handle opens.
-- Creatures and Items consume `FeatureStoreHandle`; unchanged providers remain behind
-  the named temporary adapter above.
+- Creatures and Items consume `FeatureStoreHandle`; M5 completes the same boundary for
+  every remaining provider and deletes the compatibility seam.
 - production composition prepares all eleven registered stores before explicitly
   starting Creature, Party, World Planner, Encounter, Dungeon, and Hex work.
 - the startup guard failed on the former Encounter and Dungeon constructor work and is
@@ -290,6 +290,38 @@ is deleted with the last unchanged provider during the final compatibility clean
 - run failure-isolation, migration rollback, startup-order, debounce, stale-result,
   responsive UI, and explicit-action qualification through production routes
 - perform independent architecture and quality review after the final code and document diff
+
+### M5 Cutover Evidence In Progress
+
+- `app` registers all eleven immutable owner definitions, prepares storage, constructs
+  components, and only then starts feature work.
+- every feature SQLite adapter now accepts its owner handle; feature code no longer
+  receives or depends on the global database lifecycle.
+- normal owner handles expose only readiness and operation-scoped connections. The desktop
+  Items provider receives only catalog-read capability. Its separately composed operator
+  import receives one owner-bound maintenance capability that creates the whole-database
+  recovery point and opens the later write connection from the same lifecycle.
+- opening an unprepared handle fails without creating or migrating a database. The
+  compatibility connection type and registration shortcut are deleted, duplicate
+  owner registration is rejected, and architecture proof forbids feature dependency
+  on the global lifecycle.
+- focused bootstrap and persistence proof is green. The stable pre-review diff returned
+  `BUILD SUCCESSFUL in 7m 36s` for `test`, `3m 33s` for `uiTest`, and `1m 29s`
+  for `architectureTest`; merge-blocking `check` follows the final review diff.
+- startup and rehearsal share one production store manifest. Rehearsal requires an explicit
+  absolute copy path and rejects the installed application-data directory. The operator path
+  creates a coherent, restore-tested, owner-only SQLite snapshot before rehearsal; the updater
+  qualifies that copy before installing the candidate.
+- the earlier synthetic rehearsal prepared all eleven owners and completed semantic readback.
+  The final operator-path revision then returned `CATALOG_SNAPSHOT_READY`, followed by
+  `CATALOG_REHEARSAL_READY owners=11 creatures=0 items=0 saved_encounters=0 npcs=0
+  factions=0 locations=0 encounter_tables=0` on a second synthetic copy. Invoking
+  `rehearseCatalogData` without its required absolute copy property failed before Java
+  execution. No real user data was opened or changed.
+- focused Items, persistence, rehearsal-path, Dungeon/Encounter fixture, and architecture
+  proof is green on the current pre-integration diff. Final review, current-`main`
+  integration, merge-blocking `check`, and the owner-approved installed-data copy remain
+  M5 gates.
 
 ### Finish Criteria
 

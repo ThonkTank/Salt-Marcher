@@ -9,14 +9,15 @@ import features.sessiongeneration.domain.generation.GenerationRewardReference;
 import features.sessiongeneration.domain.generation.GenerationRunCommitResult;
 import features.sessiongeneration.domain.generation.GenerationRunIdentityConflictException;
 import features.sessiongeneration.domain.generation.GenerationRunRepository;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+import platform.persistence.SqliteMigration;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import platform.persistence.SqliteConnectionSource;
-import platform.persistence.SqliteDatabase;
-import platform.persistence.SqliteMigration;
 
 public final class SqliteGenerationRunRepository implements GenerationRunRepository {
 
@@ -24,21 +25,25 @@ public final class SqliteGenerationRunRepository implements GenerationRunReposit
     public static final int SCHEMA_VERSION = 2;
     static final int RUN_SCHEMA_VERSION = 1;
 
-    private final SqliteConnectionSource connections;
+    private final ConnectionSource connections;
     private final GenerationRunSqliteReader reader = new GenerationRunSqliteReader();
     private final GenerationRunSqliteWriter writer = new GenerationRunSqliteWriter();
     private final GenerationRewardSqliteReader rewardReader = new GenerationRewardSqliteReader();
     private final GeneratedRunValidator validator = new GeneratedRunValidator();
 
-    public SqliteGenerationRunRepository(SqliteDatabase database) {
+    public static FeatureStoreDefinition storeDefinition() {
         SessionGenerationSchema schema = new SessionGenerationSchema();
-        connections = Objects.requireNonNull(database, "database").connections(
+        return FeatureStoreDefinition.of(
                 OWNER,
                 new SqliteMigration(1, schema::migrateV1),
                 new SqliteMigration(2, schema::migrateV2));
     }
 
-    SqliteGenerationRunRepository(SqliteConnectionSource connections) {
+    public SqliteGenerationRunRepository(FeatureStoreHandle store) {
+        this.connections = FeatureStoreHandle.requireOwner(store, OWNER)::openConnection;
+    }
+
+    SqliteGenerationRunRepository(ConnectionSource connections) {
         this.connections = Objects.requireNonNull(connections, "connections");
     }
 
@@ -75,6 +80,11 @@ public final class SqliteGenerationRunRepository implements GenerationRunReposit
         } catch (SQLException | IllegalArgumentException exception) {
             throw new IllegalStateException("Failed to load session-generation rewards.", exception);
         }
+    }
+
+    @FunctionalInterface
+    interface ConnectionSource {
+        Connection openConnection() throws SQLException;
     }
 
     private GenerationRunCommitResult commitTransaction(Connection connection, GeneratedRunDraft draft)

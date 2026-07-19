@@ -1,59 +1,64 @@
 package features.encounter.adapter.javafx.state;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.Statement;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import javafx.application.Platform;
-import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.control.Labeled;
-import javafx.scene.control.ScrollPane;
-import shell.api.InspectorEntrySpec;
-import shell.api.InspectorSink;
-import shell.api.ShellBinding;
-import shell.api.ShellSlot;
-import features.creatures.adapter.sqlite.model.CreaturesPersistenceSchema;
 import features.creatures.CreaturesServiceAssembly;
+import features.creatures.adapter.sqlite.model.CreaturesPersistenceSchema;
 import features.creatures.domain.catalog.CreatureCatalogData;
 import features.creatures.domain.catalog.CreatureCatalogData.CreatureProfile;
 import features.creatures.domain.catalog.port.CreatureCatalogPort;
-import features.encounter.application.EncounterApplicationService;
 import features.encounter.EncounterServiceAssembly;
+import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
+import features.encounter.api.ApplyEncounterStateCommand;
+import features.encounter.api.EncounterPoolFilters;
+import features.encounter.api.EncounterTuningSettings;
+import features.encounter.api.OpenSavedEncounterPlanCommand;
+import features.encounter.api.OpenSavedEncounterPlanResult;
+import features.encounter.api.UpdateEncounterPoolFiltersCommand;
+import features.encounter.api.UpdateEncounterTuningCommand;
 import features.encounter.domain.plan.EncounterPlan;
 import features.encounter.domain.plan.EncounterPlanCreature;
 import features.encounter.domain.plan.repository.EncounterPlanRepository;
-import features.encounter.api.ApplyEncounterStateCommand;
-import features.encounter.api.OpenSavedEncounterPlanCommand;
-import features.encounter.api.OpenSavedEncounterPlanResult;
-import features.encounter.api.EncounterPoolFilters;
-import features.encounter.api.EncounterTuningSettings;
-import features.encounter.api.UpdateEncounterPoolFiltersCommand;
-import features.encounter.api.UpdateEncounterTuningCommand;
+import features.encountertable.EncounterTableServiceAssembly;
 import features.encountertable.domain.catalog.EncounterTableCandidateData;
 import features.encountertable.domain.catalog.EncounterTableSummaryData;
 import features.encountertable.domain.catalog.port.EncounterTableCatalogPort;
-import features.party.api.PartyApi;
 import features.party.PartyServiceAssembly;
-import features.encountertable.EncounterTableServiceAssembly;
-import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
 import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
 import features.party.api.CalculateAdventuringDayCommand;
 import features.party.api.CharacterDraft;
 import features.party.api.CreateCharacterCommand;
 import features.party.api.MembershipState;
+import features.party.api.PartyApi;
+
+import javafx.application.Platform;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.control.Labeled;
+import javafx.scene.control.ScrollPane;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import platform.persistence.TestFeatureStores;
+
+import shell.api.InspectorEntrySpec;
+import shell.api.InspectorSink;
+import shell.api.ShellBinding;
+import shell.api.ShellSlot;
+
+import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @org.junit.jupiter.api.Tag("ui")
 public final class EncounterStateTabTest {
@@ -272,14 +277,18 @@ public final class EncounterStateTabTest {
 
         static TestRuntime create() {
             PartyServiceAssembly.Component party =
-                    PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+                    PartyServiceAssembly.create(new SqlitePartyRosterRepository(
+                                    TestFeatureStores.current().store(
+                                            SqlitePartyRosterRepository.storeDefinition())));
             seedParty(party.application());
             seedCreatureCatalogPersistence();
             CreaturesServiceAssembly.Component creatures =
                     CreaturesServiceAssembly.create(new FixtureCreatureCatalogPort());
             EncounterTableServiceAssembly.Component tables =
                     EncounterTableServiceAssembly.create(new EmptyEncounterTableCatalogPort());
-            SqliteEncounterPlanRepository plans = new SqliteEncounterPlanRepository();
+            SqliteEncounterPlanRepository plans = new SqliteEncounterPlanRepository(
+                            TestFeatureStores.current().store(
+                                    SqliteEncounterPlanRepository.storeDefinition()));
             EncounterServiceAssembly.Component encounter = EncounterServiceAssembly.create(
                     creatures.application(), creatures.detail(), creatures.encounterCandidates(),
                     tables.application(), tables.candidates(), null,

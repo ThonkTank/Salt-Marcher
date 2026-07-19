@@ -4,22 +4,19 @@ import features.dungeon.adapter.sqlite.gateway.DungeonSqliteGateway;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
 import features.dungeon.application.authored.port.DungeonMapHeader;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
+import platform.persistence.FeatureStoreHandle;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import platform.persistence.SqliteDatabase;
 
 /** Metadata-only SQLite catalog adapter for authored Dungeon maps. */
 public final class SqliteDungeonCatalogStore implements DungeonCatalogStore {
 
     private final DungeonSqliteGateway gateway;
 
-    public SqliteDungeonCatalogStore() {
-        this(new DungeonSqliteGateway());
-    }
-
-    public SqliteDungeonCatalogStore(SqliteDatabase database) {
-        this(new DungeonSqliteGateway(database));
+    public SqliteDungeonCatalogStore(FeatureStoreHandle store) {
+        this(new DungeonSqliteGateway(store));
     }
 
     SqliteDungeonCatalogStore(DungeonSqliteGateway gateway) {
