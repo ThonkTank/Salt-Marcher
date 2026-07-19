@@ -218,7 +218,7 @@ final class DungeonTransitionInvariantScenarios {
                 repository.unitOfWork());
         DungeonEditorDungeonState dungeonState = new DungeonEditorDungeonState();
         DungeonAuthoredApplicationService.Session initialSession = services.authored().openSession(dungeonState);
-        assertTrue(initialSession.loadInitialWindow(new MapId(sourceMapId), 0),
+        assertTrue(initialSession.loadViewport(new MapId(sourceMapId), 0, 0, 0, 63, 63),
                 "transition link use case starts from an accepted source window");
         DungeonAuthoredApplicationService.OperationResult result = services
                 .editor()
@@ -261,7 +261,7 @@ final class DungeonTransitionInvariantScenarios {
                 "compound undo restores the target reverse link atomically");
         assertTrue(services.authored().canRedo(new MapId(targetMapId)),
                 "compound transition link is available as one target-map redo step");
-        assertTrue(authoredSession.loadInitialWindow(new MapId(targetMapId), 0),
+        assertTrue(authoredSession.loadViewport(new MapId(targetMapId), 0, 0, 0, 63, 63),
                 "compound redo loads the current post-undo target-map window");
         services.authored().redo(new MapId(targetMapId), authoredSession);
         assertEquals(

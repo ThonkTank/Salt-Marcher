@@ -187,8 +187,8 @@ final class DungeonEditorMapControlsScenarios {
         assertEquals(0L, canvasStateChanges.get(),
                 "DE-CAM-007 resetCamera at initial viewport does not notify unchanged canvas state");
         dragMap(mapView, MouseButton.MIDDLE, 300, 300, 420, 300);
-        assertEquals(surfaceBefore, runtime.mapSurfaceModel().current(),
-                "DE-CAM-001 pan right leaves published map surface unchanged");
+        assertEquals(surfaceBefore.surface().revision(), runtime.mapSurfaceModel().current().surface().revision(),
+                "DE-CAM-001 pan right preserves the authored revision while refreshing the viewport");
         DungeonMapContentModel.Viewport afterRightViewport = mapContentModel.currentViewport();
         assertDoubleEquals(initialViewport.panX() + 120.0, afterRightViewport.panX(),
                 "DE-CAM-001 viewport panX increases by 120px");
@@ -203,8 +203,8 @@ final class DungeonEditorMapControlsScenarios {
 
         DungeonEditorMapSurfaceSnapshot afterRightSurface = runtime.mapSurfaceModel().current();
         dragMap(mapView, MouseButton.MIDDLE, 420, 300, 300, 300);
-        assertEquals(afterRightSurface, runtime.mapSurfaceModel().current(),
-                "DE-CAM-002 pan left leaves published map surface unchanged");
+        assertEquals(afterRightSurface.surface().revision(), runtime.mapSurfaceModel().current().surface().revision(),
+                "DE-CAM-002 pan left preserves the authored revision while refreshing the viewport");
         DungeonMapContentModel.Viewport afterLeftViewport = mapContentModel.currentViewport();
         assertDoubleEquals(afterRightViewport.panX() - 120.0, afterLeftViewport.panX(),
                 "DE-CAM-002 viewport panX decreases by 120px");
@@ -219,8 +219,8 @@ final class DungeonEditorMapControlsScenarios {
 
         DungeonEditorMapSurfaceSnapshot beforeDownSurface = runtime.mapSurfaceModel().current();
         dragMap(mapView, MouseButton.MIDDLE, 300, 300, 300, 420);
-        assertEquals(beforeDownSurface, runtime.mapSurfaceModel().current(),
-                "DE-CAM-003 pan down leaves published map surface unchanged");
+        assertEquals(beforeDownSurface.surface().revision(), runtime.mapSurfaceModel().current().surface().revision(),
+                "DE-CAM-003 pan down preserves the authored revision while refreshing the viewport");
         DungeonMapContentModel.Viewport afterDownViewport = mapContentModel.currentViewport();
         assertDoubleEquals(afterLeftViewport.panX(), afterDownViewport.panX(),
                 "DE-CAM-003 viewport panX unchanged");
@@ -235,8 +235,8 @@ final class DungeonEditorMapControlsScenarios {
 
         DungeonEditorMapSurfaceSnapshot beforeUpSurface = runtime.mapSurfaceModel().current();
         dragMap(mapView, MouseButton.MIDDLE, 300, 420, 300, 300);
-        assertEquals(beforeUpSurface, runtime.mapSurfaceModel().current(),
-                "DE-CAM-004 pan up leaves published map surface unchanged");
+        assertEquals(beforeUpSurface.surface().revision(), runtime.mapSurfaceModel().current().surface().revision(),
+                "DE-CAM-004 pan up preserves the authored revision while refreshing the viewport");
         DungeonMapContentModel.Viewport afterUpViewport = mapContentModel.currentViewport();
         assertDoubleEquals(afterDownViewport.panX(), afterUpViewport.panX(),
                 "DE-CAM-004 viewport panX unchanged");
@@ -266,8 +266,8 @@ final class DungeonEditorMapControlsScenarios {
 
         DungeonMapContentModel.Viewport initialViewport = mapContentModel.currentViewport();
         fireMapScroll(mapView, 80, 80, 120);
-        assertEquals(surfaceBefore, runtime.mapSurfaceModel().current(),
-                "DE-CAM-005 zoom in leaves published map surface unchanged");
+        assertEquals(surfaceBefore.surface().revision(), runtime.mapSurfaceModel().current().surface().revision(),
+                "DE-CAM-005 zoom in preserves the authored revision while refreshing the viewport");
         DungeonMapContentModel.Viewport zoomedInViewport = mapContentModel.currentViewport();
         assertTrue(zoomedInViewport.zoom() > initialViewport.zoom(),
                 "DE-CAM-005 viewport zoom increases");
@@ -286,8 +286,8 @@ final class DungeonEditorMapControlsScenarios {
 
         DungeonEditorMapSurfaceSnapshot afterZoomInSurface = runtime.mapSurfaceModel().current();
         fireMapScroll(mapView, 80, 80, -120);
-        assertEquals(afterZoomInSurface, runtime.mapSurfaceModel().current(),
-                "DE-CAM-006 zoom out leaves published map surface unchanged");
+        assertEquals(afterZoomInSurface.surface().revision(), runtime.mapSurfaceModel().current().surface().revision(),
+                "DE-CAM-006 zoom out preserves the authored revision while refreshing the viewport");
         DungeonMapContentModel.Viewport zoomedOutViewport = mapContentModel.currentViewport();
         assertTrue(zoomedOutViewport.zoom() < zoomedInViewport.zoom(),
                 "DE-CAM-006 viewport zoom decreases");

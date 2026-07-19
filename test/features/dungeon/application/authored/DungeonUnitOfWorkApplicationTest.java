@@ -47,7 +47,7 @@ final class DungeonUnitOfWorkApplicationTest {
 
         MapId mapId = new MapId(1L);
         DungeonAuthoredApplicationService.Session session = service.openSession(state);
-        assertTrue(session.loadInitialWindow(mapId, 0));
+        assertTrue(session.loadViewport(mapId, 0, 0, 0, 63, 63));
         service.applyRoomRectangle(
                 mapId,
                 new Cell(3, 1, 0),
@@ -73,7 +73,7 @@ final class DungeonUnitOfWorkApplicationTest {
 
         MapId mapId = new MapId(1L);
         DungeonAuthoredApplicationService.Session session = service.openSession(state);
-        assertTrue(session.loadInitialWindow(mapId, 0));
+        assertTrue(session.loadViewport(mapId, 0, 0, 0, 63, 63));
         service.applyRoomRectangle(
                 mapId,
                 new Cell(3, 1, 0),
@@ -97,7 +97,7 @@ final class DungeonUnitOfWorkApplicationTest {
         DungeonAuthoredApplicationService service = service(store, unitOfWork);
         DungeonAuthoredApplicationService.Session session = service.openSession(state);
         MapId mapId = new MapId(1L);
-        assertTrue(session.loadInitialWindow(mapId, 0));
+        assertTrue(session.loadViewport(mapId, 0, 0, 0, 63, 63));
 
         long markerId = service.createFeatureMarker(
                 mapId, FeatureMarkerKind.POI, new Cell(4, 5, 0), session);
@@ -134,7 +134,7 @@ final class DungeonUnitOfWorkApplicationTest {
         DungeonAuthoredApplicationService service = service(store, unitOfWork);
         DungeonAuthoredApplicationService.Session session = service.openSession(state);
         MapId mapId = new MapId(1L);
-        assertTrue(session.loadInitialWindow(mapId, 0));
+        assertTrue(session.loadViewport(mapId, 0, 0, 0, 63, 63));
 
         assertEquals(0L, service.createFeatureMarker(
                 mapId, FeatureMarkerKind.POI, new Cell(4, 5, 0), session));
@@ -164,7 +164,7 @@ final class DungeonUnitOfWorkApplicationTest {
         DungeonAuthoredApplicationService service = service(store, unitOfWork);
         DungeonAuthoredApplicationService.Session session = service.openSession(state);
         MapId mapId = new MapId(1L);
-        assertTrue(session.loadInitialWindow(mapId, 0));
+        assertTrue(session.loadViewport(mapId, 0, 0, 0, 63, 63));
         var beforeFailure = state.committedFacts(mapId);
 
         assertThrows(IllegalStateException.class, () -> service.createFeatureMarker(
@@ -191,7 +191,7 @@ final class DungeonUnitOfWorkApplicationTest {
         DungeonAuthoredApplicationService service = service(store, unitOfWork);
         DungeonAuthoredApplicationService.Session session = service.openSession(state);
         MapId mapId = new MapId(1L);
-        assertTrue(session.loadInitialWindow(mapId, 0));
+        assertTrue(session.loadViewport(mapId, 0, 0, 0, 63, 63));
         assertEquals(10_000L, service.createFeatureMarker(
                 mapId, FeatureMarkerKind.POI, new Cell(4, 5, 0), session));
 
@@ -234,7 +234,7 @@ final class DungeonUnitOfWorkApplicationTest {
         DungeonAuthoredApplicationService service = service(store, unitOfWork);
         DungeonAuthoredApplicationService.Session session = service.openSession(state);
         MapId mapId = new MapId(1L);
-        assertTrue(session.loadInitialWindow(mapId, 0));
+        assertTrue(session.loadViewport(mapId, 0, 0, 0, 63, 63));
 
         assertEquals(0L, service.createFeatureMarker(
                 mapId, FeatureMarkerKind.POI, new Cell(4, 5, 0), session));
@@ -262,7 +262,7 @@ final class DungeonUnitOfWorkApplicationTest {
         DungeonAuthoredApplicationService service = service(store, unitOfWork);
         DungeonAuthoredApplicationService.Session session = service.openSession(state);
         MapId mapId = new MapId(1L);
-        assertTrue(session.loadInitialWindow(mapId, 0));
+        assertTrue(session.loadViewport(mapId, 0, 0, 0, 63, 63));
         assertEquals(10_000L, service.createFeatureMarker(
                 mapId, FeatureMarkerKind.POI, new Cell(4, 5, 0), session));
         var committedBeforeFailure = state.committedFacts(mapId).committedSnapshot();

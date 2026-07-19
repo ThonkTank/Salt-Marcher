@@ -37,6 +37,7 @@ import features.dungeon.api.editor.DungeonEditorState;
 import features.dungeon.api.editor.DungeonEditorToolFamily;
 import features.dungeon.api.editor.DungeonEditorToolOptions;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
+import features.dungeon.api.editor.DungeonEditorViewportInput;
 import features.party.PartyServiceAssembly;
 import features.party.domain.roster.PartyRoster;
 import features.party.domain.roster.repository.PartyRosterRepository;
@@ -104,6 +105,8 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
         DungeonEditorFeatureRuntimeRoot runtime = createRuntimeDirect(repository);
         QueuedUiDispatcher dispatcher = new QueuedUiDispatcher();
         DungeonEditorApi api = new DungeonEditorApiFacade(runtime, dispatcher);
+        api.dispatch(new DungeonEditorIntent.SetViewport(
+                new DungeonEditorViewportInput(0, -8, -8, 8, 8)));
         List<DungeonEditorState> delivered = new ArrayList<>();
         api.subscribe(delivered::add);
 

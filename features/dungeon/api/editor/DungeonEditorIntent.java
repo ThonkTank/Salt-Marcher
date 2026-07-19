@@ -8,6 +8,14 @@ import java.util.List;
 /** Typed editor inputs introduced ahead of the JavaFX consumer migration. */
 public sealed interface DungeonEditorIntent {
 
+    record SetViewport(DungeonEditorViewportInput viewport) implements DungeonEditorIntent {
+        public SetViewport {
+            if (viewport == null) {
+                throw new IllegalArgumentException("viewport is required");
+            }
+        }
+    }
+
     record SelectMap(DungeonMapId mapId) implements DungeonEditorIntent {
         public SelectMap {
             if (mapId == null) {

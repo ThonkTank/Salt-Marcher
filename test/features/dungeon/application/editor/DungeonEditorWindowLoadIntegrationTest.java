@@ -20,6 +20,7 @@ import features.dungeon.api.editor.DungeonEditorPointerGesture;
 import features.dungeon.api.editor.DungeonEditorPointerInput;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.api.editor.DungeonEditorToolFamily;
+import features.dungeon.api.editor.DungeonEditorViewportInput;
 import features.dungeon.application.authored.command.DungeonPatchEntityRef;
 import features.dungeon.application.authored.DungeonAuthoredApplicationService;
 import features.dungeon.application.authored.DungeonAuthoredPublishedState;
@@ -97,6 +98,51 @@ final class DungeonEditorWindowLoadIntegrationTest {
     }
 
     @Test
+    void editorViewportIntentLoadsExactNegativeChunksAndCoalescesDuplicates() {
+        Catalog catalog = new Catalog();
+        RecordingWindowStore windows = new RecordingWindowStore();
+        DungeonEditorApi editor = editor(component(catalog, windows));
+        editor.dispatch(new DungeonEditorIntent.SelectMap(new DungeonMapId(1L)));
+        windows.requests.clear();
+
+        DungeonEditorViewportInput negative = new DungeonEditorViewportInput(
+                0, -65, -1, -1, 1);
+        editor.dispatch(new DungeonEditorIntent.SetViewport(negative));
+
+        assertEquals(1, windows.requests.size());
+        DungeonWindowRequest request = windows.requests.getFirst();
+        assertEquals(16, request.chunkKeys().size());
+        assertTrue(request.chunkKeys().contains(new DungeonChunkKey(1L, 0, -3, -2)));
+        assertTrue(request.chunkKeys().contains(new DungeonChunkKey(1L, 0, 0, 1)));
+        assertFalse(request.chunkKeys().contains(new DungeonChunkKey(1L, 0, 1, 1)));
+
+        editor.dispatch(new DungeonEditorIntent.SetViewport(negative));
+
+        assertEquals(1, windows.requests.size(), "an exact duplicate viewport is coalesced");
+    }
+
+    @Test
+    void projectionLevelRedispatchReusesLatestVisibleBounds() {
+        Catalog catalog = new Catalog();
+        RecordingWindowStore windows = new RecordingWindowStore();
+        DungeonEditorApi editor = editor(component(catalog, windows));
+        editor.dispatch(new DungeonEditorIntent.SelectMap(new DungeonMapId(1L)));
+        editor.dispatch(new DungeonEditorIntent.SetViewport(
+                new DungeonEditorViewportInput(0, -12, 70, 12, 90)));
+        windows.requests.clear();
+
+        editor.dispatch(new DungeonEditorIntent.ShiftProjectionLevel(1));
+
+        assertEquals(1, windows.requests.size());
+        assertTrue(windows.requests.getFirst().chunkKeys().stream()
+                .allMatch(chunk -> chunk.level() == 1));
+        assertTrue(windows.requests.getFirst().chunkKeys()
+                .contains(new DungeonChunkKey(1L, 1, -2, 0)));
+        assertTrue(windows.requests.getFirst().chunkKeys()
+                .contains(new DungeonChunkKey(1L, 1, 1, 2)));
+    }
+
+    @Test
     void missingSecondMapWindowNeverRelabelsThePreviouslyAcceptedSurface() {
         assertRejectedSecondWindow(SecondWindowMode.MISSING);
     }
@@ -129,7 +175,7 @@ final class DungeonEditorWindowLoadIntegrationTest {
         DungeonAuthoredApplicationService.Session session = service.openSession(state);
         DungeonEditorWorkspaceValues.MapId mapId = new DungeonEditorWorkspaceValues.MapId(1L);
 
-        assertTrue(session.loadInitialWindow(mapId, 0));
+        assertTrue(session.loadViewport(mapId, 0, 0, 0, 63, 63));
         var initial = state.committedFacts(mapId).surface();
         assertNotNull(initial);
         assertEquals(1L, initial.requestGeneration());
@@ -154,7 +200,7 @@ final class DungeonEditorWindowLoadIntegrationTest {
                 .flatMap(area -> area.cells().stream())
                 .anyMatch(new Cell(10, 10, 0)::equals));
 
-        assertFalse(session.loadInitialWindow(mapId, 0),
+        assertFalse(session.loadViewport(mapId, 0, 0, 0, 63, 63),
                 "the later generation cannot publish an older map revision");
 
         var retained = state.committedFacts(mapId).surface();
@@ -350,9 +396,12 @@ final class DungeonEditorWindowLoadIntegrationTest {
                 component.authored()::currentWindowRequestGeneration,
                 DirectExecutionLane.INSTANCE,
                 DirectUiDispatcher.INSTANCE);
-        return new DungeonEditorApiFacade(
+        DungeonEditorApi editor = new DungeonEditorApiFacade(
                 DungeonEditorFeatureRuntimeRoot.create(dependencies),
                 DirectUiDispatcher.INSTANCE);
+        editor.dispatch(new DungeonEditorIntent.SetViewport(
+                new DungeonEditorViewportInput(0, 0, 0, 63, 63)));
+        return editor;
     }
 
     private static void assertSemanticSurface(features.dungeon.api.DungeonEditorMapSnapshot map) {

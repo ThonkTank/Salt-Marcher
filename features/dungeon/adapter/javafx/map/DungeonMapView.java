@@ -83,7 +83,10 @@ public class DungeonMapView extends BorderPane {
     private final ChangeListener<String> inlineLabelEditorTextListener =
             (ignored, before, after) -> InputSnapshots.emitLabelEditEvent(this, LABEL_EDIT_TEXT_CHANGED_INPUT, after);
     private Consumer<DungeonMapViewInputEvent> viewInputEventHandler = ignored -> {};
+    private Consumer<DungeonMapVisibleCellBounds> visibleCellBoundsHandler = ignored -> {};
     private Runnable removeCanvasBinding = NO_CANVAS_BINDING;
+    private DungeonMapContentModel boundPresentationModel;
+    private DungeonMapVisibleCellBounds lastPublishedVisibleBounds;
     private double[] polygonXBuffer = new double[0];
     private double[] polygonYBuffer = new double[0];
     private RenderScene lastRenderedScene;
@@ -103,6 +106,8 @@ public class DungeonMapView extends BorderPane {
 
     public void bind(DungeonMapContentModel presentationModel) {
         removeCurrentCanvasListeners();
+        boundPresentationModel = presentationModel;
+        lastPublishedVisibleBounds = null;
         if (presentationModel == null) {
             return;
         }
@@ -110,6 +115,7 @@ public class DungeonMapView extends BorderPane {
                 (ignored, before, after) -> {
                     redraw(after, presentationModel);
                     showInlineLabelEditor(presentationModel.currentInlineLabelEditorPresentation(), true);
+                    publishVisibleCellBounds(after == null ? null : after.viewport());
                 };
         ChangeListener<InlineLabelEditState> inlineLabelEditListener =
                 (ignored, before, after) -> {
@@ -123,6 +129,7 @@ public class DungeonMapView extends BorderPane {
         InvalidationListener canvasSizeListener = ignored -> {
             redraw(presentationModel.currentCanvasState(), presentationModel);
             showInlineLabelEditor(presentationModel.currentInlineLabelEditorPresentation(), true);
+            publishVisibleCellBounds(presentationModel.currentCanvasState().viewport());
         };
         presentationModel.canvasStateProperty().addListener(canvasStateListener);
         presentationModel.inlineLabelEditStateProperty().addListener(inlineLabelEditListener);
@@ -136,10 +143,67 @@ public class DungeonMapView extends BorderPane {
         };
         redraw(presentationModel.currentCanvasState(), presentationModel);
         showInlineLabelEditor(presentationModel.currentInlineLabelEditorPresentation(), false);
+        publishVisibleCellBounds(presentationModel.currentCanvasState().viewport());
     }
 
     public void onViewInputEvent(Consumer<DungeonMapViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> {} : handler;
+    }
+
+    public void onVisibleCellBoundsChanged(Consumer<DungeonMapVisibleCellBounds> handler) {
+        visibleCellBoundsHandler = handler == null ? ignored -> {} : handler;
+        if (boundPresentationModel != null) {
+            publishVisibleCellBounds(boundPresentationModel.currentCanvasState().viewport());
+        }
+    }
+
+    private void publishVisibleCellBounds(Viewport viewport) {
+        double width = canvas.getWidth();
+        double height = canvas.getHeight();
+        if (viewport == null || width <= 1.0 || height <= 1.0) {
+            return;
+        }
+        DungeonMapVisibleCellBounds bounds = visibleCellBounds(viewport, width, height);
+        if (!bounds.equals(lastPublishedVisibleBounds)) {
+            lastPublishedVisibleBounds = bounds;
+            visibleCellBoundsHandler.accept(bounds);
+        }
+    }
+
+    static DungeonMapVisibleCellBounds visibleCellBounds(Viewport viewport, double width, double height) {
+        Viewport safeViewport = Objects.requireNonNull(viewport, "viewport");
+        MapCanvasWindow window = MapCanvasWindow.visible(
+                new MapCanvasViewport(
+                        safeViewport.panX(),
+                        safeViewport.panY(),
+                        safeViewport.zoom(),
+                        DungeonMapViewportScale.baseGrid()),
+                width,
+                height,
+                0.0);
+        return new DungeonMapVisibleCellBounds(
+                floorCell(window.minX()),
+                floorCell(window.minY()),
+                ceilingCell(window.maxX()),
+                ceilingCell(window.maxY()));
+    }
+
+    private static int floorCell(double coordinate) {
+        return saturatingInt(Math.floor(coordinate));
+    }
+
+    private static int ceilingCell(double coordinate) {
+        return saturatingInt(Math.ceil(coordinate) - 1.0);
+    }
+
+    private static int saturatingInt(double value) {
+        if (value <= Integer.MIN_VALUE) {
+            return Integer.MIN_VALUE;
+        }
+        if (value >= Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE;
+        }
+        return (int) value;
     }
 
     private void redraw(
@@ -207,6 +271,7 @@ public class DungeonMapView extends BorderPane {
     private void removeCurrentCanvasListeners() {
         removeCanvasBinding.run();
         removeCanvasBinding = NO_CANVAS_BINDING;
+        boundPresentationModel = null;
     }
 
     private void requestCanvasFocus() {

@@ -99,16 +99,75 @@ and commit boundaries. M7 starts only after both are complete.
 
 - Current foundation: M0 through M3 are complete through PR #508; M4.1 is
   complete through PR #509, M4.2 through PR #510, and M4.3 through PR #518.
-  M4.4 is complete through PR #526, M4.5 through PR #527, and M4.6 is complete
-  in this change. Production Editor commands, inspectors, history, transition
+  M4.4 is complete through PR #526, M4.5 through PR #527, and M4.6 through
+  PR #534. Production Editor commands, inspectors, history, transition
   linking, and Dungeon Travel now use revision-bound Catalog, Window, identity
   closure, and incremental UoW routes. The whole-map repository/record/loader,
   local identity derivation, compatibility writer, and full-record fixture
   families are deleted.
 - M4.6 delivery proof is literal green `./gradlew check` plus
-  `./gradlew installDesktopApp`. M5 is the next slice. No M4.6 review panel ran;
-  the single independent cross-roadmap review runs only after all M7
-  implementation is complete.
+  `./gradlew installDesktopApp`. M5.1 is complete in this change with the same
+  literal green proof; M5.2 is next. No intermediate review panel runs; the
+  single independent cross-roadmap review runs only after all M7 implementation
+  is complete.
+
+### Completed Slice Contract: M5.1 Viewport Dispatch And Latest Acceptance
+
+#### Goal And Decisions
+
+- Replace the Editor's fixed `0..63` authored load with a real visible-cell
+  viewport request emitted on initial binding, canvas resize, camera pan or
+  zoom, selected map change, and projection-level change.
+- JavaFX supplies only ordered visible cell bounds and the active level. The
+  application binds the selected map, expected catalog revision, and a strictly
+  increasing request generation; JavaFX must not manufacture authoritative
+  identity or revision state.
+- Load exactly the visible chunk set plus one ring through
+  `DungeonWindowStore`. Accept a result only when map identity, expected map
+  revision, and request generation still match the latest application request.
+  Late, stale, malformed, or superseded results publish nothing and never clear
+  a newer accepted surface.
+- Camera state remains presentation-local. Viewport dispatch may coalesce
+  duplicate cell bounds, but it must not turn pan or zoom into domain state.
+  M5.2 owns weighted caching and touched-chunk invalidation; M5.3 owns indexed
+  bounds and continuations; M5.4 owns physical paint layers and qualification.
+
+#### Implementation And Ownership
+
+1. Add one typed Editor API viewport input/intent and route it through
+   `DungeonEditorApiFacade`, `DungeonEditorFeatureRuntimeRoot`, runtime commands,
+   context, and session without exposing authored internals to JavaFX.
+2. Derive ordered integer cell bounds from the current map-canvas viewport and
+   actual canvas dimensions. Bind a dedicated viewport-change callback in
+   `DungeonEditorBinder`; emit after initial layout, resize, completed camera
+   movement, zoom, selected-map publication, and projection-level publication.
+3. Replace `LoadOperations.loadInitialWindow(...0, 0, 63, 63...)` with the
+   application-owned viewport request path. Preserve the last accepted viewport
+   per map/level for command worksets and make selection/commit refresh reuse
+   the latest visible bounds rather than restore a fixed window.
+4. Prove exact negative and positive chunk requests, one-ring loading, resize,
+   pan, zoom and level redispatch, duplicate coalescing, and rejection of late
+   generation, wrong-map, and stale-revision results on production routes.
+
+#### Delete Gate And Proof
+
+- Delete the fixed `0..63` Editor request and every `loadInitialWindow` name or
+  fallback that recreates it. No production Editor refresh may choose authored
+  bounds independently of the latest visible-cell input.
+- Focused API/application/JavaFX behavior tests, then literal green
+  `./gradlew check` and `./gradlew installDesktopApp` are required before the
+  M5.1 PR is merged. The next slice starts from that merge without a review
+  cycle.
+
+### Planned M5 Slice Order
+
+1. M5.1 viewport dispatch and latest-result acceptance.
+2. M5.2 bounded per-chunk-revision cache with visible/active protection and
+   touched-only invalidation.
+3. M5.3 indexed authored bounds and off-window continuations without map-wide
+   scans.
+4. M5.4 independent base/interaction/actor paint invalidation plus deterministic
+   operation-count and p95 qualification on 1k/10k/100k sparse datasets.
 
 ### Completed Slice Contract: M4.6 Read-Path Closure
 

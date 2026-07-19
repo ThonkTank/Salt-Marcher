@@ -20,6 +20,7 @@ import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.api.editor.DungeonEditorCommandOutcome;
+import features.dungeon.api.editor.DungeonEditorViewportInput;
 
 final class DungeonEditorRuntimeContext {
     private final DungeonEditorRuntimeApplicationService.RuntimeSession session;
@@ -111,6 +112,10 @@ final class DungeonEditorRuntimeContext {
 
     Result selectMap(long mapIdValue) {
         return fromSnapshot(session.selectMap(mapIdValue));
+    }
+
+    Result setViewport(DungeonEditorViewportInput viewport) {
+        return fromSnapshot(session.setViewport(viewport));
     }
 
     Result publishCurrent() {
