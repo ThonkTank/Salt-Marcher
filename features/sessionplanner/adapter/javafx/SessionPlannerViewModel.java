@@ -13,7 +13,9 @@ import features.sessionplanner.api.SessionPlannerParticipantsProjection;
 import features.sessionplanner.api.SessionPlannerRestKind;
 import features.sessionplanner.api.SessionPlannerSceneTimelineProjection;
 import features.sessionplanner.api.SessionPlannerSessionSnapshot;
+import features.sessionplanner.api.SessionPlannerStatePanelProjection;
 import features.sessionplanner.api.SessionPlannerWorkspaceSnapshot;
+import features.sessionplanner.api.SessionPreparationSnapshot;
 import platform.ui.catalogcrud.CatalogCrudControlsContentModel;
 
 /**
@@ -39,6 +41,8 @@ final class SessionPlannerViewModel {
     private SessionPlannerParticipantsProjection latestParticipants = SessionPlannerParticipantsProjection.empty();
     private SessionPlannerSceneTimelineProjection latestSceneTimeline =
             SessionPlannerSceneTimelineProjection.empty();
+    private SessionPreparationSnapshot latestPreparation = SessionPreparationSnapshot.idle();
+    private SessionPlannerStatePanelProjection latestStatePanel = SessionPlannerStatePanelProjection.empty();
 
     ReadOnlyObjectProperty<ControlsProjection> controlsProjectionProperty() {
         return controlsProjection.getReadOnlyProperty();
@@ -62,6 +66,8 @@ final class SessionPlannerViewModel {
         latestSession = safe.currentSession();
         latestParticipants = safe.participants();
         latestSceneTimeline = safe.sceneTimeline();
+        latestPreparation = safe.preparation();
+        latestStatePanel = safe.statePanel();
         locationOptions = latestSession.locationReferences().stream()
                 .map(reference -> new TimelineProjection.LocationChoice(
                         reference.locationId(), reference.displayName()))
@@ -121,15 +127,17 @@ final class SessionPlannerViewModel {
     }
 
     private void refreshControlsProjection() {
-        controlsProjection.set(ControlsProjection.from(latestSession, latestParticipants));
+        controlsProjection.set(ControlsProjection.from(latestSession, latestParticipants, latestPreparation));
     }
 
     private void refreshTimelineProjection() {
-        timelineProjection.set(TimelineProjection.from(latestSceneTimeline, locationOptions, sessionActionsDisabled()));
+        timelineProjection.set(TimelineProjection.from(
+                latestSession.session().sessionId(), latestSceneTimeline,
+                latestSession.availableEncounterPlans(), locationOptions, sessionActionsDisabled()));
     }
 
     private void refreshSummaryProjection() {
-        summaryProjection.set(SummaryProjection.from(latestSession, latestParticipants));
+        summaryProjection.set(SummaryProjection.from(latestSession, latestStatePanel));
     }
 
     private boolean sessionActionsDisabled() {
@@ -138,68 +146,31 @@ final class SessionPlannerViewModel {
 
     record ControlsProjection(
             String statusText,
-            List<AvailablePlanModel> availablePlans,
-            SetupModel setup
+            SetupModel setup,
+            SessionPreparationSnapshot preparation
     ) {
 
         ControlsProjection {
             statusText = SessionPlannerVocabulary.text(statusText);
-            availablePlans = safeCopy(availablePlans);
             setup = setup == null ? SetupModel.empty() : setup;
+            preparation = preparation == null ? SessionPreparationSnapshot.idle() : preparation;
         }
 
         static ControlsProjection empty() {
-            return new ControlsProjection("", List.of(), SetupModel.empty());
+            return new ControlsProjection("", SetupModel.empty(), SessionPreparationSnapshot.idle());
         }
 
         static ControlsProjection from(
                 SessionPlannerSessionSnapshot snapshot,
-                SessionPlannerParticipantsProjection participants
+                SessionPlannerParticipantsProjection participants,
+                SessionPreparationSnapshot preparation
         ) {
             SessionPlannerSessionSnapshot safe =
                     snapshot == null ? SessionPlannerSessionSnapshot.empty("") : snapshot;
             boolean hasCurrentSession = safe.session().sessionId() > 0L;
             return new ControlsProjection(
                     safe.status(),
-                    safe.availableEncounterPlans().stream()
-                            .map(plan -> AvailablePlanModel.from(plan, hasCurrentSession))
-                            .toList(),
-                    SetupModel.from(safe, participants));
-        }
-
-        record AvailablePlanModel(
-                long planId,
-                String name,
-                String summaryText,
-                String statusText,
-                String actionText,
-                String actionStyleClass,
-                boolean actionDisabled
-        ) {
-
-            AvailablePlanModel {
-                planId = Math.max(0L, planId);
-                name = SessionPlannerVocabulary.text(name);
-                summaryText = SessionPlannerVocabulary.text(summaryText);
-                statusText = SessionPlannerVocabulary.text(statusText);
-                actionText = SessionPlannerVocabulary.text(actionText);
-                actionStyleClass = SessionPlannerVocabulary.text(actionStyleClass);
-            }
-
-            static AvailablePlanModel from(
-                    SessionPlannerSessionSnapshot.AvailableEncounterPlan plan,
-                    boolean hasCurrentSession
-            ) {
-                boolean importEnabled = hasCurrentSession && plan.importEnabled();
-                return new AvailablePlanModel(
-                        plan.planId(),
-                        plan.name(),
-                        plan.summaryText(),
-                        plan.statusText(),
-                        "An Session anhaengen",
-                        "accent",
-                        !importEnabled);
-            }
+                    SetupModel.from(safe, participants), preparation);
         }
 
         record SetupModel(
@@ -292,24 +263,30 @@ final class SessionPlannerViewModel {
     }
 
     record TimelineProjection(
+            long sessionId,
             boolean sessionActionsDisabled,
             List<SceneModel> scenes,
             List<RestGapModel> restGaps,
+            List<AvailablePlanModel> availablePlans,
             List<LocationChoice> locationOptions
     ) {
 
         TimelineProjection {
+            sessionId = Math.max(0L, sessionId);
             scenes = safeCopy(scenes);
             restGaps = safeCopy(restGaps);
+            availablePlans = safeCopy(availablePlans);
             locationOptions = safeCopy(locationOptions);
         }
 
         static TimelineProjection empty() {
-            return new TimelineProjection(true, List.of(), List.of(), List.of());
+            return new TimelineProjection(0L, true, List.of(), List.of(), List.of(), List.of());
         }
 
         static TimelineProjection from(
+                long sessionId,
                 SessionPlannerSceneTimelineProjection projection,
+                List<SessionPlannerSessionSnapshot.AvailableEncounterPlan> availablePlans,
                 List<LocationChoice> locationOptions,
                 boolean sessionActionsDisabled
         ) {
@@ -317,6 +294,7 @@ final class SessionPlannerViewModel {
                     projection == null ? SessionPlannerSceneTimelineProjection.empty() : projection;
             List<LocationChoice> safeLocations = safeCopy(locationOptions);
             return new TimelineProjection(
+                    sessionId,
                     sessionActionsDisabled,
                     mapScenes(safe.sessionScenes(), safeLocations),
                     safe.restGaps().stream()
@@ -327,6 +305,7 @@ final class SessionPlannerViewModel {
                                     SessionPlannerVocabulary.restLabel(gap.restKind()),
                                     gap.restKind() != null && gap.restKind() != SessionPlannerRestKind.NONE))
                             .toList(),
+                    safeCopy(availablePlans).stream().map(AvailablePlanModel::from).toList(),
                     safeLocations);
         }
 
@@ -352,6 +331,7 @@ final class SessionPlannerViewModel {
                     + " XP · Ist " + formatXp(scene.linkedEncounterAdjustedXp()) + " XP";
             return new SceneModel(
                     scene.sceneToken(),
+                    scene.linkedEncounterPlanId(),
                     scene.linkedEncounterPlan(),
                     scene.linkedEncounterName(),
                     scene.linkedEncounterGeneratedLabel(),
@@ -360,6 +340,8 @@ final class SessionPlannerViewModel {
                     scene.linkedEncounterAdjustedXp(),
                     scene.linkedEncounterXpMultiplier(),
                     scene.linkedEncounterDifficultyLabel(),
+                    scene.linkedEncounterStatus(),
+                    scene.linkedEncounterRoster(),
                     scene.budgetPercentage(),
                     formatPercent(scene.budgetPercentage()),
                     formatXp(scene.targetXp()),
@@ -372,12 +354,8 @@ final class SessionPlannerViewModel {
                     locationId,
                     locationLabel(locationId, locationOptions),
                     locationChoices(locationId, locationOptions),
-                    java.util.stream.Stream.concat(
-                            scene.manualLootNotes().stream().map(note -> new LootModel(
-                                    note.noteId(), note.authoredText(), true)),
-                            scene.generatedRewards().stream().map(reward -> new LootModel(
-                                    0L, reward.displayLabel(), false)))
-                            .toList());
+                    scene.manualLootNotes(),
+                    scene.generatedRewards());
         }
 
         private static String formatXp(int value) {
@@ -418,6 +396,7 @@ final class SessionPlannerViewModel {
 
         record SceneModel(
                 long sceneToken,
+                long linkedEncounterPlanId,
                 boolean linkedEncounterPlan,
                 String linkedEncounterName,
                 String linkedEncounterGeneratedLabel,
@@ -426,6 +405,8 @@ final class SessionPlannerViewModel {
                 int linkedEncounterAdjustedXp,
                 double linkedEncounterXpMultiplier,
                 String linkedEncounterDifficultyLabel,
+                String linkedEncounterStatus,
+                List<SessionPlannerSceneTimelineProjection.EncounterRosterLine> linkedEncounterRoster,
                 BigDecimal budgetPercentage,
                 String budgetPercentageText,
                 String targetXpText,
@@ -438,14 +419,18 @@ final class SessionPlannerViewModel {
                 long locationId,
                 String locationLabel,
                 List<LocationChoice> locationChoices,
-                List<LootModel> lootEntries
+                List<SessionPlannerSceneTimelineProjection.ManualLootNote> manualLootNotes,
+                List<SessionPlannerSceneTimelineProjection.GeneratedReward> generatedRewards
         ) {
 
             SceneModel {
                 sceneToken = Math.max(0L, sceneToken);
+                linkedEncounterPlanId = Math.max(0L, linkedEncounterPlanId);
                 linkedEncounterName = SessionPlannerVocabulary.text(linkedEncounterName);
                 linkedEncounterGeneratedLabel = SessionPlannerVocabulary.text(linkedEncounterGeneratedLabel);
                 linkedEncounterDifficultyLabel = SessionPlannerVocabulary.text(linkedEncounterDifficultyLabel);
+                linkedEncounterStatus = SessionPlannerVocabulary.text(linkedEncounterStatus);
+                linkedEncounterRoster = safeCopy(linkedEncounterRoster);
                 budgetPercentage = budgetPercentage == null ? BigDecimal.ZERO : budgetPercentage;
                 budgetPercentageText = SessionPlannerVocabulary.text(budgetPercentageText);
                 targetXpText = SessionPlannerVocabulary.text(targetXpText);
@@ -455,7 +440,8 @@ final class SessionPlannerViewModel {
                 locationId = Math.max(0L, locationId);
                 locationLabel = SessionPlannerVocabulary.text(locationLabel);
                 locationChoices = safeCopy(locationChoices);
-                lootEntries = safeCopy(lootEntries);
+                manualLootNotes = safeCopy(manualLootNotes);
+                generatedRewards = safeCopy(generatedRewards);
             }
 
             String displayTitle() {
@@ -464,6 +450,35 @@ final class SessionPlannerViewModel {
 
             double budgetFraction() {
                 return budgetPercentage.doubleValue() / 100.0;
+            }
+        }
+
+        record AvailablePlanModel(
+                long planId,
+                String name,
+                String difficulty,
+                String summary,
+                String status,
+                boolean enabled
+        ) {
+            AvailablePlanModel {
+                planId = Math.max(0L, planId);
+                name = SessionPlannerVocabulary.text(name);
+                difficulty = SessionPlannerVocabulary.text(difficulty);
+                summary = SessionPlannerVocabulary.text(summary);
+                status = SessionPlannerVocabulary.text(status);
+            }
+
+            static AvailablePlanModel from(SessionPlannerSessionSnapshot.AvailableEncounterPlan plan) {
+                return new AvailablePlanModel(
+                        plan.planId(), plan.name(), plan.difficultyLabel(), plan.summaryText(),
+                        plan.statusText(), plan.importEnabled());
+            }
+
+            boolean matches(String query) {
+                String needle = SessionPlannerVocabulary.text(query).trim().toLowerCase(Locale.ROOT);
+                return needle.isBlank() || (name + " " + difficulty + " " + summary)
+                        .toLowerCase(Locale.ROOT).contains(needle);
             }
         }
 
@@ -493,13 +508,6 @@ final class SessionPlannerViewModel {
             }
         }
 
-        record LootModel(long token, String label, boolean manualNote) {
-
-            LootModel {
-                token = Math.max(0L, token);
-                label = SessionPlannerVocabulary.text(label);
-            }
-        }
     }
 
     record SummaryProjection(
@@ -517,11 +525,10 @@ final class SessionPlannerViewModel {
             int placedShortRests,
             int placedLongRests,
             String restSummary,
-            int participantCount,
-            int averageLevel,
-            String levelSpreadText,
-            String partyHeadline,
-            String partyDetail
+            boolean selectionAvailable,
+            String selectedTitle,
+            String selectedDetail,
+            String selectedBudget
     ) {
 
         SummaryProjection {
@@ -536,30 +543,25 @@ final class SessionPlannerViewModel {
             placedShortRests = Math.max(0, placedShortRests);
             placedLongRests = Math.max(0, placedLongRests);
             restSummary = SessionPlannerVocabulary.text(restSummary);
-            participantCount = Math.max(0, participantCount);
-            averageLevel = Math.max(0, averageLevel);
-            levelSpreadText = SessionPlannerVocabulary.text(levelSpreadText);
-            partyHeadline = SessionPlannerVocabulary.text(partyHeadline);
-            partyDetail = SessionPlannerVocabulary.text(partyDetail);
+            selectedTitle = SessionPlannerVocabulary.text(selectedTitle);
+            selectedDetail = SessionPlannerVocabulary.text(selectedDetail);
+            selectedBudget = SessionPlannerVocabulary.text(selectedBudget);
         }
 
         static SummaryProjection empty() {
-            return from(SessionPlannerSessionSnapshot.empty(""), SessionPlannerParticipantsProjection.empty());
+            return from(SessionPlannerSessionSnapshot.empty(""), SessionPlannerStatePanelProjection.empty());
         }
 
         static SummaryProjection from(
                 SessionPlannerSessionSnapshot sessionSnapshot,
-                SessionPlannerParticipantsProjection participantsProjection
+                SessionPlannerStatePanelProjection statePanel
         ) {
             SessionPlannerSessionSnapshot safeSession =
                     sessionSnapshot == null ? SessionPlannerSessionSnapshot.empty("") : sessionSnapshot;
-            SessionPlannerParticipantsProjection safeParticipants =
-                    participantsProjection == null
-                            ? SessionPlannerParticipantsProjection.empty()
-                            : participantsProjection;
+            SessionPlannerStatePanelProjection safeState =
+                    statePanel == null ? SessionPlannerStatePanelProjection.empty() : statePanel;
             SessionPlannerSessionSnapshot.XpBudgetState budget = safeSession.xpBudget();
             SessionPlannerSessionSnapshot.RestAdviceState rest = safeSession.restAdvice();
-            SessionPlannerParticipantsProjection.PartyState party = safeParticipants.party();
             return new SummaryProjection(
                     safeSession.session().sessionId() > 0L,
                     budget.available(),
@@ -575,21 +577,10 @@ final class SessionPlannerViewModel {
                     rest.placedShortRests(),
                     rest.placedLongRests(),
                     rest.summary(),
-                    party.activePartySize(),
-                    party.averageLevel(),
-                    levelSpreadText(party.activePartyLevels()),
-                    party.headline(),
-                    party.detail());
-        }
-
-        private static String levelSpreadText(List<Integer> levels) {
-            List<Integer> safe = levels == null ? List.of() : levels.stream().filter(level -> level != null && level > 0).sorted().toList();
-            if (safe.isEmpty()) {
-                return "";
-            }
-            int min = safe.getFirst();
-            int max = safe.getLast();
-            return min == max ? "Level " + min : "Level " + min + "–" + max;
+                    safeState.selectedSceneAvailable(),
+                    safeState.selectedSceneTitle(),
+                    safeState.selectedSceneDetail(),
+                    safeState.selectedSceneXpSummary());
         }
     }
 

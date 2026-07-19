@@ -1,69 +1,117 @@
 package features.sessionplanner.adapter.javafx;
 
+import features.sessionplanner.api.PrepareSessionCommand;
+import features.sessionplanner.api.SessionPreparationSnapshot;
+import features.sessionplanner.api.SessionPreparationStatus;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
-/**
- * Linke Steuerspalte: Session-Setup (Teilnehmer hinzufügen/entfernen, Encounter-Tage),
- * Generierungs-Panel und die Liste gespeicherter Encounter-Pläne. Die Setup-Eingabefelder sind
- * persistent, damit Combobox-Auswahl und Tippen nicht bei jedem Readback zurückgesetzt werden.
- */
+/** Compact preparation toolbar. All values come from the single workspace snapshot. */
 public final class SessionPlannerControlsView extends ScrollPane {
 
-    private static final String STYLE_COMPACT = "compact";
-    private static final String STYLE_ACCENT = "accent";
-    private static final String STYLE_FLAT = "flat";
-    private static final String STYLE_TEXT_SECONDARY = "text-secondary";
+    private static final long GENERATION_SEED = 179_974L;
+    private static final String COMPACT = "compact";
+    private static final String FLAT = "flat";
+    private static final String ACCENT = "accent";
+    private static final String SECONDARY = "text-secondary";
 
-    private final Label statusLabel = statusLabel();
-    private final ComboBox<SessionPlannerViewModel.ControlsProjection.ParticipantChoiceModel> partyMemberSelector =
+    private final Label authoredStatus = label("", SECONDARY, "session-planner-status");
+    private final Button participantDisclosure = button("Teilnehmer (0)", FLAT);
+    private final VBox participantDetail = new VBox(6);
+    private final ComboBox<SessionPlannerViewModel.ControlsProjection.ParticipantChoiceModel> participantSelector =
             new ComboBox<>();
-    private final Button addParticipantButton = button("Hinzufuegen", STYLE_ACCENT);
-    private final TextField encounterDaysField = new TextField();
-    private final Button setEncounterDaysButton = button("Setzen", STYLE_FLAT);
+    private final Button addParticipant = button("Hinzufügen", ACCENT);
     private final VBox participantRows = new VBox(4);
-    private final VBox plansBox = new VBox(6);
+    private final TextField encounterDays = field("Tage", 5);
+    private final Button applyDays = button("Übernehmen", FLAT);
+    private final TextField encounterCount = field("Auto", 4);
+    private final Button generate = button("Generieren", ACCENT);
+    private final Button cancel = button("Abbrechen", FLAT);
+    private final ProgressBar progress = new ProgressBar();
+    private final Label preparationStatus = label("", SECONDARY);
+    private final VBox replacementConfirmation = new VBox(6);
 
     private LongConsumer addParticipantHandler = ignored -> { };
     private LongConsumer removeParticipantHandler = ignored -> { };
     private Consumer<String> setEncounterDaysHandler = ignored -> { };
-    private Consumer<Long> attachPlanHandler = ignored -> { };
+    private Consumer<PrepareSessionCommand> prepareHandler = ignored -> { };
+    private Runnable cancelHandler = () -> { };
+    private boolean participantDetailOpen;
+    private boolean sessionDisabled = true;
 
     public SessionPlannerControlsView() {
-        this(null);
-    }
+        FlowPane toolbar = new FlowPane(8, 6);
+        toolbar.getStyleClass().add("session-planner-preparation-toolbar");
+        toolbar.setAlignment(Pos.CENTER_LEFT);
+        toolbar.getChildren().setAll(
+                participantDisclosure,
+                labelledInput("Encounter-Tage", encounterDays, applyDays),
+                labelledInput("Encounter-Anzahl", encounterCount),
+                generate,
+                cancel);
 
-    SessionPlannerControlsView(Node generationPanel) {
-        partyMemberSelector.setPromptText("Spieler");
-        HBox.setHgrow(partyMemberSelector, Priority.ALWAYS);
-        addParticipantButton.setOnAction(event -> {
-            var choice = partyMemberSelector.getValue();
-            if (choice != null) {
-                addParticipantHandler.accept(choice.characterId());
+        participantSelector.setPromptText("Party-Mitglied");
+        participantSelector.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(participantSelector, Priority.ALWAYS);
+        addParticipant.setOnAction(event -> {
+            var selected = participantSelector.getValue();
+            if (selected != null) {
+                addParticipantHandler.accept(selected.characterId());
             }
         });
-        encounterDaysField.setPromptText("Tage");
-        encounterDaysField.getStyleClass().add(STYLE_COMPACT);
-        HBox.setHgrow(encounterDaysField, Priority.ALWAYS);
-        setEncounterDaysButton.setOnAction(event -> setEncounterDaysHandler.accept(encounterDaysField.getText()));
+        participantDetail.getChildren().setAll(
+                new HBox(6, participantSelector, addParticipant), participantRows);
+        participantDetail.getStyleClass().add("session-planner-participant-disclosure");
+        show(participantDetail, false);
 
-        setContent(content(generationPanel));
+        participantDisclosure.setOnAction(event -> {
+            participantDetailOpen = !participantDetailOpen;
+            show(participantDetail, participantDetailOpen);
+        });
+        applyDays.setOnAction(event -> setEncounterDaysHandler.accept(encounterDays.getText()));
+        encounterDays.setOnAction(event -> setEncounterDaysHandler.accept(encounterDays.getText()));
+        generate.setOnAction(event -> dispatchPreparation(false));
+        cancel.setOnAction(event -> cancelHandler.run());
+
+        Button keep = button("Nicht ersetzen", FLAT);
+        keep.setOnAction(event -> cancelHandler.run());
+        Button replace = button("Ersetzen und generieren", ACCENT);
+        replace.setOnAction(event -> dispatchPreparation(true));
+        replacementConfirmation.getStyleClass().add("session-planner-replacement-confirmation");
+        replacementConfirmation.getChildren().setAll(
+                label("Szenen, Rasten, manuelle Notizen und generierte Referenzen dieser Session werden ersetzt."),
+                new HBox(6, keep, replace));
+
+        progress.setMaxWidth(Double.MAX_VALUE);
+        progress.getStyleClass().add("session-planner-preparation-progress");
+        VBox content = new VBox(8, authoredStatus, toolbar, participantDetail,
+                replacementConfirmation, preparationStatus, progress);
+        content.setPadding(new Insets(2));
+        content.getStyleClass().add("session-planner-controls");
+        setContent(content);
         getStyleClass().add("session-planner-controls-scroll");
         setFitToWidth(true);
-        setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        setHbarPolicy(ScrollBarPolicy.NEVER);
+        show(replacementConfirmation, false);
+        show(cancel, false);
+        show(progress, false);
     }
 
     public void onAddParticipant(LongConsumer handler) {
@@ -78,8 +126,12 @@ public final class SessionPlannerControlsView extends ScrollPane {
         setEncounterDaysHandler = handler == null ? ignored -> { } : handler;
     }
 
-    public void onAttachPlan(Consumer<Long> handler) {
-        attachPlanHandler = handler == null ? ignored -> { } : handler;
+    public void onPrepare(Consumer<PrepareSessionCommand> handler) {
+        prepareHandler = handler == null ? ignored -> { } : handler;
+    }
+
+    public void onCancel(Runnable handler) {
+        cancelHandler = handler == null ? () -> { } : handler;
     }
 
     void bind(SessionPlannerViewModel viewModel) {
@@ -90,147 +142,149 @@ public final class SessionPlannerControlsView extends ScrollPane {
         show(viewModel.controlsProjectionProperty().get());
     }
 
-    private VBox content(Node generationPanel) {
-        VBox content = new VBox(12);
-        content.getStyleClass().add("session-planner-controls");
-        content.getChildren().add(statusLabel);
-        content.getChildren().add(setupSection());
-        if (generationPanel != null) {
-            content.getChildren().add(generationPanel);
-        }
-        content.getChildren().add(sectionCard("Gespeicherte Encounter", plansBox));
-        return content;
-    }
-
-    private Node setupSection() {
-        HBox participantRow = new HBox(6, partyMemberSelector, addParticipantButton);
-        participantRow.setAlignment(Pos.CENTER_LEFT);
-        HBox daysRow = new HBox(6, label("Tage", "session-planner-card-title"), encounterDaysField, setEncounterDaysButton);
-        daysRow.setAlignment(Pos.CENTER_LEFT);
-        return sectionCard("Session-Setup", participantRow, participantRows, daysRow);
-    }
-
     private void show(SessionPlannerViewModel.ControlsProjection projection) {
         if (projection == null) {
             return;
         }
-        statusLabel.setText(projection.statusText());
+        authoredStatus.setText(projection.statusText());
+        show(authoredStatus, !projection.statusText().isBlank());
         applySetup(projection.setup());
-        showPlans(projection.availablePlans());
+        applyPreparation(projection.preparation());
     }
 
     private void applySetup(SessionPlannerViewModel.ControlsProjection.SetupModel setup) {
-        boolean disabled = setup.sessionActionsDisabled();
-
-        long previousSelection = partyMemberSelector.getValue() == null ? 0L : partyMemberSelector.getValue().characterId();
-        partyMemberSelector.getItems().setAll(setup.partyMemberChoices());
-        reselectParticipantChoice(previousSelection);
-        boolean noChoices = setup.partyMemberChoices().isEmpty();
-        partyMemberSelector.setDisable(disabled || noChoices);
-        addParticipantButton.setDisable(disabled || noChoices);
-
-        if (!encounterDaysField.isFocused()) {
-            encounterDaysField.setText(setup.encounterDaysText());
+        sessionDisabled = setup.sessionActionsDisabled();
+        participantDisclosure.setText("Teilnehmer (" + setup.sessionParticipants().size() + ")");
+        participantDisclosure.setDisable(sessionDisabled);
+        long previous = participantSelector.getValue() == null
+                ? 0L : participantSelector.getValue().characterId();
+        participantSelector.getItems().setAll(setup.partyMemberChoices());
+        participantSelector.getItems().stream()
+                .filter(choice -> choice.characterId() == previous)
+                .findFirst().ifPresentOrElse(
+                        participantSelector.getSelectionModel()::select,
+                        participantSelector.getSelectionModel()::clearSelection);
+        participantSelector.setDisable(sessionDisabled || setup.partyMemberChoices().isEmpty());
+        addParticipant.setDisable(sessionDisabled || setup.partyMemberChoices().isEmpty());
+        if (!encounterDays.isFocused()) {
+            encounterDays.setText(setup.encounterDaysText());
         }
-        encounterDaysField.setDisable(disabled);
-        setEncounterDaysButton.setDisable(disabled);
-
-        showParticipants(setup.sessionParticipants(), disabled);
+        encounterDays.setDisable(sessionDisabled);
+        applyDays.setDisable(sessionDisabled);
+        encounterCount.setDisable(sessionDisabled);
+        renderParticipants(setup.sessionParticipants());
     }
 
-    private void reselectParticipantChoice(long previousSelection) {
-        for (var choice : partyMemberSelector.getItems()) {
-            if (choice.characterId() == previousSelection && previousSelection > 0L) {
-                partyMemberSelector.getSelectionModel().select(choice);
-                return;
-            }
-        }
-        partyMemberSelector.getSelectionModel().clearSelection();
-    }
-
-    private void showParticipants(
-            List<SessionPlannerViewModel.ControlsProjection.SessionParticipantModel> participants,
-            boolean disabled
+    private void renderParticipants(
+            List<SessionPlannerViewModel.ControlsProjection.SessionParticipantModel> participants
     ) {
         List<Node> rows = new ArrayList<>();
         if (participants.isEmpty()) {
-            rows.add(label("Keine Session-Teilnehmer.", STYLE_TEXT_SECONDARY, "session-planner-empty"));
+            rows.add(label("Noch keine Session-Teilnehmer.", SECONDARY, "session-planner-empty"));
         } else {
             for (var participant : participants) {
-                Button remove = button("X", STYLE_FLAT);
-                remove.setDisable(disabled);
+                Button remove = button("Entfernen", FLAT);
+                remove.setDisable(sessionDisabled);
                 remove.setOnAction(event -> removeParticipantHandler.accept(participant.characterId()));
-                Label name = label(participant.name(), "session-planner-plan-name");
-                Label detail = label(participant.detail(), participant.detailStyleClass());
-                HBox row = new HBox(6, name, detail, spacer(), remove);
-                row.setAlignment(Pos.CENTER_LEFT);
-                rows.add(row);
+                rows.add(new HBox(6,
+                        label(participant.name(), "session-planner-plan-name"),
+                        label(participant.detail(), participant.detailStyleClass()), spacer(), remove));
             }
         }
         participantRows.getChildren().setAll(rows);
     }
 
-    private void showPlans(List<SessionPlannerViewModel.ControlsProjection.AvailablePlanModel> plans) {
-        if (plans.isEmpty()) {
-            plansBox.getChildren().setAll(label(
-                    "Keine gespeicherten Encounter-Plaene.",
-                    STYLE_TEXT_SECONDARY,
-                    "session-planner-empty"));
+    private void applyPreparation(SessionPreparationSnapshot snapshot) {
+        SessionPreparationSnapshot safe = snapshot == null ? SessionPreparationSnapshot.idle() : snapshot;
+        boolean busy = switch (safe.status()) {
+            case GENERATING, RESOLVING_ENCOUNTERS, SAVING -> true;
+            default -> false;
+        };
+        boolean confirming = safe.status() == SessionPreparationStatus.CONFIRMING_REPLACEMENT;
+        String message = safe.message().isBlank() ? defaultMessage(safe.status()) : safe.message();
+        preparationStatus.setText(message);
+        show(preparationStatus, !message.isBlank());
+        show(replacementConfirmation, confirming);
+        show(cancel, safe.cancelEnabled());
+        show(progress, busy);
+        progress.setProgress(busy ? ProgressBar.INDETERMINATE_PROGRESS : 0);
+        generate.setDisable(sessionDisabled || busy || confirming);
+    }
+
+    private void dispatchPreparation(boolean confirmed) {
+        OptionalInt count = parseCount(encounterCount.getText());
+        if (!encounterCount.getText().isBlank() && count.isEmpty()) {
+            preparationStatus.setText("Encounter-Anzahl muss zwischen 1 und 10 liegen.");
+            show(preparationStatus, true);
             return;
         }
-        List<Node> cards = new ArrayList<>();
-        for (var plan : plans) {
-            cards.add(planCard(plan));
+        prepareHandler.accept(new PrepareSessionCommand(count, GENERATION_SEED, confirmed));
+    }
+
+    private static OptionalInt parseCount(String text) {
+        if (text == null || text.isBlank()) {
+            return OptionalInt.empty();
         }
-        plansBox.getChildren().setAll(cards);
+        try {
+            int parsed = Integer.parseInt(text.trim());
+            return parsed >= 1 && parsed <= 10 ? OptionalInt.of(parsed) : OptionalInt.empty();
+        } catch (NumberFormatException failure) {
+            return OptionalInt.empty();
+        }
     }
 
-    private Node planCard(SessionPlannerViewModel.ControlsProjection.AvailablePlanModel plan) {
-        Button importButton = button(plan.actionText(), plan.actionStyleClass());
-        importButton.setDisable(plan.actionDisabled());
-        importButton.setOnAction(event -> attachPlanHandler.accept(plan.planId()));
-        VBox card = new VBox(4,
-                label(plan.name(), "session-planner-plan-name"),
-                label(plan.summaryText(), STYLE_TEXT_SECONDARY),
-                label(plan.statusText(), STYLE_TEXT_SECONDARY),
-                importButton);
-        card.getStyleClass().add("session-planner-plan-card");
-        return card;
+    private static String defaultMessage(SessionPreparationStatus status) {
+        return switch (status) {
+            case IDLE -> "";
+            case CONFIRMING_REPLACEMENT -> "Ersetzung bestätigen.";
+            case GENERATING -> "Generierung läuft …";
+            case RESOLVING_ENCOUNTERS -> "Encounter werden aufgelöst …";
+            case SAVING -> "Vorbereitete Session wird gespeichert …";
+            case READY -> "Session ist vorbereitet.";
+            case INVALID -> "Eingaben prüfen und erneut generieren.";
+            case FAILED -> "Vorbereitung fehlgeschlagen. Eingaben prüfen und erneut versuchen.";
+            case CANCELLED -> "Vorbereitung abgebrochen.";
+        };
     }
 
-    private static Label statusLabel() {
-        Label label = label("", STYLE_TEXT_SECONDARY, "session-planner-status");
-        label.setVisible(false);
-        label.textProperty().addListener((ignored, before, after) -> label.setVisible(after != null && !after.isBlank()));
-        label.managedProperty().bind(label.visibleProperty());
+    private static HBox labelledInput(String title, Node... input) {
+        HBox row = new HBox(5);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.getChildren().add(label(title, SECONDARY));
+        row.getChildren().addAll(input);
+        return row;
+    }
+
+    private static TextField field(String prompt, int columns) {
+        TextField field = new TextField();
+        field.setPromptText(prompt);
+        field.setPrefColumnCount(columns);
+        field.getStyleClass().add(COMPACT);
+        return field;
+    }
+
+    private static Button button(String text, String... styles) {
+        Button button = new Button(text);
+        button.getStyleClass().add(COMPACT);
+        button.getStyleClass().addAll(styles);
+        return button;
+    }
+
+    private static Label label(String text, String... styles) {
+        Label label = new Label(text == null ? "" : text);
+        label.setWrapText(true);
+        label.getStyleClass().addAll(styles);
         return label;
-    }
-
-    private static VBox sectionCard(String title, Node... body) {
-        VBox card = new VBox(6);
-        card.getChildren().add(label(title, "session-planner-card-title"));
-        card.getChildren().addAll(body);
-        card.getStyleClass().add("session-planner-card");
-        return card;
     }
 
     private static Region spacer() {
-        Region region = new Region();
-        HBox.setHgrow(region, Priority.ALWAYS);
-        return region;
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        return spacer;
     }
 
-    private static Label label(String text, String... styleClasses) {
-        Label label = new Label(text);
-        label.setWrapText(true);
-        label.getStyleClass().addAll(styleClasses);
-        return label;
-    }
-
-    private static Button button(String text, String... styleClasses) {
-        Button button = new Button(text);
-        button.getStyleClass().add(STYLE_COMPACT);
-        button.getStyleClass().addAll(styleClasses);
-        return button;
+    private static void show(Node node, boolean visible) {
+        node.setVisible(visible);
+        node.setManaged(visible);
     }
 }

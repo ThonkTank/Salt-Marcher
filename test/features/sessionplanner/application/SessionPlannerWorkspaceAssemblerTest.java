@@ -82,8 +82,8 @@ final class SessionPlannerWorkspaceAssemblerTest {
     @Test
     void oneCaptureAndOneOwnerBatchHydrateManyScenesAndAllPreparedSessions() {
         SessionPlan current = SessionPlan.seeded(7L, List.of(1L), EncounterDays.one())
-                .attachEncounter(11L)
-                .attachEncounter(12L);
+                .addScene().attachEncounter(1L, 11L)
+                .addScene().selectEncounter(2L).attachEncounter(2L, 12L);
         SessionPlan other = SessionPlan.seeded(8L, List.of(1L), EncounterDays.one()).addScene();
         CountingSource source = new CountingSource(new SessionPlannerReadCapture(7L, List.of(current, other), 0));
         CountingParty party = new CountingParty();
@@ -109,6 +109,10 @@ final class SessionPlannerWorkspaceAssemblerTest {
         assertEquals(2, result.workspace().sceneTimeline().sessionScenes().size());
         assertTrue(result.workspace().sceneTimeline().sessionScenes().stream()
                 .allMatch(SessionPlannerSceneTimelineProjection.SessionScene::linkedEncounterPlan));
+        assertEquals("1 × Creature 11", result.workspace().sceneTimeline().sessionScenes().getFirst()
+                .linkedEncounterRoster().getFirst().quantity() + " × "
+                + result.workspace().sceneTimeline().sessionScenes().getFirst()
+                        .linkedEncounterRoster().getFirst().displayName());
         assertEquals(3, result.preparedScenes().scenes().size(),
                 "prepared scenes are derived from the same all-session planner capture");
         assertEquals(current.revision().value(), result.workspace().sourceSessionRevision());
@@ -117,8 +121,8 @@ final class SessionPlannerWorkspaceAssemblerTest {
     @Test
     void outOfOrderEncounterBatchFailsClosedWithoutPartialOwnerFacts() {
         SessionPlan current = SessionPlan.seeded(7L, List.of(1L), EncounterDays.one())
-                .attachEncounter(11L)
-                .attachEncounter(12L);
+                .addScene().attachEncounter(1L, 11L)
+                .addScene().selectEncounter(2L).attachEncounter(2L, 12L);
         CountingEncounter encounters = new CountingEncounter(true);
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
                 new CountingSource(new SessionPlannerReadCapture(7L, List.of(current), 0)),
@@ -167,7 +171,8 @@ final class SessionPlannerWorkspaceAssemblerTest {
 
     @Test
     void staleAssemblyAndRepeatedRefreshesCoalesceIntoOneLatestRevisionPublication() {
-        SessionPlan initial = SessionPlan.seeded(7L, List.of(1L), EncounterDays.one()).attachEncounter(11L);
+        SessionPlan initial = SessionPlan.seeded(7L, List.of(1L), EncounterDays.one())
+                .addScene().attachEncounter(1L, 11L);
         SessionPlan newer = withRevision(initial.setEncounterDays(new EncounterDays(new BigDecimal("2"))),
                 initial.revision().next());
         CountingSource source = new CountingSource(new SessionPlannerReadCapture(7L, List.of(initial), 0));

@@ -609,7 +609,8 @@ public final class SessionPlannerWorkspaceAssembler {
             scenes.add(new SessionPlannerSceneTimelineProjection.SessionScene(
                     scene.encounterId(), scene.encounterPlanId(), scene.encounterPlanId() > 0L,
                     encounter.name(), encounter.generatedLabel(), encounter.creatureCount(), encounter.baseXp(),
-                    encounter.adjustedXp(), encounter.multiplier(), encounter.difficulty(),
+                    encounter.adjustedXp(), encounter.multiplier(), encounter.difficulty(), encounter.status(),
+                    encounter.roster(),
                     scene.allocation().budgetPercentage(), targetXp,
                     session.selectedEncounterId() == scene.encounterId(), scene.sceneTitle(), scene.sceneNotes(),
                     scene.locationId(), notes, generated));
@@ -767,6 +768,7 @@ public final class SessionPlannerWorkspaceAssembler {
             double multiplier,
             String difficulty,
             String displaySummary,
+            List<SessionPlannerSceneTimelineProjection.EncounterRosterLine> roster,
             String status
     ) {
         private static EncounterFact available(GeneratedEncounterPlanSummary summary) {
@@ -774,11 +776,14 @@ public final class SessionPlannerWorkspaceAssembler {
             return new EncounterFact(
                     true, summary.planId(), summary.label(), summary.label(), summary.creatureCount(),
                     Math.toIntExact(summary.baseXp()), Math.toIntExact(summary.adjustedXp()), multiplier,
-                    summary.difficulty().name(), summary.displaySummary(), "");
+                    summary.difficulty().name(), summary.displaySummary(), summary.roster().stream()
+                            .map(line -> new SessionPlannerSceneTimelineProjection.EncounterRosterLine(
+                                    line.creatureId(), line.quantity(), line.displayName()))
+                            .toList(), "");
         }
 
         private static EncounterFact unavailable(long planId, String status) {
-            return new EncounterFact(false, planId, "", "", 0, 0, 0, 1.0, "", "", status);
+            return new EncounterFact(false, planId, "", "", 0, 0, 0, 1.0, "", "", List.of(), status);
         }
     }
 

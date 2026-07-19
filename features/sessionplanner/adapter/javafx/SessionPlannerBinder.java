@@ -12,6 +12,7 @@ import features.sessionplanner.api.AddSessionManualLootNoteCommand;
 import features.sessionplanner.api.AddSessionSceneCommand;
 import features.sessionplanner.api.AttachSessionEncounterCommand;
 import features.sessionplanner.api.ClearSessionRestGapCommand;
+import features.sessionplanner.api.DetachSessionEncounterCommand;
 import features.sessionplanner.api.RemoveSessionManualLootNoteCommand;
 import features.sessionplanner.api.SessionPlannerCatalogCommand;
 import features.sessionplanner.api.SessionPlannerEncounterAllocationCommand;
@@ -51,20 +52,18 @@ final class SessionPlannerBinder {
     ShellBinding bind() {
         SessionPlannerViewModel viewModel = new SessionPlannerViewModel();
         CatalogCrudControlsContentModel catalogContentModel = viewModel.catalogContentModel();
-        SessionGenerationPanel generationPanel = new SessionGenerationPanel();
-        SessionPlannerControlsView controlsView = new SessionPlannerControlsView(generationPanel);
+        SessionPlannerControlsView controlsView = new SessionPlannerControlsView();
         CatalogCrudControlsView catalogView = new CatalogCrudControlsView();
         SessionPlannerTimelineMainView timelineView = new SessionPlannerTimelineMainView();
-        SessionPlannerSummaryView summaryView = new SessionPlannerSummaryView();
+        SessionPlannerStateView stateView = new SessionPlannerStateView();
 
         catalogView.bind(catalogContentModel);
         controlsView.bind(viewModel);
         timelineView.bind(viewModel);
-        summaryView.bind(viewModel);
+        stateView.bind(viewModel);
 
         catalogView.onViewInputEvent(event -> consumeCatalog(planner, viewModel, event));
 
-        controlsView.onAttachPlan(planId -> consumeAttachPlan(planner, viewModel, planId));
         controlsView.onAddParticipant(characterId -> ifSession(viewModel, () -> {
             if (characterId > 0L) {
                 planner.addParticipant(SessionPlannerParticipantCommand.add(characterId));
@@ -77,8 +76,8 @@ final class SessionPlannerBinder {
         }));
         controlsView.onSetEncounterDays(text -> setEncounterDays(planner, viewModel, text));
 
-        generationPanel.onPrepare(planner::prepareSession);
-        generationPanel.onCancel(planner::cancelPreparation);
+        controlsView.onPrepare(planner::prepareSession);
+        controlsView.onCancel(planner::cancelPreparation);
 
         timelineView.onAddScene(() -> ifSession(viewModel, () -> planner.addScene(new AddSessionSceneCommand())));
         timelineView.onSelectScene(sceneToken -> ifSession(viewModel, () -> {
@@ -130,20 +129,28 @@ final class SessionPlannerBinder {
                 planner.removeManualLootNote(new RemoveSessionManualLootNoteCommand(lootToken));
             }
         }));
+        timelineView.onAttachPlan((sceneToken, planId) -> ifSession(viewModel, () -> {
+            if (sceneToken > 0L && planId > 0L) {
+                planner.attachEncounter(new AttachSessionEncounterCommand(sceneToken, planId));
+            }
+        }));
+        timelineView.onDetachPlan(sceneToken -> ifSession(viewModel, () -> {
+            if (sceneToken > 0L) {
+                planner.detachEncounter(new DetachSessionEncounterCommand(sceneToken));
+            }
+        }));
 
         workspace.subscribe(snapshot -> {
             long startedNanos = System.nanoTime();
             viewModel.applyWorkspace(snapshot);
-            generationPanel.show(snapshot.preparation());
             workspaceApplied.accept(Math.max(0L, System.nanoTime() - startedNanos));
         });
         SessionPlannerWorkspaceSnapshot initial = workspace.current();
         long initialApplyStartedNanos = System.nanoTime();
         viewModel.applyWorkspace(initial);
-        generationPanel.show(initial.preparation());
         workspaceApplied.accept(Math.max(0L, System.nanoTime() - initialApplyStartedNanos));
         planner.initialize();
-        return new Binding(ShellControls.stack(catalogView, controlsView), timelineView, summaryView);
+        return new Binding(ShellControls.stack(catalogView, controlsView), timelineView, stateView);
     }
 
     private static void ifSession(SessionPlannerViewModel viewModel, Runnable action) {
@@ -174,16 +181,6 @@ final class SessionPlannerBinder {
         BigDecimal encounterDays = SessionPlannerVocabulary.parsePositiveDecimal(text);
         if (encounterDays != null) {
             planner.setEncounterDays(new SetSessionEncounterDaysCommand(encounterDays));
-        }
-    }
-
-    private static void consumeAttachPlan(
-            SessionPlannerApi planner,
-            SessionPlannerViewModel viewModel,
-            long planId
-    ) {
-        if (viewModel.hasCurrentSession() && planId > 0L) {
-            planner.attachEncounter(new AttachSessionEncounterCommand(planId));
         }
     }
 

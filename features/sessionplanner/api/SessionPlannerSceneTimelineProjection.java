@@ -37,6 +37,8 @@ public record SessionPlannerSceneTimelineProjection(
             int linkedEncounterAdjustedXp,
             double linkedEncounterXpMultiplier,
             String linkedEncounterDifficultyLabel,
+            String linkedEncounterStatus,
+            List<EncounterRosterLine> linkedEncounterRoster,
             BigDecimal budgetPercentage,
             int targetXp,
             boolean selected,
@@ -59,6 +61,8 @@ public record SessionPlannerSceneTimelineProjection(
             linkedEncounterXpMultiplier = linkedEncounterXpMultiplier <= 0.0 ? 1.0 : linkedEncounterXpMultiplier;
             linkedEncounterDifficultyLabel =
                     linkedEncounterDifficultyLabel == null ? "" : linkedEncounterDifficultyLabel.trim();
+            linkedEncounterStatus = linkedEncounterStatus == null ? "" : linkedEncounterStatus.trim();
+            linkedEncounterRoster = copy(linkedEncounterRoster);
             budgetPercentage = budgetPercentage == null ? BigDecimal.ZERO : budgetPercentage;
             targetXp = Math.max(0, targetXp);
             sceneTitle = sceneTitle == null ? "" : sceneTitle.trim();
@@ -74,8 +78,21 @@ public record SessionPlannerSceneTimelineProjection(
         }
 
         @Override
+        public List<EncounterRosterLine> linkedEncounterRoster() {
+            return List.copyOf(linkedEncounterRoster);
+        }
+
+        @Override
         public List<GeneratedReward> generatedRewards() {
             return List.copyOf(generatedRewards);
+        }
+    }
+
+    public record EncounterRosterLine(long creatureId, int quantity, String displayName) {
+        public EncounterRosterLine {
+            creatureId = Math.max(0L, creatureId);
+            quantity = Math.max(0, quantity);
+            displayName = displayName == null ? "" : displayName.trim();
         }
     }
 

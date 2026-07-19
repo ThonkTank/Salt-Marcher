@@ -19,6 +19,7 @@ import features.sessionplanner.api.AddSessionManualLootNoteCommand;
 import features.sessionplanner.api.AddSessionSceneCommand;
 import features.sessionplanner.api.AttachSessionEncounterCommand;
 import features.sessionplanner.api.ClearSessionRestGapCommand;
+import features.sessionplanner.api.DetachSessionEncounterCommand;
 import features.sessionplanner.api.RemoveSessionManualLootNoteCommand;
 import features.sessionplanner.domain.session.repository.SessionPlanSaveResult;
 import features.sessionplanner.api.SessionPlannerCatalogCommand;
@@ -124,7 +125,13 @@ public final class SessionPlannerApplicationService implements features.sessionp
 
     public void attachEncounter(AttachSessionEncounterCommand command) {
         Objects.requireNonNull(command, COMMAND_PARAMETER);
-        executeStorageCommand(() -> mutateCurrent(session -> session.attachEncounter(command.encounterPlanId())));
+        executeStorageCommand(() -> mutateCurrent(
+                session -> session.attachEncounter(command.sceneToken(), command.encounterPlanId())));
+    }
+
+    public void detachEncounter(DetachSessionEncounterCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeStorageCommand(() -> mutateCurrent(session -> session.detachEncounter(command.sceneToken())));
     }
 
     public void removeEncounter(SessionPlannerEncounterCommand command) {

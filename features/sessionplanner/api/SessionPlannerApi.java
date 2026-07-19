@@ -22,6 +22,8 @@ public interface SessionPlannerApi {
 
     void attachEncounter(AttachSessionEncounterCommand command);
 
+    void detachEncounter(DetachSessionEncounterCommand command);
+
     void removeEncounter(SessionPlannerEncounterCommand command);
 
     void moveEncounterUp(SessionPlannerEncounterCommand command);

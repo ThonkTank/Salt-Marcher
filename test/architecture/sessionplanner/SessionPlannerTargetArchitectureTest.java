@@ -32,6 +32,8 @@ public final class SessionPlannerTargetArchitectureTest {
             "features.sessionplanner.application.SessionGenerationPublishedState",
             "features.sessionplanner.application.SessionGenerationRequestFingerprint",
             "features.sessionplanner.application.SessionPreparationPublishedState",
+            "features.sessionplanner.adapter.javafx.SessionGenerationPanel",
+            "features.sessionplanner.adapter.javafx.SessionPlannerSummaryView",
             "features.sessionplanner.api.SessionPlannerCatalogModel",
             "features.sessionplanner.api.SessionPlannerCurrentSessionModel",
             "features.sessionplanner.api.SessionPlannerParticipantsModel",

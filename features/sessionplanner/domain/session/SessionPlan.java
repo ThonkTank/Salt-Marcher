@@ -159,17 +159,35 @@ public record SessionPlan(
                 "Szene hinzugefuegt.", nextEncounterId + 1, nextLootId);
     }
 
-    public SessionPlan attachEncounter(long encounterPlanId) {
-        if (encounterPlanId <= UNRESOLVED_ID) {
+    public SessionPlan attachEncounter(long sceneId, long encounterPlanId) {
+        int index = encounterIndex(encounters, sceneId);
+        if (index < 0 || sceneId != selectedEncounterId || encounterPlanId <= UNRESOLVED_ID) {
             return this;
         }
-        long encounterId = nextEncounterId;
+        SessionEncounter existing = encounters.get(index);
+        if (existing.encounterPlanId() == encounterPlanId) {
+            return this;
+        }
         List<SessionEncounter> nextEncounters = new ArrayList<>(encounters);
-        nextEncounters.add(new SessionEncounter(encounterId, encounterPlanId, SessionEncounterAllocation.zero()));
-        List<SessionEncounter> rebalanced = rebalanceAllocationsEvenly(nextEncounters);
-        long nextSelected = selectedEncounterId <= UNRESOLVED_ID ? encounterId : selectedEncounterId;
-        return copy(participantRefs, encounterDays, rebalanced, restPlacements, manualLootNotes, generatedRewards, nextSelected,
-                "Szene mit Encounter angehaengt.", nextEncounterId + 1, nextLootId);
+        nextEncounters.set(index, existing.withEncounterPlan(encounterPlanId));
+        return copy(participantRefs, encounterDays, nextEncounters, restPlacements, manualLootNotes,
+                pruneGeneratedRewards(sceneId), selectedEncounterId,
+                existing.encounterPlanId() > UNRESOLVED_ID
+                        ? "Encounter-Verknüpfung ersetzt." : "Encounter verknüpft.",
+                nextEncounterId, nextLootId);
+    }
+
+    public SessionPlan detachEncounter(long sceneId) {
+        int index = encounterIndex(encounters, sceneId);
+        if (index < 0 || sceneId != selectedEncounterId
+                || encounters.get(index).encounterPlanId() <= UNRESOLVED_ID) {
+            return this;
+        }
+        List<SessionEncounter> nextEncounters = new ArrayList<>(encounters);
+        nextEncounters.set(index, encounters.get(index).withEncounterPlan(UNRESOLVED_ID));
+        return copy(participantRefs, encounterDays, nextEncounters, restPlacements, manualLootNotes,
+                pruneGeneratedRewards(sceneId), selectedEncounterId, "Encounter-Verknüpfung entfernt.",
+                nextEncounterId, nextLootId);
     }
 
     public SessionPlan removeEncounter(long encounterId) {

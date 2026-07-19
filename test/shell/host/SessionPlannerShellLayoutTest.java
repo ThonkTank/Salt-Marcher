@@ -38,6 +38,7 @@ import features.hex.adapter.javafx.hexmap.HexMapMainView;
 import features.sessionplanner.adapter.javafx.SessionPlannerContribution;
 import features.sessionplanner.adapter.javafx.SessionPlannerControlsView;
 import features.sessionplanner.adapter.javafx.SessionPlannerTimelineMainView;
+import features.sessionplanner.adapter.javafx.SessionPlannerStateView;
 import platform.ui.catalogcrud.CatalogCrudControlsView;
 import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
@@ -122,6 +123,7 @@ public final class SessionPlannerShellLayoutTest {
                 descendant(controlsPanel, SessionPlannerControlsView.class);
         SessionPlannerTimelineMainView plannerMain =
                 descendant(workspace, SessionPlannerTimelineMainView.class);
+        SessionPlannerStateView plannerState = descendant(workspace, SessionPlannerStateView.class);
 
         assertTrue(VBox.getVgrow(controlsPanel) == javafx.scene.layout.Priority.ALWAYS,
                 "shell controls panel grows vertically");
@@ -141,13 +143,18 @@ public final class SessionPlannerShellLayoutTest {
         assertTrue(descendants(plannerMain).stream()
                         .filter(javafx.scene.control.Button.class::isInstance)
                         .map(javafx.scene.control.Button.class::cast)
-                        .anyMatch(button -> "Szene hinzufuegen".equals(button.getText())),
+                        .anyMatch(button -> "Szene hinzufügen".equals(button.getText())),
                 "planner main renders the scene board in the main slot");
         assertTrue(descendants(plannerControls).stream()
                         .filter(Label.class::isInstance)
                         .map(Label.class::cast)
-                        .anyMatch(label -> "Session-Setup".equals(label.getText())),
-                "planner controls host the session setup section");
+                        .anyMatch(label -> "Encounter-Tage".equals(label.getText())),
+                "planner controls host the compact preparation toolbar");
+        assertTrue(descendants(plannerState).stream()
+                        .filter(Label.class::isInstance)
+                        .map(Label.class::cast)
+                        .anyMatch(label -> "Ausgewählte Szene".equals(label.getText())),
+                "planner state slot keeps selected-scene context without a participant duplicate");
 
         ScrollPane stateScroll = descendants(workspace).stream()
                 .filter(ScrollPane.class::isInstance)
@@ -158,6 +165,20 @@ public final class SessionPlannerShellLayoutTest {
         assertTrue(stateScroll.getVbarPolicy() == ScrollPane.ScrollBarPolicy.AS_NEEDED,
                 "shell state panel keeps vertical scrolling globally available");
         assertTrue(stateScroll.isFitToWidth(), "shell state panel scroll content fits available width");
+
+        stage.setWidth(820.0);
+        stage.setHeight(500.0);
+        layout(workspace);
+        assertTrue(plannerControls.getHbarPolicy() == ScrollPane.ScrollBarPolicy.NEVER,
+                "compact toolbar wraps without horizontal scrolling at narrow width");
+        assertTrue(plannerMain.getHbarPolicy() == ScrollPane.ScrollBarPolicy.NEVER,
+                "timeline and selected inspector do not expose horizontal scrolling at narrow width");
+        assertTrue(plannerControls.getContent().getLayoutBounds().getWidth()
+                        <= plannerControls.getViewportBounds().getWidth() + 1.0,
+                "compact controls content fits the narrow viewport");
+        assertTrue(plannerMain.getContent().getLayoutBounds().getWidth()
+                        <= plannerMain.getViewportBounds().getWidth() + 1.0,
+                "timeline content fits the narrow viewport");
 
         ShellNavigationSidebar sidebar = new ShellNavigationSidebar();
         registerSidebarTab(
