@@ -41,11 +41,13 @@ public final class SessionPlannerControlsView extends ScrollPane {
     private final VBox participantRows = new VBox(4);
     private final TextField encounterDays = field("Tage", 5);
     private final Button applyDays = button("Übernehmen", FLAT);
+    private final Label encounterDaysError = label("", "session-planner-gap-active");
     private final TextField encounterCount = field("Auto", 4);
     private final Button generate = button("Generieren", ACCENT);
     private final Button cancel = button("Abbrechen", FLAT);
     private final ProgressBar progress = new ProgressBar();
     private final Label preparationStatus = label("", SECONDARY);
+    private final Label workspaceStatus = label("", SECONDARY, "session-planner-workspace-status");
     private final VBox replacementConfirmation = new VBox(6);
 
     private LongConsumer addParticipantHandler = ignored -> { };
@@ -55,6 +57,8 @@ public final class SessionPlannerControlsView extends ScrollPane {
     private Runnable cancelHandler = () -> { };
     private boolean participantDetailOpen;
     private boolean sessionDisabled = true;
+    private long latestPublicationRevision;
+    private long clearEncounterDaysErrorAfterRevision = Long.MAX_VALUE;
 
     public SessionPlannerControlsView() {
         FlowPane toolbar = new FlowPane(8, 6);
@@ -62,10 +66,11 @@ public final class SessionPlannerControlsView extends ScrollPane {
         toolbar.setAlignment(Pos.CENTER_LEFT);
         toolbar.getChildren().setAll(
                 participantDisclosure,
-                labelledInput("Encounter-Tage", encounterDays, applyDays),
+                encounterDaysInput(),
                 labelledInput("Encounter-Anzahl", encounterCount),
                 generate,
-                cancel);
+                cancel,
+                workspaceStatus);
 
         participantSelector.setPromptText("Party-Mitglied");
         participantSelector.setMaxWidth(Double.MAX_VALUE);
@@ -85,8 +90,10 @@ public final class SessionPlannerControlsView extends ScrollPane {
             participantDetailOpen = !participantDetailOpen;
             show(participantDetail, participantDetailOpen);
         });
-        applyDays.setOnAction(event -> setEncounterDaysHandler.accept(encounterDays.getText()));
-        encounterDays.setOnAction(event -> setEncounterDaysHandler.accept(encounterDays.getText()));
+        encounterDays.setAccessibleText("Encounter-Tage");
+        encounterDays.setAccessibleHelp("Positive Dezimalzahl für die Abenteuer-Tage eingeben.");
+        applyDays.setOnAction(event -> dispatchEncounterDays());
+        encounterDays.setOnAction(event -> dispatchEncounterDays());
         generate.setOnAction(event -> dispatchPreparation(false));
         cancel.setOnAction(event -> cancelHandler.run());
 
@@ -112,6 +119,8 @@ public final class SessionPlannerControlsView extends ScrollPane {
         show(replacementConfirmation, false);
         show(cancel, false);
         show(progress, false);
+        show(encounterDaysError, false);
+        show(workspaceStatus, false);
     }
 
     public void onAddParticipant(LongConsumer handler) {
@@ -148,8 +157,25 @@ public final class SessionPlannerControlsView extends ScrollPane {
         }
         authoredStatus.setText(projection.statusText());
         show(authoredStatus, !projection.statusText().isBlank());
+        latestPublicationRevision = projection.publicationRevision();
+        showWorkspaceStatus(projection.workspaceStatus());
+        clearEncounterDaysErrorIfAuthoritativePublication();
         applySetup(projection.setup());
         applyPreparation(projection.preparation());
+    }
+
+    private HBox encounterDaysInput() {
+        VBox input = new VBox(2, labelledInput("Encounter-Tage", encounterDays, applyDays), encounterDaysError);
+        return new HBox(input);
+    }
+
+    private void showWorkspaceStatus(SessionPlannerViewModel.WorkspaceStatusProjection status) {
+        String message = status == null ? "" : status.message();
+        workspaceStatus.setText(message);
+        workspaceStatus.setAccessibleText(message.isBlank() ? "" : "Workspace-Status: " + message);
+        workspaceStatus.setAccessibleHelp(message.isBlank()
+                ? "" : "Kompakter Hinweis zum aktuellen Session-Planner-Workspace.");
+        show(workspaceStatus, !message.isBlank());
     }
 
     private void applySetup(SessionPlannerViewModel.ControlsProjection.SetupModel setup) {
@@ -173,6 +199,33 @@ public final class SessionPlannerControlsView extends ScrollPane {
         applyDays.setDisable(sessionDisabled);
         encounterCount.setDisable(sessionDisabled);
         renderParticipants(setup.sessionParticipants());
+    }
+
+    private void dispatchEncounterDays() {
+        String text = encounterDays.getText();
+        if (SessionPlannerVocabulary.parsePositiveDecimal(text) == null) {
+            showEncounterDaysError("Encounter-Tage muss eine positive Dezimalzahl sein.");
+            return;
+        }
+        clearEncounterDaysErrorAfterRevision = latestPublicationRevision;
+        setEncounterDaysHandler.accept(text);
+    }
+
+    private void clearEncounterDaysErrorIfAuthoritativePublication() {
+        if (latestPublicationRevision > clearEncounterDaysErrorAfterRevision) {
+            clearEncounterDaysErrorAfterRevision = Long.MAX_VALUE;
+            showEncounterDaysError("");
+        }
+    }
+
+    private void showEncounterDaysError(String message) {
+        encounterDaysError.setText(message);
+        encounterDaysError.setAccessibleText(message);
+        encounterDaysError.setAccessibleHelp(message);
+        encounterDays.setAccessibleHelp(message.isBlank()
+                ? "Positive Dezimalzahl für die Abenteuer-Tage eingeben."
+                : message);
+        show(encounterDaysError, !message.isBlank());
     }
 
     private void renderParticipants(

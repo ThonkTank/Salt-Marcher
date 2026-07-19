@@ -2,6 +2,7 @@ package features.sessionplanner.adapter.javafx;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -46,6 +47,8 @@ final class SessionPlannerViewModel {
             SessionPlannerSceneTimelineProjection.empty();
     private SessionPreparationSnapshot latestPreparation = SessionPreparationSnapshot.idle();
     private SessionPlannerSelectedSceneSnapshot latestSelectedScene = SessionPlannerSelectedSceneSnapshot.empty();
+    private WorkspaceStatusProjection latestWorkspaceStatus = WorkspaceStatusProjection.empty();
+    private long latestPublicationRevision;
     private long latestSourceSessionRevision;
     private Map<Long, SessionPlannerAuthoredTarget> catalogTargets = Map.of();
 
@@ -73,6 +76,8 @@ final class SessionPlannerViewModel {
         latestSceneTimeline = safe.sceneTimeline();
         latestPreparation = safe.preparation();
         latestSelectedScene = safe.selectedScene();
+        latestWorkspaceStatus = WorkspaceStatusProjection.from(safe.issues());
+        latestPublicationRevision = safe.publicationRevision();
         latestSourceSessionRevision = safe.sourceSessionRevision();
         showCatalog(safe.catalog());
         refreshControlsProjection();
@@ -142,7 +147,8 @@ final class SessionPlannerViewModel {
     }
 
     private void refreshControlsProjection() {
-        controlsProjection.set(ControlsProjection.from(latestSession, latestParticipants, latestPreparation));
+        controlsProjection.set(ControlsProjection.from(
+                latestPublicationRevision, latestSession, latestParticipants, latestPreparation, latestWorkspaceStatus));
     }
 
     private void refreshTimelineProjection() {
@@ -160,31 +166,40 @@ final class SessionPlannerViewModel {
     }
 
     record ControlsProjection(
+            long publicationRevision,
             String statusText,
+            WorkspaceStatusProjection workspaceStatus,
             SetupModel setup,
             SessionPreparationSnapshot preparation
     ) {
 
         ControlsProjection {
+            publicationRevision = Math.max(0L, publicationRevision);
             statusText = SessionPlannerVocabulary.text(statusText);
+            workspaceStatus = workspaceStatus == null ? WorkspaceStatusProjection.empty() : workspaceStatus;
             setup = setup == null ? SetupModel.empty() : setup;
             preparation = preparation == null ? SessionPreparationSnapshot.idle() : preparation;
         }
 
         static ControlsProjection empty() {
-            return new ControlsProjection("", SetupModel.empty(), SessionPreparationSnapshot.idle());
+            return new ControlsProjection(0L, "", WorkspaceStatusProjection.empty(), SetupModel.empty(),
+                    SessionPreparationSnapshot.idle());
         }
 
         static ControlsProjection from(
+                long publicationRevision,
                 SessionPlannerSessionSnapshot snapshot,
                 SessionPlannerParticipantsProjection participants,
-                SessionPreparationSnapshot preparation
+                SessionPreparationSnapshot preparation,
+                WorkspaceStatusProjection workspaceStatus
         ) {
             SessionPlannerSessionSnapshot safe =
                     snapshot == null ? SessionPlannerSessionSnapshot.empty("") : snapshot;
             boolean hasCurrentSession = safe.session().sessionId() > 0L;
             return new ControlsProjection(
+                    publicationRevision,
                     safe.status(),
+                    workspaceStatus,
                     SetupModel.from(safe, participants), preparation);
         }
 
@@ -312,9 +327,23 @@ final class SessionPlannerViewModel {
                     safe.sceneHeaders().stream().map(SceneModel::from).toList(),
                     safe.restGaps().stream().map(gap -> new RestGapModel(
                             gap.gapIndex(), gap.leftSceneToken(), gap.rightSceneToken(),
+                            sceneTitle(safe.sceneHeaders(), gap.leftSceneToken()),
+                            sceneTitle(safe.sceneHeaders(), gap.rightSceneToken()),
                             SessionPlannerVocabulary.restLabel(gap.restKind()),
                             gap.restKind() != SessionPlannerRestKind.NONE)).toList(),
                     SelectedSceneModel.from(selected));
+        }
+
+        private static String sceneTitle(
+                List<SessionPlannerSceneTimelineProjection.SceneHeader> scenes,
+                long sceneToken
+        ) {
+            return scenes.stream()
+                    .filter(scene -> scene.sceneToken() == sceneToken)
+                    .map(SessionPlannerSceneTimelineProjection.SceneHeader::displayTitle)
+                    .findFirst()
+                    .filter(title -> !title.isBlank())
+                    .orElse("Szene " + sceneToken);
         }
 
         private static String formatXp(int value) {
@@ -490,11 +519,15 @@ final class SessionPlannerViewModel {
                 int gapIndex,
                 long leftSceneToken,
                 long rightSceneToken,
+                String leftSceneTitle,
+                String rightSceneTitle,
                 String label,
                 boolean hasAssignedRest
         ) {
 
             RestGapModel {
+                leftSceneTitle = SessionPlannerVocabulary.text(leftSceneTitle);
+                rightSceneTitle = SessionPlannerVocabulary.text(rightSceneTitle);
                 label = SessionPlannerVocabulary.text(label);
             }
         }
@@ -511,6 +544,7 @@ final class SessionPlannerViewModel {
             double progressFraction,
             boolean overBudget,
             String budgetSummary,
+            boolean restAdviceAvailable,
             int recommendedShortRests,
             int recommendedLongRests,
             int placedShortRests,
@@ -573,12 +607,42 @@ final class SessionPlannerViewModel {
                     budget.progressFraction(),
                     budget.overBudget(),
                     budget.summary(),
+                    rest.available(),
                     rest.recommendedShortRests(),
                     rest.recommendedLongRests(),
                     rest.placedShortRests(),
                     rest.placedLongRests(),
                     rest.summary(),
                     selected.available(), selectedTitle, selectedDetail, selectedBudget);
+        }
+    }
+
+    record WorkspaceStatusProjection(String message) {
+
+        WorkspaceStatusProjection {
+            message = SessionPlannerVocabulary.text(message).trim();
+        }
+
+        static WorkspaceStatusProjection empty() {
+            return new WorkspaceStatusProjection("");
+        }
+
+        static WorkspaceStatusProjection from(List<SessionPlannerWorkspaceSnapshot.Issue> issues) {
+            List<SessionPlannerWorkspaceSnapshot.Issue> distinctSorted = safeCopy(issues).stream()
+                    .filter(java.util.Objects::nonNull)
+                    .filter(issue -> !issue.message().isBlank())
+                    .distinct()
+                    .sorted(Comparator
+                            .comparing(SessionPlannerWorkspaceSnapshot.Issue::owner)
+                            .thenComparing(SessionPlannerWorkspaceSnapshot.Issue::kind)
+                            .thenComparing(SessionPlannerWorkspaceSnapshot.Issue::reference)
+                            .thenComparing(SessionPlannerWorkspaceSnapshot.Issue::message))
+                    .toList();
+            String message = distinctSorted.stream()
+                    .map(SessionPlannerWorkspaceSnapshot.Issue::message)
+                    .distinct()
+                    .collect(Collectors.joining(" · "));
+            return message.isBlank() ? empty() : new WorkspaceStatusProjection("Hinweis: " + message);
         }
     }
 

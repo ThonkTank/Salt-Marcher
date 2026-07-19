@@ -73,9 +73,15 @@ public final class SessionPlannerStateView extends ScrollPane {
         }
         budgetBar.getStyleClass().removeAll(BUDGET_OK, BUDGET_OVER);
         budgetBar.getStyleClass().add(projection.overBudget() ? BUDGET_OVER : BUDGET_OK);
-        rests.setText("Empfohlen " + projection.recommendedShortRests() + " kurz / "
-                + projection.recommendedLongRests() + " lang · platziert "
-                + projection.placedShortRests() + " kurz / " + projection.placedLongRests() + " lang");
+        rests.setText(projection.restAdviceAvailable()
+                ? "Empfohlen " + projection.recommendedShortRests() + " kurz / "
+                        + projection.recommendedLongRests() + " lang · platziert "
+                        + projection.placedShortRests() + " kurz / " + projection.placedLongRests() + " lang"
+                : fallbackRestSummary(projection.restSummary()));
+    }
+
+    private static String fallbackRestSummary(String summary) {
+        return summary == null || summary.isBlank() ? "Keine Rastempfehlung verfügbar." : summary;
     }
 
     private static String formatXp(int value) {

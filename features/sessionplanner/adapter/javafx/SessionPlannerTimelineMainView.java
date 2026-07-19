@@ -695,7 +695,16 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         private void update(SessionPlannerViewModel.TimelineProjection.RestGapModel gap, boolean disabled) {
             left = gap.leftSceneToken();
             right = gap.rightSceneToken();
+            String context = "zwischen „" + gap.leftSceneTitle() + "“ und „" + gap.rightSceneTitle() + "“";
+            String status = gap.hasAssignedRest() ? gap.label() : "Keine Rast";
+            String accessibleText = status + " " + context;
             text.setText(gap.hasAssignedRest() ? "Rast: " + gap.label() : "Keine Rast zwischen den Szenen");
+            setAccessibleText(accessibleText);
+            setAccessibleHelp("Rast-Auswahl " + context + ".");
+            text.setAccessibleText(accessibleText);
+            shortRest.setAccessibleText("Kurze Rast " + context);
+            longRest.setAccessibleText("Lange Rast " + context);
+            clear.setAccessibleText("Rast leeren " + context);
             shortRest.setDisable(disabled);
             longRest.setDisable(disabled);
             clear.setDisable(disabled || !gap.hasAssignedRest());

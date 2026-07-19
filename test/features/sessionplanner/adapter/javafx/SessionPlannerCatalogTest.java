@@ -61,6 +61,7 @@ import features.sessionplanner.api.SessionPlannerSceneTimelineProjection;
 import features.sessionplanner.api.SessionPlannerSelectedSceneSnapshot;
 import features.sessionplanner.api.SessionPlannerSessionSnapshot;
 import features.sessionplanner.api.SessionPlannerWorkspaceModel;
+import features.sessionplanner.api.SessionPlannerWorkspaceSnapshot;
 import features.sessionplanner.api.SessionPreparationSnapshot;
 import features.sessionplanner.api.SessionPreparationStatus;
 import features.sessiongeneration.api.GenerationDraft;
@@ -194,6 +195,11 @@ public final class SessionPlannerCatalogTest {
         runOnFxThread(SessionPlannerCatalogTest::assertReusableSelectedSceneInspector);
     }
 
+    @Test
+    void workspaceFeedbackEncounterDayValidationAndRestAccessibilityUsePublishedWorkspace() throws Exception {
+        runOnFxThread(SessionPlannerCatalogTest::assertWorkspaceFeedbackAndEncounterDayValidation);
+    }
+
     private static void assertSavingCancellationBoundary() {
         SessionPlannerControlsView controls = new SessionPlannerControlsView();
         SessionPlannerViewModel viewModel = new SessionPlannerViewModel();
@@ -273,6 +279,194 @@ public final class SessionPlannerCatalogTest {
     }
 
     private record PendingPreparationUi(Parent controls, SessionPlannerServiceAssembly planner) {
+    }
+
+    private static void assertWorkspaceFeedbackAndEncounterDayValidation() {
+        SessionPlannerTestServices services = services();
+        SessionPlannerServiceAssembly planner = services.planner();
+        ShellBinding binding = new SessionPlannerContribution(
+                planner.application(), planner.workspaceModel(), ignored -> { }).bind();
+        Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
+        Stage stage = new Stage();
+        stage.setScene(new Scene(controls, 560.0, 480.0));
+        stage.show();
+        layout(controls);
+        createSession(controls, "Validation");
+        TextField days = encounterDaysField(controls);
+        long revisionBeforeInvalidInput = planner.workspaceModel().current().sourceSessionRevision();
+
+        days.setText("abc");
+        button(controls, "Übernehmen").fire();
+        assertEquals(Long.valueOf(revisionBeforeInvalidInput),
+                Long.valueOf(planner.workspaceModel().current().sourceSessionRevision()),
+                "non-decimal encounter days dispatch no write through the bound contribution");
+        assertEncounterDaysError(controls);
+
+        days.setText("0");
+        button(controls, "Übernehmen").fire();
+        assertEquals(Long.valueOf(revisionBeforeInvalidInput),
+                Long.valueOf(planner.workspaceModel().current().sourceSessionRevision()),
+                "zero encounter days dispatch no write through the defensive binder");
+        assertEncounterDaysError(controls);
+
+        days.setText("1.5");
+        button(controls, "Übernehmen").fire();
+        layout(controls);
+        assertTrue(planner.workspaceModel().current().sourceSessionRevision() > revisionBeforeInvalidInput,
+                "valid encounter days dispatch through the binder writes authoritative Session truth");
+        assertTrue(!isEffectivelyVisible(labelByStyle(controls, "session-planner-gap-active")),
+                "the authoritative workspace publication clears the inline encounter-days error");
+
+        SessionPlannerViewModel viewModel = new SessionPlannerViewModel();
+        SessionPlannerControlsView feedbackControls = new SessionPlannerControlsView();
+        SessionPlannerStateView feedbackState = new SessionPlannerStateView();
+        SessionPlannerTimelineMainView feedbackTimeline = new SessionPlannerTimelineMainView();
+        feedbackControls.bind(viewModel);
+        feedbackState.bind(viewModel);
+        feedbackTimeline.bind(viewModel);
+
+        SessionPlannerWorkspaceSnapshot withFeedback = workspaceFixture(
+                20L,
+                new SessionPlannerSessionSnapshot.RestAdviceState(
+                        false, 0, 0, 0, 0, "Rastempfehlung wird noch ermittelt."),
+                List.of(
+                        new SessionPlannerWorkspaceSnapshot.Issue(
+                                SessionPlannerWorkspaceSnapshot.Owner.ENCOUNTER,
+                                SessionPlannerWorkspaceSnapshot.Kind.UNAVAILABLE,
+                                "501", "Encounter-Plan 501 ist nicht verfügbar."),
+                        new SessionPlannerWorkspaceSnapshot.Issue(
+                                SessionPlannerWorkspaceSnapshot.Owner.ENCOUNTER,
+                                SessionPlannerWorkspaceSnapshot.Kind.UNAVAILABLE,
+                                "501", "Encounter-Plan 501 ist nicht verfügbar."),
+                        new SessionPlannerWorkspaceSnapshot.Issue(
+                                SessionPlannerWorkspaceSnapshot.Owner.PARTY,
+                                SessionPlannerWorkspaceSnapshot.Kind.OWNER_FAILURE,
+                                "77", "Gruppendaten konnten nicht geladen werden.")))
+                .withPreparation(new SessionPreparationSnapshot(
+                        SessionPreparationStatus.FAILED, "Vorbereitung fehlgeschlagen.", 91L, 3L, false));
+        viewModel.applyWorkspace(withFeedback);
+        Parent feedbackControlsContent = (Parent) feedbackControls.getContent();
+        Label workspaceStatus = labelByStyle(feedbackControlsContent, "session-planner-workspace-status");
+        assertEquals("Hinweis: Gruppendaten konnten nicht geladen werden. · Encounter-Plan 501 ist nicht verfügbar.",
+                workspaceStatus.getText(), "workspace issues are deduplicated and sorted into one compact status");
+        assertEquals("Workspace-Status: " + workspaceStatus.getText(), workspaceStatus.getAccessibleText(),
+                "workspace issue status is explicitly available to assistive technology");
+        assertTrue(!workspaceStatus.getText().contains("Vorbereitung"),
+                "workspace feedback remains separate from preparation status");
+        assertTrue(hasLabel(feedbackControlsContent, "Vorbereitung fehlgeschlagen."),
+                "preparation status remains its own compact toolbar message");
+        Parent feedbackStateContent = (Parent) feedbackState.getContent();
+        assertTrue(hasLabel(feedbackStateContent, "Rastempfehlung wird noch ermittelt."),
+                "unavailable rest advice shows its summary instead of placeholder zero counts");
+        assertTrue(!hasLabelContaining(feedbackStateContent, "Empfohlen 0 kurz"),
+                "unavailable rest advice renders no numeric rest counts");
+
+        viewModel.applyWorkspace(workspaceFixture(
+                21L,
+                new SessionPlannerSessionSnapshot.RestAdviceState(
+                        true, 1, 2, 1, 0, ""), List.of()));
+        assertTrue(hasLabel(feedbackStateContent, "Empfohlen 1 kurz / 2 lang · platziert 1 kurz / 0 lang"),
+                "available rest advice keeps the compact numeric summary");
+
+        Parent timelineContent = (Parent) feedbackTimeline.getContent();
+        List<javafx.scene.layout.HBox> separators = descendants(timelineContent).stream()
+                .filter(javafx.scene.layout.HBox.class::isInstance)
+                .map(javafx.scene.layout.HBox.class::cast)
+                .filter(node -> node.getStyleClass().contains("session-planner-rest-separator"))
+                .toList();
+        assertEquals(Integer.valueOf(2), Integer.valueOf(separators.size()),
+                "two published rest gaps materialize two separators");
+        assertTrue(!separators.get(0).getAccessibleText().equals(separators.get(1).getAccessibleText()),
+                "each rest gap has distinct accessible context");
+        assertTrue(separators.get(0).getAccessibleText().contains("Alpha")
+                        && separators.get(0).getAccessibleText().contains("Beta"),
+                "rest accessibility includes both ordered scene titles");
+        assertRestButtonsAccessible(separators.get(0), "Alpha", "Beta");
+        assertRestButtonsAccessible(separators.get(1), "Beta", "Gamma");
+
+        viewModel.applyWorkspace(reorderedWorkspaceFixture());
+        assertTrue(separators.get(0).getAccessibleText().contains("Gamma umbenannt")
+                        && separators.get(0).getAccessibleText().contains("Beta umbenannt"),
+                "reorder and rename refresh the existing rest separator accessibility text");
+        assertRestButtonsAccessible(separators.get(0), "Gamma umbenannt", "Beta umbenannt");
+        assertRestButtonsAccessible(separators.get(1), "Beta umbenannt", "Alpha umbenannt");
+    }
+
+    private static void assertRestButtonsAccessible(
+            javafx.scene.layout.HBox separator,
+            String leftSceneTitle,
+            String rightSceneTitle
+    ) {
+        for (String buttonText : List.of("Kurze Rast", "Lange Rast", "Leeren")) {
+            String accessibleText = button(separator, buttonText).getAccessibleText();
+            assertTrue(!accessibleText.isBlank()
+                            && accessibleText.contains(leftSceneTitle)
+                            && accessibleText.contains(rightSceneTitle),
+                    buttonText + " has scene-pair-specific accessibility text");
+        }
+    }
+
+    private static void assertEncounterDaysError(Parent controls) {
+        Label error = labelByStyle(controls, "session-planner-gap-active");
+        assertTrue(isEffectivelyVisible(error), "invalid encounter days show a local inline error");
+        assertEquals("Encounter-Tage muss eine positive Dezimalzahl sein.", error.getText(),
+                "invalid encounter days use one actionable error message");
+        assertEquals(error.getText(), encounterDaysField(controls).getAccessibleHelp(),
+                "invalid encounter days expose the same error as field help");
+    }
+
+    private static SessionPlannerWorkspaceSnapshot workspaceFixture(
+            long publicationRevision,
+            SessionPlannerSessionSnapshot.RestAdviceState restAdvice,
+            List<SessionPlannerWorkspaceSnapshot.Issue> issues
+    ) {
+        return new SessionPlannerWorkspaceSnapshot(
+                publicationRevision, 91L, publicationRevision,
+                SessionPlannerCatalogSnapshot.empty(), new SessionPlannerSessionSnapshot(
+                        new SessionPlannerSessionSnapshot.SessionState(91L, "Feedback", BigDecimal.ONE, "1", 0L, false),
+                        SessionPlannerSessionSnapshot.XpBudgetState.empty(), restAdvice, ""),
+                features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(),
+                new SessionPlannerSceneTimelineProjection(
+                        List.of(
+                                sceneHeader(1L, "Alpha", true),
+                                sceneHeader(2L, "Beta", false),
+                                sceneHeader(3L, "Gamma", false)),
+                        List.of(
+                                new SessionPlannerSceneTimelineProjection.RestGap(
+                                        0, 1L, 2L, SessionPlannerRestKind.NONE),
+                                new SessionPlannerSceneTimelineProjection.RestGap(
+                                        1, 2L, 3L, SessionPlannerRestKind.LONG_REST))),
+                SessionPlannerSelectedSceneSnapshot.empty(), SessionPreparationSnapshot.idle(), issues);
+    }
+
+    private static SessionPlannerWorkspaceSnapshot reorderedWorkspaceFixture() {
+        return new SessionPlannerWorkspaceSnapshot(
+                22L, 91L, 22L, SessionPlannerCatalogSnapshot.empty(), new SessionPlannerSessionSnapshot(
+                        new SessionPlannerSessionSnapshot.SessionState(91L, "Feedback", BigDecimal.ONE, "1", 0L, false),
+                        SessionPlannerSessionSnapshot.XpBudgetState.empty(),
+                        SessionPlannerSessionSnapshot.RestAdviceState.empty(), ""),
+                features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(),
+                new SessionPlannerSceneTimelineProjection(
+                        List.of(
+                                sceneHeader(3L, "Gamma umbenannt", true),
+                                sceneHeader(2L, "Beta umbenannt", false),
+                                sceneHeader(1L, "Alpha umbenannt", false)),
+                        List.of(
+                                new SessionPlannerSceneTimelineProjection.RestGap(
+                                        0, 3L, 2L, SessionPlannerRestKind.SHORT_REST),
+                                new SessionPlannerSceneTimelineProjection.RestGap(
+                                        1, 2L, 1L, SessionPlannerRestKind.NONE))),
+                SessionPlannerSelectedSceneSnapshot.empty(), SessionPreparationSnapshot.idle(), List.of());
+    }
+
+    private static SessionPlannerSceneTimelineProjection.SceneHeader sceneHeader(
+            long token,
+            String title,
+            boolean selected
+    ) {
+        return new SessionPlannerSceneTimelineProjection.SceneHeader(
+                token, title, 0L, false, "", "", 0, 0, "", "", BigDecimal.ZERO, 0,
+                selected, "Keine Location", false, false);
     }
 
     private static void runTest() {
@@ -1524,6 +1718,15 @@ public final class SessionPlannerCatalogTest {
                 .filter(Label.class::isInstance)
                 .map(Label.class::cast)
                 .anyMatch(label -> label.getText() != null && label.getText().contains(text));
+    }
+
+    private static Label labelByStyle(Parent parent, String styleClass) {
+        return descendants(parent).stream()
+                .filter(Label.class::isInstance)
+                .map(Label.class::cast)
+                .filter(label -> label.getStyleClass().contains(styleClass))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Label not found with style: " + styleClass));
     }
 
     private static <T extends Node> T descendant(Parent parent, Class<T> type) {
