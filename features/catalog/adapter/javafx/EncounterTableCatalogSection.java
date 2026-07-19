@@ -29,6 +29,7 @@ public final class EncounterTableCatalogSection implements CatalogSection {
                 this.intents.accept(new EncounterTableCatalogIntent.ChangeQuery(after));
             }
         });
+        query.setOnAction(ignored -> this.intents.accept(new EncounterTableCatalogIntent.SubmitQuery()));
         controls = new VBox(
                 CatalogSectionControls.intro(
                         "Encounter-Tabellen",

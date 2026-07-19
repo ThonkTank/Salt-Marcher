@@ -15,6 +15,8 @@ public sealed interface MonsterCatalogIntent {
         }
     }
 
+    record Submit() implements MonsterCatalogIntent { }
+
     record ShiftPage(int direction) implements MonsterCatalogIntent {
     }
 

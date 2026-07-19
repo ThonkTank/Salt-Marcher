@@ -29,6 +29,7 @@ public final class FactionCatalogSection implements CatalogSection {
                 this.intents.accept(new WorldReferenceCatalogIntent.ChangeFactionQuery(after));
             }
         });
+        query.setOnAction(ignored -> this.intents.accept(new WorldReferenceCatalogIntent.SubmitFactionQuery()));
         controls = new VBox(
                 CatalogSectionControls.intro(
                         "Fraktionen", "Fraktionen bleiben World-Planner-Wahrheit und werden im Inspector bearbeitet.",

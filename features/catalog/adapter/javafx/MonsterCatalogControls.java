@@ -59,6 +59,7 @@ final class MonsterCatalogControls extends VBox {
         search.setAccessibleText("Monster suchen");
         HBox.setHgrow(search, Priority.ALWAYS);
         search.textProperty().addListener((ignored, before, after) -> publishFilters());
+        search.setOnAction(ignored -> intent.accept(new MonsterCatalogIntent.Submit()));
         configureChallengeRatings();
         location.setAccessibleText("Location");
         location.setConverter(new StringConverter<>() {

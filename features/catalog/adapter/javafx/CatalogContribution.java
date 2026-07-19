@@ -99,9 +99,9 @@ public final class CatalogContribution implements ShellContribution, AutoCloseab
 
     private static MonsterCatalogAuxiliaryOptions monsterAuxiliary(CatalogWorkspaceState state) {
         return new MonsterCatalogAuxiliaryOptions(
-                state.encounterTables().options(),
-                state.worldReferences().factionOptions(),
-                state.worldReferences().locationOptions());
+                state.monsters().encounterTableOptions(),
+                state.monsters().factionOptions(),
+                state.monsters().locationOptions());
     }
 
     private final class CatalogShellBinding implements ShellBinding {

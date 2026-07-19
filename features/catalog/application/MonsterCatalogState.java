@@ -1,16 +1,13 @@
 package features.catalog.application;
 
-import features.creatures.api.CreatureCatalogQuery;
 import features.creatures.api.CreatureCatalogRow;
 import features.creatures.api.CreatureFilterOptions;
+import java.util.List;
 import java.util.Objects;
 
-/** The single immutable Monster truth rendered by the Catalog workspace. */
+/** Temporary M3 presentation projection; browse truth lives in CatalogSectionState. */
 public record MonsterCatalogState(
         long revision,
-        long lifecycleRevision,
-        long requestRevision,
-        Lifecycle lifecycle,
         MonsterCatalogFilterDraft filterDraft,
         CreatureFilterOptions filterOptions,
         MonsterCatalogSort sort,
@@ -18,14 +15,13 @@ public record MonsterCatalogState(
         int pageOffset,
         int totalCount,
         long selectedCreatureId,
-        CatalogResultState<CreatureCatalogRow> results
+        CatalogResultState<CreatureCatalogRow> results,
+        List<CatalogReferenceOption> encounterTableOptions,
+        List<CatalogReferenceOption> factionOptions,
+        List<CatalogReferenceOption> locationOptions
 ) {
-
     public MonsterCatalogState {
         revision = Math.max(0L, revision);
-        lifecycleRevision = Math.max(0L, lifecycleRevision);
-        requestRevision = Math.max(0L, requestRevision);
-        lifecycle = Objects.requireNonNull(lifecycle, "lifecycle");
         filterDraft = Objects.requireNonNull(filterDraft, "filterDraft");
         filterOptions = Objects.requireNonNull(filterOptions, "filterOptions");
         sort = Objects.requireNonNull(sort, "sort");
@@ -34,26 +30,15 @@ public record MonsterCatalogState(
         totalCount = Math.max(0, totalCount);
         selectedCreatureId = Math.max(0L, selectedCreatureId);
         results = Objects.requireNonNull(results, "results");
+        encounterTableOptions = List.copyOf(encounterTableOptions);
+        factionOptions = List.copyOf(factionOptions);
+        locationOptions = List.copyOf(locationOptions);
     }
 
     static MonsterCatalogState initial() {
         return new MonsterCatalogState(
-                0L, 0L, 0L, Lifecycle.INACTIVE,
-                MonsterCatalogFilterDraft.empty(), CreatureFilterOptions.empty(), MonsterCatalogSort.NAME_ASC,
-                50, 0, 0, 0L, CatalogResultState.loading());
-    }
-
-    public CreatureCatalogQuery query() {
-        return new CreatureCatalogQuery(
-                filterDraft.nameQuery(), filterDraft.challengeRatingMin(), filterDraft.challengeRatingMax(),
-                filterDraft.sizes(), filterDraft.creatureTypes(), filterDraft.creatureSubtypes(),
-                filterDraft.biomes(), filterDraft.alignments(), sort.providerField(), sort.providerDirection(),
-                pageSize, pageOffset);
-    }
-
-    public enum Lifecycle {
-        INACTIVE,
-        ACTIVE,
-        CLOSED
+                0L, MonsterCatalogFilterDraft.empty(), CreatureFilterOptions.empty(),
+                MonsterCatalogSort.NAME_ASC, 50, 0, 0, 0L, CatalogResultState.uninitialized(),
+                List.of(), List.of(), List.of());
     }
 }

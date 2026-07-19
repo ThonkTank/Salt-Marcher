@@ -12,8 +12,16 @@ public record CatalogResultState<Row>(Status status, List<Row> rows, String mess
         message = Objects.requireNonNull(message, "message");
     }
 
+    public static <Row> CatalogResultState<Row> uninitialized() {
+        return new CatalogResultState<>(Status.UNINITIALIZED, List.of(), "");
+    }
+
     public static <Row> CatalogResultState<Row> loading() {
         return new CatalogResultState<>(Status.LOADING, List.of(), "");
+    }
+
+    public static <Row> CatalogResultState<Row> refreshing(List<Row> rows) {
+        return new CatalogResultState<>(Status.REFRESHING, rows, "");
     }
 
     public static <Row> CatalogResultState<Row> ready(List<Row> rows) {
@@ -25,8 +33,15 @@ public record CatalogResultState<Row>(Status status, List<Row> rows, String mess
         return new CatalogResultState<>(Status.FAILED, List.of(), Objects.requireNonNull(message, "message"));
     }
 
+    public static <Row> CatalogResultState<Row> failed(List<Row> retainedRows, String message) {
+        return new CatalogResultState<>(
+                Status.FAILED, retainedRows, Objects.requireNonNull(message, "message"));
+    }
+
     public enum Status {
+        UNINITIALIZED,
         LOADING,
+        REFRESHING,
         READY,
         EMPTY,
         INVALID_INPUT,

@@ -29,6 +29,7 @@ public final class LocationCatalogSection implements CatalogSection {
                 this.intents.accept(new WorldReferenceCatalogIntent.ChangeLocationQuery(after));
             }
         });
+        query.setOnAction(ignored -> this.intents.accept(new WorldReferenceCatalogIntent.SubmitLocationQuery()));
         controls = new VBox(
                 CatalogSectionControls.intro(
                         "Orte", "Orte öffnen und bearbeiten sich im World-Planner-Inspector.",
