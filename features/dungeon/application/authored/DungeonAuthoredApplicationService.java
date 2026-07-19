@@ -270,6 +270,16 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         return acceptedWindowRequestGeneration;
     }
 
+    public void invalidateAcceptedWindow(MapId mapId) {
+        if (mapId == null) {
+            return;
+        }
+        DungeonCommandReadSpecs.AcceptedViewport accepted = acceptedViewports.get(mapId.value());
+        if (accepted != null) {
+            windowStore.invalidateChunks(accepted.chunkKeys());
+        }
+    }
+
     private static void validateWindowResult(DungeonWindowRequest request, DungeonWindow window) {
         if (!request.mapId().equals(window.mapHeader().mapId())) {
             throw new IllegalStateException("Dungeon window returned a different map identity.");
@@ -423,6 +433,8 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     session.dungeonState());
             return;
         }
+        List<DungeonWindowStore.Lease> editLeases = new ArrayList<>();
+        try {
         Map<Long, HistoryLoadedMap> loadedMaps = new LinkedHashMap<>();
         Map<Long, DungeonMap> currentMaps = new LinkedHashMap<>();
         for (DungeonPatch selectedPatch : step.selectedPatches()) {
@@ -435,6 +447,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                         session.dungeonState());
                 return;
             }
+            editLeases.add(windowStore.protectEditChunks(readSpec.chunkKeys()));
             DungeonCommandWorksetResult loaded = commandWorksetLoader.load(readSpec);
             if (!(loaded instanceof DungeonCommandWorksetResult.Complete complete)
                     || !complete.workset().containsComplete(readSpec)) {
@@ -463,6 +476,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             }
             DungeonUnitOfWorkResult.Committed committed = (DungeonUnitOfWorkResult.Committed) commit;
             validateCommittedPatch(patch, committed);
+            windowStore.invalidateChunks(committed.chunkRevisions().keySet());
             completeHistoryStep(step, loadedMaps, List.of(patch), selectedMapId, session, undo);
             return;
         }
@@ -479,7 +493,11 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         DungeonCompoundUnitOfWorkResult.Committed committed =
                 (DungeonCompoundUnitOfWorkResult.Committed) commit;
         validateCommittedCompoundPatch(patch, committed);
+        invalidateCommittedChunks(committed);
         completeHistoryStep(step, loadedMaps, patch.patches(), selectedMapId, session, undo);
+        } finally {
+            closeLeases(editLeases);
+        }
     }
 
     private void completeHistoryStep(
@@ -938,12 +956,14 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             }
             DungeonCommandReadSpec spec = DungeonCommandReadSpecs.forViewport(
                     viewport, commandChunks, seedRefs, expansion, intent);
-            DungeonCommandWorksetResult loaded = commandWorksetLoader.load(spec);
-            if (!(loaded instanceof DungeonCommandWorksetResult.Complete complete)
-                    || !complete.workset().containsComplete(spec)) {
-                return fallback;
+            try (DungeonWindowStore.Lease editLease = windowStore.protectEditChunks(spec.chunkKeys())) {
+                DungeonCommandWorksetResult loaded = commandWorksetLoader.load(spec);
+                if (!(loaded instanceof DungeonCommandWorksetResult.Complete complete)
+                        || !complete.workset().containsComplete(spec)) {
+                    return fallback;
+                }
+                return reader.apply(complete.workset().aggregateFor(spec));
             }
-            return reader.apply(complete.workset().aggregateFor(spec));
         }
 
         private OperationResultData executePatchCommand(
@@ -964,6 +984,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     seedRefs,
                     expansion,
                     DungeonCommandReadSpec.CommandIntent.AUTHORED_MUTATION);
+            try (DungeonWindowStore.Lease editLease = windowStore.protectEditChunks(spec.chunkKeys())) {
             DungeonCommandWorksetResult loaded = commandWorksetLoader.load(spec);
             if (loaded instanceof DungeonCommandWorksetResult.Rejected rejected) {
                 return rejectedResult(worksetRejection(rejected.reason()));
@@ -1017,6 +1038,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             }
             DungeonUnitOfWorkResult.Committed committed = (DungeonUnitOfWorkResult.Committed) commit;
             validateCommittedPatch(patch, committed);
+            windowStore.invalidateChunks(committed.chunkRevisions().keySet());
             acceptedViewports.computeIfPresent(
                     mapId.value(),
                     (ignored, acceptedViewport) -> acceptedViewport.committed(committed.committedRevision()));
@@ -1027,6 +1049,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     OPERATION_FEEDBACK_POLICY.validationMessages(current, candidate),
                     OPERATION_FEEDBACK_POLICY.reactionMessages(current, candidate),
                     DungeonEditorCommandOutcome.accepted(committed.committedRevision()));
+            }
         }
 
         private LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshotData(
@@ -1278,6 +1301,18 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         }
     }
 
+    private void invalidateCommittedChunks(DungeonCompoundUnitOfWorkResult.Committed committed) {
+        for (DungeonUnitOfWorkResult.Committed mapCommit : committed.committedMaps()) {
+            windowStore.invalidateChunks(mapCommit.chunkRevisions().keySet());
+        }
+    }
+
+    private static void closeLeases(List<DungeonWindowStore.Lease> leases) {
+        for (int index = leases.size() - 1; index >= 0; index--) {
+            leases.get(index).close();
+        }
+    }
+
     private final class PublicationOperations {
         private final PublicationAssembler assembler = new PublicationAssembler();
 
@@ -1453,6 +1488,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                             maximumQ,
                             maximumR,
                             request.chunkKeys()));
+            windowStore.protectVisibleChunks(viewport.visibleChunks());
             acceptedWindowRequestGeneration = generation;
             return ViewportLoadResult.ACCEPTED;
         }
@@ -2065,6 +2101,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
 
         private DungeonMapIdentity deleteMap(DungeonMapIdentity mapIdentity) {
             catalogStore.delete(mapIdentity);
+            windowStore.invalidateMap(mapIdentity.value());
             acceptedViewports.remove(mapIdentity.value());
             editHistory.remove(mapIdentity);
             return mapIdentity;
@@ -2138,6 +2175,8 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             if (sourceViewport == null) {
                 return rejectedResult(DungeonEditorCommandOutcome.RejectionReason.STALE_REVISION);
             }
+            List<DungeonWindowStore.Lease> editLeases = new ArrayList<>();
+            try {
             Map<Long, List<DungeonPatchEntityRef>> initialSeeds = new LinkedHashMap<>();
             initialSeeds.computeIfAbsent(sourceMapId.value(), ignored -> new ArrayList<>())
                     .add(transitionRef(sourceTransitionId));
@@ -2150,7 +2189,8 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                 LinkLoadResult load = loadLinkMap(
                         mapId,
                         entry.getValue(),
-                        mapId.equals(sourceMapId) ? sourceViewport : null);
+                        mapId.equals(sourceMapId) ? sourceViewport : null,
+                        editLeases);
                 if (load.rejectionReason() != null) {
                     return rejectedResult(load.rejectionReason());
                 }
@@ -2182,7 +2222,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                         return rejectedResult(
                                 DungeonEditorCommandOutcome.RejectionReason.INSUFFICIENT_LOADED_CLOSURE);
                     }
-                    LinkLoadResult load = loadLinkMap(requiredIdentity, priorLinkSeeds, null);
+                    LinkLoadResult load = loadLinkMap(requiredIdentity, priorLinkSeeds, null, editLeases);
                     if (load.rejectionReason() != null) {
                         return rejectedResult(load.rejectionReason());
                     }
@@ -2215,9 +2255,10 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             if (commit instanceof DungeonCompoundUnitOfWorkResult.Rejected rejected) {
                 return rejectedCommit(rejected.reason());
             }
-            validateCommittedCompoundPatch(
-                    patch,
-                    (DungeonCompoundUnitOfWorkResult.Committed) commit);
+            DungeonCompoundUnitOfWorkResult.Committed committed =
+                    (DungeonCompoundUnitOfWorkResult.Committed) commit;
+            validateCommittedCompoundPatch(patch, committed);
+            invalidateCommittedChunks(committed);
             for (DungeonPatch mapPatch : patch.patches()) {
                 acceptedViewports.computeIfPresent(
                         mapPatch.mapId().value(),
@@ -2239,12 +2280,16 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     List.of(),
                     List.of("transition link saved"),
                     DungeonEditorCommandOutcome.accepted(sourcePatch.committedRevision()));
+            } finally {
+                closeLeases(editLeases);
+            }
         }
 
         private LinkLoadResult loadLinkMap(
                 DungeonMapIdentity mapId,
                 List<DungeonPatchEntityRef> seedRefs,
-                DungeonCommandReadSpecs.AcceptedViewport viewport
+                DungeonCommandReadSpecs.AcceptedViewport viewport,
+                List<DungeonWindowStore.Lease> editLeases
         ) {
             DungeonCommandReadSpec spec;
             if (viewport != null) {
@@ -2268,6 +2313,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                         DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
                         DungeonCommandReadSpec.CommandIntent.TRANSITION_LINK);
             }
+            editLeases.add(windowStore.protectEditChunks(spec.chunkKeys()));
             DungeonCommandWorksetResult result = commandWorksetLoader.load(spec);
             if (result instanceof DungeonCommandWorksetResult.Rejected rejected) {
                 return LinkLoadResult.rejected(transitionLinkWorksetRejection(rejected.reason()));

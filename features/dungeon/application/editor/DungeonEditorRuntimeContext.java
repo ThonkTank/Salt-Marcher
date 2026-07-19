@@ -114,6 +114,10 @@ final class DungeonEditorRuntimeContext {
         return fromSnapshot(session.selectMap(mapIdValue));
     }
 
+    Result reloadMap(long mapIdValue) {
+        return fromSnapshot(session.reloadMap(mapIdValue));
+    }
+
     Result setViewport(DungeonEditorViewportInput viewport) {
         return fromSnapshot(session.setViewport(viewport));
     }

@@ -19,6 +19,7 @@ public final class DungeonStoragePortArchitectureTest {
     private static final String PORTS = "features.dungeon.application.authored.port.";
     private static final String CATALOG_STORE = PORTS + "DungeonCatalogStore";
     private static final String WINDOW_STORE = PORTS + "DungeonWindowStore";
+    private static final String WINDOW_CONTENT_SOURCE = PORTS + "DungeonWindowContentSource";
     private static final String UNIT_OF_WORK = PORTS + "DungeonUnitOfWork";
     private static final String IDENTITY_ALLOCATOR = PORTS + "DungeonIdentityAllocator";
     private static final String SQLITE_REPOSITORY = "features.dungeon.adapter.sqlite.repository.";
@@ -72,9 +73,9 @@ public final class DungeonStoragePortArchitectureTest {
                     .should(directlyImplementOnly(CATALOG_STORE)).allowEmptyShould(false);
 
     @ArchTest
-    static final ArchRule sqliteWindowDirectlyImplementsOnlyWindow =
+    static final ArchRule sqliteWindowDirectlyImplementsOnlyContentSource =
             classes().that().haveFullyQualifiedName(SQLITE_WINDOW_STORE)
-                    .should(directlyImplementOnly(WINDOW_STORE)).allowEmptyShould(false);
+                    .should(directlyImplementOnly(WINDOW_CONTENT_SOURCE)).allowEmptyShould(false);
 
     @ArchTest
     static final ArchRule sqliteUnitOfWorkDirectlyImplementsOnlyUnitOfWork =

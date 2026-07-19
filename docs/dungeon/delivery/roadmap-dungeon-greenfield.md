@@ -106,10 +106,74 @@ and commit boundaries. M7 starts only after both are complete.
   local identity derivation, compatibility writer, and full-record fixture
   families are deleted.
 - M4.6 delivery proof is literal green `./gradlew check` plus
-  `./gradlew installDesktopApp`. M5.1 is complete in this change with the same
-  literal green proof; M5.2 is next. No intermediate review panel runs; the
-  single independent cross-roadmap review runs only after all M7 implementation
-  is complete.
+  `./gradlew installDesktopApp`. M5.1 is complete through PR #536. M5.2 is
+  complete in this change with the same literal green proof; M5.3 is next. No
+  intermediate review panel runs; the single independent cross-roadmap review
+  runs only after all M7 implementation is complete.
+
+### Completed Slice Contract: M5.2 Per-Chunk Cache And Touched Invalidation
+
+#### Goal And Ownership
+
+- Add one feature-lifetime `DungeonCachedWindowStore` between all Authored,
+  command-workset, and Travel consumers and the SQLite window source. JavaFX,
+  static state, and per-session cache instances are forbidden.
+- Cache immutable chunk content by `(DungeonChunkKey, contentRevision)`. Map
+  revision and viewport rectangles are not cache keys, so unchanged content is
+  reusable across map revisions.
+- Split the persistence boundary into an exact requested-chunk index read and a
+  content read for explicit cache misses. Both are revision-bound; a change
+  between reads yields stale/retry rather than mixed-revision facts. I/O never
+  runs while the cache monitor is held.
+- Assemble cache hits and misses deterministically into the existing
+  `DungeonWindow`. A cache value owns one chunk's bounded fragments,
+  dependencies, and entity extents; it never owns `DungeonMap`, a complete
+  window, or map-wide collections. M5.3 will extend extents into indexed bounds
+  and paged continuations without changing the cache key.
+
+#### Capacity, Protection, And Invalidation
+
+- Extend `WeightedViewportCache` with atomic batch lookup/put, protected-key
+  replacement, targeted invalidation, and eviction immediately after protection
+  is released. Use an access-ordered maximum of 262,144 fact weights; weight is
+  the saturating sum of one plus contained atomic spatial facts, dependency
+  refs, and extent refs.
+- Protect the chunks of the latest accepted visible viewport, excluding its
+  prefetch-only ring. Change that protected set only after M5.1 latest-request
+  acceptance. Protect command workset chunks through a scoped edit lease from
+  load/preview until commit, cancel, or context change.
+- After a successful commit, undo, redo, or compound commit, invalidate exactly
+  the chunk identities named by committed `chunkRevisions()` before refresh and
+  publication. Reject/rollback and rename invalidate nothing; map deletion
+  removes only that map; read-only Travel refresh invalidates nothing.
+
+#### Implementation Order And Proof
+
+1. Extend the generic weighted cache and focused platform tests for batches,
+   leases/protection, temporary overweight, release eviction, and targeted
+   invalidation.
+2. Add the typed index/content/extent port values, cached store and deterministic
+   window assembler; compose exactly one shared instance in `DungeonFeature`.
+3. Split SQLite header/index and miss-content queries. Every content query must
+   carry explicit chunk identities plus expected map/content revisions; no
+   authored query may scan unrequested content.
+4. Bind visible protection after accepted viewport publication, edit protection
+   to command worksets, and touched-only invalidation to successful UoW results.
+5. Prove with counting production-route fakes and SQLite integration: cold nine
+   chunks load nine contents; identical warm reads load zero; a one-chunk pan or
+   successful touch loads only the entering/touched chunk; undo, redo and
+   compound commits behave likewise; rename/reject load or invalidate none;
+   negative chunks and stale two-phase reads remain correct; 100k off-window
+   cells do not change statement or loaded-fact counts.
+
+#### Delete Gate
+
+- Delete direct injection of the uncached SQLite window store into Authored or
+  Travel, revision-wide/full-map invalidation, whole-window cache values, and
+  content reads without explicit miss chunks and expected revisions.
+- Literal green focused tests, `./gradlew check`, and
+  `./gradlew installDesktopApp` are required before the M5.2 PR merges. M5.3
+  starts from that merge without a review cycle.
 
 ### Completed Slice Contract: M5.1 Viewport Dispatch And Latest Acceptance
 

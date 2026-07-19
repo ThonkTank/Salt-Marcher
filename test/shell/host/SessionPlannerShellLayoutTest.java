@@ -43,6 +43,7 @@ import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
+import features.dungeon.application.authored.DungeonCachedWindowStore;
 import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
 import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
 import features.encountertable.adapter.sqlite.query.SqliteEncounterTableCatalogAdapter;
@@ -241,7 +242,7 @@ public final class SessionPlannerShellLayoutTest {
         SqliteDungeonCatalogStore dungeonCatalog = new SqliteDungeonCatalogStore(dungeonDatabase);
         DungeonTestAssembly.Component dungeon = DungeonTestAssembly.create(
                 dungeonCatalog,
-                new SqliteDungeonWindowStore(dungeonDatabase),
+                new DungeonCachedWindowStore(new SqliteDungeonWindowStore(dungeonDatabase)),
                 new SqliteDungeonUnitOfWork(dungeonDatabase),
                 party.activeParty(),
                 party.travelPositions(),

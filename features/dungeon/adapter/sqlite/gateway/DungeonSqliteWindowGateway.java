@@ -15,6 +15,8 @@ import features.dungeon.application.authored.port.DungeonTravelChunkKeysResult;
 import features.dungeon.application.authored.port.DungeonTravelStartRequest;
 import features.dungeon.application.authored.port.DungeonTravelStartResult;
 import features.dungeon.application.authored.port.DungeonWindow;
+import features.dungeon.application.authored.port.DungeonWindowContentRequest;
+import features.dungeon.application.authored.port.DungeonWindowIndex;
 import features.dungeon.application.authored.port.DungeonWindowChunkHeader;
 import features.dungeon.application.authored.port.DungeonWindowContinuation;
 import features.dungeon.application.authored.port.DungeonWindowEntityFragment;
@@ -72,15 +74,47 @@ public final class DungeonSqliteWindowGateway {
         this.afterHeaderRead = Objects.requireNonNull(afterHeaderRead, "afterHeaderRead");
     }
 
-    public Optional<DungeonWindow> loadWindow(DungeonWindowRequest request) {
+    public Optional<DungeonWindowIndex> loadIndex(DungeonWindowRequest request) {
         DungeonWindowRequest safeRequest = Objects.requireNonNull(request, "request");
         DungeonSqliteQueryCounter queries = new DungeonSqliteQueryCounter();
         try (Connection connection = connectionSupport.openReadyConnection()) {
-            return DungeonSqliteReadSnapshot.read(
-                    connection,
-                    () -> loadWindowSnapshot(connection, safeRequest, queries));
+            return DungeonSqliteReadSnapshot.read(connection, () -> {
+                Optional<DungeonMapHeader> header = loadMapHeader(
+                        connection, safeRequest.mapId().value(), queries);
+                if (header.isEmpty()) {
+                    return Optional.empty();
+                }
+                afterHeaderRead.run();
+                return Optional.of(new DungeonWindowIndex(
+                        header.get(), safeRequest.requestGeneration(),
+                        loadChunkHeaders(connection, safeRequest, queries)));
+            });
         } catch (SQLException exception) {
-            throw new IllegalStateException("Failed to load Dungeon window from SQLite.", exception);
+            throw new IllegalStateException("Failed to load Dungeon window index from SQLite.", exception);
+        } finally {
+            lastStatementCount.set(queries.statements());
+            lastStatementSql.set(queries.preparedSql());
+        }
+    }
+
+    public Optional<DungeonWindow> loadContent(DungeonWindowContentRequest request) {
+        DungeonWindowContentRequest safeRequest = Objects.requireNonNull(request, "request");
+        DungeonSqliteQueryCounter queries = new DungeonSqliteQueryCounter();
+        DungeonWindowRequest windowRequest = new DungeonWindowRequest(
+                safeRequest.mapId(), safeRequest.requestGeneration(),
+                safeRequest.chunks().stream().map(DungeonWindowChunkHeader::key).toList());
+        try (Connection connection = connectionSupport.openReadyConnection()) {
+            return DungeonSqliteReadSnapshot.read(connection, () -> {
+                Optional<DungeonWindow> loaded = loadWindowSnapshot(connection, windowRequest, queries);
+                if (loaded.isEmpty()
+                        || loaded.get().mapHeader().revision() != safeRequest.expectedMapRevision()
+                        || !loaded.get().chunkHeaders().equals(safeRequest.chunks())) {
+                    return Optional.empty();
+                }
+                return loaded;
+            });
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load Dungeon window content from SQLite.", exception);
         } finally {
             lastStatementCount.set(queries.statements());
             lastStatementSql.set(queries.preparedSql());

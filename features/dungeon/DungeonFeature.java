@@ -18,6 +18,7 @@ import features.dungeon.api.authored.DungeonAuthoredApi;
 import features.dungeon.api.editor.DungeonEditorApi;
 import features.dungeon.api.travel.DungeonTravelApi;
 import features.dungeon.application.authored.DungeonAuthoredApplicationService;
+import features.dungeon.application.authored.DungeonCachedWindowStore;
 import features.dungeon.application.authored.DungeonAuthoredPublishedState;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
 import features.dungeon.application.authored.port.DungeonIdentityAllocator;
@@ -64,7 +65,8 @@ public final class DungeonFeature {
         UiDispatcher dispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
         SqliteDungeonCatalogStore catalogStore =
                 new SqliteDungeonCatalogStore(Objects.requireNonNull(database, "database"));
-        SqliteDungeonWindowStore windowStore = new SqliteDungeonWindowStore(database);
+        DungeonCachedWindowStore windowStore = new DungeonCachedWindowStore(
+                new SqliteDungeonWindowStore(database));
         SqliteDungeonUnitOfWork unitOfWork = new SqliteDungeonUnitOfWork(database);
         SqliteDungeonIdentityAllocator identityAllocator = new SqliteDungeonIdentityAllocator(database);
         Runtime runtime = createRuntime(

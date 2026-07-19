@@ -77,6 +77,17 @@ final class DungeonEditorRuntimeCommands
     }
 
     @Override
+    public void reloadMap(long mapIdValue) {
+        execute(() -> {
+            interactionState.clear();
+            draftSession.clearInlineLabelEditSession();
+            statePublisher.markDraftSessionChanged();
+            stairDraftOperation.clear();
+            applyInExecutionLane(() -> context.reloadMap(mapIdValue));
+        });
+    }
+
+    @Override
     public void createMap(String mapName) {
         execute(() -> {
             interactionState.clear();
