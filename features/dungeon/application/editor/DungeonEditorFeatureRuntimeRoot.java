@@ -7,6 +7,7 @@ import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.api.editor.DungeonEditorCommandOutcome;
+import features.dungeon.api.editor.DungeonEditorViewportInput;
 
 public final class DungeonEditorFeatureRuntimeRoot
         implements DungeonEditorMapCatalogOperations,
@@ -107,6 +108,10 @@ public final class DungeonEditorFeatureRuntimeRoot
         if (initializationRequested.compareAndSet(false, true)) {
             commands.apply(context::publishCurrent);
         }
+    }
+
+    public void setViewport(DungeonEditorViewportInput viewport) {
+        commands.setViewport(viewport);
     }
 
     public features.dungeon.api.editor.DungeonEditorState currentState() {

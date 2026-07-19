@@ -41,6 +41,7 @@ final class DungeonEditorBinder {
         mapCatalog.bind(mapCatalogContentModel);
         state.bind(statePanelModel);
         main.onViewInputEvent(viewModel::consume);
+        main.onVisibleCellBoundsChanged(viewModel::consumeViewport);
         controls.onControlsInput(viewModel::consume);
         mapCatalog.onViewInputEvent(viewModel::consume);
         state.onStateInput(viewModel::consume);

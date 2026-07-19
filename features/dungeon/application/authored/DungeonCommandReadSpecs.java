@@ -195,6 +195,10 @@ final class DungeonCommandReadSpecs {
             long revision,
             long requestGeneration,
             int projectionLevel,
+            int minimumQ,
+            int minimumR,
+            int maximumQ,
+            int maximumR,
             List<DungeonChunkKey> chunkKeys
     ) {
         AcceptedViewport {
@@ -202,7 +206,25 @@ final class DungeonCommandReadSpecs {
         }
 
         AcceptedViewport committed(long committedRevision) {
-            return new AcceptedViewport(mapId, committedRevision, requestGeneration, projectionLevel, chunkKeys);
+            return new AcceptedViewport(
+                    mapId,
+                    committedRevision,
+                    requestGeneration,
+                    projectionLevel,
+                    minimumQ,
+                    minimumR,
+                    maximumQ,
+                    maximumR,
+                    chunkKeys);
+        }
+
+        boolean matches(long expectedRevision, int level, int minQ, int minR, int maxQ, int maxR) {
+            return revision == expectedRevision
+                    && projectionLevel == level
+                    && minimumQ == minQ
+                    && minimumR == minR
+                    && maximumQ == maxQ
+                    && maximumR == maxR;
         }
     }
 }

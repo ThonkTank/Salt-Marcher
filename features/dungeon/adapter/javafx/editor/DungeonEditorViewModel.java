@@ -22,6 +22,8 @@ import features.dungeon.adapter.javafx.map.DungeonMapContentModel.InlineLabelEdi
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel.InlineLabelEditState;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel.PointerTarget;
 import features.dungeon.adapter.javafx.map.DungeonMapViewInputEvent;
+import features.dungeon.adapter.javafx.map.DungeonMapVisibleCellBounds;
+import features.dungeon.api.editor.DungeonEditorViewportInput;
 
 final class DungeonEditorViewModel {
     private static final long NO_TRANSITION_ID = 0L;
@@ -41,6 +43,7 @@ final class DungeonEditorViewModel {
     private boolean inlineEditOutsidePressActive;
     private DungeonEditorState latestEditorState = DungeonEditorState.empty();
     private InteractionState interactionState = InteractionState.empty();
+    private DungeonMapVisibleCellBounds latestVisibleCellBounds;
 
     DungeonEditorViewModel(
             DungeonEditorControlsPanelModel controlsPanelModel,
@@ -87,6 +90,26 @@ final class DungeonEditorViewModel {
         controlsProjection.set(ControlsProjection.from(safeState));
         statePanelModel.apply(safeState);
         mapContentModel.applyEditorState(safeState);
+        dispatchLatestViewport();
+    }
+
+    void consumeViewport(DungeonMapVisibleCellBounds bounds) {
+        latestVisibleCellBounds = Objects.requireNonNull(bounds, "bounds");
+        if (!cameraDragActive) {
+            dispatchLatestViewport();
+        }
+    }
+
+    private void dispatchLatestViewport() {
+        if (latestVisibleCellBounds == null) {
+            return;
+        }
+        editorApi.dispatch(new DungeonEditorIntent.SetViewport(new DungeonEditorViewportInput(
+                latestEditorState.projectionLevel(),
+                latestVisibleCellBounds.minimumQ(),
+                latestVisibleCellBounds.minimumR(),
+                latestVisibleCellBounds.maximumQ(),
+                latestVisibleCellBounds.maximumR())));
     }
 
     private InteractionState currentInteractionState() {
@@ -851,6 +874,7 @@ final class DungeonEditorViewModel {
         }
         if (event.input().mouseReleased() && event.buttons().middleButtonDown()) {
             cameraDragActive = false;
+            dispatchLatestViewport();
             return true;
         }
         if (event.input().scrolled() && !event.modifiers().controlDown()) {

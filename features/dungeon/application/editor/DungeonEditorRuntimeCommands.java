@@ -13,6 +13,7 @@ import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
+import features.dungeon.api.editor.DungeonEditorViewportInput;
 
 final class DungeonEditorRuntimeCommands
         implements DungeonEditorMapCatalogOperations,
@@ -58,6 +59,10 @@ final class DungeonEditorRuntimeCommands
 
     void bindPointerOperations(DungeonEditorPointerInteractionOperations pointerOperations) {
         this.pointerOperations = Objects.requireNonNull(pointerOperations, "pointerOperations");
+    }
+
+    void setViewport(DungeonEditorViewportInput viewport) {
+        apply(() -> context.setViewport(viewport));
     }
 
     @Override

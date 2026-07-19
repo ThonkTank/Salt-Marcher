@@ -51,7 +51,7 @@ final class DungeonAuthoredPreviewWorksetTest {
         DungeonEditorDungeonState dungeonState = new DungeonEditorDungeonState();
         DungeonAuthoredApplicationService.Session session = service.openSession(dungeonState);
         DungeonEditorWorkspaceValues.MapId mapId = new DungeonEditorWorkspaceValues.MapId(1L);
-        session.loadInitialWindow(mapId, 0);
+        session.loadViewport(mapId, 0, 0, 0, 63, 63);
         var surface = dungeonState.committedFacts(mapId).surface();
         var handle = surface.map().editorHandles().stream()
                 .filter(candidate -> candidate.ref().kind() == DungeonEditorHandleKind.CLUSTER_LABEL)
@@ -169,7 +169,7 @@ final class DungeonAuthoredPreviewWorksetTest {
         DungeonEditorDungeonState state = new DungeonEditorDungeonState();
         DungeonAuthoredApplicationService.Session session = service.openSession(state);
         DungeonEditorWorkspaceValues.MapId mapId = new DungeonEditorWorkspaceValues.MapId(1L);
-        session.loadInitialWindow(mapId, 0);
+        session.loadViewport(mapId, 0, 0, 0, 63, 63);
         return new Workset(windowStore, state, session, mapId);
     }
 

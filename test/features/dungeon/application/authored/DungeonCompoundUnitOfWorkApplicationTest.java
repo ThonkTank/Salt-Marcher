@@ -39,7 +39,7 @@ final class DungeonCompoundUnitOfWorkApplicationTest {
         DungeonEditorDungeonState state = new DungeonEditorDungeonState();
         DungeonAuthoredApplicationService service = service(store, unitOfWork);
         DungeonAuthoredApplicationService.Session session = service.openSession(state);
-        assertTrue(session.loadInitialWindow(new MapId(11L), 0));
+        assertTrue(session.loadViewport(new MapId(11L), 0, 0, 0, 63, 63));
         long initialRevision = store.revision(11L);
 
         assertTrue(session.saveAuthoredTransitionLink(new MapId(11L), 1L, 12L, 2L, true));
@@ -79,7 +79,7 @@ final class DungeonCompoundUnitOfWorkApplicationTest {
         DungeonEditorDungeonState state = new DungeonEditorDungeonState();
         DungeonAuthoredApplicationService service = service(store, unitOfWork);
         DungeonAuthoredApplicationService.Session session = service.openSession(state);
-        assertTrue(session.loadInitialWindow(new MapId(11L), 0));
+        assertTrue(session.loadViewport(new MapId(11L), 0, 0, 0, 63, 63));
         long initialRevision = store.revision(11L);
         assertTrue(session.saveAuthoredTransitionLink(new MapId(11L), 1L, 12L, 2L, true));
         var beforeRejection = state.committedFacts(new MapId(11L));
@@ -122,7 +122,7 @@ final class DungeonCompoundUnitOfWorkApplicationTest {
         DungeonEditorDungeonState state = new DungeonEditorDungeonState();
         DungeonAuthoredApplicationService service = service(store, unitOfWork);
         DungeonAuthoredApplicationService.Session session = service.openSession(state);
-        assertTrue(session.loadInitialWindow(new MapId(11L), 0));
+        assertTrue(session.loadViewport(new MapId(11L), 0, 0, 0, 63, 63));
         long initialRevision = store.revision(11L);
 
         unitOfWork.failNext(new IllegalStateException("injected compound storage failure"));
@@ -160,7 +160,7 @@ final class DungeonCompoundUnitOfWorkApplicationTest {
         DungeonEditorDungeonState state = new DungeonEditorDungeonState();
         DungeonAuthoredApplicationService service = service(store, unitOfWork);
         DungeonAuthoredApplicationService.Session session = service.openSession(state);
-        assertTrue(session.loadInitialWindow(new MapId(11L), 0));
+        assertTrue(session.loadViewport(new MapId(11L), 0, 0, 0, 63, 63));
 
         assertTrue(session.saveAuthoredTransitionLink(new MapId(11L), 1L, 12L, 2L, false));
         assertEquals(1, unitOfWork.compoundPatches.getFirst().patches().size());
@@ -180,7 +180,7 @@ final class DungeonCompoundUnitOfWorkApplicationTest {
         DungeonAuthoredApplicationService service = service(store, unitOfWork);
         DungeonAuthoredApplicationService.Session session = service.openSession(state);
         MapId sourceMapId = new MapId(11L);
-        assertTrue(session.loadInitialWindow(sourceMapId, 0));
+        assertTrue(session.loadViewport(sourceMapId, 0, 0, 0, 63, 63));
         assertTrue(session.saveAuthoredTransitionLink(sourceMapId, 1L, 12L, 2L, true));
         var committedBeforeFailure = state.committedFacts(sourceMapId).committedSnapshot();
         int commitsBeforeFailure = unitOfWork.compoundPatches.size();

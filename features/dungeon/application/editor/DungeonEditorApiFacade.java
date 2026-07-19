@@ -50,7 +50,9 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
     @Override
     public void dispatch(DungeonEditorIntent intent) {
         DungeonEditorIntent safeIntent = Objects.requireNonNull(intent, "intent");
-        if (safeIntent instanceof DungeonEditorIntent.SelectMap selectMap) {
+        if (safeIntent instanceof DungeonEditorIntent.SetViewport setViewport) {
+            runtimeRoot.setViewport(setViewport.viewport());
+        } else if (safeIntent instanceof DungeonEditorIntent.SelectMap selectMap) {
             runtimeRoot.selectMap(selectMap.mapId().value());
         } else if (safeIntent instanceof DungeonEditorIntent.CreateMap createMap) {
             runtimeRoot.createMap(createMap.mapName());

@@ -1381,35 +1381,65 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
 
     private final class LoadOperations {
 
-        private boolean loadInitialWindow(
+        private ViewportLoadResult loadViewportWindow(
                 MapId mapId,
                 int projectionLevel,
+                int minimumQ,
+                int minimumR,
+                int maximumQ,
+                int maximumR,
+                boolean coalesce,
                 DungeonEditorDungeonState state
         ) {
+            if (mapId == null || maximumQ < minimumQ || maximumR < minimumR) {
+                return ViewportLoadResult.REJECTED;
+            }
+            DungeonMapHeader expectedHeader = catalogStore.find(domainMapId(mapId)).orElse(null);
+            if (expectedHeader == null) {
+                return ViewportLoadResult.REJECTED;
+            }
+            DungeonCommandReadSpecs.AcceptedViewport current = acceptedViewports.get(mapId.value());
+            if (coalesce
+                    && current != null
+                    && state.committedFacts(mapId).committedSnapshot() != null
+                    && current.matches(
+                            expectedHeader.revision(),
+                            projectionLevel,
+                            minimumQ,
+                            minimumR,
+                            maximumQ,
+                            maximumR)) {
+                return ViewportLoadResult.COALESCED;
+            }
             long generation = windowRequestGeneration.incrementAndGet();
             DungeonViewportRequest viewport = new DungeonViewportRequest(
-                    mapId.value(), generation, projectionLevel, 0, 0, 63, 63);
+                    mapId.value(),
+                    generation,
+                    projectionLevel,
+                    minimumQ,
+                    minimumR,
+                    maximumQ,
+                    maximumR);
             DungeonWindowRequest request = new DungeonWindowRequest(
                     domainMapId(mapId), generation, List.copyOf(viewport.loadingChunks()));
             DungeonWindow window = windowStore.loadWindow(request).orElse(null);
             if (window == null) {
-                rejectLatestWindow(generation, state);
-                return false;
+                return ViewportLoadResult.REJECTED;
             }
             try {
                 validateWindowResult(request, window);
             } catch (IllegalStateException invalidWindow) {
-                rejectLatestWindow(generation, state);
-                return false;
+                return ViewportLoadResult.REJECTED;
             }
             long mapIdValue = mapId.value();
             if (generation != windowRequestGeneration.get()
-                    || generation <= acceptedWindowRequestGeneration) {
-                return false;
+                    || generation <= acceptedWindowRequestGeneration
+                    || window.mapHeader().revision() != expectedHeader.revision()) {
+                return ViewportLoadResult.REJECTED;
             }
             if (!publicationOperations.publishWindowSnapshot(
                     windowProjection.editorSnapshot(window, projectionLevel), state)) {
-                return false;
+                return ViewportLoadResult.REJECTED;
             }
             acceptedViewports.put(
                     mapIdValue,
@@ -1418,26 +1448,13 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                             window.mapHeader().revision(),
                             window.requestGeneration(),
                             projectionLevel,
+                            minimumQ,
+                            minimumR,
+                            maximumQ,
+                            maximumR,
                             request.chunkKeys()));
             acceptedWindowRequestGeneration = generation;
-            return true;
-        }
-
-        private void rejectLatestWindow(long generation, DungeonEditorDungeonState state) {
-            if (generation == windowRequestGeneration.get()) {
-                state.replaceSnapshot(null);
-                state.replaceInspector(null);
-                state.replacePreview(null);
-            }
-        }
-
-        private void loadAuthoredMap(
-                MapId mapId,
-                DungeonEditorDungeonState state
-        ) {
-            DungeonCommandReadSpecs.AcceptedViewport accepted =
-                    mapId == null ? null : acceptedViewports.get(mapId.value());
-            loadInitialWindow(mapId, accepted == null ? 0 : accepted.projectionLevel(), state);
+            return ViewportLoadResult.ACCEPTED;
         }
 
         private LoadDungeonSnapshotUseCase.@Nullable InspectorSnapshotData loadInspectorWithSelection(
@@ -1521,6 +1538,12 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     clusterRef(handleRef.clusterId()),
                     roomRef(handleRef.roomId()));
         }
+    }
+
+    private enum ViewportLoadResult {
+        ACCEPTED,
+        COALESCED,
+        REJECTED
     }
 
     private final class CorridorFeatureOperations {
@@ -2613,12 +2636,42 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             catalogOperations.searchMaps(query, dungeonState);
         }
 
-        public void loadMap(MapId mapId) {
-            loadOperations.loadAuthoredMap(mapId, dungeonState);
+        public boolean loadViewport(
+                MapId mapId,
+                int projectionLevel,
+                int minimumQ,
+                int minimumR,
+                int maximumQ,
+                int maximumR
+        ) {
+            return loadOperations.loadViewportWindow(
+                    mapId,
+                    projectionLevel,
+                    minimumQ,
+                    minimumR,
+                    maximumQ,
+                    maximumR,
+                    true,
+                    dungeonState) == ViewportLoadResult.ACCEPTED;
         }
 
-        public boolean loadInitialWindow(MapId mapId, int projectionLevel) {
-            return loadOperations.loadInitialWindow(mapId, projectionLevel, dungeonState);
+        public boolean refreshViewport(
+                MapId mapId,
+                int projectionLevel,
+                int minimumQ,
+                int minimumR,
+                int maximumQ,
+                int maximumR
+        ) {
+            return loadOperations.loadViewportWindow(
+                    mapId,
+                    projectionLevel,
+                    minimumQ,
+                    minimumR,
+                    maximumQ,
+                    maximumR,
+                    false,
+                    dungeonState) == ViewportLoadResult.ACCEPTED;
         }
 
         public void loadInspectorWithSelection(
