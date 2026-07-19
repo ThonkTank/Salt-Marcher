@@ -17,6 +17,7 @@ final class DungeonSqliteSchemaManager {
             DungeonPersistenceSchema.IDENTITY_SEQUENCES_TABLE,
             DungeonPersistenceSchema.CORRIDOR_ROUTE_CELLS_TABLE,
             DungeonPersistenceSchema.CORRIDOR_ROUTE_DEPENDENCIES_TABLE,
+            DungeonPersistenceSchema.AUTHORED_LEVEL_BOUNDS_TABLE,
             DungeonPersistenceSchema.ENTITY_CHUNKS_TABLE,
             DungeonPersistenceSchema.CHUNKS_TABLE,
             DungeonPersistenceSchema.CORRIDOR_ANCHOR_REFS_TABLE,

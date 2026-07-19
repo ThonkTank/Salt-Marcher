@@ -106,10 +106,72 @@ and commit boundaries. M7 starts only after both are complete.
   local identity derivation, compatibility writer, and full-record fixture
   families are deleted.
 - M4.6 delivery proof is literal green `./gradlew check` plus
-  `./gradlew installDesktopApp`. M5.1 is complete through PR #536. M5.2 is
-  complete in this change with the same literal green proof; M5.3 is next. No
-  intermediate review panel runs; the single independent cross-roadmap review
-  runs only after all M7 implementation is complete.
+  `./gradlew installDesktopApp`. M5.1 is complete through PR #536 and M5.2
+  through PR #538. M5.3 is complete in this change with the same literal green
+  proof; M5.4 is next. No intermediate review panel runs; the single independent
+  cross-roadmap review runs only after all M7 implementation is complete.
+
+### Completed Slice Contract: M5.3 Indexed Bounds And Paged Continuations
+
+#### Goal And Authoritative Index
+
+- Extend the fresh destructive schema-v6 `dungeon_entity_chunks` index with the
+  exact cell extent contributed by one stable entity inside one chunk and its
+  total entity chunk count. Add level-keyed `dungeon_authored_level_bounds` as
+  the sole public authored-bounds source. There is no v5 translation, backfill,
+  preservation path, or schema v7.
+- Maintain entity extents, level bounds, chunk revisions, and map revision in
+  the same patch/UoW transaction. Normal and compound rollback must restore all
+  of them. Bounds are recomputed only for old/new affected levels through
+  indexed ordered extrema, never through authored hydration or map scans.
+- Preserve the M5.2 cache key `(DungeonChunkKey, contentRevision)`, protection,
+  and touched-only invalidation. Per-chunk cached content may carry immutable
+  entity extents; it must not carry global bounds or viewport-specific pages.
+
+#### Typed Reads And Paging
+
+- Add typed per-chunk entity extent, authored level bounds, continuation cursor,
+  page, and page-request values. `DungeonWindowIndex` and `DungeonWindow` carry
+  indexed bounds and the first continuation page; the public viewport snapshot
+  publishes only the active level's indexed bounds plus that typed page.
+- A continuation candidate is a stable entity intersecting at least one of the
+  exact requested chunks. Exclude the complete requested chunk set, deduplicate
+  by `(entityRef, offWindowChunk)`, and order by
+  `(entityKind, entityId, level, chunkR, chunkQ)`.
+- Page size is 256; SQLite reads at most 257 ordered rows to determine an
+  exclusive next cursor. A cursor is valid only for the same map, expected map
+  revision, request generation, and exact ordered requested-chunk set. Stale,
+  superseded, or mismatched requests publish nothing and do not mutate cache.
+- Command completeness never depends on paging through every continuation.
+  When the number of requested extents is below `entityChunkCount`, the command
+  loader resolves the stable entity through revision-bound identity closure.
+
+#### Implementation And Proof
+
+1. Change only the fresh v6 schema/create-drop ownership and constraints; add
+   extent/extrema indexes and level-bounds storage with cascade deletion.
+2. Derive old/new per-chunk extents from the complete patch-bound entity closure
+   in `DungeonSqlitePatchSpatialWriter`; update extent rows and affected level
+   bounds atomically before committing chunk/map revisions.
+3. Add exact indexed bounds and cursor-page queries to the SQLite window source,
+   then thread typed values through cached assembly, command completeness, and
+   viewport projection without changing M5.2 cache semantics.
+4. Prove empty maps/levels, negative coordinates, multiple levels, moving or
+   deleting an extremum, compound commit/rollback, multi-chunk stitching, and
+   0/1/256/257/>512 continuation rows with no gaps or duplicates. Stale revision,
+   generation, and changed chunk sets must reject.
+5. On 1k/10k/100k sparse datasets, bounds statement count is constant per
+   requested level, continuation results are capped at 257 rows, and content
+   work remains proportional to requested chunks.
+
+#### Delete Gate
+
+- Delete full off-window membership materialization, unpaged continuation
+  lists, public bounds derived from `workspaceBounds` or loaded render facts,
+  and any authored-table/map-wide scan used for bounds or continuations.
+- Literal green focused tests, `./gradlew check`, and
+  `./gradlew installDesktopApp` are required before the M5.3 PR merges. M5.4
+  starts from that merge without a review cycle.
 
 ### Completed Slice Contract: M5.2 Per-Chunk Cache And Touched Invalidation
 

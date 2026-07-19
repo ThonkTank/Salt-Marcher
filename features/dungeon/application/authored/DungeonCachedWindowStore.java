@@ -4,6 +4,10 @@ import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.application.authored.command.DungeonPatchEntityRef;
 import features.dungeon.application.authored.port.DungeonIdentityClosureRequest;
 import features.dungeon.application.authored.port.DungeonIdentityClosureResult;
+import features.dungeon.application.authored.port.DungeonAuthoredLevelBounds;
+import features.dungeon.application.authored.port.DungeonContinuationPage;
+import features.dungeon.application.authored.port.DungeonContinuationPageRequest;
+import features.dungeon.application.authored.port.DungeonEntityChunkExtent;
 import features.dungeon.application.authored.port.DungeonInboundReferenceRequest;
 import features.dungeon.application.authored.port.DungeonInboundReferenceResult;
 import features.dungeon.application.authored.port.DungeonTravelChunkKeysRequest;
@@ -87,6 +91,11 @@ public final class DungeonCachedWindowStore implements DungeonWindowStore {
     }
 
     @Override
+    public Optional<DungeonContinuationPage> loadContinuationPage(DungeonContinuationPageRequest request) {
+        return source.loadContinuationPage(Objects.requireNonNull(request, "request"));
+    }
+
+    @Override
     public synchronized void protectVisibleChunks(Collection<DungeonChunkKey> chunks) {
         Set<ChunkVersion> protectedVersions = new LinkedHashSet<>();
         for (DungeonChunkKey chunk : chunks == null ? List.<DungeonChunkKey>of() : chunks) {
@@ -159,7 +168,9 @@ public final class DungeonCachedWindowStore implements DungeonWindowStore {
     private static boolean sameIndex(DungeonWindowIndex left, DungeonWindowIndex right) {
         return left.mapHeader().equals(right.mapHeader())
                 && left.requestGeneration() == right.requestGeneration()
-                && left.chunkHeaders().equals(right.chunkHeaders());
+                && left.chunkHeaders().equals(right.chunkHeaders())
+                && left.authoredBounds().equals(right.authoredBounds())
+                && left.continuationPage().equals(right.continuationPage());
     }
 
     private static boolean validSingleChunk(
@@ -178,28 +189,16 @@ public final class DungeonCachedWindowStore implements DungeonWindowStore {
             Map<ChunkVersion, ChunkContent> contents
     ) {
         Map<DungeonPatchEntityRef, DungeonWindowEntityFragment> fragments = new LinkedHashMap<>();
-        Map<DungeonPatchEntityRef, Set<DungeonChunkKey>> offWindow = new LinkedHashMap<>();
+        List<DungeonEntityChunkExtent> extents = new ArrayList<>();
         for (ChunkVersion version : versions) {
             ChunkContent content = Objects.requireNonNull(contents.get(version), "indexed chunk content");
             for (DungeonWindowEntityFragment fragment : content.fragments()) {
                 fragments.merge(fragment.entityRef(), fragment, DungeonCachedWindowStore::merge);
             }
-            for (DungeonWindowContinuation continuation : content.continuations()) {
-                offWindow.computeIfAbsent(continuation.entityRef(), ignored -> new LinkedHashSet<>())
-                        .addAll(continuation.offWindowChunks());
-            }
-        }
-        Set<DungeonChunkKey> requested = new LinkedHashSet<>(
-                index.chunkHeaders().stream().map(DungeonWindowChunkHeader::key).toList());
-        List<DungeonWindowContinuation> continuations = new ArrayList<>();
-        for (Map.Entry<DungeonPatchEntityRef, Set<DungeonChunkKey>> entry : offWindow.entrySet()) {
-            entry.getValue().removeAll(requested);
-            if (!entry.getValue().isEmpty()) {
-                continuations.add(new DungeonWindowContinuation(entry.getKey(), List.copyOf(entry.getValue())));
-            }
+            extents.addAll(content.entityExtents());
         }
         return new DungeonWindow(index.mapHeader(), index.requestGeneration(), index.chunkHeaders(),
-                List.copyOf(fragments.values()), continuations);
+                List.copyOf(fragments.values()), extents, index.authoredBounds(), index.continuationPage());
     }
 
     private static DungeonWindowEntityFragment merge(
@@ -284,16 +283,16 @@ public final class DungeonCachedWindowStore implements DungeonWindowStore {
     private record ChunkContent(
             DungeonWindowChunkHeader header,
             List<DungeonWindowEntityFragment> fragments,
-            List<DungeonWindowContinuation> continuations
+            List<DungeonEntityChunkExtent> entityExtents
     ) {
         private ChunkContent {
             header = Objects.requireNonNull(header, "header");
             fragments = List.copyOf(fragments);
-            continuations = List.copyOf(continuations);
+            entityExtents = List.copyOf(entityExtents);
         }
 
         static ChunkContent from(DungeonWindow window) {
-            return new ChunkContent(window.chunkHeaders().get(0), window.fragments(), window.continuations());
+            return new ChunkContent(window.chunkHeaders().get(0), window.fragments(), window.entityExtents());
         }
 
         long weight() {
@@ -303,9 +302,7 @@ public final class DungeonCachedWindowStore implements DungeonWindowStore {
                 result = add(result, fragment.dependencyHeaders().size());
                 result = add(result, fragment.intersectingRequestedChunks().size());
             }
-            for (DungeonWindowContinuation continuation : continuations) {
-                result = add(result, continuation.offWindowChunks().size());
-            }
+            result = add(result, entityExtents.size());
             return result;
         }
 

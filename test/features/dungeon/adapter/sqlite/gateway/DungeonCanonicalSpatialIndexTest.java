@@ -142,6 +142,17 @@ final class DungeonCanonicalSpatialIndexTest {
                     "SELECT COUNT(*) FROM dungeon_chunks"));
             assertEquals(List.of("17"), rows(connection,
                     "SELECT COUNT(*) FROM dungeon_entity_chunks"));
+            assertEquals(List.of("7"), rows(connection,
+                    "SELECT DISTINCT entity_chunk_count FROM dungeon_entity_chunks"
+                            + " WHERE entity_kind='CORRIDOR' AND entity_id=301"));
+            assertEquals(List.of(
+                    "-1|-1|-1|-1|-1",
+                    "0|-65|-65|129|63",
+                    "1|-1|64|-1|64",
+                    "2|128|-129|128|-129",
+                    "5|-64|-65|-63|-64"), rows(connection,
+                    "SELECT level_z,minimum_q,minimum_r,maximum_q,maximum_r"
+                            + " FROM dungeon_authored_level_bounds ORDER BY level_z"));
             assertEquals(List.of("261|261"), rows(connection,
                     "SELECT COUNT(*), COUNT(DISTINCT level_z || '|' || cell_x || '|' || cell_y)"
                             + " FROM dungeon_corridor_route_cells"

@@ -5,6 +5,8 @@ import features.dungeon.application.authored.command.DungeonCompoundPatch;
 import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.command.DungeonPatchEntityRef;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
+import features.dungeon.application.authored.port.DungeonContinuationPage;
+import features.dungeon.application.authored.port.DungeonEntityChunkExtent;
 import features.dungeon.application.authored.port.DungeonEntitySnapshot;
 import features.dungeon.application.authored.port.DungeonIdentityClosureRequest;
 import features.dungeon.application.authored.port.DungeonIdentityClosureResult;
@@ -13,7 +15,6 @@ import features.dungeon.application.authored.port.DungeonInboundReferenceResult;
 import features.dungeon.application.authored.port.DungeonMapHeader;
 import features.dungeon.application.authored.port.DungeonWindow;
 import features.dungeon.application.authored.port.DungeonWindowChunkHeader;
-import features.dungeon.application.authored.port.DungeonWindowContinuation;
 import features.dungeon.application.authored.port.DungeonWindowRequest;
 import features.dungeon.application.authored.port.DungeonWindowStore;
 import features.dungeon.domain.core.structure.DungeonMap;
@@ -70,7 +71,9 @@ public final class TestDungeonCommandStore implements DungeonCatalogStore, Dunge
             return Optional.empty();
         }
         List<DungeonEntitySnapshot> snapshots = snapshots(map);
-        DungeonChunkKey offWindow = new DungeonChunkKey(request.mapId().value(), 0, 1_000_000, 1_000_000);
+        List<DungeonEntityChunkExtent> extents = request.chunkKeys().isEmpty()
+                ? List.of()
+                : snapshots.stream().map(snapshot -> extent(snapshot.ref(), request.chunkKeys().getFirst())).toList();
         return Optional.of(new DungeonWindow(
                 header(map),
                 request.requestGeneration(),
@@ -78,9 +81,9 @@ public final class TestDungeonCommandStore implements DungeonCatalogStore, Dunge
                         .map(key -> new DungeonWindowChunkHeader(key, map.revision()))
                         .toList(),
                 List.of(),
-                snapshots.stream()
-                        .map(snapshot -> new DungeonWindowContinuation(snapshot.ref(), List.of(offWindow)))
-                        .toList()));
+                extents,
+                List.of(),
+                DungeonContinuationPage.empty()));
     }
 
     @Override
@@ -163,6 +166,12 @@ public final class TestDungeonCommandStore implements DungeonCatalogStore, Dunge
 
     private static DungeonMapHeader header(DungeonMap map) {
         return new DungeonMapHeader(map.metadata().mapId(), map.metadata().mapName(), map.revision());
+    }
+
+    private static DungeonEntityChunkExtent extent(DungeonPatchEntityRef ref, DungeonChunkKey chunk) {
+        return new DungeonEntityChunkExtent(
+                ref, chunk,
+                chunk.minimumQ(), chunk.minimumR(), chunk.minimumQ(), chunk.minimumR(), 2);
     }
 
     private static List<DungeonEntitySnapshot> snapshots(DungeonMap map) {

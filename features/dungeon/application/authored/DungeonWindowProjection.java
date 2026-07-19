@@ -15,6 +15,8 @@ import features.dungeon.api.DungeonTopologyElementKind;
 import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonTopologyKind;
 import features.dungeon.api.DungeonViewportContinuation;
+import features.dungeon.api.DungeonViewportContinuationCursor;
+import features.dungeon.api.DungeonViewportContinuationPage;
 import features.dungeon.api.DungeonViewportRequest;
 import features.dungeon.api.DungeonViewportSnapshot;
 import features.dungeon.application.authored.port.DungeonWindow;
@@ -76,8 +78,8 @@ final class DungeonWindowProjection {
                 projection.publicBoundaries(),
                 projection.publicFeatures(),
                 projection.publicHandles(),
-                continuations(window),
-                projection.bounds());
+                continuationPage(window),
+                indexedBounds(window, request.level()));
     }
 
     private Projection project(DungeonWindow window, int level) {
@@ -128,8 +130,7 @@ final class DungeonWindowProjection {
                 publicAreas(areas),
                 publicBoundaries(boundaries),
                 publicFeatures(features),
-                publicHandles(handles),
-                dimensions.publicBounds());
+                publicHandles(handles));
     }
 
     private static List<DungeonEditorWorkspaceValues.Area> mergeClusterMemberCells(
@@ -699,6 +700,24 @@ final class DungeonWindowProjection {
         return List.copyOf(result);
     }
 
+    private static DungeonViewportContinuationPage continuationPage(DungeonWindow window) {
+        var cursor = window.continuationPage().nextCursor().map(value ->
+                new DungeonViewportContinuationCursor(
+                        value.mapId().value(), value.expectedMapRevision(), value.requestGeneration(),
+                        value.requestedChunks(), value.entityRef().kind().name(), value.entityRef().id(),
+                        value.offWindowChunk()));
+        return new DungeonViewportContinuationPage(continuations(window), cursor);
+    }
+
+    private static DungeonViewportSnapshot.AuthoredBounds indexedBounds(DungeonWindow window, int level) {
+        return window.authoredBounds().stream()
+                .filter(bounds -> bounds.level() == level && bounds.present())
+                .findFirst()
+                .map(bounds -> new DungeonViewportSnapshot.AuthoredBounds(
+                        true, bounds.minimumQ(), bounds.minimumR(), bounds.maximumQ(), bounds.maximumR()))
+                .orElseGet(DungeonViewportSnapshot.AuthoredBounds::empty);
+    }
+
     private static DungeonTopologyElementRef topologyRef(
             features.dungeon.application.authored.command.DungeonPatchEntityRef.Kind kind,
             long id
@@ -758,8 +777,7 @@ final class DungeonWindowProjection {
             List<DungeonAreaSnapshot> publicAreas,
             List<DungeonBoundarySnapshot> publicBoundaries,
             List<DungeonFeatureSnapshot> publicFeatures,
-            List<DungeonEditorHandleSnapshot> publicHandles,
-            DungeonViewportSnapshot.AuthoredBounds bounds
+            List<DungeonEditorHandleSnapshot> publicHandles
     ) {
     }
 

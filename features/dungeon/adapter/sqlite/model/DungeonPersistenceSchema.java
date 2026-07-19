@@ -25,6 +25,7 @@ public final class DungeonPersistenceSchema {
     public static final String FEATURE_MARKERS_TABLE = "dungeon_feature_markers";
     public static final String CHUNKS_TABLE = "dungeon_chunks";
     public static final String ENTITY_CHUNKS_TABLE = "dungeon_entity_chunks";
+    public static final String AUTHORED_LEVEL_BOUNDS_TABLE = "dungeon_authored_level_bounds";
     public static final String CORRIDOR_ROUTE_CELLS_TABLE = "dungeon_corridor_route_cells";
     public static final String CORRIDOR_ROUTE_DEPENDENCIES_TABLE = "dungeon_corridor_route_dependencies";
     public static final String IDENTITY_SEQUENCES_TABLE = "dungeon_identity_sequences";
@@ -60,6 +61,14 @@ public final class DungeonPersistenceSchema {
                     + "level_z        INTEGER NOT NULL,"
                     + "chunk_q        INTEGER NOT NULL,"
                     + "chunk_r        INTEGER NOT NULL,"
+                    + "minimum_q      INTEGER NOT NULL,"
+                    + "minimum_r      INTEGER NOT NULL,"
+                    + "maximum_q      INTEGER NOT NULL,"
+                    + "maximum_r      INTEGER NOT NULL,"
+                    + "entity_chunk_count INTEGER NOT NULL CHECK(entity_chunk_count > 0),"
+                    + "CHECK(maximum_q >= minimum_q AND maximum_r >= minimum_r),"
+                    + "CHECK(minimum_q >= chunk_q * 64 AND maximum_q < (chunk_q + 1) * 64),"
+                    + "CHECK(minimum_r >= chunk_r * 64 AND maximum_r < (chunk_r + 1) * 64),"
                     + "PRIMARY KEY (dungeon_map_id, entity_kind, entity_id, level_z, chunk_q, chunk_r),"
                     + "FOREIGN KEY (dungeon_map_id, level_z, chunk_q, chunk_r)"
                     + " REFERENCES dungeon_chunks(dungeon_map_id, level_z, chunk_q, chunk_r) ON DELETE CASCADE"
@@ -68,6 +77,27 @@ public final class DungeonPersistenceSchema {
     public static final String CREATE_DUNGEON_ENTITY_CHUNKS_LOOKUP_INDEX_SQL =
             "CREATE INDEX IF NOT EXISTS idx_dungeon_entity_chunks_by_chunk "
                     + "ON dungeon_entity_chunks(dungeon_map_id, level_z, chunk_q, chunk_r, entity_kind, entity_id)";
+
+    public static final String CREATE_DUNGEON_ENTITY_CHUNKS_EXTREMA_INDEX_SQL =
+            "CREATE INDEX IF NOT EXISTS idx_dungeon_entity_chunks_level_extrema "
+                    + "ON dungeon_entity_chunks(dungeon_map_id, level_z, minimum_q, maximum_q, minimum_r, maximum_r)";
+
+    public static final String CREATE_DUNGEON_ENTITY_CHUNKS_CONTINUATION_INDEX_SQL =
+            "CREATE INDEX IF NOT EXISTS idx_dungeon_entity_chunks_continuation "
+                    + "ON dungeon_entity_chunks("
+                    + "dungeon_map_id, entity_kind, entity_id, level_z, chunk_r, chunk_q)";
+
+    public static final String CREATE_DUNGEON_AUTHORED_LEVEL_BOUNDS_TABLE_SQL =
+            "CREATE TABLE IF NOT EXISTS dungeon_authored_level_bounds ("
+                    + "dungeon_map_id INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                    + "level_z        INTEGER NOT NULL,"
+                    + "minimum_q      INTEGER NOT NULL,"
+                    + "minimum_r      INTEGER NOT NULL,"
+                    + "maximum_q      INTEGER NOT NULL,"
+                    + "maximum_r      INTEGER NOT NULL,"
+                    + "CHECK(maximum_q >= minimum_q AND maximum_r >= minimum_r),"
+                    + "PRIMARY KEY (dungeon_map_id, level_z)"
+                    + ")";
 
     public static final String CREATE_DUNGEON_CHUNKS_HORIZONTAL_LOOKUP_INDEX_SQL =
             "CREATE INDEX IF NOT EXISTS idx_dungeon_chunks_by_horizontal_window "
@@ -306,6 +336,7 @@ public final class DungeonPersistenceSchema {
             CREATE_DUNGEON_IDENTITY_SEQUENCES_TABLE_SQL,
             CREATE_DUNGEON_CHUNKS_TABLE_SQL,
             CREATE_DUNGEON_ENTITY_CHUNKS_TABLE_SQL,
+            CREATE_DUNGEON_AUTHORED_LEVEL_BOUNDS_TABLE_SQL,
             CREATE_DUNGEON_CORRIDOR_ROUTE_CELLS_TABLE_SQL,
             CREATE_DUNGEON_CORRIDOR_ROUTE_DEPENDENCIES_TABLE_SQL,
             CREATE_DUNGEON_ROOM_CLUSTERS_TABLE_SQL,
@@ -330,6 +361,8 @@ public final class DungeonPersistenceSchema {
     public static final List<String> CREATE_INDEX_SQL = List.of(
             CREATE_DUNGEON_CHUNKS_HORIZONTAL_LOOKUP_INDEX_SQL,
             CREATE_DUNGEON_ENTITY_CHUNKS_LOOKUP_INDEX_SQL,
+            CREATE_DUNGEON_ENTITY_CHUNKS_EXTREMA_INDEX_SQL,
+            CREATE_DUNGEON_ENTITY_CHUNKS_CONTINUATION_INDEX_SQL,
             CREATE_DUNGEON_CORRIDOR_ROUTE_CELLS_LOOKUP_INDEX_SQL,
             CREATE_DUNGEON_CORRIDOR_ROUTE_DEPENDENCIES_LOOKUP_INDEX_SQL,
             CREATE_DUNGEON_ROOMS_CLUSTER_LOOKUP_INDEX_SQL

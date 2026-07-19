@@ -20,7 +20,7 @@ public record DungeonViewportSnapshot(
         List<DungeonBoundarySnapshot> boundaries,
         List<DungeonFeatureSnapshot> features,
         List<DungeonEditorHandleSnapshot> editorHandles,
-        List<DungeonViewportContinuation> continuations,
+        DungeonViewportContinuationPage continuationPage,
         AuthoredBounds authoredBounds
 ) {
     public DungeonViewportSnapshot {
@@ -40,8 +40,12 @@ public record DungeonViewportSnapshot(
         boundaries = boundaries == null ? List.of() : List.copyOf(boundaries);
         features = features == null ? List.of() : List.copyOf(features);
         editorHandles = editorHandles == null ? List.of() : List.copyOf(editorHandles);
-        continuations = continuations == null ? List.of() : List.copyOf(continuations);
+        continuationPage = continuationPage == null ? DungeonViewportContinuationPage.empty() : continuationPage;
         authoredBounds = authoredBounds == null ? AuthoredBounds.empty() : authoredBounds;
+    }
+
+    public List<DungeonViewportContinuation> continuations() {
+        return continuationPage.entries();
     }
 
     public record AuthoredBounds(boolean present, int minimumQ, int minimumR, int maximumQ, int maximumR) {

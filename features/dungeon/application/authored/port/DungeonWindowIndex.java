@@ -9,8 +9,18 @@ import java.util.Objects;
 public record DungeonWindowIndex(
         DungeonMapHeader mapHeader,
         long requestGeneration,
-        List<DungeonWindowChunkHeader> chunkHeaders
+        List<DungeonWindowChunkHeader> chunkHeaders,
+        List<DungeonAuthoredLevelBounds> authoredBounds,
+        DungeonContinuationPage continuationPage
 ) {
+    public DungeonWindowIndex(
+            DungeonMapHeader mapHeader,
+            long requestGeneration,
+            List<DungeonWindowChunkHeader> chunkHeaders
+    ) {
+        this(mapHeader, requestGeneration, chunkHeaders, List.of(), DungeonContinuationPage.empty());
+    }
+
     public DungeonWindowIndex {
         mapHeader = Objects.requireNonNull(mapHeader, "mapHeader");
         if (requestGeneration < 0L) {
@@ -20,5 +30,10 @@ public record DungeonWindowIndex(
                 chunkHeaders == null ? List.of() : chunkHeaders);
         ordered.sort(Comparator.comparing(DungeonWindowChunkHeader::key, DungeonWindowRequest.CHUNK_ORDER));
         chunkHeaders = List.copyOf(ordered);
+        List<DungeonAuthoredLevelBounds> orderedBounds = new ArrayList<>(
+                authoredBounds == null ? List.of() : authoredBounds);
+        orderedBounds.sort(Comparator.comparingInt(DungeonAuthoredLevelBounds::level));
+        authoredBounds = List.copyOf(orderedBounds);
+        continuationPage = continuationPage == null ? DungeonContinuationPage.empty() : continuationPage;
     }
 }

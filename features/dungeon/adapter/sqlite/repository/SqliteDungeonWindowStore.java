@@ -14,6 +14,8 @@ import features.dungeon.application.authored.port.DungeonWindowContentRequest;
 import features.dungeon.application.authored.port.DungeonWindowContentSource;
 import features.dungeon.application.authored.port.DungeonWindowIndex;
 import features.dungeon.application.authored.port.DungeonWindowRequest;
+import features.dungeon.application.authored.port.DungeonContinuationPage;
+import features.dungeon.application.authored.port.DungeonContinuationPageRequest;
 import java.util.Objects;
 import java.util.Optional;
 import platform.persistence.SqliteDatabase;
@@ -43,6 +45,11 @@ public final class SqliteDungeonWindowStore implements DungeonWindowContentSourc
     @Override
     public Optional<DungeonWindow> loadContent(DungeonWindowContentRequest request) {
         return gateway.loadContent(request);
+    }
+
+    @Override
+    public Optional<DungeonContinuationPage> loadContinuationPage(DungeonContinuationPageRequest request) {
+        return gateway.loadContinuationPage(request);
     }
 
     @Override

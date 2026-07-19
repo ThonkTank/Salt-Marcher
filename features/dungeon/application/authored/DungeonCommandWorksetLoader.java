@@ -57,7 +57,13 @@ public final class DungeonCommandWorksetLoader {
             required.add(fragment.entityRef());
             required.addAll(fragment.dependencyHeaders());
         });
-        window.continuations().forEach(continuation -> required.add(continuation.entityRef()));
+        Map<DungeonPatchEntityRef, Integer> requestedExtentCounts = new LinkedHashMap<>();
+        window.entityExtents().forEach(extent -> requestedExtentCounts.merge(
+                extent.entityRef(), 1, Integer::sum));
+        window.entityExtents().stream()
+                .filter(extent -> requestedExtentCounts.getOrDefault(extent.entityRef(), 0)
+                        < extent.entityChunkCount())
+                .forEach(extent -> required.add(extent.entityRef()));
 
         Map<DungeonPatchEntityRef, DungeonEntitySnapshot> loaded = new LinkedHashMap<>();
         Set<DungeonPatchEntityRef> inboundExpanded = new LinkedHashSet<>();
