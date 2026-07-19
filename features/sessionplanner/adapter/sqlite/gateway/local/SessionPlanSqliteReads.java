@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
 import features.sessionplanner.adapter.sqlite.model.CurrentSessionPointerRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionPlanRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionPlanSnapshotRecord;
@@ -28,6 +29,37 @@ final class SessionPlanSqliteReads {
     Optional<SessionPlanSnapshotRecord> loadCurrent(Connection connection) throws SQLException {
         Optional<CurrentSessionPointerRecord> current = loadCurrentPointer(connection);
         return current.isEmpty() ? Optional.empty() : loadSession(connection, current.get().sessionId());
+    }
+
+    SqliteSessionPlannerLocalGateway.WorkspaceRead loadWorkspace(Connection connection) throws SQLException {
+        long currentSessionId = loadCurrentPointer(connection)
+                .map(CurrentSessionPointerRecord::sessionId)
+                .orElse(0L);
+        List<SessionPlanRecord> plans = listSessions(connection);
+        Map<Long, List<features.sessionplanner.adapter.sqlite.model.SessionParticipantRecord>> participants =
+                detailReads.loadAllParticipants(connection);
+        Map<Long, List<features.sessionplanner.adapter.sqlite.model.SessionEncounterRecord>> encounters =
+                detailReads.loadAllEncounters(connection);
+        Map<Long, List<features.sessionplanner.adapter.sqlite.model.SessionRestPlacementRecord>> rests =
+                detailReads.loadAllRests(connection);
+        Map<Long, List<features.sessionplanner.adapter.sqlite.model.SessionManualLootNoteRecord>> notes =
+                detailReads.loadAllManualLootNotes(connection);
+        Map<Long, List<features.sessionplanner.adapter.sqlite.model.SessionGeneratedRewardRecord>> rewards =
+                detailReads.loadAllGeneratedRewards(connection);
+        List<SessionPlanSnapshotRecord> sessions = plans.stream()
+                .map(plan -> new SessionPlanSnapshotRecord(
+                        plan,
+                        participants.getOrDefault(plan.sessionId(), List.of()),
+                        encounters.getOrDefault(plan.sessionId(), List.of()),
+                        rests.getOrDefault(plan.sessionId(), List.of()),
+                        notes.getOrDefault(plan.sessionId(), List.of()),
+                        rewards.getOrDefault(plan.sessionId(), List.of())))
+                .toList();
+        long selectedId = currentSessionId;
+        if (selectedId > 0L && plans.stream().noneMatch(plan -> plan.sessionId() == selectedId)) {
+            currentSessionId = 0L;
+        }
+        return new SqliteSessionPlannerLocalGateway.WorkspaceRead(currentSessionId, sessions);
     }
 
     Optional<SessionPlanSnapshotRecord> loadSession(Connection connection, long sessionId) throws SQLException {

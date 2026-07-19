@@ -19,6 +19,8 @@ import features.sessionplanner.application.CommitPreparedSessionCommand;
 import features.sessionplanner.application.CommitPreparedSessionResult;
 import features.sessionplanner.application.SessionPreparedSessionStore;
 import features.sessionplanner.application.PreparedSessionPersistenceFingerprint;
+import features.sessionplanner.application.SessionPlannerReadCapture;
+import features.sessionplanner.application.SessionPlannerWorkspaceSource;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,7 +28,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public final class SqliteSessionPlanRepository implements SessionPlanRepository, SessionPreparedSessionStore {
+public final class SqliteSessionPlanRepository
+        implements SessionPlanRepository, SessionPreparedSessionStore, SessionPlannerWorkspaceSource {
 
     private final SqliteSessionPlannerLocalGateway gateway;
 
@@ -57,6 +60,14 @@ public final class SqliteSessionPlanRepository implements SessionPlanRepository,
         return gateway.listSessions().stream()
                 .map(record -> new SessionPlanSummary(record.sessionId(), record.displayName()))
                 .toList();
+    }
+
+    @Override
+    public SessionPlannerReadCapture readWorkspace() {
+        SqliteSessionPlannerLocalGateway.WorkspaceRead read = gateway.loadWorkspace();
+        return new SessionPlannerReadCapture(
+                read.currentSessionId(),
+                read.sessions().stream().map(SessionPlanMapper::toDomain).toList());
     }
 
     @Override

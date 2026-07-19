@@ -26,6 +26,9 @@ import features.sessionplanner.api.SessionPreparationSnapshot;
 import features.sessionplanner.api.SessionPreparationStatus;
 import features.sessionplanner.domain.session.SessionPlan;
 import features.sessionplanner.domain.session.repository.SessionPlanRepository;
+import features.party.api.PartyApi;
+import features.party.api.PartyPlanningFactsQuery;
+import features.party.api.PartyPlanningFactsResponse;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -46,9 +49,8 @@ public final class SessionPreparationCoordinator {
 
     private final SessionPlanRepository repository;
     private final SessionPreparedSessionStore preparedSessions;
-    private final SessionPlannerForeignFacts facts;
-    private final SessionPlannerPublishedState sessions;
-    private final SessionPreparationPublishedState preparationState;
+    private final PartyApi party;
+    private final SessionPlannerWorkspacePublicationCoordinator workspace;
     private final SessionGenerationApi generation;
     private final EncounterApi encounters;
     private final ExecutionLane executionLane;
@@ -59,9 +61,8 @@ public final class SessionPreparationCoordinator {
     public SessionPreparationCoordinator(
             SessionPlanRepository repository,
             SessionPreparedSessionStore preparedSessions,
-            SessionPlannerForeignFacts facts,
-            SessionPlannerPublishedState sessions,
-            SessionPreparationPublishedState preparationState,
+            PartyApi party,
+            SessionPlannerWorkspacePublicationCoordinator workspace,
             SessionGenerationApi generation,
             EncounterApi encounters,
             ExecutionLane executionLane,
@@ -69,9 +70,8 @@ public final class SessionPreparationCoordinator {
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.preparedSessions = Objects.requireNonNull(preparedSessions, "preparedSessions");
-        this.facts = Objects.requireNonNull(facts, "facts");
-        this.sessions = Objects.requireNonNull(sessions, "sessions");
-        this.preparationState = Objects.requireNonNull(preparationState, "preparationState");
+        this.party = Objects.requireNonNull(party, "party");
+        this.workspace = Objects.requireNonNull(workspace, "workspace");
         this.generation = Objects.requireNonNull(generation, "generation");
         this.encounters = Objects.requireNonNull(encounters, "encounters");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
@@ -84,11 +84,12 @@ public final class SessionPreparationCoordinator {
     }
 
     void cancel() {
-        executionLane.execute(() -> invalidateOnLane("Vorbereitung abgebrochen."));
+        executionLane.execute(() -> invalidateOnLane(
+                SessionPreparationStatus.CANCELLED, "Vorbereitung abgebrochen."));
     }
 
     void invalidate() {
-        executionLane.execute(() -> invalidateOnLane(""));
+        executionLane.execute(() -> invalidateOnLane(SessionPreparationStatus.IDLE, ""));
     }
 
     private void prepareOnLane(PrepareSessionCommand command) {
@@ -114,6 +115,59 @@ public final class SessionPreparationCoordinator {
                     session.sessionId(), attemptId, false);
             return;
         }
+        publish(SessionPreparationStatus.GENERATING, "Session wird generiert …",
+                session.sessionId(), attemptId, true);
+        CompletionStage<PartyPlanningFactsResponse> planningStage;
+        try {
+            planningStage = party.loadPlanningFacts(new PartyPlanningFactsQuery(session.participantRefs(), 0));
+        } catch (RuntimeException exception) {
+            diagnostics.failure(PREPARATION_FAILURE, exception.getClass());
+            publish(SessionPreparationStatus.FAILED, "Party-Planungsdaten konnten nicht geladen werden.",
+                    session.sessionId(), attemptId, false);
+            return;
+        }
+        if (planningStage == null) {
+            publish(SessionPreparationStatus.FAILED, "Party-Planungsdaten konnten nicht geladen werden.",
+                    session.sessionId(), attemptId, false);
+            return;
+        }
+        try {
+            planningStage.whenComplete((response, failure) -> {
+                try {
+                    executionLane.execute(() ->
+                            completePlanningFacts(attemptId, session, command, response, failure));
+                } catch (RuntimeException schedulingFailure) {
+                    diagnostics.failure(PREPARATION_FAILURE, schedulingFailure.getClass());
+                    if (attemptSequence == attemptId) {
+                        publish(SessionPreparationStatus.FAILED,
+                                "Party-Planungsdaten konnten nicht abgeschlossen werden.",
+                                session.sessionId(), attemptId, false);
+                    }
+                }
+            });
+        } catch (RuntimeException exception) {
+            diagnostics.failure(PREPARATION_FAILURE, exception.getClass());
+            publish(SessionPreparationStatus.FAILED, "Party-Planungsdaten konnten nicht geladen werden.",
+                    session.sessionId(), attemptId, false);
+        }
+    }
+
+    private void completePlanningFacts(
+            long attemptId,
+            SessionPlan session,
+            PrepareSessionCommand command,
+            PartyPlanningFactsResponse facts,
+            Throwable failure
+    ) {
+        if (attemptSequence != attemptId) {
+            return;
+        }
+        if (failure != null) {
+            diagnostics.failure(PREPARATION_FAILURE, failure.getClass());
+            publish(SessionPreparationStatus.FAILED, "Party-Planungsdaten konnten nicht geladen werden.",
+                    session.sessionId(), attemptId, false);
+            return;
+        }
         Optional<SessionPreparationFingerprint> captured = SessionPreparationFingerprint.capture(
                 session, facts, command.encounterCount(), command.seed());
         if (captured.isEmpty()) {
@@ -125,8 +179,6 @@ public final class SessionPreparationCoordinator {
         }
         Attempt attempt = new Attempt(attemptId, captured.orElseThrow());
         active = attempt;
-        publish(SessionPreparationStatus.GENERATING, "Session wird generiert …",
-                session.sessionId(), attemptId, true);
         CompletionStage<GenerationDraftResponse> stage;
         try {
             stage = generation.draft(attempt.fingerprint.toGenerationRequest());
@@ -138,7 +190,7 @@ public final class SessionPreparationCoordinator {
             fail(attempt, "Session konnte nicht generiert werden.", null);
             return;
         }
-        observe(stage, (response, failure) -> completeGenerationDraft(attempt, response, failure), attempt,
+        observe(stage, (response, draftFailure) -> completeGenerationDraft(attempt, response, draftFailure), attempt,
                 "Session konnte nicht generiert werden.");
     }
 
@@ -329,10 +381,10 @@ public final class SessionPreparationCoordinator {
             return;
         }
         if (result instanceof CommitPreparedSessionResult.Success success) {
-            sessions.publishCurrentSession(success.committedSession());
             active = null;
-            publish(SessionPreparationStatus.READY, "Session ist vorbereitet.",
-                    success.committedSession().sessionId(), attempt.id, false);
+            workspace.preparedCommit(success.committedSession(), new SessionPreparationSnapshot(
+                    SessionPreparationStatus.READY, "Session ist vorbereitet.",
+                    success.committedSession().sessionId(), attempt.id, false));
         } else if (result instanceof CommitPreparedSessionResult.Invalid
                 || result instanceof CommitPreparedSessionResult.Stale
                 || result instanceof CommitPreparedSessionResult.NotFound) {
@@ -509,13 +561,9 @@ public final class SessionPreparationCoordinator {
             fail(attempt, "Session konnte nicht auf Änderungen geprüft werden.", exception);
             return false;
         }
-        Optional<SessionPreparationFingerprint> live = current.flatMap(session ->
-                SessionPreparationFingerprint.capture(
-                        session,
-                        facts,
-                        attempt.fingerprint.encounterCount(),
-                        attempt.fingerprint.seed()));
-        if (live.isEmpty() || !live.orElseThrow().identity().equals(attempt.fingerprint.identity())) {
+        if (current.isEmpty()
+                || current.orElseThrow().sessionId() != attempt.fingerprint.sessionId()
+                || !current.orElseThrow().revision().equals(attempt.fingerprint.sourceRevision())) {
             active = null;
             attemptSequence++;
             publish(SessionPreparationStatus.INVALID,
@@ -542,11 +590,11 @@ public final class SessionPreparationCoordinator {
         }
     }
 
-    private void invalidateOnLane(String message) {
-        long sessionId = preparationState.current().sessionId();
+    private void invalidateOnLane(SessionPreparationStatus status, String message) {
+        long sessionId = workspace.current().preparation().sessionId();
         long attemptId = ++attemptSequence;
         active = null;
-        publish(SessionPreparationStatus.IDLE, message, sessionId, attemptId, false);
+        publish(status, message, sessionId, attemptId, false);
     }
 
     private void invalid(Attempt attempt, String message) {
@@ -577,7 +625,7 @@ public final class SessionPreparationCoordinator {
             long attemptId,
             boolean cancelEnabled
     ) {
-        preparationState.publish(new SessionPreparationSnapshot(
+        workspace.publishPreparation(new SessionPreparationSnapshot(
                 status, message, sessionId, attemptId, cancelEnabled));
     }
 

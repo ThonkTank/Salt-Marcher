@@ -6,6 +6,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import features.sessionplanner.adapter.sqlite.model.SessionEncounterRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionGeneratedRewardRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionManualLootNoteRecord;
@@ -16,6 +18,99 @@ import features.sessionplanner.adapter.sqlite.model.SessionPlannerPersistenceSch
 final class SessionPlanSqliteDetailReads {
 
     private static final String SORT_ORDER = "sort_order";
+
+    Map<Long, List<SessionParticipantRecord>> loadAllParticipants(Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT session_id, character_id, sort_order FROM "
+                        + SessionPlannerPersistenceSchema.SESSION_PARTICIPANTS_TABLE
+                        + " ORDER BY session_id, sort_order, character_id");
+                ResultSet resultSet = statement.executeQuery()) {
+            Map<Long, List<SessionParticipantRecord>> values = new LinkedHashMap<>();
+            while (resultSet.next()) {
+                add(values, resultSet.getLong("session_id"), new SessionParticipantRecord(
+                        resultSet.getLong("character_id"), resultSet.getInt(SORT_ORDER)));
+            }
+            return immutable(values);
+        }
+    }
+
+    Map<Long, List<SessionEncounterRecord>> loadAllEncounters(Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT session_id, encounter_id, encounter_plan_id, budget_percentage, scene_title, scene_notes, "
+                        + "location_id, sort_order FROM "
+                        + SessionPlannerPersistenceSchema.SESSION_ENCOUNTERS_TABLE
+                        + " ORDER BY session_id, sort_order, encounter_id");
+                ResultSet resultSet = statement.executeQuery()) {
+            Map<Long, List<SessionEncounterRecord>> values = new LinkedHashMap<>();
+            while (resultSet.next()) {
+                add(values, resultSet.getLong("session_id"), new SessionEncounterRecord(
+                        resultSet.getLong("encounter_id"), resultSet.getLong("encounter_plan_id"),
+                        resultSet.getString("budget_percentage"), resultSet.getString("scene_title"),
+                        resultSet.getString("scene_notes"), resultSet.getLong("location_id"),
+                        resultSet.getInt(SORT_ORDER)));
+            }
+            return immutable(values);
+        }
+    }
+
+    Map<Long, List<SessionRestPlacementRecord>> loadAllRests(Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT session_id, left_encounter_id, right_encounter_id, rest_kind, sort_order FROM "
+                        + SessionPlannerPersistenceSchema.SESSION_RESTS_TABLE
+                        + " ORDER BY session_id, sort_order, left_encounter_id, right_encounter_id");
+                ResultSet resultSet = statement.executeQuery()) {
+            Map<Long, List<SessionRestPlacementRecord>> values = new LinkedHashMap<>();
+            while (resultSet.next()) {
+                add(values, resultSet.getLong("session_id"), new SessionRestPlacementRecord(
+                        resultSet.getLong("left_encounter_id"), resultSet.getLong("right_encounter_id"),
+                        resultSet.getString("rest_kind"), resultSet.getInt(SORT_ORDER)));
+            }
+            return immutable(values);
+        }
+    }
+
+    Map<Long, List<SessionManualLootNoteRecord>> loadAllManualLootNotes(Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT session_id, note_id, scene_id, note_text, sort_order FROM "
+                        + SessionPlannerPersistenceSchema.SESSION_MANUAL_LOOT_NOTES_TABLE
+                        + " ORDER BY session_id, sort_order, note_id");
+                ResultSet resultSet = statement.executeQuery()) {
+            Map<Long, List<SessionManualLootNoteRecord>> values = new LinkedHashMap<>();
+            while (resultSet.next()) {
+                add(values, resultSet.getLong("session_id"), new SessionManualLootNoteRecord(
+                        resultSet.getLong("note_id"), resultSet.getLong("scene_id"),
+                        resultSet.getString("note_text"), resultSet.getInt(SORT_ORDER)));
+            }
+            return immutable(values);
+        }
+    }
+
+    Map<Long, List<SessionGeneratedRewardRecord>> loadAllGeneratedRewards(Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT session_id, scene_id, generation_id, treasure_id, last_known_label, sort_order FROM "
+                        + SessionPlannerPersistenceSchema.SESSION_GENERATED_REWARDS_TABLE
+                        + " ORDER BY session_id, sort_order, generation_id, treasure_id");
+                ResultSet resultSet = statement.executeQuery()) {
+            Map<Long, List<SessionGeneratedRewardRecord>> values = new LinkedHashMap<>();
+            while (resultSet.next()) {
+                add(values, resultSet.getLong("session_id"), new SessionGeneratedRewardRecord(
+                        resultSet.getLong("scene_id"), resultSet.getString("generation_id"),
+                        resultSet.getLong("treasure_id"), resultSet.getString("last_known_label"),
+                        resultSet.getInt(SORT_ORDER)));
+            }
+            return immutable(values);
+        }
+    }
+
+    private static <T> void add(Map<Long, List<T>> values, long sessionId, T value) {
+        values.computeIfAbsent(sessionId, ignored -> new ArrayList<>()).add(value);
+    }
+
+    private static <T> Map<Long, List<T>> immutable(Map<Long, List<T>> values) {
+        Map<Long, List<T>> copy = new LinkedHashMap<>();
+        values.forEach((key, value) -> copy.put(key, List.copyOf(value)));
+        return Map.copyOf(copy);
+    }
 
     List<SessionParticipantRecord> loadParticipants(Connection connection, long sessionId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(

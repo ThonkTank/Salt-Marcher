@@ -1,5 +1,7 @@
 package features.sessionplanner.adapter.javafx;
 
+import features.sessionplanner.api.SessionPlannerApi;
+import features.sessionplanner.api.SessionPlannerWorkspaceModel;
 import java.util.Objects;
 import shell.api.ContributionKey;
 import shell.api.NavigationGraphicResource;
@@ -9,40 +11,15 @@ import shell.api.ShellContribution;
 import shell.api.ShellContributionSpec;
 import shell.api.ShellLeftBarTabMode;
 import shell.api.ShellLeftBarTabSpec;
-import features.sessionplanner.api.SessionPlannerApi;
-import features.sessionplanner.api.SessionPlannerCatalogModel;
-import features.sessionplanner.api.SessionPlannerCurrentSessionModel;
-import features.sessionplanner.api.SessionPlannerParticipantsModel;
-import features.sessionplanner.api.SessionPlannerSceneTimelineModel;
-import features.sessionplanner.api.SessionPlannerStatePanelModel;
-import features.sessionplanner.api.SessionPreparationModel;
 
 public final class SessionPlannerContribution implements ShellContribution {
 
     private final SessionPlannerApi planner;
-    private final SessionPlannerCurrentSessionModel sessionModel;
-    private final SessionPlannerCatalogModel catalogModel;
-    private final SessionPlannerParticipantsModel participantsModel;
-    private final SessionPlannerSceneTimelineModel sceneTimelineModel;
-    private final SessionPlannerStatePanelModel statePanelModel;
-    private final SessionPreparationModel preparationModel;
+    private final SessionPlannerWorkspaceModel workspace;
 
-    public SessionPlannerContribution(
-            SessionPlannerApi planner,
-            SessionPlannerCurrentSessionModel sessionModel,
-            SessionPlannerCatalogModel catalogModel,
-            SessionPlannerParticipantsModel participantsModel,
-            SessionPlannerSceneTimelineModel sceneTimelineModel,
-            SessionPlannerStatePanelModel statePanelModel,
-            SessionPreparationModel preparationModel
-    ) {
+    public SessionPlannerContribution(SessionPlannerApi planner, SessionPlannerWorkspaceModel workspace) {
         this.planner = Objects.requireNonNull(planner, "planner");
-        this.sessionModel = Objects.requireNonNull(sessionModel, "sessionModel");
-        this.catalogModel = Objects.requireNonNull(catalogModel, "catalogModel");
-        this.participantsModel = Objects.requireNonNull(participantsModel, "participantsModel");
-        this.sceneTimelineModel = Objects.requireNonNull(sceneTimelineModel, "sceneTimelineModel");
-        this.statePanelModel = Objects.requireNonNull(statePanelModel, "statePanelModel");
-        this.preparationModel = Objects.requireNonNull(preparationModel, "preparationModel");
+        this.workspace = Objects.requireNonNull(workspace, "workspace");
     }
 
     @Override
@@ -58,13 +35,6 @@ public final class SessionPlannerContribution implements ShellContribution {
 
     @Override
     public ShellBinding bind() {
-        return new SessionPlannerBinder(
-                planner,
-                sessionModel,
-                catalogModel,
-                participantsModel,
-                sceneTimelineModel,
-                statePanelModel,
-                preparationModel).bind();
+        return new SessionPlannerBinder(planner, workspace).bind();
     }
 }

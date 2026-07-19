@@ -9,9 +9,6 @@ import features.encounter.api.CommitGeneratedEncounterBatchCommand;
 import features.encounter.api.CommittedGeneratedEncounterBatchResult;
 import features.encounter.api.CommittedGeneratedEncounterMapping;
 import features.encounter.api.EncounterApi;
-import features.encounter.api.EncounterPlanBudgetModel;
-import features.encounter.api.EncounterPlanBudgetResult;
-import features.encounter.api.EncounterPlanBudgetStatus;
 import features.encounter.api.GeneratedEncounterDifficulty;
 import features.encounter.api.GeneratedEncounterPlanSummary;
 import features.encounter.api.GeneratedEncounterPlanSummaryBatchQuery;
@@ -92,7 +89,7 @@ final class SessionPreparationCoordinatorTest {
             assertEquals("run", committed.generatedRewards().getFirst().generationId());
             assertEquals(1L, committed.generatedRewards().getFirst().treasureId());
             assertTrue(!committed.generatedRewards().getFirst().lastKnownLabel().isBlank());
-            assertEquals(SessionPreparationStatus.READY, fixture.planner.preparationModel().current().status());
+            assertEquals(SessionPreparationStatus.READY, fixture.planner.workspaceModel().current().preparation().status());
             assertInstanceOf(CommitPreparedSessionResult.Success.class, fixture.preparedSessions.lastResult);
         }
     }
@@ -108,7 +105,7 @@ final class SessionPreparationCoordinatorTest {
             fixture.prepare();
 
             SessionPlan unchanged = fixture.repository.loadCurrent().orElseThrow();
-            assertEquals(SessionPreparationStatus.INVALID, fixture.planner.preparationModel().current().status());
+            assertEquals(SessionPreparationStatus.INVALID, fixture.planner.workspaceModel().current().preparation().status());
             assertEquals(1L, unchanged.revision().value());
             assertTrue(unchanged.encounters().isEmpty());
             assertEquals(0, fixture.generation.commitCalls);
@@ -132,7 +129,7 @@ final class SessionPreparationCoordinatorTest {
             pendingEncounterCommit.complete(committedBatch(fixture.encounters.lastPreparedBatch));
 
             SessionPlan unchangedByPreparation = fixture.repository.loadCurrent().orElseThrow();
-            assertEquals(SessionPreparationStatus.INVALID, fixture.planner.preparationModel().current().status());
+            assertEquals(SessionPreparationStatus.INVALID, fixture.planner.workspaceModel().current().preparation().status());
             assertEquals("Changed while foreign commits were running", unchangedByPreparation.displayName());
             assertTrue(unchangedByPreparation.encounters().isEmpty());
             assertEquals(0, fixture.preparedSessions.commitCalls);
@@ -145,13 +142,13 @@ final class SessionPreparationCoordinatorTest {
             fixture.preparedSessions.failNext = true;
 
             fixture.prepare();
-            assertEquals(SessionPreparationStatus.FAILED, fixture.planner.preparationModel().current().status());
+            assertEquals(SessionPreparationStatus.FAILED, fixture.planner.workspaceModel().current().preparation().status());
             assertEquals(1L, fixture.repository.loadCurrent().orElseThrow().revision().value());
 
             fixture.prepare();
 
             SessionPlan committed = fixture.repository.loadCurrent().orElseThrow();
-            assertEquals(SessionPreparationStatus.READY, fixture.planner.preparationModel().current().status());
+            assertEquals(SessionPreparationStatus.READY, fixture.planner.workspaceModel().current().preparation().status());
             assertEquals(2, fixture.generation.commitCalls);
             assertEquals(2, fixture.encounters.commitCalls);
             assertEquals(2, fixture.preparedSessions.commitCalls);
@@ -170,7 +167,7 @@ final class SessionPreparationCoordinatorTest {
 
             fixture.prepare();
 
-            assertEquals(SessionPreparationStatus.FAILED, fixture.planner.preparationModel().current().status());
+            assertEquals(SessionPreparationStatus.FAILED, fixture.planner.workspaceModel().current().preparation().status());
             assertEquals(0, fixture.preparedSessions.commitCalls);
             assertEquals(1, fixture.generation.artifactInsertions);
             assertEquals(0, fixture.encounters.artifactInsertions);
@@ -179,7 +176,7 @@ final class SessionPreparationCoordinatorTest {
             fixture.prepare();
 
             SessionPlan committed = fixture.repository.loadCurrent().orElseThrow();
-            assertEquals(SessionPreparationStatus.READY, fixture.planner.preparationModel().current().status());
+            assertEquals(SessionPreparationStatus.READY, fixture.planner.workspaceModel().current().preparation().status());
             assertEquals(1, fixture.generation.preparationIdentities.stream().distinct().count());
             assertEquals(1, fixture.encounters.preparationIdentities.stream().distinct().count());
             assertEquals(1, fixture.generation.artifactInsertions);
@@ -200,13 +197,13 @@ final class SessionPreparationCoordinatorTest {
             fixture.prepare();
 
             assertEquals(SessionPreparationStatus.CONFIRMING_REPLACEMENT,
-                    fixture.planner.preparationModel().current().status());
+                    fixture.planner.workspaceModel().current().preparation().status());
             assertEquals(0, fixture.generation.draftCalls);
             assertEquals(2L, fixture.repository.loadCurrent().orElseThrow().revision().value());
 
             fixture.prepareConfirmed();
 
-            assertEquals(SessionPreparationStatus.READY, fixture.planner.preparationModel().current().status());
+            assertEquals(SessionPreparationStatus.READY, fixture.planner.workspaceModel().current().preparation().status());
             assertEquals(1, fixture.generation.draftCalls);
             assertEquals(3L, fixture.repository.loadCurrent().orElseThrow().revision().value());
         }
@@ -222,7 +219,8 @@ final class SessionPreparationCoordinatorTest {
             fixture.planner.application().cancelPreparation();
             pending.complete(fixture.generation.successfulDraft());
 
-            assertEquals(SessionPreparationStatus.IDLE, fixture.planner.preparationModel().current().status());
+            assertEquals(SessionPreparationStatus.CANCELLED,
+                    fixture.planner.workspaceModel().current().preparation().status());
             assertEquals(0, fixture.encounters.prepareCalls);
             assertEquals(0, fixture.preparedSessions.commitCalls);
             assertEquals(1L, fixture.repository.loadCurrent().orElseThrow().revision().value());
@@ -241,7 +239,7 @@ final class SessionPreparationCoordinatorTest {
             fixture.prepare();
             older.complete(fixture.generation.successfulDraft());
 
-            assertEquals(SessionPreparationStatus.READY, fixture.planner.preparationModel().current().status());
+            assertEquals(SessionPreparationStatus.READY, fixture.planner.workspaceModel().current().preparation().status());
             assertEquals(2, fixture.generation.draftCalls);
             assertEquals(1, fixture.encounters.prepareCalls);
             assertEquals(1, fixture.preparedSessions.commitCalls);
@@ -260,7 +258,7 @@ final class SessionPreparationCoordinatorTest {
                     1L, new CharacterDraft("Aria", "Mira", 5, 14, 16)));
             pending.complete(fixture.generation.successfulDraft());
 
-            assertEquals(SessionPreparationStatus.IDLE, fixture.planner.preparationModel().current().status());
+            assertEquals(SessionPreparationStatus.IDLE, fixture.planner.workspaceModel().current().preparation().status());
             assertEquals(0, fixture.encounters.prepareCalls);
             assertEquals(0, fixture.preparedSessions.commitCalls);
             assertEquals(1L, fixture.repository.loadCurrent().orElseThrow().revision().value());
@@ -275,7 +273,7 @@ final class SessionPreparationCoordinatorTest {
                             "generation failed"));
             generationFailure.prepare();
             assertEquals(SessionPreparationStatus.FAILED,
-                    generationFailure.planner.preparationModel().current().status());
+                    generationFailure.planner.workspaceModel().current().preparation().status());
             assertEquals(0, generationFailure.preparedSessions.commitCalls);
             assertEquals(1L, generationFailure.repository.loadCurrent().orElseThrow().revision().value());
         }
@@ -286,7 +284,7 @@ final class SessionPreparationCoordinatorTest {
                             "encounter failed"));
             encounterFailure.prepare();
             assertEquals(SessionPreparationStatus.FAILED,
-                    encounterFailure.planner.preparationModel().current().status());
+                    encounterFailure.planner.workspaceModel().current().preparation().status());
             assertEquals(0, encounterFailure.preparedSessions.commitCalls);
             assertEquals(1L, encounterFailure.repository.loadCurrent().orElseThrow().revision().value());
         }
@@ -305,7 +303,7 @@ final class SessionPreparationCoordinatorTest {
 
             fixture.prepare();
 
-            assertEquals(SessionPreparationStatus.FAILED, fixture.planner.preparationModel().current().status());
+            assertEquals(SessionPreparationStatus.FAILED, fixture.planner.workspaceModel().current().preparation().status());
             assertEquals(0, fixture.preparedSessions.commitCalls);
             assertEquals(1L, fixture.repository.loadCurrent().orElseThrow().revision().value());
         }
@@ -316,13 +314,13 @@ final class SessionPreparationCoordinatorTest {
         try (Fixture throwing = fixture("sync-throw.db")) {
             throwing.generation.throwOnDraft = true;
             throwing.prepare();
-            assertEquals(SessionPreparationStatus.FAILED, throwing.planner.preparationModel().current().status());
+            assertEquals(SessionPreparationStatus.FAILED, throwing.planner.workspaceModel().current().preparation().status());
             assertEquals(0, throwing.preparedSessions.commitCalls);
         }
         try (Fixture nullStage = fixture("null-stage.db")) {
             nullStage.encounters.nullPrepareStage = true;
             nullStage.prepare();
-            assertEquals(SessionPreparationStatus.FAILED, nullStage.planner.preparationModel().current().status());
+            assertEquals(SessionPreparationStatus.FAILED, nullStage.planner.workspaceModel().current().preparation().status());
             assertEquals(0, nullStage.preparedSessions.commitCalls);
             assertEquals(1L, nullStage.repository.loadCurrent().orElseThrow().revision().value());
         }
@@ -334,7 +332,7 @@ final class SessionPreparationCoordinatorTest {
         try (Fixture fixture = fixture("callback-rejection.db", generationResult(), lane)) {
             fixture.prepare();
 
-            assertEquals(SessionPreparationStatus.FAILED, fixture.planner.preparationModel().current().status());
+            assertEquals(SessionPreparationStatus.FAILED, fixture.planner.workspaceModel().current().preparation().status());
             assertEquals(0, fixture.encounters.prepareCalls);
             assertEquals(0, fixture.preparedSessions.commitCalls);
             assertEquals(1L, fixture.repository.loadCurrent().orElseThrow().revision().value());
@@ -363,13 +361,11 @@ final class SessionPreparationCoordinatorTest {
                 new CharacterDraft("Aria", "Mira", 4, 14, 16), MembershipState.ACTIVE));
         SessionPlannerServiceAssembly planner = new SessionPlannerServiceAssembly(
                 repository,
+                repository,
                 preparedSessions,
                 party.application(),
-                party.activeParty(),
-                party.adventuringDayCalculation(),
                 encounters,
                 emptySavedPlans(),
-                unavailableBudget(),
                 null,
                 generation,
                 lane,
@@ -386,12 +382,6 @@ final class SessionPreparationCoordinatorTest {
             listener.accept(empty);
             return () -> { };
         });
-    }
-
-    private static EncounterPlanBudgetModel unavailableBudget() {
-        return new EncounterPlanBudgetModel(
-                () -> new EncounterPlanBudgetResult(EncounterPlanBudgetStatus.NOT_FOUND, null, ""),
-                ignored -> () -> { });
     }
 
     private static GenerationResult generationResult() {

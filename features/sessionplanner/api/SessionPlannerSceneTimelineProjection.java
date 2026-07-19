@@ -43,7 +43,8 @@ public record SessionPlannerSceneTimelineProjection(
             String sceneTitle,
             String sceneNotes,
             long locationId,
-            List<LootEntry> lootEntries
+            List<ManualLootNote> manualLootNotes,
+            List<GeneratedReward> generatedRewards
     ) {
 
         public SessionScene {
@@ -63,12 +64,18 @@ public record SessionPlannerSceneTimelineProjection(
             sceneTitle = sceneTitle == null ? "" : sceneTitle.trim();
             sceneNotes = sceneNotes == null ? "" : sceneNotes.trim();
             locationId = Math.max(0L, locationId);
-            lootEntries = copy(lootEntries);
+            manualLootNotes = copy(manualLootNotes);
+            generatedRewards = copy(generatedRewards);
         }
 
         @Override
-        public List<LootEntry> lootEntries() {
-            return List.copyOf(lootEntries);
+        public List<ManualLootNote> manualLootNotes() {
+            return List.copyOf(manualLootNotes);
+        }
+
+        @Override
+        public List<GeneratedReward> generatedRewards() {
+            return List.copyOf(generatedRewards);
         }
     }
 
@@ -87,21 +94,103 @@ public record SessionPlannerSceneTimelineProjection(
         }
     }
 
-    public record LootEntry(
-            Kind kind,
-            long token,
-            String label
-    ) {
+    public record ManualLootNote(long noteId, String authoredText) {
+        public ManualLootNote {
+            noteId = Math.max(0L, noteId);
+            authoredText = authoredText == null ? "" : authoredText.trim();
+        }
+    }
 
-        public LootEntry {
-            kind = kind == null ? Kind.MANUAL_NOTE : kind;
-            token = Math.max(0L, token);
-            label = label == null ? "" : label.trim();
+    public record GeneratedReward(
+            String generationRunId,
+            int treasureId,
+            Availability availability,
+            String statusText,
+            String fallbackLabel,
+            String stockClass,
+            String channel,
+            int anchorEncounterNumber,
+            String theme,
+            String magicType,
+            long targetCp,
+            int nonMagicSlots,
+            int magicSlots,
+            List<ItemLine> itemLines,
+            List<Packing> packing
+    ) {
+        public GeneratedReward {
+            generationRunId = generationRunId == null ? "" : generationRunId.trim();
+            treasureId = Math.max(0, treasureId);
+            availability = availability == null ? Availability.UNAVAILABLE : availability;
+            statusText = statusText == null ? "" : statusText.trim();
+            fallbackLabel = availability == Availability.AVAILABLE
+                    ? "" : fallbackLabel == null ? "" : fallbackLabel.trim();
+            stockClass = stockClass == null ? "" : stockClass.trim();
+            channel = channel == null ? "" : channel.trim();
+            anchorEncounterNumber = Math.max(0, anchorEncounterNumber);
+            theme = theme == null ? "" : theme.trim();
+            magicType = magicType == null ? "" : magicType.trim();
+            targetCp = Math.max(0L, targetCp);
+            nonMagicSlots = Math.max(0, nonMagicSlots);
+            magicSlots = Math.max(0, magicSlots);
+            itemLines = copy(itemLines);
+            packing = copy(packing);
+            if (availability == Availability.AVAILABLE
+                    && (generationRunId.isBlank() || treasureId <= 0 || channel.isBlank())) {
+                throw new IllegalArgumentException("available generated reward is incomplete");
+            }
         }
 
-        public enum Kind {
-            MANUAL_NOTE,
-            GENERATED_REWARD
+        public String displayLabel() {
+            if (availability == Availability.UNAVAILABLE) {
+                return fallbackLabel.isBlank() ? "Generierte Belohnung nicht verfügbar" : fallbackLabel;
+            }
+            String themed = theme.isBlank() ? "Generierte Belohnung" : theme;
+            return channel + " · " + themed + " · " + itemLines.size() + " Positionen";
+        }
+    }
+
+    public enum Availability { AVAILABLE, UNAVAILABLE }
+
+    public record ItemLine(
+            int lineId,
+            String role,
+            String itemId,
+            String text,
+            long quantity,
+            long unitCp,
+            long actualCp,
+            BigDecimal totalCapacity,
+            String allowedContainers,
+            String magicRarity,
+            boolean cursed
+    ) {
+        public ItemLine {
+            lineId = Math.max(0, lineId);
+            role = role == null ? "" : role.trim();
+            itemId = itemId == null ? "" : itemId.trim();
+            text = text == null ? "" : text.trim();
+            quantity = Math.max(0L, quantity);
+            unitCp = Math.max(0L, unitCp);
+            actualCp = Math.max(0L, actualCp);
+            totalCapacity = totalCapacity == null ? BigDecimal.ZERO : totalCapacity;
+            allowedContainers = allowedContainers == null ? "" : allowedContainers.trim();
+            magicRarity = magicRarity == null ? "" : magicRarity.trim();
+        }
+    }
+
+    public record Packing(
+            int lineId,
+            String containerType,
+            int containerCount,
+            String containerId,
+            boolean valid
+    ) {
+        public Packing {
+            lineId = Math.max(0, lineId);
+            containerType = containerType == null ? "" : containerType.trim();
+            containerCount = Math.max(0, containerCount);
+            containerId = containerId == null ? "" : containerId.trim();
         }
     }
 

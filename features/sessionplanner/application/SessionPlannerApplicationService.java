@@ -11,8 +11,6 @@ import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
 import platform.execution.ExecutionLane;
 import features.sessionplanner.domain.session.EncounterDays;
-import features.sessionplanner.domain.session.SessionActivePartyMembersFact;
-import features.sessionplanner.domain.session.SessionPartyMemberProfile;
 import features.sessionplanner.domain.session.SessionPlan;
 import features.sessionplanner.domain.session.SessionPlanSummary;
 import features.sessionplanner.domain.session.SessionRestPlacement;
@@ -43,8 +41,7 @@ public final class SessionPlannerApplicationService implements features.sessionp
     private static final String SAVE_FAILURE_STATUS = "Session konnte nicht gespeichert werden.";
 
     private final SessionPlanRepository repository;
-    private final SessionPlannerForeignFacts facts;
-    private final SessionPlannerPublishedState publishedState;
+    private final SessionPlannerWorkspacePublicationCoordinator workspace;
     private final ExecutionLane executionLane;
     private final Diagnostics diagnostics;
     private final SessionPreparationCoordinator preparation;
@@ -53,15 +50,13 @@ public final class SessionPlannerApplicationService implements features.sessionp
 
     public SessionPlannerApplicationService(
             SessionPlanRepository repository,
-            SessionPlannerForeignFacts facts,
-            SessionPlannerPublishedState publishedState,
+            SessionPlannerWorkspacePublicationCoordinator workspace,
             SessionPreparationCoordinator preparation,
             ExecutionLane executionLane,
             Diagnostics diagnostics
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
-        this.facts = Objects.requireNonNull(facts, "facts");
-        this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
+        this.workspace = Objects.requireNonNull(workspace, "workspace");
         this.preparation = Objects.requireNonNull(preparation, "preparation");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
@@ -69,25 +64,21 @@ public final class SessionPlannerApplicationService implements features.sessionp
 
     public void initialize() {
         if (initializationRequested.compareAndSet(false, true)) {
-            executeStorageCommand(() -> {
-                publishedState.initialize();
-                initialized.set(true);
-            });
+            workspace.initialize();
+            initialized.set(true);
         }
     }
 
     public void refreshForeignFacts() {
-        executeStorageCommand(publishedState::publishLoadedCurrentSession);
+        workspace.providerRefresh();
     }
 
     public void refreshPartyFacts() {
         if (!initialized.get()) {
             return;
         }
-        executeStorageCommand(() -> {
-            preparation.invalidate();
-            publishedState.publishLoadedCurrentSession();
-        });
+        preparation.invalidate();
+        workspace.providerRefresh();
     }
 
     public void createSession(SessionPlannerCatalogCommand.CreateSessionCommand command) {
@@ -249,7 +240,7 @@ public final class SessionPlannerApplicationService implements features.sessionp
 
     private void updateEncounterSceneOnLane(UpdateSessionEncounterSceneCommand command) {
         mutateCurrent(session -> {
-            if (command.locationId() > 0L && !facts.locationExists(command.locationId())) {
+            if (command.locationId() > 0L && !workspace.locationExists(command.locationId())) {
                 return session.withStatus("Location nicht gefunden.");
             }
             return session.updateEncounterScene(
@@ -270,13 +261,13 @@ public final class SessionPlannerApplicationService implements features.sessionp
     private void selectLoadedSession(SessionPlan sessionPlan) {
         repository.setCurrentSessionId(sessionPlan.sessionId());
         preparation.invalidate();
-        publishedState.publishCurrentSession(sessionPlan.clearStatus().withStatus("Session geoeffnet."));
+        workspace.authoredMutation(sessionPlan.clearStatus().withStatus("Session geoeffnet."));
     }
 
     private void selectFallback(SessionPlan sessionPlan) {
         repository.setCurrentSessionId(sessionPlan.sessionId());
         preparation.invalidate();
-        publishedState.publishCurrentSession(sessionPlan);
+        workspace.authoredMutation(sessionPlan);
     }
 
     private Optional<SessionPlan> loadCurrentSession() {
@@ -307,20 +298,17 @@ public final class SessionPlannerApplicationService implements features.sessionp
             result = repository.save(Objects.requireNonNull(candidate, "candidate"));
         } catch (IllegalStateException exception) {
             reportStorageFailure(exception);
-            publishedState.publishCurrentSessionWithoutCatalogRefresh(
-                    stableSession.withStatus(SAVE_FAILURE_STATUS));
+            publishFailure(SAVE_FAILURE_STATUS, stableSession.sessionId());
             return;
         }
         if (result.status() != SessionPlanSaveResult.Status.SUCCESS) {
-            publishedState.publishCurrentSessionWithoutCatalogRefresh(
-                    stableSession.withStatus(result.status() == SessionPlanSaveResult.Status.STALE
-                            ? "Session wurde zwischenzeitlich geändert."
-                            : SAVE_FAILURE_STATUS));
+            publishFailure(result.status() == SessionPlanSaveResult.Status.STALE
+                    ? "Session wurde zwischenzeitlich geändert." : SAVE_FAILURE_STATUS, stableSession.sessionId());
             return;
         }
         SessionPlan saved = result.committedSession().orElseThrow();
         preparation.invalidate();
-        publishedState.publishCurrentSession(saved);
+        workspace.authoredMutation(saved);
     }
 
     private void saveNewCurrent(SessionPlan sessionPlan) {
@@ -337,15 +325,14 @@ public final class SessionPlannerApplicationService implements features.sessionp
             return;
         }
         preparation.invalidate();
-        publishedState.publishCurrentSession(saved);
+        workspace.authoredMutation(saved);
     }
 
     private SessionPlan seedSession(long sessionId) {
         try {
-            SessionActivePartyMembersFact activeParty = facts.activePartyMembers();
-            List<Long> participantRefs = activeParty.available()
-                    ? participantRefs(activeParty)
-                    : List.of();
+            List<Long> participantRefs = workspace.current().participants().activePartyMembers().stream()
+                    .map(features.sessionplanner.api.SessionPlannerParticipantsProjection.ActivePartyMember::characterId)
+                    .toList();
             return SessionPlan.seeded(sessionId, participantRefs, EncounterDays.one());
         } catch (IllegalStateException exception) {
             return SessionPlan.seeded(sessionId, List.of(), EncounterDays.one());
@@ -365,12 +352,10 @@ public final class SessionPlannerApplicationService implements features.sessionp
         diagnostics.failure(STORAGE_FAILURE, exception.getClass());
     }
 
-    private static List<Long> participantRefs(SessionActivePartyMembersFact activeParty) {
-        List<Long> participantRefs = new ArrayList<>();
-        for (SessionPartyMemberProfile member : activeParty.members()) {
-            participantRefs.add(member.characterId());
-        }
-        return participantRefs;
+    private void publishFailure(String message, long sessionId) {
+        workspace.publishPreparation(new features.sessionplanner.api.SessionPreparationSnapshot(
+                features.sessionplanner.api.SessionPreparationStatus.FAILED,
+                message, sessionId, workspace.current().preparation().attemptId(), false));
     }
 
     private static SessionRestPlacement toRestPlacement(
