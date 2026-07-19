@@ -14,16 +14,12 @@ import features.sessionplanner.api.AttachSessionEncounterCommand;
 import features.sessionplanner.api.ClearSessionRestGapCommand;
 import features.sessionplanner.api.RemoveSessionManualLootNoteCommand;
 import features.sessionplanner.api.SessionPlannerCatalogCommand;
-import features.sessionplanner.api.SessionPlannerCurrentSessionModel;
-import features.sessionplanner.api.SessionPlannerCatalogModel;
 import features.sessionplanner.api.SessionPlannerEncounterAllocationCommand;
 import features.sessionplanner.api.SessionPlannerEncounterCommand;
 import features.sessionplanner.api.SessionPlannerParticipantCommand;
-import features.sessionplanner.api.SessionPlannerParticipantsModel;
 import features.sessionplanner.api.SessionPlannerRestKind;
-import features.sessionplanner.api.SessionPlannerSceneTimelineModel;
-import features.sessionplanner.api.SessionPlannerStatePanelModel;
-import features.sessionplanner.api.SessionPreparationModel;
+import features.sessionplanner.api.SessionPlannerWorkspaceModel;
+import features.sessionplanner.api.SessionPlannerWorkspaceSnapshot;
 import features.sessionplanner.api.SetSessionEncounterDaysCommand;
 import features.sessionplanner.api.SetSessionRestGapCommand;
 import features.sessionplanner.api.UpdateSessionEncounterSceneCommand;
@@ -39,31 +35,14 @@ import platform.ui.catalogcrud.CatalogCrudControlsViewInputEvent;
 final class SessionPlannerBinder {
 
     private final SessionPlannerApi planner;
-    private final SessionPlannerCurrentSessionModel sessionModel;
-    private final SessionPlannerCatalogModel catalogModel;
-    private final SessionPlannerParticipantsModel participantsModel;
-    private final SessionPlannerSceneTimelineModel sceneTimelineModel;
-    private final SessionPlannerStatePanelModel statePanelModel;
-    private final SessionPreparationModel preparationModel;
+    private final SessionPlannerWorkspaceModel workspace;
 
     SessionPlannerBinder(
             SessionPlannerApi planner,
-            SessionPlannerCurrentSessionModel sessionModel,
-            SessionPlannerCatalogModel catalogModel,
-            SessionPlannerParticipantsModel participantsModel,
-            SessionPlannerSceneTimelineModel sceneTimelineModel,
-            SessionPlannerStatePanelModel statePanelModel,
-            SessionPreparationModel preparationModel
+            SessionPlannerWorkspaceModel workspace
     ) {
         this.planner = Objects.requireNonNull(planner, "planner");
-        this.sessionModel = Objects.requireNonNull(sessionModel, "sessionModel");
-        this.catalogModel = Objects.requireNonNull(catalogModel, "catalogModel");
-        this.participantsModel = Objects.requireNonNull(participantsModel, "participantsModel");
-        this.sceneTimelineModel = Objects.requireNonNull(sceneTimelineModel, "sceneTimelineModel");
-        // Weiterhin Teil des publizierten Zustands, aber von der UI nicht mehr konsumiert:
-        // die rechte Spalte ist jetzt die read-only Session-Übersicht (SummaryView).
-        this.statePanelModel = Objects.requireNonNull(statePanelModel, "statePanelModel");
-        this.preparationModel = Objects.requireNonNull(preparationModel, "preparationModel");
+        this.workspace = Objects.requireNonNull(workspace, "workspace");
     }
 
     ShellBinding bind() {
@@ -97,7 +76,6 @@ final class SessionPlannerBinder {
 
         generationPanel.onPrepare(planner::prepareSession);
         generationPanel.onCancel(planner::cancelPreparation);
-        generationPanel.bind(preparationModel);
 
         timelineView.onAddScene(() -> ifSession(viewModel, () -> planner.addScene(new AddSessionSceneCommand())));
         timelineView.onSelectScene(sceneToken -> ifSession(viewModel, () -> {
@@ -150,7 +128,13 @@ final class SessionPlannerBinder {
             }
         }));
 
-        viewModel.bindReadback(sessionModel, catalogModel, participantsModel, sceneTimelineModel);
+        workspace.subscribe(snapshot -> {
+            viewModel.applyWorkspace(snapshot);
+            generationPanel.show(snapshot.preparation());
+        });
+        SessionPlannerWorkspaceSnapshot initial = workspace.current();
+        viewModel.applyWorkspace(initial);
+        generationPanel.show(initial.preparation());
         planner.initialize();
         return new Binding(ShellControls.stack(catalogView, controlsView), timelineView, summaryView);
     }

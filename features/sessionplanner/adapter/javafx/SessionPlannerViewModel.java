@@ -8,15 +8,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
-import features.sessionplanner.api.SessionPlannerCatalogModel;
 import features.sessionplanner.api.SessionPlannerCatalogSnapshot;
-import features.sessionplanner.api.SessionPlannerCurrentSessionModel;
-import features.sessionplanner.api.SessionPlannerParticipantsModel;
 import features.sessionplanner.api.SessionPlannerParticipantsProjection;
 import features.sessionplanner.api.SessionPlannerRestKind;
-import features.sessionplanner.api.SessionPlannerSceneTimelineModel;
 import features.sessionplanner.api.SessionPlannerSceneTimelineProjection;
 import features.sessionplanner.api.SessionPlannerSessionSnapshot;
+import features.sessionplanner.api.SessionPlannerWorkspaceSnapshot;
 import platform.ui.catalogcrud.CatalogCrudControlsContentModel;
 
 /**
@@ -59,20 +56,20 @@ final class SessionPlannerViewModel {
         return catalogContentModel;
     }
 
-    void bindReadback(
-            SessionPlannerCurrentSessionModel sessionModel,
-            SessionPlannerCatalogModel catalogModel,
-            SessionPlannerParticipantsModel participantsModel,
-            SessionPlannerSceneTimelineModel sceneTimelineModel
-    ) {
-        sessionModel.subscribe(this::applySession);
-        catalogModel.subscribe(this::applyCatalog);
-        participantsModel.subscribe(this::applyParticipants);
-        sceneTimelineModel.subscribe(this::applySceneTimeline);
-        applySession(sessionModel.current());
-        applyCatalog(catalogModel.current());
-        applyParticipants(participantsModel.current());
-        applySceneTimeline(sceneTimelineModel.current());
+    void applyWorkspace(SessionPlannerWorkspaceSnapshot workspace) {
+        SessionPlannerWorkspaceSnapshot safe = workspace == null
+                ? SessionPlannerWorkspaceSnapshot.empty() : workspace;
+        latestSession = safe.currentSession();
+        latestParticipants = safe.participants();
+        latestSceneTimeline = safe.sceneTimeline();
+        locationOptions = latestSession.locationReferences().stream()
+                .map(reference -> new TimelineProjection.LocationChoice(
+                        reference.locationId(), reference.displayName()))
+                .toList();
+        showCatalog(safe.catalog());
+        refreshControlsProjection();
+        refreshTimelineProjection();
+        refreshSummaryProjection();
     }
 
     boolean hasCurrentSession() {
@@ -103,14 +100,7 @@ final class SessionPlannerViewModel {
         catalogContentModel.openDelete(itemId);
     }
 
-    private void applySession(SessionPlannerSessionSnapshot snapshot) {
-        latestSession = snapshot == null ? SessionPlannerSessionSnapshot.empty("") : snapshot;
-        applyLocationReferences(latestSession.locationReferences());
-        refreshControlsProjection();
-        refreshSummaryProjection();
-    }
-
-    private void applyCatalog(SessionPlannerCatalogSnapshot catalog) {
+    private void showCatalog(SessionPlannerCatalogSnapshot catalog) {
         SessionPlannerCatalogSnapshot safe = catalog == null ? SessionPlannerCatalogSnapshot.empty() : catalog;
         catalogContentModel.showCatalog(new CatalogCrudControlsContentModel.CatalogState(
                 "Sessions",
@@ -128,30 +118,6 @@ final class SessionPlannerViewModel {
                 new CatalogCrudControlsContentModel.Actions(true, true, true, false),
                 false,
                 safe.statusText()));
-    }
-
-    private void applyParticipants(SessionPlannerParticipantsProjection projection) {
-        latestParticipants = projection == null ? SessionPlannerParticipantsProjection.empty() : projection;
-        refreshControlsProjection();
-        refreshSummaryProjection();
-    }
-
-    void applySceneTimeline(SessionPlannerSceneTimelineProjection sceneTimelineProjection) {
-        latestSceneTimeline = sceneTimelineProjection == null
-                ? SessionPlannerSceneTimelineProjection.empty()
-                : sceneTimelineProjection;
-        refreshTimelineProjection();
-    }
-
-    void applyLocationReferences(List<SessionPlannerSessionSnapshot.LocationReference> locationReferences) {
-        locationOptions = locationReferences == null
-                ? List.of()
-                : locationReferences.stream()
-                        .map(reference -> new TimelineProjection.LocationChoice(
-                                reference.locationId(),
-                                reference.displayName()))
-                        .toList();
-        refreshTimelineProjection();
     }
 
     private void refreshControlsProjection() {
@@ -406,11 +372,11 @@ final class SessionPlannerViewModel {
                     locationId,
                     locationLabel(locationId, locationOptions),
                     locationChoices(locationId, locationOptions),
-                    scene.lootEntries().stream()
-                            .map(entry -> new LootModel(
-                                    entry.token(),
-                                    entry.label(),
-                                    entry.kind() == SessionPlannerSceneTimelineProjection.LootEntry.Kind.MANUAL_NOTE))
+                    java.util.stream.Stream.concat(
+                            scene.manualLootNotes().stream().map(note -> new LootModel(
+                                    note.noteId(), note.authoredText(), true)),
+                            scene.generatedRewards().stream().map(reward -> new LootModel(
+                                    0L, reward.displayLabel(), false)))
                             .toList());
         }
 

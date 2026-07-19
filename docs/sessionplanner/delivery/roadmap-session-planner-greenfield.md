@@ -197,14 +197,13 @@ acceptance after the last UI diff.
 
 ## Current Migration Position
 
-- Current foundation: M0 through M3 are complete. Session Generation publishes
-  the typed draft/commit/load/reward-read boundary, while Encounter now prepares
-  one concrete deterministic roster batch from one Creature facts snapshot,
-  commits it atomically and idempotently, and batch-hydrates current summaries.
-  Session Planner now owns one confirmed, cancellable, latest-wins preparation
-  route and one revision-guarded final transaction.
-- Current milestone: M4 replaces independent projection refreshes with one
-  coherent revisioned workspace snapshot and structured reward projection.
+- Current foundation: M0 through M4 are complete. Session Generation publishes
+  the typed draft/commit/load/reward-read boundary, Encounter owns concrete
+  deterministic roster batches and summary hydration, and Session Planner owns
+  one confirmed preparation route, one revision-guarded final transaction, and
+  one coherent revisioned workspace publication with typed foreign facts.
+- Current milestone: M5 enforces the delivered boundaries, removes remaining
+  migration compatibility, and proves production-route performance.
 - M0 closure: documentation whitespace, required `check`, and desktop install
   proof are green after the final owner-language diff.
 - M1 closure: the Golden fixture uses two level-3 and two level-4 characters,
@@ -233,6 +232,18 @@ acceptance after the last UI diff.
   fingerprint mismatch, transaction rollback, migration, and the JavaFX
   production route. The final 21-test M3 suite, `git diff --check`, required
   `check`, and desktop install are green after the final M3 diff.
+- M4 closure: one set-based planner capture now assembles catalog, setup,
+  timeline, summary, preparation, and all-session prepared scenes. Each assembly
+  performs one Party planning read, at most one Encounter and Session
+  Generation batch read, and one World Planner snapshot capture; generated
+  Encounter and reward content remains typed through the view boundary.
+  Latest-revision publication coalesces dirty refreshes, rejects
+  stale assemblies, retries a source mismatch once, and retains stable content
+  for transient or failed states. Real v3 SQLite proof records seven fixed
+  statement families for empty and multi-session workspaces containing every
+  child family. The final Session Planner and shell focused suite (`49s`),
+  `git diff --check`, required `check` (`7m 27s`), and desktop install (`25s`)
+  are green after the final M4 code diff.
 
 ## Delivery Rules
 

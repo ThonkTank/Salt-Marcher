@@ -205,11 +205,8 @@ public final class AppBootstrap implements AutoCloseable {
         SessionPlannerServiceAssembly session = SessionPlannerServiceAssembly.create(
                 database,
                 party.application(),
-                party.activeParty(),
-                party.adventuringDayCalculation(),
                 encounter.application(),
                 encounter.savedPlans(),
-                encounter.planBudget(),
                 world.snapshot(),
                 generation,
                 executionLane,

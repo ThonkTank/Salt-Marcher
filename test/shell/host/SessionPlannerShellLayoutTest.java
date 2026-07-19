@@ -230,9 +230,8 @@ public final class SessionPlannerShellLayoutTest {
                 party.adventuringDaySummary(), party.mutation(), new SqliteEncounterPlanRepository());
         SqliteSessionPlanRepository sessionRepository = new SqliteSessionPlanRepository();
         SessionPlannerServiceAssembly session = new SessionPlannerServiceAssembly(
-                sessionRepository, sessionRepository, party.application(), party.activeParty(),
-                party.adventuringDayCalculation(), encounter.application(), encounter.savedPlans(),
-                encounter.planBudget(), null, unsupportedGeneration(),
+                sessionRepository, sessionRepository, sessionRepository, party.application(),
+                encounter.application(), encounter.savedPlans(), null, unsupportedGeneration(),
                 DirectExecutionLane.INSTANCE, DirectUiDispatcher.INSTANCE, NoopDiagnostics.INSTANCE);
         HexServiceAssembly hex = new HexServiceAssembly(
                 new SqliteHexMapRepository(), party.travelPositions(), party.application());
@@ -296,10 +295,7 @@ public final class SessionPlannerShellLayoutTest {
 
     private static SessionPlannerContribution sessionPlanner(LayoutServices services) {
         return new SessionPlannerContribution(
-                services.session().application(), services.session().currentSessionModel(),
-                services.session().catalogModel(), services.session().participantsModel(),
-                services.session().sceneTimelineModel(), services.session().statePanelModel(),
-                services.session().preparationModel());
+                services.session().application(), services.session().workspaceModel());
     }
 
     private static SessionGenerationApi unsupportedGeneration() {

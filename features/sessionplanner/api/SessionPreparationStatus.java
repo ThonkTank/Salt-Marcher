@@ -8,5 +8,6 @@ public enum SessionPreparationStatus {
     SAVING,
     READY,
     INVALID,
-    FAILED
+    FAILED,
+    CANCELLED
 }

@@ -2,8 +2,8 @@ package features.sessionplanner.application;
 
 import features.sessiongeneration.api.GenerationPreparationIdentity;
 import features.sessiongeneration.api.GenerationRequest;
-import features.sessionplanner.domain.session.SessionActivePartyMembersFact;
-import features.sessionplanner.domain.session.SessionPartyMemberProfile;
+import features.party.api.PartyPlanningFactsResponse;
+import features.party.api.ReadStatus;
 import features.sessionplanner.domain.session.SessionPlan;
 import features.sessionplanner.domain.session.SessionRevision;
 import java.math.BigDecimal;
@@ -38,24 +38,26 @@ public record SessionPreparationFingerprint(
 
     static Optional<SessionPreparationFingerprint> capture(
             SessionPlan session,
-            SessionPlannerForeignFacts facts,
+            PartyPlanningFactsResponse facts,
             OptionalInt encounterCount,
             long seed
     ) {
         if (session == null || facts == null || encounterCount == null) {
             return Optional.empty();
         }
-        SessionActivePartyMembersFact activeParty = facts.activePartyMembers();
-        if (!activeParty.available() || session.participantRefs().isEmpty()) {
+        if (facts.status() != ReadStatus.SUCCESS || session.participantRefs().isEmpty()
+                || facts.participants().size() != session.participantRefs().size()) {
             return Optional.empty();
         }
         List<Participant> participants = new ArrayList<>();
-        for (long participantId : session.participantRefs()) {
-            SessionPartyMemberProfile member = activeParty.resolve(participantId);
-            if (participantId <= 0L || member == null || member.currentLevel() < 1 || member.currentLevel() > 20) {
+        for (int index = 0; index < session.participantRefs().size(); index++) {
+            long participantId = session.participantRefs().get(index);
+            PartyPlanningFactsResponse.ResolvedParticipant resolved = facts.participants().get(index);
+            if (participantId <= 0L || resolved.requestedId() != participantId || !resolved.available()
+                    || resolved.member().level() < 1 || resolved.member().level() > 20) {
                 return Optional.empty();
             }
-            participants.add(new Participant(participantId, member.currentLevel()));
+            participants.add(new Participant(participantId, resolved.member().level()));
         }
         participants.sort(Comparator.comparingLong(Participant::stableId));
         if (participants.stream().map(Participant::stableId).distinct().count() != participants.size()) {

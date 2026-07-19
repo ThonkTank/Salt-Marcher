@@ -68,6 +68,25 @@ public final class SqliteSessionPlannerLocalGateway {
         }
     }
 
+    public WorkspaceRead loadWorkspace() {
+        try (Connection connection = openReadyConnection()) {
+            boolean previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                WorkspaceRead result = reads.loadWorkspace(connection);
+                connection.commit();
+                return result;
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            } finally {
+                connection.setAutoCommit(previousAutoCommit);
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load session planner workspace from SQLite.", exception);
+        }
+    }
+
     public SaveOutcome insert(SessionPlanSnapshotRecord snapshot) {
         Objects.requireNonNull(snapshot, "snapshot");
         try (Connection connection = openReadyConnection()) {
@@ -215,5 +234,12 @@ public final class SqliteSessionPlannerLocalGateway {
         STALE,
         NOT_FOUND,
         ALREADY_EXISTS
+    }
+
+    public record WorkspaceRead(long currentSessionId, List<SessionPlanSnapshotRecord> sessions) {
+        public WorkspaceRead {
+            currentSessionId = Math.max(0L, currentSessionId);
+            sessions = sessions == null ? List.of() : List.copyOf(sessions);
+        }
     }
 }

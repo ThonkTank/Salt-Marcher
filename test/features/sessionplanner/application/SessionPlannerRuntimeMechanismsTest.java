@@ -17,9 +17,6 @@ import platform.diagnostics.Diagnostics;
 import platform.execution.ExecutionLane;
 import platform.ui.UiDispatcher;
 import features.encounter.application.EncounterApplicationServiceFakes;
-import features.encounter.api.EncounterPlanBudgetModel;
-import features.encounter.api.EncounterPlanBudgetResult;
-import features.encounter.api.EncounterPlanBudgetStatus;
 import features.encounter.api.SavedEncounterPlanListModel;
 import features.encounter.api.SavedEncounterPlanListResult;
 import features.encounter.api.SavedEncounterPlanStatus;
@@ -60,20 +57,21 @@ final class SessionPlannerRuntimeMechanismsTest {
                 repository, party, lane, dispatcher, diagnostics);
 
         assertEquals(0, repository.reads);
-        assertEquals(0L, planner.currentSessionModel().current().session().sessionId());
-        assertTrue(planner.catalogModel().current().sessions().isEmpty());
+        assertEquals(0L, planner.workspaceModel().current().currentSession().session().sessionId());
+        assertTrue(planner.workspaceModel().current().catalog().sessions().isEmpty());
         assertEquals(0, repository.reads, "all lazy current suppliers are I/O-free");
 
         List<Long> observedSessions = new ArrayList<>();
-        planner.currentSessionModel().subscribe(snapshot -> observedSessions.add(snapshot.session().sessionId()));
+        planner.workspaceModel().subscribe(snapshot ->
+                observedSessions.add(snapshot.currentSession().session().sessionId()));
         planner.application().initialize();
         assertEquals(0, repository.reads);
         assertEquals(1, lane.pending());
         lane.runAll();
 
-        assertEquals(2, repository.reads, "initialization loads current session and catalog on the lane");
-        assertEquals(1L, planner.currentSessionModel().current().session().sessionId());
-        assertTrue(planner.currentSessionModel().current().xpBudget().available(),
+        assertEquals(1, repository.reads, "initialization performs one set-based workspace read on the lane");
+        assertEquals(1L, planner.workspaceModel().current().currentSession().session().sessionId());
+        assertTrue(planner.workspaceModel().current().currentSession().xpBudget().available(),
                 "nested Party command-to-current read completes inline on the shared lane");
         assertTrue(observedSessions.isEmpty(), "published callback waits for the supplied UI dispatcher");
         dispatcher.runAll();
@@ -97,7 +95,7 @@ final class SessionPlannerRuntimeMechanismsTest {
 
         assertEquals(List.of("sessionplanner.storage-failure"), diagnostics.ids);
         assertEquals(List.of(IllegalStateException.class), diagnostics.failureTypes);
-        assertFalse(planner.currentSessionModel().current().xpBudget().available());
+        assertFalse(planner.workspaceModel().current().currentSession().xpBudget().available());
     }
 
     @Test
@@ -112,14 +110,14 @@ final class SessionPlannerRuntimeMechanismsTest {
                 repository, party, lane, dispatcher, diagnostics);
         planner.application().initialize();
         lane.runAll();
-        var stable = planner.currentSessionModel().current();
+        var stable = planner.workspaceModel().current().currentSession();
         repository.failCurrentLoads = true;
 
         planner.application().setEncounterDays(new SetSessionEncounterDaysCommand(new BigDecimal("2")));
         lane.runAll();
 
         assertEquals(0, repository.saves);
-        assertEquals(stable, planner.currentSessionModel().current());
+        assertEquals(stable, planner.workspaceModel().current().currentSession());
         assertEquals(List.of("sessionplanner.storage-failure"), diagnostics.ids);
     }
 
@@ -135,14 +133,14 @@ final class SessionPlannerRuntimeMechanismsTest {
                 repository, party, lane, dispatcher, diagnostics);
         planner.application().initialize();
         lane.runAll();
-        var stable = planner.currentSessionModel().current();
+        var stable = planner.workspaceModel().current().currentSession();
         repository.failNextId = true;
 
         planner.application().createSession(new SessionPlannerCatalogCommand.CreateSessionCommand("Next"));
         lane.runAll();
 
         assertEquals(0, repository.saves);
-        assertEquals(stable, planner.currentSessionModel().current());
+        assertEquals(stable, planner.workspaceModel().current().currentSession());
         assertEquals(7L, repository.current.sessionId());
         assertEquals(List.of("sessionplanner.storage-failure"), diagnostics.ids);
     }
@@ -167,9 +165,9 @@ final class SessionPlannerRuntimeMechanismsTest {
         assertEquals(1, repository.saves);
         assertEquals(BigDecimal.ONE, repository.current.encounterDays().value());
         assertEquals(BigDecimal.ONE,
-                planner.currentSessionModel().current().session().encounterDays());
+                planner.workspaceModel().current().currentSession().session().encounterDays());
         assertEquals("Session konnte nicht gespeichert werden.",
-                planner.currentSessionModel().current().status());
+                planner.workspaceModel().current().preparation().message());
         assertEquals(List.of("sessionplanner.storage-failure"), diagnostics.ids);
     }
 
@@ -185,7 +183,7 @@ final class SessionPlannerRuntimeMechanismsTest {
                 repository, party, lane, dispatcher, diagnostics);
         planner.application().initialize();
         lane.runAll();
-        var stableCatalog = planner.catalogModel().current();
+        var stableCatalog = planner.workspaceModel().current().catalog();
         repository.failSaves = true;
         repository.failLists = true;
 
@@ -193,10 +191,10 @@ final class SessionPlannerRuntimeMechanismsTest {
         lane.runAll();
 
         assertEquals(BigDecimal.ONE,
-                planner.currentSessionModel().current().session().encounterDays());
+                planner.workspaceModel().current().currentSession().session().encounterDays());
         assertEquals("Session konnte nicht gespeichert werden.",
-                planner.currentSessionModel().current().status());
-        assertEquals(stableCatalog, planner.catalogModel().current());
+                planner.workspaceModel().current().preparation().message());
+        assertEquals(stableCatalog, planner.workspaceModel().current().catalog());
         assertEquals(List.of("sessionplanner.storage-failure"), diagnostics.ids);
     }
 
@@ -227,6 +225,63 @@ final class SessionPlannerRuntimeMechanismsTest {
         assertEquals(readsAfterPublication, repository.reads);
     }
 
+    @Test
+    void transientMutationStatusIsPublishedOnceOverTheAcceptedWorkspaceThenCleared() {
+        ReentrantRecordingLane lane = new ReentrantRecordingLane();
+        RecordingDispatcher dispatcher = new RecordingDispatcher();
+        PartyServiceAssembly.Component party = createParty(lane, dispatcher);
+        RecordingSessionRepository repository = new RecordingSessionRepository(
+                SessionPlan.seeded(7L, List.of(1L), EncounterDays.one()));
+        repository.stripPersistedStatus = true;
+        SessionPlannerServiceAssembly planner = createPlanner(
+                repository, party, lane, dispatcher, (id, type) -> { });
+        planner.application().initialize();
+        lane.runAll();
+
+        planner.application().setEncounterDays(new SetSessionEncounterDaysCommand(new BigDecimal("2")));
+        lane.runAll();
+
+        assertEquals("Session-Tage aktualisiert.",
+                planner.workspaceModel().current().currentSession().status(),
+                "the committed status overlays the first accepted re-read even when it is transient");
+        assertEquals("", repository.current.statusText());
+
+        party.application().createCharacter(new CreateCharacterCommand(
+                new CharacterDraft("Borin", "Stein", 2, 12, 14), MembershipState.ACTIVE));
+        lane.runAll();
+        dispatcher.runAll();
+        lane.runAll();
+
+        assertEquals("", planner.workspaceModel().current().currentSession().status(),
+                "an unrelated provider refresh must not keep replaying an accepted transient status");
+    }
+
+    @Test
+    void sourceMismatchRetriesOnlyOnceThenPublishesStableFailure() {
+        ReentrantRecordingLane lane = new ReentrantRecordingLane();
+        RecordingDispatcher dispatcher = new RecordingDispatcher();
+        RecordingSessionRepository repository = new RecordingSessionRepository(
+                SessionPlan.seeded(7L, List.of(1L), EncounterDays.one()));
+        PartyServiceAssembly.Component party = createParty(lane, dispatcher);
+        SessionPlannerServiceAssembly planner = createPlanner(
+                repository, party, lane, dispatcher, (id, type) -> { });
+        planner.application().initialize();
+        lane.runAll();
+        repository.lagWorkspaceReadsAfterSave = 2;
+
+        planner.application().setEncounterDays(new SetSessionEncounterDaysCommand(new BigDecimal("2")));
+        lane.runAll();
+
+        assertEquals(3, repository.workspaceReads,
+                "initial read plus exactly one source-mismatch retry");
+        assertEquals(0, lane.pending(), "a persistent mismatch must not schedule an unbounded retry loop");
+        assertEquals(features.sessionplanner.api.SessionPreparationStatus.FAILED,
+                planner.workspaceModel().current().preparation().status());
+        assertEquals(BigDecimal.ONE,
+                planner.workspaceModel().current().currentSession().session().encounterDays(),
+                "the last coherent workspace remains visible on mismatch failure");
+    }
+
     private static PartyServiceAssembly.Component createParty(
             ReentrantRecordingLane lane,
             RecordingDispatcher dispatcher
@@ -255,18 +310,13 @@ final class SessionPlannerRuntimeMechanismsTest {
                             SavedEncounterPlanStatus.SUCCESS, List.of(), ""));
                     return () -> { };
                 });
-        EncounterPlanBudgetModel planBudget = new EncounterPlanBudgetModel(
-                () -> new EncounterPlanBudgetResult(EncounterPlanBudgetStatus.STORAGE_ERROR, null, ""),
-                listener -> () -> { });
         return new SessionPlannerServiceAssembly(
                 repository,
+                (SessionPlannerWorkspaceSource) repository,
                 (SessionPreparedSessionStore) repository,
                 party.application(),
-                party.activeParty(),
-                party.adventuringDayCalculation(),
                 EncounterApplicationServiceFakes.noOp(),
                 savedPlans,
-                planBudget,
                 null,
                 unavailableGeneration(),
                 lane,
@@ -322,16 +372,21 @@ final class SessionPlannerRuntimeMechanismsTest {
     }
 
     private static final class RecordingSessionRepository
-            implements SessionPlanRepository, SessionPreparedSessionStore {
+            implements SessionPlanRepository, SessionPreparedSessionStore, SessionPlannerWorkspaceSource {
 
         private SessionPlan current;
+        private SessionPlan previous;
         private int reads;
+        private int workspaceReads;
         private int saves;
         private boolean failReads;
         private boolean failCurrentLoads;
         private boolean failNextId;
         private boolean failSaves;
         private boolean failLists;
+        private boolean stripPersistedStatus;
+        private int lagWorkspaceReadsAfterSave;
+        private int staleWorkspaceReads;
 
         private RecordingSessionRepository(SessionPlan current) {
             this.current = current;
@@ -345,6 +400,21 @@ final class SessionPlannerRuntimeMechanismsTest {
             }
             failIfRequested();
             return Optional.ofNullable(current);
+        }
+
+        @Override
+        public SessionPlannerReadCapture readWorkspace() {
+            reads++;
+            workspaceReads++;
+            if (failLists) {
+                throw storageFailure();
+            }
+            failIfRequested();
+            SessionPlan captured = staleWorkspaceReads > 0 ? previous : current;
+            staleWorkspaceReads = Math.max(0, staleWorkspaceReads - 1);
+            return captured == null
+                    ? new SessionPlannerReadCapture(0L, List.of())
+                    : new SessionPlannerReadCapture(captured.sessionId(), List.of(captured));
         }
 
         @Override
@@ -381,17 +451,20 @@ final class SessionPlannerRuntimeMechanismsTest {
             if (failSaves) {
                 throw storageFailure();
             }
-            current = new SessionPlan(
+            SessionPlan committed = new SessionPlan(
                     sessionPlan.sessionId(), sessionPlan.revision().next(), sessionPlan.displayName(),
                     sessionPlan.participantRefs(), sessionPlan.encounterDays(), sessionPlan.encounters(),
                     sessionPlan.restPlacements(), sessionPlan.manualLootNotes(), sessionPlan.generatedRewards(),
                     sessionPlan.selectedEncounterId(), sessionPlan.statusText(), sessionPlan.nextEncounterId(),
                     sessionPlan.nextLootId());
+            previous = current;
+            current = stripPersistedStatus ? committed.clearStatus() : committed;
+            staleWorkspaceReads = lagWorkspaceReadsAfterSave;
             return new SessionPlanSaveResult(
                     SessionPlanSaveResult.Status.SUCCESS,
                     sessionPlan.revision(),
-                    Optional.of(current.revision()),
-                    Optional.of(current));
+                    Optional.of(committed.revision()),
+                    Optional.of(committed));
         }
 
         @Override

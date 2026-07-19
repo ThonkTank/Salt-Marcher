@@ -1,7 +1,6 @@
 package features.sessionplanner.adapter.javafx;
 
 import features.sessionplanner.api.PrepareSessionCommand;
-import features.sessionplanner.api.SessionPreparationModel;
 import features.sessionplanner.api.SessionPreparationSnapshot;
 import features.sessionplanner.api.SessionPreparationStatus;
 import java.util.OptionalInt;
@@ -61,14 +60,6 @@ final class SessionGenerationPanel extends VBox {
         cancelHandler = handler == null ? () -> { } : handler;
     }
 
-    void bind(SessionPreparationModel model) {
-        if (model == null) {
-            return;
-        }
-        model.subscribe(this::show);
-        show(model.current());
-    }
-
     private void dispatch(boolean replacementConfirmed) {
         OptionalInt count = parseCount(encounterCount.getText());
         if (!encounterCount.getText().isBlank() && count.isEmpty()) {
@@ -89,7 +80,7 @@ final class SessionGenerationPanel extends VBox {
         prepareHandler.accept(new PrepareSessionCommand(count, parsedSeed, replacementConfirmed));
     }
 
-    private void show(SessionPreparationSnapshot snapshot) {
+    void show(SessionPreparationSnapshot snapshot) {
         SessionPreparationSnapshot safe = snapshot == null ? SessionPreparationSnapshot.idle() : snapshot;
         status.setText(safe.message().isBlank() ? defaultMessage(safe.status()) : safe.message());
         boolean confirming = safe.status() == SessionPreparationStatus.CONFIRMING_REPLACEMENT;
@@ -112,6 +103,7 @@ final class SessionGenerationPanel extends VBox {
             case READY -> "Session ist vorbereitet.";
             case INVALID -> "Session-Eingaben sind ungültig.";
             case FAILED -> "Session-Vorbereitung ist fehlgeschlagen.";
+            case CANCELLED -> "Session-Vorbereitung wurde abgebrochen.";
         };
     }
 

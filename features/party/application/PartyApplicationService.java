@@ -3,7 +3,12 @@ package features.party.application;
 import static features.party.api.PartyDungeonTravelLocationKind.TRANSITION;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
@@ -31,6 +36,9 @@ import features.party.api.MembershipState;
 import features.party.api.MovePartyCharactersCommand;
 import features.party.api.PartyDungeonTravelLocationSnapshot;
 import features.party.api.PartyMutationModel;
+import features.party.api.PartyPlanningFactsQuery;
+import features.party.api.PartyPlanningFactsResponse;
+import features.party.api.PartyMemberSummary;
 import features.party.api.PartyOverworldTravelLocationSnapshot;
 import features.party.api.PartySnapshotModel;
 import features.party.api.PartyTravelLocationSnapshot;
@@ -130,6 +138,53 @@ public final class PartyApplicationService implements features.party.api.PartyAp
 
     public void calculateAdventuringDay(CalculateAdventuringDayCommand command) {
         executionLane.execute(() -> calculateAdventuringDayOnLane(command));
+    }
+
+    @Override
+    public CompletionStage<PartyPlanningFactsResponse> loadPlanningFacts(PartyPlanningFactsQuery query) {
+        CompletableFuture<PartyPlanningFactsResponse> result = new CompletableFuture<>();
+        if (query == null) {
+            result.complete(PartyPlanningFactsResponse.failure("Party-Planungsdaten konnten nicht geladen werden."));
+            return result;
+        }
+        try {
+            executionLane.execute(() -> completePlanningFacts(query, result));
+        } catch (RuntimeException exception) {
+            diagnostics.failure(STORAGE_FAILURE, exception.getClass());
+            result.complete(PartyPlanningFactsResponse.failure(
+                    "Party-Planungsdaten konnten nicht geladen werden."));
+        }
+        return result;
+    }
+
+    private void completePlanningFacts(
+            PartyPlanningFactsQuery query,
+            CompletableFuture<PartyPlanningFactsResponse> result
+    ) {
+        try {
+            PartyRoster roster = repository.load();
+            List<PartyMemberSummary> active = PartyPublishedProjection.activePartyResult(roster).members();
+            Map<Long, PartyMemberSummary> byId = active.stream()
+                    .collect(Collectors.toUnmodifiableMap(PartyMemberSummary::id, Function.identity()));
+            List<PartyPlanningFactsResponse.ResolvedParticipant> participants = query.participantIds().stream()
+                    .map(id -> new PartyPlanningFactsResponse.ResolvedParticipant(id, byId.get(id)))
+                    .toList();
+            List<Integer> levels = participants.stream()
+                    .filter(PartyPlanningFactsResponse.ResolvedParticipant::available)
+                    .map(participant -> participant.member().level())
+                    .toList();
+            result.complete(new PartyPlanningFactsResponse(
+                    features.party.api.ReadStatus.SUCCESS,
+                    active,
+                    participants,
+                    PartyPublishedProjection.adventuringDayCalculationResult(
+                            levels, query.plannedGroupXp(), adventuringDayProgress).planningSummary(),
+                    ""));
+        } catch (RuntimeException exception) {
+            diagnostics.failure(STORAGE_FAILURE, exception.getClass());
+            result.complete(PartyPlanningFactsResponse.failure(
+                    "Party-Planungsdaten konnten nicht geladen werden."));
+        }
     }
 
     private void calculateAdventuringDayOnLane(CalculateAdventuringDayCommand command) {

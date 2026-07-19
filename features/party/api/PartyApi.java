@@ -2,6 +2,9 @@ package features.party.api;
 
 public interface PartyApi {
 
+    java.util.concurrent.CompletionStage<PartyPlanningFactsResponse> loadPlanningFacts(
+            PartyPlanningFactsQuery query);
+
     PartySnapshotModel snapshot();
 
     ActivePartyModel activeParty();
