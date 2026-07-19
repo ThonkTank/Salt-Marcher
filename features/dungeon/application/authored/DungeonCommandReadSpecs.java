@@ -218,13 +218,5 @@ final class DungeonCommandReadSpecs {
                     chunkKeys);
         }
 
-        boolean matches(long expectedRevision, int level, int minQ, int minR, int maxQ, int maxR) {
-            return revision == expectedRevision
-                    && projectionLevel == level
-                    && minimumQ == minQ
-                    && minimumR == minR
-                    && maximumQ == maxQ
-                    && maximumR == maxR;
-        }
     }
 }

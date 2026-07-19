@@ -106,10 +106,69 @@ and commit boundaries. M7 starts only after both are complete.
   local identity derivation, compatibility writer, and full-record fixture
   families are deleted.
 - M4.6 delivery proof is literal green `./gradlew check` plus
-  `./gradlew installDesktopApp`. M5.1 is complete through PR #536 and M5.2
-  through PR #538. M5.3 is complete in this change with the same literal green
-  proof; M5.4 is next. No intermediate review panel runs; the single independent
-  cross-roadmap review runs only after all M7 implementation is complete.
+  `./gradlew installDesktopApp`. M5.1 is complete through PR #536, M5.2 through
+  PR #538, and M5.3 through PR #540. M5.4 is complete in this change with
+  literal green `./gradlew check` and `./gradlew installDesktopApp`; M6 is next
+  and begins from the M5.4 merge. No intermediate review panel runs; the single
+  independent cross-roadmap review runs only after all M7 implementation is
+  complete.
+
+### Completed Slice Contract: M5.4 Layered Canvas And Runtime Qualification
+
+#### Physical Layers And Invalidation
+
+- `MapCanvasPane` owns three distinct size-bound canvases in fixed z-order:
+  `BASE`, `INTERACTION`, and `ACTOR`. Only `BASE` receives pointer/focus input;
+  the other layers are mouse-transparent.
+- Stable grid/authored geometry/relations/labels paint on `BASE`; selection,
+  preview, handles, and hover on `INTERACTION`; Party/Travel and other moving
+  runtime actors on `ACTOR`.
+- `CanvasState` carries independent layer revisions. Hover invalidates only
+  interaction, actor movement only actor, and authored publication only the
+  projections that changed. Camera and resize invalidate all physical layers.
+  Hit-index rebuilding is forbidden for hover-only or actor-only changes.
+- Delete canvas aliasing, the shared-surface fallback, Base redraw on hover,
+  actor paint on interaction, and the no-op aggregate redraw hook.
+
+#### Measurement And Sample Protocol
+
+- Add feature-neutral `MapCanvasPaintSample` and `MapCanvasPaintObserver`. Every
+  executed layer paint emits exactly one sample containing layer, operation id,
+  duration, visited primitives, and painted primitives; a non-invalidated layer
+  emits none. Production defaults to a passive observer.
+- Qualify through fresh schema-v6 SQLite plus real Dungeon feature, public
+  Editor/Travel API, JavaFX binding, and paint routes. Counting decorators record
+  index, content, closure, continuation, UoW, and Travel operations; fixture
+  self-tests and timing-only proof are insufficient.
+- For each 1k/10k/100k sparse dataset use the same visible authored subset,
+  at most nine visible-plus-ring chunks, and off-window-only growth. Camera,
+  hover, preview, commit, undo, and Travel refresh use 20 fixed warmups followed
+  by exactly 100 measured alternating real inputs. Cold load uses one sample.
+- Record all measured samples and nearest-rank min/p50/p95/max. Do not retry,
+  trim outliers, adapt warmups, raise budgets, or skip for environment noise.
+  Camera and hover p95 must be at most 16 ms; preview p95 at most 50 ms with
+  exactly zero repository I/O.
+
+#### Deterministic Work Proof
+
+- Hover paints neither Base nor Actor and performs zero repository I/O;
+  preview paints neither Base nor Actor and performs zero repository I/O;
+  actor-only refresh paints neither Base nor Interaction.
+- Encode fixed upper bounds for port calls, hydrated entities, visited/painted
+  primitives, and touched/reloaded chunks for cold load, camera, commit, undo,
+  and Travel refresh. Counts must be identical across 1k/10k/100k while only
+  off-window content grows.
+- Run at least 100 bind/resize/camera/hover/preview/actor cycles and prove exactly
+  three canvases, stable z-order, no listener or paint multiplication, and
+  pointer/focus ownership on Base.
+
+#### Delete Gate And Proof
+
+- Delete aggregate-only/no-op measurement, dynamic count budgets derived from
+  observed results, and any timing pass based on retry, trimming, or skip.
+- Focused layer, stability, work-bound, and p95 qualification tests followed by
+  literal green `./gradlew check` and `./gradlew installDesktopApp` are required
+  before the M5.4 PR merges. M6 starts from that merge without a review cycle.
 
 ### Completed Slice Contract: M5.3 Indexed Bounds And Paged Continuations
 

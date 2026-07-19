@@ -31,12 +31,12 @@ import features.dungeon.adapter.javafx.map.DungeonMapContentModel.PointerTarget;
 import features.dungeon.api.editor.DungeonEditorPointerInput;
 import features.dungeon.adapter.javafx.map.DungeonMapView;
 import platform.ui.catalogcrud.CatalogCrudControlsView;
+import platform.ui.mapcanvas.MapCanvasPane;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.CheckBox;
@@ -1917,10 +1917,10 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
         assertTrue(paintedPixels > 0, message);
     }
 
-    static Canvas mapCanvas(DungeonMapView mapView) {
+    static MapCanvasPane mapCanvas(DungeonMapView mapView) {
         return descendants(mapView).stream()
-                .filter(Canvas.class::isInstance)
-                .map(Canvas.class::cast)
+                .filter(MapCanvasPane.class::isInstance)
+                .map(MapCanvasPane.class::cast)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Dungeon map canvas not found."));
     }
@@ -2307,6 +2307,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static TestBinding bindTest(TestRuntime runtime, double width, double height) {
+        releaseProofWindowsBeforeBinding();
         ShellBinding shellBinding = new DungeonEditorContribution(runtime.editorApi()).bind();
         Parent controlsRoot = slot(shellBinding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
         DungeonEditorControlsView controls = descendant(controlsRoot, DungeonEditorControlsView.class);
@@ -2324,6 +2325,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static TestBinding bindShellTest(TestRuntime runtime, double width, double height) {
+        releaseProofWindowsBeforeBinding();
         AppShell shell = new AppShell();
         DungeonEditorContribution contribution = new DungeonEditorContribution(runtime.editorApi());
         ShellBinding shellBinding = contribution.bind();

@@ -232,10 +232,6 @@ public final class DungeonMapContentModel {
                 safeTarget.topologyId());
     }
 
-    void recordCanvasRedraw(long elapsedNanos) {
-        // Retained as the canvas redraw hook; Wave 08 removed the unused local accumulator.
-    }
-
     private void showRenderState(DungeonMapRenderState nextRenderState) {
         renderState = nextRenderState == null ? renderState : nextRenderState;
         frameConsumption.clearHoverTarget();
@@ -334,24 +330,36 @@ public final class DungeonMapContentModel {
         private final RenderScene renderScene;
         private final DungeonMapSceneAssembler.SceneBuckets hoverOverlay;
         private final Viewport viewport;
+        private final long baseRevision;
+        private final long interactionRevision;
+        private final long actorRevision;
 
-        private static CanvasState initial(RenderScene renderScene, Viewport viewport) {
+        static CanvasState initial(RenderScene renderScene, Viewport viewport) {
             return new CanvasState(
                 renderScene,
                     DungeonMapSceneAssembler.SceneBuckets.empty(),
-                    viewport);
+                    viewport,
+                    1L,
+                    1L,
+                    1L);
         }
 
         private CanvasState(
                 RenderScene renderScene,
                 DungeonMapSceneAssembler.SceneBuckets hoverOverlay,
-                Viewport viewport
+                Viewport viewport,
+                long baseRevision,
+                long interactionRevision,
+                long actorRevision
         ) {
             this.renderScene = renderScene == null ? RenderScene.empty(defaultTitle()) : renderScene;
             this.hoverOverlay = hoverOverlay == null
                     ? DungeonMapSceneAssembler.SceneBuckets.empty()
                     : hoverOverlay;
             this.viewport = viewport == null ? Viewport.initial() : viewport;
+            this.baseRevision = Math.max(0L, baseRevision);
+            this.interactionRevision = Math.max(0L, interactionRevision);
+            this.actorRevision = Math.max(0L, actorRevision);
         }
 
         public RenderScene baseRenderScene() {
@@ -382,36 +390,75 @@ public final class DungeonMapContentModel {
             return viewport;
         }
 
-        private CanvasState withRenderScene(RenderScene nextRenderScene, Viewport nextViewport) {
-            return new CanvasState(
-                    nextRenderScene,
-                    DungeonMapSceneAssembler.SceneBuckets.empty(),
-                    nextViewport);
+        public long baseRevision() {
+            return baseRevision;
         }
 
-        private CanvasState withHoverOverlay(
+        public long interactionRevision() {
+            return interactionRevision;
+        }
+
+        public long actorRevision() {
+            return actorRevision;
+        }
+
+        CanvasState withRenderScene(RenderScene nextRenderScene, Viewport nextViewport) {
+            RenderScene safeNext = nextRenderScene == null ? RenderScene.empty(defaultTitle()) : nextRenderScene;
+            boolean viewportChanged = !Objects.equals(viewport, nextViewport);
+            return new CanvasState(
+                    safeNext,
+                    DungeonMapSceneAssembler.SceneBuckets.empty(),
+                    nextViewport,
+                    incrementIf(baseRevision, viewportChanged || !renderScene.sameBasePaint(safeNext)),
+                    incrementIf(interactionRevision,
+                            viewportChanged
+                                    || !renderScene.sameInteractionPaint(safeNext)
+                                    || !hoverOverlay.equals(DungeonMapSceneAssembler.SceneBuckets.empty())),
+                    incrementIf(actorRevision, viewportChanged || !renderScene.sameActorPaint(safeNext)));
+        }
+
+        CanvasState withHoverOverlay(
                 DungeonMapSceneAssembler.SceneBuckets nextHoverOverlay,
                 Viewport nextViewport
         ) {
             return new CanvasState(
                     renderScene,
                     nextHoverOverlay,
-                    nextViewport);
+                    nextViewport,
+                    incrementIf(baseRevision, !Objects.equals(viewport, nextViewport)),
+                    incrementIf(interactionRevision,
+                            !Objects.equals(viewport, nextViewport)
+                                    || !Objects.equals(hoverOverlay, nextHoverOverlay)),
+                    incrementIf(actorRevision, !Objects.equals(viewport, nextViewport)));
         }
 
         private CanvasState withRenderSceneMetadata(RenderScene nextRenderScene, Viewport nextViewport) {
-            return new CanvasState(nextRenderScene, hoverOverlay, nextViewport);
+            return withRenderScene(nextRenderScene, nextViewport);
         }
 
-        private CanvasState withViewport(Viewport nextViewport) {
-            return new CanvasState(renderScene, hoverOverlay, nextViewport);
+        CanvasState withViewport(Viewport nextViewport) {
+            boolean changed = !Objects.equals(viewport, nextViewport);
+            return new CanvasState(
+                    renderScene,
+                    hoverOverlay,
+                    nextViewport,
+                    incrementIf(baseRevision, changed),
+                    incrementIf(interactionRevision, changed),
+                    incrementIf(actorRevision, changed));
         }
 
         private boolean sameAs(CanvasState other) {
             return other != null
                     && Objects.equals(renderScene, other.renderScene)
                     && Objects.equals(hoverOverlay, other.hoverOverlay)
-                    && Objects.equals(viewport, other.viewport);
+                    && Objects.equals(viewport, other.viewport)
+                    && baseRevision == other.baseRevision
+                    && interactionRevision == other.interactionRevision
+                    && actorRevision == other.actorRevision;
+        }
+
+        private static long incrementIf(long revision, boolean changed) {
+            return changed ? revision + 1L : revision;
         }
     }
 
@@ -694,6 +741,10 @@ public final class DungeonMapContentModel {
             List<GlyphPrimitive> glyphs,
             List<TextPrimitive> texts,
             List<RelationPrimitive> relations,
+            List<MapCanvasPolygonPrimitive> interactionSurfaces,
+            List<BoundaryPrimitive> interactionBoundaries,
+            List<GlyphPrimitive> interactionGlyphs,
+            List<TextPrimitive> interactionTexts,
             List<MapCanvasPolygonPrimitive> actors,
             List<MapCanvasPolygonPrimitive> hoverSurfaces,
             List<BoundaryPrimitive> hoverBoundaries,
@@ -713,6 +764,10 @@ public final class DungeonMapContentModel {
             glyphs = copyOf(glyphs);
             texts = copyOf(texts);
             relations = copyOf(relations);
+            interactionSurfaces = copyOf(interactionSurfaces);
+            interactionBoundaries = copyOf(interactionBoundaries);
+            interactionGlyphs = copyOf(interactionGlyphs);
+            interactionTexts = copyOf(interactionTexts);
             actors = copyOf(actors);
             hoverSurfaces = copyOf(hoverSurfaces);
             hoverBoundaries = copyOf(hoverBoundaries);
@@ -730,6 +785,10 @@ public final class DungeonMapContentModel {
                     false,
                     "No map scene loaded.",
                     true,
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    List.of(),
                     List.of(),
                     List.of(),
                     List.of(),
@@ -760,6 +819,10 @@ public final class DungeonMapContentModel {
                     glyphs,
                     texts,
                     relations,
+                    interactionSurfaces,
+                    interactionBoundaries,
+                    interactionGlyphs,
+                    interactionTexts,
                     actors,
                     safeOverlay.surfaces(),
                     safeOverlay.boundaries(),
@@ -782,6 +845,10 @@ public final class DungeonMapContentModel {
                     glyphs,
                     texts,
                     relations,
+                    interactionSurfaces,
+                    interactionBoundaries,
+                    interactionGlyphs,
+                    interactionTexts,
                     actors,
                     hoverSurfaces,
                     hoverBoundaries,
@@ -802,19 +869,43 @@ public final class DungeonMapContentModel {
             return !surfaces.isEmpty()
                     || !boundaries.isEmpty()
                     || !glyphs.isEmpty()
+                    || !interactionSurfaces.isEmpty()
+                    || !interactionBoundaries.isEmpty()
+                    || !interactionGlyphs.isEmpty()
                     || !actors.isEmpty();
         }
 
         private boolean containsAnnotationPrimitives() {
-            return !texts.isEmpty() || !relations.isEmpty();
+            return !texts.isEmpty() || !interactionTexts.isEmpty() || !relations.isEmpty();
+        }
+
+        boolean sameBasePaint(RenderScene other) {
+            return other != null
+                    && gridView == other.gridView
+                    && Objects.equals(surfaces, other.surfaces)
+                    && Objects.equals(boundaries, other.boundaries)
+                    && Objects.equals(glyphs, other.glyphs)
+                    && Objects.equals(texts, other.texts)
+                    && Objects.equals(relations, other.relations);
+        }
+
+        boolean sameInteractionPaint(RenderScene other) {
+            return other != null
+                    && Objects.equals(interactionSurfaces, other.interactionSurfaces)
+                    && Objects.equals(interactionBoundaries, other.interactionBoundaries)
+                    && Objects.equals(interactionGlyphs, other.interactionGlyphs)
+                    && Objects.equals(interactionTexts, other.interactionTexts);
+        }
+
+        boolean sameActorPaint(RenderScene other) {
+            return other != null && Objects.equals(actors, other.actors);
         }
 
         @Override
         public List<MapCanvasPolygonPrimitive> surfaces() {
-            if (hoverSurfaces.isEmpty()) {
-                return copyOf(surfaces);
-            }
-            List<MapCanvasPolygonPrimitive> combined = new java.util.ArrayList<>(surfaces.size() + hoverSurfaces.size());
+            List<MapCanvasPolygonPrimitive> combined = new java.util.ArrayList<>(
+                    surfaces.size() + interactionSurfaces.size() + hoverSurfaces.size());
+            combined.addAll(interactionSurfaces);
             combined.addAll(surfaces);
             combined.addAll(hoverSurfaces);
             return List.copyOf(combined);
@@ -822,10 +913,9 @@ public final class DungeonMapContentModel {
 
         @Override
         public List<BoundaryPrimitive> boundaries() {
-            if (hoverBoundaries.isEmpty()) {
-                return copyOf(boundaries);
-            }
-            List<BoundaryPrimitive> combined = new java.util.ArrayList<>(boundaries.size() + hoverBoundaries.size());
+            List<BoundaryPrimitive> combined = new java.util.ArrayList<>(
+                    boundaries.size() + interactionBoundaries.size() + hoverBoundaries.size());
+            combined.addAll(interactionBoundaries);
             combined.addAll(boundaries);
             combined.addAll(hoverBoundaries);
             return List.copyOf(combined);
@@ -833,10 +923,9 @@ public final class DungeonMapContentModel {
 
         @Override
         public List<GlyphPrimitive> glyphs() {
-            if (hoverGlyphs.isEmpty()) {
-                return copyOf(glyphs);
-            }
-            List<GlyphPrimitive> combined = new java.util.ArrayList<>(glyphs.size() + hoverGlyphs.size());
+            List<GlyphPrimitive> combined = new java.util.ArrayList<>(
+                    glyphs.size() + interactionGlyphs.size() + hoverGlyphs.size());
+            combined.addAll(interactionGlyphs);
             combined.addAll(glyphs);
             combined.addAll(hoverGlyphs);
             return List.copyOf(combined);
@@ -844,10 +933,9 @@ public final class DungeonMapContentModel {
 
         @Override
         public List<TextPrimitive> texts() {
-            if (hoverTexts.isEmpty()) {
-                return copyOf(texts);
-            }
-            List<TextPrimitive> combined = new java.util.ArrayList<>(texts.size() + hoverTexts.size());
+            List<TextPrimitive> combined = new java.util.ArrayList<>(
+                    texts.size() + interactionTexts.size() + hoverTexts.size());
+            combined.addAll(interactionTexts);
             combined.addAll(texts);
             combined.addAll(hoverTexts);
             return List.copyOf(combined);
@@ -877,6 +965,26 @@ public final class DungeonMapContentModel {
 
         List<TextPrimitive> baseTexts() {
             return copyOf(texts);
+        }
+
+        @Override
+        public List<MapCanvasPolygonPrimitive> interactionSurfaces() {
+            return copyOf(interactionSurfaces);
+        }
+
+        @Override
+        public List<BoundaryPrimitive> interactionBoundaries() {
+            return copyOf(interactionBoundaries);
+        }
+
+        @Override
+        public List<GlyphPrimitive> interactionGlyphs() {
+            return copyOf(interactionGlyphs);
+        }
+
+        @Override
+        public List<TextPrimitive> interactionTexts() {
+            return copyOf(interactionTexts);
         }
 
         @Override

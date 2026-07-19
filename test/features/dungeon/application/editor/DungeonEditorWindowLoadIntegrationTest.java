@@ -122,13 +122,72 @@ final class DungeonEditorWindowLoadIntegrationTest {
     }
 
     @Test
-    void projectionLevelRedispatchReusesLatestVisibleBounds() {
+    void sameRevisionAndLoadingChunksCoalesceEvenWhenCellBoundsMove() {
         Catalog catalog = new Catalog();
         RecordingWindowStore windows = new RecordingWindowStore();
         DungeonEditorApi editor = editor(component(catalog, windows));
         editor.dispatch(new DungeonEditorIntent.SelectMap(new DungeonMapId(1L)));
         editor.dispatch(new DungeonEditorIntent.SetViewport(
-                new DungeonEditorViewportInput(0, -12, 70, 12, 90)));
+                new DungeonEditorViewportInput(0, 1, 1, 30, 30)));
+        windows.requests.clear();
+
+        editor.dispatch(new DungeonEditorIntent.SetViewport(
+                new DungeonEditorViewportInput(0, 2, 2, 29, 29)));
+
+        assertTrue(windows.requests.isEmpty(),
+                "same revision, level and loading chunks coalesce without repository I/O");
+    }
+
+    @Test
+    void mutationRevisionCoalescesTheFollowingVisibleViewportPublication() {
+        Catalog catalog = new Catalog();
+        TestDungeonCommandStore windows = new TestDungeonCommandStore(
+                DungeonMapAuthoring.committedContent(
+                        DungeonMapAuthoring.empty(new DungeonMapIdentity(1L), "Alpha"),
+                        7L));
+        DungeonAuthoredApplicationService service = new DungeonAuthoredApplicationService(
+                catalog,
+                windows,
+                features.dungeon.DungeonTestAssembly.inMemoryUnitOfWork(),
+                new TestDungeonIdentityAllocator(),
+                DirectExecutionLane.INSTANCE,
+                new DungeonAuthoredPublishedState(DirectUiDispatcher.INSTANCE));
+        DungeonEditorRuntimeApplicationService application = new DungeonEditorRuntimeApplicationService(
+                service,
+                new DungeonEditorPublishedState(DirectUiDispatcher.INSTANCE));
+        DungeonEditorDungeonState state = new DungeonEditorDungeonState();
+        DungeonEditorViewportInput viewport = new DungeonEditorViewportInput(0, 0, 0, 63, 63);
+        application.openSession(state, runtime -> {
+            runtime.setViewport(viewport);
+            runtime.selectMap(1L);
+            runtime.setViewport(viewport);
+            DungeonEditorWorkspaceValues.MapId mapId = new DungeonEditorWorkspaceValues.MapId(1L);
+
+            runtime.applyRoomRectangle(mapId, new Cell(10, 10, 0), new Cell(10, 10, 0), false);
+            runtime.publishCurrent();
+
+            assertInstanceOf(
+                    DungeonEditorCommandOutcome.Accepted.class,
+                    state.committedFacts(mapId).commandOutcome());
+            assertEquals(8L, state.committedFacts(mapId).surface().acceptedRevision());
+            int requestsAfterMutation = windows.windowRequests().size();
+
+            assertNull(runtime.setViewport(viewport));
+            assertEquals(requestsAfterMutation, windows.windowRequests().size(),
+                    "the mutation publication already makes the same visible chunks current at its new revision");
+            return null;
+        });
+    }
+
+    @Test
+    void projectionLevelRedispatchReusesLatestVisibleBounds() {
+        Catalog catalog = new Catalog();
+        RecordingWindowStore windows = new RecordingWindowStore();
+        DungeonEditorApi editor = editor(component(catalog, windows));
+        editor.dispatch(new DungeonEditorIntent.SelectMap(new DungeonMapId(1L)));
+        DungeonEditorViewportInput levelZeroViewport =
+                new DungeonEditorViewportInput(0, -12, 70, 12, 90);
+        editor.dispatch(new DungeonEditorIntent.SetViewport(levelZeroViewport));
         windows.requests.clear();
 
         editor.dispatch(new DungeonEditorIntent.ShiftProjectionLevel(1));
@@ -140,6 +199,14 @@ final class DungeonEditorWindowLoadIntegrationTest {
                 .contains(new DungeonChunkKey(1L, 1, -2, 0)));
         assertTrue(windows.requests.getFirst().chunkKeys()
                 .contains(new DungeonChunkKey(1L, 1, 1, 2)));
+
+        long refreshedGeneration = editor.current().requestGeneration();
+        editor.dispatch(new DungeonEditorIntent.SetViewport(levelZeroViewport.atLevel(1)));
+
+        assertEquals(1, windows.requests.size(),
+                "the projection refresh already accepted the identical level-one viewport");
+        assertEquals(refreshedGeneration, editor.current().requestGeneration(),
+                "coalescing the identical viewport must keep the accepted refresh generation stable");
     }
 
     @Test

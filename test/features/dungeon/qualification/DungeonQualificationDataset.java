@@ -1,6 +1,7 @@
 package features.dungeon.qualification;
 
 import features.dungeon.api.DungeonCellRef;
+import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.api.DungeonViewportRequest;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -13,6 +14,7 @@ public enum DungeonQualificationDataset {
 
     public static final long MAP_ID = 1L;
     public static final int LEVEL = 0;
+    private static final int OFF_WINDOW_CHUNKS = 300;
 
     private final int authoredCellCount;
 
@@ -30,14 +32,23 @@ public enum DungeonQualificationDataset {
 
     public Stream<DungeonCellRef> authoredCells() {
         return IntStream.range(0, authoredCellCount)
-                .mapToObj(index -> new DungeonCellRef(
-                        sparseCoordinate(index, 67),
-                        sparseCoordinate(index, 131),
-                        LEVEL));
+                .mapToObj(DungeonQualificationDataset::sparseCell);
     }
 
-    private static int sparseCoordinate(int index, int stride) {
-        int magnitude = Math.multiplyExact(index, stride);
-        return (index & 1) == 0 ? magnitude : -magnitude;
+    private static DungeonCellRef sparseCell(int index) {
+        if (index == 0) {
+            return new DungeonCellRef(0, 0, LEVEL);
+        }
+        int position = index - 1;
+        int slot = position % OFF_WINDOW_CHUNKS;
+        int inChunk = position / OFF_WINDOW_CHUNKS;
+        int magnitude = 10 + slot / 2;
+        int chunk = (slot & 1) == 0 ? magnitude : -magnitude;
+        int localQ = inChunk % DungeonChunkKey.CHUNK_SIZE;
+        int localR = inChunk / DungeonChunkKey.CHUNK_SIZE;
+        return new DungeonCellRef(
+                chunk * DungeonChunkKey.CHUNK_SIZE + localQ,
+                chunk * DungeonChunkKey.CHUNK_SIZE + localR,
+                LEVEL);
     }
 }
