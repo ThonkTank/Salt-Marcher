@@ -83,9 +83,10 @@ Core invariants:
   generated reward references owned by that scene
 - a manual-note identity is session-local and every note mutation identifies
   both its owning scene and the exact Session revision it was authored from
-- every authored mutation, including catalog rename and delete, carries the
-  exact Session identity and revision visible at intent time; Current is a read
-  and navigation pointer, never an implicit write target
+- every authored mutation and preparation request, including catalog rename,
+  delete, Generate, and replacement confirmation, carries the exact Session
+  identity and revision visible at intent time; Current is a read and
+  navigation pointer, never an implicit write target
 - incomplete preparation never mutates `SessionPlan`
 - prepared-content replacement applies to the exact session identity and
   revision it read; concurrent authored edits reject the replacement

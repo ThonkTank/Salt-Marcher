@@ -35,9 +35,10 @@ Scenes exist independently of encounters. Encounter rosters, creature details,
 party members, locations, and generated reward contents remain owned by their
 source features.
 
-Every authored action is bound to the Session identity and revision displayed
-when the user triggered it. A delayed, stale, removed, or non-current target is
-never redirected through the current-session pointer. Successful edits of a
+Every authored action, including Generate and destructive-replacement
+confirmation, is bound to the Session identity and revision displayed when the
+user triggered it. A delayed, stale, removed, or non-current target is never
+redirected through the current-session pointer. Successful edits of a
 non-current Session refresh catalog truth without replacing, invalidating, or
 publishing over the active Session's search and preparation state.
 
@@ -81,7 +82,9 @@ engine version, catalog version, or an intermediate Apply button.
 
 ## Session Preparation Flow
 
-1. The user selects a session and requests generation.
+1. The user selects a session and requests generation. The request retains that
+   exact Session identity and revision through loading, confirmation, and the
+   final replacement check.
 2. If replacing existing scenes, rests, generated reward references, or manual
    loot notes would be destructive, the planner asks for explicit confirmation
    before work starts. An empty session needs no confirmation.

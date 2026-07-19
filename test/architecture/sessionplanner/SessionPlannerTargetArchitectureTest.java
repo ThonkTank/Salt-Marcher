@@ -131,7 +131,7 @@ public final class SessionPlannerTargetArchitectureTest {
     void everyAuthoredApiCommandCarriesTheTargetAsItsFirstRecordComponentAndConstructorArgument() {
         Set<String> targetlessOperations = Set.of(
                 "initialize", "createSession", "selectSession", "searchEncounterPlans",
-                "prepareSession", "cancelPreparation");
+                "cancelPreparation");
         java.util.Arrays.stream(SessionPlannerApi.class.getDeclaredMethods())
                 .filter(method -> !targetlessOperations.contains(method.getName()))
                 .forEach(method -> {

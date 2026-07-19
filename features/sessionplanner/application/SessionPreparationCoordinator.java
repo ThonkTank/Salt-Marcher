@@ -100,10 +100,13 @@ public final class SessionPreparationCoordinator {
 
     synchronized void prepare(PrepareSessionCommand command) {
         Objects.requireNonNull(command, "command");
+        if (!targetsCurrentWorkspace(command.target())) {
+            return;
+        }
         Attempt attempt = new Attempt(++attemptSequence, command);
         active = attempt;
         publish(SessionPreparationStatus.GENERATING, "Session wird vorbereitet …",
-                workspace.current().sourceSessionId(), attempt.id, true);
+                command.target().sessionId(), attempt.id, true);
         dispatchIo(attempt, () -> loadSession(attempt), "Session konnte nicht geladen werden.");
     }
 
@@ -135,15 +138,13 @@ public final class SessionPreparationCoordinator {
         if (active == null) {
             return false;
         }
-        SessionPlan source = active.session;
-        return source != null && source.sessionId() == target.sessionId()
-                && source.revision().value() == target.expectedRevision();
+        return active.command.target().equals(target);
     }
 
     private void loadSession(Attempt attempt) {
         Optional<SessionPlan> loaded;
         try {
-            loaded = repository.loadCurrent();
+            loaded = repository.loadById(attempt.command.target().sessionId());
         } catch (IllegalStateException exception) {
             scheduleCpu(attempt, () -> fail(attempt, "Session konnte nicht geladen werden.", exception),
                     "Session konnte nicht geladen werden.");
@@ -161,6 +162,10 @@ public final class SessionPreparationCoordinator {
             return;
         }
         SessionPlan session = loaded.orElseThrow();
+        if (session.revision().value() != attempt.command.target().expectedRevision()) {
+            invalid(attempt, "Session wurde geändert; die Vorbereitung wurde nicht übernommen.");
+            return;
+        }
         attempt.session = session;
         if (replacesAuthoredContent(session) && !attempt.command.replacementConfirmed()) {
             active = null;

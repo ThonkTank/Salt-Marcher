@@ -105,8 +105,7 @@ final class SessionPreparationProductionRouteTest {
         Path path = temporaryDirectory.resolve("session-preparation-latest-wins.sqlite");
         try (ProductionFixture fixture = ProductionFixture.open(path, diagnostics, delayed::wrap)) {
             long initialRevision = fixture.planner.workspaceModel().current().publicationRevision();
-            fixture.planner.application().prepareSession(new PrepareSessionCommand(
-                    OptionalInt.of(3), 179974L, false));
+            fixture.planner.application().prepareSession(prepareCommand(fixture.planner, false));
             delayed.captured.get(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS);
             SessionPlannerWorkspaceSnapshot first = awaitWorkspace(
                     fixture.planner.workspaceModel(), initialRevision,
@@ -130,6 +129,36 @@ final class SessionPreparationProductionRouteTest {
             assertEquals(winningAttempt, fixture.planner.workspaceModel().current().preparation().attemptId());
             assertEquals(1L, rowCount(path, "session_generation_runs"));
             assertEquals(3L, rowCount(path, "generated_encounter_plan_origins"));
+            assertTrue(diagnostics.failures.isEmpty(), () -> "diagnostic failures=" + diagnostics.failures);
+        }
+    }
+
+    @Test
+    void delayedGenerateIntentCannotPrepareTheSessionSelectedAfterItsTargetWasCaptured() throws Exception {
+        RecordingDiagnostics diagnostics = new RecordingDiagnostics();
+        Path path = temporaryDirectory.resolve("session-preparation-stale-target.sqlite");
+        try (ProductionFixture fixture = ProductionFixture.open(path, diagnostics)) {
+            SessionPlan originallyDisplayed = fixture.repository.loadCurrent().orElseThrow();
+            long beforeCreate = fixture.planner.workspaceModel().current().publicationRevision();
+            fixture.planner.application().createSession(new SessionPlannerCatalogCommand.CreateSessionCommand(
+                    "Newly selected session"));
+            SessionPlannerWorkspaceSnapshot newlySelected = awaitWorkspace(
+                    fixture.planner.workspaceModel(), beforeCreate, workspace ->
+                            workspace.sourceSessionId() != originallyDisplayed.sessionId());
+            SessionPlan selectedBeforeStaleIntent = fixture.repository.loadCurrent().orElseThrow();
+
+            fixture.planner.application().prepareSession(new PrepareSessionCommand(
+                    new features.sessionplanner.api.SessionPlannerAuthoredTarget(
+                            originallyDisplayed.sessionId(), originallyDisplayed.revision().value()),
+                    OptionalInt.of(3), 179974L, false));
+
+            assertEquals(newlySelected.publicationRevision(),
+                    fixture.planner.workspaceModel().current().publicationRevision(),
+                    "a delayed Generate intent must not publish preparation for a later selected Session");
+            assertEquals(selectedBeforeStaleIntent, fixture.repository.loadCurrent().orElseThrow(),
+                    "a stale Generate target must not mutate the current Session");
+            assertEquals(0L, rowCount(path, "session_generation_runs"));
+            assertEquals(0L, rowCount(path, "generated_encounter_plan_origins"));
             assertTrue(diagnostics.failures.isEmpty(), () -> "diagnostic failures=" + diagnostics.failures);
         }
     }
@@ -166,8 +195,7 @@ final class SessionPreparationProductionRouteTest {
             original = fixture.repository.loadCurrent().orElseThrow();
             long initialPublication = fixture.planner.workspaceModel().current().publicationRevision();
 
-            fixture.planner.application().prepareSession(new PrepareSessionCommand(
-                    OptionalInt.of(3), 179974L, false));
+            fixture.planner.application().prepareSession(prepareCommand(fixture.planner, false));
             delayed.entered.get(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS);
             SessionPlannerWorkspaceSnapshot saving = awaitWorkspace(
                     fixture.planner.workspaceModel(), initialPublication,
@@ -201,8 +229,7 @@ final class SessionPreparationProductionRouteTest {
             SessionPlan original = fixture.repository.loadCurrent().orElseThrow();
             long initialPublication = fixture.planner.workspaceModel().current().publicationRevision();
 
-            fixture.planner.application().prepareSession(new PrepareSessionCommand(
-                    OptionalInt.of(3), 179974L, false));
+            fixture.planner.application().prepareSession(prepareCommand(fixture.planner, false));
             assertTrue(heldStore.entered.await(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS),
                     "real prepared-session store was not entered");
             SessionPlannerWorkspaceSnapshot finalSaving = awaitWorkspace(
@@ -259,8 +286,7 @@ final class SessionPreparationProductionRouteTest {
                     "authored-lane blocker was not entered");
 
             long initialPublication = fixture.planner.workspaceModel().current().publicationRevision();
-            fixture.planner.application().prepareSession(new PrepareSessionCommand(
-                    OptionalInt.of(3), 179974L, false));
+            fixture.planner.application().prepareSession(prepareCommand(fixture.planner, false));
             delayed.entered.get(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS);
             SessionPlannerWorkspaceSnapshot saving = awaitWorkspace(
                     fixture.planner.workspaceModel(),
@@ -326,8 +352,7 @@ final class SessionPreparationProductionRouteTest {
             SessionPreparationStatus expected
     ) throws Exception {
         long revision = planner.workspaceModel().current().publicationRevision();
-        planner.application().prepareSession(new PrepareSessionCommand(
-                OptionalInt.of(3), 179974L, replacementConfirmed));
+        planner.application().prepareSession(prepareCommand(planner, replacementConfirmed));
         SessionPlannerWorkspaceSnapshot terminal = awaitWorkspace(planner.workspaceModel(), revision, workspace ->
                 workspace.preparation().attemptId() > priorAttempt
                         && terminal(workspace.preparation().status()));
@@ -467,8 +492,7 @@ final class SessionPreparationProductionRouteTest {
             boolean replacementConfirmed
     ) throws Exception {
         long revision = planner.workspaceModel().current().publicationRevision();
-        planner.application().prepareSession(new PrepareSessionCommand(
-                OptionalInt.of(3), 179974L, replacementConfirmed));
+        planner.application().prepareSession(prepareCommand(planner, replacementConfirmed));
         SessionPlannerWorkspaceSnapshot ready = awaitWorkspace(planner.workspaceModel(), revision, workspace ->
                 workspace.preparation().attemptId() > priorAttempt
                         && terminal(workspace.preparation().status()));
@@ -497,6 +521,17 @@ final class SessionPreparationProductionRouteTest {
             case READY, INVALID, FAILED, CANCELLED, CONFIRMING_REPLACEMENT -> true;
             default -> false;
         };
+    }
+
+    private static PrepareSessionCommand prepareCommand(
+            SessionPlannerServiceAssembly planner,
+            boolean replacementConfirmed
+    ) {
+        SessionPlannerWorkspaceSnapshot workspace = planner.workspaceModel().current();
+        return new PrepareSessionCommand(
+                new features.sessionplanner.api.SessionPlannerAuthoredTarget(
+                        workspace.sourceSessionId(), workspace.sourceSessionRevision()),
+                OptionalInt.of(3), 179974L, replacementConfirmed);
     }
 
     private static SessionPlannerWorkspaceSnapshot awaitWorkspace(

@@ -46,6 +46,7 @@ import features.sessiongeneration.api.GenerationRunResponse;
 import features.sessiongeneration.api.SessionGenerationApi;
 import features.sessionplanner.SessionPlannerServiceAssembly;
 import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
+import features.sessionplanner.api.AddSessionSceneCommand;
 import features.sessionplanner.api.PrepareSessionCommand;
 import features.sessionplanner.api.SessionPlannerAuthoredTarget;
 import features.sessionplanner.api.SessionPlannerCatalogCommand;
@@ -195,8 +196,7 @@ final class SessionPreparationCoordinatorTest {
     @Test
     void destructivePreparationRequiresConfirmationBeforeDrafting() {
         try (Fixture fixture = fixture("confirmation.db")) {
-            SessionPlan authored = fixture.repository.loadCurrent().orElseThrow().addScene();
-            fixture.repository.save(authored);
+            fixture.planner.application().addScene(new AddSessionSceneCommand(fixture.target()));
 
             fixture.prepare();
 
@@ -782,11 +782,17 @@ final class SessionPreparationCoordinatorTest {
     ) implements AutoCloseable {
 
         private void prepare() {
-            planner.application().prepareSession(new PrepareSessionCommand(OptionalInt.of(1), 41L, false));
+            planner.application().prepareSession(new PrepareSessionCommand(target(), OptionalInt.of(1), 41L, false));
         }
 
         private void prepareConfirmed() {
-            planner.application().prepareSession(new PrepareSessionCommand(OptionalInt.of(1), 41L, true));
+            planner.application().prepareSession(new PrepareSessionCommand(target(), OptionalInt.of(1), 41L, true));
+        }
+
+        private SessionPlannerAuthoredTarget target() {
+            var workspace = planner.workspaceModel().current();
+            return new SessionPlannerAuthoredTarget(
+                    workspace.sourceSessionId(), workspace.sourceSessionRevision());
         }
 
         @Override

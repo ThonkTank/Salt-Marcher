@@ -8,6 +8,7 @@ import shell.api.ShellBinding;
 import shell.api.ShellControls;
 import shell.api.ShellSlot;
 import features.sessionplanner.api.SessionPlannerApi;
+import features.sessionplanner.api.PrepareSessionCommand;
 import features.sessionplanner.api.AddSessionManualLootNoteCommand;
 import features.sessionplanner.api.AddSessionSceneCommand;
 import features.sessionplanner.api.AttachSessionEncounterCommand;
@@ -41,6 +42,7 @@ final class SessionPlannerBinder {
     private final SessionPlannerApi planner;
     private final SessionPlannerWorkspaceModel workspace;
     private final java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> workspaceApplied;
+    private SessionPlannerAuthoredTarget replacementConfirmationTarget;
 
     SessionPlannerBinder(
             SessionPlannerApi planner,
@@ -79,8 +81,24 @@ final class SessionPlannerBinder {
         }));
         controlsView.onSetEncounterDays(text -> setEncounterDays(planner, viewModel, text));
 
-        controlsView.onPrepare(planner::prepareSession);
-        controlsView.onCancel(planner::cancelPreparation);
+        controlsView.onPrepare(request -> ifTarget(viewModel, currentTarget -> {
+            SessionPlannerAuthoredTarget target = request.replacementConfirmed()
+                    ? replacementConfirmationTarget : currentTarget;
+            if (target == null) {
+                return;
+            }
+            if (request.replacementConfirmed()) {
+                replacementConfirmationTarget = null;
+            } else {
+                replacementConfirmationTarget = target;
+            }
+            planner.prepareSession(new PrepareSessionCommand(
+                    target, request.encounterCount(), request.seed(), request.replacementConfirmed()));
+        }));
+        controlsView.onCancel(() -> {
+            replacementConfirmationTarget = null;
+            planner.cancelPreparation();
+        });
 
         timelineView.onAddScene(() -> ifTarget(viewModel, target ->
                 planner.addScene(new AddSessionSceneCommand(target))));

@@ -1,6 +1,5 @@
 package features.sessionplanner.adapter.javafx;
 
-import features.sessionplanner.api.PrepareSessionCommand;
 import features.sessionplanner.api.SessionPreparationSnapshot;
 import features.sessionplanner.api.SessionPreparationStatus;
 import java.util.ArrayList;
@@ -53,7 +52,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
     private LongConsumer addParticipantHandler = ignored -> { };
     private LongConsumer removeParticipantHandler = ignored -> { };
     private Consumer<String> setEncounterDaysHandler = ignored -> { };
-    private Consumer<PrepareSessionCommand> prepareHandler = ignored -> { };
+    private Consumer<PreparationRequest> prepareHandler = ignored -> { };
     private Runnable cancelHandler = () -> { };
     private boolean participantDetailOpen;
     private boolean sessionDisabled = true;
@@ -135,7 +134,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         setEncounterDaysHandler = handler == null ? ignored -> { } : handler;
     }
 
-    public void onPrepare(Consumer<PrepareSessionCommand> handler) {
+    public void onPrepare(Consumer<PreparationRequest> handler) {
         prepareHandler = handler == null ? ignored -> { } : handler;
     }
 
@@ -271,7 +270,11 @@ public final class SessionPlannerControlsView extends ScrollPane {
             show(preparationStatus, true);
             return;
         }
-        prepareHandler.accept(new PrepareSessionCommand(count, GENERATION_SEED, confirmed));
+        prepareHandler.accept(new PreparationRequest(count, GENERATION_SEED, confirmed));
+    }
+
+    /** UI-only preparation input. The binder attaches the workspace target at the click boundary. */
+    public record PreparationRequest(OptionalInt encounterCount, long seed, boolean replacementConfirmed) {
     }
 
     private static OptionalInt parseCount(String text) {

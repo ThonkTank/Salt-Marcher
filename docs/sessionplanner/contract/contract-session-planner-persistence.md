@@ -99,10 +99,12 @@ transaction, advances the revision once, and returns the committed snapshot.
 A stale revision or invalid payload writes nothing.
 
 Every authored command carries one authored target consisting of Session
-identity and expected revision. Reference-bearing commands additionally carry
-and validate their scene, note, participant, rest-gap, or foreign-plan
-identity. The adapter loads that exact Session root and compare-and-swap saves
-it; it never substitutes the current-session pointer as the write target.
+identity and expected revision. This includes `PrepareSessionCommand`: it loads
+and validates that exact root before any foreign preparation, preserves the
+target through replacement confirmation, and applies the final compare-and-swap
+only to that target. Reference-bearing commands additionally carry and validate
+their scene, note, participant, rest-gap, or foreign-plan identity. The adapter
+never substitutes the current-session pointer as a read or write target.
 
 Delete is one guarded Session Planner transaction. It deletes only with
 `session_id` plus expected revision, updates the current pointer only when that

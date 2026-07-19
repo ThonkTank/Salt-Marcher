@@ -100,8 +100,10 @@ only if that capture is still current. Completion from a stale capture is
 discarded and cannot overwrite a newer publication.
 
 Authored intents carry a Session identity and source revision from the JavaFX
-event boundary through the serial authored lane. Search and preparation are
-invalidated only when that target matches their active source. A successful
+event boundary through the serial authored lane. Generate binds this target
+before asynchronous work begins; preparation loads that exact root, preserves
+it through replacement confirmation, and rechecks it before the final commit.
+Search and preparation are invalidated only when that target matches their active source. A successful
 non-current mutation triggers a catalog reassembly against an authoritative
 Current read and retains the active Session's search and preparation state.
 
