@@ -1562,6 +1562,14 @@
     -fx-border-radius: 8;
     -fx-padding: 8 10 8 10;
 }
+.session-planner-selected-scene-inspector {
+    -fx-padding: 10 12 12 20;
+    -fx-background-color: rgba(30, 127, 212, 0.055);
+    -fx-border-color: derive(-sm-accent, -45%);
+}
+.session-planner-scene-header {
+    -fx-padding: 6 10 6 10;
+}
 .session-planner-encounter-header {
     -fx-cursor: hand;
     -fx-padding: 2 0 2 0;

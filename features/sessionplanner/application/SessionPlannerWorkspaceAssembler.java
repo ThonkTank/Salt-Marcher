@@ -25,8 +25,8 @@ import features.sessionplanner.api.SessionEncounterPlanSearchSnapshot;
 import features.sessionplanner.api.SessionPlannerParticipantsProjection;
 import features.sessionplanner.api.SessionPlannerRestKind;
 import features.sessionplanner.api.SessionPlannerSceneTimelineProjection;
+import features.sessionplanner.api.SessionPlannerSelectedSceneSnapshot;
 import features.sessionplanner.api.SessionPlannerSessionSnapshot;
-import features.sessionplanner.api.SessionPlannerStatePanelProjection;
 import features.sessionplanner.api.SessionPlannerWorkspaceSnapshot;
 import features.sessionplanner.api.SessionPreparationSnapshot;
 import features.sessionplanner.domain.session.SessionEncounter;
@@ -111,7 +111,7 @@ public final class SessionPlannerWorkspaceAssembler {
                     WORKSPACE_ASSEMBLY,
                     safePreparation.attemptId(),
                     Math.max(0L, System.nanoTime() - startedNanos),
-                    result.workspace().sceneTimeline().sessionScenes().size(),
+                    result.workspace().sceneTimeline().sceneHeaders().size(),
                     capture.queryCount()));
             return result;
         }));
@@ -128,15 +128,16 @@ public final class SessionPlannerWorkspaceAssembler {
                     0L, 0L, 0L, catalog(capture, ""),
                     SessionPlannerSessionSnapshot.empty("Keine Session verfügbar."),
                     SessionPlannerParticipantsProjection.empty(), SessionPlannerSceneTimelineProjection.empty(),
-                    SessionPlannerStatePanelProjection.empty(), SessionEncounterPlanSearchSnapshot.idle(),
+                    SessionPlannerSelectedSceneSnapshot.empty(),
                     preparation, List.of());
             return CompletableFuture.completedFuture(new SessionPlannerWorkspaceAssembly(empty, prepared));
         }
 
         SessionPlan session = selected.orElseThrow();
+        SessionEncounter selectedScene = selectedScene(session);
         WorldCapture world = captureWorld();
         List<Long> planIds = encounterPlanIds(session);
-        List<RewardRef> rewardRefs = rewardReferences(session);
+        List<RewardRef> rewardRefs = rewardReferences(session, selectedScene == null ? 0L : selectedScene.encounterId());
         CompletionStage<EncounterCapture> encounterStage = encounterCapture(planIds);
         CompletionStage<RewardCapture> rewardStage = rewardCapture(rewardRefs);
         return encounterStage.thenCompose(encounterCapture -> {
@@ -172,10 +173,12 @@ public final class SessionPlannerWorkspaceAssembler {
         SessionPlannerParticipantsProjection participants = participants(session, partyCapture.response());
         int scaledBudgetXp = scaledBudget(session, partyCapture.response());
         SessionPlannerSceneTimelineProjection timeline = timeline(
-                session, scaledBudgetXp, encounter.byId(), rewards.byReference());
+                session, scaledBudgetXp, encounter.byId(), world.locations());
+        SessionPlannerSelectedSceneSnapshot selectedScene = selectedScene(
+                session, scaledBudgetXp, encounter.byId(), rewards.byReference(), world.locations());
         SessionPlannerSessionSnapshot current = currentSession(
                 session, partyCapture.response(), participants, scaledBudgetXp,
-                encounter.byId(), world.locations());
+                encounter.byId());
         SessionPlannerWorkspaceSnapshot workspace = new SessionPlannerWorkspaceSnapshot(
                 0L,
                 session.sessionId(),
@@ -184,8 +187,7 @@ public final class SessionPlannerWorkspaceAssembler {
                 current,
                 participants,
                 timeline,
-                statePanel(session, timeline),
-                SessionEncounterPlanSearchSnapshot.idle(),
+                selectedScene,
                 preparation,
                 issues);
         return new SessionPlannerWorkspaceAssembly(workspace, preparedScenes);
@@ -203,7 +205,7 @@ public final class SessionPlannerWorkspaceAssembler {
                         SessionPlannerWorkspaceSnapshot.Kind.OWNER_FAILURE, "", "World-Planner-Orte sind nicht verfügbar.")));
             }
             return new WorldCapture(snapshot.locations().stream()
-                    .map(location -> new SessionPlannerSessionSnapshot.LocationReference(
+                    .map(location -> new SessionPlannerSelectedSceneSnapshot.LocationChoice(
                             location.locationId(), location.displayName()))
                     .toList(), List.of());
         } catch (RuntimeException failure) {
@@ -313,7 +315,7 @@ public final class SessionPlannerWorkspaceAssembler {
         }
         Map<GenerationRewardReference, RewardRef> requestedByApi = new LinkedHashMap<>();
         requested.forEach(ref -> requestedByApi.put(ref.apiReference(), ref));
-        Map<RewardRef, SessionPlannerSceneTimelineProjection.GeneratedReward> values = new LinkedHashMap<>();
+        Map<RewardRef, SessionPlannerSelectedSceneSnapshot.GeneratedReward> values = new LinkedHashMap<>();
         Set<GenerationRewardReference> seen = new LinkedHashSet<>();
         try {
             for (GenerationRewardBatchResponse.ResolvedReward resolved : response.resolved()) {
@@ -338,7 +340,7 @@ public final class SessionPlannerWorkspaceAssembler {
         }
         List<SessionPlannerWorkspaceSnapshot.Issue> issues = requested.stream()
                 .filter(ref -> values.get(ref).availability()
-                        == SessionPlannerSceneTimelineProjection.Availability.UNAVAILABLE)
+                        == SessionPlannerSelectedSceneSnapshot.Availability.UNAVAILABLE)
                 .map(ref -> issue(SessionPlannerWorkspaceSnapshot.Owner.SESSION_GENERATION,
                         SessionPlannerWorkspaceSnapshot.Kind.UNAVAILABLE, ref.stableReference(),
                         "Generierte Belohnung fehlt."))
@@ -367,36 +369,36 @@ public final class SessionPlannerWorkspaceAssembler {
         return packed.equals(lineIds);
     }
 
-    private static SessionPlannerSceneTimelineProjection.GeneratedReward availableReward(
+    private static SessionPlannerSelectedSceneSnapshot.GeneratedReward availableReward(
             RewardRef ref,
             GenerationRewardBatchResponse.ResolvedReward reward
     ) {
         GenerationResult.Treasure treasure = reward.treasure();
-        return new SessionPlannerSceneTimelineProjection.GeneratedReward(
-                ref.runId(), ref.treasureId(), SessionPlannerSceneTimelineProjection.Availability.AVAILABLE,
+        return new SessionPlannerSelectedSceneSnapshot.GeneratedReward(
+                ref.runId(), ref.treasureId(), SessionPlannerSelectedSceneSnapshot.Availability.AVAILABLE,
                 "", "", treasure.stockClass().name(), treasure.channel().name(),
                 treasure.anchorEncounterNumber(), treasure.theme(), treasure.magicType(), treasure.targetCp(),
                 treasure.nonMagicSlots(), treasure.magicSlots(),
-                reward.lootItems().stream().map(line -> new SessionPlannerSceneTimelineProjection.ItemLine(
+                reward.lootItems().stream().map(line -> new SessionPlannerSelectedSceneSnapshot.ItemLine(
                         line.lineId(), line.role().name(), line.itemId(), line.text(), line.quantity(), line.unitCp(),
                         line.actualCp(), line.totalCapacity(), line.allowedContainers(), line.magicRarity(),
                         line.cursed())).toList(),
-                reward.packing().stream().map(packing -> new SessionPlannerSceneTimelineProjection.Packing(
+                reward.packing().stream().map(packing -> new SessionPlannerSelectedSceneSnapshot.Packing(
                         packing.lineId(), packing.containerType(), packing.containerCount(), packing.containerId(),
                         packing.valid())).toList());
     }
 
-    private static SessionPlannerSceneTimelineProjection.GeneratedReward unavailableReward(
+    private static SessionPlannerSelectedSceneSnapshot.GeneratedReward unavailableReward(
             RewardRef ref,
             String message
     ) {
-        return new SessionPlannerSceneTimelineProjection.GeneratedReward(
-                ref.runId(), ref.treasureId(), SessionPlannerSceneTimelineProjection.Availability.UNAVAILABLE,
+        return new SessionPlannerSelectedSceneSnapshot.GeneratedReward(
+                ref.runId(), ref.treasureId(), SessionPlannerSelectedSceneSnapshot.Availability.UNAVAILABLE,
                 message, ref.fallbackLabel(), "", "", 0, "", "", 0L, 0, 0, List.of(), List.of());
     }
 
     private static RewardCapture failedRewards(List<RewardRef> requested, String message) {
-        Map<RewardRef, SessionPlannerSceneTimelineProjection.GeneratedReward> values = new LinkedHashMap<>();
+        Map<RewardRef, SessionPlannerSelectedSceneSnapshot.GeneratedReward> values = new LinkedHashMap<>();
         requested.forEach(ref -> values.put(ref, unavailableReward(ref, message)));
         return new RewardCapture(Map.copyOf(values), List.of(issue(
                 SessionPlannerWorkspaceSnapshot.Owner.SESSION_GENERATION,
@@ -405,7 +407,7 @@ public final class SessionPlannerWorkspaceAssembler {
 
     private static RewardCapture malformedRewards(List<RewardRef> requested) {
         String message = "Generierte Belohnungen waren widersprüchlich und wurden verworfen.";
-        Map<RewardRef, SessionPlannerSceneTimelineProjection.GeneratedReward> values = new LinkedHashMap<>();
+        Map<RewardRef, SessionPlannerSelectedSceneSnapshot.GeneratedReward> values = new LinkedHashMap<>();
         requested.forEach(ref -> values.put(ref, unavailableReward(ref, message)));
         return new RewardCapture(Map.copyOf(values), List.of(issue(
                 SessionPlannerWorkspaceSnapshot.Owner.SESSION_GENERATION,
@@ -510,8 +512,7 @@ public final class SessionPlannerWorkspaceAssembler {
             PartyPlanningFactsResponse party,
             SessionPlannerParticipantsProjection participants,
             int scaledBudget,
-            Map<Long, EncounterFact> encounters,
-            List<SessionPlannerSessionSnapshot.LocationReference> locations
+            Map<Long, EncounterFact> encounters
     ) {
         int plannedXp = plannedXp(session, encounters);
         int remaining = Math.max(0, scaledBudget - plannedXp);
@@ -547,39 +548,31 @@ public final class SessionPlannerWorkspaceAssembler {
                         session.encounterDays().displayText(), session.selectedEncounterId(),
                         session.selectedEncounterId() > 0L),
                 xp, rests, SessionPlannerSessionSnapshot.GoldBudgetState.manualNotes(session.manualLootNotes().size()),
-                locations, status);
+                status);
     }
 
     private static SessionPlannerSceneTimelineProjection timeline(
             SessionPlan session,
             int scaledBudget,
             Map<Long, EncounterFact> encounters,
-            Map<RewardRef, SessionPlannerSceneTimelineProjection.GeneratedReward> rewards
+            List<SessionPlannerSelectedSceneSnapshot.LocationChoice> locations
     ) {
-        List<SessionPlannerSceneTimelineProjection.SessionScene> scenes = new ArrayList<>();
-        for (SessionEncounter scene : session.encounters()) {
+        List<SessionPlannerSceneTimelineProjection.SceneHeader> scenes = new ArrayList<>();
+        for (int index = 0; index < session.encounters().size(); index++) {
+            SessionEncounter scene = session.encounters().get(index);
             EncounterFact encounter = scene.encounterPlanId() > 0L
                     ? encounters.getOrDefault(scene.encounterPlanId(),
                             EncounterFact.unavailable(scene.encounterPlanId(), ENCOUNTER_FAILURE))
                     : EncounterFact.unavailable(0L, "");
             int targetXp = scene.allocation().budgetPercentage().multiply(BigDecimal.valueOf(scaledBudget))
                     .divide(HUNDRED, 0, RoundingMode.HALF_UP).intValue();
-            List<SessionPlannerSceneTimelineProjection.ManualLootNote> notes = session.manualLootNotes().stream()
-                    .filter(note -> note.sceneId() == scene.encounterId())
-                    .map(note -> new SessionPlannerSceneTimelineProjection.ManualLootNote(
-                            note.noteId(), note.authoredText())).toList();
-            List<SessionPlannerSceneTimelineProjection.GeneratedReward> generated = session.generatedRewards().stream()
-                    .filter(reward -> reward.sceneId() == scene.encounterId())
-                    .map(RewardRef::from)
-                    .map(ref -> rewards.getOrDefault(ref, unavailableReward(ref, REWARD_FAILURE))).toList();
-            scenes.add(new SessionPlannerSceneTimelineProjection.SessionScene(
-                    scene.encounterId(), scene.encounterPlanId(), scene.encounterPlanId() > 0L,
-                    encounter.name(), encounter.generatedLabel(), encounter.creatureCount(), encounter.baseXp(),
-                    encounter.adjustedXp(), encounter.multiplier(), encounter.difficulty(), encounter.status(),
-                    encounter.roster(),
-                    scene.allocation().budgetPercentage(), targetXp,
-                    session.selectedEncounterId() == scene.encounterId(), scene.sceneTitle(), scene.sceneNotes(),
-                    scene.locationId(), notes, generated));
+            String displayTitle = scene.sceneTitle().isBlank() ? "Unbenannte Szene" : scene.sceneTitle();
+            scenes.add(new SessionPlannerSceneTimelineProjection.SceneHeader(
+                    scene.encounterId(), displayTitle, scene.encounterPlanId(), scene.encounterPlanId() > 0L,
+                    encounter.name(), encounter.generatedLabel(), encounter.creatureCount(), encounter.adjustedXp(),
+                    encounter.difficulty(), encounter.status(), scene.allocation().budgetPercentage(), targetXp,
+                    session.selectedEncounterId() == scene.encounterId(), locationLabel(scene.locationId(), locations),
+                    index > 0, index < session.encounters().size() - 1));
         }
         List<SessionPlannerSceneTimelineProjection.RestGap> gaps = new ArrayList<>();
         for (int index = 0; index < session.encounters().size() - 1; index++) {
@@ -592,27 +585,70 @@ public final class SessionPlannerWorkspaceAssembler {
         return new SessionPlannerSceneTimelineProjection(scenes, gaps);
     }
 
-    private static SessionPlannerStatePanelProjection statePanel(
+    private static SessionPlannerSelectedSceneSnapshot selectedScene(
             SessionPlan session,
-            SessionPlannerSceneTimelineProjection timeline
+            int scaledBudget,
+            Map<Long, EncounterFact> encounters,
+            Map<RewardRef, SessionPlannerSelectedSceneSnapshot.GeneratedReward> rewards,
+            List<SessionPlannerSelectedSceneSnapshot.LocationChoice> locations
     ) {
-        SessionPlannerSceneTimelineProjection.SessionScene selected = timeline.sessionScenes().stream()
-                .filter(SessionPlannerSceneTimelineProjection.SessionScene::selected).findFirst().orElse(null);
+        SessionEncounter selected = selectedScene(session);
         if (selected == null) {
-            return SessionPlannerStatePanelProjection.empty();
+            return SessionPlannerSelectedSceneSnapshot.empty();
         }
-        String title = !selected.sceneTitle().isBlank() ? selected.sceneTitle()
-                : !selected.linkedEncounterName().isBlank() ? selected.linkedEncounterName()
-                : "Szene #" + selected.sceneToken();
-        String detail = selected.linkedEncounterPlan()
-                ? selected.linkedEncounterCreatureCount() + " Kreaturen"
-                : "Keine verknüpfte Encounter-Planung";
-        String xp = selected.budgetPercentage().stripTrailingZeros().toPlainString()
-                + "% Budget · Ziel " + selected.targetXp() + " XP · Ist "
-                + selected.linkedEncounterAdjustedXp() + " XP";
-        return new SessionPlannerStatePanelProjection(
-                true, title, detail, xp, "Ausgewählte Szene #" + session.selectedEncounterId(),
-                "Katalog-Vorbereitung", "Planner-owned read-only Placeholder.");
+        EncounterFact encounter = selected.encounterPlanId() > 0L
+                ? encounters.getOrDefault(selected.encounterPlanId(),
+                        EncounterFact.unavailable(selected.encounterPlanId(), ENCOUNTER_FAILURE))
+                : EncounterFact.unavailable(0L, "");
+        int targetXp = selected.allocation().budgetPercentage().multiply(BigDecimal.valueOf(scaledBudget))
+                .divide(HUNDRED, 0, RoundingMode.HALF_UP).intValue();
+        List<SessionPlannerSelectedSceneSnapshot.ManualLootNote> notes = session.manualLootNotes().stream()
+                .filter(note -> note.sceneId() == selected.encounterId())
+                .map(note -> new SessionPlannerSelectedSceneSnapshot.ManualLootNote(
+                        note.noteId(), note.authoredText())).toList();
+        List<SessionPlannerSelectedSceneSnapshot.GeneratedReward> generated = session.generatedRewards().stream()
+                .filter(reward -> reward.sceneId() == selected.encounterId())
+                .map(RewardRef::from)
+                .map(ref -> rewards.getOrDefault(ref, unavailableReward(ref, REWARD_FAILURE))).toList();
+        return new SessionPlannerSelectedSceneSnapshot(
+                true, selected.encounterId(), selected.sceneTitle(), selected.sceneNotes(), selected.locationId(),
+                locationChoices(selected.locationId(), locations), selected.allocation().budgetPercentage(), targetXp,
+                selected.encounterPlanId(), selected.encounterPlanId() > 0L, encounter.name(),
+                encounter.generatedLabel(), encounter.creatureCount(), encounter.baseXp(), encounter.adjustedXp(),
+                encounter.multiplier(), encounter.difficulty(), encounter.status(), encounter.roster(), notes,
+                generated, SessionEncounterPlanSearchSnapshot.idle());
+    }
+
+    private static SessionEncounter selectedScene(SessionPlan session) {
+        return session.encounters().stream()
+                .filter(scene -> scene.encounterId() == session.selectedEncounterId())
+                .findFirst().orElse(null);
+    }
+
+    private static String locationLabel(
+            long locationId,
+            List<SessionPlannerSelectedSceneSnapshot.LocationChoice> locations
+    ) {
+        if (locationId <= 0L) {
+            return "Keine Location";
+        }
+        return locations.stream().filter(location -> location.locationId() == locationId)
+                .map(SessionPlannerSelectedSceneSnapshot.LocationChoice::displayName)
+                .findFirst().orElse("Location #" + locationId);
+    }
+
+    private static List<SessionPlannerSelectedSceneSnapshot.LocationChoice> locationChoices(
+            long selectedLocationId,
+            List<SessionPlannerSelectedSceneSnapshot.LocationChoice> locations
+    ) {
+        List<SessionPlannerSelectedSceneSnapshot.LocationChoice> choices = new ArrayList<>();
+        choices.add(new SessionPlannerSelectedSceneSnapshot.LocationChoice(0L, "Keine Location"));
+        choices.addAll(locations);
+        if (selectedLocationId > 0L && locations.stream().noneMatch(item -> item.locationId() == selectedLocationId)) {
+            choices.add(new SessionPlannerSelectedSceneSnapshot.LocationChoice(
+                    selectedLocationId, "Location #" + selectedLocationId));
+        }
+        return List.copyOf(choices);
     }
 
     private static PreparedSceneCatalogSnapshot preparedScenes(SessionPlannerReadCapture capture) {
@@ -632,9 +668,11 @@ public final class SessionPlannerWorkspaceAssembler {
         return List.copyOf(ids);
     }
 
-    private static List<RewardRef> rewardReferences(SessionPlan session) {
+    private static List<RewardRef> rewardReferences(SessionPlan session, long selectedSceneToken) {
         LinkedHashMap<String, RewardRef> unique = new LinkedHashMap<>();
-        session.generatedRewards().stream().map(RewardRef::from)
+        session.generatedRewards().stream()
+                .filter(reward -> reward.sceneId() == selectedSceneToken)
+                .map(RewardRef::from)
                 .forEach(ref -> unique.putIfAbsent(ref.stableReference(), ref));
         return List.copyOf(unique.values());
     }
@@ -690,7 +728,7 @@ public final class SessionPlannerWorkspaceAssembler {
     }
 
     private record RewardCapture(
-            Map<RewardRef, SessionPlannerSceneTimelineProjection.GeneratedReward> byReference,
+            Map<RewardRef, SessionPlannerSelectedSceneSnapshot.GeneratedReward> byReference,
             List<SessionPlannerWorkspaceSnapshot.Issue> issues
     ) {
         private RewardCapture {
@@ -710,7 +748,7 @@ public final class SessionPlannerWorkspaceAssembler {
     }
 
     private record WorldCapture(
-            List<SessionPlannerSessionSnapshot.LocationReference> locations,
+            List<SessionPlannerSelectedSceneSnapshot.LocationChoice> locations,
             List<SessionPlannerWorkspaceSnapshot.Issue> issues
     ) {
         private WorldCapture {
@@ -730,7 +768,7 @@ public final class SessionPlannerWorkspaceAssembler {
             double multiplier,
             String difficulty,
             String displaySummary,
-            List<SessionPlannerSceneTimelineProjection.EncounterRosterLine> roster,
+            List<SessionPlannerSelectedSceneSnapshot.EncounterRosterLine> roster,
             String status
     ) {
         private static EncounterFact available(GeneratedEncounterPlanSummary summary) {
@@ -739,7 +777,7 @@ public final class SessionPlannerWorkspaceAssembler {
                     true, summary.planId(), summary.label(), summary.label(), summary.creatureCount(),
                     Math.toIntExact(summary.baseXp()), Math.toIntExact(summary.adjustedXp()), multiplier,
                     summary.difficulty().name(), summary.displaySummary(), summary.roster().stream()
-                            .map(line -> new SessionPlannerSceneTimelineProjection.EncounterRosterLine(
+                            .map(line -> new SessionPlannerSelectedSceneSnapshot.EncounterRosterLine(
                                     line.creatureId(), line.quantity(), line.displayName()))
                             .toList(), "");
         }

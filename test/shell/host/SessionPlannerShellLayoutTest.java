@@ -104,6 +104,9 @@ public final class SessionPlannerShellLayoutTest {
         Stage stage = new Stage();
         stage.setScene(new Scene(workspace, 1_120.0, 620.0));
         stage.show();
+        services.session().application().createSession(
+                new features.sessionplanner.api.SessionPlannerCatalogCommand.CreateSessionCommand("Layout"));
+        services.session().application().addScene(new features.sessionplanner.api.AddSessionSceneCommand());
         layout(workspace);
 
         VBox controlsPanel = descendants(workspace).stream()
@@ -145,6 +148,9 @@ public final class SessionPlannerShellLayoutTest {
                         .map(javafx.scene.control.Button.class::cast)
                         .anyMatch(button -> "Szene hinzufügen".equals(button.getText())),
                 "planner main renders the scene board in the main slot");
+        Node selectedInspector = descendants(plannerMain).stream()
+                .filter(node -> node.getStyleClass().contains("session-planner-selected-scene-inspector"))
+                .findFirst().orElseThrow(() -> new AssertionError("Selected scene inspector not found."));
         assertTrue(descendants(plannerControls).stream()
                         .filter(Label.class::isInstance)
                         .map(Label.class::cast)
@@ -179,6 +185,8 @@ public final class SessionPlannerShellLayoutTest {
         assertTrue(plannerMain.getContent().getLayoutBounds().getWidth()
                         <= plannerMain.getViewportBounds().getWidth() + 1.0,
                 "timeline content fits the narrow viewport");
+        assertTrue(selectedInspector.getBoundsInParent().getWidth() <= plannerMain.getViewportBounds().getWidth() + 1.0,
+                "real selected-scene inspector fits the 820x500 shell without horizontal clipping");
 
         ShellNavigationSidebar sidebar = new ShellNavigationSidebar();
         registerSidebarTab(

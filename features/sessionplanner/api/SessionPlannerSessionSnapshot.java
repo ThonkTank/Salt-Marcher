@@ -1,14 +1,12 @@
 package features.sessionplanner.api;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 public record SessionPlannerSessionSnapshot(
         SessionState session,
         XpBudgetState xpBudget,
         RestAdviceState restAdvice,
         GoldBudgetState goldBudget,
-        List<LocationReference> locationReferences,
         String status
 ) {
 
@@ -17,13 +15,7 @@ public record SessionPlannerSessionSnapshot(
         xpBudget = xpBudget == null ? XpBudgetState.empty() : xpBudget;
         restAdvice = restAdvice == null ? RestAdviceState.empty() : restAdvice;
         goldBudget = goldBudget == null ? GoldBudgetState.manualNotes(0) : goldBudget;
-        locationReferences = copy(locationReferences);
         status = status == null ? "" : status;
-    }
-
-    @Override
-    public List<LocationReference> locationReferences() {
-        return List.copyOf(locationReferences);
     }
 
     public static SessionPlannerSessionSnapshot empty(String status) {
@@ -32,7 +24,6 @@ public record SessionPlannerSessionSnapshot(
                 XpBudgetState.empty(),
                 RestAdviceState.empty(),
                 GoldBudgetState.manualNotes(0),
-                List.of(),
                 status);
     }
 
@@ -132,17 +123,4 @@ public record SessionPlannerSessionSnapshot(
         }
     }
 
-    public record LocationReference(long locationId, String displayName) {
-
-        public LocationReference {
-            locationId = Math.max(0L, locationId);
-            displayName = displayName == null || displayName.isBlank()
-                    ? "Location #" + locationId
-                    : displayName.trim();
-        }
-    }
-
-    private static <T> List<T> copy(List<T> values) {
-        return values == null ? List.of() : List.copyOf(values);
-    }
 }

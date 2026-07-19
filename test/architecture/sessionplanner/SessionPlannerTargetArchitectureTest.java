@@ -39,6 +39,8 @@ public final class SessionPlannerTargetArchitectureTest {
             "features.sessionplanner.api.SessionPlannerParticipantsModel",
             "features.sessionplanner.api.SessionPlannerSceneTimelineModel",
             "features.sessionplanner.api.SessionPlannerStatePanelModel",
+            "features.sessionplanner.api.SessionPlannerStatePanelProjection",
+            "features.sessionplanner.api.SessionPlannerSceneTimelineProjection$SessionScene",
             "features.encounter.api.GeneratedEncounterPlanImportApi",
             "features.encounter.api.GeneratedEncounterPlanImportCommand",
             "features.encounter.api.GeneratedEncounterPlanImportResult",

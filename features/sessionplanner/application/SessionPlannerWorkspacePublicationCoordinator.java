@@ -170,7 +170,7 @@ public final class SessionPlannerWorkspacePublicationCoordinator {
     }
 
     public boolean locationExists(long locationId) {
-        return locationId <= 0L || workspace.current().currentSession().locationReferences().stream()
+        return locationId <= 0L || workspace.current().selectedScene().locationChoices().stream()
                 .anyMatch(location -> location.locationId() == locationId);
     }
 
@@ -240,7 +240,7 @@ public final class SessionPlannerWorkspacePublicationCoordinator {
 
     private void publish(SessionPlannerWorkspaceAssembly result) {
         SessionPlannerWorkspaceSnapshot candidate = applyStatusOverlay(result.workspace())
-                .withEncounterPlanSearch(workspace.current().encounterPlanSearch())
+                .withSelectedSceneSearch(retainedSearch(result.workspace(), workspace.current()))
                 .withPreparation(acceptedPreparation)
                 .withPublicationRevision(++publicationRevision);
         workspace.publish(candidate);
@@ -283,14 +283,14 @@ public final class SessionPlannerWorkspacePublicationCoordinator {
         var current = candidate.currentSession();
         var withStatus = new features.sessionplanner.api.SessionPlannerSessionSnapshot(
                 current.session(), current.xpBudget(), current.restAdvice(), current.goldBudget(),
-                current.locationReferences(), statusOverlay);
+                statusOverlay);
         var catalog = candidate.catalog();
         var catalogWithStatus = new features.sessionplanner.api.SessionPlannerCatalogSnapshot(
                 catalog.sessions(), catalog.selectedSessionId(), statusOverlay);
         return new SessionPlannerWorkspaceSnapshot(
                 candidate.publicationRevision(), candidate.sourceSessionId(), candidate.sourceSessionRevision(),
                 catalogWithStatus, withStatus, candidate.participants(), candidate.sceneTimeline(),
-                candidate.statePanel(), candidate.encounterPlanSearch(), candidate.preparation(), candidate.issues());
+                candidate.selectedScene(), candidate.preparation(), candidate.issues());
     }
 
     private synchronized void completeEncounterSearchRoots(
@@ -317,8 +317,8 @@ public final class SessionPlannerWorkspacePublicationCoordinator {
             }
         }
         LinkedHashSet<Long> hydrateIds = new LinkedHashSet<>(hits.keySet());
-        workspace.current().sceneTimeline().sessionScenes().stream()
-                .map(features.sessionplanner.api.SessionPlannerSceneTimelineProjection.SessionScene::linkedEncounterPlanId)
+        workspace.current().sceneTimeline().sceneHeaders().stream()
+                .map(features.sessionplanner.api.SessionPlannerSceneTimelineProjection.SceneHeader::linkedEncounterPlanId)
                 .filter(id -> id > 0L)
                 .forEach(hydrateIds::add);
         if (hydrateIds.isEmpty()) {
@@ -421,7 +421,7 @@ public final class SessionPlannerWorkspacePublicationCoordinator {
         }
         publishEncounterSearch(new SessionEncounterPlanSearchSnapshot(
                 requestEpoch, source.sourceSessionId(), source.sourceSessionRevision(), selectedScene,
-                source.encounterPlanSearch().normalizedQuery(), SessionEncounterPlanSearchSnapshot.Status.FAILED,
+                source.selectedScene().encounterPlanSearch().normalizedQuery(), SessionEncounterPlanSearchSnapshot.Status.FAILED,
                 List.of(), false, "Encounter-Suche konnte nicht geladen werden."));
     }
 
@@ -435,19 +435,31 @@ public final class SessionPlannerWorkspacePublicationCoordinator {
 
     private void publishEncounterSearch(SessionEncounterPlanSearchSnapshot search) {
         workspace.publish(workspace.current()
-                .withEncounterPlanSearch(search)
+                .withSelectedSceneSearch(search)
                 .withPublicationRevision(++publicationRevision));
     }
 
     private void invalidateEncounterSearch() {
         searchEpoch++;
-        if (workspace.current().encounterPlanSearch().status() == SessionEncounterPlanSearchSnapshot.Status.IDLE
-                && workspace.current().encounterPlanSearch().results().isEmpty()) {
+        if (workspace.current().selectedScene().encounterPlanSearch().status()
+                    == SessionEncounterPlanSearchSnapshot.Status.IDLE
+                && workspace.current().selectedScene().encounterPlanSearch().results().isEmpty()) {
             return;
         }
         workspace.publish(workspace.current()
-                .withEncounterPlanSearch(SessionEncounterPlanSearchSnapshot.idle())
+                .withSelectedSceneSearch(SessionEncounterPlanSearchSnapshot.idle())
                 .withPublicationRevision(++publicationRevision));
+    }
+
+    private static SessionEncounterPlanSearchSnapshot retainedSearch(
+            SessionPlannerWorkspaceSnapshot candidate,
+            SessionPlannerWorkspaceSnapshot current
+    ) {
+        SessionEncounterPlanSearchSnapshot search = current.selectedScene().encounterPlanSearch();
+        return candidate.sourceSessionId() == search.sourceSessionId()
+                && candidate.sourceSessionRevision() == search.sourceSessionRevision()
+                && candidate.selectedScene().sceneToken() == search.selectedSceneToken()
+                ? search : SessionEncounterPlanSearchSnapshot.idle();
     }
 
     private record SourceStamp(long sessionId, long revision) {

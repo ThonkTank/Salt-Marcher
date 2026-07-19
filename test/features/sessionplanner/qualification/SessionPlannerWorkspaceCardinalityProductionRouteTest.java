@@ -86,7 +86,7 @@ final class SessionPlannerWorkspaceCardinalityProductionRouteTest {
                             route.planner.workspaceModel().current().participants().participants().size());
                 } else if (dimension.equals("scenes")) {
                     assertEquals(variant.encounters().size(), route.planner.workspaceModel().current()
-                            .sceneTimeline().sessionScenes().size());
+                            .sceneTimeline().sceneHeaders().size());
                 }
             }
         }
@@ -118,7 +118,8 @@ final class SessionPlannerWorkspaceCardinalityProductionRouteTest {
 
             route.planner.application().searchEncounterPlans(
                     new SearchSessionEncounterPlansCommand(1L, "bounded"));
-            SessionEncounterPlanSearchSnapshot result = route.planner.workspaceModel().current().encounterPlanSearch();
+            SessionEncounterPlanSearchSnapshot result = route.planner.workspaceModel().current()
+                    .selectedScene().encounterPlanSearch();
             assertEquals(SessionEncounterPlanSearchSnapshot.Status.READY, result.status());
             assertEquals(8, result.results().size());
             assertTrue(result.hasMore());
@@ -135,7 +136,7 @@ final class SessionPlannerWorkspaceCardinalityProductionRouteTest {
             assertEquals(1, linkedHydration.cardinality());
             assertEquals(ENCOUNTER_SUMMARY_STATEMENTS, linkedHydration.queryCount());
             assertEquals(64, route.planner.workspaceModel().current()
-                    .sceneTimeline().sessionScenes().getFirst().linkedEncounterRoster().size());
+                    .selectedScene().linkedEncounterRoster().size());
             Measurement creatureFacts = diagnostics.last("creatures.sqlite.facts-read");
             assertEquals(64, creatureFacts.cardinality());
             assertEquals(2, creatureFacts.queryCount());

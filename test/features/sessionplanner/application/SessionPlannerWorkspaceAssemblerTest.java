@@ -60,6 +60,7 @@ import features.sessiongeneration.api.GenerationRunResponse;
 import features.sessiongeneration.api.GenerationStatus;
 import features.sessiongeneration.api.SessionGenerationApi;
 import features.sessionplanner.api.SessionPlannerSceneTimelineProjection;
+import features.sessionplanner.api.SessionPlannerSelectedSceneSnapshot;
 import features.sessionplanner.api.SessionPlannerWorkspaceSnapshot;
 import features.sessionplanner.api.SessionPreparationSnapshot;
 import features.sessionplanner.api.SearchSessionEncounterPlansCommand;
@@ -104,13 +105,11 @@ final class SessionPlannerWorkspaceAssemblerTest {
         assertEquals(1, party.reads);
         assertEquals(1, encounters.reads);
         assertEquals(List.of(11L, 12L), encounters.requestedPlanIds);
-        assertEquals(2, result.workspace().sceneTimeline().sessionScenes().size());
-        assertTrue(result.workspace().sceneTimeline().sessionScenes().stream()
-                .allMatch(SessionPlannerSceneTimelineProjection.SessionScene::linkedEncounterPlan));
-        assertEquals("1 × Creature 11", result.workspace().sceneTimeline().sessionScenes().getFirst()
-                .linkedEncounterRoster().getFirst().quantity() + " × "
-                + result.workspace().sceneTimeline().sessionScenes().getFirst()
-                        .linkedEncounterRoster().getFirst().displayName());
+        assertEquals(2, result.workspace().sceneTimeline().sceneHeaders().size());
+        assertTrue(result.workspace().sceneTimeline().sceneHeaders().stream()
+                .allMatch(SessionPlannerSceneTimelineProjection.SceneHeader::linkedEncounterPlan));
+        assertEquals("1 × Creature 12", result.workspace().selectedScene().linkedEncounterRoster().getFirst().quantity()
+                + " × " + result.workspace().selectedScene().linkedEncounterRoster().getFirst().displayName());
         assertEquals(3, result.preparedScenes().scenes().size(),
                 "prepared scenes are derived from the same all-session planner capture");
         assertEquals(current.revision().value(), result.workspace().sourceSessionRevision());
@@ -134,10 +133,10 @@ final class SessionPlannerWorkspaceAssemblerTest {
         assertTrue(workspace.issues().stream().anyMatch(issue ->
                 issue.owner() == SessionPlannerWorkspaceSnapshot.Owner.ENCOUNTER
                         && issue.kind() == SessionPlannerWorkspaceSnapshot.Kind.MALFORMED_RESPONSE));
-        assertTrue(workspace.sceneTimeline().sessionScenes().stream()
+        assertTrue(workspace.sceneTimeline().sceneHeaders().stream()
                 .allMatch(scene -> scene.linkedEncounterName().isBlank()
                         && scene.linkedEncounterAdjustedXp() == 0));
-        assertTrue(workspace.encounterPlanSearch().results().isEmpty());
+        assertTrue(workspace.selectedScene().encounterPlanSearch().results().isEmpty());
     }
 
     @Test
@@ -153,17 +152,40 @@ final class SessionPlannerWorkspaceAssemblerTest {
                 new CountingParty(), new CountingEncounter(false), generation, null,
                 directLane(), NoopDiagnostics.INSTANCE);
 
-        SessionPlannerSceneTimelineProjection.GeneratedReward reward = assembler
+        SessionPlannerSelectedSceneSnapshot.GeneratedReward reward = assembler
                 .assemble(SessionPreparationSnapshot.idle()).toCompletableFuture().join()
-                .workspace().sceneTimeline().sessionScenes().getFirst().generatedRewards().getFirst();
+                .workspace().selectedScene().generatedRewards().getFirst();
 
         assertEquals(1, generation.reads);
-        assertEquals(SessionPlannerSceneTimelineProjection.Availability.AVAILABLE, reward.availability());
+        assertEquals(SessionPlannerSelectedSceneSnapshot.Availability.AVAILABLE, reward.availability());
         assertEquals("", reward.fallbackLabel());
         assertEquals("ENCOUNTER · Sunken vault · 1 Positionen", reward.displayLabel());
         assertEquals("gem-3", reward.itemLines().getFirst().itemId());
         assertEquals(new BigDecimal("2.5"), reward.itemLines().getFirst().totalCapacity());
         assertEquals("chest", reward.packing().getFirst().containerType());
+    }
+
+    @Test
+    void rewardHydrationReadsOnlyTheSelectedSceneAndSkipsWhenItOwnsNoReferences() {
+        SessionPlan current = SessionPlan.seeded(7L, List.of(1L), EncounterDays.one())
+                .replaceGeneratedContent(
+                        List.of(
+                                new SessionEncounter(1L, 11L, SessionEncounterAllocation.hundred()),
+                                new SessionEncounter(2L, 12L, SessionEncounterAllocation.hundred())),
+                        List.of(new SessionGeneratedRewardReference(1L, "run-7", 3L, "Scene one")))
+                .selectEncounter(2L);
+        RewardGeneration generation = new RewardGeneration();
+        SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
+                new CountingSource(new SessionPlannerReadCapture(7L, List.of(current), 0)),
+                new CountingParty(), new CountingEncounter(false), generation, null,
+                directLane(), NoopDiagnostics.INSTANCE);
+
+        SessionPlannerWorkspaceSnapshot workspace = assembler.assemble(SessionPreparationSnapshot.idle())
+                .toCompletableFuture().join().workspace();
+
+        assertEquals(0, generation.reads, "unselected reward references trigger no Session Generation read");
+        assertTrue(workspace.selectedScene().generatedRewards().isEmpty());
+        assertEquals(2, workspace.sceneTimeline().sceneHeaders().size());
     }
 
     @Test
@@ -215,10 +237,10 @@ final class SessionPlannerWorkspaceAssemblerTest {
 
             SessionPlannerWorkspaceSnapshot workspace = assembler.assemble(SessionPreparationSnapshot.idle())
                     .toCompletableFuture().join().workspace();
-            SessionPlannerSceneTimelineProjection.GeneratedReward reward =
-                    workspace.sceneTimeline().sessionScenes().getFirst().generatedRewards().getFirst();
+            SessionPlannerSelectedSceneSnapshot.GeneratedReward reward =
+                    workspace.selectedScene().generatedRewards().getFirst();
 
-            assertEquals(SessionPlannerSceneTimelineProjection.Availability.UNAVAILABLE, reward.availability());
+            assertEquals(SessionPlannerSelectedSceneSnapshot.Availability.UNAVAILABLE, reward.availability());
             assertEquals("Last known reward", reward.fallbackLabel());
             SessionPlannerWorkspaceSnapshot.Kind expected = switch (mode) {
                 case MISSING -> SessionPlannerWorkspaceSnapshot.Kind.UNAVAILABLE;
@@ -250,17 +272,17 @@ final class SessionPlannerWorkspaceAssemblerTest {
         publications.searchEncounterPlans(new SearchSessionEncounterPlansCommand(1L, "x"));
 
         assertEquals(SessionEncounterPlanSearchSnapshot.Status.TOO_SHORT,
-                publications.current().encounterPlanSearch().status());
+                publications.current().selectedScene().encounterPlanSearch().status());
         assertEquals(0, encounters.searchReads);
         assertEquals(summaryReadsAfterAssembly, encounters.reads);
 
         publications.searchEncounterPlans(new SearchSessionEncounterPlansCommand(1L, " PLAN "));
 
         assertEquals(SessionEncounterPlanSearchSnapshot.Status.READY,
-                publications.current().encounterPlanSearch().status());
-        assertEquals("plan", publications.current().encounterPlanSearch().normalizedQuery());
-        assertEquals(8, publications.current().encounterPlanSearch().results().size());
-        assertTrue(publications.current().encounterPlanSearch().hasMore());
+                publications.current().selectedScene().encounterPlanSearch().status());
+        assertEquals("plan", publications.current().selectedScene().encounterPlanSearch().normalizedQuery());
+        assertEquals(8, publications.current().selectedScene().encounterPlanSearch().results().size());
+        assertTrue(publications.current().selectedScene().encounterPlanSearch().hasMore());
         assertEquals(List.of(11L, 12L, 13L, 14L, 15L, 16L, 17L, 18L, 77L),
                 encounters.requestedPlanIds,
                 "search summary hydration contains bounded hit ids plus the distinct linked id");
@@ -289,8 +311,8 @@ final class SessionPlannerWorkspaceAssemblerTest {
         first.complete(encounters.searchResult());
 
         assertEquals(SessionEncounterPlanSearchSnapshot.Status.READY,
-                publications.current().encounterPlanSearch().status());
-        assertEquals("second", publications.current().encounterPlanSearch().normalizedQuery());
+                publications.current().selectedScene().encounterPlanSearch().status());
+        assertEquals("second", publications.current().selectedScene().encounterPlanSearch().normalizedQuery());
 
         encounters.pendingSearch = new CompletableFuture<>();
         publications.searchEncounterPlans(new SearchSessionEncounterPlansCommand(1L, "third"));
@@ -299,7 +321,7 @@ final class SessionPlannerWorkspaceAssemblerTest {
         third.complete(encounters.searchResult());
 
         assertEquals(SessionEncounterPlanSearchSnapshot.Status.IDLE,
-                publications.current().encounterPlanSearch().status(),
+                publications.current().selectedScene().encounterPlanSearch().status(),
                 "an authored intent invalidates the in-flight search before its late completion");
     }
 

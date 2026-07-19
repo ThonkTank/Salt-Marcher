@@ -16,12 +16,12 @@ public final class SessionPlannerContribution implements ShellContribution {
 
     private final SessionPlannerApi planner;
     private final SessionPlannerWorkspaceModel workspace;
-    private final java.util.function.LongConsumer workspaceApplied;
+    private final java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> workspaceApplied;
 
     public SessionPlannerContribution(
             SessionPlannerApi planner,
             SessionPlannerWorkspaceModel workspace,
-            java.util.function.LongConsumer workspaceApplied
+            java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> workspaceApplied
     ) {
         this.planner = Objects.requireNonNull(planner, "planner");
         this.workspace = Objects.requireNonNull(workspace, "workspace");

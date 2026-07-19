@@ -5,6 +5,7 @@ import features.encounter.api.SavedEncounterPlanListModel;
 import features.party.api.PartyApi;
 import features.sessiongeneration.api.SessionGenerationApi;
 import features.sessionplanner.adapter.javafx.SessionPlannerContribution;
+import features.sessionplanner.adapter.javafx.SessionPlannerWorkspaceApplyObservation;
 import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
 import features.sessionplanner.api.PreparedSceneCatalogModel;
 import features.sessionplanner.api.SessionPlannerApi;
@@ -119,13 +120,23 @@ public final class SessionPlannerServiceAssembly {
     }
 
     public ShellContribution contribution() {
-        return new SessionPlannerContribution(runtime.applicationService(), workspaceModel(), durationNanos ->
-                diagnostics.measurement(new Measurement(
-                        JAVAFX_APPLY,
-                        runtime.publication().current().preparation().attemptId(),
-                        durationNanos,
-                        1,
-                        0)));
+        return contribution(ignored -> { });
+    }
+
+    public ShellContribution contribution(
+            java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> observer
+    ) {
+        java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> safeObserver =
+                Objects.requireNonNull(observer, "observer");
+        return new SessionPlannerContribution(runtime.applicationService(), workspaceModel(), observation -> {
+            diagnostics.measurement(new Measurement(
+                    JAVAFX_APPLY,
+                    observation.snapshot().preparation().attemptId(),
+                    observation.durationNanos(),
+                    observation.materializedUnitCount(),
+                    0));
+            safeObserver.accept(observation);
+        });
     }
 
     private record Runtime(

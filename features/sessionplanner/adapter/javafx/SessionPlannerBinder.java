@@ -38,12 +38,12 @@ final class SessionPlannerBinder {
 
     private final SessionPlannerApi planner;
     private final SessionPlannerWorkspaceModel workspace;
-    private final java.util.function.LongConsumer workspaceApplied;
+    private final java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> workspaceApplied;
 
     SessionPlannerBinder(
             SessionPlannerApi planner,
             SessionPlannerWorkspaceModel workspace,
-            java.util.function.LongConsumer workspaceApplied
+            java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> workspaceApplied
     ) {
         this.planner = Objects.requireNonNull(planner, "planner");
         this.workspace = Objects.requireNonNull(workspace, "workspace");
@@ -149,12 +149,16 @@ final class SessionPlannerBinder {
         workspace.subscribe(snapshot -> {
             long startedNanos = System.nanoTime();
             viewModel.applyWorkspace(snapshot);
-            workspaceApplied.accept(Math.max(0L, System.nanoTime() - startedNanos));
+            workspaceApplied.accept(new SessionPlannerWorkspaceApplyObservation(
+                    snapshot, Math.max(0L, System.nanoTime() - startedNanos),
+                    timelineView.materializedUnitCount()));
         });
         SessionPlannerWorkspaceSnapshot initial = workspace.current();
         long initialApplyStartedNanos = System.nanoTime();
         viewModel.applyWorkspace(initial);
-        workspaceApplied.accept(Math.max(0L, System.nanoTime() - initialApplyStartedNanos));
+        workspaceApplied.accept(new SessionPlannerWorkspaceApplyObservation(
+                initial, Math.max(0L, System.nanoTime() - initialApplyStartedNanos),
+                timelineView.materializedUnitCount()));
         planner.initialize();
         return new Binding(ShellControls.stack(catalogView, controlsView), timelineView, stateView);
     }
