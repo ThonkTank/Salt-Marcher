@@ -129,7 +129,10 @@ final class SessionPlannerWorkspaceCardinalityProductionRouteTest {
             assertEquals(ENCOUNTER_SUMMARY_STATEMENTS, searchHydration.queryCount());
 
             long priorRevision = route.planner.workspaceModel().current().publicationRevision();
-            route.planner.application().attachEncounter(new AttachSessionEncounterCommand(1L, 257L));
+            route.planner.application().attachEncounter(new AttachSessionEncounterCommand(
+                    new features.sessionplanner.api.SessionPlannerAuthoredTarget(
+                            route.planner.workspaceModel().current().sourceSessionId(),
+                            route.planner.workspaceModel().current().sourceSessionRevision()), 1L, 257L));
             assertTrue(route.planner.workspaceModel().current().publicationRevision() > priorRevision,
                     "direct production lanes publish attach before returning");
             Measurement linkedHydration = diagnostics.last("encounter.saved-plan-summary.read");

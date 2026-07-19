@@ -47,7 +47,10 @@ import features.sessiongeneration.api.SessionGenerationApi;
 import features.sessionplanner.SessionPlannerServiceAssembly;
 import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
 import features.sessionplanner.api.PrepareSessionCommand;
+import features.sessionplanner.api.SessionPlannerAuthoredTarget;
+import features.sessionplanner.api.SessionPlannerCatalogCommand;
 import features.sessionplanner.api.SessionPreparationStatus;
+import features.sessionplanner.api.SetSessionEncounterDaysCommand;
 import features.sessionplanner.domain.session.EncounterDays;
 import features.sessionplanner.domain.session.SessionPlan;
 import java.math.BigDecimal;
@@ -225,6 +228,35 @@ final class SessionPreparationCoordinatorTest {
             assertEquals(0, fixture.encounters.prepareCalls);
             assertEquals(0, fixture.preparedSessions.commitCalls);
             assertEquals(1L, fixture.repository.loadCurrent().orElseThrow().revision().value());
+        }
+    }
+
+    @Test
+    void delayedNonCurrentAuthoredWriteDoesNotCancelTheActiveCurrentPreparation() {
+        try (Fixture fixture = fixture("non-current-write-keeps-current-preparation.db")) {
+            fixture.repository.insert(SessionPlan.seeded(8L, List.of(1L), EncounterDays.one()));
+            fixture.planner.application().selectSession(new SessionPlannerCatalogCommand.SelectSessionCommand(8L, java.util.Optional.empty()));
+
+            CompletableFuture<GenerationDraftResponse> pending = new CompletableFuture<>();
+            fixture.generation.draftStages.add(pending);
+            fixture.prepare();
+            assertEquals(SessionPreparationStatus.GENERATING,
+                    fixture.planner.workspaceModel().current().preparation().status());
+
+            fixture.planner.application().setEncounterDays(new SetSessionEncounterDaysCommand(
+                    new SessionPlannerAuthoredTarget(7L, 1L), new BigDecimal("1.5")));
+
+            assertEquals(8L, fixture.planner.workspaceModel().current().sourceSessionId());
+            assertEquals(SessionPreparationStatus.GENERATING,
+                    fixture.planner.workspaceModel().current().preparation().status(),
+                    "an old-session write must not invalidate the active current preparation");
+
+            pending.complete(fixture.generation.successfulDraft());
+
+            assertEquals(SessionPreparationStatus.READY,
+                    fixture.planner.workspaceModel().current().preparation().status());
+            assertEquals(8L, fixture.repository.loadCurrent().orElseThrow().sessionId());
+            assertEquals(new BigDecimal("1.5"), fixture.repository.loadById(7L).orElseThrow().encounterDays().value());
         }
     }
 

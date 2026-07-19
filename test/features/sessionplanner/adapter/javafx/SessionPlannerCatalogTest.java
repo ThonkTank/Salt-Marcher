@@ -255,7 +255,10 @@ public final class SessionPlannerCatalogTest {
         stage.show();
         planner.application().createSession(new SessionPlannerCatalogCommand.CreateSessionCommand("Pending"));
         services.party().application().activeParty().current().memberIds().forEach(characterId ->
-                planner.application().addParticipant(SessionPlannerParticipantCommand.add(characterId)));
+                planner.application().addParticipant(SessionPlannerParticipantCommand.add(
+                        new features.sessionplanner.api.SessionPlannerAuthoredTarget(
+                                planner.workspaceModel().current().sourceSessionId(),
+                                planner.workspaceModel().current().sourceSessionRevision()), characterId)));
         layout(controls);
 
         button(controls, "Generieren").fire();
@@ -601,7 +604,10 @@ public final class SessionPlannerCatalogTest {
         manualNote.requestFocus();
         manualNote.selectRange(2, 8);
         services.planner().application().setEncounterDays(
-                new features.sessionplanner.api.SetSessionEncounterDaysCommand(new BigDecimal("1.1")));
+                new features.sessionplanner.api.SetSessionEncounterDaysCommand(
+                        new features.sessionplanner.api.SessionPlannerAuthoredTarget(
+                                workspace.current().sourceSessionId(), workspace.current().sourceSessionRevision()),
+                        new BigDecimal("1.1")));
         layout(main);
         assertEquals("Edited cache beneath the altar", manualNote.getText(),
                 "same-scene publication preserves a keyed dirty manual-note editor");

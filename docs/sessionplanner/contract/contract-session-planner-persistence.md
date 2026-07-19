@@ -98,12 +98,18 @@ replaces the root and affected child collections in one Session Planner
 transaction, advances the revision once, and returns the committed snapshot.
 A stale revision or invalid payload writes nothing.
 
-Scene and manual-note commands carry one authored target consisting of Session
-identity and expected revision. Manual-note update and removal additionally
-carry the owning scene identity because note IDs are session-local. The adapter
-loads that exact Session root, validates the referenced scene or note and any
-World Planner location, and compare-and-swap saves it; it never substitutes the
-current-session pointer as the write target.
+Every authored command carries one authored target consisting of Session
+identity and expected revision. Reference-bearing commands additionally carry
+and validate their scene, note, participant, rest-gap, or foreign-plan
+identity. The adapter loads that exact Session root and compare-and-swap saves
+it; it never substitutes the current-session pointer as the write target.
+
+Delete is one guarded Session Planner transaction. It deletes only with
+`session_id` plus expected revision, updates the current pointer only when that
+exact current root was deleted, and creates and selects a seeded replacement in
+the same transaction when no Session remains. Stale and missing outcomes write
+nothing. After success the application reads Current authoritatively before it
+publishes.
 
 A catalog switch with a dirty scene draft is one authored-lane operation. It
 prevalidates the target Session, compare-and-swap saves the source draft, then

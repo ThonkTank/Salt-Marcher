@@ -31,6 +31,10 @@ final class SessionPlanSqliteReads {
         return current.isEmpty() ? Optional.empty() : loadSession(connection, current.get().sessionId());
     }
 
+    long currentSessionId(Connection connection) throws SQLException {
+        return loadCurrentPointer(connection).map(CurrentSessionPointerRecord::sessionId).orElse(0L);
+    }
+
     SqliteSessionPlannerLocalGateway.WorkspaceRead loadWorkspace(Connection connection) throws SQLException {
         long currentSessionId = loadCurrentPointer(connection)
                 .map(CurrentSessionPointerRecord::sessionId)

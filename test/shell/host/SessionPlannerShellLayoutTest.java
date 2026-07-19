@@ -106,7 +106,10 @@ public final class SessionPlannerShellLayoutTest {
         stage.show();
         services.session().application().createSession(
                 new features.sessionplanner.api.SessionPlannerCatalogCommand.CreateSessionCommand("Layout"));
-        services.session().application().addScene(new features.sessionplanner.api.AddSessionSceneCommand());
+        services.session().application().addScene(new features.sessionplanner.api.AddSessionSceneCommand(
+                new features.sessionplanner.api.SessionPlannerAuthoredTarget(
+                        services.session().workspaceModel().current().sourceSessionId(),
+                        services.session().workspaceModel().current().sourceSessionRevision())));
         layout(workspace);
 
         VBox controlsPanel = descendants(workspace).stream()

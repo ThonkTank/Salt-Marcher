@@ -30,16 +30,23 @@ public sealed interface SessionPlannerCatalogCommand permits
         }
     }
 
-    record RenameSessionCommand(long sessionId, String displayName) implements SessionPlannerCatalogCommand {
+    record RenameSessionCommand(
+            SessionPlannerAuthoredTarget target,
+            String displayName
+    ) implements SessionPlannerCatalogCommand {
         public RenameSessionCommand {
-            sessionId = Math.max(0L, sessionId);
+            if (target == null) {
+                throw new IllegalArgumentException("authored target is required");
+            }
             displayName = displayName == null ? "" : displayName.trim();
         }
     }
 
-    record DeleteSessionCommand(long sessionId) implements SessionPlannerCatalogCommand {
+    record DeleteSessionCommand(SessionPlannerAuthoredTarget target) implements SessionPlannerCatalogCommand {
         public DeleteSessionCommand {
-            sessionId = Math.max(0L, sessionId);
+            if (target == null) {
+                throw new IllegalArgumentException("authored target is required");
+            }
         }
     }
 }

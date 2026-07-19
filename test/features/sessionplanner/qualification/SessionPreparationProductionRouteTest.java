@@ -271,7 +271,9 @@ final class SessionPreparationProductionRouteTest {
             CountDownLatch mutationSubmitted = observedAuthoredLane.observeNextSubmission();
             fixture.planner.application().renameSession(
                     new SessionPlannerCatalogCommand.RenameSessionCommand(
-                            original.sessionId(), "FIFO authored mutation"));
+                            new features.sessionplanner.api.SessionPlannerAuthoredTarget(
+                                    original.sessionId(), original.revision().value()),
+                            "FIFO authored mutation"));
             assertTrue(mutationSubmitted.await(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS),
                     "authored mutation was not submitted");
 
@@ -443,13 +445,17 @@ final class SessionPreparationProductionRouteTest {
                 continue;
             }
             revision = created.publicationRevision();
-            planner.application().addParticipant(SessionPlannerParticipantCommand.add(participantId));
+            planner.application().addParticipant(SessionPlannerParticipantCommand.add(
+                    new features.sessionplanner.api.SessionPlannerAuthoredTarget(
+                            created.sourceSessionId(), created.sourceSessionRevision()), participantId));
             int expected = created.participants().participants().size() + 1;
             created = awaitWorkspace(planner.workspaceModel(), revision,
                     workspace -> workspace.participants().participants().size() == expected);
         }
         revision = created.publicationRevision();
-        planner.application().setEncounterDays(new SetSessionEncounterDaysCommand(new BigDecimal("0.6")));
+        planner.application().setEncounterDays(new SetSessionEncounterDaysCommand(
+                new features.sessionplanner.api.SessionPlannerAuthoredTarget(
+                        created.sourceSessionId(), created.sourceSessionRevision()), new BigDecimal("0.6")));
         awaitWorkspace(planner.workspaceModel(), revision, workspace ->
                 workspace.currentSession().session().encounterDays().compareTo(new BigDecimal("0.6")) == 0);
     }

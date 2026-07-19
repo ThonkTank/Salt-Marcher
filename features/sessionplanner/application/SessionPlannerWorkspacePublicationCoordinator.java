@@ -17,6 +17,7 @@ import features.sessionplanner.api.SearchSessionEncounterPlansCommand;
 import features.sessionplanner.api.SessionEncounterPlanSearchSnapshot;
 import features.sessionplanner.api.SessionPreparationSnapshot;
 import features.sessionplanner.api.SessionPreparationStatus;
+import features.sessionplanner.api.SessionPlannerAuthoredTarget;
 import features.sessionplanner.domain.session.SessionPlan;
 import java.util.List;
 import java.util.LinkedHashMap;
@@ -94,6 +95,12 @@ public final class SessionPlannerWorkspacePublicationCoordinator {
         request(new SourceStamp(committed.sessionId(), committed.revision().value()), SessionPreparationSnapshot.idle());
     }
 
+    public synchronized void authoredNonCurrentMutation(SessionPlan authoritativeCurrent) {
+        Objects.requireNonNull(authoritativeCurrent, "authoritativeCurrent");
+        request(new SourceStamp(authoritativeCurrent.sessionId(), authoritativeCurrent.revision().value()),
+                workspace.current().preparation());
+    }
+
     public synchronized void preparedCommit(SessionPlan committed, SessionPreparationSnapshot ready) {
         Objects.requireNonNull(committed, "committed");
         statusOverlay = committed.statusText();
@@ -109,6 +116,28 @@ public final class SessionPlannerWorkspacePublicationCoordinator {
 
     public synchronized void authoredIntent() {
         invalidateEncounterSearch();
+    }
+
+    public synchronized void authoredIntent(SessionPlannerAuthoredTarget target) {
+        Objects.requireNonNull(target, "target");
+        SessionPlannerWorkspaceSnapshot stable = workspace.current();
+        if (stable.sourceSessionId() == target.sessionId()
+                && stable.sourceSessionRevision() == target.expectedRevision()) {
+            invalidateEncounterSearch();
+        }
+    }
+
+    public synchronized void publishAuthoredFailure(long targetSessionId, String message) {
+        SessionPlannerWorkspaceSnapshot stable = workspace.current();
+        if (stable.sourceSessionId() != targetSessionId) {
+            return;
+        }
+        publishPreparation(new SessionPreparationSnapshot(
+                SessionPreparationStatus.FAILED,
+                message,
+                targetSessionId,
+                stable.preparation().attemptId(),
+                false));
     }
 
     public synchronized void searchEncounterPlans(SearchSessionEncounterPlansCommand command) {

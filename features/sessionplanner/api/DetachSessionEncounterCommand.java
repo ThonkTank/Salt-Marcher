@@ -1,8 +1,13 @@
 package features.sessionplanner.api;
 
-public record DetachSessionEncounterCommand(long sceneToken) {
+public record DetachSessionEncounterCommand(SessionPlannerAuthoredTarget target, long sceneToken) {
 
     public DetachSessionEncounterCommand {
-        sceneToken = Math.max(0L, sceneToken);
+        if (target == null) {
+            throw new IllegalArgumentException("authored target is required");
+        }
+        if (sceneToken <= 0L) {
+            throw new IllegalArgumentException("scene id must be positive");
+        }
     }
 }

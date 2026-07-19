@@ -99,6 +99,12 @@ Assembly begins from a captured planner snapshot; foreign results are joined
 only if that capture is still current. Completion from a stale capture is
 discarded and cannot overwrite a newer publication.
 
+Authored intents carry a Session identity and source revision from the JavaFX
+event boundary through the serial authored lane. Search and preparation are
+invalidated only when that target matches their active source. A successful
+non-current mutation triggers a catalog reassembly against an authoritative
+Current read and retains the active Session's search and preparation state.
+
 An in-progress or failed preparation updates status around the last stable
 authored workspace. Only a successful final Session Planner commit may publish
 new authored prepared content. JavaFX applies a complete immutable value in one

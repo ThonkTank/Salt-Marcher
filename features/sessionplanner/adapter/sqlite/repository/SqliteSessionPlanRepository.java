@@ -9,6 +9,7 @@ import features.sessionplanner.adapter.sqlite.mapper.SessionPlanMapper;
 import features.sessionplanner.domain.session.SessionPlan;
 import features.sessionplanner.domain.session.SessionPlanSummary;
 import features.sessionplanner.domain.session.repository.SessionPlanRepository;
+import features.sessionplanner.domain.session.repository.SessionPlanDeleteResult;
 import features.sessionplanner.domain.session.repository.SessionPlanSaveResult;
 import features.sessionplanner.domain.session.SessionRevision;
 import features.sessionplanner.domain.session.SessionEncounter;
@@ -84,8 +85,38 @@ public final class SqliteSessionPlanRepository
     }
 
     @Override
-    public void delete(long sessionId) {
-        gateway.deleteSession(sessionId);
+    public SessionPlanDeleteResult deleteGuarded(
+            long sessionId,
+            SessionRevision expectedRevision,
+            List<Long> replacementParticipantRefs
+    ) {
+        Objects.requireNonNull(expectedRevision, "expectedRevision");
+        List<Long> participantRefs = replacementParticipantRefs == null
+                ? List.of() : List.copyOf(replacementParticipantRefs);
+        try {
+            SqliteSessionPlannerLocalGateway.DeleteOutcome outcome = gateway.deleteSessionGuarded(
+                    sessionId,
+                    expectedRevision.value(),
+                    replacementId -> SessionPlanMapper.toSnapshot(SessionPlan.seeded(
+                            replacementId, participantRefs, features.sessionplanner.domain.session.EncounterDays.one())));
+            return new SessionPlanDeleteResult(
+                    switch (outcome.status()) {
+                        case SUCCESS -> SessionPlanDeleteResult.Status.SUCCESS;
+                        case STALE -> SessionPlanDeleteResult.Status.STALE;
+                        case NOT_FOUND -> SessionPlanDeleteResult.Status.NOT_FOUND;
+                    },
+                    sessionId,
+                    expectedRevision,
+                    outcome.currentTargetRevision().map(SessionRevision::new),
+                    outcome.authoritativeCurrent().map(SessionPlanMapper::toDomain));
+        } catch (IllegalStateException exception) {
+            return new SessionPlanDeleteResult(
+                    SessionPlanDeleteResult.Status.STORAGE_FAILURE,
+                    sessionId,
+                    expectedRevision,
+                    Optional.empty(),
+                    Optional.empty());
+        }
     }
 
     @Override

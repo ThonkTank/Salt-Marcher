@@ -31,6 +31,7 @@ import features.sessionplanner.domain.session.SessionPlan;
 import features.sessionplanner.domain.session.SessionPlanSummary;
 import features.sessionplanner.domain.session.repository.SessionPlanRepository;
 import features.sessionplanner.domain.session.repository.SessionPlanSaveResult;
+import features.sessionplanner.domain.session.repository.SessionPlanDeleteResult;
 import features.sessionplanner.api.SessionPlannerCatalogCommand;
 import features.sessionplanner.api.SessionPlannerAuthoredTarget;
 import features.sessionplanner.api.UpdateSessionEncounterSceneCommand;
@@ -116,9 +117,10 @@ final class SessionPlannerRuntimeMechanismsTest {
         planner.application().initialize();
         lane.runAll();
         var stable = planner.workspaceModel().current().currentSession();
-        repository.failCurrentLoads = true;
+        repository.failReads = true;
 
-        planner.application().setEncounterDays(new SetSessionEncounterDaysCommand(new BigDecimal("2")));
+        planner.application().setEncounterDays(new SetSessionEncounterDaysCommand(
+                authoredTarget(repository.current), new BigDecimal("2")));
         lane.runAll();
 
         assertEquals(0, repository.saves);
@@ -164,7 +166,8 @@ final class SessionPlannerRuntimeMechanismsTest {
         lane.runAll();
         repository.failSaves = true;
 
-        planner.application().setEncounterDays(new SetSessionEncounterDaysCommand(new BigDecimal("2")));
+        planner.application().setEncounterDays(new SetSessionEncounterDaysCommand(
+                authoredTarget(repository.current), new BigDecimal("2")));
         lane.runAll();
 
         assertEquals(1, repository.saves);
@@ -192,7 +195,8 @@ final class SessionPlannerRuntimeMechanismsTest {
         repository.failSaves = true;
         repository.failLists = true;
 
-        planner.application().setEncounterDays(new SetSessionEncounterDaysCommand(new BigDecimal("2")));
+        planner.application().setEncounterDays(new SetSessionEncounterDaysCommand(
+                authoredTarget(repository.current), new BigDecimal("2")));
         lane.runAll();
 
         assertEquals(BigDecimal.ONE,
@@ -243,7 +247,8 @@ final class SessionPlannerRuntimeMechanismsTest {
         planner.application().initialize();
         lane.runAll();
 
-        planner.application().setEncounterDays(new SetSessionEncounterDaysCommand(new BigDecimal("2")));
+        planner.application().setEncounterDays(new SetSessionEncounterDaysCommand(
+                authoredTarget(repository.current), new BigDecimal("2")));
         lane.runAll();
 
         assertEquals("Session-Tage aktualisiert.",
@@ -274,7 +279,8 @@ final class SessionPlannerRuntimeMechanismsTest {
         lane.runAll();
         repository.lagWorkspaceReadsAfterSave = 2;
 
-        planner.application().setEncounterDays(new SetSessionEncounterDaysCommand(new BigDecimal("2")));
+        planner.application().setEncounterDays(new SetSessionEncounterDaysCommand(
+                authoredTarget(repository.current), new BigDecimal("2")));
         lane.runAll();
 
         assertEquals(3, repository.workspaceReads,
@@ -507,6 +513,10 @@ final class SessionPlannerRuntimeMechanismsTest {
         }
     }
 
+    private static SessionPlannerAuthoredTarget authoredTarget(SessionPlan session) {
+        return new SessionPlannerAuthoredTarget(session.sessionId(), session.revision().value());
+    }
+
     private static final class RecordingSessionRepository
             implements SessionPlanRepository, SessionPreparedSessionStore, SessionPlannerWorkspaceSource {
 
@@ -626,10 +636,33 @@ final class SessionPlannerRuntimeMechanismsTest {
         }
 
         @Override
-        public void delete(long sessionId) {
-            if (current != null && current.sessionId() == sessionId) {
-                current = null;
+        public SessionPlanDeleteResult deleteGuarded(
+                long sessionId,
+                features.sessionplanner.domain.session.SessionRevision expectedRevision,
+                List<Long> replacementParticipantRefs
+        ) {
+            SessionPlan target = current != null && current.sessionId() == sessionId ? current : other;
+            if (target == null || target.sessionId() != sessionId) {
+                return new SessionPlanDeleteResult(
+                        SessionPlanDeleteResult.Status.NOT_FOUND, sessionId, expectedRevision,
+                        Optional.empty(), Optional.empty());
             }
+            if (!target.revision().equals(expectedRevision)) {
+                return new SessionPlanDeleteResult(
+                        SessionPlanDeleteResult.Status.STALE, sessionId, expectedRevision,
+                        Optional.of(target.revision()), Optional.empty());
+            }
+            if (target == current) {
+                current = other == null
+                        ? SessionPlan.seeded(sessionId + 1L, replacementParticipantRefs, EncounterDays.one())
+                        : other;
+                other = null;
+            } else {
+                other = null;
+            }
+            return new SessionPlanDeleteResult(
+                    SessionPlanDeleteResult.Status.SUCCESS, sessionId, expectedRevision,
+                    Optional.of(expectedRevision), Optional.of(current));
         }
 
         @Override

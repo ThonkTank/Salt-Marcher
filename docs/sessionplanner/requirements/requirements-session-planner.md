@@ -35,6 +35,12 @@ Scenes exist independently of encounters. Encounter rosters, creature details,
 party members, locations, and generated reward contents remain owned by their
 source features.
 
+Every authored action is bound to the Session identity and revision displayed
+when the user triggered it. A delayed, stale, removed, or non-current target is
+never redirected through the current-session pointer. Successful edits of a
+non-current Session refresh catalog truth without replacing, invalidating, or
+publishing over the active Session's search and preparation state.
+
 ## Compact Workspace
 
 The Session Planner is one master-detail workspace:
@@ -65,6 +71,10 @@ The Session Planner is one master-detail workspace:
   against its displayed Session revision before switching. A stale, removed, or
   invalid source keeps the old Session and draft visible with an actionable
   failure; the draft is never copied into the target Session
+- deleting a Session validates its displayed revision and updates deletion,
+  fallback selection, and any required empty-catalog replacement atomically;
+  stale or missing targets write nothing, while deleting a non-current Session
+  preserves the active pointer
 
 The Generate action MUST remain available without exposing a ruleset selector,
 engine version, catalog version, or an intermediate Apply button.

@@ -4,11 +4,14 @@ import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import features.sessionplanner.api.SessionPlannerCatalogSnapshot;
+import features.sessionplanner.api.SessionPlannerAuthoredTarget;
 import features.sessionplanner.api.SessionEncounterPlanSearchSnapshot;
 import features.sessionplanner.api.SessionPlannerParticipantsProjection;
 import features.sessionplanner.api.SessionPlannerRestKind;
@@ -44,6 +47,7 @@ final class SessionPlannerViewModel {
     private SessionPreparationSnapshot latestPreparation = SessionPreparationSnapshot.idle();
     private SessionPlannerSelectedSceneSnapshot latestSelectedScene = SessionPlannerSelectedSceneSnapshot.empty();
     private long latestSourceSessionRevision;
+    private Map<Long, SessionPlannerAuthoredTarget> catalogTargets = Map.of();
 
     ReadOnlyObjectProperty<ControlsProjection> controlsProjectionProperty() {
         return controlsProjection.getReadOnlyProperty();
@@ -80,6 +84,16 @@ final class SessionPlannerViewModel {
         return latestSession.session().sessionId() > 0L;
     }
 
+    SessionPlannerAuthoredTarget currentTarget() {
+        return new SessionPlannerAuthoredTarget(
+                latestSession.session().sessionId(), latestSourceSessionRevision);
+    }
+
+    Optional<SessionPlannerAuthoredTarget> catalogTarget(String itemId) {
+        long sessionId = SessionPlannerVocabulary.parsePositiveLong(itemId);
+        return Optional.ofNullable(catalogTargets.get(sessionId));
+    }
+
     void updateSelectorFilter(String nextFilterText) {
         catalogContentModel.updateSelectorFilter(nextFilterText);
     }
@@ -106,6 +120,9 @@ final class SessionPlannerViewModel {
 
     private void showCatalog(SessionPlannerCatalogSnapshot catalog) {
         SessionPlannerCatalogSnapshot safe = catalog == null ? SessionPlannerCatalogSnapshot.empty() : catalog;
+        catalogTargets = safe.sessions().stream().collect(Collectors.toUnmodifiableMap(
+                SessionPlannerCatalogSnapshot.SessionSummary::sessionId,
+                session -> new SessionPlannerAuthoredTarget(session.sessionId(), session.revision())));
         catalogContentModel.showCatalog(new CatalogCrudControlsContentModel.CatalogState(
                 "Sessions",
                 "Session auswaehlen",
@@ -116,7 +133,7 @@ final class SessionPlannerViewModel {
                                 Long.toString(session.sessionId()),
                                 session.displayName(),
                                 "",
-                                0L,
+                                session.revision(),
                                 true))
                         .toList(),
                 new CatalogCrudControlsContentModel.Actions(true, true, true, false),

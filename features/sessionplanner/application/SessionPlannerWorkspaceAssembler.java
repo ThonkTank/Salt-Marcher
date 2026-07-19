@@ -457,7 +457,7 @@ public final class SessionPlannerWorkspaceAssembler {
     private static SessionPlannerCatalogSnapshot catalog(SessionPlannerReadCapture capture, String status) {
         return new SessionPlannerCatalogSnapshot(
                 capture.sessions().stream().map(session -> new SessionPlannerCatalogSnapshot.SessionSummary(
-                        session.sessionId(), session.displayName())).toList(),
+                        session.sessionId(), session.revision().value(), session.displayName())).toList(),
                 capture.currentSessionId(), status);
     }
 

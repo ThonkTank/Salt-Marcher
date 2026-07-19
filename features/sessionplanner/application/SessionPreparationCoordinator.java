@@ -24,6 +24,7 @@ import features.sessiongeneration.api.SessionGenerationApi;
 import features.sessionplanner.api.PrepareSessionCommand;
 import features.sessionplanner.api.SessionPreparationSnapshot;
 import features.sessionplanner.api.SessionPreparationStatus;
+import features.sessionplanner.api.SessionPlannerAuthoredTarget;
 import features.sessionplanner.domain.session.SessionPlan;
 import features.sessionplanner.domain.session.repository.SessionPlanRepository;
 import features.party.api.PartyApi;
@@ -115,6 +116,28 @@ public final class SessionPreparationCoordinator {
 
     synchronized void invalidate() {
         invalidateNow(SessionPreparationStatus.IDLE, "");
+    }
+
+    synchronized void invalidate(SessionPlannerAuthoredTarget target) {
+        Objects.requireNonNull(target, "target");
+        if (!targetsCurrentWorkspace(target) && !targetsActiveAttempt(target)) {
+            return;
+        }
+        invalidateNow(SessionPreparationStatus.IDLE, "");
+    }
+
+    private boolean targetsCurrentWorkspace(SessionPlannerAuthoredTarget target) {
+        return workspace.current().sourceSessionId() == target.sessionId()
+                && workspace.current().sourceSessionRevision() == target.expectedRevision();
+    }
+
+    private boolean targetsActiveAttempt(SessionPlannerAuthoredTarget target) {
+        if (active == null) {
+            return false;
+        }
+        SessionPlan source = active.session;
+        return source != null && source.sessionId() == target.sessionId()
+                && source.revision().value() == target.expectedRevision();
     }
 
     private void loadSession(Attempt attempt) {
