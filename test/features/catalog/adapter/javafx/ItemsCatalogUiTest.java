@@ -81,11 +81,11 @@ public final class ItemsCatalogUiTest {
             select(combo(pane, "Item-Seltenheit"), "Rare");
             select(combo(pane, "Item-Magie"), "Ja");
             select(combo(pane, "Item-Attunement"), "Nein");
-            text(pane, "Item-Minimalkosten").setText("100");
-            text(pane, "Item-Maximalkosten").setText("900");
+            text(pane, "Item-Kosten Minimum").setText("100");
+            text(pane, "Item-Kosten Maximum").setText("900");
             select(combo(pane, "Item-Sortierfeld"), "Kosten");
             select(combo(pane, "Item-Sortierrichtung"), "Absteigend");
-            button(pane, "Items suchen").fire();
+            submit(pane);
 
             ItemsCatalogApi.ItemQuery query = api.queries.getLast();
             assertEquals("blade", query.name());
@@ -120,7 +120,7 @@ public final class ItemsCatalogUiTest {
             Parent pane = fixture.host();
 
             api.deferNextSearch();
-            button(pane, "Items suchen").fire();
+            submit(pane);
             assertEquals("Aktualisiere...", label(pane, "Item-Ergebnisse Status").getText());
             api.completeDeferred(ItemsCatalogApi.CatalogStatus.SUCCESS, List.of(), 0);
             assertEquals("Keine Einträge gefunden.", label(pane, "Item-Ergebnisse Status").getText());
@@ -134,8 +134,8 @@ public final class ItemsCatalogUiTest {
                     "Item-Suche konnte nicht ausgeführt werden.");
 
             int callsBeforeInvalidText = api.queries.size();
-            text(pane, "Item-Minimalkosten").setText("keine Zahl");
-            button(pane, "Items suchen").fire();
+            text(pane, "Item-Kosten Minimum").setText("keine Zahl");
+            submit(pane);
             assertEquals(callsBeforeInvalidText, api.queries.size());
             assertEquals("Ungültige Item-Suche.", label(pane, "Item-Ergebnisse Status").getText());
         });
@@ -153,7 +153,7 @@ public final class ItemsCatalogUiTest {
             assertEquals(1, results.getItems().size());
             results.getSelectionModel().selectFirst();
 
-            Button open = button(pane, "Ausgewähltes Item im Inspector öffnen");
+            Button open = button(pane, "Item im Inspector öffnen");
             assertFalse(open.isDisabled());
             open.fire();
             assertEquals("equipment:rapier", api.lastDetailKey);
@@ -195,7 +195,7 @@ public final class ItemsCatalogUiTest {
             Parent pane = fixture.host();
             TextField query = text(pane, "Item-Name");
             query.setText("  rapier draft  ");
-            button(pane, "Items suchen").fire();
+            submit(pane);
             button(pane, "Nächste Item-Seite").fire();
             TableView<?> results = table(pane, "Item-Ergebnisse");
             results.getSelectionModel().selectFirst();
@@ -220,8 +220,12 @@ public final class ItemsCatalogUiTest {
             String expectedText
     ) {
         api.nextStatus = status;
-        button(pane, "Items suchen").fire();
+        submit(pane);
         assertEquals(expectedText, label(pane, "Item-Ergebnisse Status").getText());
+    }
+
+    private static void submit(Parent pane) {
+        text(pane, "Item-Name").fireEvent(new javafx.event.ActionEvent());
     }
 
     private static void assertCompleteInspector(InspectorEntrySpec entry) {

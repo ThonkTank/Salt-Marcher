@@ -47,7 +47,7 @@ public final class CatalogFeature {
                 definitions, requiredProviders.publicationDispatcher());
         CatalogWorkspaceBinding binding = new CatalogWorkspaceBinding(controller.publication());
         features.catalog.adapter.javafx.CatalogContribution contribution =
-                new features.catalog.adapter.javafx.CatalogContribution(controller, binding);
+                new features.catalog.adapter.javafx.CatalogContribution(controller, binding, definitions);
         return new Component(controller, binding, contribution);
     }
 

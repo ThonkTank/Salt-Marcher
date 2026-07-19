@@ -57,6 +57,31 @@ public final class LocationCatalogDefinition
     @Override public Long key(LocationRow row) { return row.locationId(); }
 
     @Override
+    public CatalogPresentationSpec<TextCatalogQuery, LocationRow, Long> presentation() {
+        return new CatalogPresentationSpec<>(
+                "Ortskatalog", "Orte", LocationRow::displayName,
+                List.of(textFilter("Orte suchen …", "Orte suchen")),
+                List.of(
+                        new CatalogColumnSpec<>("Name", LocationRow::displayName),
+                        new CatalogColumnSpec<>("Details", LocationRow::details)),
+                Optional.of(new CatalogActionSpec(
+                        CatalogActionId.OPEN, "Details öffnen", "Ort im Inspector öffnen", "Öffnen",
+                        CatalogActionSpec.Emphasis.SECONDARY)),
+                List.of(
+                        new CatalogActionSpec(
+                                CatalogActionId.USE_AS_ENCOUNTER_SOURCE, "Als Quelle",
+                                "Ort als Encounter-Quelle verwenden", "Als Encounter-Quelle",
+                                CatalogActionSpec.Emphasis.PRIMARY),
+                        new CatalogActionSpec(
+                                CatalogActionId.SET_FOCUSED_SCENE_LOCATION, "Als Ort",
+                                "Ort der fokussierten Scene zuweisen", "Als Scene-Ort",
+                                CatalogActionSpec.Emphasis.SECONDARY)),
+                List.of(new CatalogActionSpec(
+                        CatalogActionId.CREATE, "Ort anlegen", "Ort anlegen", "Ort anlegen",
+                        CatalogActionSpec.Emphasis.PRIMARY)), false);
+    }
+
+    @Override
     public Runnable observeProvider(Consumer<CatalogProviderChange<TextCatalogQuery>> listener) {
         return CatalogSubscriptions.acquire(
                 () -> world.subscribe(ignored -> changed(listener)),
@@ -85,5 +110,12 @@ public final class LocationCatalogDefinition
     private void changed(Consumer<CatalogProviderChange<TextCatalogQuery>> listener) {
         providerRevision.incrementAndGet();
         listener.accept(CatalogProviderChange.invalidated());
+    }
+
+    private static CatalogFilterSpec.Text<TextCatalogQuery> textFilter(String prompt, String accessible) {
+        return new CatalogFilterSpec.Text<>(prompt, accessible, TextCatalogQuery::text,
+                (query, value) -> new TextCatalogQuery(value),
+                query -> query.text().isBlank() ? "" : "Suche: " + query.text(),
+                ignored -> TextCatalogQuery.empty());
     }
 }

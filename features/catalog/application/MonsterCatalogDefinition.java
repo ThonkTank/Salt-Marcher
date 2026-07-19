@@ -21,6 +21,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.text.NumberFormat;
+import java.util.Locale;
+import java.util.Optional;
 
 /** Monster provider translation and explicit actions; browse lifecycle remains in BrowseSession. */
 public final class MonsterCatalogDefinition
@@ -111,6 +114,95 @@ public final class MonsterCatalogDefinition
         return row.id();
     }
 
+    @Override
+    public CatalogPresentationSpec<MonsterCatalogQuery, CreatureCatalogRow, Long> presentation() {
+        List<CatalogFilterSpec<MonsterCatalogQuery>> filters = List.of(
+                new CatalogFilterSpec.Text<>(
+                        "Monster suchen …", "Monster suchen", query -> query.filters().nameQuery(),
+                        (query, value) -> query.withFilters(query.filters().withNameQuery(value)),
+                        query -> query.filters().nameQuery().isBlank()
+                                ? "" : "Suche: " + query.filters().nameQuery(),
+                        query -> query.withFilters(query.filters().withNameQuery(""))),
+                new CatalogFilterSpec.ChoiceRange<>(
+                        "CR", "Challenge Rating",
+                        query -> CatalogPresentationChoices.strings(query.options().challengeRatings()),
+                        query -> query.filters().challengeRatingMin(),
+                        query -> query.filters().challengeRatingMax(),
+                        (query, minimum, maximum) -> query.withFilters(
+                                query.filters().withChallengeRating(minimum, maximum)),
+                        query -> query.filters().challengeRatingMin().isBlank()
+                                && query.filters().challengeRatingMax().isBlank() ? ""
+                                : "CR: " + query.filters().challengeRatingMin() + "–"
+                                        + query.filters().challengeRatingMax(),
+                        query -> query.withFilters(query.filters().withChallengeRating("", ""))),
+                multiString("Größe", "Monster-Größe", query -> query.options().sizes(),
+                        query -> query.filters().sizes(),
+                        (query, values) -> query.withFilters(query.filters().withSizes(values))),
+                multiString("Typ", "Monster-Typ", query -> query.options().types(),
+                        query -> query.filters().creatureTypes(),
+                        (query, values) -> query.withFilters(query.filters().withCreatureTypes(values))),
+                multiString("Unterart", "Monster-Unterart", query -> query.options().subtypes(),
+                        query -> query.filters().creatureSubtypes(),
+                        (query, values) -> query.withFilters(query.filters().withCreatureSubtypes(values))),
+                multiString("Umgebung", "Monster-Umgebung", query -> query.options().biomes(),
+                        query -> query.filters().biomes(),
+                        (query, values) -> query.withFilters(query.filters().withBiomes(values))),
+                multiString("Gesinnung", "Monster-Gesinnung", query -> query.options().alignments(),
+                        query -> query.filters().alignments(),
+                        (query, values) -> query.withFilters(query.filters().withAlignments(values))),
+                new CatalogFilterSpec.MultiChoice<>(
+                        "Tabelle", "Encounter-Tabellen",
+                        query -> CatalogPresentationChoices.references(query.encounterTables()).stream()
+                                .filter(choice -> choice.value() > 0L).toList(),
+                        query -> query.filters().encounterTableIds(),
+                        (query, values) -> query.withFilters(query.filters().withEncounterTables(values)),
+                        query -> CatalogPresentationChoices.count(
+                                "Tabellen", query.filters().encounterTableIds().size()),
+                        query -> query.withFilters(query.filters().withEncounterTables(List.of()))),
+                new CatalogFilterSpec.MultiChoice<>(
+                        "Fraktionen", "World-Fraktionen",
+                        query -> CatalogPresentationChoices.references(query.factions()).stream()
+                                .filter(choice -> choice.value() > 0L).toList(),
+                        query -> query.filters().worldFactionIds(),
+                        (query, values) -> query.withFilters(query.filters().withFactions(values)),
+                        query -> CatalogPresentationChoices.count(
+                                "Fraktionen", query.filters().worldFactionIds().size()),
+                        query -> query.withFilters(query.filters().withFactions(List.of()))),
+                new CatalogFilterSpec.Choice<>(
+                        "Ort", "World-Ort", query -> CatalogPresentationChoices.references(query.locations()),
+                        query -> query.filters().worldLocationId(),
+                        (query, value) -> query.withFilters(query.filters().withLocation(value)),
+                        query -> query.filters().worldLocationId() <= 0L
+                                ? "" : "Ort: #" + query.filters().worldLocationId(),
+                        query -> query.withFilters(query.filters().withLocation(0L))),
+                new CatalogFilterSpec.Choice<>(
+                        "Sortierung", "Monster sortieren",
+                        ignored -> java.util.Arrays.stream(MonsterCatalogSort.values())
+                                .map(value -> new CatalogChoice<>(value, value.label())).toList(),
+                        MonsterCatalogQuery::sort, MonsterCatalogQuery::withSort,
+                        ignored -> "", java.util.function.UnaryOperator.identity()));
+        return new CatalogPresentationSpec<>(
+                "Monster-Ergebnisse", "Monster", CreatureCatalogRow::name, filters,
+                List.of(
+                        new CatalogColumnSpec<>("Name", CreatureCatalogRow::name),
+                        new CatalogColumnSpec<>("CR", CreatureCatalogRow::challengeRating),
+                        new CatalogColumnSpec<>("Typ", CreatureCatalogRow::creatureType),
+                        new CatalogColumnSpec<>("Größe", CreatureCatalogRow::size),
+                        new CatalogColumnSpec<>("XP", row ->
+                                NumberFormat.getIntegerInstance(Locale.US).format(row.xp()))),
+                Optional.of(new CatalogActionSpec(
+                        CatalogActionId.OPEN, "Details öffnen", "Monster im Inspector öffnen", "Öffnen",
+                        CatalogActionSpec.Emphasis.SECONDARY)),
+                List.of(
+                        new CatalogActionSpec(
+                                CatalogActionId.ADD_TO_ENCOUNTER, "+ Encounter", "Zum Encounter hinzufügen",
+                                "+ Encounter", CatalogActionSpec.Emphasis.PRIMARY),
+                        new CatalogActionSpec(
+                                CatalogActionId.ADD_TO_SCENE, "+ Scene", "Zur fokussierten Scene hinzufügen",
+                                "+ Scene", CatalogActionSpec.Emphasis.SECONDARY)),
+                List.of(), true);
+    }
+
     @Override public void committed(MonsterCatalogQuery previous, MonsterCatalogQuery committed) {
         if (!previous.filters().toPoolFilters().equals(committed.filters().toPoolFilters())) {
             encounter.updatePoolFilters(committed.filters().toPoolFilters());
@@ -142,6 +234,21 @@ public final class MonsterCatalogDefinition
         if (creatureId > 0L) {
             scene.addCreature(creatureId);
         }
+    }
+
+    private static CatalogFilterSpec.MultiChoice<MonsterCatalogQuery, String> multiString(
+            String prompt,
+            String accessible,
+            java.util.function.Function<MonsterCatalogQuery, List<String>> options,
+            java.util.function.Function<MonsterCatalogQuery, List<String>> selected,
+            java.util.function.BiFunction<MonsterCatalogQuery, List<String>, MonsterCatalogQuery> update
+    ) {
+        return new CatalogFilterSpec.MultiChoice<>(
+                prompt, accessible,
+                query -> CatalogPresentationChoices.requiredStrings(options.apply(query)),
+                selected, update,
+                query -> CatalogPresentationChoices.count(prompt, selected.apply(query).size()),
+                query -> update.apply(query, List.of()));
     }
 
 }

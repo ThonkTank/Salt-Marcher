@@ -14,6 +14,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.Optional;
 
 /** Encounter Table provider translation and explicit Encounter-source action. */
 public final class EncounterTableCatalogDefinition
@@ -72,6 +73,22 @@ public final class EncounterTableCatalogDefinition
     }
 
     @Override
+    public CatalogPresentationSpec<TextCatalogQuery, EncounterTableRow, Long> presentation() {
+        return new CatalogPresentationSpec<>(
+                "Encounter-Tabellen-Katalog", "Encounter-Tabellen", EncounterTableRow::name,
+                List.of(textFilter("Encounter-Tabellen suchen …", "Encounter-Tabellen suchen")),
+                List.of(
+                        new CatalogColumnSpec<>("Name", EncounterTableRow::name),
+                        new CatalogColumnSpec<>("Details", EncounterTableRow::details)),
+                Optional.empty(),
+                List.of(new CatalogActionSpec(
+                        CatalogActionId.USE_AS_ENCOUNTER_SOURCE, "Als Quelle",
+                        "Encounter-Tabelle als Encounter-Quelle verwenden", "Als Encounter-Quelle",
+                        CatalogActionSpec.Emphasis.PRIMARY)),
+                List.of(), false);
+    }
+
+    @Override
     public Runnable observeProvider(Consumer<CatalogProviderChange<TextCatalogQuery>> listener) {
         return catalog.subscribe(ignored -> {
             providerRevision.incrementAndGet();
@@ -95,5 +112,13 @@ public final class EncounterTableCatalogDefinition
 
     private static String normalized(String value) {
         return Objects.requireNonNullElse(value, "").trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static CatalogFilterSpec.Text<TextCatalogQuery> textFilter(String prompt, String accessible) {
+        return new CatalogFilterSpec.Text<>(
+                prompt, accessible, TextCatalogQuery::text,
+                (query, value) -> new TextCatalogQuery(value),
+                query -> query.text().isBlank() ? "" : "Suche: " + query.text(),
+                ignored -> TextCatalogQuery.empty());
     }
 }

@@ -53,6 +53,22 @@ public final class FactionCatalogDefinition
     @Override public Long key(FactionRow row) { return row.factionId(); }
 
     @Override
+    public CatalogPresentationSpec<TextCatalogQuery, FactionRow, Long> presentation() {
+        return new CatalogPresentationSpec<>(
+                "Fraktionskatalog", "Fraktionen", FactionRow::displayName,
+                List.of(textFilter("Fraktionen suchen …", "Fraktionen suchen")),
+                List.of(
+                        new CatalogColumnSpec<>("Name", FactionRow::displayName),
+                        new CatalogColumnSpec<>("Details", FactionRow::details)),
+                Optional.of(openAction("Fraktion")),
+                List.of(new CatalogActionSpec(
+                        CatalogActionId.USE_AS_ENCOUNTER_SOURCE, "Als Quelle",
+                        "Fraktion als Encounter-Quelle verwenden", "Als Encounter-Quelle",
+                        CatalogActionSpec.Emphasis.PRIMARY)),
+                List.of(createAction("Fraktion anlegen")), false);
+    }
+
+    @Override
     public Runnable observeProvider(Consumer<CatalogProviderChange<TextCatalogQuery>> listener) {
         return CatalogSubscriptions.acquire(
                 () -> world.subscribe(ignored -> changed(listener)),
@@ -78,5 +94,22 @@ public final class FactionCatalogDefinition
     private void changed(Consumer<CatalogProviderChange<TextCatalogQuery>> listener) {
         providerRevision.incrementAndGet();
         listener.accept(CatalogProviderChange.invalidated());
+    }
+
+    private static CatalogFilterSpec.Text<TextCatalogQuery> textFilter(String prompt, String accessible) {
+        return new CatalogFilterSpec.Text<>(prompt, accessible, TextCatalogQuery::text,
+                (query, value) -> new TextCatalogQuery(value),
+                query -> query.text().isBlank() ? "" : "Suche: " + query.text(),
+                ignored -> TextCatalogQuery.empty());
+    }
+
+    private static CatalogActionSpec openAction(String noun) {
+        return new CatalogActionSpec(CatalogActionId.OPEN, "Details öffnen", noun + " im Inspector öffnen",
+                "Öffnen", CatalogActionSpec.Emphasis.SECONDARY);
+    }
+
+    private static CatalogActionSpec createAction(String label) {
+        return new CatalogActionSpec(CatalogActionId.CREATE, label, label, label,
+                CatalogActionSpec.Emphasis.PRIMARY);
     }
 }

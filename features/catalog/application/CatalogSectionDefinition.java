@@ -19,6 +19,8 @@ public interface CatalogSectionDefinition<Q, R, K> {
 
     K key(R row);
 
+    CatalogPresentationSpec<Q, R, K> presentation();
+
     default Q reconcileOnActivate(Q retainedQuery) {
         return Objects.requireNonNull(retainedQuery, "retainedQuery");
     }

@@ -14,6 +14,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.List;
 
 /** NPC provider projection and explicit NPC actions. */
 public final class NpcCatalogDefinition implements CatalogSectionDefinition<TextCatalogQuery, NpcRow, Long> {
@@ -55,6 +56,27 @@ public final class NpcCatalogDefinition implements CatalogSectionDefinition<Text
     @Override public Long key(NpcRow row) { return row.npcId(); }
 
     @Override
+    public CatalogPresentationSpec<TextCatalogQuery, NpcRow, Long> presentation() {
+        return new CatalogPresentationSpec<>(
+                "NPC-Katalog", "NPCs", NpcRow::displayName,
+                List.of(textFilter("NPCs suchen …", "NPCs suchen")),
+                List.of(
+                        new CatalogColumnSpec<>("Name", NpcRow::displayName),
+                        new CatalogColumnSpec<>("Details", NpcRow::details)),
+                Optional.of(openAction()),
+                List.of(
+                        new CatalogActionSpec(
+                                CatalogActionId.ADD_TO_ENCOUNTER, "Zum Encounter",
+                                "NPC zum Encounter hinzufügen", "Zum Encounter",
+                                CatalogActionSpec.Emphasis.PRIMARY),
+                        new CatalogActionSpec(
+                                CatalogActionId.ADD_TO_SCENE, "Zur Scene",
+                                "NPC zur fokussierten Scene hinzufügen", "Zur Scene",
+                                CatalogActionSpec.Emphasis.SECONDARY)),
+                List.of(createAction("NPC anlegen")), false);
+    }
+
+    @Override
     public Runnable observeProvider(Consumer<CatalogProviderChange<TextCatalogQuery>> listener) {
         return CatalogSubscriptions.acquire(
                 () -> creatures.subscribe(ignored -> changed(listener)),
@@ -77,5 +99,22 @@ public final class NpcCatalogDefinition implements CatalogSectionDefinition<Text
     private void changed(Consumer<CatalogProviderChange<TextCatalogQuery>> listener) {
         providerRevision.incrementAndGet();
         listener.accept(CatalogProviderChange.invalidated());
+    }
+
+    private static CatalogFilterSpec.Text<TextCatalogQuery> textFilter(String prompt, String accessible) {
+        return new CatalogFilterSpec.Text<>(prompt, accessible, TextCatalogQuery::text,
+                (query, value) -> new TextCatalogQuery(value),
+                query -> query.text().isBlank() ? "" : "Suche: " + query.text(),
+                ignored -> TextCatalogQuery.empty());
+    }
+
+    private static CatalogActionSpec openAction() {
+        return new CatalogActionSpec(CatalogActionId.OPEN, "Details öffnen", "NPC im Inspector öffnen",
+                "Öffnen", CatalogActionSpec.Emphasis.SECONDARY);
+    }
+
+    private static CatalogActionSpec createAction(String label) {
+        return new CatalogActionSpec(CatalogActionId.CREATE, label, label, label,
+                CatalogActionSpec.Emphasis.PRIMARY);
     }
 }

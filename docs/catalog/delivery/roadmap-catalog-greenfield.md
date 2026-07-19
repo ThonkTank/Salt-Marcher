@@ -69,8 +69,10 @@ from refreshed `origin/main`.
 - Locally completed milestone: M3 replaces the five section-controller lifecycles with
   one typed `BrowseSession`, seven explicit definitions, selected-only activation,
   retained immutable section state, 200 ms debounce, immediate submit, and stale-result rejection.
-- M3 publication state: the milestone pull request and required CI are pending; M4 starts
-  only after that pull request merges.
+- M3 publication: PR #532 merged with required CI green.
+- Locally completed milestone: M4 replaces every section-specific JavaFX tree with one
+  typed renderer and one control factory. Full `uiTest`, `architectureTest`, and
+  merge-blocking `check` are green; publication remains pending.
 
 ## M0: Target Lock And Baseline
 
@@ -256,6 +258,26 @@ is deleted with the last unchanged provider during the final compatibility clean
 - all seven sections pass the same measured visual and interaction contract
 - UI tests drive production Catalog application routes rather than self-testing fixtures
 - `uiTest`, architecture proof, and `./gradlew check` are green
+
+### M4 Implementation Evidence
+
+- one `CatalogSectionRenderer` owns the persistent seven-section selector, the selected
+  control tree, filter chips, shared table, status, paging, keyboard behavior, stable-id
+  selection, confirmations, and explicit row and section actions
+- one `CatalogControlFactory` assigns the centralized visual roles; all ordinary size,
+  type, spacing, and gap values live in `resources/salt-marcher.css`
+- the seven typed definitions provide sealed text, choice, multi-choice, range, and
+  tri-state filter specifications plus framework-neutral columns and typed actions
+- all seven concrete `*CatalogSection` classes, `MonsterCatalogControls`, auxiliary
+  control state, both presentation hosts, `CatalogSection`, and `CatalogTableScaffold`
+  are deleted
+- production-route Catalog UI tests prove the 28 px and 12 px contract, inside labels,
+  absence of redundant headings and tuning controls, all Items outcomes, shared paging,
+  retained draft/page/selection, Inspector opening, saved-Encounter confirmation, and
+  every supported Encounter or Scene handoff
+- final rebased qualification: `./gradlew check uiTest architectureTest --console=plain`
+  returned `BUILD SUCCESSFUL in 6m 59s` on the complete implementation and
+  documentation diff
 
 ## M5: Atomic Cutover, Deletion, And Qualification
 
