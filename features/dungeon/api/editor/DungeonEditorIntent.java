@@ -24,6 +24,14 @@ public sealed interface DungeonEditorIntent {
         }
     }
 
+    record ReloadMap(DungeonMapId mapId) implements DungeonEditorIntent {
+        public ReloadMap {
+            if (mapId == null) {
+                throw new IllegalArgumentException("mapId is required");
+            }
+        }
+    }
+
     record CreateMap(String mapName) implements DungeonEditorIntent {
         public CreateMap {
             mapName = cleanName(mapName);

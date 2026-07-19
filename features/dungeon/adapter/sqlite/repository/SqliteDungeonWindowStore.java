@@ -10,14 +10,16 @@ import features.dungeon.application.authored.port.DungeonTravelChunkKeysResult;
 import features.dungeon.application.authored.port.DungeonTravelStartRequest;
 import features.dungeon.application.authored.port.DungeonTravelStartResult;
 import features.dungeon.application.authored.port.DungeonWindow;
+import features.dungeon.application.authored.port.DungeonWindowContentRequest;
+import features.dungeon.application.authored.port.DungeonWindowContentSource;
+import features.dungeon.application.authored.port.DungeonWindowIndex;
 import features.dungeon.application.authored.port.DungeonWindowRequest;
-import features.dungeon.application.authored.port.DungeonWindowStore;
 import java.util.Objects;
 import java.util.Optional;
 import platform.persistence.SqliteDatabase;
 
 /** Dedicated SQLite adapter for sparse windows and exact identity closure. */
-public final class SqliteDungeonWindowStore implements DungeonWindowStore {
+public final class SqliteDungeonWindowStore implements DungeonWindowContentSource {
 
     private final DungeonSqliteWindowGateway gateway;
 
@@ -34,8 +36,13 @@ public final class SqliteDungeonWindowStore implements DungeonWindowStore {
     }
 
     @Override
-    public Optional<DungeonWindow> loadWindow(DungeonWindowRequest request) {
-        return gateway.loadWindow(request);
+    public Optional<DungeonWindowIndex> loadIndex(DungeonWindowRequest request) {
+        return gateway.loadIndex(request);
+    }
+
+    @Override
+    public Optional<DungeonWindow> loadContent(DungeonWindowContentRequest request) {
+        return gateway.loadContent(request);
     }
 
     @Override

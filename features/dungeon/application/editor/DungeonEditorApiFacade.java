@@ -54,6 +54,8 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
             runtimeRoot.setViewport(setViewport.viewport());
         } else if (safeIntent instanceof DungeonEditorIntent.SelectMap selectMap) {
             runtimeRoot.selectMap(selectMap.mapId().value());
+        } else if (safeIntent instanceof DungeonEditorIntent.ReloadMap reloadMap) {
+            runtimeRoot.reloadMap(reloadMap.mapId().value());
         } else if (safeIntent instanceof DungeonEditorIntent.CreateMap createMap) {
             runtimeRoot.createMap(createMap.mapName());
         } else if (safeIntent instanceof DungeonEditorIntent.RenameMap renameMap) {

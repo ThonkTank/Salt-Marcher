@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
+import features.dungeon.application.authored.DungeonCachedWindowStore;
 import features.dungeon.application.authored.command.CorridorChange;
 import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.command.DungeonPatchEntityRef;
@@ -63,7 +64,9 @@ final class DungeonCanonicalSpatialIndexTest {
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
             seedAuthoredMap(database);
 
-            DungeonWindow window = new SqliteDungeonWindowStore(database).loadWindow(new DungeonWindowRequest(
+            DungeonCachedWindowStore windows = new DungeonCachedWindowStore(
+                    new SqliteDungeonWindowStore(database));
+            DungeonWindow window = windows.loadWindow(new DungeonWindowRequest(
                     new DungeonMapIdentity(41L),
                     1L,
                     List.of(new DungeonChunkKey(41L, 5, -1, -2))))
@@ -78,7 +81,7 @@ final class DungeonCanonicalSpatialIndexTest {
             assertEquals(new Cell(1, 0, 5), door.relativeCell());
             assertEquals(new Cell(-64, -65, 5), door.absoluteCell());
 
-            DungeonWindow interiorWindow = new SqliteDungeonWindowStore(database).loadWindow(
+            DungeonWindow interiorWindow = windows.loadWindow(
                     new DungeonWindowRequest(
                             new DungeonMapIdentity(41L),
                             2L,

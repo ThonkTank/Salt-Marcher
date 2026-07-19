@@ -996,7 +996,7 @@ final class DungeonEditorViewModel {
         long noSelectedMapId = 0L;
         if (selectedMapIdValue > noSelectedMapId) {
             mapContentModel.clearHoverTarget();
-            editorApi.dispatch(new DungeonEditorIntent.SelectMap(new DungeonMapId(selectedMapIdValue)));
+            editorApi.dispatch(new DungeonEditorIntent.ReloadMap(new DungeonMapId(selectedMapIdValue)));
         }
     }
 

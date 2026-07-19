@@ -11,6 +11,7 @@ import shell.api.ShellSlot;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
+import features.dungeon.application.authored.DungeonCachedWindowStore;
 import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
 import features.dungeon.DungeonTestAssembly;
 import features.dungeon.application.travel.DungeonTravelRuntimeApplicationService;
@@ -452,7 +453,7 @@ public final class DungeonTravelProjectionLevelTest {
             SqliteDungeonCatalogStore dungeonCatalog = new SqliteDungeonCatalogStore(dungeonDatabase);
             DungeonTestAssembly.Component dungeon = DungeonTestAssembly.create(
                     dungeonCatalog,
-                    new SqliteDungeonWindowStore(dungeonDatabase),
+                    new DungeonCachedWindowStore(new SqliteDungeonWindowStore(dungeonDatabase)),
                     new SqliteDungeonUnitOfWork(dungeonDatabase),
                     party.activeParty(),
                     party.travelPositions(),

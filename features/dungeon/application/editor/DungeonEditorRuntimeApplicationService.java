@@ -147,6 +147,12 @@ public final class DungeonEditorRuntimeApplicationService {
             return snapshot;
         }
 
+        public DungeonEditorSessionSnapshot.SnapshotData reloadMap(long mapId) {
+            MapId selectedMap = new MapId(mapId);
+            authoredService.invalidateAcceptedWindow(selectedMap);
+            return selectMap(mapId);
+        }
+
         public DungeonEditorSessionSnapshot.@Nullable SnapshotData setViewport(
                 DungeonEditorViewportInput viewport
         ) {

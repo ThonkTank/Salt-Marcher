@@ -21,6 +21,7 @@ import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonIdentityAllocator;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
+import features.dungeon.application.authored.DungeonCachedWindowStore;
 import features.party.adapter.sqlite.model.PartyPersistenceSchema;
 import features.dungeon.DungeonTestAssembly;
 import features.dungeon.domain.core.geometry.Cell;
@@ -105,7 +106,7 @@ class DungeonEditorTestPersistence {
             SqliteDungeonCatalogStore catalog = new SqliteDungeonCatalogStore(sqliteDatabase);
             DungeonTestAssembly.Component dungeon = createDungeonServices(
                     catalog,
-                    new SqliteDungeonWindowStore(sqliteDatabase),
+                    new DungeonCachedWindowStore(new SqliteDungeonWindowStore(sqliteDatabase)),
                     new SqliteDungeonUnitOfWork(sqliteDatabase),
                     new SqliteDungeonIdentityAllocator(sqliteDatabase));
             DungeonEditorRuntimeDependencies dependencies =

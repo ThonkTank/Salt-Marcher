@@ -128,6 +128,11 @@ public final class DungeonEditorFeatureRuntimeRoot
     }
 
     @Override
+    public void reloadMap(long mapIdValue) {
+        commands.reloadMap(mapIdValue);
+    }
+
+    @Override
     public void createMap(String mapName) {
         commands.createMap(mapName);
     }

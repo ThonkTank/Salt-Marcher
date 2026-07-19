@@ -3,6 +3,7 @@ package features.dungeon.adapter.sqlite.gateway;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.command.DungeonPatchEntityRef;
@@ -11,7 +12,9 @@ import features.dungeon.application.authored.port.DungeonEntitySnapshot;
 import features.dungeon.application.authored.port.DungeonIdentityClosureRequest;
 import features.dungeon.application.authored.port.DungeonIdentityClosureResult;
 import features.dungeon.application.authored.port.DungeonWindow;
+import features.dungeon.application.authored.port.DungeonWindowContentRequest;
 import features.dungeon.application.authored.port.DungeonWindowEntityFragment;
+import features.dungeon.application.authored.port.DungeonWindowIndex;
 import features.dungeon.application.authored.port.DungeonWindowRequest;
 import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
@@ -40,7 +43,7 @@ final class DungeonSqliteReadSnapshotTest {
     private static final long OLD_REVISION = 9L;
 
     @Test
-    void windowCannotCombineOldHeaderWithConcurrentNewEntityFacts(@TempDir Path tempDir) throws Exception {
+    void twoPhaseWindowRejectsConcurrentRevisionInsteadOfCombiningFacts(@TempDir Path tempDir) throws Exception {
         Path path = tempDir.resolve("window-snapshot.db");
         try (SqliteDatabase database = savedDatabase(path)) {
             enableWal(path);
@@ -48,18 +51,17 @@ final class DungeonSqliteReadSnapshotTest {
             DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(database, update::afterHeaderRead);
             update.start();
 
-            DungeonWindow window = gateway.loadWindow(new DungeonWindowRequest(
+            DungeonWindowRequest request = new DungeonWindowRequest(
                     new DungeonMapIdentity(MAP_ID),
                     4L,
-                    List.of(new DungeonChunkKey(MAP_ID, 0, 1, 0))))
-                    .orElseThrow();
+                    List.of(new DungeonChunkKey(MAP_ID, 0, 1, 0)));
+            DungeonWindowIndex index = gateway.loadIndex(request).orElseThrow();
             update.joinAndAssert();
 
-            assertEquals(OLD_REVISION, window.mapHeader().revision());
-            DungeonWindowEntityFragment.FeatureMarker marker = assertInstanceOf(
-                    DungeonWindowEntityFragment.FeatureMarker.class,
-                    window.fragments().getFirst());
-            assertEquals("old marker", marker.label());
+            assertEquals(OLD_REVISION, index.mapHeader().revision());
+            assertTrue(gateway.loadContent(new DungeonWindowContentRequest(
+                    index.mapHeader().mapId(), index.mapHeader().revision(),
+                    index.requestGeneration(), index.chunkHeaders())).isEmpty());
             assertCommittedNewState(path);
         }
     }

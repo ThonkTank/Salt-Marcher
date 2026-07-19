@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSeeder;
+import features.dungeon.application.authored.DungeonCachedWindowStore;
 import features.dungeon.application.authored.command.CorridorChange;
 import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.command.DungeonPatchChange;
@@ -19,6 +20,7 @@ import features.dungeon.application.authored.port.DungeonIdentityClosureRequest;
 import features.dungeon.application.authored.port.DungeonIdentityClosureResult;
 import features.dungeon.application.authored.port.DungeonWindow;
 import features.dungeon.application.authored.port.DungeonWindowRequest;
+import features.dungeon.application.authored.port.DungeonWindowStore;
 import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.domain.core.component.CorridorWaypoint;
 import features.dungeon.domain.core.component.StairExit;
@@ -60,7 +62,8 @@ final class SqliteDungeonUnitOfWorkTest {
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
             DungeonSqliteFixtureSeeder.insertHeader(database, MAP_ID, "Patch map", 1L);
             SqliteDungeonUnitOfWork unitOfWork = new SqliteDungeonUnitOfWork(database);
-            SqliteDungeonWindowStore readStore = new SqliteDungeonWindowStore(database);
+            DungeonWindowStore readStore = new DungeonCachedWindowStore(
+                    new SqliteDungeonWindowStore(database));
 
             Facts first = facts("first", false);
             DungeonUnitOfWorkResult.Committed inserted = committed(unitOfWork.commit(
@@ -119,7 +122,7 @@ final class SqliteDungeonUnitOfWorkTest {
     }
 
     private static void assertExactProductionRead(
-            SqliteDungeonWindowStore readStore,
+            DungeonWindowStore readStore,
             long revision,
             Facts expected
     ) {
