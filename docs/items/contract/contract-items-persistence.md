@@ -15,11 +15,41 @@ it does not access SQLite or the public HTTP source.
 
 ## Ownership And Compatibility
 
-Items owns the `items` and `item_tags` SQLite tables. Stable source keys from
-the pinned `/api/2014` API are persisted as text identifiers. Schema migration
-is registered under the `items` owner in the shared `SqliteDatabase`; Items
+Items owns the unambiguous target tables `items_catalog_entries` and
+`items_catalog_tags`. Stable source keys from the pinned `/api/2014` API are
+persisted as text identifiers. Schema migration is registered under the
+`items` owner and consumed through one prepared `FeatureStoreHandle`; Items
 does not open a parallel connection lifecycle. A source-version change requires
 an explicit migration decision and full re-import.
+
+Target owner version `2` has one structural signature: exact entry and tag
+columns, `source_key` and `(item_source_key, tag)` primary keys, a cascading tag
+foreign key, and a unique nullable `legacy_id`. Owner validation checks this
+signature, item identity, boolean domains, tag ownership, physical integrity,
+and foreign keys before the handle becomes `READY`.
+
+## Supported Upgrade Shapes
+
+Owner version `1` was historically written for two incompatible table shapes.
+Version `2` therefore classifies structure before creating, copying, dropping,
+or renaming anything and supports exactly:
+
+- legacy `items(id, slug, is_magic, requires_attunement, ...)` with
+  `item_tags(item_id, tag)`;
+- intermediate `items(source_key, magic, attunement, ...)` with
+  `item_tags(item_source_key, tag)`.
+
+Legacy identity becomes `legacy:<slug>` while the numeric id remains only in
+nullable migration provenance. The migration preserves names, categories,
+magic and attunement facts, attunement condition, costs, weight, damage, armor,
+description, normalized tags, source text, and otherwise nullable provenance.
+Intermediate canonical source keys and attribution remain unchanged.
+
+Both upgrades run inside the owner transaction. Target row and tag counts,
+identity, tag ownership, and the final target signature are validated before
+the predecessor tables are dropped and before owner version `2` commits. An
+unknown or mixed signature returns typed `INCOMPATIBLE`, rolls back the complete
+owner transaction, and does not affect another provider's readiness.
 
 ## Import Boundary
 
@@ -46,9 +76,9 @@ upstream fields remain absent rather than being synthesized.
 ## Query Contract
 
 Catalog queries accept optional filters and a bounded page. Invalid bounds
-return an invalid-query result. Missing tables or zero imported rows return an
-unavailable result. Storage failures return a storage-error result without
-changing published prior state.
+return an invalid-query result. Zero imported rows return an unavailable
+result. An unsupported schema returns an incompatible result. Storage failures
+return a storage-error result without changing published prior state.
 
 All catalog reads and explicit imports return `CompletionStage` results and
 schedule blocking work through the supplied `ExecutionLane`. SQLite and HTTP
@@ -58,6 +88,7 @@ consumer may dispatch only the resulting immutable projection back to JavaFX.
 ## Error And Compatibility Behavior
 
 - Missing or zero-row imported data returns `UNAVAILABLE`.
+- An unsupported or newer Items schema returns `INCOMPATIBLE` without mutation.
 - Invalid cost bounds return `INVALID_QUERY` without querying rows.
 - Missing detail keys return `NOT_FOUND`.
 - SQLite failures return `STORAGE_ERROR`; execution-lane rejection returns
@@ -65,18 +96,21 @@ consumer may dispatch only the resulting immutable projection back to JavaFX.
 - Import distinguishes source, validation, backup, storage, and execution
   failures. No failure status permits partial replacement.
 
-The schema owner version starts at 1. Additive compatible schema changes use a
-later Items-owned migration. A source-version change or incompatible shape
-requires an explicit migration decision and full re-import; public API callers
-must not infer persistence compatibility from table layout.
+The schema owner target is version `2`. Released version `1` remains immutable
+as the historical intermediate creation step; version `2` is the only
+structural translator for both supported v1 shapes. Later compatible changes
+use a new Items-owned migration. A source-version change or any other shape
+requires an explicit migration decision; public API callers never infer
+compatibility from JDBC or table layout.
 
 ## Verification Ownership
 
-Production-route tests own proof that queries use the shared SQLite lifecycle,
-that both source indexes and their detail documents are parsed, that blocking
-work is scheduled through `ExecutionLane`, and that a failed replacement rolls
-back both Items-owned tables. Repository `check` remains the merge-blocking
-proof owner.
+Production-route tests own proof that both predecessor fixtures migrate once,
+unknown signatures remain unchanged, Items failure leaves Creature reads usable,
+queries use the shared SQLite lifecycle, both source indexes and their detail
+documents are parsed, blocking work is scheduled through `ExecutionLane`, and a
+failed replacement rolls back both Items-owned tables. Repository `check`
+remains the merge-blocking proof owner.
 
 ## Attribution
 

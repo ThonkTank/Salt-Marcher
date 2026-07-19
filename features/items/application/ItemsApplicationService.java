@@ -4,6 +4,7 @@ import features.items.api.ItemsCatalogApi;
 import features.items.api.ItemsImportApi;
 import features.items.domain.catalog.ItemCatalogData;
 import features.items.domain.catalog.ItemCatalogData.Detail;
+import features.items.domain.catalog.ItemCatalogAccessException;
 import features.items.domain.catalog.ItemCatalogPort;
 import features.items.domain.importing.ImportedItem;
 import features.items.domain.importing.ItemImportBatch;
@@ -83,6 +84,9 @@ public final class ItemsApplicationService implements ItemsCatalogApi, ItemsImpo
                     values.categories(),
                     values.subcategories(),
                     values.rarities());
+        } catch (ItemCatalogAccessException exception) {
+            diagnostics.failure(READ_FAILURE, exception.getClass());
+            return new FilterOptionsResult(status(exception), List.of(), List.of(), List.of());
         } catch (IllegalStateException exception) {
             diagnostics.failure(READ_FAILURE, exception.getClass());
             return new FilterOptionsResult(CatalogStatus.STORAGE_ERROR, List.of(), List.of(), List.of());
@@ -104,6 +108,9 @@ public final class ItemsApplicationService implements ItemsCatalogApi, ItemsImpo
                     page.totalCount(),
                     page.pageSize(),
                     page.pageOffset());
+        } catch (ItemCatalogAccessException exception) {
+            diagnostics.failure(READ_FAILURE, exception.getClass());
+            return empty(status(exception), query);
         } catch (IllegalStateException exception) {
             diagnostics.failure(READ_FAILURE, exception.getClass());
             return empty(CatalogStatus.STORAGE_ERROR, query);
@@ -122,6 +129,9 @@ public final class ItemsApplicationService implements ItemsCatalogApi, ItemsImpo
             return new DetailResult(
                     detail == null ? CatalogStatus.NOT_FOUND : CatalogStatus.SUCCESS,
                     toDetail(detail));
+        } catch (ItemCatalogAccessException exception) {
+            diagnostics.failure(READ_FAILURE, exception.getClass());
+            return new DetailResult(status(exception), null);
         } catch (IllegalStateException exception) {
             diagnostics.failure(READ_FAILURE, exception.getClass());
             return new DetailResult(CatalogStatus.STORAGE_ERROR, null);
@@ -183,6 +193,12 @@ public final class ItemsApplicationService implements ItemsCatalogApi, ItemsImpo
 
     private FilterOptionsResult filterExecutionFailure() {
         return new FilterOptionsResult(CatalogStatus.EXECUTION_ERROR, List.of(), List.of(), List.of());
+    }
+
+    private static CatalogStatus status(ItemCatalogAccessException exception) {
+        return exception.reason() == ItemCatalogAccessException.Reason.INCOMPATIBLE
+                ? CatalogStatus.INCOMPATIBLE
+                : CatalogStatus.STORAGE_ERROR;
     }
 
     private static ItemQuery normalize(@Nullable ItemQuery query) {

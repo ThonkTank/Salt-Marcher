@@ -2,6 +2,7 @@ package features.items.adapter.sqlite;
 
 import features.items.domain.catalog.ItemCatalogData;
 import features.items.domain.catalog.ItemCatalogData.Detail;
+import features.items.domain.catalog.ItemCatalogAccessException;
 import features.items.domain.catalog.ItemCatalogPort;
 import features.items.domain.importing.ImportedItem;
 import features.items.domain.importing.ItemImportBatch;
@@ -17,6 +18,8 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import platform.persistence.FeatureStoreDefinition;
 import platform.persistence.FeatureStoreHandle;
+import platform.persistence.FeatureStoreReadiness;
+import platform.persistence.FeatureStoreUnavailableException;
 import platform.persistence.SqliteDatabase;
 import platform.persistence.SqliteMigration;
 
@@ -24,7 +27,7 @@ import platform.persistence.SqliteMigration;
 public final class SqliteItemCatalogAdapter implements ItemCatalogPort, ItemImportStore {
 
     public static final String OWNER = "items";
-    public static final int SCHEMA_VERSION = 1;
+    public static final int SCHEMA_VERSION = 2;
 
     private static final String FILTERS = " WHERE "
             + "(? IS NULL OR LOWER(name) LIKE LOWER(?)) "
@@ -42,15 +45,18 @@ public final class SqliteItemCatalogAdapter implements ItemCatalogPort, ItemImpo
     public SqliteItemCatalogAdapter(SqliteDatabase database) {
         this.database = Objects.requireNonNull(database, "database");
         ItemsSchema schema = new ItemsSchema();
-        connections = database.featureStore(FeatureStoreDefinition.of(
+        connections = database.featureStore(FeatureStoreDefinition.validated(
                 OWNER,
-                new SqliteMigration(SCHEMA_VERSION, schema::migrate)));
+                schema::validateTarget,
+                new SqliteMigration(1, schema::migrateV1),
+                new SqliteMigration(SCHEMA_VERSION, schema::migrateV2)));
     }
 
     @Override
     public boolean isAvailable() {
         try (Connection connection = connections.openConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM items");
+             PreparedStatement statement = connection.prepareStatement(
+                     "SELECT COUNT(*) FROM " + ItemsSchema.ENTRIES_TABLE);
              ResultSet result = statement.executeQuery()) {
             return result.next() && result.getInt(1) > 0;
         } catch (SQLException exception) {
@@ -74,9 +80,10 @@ public final class SqliteItemCatalogAdapter implements ItemCatalogPort, ItemImpo
     public ItemCatalogData.CatalogPage search(ItemCatalogData.SearchSpec spec) {
         Objects.requireNonNull(spec, "spec");
         String rowSql = "SELECT source_key, name, category, subcategory, magic, rarity, attunement, "
-                + "cost_cp, cost_display FROM items" + FILTERS + orderBy(spec.sortField(), spec.ascending())
+                + "cost_cp, cost_display FROM " + ItemsSchema.ENTRIES_TABLE
+                + FILTERS + orderBy(spec.sortField(), spec.ascending())
                 + " LIMIT ? OFFSET ?";
-        String countSql = "SELECT COUNT(*) FROM items" + FILTERS;
+        String countSql = "SELECT COUNT(*) FROM " + ItemsSchema.ENTRIES_TABLE + FILTERS;
         try (Connection connection = connections.openConnection();
              PreparedStatement count = connection.prepareStatement(countSql);
              PreparedStatement rows = connection.prepareStatement(rowSql)) {
@@ -98,7 +105,7 @@ public final class SqliteItemCatalogAdapter implements ItemCatalogPort, ItemImpo
     public @Nullable Detail loadDetail(String sourceKey) {
         String sql = "SELECT source_key, name, category, subcategory, magic, rarity, attunement, cost_cp, "
                 + "cost_display, weight, damage, armor_class, description, source_version, source_url "
-                + "FROM items WHERE source_key = ?";
+                + "FROM " + ItemsSchema.ENTRIES_TABLE + " WHERE source_key = ?";
         try (Connection connection = connections.openConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, sourceKey);
@@ -156,8 +163,8 @@ public final class SqliteItemCatalogAdapter implements ItemCatalogPort, ItemImpo
         connection.setAutoCommit(false);
         try {
             try (var statement = connection.createStatement()) {
-                statement.executeUpdate("DELETE FROM item_tags");
-                statement.executeUpdate("DELETE FROM items");
+                statement.executeUpdate("DELETE FROM " + ItemsSchema.TAGS_TABLE);
+                statement.executeUpdate("DELETE FROM " + ItemsSchema.ENTRIES_TABLE);
             }
             insert(connection, items);
             connection.commit();
@@ -170,10 +177,11 @@ public final class SqliteItemCatalogAdapter implements ItemCatalogPort, ItemImpo
     }
 
     private static void insert(Connection connection, List<ImportedItem> items) throws SQLException {
-        String itemSql = "INSERT INTO items(source_key, name, category, subcategory, magic, rarity, attunement, "
+        String itemSql = "INSERT INTO " + ItemsSchema.ENTRIES_TABLE
+                + "(source_key, name, category, subcategory, magic, rarity, attunement, "
                 + "cost_cp, cost_display, weight, damage, armor_class, description, source_version, source_url) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        String tagSql = "INSERT INTO item_tags(item_source_key, tag) VALUES (?, ?)";
+        String tagSql = "INSERT INTO " + ItemsSchema.TAGS_TABLE + "(item_source_key, tag) VALUES (?, ?)";
         try (PreparedStatement item = connection.prepareStatement(itemSql);
              PreparedStatement tag = connection.prepareStatement(tagSql)) {
             for (ImportedItem imported : items) {
@@ -210,7 +218,8 @@ public final class SqliteItemCatalogAdapter implements ItemCatalogPort, ItemImpo
 
     private static List<String> distinct(Connection connection, String column) throws SQLException {
         List<String> values = new ArrayList<>();
-        String sql = "SELECT DISTINCT " + column + " FROM items WHERE " + column + " <> '' ORDER BY " + column;
+        String sql = "SELECT DISTINCT " + column + " FROM " + ItemsSchema.ENTRIES_TABLE
+                + " WHERE " + column + " <> '' ORDER BY " + column;
         try (PreparedStatement statement = connection.prepareStatement(sql);
              ResultSet result = statement.executeQuery()) {
             while (result.next()) {
@@ -252,7 +261,7 @@ public final class SqliteItemCatalogAdapter implements ItemCatalogPort, ItemImpo
     private static List<String> tags(Connection connection, String sourceKey) throws SQLException {
         List<String> values = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT tag FROM item_tags WHERE item_source_key = ? ORDER BY tag")) {
+                "SELECT tag FROM " + ItemsSchema.TAGS_TABLE + " WHERE item_source_key = ? ORDER BY tag")) {
             statement.setString(1, sourceKey);
             try (ResultSet result = statement.executeQuery()) {
                 while (result.next()) {
@@ -351,6 +360,11 @@ public final class SqliteItemCatalogAdapter implements ItemCatalogPort, ItemImpo
     }
 
     private static IllegalStateException failure(String action, SQLException exception) {
-        return new IllegalStateException("Could not " + action + " in SQLite.", exception);
+        ItemCatalogAccessException.Reason reason = exception instanceof FeatureStoreUnavailableException unavailable
+                && (unavailable.readiness() == FeatureStoreReadiness.MIGRATION_FAILED
+                    || unavailable.readiness() == FeatureStoreReadiness.NEWER_SCHEMA)
+                ? ItemCatalogAccessException.Reason.INCOMPATIBLE
+                : ItemCatalogAccessException.Reason.STORAGE;
+        return new ItemCatalogAccessException(reason, exception);
     }
 }

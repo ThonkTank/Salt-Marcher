@@ -308,6 +308,7 @@ public final class ItemsCatalogController implements CatalogLifecycle {
                     CatalogResultState.Status.INVALID_INPUT, List.of(), "Ungültige Item-Suche.");
             case UNAVAILABLE -> new CatalogResultState<>(
                     CatalogResultState.Status.UNAVAILABLE, List.of(), "Noch kein Item-Katalog importiert.");
+            case INCOMPATIBLE -> CatalogResultState.failed("Item-Katalog ist nicht kompatibel.");
             case NOT_FOUND -> CatalogResultState.ready(List.of());
             case STORAGE_ERROR -> CatalogResultState.failed("Item-Katalog konnte nicht gelesen werden.");
             case EXECUTION_ERROR -> CatalogResultState.failed("Item-Suche konnte nicht ausgeführt werden.");
@@ -319,6 +320,7 @@ public final class ItemsCatalogController implements CatalogLifecycle {
             case SUCCESS -> "";
             case INVALID_QUERY -> "Ungültige Item-Suche.";
             case UNAVAILABLE -> "Noch kein Item-Katalog importiert.";
+            case INCOMPATIBLE -> "Item-Katalog ist nicht kompatibel.";
             case NOT_FOUND -> "Item nicht gefunden.";
             case STORAGE_ERROR -> "Item-Katalog konnte nicht gelesen werden.";
             case EXECUTION_ERROR -> "Item-Suche konnte nicht ausgeführt werden.";
