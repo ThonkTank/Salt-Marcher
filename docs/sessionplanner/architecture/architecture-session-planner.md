@@ -143,6 +143,18 @@ implementation package or repository.
   invalidates older work
 - late completion may contribute diagnostics but cannot publish or commit
   against a stale fingerprint
+- `saving` remains cancellable while the two immutable, idempotent foreign
+  commits finish; cancellation retains those artifacts and skips the Planner
+  write without compensation
+- after both foreign commits and command assembly, the coordinator rechecks the
+  current Session identity and revision, then enters one synchronized final
+  Planner-commit point of no return immediately before `commitPreparedSession`
+- entering that boundary atomically verifies the attempt is still latest,
+  marks it non-cancellable, and republishes the same attempt and Session as
+  `saving` with cancellation disabled; failure to enter skips the Planner store
+- cancellation after that boundary is a strict no-op and cannot suppress the
+  Planner store's `ready`, `invalid`, or `failed` outcome; newer-attempt and
+  authored invalidation rules remain authoritative
 
 Stage timings record stable request identity, stage, duration, candidate count,
 and query count only. Diagnostics exclude authored text, creature payloads,

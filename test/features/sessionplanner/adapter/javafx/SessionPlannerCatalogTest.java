@@ -17,6 +17,7 @@ import javafx.scene.control.ButtonBase;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
@@ -154,8 +155,8 @@ public final class SessionPlannerCatalogTest {
     }
 
     @Test
-    void generationActionIsDisabledWhileSavingIsInFlight() throws Exception {
-        runOnFxThread(SessionPlannerCatalogTest::assertSavingActionDisabled);
+    void savingControlsReflectPlannerCommitCancellationBoundary() throws Exception {
+        runOnFxThread(SessionPlannerCatalogTest::assertSavingCancellationBoundary);
     }
 
     @Test
@@ -187,11 +188,11 @@ public final class SessionPlannerCatalogTest {
         runOnFxThread(SessionPlannerCatalogTest::assertEncounterSearchIsDemandDrivenAndBounded);
     }
 
-    private static void assertSavingActionDisabled() {
+    private static void assertSavingCancellationBoundary() {
         SessionPlannerControlsView controls = new SessionPlannerControlsView();
         SessionPlannerViewModel viewModel = new SessionPlannerViewModel();
         controls.bind(viewModel);
-        SessionPreparationSnapshot saving = new SessionPreparationSnapshot(
+        SessionPreparationSnapshot preCommitSaving = new SessionPreparationSnapshot(
                 SessionPreparationStatus.SAVING,
                 "Session wird gespeichert …",
                 7L,
@@ -206,13 +207,34 @@ public final class SessionPlannerCatalogTest {
                 1L, 7L, 1L, SessionPlannerCatalogSnapshot.empty(), session,
                 features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(),
                 SessionPlannerSceneTimelineProjection.empty(),
-                features.sessionplanner.api.SessionPlannerStatePanelProjection.empty(), saving, List.of()));
+                features.sessionplanner.api.SessionPlannerStatePanelProjection.empty(), preCommitSaving, List.of()));
 
         Parent content = (Parent) controls.getContent();
         assertTrue(button(content, "Generieren").isDisabled(),
-                "generation action is disabled while saving");
+                "generation action is disabled during pre-commit saving");
         assertTrue(isEffectivelyVisible(button(content, "Abbrechen")),
-                "saving state keeps cancellation visible");
+                "pre-commit saving keeps cancellation visible");
+        assertTrue(isEffectivelyVisible(descendant(content, ProgressBar.class)),
+                "pre-commit saving keeps progress visible");
+
+        SessionPreparationSnapshot finalCommitSaving = new SessionPreparationSnapshot(
+                SessionPreparationStatus.SAVING,
+                "Vorbereitete Session wird gespeichert …",
+                7L,
+                4L,
+                false);
+        viewModel.applyWorkspace(new features.sessionplanner.api.SessionPlannerWorkspaceSnapshot(
+                2L, 7L, 1L, SessionPlannerCatalogSnapshot.empty(), session,
+                features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(),
+                SessionPlannerSceneTimelineProjection.empty(),
+                features.sessionplanner.api.SessionPlannerStatePanelProjection.empty(), finalCommitSaving, List.of()));
+
+        assertTrue(button(content, "Generieren").isDisabled(),
+                "generation action remains disabled during final Planner commit");
+        assertTrue(!isEffectivelyVisible(button(content, "Abbrechen")),
+                "final Planner commit hides cancellation");
+        assertTrue(isEffectivelyVisible(descendant(content, ProgressBar.class)),
+                "final Planner commit keeps progress visible");
     }
 
     private static PendingPreparationUi openPendingDraft(SessionGenerationApi generation) {

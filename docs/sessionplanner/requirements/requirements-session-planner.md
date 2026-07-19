@@ -66,6 +66,14 @@ engine version, catalog version, or an intermediate Apply button.
 4. Success publishes the complete generated session as the current editable
    planner state without an intermediate preview or second Apply action.
 
+Cancellation remains available through the `saving` stage while the immutable,
+idempotent Session Generation and Encounter commits finish. It prevents the
+final Session Planner replacement but does not delete or compensate those
+foreign artifacts. After the final current-session identity and revision check
+passes and the final Planner commit begins, cancellation is no longer available
+and has no effect. Concurrent cancellation cannot suppress that commit's
+`ready`, `invalid`, or `failed` outcome.
+
 If the selected session or relevant inputs change while preparation is
 running, the older result MUST NOT replace the newer authored state. Invalid
 input, generation failure, encounter resolution failure, or saving failure

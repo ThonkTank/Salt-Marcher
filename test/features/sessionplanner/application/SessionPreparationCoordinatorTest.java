@@ -1,6 +1,7 @@
 package features.sessionplanner.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -228,6 +229,58 @@ final class SessionPreparationCoordinatorTest {
     }
 
     @Test
+    void cancelBeforePlannerCommitPointOfNoReturnSkipsPlannerStore() {
+        try (Fixture fixture = fixture("cancel-before-planner-commit.db")) {
+            CompletableFuture<CommittedGeneratedEncounterBatchResult> pendingEncounterCommit =
+                    new CompletableFuture<>();
+            fixture.encounters.commitOverride = pendingEncounterCommit;
+
+            fixture.prepare();
+            assertEquals(SessionPreparationStatus.SAVING,
+                    fixture.planner.workspaceModel().current().preparation().status());
+            assertTrue(fixture.planner.workspaceModel().current().preparation().cancelEnabled());
+
+            fixture.planner.application().cancelPreparation();
+            pendingEncounterCommit.complete(committedBatch(fixture.encounters.lastPreparedBatch));
+
+            assertEquals(SessionPreparationStatus.CANCELLED,
+                    fixture.planner.workspaceModel().current().preparation().status());
+            assertEquals(0, fixture.preparedSessions.commitCalls);
+            assertEquals(1L, fixture.repository.loadCurrent().orElseThrow().revision().value());
+        }
+    }
+
+    @Test
+    void plannerCommitPointOfNoReturnMakesConcurrentCancelNoOpAndReachesReady() {
+        try (Fixture fixture = fixture("cancel-after-planner-commit.db")) {
+            fixture.preparedSessions.beforeCommit = fixture.planner.application()::cancelPreparation;
+
+            fixture.prepare();
+
+            assertEquals(SessionPreparationStatus.READY,
+                    fixture.planner.workspaceModel().current().preparation().status());
+            assertFalse(fixture.planner.workspaceModel().current().preparation().cancelEnabled());
+            assertEquals(1L, fixture.planner.workspaceModel().current().preparation().attemptId());
+            assertEquals(1, fixture.preparedSessions.commitCalls);
+            assertEquals(2L, fixture.repository.loadCurrent().orElseThrow().revision().value());
+        }
+    }
+
+    @Test
+    void stalePlannerCasResultRemainsInvalid() {
+        try (Fixture fixture = fixture("stale-planner-cas.db")) {
+            fixture.preparedSessions.staleNext = true;
+
+            fixture.prepare();
+
+            assertEquals(SessionPreparationStatus.INVALID,
+                    fixture.planner.workspaceModel().current().preparation().status());
+            assertEquals(1, fixture.preparedSessions.commitCalls);
+            assertEquals(1L, fixture.repository.loadCurrent().orElseThrow().revision().value());
+        }
+    }
+
+    @Test
     void newerAttemptWinsBeforeOlderDraftCompletes() {
         try (Fixture fixture = fixture("latest-wins.db")) {
             CompletableFuture<GenerationDraftResponse> older = new CompletableFuture<>();
@@ -447,6 +500,8 @@ final class SessionPreparationCoordinatorTest {
         private int commitCalls;
         private CommitPreparedSessionResult lastResult;
         private boolean failNext;
+        private boolean staleNext;
+        private Runnable beforeCommit = () -> { };
 
         private CountingPreparedSessionStore(SessionPreparedSessionStore delegate) {
             this.delegate = delegate;
@@ -455,6 +510,13 @@ final class SessionPreparationCoordinatorTest {
         @Override
         public CommitPreparedSessionResult commitPreparedSession(CommitPreparedSessionCommand command) {
             commitCalls++;
+            beforeCommit.run();
+            if (staleNext) {
+                staleNext = false;
+                lastResult = new CommitPreparedSessionResult.Stale(
+                        command.expectedRevision(), command.expectedRevision().next());
+                return lastResult;
+            }
             if (failNext) {
                 failNext = false;
                 lastResult = new CommitPreparedSessionResult.StorageFailure("simulated planner failure");

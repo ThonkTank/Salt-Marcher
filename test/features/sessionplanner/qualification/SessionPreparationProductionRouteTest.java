@@ -18,6 +18,7 @@ import features.sessiongeneration.api.GenerationResult;
 import features.sessiongeneration.api.GenerationStatus;
 import features.sessiongeneration.api.SessionGenerationApi;
 import features.sessionplanner.SessionPlannerServiceAssembly;
+import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
 import features.sessionplanner.api.PrepareSessionCommand;
 import features.sessionplanner.api.SessionPlannerCatalogCommand;
 import features.sessionplanner.api.SessionPlannerParticipantCommand;
@@ -25,6 +26,10 @@ import features.sessionplanner.api.SessionPlannerWorkspaceModel;
 import features.sessionplanner.api.SessionPlannerWorkspaceSnapshot;
 import features.sessionplanner.api.SessionPreparationStatus;
 import features.sessionplanner.api.SetSessionEncounterDaysCommand;
+import features.sessionplanner.application.CommitPreparedSessionCommand;
+import features.sessionplanner.application.CommitPreparedSessionResult;
+import features.sessionplanner.application.SessionPreparedSessionStore;
+import features.sessionplanner.domain.session.SessionPlan;
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.sql.DriverManager;
@@ -36,6 +41,7 @@ import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -116,8 +122,6 @@ final class SessionPreparationProductionRouteTest {
             long winningAttempt = fixture.planner.workspaceModel().current().preparation().attemptId();
             delayed.release.complete(null);
             delayed.finished.get(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS);
-            fixture.preparationCpu.close();
-            fixture.preparationIo.close();
 
             assertEquals(SessionPreparationStatus.READY,
                     fixture.planner.workspaceModel().current().preparation().status());
@@ -150,6 +154,82 @@ final class SessionPreparationProductionRouteTest {
         }
     }
 
+    @Test
+    void cancelBeforePlannerCommitBoundaryLeavesPlannerSessionUnchangedAfterReopen() throws Exception {
+        RecordingDiagnostics diagnostics = new RecordingDiagnostics();
+        HoldingForeignCommitCompletion delayed = new HoldingForeignCommitCompletion();
+        Path path = temporaryDirectory.resolve("session-preparation-cancel-before-planner-commit.sqlite");
+        SessionPlan original;
+        try (ProductionFixture fixture = ProductionFixture.open(path, diagnostics, delayed::wrap)) {
+            original = fixture.repository.loadCurrent().orElseThrow();
+            long initialPublication = fixture.planner.workspaceModel().current().publicationRevision();
+
+            fixture.planner.application().prepareSession(new PrepareSessionCommand(
+                    OptionalInt.of(3), 179974L, false));
+            delayed.entered.get(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+            SessionPlannerWorkspaceSnapshot saving = awaitWorkspace(
+                    fixture.planner.workspaceModel(), initialPublication,
+                    workspace -> workspace.preparation().status() == SessionPreparationStatus.SAVING
+                            && workspace.preparation().cancelEnabled());
+
+            fixture.planner.application().cancelPreparation();
+            SessionPlannerWorkspaceSnapshot cancelled = awaitWorkspace(
+                    fixture.planner.workspaceModel(), saving.publicationRevision(),
+                    workspace -> workspace.preparation().status() == SessionPreparationStatus.CANCELLED);
+            delayed.release.complete(null);
+            delayed.finished.get(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+
+            assertEquals(cancelled.publicationRevision(),
+                    fixture.planner.workspaceModel().current().publicationRevision(),
+                    "late immutable foreign completion publishes no post-cancel Planner state");
+        }
+
+        assertEquals(original, reopenCurrentSession(path, diagnostics),
+                "pre-boundary cancellation preserves the original Planner revision and content after reopen");
+    }
+
+    @Test
+    void cancelAfterPlannerCommitBoundaryIsNoOpAndPreparedSessionPersistsAfterReopen() throws Exception {
+        RecordingDiagnostics diagnostics = new RecordingDiagnostics();
+        HoldingPreparedSessionStore heldStore = new HoldingPreparedSessionStore();
+        Path path = temporaryDirectory.resolve("session-preparation-cancel-after-planner-commit.sqlite");
+        SessionPlan committed;
+        try (ProductionFixture fixture = ProductionFixture.open(
+                path, diagnostics, UnaryOperator.identity(), heldStore::wrap)) {
+            SessionPlan original = fixture.repository.loadCurrent().orElseThrow();
+            long initialPublication = fixture.planner.workspaceModel().current().publicationRevision();
+
+            fixture.planner.application().prepareSession(new PrepareSessionCommand(
+                    OptionalInt.of(3), 179974L, false));
+            assertTrue(heldStore.entered.await(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS),
+                    "real prepared-session store was not entered");
+            SessionPlannerWorkspaceSnapshot finalSaving = awaitWorkspace(
+                    fixture.planner.workspaceModel(), initialPublication,
+                    workspace -> workspace.preparation().status() == SessionPreparationStatus.SAVING
+                            && !workspace.preparation().cancelEnabled());
+
+            fixture.planner.application().cancelPreparation();
+            SessionPlannerWorkspaceSnapshot afterCancel = fixture.planner.workspaceModel().current();
+            assertEquals(finalSaving.publicationRevision(), afterCancel.publicationRevision(),
+                    "post-boundary cancel publishes no state");
+            assertEquals(finalSaving.preparation(), afterCancel.preparation(),
+                    "post-boundary cancel neither changes attempt sequence nor publishes CANCELLED");
+
+            heldStore.release.countDown();
+            SessionPlannerWorkspaceSnapshot ready = awaitWorkspace(
+                    fixture.planner.workspaceModel(), finalSaving.publicationRevision(),
+                    workspace -> workspace.preparation().status() == SessionPreparationStatus.READY);
+            assertEquals(finalSaving.preparation().attemptId(), ready.preparation().attemptId());
+            committed = fixture.repository.loadCurrent().orElseThrow();
+            assertTrue(committed.revision().value() > original.revision().value());
+            assertFalse(committed.encounters().isEmpty());
+            assertFalse(committed.generatedRewards().isEmpty());
+        }
+
+        assertEquals(committed, reopenCurrentSession(path, diagnostics),
+                "post-boundary Planner revision and prepared content survive close and reopen");
+    }
+
     private static BoundedExecutionLane lane(Diagnostics diagnostics, String name) {
         return new BoundedExecutionLane(diagnostics, name, 2);
     }
@@ -179,6 +259,14 @@ final class SessionPreparationProductionRouteTest {
                 var statement = connection.createStatement();
                 var rows = statement.executeQuery("SELECT COUNT(*) FROM " + table)) {
             return rows.getLong(1);
+        }
+    }
+
+    private static SessionPlan reopenCurrentSession(Path path, Diagnostics diagnostics) {
+        try (SqliteDatabase reopened = new SqliteDatabase(path, diagnostics)) {
+            SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(reopened);
+            reopened.prepareRegisteredStores();
+            return repository.loadCurrent().orElseThrow();
         }
     }
 
@@ -395,6 +483,7 @@ final class SessionPreparationProductionRouteTest {
         private final BoundedExecutionLane encounterIo;
         private final BoundedExecutionLane preparationCpu;
         private final BoundedExecutionLane preparationIo;
+        private final SqliteSessionPlanRepository repository;
         private final GenerationResult canonical;
         private final SessionPlannerServiceAssembly planner;
         private final long coldCatalogNanos;
@@ -409,6 +498,7 @@ final class SessionPreparationProductionRouteTest {
                 BoundedExecutionLane encounterIo,
                 BoundedExecutionLane preparationCpu,
                 BoundedExecutionLane preparationIo,
+                SqliteSessionPlanRepository repository,
                 GenerationResult canonical,
                 SessionPlannerServiceAssembly planner,
                 long coldCatalogNanos,
@@ -422,6 +512,7 @@ final class SessionPreparationProductionRouteTest {
             this.encounterIo = encounterIo;
             this.preparationCpu = preparationCpu;
             this.preparationIo = preparationIo;
+            this.repository = repository;
             this.canonical = canonical;
             this.planner = planner;
             this.coldCatalogNanos = coldCatalogNanos;
@@ -436,6 +527,15 @@ final class SessionPreparationProductionRouteTest {
                 Path path,
                 RecordingDiagnostics diagnostics,
                 UnaryOperator<SessionGenerationApi> generationDecorator
+        ) throws Exception {
+            return open(path, diagnostics, generationDecorator, UnaryOperator.identity());
+        }
+
+        private static ProductionFixture open(
+                Path path,
+                RecordingDiagnostics diagnostics,
+                UnaryOperator<SessionGenerationApi> generationDecorator,
+                UnaryOperator<SessionPreparedSessionStore> preparedSessionStoreDecorator
         ) throws Exception {
             SqliteDatabase database = new SqliteDatabase(path, diagnostics);
             SerialExecutionLane authored = new SerialExecutionLane(diagnostics);
@@ -464,9 +564,12 @@ final class SessionPreparationProductionRouteTest {
                     party.application(), party.activeParty(), party.activeComposition(),
                     party.adventuringDaySummary(), party.mutation(),
                     authored, encounterCpu, encounterIo, DirectUiDispatcher.INSTANCE, diagnostics);
-            SessionPlannerServiceAssembly planner = SessionPlannerServiceAssembly.create(
-                    database, party.application(), encounters.application(), encounters.savedPlans(), null,
-                    generationDecorator.apply(generation), authored, preparationCpu, preparationIo,
+            SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(database);
+            SessionGenerationApi decoratedGeneration = generationDecorator.apply(generation);
+            SessionPlannerServiceAssembly planner = new SessionPlannerServiceAssembly(
+                    repository, repository, preparedSessionStoreDecorator.apply(repository),
+                    party.application(), encounters.application(), encounters.savedPlans(), null,
+                    decoratedGeneration, authored, preparationCpu, preparationIo,
                     DirectUiDispatcher.INSTANCE, diagnostics);
 
             long coldStoreStarted = System.nanoTime();
@@ -479,7 +582,8 @@ final class SessionPreparationProductionRouteTest {
             initializeCanonicalSession(planner, party.activeParty().current().memberIds());
             return new ProductionFixture(
                     database, authored, generationCpu, generationIo, encounterCpu, encounterIo,
-                    preparationCpu, preparationIo, canonical, planner, coldCatalogNanos, coldStoreNanos);
+                    preparationCpu, preparationIo, repository, canonical, planner,
+                    coldCatalogNanos, coldStoreNanos);
         }
 
         @Override
@@ -492,6 +596,62 @@ final class SessionPreparationProductionRouteTest {
             generationCpu.close();
             authored.close();
             database.close();
+        }
+    }
+
+    private static final class HoldingForeignCommitCompletion {
+        private final CompletableFuture<Void> entered = new CompletableFuture<>();
+        private final CompletableFuture<Void> release = new CompletableFuture<>();
+        private final CompletableFuture<Void> finished = new CompletableFuture<>();
+
+        private SessionGenerationApi wrap(SessionGenerationApi delegate) {
+            return new ForwardingGenerationApi(delegate) {
+                @Override
+                public CompletionStage<features.sessiongeneration.api.GenerationRunResponse> commit(
+                        features.sessiongeneration.api.CommitGenerationRunCommand command
+                ) {
+                    CompletableFuture<features.sessiongeneration.api.GenerationRunResponse> delayed = delegate
+                            .commit(command)
+                            .thenCompose(result -> {
+                                entered.complete(null);
+                                return release.thenApply(ignored -> result);
+                            })
+                            .toCompletableFuture();
+                    delayed.whenComplete((ignored, failure) -> {
+                        if (failure == null) {
+                            finished.complete(null);
+                        } else {
+                            finished.completeExceptionally(failure);
+                        }
+                    });
+                    return delayed;
+                }
+            };
+        }
+    }
+
+    private static final class HoldingPreparedSessionStore {
+        private final CountDownLatch entered = new CountDownLatch(1);
+        private final CountDownLatch release = new CountDownLatch(1);
+
+        private SessionPreparedSessionStore wrap(SessionPreparedSessionStore delegate) {
+            return command -> commitAfterRelease(delegate, command);
+        }
+
+        private CommitPreparedSessionResult commitAfterRelease(
+                SessionPreparedSessionStore delegate,
+                CommitPreparedSessionCommand command
+        ) {
+            entered.countDown();
+            try {
+                if (!release.await(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("timed out waiting to release prepared-session store");
+                }
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("interrupted while holding prepared-session store", exception);
+            }
+            return delegate.commitPreparedSession(command);
         }
     }
 

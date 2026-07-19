@@ -104,6 +104,9 @@ public final class SessionPreparationCoordinator {
     }
 
     synchronized void cancel() {
+        if (active == null || active.plannerCommitPointOfNoReturn) {
+            return;
+        }
         invalidateNow(SessionPreparationStatus.CANCELLED, "Vorbereitung abgebrochen.");
     }
 
@@ -411,6 +414,9 @@ public final class SessionPreparationCoordinator {
                         "Session konnte nicht auf Änderungen geprüft werden.");
                 return;
             }
+            if (!enterPlannerCommit(attempt)) {
+                return;
+            }
             result = preparedSessions.commitPreparedSession(command);
         } catch (RuntimeException exception) {
             scheduleCpu(attempt, () -> fail(attempt, "Session konnte nicht gespeichert werden.", exception),
@@ -611,6 +617,16 @@ public final class SessionPreparationCoordinator {
         return active == attempt && attemptSequence == attempt.id;
     }
 
+    private synchronized boolean enterPlannerCommit(Attempt attempt) {
+        if (!isActive(attempt) || attempt.plannerCommitPointOfNoReturn) {
+            return false;
+        }
+        attempt.plannerCommitPointOfNoReturn = true;
+        publish(SessionPreparationStatus.SAVING, "Vorbereitete Session wird gespeichert …",
+                attempt.fingerprint.sessionId(), attempt.id, false);
+        return true;
+    }
+
     private void scheduleCallback(
             Attempt attempt,
             Runnable callback,
@@ -732,6 +748,7 @@ public final class SessionPreparationCoordinator {
         private Throwable generationCommitFailure;
         private CommittedGeneratedEncounterBatchResult encounterCommit;
         private Throwable encounterCommitFailure;
+        private boolean plannerCommitPointOfNoReturn;
 
         private Attempt(long id, PrepareSessionCommand command) {
             this.id = id;
