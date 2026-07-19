@@ -20,11 +20,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Collections;
 import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,7 +39,6 @@ public final class SqliteDatabase implements AutoCloseable {
     private static final String APP_DATA_DIR_NAME = "salt-marcher";
     private static final String MIGRATIONS_TABLE = "sm_schema_versions";
     private static final byte[] SQLITE_HEADER = "SQLite format 3\0".getBytes(StandardCharsets.US_ASCII);
-    private static final Pattern OWNER_PATTERN = Pattern.compile("[a-z][a-z0-9-]*");
     private static final Pattern BACKUP_VERSION_PATTERN = Pattern.compile(".*\\.backup-v(\\d+)\\.sqlite");
     private static final DiagnosticId INTEGRITY_FAILURE =
             new DiagnosticId("persistence.integrity-failure");
@@ -53,8 +50,9 @@ public final class SqliteDatabase implements AutoCloseable {
     private final Path databasePath;
     private final Diagnostics diagnostics;
     private final FileMover fileMover;
-    private final Map<String, List<SqliteMigration>> migrationPlans = new LinkedHashMap<>();
+    private final Map<String, StoreHandle> stores = new LinkedHashMap<>();
     private boolean prepared;
+    private boolean storesSealed;
     private boolean closed;
 
     public SqliteDatabase(Path databasePath, Diagnostics diagnostics) {
@@ -129,15 +127,51 @@ public final class SqliteDatabase implements AutoCloseable {
         }
     }
 
-    public synchronized SqliteConnectionSource connections(String owner, SqliteMigration... migrations) {
-        String safeOwner = requireOwner(owner);
-        List<SqliteMigration> plan = normalizedPlan(migrations);
-        List<SqliteMigration> existing = migrationPlans.get(safeOwner);
-        if (existing != null && !versions(existing).equals(versions(plan))) {
+    /**
+     * Registers an immutable feature-store definition and returns its owner-bound handle.
+     * Registration is complete before production storage preparation begins.
+     */
+    public synchronized FeatureStoreHandle featureStore(FeatureStoreDefinition definition) {
+        FeatureStoreDefinition safeDefinition = Objects.requireNonNull(definition, "definition");
+        StoreHandle existing = stores.get(safeDefinition.owner());
+        if (existing != null && !existing.definition.versions().equals(safeDefinition.versions())) {
             throw new IllegalArgumentException("migration owner registered with a different version plan");
         }
-        migrationPlans.putIfAbsent(safeOwner, plan);
-        return this::openConnection;
+        if (existing != null) {
+            return existing;
+        }
+        if (storesSealed) {
+            throw new IllegalStateException("feature stores are already prepared");
+        }
+        StoreHandle registered = new StoreHandle(safeDefinition);
+        stores.put(safeDefinition.owner(), registered);
+        return registered;
+    }
+
+    /** Temporary adapter for unchanged SQLite providers during the storage migration. */
+    public synchronized SqliteConnectionSource connections(String owner, SqliteMigration... migrations) {
+        return featureStore(FeatureStoreDefinition.of(owner, migrations));
+    }
+
+    /**
+     * Seals registration and prepares every owner independently. A failed or newer owner
+     * does not prevent another owner from becoming ready.
+     */
+    public synchronized Map<String, FeatureStoreReadiness> prepareRegisteredStores() {
+        storesSealed = true;
+        try {
+            prepare();
+        } catch (NewerPlatformSchemaException exception) {
+            markAllStores(FeatureStoreReadiness.NEWER_SCHEMA);
+            return readinessSnapshot();
+        } catch (SQLException exception) {
+            markAllStores(FeatureStoreReadiness.CORRUPT);
+            return readinessSnapshot();
+        }
+        for (StoreHandle store : stores.values()) {
+            prepareStore(store);
+        }
+        return readinessSnapshot();
     }
 
     public synchronized void prepare() throws SQLException {
@@ -158,20 +192,27 @@ public final class SqliteDatabase implements AutoCloseable {
         closed = true;
     }
 
-    private Connection openConnection() throws SQLException {
-        prepare();
-        synchronized (this) {
-            requireOpen();
-        }
+    private Connection openConnection(StoreHandle store) throws SQLException {
         Connection connection = null;
         try {
-            // Connection setup changes WAL mode and may execute idempotent DDL or feature
-            // migrations. Serialize only that initialization window for this database lifecycle;
-            // returned connections and their feature transactions remain independently concurrent.
             synchronized (this) {
                 requireOpen();
+                if (store.readiness == null) {
+                    try {
+                        prepare();
+                    } catch (NewerPlatformSchemaException exception) {
+                        markAllStores(FeatureStoreReadiness.NEWER_SCHEMA);
+                    } catch (SQLException exception) {
+                        markAllStores(FeatureStoreReadiness.CORRUPT);
+                    }
+                    if (store.readiness == null) {
+                        prepareStore(store);
+                    }
+                }
+                if (store.readiness != FeatureStoreReadiness.READY) {
+                    throw new FeatureStoreUnavailableException(store.readiness);
+                }
                 connection = openConfigured(databasePath);
-                migrate(connection, registeredPlans());
             }
             return connection;
         } catch (SQLException | RuntimeException exception) {
@@ -202,10 +243,11 @@ public final class SqliteDatabase implements AutoCloseable {
             }
             int version = platformVersion(snapshot);
             if (version > PLATFORM_SCHEMA_VERSION) {
-                throw new SQLException("SQLite platform schema is newer than this application.");
+                throw new NewerPlatformSchemaException();
             }
             try {
                 assertForeignKeys(snapshot);
+                restoreTest(snapshot);
             } catch (SQLException exception) {
                 diagnostics.failure(INTEGRITY_FAILURE, exception.getClass());
                 throw exception;
@@ -219,31 +261,41 @@ public final class SqliteDatabase implements AutoCloseable {
         }
     }
 
-    private void migrate(Connection connection, Map<String, List<SqliteMigration>> plans) throws SQLException {
+    private void prepareStore(StoreHandle store) {
+        if (store.readiness != null) {
+            return;
+        }
+        try (Connection connection = openConfigured(databasePath)) {
+            migrate(connection, store.definition);
+            store.readiness = FeatureStoreReadiness.READY;
+        } catch (NewerFeatureSchemaException | NewerPlatformSchemaException exception) {
+            store.readiness = FeatureStoreReadiness.NEWER_SCHEMA;
+        } catch (SQLException | RuntimeException exception) {
+            store.readiness = FeatureStoreReadiness.MIGRATION_FAILED;
+            diagnostics.failure(MIGRATION_FAILURE, exception.getClass());
+        }
+    }
+
+    private void migrate(Connection connection, FeatureStoreDefinition definition) throws SQLException {
         boolean previousAutoCommit = connection.getAutoCommit();
         connection.setAutoCommit(false);
         try {
             ensurePlatformMetadata(connection);
-            for (Map.Entry<String, List<SqliteMigration>> entry : plans.entrySet()) {
-                String owner = entry.getKey();
-                List<SqliteMigration> plan = entry.getValue();
-                int storedVersion = storedFeatureVersion(connection, owner);
-                int supportedVersion = plan.isEmpty() ? 0 : plan.getLast().version();
-                if (storedVersion > supportedVersion) {
-                    throw new SQLException("SQLite feature schema is newer than this application.");
-                }
-                for (SqliteMigration migration : plan) {
-                    if (migration.version() > storedVersion) {
-                        migration.action().apply(connection);
-                        storeFeatureVersion(connection, owner, migration.version());
-                    }
+            int storedVersion = storedFeatureVersion(connection, definition.owner());
+            if (storedVersion > definition.supportedVersion()) {
+                throw new NewerFeatureSchemaException();
+            }
+            for (SqliteMigration migration : definition.migrations()) {
+                if (migration.version() > storedVersion) {
+                    migration.action().apply(connection);
+                    storeFeatureVersion(connection, definition.owner(), migration.version());
                 }
             }
+            definition.validator().validate(connection);
             assertConnectionIntegrity(connection);
             connection.commit();
         } catch (SQLException | RuntimeException exception) {
             rollback(connection, exception);
-            diagnostics.failure(MIGRATION_FAILURE, exception.getClass());
             if (exception instanceof SQLException sqlException) {
                 throw sqlException;
             }
@@ -256,7 +308,7 @@ public final class SqliteDatabase implements AutoCloseable {
     private void ensurePlatformMetadata(Connection connection) throws SQLException {
         int version = pragmaInt(connection, "PRAGMA user_version");
         if (version > PLATFORM_SCHEMA_VERSION) {
-            throw new SQLException("SQLite platform schema is newer than this application.");
+            throw new NewerPlatformSchemaException();
         }
         try (Statement statement = connection.createStatement()) {
             statement.execute("CREATE TABLE IF NOT EXISTS " + MIGRATIONS_TABLE
@@ -424,6 +476,19 @@ public final class SqliteDatabase implements AutoCloseable {
     private static void assertForeignKeys(Path path) throws SQLException {
         try (Connection connection = openReadOnly(path)) {
             assertConnectionForeignKeys(connection);
+        }
+    }
+
+    private void restoreTest(Path snapshot) throws SQLException {
+        Path restoreProbe = snapshot.resolveSibling("restore-probe.db");
+        try {
+            Files.copy(snapshot, restoreProbe, StandardCopyOption.REPLACE_EXISTING);
+            assertPhysicalIntegrity(restoreProbe);
+            assertForeignKeys(restoreProbe);
+        } catch (IOException exception) {
+            throw new SQLException("Could not restore-test SQLite backup.", exception);
+        } finally {
+            deleteIfExists(restoreProbe);
         }
     }
 
@@ -610,36 +675,57 @@ public final class SqliteDatabase implements AutoCloseable {
         }
     }
 
-    private static List<SqliteMigration> normalizedPlan(SqliteMigration[] migrations) {
-        List<SqliteMigration> plan = new ArrayList<>(Arrays.asList(
-                migrations == null ? new SqliteMigration[0] : migrations));
-        if (plan.stream().anyMatch(Objects::isNull)) {
-            throw new IllegalArgumentException("migration plan must not contain null");
+    private void markAllStores(FeatureStoreReadiness readiness) {
+        for (StoreHandle store : stores.values()) {
+            store.readiness = readiness;
         }
-        plan.sort(Comparator.comparingInt(SqliteMigration::version));
-        int expected = 1;
-        for (SqliteMigration migration : plan) {
-            if (migration.version() != expected++) {
-                throw new IllegalArgumentException("migration versions must be contiguous from one");
-            }
-        }
-        return List.copyOf(plan);
     }
 
-    private synchronized Map<String, List<SqliteMigration>> registeredPlans() {
-        return Collections.unmodifiableMap(new LinkedHashMap<>(migrationPlans));
+    private Map<String, FeatureStoreReadiness> readinessSnapshot() {
+        Map<String, FeatureStoreReadiness> readiness = new LinkedHashMap<>();
+        stores.forEach((owner, store) -> readiness.put(owner, store.readiness));
+        return Map.copyOf(readiness);
     }
 
-    private static List<Integer> versions(List<SqliteMigration> plan) {
-        return plan.stream().map(SqliteMigration::version).toList();
+    private final class StoreHandle implements FeatureStoreHandle {
+
+        private final FeatureStoreDefinition definition;
+        private volatile FeatureStoreReadiness readiness;
+
+        private StoreHandle(FeatureStoreDefinition definition) {
+            this.definition = definition;
+        }
+
+        @Override
+        public String owner() {
+            return definition.owner();
+        }
+
+        @Override
+        public java.util.Optional<FeatureStoreReadiness> readiness() {
+            return java.util.Optional.ofNullable(readiness);
+        }
+
+        @Override
+        public Connection openConnection() throws SQLException {
+            return SqliteDatabase.this.openConnection(this);
+        }
+    }
+
+    private static final class NewerFeatureSchemaException extends SQLException {
+        private NewerFeatureSchemaException() {
+            super("SQLite feature schema is newer than this application.");
+        }
+    }
+
+    private static final class NewerPlatformSchemaException extends SQLException {
+        private NewerPlatformSchemaException() {
+            super("SQLite platform schema is newer than this application.");
+        }
     }
 
     private static String requireOwner(String owner) {
-        String safeOwner = Objects.requireNonNull(owner, "owner").toLowerCase(Locale.ROOT);
-        if (!OWNER_PATTERN.matcher(safeOwner).matches()) {
-            throw new IllegalArgumentException("invalid migration owner");
-        }
-        return safeOwner;
+        return FeatureStoreDefinition.of(owner).owner();
     }
 
     private void requireOpen() throws SQLException {

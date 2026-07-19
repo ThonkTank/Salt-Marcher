@@ -30,11 +30,13 @@ public final class PartyServiceAssembly {
     }
 
     public static Component create(PartyRosterRepository repository) {
-        return create(
+        Component component = assemble(
                 repository,
                 DirectExecutionLane.INSTANCE,
                 DirectUiDispatcher.INSTANCE,
                 NoopDiagnostics.INSTANCE);
+        start(component);
+        return component;
     }
 
     public static Component create(
@@ -43,7 +45,7 @@ public final class PartyServiceAssembly {
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
-        return create(
+        return assemble(
                 new SqlitePartyRosterRepository(Objects.requireNonNull(database, "database")),
                 executionLane,
                 uiDispatcher,
@@ -51,6 +53,17 @@ public final class PartyServiceAssembly {
     }
 
     public static Component create(
+            PartyRosterRepository repository,
+            ExecutionLane executionLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics
+    ) {
+        Component component = assemble(repository, executionLane, uiDispatcher, diagnostics);
+        start(component);
+        return component;
+    }
+
+    private static Component assemble(
             PartyRosterRepository repository,
             ExecutionLane executionLane,
             UiDispatcher uiDispatcher,
@@ -70,7 +83,6 @@ public final class PartyServiceAssembly {
                 publishedState,
                 Objects.requireNonNull(executionLane, "executionLane"),
                 Objects.requireNonNull(diagnostics, "diagnostics"));
-        application.refreshPublishedState();
         return new Component(
                 application,
                 snapshot,
@@ -82,6 +94,11 @@ public final class PartyServiceAssembly {
                 dayCalculation,
                 new PartyTopBarContribution(application, snapshot, daySummary, mutation),
                 new AdventuringDayTopBarContribution(daySummary, dayCalculation, application));
+    }
+
+    public static void start(Component component) {
+        PartyApi application = Objects.requireNonNull(component, "component").application();
+        ((PartyApplicationService) application).refreshPublishedState();
     }
 
     public record Component(

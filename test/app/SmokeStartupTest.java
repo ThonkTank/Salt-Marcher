@@ -2,10 +2,12 @@ package app;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.DriverManager;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -18,10 +20,13 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.Pane;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import shell.api.ContributionKey;
 import shell.host.AppShell;
 import platform.diagnostics.NoopDiagnostics;
+import platform.execution.ExecutionLane;
 import platform.persistence.SqliteDatabase;
+import platform.ui.DirectUiDispatcher;
 
 @org.junit.jupiter.api.Tag("ui")
 public final class SmokeStartupTest {
@@ -84,6 +89,24 @@ public final class SmokeStartupTest {
             }
         });
         openTempSqliteConnection();
+    }
+
+    @Test
+    void preparesEveryFeatureStoreBeforeFirstServiceWork(@TempDir Path temporaryDirectory) throws Exception {
+        runOnFx(() -> {
+            Path databasePath = temporaryDirectory.resolve("startup-order.sqlite");
+            try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
+                StoragePreparedLane lane = new StoragePreparedLane(databasePath);
+                try (AppBootstrap bootstrap = new AppBootstrap(
+                        NoopDiagnostics.INSTANCE,
+                        lane,
+                        DirectUiDispatcher.INSTANCE,
+                        database)) {
+                    bootstrap.createShell();
+                    require(lane.executions > 0, "Expected explicitly started service work.");
+                }
+            }
+        });
     }
 
     private static void runOnFx(ThrowingRunnable action) throws Exception {
@@ -161,6 +184,57 @@ public final class SmokeStartupTest {
     private static void require(boolean condition, String message) {
         if (!condition) {
             throw new IllegalStateException(message);
+        }
+    }
+
+    private static final class StoragePreparedLane implements ExecutionLane {
+
+        private static final Set<String> EXPECTED_OWNERS = Set.of(
+                "creatures",
+                "dungeon",
+                "encounter",
+                "encounter-table",
+                "hex",
+                "items",
+                "party",
+                "scene",
+                "session-generation",
+                "session-planner",
+                "world-planner");
+
+        private final Path databasePath;
+        private int executions;
+
+        private StoragePreparedLane(Path databasePath) {
+            this.databasePath = databasePath;
+        }
+
+        @Override
+        public void execute(Runnable work) {
+            assertAllStoresPrepared();
+            executions++;
+            work.run();
+        }
+
+        private void assertAllStoresPrepared() {
+            try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+                    var statement = connection.createStatement();
+                    var result = statement.executeQuery("SELECT owner FROM sm_schema_versions")) {
+                java.util.HashSet<String> actual = new java.util.HashSet<>();
+                while (result.next()) {
+                    actual.add(result.getString(1));
+                }
+                require(
+                        actual.equals(EXPECTED_OWNERS),
+                        "Service work started before all feature stores were prepared: " + actual);
+            } catch (java.sql.SQLException exception) {
+                throw new IllegalStateException("Service work started before storage preparation.", exception);
+            }
+        }
+
+        @Override
+        public void close() {
+            // Owned by the bootstrap; no external resources in this proof lane.
         }
     }
 

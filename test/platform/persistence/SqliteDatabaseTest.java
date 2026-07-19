@@ -145,20 +145,79 @@ final class SqliteDatabaseTest {
     }
 
     @Test
-    void runsEveryRegisteredFeaturePlanOnceInRegistrationOrder() throws Exception {
-        Path databasePath = temporaryDirectory.resolve("ordered.db");
-        List<String> order = new ArrayList<>();
-        SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { });
-        SqliteConnectionSource first = database.connections(
-                "first", new SqliteMigration(1, connection -> order.add("first")));
-        database.connections("second", new SqliteMigration(1, connection -> order.add("second")));
+    void newerUnrelatedOwnerDoesNotBlockReadyStore() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("owner-isolation.db");
+        try (SqliteDatabase initial = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            initial.featureStore(FeatureStoreDefinition.of(
+                    "future-owner",
+                    new SqliteMigration(1, connection -> connection.createStatement().execute(
+                            "CREATE TABLE future_rows(id INTEGER PRIMARY KEY)")),
+                    new SqliteMigration(2, connection -> connection.createStatement().execute(
+                            "ALTER TABLE future_rows ADD COLUMN label TEXT"))));
+            initial.featureStore(FeatureStoreDefinition.of(
+                    "healthy-owner",
+                    new SqliteMigration(1, connection -> connection.createStatement().execute(
+                            "CREATE TABLE healthy_rows(id INTEGER PRIMARY KEY)"))));
+            assertEquals(
+                    FeatureStoreReadiness.READY,
+                    initial.prepareRegisteredStores().get("future-owner"));
+        }
 
-        try (var ignored = first.openConnection()) {
-            assertEquals(List.of("first", "second"), order);
+        try (SqliteDatabase current = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            FeatureStoreHandle future = current.featureStore(FeatureStoreDefinition.of(
+                    "future-owner",
+                    new SqliteMigration(1, connection -> connection.createStatement().execute(
+                            "CREATE TABLE future_rows(id INTEGER PRIMARY KEY)"))));
+            FeatureStoreHandle healthy = current.featureStore(FeatureStoreDefinition.of(
+                    "healthy-owner",
+                    new SqliteMigration(1, connection -> connection.createStatement().execute(
+                            "CREATE TABLE healthy_rows(id INTEGER PRIMARY KEY)"))));
+
+            var readiness = current.prepareRegisteredStores();
+
+            assertEquals(FeatureStoreReadiness.NEWER_SCHEMA, readiness.get("future-owner"));
+            assertEquals(FeatureStoreReadiness.READY, readiness.get("healthy-owner"));
+            FeatureStoreUnavailableException unavailable = assertThrows(
+                    FeatureStoreUnavailableException.class,
+                    future::openConnection);
+            assertEquals(FeatureStoreReadiness.NEWER_SCHEMA, unavailable.readiness());
+            try (var connection = healthy.openConnection()) {
+                connection.createStatement().execute("INSERT INTO healthy_rows(id) VALUES(1)");
+            }
         }
-        try (var ignored = first.openConnection()) {
-            assertEquals(List.of("first", "second"), order);
+    }
+
+    @Test
+    void failedOwnerRollsBackAndLeavesOtherPreparedOwnerUsable() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("owner-failure-isolation.db");
+        RecordingDiagnostics diagnostics = new RecordingDiagnostics();
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, diagnostics)) {
+            FeatureStoreHandle broken = database.featureStore(FeatureStoreDefinition.validated(
+                    "broken-owner",
+                    connection -> {
+                        throw new SQLException("private payload");
+                    },
+                    new SqliteMigration(1, connection -> connection.createStatement().execute(
+                            "CREATE TABLE partial_rows(id INTEGER)"))));
+            FeatureStoreHandle healthy = database.featureStore(FeatureStoreDefinition.of(
+                    "healthy-owner",
+                    new SqliteMigration(1, connection -> connection.createStatement().execute(
+                            "CREATE TABLE complete_rows(id INTEGER PRIMARY KEY)"))));
+
+            var readiness = database.prepareRegisteredStores();
+
+            assertEquals(FeatureStoreReadiness.MIGRATION_FAILED, readiness.get("broken-owner"));
+            assertEquals(FeatureStoreReadiness.READY, readiness.get("healthy-owner"));
+            assertThrows(FeatureStoreUnavailableException.class, broken::openConnection);
+            try (var connection = healthy.openConnection();
+                    var partial = connection.prepareStatement(
+                            "SELECT name FROM sqlite_master WHERE type='table' AND name='partial_rows'");
+                    var partialResult = partial.executeQuery()) {
+                assertFalse(partialResult.next());
+                connection.createStatement().execute("INSERT INTO complete_rows(id) VALUES(1)");
+            }
         }
+        assertEquals(List.of("persistence.migration-failure"), diagnostics.ids);
     }
 
     @Test
@@ -272,9 +331,11 @@ final class SqliteDatabaseTest {
         RecordingDiagnostics diagnostics = new RecordingDiagnostics();
         SqliteDatabase database = new SqliteDatabase(databasePath, diagnostics);
 
-        assertThrows(SQLException.class,
+        FeatureStoreUnavailableException unavailable = assertThrows(
+                FeatureStoreUnavailableException.class,
                 () -> database.connections("seed", seedMigration()).openConnection());
 
+        assertEquals(FeatureStoreReadiness.CORRUPT, unavailable.readiness());
         assertArrayEquals(corrupt, Files.readAllBytes(databasePath));
         assertEquals(
                 List.of("persistence.integrity-failure", "persistence.recovery-failure"),
@@ -545,9 +606,11 @@ final class SqliteDatabaseTest {
         }
         SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { });
 
-        assertThrows(SQLException.class,
+        FeatureStoreUnavailableException unavailable = assertThrows(
+                FeatureStoreUnavailableException.class,
                 () -> database.connections("seed", seedMigration()).openConnection());
 
+        assertEquals(FeatureStoreReadiness.NEWER_SCHEMA, unavailable.readiness());
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath)) {
             assertEquals(99, pragmaInt(connection, "PRAGMA user_version"));
         }

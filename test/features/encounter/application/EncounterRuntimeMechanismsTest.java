@@ -23,6 +23,7 @@ final class EncounterRuntimeMechanismsTest {
         RecordingLane lane = new RecordingLane();
         RecordingActions actions = new RecordingActions();
         EncounterApplicationService application = new EncounterApplicationService(actions, lane);
+        application.initialize();
 
         assertEquals(1, lane.pending());
         assertTrue(actions.calls.isEmpty());

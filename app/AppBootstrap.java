@@ -140,6 +140,8 @@ public final class AppBootstrap implements AutoCloseable {
     public AppShell createShell() {
         AppShell shell = new AppShell(diagnostics);
         Components components = createComponents();
+        database.prepareRegisteredStores();
+        components.start();
         List<ResolvedContribution> contributions = bindContributions(shell, components);
         contributions.stream()
                 .sorted(Comparator.comparing(contribution -> contribution.spec().key().value()))
@@ -154,7 +156,6 @@ public final class AppBootstrap implements AutoCloseable {
     private Components createComponents() {
         CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(
                 database, executionLane, uiDispatcher, diagnostics);
-        creatures.application().refreshReferenceIndex(new RefreshCreatureReferenceIndexCommand());
         EncounterTableServiceAssembly.Component encounterTables =
                 EncounterTableServiceAssembly.create(
                         database, executionLane, uiDispatcher, diagnostics);
@@ -481,6 +482,14 @@ public final class AppBootstrap implements AutoCloseable {
             SessionPlannerServiceAssembly session,
             SceneFeature.Component scene
     ) {
+        private void start() {
+            creatures.application().refreshReferenceIndex(new RefreshCreatureReferenceIndexCommand());
+            PartyServiceAssembly.start(party);
+            world.start();
+            encounter.start();
+            dungeon.start();
+            hex.start();
+        }
     }
 
     private record ResolvedContribution(ShellContributionSpec spec, ShellBinding binding) {

@@ -26,6 +26,10 @@ public final class DungeonEditorApiFacade implements DungeonEditorApi {
         this.uiDispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
     }
 
+    public void initialize() {
+        runtimeRoot.initialize();
+    }
+
     @Override
     public DungeonEditorState current() {
         return runtimeRoot.currentState();

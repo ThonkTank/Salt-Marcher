@@ -1,7 +1,8 @@
 package features.creatures.adapter.sqlite.gateway.local;
 
 import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteConnectionSource;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
 import platform.persistence.SqliteDatabase;
 import platform.persistence.SqliteMigration;
 import org.jspecify.annotations.Nullable;
@@ -22,7 +23,7 @@ import java.util.Objects;
  */
 public final class SqliteCreatureCatalogLocalGateway {
 
-    private final SqliteConnectionSource connections;
+    private final FeatureStoreHandle connections;
     private final CreatureCatalogFilterValuesSqliteStore filterValuesStore = new CreatureCatalogFilterValuesSqliteStore();
     private final CreatureCatalogSearchSqliteStore catalogSearchStore = new CreatureCatalogSearchSqliteStore();
     private final CreatureDetailSqliteStore creatureDetailStore = new CreatureDetailSqliteStore();
@@ -37,9 +38,10 @@ public final class SqliteCreatureCatalogLocalGateway {
 
     public SqliteCreatureCatalogLocalGateway(SqliteDatabase database) {
         CreaturesSchemaMigrator schemaMigrator = new CreaturesSchemaMigrator();
-        this.connections = Objects.requireNonNull(database, "database").connections(
-                "creatures",
-                new SqliteMigration(1, schemaMigrator::ensureSchema));
+        this.connections = Objects.requireNonNull(database, "database").featureStore(
+                FeatureStoreDefinition.of(
+                        "creatures",
+                        new SqliteMigration(1, schemaMigrator::ensureSchema)));
     }
 
     public CreatureFilterValuesRecord loadFilterValues() {

@@ -15,7 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import platform.persistence.SqliteConnectionSource;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
 import platform.persistence.SqliteDatabase;
 import platform.persistence.SqliteMigration;
 
@@ -36,14 +37,14 @@ public final class SqliteItemCatalogAdapter implements ItemCatalogPort, ItemImpo
             + "AND (? IS NULL OR cost_cp <= ?) ";
 
     private final SqliteDatabase database;
-    private final SqliteConnectionSource connections;
+    private final FeatureStoreHandle connections;
 
     public SqliteItemCatalogAdapter(SqliteDatabase database) {
         this.database = Objects.requireNonNull(database, "database");
         ItemsSchema schema = new ItemsSchema();
-        connections = database.connections(
+        connections = database.featureStore(FeatureStoreDefinition.of(
                 OWNER,
-                new SqliteMigration(SCHEMA_VERSION, schema::migrate));
+                new SqliteMigration(SCHEMA_VERSION, schema::migrate)));
     }
 
     @Override
