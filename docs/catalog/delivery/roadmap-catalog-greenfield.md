@@ -411,8 +411,13 @@ from refreshed `origin/main`.
   acceptance sizes. Status-only refresh transitions no longer replace unchanged table rows.
 - renewed literal merge-blocking `./gradlew check --console=plain` returned
   `BUILD SUCCESSFUL in 6m 3s` on the complete acceptance implementation and
-  review-fix diff. Desktop installation and visible owner acceptance remain
-  open gates.
+  review-fix diff. The owner-approved installed-data rehearsal created the protected
+  `catalog-greenfield-20260719T215743Z.tar.gz` archive, returned
+  `CATALOG_REHEARSAL_READY owners=11 creatures=2526 items=1329 saved_encounters=5
+  npcs=0 factions=0 locations=0 encounter_tables=5`, and left the installed database
+  hash unchanged. `./gradlew installDesktopApp --console=plain` then returned
+  `BUILD SUCCESSFUL in 17s`; the desktop shortcut now launches this candidate. Required
+  PR CI and visible owner acceptance remain open gates.
 
 ### Finish Criteria
 
