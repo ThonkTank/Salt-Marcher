@@ -9,6 +9,7 @@ import platform.diagnostics.NoopDiagnostics;
 import platform.persistence.SqliteConnectionSource;
 import platform.persistence.SqliteDatabase;
 import platform.persistence.SqliteMigration;
+import platform.persistence.SqliteQueryCounter;
 import features.sessionplanner.adapter.sqlite.model.SessionPlanRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionPlanSnapshotRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionPlannerPersistenceSchema;
@@ -69,13 +70,19 @@ public final class SqliteSessionPlannerLocalGateway {
     }
 
     public WorkspaceRead loadWorkspace() {
-        try (Connection connection = openReadyConnection()) {
+        SqliteQueryCounter counted;
+        try {
+            counted = new SqliteQueryCounter(openReadyConnection());
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load session planner workspace from SQLite.", exception);
+        }
+        try (Connection connection = counted.connection()) {
             boolean previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {
                 WorkspaceRead result = reads.loadWorkspace(connection);
                 connection.commit();
-                return result;
+                return new WorkspaceRead(result.currentSessionId(), result.sessions(), counted.queryCount());
             } catch (SQLException | RuntimeException exception) {
                 connection.rollback();
                 throw exception;
@@ -236,10 +243,13 @@ public final class SqliteSessionPlannerLocalGateway {
         ALREADY_EXISTS
     }
 
-    public record WorkspaceRead(long currentSessionId, List<SessionPlanSnapshotRecord> sessions) {
+    public record WorkspaceRead(long currentSessionId, List<SessionPlanSnapshotRecord> sessions, int queryCount) {
         public WorkspaceRead {
             currentSessionId = Math.max(0L, currentSessionId);
             sessions = sessions == null ? List.of() : List.copyOf(sessions);
+            if (queryCount < 0) {
+                throw new IllegalArgumentException("query count must not be negative");
+            }
         }
     }
 }

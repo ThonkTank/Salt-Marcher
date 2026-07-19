@@ -20,6 +20,8 @@ import features.worldplanner.api.WorldPlannerSnapshotModel;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import platform.diagnostics.Diagnostics;
+import platform.diagnostics.DiagnosticId;
+import platform.diagnostics.Measurement;
 import platform.execution.ExecutionLane;
 import platform.persistence.SqliteDatabase;
 import platform.ui.UiDispatcher;
@@ -27,7 +29,11 @@ import shell.api.ShellContribution;
 
 public final class SessionPlannerServiceAssembly {
 
+    private static final DiagnosticId JAVAFX_APPLY =
+            new DiagnosticId("sessionplanner.javafx.workspace-apply");
+
     private final Runtime runtime;
+    private final Diagnostics diagnostics;
 
     public static SessionPlannerServiceAssembly create(
             SqliteDatabase database,
@@ -36,7 +42,9 @@ public final class SessionPlannerServiceAssembly {
             SavedEncounterPlanListModel savedPlans,
             @Nullable WorldPlannerSnapshotModel worldPlanner,
             SessionGenerationApi generation,
-            ExecutionLane executionLane,
+            ExecutionLane authoredExecutionLane,
+            ExecutionLane preparationCpuLane,
+            ExecutionLane preparationIoLane,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
@@ -44,7 +52,8 @@ public final class SessionPlannerServiceAssembly {
                 Objects.requireNonNull(database, "database"));
         return new SessionPlannerServiceAssembly(
                 repository, repository, repository, party, encounters, savedPlans, worldPlanner,
-                generation, executionLane, uiDispatcher, diagnostics);
+                generation, authoredExecutionLane, preparationCpuLane, preparationIoLane,
+                uiDispatcher, diagnostics);
     }
 
     public SessionPlannerServiceAssembly(
@@ -56,7 +65,9 @@ public final class SessionPlannerServiceAssembly {
             SavedEncounterPlanListModel savedPlans,
             @Nullable WorldPlannerSnapshotModel worldPlanner,
             SessionGenerationApi generation,
-            ExecutionLane executionLane,
+            ExecutionLane authoredExecutionLane,
+            ExecutionLane preparationCpuLane,
+            ExecutionLane preparationIoLane,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
@@ -64,14 +75,17 @@ public final class SessionPlannerServiceAssembly {
         PartyApi safeParty = Objects.requireNonNull(party, "party");
         EncounterApi safeEncounters = Objects.requireNonNull(encounters, "encounters");
         SavedEncounterPlanListModel safeSavedPlans = Objects.requireNonNull(savedPlans, "savedPlans");
-        ExecutionLane lane = Objects.requireNonNull(executionLane, "executionLane");
+        ExecutionLane authoredLane = Objects.requireNonNull(authoredExecutionLane, "authoredExecutionLane");
+        ExecutionLane cpuLane = Objects.requireNonNull(preparationCpuLane, "preparationCpuLane");
+        ExecutionLane ioLane = Objects.requireNonNull(preparationIoLane, "preparationIoLane");
+        this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
                 Objects.requireNonNull(workspaceSource, "workspaceSource"), safeParty, safeEncounters,
-                safeSavedPlans, Objects.requireNonNull(generation, "generation"), worldPlanner, lane);
+                safeSavedPlans, Objects.requireNonNull(generation, "generation"), worldPlanner, ioLane, diagnostics);
         SessionPlannerWorkspacePublicationCoordinator publication =
                 new SessionPlannerWorkspacePublicationCoordinator(
                         assembler, Objects.requireNonNull(uiDispatcher, "uiDispatcher"),
-                        Objects.requireNonNull(diagnostics, "diagnostics"));
+                        diagnostics);
         SessionPreparationCoordinator preparation = new SessionPreparationCoordinator(
                 safeRepository,
                 Objects.requireNonNull(preparedSessions, "preparedSessions"),
@@ -79,10 +93,11 @@ public final class SessionPlannerServiceAssembly {
                 publication,
                 generation,
                 safeEncounters,
-                lane,
-                Objects.requireNonNull(diagnostics, "diagnostics"));
+                cpuLane,
+                ioLane,
+                diagnostics);
         SessionPlannerApplicationService application = new SessionPlannerApplicationService(
-                safeRepository, publication, preparation, lane, diagnostics);
+                safeRepository, publication, preparation, authoredLane, diagnostics);
         safeParty.activeParty().subscribe(ignored -> application.refreshPartyFacts());
         safeSavedPlans.subscribe(ignored -> application.refreshForeignFacts());
         if (worldPlanner != null) {
@@ -104,7 +119,13 @@ public final class SessionPlannerServiceAssembly {
     }
 
     public ShellContribution contribution() {
-        return new SessionPlannerContribution(runtime.applicationService(), workspaceModel());
+        return new SessionPlannerContribution(runtime.applicationService(), workspaceModel(), durationNanos ->
+                diagnostics.measurement(new Measurement(
+                        JAVAFX_APPLY,
+                        runtime.publication().current().preparation().attemptId(),
+                        durationNanos,
+                        1,
+                        0)));
     }
 
     private record Runtime(

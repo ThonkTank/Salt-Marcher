@@ -21,6 +21,8 @@ final class AppBootstrapLifecycleTest {
         RecordingLane generationIo = new RecordingLane();
         RecordingLane encounterCpu = new RecordingLane();
         RecordingLane encounterIo = new RecordingLane();
+        RecordingLane preparationCpu = new RecordingLane();
+        RecordingLane preparationIo = new RecordingLane();
         AppBootstrap bootstrap = new AppBootstrap(
                 NoopDiagnostics.INSTANCE,
                 shared,
@@ -28,6 +30,8 @@ final class AppBootstrapLifecycleTest {
                 generationIo,
                 encounterCpu,
                 encounterIo,
+                preparationCpu,
+                preparationIo,
                 DirectUiDispatcher.INSTANCE,
                 new SqliteDatabase(temporaryDirectory.resolve("lifecycle.sqlite"), NoopDiagnostics.INSTANCE));
 
@@ -38,6 +42,8 @@ final class AppBootstrapLifecycleTest {
         assertEquals(1, generationIo.closes);
         assertEquals(1, encounterCpu.closes);
         assertEquals(1, encounterIo.closes);
+        assertEquals(1, preparationCpu.closes);
+        assertEquals(1, preparationIo.closes);
         assertEquals(1, shared.closes);
     }
 

@@ -1,9 +1,13 @@
 package features.party.adapter.sqlite.gateway.local;
 
 import platform.diagnostics.NoopDiagnostics;
+import platform.diagnostics.DiagnosticId;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.Measurement;
 import platform.persistence.SqliteConnectionSource;
 import platform.persistence.SqliteDatabase;
 import platform.persistence.SqliteMigration;
+import platform.persistence.SqliteQueryCounter;
 import features.party.adapter.sqlite.model.PartyRosterRecord;
 
 import java.sql.Connection;
@@ -15,8 +19,11 @@ import java.util.Objects;
  */
 public final class SqlitePartyLocalGateway {
 
+    private static final DiagnosticId ROSTER_READ = new DiagnosticId("party.sqlite.roster-read");
+
     private final SqliteConnectionSource connections;
     private final PartyRosterSqliteStore store;
+    private final Diagnostics diagnostics;
 
     public SqlitePartyLocalGateway() {
         this(SqliteDatabase.defaultDatabase(
@@ -25,16 +32,32 @@ public final class SqlitePartyLocalGateway {
     }
 
     public SqlitePartyLocalGateway(SqliteDatabase database) {
+        this(database, NoopDiagnostics.INSTANCE);
+    }
+
+    public SqlitePartyLocalGateway(SqliteDatabase database, Diagnostics diagnostics) {
         PartyRosterSchemaMigrator schemaMigrator = new PartyRosterSchemaMigrator();
         this.connections = Objects.requireNonNull(database, "database").connections(
                 "party",
                 new SqliteMigration(1, schemaMigrator::ensureSchema));
         this.store = new PartyRosterSqliteStore();
+        this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
     public PartyRosterRecord load() {
-        try (Connection connection = connections.openConnection()) {
-            return store.load(connection);
+        long startedNanos = System.nanoTime();
+        try {
+            SqliteQueryCounter counted = new SqliteQueryCounter(connections.openConnection());
+            try (Connection connection = counted.connection()) {
+                PartyRosterRecord roster = store.load(connection);
+                diagnostics.measurement(new Measurement(
+                        ROSTER_READ,
+                        0L,
+                        Math.max(0L, System.nanoTime() - startedNanos),
+                        roster.characters().size(),
+                        counted.queryCount()));
+                return roster;
+            }
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to load party roster from SQLite.", exception);
         }

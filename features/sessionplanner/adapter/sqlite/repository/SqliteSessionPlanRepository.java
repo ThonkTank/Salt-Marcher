@@ -67,7 +67,8 @@ public final class SqliteSessionPlanRepository
         SqliteSessionPlannerLocalGateway.WorkspaceRead read = gateway.loadWorkspace();
         return new SessionPlannerReadCapture(
                 read.currentSessionId(),
-                read.sessions().stream().map(SessionPlanMapper::toDomain).toList());
+                read.sessions().stream().map(SessionPlanMapper::toDomain).toList(),
+                read.queryCount());
     }
 
     @Override

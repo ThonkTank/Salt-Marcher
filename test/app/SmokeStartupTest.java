@@ -100,6 +100,12 @@ public final class SmokeStartupTest {
                 try (AppBootstrap bootstrap = new AppBootstrap(
                         NoopDiagnostics.INSTANCE,
                         lane,
+                        lane,
+                        lane,
+                        lane,
+                        lane,
+                        lane,
+                        lane,
                         DirectUiDispatcher.INSTANCE,
                         database)) {
                     bootstrap.createShell();

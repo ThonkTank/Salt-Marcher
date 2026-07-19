@@ -287,7 +287,7 @@ final class SessionPlannerRuntimeMechanismsTest {
             RecordingDispatcher dispatcher
     ) {
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(
-                new InMemoryPartyRepository(), lane, dispatcher, (id, type) -> { });
+                new InMemoryPartyRepository(), lane, lane, dispatcher, (id, type) -> { });
         lane.runAll();
         party.application().createCharacter(new CreateCharacterCommand(
                 new CharacterDraft("Aria", "Mira", 3, 14, 16), MembershipState.ACTIVE));
@@ -319,6 +319,8 @@ final class SessionPlannerRuntimeMechanismsTest {
                 savedPlans,
                 null,
                 unavailableGeneration(),
+                lane,
+                lane,
                 lane,
                 dispatcher,
                 diagnostics);
@@ -413,8 +415,8 @@ final class SessionPlannerRuntimeMechanismsTest {
             SessionPlan captured = staleWorkspaceReads > 0 ? previous : current;
             staleWorkspaceReads = Math.max(0, staleWorkspaceReads - 1);
             return captured == null
-                    ? new SessionPlannerReadCapture(0L, List.of())
-                    : new SessionPlannerReadCapture(captured.sessionId(), List.of(captured));
+                    ? new SessionPlannerReadCapture(0L, List.of(), 0)
+                    : new SessionPlannerReadCapture(captured.sessionId(), List.of(captured), 0);
         }
 
         @Override

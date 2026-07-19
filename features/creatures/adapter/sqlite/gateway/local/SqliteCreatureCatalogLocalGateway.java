@@ -1,10 +1,14 @@
 package features.creatures.adapter.sqlite.gateway.local;
 
 import platform.diagnostics.NoopDiagnostics;
+import platform.diagnostics.DiagnosticId;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.Measurement;
 import platform.persistence.FeatureStoreDefinition;
 import platform.persistence.FeatureStoreHandle;
 import platform.persistence.SqliteDatabase;
 import platform.persistence.SqliteMigration;
+import platform.persistence.SqliteQueryCounter;
 import org.jspecify.annotations.Nullable;
 import features.creatures.adapter.sqlite.model.CreatureCatalogPageRecord;
 import features.creatures.adapter.sqlite.model.CreatureCatalogSearchCriteriaRecord;
@@ -23,12 +27,15 @@ import java.util.Objects;
  */
 public final class SqliteCreatureCatalogLocalGateway {
 
+    private static final DiagnosticId FACTS_READ = new DiagnosticId("creatures.sqlite.facts-read");
+
     private final FeatureStoreHandle connections;
     private final CreatureCatalogFilterValuesSqliteStore filterValuesStore = new CreatureCatalogFilterValuesSqliteStore();
     private final CreatureCatalogSearchSqliteStore catalogSearchStore = new CreatureCatalogSearchSqliteStore();
     private final CreatureDetailSqliteStore creatureDetailStore = new CreatureDetailSqliteStore();
     private final EncounterCandidateSqliteStore encounterCandidateStore = new EncounterCandidateSqliteStore();
     private final CreatureFactsSqliteStore creatureFactsStore = new CreatureFactsSqliteStore();
+    private final Diagnostics diagnostics;
 
     public SqliteCreatureCatalogLocalGateway() {
         this(SqliteDatabase.defaultDatabase(
@@ -37,11 +44,16 @@ public final class SqliteCreatureCatalogLocalGateway {
     }
 
     public SqliteCreatureCatalogLocalGateway(SqliteDatabase database) {
+        this(database, NoopDiagnostics.INSTANCE);
+    }
+
+    public SqliteCreatureCatalogLocalGateway(SqliteDatabase database, Diagnostics diagnostics) {
         CreaturesSchemaMigrator schemaMigrator = new CreaturesSchemaMigrator();
         this.connections = Objects.requireNonNull(database, "database").featureStore(
                 FeatureStoreDefinition.of(
                         "creatures",
                         new SqliteMigration(1, schemaMigrator::ensureSchema)));
+        this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
     public CreatureFilterValuesRecord loadFilterValues() {
@@ -85,8 +97,19 @@ public final class SqliteCreatureCatalogLocalGateway {
             features.creatures.domain.catalog.CreatureCatalogData.CreatureFactsSpec spec
     ) {
         Objects.requireNonNull(spec, "spec");
-        try (Connection connection = openReadyConnection()) {
-            return creatureFactsStore.load(connection, spec);
+        long startedNanos = System.nanoTime();
+        try {
+            SqliteQueryCounter counted = new SqliteQueryCounter(openReadyConnection());
+            try (Connection connection = counted.connection()) {
+                List<EncounterCandidateRecord> facts = creatureFactsStore.load(connection, spec);
+                diagnostics.measurement(new Measurement(
+                        FACTS_READ,
+                        0L,
+                        Math.max(0L, System.nanoTime() - startedNanos),
+                        facts.size(),
+                        counted.queryCount()));
+                return facts;
+            }
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to load requested creature facts from SQLite.", exception);
         }

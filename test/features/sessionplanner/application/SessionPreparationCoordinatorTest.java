@@ -369,6 +369,8 @@ final class SessionPreparationCoordinatorTest {
                 null,
                 generation,
                 lane,
+                lane,
+                lane,
                 DirectUiDispatcher.INSTANCE,
                 NoopDiagnostics.INSTANCE);
         planner.application().initialize();

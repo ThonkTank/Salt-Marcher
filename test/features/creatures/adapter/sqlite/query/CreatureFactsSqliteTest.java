@@ -25,7 +25,8 @@ final class CreatureFactsSqliteTest {
         Path path = directory.resolve("creature-facts.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
             CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(
-                    database, DirectExecutionLane.INSTANCE, DirectUiDispatcher.INSTANCE,
+                    database, DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE,
+                    DirectUiDispatcher.INSTANCE,
                     NoopDiagnostics.INSTANCE);
             creatures.catalogQueries().loadFilterOptions().toCompletableFuture().join();
             insert(path, 31L, "Third", "1/2", 100);

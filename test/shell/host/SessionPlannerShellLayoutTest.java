@@ -233,7 +233,8 @@ public final class SessionPlannerShellLayoutTest {
         SessionPlannerServiceAssembly session = new SessionPlannerServiceAssembly(
                 sessionRepository, sessionRepository, sessionRepository, party.application(),
                 encounter.application(), encounter.savedPlans(), null, unsupportedGeneration(),
-                DirectExecutionLane.INSTANCE, DirectUiDispatcher.INSTANCE, NoopDiagnostics.INSTANCE);
+                DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE,
+                DirectUiDispatcher.INSTANCE, NoopDiagnostics.INSTANCE);
         HexServiceAssembly hex = new HexServiceAssembly(
                 new SqliteHexMapRepository(), party.travelPositions(), party.application());
         SqliteDatabase dungeonDatabase = SqliteDatabase.defaultDatabase(
@@ -296,7 +297,7 @@ public final class SessionPlannerShellLayoutTest {
 
     private static SessionPlannerContribution sessionPlanner(LayoutServices services) {
         return new SessionPlannerContribution(
-                services.session().application(), services.session().workspaceModel());
+                services.session().application(), services.session().workspaceModel(), ignored -> { });
     }
 
     private static SessionGenerationApi unsupportedGeneration() {

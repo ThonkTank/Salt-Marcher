@@ -9,6 +9,7 @@ import java.util.concurrent.CompletionStage;
 import org.jspecify.annotations.Nullable;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
+import platform.diagnostics.Measurement;
 import platform.diagnostics.NoopDiagnostics;
 import platform.execution.DirectExecutionLane;
 import platform.execution.ExecutionLane;
@@ -56,6 +57,7 @@ public final class CreaturesApplicationService
     private static final DiagnosticId DETAIL_FAILURE = new DiagnosticId("creatures.detail.storage-failure");
     private static final DiagnosticId ENCOUNTER_CANDIDATES_FAILURE =
             new DiagnosticId("creatures.encounter-candidates.storage-failure");
+    private static final DiagnosticId FACTS_READ = new DiagnosticId("creatures.facts.read");
 
     private static final List<String> CHALLENGE_RATINGS = List.of(
             "0", "1/8", "1/4", "1/2",
@@ -102,6 +104,7 @@ public final class CreaturesApplicationService
     private final CreatureCatalogPort lookup;
     private final CreaturesPublishedState publishedState;
     private final ExecutionLane executionLane;
+    private final ExecutionLane factsLane;
     private final Diagnostics diagnostics;
     private final Object referenceIndexLock = new Object();
     private long referenceIndexRevision;
@@ -114,6 +117,7 @@ public final class CreaturesApplicationService
                 lookup,
                 publishedState,
                 DirectExecutionLane.INSTANCE,
+                DirectExecutionLane.INSTANCE,
                 NoopDiagnostics.INSTANCE);
     }
 
@@ -121,11 +125,13 @@ public final class CreaturesApplicationService
             CreatureCatalogPort lookup,
             CreaturesPublishedState publishedState,
             ExecutionLane executionLane,
+            ExecutionLane factsLane,
             Diagnostics diagnostics
     ) {
         this.lookup = Objects.requireNonNull(lookup, "lookup");
         this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
+        this.factsLane = Objects.requireNonNull(factsLane, "factsLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
@@ -277,7 +283,7 @@ public final class CreaturesApplicationService
             return completion;
         }
         try {
-            executionLane.execute(() -> completion.complete(loadFactsInLane(query)));
+            factsLane.execute(() -> completion.complete(loadFactsInLane(query)));
         } catch (RuntimeException exception) {
             diagnostics.failure(ENCOUNTER_CANDIDATES_FAILURE, exception.getClass());
             completion.complete(CreatureFactsSnapshotResult.storageFailure());
@@ -286,14 +292,22 @@ public final class CreaturesApplicationService
     }
 
     private CreatureFactsSnapshotResult loadFactsInLane(CreatureFactsQuery query) {
+        long startedNanos = System.nanoTime();
         try {
             var mode = query.mode() == CreatureFactsQuery.Mode.XP_VALUES
                     ? CreatureCatalogData.CreatureFactsSpec.FactsMode.XP_VALUES
                     : CreatureCatalogData.CreatureFactsSpec.FactsMode.CREATURE_IDS;
-            return CreatureFactsSnapshotResult.success(lookup.loadCreatureFacts(
+            CreatureFactsSnapshotResult result = CreatureFactsSnapshotResult.success(lookup.loadCreatureFacts(
                     new CreatureCatalogData.CreatureFactsSpec(mode, query.values())).stream()
                     .map(CreatureCatalogProjection::encounterCandidate)
                     .toList());
+            diagnostics.measurement(new Measurement(
+                    FACTS_READ,
+                    0L,
+                    Math.max(0L, System.nanoTime() - startedNanos),
+                    query.values().size(),
+                    0));
+            return result;
         } catch (IllegalArgumentException exception) {
             return CreatureFactsSnapshotResult.invalidRequest();
         } catch (IllegalStateException exception) {

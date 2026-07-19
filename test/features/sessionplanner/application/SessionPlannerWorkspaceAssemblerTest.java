@@ -84,7 +84,7 @@ final class SessionPlannerWorkspaceAssemblerTest {
                 .attachEncounter(11L)
                 .attachEncounter(12L);
         SessionPlan other = SessionPlan.seeded(8L, List.of(1L), EncounterDays.one()).addScene();
-        CountingSource source = new CountingSource(new SessionPlannerReadCapture(7L, List.of(current, other)));
+        CountingSource source = new CountingSource(new SessionPlannerReadCapture(7L, List.of(current, other), 0));
         CountingParty party = new CountingParty();
         CountingEncounter encounters = new CountingEncounter(false);
         int[] savedPlanReads = {0};
@@ -94,7 +94,8 @@ final class SessionPlannerWorkspaceAssemblerTest {
                     return new SavedEncounterPlanListResult(SavedEncounterPlanStatus.SUCCESS, List.of(), "");
                 }, listener -> () -> { }, listener -> () -> { });
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
-                source, party, encounters, savedPlans, unavailableGeneration(), null, directLane());
+                source, party, encounters, savedPlans, unavailableGeneration(), null, directLane(),
+                NoopDiagnostics.INSTANCE);
 
         SessionPlannerWorkspaceAssembly result = assembler.assemble(SessionPreparationSnapshot.idle())
                 .toCompletableFuture().join();
@@ -119,8 +120,9 @@ final class SessionPlannerWorkspaceAssemblerTest {
                 .attachEncounter(12L);
         CountingEncounter encounters = new CountingEncounter(true);
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
-                new CountingSource(new SessionPlannerReadCapture(7L, List.of(current))),
-                new CountingParty(), encounters, emptySavedPlans(), unavailableGeneration(), null, directLane());
+                new CountingSource(new SessionPlannerReadCapture(7L, List.of(current), 0)),
+                new CountingParty(), encounters, emptySavedPlans(), unavailableGeneration(), null, directLane(),
+                NoopDiagnostics.INSTANCE);
 
         SessionPlannerWorkspaceSnapshot workspace = assembler.assemble(SessionPreparationSnapshot.idle())
                 .toCompletableFuture().join().workspace();
@@ -145,9 +147,9 @@ final class SessionPlannerWorkspaceAssemblerTest {
                                 1L, "run-7", 3L, "STALE FALLBACK LABEL")));
         RewardGeneration generation = new RewardGeneration();
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
-                new CountingSource(new SessionPlannerReadCapture(7L, List.of(current))),
+                new CountingSource(new SessionPlannerReadCapture(7L, List.of(current), 0)),
                 new CountingParty(), new CountingEncounter(false), emptySavedPlans(), generation, null,
-                directLane());
+                directLane(), NoopDiagnostics.INSTANCE);
 
         SessionPlannerSceneTimelineProjection.GeneratedReward reward = assembler
                 .assemble(SessionPreparationSnapshot.idle()).toCompletableFuture().join()
@@ -167,11 +169,11 @@ final class SessionPlannerWorkspaceAssemblerTest {
         SessionPlan initial = SessionPlan.seeded(7L, List.of(1L), EncounterDays.one()).attachEncounter(11L);
         SessionPlan newer = withRevision(initial.setEncounterDays(new EncounterDays(new BigDecimal("2"))),
                 initial.revision().next());
-        CountingSource source = new CountingSource(new SessionPlannerReadCapture(7L, List.of(initial)));
+        CountingSource source = new CountingSource(new SessionPlannerReadCapture(7L, List.of(initial), 0));
         CountingEncounter encounters = new CountingEncounter(false, true);
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
                 source, new CountingParty(), encounters, emptySavedPlans(), unavailableGeneration(), null,
-                directLane());
+                directLane(), NoopDiagnostics.INSTANCE);
         SessionPlannerWorkspacePublicationCoordinator publications =
                 new SessionPlannerWorkspacePublicationCoordinator(
                         assembler, DirectUiDispatcher.INSTANCE, NoopDiagnostics.INSTANCE);
@@ -179,7 +181,7 @@ final class SessionPlannerWorkspaceAssemblerTest {
         publications.model().subscribe(snapshot -> publishedSourceRevisions.add(snapshot.sourceSessionRevision()));
 
         publications.initialize();
-        source.capture = new SessionPlannerReadCapture(7L, List.of(newer));
+        source.capture = new SessionPlannerReadCapture(7L, List.of(newer), 0);
         publications.providerRefresh();
         publications.providerRefresh();
         publications.authoredMutation(newer);
@@ -204,9 +206,9 @@ final class SessionPlannerWorkspaceAssemblerTest {
                             List.of(new SessionGeneratedRewardReference(
                                     1L, "run-7", 3L, "Last known reward")));
             SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
-                    new CountingSource(new SessionPlannerReadCapture(7L, List.of(current))),
+                    new CountingSource(new SessionPlannerReadCapture(7L, List.of(current), 0)),
                     new CountingParty(), new CountingEncounter(false), emptySavedPlans(),
-                    new RewardGeneration(mode), null, directLane());
+                    new RewardGeneration(mode), null, directLane(), NoopDiagnostics.INSTANCE);
 
             SessionPlannerWorkspaceSnapshot workspace = assembler.assemble(SessionPreparationSnapshot.idle())
                     .toCompletableFuture().join().workspace();

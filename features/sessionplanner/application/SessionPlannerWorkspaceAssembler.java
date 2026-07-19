@@ -54,6 +54,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.jspecify.annotations.Nullable;
 import platform.execution.ExecutionLane;
+import platform.diagnostics.DiagnosticId;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.Measurement;
 
 /** Assembles one coherent workspace from one planner capture and bounded owner reads. */
 public final class SessionPlannerWorkspaceAssembler {
@@ -61,6 +64,8 @@ public final class SessionPlannerWorkspaceAssembler {
     private static final BigDecimal HUNDRED = new BigDecimal("100");
     private static final String ENCOUNTER_FAILURE = "Encounter-Details konnten nicht geladen werden.";
     private static final String REWARD_FAILURE = "Generierte Belohnungen konnten nicht geladen werden.";
+    private static final DiagnosticId WORKSPACE_ASSEMBLY =
+            new DiagnosticId("sessionplanner.workspace.assembly");
 
     private final SessionPlannerWorkspaceSource source;
     private final PartyApi party;
@@ -69,6 +74,7 @@ public final class SessionPlannerWorkspaceAssembler {
     private final SessionGenerationApi generation;
     private final @Nullable WorldPlannerSnapshotModel worldPlanner;
     private final ExecutionLane executionLane;
+    private final Diagnostics diagnostics;
 
     public SessionPlannerWorkspaceAssembler(
             SessionPlannerWorkspaceSource source,
@@ -77,7 +83,8 @@ public final class SessionPlannerWorkspaceAssembler {
             SavedEncounterPlanListModel savedPlans,
             SessionGenerationApi generation,
             @Nullable WorldPlannerSnapshotModel worldPlanner,
-            ExecutionLane executionLane
+            ExecutionLane executionLane,
+            Diagnostics diagnostics
     ) {
         this.source = Objects.requireNonNull(source, "source");
         this.party = Objects.requireNonNull(party, "party");
@@ -86,9 +93,11 @@ public final class SessionPlannerWorkspaceAssembler {
         this.generation = Objects.requireNonNull(generation, "generation");
         this.worldPlanner = worldPlanner;
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
+        this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
     public CompletionStage<SessionPlannerWorkspaceAssembly> assemble(SessionPreparationSnapshot preparation) {
+        long startedNanos = System.nanoTime();
         CompletableFuture<SessionPlannerReadCapture> plannerRead = new CompletableFuture<>();
         try {
             executionLane.execute(() -> {
@@ -103,7 +112,15 @@ public final class SessionPlannerWorkspaceAssembler {
         }
         SessionPreparationSnapshot safePreparation = preparation == null
                 ? SessionPreparationSnapshot.idle() : preparation;
-        return plannerRead.thenCompose(capture -> hydrate(capture, safePreparation));
+        return plannerRead.thenCompose(capture -> hydrate(capture, safePreparation).thenApply(result -> {
+            diagnostics.measurement(new Measurement(
+                    WORKSPACE_ASSEMBLY,
+                    safePreparation.attemptId(),
+                    Math.max(0L, System.nanoTime() - startedNanos),
+                    result.workspace().sceneTimeline().sessionScenes().size(),
+                    capture.queryCount()));
+            return result;
+        }));
     }
 
     private CompletionStage<SessionPlannerWorkspaceAssembly> hydrate(
