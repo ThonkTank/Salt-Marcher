@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import features.dungeon.application.authored.command.DungeonPatchEntityRef;
 
 /** Maps exact source-local graphs without constructing a partial DungeonMap. */
 public final class DungeonWindowEntityMapper {
@@ -31,7 +32,10 @@ public final class DungeonWindowEntityMapper {
                 throw incomplete("room has no authored cells");
             }
             return new DungeonEntitySnapshot.Room(
-                    DungeonRoomRecordMapperSupport.toRooms(List.of(room.value())).getFirst());
+                    DungeonRoomRecordMapperSupport.toRooms(List.of(room.value())).getFirst(),
+                    room.value().clusterId() > 0L
+                            ? List.of(DungeonPatchEntityRef.roomCluster(room.value().clusterId()))
+                            : List.of());
         }
         if (record instanceof DungeonWindowEntityRecord.RoomCluster cluster) {
             if (cluster.memberRooms().isEmpty()
@@ -41,7 +45,10 @@ public final class DungeonWindowEntityMapper {
             validateBoundaries(cluster.value().boundaries());
             var rooms = DungeonRoomRecordMapperSupport.toRooms(cluster.memberRooms());
             return new DungeonEntitySnapshot.RoomClusterSnapshot(
-                    DungeonClusterRecordMapperSupport.toClusters(List.of(cluster.value()), rooms).getFirst());
+                    DungeonClusterRecordMapperSupport.toClusters(List.of(cluster.value()), rooms).getFirst(),
+                    cluster.memberRooms().stream()
+                            .map(room -> DungeonPatchEntityRef.room(room.roomId()))
+                            .toList());
         }
         if (record instanceof DungeonWindowEntityRecord.Corridor corridor) {
             validateCorridorClosure(corridor);
@@ -54,7 +61,7 @@ public final class DungeonWindowEntityMapper {
             if (value == null || !value.isReadable()) {
                 throw incomplete("corridor has incomplete endpoint geometry");
             }
-            return new DungeonEntitySnapshot.CorridorSnapshot(value);
+            return new DungeonEntitySnapshot.CorridorSnapshot(value, corridorDependencies(corridor));
         }
         if (record instanceof DungeonWindowEntityRecord.Stair stairRecord) {
             DungeonStairRecord source = stairRecord.value();
@@ -63,17 +70,23 @@ public final class DungeonWindowEntityMapper {
             if (!stair.isReadable()) {
                 throw incomplete("stair path or exits are incomplete");
             }
-            return new DungeonEntitySnapshot.StairSnapshot(stair);
+            return new DungeonEntitySnapshot.StairSnapshot(
+                    stair,
+                    source.corridorId() == null
+                            ? List.of()
+                            : List.of(DungeonPatchEntityRef.corridor(source.corridorId())));
         }
         if (record instanceof DungeonWindowEntityRecord.Transition transition) {
             validateTransitionSource(transition.value());
             return new DungeonEntitySnapshot.TransitionSnapshot(
-                    DungeonTransitionRecordMapperSupport.toTransitions(List.of(transition.value())).getFirst());
+                    DungeonTransitionRecordMapperSupport.toTransitions(List.of(transition.value())).getFirst(),
+                    transitionDependencies(transition.value()));
         }
         if (record instanceof DungeonWindowEntityRecord.FeatureMarker marker) {
             return new DungeonEntitySnapshot.FeatureMarkerSnapshot(
                     DungeonFeatureMarkerRecordMapperSupport.toFeatureMarkers(List.of(marker.value()))
-                            .markers().getFirst());
+                            .markers().getFirst(),
+                    List.of());
         }
         throw malformed("unsupported entity record");
     }
@@ -127,6 +140,40 @@ public final class DungeonWindowEntityMapper {
                 throw incomplete("corridor anchor ref host is missing");
             }
         }
+    }
+
+    private static List<DungeonPatchEntityRef> corridorDependencies(
+            DungeonWindowEntityRecord.Corridor corridor
+    ) {
+        Set<DungeonPatchEntityRef> result = new java.util.LinkedHashSet<>();
+        corridor.value().roomIds().stream().filter(id -> id > 0L)
+                .map(DungeonPatchEntityRef::room).forEach(result::add);
+        corridor.value().waypoints().stream().map(waypoint -> waypoint.clusterId())
+                .filter(id -> id > 0L).map(DungeonPatchEntityRef::roomCluster).forEach(result::add);
+        corridor.value().doorBindings().forEach(binding -> {
+            if (binding.roomId() > 0L) {
+                result.add(DungeonPatchEntityRef.room(binding.roomId()));
+            }
+            if (binding.clusterId() > 0L) {
+                result.add(DungeonPatchEntityRef.roomCluster(binding.clusterId()));
+            }
+        });
+        corridor.value().anchorRefs().stream().map(ref -> ref.hostCorridorId())
+                .filter(id -> id > 0L).map(DungeonPatchEntityRef::corridor).forEach(result::add);
+        corridor.anchorHosts().stream().map(DungeonCorridorRecord::corridorId)
+                .filter(id -> id > 0L && id != corridor.value().corridorId())
+                .map(DungeonPatchEntityRef::corridor).forEach(result::add);
+        return result.stream().sorted(features.dungeon.application.authored.port.DungeonWindow.ENTITY_ORDER).toList();
+    }
+
+    private static List<DungeonPatchEntityRef> transitionDependencies(DungeonTransitionRecord transition) {
+        Set<DungeonPatchEntityRef> result = new java.util.LinkedHashSet<>();
+        if (transition.targetTransitionId() != null
+                && transition.targetDungeonMapId() != null
+                && transition.targetDungeonMapId() == transition.mapId()) {
+            result.add(DungeonPatchEntityRef.transition(transition.targetTransitionId()));
+        }
+        return result.stream().sorted(features.dungeon.application.authored.port.DungeonWindow.ENTITY_ORDER).toList();
     }
 
     private static void validateTransitionSource(DungeonTransitionRecord transition) {

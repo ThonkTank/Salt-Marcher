@@ -4,9 +4,6 @@ import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.corridor.CorridorBindingMovement;
 import features.dungeon.domain.core.structure.corridor.CorridorBindingMovement.DoorBindingMoveResult;
-import features.dungeon.domain.core.structure.corridor.CorridorMapAuthoring;
-import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
-import features.dungeon.domain.core.structure.corridor.DungeonCorridorEndpoint;
 import features.dungeon.domain.core.structure.door.DoorBoundaryRelocation;
 import features.dungeon.domain.core.structure.door.DoorBoundaryRelocation.DoorBoundaryMovePlan;
 import features.dungeon.domain.core.structure.topology.SpatialTopology;
@@ -101,16 +98,6 @@ final class DungeonMapConnectionAuthoring {
             int deltaLevel
     ) {
         return corridorBindingMovement.moveWaypoint(dungeonMap, corridorId, waypointIndex, deltaQ, deltaR, deltaLevel);
-    }
-
-    DungeonMap createCorridor(
-            DungeonMap dungeonMap,
-            CorridorRoutingPolicy routingPolicy,
-            long stairId,
-            DungeonCorridorEndpoint start,
-            DungeonCorridorEndpoint end
-    ) {
-        return new CorridorMapAuthoring(routingPolicy).createCorridor(dungeonMap, stairId, start, end);
     }
 
     private DungeonMap withRelocatedDoorBoundary(

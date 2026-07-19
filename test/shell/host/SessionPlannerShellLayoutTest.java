@@ -40,7 +40,7 @@ import features.sessionplanner.adapter.javafx.SessionPlannerControlsView;
 import features.sessionplanner.adapter.javafx.SessionPlannerTimelineMainView;
 import platform.ui.catalogcrud.CatalogCrudControlsView;
 import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
-import features.dungeon.adapter.sqlite.repository.SqliteDungeonMapRepository;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
 import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
@@ -239,10 +239,9 @@ public final class SessionPlannerShellLayoutTest {
         SqliteDatabase dungeonDatabase = SqliteDatabase.defaultDatabase(
                 DungeonPersistenceSchema.DATABASE_FILE_NAME,
                 NoopDiagnostics.INSTANCE);
-        SqliteDungeonMapRepository dungeonStores = new SqliteDungeonMapRepository(dungeonDatabase);
+        SqliteDungeonCatalogStore dungeonCatalog = new SqliteDungeonCatalogStore(dungeonDatabase);
         DungeonTestAssembly.Component dungeon = DungeonTestAssembly.create(
-                dungeonStores,
-                dungeonStores,
+                dungeonCatalog,
                 new SqliteDungeonWindowStore(dungeonDatabase),
                 new SqliteDungeonUnitOfWork(dungeonDatabase),
                 party.activeParty(),

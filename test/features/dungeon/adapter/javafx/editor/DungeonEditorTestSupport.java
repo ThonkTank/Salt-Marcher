@@ -8,13 +8,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.WeakHashMap;
-import features.dungeon.adapter.sqlite.repository.SqliteDungeonMapRepository;
+import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
-import features.dungeon.domain.core.structure.DungeonMapIdentity;
-import features.dungeon.domain.core.structure.DungeonMap;
-import features.dungeon.domain.core.structure.room.RoomCellCoverage;
-import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.api.DungeonEdgeRef;
 import features.dungeon.api.DungeonEditorControlsModel;
 import features.dungeon.api.DungeonEditorControlsSnapshot;
@@ -282,11 +278,6 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
 
     static void selectMap(DungeonEditorControlsView controls, String mapName) {
         selectComboItem(comboBox(controls, "Dungeon auswählen"), mapName);
-        Object selected = comboBox(controls, "Dungeon auswählen").getValue();
-        if (selected instanceof String mapIdText && !mapIdText.isBlank()) {
-            new DungeonEditorTestPersistence.DatabaseAssertions()
-                    .refreshWindowIndexesForFixture(Long.parseLong(mapIdText));
-        }
         click(button(controls, "Öffnen"));
     }
 
@@ -1344,22 +1335,29 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static Set<String> persistedClusterCellsThroughRepository(long mapId, long clusterId, int level) {
-        DungeonMap dungeonMap = new SqliteDungeonMapRepository()
-                .findById(new DungeonMapIdentity(mapId))
-                .orElseThrow(() -> new AssertionError("Map not found during persisted room readback: " + mapId));
-        RoomCluster cluster = dungeonMap.topology().roomClusters().stream()
-                .filter(candidate -> candidate.clusterId() == clusterId)
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("Cluster not found during persisted room readback: "
-                        + clusterId));
-        var rooms = dungeonMap.rooms().rooms().stream()
-                .filter(room -> room.clusterId() == clusterId)
-                .toList();
         Set<String> cells = new LinkedHashSet<>();
-        new RoomCellCoverage().clusterCells(cluster, rooms, level).stream()
-                .map(DungeonEditorTestSupport::cellKey)
-                .forEach(cells::add);
-        return cells;
+        try (platform.persistence.SqliteDatabase database = platform.persistence.SqliteDatabase.defaultDatabase(
+                DungeonPersistenceSchema.DATABASE_FILE_NAME,
+                platform.diagnostics.NoopDiagnostics.INSTANCE);
+                var connection = database.connections("dungeon-test-inspection").openConnection();
+                var statement = connection.prepareStatement(
+                        "SELECT c.cell_x,c.cell_y,c.level_z FROM " + DungeonPersistenceSchema.ROOM_CELLS_TABLE + " c"
+                                + " JOIN " + DungeonPersistenceSchema.ROOMS_TABLE + " r ON r.room_id=c.room_id"
+                                + " WHERE r.dungeon_map_id=? AND r.cluster_id=? AND c.level_z=?"
+                                + " ORDER BY c.level_z,c.cell_y,c.cell_x")) {
+            statement.setLong(1, mapId);
+            statement.setLong(2, clusterId);
+            statement.setInt(3, level);
+            try (var rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    cells.add(cellKey(new Cell(
+                            rows.getInt("cell_x"), rows.getInt("cell_y"), rows.getInt("level_z"))));
+                }
+            }
+            return Set.copyOf(cells);
+        } catch (Exception exception) {
+            throw new AssertionError("Failed to read persisted cluster cells for map " + mapId, exception);
+        }
     }
 
     static features.dungeon.api.DungeonEditorMapSnapshot.Area roomAreaByLabel(

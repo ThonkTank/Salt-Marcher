@@ -11,11 +11,19 @@ import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.port.DungeonCompoundUnitOfWorkResult;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
-import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
+import features.dungeon.application.authored.port.DungeonEntitySnapshot;
+import features.dungeon.application.authored.port.DungeonIdentityClosureRequest;
+import features.dungeon.application.authored.port.DungeonIdentityClosureResult;
+import features.dungeon.application.authored.port.DungeonInboundReferenceRequest;
+import features.dungeon.application.authored.port.DungeonInboundReferenceResult;
 import features.dungeon.application.authored.port.DungeonMapHeader;
 import features.dungeon.application.authored.port.DungeonUnitOfWork;
 import features.dungeon.application.authored.port.DungeonUnitOfWorkResult;
+import features.dungeon.application.authored.port.DungeonWindow;
+import features.dungeon.application.authored.port.DungeonWindowChunkHeader;
+import features.dungeon.application.authored.port.DungeonWindowRequest;
+import features.dungeon.application.authored.port.DungeonWindowStore;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.DungeonMapMetadata;
@@ -207,9 +215,11 @@ final class DungeonTransitionInvariantScenarios {
         DungeonTestAssembly.Component services = DungeonEditorTestPersistence.createDungeonServices(
                 repository,
                 repository,
-                DungeonTestAssembly.emptyWindowStore(),
                 repository.unitOfWork());
         DungeonEditorDungeonState dungeonState = new DungeonEditorDungeonState();
+        DungeonAuthoredApplicationService.Session initialSession = services.authored().openSession(dungeonState);
+        assertTrue(initialSession.loadInitialWindow(new MapId(sourceMapId), 0),
+                "transition link use case starts from an accepted source window");
         DungeonAuthoredApplicationService.OperationResult result = services
                 .editor()
                 .openSession(dungeonState, runtimeSession -> runtimeSession.saveTransitionLink(
@@ -251,6 +261,8 @@ final class DungeonTransitionInvariantScenarios {
                 "compound undo restores the target reverse link atomically");
         assertTrue(services.authored().canRedo(new MapId(targetMapId)),
                 "compound transition link is available as one target-map redo step");
+        assertTrue(authoredSession.loadInitialWindow(new MapId(targetMapId), 0),
+                "compound redo loads the current post-undo target-map window");
         services.authored().redo(new MapId(targetMapId), authoredSession);
         assertEquals(
                 TransitionDestination.dungeonMap(targetMapId, targetTransitionId),
@@ -307,7 +319,7 @@ final class DungeonTransitionInvariantScenarios {
                 List.of(),
                 new StairCollection(List.of()),
                 new TransitionCatalog(List.of(transitions)),
-                0L);
+                1L);
     }
 
     private static Transition transitionById(DungeonMap map, long transitionId) {
@@ -340,7 +352,7 @@ final class DungeonTransitionInvariantScenarios {
         return List.copyOf(result);
     }
 
-    private static final class MissingPreviousMapRepository implements DungeonCatalogStore, DungeonMapRepository {
+    private static final class MissingPreviousMapRepository implements DungeonCatalogStore, DungeonWindowStore {
         private final Map<Long, DungeonMap> mapsById = new LinkedHashMap<>();
         private final long missingPreviousMapId;
         private final List<Long> requestedMapIds = new ArrayList<>();
@@ -357,22 +369,12 @@ final class DungeonTransitionInvariantScenarios {
         }
 
         @Override
-        public long nextStairId() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long nextTransitionId() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Optional<DungeonMap> findById(DungeonMapIdentity mapId) {
+        public Optional<DungeonMapHeader> find(DungeonMapIdentity mapId) {
             long id = mapId == null ? 0L : mapId.value();
             requestedMapIds.add(id);
             return id == missingPreviousMapId
                     ? Optional.empty()
-                    : Optional.ofNullable(mapsById.get(id));
+                    : Optional.ofNullable(mapsById.get(id)).map(MissingPreviousMapRepository::header);
         }
 
         @Override
@@ -391,12 +393,67 @@ final class DungeonTransitionInvariantScenarios {
         }
 
         @Override
-        public Optional<DungeonMap> firstMap() {
-            return mapsById.values().stream().findFirst();
+        public void delete(DungeonMapIdentity mapId) {
         }
 
         @Override
-        public void delete(DungeonMapIdentity mapId) {
+        public Optional<DungeonWindow> loadWindow(DungeonWindowRequest request) {
+            DungeonMap map = mapsById.get(request.mapId().value());
+            if (map == null) {
+                return Optional.empty();
+            }
+            List<DungeonWindowChunkHeader> chunkHeaders = request.chunkKeys().stream()
+                    .map(key -> new DungeonWindowChunkHeader(key, map.revision()))
+                    .toList();
+            return Optional.of(new DungeonWindow(
+                    header(map), request.requestGeneration(), chunkHeaders, List.of(), List.of()));
+        }
+
+        @Override
+        public DungeonIdentityClosureResult loadIdentityClosure(DungeonIdentityClosureRequest request) {
+            DungeonMap map = mapsById.get(request.mapId().value());
+            if (map == null) {
+                requestedMapIds.add(request.mapId().value());
+                return new DungeonIdentityClosureResult.Rejected(
+                        DungeonIdentityClosureResult.Reason.MAP_MISSING, request.entityRefs());
+            }
+            if (map.revision() != request.expectedMapRevision()) {
+                return new DungeonIdentityClosureResult.Rejected(
+                        DungeonIdentityClosureResult.Reason.STALE_REVISION, request.entityRefs());
+            }
+            List<DungeonEntitySnapshot> snapshots = new ArrayList<>();
+            for (var ref : request.entityRefs()) {
+                if (ref.kind() == features.dungeon.application.authored.command.DungeonPatchEntityRef.Kind.TRANSITION) {
+                    Transition transition = map.transitionCatalog().transition(ref.id());
+                    if (transition == null) {
+                        return new DungeonIdentityClosureResult.Rejected(
+                                DungeonIdentityClosureResult.Reason.ENTITY_MISSING, List.of(ref));
+                    }
+                    snapshots.add(new DungeonEntitySnapshot.TransitionSnapshot(transition));
+                }
+            }
+            return new DungeonIdentityClosureResult.Complete(header(map), snapshots);
+        }
+
+        @Override
+        public DungeonInboundReferenceResult discoverInboundReferences(DungeonInboundReferenceRequest request) {
+            DungeonMap map = mapsById.get(request.mapId().value());
+            if (map == null) {
+                requestedMapIds.add(request.mapId().value());
+                return new DungeonInboundReferenceResult.Rejected(
+                        DungeonIdentityClosureResult.Reason.MAP_MISSING,
+                        request.targetRefs());
+            }
+            if (map.revision() != request.expectedMapRevision()) {
+                return new DungeonInboundReferenceResult.Rejected(
+                        DungeonIdentityClosureResult.Reason.STALE_REVISION,
+                        request.targetRefs());
+            }
+            return new DungeonInboundReferenceResult.Complete(header(map), List.of());
+        }
+
+        private static DungeonMapHeader header(DungeonMap map) {
+            return new DungeonMapHeader(map.metadata().mapId(), map.metadata().mapName(), map.revision());
         }
 
         private DungeonUnitOfWork unitOfWork() {

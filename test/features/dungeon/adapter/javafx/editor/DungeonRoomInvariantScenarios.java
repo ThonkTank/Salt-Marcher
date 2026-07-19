@@ -13,6 +13,7 @@ import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
 import features.dungeon.domain.core.structure.room.RoomClusterGeometry;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import features.dungeon.domain.core.structure.room.RoomClusterRoomPartition;
+import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;
 
 final class DungeonRoomInvariantScenarios {
 
@@ -44,19 +45,22 @@ final class DungeonRoomInvariantScenarios {
                 List.of(EdgeSide.northOf(1, 1), EdgeSide.northOf(2, 1)),
                 0,
                 -1,
-                0);
+                0,
+                roomIds(100L, 100L));
         RoomRegion stretchedRoom = firstRoom(stretched);
         assertEquals(original.roomId(), stretchedRoom.roomId(), "DGI-ROOM-001 room id survives wall-run stretch");
         assertEquals(original.narration(), stretchedRoom.narration(), "DGI-ROOM-001 narration survives wall-run stretch");
 
         DungeonMap partitioned = DungeonMapAuthoring.empty(new DungeonMapIdentity(11L), "Partitioned Paint Test")
-                .paintRoomRectangle(new Cell(1, 1, 0), new Cell(2, 1, 0));
+                .paintRoomRectangle(
+                        new Cell(1, 1, 0), new Cell(2, 1, 0), roomIds(200L, 200L));
         long clusterId = firstRoom(partitioned).clusterId();
         partitioned = partitioned.editClusterBoundaries(
                 clusterId,
                 List.of(EdgeSide.eastOf(1, 1)),
                 BoundaryKind.WALL,
-                false);
+                false,
+                roomIds(300L, 300L));
         RoomRegion left = roomByAnchor(partitioned, new Cell(1, 1, 0));
         RoomRegion right = roomByAnchor(partitioned, new Cell(2, 1, 0));
         DungeonRoomNarration leftNarration = new DungeonRoomNarration("Left identity", List.of());
@@ -65,7 +69,10 @@ final class DungeonRoomInvariantScenarios {
                 withNarration(partitioned, left.roomId(), leftNarration),
                 right.roomId(),
                 rightNarration);
-        DungeonMap expanded = narratedTwoRooms.paintRoomRectangle(new Cell(1, 1, 0), new Cell(1, 2, 0));
+        DungeonMap expanded = narratedTwoRooms.paintRoomRectangle(
+                new Cell(1, 1, 0),
+                new Cell(1, 2, 0),
+                roomIds(400L, 400L));
         assertEquals(leftNarration, roomById(expanded, left.roomId()).narration(),
                 "DGI-ROOM-001 partition-preserving paint keeps left room narration");
         assertEquals(rightNarration, roomById(expanded, right.roomId()).narration(),
@@ -73,7 +80,10 @@ final class DungeonRoomInvariantScenarios {
         assertEquals(2L, (long) expanded.rooms().rooms().size(),
                 "DGI-ROOM-001 partition-preserving paint keeps both represented rooms");
 
-        DungeonMap trimmed = expanded.deleteRoomRectangle(new Cell(1, 2, 0), new Cell(1, 2, 0));
+        DungeonMap trimmed = expanded.deleteRoomRectangle(
+                new Cell(1, 2, 0),
+                new Cell(1, 2, 0),
+                roomIds(500L, 500L));
         assertEquals(leftNarration, roomById(trimmed, left.roomId()).narration(),
                 "DGI-ROOM-001 partition-preserving delete keeps represented left room narration");
         assertEquals(rightNarration, roomById(trimmed, right.roomId()).narration(),
@@ -97,20 +107,22 @@ final class DungeonRoomInvariantScenarios {
         assertEquals(assignedCells.size(), (int) assignedCount, "DGI-ROOM-002 partition assigns each cell once");
 
         DungeonMap partitioned = DungeonMapAuthoring.empty(new DungeonMapIdentity(12L), "Boundary Coalesce Test")
-                .paintRoomRectangle(left, middle);
+                .paintRoomRectangle(left, middle, roomIds(600L, 600L));
         long clusterId = firstRoom(partitioned).clusterId();
         DungeonMap split = partitioned.editClusterBoundaries(
                 clusterId,
                 List.of(EdgeSide.eastOf(0, 0)),
                 BoundaryKind.WALL,
-                false);
+                false,
+                roomIds(700L, 700L));
         assertEquals(2L, (long) split.rooms().rooms().size(),
                 "DGI-ROOM-002 closed boundary split creates two room components");
         DungeonMap coalesced = split.editClusterBoundaries(
                 clusterId,
                 List.of(EdgeSide.eastOf(0, 0)),
                 BoundaryKind.WALL,
-                true);
+                true,
+                roomIds(800L, 800L));
         assertEquals(1L, (long) coalesced.rooms().rooms().size(),
                 "DGI-ROOM-002 removing the separating wall coalesces the open component to one room");
         assertEquals(java.util.Set.of(left, middle), coalesced.rooms().rooms().getFirst().floorCells(),
@@ -138,7 +150,16 @@ final class DungeonRoomInvariantScenarios {
 
     private static DungeonMap twoByTwoMap() {
         return DungeonMapAuthoring.empty(new DungeonMapIdentity(10L), "Room Test")
-                .paintRoomRectangle(new Cell(1, 1, 0), new Cell(2, 2, 0));
+                .paintRoomRectangle(
+                        new Cell(1, 1, 0), new Cell(2, 2, 0), roomIds(10L, 10L));
+    }
+
+    private static RoomTopologyWorkCatalog.ReservedIdentities roomIds(
+            long firstClusterId,
+            long firstRoomId
+    ) {
+        return new RoomTopologyWorkCatalog.ReservedIdentities(
+                firstClusterId, 64, firstRoomId, 64);
     }
 
     private static DungeonMap withNarration(

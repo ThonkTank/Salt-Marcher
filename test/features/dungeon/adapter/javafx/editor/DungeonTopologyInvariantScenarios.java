@@ -9,10 +9,12 @@ import features.dungeon.domain.core.graph.DungeonTopologyElementKind;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.corridor.DungeonCorridorEndpoint;
+import features.dungeon.domain.core.structure.corridor.CorridorMapAuthoring;
 import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;
 import features.dungeon.domain.core.structure.transition.Transition;
 import features.dungeon.domain.core.structure.transition.TransitionAnchor;
 import features.dungeon.domain.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
@@ -37,7 +39,8 @@ final class DungeonTopologyInvariantScenarios {
 
     private static void assertDoorTopologyIdentity() {
         DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(70L), "Door Topology Identity");
-        map = map.paintRoomRectangle(new Cell(1, 1, 0), new Cell(3, 3, 0));
+        map = map.paintRoomRectangle(
+                new Cell(1, 1, 0), new Cell(3, 3, 0), roomIds(10L, 10L));
         RoomCluster cluster = clusterContainingAnchor(map, new Cell(1, 1, 0));
         Edge doorEdge = Edge.sideOf(new Cell(3, 2, 0), Direction.EAST);
         DungeonTopologyRef doorRef = DungeonTopologyRef.door(DungeonBoundaryKey.from(doorEdge).stableId());
@@ -46,14 +49,16 @@ final class DungeonTopologyInvariantScenarios {
                 cluster.clusterId(),
                 List.of(doorEdge),
                 BoundaryKind.DOOR,
-                false);
+                false,
+                roomIds(100L, 100L));
         assertPresent(withDoor, doorRef, "door topology identity is published after create");
 
         DungeonMap updated = withDoor.editClusterBoundaries(
                 cluster.clusterId(),
                 List.of(doorEdge),
                 BoundaryKind.DOOR,
-                false);
+                false,
+                roomIds(200L, 200L));
         assertPresent(updated, doorRef, "door topology identity survives idempotent update");
 
         DungeonMap corridorBound = corridorBoundDoorMap();
@@ -61,7 +66,8 @@ final class DungeonTopologyInvariantScenarios {
                 corridorBound,
                 clusterContainingAnchor(corridorBound, new Cell(8, 1, 0)).clusterId(),
                 new Cell(8, 2, 0),
-                Direction.WEST);
+                Direction.WEST,
+                1_600L);
         assertTrue(
                 hasDoorBoundary(corridorBound, boundDoor.clusterId(), boundDoor.edge()),
                 "corridor-bound setup contains authored door boundary");
@@ -73,7 +79,8 @@ final class DungeonTopologyInvariantScenarios {
                 boundDoor.clusterId(),
                 List.of(boundDoor.edge()),
                 BoundaryKind.DOOR,
-                true);
+                true,
+                roomIds(300L, 300L));
         assertTrue(
                 hasDoorBoundary(rejectedDelete, boundDoor.clusterId(), boundDoor.edge()),
                 "corridor-bound delete reject preserves authored door boundary");
@@ -83,41 +90,57 @@ final class DungeonTopologyInvariantScenarios {
                 cluster.clusterId(),
                 List.of(doorEdge),
                 BoundaryKind.DOOR,
-                true);
+                true,
+                roomIds(400L, 400L));
         assertAbsent(deleted, doorRef, "door topology identity is released after unbound delete");
     }
 
     private static DungeonMap corridorBoundDoorMap() {
         DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(71L), "Corridor Bound Door Topology");
-        map = map.paintRoomRectangle(new Cell(1, 1, 0), new Cell(3, 3, 0));
-        map = map.paintRoomRectangle(new Cell(8, 1, 0), new Cell(10, 3, 0));
+        map = map.paintRoomRectangle(
+                new Cell(1, 1, 0), new Cell(3, 3, 0), roomIds(500L, 500L));
+        map = map.paintRoomRectangle(
+                new Cell(8, 1, 0), new Cell(10, 3, 0), roomIds(600L, 600L));
         DoorFixture leftDoor = doorFixture(
                 map,
                 clusterContainingAnchor(map, new Cell(1, 1, 0)).clusterId(),
                 new Cell(3, 2, 0),
-                Direction.EAST);
-        map = withDoorBoundary(map, leftDoor);
+                Direction.EAST,
+                1_000L);
+        map = withDoorBoundary(map, leftDoor, 1_100L);
         leftDoor = doorFixture(
                 map,
                 clusterContainingAnchor(map, new Cell(1, 1, 0)).clusterId(),
                 leftDoor.cell(),
-                leftDoor.direction());
+                leftDoor.direction(),
+                1_200L);
         DoorFixture rightDoor = doorFixture(
                 map,
                 clusterContainingAnchor(map, new Cell(8, 1, 0)).clusterId(),
                 new Cell(8, 2, 0),
-                Direction.WEST);
-        map = withDoorBoundary(map, rightDoor);
+                Direction.WEST,
+                1_300L);
+        map = withDoorBoundary(map, rightDoor, 1_400L);
         rightDoor = doorFixture(
                 map,
                 clusterContainingAnchor(map, new Cell(8, 1, 0)).clusterId(),
                 rightDoor.cell(),
-                rightDoor.direction());
+                rightDoor.direction(),
+                1_500L);
         RoomRegion leftRoom = roomInCluster(map, leftDoor.clusterId());
         RoomRegion rightRoom = roomInCluster(map, rightDoor.clusterId());
-        return map.createCorridor(
-                new features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy(),
-                0L,
+        return new CorridorMapAuthoring(
+                new features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy())
+                .createCorridor(
+                map,
+                new CorridorMapAuthoring.IdentityReservation(
+                        700L,
+                        701L,
+                        702L,
+                        703L,
+                        List.of(704L, 705L),
+                        roomIds(800L, 800L),
+                        roomIds(900L, 900L)),
                 DungeonCorridorEndpoint.door(
                         leftRoom.roomId(),
                         leftDoor.clusterId(),
@@ -136,7 +159,8 @@ final class DungeonTopologyInvariantScenarios {
             DungeonMap map,
             long clusterId,
             Cell cell,
-            Direction direction
+            Direction direction,
+            long reservationFirstId
     ) {
         Edge edge = Edge.sideOf(cell, direction);
         DungeonTopologyRef ref = DungeonTopologyRef.door(DungeonBoundaryKey.from(edge).stableId());
@@ -144,17 +168,23 @@ final class DungeonTopologyInvariantScenarios {
                 clusterId,
                 List.of(edge),
                 BoundaryKind.DOOR,
-                false);
+                false,
+                roomIds(reservationFirstId, reservationFirstId));
         assertPresent(withDoor, ref, "door fixture publishes topology identity");
         return new DoorFixture(clusterId, cell, direction, edge, ref);
     }
 
-    private static DungeonMap withDoorBoundary(DungeonMap map, DoorFixture door) {
+    private static DungeonMap withDoorBoundary(
+            DungeonMap map,
+            DoorFixture door,
+            long reservationFirstId
+    ) {
         return map.editClusterBoundaries(
                 door.clusterId(),
                 List.of(door.edge()),
                 BoundaryKind.DOOR,
-                false);
+                false,
+                roomIds(reservationFirstId, reservationFirstId));
     }
 
     private static void assertTransitionTopologyIdentity() {
@@ -206,6 +236,14 @@ final class DungeonTopologyInvariantScenarios {
         DungeonMap deleted = rejectedDelete.withExactTransitionChange(deletable, null);
         assertAbsent(deleted, deletableRef, "transition topology identity is released after successful delete");
         assertPresent(deleted, firstRef, "unrelated transition topology identity survives another transition delete");
+    }
+
+    private static RoomTopologyWorkCatalog.ReservedIdentities roomIds(
+            long firstClusterId,
+            long firstRoomId
+    ) {
+        return new RoomTopologyWorkCatalog.ReservedIdentities(
+                firstClusterId, 64, firstRoomId, 64);
     }
 
     private static DungeonTopologyRef transitionRef(long transitionId) {

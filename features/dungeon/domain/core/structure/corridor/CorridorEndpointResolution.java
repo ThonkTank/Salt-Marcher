@@ -14,6 +14,7 @@ import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMutation;
 import features.dungeon.domain.core.structure.room.RoomTopologyRebuilder.RebuildResult;
+import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;
 import features.dungeon.domain.core.structure.topology.DungeonMapTopology.DungeonTopologyBinding;
 
 /**
@@ -27,30 +28,37 @@ final class CorridorEndpointResolution {
     ResolvedEndpointResult resolve(
             DungeonMap dungeonMap,
             DungeonCorridorEndpoint endpoint,
-            CorridorHostCells hostCells
+            CorridorHostCells hostCells,
+            long reservedAnchorId,
+            RoomTopologyWorkCatalog.ReservedIdentities roomIds
     ) {
         Objects.requireNonNull(dungeonMap, "dungeonMap");
+        Objects.requireNonNull(roomIds, "roomIds");
+        if (reservedAnchorId <= 0L) {
+            throw new IllegalArgumentException("corridor-anchor identity must be positive");
+        }
         if (endpoint == null || !endpoint.present()) {
             return null;
         }
         if (endpoint.isDoorEndpoint()) {
-            return resolveDoorEndpoint(dungeonMap, endpoint);
+            return resolveDoorEndpoint(dungeonMap, endpoint, roomIds);
         }
         if (endpoint.isAnchorEndpoint()) {
-            return resolveAnchorEndpoint(dungeonMap, endpoint, hostCells);
+            return resolveAnchorEndpoint(dungeonMap, endpoint, hostCells, reservedAnchorId);
         }
         return null;
     }
 
     private static @Nullable ResolvedEndpointResult resolveDoorEndpoint(
             DungeonMap dungeonMap,
-            DungeonCorridorEndpoint endpoint
+            DungeonCorridorEndpoint endpoint,
+            RoomTopologyWorkCatalog.ReservedIdentities roomIds
     ) {
         if (CorridorMapLookup.cluster(dungeonMap, endpoint.clusterId()) == null) {
             return null;
         }
         Edge edge = Edge.sideOf(endpoint.roomCell(), endpoint.direction());
-        DungeonMap mapped = ensureDoorBoundary(dungeonMap, endpoint.clusterId(), edge);
+        DungeonMap mapped = ensureDoorBoundary(dungeonMap, endpoint.clusterId(), edge, roomIds);
         RoomCluster mappedCluster = CorridorMapLookup.cluster(mapped, endpoint.clusterId());
         DungeonClusterBoundary boundary = boundaryAt(mapped, endpoint.clusterId(), edge);
         if (mappedCluster == null || boundary == null || !boundary.isDoor()) {
@@ -73,13 +81,15 @@ final class CorridorEndpointResolution {
     private static @Nullable ResolvedEndpointResult resolveAnchorEndpoint(
             DungeonMap dungeonMap,
             DungeonCorridorEndpoint endpoint,
-            CorridorHostCells hostCells
+            CorridorHostCells hostCells,
+            long reservedAnchorId
     ) {
         CorridorAnchorEndpointMaterialization.AuthoredEndpointMaterialization resolved =
                 CorridorAnchorEndpointMaterialization.materializeAuthored(
                         dungeonMap.corridors(),
                         endpoint,
                         localAnchorId(dungeonMap, endpoint),
+                        reservedAnchorId,
                         hostCells);
         if (resolved == null) {
             return null;
@@ -98,19 +108,26 @@ final class CorridorEndpointResolution {
         return new ResolvedEndpointResult(resolvedMap, resolvedAnchor(resolved.anchor()));
     }
 
-    private static DungeonMap ensureDoorBoundary(DungeonMap dungeonMap, long clusterId, Edge edge) {
+    private static DungeonMap ensureDoorBoundary(
+            DungeonMap dungeonMap,
+            long clusterId,
+            Edge edge,
+            RoomTopologyWorkCatalog.ReservedIdentities roomIds
+    ) {
         DungeonClusterBoundary existing = boundaryAt(dungeonMap, clusterId, edge);
         if (existing != null && existing.isDoor()) {
             return dungeonMap;
         }
-        return BOUNDARY_MUTATION.editBoundaries(
-                        dungeonMap.topology(),
-                        dungeonMap.rooms(),
-                        dungeonMap.corridors(),
-                        clusterId,
-                        List.of(edge),
-                        BoundaryKind.DOOR,
-                        false)
+        var rebuild = BOUNDARY_MUTATION.editBoundaries(
+                dungeonMap.topology(),
+                dungeonMap.rooms(),
+                dungeonMap.corridors(),
+                clusterId,
+                List.of(edge),
+                BoundaryKind.DOOR,
+                false,
+                roomIds);
+        return rebuild
                 .map(result -> withRoomTopology(dungeonMap, result))
                 .orElse(dungeonMap);
     }

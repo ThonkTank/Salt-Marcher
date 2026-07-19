@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import platform.diagnostics.NoopDiagnostics;
 import platform.persistence.SqliteDatabase;
-import features.dungeon.adapter.sqlite.repository.SqliteDungeonMapRepository;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
 import features.hex.adapter.sqlite.repository.SqliteHexMapRepository;
 import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
 import features.worldplanner.adapter.sqlite.repository.SqliteWorldPlannerRepository;
@@ -25,7 +25,7 @@ final class SqliteDungeonHexPlannerAdaptersTest {
         try (SqliteDatabase database = new SqliteDatabase(
                 temporaryDirectory.resolve("dungeon-hex-planners.db"),
                 NoopDiagnostics.INSTANCE)) {
-            SqliteDungeonMapRepository dungeons = new SqliteDungeonMapRepository(database);
+            SqliteDungeonCatalogStore dungeons = new SqliteDungeonCatalogStore(database);
             SqliteHexMapRepository hexMaps = new SqliteHexMapRepository(database);
             SqliteSessionPlanRepository sessions = new SqliteSessionPlanRepository(database);
             SqliteWorldPlannerRepository world = new SqliteWorldPlannerRepository(database);
@@ -41,7 +41,7 @@ final class SqliteDungeonHexPlannerAdaptersTest {
             assertTrue(world.load().npcs().isEmpty());
             assertEquals(expectedVersions, featureVersions(database));
 
-            dungeons.firstMap();
+            dungeons.first();
             hexMaps.loadSelected();
             sessions.loadCurrent();
             world.load();

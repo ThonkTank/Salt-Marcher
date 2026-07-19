@@ -8,7 +8,7 @@ import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import shell.api.ShellBinding;
 import shell.api.ShellSlot;
-import features.dungeon.adapter.sqlite.repository.SqliteDungeonMapRepository;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
 import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
@@ -449,10 +449,9 @@ public final class DungeonTravelProjectionLevelTest {
             SqliteDatabase dungeonDatabase = new SqliteDatabase(
                     database.databasePath,
                     NoopDiagnostics.INSTANCE);
-            SqliteDungeonMapRepository dungeonStores = new SqliteDungeonMapRepository(dungeonDatabase);
+            SqliteDungeonCatalogStore dungeonCatalog = new SqliteDungeonCatalogStore(dungeonDatabase);
             DungeonTestAssembly.Component dungeon = DungeonTestAssembly.create(
-                    dungeonStores,
-                    dungeonStores,
+                    dungeonCatalog,
                     new SqliteDungeonWindowStore(dungeonDatabase),
                     new SqliteDungeonUnitOfWork(dungeonDatabase),
                     party.activeParty(),

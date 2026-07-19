@@ -192,7 +192,7 @@ final class RoomClusterBoundaryEdit {
 
         List<RoomRegion> partitionEditedRooms(
                 DungeonRoomTopologyClusterWork target,
-                RoomTopologyWorkCatalog.IdAllocation ids
+                RoomTopologyWorkCatalog.ReservedIdentities ids
         ) {
             return new DungeonRoomBoundaryPartition()
                     .roomsForBoundaryEdit(target, groupedCompatibilityBoundaries(), ids);

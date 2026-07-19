@@ -3,30 +3,41 @@ package features.dungeon.adapter.sqlite.gateway;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
-import features.dungeon.adapter.sqlite.model.DungeonClusterBoundaryRecord;
-import features.dungeon.adapter.sqlite.model.DungeonCorridorDoorBindingRecord;
-import features.dungeon.adapter.sqlite.model.DungeonCorridorRecord;
-import features.dungeon.adapter.sqlite.model.DungeonCorridorWaypointRecord;
-import features.dungeon.adapter.sqlite.model.DungeonFeatureMarkerRecord;
-import features.dungeon.adapter.sqlite.model.DungeonGridBoundsRecord;
-import features.dungeon.adapter.sqlite.model.DungeonMapRecord;
-import features.dungeon.adapter.sqlite.model.DungeonRoomCellRecord;
-import features.dungeon.adapter.sqlite.model.DungeonRoomClusterRecord;
-import features.dungeon.adapter.sqlite.model.DungeonRoomRecord;
-import features.dungeon.adapter.sqlite.model.DungeonStairExitRecord;
-import features.dungeon.adapter.sqlite.model.DungeonStairPathNodeRecord;
-import features.dungeon.adapter.sqlite.model.DungeonStairRecord;
-import features.dungeon.adapter.sqlite.model.DungeonTransitionRecord;
-import features.dungeon.adapter.sqlite.mapper.DungeonMapRecordFixtureMapper;
-import features.dungeon.adapter.sqlite.mapper.DungeonMapRecordMapper;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
+import features.dungeon.application.authored.command.CorridorChange;
+import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.command.DungeonPatchEntityRef;
+import features.dungeon.application.authored.command.FeatureMarkerChange;
+import features.dungeon.application.authored.command.RoomClusterChange;
+import features.dungeon.application.authored.command.RoomRegionChange;
+import features.dungeon.application.authored.command.StairChange;
+import features.dungeon.application.authored.command.TransitionChange;
+import features.dungeon.application.authored.command.DungeonPatchResultFacts;
 import features.dungeon.application.authored.port.DungeonWindow;
 import features.dungeon.application.authored.port.DungeonWindowEntityFragment;
 import features.dungeon.application.authored.port.DungeonWindowRequest;
 import features.dungeon.api.DungeonChunkKey;
+import features.dungeon.domain.core.component.CorridorDoorBinding;
+import features.dungeon.domain.core.component.CorridorWaypoint;
+import features.dungeon.domain.core.component.StairExit;
 import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.Direction;
+import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
+import features.dungeon.domain.core.structure.corridor.Corridor;
+import features.dungeon.domain.core.structure.corridor.CorridorBindings;
+import features.dungeon.domain.core.structure.feature.FeatureMarker;
+import features.dungeon.domain.core.structure.feature.FeatureMarkerKind;
+import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
+import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
+import features.dungeon.domain.core.structure.room.RoomCluster;
+import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.stair.Stair;
+import features.dungeon.domain.core.structure.stair.StairShape;
+import features.dungeon.domain.core.structure.transition.Transition;
+import features.dungeon.domain.core.structure.transition.TransitionAnchor;
+import features.dungeon.domain.core.structure.transition.TransitionDestination;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -35,6 +46,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import platform.diagnostics.NoopDiagnostics;
@@ -43,27 +56,17 @@ import platform.persistence.SqliteDatabase;
 final class DungeonCanonicalSpatialIndexTest {
 
     @Test
-    void fullMapBridgeRoundTripsCanonicalGeometryAndIndexesEveryIntersectingChunk(@TempDir Path tempDir)
+    void realPatchUnitOfWorkIndexesCanonicalGeometryInEveryIntersectingChunk(@TempDir Path tempDir)
             throws Exception {
         Path databasePath = tempDir.resolve("spatial-index.db");
-        DungeonMapRecord authored = DungeonMapRecordFixtureMapper.toRecord(
-                DungeonMapRecordMapper.toDomain(authoredMap()));
 
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            DungeonSqliteFixtureSeeder.seed(database, authored);
-            DungeonSqliteGateway gateway = new DungeonSqliteGateway(database);
-
-            DungeonMapRecord loaded = gateway.findMap(authored.mapId()).orElseThrow();
-            assertEquals(authored.rooms().getFirst().floorCells(), loaded.rooms().getFirst().floorCells());
-            assertEquals(authored.roomClusters().getFirst().boundaries(),
-                    loaded.roomClusters().getFirst().boundaries());
-            assertEquals(5, loaded.corridors().getFirst().doorBindings().getFirst().relativeCellZ());
-            assertEquals(authored.revision(), loaded.revision());
+            seedAuthoredMap(database);
 
             DungeonWindow window = new SqliteDungeonWindowStore(database).loadWindow(new DungeonWindowRequest(
-                    new DungeonMapIdentity(authored.mapId()),
+                    new DungeonMapIdentity(41L),
                     1L,
-                    List.of(new DungeonChunkKey(authored.mapId(), 5, -1, -2))))
+                    List.of(new DungeonChunkKey(41L, 5, -1, -2))))
                     .orElseThrow();
             DungeonWindowEntityFragment.Corridor corridor = assertInstanceOf(
                     DungeonWindowEntityFragment.Corridor.class,
@@ -77,11 +80,11 @@ final class DungeonCanonicalSpatialIndexTest {
 
             DungeonWindow interiorWindow = new SqliteDungeonWindowStore(database).loadWindow(
                     new DungeonWindowRequest(
-                            new DungeonMapIdentity(authored.mapId()),
+                            new DungeonMapIdentity(41L),
                             2L,
                             List.of(
-                                    new DungeonChunkKey(authored.mapId(), 0, 0, -1),
-                                    new DungeonChunkKey(authored.mapId(), 0, -3, 4))))
+                                    new DungeonChunkKey(41L, 0, 0, -1),
+                                    new DungeonChunkKey(41L, 0, -3, 4))))
                     .orElseThrow();
             DungeonWindowEntityFragment.Corridor interior = assertInstanceOf(
                     DungeonWindowEntityFragment.Corridor.class,
@@ -153,84 +156,61 @@ final class DungeonCanonicalSpatialIndexTest {
         }
     }
 
-    private static DungeonMapRecord authoredMap() {
+    private static void seedAuthoredMap(SqliteDatabase database) {
         long mapId = 41L;
         long roomId = 101L;
         long clusterId = 201L;
-        DungeonRoomRecord room = new DungeonRoomRecord(
-                roomId,
-                mapId,
-                clusterId,
-                "Sparse room",
-                "",
+        RoomRegion room = new RoomRegion(roomId, mapId, clusterId, "Sparse room", Set.of(
+                new Cell(-65, -65, 0), new Cell(64, 0, 0), new Cell(-64, -65, 5)),
+                DungeonRoomNarration.empty());
+        Cell center = new Cell(-65, -65, 0);
+        RoomCluster cluster = RoomCluster.authored(clusterId, mapId, "Sparse cluster", center, Map.of(
+                0, List.of(
+                        new DungeonClusterBoundary(clusterId, 0, new Cell(0, 0, 0),
+                                Direction.NORTH, BoundaryKind.OPEN),
+                        new DungeonClusterBoundary(clusterId, 0, new Cell(129, 65, 0),
+                                Direction.SOUTH, BoundaryKind.OPEN))));
+        Corridor corridor = new Corridor(301L, mapId, 0, List.of(roomId), new CorridorBindings(
                 List.of(
-                        new DungeonRoomCellRecord(roomId, 0, -65, -65),
-                        new DungeonRoomCellRecord(roomId, 0, 64, 0),
-                        new DungeonRoomCellRecord(roomId, 5, -64, -65)),
-                List.of());
-        DungeonRoomClusterRecord cluster = new DungeonRoomClusterRecord(
-                clusterId,
-                mapId,
-                "Sparse cluster",
-                -65,
-                -65,
-                0,
-                List.of(
-                        new DungeonClusterBoundaryRecord(clusterId, 0, -65, -65, "NORTH", "OPEN", null),
-                        new DungeonClusterBoundaryRecord(clusterId, 0, 64, 0, "SOUTH", "OPEN", null)));
-        DungeonCorridorRecord corridor = new DungeonCorridorRecord(
-                301L,
-                mapId,
-                0,
-                List.of(roomId),
-                List.of(
-                        new DungeonCorridorWaypointRecord(301L, clusterId, 1, 1, 0),
-                        new DungeonCorridorWaypointRecord(301L, clusterId, 2, 2, 0),
-                        new DungeonCorridorWaypointRecord(301L, clusterId, 194, 65, 0)),
-                List.of(new DungeonCorridorDoorBindingRecord(
-                        301L, roomId, clusterId, 1, 0, 5, "EAST", 7002L)),
-                List.of(),
-                List.of());
-        DungeonStairRecord stair = new DungeonStairRecord(
-                401L,
-                mapId,
-                "Sparse stair",
-                "LADDER",
-                0,
-                1,
-                1,
-                null,
-                List.of(new DungeonStairPathNodeRecord(401L, -1, 64, 1)),
-                List.of(new DungeonStairExitRecord(401L, 402L, 128, -129, 2, "Exit")));
-        DungeonTransitionRecord transition = new DungeonTransitionRecord(
-                501L,
-                mapId,
-                "Sparse transition",
-                -1,
-                -1,
-                -1,
-                "CELL",
-                null,
-                "UNLINKED_ENTRANCE",
-                null,
-                null,
-                null,
-                null,
-                null);
-        DungeonFeatureMarkerRecord marker = new DungeonFeatureMarkerRecord(
-                601L, mapId, "OBJECT", -64, 63, 0, "Sparse marker", "");
-        return new DungeonMapRecord(
-                mapId,
-                "Canonical spatial index",
-                7L,
-                DungeonGridBoundsRecord.defaultGrid(),
-                List.of(cluster),
-                List.of(room),
-                List.of(),
-                List.of(corridor),
-                List.of(stair),
-                List.of(transition),
-                List.of(marker));
+                        new CorridorWaypoint(clusterId, new Cell(1, 1, 0), 0),
+                        new CorridorWaypoint(clusterId, new Cell(2, 2, 0), 0),
+                        new CorridorWaypoint(clusterId, new Cell(194, 65, 0), 0)),
+                List.of(new CorridorDoorBinding(
+                        roomId, clusterId, new Cell(1, 0, 5), Direction.EAST, DungeonTopologyRef.door(7002L))),
+                List.of(), List.of()));
+        Stair stair = new Stair(401L, mapId, "Sparse stair", StairShape.LADDER, Direction.NORTH, 1, 1,
+                List.of(new Cell(-1, 64, 1)),
+                List.of(new StairExit(402L, new Cell(128, -129, 2), "Exit")), null);
+        Transition transition = new Transition(501L, mapId, "Sparse transition",
+                TransitionAnchor.cell(new Cell(-1, -1, -1)), TransitionDestination.unlinkedEntrance(), null);
+        FeatureMarker marker = new FeatureMarker(601L, new DungeonMapIdentity(mapId), FeatureMarkerKind.OBJECT,
+                new Cell(-64, 63, 0), "Sparse marker", "");
+        List<features.dungeon.application.authored.command.DungeonPatchChange> changes = List.of(
+                new RoomClusterChange(null, cluster, Set.of()),
+                new RoomRegionChange(null, room),
+                new CorridorChange(null, corridor, Set.of()),
+                new StairChange(null, stair),
+                new TransitionChange(null, transition),
+                new FeatureMarkerChange(null, marker));
+        Set<DungeonChunkKey> chunks = Set.of(
+                new DungeonChunkKey(mapId, -1, -1, -1),
+                new DungeonChunkKey(mapId, 0, -2, -2),
+                new DungeonChunkKey(mapId, 0, -1, -1),
+                new DungeonChunkKey(mapId, 0, 0, -1),
+                new DungeonChunkKey(mapId, 0, 1, -1),
+                new DungeonChunkKey(mapId, 0, 2, -1),
+                new DungeonChunkKey(mapId, 0, -1, 0),
+                new DungeonChunkKey(mapId, 0, 1, 0),
+                new DungeonChunkKey(mapId, 0, 2, 0),
+                new DungeonChunkKey(mapId, 1, -1, 1),
+                new DungeonChunkKey(mapId, 2, 2, -3),
+                new DungeonChunkKey(mapId, 5, -1, -2),
+                new DungeonChunkKey(mapId, 5, -1, -1));
+        DungeonSqliteFixtureSeeder.insertHeader(database, mapId, "Canonical spatial index", 6L);
+        DungeonPatch base = DungeonPatch.of(new DungeonMapIdentity(mapId), 6L, changes);
+        DungeonSqliteFixtureSeeder.commit(database, new DungeonPatch(
+                base.mapId(), base.expectedRevision(), base.changes(), chunks,
+                new DungeonPatchResultFacts(base.resultFacts().affectedEntities()), base.encodedBytes()));
     }
 
     private static Connection open(Path databasePath) throws SQLException {

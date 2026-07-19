@@ -1,5 +1,6 @@
 package features.dungeon.adapter.javafx.editor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,16 +30,26 @@ import features.dungeon.application.travel.projection.TravelActionFacts;
 import features.dungeon.application.travel.projection.TravelActionFacts.SelectedAction;
 import features.dungeon.application.travel.projection.TravelActionKind;
 import features.dungeon.application.travel.projection.TravelAuthoredSurface;
-import features.dungeon.application.travel.projection.TravelAuthoredSurfaceProjectionMapper;
 import features.dungeon.application.travel.projection.TravelHeading;
 import features.dungeon.application.travel.projection.TravelPositionFacts;
 import features.dungeon.application.travel.projection.TravelSurfaceFacts;
 import features.dungeon.application.travel.projection.TravelSurfaceProjection;
 import features.dungeon.application.travel.projection.TravelTransitionTarget;
+import features.dungeon.application.travel.projection.TravelWindowProjectionMapper;
 import features.dungeon.application.travel.session.TravelDungeonSessionSurface.LocationKind;
-import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
+import features.dungeon.application.authored.command.DungeonPatchEntityRef;
+import features.dungeon.application.authored.port.DungeonEntitySnapshot;
+import features.dungeon.application.authored.port.DungeonIdentityClosureRequest;
+import features.dungeon.application.authored.port.DungeonIdentityClosureResult;
 import features.dungeon.application.authored.port.DungeonMapHeader;
+import features.dungeon.application.authored.port.DungeonTravelStartRequest;
+import features.dungeon.application.authored.port.DungeonTravelStartResult;
+import features.dungeon.application.authored.port.DungeonWindow;
+import features.dungeon.application.authored.port.DungeonWindowChunkHeader;
+import features.dungeon.application.authored.port.DungeonWindowEntityFragment;
+import features.dungeon.application.authored.port.DungeonWindowRequest;
+import features.dungeon.application.authored.port.DungeonWindowStore;
 import features.dungeon.domain.core.structure.DungeonMapMetadata;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
@@ -53,6 +64,7 @@ import features.dungeon.domain.core.structure.transition.TransitionCatalog;
 import features.dungeon.domain.core.structure.transition.TransitionAnchor;
 import features.dungeon.api.DungeonTravelLocationKind;
 import features.dungeon.api.DungeonTravelPosition;
+import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.api.TravelDungeonAction;
 import features.dungeon.api.TravelDungeonModel;
 import features.dungeon.api.TravelDungeonSnapshot;
@@ -113,10 +125,12 @@ final class DungeonRuntimeProjectionInvariantScenarios {
         assertEquals(TravelTransitionTarget.absent(), traversal.transitionTarget(),
                 "runtime path projection keeps traversal state outside transition targets");
 
-        TravelSurfaceFacts noLinkSurface = project(map, derivedState(derived.map().areas(), derived.map().boundaries()),
+        TravelSurfaceFacts windowFactSurface = project(
+                map,
+                derivedState(derived.map().areas(), derived.map().boundaries()),
                 new Cell(0, 0, 0));
-        assertEquals(null, firstActionOfKind(noLinkSurface, TravelActionKind.TRAVERSAL),
-                "runtime path projection must not rebuild traversal links outside derived state");
+        assertTrue(firstActionOfKind(windowFactSurface, TravelActionKind.TRAVERSAL) != null,
+                "runtime path projection derives traversal directly from sparse window facts");
         assertRuntimeCorridorTraversalProjection();
     }
 
@@ -127,7 +141,7 @@ final class DungeonRuntimeProjectionInvariantScenarios {
         DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(31L), "Runtime Corridors");
         List<DungeonAreaFacts> areas = List.of(
                 area(DungeonAreaType.ROOM, 310L, "Start", List.of(roomTile)),
-                area(DungeonAreaType.CORRIDOR, 320L, "Gang 320", List.of(corridorStart, corridorEnd)));
+                area(DungeonAreaType.CORRIDOR, 320L, "Corridor 320", List.of(corridorStart, corridorEnd)));
         DungeonMapFacts mapFacts = new DungeonMapFacts(DungeonTopology.SQUARE, 3, 1, areas, List.of());
         DungeonDerivedState withCorridorLinks = new DungeonDerivedState(
                 mapFacts,
@@ -137,18 +151,18 @@ final class DungeonRuntimeProjectionInvariantScenarios {
         TravelSurfaceFacts surface = project(map, withCorridorLinks, corridorStart);
         TravelActionFacts traversal = firstActionOfKind(surface, TravelActionKind.TRAVERSAL);
 
-        assertEquals("Gang 320", surface.areaLabel(),
+        assertEquals("Corridor 320", surface.areaLabel(),
                 "runtime corridor traversal projection resolves active corridor area");
         assertTrue(traversal != null,
                 "runtime corridor traversal projection publishes corridor traversal action from derived links");
-        assertEquals("Gang 320", traversal.label(),
+        assertEquals("Corridor 320", traversal.label(),
                 "runtime corridor traversal projection keeps corridor source label");
         assertEquals(corridorEnd, traversal.targetPosition().tile(),
                 "runtime corridor traversal projection follows the derived corridor segment target");
 
-        TravelSurfaceFacts noLinkSurface = project(map, derivedState(areas, List.of()), corridorStart);
-        assertEquals(null, firstActionOfKind(noLinkSurface, TravelActionKind.TRAVERSAL),
-                "runtime corridor traversal projection must not rebuild corridor links from corridor cells");
+        TravelSurfaceFacts windowFactSurface = project(map, derivedState(areas, List.of()), corridorStart);
+        assertTrue(firstActionOfKind(windowFactSurface, TravelActionKind.TRAVERSAL) != null,
+                "runtime corridor traversal projection derives adjacent movement from sparse corridor facts");
         assertCrossLevelCorridorCellsDoNotCreateCorridorTraversal();
     }
 
@@ -460,7 +474,7 @@ final class DungeonRuntimeProjectionInvariantScenarios {
     }
 
     private static TravelSurfaceFacts project(DungeonMap map, DungeonDerivedState derived, Cell activeTile) {
-        TravelAuthoredSurface authoredSurface = TravelAuthoredSurfaceProjectionMapper.from(map, derived);
+        TravelAuthoredSurface authoredSurface = windowSurface(map, derived);
         return new TravelSurfaceProjection().project(
                 authoredSurface,
                 new TravelPositionFacts(
@@ -482,7 +496,110 @@ final class DungeonRuntimeProjectionInvariantScenarios {
         for (features.dungeon.domain.core.structure.transition.Transition transition : transitions) {
             map = withTransition(map, transition);
         }
-        return TravelAuthoredSurfaceProjectionMapper.from(map, derivedState(areas, List.of()));
+        return windowSurface(map, derivedState(areas, List.of()));
+    }
+
+    private static TravelAuthoredSurface windowSurface(DungeonMap map, DungeonDerivedState derived) {
+        List<DungeonWindowEntityFragment> fragments = new ArrayList<>();
+        List<DungeonChunkKey> requestedChunks = new ArrayList<>();
+        for (DungeonAreaFacts area : derived.map().areas()) {
+            List<DungeonChunkKey> areaChunks = chunksFor(map.metadata().mapId().value(), area.cells());
+            requestedChunks.addAll(areaChunks);
+            if (area.kind().isRoom()) {
+                fragments.add(new DungeonWindowEntityFragment.Room(
+                        DungeonPatchEntityRef.room(area.id()),
+                        area.clusterId(),
+                        area.label(),
+                        "",
+                        area.cells(),
+                        List.of(),
+                        areaChunks,
+                        List.of()));
+            } else {
+                List<DungeonWindowEntityFragment.CorridorRouteCellFact> routeCells = new ArrayList<>();
+                for (int index = 0; index < area.cells().size(); index++) {
+                    routeCells.add(new DungeonWindowEntityFragment.CorridorRouteCellFact(
+                            0,
+                            index,
+                            area.cells().get(index)));
+                }
+                fragments.add(new DungeonWindowEntityFragment.Corridor(
+                        DungeonPatchEntityRef.corridor(area.id()),
+                        area.cells().isEmpty() ? 0 : area.cells().get(0).level(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        routeCells,
+                        areaChunks,
+                        List.of()));
+            }
+        }
+        int boundaryIndex = 0;
+        for (DungeonBoundaryFacts boundary : derived.map().boundaries()) {
+            DungeonWindowEntityFragment.ClusterBoundaryFact fact = windowBoundary(boundary);
+            if (fact != null) {
+                List<DungeonChunkKey> boundaryChunks = chunksFor(
+                        map.metadata().mapId().value(), List.of(fact.cell()));
+                requestedChunks.addAll(boundaryChunks);
+                fragments.add(new DungeonWindowEntityFragment.RoomCluster(
+                        DungeonPatchEntityRef.roomCluster(9_000_000L + boundaryIndex++),
+                        "Window boundary facts",
+                        List.of(),
+                        List.of(fact),
+                        boundaryChunks,
+                        List.of()));
+            }
+        }
+        List<DungeonEntitySnapshot> closure = map.transitionCatalog().transitions().stream()
+                .map(DungeonEntitySnapshot.TransitionSnapshot::new)
+                .map(DungeonEntitySnapshot.class::cast)
+                .toList();
+        DungeonMapHeader header = new DungeonMapHeader(
+                map.metadata().mapId(),
+                map.metadata().mapName(),
+                Math.max(1L, map.revision()));
+        List<DungeonWindowChunkHeader> chunkHeaders = requestedChunks.stream()
+                .distinct()
+                .map(key -> new DungeonWindowChunkHeader(key, header.revision()))
+                .toList();
+        return TravelWindowProjectionMapper.from(
+                header,
+                new DungeonWindow(header, 0L, chunkHeaders, fragments, List.of()),
+                closure);
+    }
+
+    private static List<DungeonChunkKey> chunksFor(long mapId, Iterable<Cell> cells) {
+        java.util.LinkedHashSet<DungeonChunkKey> chunks = new java.util.LinkedHashSet<>();
+        for (Cell cell : cells) {
+            chunks.add(new DungeonChunkKey(
+                    mapId,
+                    cell.level(),
+                    Math.floorDiv(cell.q(), DungeonChunkKey.CHUNK_SIZE),
+                    Math.floorDiv(cell.r(), DungeonChunkKey.CHUNK_SIZE)));
+        }
+        return List.copyOf(chunks);
+    }
+
+    private static DungeonWindowEntityFragment.ClusterBoundaryFact windowBoundary(DungeonBoundaryFacts boundary) {
+        for (Cell cell : boundary.edge().touchingCells()) {
+            for (Direction direction : Direction.values()) {
+                if (direction.edgeOf(cell).equals(boundary.edge())) {
+                    DungeonWindowEntityFragment.BoundaryKind kind = switch (boundary.kind().toLowerCase()) {
+                        case "door" -> DungeonWindowEntityFragment.BoundaryKind.DOOR;
+                        case "open" -> DungeonWindowEntityFragment.BoundaryKind.OPEN;
+                        default -> DungeonWindowEntityFragment.BoundaryKind.WALL;
+                    };
+                    return new DungeonWindowEntityFragment.ClusterBoundaryFact(
+                            cell,
+                            direction,
+                            kind,
+                            boundary.topologyRef());
+                }
+            }
+        }
+        return null;
     }
 
     private static DungeonMap authoredTravelBootstrapMap(
@@ -513,7 +630,7 @@ final class DungeonRuntimeProjectionInvariantScenarios {
                 List.of(),
                 new StairCollection(List.of()),
                 new TransitionCatalog(List.of()),
-                0L);
+                1L);
         if (transitionAnchor == null || transitionId <= 0L) {
             return map;
         }
@@ -530,7 +647,7 @@ final class DungeonRuntimeProjectionInvariantScenarios {
         return map.withExactTransitionChange(null, transition);
     }
 
-    private interface DungeonTestStore extends DungeonCatalogStore, DungeonMapRepository {
+    private interface DungeonTestStore extends DungeonCatalogStore, DungeonWindowStore {
     }
 
     private static DungeonTestStore repositoryOf(DungeonMap firstMap, DungeonMap secondMap) {
@@ -539,23 +656,8 @@ final class DungeonRuntimeProjectionInvariantScenarios {
                 secondMap.metadata().mapId().value(), secondMap);
         return new DungeonTestStore() {
             @Override
-            public long nextStairId() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public long nextTransitionId() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public Optional<DungeonMap> findById(DungeonMapIdentity mapId) {
-                return Optional.ofNullable(mapId == null ? null : mapsById.get(mapId.value()));
-            }
-
-            @Override
             public List<DungeonMapHeader> search(String query) {
-                return List.of();
+                return mapsById.values().stream().map(DungeonRuntimeProjectionInvariantScenarios::header).toList();
             }
 
             @Override
@@ -569,14 +671,137 @@ final class DungeonRuntimeProjectionInvariantScenarios {
             }
 
             @Override
-            public Optional<DungeonMap> firstMap() {
-                return Optional.of(firstMap);
+            public void delete(DungeonMapIdentity mapId) {
             }
 
             @Override
-            public void delete(DungeonMapIdentity mapId) {
+            public Optional<DungeonWindow> loadWindow(DungeonWindowRequest request) {
+                DungeonMap map = mapsById.get(request.mapId().value());
+                if (map == null) {
+                    return Optional.empty();
+                }
+                List<DungeonWindowEntityFragment> fragments = new java.util.ArrayList<>();
+                for (RoomRegion room : map.rooms().rooms()) {
+                    List<Cell> cells = room.floorCells().stream()
+                            .filter(cell -> requested(request, cell))
+                            .toList();
+                    if (!cells.isEmpty()) {
+                        fragments.add(new DungeonWindowEntityFragment.Room(
+                                DungeonPatchEntityRef.room(room.roomId()),
+                                room.clusterId(), room.name(), "", cells, List.of(),
+                                intersecting(request, cells),
+                                List.of(DungeonPatchEntityRef.roomCluster(room.clusterId()))));
+                    }
+                }
+                for (Transition transition : map.transitionCatalog().transitions()) {
+                    Cell anchor = transition.anchorCell();
+                    if (anchor != null && requested(request, anchor)) {
+                        fragments.add(new DungeonWindowEntityFragment.Transition(
+                                DungeonPatchEntityRef.transition(transition.transitionId()),
+                                transition.description(), transition.anchor(), transition.destination(),
+                                transition.linkedTransitionId(), intersecting(request, List.of(anchor)), List.of()));
+                    }
+                }
+                List<DungeonWindowChunkHeader> chunkHeaders = request.chunkKeys().stream()
+                        .map(key -> new DungeonWindowChunkHeader(key, map.revision()))
+                        .toList();
+                return Optional.of(new DungeonWindow(
+                        header(map), request.requestGeneration(), chunkHeaders, fragments, List.of()));
+            }
+
+            @Override
+            public DungeonIdentityClosureResult loadIdentityClosure(DungeonIdentityClosureRequest request) {
+                DungeonMap map = mapsById.get(request.mapId().value());
+                if (map == null) {
+                    return new DungeonIdentityClosureResult.Rejected(
+                            DungeonIdentityClosureResult.Reason.MAP_MISSING, request.entityRefs());
+                }
+                if (map.revision() != request.expectedMapRevision()) {
+                    return new DungeonIdentityClosureResult.Rejected(
+                            DungeonIdentityClosureResult.Reason.STALE_REVISION, request.entityRefs());
+                }
+                List<DungeonEntitySnapshot> snapshots = new java.util.ArrayList<>();
+                for (DungeonPatchEntityRef ref : request.entityRefs()) {
+                    if (ref.kind() == DungeonPatchEntityRef.Kind.TRANSITION) {
+                        Transition transition = map.transitionCatalog().transition(ref.id());
+                        if (transition == null) {
+                            return new DungeonIdentityClosureResult.Rejected(
+                                    DungeonIdentityClosureResult.Reason.ENTITY_MISSING, List.of(ref));
+                        }
+                        snapshots.add(new DungeonEntitySnapshot.TransitionSnapshot(transition));
+                    }
+                }
+                return new DungeonIdentityClosureResult.Complete(header(map), snapshots);
+            }
+
+            @Override
+            public DungeonTravelStartResult locateTravelStart(DungeonTravelStartRequest request) {
+                DungeonMap map = mapsById.get(request.mapId().value());
+                if (map == null) {
+                    return new DungeonTravelStartResult.Rejected(
+                            DungeonIdentityClosureResult.Reason.MAP_MISSING);
+                }
+                Transition entry = map.transitionCatalog().transitions().stream()
+                        .filter(Transition::isPlaced)
+                        .min(java.util.Comparator.comparingLong(Transition::transitionId))
+                        .orElse(null);
+                if (entry != null) {
+                    return new DungeonTravelStartResult.Located(
+                            header(map), entry.anchorCell(), entry.transitionId());
+                }
+                Cell first = map.rooms().rooms().stream()
+                        .flatMap(room -> room.floorCells().stream())
+                        .min(features.dungeon.domain.core.geometry.CellOrdering::compareCells)
+                        .orElse(null);
+                return first == null
+                        ? new DungeonTravelStartResult.Empty(header(map))
+                        : new DungeonTravelStartResult.Located(header(map), first, null);
+            }
+
+            @Override
+            public features.dungeon.application.authored.port.DungeonTravelChunkKeysResult discoverTravelChunkKeys(
+                    features.dungeon.application.authored.port.DungeonTravelChunkKeysRequest request
+            ) {
+                DungeonMap map = mapsById.get(request.mapId().value());
+                if (map == null) {
+                    return new features.dungeon.application.authored.port.DungeonTravelChunkKeysResult.Rejected(
+                            DungeonIdentityClosureResult.Reason.MAP_MISSING);
+                }
+                List<Cell> spatialCells = new ArrayList<>();
+                map.rooms().rooms().forEach(room -> spatialCells.addAll(room.floorCells()));
+                map.transitionCatalog().transitions().stream()
+                        .map(Transition::anchorCell)
+                        .filter(java.util.Objects::nonNull)
+                        .forEach(spatialCells::add);
+                List<DungeonChunkKey> chunks = chunksFor(request.mapId().value(), spatialCells).stream()
+                        .filter(key -> Math.abs(key.chunkQ() - request.centerChunkQ()) <= 1
+                                && Math.abs(key.chunkR() - request.centerChunkR()) <= 1)
+                        .toList();
+                return new features.dungeon.application.authored.port.DungeonTravelChunkKeysResult.Complete(
+                        header(map), chunks);
             }
         };
+    }
+
+    private static DungeonMapHeader header(DungeonMap map) {
+        return new DungeonMapHeader(map.metadata().mapId(), map.metadata().mapName(), map.revision());
+    }
+
+    private static boolean requested(DungeonWindowRequest request, Cell cell) {
+        return request.chunkKeys().stream().anyMatch(key -> key.level() == cell.level()
+                && cell.q() >= key.minimumQ() && cell.q() <= key.maximumQ()
+                && cell.r() >= key.minimumR() && cell.r() <= key.maximumR());
+    }
+
+    private static List<features.dungeon.api.DungeonChunkKey> intersecting(
+            DungeonWindowRequest request,
+            List<Cell> cells
+    ) {
+        return request.chunkKeys().stream()
+                .filter(key -> cells.stream().anyMatch(cell -> key.level() == cell.level()
+                        && cell.q() >= key.minimumQ() && cell.q() <= key.maximumQ()
+                        && cell.r() >= key.minimumR() && cell.r() <= key.maximumR()))
+                .toList();
     }
 
     private static DungeonDerivedState derivedState(
@@ -641,17 +866,6 @@ final class DungeonRuntimeProjectionInvariantScenarios {
             }
         }
         return -1;
-    }
-
-    private static DungeonMap loadMap(DungeonMapRepository repository, DungeonMapIdentity mapId) {
-        if (mapId != null) {
-            Optional<DungeonMap> map = repository.findById(mapId);
-            if (map.isPresent()) {
-                return map.get();
-            }
-        }
-        return repository.firstMap()
-                .orElse(DungeonMapAuthoring.empty(new DungeonMapIdentity(1L), "Dungeon Map"));
     }
 
     private static TravelRuntimeFixture travelServices(DungeonTestStore repository) {

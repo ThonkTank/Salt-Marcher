@@ -22,7 +22,8 @@ public final class RoomClusterBoundaryMutation {
             long clusterId,
             List<Edge> edges,
             BoundaryKind kind,
-            boolean deleteBoundary
+            boolean deleteBoundary,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
     ) {
         if (invalidBoundaryEditRequest(clusterId, edges)) {
             return Optional.empty();
@@ -43,8 +44,8 @@ public final class RoomClusterBoundaryMutation {
         if (!edit.changed()) {
             return Optional.empty();
         }
-        RoomTopologyWorkCatalog.IdAllocation ids = WORK_CATALOG.newIdAllocation(topology, rooms);
         List<RoomRegion> rebuiltRooms = edit.partitionEditedRooms(target, ids);
+        ids.validateAllocatedRooms(rebuiltRooms);
         List<DungeonRoomTopologyClusterWork> nextClusters = new ArrayList<>();
         for (DungeonRoomTopologyClusterWork work : clusters) {
             nextClusters.add(work.cluster().clusterId() == clusterId

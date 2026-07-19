@@ -16,8 +16,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
-import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSpatialIndex;
-import features.dungeon.adapter.sqlite.repository.SqliteDungeonMapRepository;
+import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSeeder;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonIdentityAllocator;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
 import features.party.adapter.sqlite.model.PartyPersistenceSchema;
@@ -26,10 +27,38 @@ import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
 import features.dungeon.domain.core.geometry.Edge;
-import features.dungeon.application.authored.port.DungeonMapRepository;
+import features.dungeon.domain.core.structure.DungeonMapIdentity;
+import features.dungeon.domain.core.component.CorridorAnchor;
+import features.dungeon.domain.core.component.CorridorAnchorRef;
+import features.dungeon.domain.core.component.CorridorDoorBinding;
+import features.dungeon.domain.core.component.CorridorWaypoint;
+import features.dungeon.domain.core.component.StairExit;
+import features.dungeon.domain.core.graph.DungeonTopologyRef;
+import features.dungeon.domain.core.structure.corridor.Corridor;
+import features.dungeon.domain.core.structure.corridor.CorridorBindings;
+import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
+import features.dungeon.domain.core.structure.room.RoomCluster;
+import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.stair.Stair;
+import features.dungeon.domain.core.structure.stair.StairShape;
+import features.dungeon.domain.core.structure.transition.Transition;
+import features.dungeon.domain.core.structure.transition.TransitionAnchor;
+import features.dungeon.domain.core.structure.transition.TransitionDestination;
+import features.dungeon.application.authored.command.DungeonPatch;
+import features.dungeon.application.authored.command.DungeonPatchChange;
+import features.dungeon.application.authored.command.DungeonCompoundPatch;
+import features.dungeon.application.authored.command.CorridorChange;
+import features.dungeon.application.authored.command.RoomClusterChange;
+import features.dungeon.application.authored.command.RoomRegionChange;
+import features.dungeon.application.authored.command.StairChange;
+import features.dungeon.application.authored.command.TransitionChange;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
+import features.dungeon.application.authored.port.DungeonIdentityAllocator;
+import features.dungeon.application.authored.port.DungeonIdentityKind;
 import features.dungeon.application.authored.port.DungeonUnitOfWork;
 import features.dungeon.application.authored.port.DungeonWindowStore;
+import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.api.DungeonEditorControlsModel;
 import features.dungeon.api.DungeonEditorMapSurfaceModel;
 import features.dungeon.api.DungeonEditorStateModel;
@@ -73,12 +102,12 @@ class DungeonEditorTestPersistence {
             SqliteDatabase sqliteDatabase = new SqliteDatabase(
                     database.databasePath,
                     platform.diagnostics.NoopDiagnostics.INSTANCE);
-            SqliteDungeonMapRepository stores = new SqliteDungeonMapRepository(sqliteDatabase);
+            SqliteDungeonCatalogStore catalog = new SqliteDungeonCatalogStore(sqliteDatabase);
             DungeonTestAssembly.Component dungeon = createDungeonServices(
-                    stores,
-                    stores,
+                    catalog,
                     new SqliteDungeonWindowStore(sqliteDatabase),
-                    new SqliteDungeonUnitOfWork(sqliteDatabase));
+                    new SqliteDungeonUnitOfWork(sqliteDatabase),
+                    new SqliteDungeonIdentityAllocator(sqliteDatabase));
             DungeonEditorRuntimeDependencies dependencies =
                     DungeonEditorTestPersistence.editorDependencies(dungeon);
             DungeonEditorApi api = new DungeonEditorApiFacade(
@@ -96,16 +125,35 @@ class DungeonEditorTestPersistence {
 
     static DungeonTestAssembly.Component createDungeonServices(
             DungeonCatalogStore catalogStore,
-            DungeonMapRepository repository,
             DungeonWindowStore windowStore,
             DungeonUnitOfWork unitOfWork
     ) {
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(new EmptyPartyRosterRepository());
         return DungeonTestAssembly.create(
                 catalogStore,
-                repository,
                 windowStore,
                 unitOfWork,
+                party.activeParty(),
+                party.travelPositions(),
+                party.application(),
+                party.mutation(),
+                platform.execution.DirectExecutionLane.INSTANCE,
+                platform.ui.DirectUiDispatcher.INSTANCE,
+                platform.diagnostics.NoopDiagnostics.INSTANCE);
+    }
+
+    static DungeonTestAssembly.Component createDungeonServices(
+            DungeonCatalogStore catalogStore,
+            DungeonWindowStore windowStore,
+            DungeonUnitOfWork unitOfWork,
+            DungeonIdentityAllocator identityAllocator
+    ) {
+        PartyServiceAssembly.Component party = PartyServiceAssembly.create(new EmptyPartyRosterRepository());
+        return DungeonTestAssembly.create(
+                catalogStore,
+                windowStore,
+                unitOfWork,
+                identityAllocator,
                 party.activeParty(),
                 party.travelPositions(),
                 party.application(),
@@ -194,17 +242,7 @@ class DungeonEditorTestPersistence {
         }
 
         long createPersistedMap(String mapName) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                long mapId = insertAndReturnId(
-                        connection,
-                        "INSERT INTO dungeon_maps(name) VALUES(?)",
-                        mapName);
-                connection.commit();
-                return mapId;
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to create persisted dungeon map fixture.", exception);
-            }
+            return new SqliteDungeonCatalogStore(sqliteDatabase()).create(mapName).mapId().value();
         }
 
         long countMapIdWithName(long mapId, String mapName) {
@@ -235,10 +273,6 @@ class DungeonEditorTestPersistence {
 
         long countChunksForMap(long mapId) {
             return count("SELECT COUNT(*) FROM dungeon_chunks WHERE dungeon_map_id=?", mapId);
-        }
-
-        void refreshWindowIndexesForFixture(long mapId) {
-            DungeonSqliteFixtureSpatialIndex.rebuild(databasePath, mapId);
         }
 
         long countRoomClustersForMap(long mapId) {
@@ -1377,153 +1411,109 @@ class DungeonEditorTestPersistence {
         }
 
         void seedF6MultiLevelFloors(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                insertRectangularRoom(connection, mapId, "R2", 1, 1, 1);
-                insertRectangularRoom(connection, mapId, "R3", 2, 1, 1);
-                connection.commit();
-                refreshWindowIndexesForFixture(mapId);
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed F6_MULTI_LEVEL_FLOORS fixture.", exception);
-            }
+            commitRectangularRooms(mapId, List.of(
+                    new RoomSeed("R1", 0, 1, 1, 3, 3),
+                    new RoomSeed("R2", 1, 1, 1, 3, 3),
+                    new RoomSeed("R3", 2, 1, 1, 3, 3)));
         }
 
         void seedTransitionDescriptionFixture(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                insertRectangularRoom(connection, mapId, "R2", 1, 1, 1);
-                insertRectangularRoom(connection, mapId, "R3", 2, 1, 1);
-                insertTransition(connection, mapId, "Initial transition.", 5, 2, 0);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed transition description fixture.", exception);
-            }
+            seedF6MultiLevelFloors(mapId);
+            commitTransition(mapId, "Initial transition.", new Cell(5, 2, 0));
         }
 
         void seedTransitionLinkFixture(long sourceMapId, long targetMapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, sourceMapId, "R1", 0, 1, 1);
-                insertRectangularRoom(connection, sourceMapId, "R2", 1, 1, 1);
-                insertRectangularRoom(connection, sourceMapId, "R3", 2, 1, 1);
-                insertTransition(connection, sourceMapId, "Source transition.", 5, 2, 0);
-                insertRectangularRoom(connection, targetMapId, "R1", 0, 1, 1);
-                insertTransition(connection, targetMapId, "Target transition.", 6, 2, 0);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed transition link fixture.", exception);
-            }
+            commitRectangularRooms(sourceMapId, List.of(
+                    new RoomSeed("R1", 0, 1, 1, 3, 3),
+                    new RoomSeed("R2", 1, 1, 1, 3, 3),
+                    new RoomSeed("R3", 2, 1, 1, 3, 3)));
+            commitTransition(sourceMapId, "Source transition.", new Cell(5, 2, 0));
+            commitRectangularRooms(targetMapId, List.of(new RoomSeed("R1", 0, 1, 1, 3, 3)));
+            long targetTransitionId = reserveTransitionIds(1).getFirst();
+            commitTransitions(targetMapId, List.of(transition(
+                    targetTransitionId,
+                    targetMapId,
+                    "Target transition.",
+                    new Cell(6, 2, 0)).withDestination(TransitionDestination.overworldTile(77L, 88L))));
         }
 
         void seedResolvedTransitionLinkFixture(long sourceMapId, long targetMapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, sourceMapId, "R1", 0, 1, 1);
-                insertRectangularRoom(connection, sourceMapId, "R2", 1, 1, 1);
-                insertRectangularRoom(connection, sourceMapId, "R3", 2, 1, 1);
-                long sourceTransitionId = insertTransition(connection, sourceMapId, "Source transition.", 5, 2, 0);
-                insertRectangularRoom(connection, targetMapId, "R1", 0, 1, 1);
-                long targetTransitionId = insertTransition(connection, targetMapId, "Target transition.", 6, 2, 0);
-                updateDungeonMapDestination(connection, sourceTransitionId, targetMapId, targetTransitionId);
-                updateLinkedTransition(connection, targetTransitionId, sourceTransitionId);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed resolved transition link fixture.", exception);
-            }
+            seedTransitionLinkFixture(sourceMapId, targetMapId);
+            long sourceTransitionId = transitionIdByDescription(sourceMapId, "Source transition.");
+            long targetTransitionId = transitionIdByDescription(targetMapId, "Target transition.");
+            Transition sourceBefore = transition(
+                    sourceTransitionId,
+                    sourceMapId,
+                    "Source transition.",
+                    new Cell(5, 2, 0));
+            Transition targetBefore = transition(
+                    targetTransitionId,
+                    targetMapId,
+                    "Target transition.",
+                    new Cell(6, 2, 0)).withDestination(TransitionDestination.overworldTile(77L, 88L));
+            Transition sourceAfter = sourceBefore.withDestination(
+                    TransitionDestination.dungeonMap(targetMapId, targetTransitionId));
+            Transition targetAfter = targetBefore.withLinkedTransitionId(sourceTransitionId);
+            DungeonSqliteFixtureSeeder.commit(sqliteDatabase(), DungeonCompoundPatch.of(List.of(
+                    DungeonPatch.of(
+                            new DungeonMapIdentity(sourceMapId),
+                            mapRevision(sourceMapId),
+                            List.of(new TransitionChange(sourceBefore, sourceAfter))),
+                    DungeonPatch.of(
+                            new DungeonMapIdentity(targetMapId),
+                            mapRevision(targetMapId),
+                            List.of(new TransitionChange(targetBefore, targetAfter))))));
         }
 
         void seedUnlinkedTransitionFixture(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                insertRectangularRoom(connection, mapId, "R2", 1, 1, 1);
-                insertRectangularRoom(connection, mapId, "R3", 2, 1, 1);
-                insertTransitionWithAnchor(
-                        connection,
-                        mapId,
-                        "Unlinked transition.",
-                        5,
-                        2,
-                        0,
-                        "CELL",
-                        null,
-                        "UNLINKED_ENTRANCE",
-                        null,
-                        null,
-                        null,
-                        null);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed unlinked transition fixture.", exception);
-            }
+            commitRectangularRooms(mapId, List.of(
+                    new RoomSeed("R1", 0, 1, 1, 3, 3),
+                    new RoomSeed("R2", 1, 1, 1, 3, 3),
+                    new RoomSeed("R3", 2, 1, 1, 3, 3)));
+            commitTransition(mapId, "Unlinked transition.", new Cell(5, 2, 0));
         }
 
         void seedTransitionAnchorRoundtripFixture(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                long targetMapId = insertAndReturnId(
-                        connection,
-                        "INSERT INTO dungeon_maps(name) VALUES(?)",
-                        "Transition Anchor Destination Target");
-                insertTransition(connection, mapId, "Cell anchor transition.", 5, 2, 0);
-                insertTransitionWithAnchor(
-                        connection,
-                        mapId,
-                        "Dungeon map destination transition.",
-                        7,
-                        2,
-                        0,
-                        "CELL",
-                        null,
-                        "DUNGEON_MAP",
-                        null,
-                        null,
-                        targetMapId,
-                        null);
-                insertTransitionWithAnchor(
-                        connection,
-                        mapId,
-                        "None anchor transition.",
-                        null,
-                        null,
-                        null,
-                        "NONE",
-                        null);
-                insertTransitionWithAnchor(
-                        connection,
-                        mapId,
-                        "Edge anchor transition.",
-                        6,
-                        2,
-                        0,
-                        "EDGE",
-                        "EAST");
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed transition anchor roundtrip fixture.", exception);
-            }
+            commitRectangularRooms(mapId, List.of(new RoomSeed("R1", 0, 1, 1, 3, 3)));
+            long targetMapId = createPersistedMap("Transition Anchor Destination Target");
+            List<Long> transitionIds = reserveTransitionIds(4);
+            commitTransitions(mapId, List.of(
+                    new Transition(
+                            transitionIds.get(0),
+                            mapId,
+                            "Cell anchor transition.",
+                            TransitionAnchor.cell(new Cell(5, 2, 0)),
+                            TransitionDestination.overworldTile(77L, 88L),
+                            null),
+                    new Transition(
+                            transitionIds.get(1),
+                            mapId,
+                            "Dungeon map destination transition.",
+                            TransitionAnchor.cell(new Cell(7, 2, 0)),
+                            TransitionDestination.dungeonMap(targetMapId, (Long) null),
+                            null),
+                    new Transition(
+                            transitionIds.get(2),
+                            mapId,
+                            "None anchor transition.",
+                            TransitionAnchor.none(),
+                            TransitionDestination.overworldTile(77L, 88L),
+                            null),
+                    new Transition(
+                            transitionIds.get(3),
+                            mapId,
+                            "Edge anchor transition.",
+                            TransitionAnchor.edge(new Cell(6, 2, 0), Direction.EAST),
+                            TransitionDestination.overworldTile(77L, 88L),
+                            null)));
         }
 
         void seedMalformedUnknownAnchorFixture(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                insertTransitionWithAnchor(
-                        connection,
-                        mapId,
-                        "Malformed unknown anchor.",
-                        1,
-                        1,
-                        0,
-                        "PORTAL",
-                        null);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed malformed unknown transition anchor fixture.", exception);
-            }
+            seedMalformedTransitionFixture(
+                    mapId,
+                    "Malformed unknown anchor.",
+                    new Cell(1, 1, 0),
+                    "UPDATE dungeon_transitions SET anchor_type='PORTAL' WHERE transition_id=?");
         }
 
         void seedMalformedPartialAnchorCoordinateFixture(long mapId) {
@@ -1542,32 +1532,24 @@ class DungeonEditorTestPersistence {
         }
 
         private void seedMalformedCoordinateFixture(long mapId, String description, String corruptionSql) {
-            long transitionId;
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                transitionId = insertTransitionWithAnchor(
-                        connection,
-                        mapId,
-                        description,
-                        1,
-                        1,
-                        0,
-                        "CELL",
-                        null,
-                        "UNLINKED_ENTRANCE",
-                        null,
-                        null,
-                        null,
-                        null);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed indexed transition fixture baseline.", exception);
-            }
-            refreshWindowIndexesForFixture(mapId);
+            seedMalformedTransitionFixture(mapId, description, new Cell(1, 1, 0), corruptionSql);
+        }
+
+        private void seedMalformedTransitionFixture(
+                long mapId,
+                String description,
+                Cell anchor,
+                String corruptionSql,
+                Object... corruptionValues
+        ) {
+            commitRectangularRooms(mapId, List.of(new RoomSeed("R1", 0, 1, 1, 3, 3)));
+            long transitionId = commitTransition(mapId, description, anchor);
             try (Connection connection = open();
                  PreparedStatement statement = connection.prepareStatement(corruptionSql)) {
-                statement.setLong(1, transitionId);
+                Object[] bindings = new Object[corruptionValues.length + 1];
+                System.arraycopy(corruptionValues, 0, bindings, 0, corruptionValues.length);
+                bindings[corruptionValues.length] = transitionId;
+                bind(statement, bindings);
                 if (statement.executeUpdate() != 1) {
                     throw new SQLException("Expected exactly one transition row to corrupt.");
                 }
@@ -1577,1210 +1559,541 @@ class DungeonEditorTestPersistence {
         }
 
         void seedMalformedIncompleteEdgeAnchorFixture(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                insertTransitionWithAnchor(
-                        connection,
-                        mapId,
-                        "Malformed incomplete edge anchor.",
-                        2,
-                        1,
-                        0,
-                        "EDGE",
-                        "UP");
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed malformed incomplete edge fixture.", exception);
-            }
+            seedMalformedTransitionFixture(
+                    mapId,
+                    "Malformed incomplete edge anchor.",
+                    new Cell(2, 1, 0),
+                    "UPDATE dungeon_transitions"
+                            + " SET anchor_type='EDGE', anchor_edge_direction='UP' WHERE transition_id=?");
         }
 
         void seedMalformedImplicitAnchorWithEdgeDirectionFixture(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                insertTransitionWithAnchor(
-                        connection,
-                        mapId,
-                        "Malformed implicit anchor edge direction.",
-                        2,
-                        1,
-                        0,
-                        null,
-                        "EAST");
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed malformed implicit edge fixture.", exception);
-            }
+            seedMalformedTransitionFixture(
+                    mapId,
+                    "Malformed implicit anchor edge direction.",
+                    new Cell(2, 1, 0),
+                    "UPDATE dungeon_transitions"
+                            + " SET anchor_type=NULL, anchor_edge_direction='EAST' WHERE transition_id=?");
         }
 
         void seedMalformedDestinationTypeFixture(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                insertTransitionWithAnchor(
-                        connection,
-                        mapId,
-                        "Malformed destination.",
-                        3,
-                        1,
-                        0,
-                        "CELL",
-                        null,
-                        "PORTAL_TARGET");
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed malformed destination type fixture.", exception);
-            }
+            seedMalformedTransitionFixture(
+                    mapId,
+                    "Malformed destination.",
+                    new Cell(3, 1, 0),
+                    "UPDATE dungeon_transitions SET destination_type='PORTAL_TARGET' WHERE transition_id=?");
         }
 
         void seedMalformedDestinationTargetFixture(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                insertTransitionWithAnchor(
-                        connection,
-                        mapId,
-                        "Malformed destination target.",
-                        4,
-                        1,
-                        0,
-                        "CELL",
-                        null,
-                        "OVERWORLD_TILE",
-                        null,
-                        88L,
-                        null,
-                        null);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed malformed destination target fixture.", exception);
-            }
+            seedMalformedTransitionFixture(
+                    mapId,
+                    "Malformed destination target.",
+                    new Cell(4, 1, 0),
+                    "UPDATE dungeon_transitions"
+                            + " SET destination_type='OVERWORLD_TILE',"
+                            + " target_overworld_map_id=NULL, target_overworld_tile_id=88"
+                            + " WHERE transition_id=?");
         }
 
         void seedMalformedDungeonMapDestinationIdFixture(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                insertTransitionWithAnchor(
-                        connection,
-                        mapId,
-                        "Malformed dungeon map destination id.",
-                        4,
-                        2,
-                        0,
-                        "CELL",
-                        null,
-                        "DUNGEON_MAP",
-                        null,
-                        null,
-                        0L,
-                        null);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed malformed dungeon map destination fixture.", exception);
-            }
+            seedMalformedTransitionFixture(
+                    mapId,
+                    "Malformed dungeon map destination id.",
+                    new Cell(4, 2, 0),
+                    "UPDATE dungeon_transitions"
+                            + " SET destination_type='DUNGEON_MAP', target_dungeon_map_id=0"
+                            + " WHERE transition_id=?");
         }
 
         void seedMalformedDungeonTransitionDestinationIdFixture(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                long targetMapId = insertAndReturnId(
-                        connection,
-                        "INSERT INTO dungeon_maps(name) VALUES(?)",
-                        "Malformed Destination Target Map");
-                insertTransitionWithAnchor(
-                        connection,
-                        mapId,
-                        "Malformed dungeon transition destination id.",
-                        4,
-                        3,
-                        0,
-                        "CELL",
-                        null,
-                        "DUNGEON_MAP",
-                        null,
-                        null,
-                        targetMapId,
-                        -1L);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException(
-                        "Failed to seed malformed dungeon transition destination fixture.",
-                        exception);
-            }
+            long targetMapId = createPersistedMap("Malformed Destination Target Map");
+            seedMalformedTransitionFixture(
+                    mapId,
+                    "Malformed dungeon transition destination id.",
+                    new Cell(4, 3, 0),
+                    "UPDATE dungeon_transitions"
+                            + " SET destination_type='DUNGEON_MAP',"
+                            + " target_dungeon_map_id=?, target_transition_id=-1"
+                            + " WHERE transition_id=?",
+                    targetMapId);
         }
 
         void seedMalformedOverworldTileDestinationIdFixture(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                insertTransitionWithAnchor(
-                        connection,
-                        mapId,
-                        "Malformed overworld tile destination id.",
-                        4,
-                        4,
-                        0,
-                        "CELL",
-                        null,
-                        "OVERWORLD_TILE",
-                        77L,
-                        0L,
-                        null,
-                        null);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException(
-                        "Failed to seed malformed overworld tile destination fixture.",
-                        exception);
-            }
+            seedMalformedTransitionFixture(
+                    mapId,
+                    "Malformed overworld tile destination id.",
+                    new Cell(4, 4, 0),
+                    "UPDATE dungeon_transitions"
+                            + " SET destination_type='OVERWORLD_TILE',"
+                            + " target_overworld_map_id=77, target_overworld_tile_id=0"
+                            + " WHERE transition_id=?");
         }
 
         void seedSelectedLinkedTransitionFixture(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                long selectedId = insertTransition(
-                        connection,
-                        mapId,
-                        "Selected linked transition.",
-                        5,
-                        2,
-                        0);
-                long linkedId = insertTransition(
-                        connection,
-                        mapId,
-                        "Selected linked target transition.",
-                        6,
-                        2,
-                        0);
-                updateLinkedTransition(connection, selectedId, linkedId);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed selected linked transition fixture.", exception);
-            }
+            commitRectangularRooms(mapId, List.of(new RoomSeed("R1", 0, 1, 1, 3, 3)));
+            List<Long> transitionIds = reserveTransitionIds(2);
+            long selectedId = transitionIds.get(0);
+            long linkedId = transitionIds.get(1);
+            Transition selectedBefore = transition(
+                    selectedId,
+                    mapId,
+                    "Selected linked transition.",
+                    new Cell(5, 2, 0)).withDestination(TransitionDestination.overworldTile(77L, 88L));
+            Transition linked = transition(
+                    linkedId,
+                    mapId,
+                    "Selected linked target transition.",
+                    new Cell(6, 2, 0)).withDestination(TransitionDestination.overworldTile(77L, 88L));
+            commitTransitions(mapId, List.of(selectedBefore, linked));
+            commitChanges(mapId, List.of(new TransitionChange(
+                    selectedBefore,
+                    selectedBefore.withLinkedTransitionId(linkedId))));
         }
 
         void seedReverseLinkedTransitionFixture(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                long selectedId = insertTransition(
-                        connection,
-                        mapId,
-                        "Reverse linked target transition.",
-                        5,
-                        2,
-                        0);
-                long sourceId = insertTransition(
-                        connection,
-                        mapId,
-                        "Reverse linked source transition.",
-                        6,
-                        2,
-                        0);
-                updateLinkedTransition(connection, sourceId, selectedId);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed reverse linked transition fixture.", exception);
-            }
+            commitRectangularRooms(mapId, List.of(new RoomSeed("R1", 0, 1, 1, 3, 3)));
+            List<Long> transitionIds = reserveTransitionIds(2);
+            long selectedId = transitionIds.get(0);
+            long sourceId = transitionIds.get(1);
+            Transition selected = transition(
+                    selectedId,
+                    mapId,
+                    "Reverse linked target transition.",
+                    new Cell(5, 2, 0)).withDestination(TransitionDestination.overworldTile(77L, 88L));
+            Transition sourceBefore = transition(
+                    sourceId,
+                    mapId,
+                    "Reverse linked source transition.",
+                    new Cell(6, 2, 0)).withDestination(TransitionDestination.overworldTile(77L, 88L));
+            commitTransitions(mapId, List.of(selected, sourceBefore));
+            commitChanges(mapId, List.of(new TransitionChange(
+                    sourceBefore,
+                    sourceBefore.withLinkedTransitionId(selectedId))));
         }
 
         void seedDestinationReferenceTransitionFixture(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                long selectedId = insertTransition(
-                        connection,
-                        mapId,
-                        "Destination target transition.",
-                        5,
-                        2,
-                        0);
-                long sourceId = insertTransition(
-                        connection,
-                        mapId,
-                        "Destination source transition.",
-                        6,
-                        2,
-                        0);
-                updateDungeonMapDestination(connection, sourceId, mapId, selectedId);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed transition destination reference fixture.", exception);
-            }
+            commitRectangularRooms(mapId, List.of(new RoomSeed("R1", 0, 1, 1, 3, 3)));
+            List<Long> transitionIds = reserveTransitionIds(2);
+            long selectedId = transitionIds.get(0);
+            long sourceId = transitionIds.get(1);
+            Transition selected = transition(
+                    selectedId,
+                    mapId,
+                    "Destination target transition.",
+                    new Cell(5, 2, 0)).withDestination(TransitionDestination.overworldTile(77L, 88L));
+            Transition sourceBefore = transition(
+                    sourceId,
+                    mapId,
+                    "Destination source transition.",
+                    new Cell(6, 2, 0));
+            commitTransitions(mapId, List.of(selected, sourceBefore));
+            commitChanges(mapId, List.of(new TransitionChange(
+                    sourceBefore,
+                    sourceBefore.withDestination(TransitionDestination.dungeonMap(mapId, selectedId)))));
         }
 
         void seedF1SingleRoom(long mapId, String roomName, int level, int anchorX, int anchorY) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, roomName, level, anchorX, anchorY);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed F1_SINGLE_ROOM fixture.", exception);
-            }
+            commitRectangularRooms(
+                    mapId,
+                    List.of(new RoomSeed(roomName, level, anchorX, anchorY, 3, 3)));
         }
 
         void seedF15ComplexCluster(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                long clusterId = insertAndReturnId(
-                        connection,
-                        "INSERT INTO dungeon_room_clusters(dungeon_map_id, name) VALUES(?, ?)",
-                        mapId,
-                        "Cluster pending");
-                nameCluster(connection, clusterId);
-                long roomOneId = insertClusterRoom(connection, mapId, clusterId, "R1", 10, 10, 0);
-                long roomTwoId = insertClusterRoom(connection, mapId, clusterId, "R2", 11, 10, 0);
-                insertTopologyElement(connection, mapId, roomOneId, clusterId, "R1");
-                insertTopologyElement(connection, mapId, roomTwoId, clusterId, "R2");
-                insertRoomCell(connection, roomOneId, 0, 10, 10);
-                insertRoomCell(connection, roomOneId, 0, 10, 11);
-                insertRoomCell(connection, roomOneId, 0, 10, 12);
-                insertRoomCell(connection, roomTwoId, 0, 11, 10);
-                insertRoomCell(connection, roomTwoId, 0, 12, 10);
-                insertComplexClusterWalls(connection, mapId, clusterId);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed F15_COMPLEX_CLUSTER fixture.", exception);
-            }
+            SqliteDungeonIdentityAllocator identities = identityAllocator();
+            long clusterId = identities.reserve(DungeonIdentityKind.ROOM_CLUSTER, 1).firstId();
+            var roomIds = identities.reserve(DungeonIdentityKind.ROOM, 2);
+            Cell center = new Cell(10, 10, 0);
+            Set<Cell> roomOneCells = Set.of(
+                    new Cell(10, 10, 0),
+                    new Cell(10, 11, 0),
+                    new Cell(10, 12, 0));
+            Set<Cell> roomTwoCells = Set.of(
+                    new Cell(11, 10, 0),
+                    new Cell(12, 10, 0));
+            RoomCluster cluster = RoomCluster.authored(
+                    clusterId,
+                    mapId,
+                    "Cluster " + clusterId,
+                    center,
+                    DungeonClusterBoundary.orderedByLevel(complexClusterBoundaries(clusterId)));
+            commitChanges(mapId, List.of(
+                    new RoomClusterChange(null, cluster, Set.of()),
+                    new RoomRegionChange(null, new RoomRegion(
+                            roomIds.idAt(0), mapId, clusterId, "R1", roomOneCells, null)),
+                    new RoomRegionChange(null, new RoomRegion(
+                            roomIds.idAt(1), mapId, clusterId, "R2", roomTwoCells, null))));
         }
 
         void seedNarrationRoomWithEastExitLink(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                long roomId = insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                insertRectangularRoom(connection, mapId, "R2", 0, 4, 1);
-                markDoorEdge(connection, mapId, roomId, 0, 1, 0, "EAST", "Door east", 200);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed narration room with east exit link fixture.", exception);
-            }
+            commitRectangularRoomsWithDoors(mapId, List.of(
+                    new RoomSeed("R1", 0, 1, 1, 3, 3),
+                    new RoomSeed("R2", 0, 4, 1, 3, 3)), List.of(
+                    new DoorSeed(0, new Cell(3, 2, 0), Direction.EAST)));
         }
 
         void seedF4WalledRoomWithDoor(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                long roomId = insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                insertRectangularRoom(connection, mapId, "R2", 0, 4, 1);
-                markDoorEdge(connection, mapId, roomId, 0, 1, 0, "EAST", "Door east", 200);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed F4_WALLED_ROOM_WITH_DOOR fixture.", exception);
-            }
+            seedNarrationRoomWithEastExitLink(mapId);
         }
 
         void seedF7StairAnchor(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, "R1", 0, 8, 8);
-                long stairId = insertAndReturnId(
-                        connection,
-                        "INSERT INTO dungeon_stairs(dungeon_map_id, name, shape, direction, dimension1, dimension2)"
-                                + " VALUES(?, ?, ?, ?, ?, ?)",
-                        mapId,
-                        "S1",
-                        "STRAIGHT",
-                        0,
-                        3,
-                        1);
-                insertFeatureTopologyElement(connection, mapId, stairId, "STAIR", "S1", 400);
-                insertStairPathNode(connection, stairId, 0, 2, 2, 0);
-                insertStairPathNode(connection, stairId, 1, 2, 1, 0);
-                insertStairPathNode(connection, stairId, 2, 2, 0, 0);
-                insertStairExit(connection, stairId, 2, 2, 0, "Unterer Ausgang");
-                insertStairExit(connection, stairId, 2, 0, 1, "Oberer Ausgang");
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed F7_STAIR_ANCHOR fixture.", exception);
-            }
+            commitRectangularRooms(mapId, List.of(new RoomSeed("R1", 0, 8, 8, 3, 3)));
+            commitStair(mapId, "S1", null, List.of(
+                    new Cell(2, 2, 0),
+                    new Cell(2, 1, 0),
+                    new Cell(2, 0, 0)), new Cell(2, 0, 1));
         }
 
         void seedF7StairAnchorWithBlockingRoom(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, "R1", 0, 3, 1);
-                long stairId = insertAndReturnId(
-                        connection,
-                        "INSERT INTO dungeon_stairs(dungeon_map_id, name, shape, direction, dimension1, dimension2)"
-                                + " VALUES(?, ?, ?, ?, ?, ?)",
-                        mapId,
-                        "S1",
-                        "STRAIGHT",
-                        0,
-                        3,
-                        1);
-                insertFeatureTopologyElement(connection, mapId, stairId, "STAIR", "S1", 400);
-                insertStairPathNode(connection, stairId, 0, 2, 2, 0);
-                insertStairPathNode(connection, stairId, 1, 2, 1, 0);
-                insertStairPathNode(connection, stairId, 2, 2, 0, 0);
-                insertStairExit(connection, stairId, 2, 2, 0, "Unterer Ausgang");
-                insertStairExit(connection, stairId, 2, 0, 1, "Oberer Ausgang");
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed invalid stair recompute fixture.", exception);
-            }
+            commitRectangularRooms(mapId, List.of(new RoomSeed("R1", 0, 3, 1, 3, 3)));
+            commitStair(mapId, "S1", null, List.of(
+                    new Cell(2, 2, 0),
+                    new Cell(2, 1, 0),
+                    new Cell(2, 0, 0)), new Cell(2, 0, 1));
         }
 
         void seedCorridorBoundStairAnchor(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                long roomId = insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                long clusterId = scalarLong(
-                        connection,
-                        "SELECT cluster_id FROM dungeon_rooms WHERE room_id=?",
-                        roomId);
-                long corridorId = insertAndReturnId(
-                        connection,
-                        "INSERT INTO dungeon_corridors(dungeon_map_id, level_z) VALUES(?, ?)",
-                        mapId,
-                        0);
-                insertCorridorTopologyElement(connection, mapId, corridorId, corridorId, "CORRIDOR", "K1", 300);
-                insertCorridorWaypoint(connection, corridorId, clusterId, 0, 2, 0, 0);
-                long stairId = insertAndReturnId(
-                        connection,
-                        "INSERT INTO dungeon_stairs(dungeon_map_id, name, shape, direction, dimension1, dimension2, corridor_id)"
-                                + " VALUES(?, ?, ?, ?, ?, ?, ?)",
-                        mapId,
-                        "S1",
-                        "STRAIGHT",
-                        0,
-                        1,
-                        1,
-                        corridorId);
-                insertCorridorTopologyElement(connection, mapId, stairId, corridorId, "STAIR", "S1", 400);
-                insertStairPathNode(connection, stairId, 0, 2, 2, 0);
-                insertStairPathNode(connection, stairId, 1, 2, 2, 1);
-                insertStairExit(connection, stairId, 2, 2, 0, "Unterer Ausgang");
-                insertStairExit(connection, stairId, 2, 2, 1, "Oberer Ausgang");
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed corridor-bound stair fixture.", exception);
-            }
+            List<SeededRoom> rooms = commitRectangularRooms(
+                    mapId,
+                    List.of(new RoomSeed("R1", 0, 1, 1, 3, 3)));
+            SeededRoom room = rooms.getFirst();
+            long corridorId = identityAllocator().reserve(DungeonIdentityKind.CORRIDOR, 1).firstId();
+            Corridor corridor = new Corridor(
+                    corridorId,
+                    mapId,
+                    0,
+                    List.of(),
+                    new CorridorBindings(
+                            List.of(new CorridorWaypoint(room.clusterId(), new Cell(1, 3, 0), 0)),
+                            List.of(),
+                            List.of(),
+                            List.of()));
+            commitChanges(mapId, List.of(new CorridorChange(
+                    null,
+                    corridor,
+                    Set.of(new DungeonChunkKey(mapId, 0, 0, 0)))));
+            commitStair(mapId, "S1", corridorId, List.of(
+                    new Cell(2, 2, 0),
+                    new Cell(2, 2, 1)), new Cell(2, 2, 1));
         }
 
         void seedGlobalStairIdentitySentinel(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                long stairId = insertAndReturnId(
-                        connection,
-                        "INSERT INTO dungeon_stairs(dungeon_map_id, name, shape, direction, dimension1, dimension2)"
-                                + " VALUES(?, ?, ?, ?, ?, ?)",
-                        mapId,
-                        "Global Stair Sentinel",
-                        "STRAIGHT",
-                        0,
-                        1,
-                        1);
-                insertFeatureTopologyElement(
-                        connection,
-                        mapId,
-                        stairId,
-                        "STAIR",
-                        "Global Stair Sentinel",
-                        900);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed global stair identity sentinel.", exception);
-            }
+            commitStair(mapId, "Global Stair Sentinel", null, List.of(
+                    new Cell(1, 1, 0),
+                    new Cell(1, 0, 0),
+                    new Cell(1, -1, 0)), new Cell(1, -1, 1));
         }
 
         void seedGlobalTransitionIdentitySentinel(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertTransition(connection, mapId, "Global transition sentinel.", 1, 1, 0);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed global transition identity sentinel.", exception);
-            }
+            commitTransition(mapId, "Global transition sentinel.", new Cell(1, 1, 0));
         }
 
         void seedCorridorWithAnchor(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                long roomOneId = insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                long roomTwoId = insertRectangularRoom(connection, mapId, "R2", 0, 8, 1);
-                long roomOneClusterId = scalarLong(
-                        connection,
-                        "SELECT cluster_id FROM dungeon_rooms WHERE room_id=?",
-                        roomOneId);
-                long roomTwoClusterId = scalarLong(
-                        connection,
-                        "SELECT cluster_id FROM dungeon_rooms WHERE room_id=?",
-                        roomTwoId);
-                long doorOneId = markDoorEdge(connection, mapId, roomOneId, 0, 1, 0, "EAST", "D1", 200);
-                long doorTwoId = markDoorEdge(connection, mapId, roomTwoId, 0, -1, 0, "WEST", "D2", 201);
-                long corridorId = insertAndReturnId(
-                        connection,
-                        "INSERT INTO dungeon_corridors(dungeon_map_id, level_z) VALUES(?, ?)",
-                        mapId,
-                        0);
-                insertCorridorTopologyElement(connection, mapId, corridorId, corridorId, "CORRIDOR", "K1", 300);
-                insertCorridorMember(connection, corridorId, roomOneId, 0);
-                insertCorridorMember(connection, corridorId, roomTwoId, 1);
-                insertCorridorDoorOverride(connection, corridorId, roomOneId, roomOneClusterId, 1, 0, "EAST", doorOneId, 0);
-                insertCorridorDoorOverride(connection, corridorId, roomTwoId, roomTwoClusterId, -1, 0, "WEST", doorTwoId, 1);
-                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 0, 2, 0, 0);
-                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 2, 0, 0, 1);
-                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 4, 0, 0, 2);
-                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 4, 3, 0, 3);
-                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 5, 3, 0, 4);
-                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 5, 0, 0, 5);
-                long anchorTopologyId = 70_000L + corridorId;
-                insertCorridorTopologyElement(
-                        connection,
-                        mapId,
-                        anchorTopologyId,
-                        corridorId,
-                        "CORRIDOR_ANCHOR",
-                        "A1",
-                        301);
-                insertCorridorAnchor(connection, corridorId, 1, corridorId, 6, 5, 0, anchorTopologyId, 0);
-                insertCorridorAnchorRef(connection, corridorId, corridorId, anchorTopologyId, 2);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed F5_CORRIDOR_WITH_ANCHOR fixture.", exception);
-            }
+            commitCorridorWithAnchor(mapId, false);
         }
 
         void seedCorridorSplitRouteTarget(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                long roomOneId = insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                long roomTwoId = insertRectangularRoom(connection, mapId, "R2", 0, 8, 1);
-                long roomThreeId = insertRectangularRoom(connection, mapId, "R3", 0, 5, 9);
-                long roomOneClusterId = scalarLong(
-                        connection,
-                        "SELECT cluster_id FROM dungeon_rooms WHERE room_id=?",
-                        roomOneId);
-                long roomTwoClusterId = scalarLong(
-                        connection,
-                        "SELECT cluster_id FROM dungeon_rooms WHERE room_id=?",
-                        roomTwoId);
-                long doorOneId = markDoorEdge(connection, mapId, roomOneId, 0, 1, 0, "EAST", "D1", 200);
-                long doorTwoId = markDoorEdge(connection, mapId, roomTwoId, 0, -1, 0, "WEST", "D2", 201);
-                markDoorEdge(connection, mapId, roomThreeId, 0, 0, -1, "NORTH", "D3", 202);
-                long corridorId = insertAndReturnId(
-                        connection,
-                        "INSERT INTO dungeon_corridors(dungeon_map_id, level_z) VALUES(?, ?)",
-                        mapId,
-                        0);
-                insertCorridorTopologyElement(connection, mapId, corridorId, corridorId, "CORRIDOR", "K1", 300);
-                insertCorridorMember(connection, corridorId, roomOneId, 0);
-                insertCorridorMember(connection, corridorId, roomTwoId, 1);
-                insertCorridorDoorOverride(connection, corridorId, roomOneId, roomOneClusterId, 1, 0, "EAST", doorOneId, 0);
-                insertCorridorDoorOverride(connection, corridorId, roomTwoId, roomTwoClusterId, -1, 0, "WEST", doorTwoId, 1);
-                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 0, 2, 0, 0);
-                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 2, 0, 0, 1);
-                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 4, 0, 0, 2);
-                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 4, 3, 0, 3);
-                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 5, 3, 0, 4);
-                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 5, 0, 0, 5);
-                long anchorTopologyId = 70_000L + corridorId;
-                insertCorridorTopologyElement(
-                        connection,
-                        mapId,
-                        anchorTopologyId,
-                        corridorId,
-                        "CORRIDOR_ANCHOR",
-                        "A1",
-                        301);
-                insertCorridorAnchor(connection, corridorId, 1, corridorId, 6, 5, 0, anchorTopologyId, 0);
-                insertCorridorAnchorRef(connection, corridorId, corridorId, anchorTopologyId, 2);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed DE-COR-004 crossing split fixture.", exception);
-            }
+            commitCorridorWithAnchor(mapId, true);
         }
 
         void seedVerticalFallbackCorridorRouteTarget(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                long roomOneId = insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                long roomTwoId = insertRectangularRoom(connection, mapId, "R2", 0, 10, 6);
-                insertRectangularRoom(connection, mapId, "R_BLOCK", 0, 5, 1);
-                markDoorEdge(connection, mapId, roomOneId, 0, 1, 0, "EAST", "D1", 200);
-                markDoorEdge(connection, mapId, roomTwoId, 0, -1, 0, "WEST", "D2", 201);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException(
-                        "Failed to seed horizontal-blocked vertical-fallback corridor fixture.",
-                        exception);
-            }
+            commitRectangularRoomsWithDoors(mapId, List.of(
+                    new RoomSeed("R1", 0, 1, 1, 3, 3),
+                    new RoomSeed("R2", 0, 10, 6, 3, 3),
+                    new RoomSeed("R_BLOCK", 0, 5, 1, 3, 3)), List.of(
+                    new DoorSeed(0, new Cell(3, 2, 0), Direction.EAST),
+                    new DoorSeed(1, new Cell(10, 7, 0), Direction.WEST)));
         }
 
         void seedRoomToDoorRouteTarget(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                long roomTwoId = insertRectangularRoom(connection, mapId, "R2", 0, 8, 1);
-                markDoorEdge(connection, mapId, roomTwoId, 0, -1, 0, "WEST", "D2", 201);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed F12_ROOM_TO_DOOR_ROUTE_TARGET fixture.", exception);
-            }
+            commitRectangularRoomsWithDoors(mapId, List.of(
+                    new RoomSeed("R1", 0, 1, 1, 3, 3),
+                    new RoomSeed("R2", 0, 8, 1, 3, 3)), List.of(
+                    new DoorSeed(1, new Cell(8, 2, 0), Direction.WEST)));
         }
 
         void seedBlockedCorridorRouteTarget(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                insertRectangularRoom(connection, mapId, "R2", 0, -3, 1);
-                insertRectangularRoom(connection, mapId, "R3", 0, 5, 1);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed blocked corridor route fixture.", exception);
-            }
+            commitRectangularRooms(mapId, List.of(
+                    new RoomSeed("R1", 0, 1, 1, 3, 3),
+                    new RoomSeed("R2", 0, -3, 1, 3, 3),
+                    new RoomSeed("R3", 0, 5, 1, 3, 3)));
         }
 
         void seedTwoByTwoRoom(long mapId, String roomName, int level, int anchorX, int anchorY) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                insertTwoByTwoRoom(connection, mapId, roomName, level, anchorX, anchorY);
-                connection.commit();
-                refreshWindowIndexesForFixture(mapId);
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed two-by-two dungeon room fixture.", exception);
+            commitRectangularRooms(
+                    mapId,
+                    List.of(new RoomSeed(roomName, level, anchorX, anchorY, 2, 2)));
+        }
+
+        private List<SeededRoom> commitRectangularRooms(long mapId, List<RoomSeed> seeds) {
+            return commitRectangularRoomsWithDoors(mapId, seeds, List.of());
+        }
+
+        private List<SeededRoom> commitRectangularRoomsWithDoors(
+                long mapId,
+                List<RoomSeed> seeds,
+                List<DoorSeed> doors
+        ) {
+            SqliteDungeonIdentityAllocator identities = identityAllocator();
+            var roomIds = identities.reserve(DungeonIdentityKind.ROOM, seeds.size());
+            var clusterIds = identities.reserve(DungeonIdentityKind.ROOM_CLUSTER, seeds.size());
+            List<DungeonPatchChange> changes = new ArrayList<>();
+            List<SeededRoom> seededRooms = new ArrayList<>();
+            for (int index = 0; index < seeds.size(); index++) {
+                RoomSeed seed = seeds.get(index);
+                long roomId = roomIds.idAt(index);
+                long clusterId = clusterIds.idAt(index);
+                Set<Cell> cells = rectangleCells(seed);
+                Cell center = new Cell(
+                        seed.anchorQ() + seed.width() / 2,
+                        seed.anchorR() + seed.height() / 2,
+                        seed.level());
+                RoomCluster cluster = RoomCluster.authored(
+                        clusterId,
+                        mapId,
+                        "Cluster " + clusterId,
+                        center,
+                        DungeonClusterBoundary.orderedByLevel(
+                                rectangleBoundaries(clusterId, center, cells, doorsForRoom(doors, index))));
+                RoomRegion room = new RoomRegion(
+                        roomId,
+                        mapId,
+                        clusterId,
+                        seed.name() == null || seed.name().isBlank() ? "Raum " + roomId : seed.name(),
+                        cells,
+                        null);
+                changes.add(new RoomClusterChange(null, cluster, Set.of()));
+                changes.add(new RoomRegionChange(null, room));
+                seededRooms.add(new SeededRoom(roomId, clusterId, seed, center));
             }
+            commitChanges(mapId, changes);
+            return List.copyOf(seededRooms);
+        }
+
+        private void commitCorridorWithAnchor(long mapId, boolean includeSplitTarget) {
+            List<RoomSeed> roomSeeds = new ArrayList<>(List.of(
+                    new RoomSeed("R1", 0, 1, 1, 3, 3),
+                    new RoomSeed("R2", 0, 8, 1, 3, 3)));
+            List<DoorSeed> doors = new ArrayList<>(List.of(
+                    new DoorSeed(0, new Cell(3, 2, 0), Direction.EAST),
+                    new DoorSeed(1, new Cell(8, 2, 0), Direction.WEST)));
+            if (includeSplitTarget) {
+                roomSeeds.add(new RoomSeed("R3", 0, 5, 9, 3, 3));
+                doors.add(new DoorSeed(2, new Cell(6, 9, 0), Direction.NORTH));
+            }
+            List<SeededRoom> rooms = commitRectangularRoomsWithDoors(mapId, roomSeeds, doors);
+            SeededRoom first = rooms.get(0);
+            SeededRoom second = rooms.get(1);
+            SqliteDungeonIdentityAllocator identities = identityAllocator();
+            long corridorId = identities.reserve(DungeonIdentityKind.CORRIDOR, 1).firstId();
+            long anchorId = identities.reserve(DungeonIdentityKind.CORRIDOR_ANCHOR, 1).firstId();
+            DungeonTopologyRef firstDoor = doorTopologyRef(new Cell(3, 2, 0), Direction.EAST);
+            DungeonTopologyRef secondDoor = doorTopologyRef(new Cell(8, 2, 0), Direction.WEST);
+            Corridor corridor = new Corridor(
+                    corridorId,
+                    mapId,
+                    0,
+                    List.of(first.roomId(), second.roomId()),
+                    new CorridorBindings(
+                            List.of(
+                                    new CorridorWaypoint(first.clusterId(), new Cell(1, 3, 0), 0),
+                                    new CorridorWaypoint(first.clusterId(), new Cell(3, 1, 0), 0),
+                                    new CorridorWaypoint(first.clusterId(), new Cell(5, 1, 0), 0),
+                                    new CorridorWaypoint(first.clusterId(), new Cell(5, 4, 0), 0),
+                                    new CorridorWaypoint(first.clusterId(), new Cell(6, 4, 0), 0),
+                                    new CorridorWaypoint(first.clusterId(), new Cell(6, 1, 0), 0)),
+                            List.of(
+                                    new CorridorDoorBinding(
+                                            first.roomId(), first.clusterId(), new Cell(2, 1, 0),
+                                            Direction.EAST, firstDoor),
+                                    new CorridorDoorBinding(
+                                            second.roomId(), second.clusterId(), new Cell(0, 1, 0),
+                                            Direction.WEST, secondDoor)),
+                            List.of(new CorridorAnchor(anchorId, corridorId, new Cell(6, 5, 0))),
+                            List.of(new CorridorAnchorRef(corridorId, anchorId))));
+            commitChanges(mapId, List.of(new CorridorChange(
+                    null,
+                    corridor,
+                    Set.of(new DungeonChunkKey(mapId, 0, 0, 0)))));
+        }
+
+        private void commitStair(
+                long mapId,
+                String name,
+                Long corridorId,
+                List<Cell> path,
+                Cell upperExit
+        ) {
+            SqliteDungeonIdentityAllocator identities = identityAllocator();
+            long stairId = identities.reserve(DungeonIdentityKind.STAIR, 1).firstId();
+            var exitIds = identities.reserve(DungeonIdentityKind.STAIR_EXIT, 2);
+            Stair stair = new Stair(
+                    stairId,
+                    mapId,
+                    name,
+                    StairShape.STRAIGHT,
+                    Direction.NORTH,
+                    corridorId == null ? 3 : 1,
+                    1,
+                    path,
+                    List.of(
+                            new StairExit(exitIds.idAt(0), path.getFirst(), "Unterer Ausgang"),
+                            new StairExit(exitIds.idAt(1), upperExit, "Oberer Ausgang")),
+                    corridorId);
+            commitChanges(mapId, List.of(new StairChange(null, stair)));
+        }
+
+        private void commitChanges(long mapId, List<? extends DungeonPatchChange> changes) {
+            long baselineRevision = mapRevision(mapId);
+            DungeonSqliteFixtureSeeder.commit(sqliteDatabase(), DungeonPatch.of(
+                    new DungeonMapIdentity(mapId),
+                    baselineRevision,
+                    List.copyOf(changes)));
+            normalizeFixtureRevision(mapId, baselineRevision);
+        }
+
+        private void normalizeFixtureRevision(long mapId, long baselineRevision) {
+            try (Connection connection = open();
+                 PreparedStatement map = connection.prepareStatement(
+                         "UPDATE dungeon_maps SET revision=? WHERE dungeon_map_id=?");
+                 PreparedStatement chunks = connection.prepareStatement(
+                         "UPDATE dungeon_chunks SET content_revision=? WHERE dungeon_map_id=?")) {
+                bind(map, baselineRevision, mapId);
+                map.executeUpdate();
+                bind(chunks, baselineRevision, mapId);
+                chunks.executeUpdate();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to normalize authored fixture revision.", exception);
+            }
+        }
+
+        private SqliteDungeonIdentityAllocator identityAllocator() {
+            return new SqliteDungeonIdentityAllocator(sqliteDatabase());
+        }
+
+        private long commitTransition(long mapId, String description, Cell anchor) {
+            long transitionId = reserveTransitionIds(1).get(0);
+            Transition transition = transition(transitionId, mapId, description, anchor);
+            commitTransitions(mapId, List.of(transition));
+            return transitionId;
+        }
+
+        private List<Long> reserveTransitionIds(int count) {
+            var range = identityAllocator().reserve(DungeonIdentityKind.TRANSITION, count);
+            List<Long> transitionIds = new ArrayList<>(count);
+            for (int index = 0; index < count; index++) {
+                transitionIds.add(range.idAt(index));
+            }
+            return List.copyOf(transitionIds);
+        }
+
+        private void commitTransitions(long mapId, List<Transition> transitions) {
+            List<DungeonPatchChange> changes = transitions.stream()
+                    .map(transition -> (DungeonPatchChange) new TransitionChange(null, transition))
+                    .toList();
+            commitChanges(mapId, changes);
+        }
+
+        private static Transition transition(long transitionId, long mapId, String description, Cell anchor) {
+            return new Transition(
+                    transitionId,
+                    mapId,
+                    description,
+                    TransitionAnchor.cell(anchor),
+                    TransitionDestination.unlinkedEntrance(),
+                    null);
+        }
+
+        private SqliteDatabase sqliteDatabase() {
+            return new SqliteDatabase(databasePath, platform.diagnostics.NoopDiagnostics.INSTANCE);
+        }
+
+        private static Set<Cell> rectangleCells(RoomSeed seed) {
+            Set<Cell> result = new LinkedHashSet<>();
+            for (int r = 0; r < seed.height(); r++) {
+                for (int q = 0; q < seed.width(); q++) {
+                    result.add(new Cell(seed.anchorQ() + q, seed.anchorR() + r, seed.level()));
+                }
+            }
+            return Set.copyOf(result);
+        }
+
+        private static List<DungeonClusterBoundary> rectangleBoundaries(
+                long clusterId,
+                Cell center,
+                Set<Cell> cells,
+                List<DoorSeed> doors
+        ) {
+            List<DungeonClusterBoundary> result = new ArrayList<>();
+            for (Cell cell : cells) {
+                for (Direction direction : Direction.values()) {
+                    if (!cells.contains(direction.neighborOf(cell))) {
+                        boolean door = doors.stream().anyMatch(seed ->
+                                seed.cell().equals(cell) && seed.direction() == direction);
+                        result.add(new DungeonClusterBoundary(
+                                clusterId,
+                                cell.level(),
+                                new Cell(cell.q() - center.q(), cell.r() - center.r(), cell.level()),
+                                direction,
+                                door ? BoundaryKind.DOOR : BoundaryKind.WALL,
+                                door ? doorTopologyRef(cell, direction) : DungeonTopologyRef.empty()));
+                    }
+                }
+            }
+            return List.copyOf(result);
+        }
+
+        private static List<DoorSeed> doorsForRoom(List<DoorSeed> doors, int roomIndex) {
+            return doors.stream().filter(door -> door.roomIndex() == roomIndex).toList();
+        }
+
+        private static DungeonTopologyRef doorTopologyRef(Cell cell, Direction direction) {
+            return DungeonTopologyRef.door(DungeonBoundaryKey.from(Edge.sideOf(cell, direction)).stableId());
+        }
+
+        private static List<DungeonClusterBoundary> complexClusterBoundaries(long clusterId) {
+            List<DungeonClusterBoundary> boundaries = new ArrayList<>();
+            for (int relativeQ = 0; relativeQ <= 2; relativeQ++) {
+                boundaries.add(boundary(clusterId, relativeQ, 0, Direction.NORTH));
+            }
+            boundaries.add(boundary(clusterId, 2, 0, Direction.EAST));
+            boundaries.add(boundary(clusterId, 1, 0, Direction.SOUTH));
+            boundaries.add(boundary(clusterId, 2, 0, Direction.SOUTH));
+            boundaries.add(boundary(clusterId, 0, 1, Direction.EAST));
+            boundaries.add(boundary(clusterId, 0, 2, Direction.EAST));
+            boundaries.add(boundary(clusterId, 0, 2, Direction.SOUTH));
+            for (int relativeR = 0; relativeR <= 2; relativeR++) {
+                boundaries.add(boundary(clusterId, 0, relativeR, Direction.WEST));
+            }
+            return List.copyOf(boundaries);
+        }
+
+        private static DungeonClusterBoundary boundary(
+                long clusterId,
+                int relativeQ,
+                int relativeR,
+                Direction direction
+        ) {
+            return new DungeonClusterBoundary(
+                    clusterId,
+                    0,
+                    new Cell(relativeQ, relativeR, 0),
+                    direction,
+                    BoundaryKind.WALL);
+        }
+
+        private record RoomSeed(String name, int level, int anchorQ, int anchorR, int width, int height) {
+        }
+
+        private record DoorSeed(int roomIndex, Cell cell, Direction direction) {
+        }
+
+        private record SeededRoom(long roomId, long clusterId, RoomSeed seed, Cell center) {
         }
 
         void seedLargeCurrentGeometryRoom(long mapId, int width, int height) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                long clusterId = insertAndReturnId(
-                        connection,
-                        "INSERT INTO dungeon_room_clusters(dungeon_map_id, name) VALUES(?, ?)",
-                        mapId,
-                        "Cluster pending");
-                nameCluster(connection, clusterId);
-                long roomId = insertAndReturnId(
-                        connection,
-                        "INSERT INTO dungeon_rooms(dungeon_map_id, cluster_id, name, visual_description)"
-                                + " VALUES(?, ?, ?, ?)",
-                        mapId,
-                        clusterId,
-                        "Large Per-Cell Room",
-                        "");
-                insertTopologyElement(connection, mapId, roomId, clusterId, "Large Per-Cell Room");
-                insertRoomCells(connection, roomId, 0, 0, 0, width, height);
-                insertRectangularPerimeterWalls(connection, mapId, clusterId, 0, 0, 0, width, height);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed large current-geometry room fixture.", exception);
-            }
-        }
-
-        static void insertTwoByTwoRoom(
-                Connection connection,
-                long mapId,
-                String roomName,
-                int level,
-                int anchorX,
-                int anchorY
-        ) throws SQLException {
-            long clusterId = insertAndReturnId(
-                    connection,
-                    "INSERT INTO dungeon_room_clusters(dungeon_map_id, name) VALUES(?, ?)",
+            commitRectangularRooms(
                     mapId,
-                    "Cluster pending");
-            nameCluster(connection, clusterId);
-            long roomId = insertAndReturnId(
-                    connection,
-                    "INSERT INTO dungeon_rooms(dungeon_map_id, cluster_id, name, visual_description)"
-                            + " VALUES(?, ?, ?, ?)",
-                    mapId,
-                    clusterId,
-                    roomName == null || roomName.isBlank() ? "Fixture room pending" : roomName,
-                    "");
-            if (roomName == null || roomName.isBlank()) {
-                nameRoom(connection, roomId);
-            }
-            insertTopologyElement(connection, mapId, roomId, clusterId,
-                    roomName == null || roomName.isBlank() ? "Raum " + roomId : roomName);
-            insertRoomCells(connection, roomId, level, anchorX, anchorY, 2, 2);
-            insertTwoByTwoPerimeterWalls(connection, mapId, clusterId, level, anchorX + 1, anchorY + 1);
-        }
-
-        static long insertRectangularRoom(
-                Connection connection,
-                long mapId,
-                String roomName,
-                int level,
-                int anchorX,
-                int anchorY
-        ) throws SQLException {
-            long clusterId = insertAndReturnId(
-                    connection,
-                    "INSERT INTO dungeon_room_clusters(dungeon_map_id, name) VALUES(?, ?)",
-                    mapId,
-                    "Cluster pending");
-            nameCluster(connection, clusterId);
-            long roomId = insertAndReturnId(
-                    connection,
-                    "INSERT INTO dungeon_rooms(dungeon_map_id, cluster_id, name, visual_description)"
-                            + " VALUES(?, ?, ?, ?)",
-                    mapId,
-                    clusterId,
-                    roomName == null || roomName.isBlank() ? "Fixture room pending" : roomName,
-                    "");
-            if (roomName == null || roomName.isBlank()) {
-                nameRoom(connection, roomId);
-            }
-            insertTopologyElement(connection, mapId, roomId, clusterId,
-                    roomName == null || roomName.isBlank() ? "Raum " + roomId : roomName);
-            insertRoomCells(connection, roomId, level, anchorX, anchorY, 3, 3);
-            insertPerimeterWalls(connection, mapId, clusterId, level, anchorX + 1, anchorY + 1);
-            return roomId;
-        }
-
-        static long insertClusterRoom(
-                Connection connection,
-                long mapId,
-                long clusterId,
-                String roomName,
-                int componentX,
-                int componentY,
-                int level
-        ) throws SQLException {
-            return insertAndReturnId(
-                    connection,
-                    "INSERT INTO dungeon_rooms(dungeon_map_id, cluster_id, name, visual_description)"
-                            + " VALUES(?, ?, ?, ?)",
-                    mapId,
-                    clusterId,
-                    roomName,
-                    "");
-        }
-
-        private static void nameCluster(Connection connection, long clusterId) throws SQLException {
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "UPDATE dungeon_room_clusters SET name=? WHERE cluster_id=?")) {
-                bind(statement, "Cluster " + clusterId, clusterId);
-                statement.executeUpdate();
-            }
-        }
-
-        private static void nameRoom(Connection connection, long roomId) throws SQLException {
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "UPDATE dungeon_rooms SET name=? WHERE room_id=?")) {
-                bind(statement, "Raum " + roomId, roomId);
-                statement.executeUpdate();
-            }
-        }
-
-        static void insertComplexClusterWalls(
-                Connection connection,
-                long mapId,
-                long clusterId
-        ) throws SQLException {
-            int sortOrder = 1;
-            for (int relativeX = 0; relativeX <= 2; relativeX++) {
-                insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, relativeX, 0, "NORTH", sortOrder++);
-            }
-            insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 2, 0, "EAST", sortOrder++);
-            insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 1, 0, "SOUTH", sortOrder++);
-            insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 2, 0, "SOUTH", sortOrder++);
-            insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 0, 1, "EAST", sortOrder++);
-            insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 0, 2, "EAST", sortOrder++);
-            insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 0, 2, "SOUTH", sortOrder++);
-            for (int relativeY = 0; relativeY <= 2; relativeY++) {
-                insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 0, relativeY, "WEST", sortOrder++);
-            }
-        }
-
-        static long markDoorEdge(
-                Connection connection,
-                long mapId,
-                long roomId,
-                int level,
-                int relativeCellX,
-                int relativeCellY,
-                String direction,
-                String label,
-                int sortOrder
-        ) throws SQLException {
-            long clusterId = scalarLong(
-                    connection,
-                    "SELECT cluster_id FROM dungeon_rooms WHERE room_id=?",
-                    roomId);
-            long absoluteCellX = scalarLong(
-                    connection,
-                    "SELECT (MIN(cell_row.cell_x) + MAX(cell_row.cell_x)) / 2 + ?"
-                            + " FROM dungeon_room_cells cell_row"
-                            + " JOIN dungeon_rooms room_row ON room_row.room_id=cell_row.room_id"
-                            + " WHERE room_row.cluster_id=?",
-                    relativeCellX,
-                    clusterId);
-            long absoluteCellY = scalarLong(
-                    connection,
-                    "SELECT (MIN(cell_row.cell_y) + MAX(cell_row.cell_y)) / 2 + ?"
-                            + " FROM dungeon_room_cells cell_row"
-                            + " JOIN dungeon_rooms room_row ON room_row.room_id=cell_row.room_id"
-                            + " WHERE room_row.cluster_id=?",
-                    relativeCellY,
-                    clusterId);
-            long topologyElementId = scalarLong(
-                    connection,
-                    "SELECT topology_element_id FROM dungeon_room_cluster_edges"
-                            + " WHERE cluster_id=? AND level_z=? AND cell_x=? AND cell_y=? AND edge_direction=?",
-                    clusterId,
-                    level,
-                    absoluteCellX,
-                    absoluteCellY,
-                    direction);
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "UPDATE dungeon_room_cluster_edges SET edge_type=?"
-                            + " WHERE cluster_id=? AND level_z=? AND cell_x=? AND cell_y=? AND edge_direction=?")) {
-                bind(statement, "DOOR", clusterId, level, absoluteCellX, absoluteCellY, direction);
-                statement.executeUpdate();
-            }
-            insertTopologyElement(connection, mapId, topologyElementId, clusterId, "DOOR", label, sortOrder);
-            return topologyElementId;
-        }
-
-        static void insertCorridorMember(
-                Connection connection,
-                long corridorId,
-                long roomId,
-                int sortOrder
-        ) throws SQLException {
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO dungeon_corridor_members(corridor_id, room_id, member_order) VALUES(?, ?, ?)")) {
-                bind(statement, corridorId, roomId, sortOrder);
-                statement.executeUpdate();
-            }
-        }
-
-        static void insertCorridorDoorOverride(
-                Connection connection,
-                long corridorId,
-                long roomId,
-                long clusterId,
-                int relativeCellX,
-                int relativeCellY,
-                String direction,
-                long topologyElementId,
-                int sortOrder
-        ) throws SQLException {
-            int canonicalRelativeX = relativeCellX + fixtureCenterOffset(connection, clusterId, "cell_x");
-            int canonicalRelativeY = relativeCellY + fixtureCenterOffset(connection, clusterId, "cell_y");
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO dungeon_corridor_door_overrides("
-                            + "corridor_id, room_id, cluster_id, relative_cell_x, relative_cell_y,"
-                            + " edge_direction, topology_element_id, sort_order"
-                            + ") VALUES(?, ?, ?, ?, ?, ?, ?, ?)")) {
-                bind(statement, corridorId, roomId, clusterId, canonicalRelativeX, canonicalRelativeY,
-                        direction, topologyElementId, sortOrder);
-                statement.executeUpdate();
-            }
-        }
-
-        static void insertCorridorWaypoint(
-                Connection connection,
-                long corridorId,
-                long clusterId,
-                int relativeX,
-                int relativeY,
-                int relativeZ,
-                int sortOrder
-        ) throws SQLException {
-            int canonicalRelativeX = relativeX + fixtureCenterOffset(connection, clusterId, "cell_x");
-            int canonicalRelativeY = relativeY + fixtureCenterOffset(connection, clusterId, "cell_y");
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO dungeon_corridor_waypoints("
-                            + "corridor_id, sort_order, cluster_id, relative_x, relative_y, relative_z"
-                            + ") VALUES(?, ?, ?, ?, ?, ?)")) {
-                bind(statement, corridorId, sortOrder, clusterId,
-                        canonicalRelativeX, canonicalRelativeY, relativeZ);
-                statement.executeUpdate();
-            }
-        }
-
-        private static int fixtureCenterOffset(
-                Connection connection,
-                long clusterId,
-                String coordinateColumn
-        ) throws SQLException {
-            if (!"cell_x".equals(coordinateColumn) && !"cell_y".equals(coordinateColumn)) {
-                throw new IllegalArgumentException("Unsupported cell coordinate column: " + coordinateColumn);
-            }
-            return (int) scalarLong(
-                    connection,
-                    "SELECT (MIN(cell_row." + coordinateColumn + ")"
-                            + " + MAX(cell_row." + coordinateColumn + ")) / 2"
-                            + " - MIN(cell_row." + coordinateColumn + ")"
-                            + " FROM dungeon_room_cells cell_row"
-                            + " JOIN dungeon_rooms room_row ON room_row.room_id=cell_row.room_id"
-                            + " WHERE room_row.cluster_id=?",
-                    clusterId);
-        }
-
-        static void insertCorridorAnchor(
-                Connection connection,
-                long corridorId,
-                long anchorId,
-                long hostCorridorId,
-                int cellX,
-                int cellY,
-                int cellZ,
-                long topologyElementId,
-                int sortOrder
-        ) throws SQLException {
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO dungeon_corridor_anchors("
-                            + "corridor_id, anchor_id, host_corridor_id, cell_x, cell_y, cell_z,"
-                            + " topology_element_id, sort_order"
-                            + ") VALUES(?, ?, ?, ?, ?, ?, ?, ?)")) {
-                bind(statement, corridorId, anchorId, hostCorridorId, cellX, cellY, cellZ,
-                        topologyElementId, sortOrder);
-                statement.executeUpdate();
-            }
-        }
-
-        static void insertCorridorAnchorRef(
-                Connection connection,
-                long corridorId,
-                long hostCorridorId,
-                long topologyElementId,
-                int sortOrder
-        ) throws SQLException {
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO dungeon_corridor_anchor_refs("
-                            + "corridor_id, host_corridor_id, topology_element_id, sort_order"
-                            + ") VALUES(?, ?, ?, ?)")) {
-                bind(statement, corridorId, hostCorridorId, topologyElementId, sortOrder);
-                statement.executeUpdate();
-            }
-        }
-
-        static void insertTwoByTwoPerimeterWalls(
-                Connection connection,
-                long mapId,
-                long clusterId,
-                int level,
-                int centerX,
-                int centerY
-        ) throws SQLException {
-            int sortOrder = 1;
-            for (int relativeX = -1; relativeX <= 0; relativeX++) {
-                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, relativeX, -1, "NORTH",
-                        sortOrder);
-                sortOrder++;
-                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, relativeX, 0, "SOUTH",
-                        sortOrder);
-                sortOrder++;
-            }
-            for (int relativeY = -1; relativeY <= 0; relativeY++) {
-                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, 0, relativeY, "EAST",
-                        sortOrder);
-                sortOrder++;
-                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, -1, relativeY, "WEST",
-                        sortOrder);
-                sortOrder++;
-            }
-        }
-
-        static void insertPerimeterWalls(
-                Connection connection,
-                long mapId,
-                long clusterId,
-                int level,
-                int centerX,
-                int centerY
-        ) throws SQLException {
-            int sortOrder = 1;
-            for (int relativeX = -1; relativeX <= 1; relativeX++) {
-                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, relativeX, -1, "NORTH",
-                        sortOrder);
-                sortOrder++;
-                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, relativeX, 1, "SOUTH",
-                        sortOrder);
-                sortOrder++;
-            }
-            for (int relativeY = -1; relativeY <= 1; relativeY++) {
-                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, 1, relativeY, "EAST",
-                        sortOrder);
-                sortOrder++;
-                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, -1, relativeY, "WEST",
-                        sortOrder);
-                sortOrder++;
-            }
-        }
-
-        static void insertRectangularPerimeterWalls(
-                Connection connection,
-                long mapId,
-                long clusterId,
-                int level,
-                int centerX,
-                int centerY,
-                int width,
-                int height
-        ) throws SQLException {
-            int sortOrder = 1;
-            int maxRelativeX = width - 1;
-            int maxRelativeY = height - 1;
-            for (int relativeX = 0; relativeX < width; relativeX++) {
-                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, relativeX, 0, "NORTH",
-                        sortOrder);
-                sortOrder++;
-                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, relativeX, maxRelativeY,
-                        "SOUTH", sortOrder);
-                sortOrder++;
-            }
-            for (int relativeY = 0; relativeY < height; relativeY++) {
-                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, maxRelativeX, relativeY,
-                        "EAST", sortOrder);
-                sortOrder++;
-                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, 0, relativeY, "WEST",
-                        sortOrder);
-                sortOrder++;
-            }
-        }
-
-        static void insertClusterBoundary(
-                Connection connection,
-                long mapId,
-                long clusterId,
-                int level,
-                int centerX,
-                int centerY,
-                int relativeX,
-                int relativeY,
-                String direction,
-                int sortOrder
-        ) throws SQLException {
-            long topologyElementId = wallTopologyElementId(centerX, centerY, level, relativeX, relativeY, direction);
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO dungeon_room_cluster_edges("
-                            + "dungeon_map_id, cluster_id, level_z, cell_x, cell_y,"
-                            + " edge_direction, edge_type, topology_element_id"
-                            + ") VALUES(?, ?, ?, ?, ?, ?, ?, ?)")) {
-                bind(statement, mapId, clusterId, level, centerX + relativeX, centerY + relativeY,
-                        direction, "WALL", topologyElementId);
-                statement.executeUpdate();
-            }
-            insertTopologyElement(connection, mapId, topologyElementId, clusterId, "WALL", "Wall", sortOrder);
-        }
-
-        static void insertStairPathNode(
-                Connection connection,
-                long stairId,
-                int sortOrder,
-                int cellX,
-                int cellY,
-                int cellZ
-        ) throws SQLException {
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO dungeon_stair_path_nodes(stair_id, sort_order, cell_x, cell_y, cell_z)"
-                            + " VALUES(?, ?, ?, ?, ?)")) {
-                bind(statement, stairId, sortOrder, cellX, cellY, cellZ);
-                statement.executeUpdate();
-            }
-        }
-
-        static void insertStairExit(
-                Connection connection,
-                long stairId,
-                int cellX,
-                int cellY,
-                int cellZ,
-                String label
-        ) throws SQLException {
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO dungeon_stair_exits(stair_id, cell_x, cell_y, cell_z, label)"
-                            + " VALUES(?, ?, ?, ?, ?)")) {
-                bind(statement, stairId, cellX, cellY, cellZ, label);
-                statement.executeUpdate();
-            }
-        }
-
-        static long insertTransition(
-                Connection connection,
-                long mapId,
-                String description,
-                int cellX,
-                int cellY,
-                int level
-        ) throws SQLException {
-            long transitionId = insertTransitionWithAnchor(
-                    connection,
-                    mapId,
-                    description,
-                    cellX,
-                    cellY,
-                    level,
-                    "CELL",
-                    null);
-            return transitionId;
-        }
-
-        static long insertTransitionWithAnchor(
-                Connection connection,
-                long mapId,
-                String description,
-                Integer cellX,
-                Integer cellY,
-                Integer level,
-                String anchorType,
-                String anchorEdgeDirection
-        ) throws SQLException {
-            return insertTransitionWithAnchor(
-                    connection,
-                    mapId,
-                    description,
-                    cellX,
-                    cellY,
-                    level,
-                    anchorType,
-                    anchorEdgeDirection,
-                    "OVERWORLD_TILE");
-        }
-
-        static long insertTransitionWithAnchor(
-                Connection connection,
-                long mapId,
-                String description,
-                Integer cellX,
-                Integer cellY,
-                Integer level,
-                String anchorType,
-                String anchorEdgeDirection,
-                String destinationType
-        ) throws SQLException {
-            return insertTransitionWithAnchor(
-                    connection,
-                    mapId,
-                    description,
-                    cellX,
-                    cellY,
-                    level,
-                    anchorType,
-                    anchorEdgeDirection,
-                    destinationType,
-                    77L,
-                    88L,
-                    null,
-                    null);
-        }
-
-        static long insertTransitionWithAnchor(
-                Connection connection,
-                long mapId,
-                String description,
-                Integer cellX,
-                Integer cellY,
-                Integer level,
-                String anchorType,
-                String anchorEdgeDirection,
-                String destinationType,
-                Long targetOverworldMapId,
-                Long targetOverworldTileId,
-                Long targetDungeonMapId,
-                Long targetTransitionId
-        ) throws SQLException {
-            long transitionId;
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO dungeon_transitions("
-                            + "dungeon_map_id, description, cell_x, cell_y, level_z,"
-                            + " anchor_type, anchor_edge_direction,"
-                            + " destination_type, target_overworld_map_id, target_overworld_tile_id,"
-                            + " target_dungeon_map_id, target_transition_id, linked_transition_id"
-                            + ") VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)",
-                    Statement.RETURN_GENERATED_KEYS)) {
-                statement.setLong(1, mapId);
-                statement.setString(2, description);
-                setNullableInteger(statement, 3, cellX);
-                setNullableInteger(statement, 4, cellY);
-                setNullableInteger(statement, 5, level);
-                statement.setString(6, anchorType);
-                statement.setString(7, anchorEdgeDirection);
-                statement.setString(8, destinationType);
-                setNullableLong(statement, 9, targetOverworldMapId);
-                setNullableLong(statement, 10, targetOverworldTileId);
-                setNullableLong(statement, 11, targetDungeonMapId);
-                setNullableLong(statement, 12, targetTransitionId);
-                statement.executeUpdate();
-                try (ResultSet resultSet = statement.getGeneratedKeys()) {
-                    if (!resultSet.next()) {
-                        throw new SQLException("No generated key for transition insert.");
-                    }
-                    transitionId = resultSet.getLong(1);
-                }
-            }
-            insertFeatureTopologyElement(connection, mapId, transitionId, "TRANSITION", "Übergang " + transitionId, 500);
-            return transitionId;
-        }
-
-        private static void setNullableInteger(
-                PreparedStatement statement,
-                int parameterIndex,
-                Integer value
-        ) throws SQLException {
-            if (value == null) {
-                statement.setNull(parameterIndex, java.sql.Types.INTEGER);
-                return;
-            }
-            statement.setInt(parameterIndex, value);
-        }
-
-        private static void setNullableLong(
-                PreparedStatement statement,
-                int parameterIndex,
-                Long value
-        ) throws SQLException {
-            if (value == null) {
-                statement.setNull(parameterIndex, java.sql.Types.INTEGER);
-                return;
-            }
-            statement.setLong(parameterIndex, value);
-        }
-
-        static void updateLinkedTransition(
-                Connection connection,
-                long transitionId,
-                long linkedTransitionId
-        ) throws SQLException {
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "UPDATE dungeon_transitions SET linked_transition_id=? WHERE transition_id=?")) {
-                bind(statement, linkedTransitionId, transitionId);
-                statement.executeUpdate();
-            }
-        }
-
-        static void updateDungeonMapDestination(
-                Connection connection,
-                long transitionId,
-                long targetMapId,
-                long targetTransitionId
-        ) throws SQLException {
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "UPDATE dungeon_transitions SET destination_type='DUNGEON_MAP',"
-                            + " target_overworld_map_id=NULL, target_overworld_tile_id=NULL,"
-                            + " target_dungeon_map_id=?, target_transition_id=?"
-                            + " WHERE transition_id=?")) {
-                bind(statement, targetMapId, targetTransitionId, transitionId);
-                statement.executeUpdate();
-            }
-        }
-
-        static void insertFeatureTopologyElement(
-                Connection connection,
-                long mapId,
-                long elementId,
-                String elementKind,
-                String label,
-                int sortOrder
-        ) throws SQLException {
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT OR IGNORE INTO dungeon_topology_elements("
-                            + "dungeon_map_id, element_kind, element_id, cluster_id, corridor_id, label, sort_order"
-                            + ") VALUES(?, ?, ?, NULL, NULL, ?, ?)")) {
-                bind(statement, mapId, elementKind, elementId, label, sortOrder);
-                statement.executeUpdate();
-            }
+                    List.of(new RoomSeed("Large Per-Cell Room", 0, 0, 0, width, height)));
         }
 
         static long wallTopologyElementId(
@@ -2794,58 +2107,6 @@ class DungeonEditorTestPersistence {
             Cell absoluteCell = new Cell(centerX + relativeX, centerY + relativeY, level);
             Edge edge = Edge.sideOf(absoluteCell, Direction.parse(direction));
             return DungeonBoundaryKey.from(edge).stableId();
-        }
-
-        static void insertTopologyElement(
-                Connection connection,
-                long mapId,
-                long roomId,
-                long clusterId,
-                String label
-        ) throws SQLException {
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO dungeon_topology_elements("
-                            + "dungeon_map_id, element_kind, element_id, cluster_id, corridor_id, label, sort_order"
-                            + ") VALUES(?, ?, ?, ?, NULL, ?, ?)")) {
-                bind(statement, mapId, "ROOM", roomId, clusterId, label, roomId);
-                statement.executeUpdate();
-            }
-        }
-
-        static void insertTopologyElement(
-                Connection connection,
-                long mapId,
-                long elementId,
-                long clusterId,
-                String elementKind,
-                String label,
-                int sortOrder
-        ) throws SQLException {
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT OR IGNORE INTO dungeon_topology_elements("
-                            + "dungeon_map_id, element_kind, element_id, cluster_id, corridor_id, label, sort_order"
-                            + ") VALUES(?, ?, ?, ?, NULL, ?, ?)")) {
-                bind(statement, mapId, elementKind, elementId, clusterId, label, sortOrder);
-                statement.executeUpdate();
-            }
-        }
-
-        static void insertCorridorTopologyElement(
-                Connection connection,
-                long mapId,
-                long elementId,
-                long corridorId,
-                String elementKind,
-                String label,
-                int sortOrder
-        ) throws SQLException {
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT OR IGNORE INTO dungeon_topology_elements("
-                            + "dungeon_map_id, element_kind, element_id, cluster_id, corridor_id, label, sort_order"
-                            + ") VALUES(?, ?, ?, NULL, ?, ?, ?)")) {
-                bind(statement, mapId, elementKind, elementId, corridorId, label, sortOrder);
-                statement.executeUpdate();
-            }
         }
 
         long count(String sql, String value) {
@@ -2935,53 +2196,6 @@ class DungeonEditorTestPersistence {
             }
         }
 
-        static long insertAndReturnId(Connection connection, String sql, Object... values) throws SQLException {
-            try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-                bind(statement, values);
-                statement.executeUpdate();
-                try (ResultSet resultSet = statement.getGeneratedKeys()) {
-                    if (!resultSet.next()) {
-                        throw new SQLException("No generated key for insert: " + sql);
-                    }
-                    return resultSet.getLong(1);
-                }
-            }
-        }
-
-        private static void insertRoomCells(
-                Connection connection,
-                long roomId,
-                int level,
-                int anchorX,
-                int anchorY,
-                int width,
-                int height
-        ) throws SQLException {
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO dungeon_room_cells(room_id, level_z, cell_x, cell_y) VALUES (?, ?, ?, ?)")) {
-                for (int q = anchorX; q < anchorX + width; q++) {
-                    for (int r = anchorY; r < anchorY + height; r++) {
-                        bind(statement, roomId, level, q, r);
-                        statement.executeUpdate();
-                    }
-                }
-            }
-        }
-
-        private static void insertRoomCell(
-                Connection connection,
-                long roomId,
-                int level,
-                int cellX,
-                int cellY
-        ) throws SQLException {
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO dungeon_room_cells(room_id, level_z, cell_x, cell_y) VALUES(?, ?, ?, ?)")) {
-                bind(statement, roomId, level, cellX, cellY);
-                statement.executeUpdate();
-            }
-        }
-
         static void bind(PreparedStatement statement, Object... values) throws SQLException {
             for (int index = 0; index < values.length; index++) {
                 Object value = values[index];
@@ -3008,11 +2222,5 @@ class DungeonEditorTestPersistence {
             }
         }
 
-        static long scalarLong(Connection connection, String sql, Object... values) throws SQLException {
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                bind(statement, values);
-                return scalar(statement);
-            }
-        }
     }
 }

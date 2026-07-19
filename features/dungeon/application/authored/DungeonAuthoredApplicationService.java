@@ -24,8 +24,10 @@ import features.dungeon.domain.core.projection.DungeonDerivedStateProjection;
 import features.dungeon.domain.core.projection.DungeonAreaType;
 import features.dungeon.domain.core.projection.DungeonState;
 import features.dungeon.domain.core.projection.DungeonMapFacts;
-import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
+import features.dungeon.application.authored.port.DungeonIdentityAllocator;
+import features.dungeon.application.authored.port.DungeonIdentityKind;
+import features.dungeon.application.authored.port.DungeonIdentityRange;
 import features.dungeon.application.authored.port.DungeonMapHeader;
 import features.dungeon.application.authored.port.DungeonCompoundUnitOfWorkResult;
 import features.dungeon.application.authored.port.DungeonUnitOfWork;
@@ -122,16 +124,17 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
     private static final String PREVIEW_ARGUMENT = "preview";
 
     private final DungeonCatalogStore catalogStore;
-    private final DungeonMapRepository repository;
     private final DungeonWindowStore windowStore;
     private final DungeonUnitOfWork unitOfWork;
+    private final DungeonIdentityAllocator identityAllocator;
+    private final DungeonCommandWorksetLoader commandWorksetLoader;
     private final DungeonAuthoredPublishedState publishedState;
     private final ExecutionLane executionLane;
     private final CorridorRoutingPolicy corridorRoutingPolicy;
     private final CreateCorridorCommand createCorridorCommand;
     private final DeleteCorridorCommand deleteCorridorCommand;
-    /* Pointer previews operate on this immutable authored workset. */
-    private final ConcurrentMap<Long, DungeonMap> authoredWorkset = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Long, DungeonCommandReadSpecs.AcceptedViewport> acceptedViewports =
+            new ConcurrentHashMap<>();
     private final DungeonEditHistory editHistory = new DungeonEditHistory();
     private final DungeonWindowProjection windowProjection = new DungeonWindowProjection();
     private final AtomicLong windowRequestGeneration = new AtomicLong();
@@ -182,29 +185,30 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
 
     public DungeonAuthoredApplicationService(
             DungeonCatalogStore catalogStore,
-            DungeonMapRepository repository,
             DungeonWindowStore windowStore,
             DungeonUnitOfWork unitOfWork,
+            DungeonIdentityAllocator identityAllocator,
             ExecutionLane executionLane,
             DungeonAuthoredPublishedState publishedState
     ) {
-        this(catalogStore, repository, windowStore, unitOfWork, executionLane, publishedState,
+        this(catalogStore, windowStore, unitOfWork, identityAllocator, executionLane, publishedState,
                 new OrthogonalCorridorRoutingPolicy());
     }
 
     public DungeonAuthoredApplicationService(
             DungeonCatalogStore catalogStore,
-            DungeonMapRepository repository,
             DungeonWindowStore windowStore,
             DungeonUnitOfWork unitOfWork,
+            DungeonIdentityAllocator identityAllocator,
             ExecutionLane executionLane,
             DungeonAuthoredPublishedState publishedState,
             CorridorRoutingPolicy corridorRoutingPolicy
     ) {
         this.catalogStore = Objects.requireNonNull(catalogStore, "catalogStore");
-        this.repository = Objects.requireNonNull(repository, "repository");
         this.windowStore = Objects.requireNonNull(windowStore, "windowStore");
         this.unitOfWork = Objects.requireNonNull(unitOfWork, "unitOfWork");
+        this.identityAllocator = Objects.requireNonNull(identityAllocator, "identityAllocator");
+        this.commandWorksetLoader = new DungeonCommandWorksetLoader(this.catalogStore, this.windowStore);
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
         this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
         this.corridorRoutingPolicy = Objects.requireNonNull(corridorRoutingPolicy, "corridorRoutingPolicy");
@@ -281,48 +285,35 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         }
     }
 
-    public DungeonMap loadMap(@Nullable DungeonMapIdentity mapId) {
-        if (mapId != null) {
-            DungeonMap cached = authoredWorkset.get(mapId.value());
-            if (cached != null) {
-                return cached;
-            }
-            Optional<DungeonMap> map = repository.findById(mapId);
-            if (map.isPresent()) {
-                DungeonMap loaded = map.get();
-                authoredWorkset.put(mapId.value(), loaded);
-                return loaded;
-            }
-        }
-        DungeonMap fallback = repository.firstMap().orElse(emptyFallbackMap());
-        authoredWorkset.putIfAbsent(fallback.metadata().mapId().value(), fallback);
-        return fallback;
-    }
-
-    public Optional<DungeonMap> findMap(DungeonMapIdentity mapId) {
-        return repository.findById(mapId);
-    }
-
-    private DungeonMap reloadMap(@Nullable DungeonMapIdentity mapId) {
-        DungeonMap loaded = mapId == null
-                ? repository.firstMap().orElse(emptyFallbackMap())
-                : repository.findById(mapId)
-                        .or(repository::firstMap)
-                        .orElseGet(DungeonAuthoredApplicationService::emptyFallbackMap);
-        authoredWorkset.put(loaded.metadata().mapId().value(), loaded);
-        return loaded;
-    }
-
-    public DungeonDerivedState derive(DungeonMap dungeonMap) {
+    private DungeonDerivedState derive(DungeonMap dungeonMap) {
         return derivedStateProjection.project(dungeonMap);
     }
 
     public void applyRoomRectangle(MapId mapId, Cell start, Cell end, boolean deleteMode, Session session) {
         Objects.requireNonNull(start, "start");
         Objects.requireNonNull(end, "end");
+        if (start.level() != end.level()) {
+            publicationOperations.publishMutation(
+                    rejectedResult(DungeonEditorCommandOutcome.RejectionReason.INVALID_TARGET),
+                    session.dungeonState());
+            return;
+        }
         OperationResultData result = mutationPipeline.executePatchCommand(
                 domainMapId(mapId),
-                current -> roomRectangleCommand.plan(current, start, end, deleteMode));
+                session.dungeonState(),
+                DungeonCommandReadSpecs.rectangleWithRing(mapId.value(), start, end),
+                List.of(),
+                DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
+                current -> {
+                    int identityBound = roomIdentityBound(current, rectangleCellCount(start, end));
+                    return roomRectangleCommand.plan(
+                            current,
+                            start,
+                            end,
+                            deleteMode,
+                            reserve(DungeonIdentityKind.ROOM_CLUSTER, identityBound),
+                            reserve(DungeonIdentityKind.ROOM, identityBound));
+                });
         publicationOperations.publishMutation(result, session.dungeonState());
     }
 
@@ -341,12 +332,21 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         BoundaryKind safeBoundaryKind = Objects.requireNonNull(boundaryKind, "boundaryKind");
         OperationResultData result = mutationPipeline.executePatchCommand(
                 domainMapId(mapId),
-                current -> clusterBoundaryCommand.plan(
-                        current,
-                        clusterId,
-                        safeEdges,
-                        safeBoundaryKind,
-                        deleteMode));
+                session.dungeonState(),
+                DungeonCommandReadSpecs.edgesWithRing(mapId.value(), safeEdges),
+                clusterId > 0L ? List.of(DungeonPatchEntityRef.roomCluster(clusterId)) : List.of(),
+                DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
+                current -> {
+                    int identityBound = roomIdentityBound(current, safeEdges.size() * 2L);
+                    return clusterBoundaryCommand.plan(
+                            current,
+                            clusterId,
+                            safeEdges,
+                            safeBoundaryKind,
+                            deleteMode,
+                            reserve(DungeonIdentityKind.ROOM_CLUSTER, identityBound),
+                            reserve(DungeonIdentityKind.ROOM, identityBound));
+                });
         publicationOperations.publishMutation(result, session.dungeonState());
     }
 
@@ -415,104 +415,150 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         if (!step.present()) {
             return;
         }
-        DungeonMap currentSingleMap = step.singlePatchEntry()
-                ? loadMap(selectedMapId)
-                : null;
-        DungeonPatch singlePatch = currentSingleMap == null
-                ? null
-                : step.rebasedSinglePatch(currentSingleMap.revision());
-        if (singlePatch != null) {
-            applySingleHistoryStep(
-                    step,
-                    singlePatch,
-                    currentSingleMap,
-                    session,
-                    undo);
+        DungeonCommandReadSpecs.AcceptedViewport selectedViewport =
+                acceptedViewport(selectedMapId, session.dungeonState());
+        if (selectedViewport == null) {
+            publicationOperations.publishMutation(
+                    rejectedResult(DungeonEditorCommandOutcome.RejectionReason.STALE_REVISION),
+                    session.dungeonState());
             return;
         }
-        applyCompoundHistoryStep(step, selectedMapId, session, undo);
-    }
-
-    private void applyCompoundHistoryStep(
-            DungeonEditHistory.Step step,
-            DungeonMapIdentity selectedMapId,
-            Session session,
-            boolean undo
-    ) {
+        Map<Long, HistoryLoadedMap> loadedMaps = new LinkedHashMap<>();
         Map<Long, DungeonMap> currentMaps = new LinkedHashMap<>();
-        for (long affectedMapId : step.mapIds()) {
-            DungeonMap current = authoredWorkset.get(affectedMapId);
-            if (current == null) {
-                current = repository.findById(new DungeonMapIdentity(affectedMapId)).orElse(null);
-            }
-            if (current == null) {
+        for (DungeonPatch selectedPatch : step.selectedPatches()) {
+            DungeonMapIdentity affectedMapId = selectedPatch.mapId();
+            DungeonCommandReadSpec readSpec = historyReadSpec(
+                    selectedPatch, selectedMapId, selectedViewport);
+            if (readSpec == null) {
+                publicationOperations.publishMutation(
+                        rejectedResult(DungeonEditorCommandOutcome.RejectionReason.INVALID_TARGET),
+                        session.dungeonState());
                 return;
             }
-            currentMaps.put(affectedMapId, current);
+            DungeonCommandWorksetResult loaded = commandWorksetLoader.load(readSpec);
+            if (!(loaded instanceof DungeonCommandWorksetResult.Complete complete)
+                    || !complete.workset().containsComplete(readSpec)) {
+                DungeonEditorCommandOutcome.RejectionReason reason =
+                        loaded instanceof DungeonCommandWorksetResult.Rejected rejected
+                                ? worksetRejection(rejected.reason())
+                                : DungeonEditorCommandOutcome.RejectionReason.INSUFFICIENT_LOADED_CLOSURE;
+                publicationOperations.publishMutation(rejectedResult(reason), session.dungeonState());
+                return;
+            }
+            DungeonMap current = complete.workset().aggregateFor(readSpec);
+            loadedMaps.put(affectedMapId.value(), new HistoryLoadedMap(complete.workset(), readSpec));
+            currentMaps.put(affectedMapId.value(), current);
+        }
+        if (step.singlePatchEntry()) {
+            DungeonMap current = currentMaps.get(selectedMapId.value());
+            DungeonPatch patch = current == null ? null : step.rebasedSinglePatch(current.revision());
+            if (patch == null) {
+                throw new IllegalStateException("single history step omitted the selected map");
+            }
+            DungeonUnitOfWorkResult commit = unitOfWork.commit(patch);
+            if (commit instanceof DungeonUnitOfWorkResult.Rejected rejected) {
+                publicationOperations.publishMutation(
+                        rejectedCommit(rejected.reason()), session.dungeonState());
+                return;
+            }
+            DungeonUnitOfWorkResult.Committed committed = (DungeonUnitOfWorkResult.Committed) commit;
+            validateCommittedPatch(patch, committed);
+            completeHistoryStep(step, loadedMaps, List.of(patch), selectedMapId, session, undo);
+            return;
         }
         DungeonCompoundPatch patch = step.rebasedCompoundPatch(currentMaps);
         if (patch == null) {
             throw new IllegalStateException("compound history step did not expose a compound patch");
         }
-        Map<Long, DungeonMap> changedMaps = patch.applyTo(currentMaps);
         DungeonCompoundUnitOfWorkResult commit = unitOfWork.commit(patch);
         if (commit instanceof DungeonCompoundUnitOfWorkResult.Rejected rejected) {
-            DungeonMap selected = currentMaps.get(selectedMapId.value());
-            if (selected == null) {
-                throw new IllegalStateException("compound history omitted the selected map");
-            }
             publicationOperations.publishMutation(
-                    rejectedCommit(selected, rejected.reason()),
-                    session.dungeonState());
+                    rejectedCommit(rejected.reason()), session.dungeonState());
             return;
         }
         DungeonCompoundUnitOfWorkResult.Committed committed =
                 (DungeonCompoundUnitOfWorkResult.Committed) commit;
         validateCommittedCompoundPatch(patch, committed);
-        for (DungeonMap changedMap : changedMaps.values()) {
-            authoredWorkset.put(changedMap.metadata().mapId().value(), changedMap);
-        }
-        editHistory.complete(step);
-        DungeonMap saved = changedMaps.get(selectedMapId.value());
-        if (saved == null) {
-            throw new IllegalStateException("compound history omitted the selected map");
-        }
-        OperationResultData result = new OperationResultData(
-                mutationPipeline.snapshotData(saved, derive(saved)),
-                true,
-                List.of(),
-                List.of(undo ? "undo applied" : "redo applied"),
-                DungeonEditorCommandOutcome.accepted(saved.revision()));
-        publicationOperations.publishMutation(result, session.dungeonState());
+        completeHistoryStep(step, loadedMaps, patch.patches(), selectedMapId, session, undo);
     }
 
-    private void applySingleHistoryStep(
+    private void completeHistoryStep(
             DungeonEditHistory.Step step,
-            DungeonPatch patch,
-            DungeonMap current,
+            Map<Long, HistoryLoadedMap> loadedMaps,
+            List<DungeonPatch> committedPatches,
+            DungeonMapIdentity selectedMapId,
             Session session,
             boolean undo
     ) {
-        DungeonMap candidate = patch.applyTo(current);
-        DungeonUnitOfWorkResult commit = unitOfWork.commit(patch);
-        if (commit instanceof DungeonUnitOfWorkResult.Rejected rejected) {
-            publicationOperations.publishMutation(
-                    rejectedCommit(current, rejected.reason()),
-                    session.dungeonState());
-            return;
+        for (DungeonPatch committedPatch : committedPatches) {
+            acceptedViewports.computeIfPresent(
+                    committedPatch.mapId().value(),
+                    (ignored, viewport) -> viewport.committed(committedPatch.committedRevision()));
         }
-        DungeonUnitOfWorkResult.Committed committed = (DungeonUnitOfWorkResult.Committed) commit;
-        validateCommittedPatch(patch, committed);
-        authoredWorkset.put(candidate.metadata().mapId().value(), candidate);
         editHistory.complete(step);
+        DungeonPatch selectedPatch = committedPatches.stream()
+                .filter(candidate -> candidate.mapId().equals(selectedMapId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("history omitted the selected map patch"));
+        HistoryLoadedMap selected = loadedMaps.get(selectedMapId.value());
+        if (selected == null) {
+            throw new IllegalStateException("history omitted the selected map workset");
+        }
         OperationResultData result = new OperationResultData(
-                mutationPipeline.snapshotData(candidate, derive(candidate)),
+                mutationPipeline.snapshotData(selected.workset(), selected.spec(), selectedPatch),
                 true,
                 List.of(),
                 List.of(undo ? "undo applied" : "redo applied"),
-                DungeonEditorCommandOutcome.accepted(committed.committedRevision()));
+                DungeonEditorCommandOutcome.accepted(selectedPatch.committedRevision()));
         publicationOperations.publishMutation(result, session.dungeonState());
     }
+
+    private @Nullable DungeonCommandReadSpec historyReadSpec(
+            DungeonPatch patch,
+            DungeonMapIdentity selectedMapId,
+            DungeonCommandReadSpecs.AcceptedViewport selectedViewport
+    ) {
+        Set<features.dungeon.api.DungeonChunkKey> chunks =
+                DungeonCommandReadSpecs.withRing(patch.touchedChunks());
+        List<DungeonPatchEntityRef> seeds = historySeedRefs(patch);
+        if (patch.mapId().equals(selectedMapId)) {
+            return DungeonCommandReadSpecs.forViewport(
+                    selectedViewport,
+                    chunks,
+                    seeds,
+                    DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
+                    DungeonCommandReadSpec.CommandIntent.HISTORY);
+        }
+        DungeonMapHeader header = catalogStore.find(patch.mapId()).orElse(null);
+        return header == null ? null : DungeonCommandReadSpecs.forHeader(
+                header,
+                windowRequestGeneration.incrementAndGet(),
+                chunks,
+                seeds,
+                DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
+                DungeonCommandReadSpec.CommandIntent.HISTORY);
+    }
+
+    private static List<DungeonPatchEntityRef> historySeedRefs(DungeonPatch patch) {
+        List<DungeonPatchEntityRef> result = new ArrayList<>();
+        patch.changes().forEach(change -> {
+            boolean existsBefore = switch (change) {
+                case features.dungeon.application.authored.command.FeatureMarkerChange marker -> marker.before() != null;
+                case RoomRegionChange room -> room.before() != null;
+                case RoomClusterChange cluster -> cluster.before() != null;
+                case features.dungeon.application.authored.command.StairChange stair -> stair.before() != null;
+                case features.dungeon.application.authored.command.TransitionChange transition ->
+                        transition.before() != null;
+                case CorridorChange corridor -> corridor.before() != null;
+            };
+            if (existsBefore) {
+                result.add(change.entityRef());
+            }
+        });
+        return List.copyOf(result);
+    }
+
+    private record HistoryLoadedMap(DungeonCommandWorkset workset, DungeonCommandReadSpec spec) { }
 
     public void createCorridor(
             MapId mapId,
@@ -532,7 +578,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
     }
 
     public boolean canCreateStair(MapId mapId, StairGeometrySpec spec, Session session) {
-        return stairTransitionOperations.canCreateStair(mapId, spec);
+        return stairTransitionOperations.canCreateStair(mapId, spec, session);
     }
 
     public boolean deleteStair(MapId mapId, long stairId, Session session) {
@@ -554,7 +600,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             TransitionDestination destination,
             Session session
     ) {
-        return stairTransitionOperations.canCreateTransition(mapId, anchor, destination);
+        return stairTransitionOperations.canCreateTransition(mapId, anchor, destination, session);
     }
 
     public boolean deleteTransition(MapId mapId, long transitionId, Session session) {
@@ -573,27 +619,12 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         return corridorFeatureOperations.deleteFeatureMarker(mapId, markerId, session);
     }
 
-    private static DungeonMapIdentity domainMapId(MapId mapId) {
-        return new DungeonMapIdentity(mapId == null ? 1L : mapId.value());
+    private static @Nullable DungeonMapIdentity domainMapId(@Nullable MapId mapId) {
+        return mapId == null ? null : new DungeonMapIdentity(mapId.value());
     }
 
     private static MapId mapId(DungeonMapIdentity mapId) {
         return new MapId(mapId.value());
-    }
-
-    private static DungeonMap emptyFallbackMap() {
-        return DungeonMapAuthoring.empty(new DungeonMapIdentity(1L), DEFAULT_MAP_NAME);
-    }
-
-    private long stairIdForCorridor(
-            DungeonMap current,
-            DungeonCorridorEndpoint start,
-            DungeonCorridorEndpoint end
-    ) {
-        if (start.sameLevelAs(end)) {
-            return 0L;
-        }
-        return repository.nextStairId();
     }
 
     private static DungeonCorridorEndpoint corridorEndpoint(
@@ -617,6 +648,152 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     Direction.NORTH,
                     DungeonTopologyRef.empty());
         };
+    }
+
+    private static List<DungeonPatchEntityRef> entityRefs(DungeonPatchEntityRef... refs) {
+        List<DungeonPatchEntityRef> result = new ArrayList<>();
+        for (DungeonPatchEntityRef ref : refs == null ? new DungeonPatchEntityRef[0] : refs) {
+            if (ref != null && !result.contains(ref)) {
+                result.add(ref);
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    private static @Nullable DungeonPatchEntityRef roomRef(long roomId) {
+        return roomId > 0L ? DungeonPatchEntityRef.room(roomId) : null;
+    }
+
+    private static @Nullable DungeonPatchEntityRef clusterRef(long clusterId) {
+        return clusterId > 0L ? DungeonPatchEntityRef.roomCluster(clusterId) : null;
+    }
+
+    private static @Nullable DungeonPatchEntityRef corridorRef(long corridorId) {
+        return corridorId > 0L ? DungeonPatchEntityRef.corridor(corridorId) : null;
+    }
+
+    private static @Nullable DungeonPatchEntityRef stairRef(long stairId) {
+        return stairId > 0L ? DungeonPatchEntityRef.stair(stairId) : null;
+    }
+
+    private static @Nullable DungeonPatchEntityRef transitionRef(long transitionId) {
+        return transitionId > 0L ? DungeonPatchEntityRef.transition(transitionId) : null;
+    }
+
+    private static @Nullable DungeonPatchEntityRef markerRef(long markerId) {
+        return markerId > 0L ? DungeonPatchEntityRef.featureMarker(markerId) : null;
+    }
+
+    private DungeonIdentityRange reserve(DungeonIdentityKind kind, int count) {
+        return identityAllocator.reserve(kind, Math.max(1, count));
+    }
+
+    private static int roomIdentityBound(DungeonMap current, long additionalCells) {
+        long loadedCells = 0L;
+        if (current != null) {
+            for (RoomRegion room : current.rooms().rooms()) {
+                loadedCells += room.floorCells().size();
+            }
+        }
+        return positiveBound(loadedCells + Math.max(0L, additionalCells));
+    }
+
+    private static int positiveBound(long value) {
+        return (int) Math.max(1L, Math.min(Integer.MAX_VALUE, value));
+    }
+
+    private static long rectangleCellCount(Cell start, Cell end) {
+        if (start == null || end == null) {
+            return 1L;
+        }
+        long width = Math.abs((long) start.q() - end.q()) + 1L;
+        long height = Math.abs((long) start.r() - end.r()) + 1L;
+        try {
+            return Math.multiplyExact(width, height);
+        } catch (ArithmeticException ignored) {
+            return Integer.MAX_VALUE;
+        }
+    }
+
+    private static List<DungeonPatchEntityRef> corridorEndpointRefs(
+            DungeonCorridorEndpoint start,
+            DungeonCorridorEndpoint end
+    ) {
+        List<DungeonPatchEntityRef> result = new ArrayList<>();
+        addCorridorEndpointRefs(result, start);
+        addCorridorEndpointRefs(result, end);
+        return List.copyOf(result);
+    }
+
+    private static void addCorridorEndpointRefs(
+            List<DungeonPatchEntityRef> target,
+            DungeonCorridorEndpoint endpoint
+    ) {
+        if (endpoint == null) {
+            return;
+        }
+        if (endpoint.isDoorEndpoint()) {
+            DungeonPatchEntityRef room = roomRef(endpoint.roomId());
+            DungeonPatchEntityRef cluster = clusterRef(endpoint.clusterId());
+            if (room != null && !target.contains(room)) {
+                target.add(room);
+            }
+            if (cluster != null && !target.contains(cluster)) {
+                target.add(cluster);
+            }
+        } else if (endpoint.isAnchorEndpoint()) {
+            DungeonPatchEntityRef corridor = corridorRef(endpoint.hostCorridorId());
+            if (corridor != null && !target.contains(corridor)) {
+                target.add(corridor);
+            }
+        }
+    }
+
+    private static Set<features.dungeon.api.DungeonChunkKey> corridorRouteChunks(
+            long mapId,
+            DungeonCorridorEndpoint start,
+            DungeonCorridorEndpoint end
+    ) {
+        Cell startCell = corridorEndpointCell(start);
+        Cell endCell = corridorEndpointCell(end);
+        List<Cell> cells = new ArrayList<>();
+        if (startCell != null && endCell != null) {
+            if (start.sameLevelAs(end)) {
+                cells.addAll(features.dungeon.domain.core.geometry.Route.horizontalFirstOnStartLevel(
+                        startCell, endCell));
+                cells.addAll(features.dungeon.domain.core.geometry.Route.verticalFirstOnStartLevel(
+                        startCell, endCell));
+            } else {
+                cells.addAll(features.dungeon.domain.core.geometry.Route.horizontalFirst(startCell, endCell));
+                cells.addAll(features.dungeon.domain.core.geometry.Route.verticalFirst(startCell, endCell));
+            }
+        }
+        return DungeonCommandReadSpecs.cellsWithRing(mapId, cells);
+    }
+
+    private static Set<features.dungeon.api.DungeonChunkKey> stairGeometryChunks(
+            long mapId,
+            StairGeometrySpec spec
+    ) {
+        if (spec == null) {
+            return Set.of();
+        }
+        return DungeonCommandReadSpecs.cellsWithRing(
+                mapId,
+                java.util.stream.Stream.concat(
+                                spec.generatedPath().stream(),
+                                spec.generatedExitCells().stream())
+                        .toList());
+    }
+
+    private static @Nullable Cell corridorEndpointCell(@Nullable DungeonCorridorEndpoint endpoint) {
+        if (endpoint == null) {
+            return null;
+        }
+        if (endpoint.isDoorEndpoint()) {
+            return endpoint.direction().neighborOf(endpoint.roomCell());
+        }
+        return endpoint.isAnchorEndpoint() ? endpoint.anchorCell() : null;
     }
 
     public record RoomNarrationInput(
@@ -745,50 +922,172 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
 
     private final class MutationPipeline {
 
+        private <T> T readCommand(
+                DungeonMapIdentity mapId,
+                DungeonEditorDungeonState state,
+                java.util.Collection<features.dungeon.api.DungeonChunkKey> commandChunks,
+                java.util.Collection<DungeonPatchEntityRef> seedRefs,
+                DungeonCommandReadSpec.DependencyExpansion expansion,
+                DungeonCommandReadSpec.CommandIntent intent,
+                T fallback,
+                java.util.function.Function<DungeonMap, T> reader
+        ) {
+            DungeonCommandReadSpecs.AcceptedViewport viewport = acceptedViewport(mapId, state);
+            if (viewport == null) {
+                return fallback;
+            }
+            DungeonCommandReadSpec spec = DungeonCommandReadSpecs.forViewport(
+                    viewport, commandChunks, seedRefs, expansion, intent);
+            DungeonCommandWorksetResult loaded = commandWorksetLoader.load(spec);
+            if (!(loaded instanceof DungeonCommandWorksetResult.Complete complete)
+                    || !complete.workset().containsComplete(spec)) {
+                return fallback;
+            }
+            return reader.apply(complete.workset().aggregateFor(spec));
+        }
+
         private OperationResultData executePatchCommand(
                 DungeonMapIdentity mapId,
+                DungeonEditorDungeonState state,
+                java.util.Collection<features.dungeon.api.DungeonChunkKey> commandChunks,
+                java.util.Collection<DungeonPatchEntityRef> seedRefs,
+                DungeonCommandReadSpec.DependencyExpansion expansion,
                 AuthoredPatchCommand command
         ) {
-            DungeonMap current = loadMap(mapId);
+            DungeonCommandReadSpecs.AcceptedViewport viewport = acceptedViewport(mapId, state);
+            if (viewport == null) {
+                return rejectedResult(DungeonEditorCommandOutcome.RejectionReason.STALE_REVISION);
+            }
+            DungeonCommandReadSpec spec = DungeonCommandReadSpecs.forViewport(
+                    viewport,
+                    commandChunks,
+                    seedRefs,
+                    expansion,
+                    DungeonCommandReadSpec.CommandIntent.AUTHORED_MUTATION);
+            DungeonCommandWorksetResult loaded = commandWorksetLoader.load(spec);
+            if (loaded instanceof DungeonCommandWorksetResult.Rejected rejected) {
+                return rejectedResult(worksetRejection(rejected.reason()));
+            }
+            DungeonCommandWorkset workset = ((DungeonCommandWorksetResult.Complete) loaded).workset();
+            if (!workset.containsComplete(spec)) {
+                return rejectedResult(DungeonEditorCommandOutcome.RejectionReason.INSUFFICIENT_LOADED_CLOSURE);
+            }
+            DungeonMap current = workset.aggregateFor(spec);
             DungeonCommandResult commandResult = command.plan(current);
             if (commandResult instanceof DungeonCommandResult.Rejected rejected) {
-                return new OperationResultData(
-                        snapshotData(current, derive(current)),
-                        false,
-                        List.of(),
-                        List.of(),
-                        DungeonEditorCommandOutcome.rejected(rejected.reason()));
+                return rejectedResult(rejected.reason());
             }
             DungeonCommandResult.Accepted accepted = (DungeonCommandResult.Accepted) commandResult;
             DungeonMap candidate = accepted.patch().applyTo(current);
             DungeonPatch patch = withDerivedSpatialImpact(accepted.patch(), current, candidate);
+            if (!Set.copyOf(spec.chunkKeys()).containsAll(patch.touchedChunks())) {
+                Set<features.dungeon.api.DungeonChunkKey> expandedChunks = new LinkedHashSet<>(spec.chunkKeys());
+                expandedChunks.addAll(DungeonCommandReadSpecs.withRing(patch.touchedChunks()));
+                spec = DungeonCommandReadSpecs.forViewport(
+                        viewport,
+                        expandedChunks,
+                        seedRefs,
+                        expansion,
+                        DungeonCommandReadSpec.CommandIntent.AUTHORED_MUTATION);
+                loaded = commandWorksetLoader.load(spec);
+                if (!(loaded instanceof DungeonCommandWorksetResult.Complete expanded)
+                        || !expanded.workset().containsComplete(spec)) {
+                    return rejectedResult(loaded instanceof DungeonCommandWorksetResult.Rejected rejected
+                            ? worksetRejection(rejected.reason())
+                            : DungeonEditorCommandOutcome.RejectionReason.INSUFFICIENT_LOADED_CLOSURE);
+                }
+                workset = expanded.workset();
+                current = workset.aggregateFor(spec);
+                commandResult = command.plan(current);
+                if (!(commandResult instanceof DungeonCommandResult.Accepted replanned)) {
+                    DungeonEditorCommandOutcome.RejectionReason reason =
+                            ((DungeonCommandResult.Rejected) commandResult).reason();
+                    return rejectedResult(reason);
+                }
+                candidate = replanned.patch().applyTo(current);
+                patch = withDerivedSpatialImpact(replanned.patch(), current, candidate);
+                if (!Set.copyOf(spec.chunkKeys()).containsAll(patch.touchedChunks())) {
+                    return rejectedResult(
+                            DungeonEditorCommandOutcome.RejectionReason.INSUFFICIENT_LOADED_CLOSURE);
+                }
+            }
             DungeonUnitOfWorkResult commit = unitOfWork.commit(patch);
             if (commit instanceof DungeonUnitOfWorkResult.Rejected rejected) {
-                return rejectedCommit(current, rejected.reason());
+                return rejectedCommit(rejected.reason());
             }
             DungeonUnitOfWorkResult.Committed committed = (DungeonUnitOfWorkResult.Committed) commit;
             validateCommittedPatch(patch, committed);
-            authoredWorkset.put(candidate.metadata().mapId().value(), candidate);
+            acceptedViewports.computeIfPresent(
+                    mapId.value(),
+                    (ignored, acceptedViewport) -> acceptedViewport.committed(committed.committedRevision()));
             editHistory.recordPatch(patch);
             return new OperationResultData(
-                    snapshotData(candidate, derive(candidate)),
+                    snapshotData(workset, spec, patch),
                     true,
                     OPERATION_FEEDBACK_POLICY.validationMessages(current, candidate),
                     OPERATION_FEEDBACK_POLICY.reactionMessages(current, candidate),
                     DungeonEditorCommandOutcome.accepted(committed.committedRevision()));
         }
 
-        private LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshotData(DungeonMap dungeonMap) {
-            return assembleDungeonSnapshot.execute(dungeonMap, publishDungeonEditorHandles.execute(dungeonMap));
-        }
-
         private LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshotData(
-                DungeonMap dungeonMap,
-                DungeonDerivedState derived
+                DungeonCommandWorkset workset,
+                DungeonCommandReadSpec spec,
+                DungeonPatch patch
         ) {
-            return assembleDungeonSnapshot.execute(dungeonMap, derived, publishDungeonEditorHandles.execute(dungeonMap));
+            if (!workset.containsComplete(spec)) {
+                throw new IllegalStateException("Dungeon surface projection requires the complete command workset");
+            }
+            DungeonMap commandScopedCandidate = patch.applyTo(workset.aggregateFor(spec));
+            DungeonDerivedState derived = derive(commandScopedCandidate);
+            return assembleDungeonSnapshot.execute(
+                    commandScopedCandidate,
+                    derived,
+                    publishDungeonEditorHandles.execute(commandScopedCandidate));
         }
 
+    }
+
+    private DungeonCommandReadSpecs.AcceptedViewport acceptedViewport(
+            @Nullable DungeonMapIdentity mapId,
+            @Nullable DungeonEditorDungeonState state
+    ) {
+        if (mapId == null || state == null) {
+            return null;
+        }
+        DungeonCommandReadSpecs.AcceptedViewport viewport = acceptedViewports.get(mapId.value());
+        DungeonEditorSessionSnapshot.SurfaceData surface =
+                state.committedFacts(new MapId(mapId.value())).surface();
+        if (viewport == null
+                || surface == null
+                || surface.mapId() == null
+                || surface.mapId().value() != mapId.value()
+                || surface.acceptedRevision() != viewport.revision()
+                || surface.requestGeneration() != viewport.requestGeneration()) {
+            return null;
+        }
+        return viewport;
+    }
+
+    private static OperationResultData rejectedResult(
+            DungeonEditorCommandOutcome.RejectionReason reason
+    ) {
+        return new OperationResultData(
+                null,
+                false,
+                List.of(),
+                List.of(),
+                DungeonEditorCommandOutcome.rejected(reason));
+    }
+
+    private static DungeonEditorCommandOutcome.RejectionReason worksetRejection(
+            DungeonCommandWorksetResult.Reason reason
+    ) {
+        return switch (reason) {
+            case STALE_REVISION -> DungeonEditorCommandOutcome.RejectionReason.STALE_REVISION;
+            case MAP_MISSING, ENTITY_MISSING -> DungeonEditorCommandOutcome.RejectionReason.INVALID_TARGET;
+            case MALFORMED_ENTITY, INCOMPLETE_ENTITY ->
+                    DungeonEditorCommandOutcome.RejectionReason.INSUFFICIENT_LOADED_CLOSURE;
+        };
     }
 
     private DungeonPatch withDerivedSpatialImpact(
@@ -927,20 +1226,12 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
 
     private record AnchorKey(long hostCorridorId, long anchorId) { }
 
-    private OperationResultData rejectedCommit(
-            DungeonMap current,
-            DungeonUnitOfWorkResult.Reason reason
-    ) {
+    private OperationResultData rejectedCommit(DungeonUnitOfWorkResult.Reason reason) {
         DungeonEditorCommandOutcome.RejectionReason rejectionReason = switch (reason) {
             case STALE_REVISION -> DungeonEditorCommandOutcome.RejectionReason.STALE_REVISION;
             case MAP_NOT_FOUND -> DungeonEditorCommandOutcome.RejectionReason.INVALID_TARGET;
         };
-        return new OperationResultData(
-                mutationPipeline.snapshotData(current, derive(current)),
-                false,
-                List.of(),
-                List.of(),
-                DungeonEditorCommandOutcome.rejected(rejectionReason));
+        return rejectedResult(rejectionReason);
     }
 
     private static void validateCommittedPatch(
@@ -1120,7 +1411,14 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     windowProjection.editorSnapshot(window, projectionLevel), state)) {
                 return false;
             }
-            authoredWorkset.remove(mapIdValue);
+            acceptedViewports.put(
+                    mapIdValue,
+                    new DungeonCommandReadSpecs.AcceptedViewport(
+                            window.mapHeader().mapId(),
+                            window.mapHeader().revision(),
+                            window.requestGeneration(),
+                            projectionLevel,
+                            request.chunkKeys()));
             acceptedWindowRequestGeneration = generation;
             return true;
         }
@@ -1133,33 +1431,95 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             }
         }
 
-        private LoadDungeonSnapshotUseCase.DungeonSnapshotData loadAuthoredMap(
+        private void loadAuthoredMap(
                 MapId mapId,
                 DungeonEditorDungeonState state
         ) {
-            LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot =
-                    mutationPipeline.snapshotData(reloadMap(domainMapId(mapId)));
-            publicationOperations.publishSnapshot(snapshot, state);
-            return snapshot;
+            DungeonCommandReadSpecs.AcceptedViewport accepted =
+                    mapId == null ? null : acceptedViewports.get(mapId.value());
+            loadInitialWindow(mapId, accepted == null ? 0 : accepted.projectionLevel(), state);
         }
 
-        private LoadDungeonSnapshotUseCase.InspectorSnapshotData loadInspectorWithSelection(
+        private LoadDungeonSnapshotUseCase.@Nullable InspectorSnapshotData loadInspectorWithSelection(
                 MapId mapId,
                 DungeonTopologyRef topologyRef,
                 long clusterId,
                 boolean clusterSelection,
+                DungeonEditorWorkspaceValues.HandleRef handleRef,
                 DungeonEditorDungeonState state
         ) {
-            DungeonMap dungeonMap = reloadMap(domainMapId(mapId));
-            LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot = mutationPipeline.snapshotData(dungeonMap);
-            LoadDungeonSnapshotUseCase.InspectorSnapshotData inspector = inspectDungeonSelection.execute(
-                    dungeonMap,
-                    snapshot.derived(),
-                    topologyRef,
-                    clusterId,
-                    clusterSelection);
+            if (mapId == null) {
+                return null;
+            }
+            DungeonEditorWorkspaceValues.HandleRef safeHandle = handleRef == null
+                    ? DungeonEditorWorkspaceValues.HandleRef.empty()
+                    : handleRef;
+            List<DungeonPatchEntityRef> seeds = inspectorSeeds(
+                    topologyRef, clusterId, clusterSelection, safeHandle);
+            Set<features.dungeon.api.DungeonChunkKey> chunks =
+                    safeHandle.equals(DungeonEditorWorkspaceValues.HandleRef.empty())
+                            ? Set.of()
+                            : DungeonCommandReadSpecs.cellsWithRing(mapId.value(), List.of(safeHandle.cell()));
+            LoadDungeonSnapshotUseCase.InspectorSnapshotData inspector = mutationPipeline.readCommand(
+                    domainMapId(mapId),
+                    state,
+                    chunks,
+                    seeds,
+                    DungeonCommandReadSpec.DependencyExpansion.OUTBOUND,
+                    DungeonCommandReadSpec.CommandIntent.INSPECTOR,
+                    null,
+                    current -> inspectDungeonSelection.execute(
+                            current,
+                            derive(current),
+                            topologyRef,
+                            clusterId,
+                            clusterSelection));
             publicationOperations.publishInspector(inspector, state);
             return inspector;
+        }
+
+        private List<DungeonPatchEntityRef> inspectorSeeds(
+                @Nullable DungeonTopologyRef topologyRef,
+                long clusterId,
+                boolean clusterSelection,
+                DungeonEditorWorkspaceValues.HandleRef handleRef
+        ) {
+            if (clusterSelection) {
+                return entityRefs(clusterRef(clusterId));
+            }
+            DungeonTopologyRef ref = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
+            var kind = ref.kind();
+            if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.ROOM) {
+                return entityRefs(roomRef(ref.id()));
+            }
+            if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.CORRIDOR) {
+                return entityRefs(corridorRef(ref.id()));
+            }
+            if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.STAIR) {
+                return entityRefs(stairRef(ref.id()));
+            }
+            if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.TRANSITION) {
+                return entityRefs(transitionRef(ref.id()));
+            }
+            if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.FEATURE_MARKER) {
+                return entityRefs(markerRef(ref.id()));
+            }
+            if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.CORRIDOR_ANCHOR) {
+                return entityRefs(corridorRef(handleRef.corridorId()));
+            }
+            if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.DOOR
+                    || kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.WALL) {
+                return entityRefs(clusterRef(handleRef.clusterId() > 0L
+                        ? handleRef.clusterId()
+                        : clusterId));
+            }
+            return entityRefs(
+                    corridorRef(handleRef.corridorId()),
+                    stairRef(handleRef.kind() == DungeonEditorHandleKind.STAIR_ANCHOR
+                            ? handleRef.ownerId()
+                            : 0L),
+                    clusterRef(handleRef.clusterId()),
+                    roomRef(handleRef.roomId()));
         }
     }
 
@@ -1175,17 +1535,39 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             DungeonCorridorEndpoint endEndpoint = corridorEndpoint(end);
             OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
-                    current -> createCorridorCommand.plan(
-                            current,
-                            stairIdForCorridor(current, startEndpoint, endEndpoint),
-                            startEndpoint,
-                            endEndpoint));
+                    session.dungeonState(),
+                    corridorRouteChunks(mapId.value(), startEndpoint, endEndpoint),
+                    corridorEndpointRefs(startEndpoint, endEndpoint),
+                    DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
+                    current -> {
+                        boolean crossLevel = !startEndpoint.sameLevelAs(endEndpoint);
+                        int endpointRoomBound = roomIdentityBound(current, 2L);
+                        int combinedRoomBound = positiveBound(endpointRoomBound * 2L);
+                        CreateCorridorCommand.ReservedIdentities identities =
+                                new CreateCorridorCommand.ReservedIdentities(
+                                        reserve(DungeonIdentityKind.CORRIDOR, 1).firstId(),
+                                        reserve(DungeonIdentityKind.CORRIDOR_ANCHOR, 2),
+                                        crossLevel ? reserve(DungeonIdentityKind.STAIR, 1).firstId() : 0L,
+                                        crossLevel
+                                                ? reserve(
+                                                        DungeonIdentityKind.STAIR_EXIT,
+                                                        Math.abs(startEndpoint.level() - endEndpoint.level()) + 1)
+                                                : null,
+                                        reserve(DungeonIdentityKind.ROOM_CLUSTER, Math.max(2, combinedRoomBound)),
+                                        reserve(DungeonIdentityKind.ROOM, Math.max(2, combinedRoomBound)));
+                        return createCorridorCommand.plan(
+                                current, identities, startEndpoint, endEndpoint);
+                    });
             publicationOperations.publishMutation(result, session.dungeonState());
         }
 
         private void deleteCorridor(MapId mapId, CorridorDeletionTarget target, Session session) {
             OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
+                    session.dungeonState(),
+                    List.of(),
+                    entityRefs(corridorRef(target == null ? 0L : target.corridorId())),
+                    DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
                     current -> deleteCorridorCommand.plan(current, target));
             publicationOperations.publishMutation(result, session.dungeonState());
         }
@@ -1194,19 +1576,22 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             Objects.requireNonNull(mapId, "mapId");
             Objects.requireNonNull(kind, "kind");
             Objects.requireNonNull(anchor, "anchor");
-            DungeonMap currentMap = loadMap(domainMapId(mapId));
-            long markerId = currentMap.nextFeatureMarkerId();
+            long[] markerId = {0L};
             OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
+                    session.dungeonState(),
+                    DungeonCommandReadSpecs.cellsWithRing(mapId.value(), List.of(anchor)),
+                    List.of(),
+                    DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
                     current -> createFeatureMarkerCommand.plan(
                             current,
-                            markerId,
+                            markerId[0] = identityAllocator.reserveFeatureMarkerId(),
                             kind,
                             anchor,
                             DEFAULT_LABEL,
                             DEFAULT_DESCRIPTION));
             publicationOperations.publishMutation(result, session.dungeonState());
-            return result.changed() ? markerId : 0L;
+            return result.changed() ? markerId[0] : 0L;
         }
 
         private boolean canCreateFeatureMarker(MapId mapId, FeatureMarkerKind kind, Cell anchor) {
@@ -1219,6 +1604,10 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             }
             OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
+                    session.dungeonState(),
+                    List.of(),
+                    entityRefs(markerRef(markerId)),
+                    DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
                     current -> deleteFeatureMarkerCommand.plan(current, markerId));
             publicationOperations.publishMutation(result, session.dungeonState());
             return result.changed();
@@ -1230,15 +1619,44 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         private void createStair(MapId mapId, StairGeometrySpec spec, Session session) {
             Objects.requireNonNull(mapId, "mapId");
             Objects.requireNonNull(spec, "spec");
-            long stairId = repository.nextStairId();
             OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
-                    current -> createStairCommand.plan(current, stairId, spec));
+                    session.dungeonState(),
+                    DungeonCommandReadSpecs.cellsWithRing(
+                            mapId.value(),
+                            java.util.stream.Stream.concat(
+                                            spec.generatedPath().stream(),
+                                            spec.generatedExitCells().stream())
+                                    .toList()),
+                    List.of(),
+                    DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
+                    current -> createStairCommand.plan(
+                            current,
+                            reserve(DungeonIdentityKind.STAIR, 1).firstId(),
+                            reserve(DungeonIdentityKind.STAIR_EXIT, Math.max(1, spec.dimension2() + 1)),
+                            spec));
             publicationOperations.publishMutation(result, session.dungeonState());
         }
 
-        private boolean canCreateStair(MapId mapId, StairGeometrySpec spec) {
-            return mapId != null && spec != null && loadMap(domainMapId(mapId)).canCreateStair(spec);
+        private boolean canCreateStair(MapId mapId, StairGeometrySpec spec, Session session) {
+            if (mapId == null || spec == null || session == null) {
+                return false;
+            }
+            Set<features.dungeon.api.DungeonChunkKey> chunks = DungeonCommandReadSpecs.cellsWithRing(
+                    mapId.value(),
+                    java.util.stream.Stream.concat(
+                                    spec.generatedPath().stream(),
+                                    spec.generatedExitCells().stream())
+                            .toList());
+            return mutationPipeline.readCommand(
+                    domainMapId(mapId),
+                    session.dungeonState(),
+                    chunks,
+                    List.of(),
+                    DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
+                    DungeonCommandReadSpec.CommandIntent.INSPECTOR,
+                    false,
+                    current -> current.canCreateStair(spec));
         }
 
         private boolean deleteStair(MapId mapId, long stairId, Session session) {
@@ -1247,6 +1665,10 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             }
             OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
+                    session.dungeonState(),
+                    List.of(),
+                    entityRefs(stairRef(stairId)),
+                    DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
                     current -> deleteStairCommand.plan(current, stairId));
             publicationOperations.publishMutation(result, session.dungeonState());
             return result.changed();
@@ -1261,12 +1683,16 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             Objects.requireNonNull(mapId, "mapId");
             Objects.requireNonNull(anchor, "anchor");
             Objects.requireNonNull(destination, "destination");
-            long transitionId = repository.nextTransitionId();
             OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
+                    session.dungeonState(),
+                    DungeonCommandReadSpecs.cellsWithRing(
+                            mapId.value(), anchor.cell() == null ? List.of() : List.of(anchor.cell())),
+                    List.of(),
+                    DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
                     current -> createTransitionCommand.plan(
                             current,
-                            transitionId,
+                            identityAllocator.reserveTransitionId(),
                             anchor,
                             destination));
             publicationOperations.publishMutation(result, session.dungeonState());
@@ -1275,12 +1701,22 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         private boolean canCreateTransition(
                 MapId mapId,
                 TransitionAnchor anchor,
-                TransitionDestination destination
+                TransitionDestination destination,
+                Session session
         ) {
-            return mapId != null
-                    && anchor != null
-                    && destination != null
-                    && loadMap(domainMapId(mapId)).transitionCatalog().canCreate(anchor, destination);
+            if (mapId == null || anchor == null || destination == null || session == null) {
+                return false;
+            }
+            return mutationPipeline.readCommand(
+                    domainMapId(mapId),
+                    session.dungeonState(),
+                    DungeonCommandReadSpecs.cellsWithRing(
+                            mapId.value(), anchor.cell() == null ? List.of() : List.of(anchor.cell())),
+                    List.of(),
+                    DungeonCommandReadSpec.DependencyExpansion.OUTBOUND,
+                    DungeonCommandReadSpec.CommandIntent.INSPECTOR,
+                    false,
+                    current -> current.transitionCatalog().canCreate(anchor, destination));
         }
 
         private boolean deleteTransition(MapId mapId, long transitionId, Session session) {
@@ -1289,6 +1725,10 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             }
             OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
+                    session.dungeonState(),
+                    List.of(),
+                    entityRefs(transitionRef(transitionId)),
+                    DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
                     current -> deleteTransitionCommand.plan(current, transitionId));
             publicationOperations.publishMutation(result, session.dungeonState());
             return result.changed();
@@ -1308,25 +1748,46 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             if (!DungeonEditorSessionPreviewHelper.directClusterMoveCommitHandle(handleRef.kind())) {
                 return;
             }
+            if (handleRef.clusterId() <= 0L) {
+                publicationOperations.publishMutation(
+                        rejectedResult(DungeonEditorCommandOutcome.RejectionReason.INVALID_TARGET),
+                        session.dungeonState());
+                return;
+            }
+            Set<features.dungeon.api.DungeonChunkKey> chunks = DungeonCommandReadSpecs.movedCellWithRing(
+                    mapId.value(),
+                    handleRef.cell(),
+                    safePreview.deltaQ(),
+                    safePreview.deltaR(),
+                    safePreview.deltaLevel());
             OperationResultData result = handleRef.kind() == DungeonEditorHandleKind.CLUSTER_CORNER
                     ? mutationPipeline.executePatchCommand(
                             domainMapId(mapId),
-                            current -> clusterCornerCommand.plan(
-                                    current,
-                                    handleRef.clusterId() > 0L
-                                            ? handleRef.clusterId()
-                                            : current.clusterIdForTopologyRef(handleRef.topologyRef()),
-                                    handleRef.cell(),
-                                    safePreview.deltaQ(),
-                                    safePreview.deltaR(),
-                                    safePreview.deltaLevel()))
+                            session.dungeonState(),
+                            chunks,
+                            List.of(DungeonPatchEntityRef.roomCluster(handleRef.clusterId())),
+                            DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
+                            current -> {
+                                int identityBound = roomIdentityBound(current, 1L);
+                                return clusterCornerCommand.plan(
+                                        current,
+                                        handleRef.clusterId(),
+                                        handleRef.cell(),
+                                        safePreview.deltaQ(),
+                                        safePreview.deltaR(),
+                                        safePreview.deltaLevel(),
+                                        reserve(DungeonIdentityKind.ROOM_CLUSTER, identityBound),
+                                        reserve(DungeonIdentityKind.ROOM, identityBound));
+                            })
                     : mutationPipeline.executePatchCommand(
                             domainMapId(mapId),
+                            session.dungeonState(),
+                            chunks,
+                            List.of(DungeonPatchEntityRef.roomCluster(handleRef.clusterId())),
+                            DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
                             current -> moveConnectionHandleCommand.planCluster(
                                     current,
-                                    handleRef.clusterId() > 0L
-                                            ? handleRef.clusterId()
-                                            : current.clusterIdForTopologyRef(handleRef.topologyRef()),
+                                    handleRef.clusterId(),
                                     safePreview.deltaQ(),
                                     safePreview.deltaR(),
                                     safePreview.deltaLevel()));
@@ -1344,8 +1805,21 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             if (handleRef.kind() != DungeonEditorHandleKind.DOOR) {
                 return;
             }
+            Edge movedEdge = sourceEdge(handleRef);
             OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
+                    session.dungeonState(),
+                    DungeonCommandReadSpecs.translatedEdgesWithRing(
+                            mapId.value(),
+                            List.of(movedEdge),
+                            safePreview.deltaQ(),
+                            safePreview.deltaR(),
+                            safePreview.deltaLevel()),
+                    entityRefs(
+                            corridorRef(handleRef.corridorId()),
+                            roomRef(handleRef.roomId()),
+                            clusterRef(handleRef.clusterId())),
+                    DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
                     current -> {
                         if (handleRef.corridorId() > ABSENT_ID) {
                             return moveConnectionHandleCommand.planDoorBinding(
@@ -1363,11 +1837,9 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                         return moveConnectionHandleCommand.planDoorBoundary(
                                 current,
                                 topologyRef,
-                                handleRef.clusterId() > 0L
-                                        ? handleRef.clusterId()
-                                        : current.clusterIdForTopologyRef(topologyRef),
+                                handleRef.clusterId(),
                                 Math.max(0L, handleRef.roomId()),
-                                sourceEdge(handleRef),
+                                movedEdge,
                                 safePreview.deltaQ(),
                                 safePreview.deltaR(),
                             safePreview.deltaLevel());
@@ -1387,6 +1859,15 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             if (handleRef.kind() == DungeonEditorHandleKind.CORRIDOR_ANCHOR) {
                 result = mutationPipeline.executePatchCommand(
                         domainMapId(mapId),
+                        session.dungeonState(),
+                        DungeonCommandReadSpecs.movedCellWithRing(
+                                mapId.value(),
+                                handleRef.cell(),
+                                safePreview.deltaQ(),
+                                safePreview.deltaR(),
+                                safePreview.deltaLevel()),
+                        entityRefs(corridorRef(handleRef.corridorId())),
+                        DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
                         current -> moveConnectionHandleCommand.planCorridorAnchor(
                                 current,
                                 Math.max(0L, handleRef.corridorId()),
@@ -1400,6 +1881,15 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             } else if (handleRef.kind() == DungeonEditorHandleKind.CORRIDOR_WAYPOINT) {
                 result = mutationPipeline.executePatchCommand(
                         domainMapId(mapId),
+                        session.dungeonState(),
+                        DungeonCommandReadSpecs.movedCellWithRing(
+                                mapId.value(),
+                                handleRef.cell(),
+                                safePreview.deltaQ(),
+                                safePreview.deltaR(),
+                                safePreview.deltaLevel()),
+                        entityRefs(corridorRef(handleRef.corridorId())),
+                        DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
                         current -> moveConnectionHandleCommand.planCorridorWaypoint(
                                 current,
                                 Math.max(0L, handleRef.corridorId()),
@@ -1426,6 +1916,15 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             }
             OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
+                    session.dungeonState(),
+                    DungeonCommandReadSpecs.movedCellWithRing(
+                            mapId.value(),
+                            handleRef.cell(),
+                            safePreview.deltaQ(),
+                            safePreview.deltaR(),
+                            safePreview.deltaLevel()),
+                    entityRefs(stairRef(handleRef.ownerId())),
+                    DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
                     current -> moveConnectionHandleCommand.planStairAnchor(
                             current,
                             Math.max(0L, handleRef.ownerId()),
@@ -1443,15 +1942,30 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         ) {
             DungeonEditorSessionValues.MoveBoundaryStretchPreview safePreview =
                     Objects.requireNonNull(preview, PREVIEW_ARGUMENT);
+            List<Edge> sourceEdges = DungeonEditorWorkspaceGeometry.unitEdges(safePreview.sourceEdges());
             OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
-                    current -> clusterBoundaryStretchCommand.plan(
-                            current,
-                            safePreview.clusterId(),
-                            DungeonEditorWorkspaceGeometry.unitEdges(safePreview.sourceEdges()),
+                    session.dungeonState(),
+                    DungeonCommandReadSpecs.translatedEdgesWithRing(
+                            mapId.value(),
+                            sourceEdges,
                             safePreview.deltaQ(),
                             safePreview.deltaR(),
-                            safePreview.deltaLevel()));
+                            safePreview.deltaLevel()),
+                    entityRefs(clusterRef(safePreview.clusterId())),
+                    DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
+                    current -> {
+                        int identityBound = roomIdentityBound(current, sourceEdges.size() * 2L);
+                        return clusterBoundaryStretchCommand.plan(
+                                current,
+                                safePreview.clusterId(),
+                                sourceEdges,
+                                safePreview.deltaQ(),
+                                safePreview.deltaR(),
+                                safePreview.deltaLevel(),
+                                reserve(DungeonIdentityKind.ROOM_CLUSTER, identityBound),
+                                reserve(DungeonIdentityKind.ROOM, identityBound));
+                    });
             publicationOperations.publishMutation(result, session.dungeonState());
         }
 
@@ -1512,10 +2026,6 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     ? DEFAULT_MAP_NAME
                     : requestedMapName;
             DungeonMapHeader created = catalogStore.create(mapName);
-            DungeonMap emptyMap = DungeonMapAuthoring.committedContent(
-                    DungeonMapAuthoring.empty(created.mapId(), created.mapName()),
-                    created.revision());
-            authoredWorkset.put(created.mapId().value(), emptyMap);
             return created.mapId();
         }
 
@@ -1524,16 +2034,15 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     ? DEFAULT_MAP_NAME
                     : requestedMapName;
             DungeonMapHeader renamed = catalogStore.rename(mapIdentity, mapName);
-            authoredWorkset.computeIfPresent(mapIdentity.value(), (ignored, current) ->
-                    DungeonMapAuthoring.committedContent(
-                            DungeonMapAuthoring.rename(current, renamed.mapName()),
-                            renamed.revision()));
+            acceptedViewports.computeIfPresent(
+                    mapIdentity.value(),
+                    (ignored, viewport) -> viewport.committed(renamed.revision()));
             return renamed.mapId();
         }
 
         private DungeonMapIdentity deleteMap(DungeonMapIdentity mapIdentity) {
             catalogStore.delete(mapIdentity);
-            authoredWorkset.remove(mapIdentity.value());
+            acceptedViewports.remove(mapIdentity.value());
             editHistory.remove(mapIdentity);
             return mapIdentity;
         }
@@ -1592,102 +2101,208 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                 long sourceTransitionId,
                 @Nullable DungeonMapIdentity targetMapId,
                 long targetTransitionId,
-                boolean bidirectional
+                boolean bidirectional,
+                DungeonEditorDungeonState state
         ) {
-            LoadedTransitionLink loaded = loadTransitionLink(
-                    sourceMapId,
-                    sourceTransitionId,
-                    targetMapId,
-                    targetTransitionId);
-            if (loaded == null) {
+            if (sourceMapId == null
+                    || targetMapId == null
+                    || sourceTransitionId <= 0L
+                    || targetTransitionId <= 0L
+                    || state == null) {
                 return null;
             }
-            Map<Long, DungeonMap> pendingMaps = loadedMaps(loaded.sourceMap(), loaded.targetMap());
+            DungeonCommandReadSpecs.AcceptedViewport sourceViewport = acceptedViewport(sourceMapId, state);
+            if (sourceViewport == null) {
+                return rejectedResult(DungeonEditorCommandOutcome.RejectionReason.STALE_REVISION);
+            }
+            Map<Long, List<DungeonPatchEntityRef>> initialSeeds = new LinkedHashMap<>();
+            initialSeeds.computeIfAbsent(sourceMapId.value(), ignored -> new ArrayList<>())
+                    .add(transitionRef(sourceTransitionId));
+            initialSeeds.computeIfAbsent(targetMapId.value(), ignored -> new ArrayList<>())
+                    .add(transitionRef(targetTransitionId));
+            Map<Long, LinkLoadedMap> loadedMaps = new LinkedHashMap<>();
+            Map<Long, DungeonMap> pendingMaps = new LinkedHashMap<>();
+            for (Map.Entry<Long, List<DungeonPatchEntityRef>> entry : initialSeeds.entrySet()) {
+                DungeonMapIdentity mapId = new DungeonMapIdentity(entry.getKey());
+                LinkLoadResult load = loadLinkMap(
+                        mapId,
+                        entry.getValue(),
+                        mapId.equals(sourceMapId) ? sourceViewport : null);
+                if (load.rejectionReason() != null) {
+                    return rejectedResult(load.rejectionReason());
+                }
+                LinkLoadedMap loaded = Objects.requireNonNull(load.loaded(), "loaded transition-link workset");
+                loadedMaps.put(entry.getKey(), loaded);
+                pendingMaps.put(entry.getKey(), loaded.workset().aggregateFor(loaded.spec()));
+            }
             Set<Long> knownMissingMapIds = new LinkedHashSet<>();
             DungeonCompoundCommandResult commandResult = transitionLinkCommand.plan(
                     pendingMaps.values(),
-                    loaded.sourceIdentity().value(),
+                    sourceMapId.value(),
                     sourceTransitionId,
-                    loaded.targetIdentity().value(),
+                    targetMapId.value(),
                     targetTransitionId,
                     bidirectional,
                     knownMissingMapIds);
-            if (commandResult instanceof DungeonCompoundCommandResult.RequiresMap requiresMap) {
+            while (commandResult instanceof DungeonCompoundCommandResult.RequiresMap requiresMap) {
                 long mapId = requiresMap.mapId();
-                Optional<DungeonMap> requiredMap = repository.findById(new DungeonMapIdentity(mapId));
-                if (requiredMap.isPresent()) {
-                    pendingMaps.put(mapId, requiredMap.orElseThrow());
-                } else {
+                if (loadedMaps.containsKey(mapId) || knownMissingMapIds.contains(mapId)) {
+                    return rejectedResult(
+                            DungeonEditorCommandOutcome.RejectionReason.INSUFFICIENT_LOADED_CLOSURE);
+                }
+                DungeonMapIdentity requiredIdentity = new DungeonMapIdentity(mapId);
+                if (catalogStore.find(requiredIdentity).isEmpty()) {
                     knownMissingMapIds.add(mapId);
+                } else {
+                    List<DungeonPatchEntityRef> priorLinkSeeds = priorLinkSeeds(pendingMaps, mapId);
+                    if (priorLinkSeeds.isEmpty()) {
+                        return rejectedResult(
+                                DungeonEditorCommandOutcome.RejectionReason.INSUFFICIENT_LOADED_CLOSURE);
+                    }
+                    LinkLoadResult load = loadLinkMap(requiredIdentity, priorLinkSeeds, null);
+                    if (load.rejectionReason() != null) {
+                        return rejectedResult(load.rejectionReason());
+                    }
+                    LinkLoadedMap loaded = Objects.requireNonNull(load.loaded(), "loaded prior-link workset");
+                    loadedMaps.put(mapId, loaded);
+                    pendingMaps.put(mapId, loaded.workset().aggregateFor(loaded.spec()));
                 }
                 commandResult = transitionLinkCommand.plan(
                         pendingMaps.values(),
-                        loaded.sourceIdentity().value(),
+                        sourceMapId.value(),
                         sourceTransitionId,
-                        loaded.targetIdentity().value(),
+                        targetMapId.value(),
                         targetTransitionId,
                         bidirectional,
                         knownMissingMapIds);
             }
-            if (!(commandResult instanceof DungeonCompoundCommandResult.Accepted accepted)) {
-                return null;
+            if (commandResult instanceof DungeonCompoundCommandResult.Rejected rejected) {
+                return rejectedResult(rejected.reason());
             }
+            DungeonCompoundCommandResult.Accepted accepted =
+                    (DungeonCompoundCommandResult.Accepted) commandResult;
             DungeonCompoundPatch patch = accepted.patch();
-            Map<Long, DungeonMap> patchedMaps = patch.applyTo(pendingMaps);
+            for (DungeonPatch mapPatch : patch.patches()) {
+                if (!loadedMaps.containsKey(mapPatch.mapId().value())) {
+                    return rejectedResult(
+                            DungeonEditorCommandOutcome.RejectionReason.INSUFFICIENT_LOADED_CLOSURE);
+                }
+            }
             DungeonCompoundUnitOfWorkResult commit = unitOfWork.commit(patch);
             if (commit instanceof DungeonCompoundUnitOfWorkResult.Rejected rejected) {
-                return rejectedCommit(loaded.sourceMap(), rejected.reason());
+                return rejectedCommit(rejected.reason());
             }
             validateCommittedCompoundPatch(
                     patch,
                     (DungeonCompoundUnitOfWorkResult.Committed) commit);
-            for (DungeonMap patchedMap : patchedMaps.values()) {
-                authoredWorkset.put(patchedMap.metadata().mapId().value(), patchedMap);
+            for (DungeonPatch mapPatch : patch.patches()) {
+                acceptedViewports.computeIfPresent(
+                        mapPatch.mapId().value(),
+                        (ignored, viewport) -> viewport.committed(mapPatch.committedRevision()));
             }
             editHistory.recordCompoundPatch(patch);
-            DungeonMap savedSourceMap = patchedMaps.get(loaded.sourceIdentity().value());
-            if (savedSourceMap == null) {
+            DungeonPatch sourcePatch = patch.patches().stream()
+                    .filter(candidate -> candidate.mapId().equals(sourceMapId))
+                    .findFirst()
+                    .orElse(null);
+            LinkLoadedMap loadedSource = loadedMaps.get(sourceMapId.value());
+            if (sourcePatch == null || loadedSource == null) {
                 throw new IllegalStateException("Atomic transition link commit omitted the source map.");
             }
-            DungeonDerivedState derived = derive(savedSourceMap);
             return new OperationResultData(
-                    mutationPipeline.snapshotData(savedSourceMap, derived),
+                    mutationPipeline.snapshotData(
+                            loadedSource.workset(), loadedSource.spec(), sourcePatch),
                     true,
                     List.of(),
                     List.of("transition link saved"),
-                    DungeonEditorCommandOutcome.accepted(savedSourceMap.revision()));
+                    DungeonEditorCommandOutcome.accepted(sourcePatch.committedRevision()));
         }
 
-        private @Nullable LoadedTransitionLink loadTransitionLink(
-                @Nullable DungeonMapIdentity sourceMapId,
-                long sourceTransitionId,
-                @Nullable DungeonMapIdentity targetMapId,
-                long targetTransitionId
+        private LinkLoadResult loadLinkMap(
+                DungeonMapIdentity mapId,
+                List<DungeonPatchEntityRef> seedRefs,
+                DungeonCommandReadSpecs.AcceptedViewport viewport
         ) {
-            if (sourceMapId == null || targetMapId == null || sourceTransitionId <= 0L || targetTransitionId <= 0L) {
-                return null;
+            DungeonCommandReadSpec spec;
+            if (viewport != null) {
+                spec = DungeonCommandReadSpecs.forViewport(
+                        viewport,
+                        List.of(),
+                        seedRefs,
+                        DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
+                        DungeonCommandReadSpec.CommandIntent.TRANSITION_LINK);
+            } else {
+                DungeonMapHeader header = catalogStore.find(mapId).orElse(null);
+                if (header == null) {
+                    return LinkLoadResult.rejected(
+                            DungeonEditorCommandOutcome.RejectionReason.MISSING_TRANSITION_DESTINATION);
+                }
+                spec = DungeonCommandReadSpecs.forHeader(
+                        header,
+                        windowRequestGeneration.incrementAndGet(),
+                        List.of(),
+                        seedRefs,
+                        DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
+                        DungeonCommandReadSpec.CommandIntent.TRANSITION_LINK);
             }
-            DungeonMap sourceMap = repository.findById(sourceMapId).orElse(null);
-            DungeonMap targetMap = repository.findById(targetMapId).orElse(null);
-            if (sourceMap == null || targetMap == null) {
-                return null;
+            DungeonCommandWorksetResult result = commandWorksetLoader.load(spec);
+            if (result instanceof DungeonCommandWorksetResult.Rejected rejected) {
+                return LinkLoadResult.rejected(transitionLinkWorksetRejection(rejected.reason()));
             }
-            return new LoadedTransitionLink(sourceMapId, targetMapId, sourceMap, targetMap);
+            DungeonCommandWorkset workset = ((DungeonCommandWorksetResult.Complete) result).workset();
+            return workset.containsComplete(spec)
+                    ? LinkLoadResult.loaded(new LinkLoadedMap(workset, spec))
+                    : LinkLoadResult.rejected(
+                            DungeonEditorCommandOutcome.RejectionReason.INSUFFICIENT_LOADED_CLOSURE);
         }
 
-        private Map<Long, DungeonMap> loadedMaps(DungeonMap sourceMap, DungeonMap targetMap) {
-            Map<Long, DungeonMap> pendingMaps = new LinkedHashMap<>();
-            pendingMaps.put(sourceMap.metadata().mapId().value(), sourceMap);
-            pendingMaps.put(targetMap.metadata().mapId().value(), targetMap);
-            return pendingMaps;
-        }
-
-        private record LoadedTransitionLink(
-                DungeonMapIdentity sourceIdentity,
-                DungeonMapIdentity targetIdentity,
-                DungeonMap sourceMap,
-                DungeonMap targetMap
+        private DungeonEditorCommandOutcome.RejectionReason transitionLinkWorksetRejection(
+                DungeonCommandWorksetResult.Reason reason
         ) {
+            return switch (reason) {
+                case STALE_REVISION -> DungeonEditorCommandOutcome.RejectionReason.STALE_REVISION;
+                case MAP_MISSING, ENTITY_MISSING ->
+                        DungeonEditorCommandOutcome.RejectionReason.MISSING_TRANSITION_DESTINATION;
+                case MALFORMED_ENTITY, INCOMPLETE_ENTITY ->
+                        DungeonEditorCommandOutcome.RejectionReason.INSUFFICIENT_LOADED_CLOSURE;
+            };
+        }
+
+        private List<DungeonPatchEntityRef> priorLinkSeeds(
+                Map<Long, DungeonMap> loadedMaps,
+                long requiredMapId
+        ) {
+            List<DungeonPatchEntityRef> result = new ArrayList<>();
+            for (DungeonMap loadedMap : loadedMaps.values()) {
+                for (features.dungeon.domain.core.structure.transition.Transition transition
+                        : loadedMap.transitionCatalog().transitions()) {
+                    Long destinationTransitionId = transition.destination().transitionId();
+                    if (transition.destination().isDungeonMap()
+                            && transition.destination().mapId() == requiredMapId
+                            && destinationTransitionId != null
+                            && destinationTransitionId > 0L) {
+                        result.add(transitionRef(destinationTransitionId));
+                    }
+                }
+            }
+            return result.stream().distinct().toList();
+        }
+
+        private record LinkLoadedMap(DungeonCommandWorkset workset, DungeonCommandReadSpec spec) { }
+
+        private record LinkLoadResult(
+                @Nullable LinkLoadedMap loaded,
+                DungeonEditorCommandOutcome.RejectionReason rejectionReason
+        ) {
+            private static LinkLoadResult loaded(LinkLoadedMap loaded) {
+                return new LinkLoadResult(Objects.requireNonNull(loaded, "loaded"), null);
+            }
+
+            private static LinkLoadResult rejected(
+                    DungeonEditorCommandOutcome.RejectionReason reason
+            ) {
+                return new LinkLoadResult(null, Objects.requireNonNull(reason, "reason"));
+            }
         }
     }
 
@@ -1703,6 +2318,10 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             }
             OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
+                    state,
+                    List.of(),
+                    entityRefs(roomRef(roomNarration.roomId())),
+                    DungeonCommandReadSpec.DependencyExpansion.OUTBOUND,
                     current -> roomNarrationCommand.plan(
                             current,
                             roomNarration.roomId(),
@@ -1725,9 +2344,17 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             OperationResultData result = switch (safeTargetType) {
                 case CLUSTER -> mutationPipeline.executePatchCommand(
                         domainMapId(mapId),
+                        state,
+                        List.of(),
+                        entityRefs(clusterRef(targetId)),
+                        DungeonCommandReadSpec.DependencyExpansion.OUTBOUND,
                         current -> roomClusterNameCommand.plan(current, targetId, trimmedName));
                 case ROOM -> mutationPipeline.executePatchCommand(
                         domainMapId(mapId),
+                        state,
+                        List.of(),
+                        entityRefs(roomRef(targetId)),
+                        DungeonCommandReadSpec.DependencyExpansion.OUTBOUND,
                         current -> roomNameCommand.plan(current, targetId, trimmedName));
                 case EMPTY -> null;
             };
@@ -1748,6 +2375,10 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             }
             OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
+                    state,
+                    List.of(),
+                    entityRefs(transitionRef(transitionId)),
+                    DungeonCommandReadSpec.DependencyExpansion.OUTBOUND,
                     current -> transitionDescriptionCommand.plan(current, transitionId, description));
             publicationOperations.publishMutation(result, state);
         }
@@ -1764,6 +2395,10 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             }
             OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
+                    state,
+                    List.of(),
+                    entityRefs(markerRef(markerId)),
+                    DungeonCommandReadSpec.DependencyExpansion.OUTBOUND,
                     current -> featureMarkerSemanticsCommand.plan(
                             current, markerId, label, description));
             publicationOperations.publishMutation(result, state);
@@ -1785,7 +2420,8 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     sourceTransitionId,
                     new DungeonMapIdentity(targetMapId),
                     targetTransitionId,
-                    bidirectional);
+                    bidirectional,
+                    state);
             if (result == null) {
                 return false;
             }
@@ -1804,19 +2440,36 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             }
             OperationResultData result = mutationPipeline.executePatchCommand(
                     domainMapId(mapId),
-                    current -> updateStairGeometryCommand.plan(current, stairId, spec));
+                    state,
+                    stairGeometryChunks(mapId.value(), spec),
+                    entityRefs(stairRef(stairId)),
+                    DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
+                    current -> updateStairGeometryCommand.plan(
+                            current,
+                            stairId,
+                            reserve(DungeonIdentityKind.STAIR_EXIT, Math.max(1, spec.dimension2() + 1)),
+                            spec));
             publicationOperations.publishMutation(result, state);
         }
 
         private boolean canSaveStairGeometry(
                 MapId mapId,
                 long stairId,
-                StairGeometrySpec spec
+                StairGeometrySpec spec,
+                DungeonEditorDungeonState state
         ) {
-            return mapId != null
-                    && stairId > 0L
-                    && spec != null
-                    && loadMap(domainMapId(mapId)).canSaveStairGeometry(stairId, spec);
+            if (mapId == null || stairId <= 0L || spec == null) {
+                return false;
+            }
+            return mutationPipeline.readCommand(
+                    domainMapId(mapId),
+                    state,
+                    stairGeometryChunks(mapId.value(), spec),
+                    entityRefs(stairRef(stairId)),
+                    DungeonCommandReadSpec.DependencyExpansion.OUTBOUND_AND_INBOUND,
+                    DungeonCommandReadSpec.CommandIntent.INSPECTOR,
+                    false,
+                    current -> current.canSaveStairGeometry(stairId, spec));
         }
 
         private @Nullable StairGeometrySpec stairGeometrySpec(
@@ -1825,13 +2478,22 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                 StairShape shape,
                 Direction direction,
                 int dimension1,
-                int dimension2
+                int dimension2,
+                DungeonEditorDungeonState state
         ) {
             if (mapId == null || stairId <= 0L || shape == null || direction == null
                     || dimension1 <= 0 || dimension2 <= 0) {
                 return null;
             }
-            Cell anchor = loadMap(domainMapId(mapId)).stairs().anchorOf(stairId);
+            Cell anchor = mutationPipeline.readCommand(
+                    domainMapId(mapId),
+                    state,
+                    List.of(),
+                    entityRefs(stairRef(stairId)),
+                    DungeonCommandReadSpec.DependencyExpansion.OUTBOUND,
+                    DungeonCommandReadSpec.CommandIntent.INSPECTOR,
+                    null,
+                    current -> current.stairs().anchorOf(stairId));
             return anchor == null ? null : new StairGeometrySpec(shape, anchor, direction, dimension1, dimension2);
         }
     }
@@ -1926,7 +2588,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         }
 
         public boolean canSaveStairGeometry(MapId mapId, long stairId, StairGeometrySpec spec) {
-            return detailSaveOperations.canSaveStairGeometry(mapId, stairId, spec);
+            return detailSaveOperations.canSaveStairGeometry(mapId, stairId, spec, dungeonState);
         }
 
         public @Nullable StairGeometrySpec stairGeometrySpec(
@@ -1943,7 +2605,8 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     shape,
                     direction,
                     dimension1,
-                    dimension2);
+                    dimension2,
+                    dungeonState);
         }
 
         public void searchMaps(String query) {
@@ -1962,13 +2625,15 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                 MapId mapId,
                 DungeonTopologyRef topologyRef,
                 long clusterId,
-                boolean clusterSelection
+                boolean clusterSelection,
+                DungeonEditorWorkspaceValues.HandleRef handleRef
         ) {
             loadOperations.loadInspectorWithSelection(
                     mapId,
                     topologyRef,
                     clusterId,
                     clusterSelection,
+                    handleRef,
                     dungeonState);
         }
 

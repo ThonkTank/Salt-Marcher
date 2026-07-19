@@ -6,14 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import features.dungeon.api.DungeonMapCatalogResponse;
 import features.dungeon.application.authored.port.DungeonCatalogStore;
 import features.dungeon.application.authored.port.DungeonMapHeader;
-import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.editor.session.DungeonEditorDungeonState;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapId;
-import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import platform.ui.DirectUiDispatcher;
 import platform.execution.DirectExecutionLane;
@@ -21,15 +18,15 @@ import platform.execution.DirectExecutionLane;
 final class DungeonCatalogStoreApplicationTest {
 
     @Test
-    void catalogLifecycleNeverUsesTheTemporaryWholeMapRepository() {
+    void catalogLifecycleUsesOnlyMetadataAndCatalogMutations() {
         InMemoryCatalogStore catalog = new InMemoryCatalogStore();
         DungeonAuthoredPublishedState publishedState =
                 new DungeonAuthoredPublishedState(DirectUiDispatcher.INSTANCE);
         DungeonAuthoredApplicationService service = new DungeonAuthoredApplicationService(
                 catalog,
-                new FailingWholeMapRepository(),
                 features.dungeon.DungeonTestAssembly.emptyWindowStore(),
                 features.dungeon.DungeonTestAssembly.inMemoryUnitOfWork(),
+                new TestDungeonIdentityAllocator(),
                 DirectExecutionLane.INSTANCE,
                 publishedState);
         DungeonAuthoredApplicationService.Session session =
@@ -96,32 +93,6 @@ final class DungeonCatalogStoreApplicationTest {
         @Override
         public void delete(DungeonMapIdentity mapId) {
             headers.removeIf(header -> header.mapId().equals(mapId));
-        }
-    }
-
-    private static final class FailingWholeMapRepository implements DungeonMapRepository {
-        @Override
-        public long nextStairId() {
-            throw unexpectedCall();
-        }
-
-        @Override
-        public long nextTransitionId() {
-            throw unexpectedCall();
-        }
-
-        @Override
-        public Optional<DungeonMap> findById(DungeonMapIdentity mapId) {
-            throw unexpectedCall();
-        }
-
-        @Override
-        public Optional<DungeonMap> firstMap() {
-            throw unexpectedCall();
-        }
-
-        private static AssertionError unexpectedCall() {
-            return new AssertionError("catalog lifecycle must not use whole-map persistence");
         }
     }
 }

@@ -7,6 +7,9 @@ import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.stair.Stair;
 import features.dungeon.domain.core.structure.transition.Transition;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
 
 /** Typed authored fact for exactly one stable identity; never a partial aggregate. */
@@ -19,9 +22,17 @@ public sealed interface DungeonEntitySnapshot permits DungeonEntitySnapshot.Room
 
     DungeonPatchEntityRef ref();
 
-    record Room(RoomRegion value) implements DungeonEntitySnapshot {
+    List<DungeonPatchEntityRef> dependencyHeaders();
+
+    record Room(RoomRegion value, List<DungeonPatchEntityRef> dependencyHeaders)
+            implements DungeonEntitySnapshot {
+        public Room(RoomRegion value) {
+            this(value, List.of());
+        }
+
         public Room {
             value = Objects.requireNonNull(value, "value");
+            dependencyHeaders = dependencies(dependencyHeaders);
         }
 
         @Override
@@ -30,9 +41,15 @@ public sealed interface DungeonEntitySnapshot permits DungeonEntitySnapshot.Room
         }
     }
 
-    record RoomClusterSnapshot(RoomCluster value) implements DungeonEntitySnapshot {
+    record RoomClusterSnapshot(RoomCluster value, List<DungeonPatchEntityRef> dependencyHeaders)
+            implements DungeonEntitySnapshot {
+        public RoomClusterSnapshot(RoomCluster value) {
+            this(value, List.of());
+        }
+
         public RoomClusterSnapshot {
             value = Objects.requireNonNull(value, "value");
+            dependencyHeaders = dependencies(dependencyHeaders);
         }
 
         @Override
@@ -41,9 +58,15 @@ public sealed interface DungeonEntitySnapshot permits DungeonEntitySnapshot.Room
         }
     }
 
-    record CorridorSnapshot(Corridor value) implements DungeonEntitySnapshot {
+    record CorridorSnapshot(Corridor value, List<DungeonPatchEntityRef> dependencyHeaders)
+            implements DungeonEntitySnapshot {
+        public CorridorSnapshot(Corridor value) {
+            this(value, List.of());
+        }
+
         public CorridorSnapshot {
             value = Objects.requireNonNull(value, "value");
+            dependencyHeaders = dependencies(dependencyHeaders);
         }
 
         @Override
@@ -52,9 +75,15 @@ public sealed interface DungeonEntitySnapshot permits DungeonEntitySnapshot.Room
         }
     }
 
-    record StairSnapshot(Stair value) implements DungeonEntitySnapshot {
+    record StairSnapshot(Stair value, List<DungeonPatchEntityRef> dependencyHeaders)
+            implements DungeonEntitySnapshot {
+        public StairSnapshot(Stair value) {
+            this(value, List.of());
+        }
+
         public StairSnapshot {
             value = Objects.requireNonNull(value, "value");
+            dependencyHeaders = dependencies(dependencyHeaders);
         }
 
         @Override
@@ -63,9 +92,15 @@ public sealed interface DungeonEntitySnapshot permits DungeonEntitySnapshot.Room
         }
     }
 
-    record TransitionSnapshot(Transition value) implements DungeonEntitySnapshot {
+    record TransitionSnapshot(Transition value, List<DungeonPatchEntityRef> dependencyHeaders)
+            implements DungeonEntitySnapshot {
+        public TransitionSnapshot(Transition value) {
+            this(value, List.of());
+        }
+
         public TransitionSnapshot {
             value = Objects.requireNonNull(value, "value");
+            dependencyHeaders = dependencies(dependencyHeaders);
         }
 
         @Override
@@ -74,14 +109,27 @@ public sealed interface DungeonEntitySnapshot permits DungeonEntitySnapshot.Room
         }
     }
 
-    record FeatureMarkerSnapshot(FeatureMarker value) implements DungeonEntitySnapshot {
+    record FeatureMarkerSnapshot(FeatureMarker value, List<DungeonPatchEntityRef> dependencyHeaders)
+            implements DungeonEntitySnapshot {
+        public FeatureMarkerSnapshot(FeatureMarker value) {
+            this(value, List.of());
+        }
+
         public FeatureMarkerSnapshot {
             value = Objects.requireNonNull(value, "value");
+            dependencyHeaders = dependencies(dependencyHeaders);
         }
 
         @Override
         public DungeonPatchEntityRef ref() {
             return DungeonPatchEntityRef.featureMarker(value.markerId());
         }
+    }
+
+    private static List<DungeonPatchEntityRef> dependencies(List<DungeonPatchEntityRef> values) {
+        List<DungeonPatchEntityRef> ordered = new ArrayList<>(new LinkedHashSet<>(
+                values == null ? List.of() : values));
+        ordered.sort(DungeonWindow.ENTITY_ORDER);
+        return List.copyOf(ordered);
     }
 }

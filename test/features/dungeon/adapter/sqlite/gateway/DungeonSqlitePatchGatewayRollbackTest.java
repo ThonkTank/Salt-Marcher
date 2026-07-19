@@ -3,8 +3,6 @@ package features.dungeon.adapter.sqlite.gateway;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import features.dungeon.adapter.sqlite.model.DungeonGridBoundsRecord;
-import features.dungeon.adapter.sqlite.model.DungeonMapRecord;
 import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.command.FeatureMarkerChange;
 import features.dungeon.domain.core.geometry.Cell;
@@ -29,8 +27,7 @@ final class DungeonSqlitePatchGatewayRollbackTest {
     void rollsBackRevisionAuthoredSpatialAndTopologyRowsWhenCommitFails(@TempDir Path directory) throws Exception {
         Path path = directory.resolve("rollback.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            DungeonSqliteFixtureSeeder.seed(database, List.of(
-                    new DungeonMapRecord(MAP_ID, "Rollback map", 1L, DungeonGridBoundsRecord.defaultGrid())));
+            DungeonSqliteFixtureSeeder.insertHeader(database, MAP_ID, "Rollback map", 1L);
             DungeonSqlitePatchGateway gateway = new DungeonSqlitePatchGateway(database, phase -> {
                 if (phase == DungeonSqlitePatchGateway.Phase.BEFORE_COMMIT) {
                     throw new SQLException("injected before commit");

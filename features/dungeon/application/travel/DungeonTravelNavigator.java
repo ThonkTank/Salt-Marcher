@@ -2,15 +2,11 @@ package features.dungeon.application.travel;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import features.dungeon.application.authored.DungeonAuthoredApplicationService;
-import features.dungeon.domain.core.structure.DungeonMap;
-import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.application.travel.projection.TravelActionFacts;
 import features.dungeon.application.travel.projection.TravelActionFacts.SelectedAction;
 import features.dungeon.application.travel.projection.TravelActionKind;
 import features.dungeon.application.travel.projection.TravelAuthoredSurface;
 import features.dungeon.application.travel.projection.TravelAuthoredSurface.Transition;
-import features.dungeon.application.travel.projection.TravelAuthoredSurfaceProjectionMapper;
 import features.dungeon.application.travel.projection.TravelDungeonSessionProjectionMapper;
 import features.dungeon.application.travel.projection.TravelHeading;
 import features.dungeon.application.travel.projection.TravelPositionFacts;
@@ -29,17 +25,17 @@ public final class DungeonTravelNavigator {
     private static final String TRAVEL_ACTION_COMPLETE = "Reiseaktion ausgefuehrt.";
     private static final String DUNGEON_TRANSITION_USED = "Übergang benutzt.";
 
-    private final DungeonAuthoredApplicationService authoredMaps;
+    private final DungeonTravelAuthoredReader authoredReader;
     private final DungeonTravelPartyGateway partyGateway;
     private final DungeonTravelSurfaceLoader surfaceLoader;
     private final TravelSurfaceProjection projector = new TravelSurfaceProjection();
 
     public DungeonTravelNavigator(
-            DungeonAuthoredApplicationService authoredMaps,
+            DungeonTravelAuthoredReader authoredReader,
             DungeonTravelPartyGateway partyGateway,
             DungeonTravelSurfaceLoader surfaceLoader
     ) {
-        this.authoredMaps = Objects.requireNonNull(authoredMaps, "authoredMaps");
+        this.authoredReader = Objects.requireNonNull(authoredReader, "authoredReader");
         this.partyGateway = Objects.requireNonNull(partyGateway, "partyGateway");
         this.surfaceLoader = Objects.requireNonNull(surfaceLoader, "surfaceLoader");
     }
@@ -98,16 +94,30 @@ public final class DungeonTravelNavigator {
             @Nullable TravelPositionFacts position,
             SelectedAction selectedAction
     ) {
-        DungeonMap currentMap = loadMap(position);
-        TravelAuthoredSurface currentSurface =
-                TravelAuthoredSurfaceProjectionMapper.from(currentMap, authoredMaps.derive(currentMap));
+        DungeonTravelAuthoredReadResult readResult = authoredReader.readCurrentPosition(position);
+        if (!(readResult instanceof DungeonTravelAuthoredReadResult.Loaded loaded)) {
+            return unavailableRead(position);
+        }
+        TravelAuthoredSurface currentSurface = loaded.surface();
         return new MoveResolver(currentSurface, position).move(SelectedAction.safe(selectedAction));
     }
 
-    private DungeonMap loadMap(@Nullable TravelPositionFacts position) {
-        return position == null
-                ? authoredMaps.loadMap(null)
-                : authoredMaps.loadMap(new DungeonMapIdentity(position.mapId()));
+    private MoveResult unavailableRead(@Nullable TravelPositionFacts position) {
+        if (position == null) {
+            return new MoveResult(
+                    MoveStatus.NO_MAP,
+                    TravelDungeonSessionSurface.outsideDungeonSurface(0L),
+                    null);
+        }
+        TravelAuthoredSurface unavailable = new TravelAuthoredSurface(
+                new TravelAuthoredSurface.Header(position.mapId(), "Dungeon", 0L),
+                null);
+        TravelSurfaceFacts surface = projector.project(
+                unavailable, position, "Dungeon ist nicht verfügbar.");
+        return new MoveResult(
+                MoveStatus.TARGET_UNAVAILABLE,
+                TravelDungeonSessionProjectionMapper.toRuntimeSurface(surface),
+                null);
     }
 
     private final class MoveResolver {
@@ -196,10 +206,10 @@ public final class DungeonTravelNavigator {
         }
 
         private ResolvedDungeonTransition resolveTransitionTarget(TravelTransitionTarget target) {
-            DungeonMap targetMap = authoredMaps.findMap(new DungeonMapIdentity(target.mapId())).orElse(null);
-            TravelAuthoredSurface targetSurface = targetMap == null
-                    ? null
-                    : TravelAuthoredSurfaceProjectionMapper.from(targetMap, authoredMaps.derive(targetMap));
+            DungeonTravelAuthoredReadResult readResult = authoredReader.readExactTransitionTarget(target);
+            TravelAuthoredSurface targetSurface = readResult instanceof DungeonTravelAuthoredReadResult.Loaded loaded
+                    ? loaded.surface()
+                    : null;
             Transition targetTransition =
                     targetSurface == null
                             ? null

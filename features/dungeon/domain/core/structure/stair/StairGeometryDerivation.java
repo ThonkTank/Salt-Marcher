@@ -1,7 +1,6 @@
 package features.dungeon.domain.core.structure.stair;
 
 import java.util.List;
-import features.dungeon.domain.core.component.StairExit;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
 
@@ -62,10 +61,10 @@ public final class StairGeometryDerivation {
     }
 
     private static boolean exitsMatch(StairGeometrySpec spec, Cell lower, Cell upper) {
-        List<StairExit> exits = spec.generatedExits(List.of());
+        List<Cell> exits = spec.generatedExitCells();
         return !exits.isEmpty()
-                && lower.equals(exits.getFirst().position())
-                && upper.equals(exits.getLast().position());
+                && lower.equals(exits.getFirst())
+                && upper.equals(exits.getLast());
     }
 
     private static Result valid(StairGeometrySpec spec) {

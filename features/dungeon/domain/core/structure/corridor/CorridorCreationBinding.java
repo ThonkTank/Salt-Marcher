@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.Cell;
-import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.corridor.CorridorEndpointResolution.ResolvedEndpointResult;
 import features.dungeon.domain.core.structure.stair.StairCollection;
 import features.dungeon.domain.core.structure.stair.CorridorBoundStairGeometry;
@@ -16,10 +15,14 @@ final class CorridorCreationBinding {
     Corridor bindEndpoints(
             ResolvedEndpointResult startResolved,
             ResolvedEndpointResult endResolved,
-            int level
+            int level,
+            long reservedCorridorId
     ) {
+        if (reservedCorridorId <= NO_CORRIDOR_ID) {
+            throw new IllegalArgumentException("corridor identity must be positive");
+        }
         Corridor corridor = new Corridor(
-                nextCorridorId(endResolved.map()),
+                reservedCorridorId,
                 endResolved.map().metadata().mapId().value(),
                 level,
                 roomIds(startResolved, endResolved),
@@ -34,7 +37,8 @@ final class CorridorCreationBinding {
             DungeonCorridorEndpoint end,
             List<Cell> routeCells,
             ResolvedEndpointResult endResolved,
-            Corridor corridor
+            Corridor corridor,
+            @Nullable List<Long> reservedStairExitIds
     ) {
         StairCollection nextStairs = endResolved.map().stairs();
         if (!start.sameLevelAs(end)) {
@@ -44,7 +48,8 @@ final class CorridorCreationBinding {
                             endResolved.map().metadata().mapId().value(),
                             corridor.corridorId(),
                             geometry.path(),
-                            geometry.upperExit()))
+                            geometry.upperExit(),
+                            reservedStairExitIds))
                     .orElse(nextStairs);
         }
         return nextStairs;
@@ -70,13 +75,4 @@ final class CorridorCreationBinding {
         return roomId != null && roomId > NO_ROOM_ID;
     }
 
-    private static long nextCorridorId(DungeonMap dungeonMap) {
-        long result = NO_CORRIDOR_ID;
-        for (Corridor corridor : dungeonMap.corridors()) {
-            if (corridor != null && corridor.corridorId() > result) {
-                result = corridor.corridorId();
-            }
-        }
-        return result + 1L;
-    }
 }

@@ -120,7 +120,11 @@ final class DungeonRoomClusterPatchCommandsTest {
     }
 
     private static DungeonMap mapWithRoom() {
-        return DungeonMapAuthoring.empty(new DungeonMapIdentity(93L), "Room Patch Commands")
-                .paintRoomRectangle(new Cell(1, 1, 0), new Cell(2, 2, 0));
+        return DungeonCommandTestIdentities.paint(
+                DungeonMapAuthoring.empty(new DungeonMapIdentity(93L), "Room Patch Commands"),
+                new Cell(1, 1, 0),
+                new Cell(2, 2, 0),
+                1L,
+                1L);
     }
 }

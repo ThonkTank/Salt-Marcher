@@ -24,12 +24,21 @@ public final class RoomClusterCornerMovement {
             Cell corner,
             int deltaQ,
             int deltaR,
-            int deltaLevel
+            int deltaLevel,
+            RoomTopologyWorkCatalog.ReservedIdentities allocation
     ) {
         if (corner == null || deltaLevel != 0 || clusterId <= NO_ID) {
             return Optional.empty();
         }
-        return moveResolvedCorner(topology, rooms, corridors, clusterId, corner, deltaQ, deltaR);
+        return moveResolvedCorner(
+                topology,
+                rooms,
+                corridors,
+                clusterId,
+                corner,
+                deltaQ,
+                deltaR,
+                new RoomMutationIdCursor(allocation));
     }
 
     private Optional<RebuildResult> moveResolvedCorner(
@@ -39,7 +48,8 @@ public final class RoomClusterCornerMovement {
             long clusterId,
             Cell corner,
             int deltaQ,
-            int deltaR
+            int deltaR,
+            RoomMutationIdCursor ids
     ) {
         Optional<RebuildResult> horizontalFirst = moveHorizontalFirst(
                 topology,
@@ -48,7 +58,8 @@ public final class RoomClusterCornerMovement {
                 clusterId,
                 corner,
                 deltaQ,
-                deltaR);
+                deltaR,
+                ids);
         Cell targetCorner = new Cell(corner.q() + deltaQ, corner.r() + deltaR, corner.level());
         if (containsCorner(horizontalFirst, clusterId, targetCorner)) {
             return horizontalFirst;
@@ -60,7 +71,8 @@ public final class RoomClusterCornerMovement {
                 clusterId,
                 corner,
                 deltaQ,
-                deltaR);
+                deltaR,
+                ids);
         if (containsCorner(verticalFirst, clusterId, targetCorner)) {
             return verticalFirst;
         }
@@ -77,9 +89,10 @@ public final class RoomClusterCornerMovement {
             long clusterId,
             Cell corner,
             int deltaQ,
-            int deltaR
+            int deltaR,
+            RoomMutationIdCursor ids
     ) {
-        Optional<RebuildResult> vertical = moveVertical(topology, rooms, corridors, clusterId, corner, deltaQ);
+        Optional<RebuildResult> vertical = moveVertical(topology, rooms, corridors, clusterId, corner, deltaQ, ids);
         if (deltaQ != 0 && vertical.isEmpty()) {
             return Optional.empty();
         }
@@ -89,7 +102,8 @@ public final class RoomClusterCornerMovement {
                 corridors,
                 clusterId,
                 new Cell(corner.q() + deltaQ, corner.r(), corner.level()),
-                deltaR);
+                deltaR,
+                ids);
         if (deltaR != 0 && horizontal.isEmpty()) {
             return Optional.empty();
         }
@@ -103,10 +117,11 @@ public final class RoomClusterCornerMovement {
             long clusterId,
             Cell corner,
             int deltaQ,
-            int deltaR
+            int deltaR,
+            RoomMutationIdCursor ids
     ) {
         RebuildResult current = new RebuildResult(topology, rooms);
-        Optional<RebuildResult> horizontal = moveHorizontal(current, corridors, clusterId, corner, deltaR);
+        Optional<RebuildResult> horizontal = moveHorizontal(current, corridors, clusterId, corner, deltaR, ids);
         if (deltaR != 0 && horizontal.isEmpty()) {
             return Optional.empty();
         }
@@ -117,7 +132,8 @@ public final class RoomClusterCornerMovement {
                 corridors,
                 clusterId,
                 new Cell(corner.q(), corner.r() + deltaR, corner.level()),
-                deltaQ);
+                deltaQ,
+                ids);
         if (deltaQ != 0 && vertical.isEmpty()) {
             return Optional.empty();
         }
@@ -130,7 +146,8 @@ public final class RoomClusterCornerMovement {
             List<Corridor> corridors,
             long clusterId,
             Cell corner,
-            int deltaQ
+            int deltaQ,
+            RoomMutationIdCursor ids
     ) {
         if (deltaQ == 0) {
             return Optional.empty();
@@ -143,7 +160,8 @@ public final class RoomClusterCornerMovement {
                 sideEdges(topology, rooms, clusterId, corner, true),
                 deltaQ,
                 0,
-                0);
+                0,
+                ids);
     }
 
     private Optional<RebuildResult> moveHorizontal(
@@ -151,7 +169,8 @@ public final class RoomClusterCornerMovement {
             List<Corridor> corridors,
             long clusterId,
             Cell corner,
-            int deltaR
+            int deltaR,
+            RoomMutationIdCursor ids
     ) {
         if (deltaR == 0) {
             return Optional.empty();
@@ -164,7 +183,8 @@ public final class RoomClusterCornerMovement {
                 sideEdges(current.topology(), current.rooms(), clusterId, corner, false),
                 0,
                 deltaR,
-                0);
+                0,
+                ids);
     }
 
     private static List<Edge> sideEdges(

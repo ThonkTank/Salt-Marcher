@@ -84,14 +84,4 @@ public record RoomCatalog(
         return Map.copyOf(copied);
     }
 
-    public long nextRoomId() {
-        long result = 0L;
-        for (RoomRegion room : rooms) {
-            if (room != null && room.roomId() > result) {
-                result = room.roomId();
-            }
-        }
-        return result + 1L;
-    }
-
 }

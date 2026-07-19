@@ -20,7 +20,7 @@ final class RoomClusterRoomComponents {
     static List<RoomRegion> roomsForMutation(
             RoomClusterWork work,
             Map<Integer, ? extends Iterable<Edge>> barriersByLevel,
-            long nextRoomId,
+            RoomMutationIdCursor ids,
             Map<Long, List<Cell>> previousCellsByRoom
     ) {
         List<RoomComponent> components = roomComponents(work, barriersByLevel);
@@ -28,7 +28,7 @@ final class RoomClusterRoomComponents {
                 ? RoomClusterRoomPartition.cellsByRoom(work.cluster(), work.rooms(), barriersByLevel)
                 : previousCellsByRoom;
         Map<Long, Set<Cell>> previousCellSetsByRoom = previousCellSetsByRoom(resolvedPreviousCellsByRoom);
-        RoomIdCursor idCursor = new RoomIdCursor(nextRoomId);
+        RoomMutationIdCursor idCursor = java.util.Objects.requireNonNull(ids, "ids");
         Set<Long> usedRoomIds = new LinkedHashSet<>();
         List<RoomRegion> rooms = new ArrayList<>();
         for (RoomComponent component : components) {
@@ -55,10 +55,10 @@ final class RoomClusterRoomComponents {
             RoomClusterWork work,
             RoomComponent component,
             RoomRegion template,
-            RoomIdCursor idCursor,
+            RoomMutationIdCursor idCursor,
             Set<Long> usedRoomIds
     ) {
-        long roomId = template == null ? idCursor.reserveUnusedRoomId(usedRoomIds) : template.roomId();
+        long roomId = template == null ? reserveUnusedRoomId(idCursor, usedRoomIds) : template.roomId();
         usedRoomIds.add(roomId);
         rooms.add(new RoomRegion(
                 roomId,
@@ -101,22 +101,15 @@ final class RoomClusterRoomComponents {
         return CellOrdering.compareCells(left.anchor(), right.anchor());
     }
 
-    private static final class RoomIdCursor {
-        private long nextRoomId;
-
-        RoomIdCursor(long nextRoomId) {
-            this.nextRoomId = Math.max(1L, nextRoomId);
+    private static long reserveUnusedRoomId(
+            RoomMutationIdCursor ids,
+            Set<Long> usedRoomIds
+    ) {
+        long roomId = ids.reserveRoomId();
+        while (usedRoomIds.contains(roomId)) {
+            roomId = ids.reserveRoomId();
         }
-
-        long reserveUnusedRoomId(Set<Long> usedRoomIds) {
-            long roomId = nextRoomId;
-            nextRoomId += 1L;
-            while (usedRoomIds.contains(roomId)) {
-                roomId += 1L;
-                nextRoomId = Math.max(nextRoomId, roomId + 1L);
-            }
-            return roomId;
-        }
+        return roomId;
     }
 
     record RoomComponent(

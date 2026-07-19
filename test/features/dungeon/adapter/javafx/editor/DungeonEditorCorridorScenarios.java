@@ -84,12 +84,13 @@ final class DungeonEditorCorridorScenarios {
                 .filter(handle -> "CORRIDOR_ANCHOR".equals(handle.ref().kind().name()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("F5_CORRIDOR_WITH_ANCHOR anchor handle not loaded."));
+        long anchorId = editorTopologyRef(corridorAnchor.ref().topologyRef()).id();
         List<String> anchorRowsBefore = runtime.database().corridorAnchorState(mapId);
         List<String> stableRowsBefore = runtime.database().corridorStableConnectionState(mapId);
         List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
         String a1AnchorRow = anchorRowsBefore.stream()
-                .filter(row -> row.contains("anchor_id=1")
+                .filter(row -> row.contains("anchor_id=" + anchorId)
                         && row.contains("cell_x=6")
                         && row.contains("cell_y=5")
                         && row.contains("cell_z=0"))
@@ -189,8 +190,7 @@ final class DungeonEditorCorridorScenarios {
         List<String> anchorRowsBefore = runtime.database().corridorAnchorState(mapId);
         List<String> stableRowsBefore = runtime.database().corridorStableConnectionState(mapId);
         String a1AnchorRowBefore = anchorRowsBefore.stream()
-                .filter(row -> row.contains("anchor_id=1")
-                        && row.contains("cell_x=6")
+                .filter(row -> row.contains("cell_x=6")
                         && row.contains("cell_y=5")
                         && row.contains("cell_z=0"))
                 .findFirst()
@@ -342,7 +342,7 @@ final class DungeonEditorCorridorScenarios {
         List<String> stableRowsBeforeMove = runtime.database().corridorStableConnectionState(mapId);
         List<String> anchorRowsBeforeMove = runtime.database().corridorAnchorState(mapId);
         assertTrue(anchorRowsBeforeMove.stream().anyMatch(row ->
-                        row.contains("anchor_id=1")
+                        row.contains("anchor_id=" + anchorRef.id())
                                 && row.contains("cell_x=6")
                                 && row.contains("cell_y=5")
                                 && row.contains("cell_z=0")),
@@ -353,7 +353,7 @@ final class DungeonEditorCorridorScenarios {
 
         List<String> anchorRowsAfterMove = runtime.database().corridorAnchorState(mapId);
         assertTrue(anchorRowsAfterMove.stream().anyMatch(row ->
-                        row.contains("anchor_id=1")
+                        row.contains("anchor_id=" + anchorRef.id())
                                 && row.contains("cell_x=6")
                                 && row.contains("cell_y=4")
                                 && row.contains("cell_z=0")),
@@ -462,6 +462,9 @@ final class DungeonEditorCorridorScenarios {
         List<String> stableRowsBeforeMove = runtime.database().corridorStableConnectionState(mapId);
         List<String> authoredStateBeforeMove = runtime.database().authoredGeometryState(mapId);
         long geometryRowsBeforeMove = runtime.database().countAuthoredGeometryRows(mapId);
+        long anchorId = editorTopologyRef(firstCorridorAnchorHandle(
+                runtime.mapSurfaceModel().current(),
+                "DE-CLUSTER-COR-001 host").ref().topologyRef()).id();
         click(button(controls, "Auswahl"));
         DungeonEditorHandleSnapshot clusterLabel = runtime.mapSurfaceModel().current().surface().map().editorHandles().stream()
                 .filter(handle -> "CLUSTER_LABEL".equals(handle.ref().kind().name()))
@@ -508,13 +511,13 @@ final class DungeonEditorCorridorScenarios {
                 "DE-CLUSTER-COR-001 cluster move persists translated derived anchor at (3,1,0)");
         List<String> anchorRowsAfterMove = runtime.database().corridorAnchorState(mapId);
         assertTrue(anchorRowsAfterMove.stream().anyMatch(row ->
-                        row.contains("anchor_id=1")
+                        row.contains("anchor_id=" + anchorId)
                                 && row.contains("cell_x=6")
                                 && row.contains("cell_y=4")
                                 && row.contains("cell_z=0")),
                 "DE-CLUSTER-COR-001 cluster move updates host A1 to (6,4,0): " + anchorRowsAfterMove);
         assertTrue(!anchorRowsAfterMove.stream().anyMatch(row ->
-                        row.contains("anchor_id=1")
+                        row.contains("anchor_id=" + anchorId)
                                 && row.contains("cell_x=6")
                                 && row.contains("cell_y=5")
                                 && row.contains("cell_z=0")),

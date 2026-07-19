@@ -2,10 +2,6 @@ package features.dungeon.adapter.sqlite.gateway;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import features.dungeon.adapter.sqlite.model.DungeonGridBoundsRecord;
-import features.dungeon.adapter.sqlite.model.DungeonFeatureMarkerRecord;
-import features.dungeon.adapter.sqlite.model.DungeonMapRecord;
-import features.dungeon.adapter.sqlite.model.DungeonTopologyElementRecord;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
 import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.command.FeatureMarkerChange;
@@ -31,7 +27,19 @@ class DungeonSqliteOptimisticRevisionTest {
     void patchCommitDoesNotRewriteUnchangedStableIdentityRows() throws Exception {
         Path databasePath = temporaryDirectory.resolve("incremental.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            DungeonSqliteFixtureSeeder.seed(database, mapWithMarkers());
+            DungeonSqliteFixtureSeeder.insertHeader(database, 51L, "first", 1L);
+            DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(
+                    new DungeonMapIdentity(51L),
+                    1L,
+                    List.of(
+                            new FeatureMarkerChange(null, marker(new DungeonMapIdentity(51L), 71L, "Marker")),
+                            new FeatureMarkerChange(null, new FeatureMarker(
+                                    72L,
+                                    new DungeonMapIdentity(51L),
+                                    FeatureMarkerKind.POI,
+                                    new Cell(6, 5, 0),
+                                    "Untouched",
+                                    "")))));
             try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
                  var statement = connection.createStatement()) {
                 statement.execute("CREATE TABLE marker_update_count(value INTEGER NOT NULL)");
@@ -44,34 +52,13 @@ class DungeonSqliteOptimisticRevisionTest {
             FeatureMarker before = marker(map, 71L, "Marker");
             FeatureMarker after = marker(map, 71L, "Changed");
             DungeonUnitOfWorkResult result = new SqliteDungeonUnitOfWork(database).commit(
-                    DungeonPatch.of(map, 1L, List.of(new FeatureMarkerChange(before, after))));
+                    DungeonPatch.of(map, 2L, List.of(new FeatureMarkerChange(before, after))));
 
-            assertEquals(2L, ((DungeonUnitOfWorkResult.Committed) result).committedRevision());
+            assertEquals(3L, ((DungeonUnitOfWorkResult.Committed) result).committedRevision());
             assertEquals(1L, scalar(databasePath, "SELECT value FROM marker_update_count"));
             assertEquals("Untouched", text(databasePath,
                     "SELECT label FROM dungeon_feature_markers WHERE feature_marker_id=72"));
         }
-    }
-
-    private static DungeonMapRecord mapWithMarkers() {
-        return new DungeonMapRecord(
-                51L,
-                "first",
-                1L,
-                DungeonGridBoundsRecord.defaultGrid(),
-                List.of(),
-                List.of(),
-                List.of(
-                        new DungeonTopologyElementRecord(51L, "FEATURE_MARKER", 71L, null, null,
-                                "Marker", 0),
-                        new DungeonTopologyElementRecord(51L, "FEATURE_MARKER", 72L, null, null,
-                                "Untouched", 1)),
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of(
-                        new DungeonFeatureMarkerRecord(71L, 51L, "POI", 4, 5, 0, "Marker", ""),
-                        new DungeonFeatureMarkerRecord(72L, 51L, "POI", 6, 5, 0, "Untouched", "")));
     }
 
     private static FeatureMarker marker(DungeonMapIdentity map, long id, String label) {

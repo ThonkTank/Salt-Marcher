@@ -46,6 +46,9 @@ Persisted authored truth includes:
 - `DungeonCatalogStore` owns map metadata lookup and catalog mutations
 - `DungeonWindowStore` owns explicit chunk reads and command-specific stable
   identity closure reads
+- `DungeonIdentityAllocator` owns atomic typed reservation of bounded stable
+  identity ranges for map-wide authored families without writing placeholder
+  authored state
 - `DungeonUnitOfWork` owns revision-checked `DungeonPatch` and
   `DungeonCompoundPatch` commits
 - SQLite adapters translate source-local rows into dungeon-domain values and
@@ -67,6 +70,14 @@ Persisted authored truth includes:
 `dungeon_maps.revision` stores the last committed authored revision. Adapters
 MUST read and write that value; they MUST NOT replace it with a constant
 readback revision.
+
+`dungeon_identity_sequences` is technical allocation state keyed by supported
+identity kind. Reserving an identity or bounded contiguous range advances only
+its sequence in one short transaction; it MUST NOT create a dummy map,
+topology element, authored entity, or child row. Every map-wide stable identity
+family that a command can create uses this allocation boundary rather than a
+partial-workset maximum. The destructive replacement schema initializes the
+table directly and does not derive or backfill it from discarded Dungeon rows.
 
 `dungeon_chunks` is a source-local spatial inventory keyed by
 `(dungeon_map_id, level_z, chunk_q, chunk_r)`. One chunk covers `64 x 64`

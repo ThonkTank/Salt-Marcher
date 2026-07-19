@@ -241,8 +241,11 @@ surfaces remain reserved for `CELL` anchors.
 
 ## Application Ports And Foreign APIs
 
-The Dungeon application owns non-blocking catalog, window-read, and
-unit-of-work ports for authored maps. Its SQLite adapter implements those ports;
+The Dungeon application owns non-blocking catalog, window-read, identity
+allocation, and unit-of-work ports for authored maps. Identity allocation
+reserves bounded stable ranges for every map-wide authored identity family that
+commands may create, without inserting placeholder maps, topology elements,
+authored entities, or child rows. Its SQLite adapter implements those ports;
 adapters never surface JDBC types or exceptions through Dungeon APIs.
 
 Party-aware travel composition consumes `PartyApi`, supplied explicitly during

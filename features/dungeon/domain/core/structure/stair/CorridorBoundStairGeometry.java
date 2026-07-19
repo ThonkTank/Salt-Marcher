@@ -36,7 +36,7 @@ public record CorridorBoundStairGeometry(List<Cell> path, Cell upperExit) {
                 new Cell(terminus.q(), terminus.r(), targetLevel)));
     }
 
-    public Stair materialize(long stairId, long mapId, long corridorId) {
-        return Stair.corridorBound(stairId, mapId, corridorId, path, upperExit);
+    public Stair materialize(long stairId, long mapId, long corridorId, List<Long> reservedExitIds) {
+        return Stair.corridorBound(stairId, mapId, corridorId, path, upperExit, reservedExitIds);
     }
 }

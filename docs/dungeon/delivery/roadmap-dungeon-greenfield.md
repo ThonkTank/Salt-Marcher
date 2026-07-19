@@ -99,142 +99,151 @@ and commit boundaries. M7 starts only after both are complete.
 
 - Current foundation: M0 through M3 are complete through PR #508; M4.1 is
   complete through PR #509, M4.2 through PR #510, and M4.3 through PR #518.
-  M4.4 is complete through PR #526. Production cold viewport and preview reads
-  use `DungeonWindowStore`; schema v6 owns canonical authored rows, entity
-  membership, chunk revisions, selected corridor routes, and route dependencies.
-- This slice: M4.5 commits `DungeonCompoundPatch` values through one atomic
-  row-level transaction, moves transition-link commands and compound history
-  replay, and removes the complete production full-record write route.
-- The temporary whole-map bridge remains read-only for remaining command,
-  inspector, and travel hydration. M4.6 owns those reads and the remaining
-  `DungeonMapRepository`, record, loader, and mapper deletion.
+  M4.4 is complete through PR #526, M4.5 through PR #527, and M4.6 is complete
+  in this change. Production Editor commands, inspectors, history, transition
+  linking, and Dungeon Travel now use revision-bound Catalog, Window, identity
+  closure, and incremental UoW routes. The whole-map repository/record/loader,
+  local identity derivation, compatibility writer, and full-record fixture
+  families are deleted.
+- M4.6 delivery proof is literal green `./gradlew check` plus
+  `./gradlew installDesktopApp`. M5 is the next slice. No M4.6 review panel ran;
+  the single independent cross-roadmap review runs only after all M7
+  implementation is complete.
 
-### Active Slice Contract: M4.5 Compound Unit Of Work
+### Completed Slice Contract: M4.6 Read-Path Closure
 
 #### Goal, Authoritative Facts, And Boundaries
 
-- A `DungeonCompoundPatch` is one indivisible command over one or more distinct
-  map patches. Each contained `DungeonPatch` remains the sole owner of that
-  map's expected revision, exact row changes, touched chunks, and result facts.
-- Reuse the M4.4 entity and spatial writers. No compound path may map, diff,
-  persist, or read back a complete `DungeonMap` or `DungeonMapRecord`.
-- The two production compatibility consumers are exactly transition-link commit
-  and compound undo/redo. A compound history entry remains compound even when
-  it currently contains one map patch.
-- M4.5 preserves accepted behavior. Success advances every affected map once;
-  rejection or failure advances none and changes no workset, publication, or
-  history stack. Read-path closure is M4.6; cache/runtime and travel behavior
-  changes are excluded.
+- All remaining production authored reads use `DungeonCatalogStore` plus
+  `DungeonWindowStore`. No Editor or Travel route may call a whole-map
+  repository, record loader, or hidden equivalent.
+- A command may hydrate only an explicitly marked `DungeonCommandWorkset` bound
+  to one map revision and one declared `DungeonCommandReadSpec`. A partial
+  `DungeonMap` must never be published, cached, passed as a complete map, or
+  accepted for commit without a successful completeness check.
+- Travel consumes typed window/closure projections and never receives a
+  `DungeonMap` or depends on `DungeonAuthoredApplicationService`.
+- M4.6 preserves accepted Editor and Travel behavior. M5 owns cache/runtime and
+  performance qualification; M6 owns stable travel action identity, direct
+  movement, Party completion ordering, and the global `Reise` context.
+- There are no Dungeon Bestandsdaten. Schema v6 remains a destructive
+  Dungeon-only replacement: no v5 row translation, backfill, compatibility
+  loader, or preservation path is permitted.
 
-#### Port, Result, And Application Decisions
+#### Port And Workset Decisions
 
-- Extend `DungeonUnitOfWork` with `commit(DungeonCompoundPatch)` and add a sealed
-  adapter-neutral `DungeonCompoundUnitOfWorkResult`. `Committed` contains one
-  `DungeonUnitOfWorkResult.Committed` per affected map, immutable and ordered by
-  map id. `Rejected` contains the deterministically selected map id and existing
-  reason `MAP_NOT_FOUND` or `STALE_REVISION`. JDBC types never cross the port;
-  validation, constraint, and storage exceptions remain commit failures.
-- The SQLite adapter builds every committed result from input patch facts and
-  transaction-local map/chunk revisions. It performs zero post-commit map,
-  window, closure, entity, or record readback.
-- Transition-link planning applies the compound patch once to its loaded
-  in-memory maps, commits once, and only on `Committed` installs all candidates,
-  records one compound history entry, derives the source result, and publishes.
-- `DungeonEditHistory.Step` exposes the selected forward/inverse compound patch
-  rebased against every currently loaded affected revision. Compound undo/redo
-  applies candidates in memory, commits once, and calls `complete` only after a
-  validated `Committed` result. Rejection/failure leaves every shared stack and
-  candidate untouched and follows the existing typed rejection/publication
-  behavior for the selected map.
-- Validate a committed result against every input map id, committed revision,
-  touched chunk, and result fact before changing application state. Missing,
-  duplicate, extra, or mismatched result entries are adapter contract failures.
+- Extend `DungeonCatalogStore` with metadata-only `find(mapId)` and `first()`
+  header reads. Selection is catalog-first and never invents map id `1`.
+- Add a narrow typed `DungeonIdentityAllocator` that reserves one identity or a
+  bounded contiguous range for every map-wide stable authored family created by
+  commands, including rooms, clusters, corridors and their stable anchors,
+  feature markers, stairs and their stable children, transitions, and topology
+  identities where they are not identical to their semantic owner. SQLite owns
+  one atomic technical sequence per kind; reservation creates no placeholder
+  map, entity, child row, or topology row. The fresh v6 schema initializes the
+  sequences directly and does not migrate v5 identities.
+- `DungeonCommandReadSpec` names map identity, expected revision, spatial chunk
+  keys, stable seed refs, dependency expansion, request generation, and command
+  intent. Inputs and outputs use deterministic chunk-key and entity-ref order.
+- `DungeonCommandWorkset` owns the header, loaded chunk identities, complete
+  entity snapshots, transitive dependency refs, and its internal command-scoped
+  aggregate. Only this marked type may expose that aggregate to command
+  planning, and only after `containsComplete(spec)` succeeds.
+- `DungeonCommandWorksetResult` is either `Complete(workset)` or a typed reject
+  for missing map/entity, stale revision, malformed entity, or incomplete
+  entity. Incomplete input maps to the stable authored rejection
+  `INSUFFICIENT_LOADED_CLOSURE`; it creates no mutation, publication, cache, or
+  history change.
 
-#### Atomic SQLite Transaction
+#### Revision-Bound Closure
 
-The adapter canonicalizes work by ascending map id and owns one connection with
-auto-commit disabled:
+1. Read the map header from Catalog and bind the request to that exact revision.
+2. Load the declared chunks plus ring. Merge explicit command refs, window refs,
+   continuation refs, and dependency refs in deterministic order.
+3. Load identity closure at the same revision and recursively expand snapshot
+   dependencies to a fixpoint. Empty ref sets still revision-validate.
+4. Reject the complete attempt if any round is stale, missing, malformed, or
+   incomplete; never merge facts from different revisions and never guess
+   unseen truth.
+5. Assemble and validate the marked command workset. A mutating command does not
+   retry stale gesture intent automatically. A read-only Travel refresh may
+   restart catalog-first once.
 
-1. validate the compound and all contained patches without writes; reject
-   duplicate/invalid map ownership and invalid revision transitions
-2. read and validate every current map revision in canonical order before the
-   first compare-and-set; if several maps are invalid, reject the lowest ordered
-   invalid map deterministically and roll back
-3. validate every stored before-graph and capture the bounded source-local
-   dependencies required by the M4.4 writers before the first mutation
-4. compare-and-set every map revision in canonical order; any zero-row result or
-   exception rolls back all earlier CAS operations
-5. apply each patch's exact authored changes through the shared entity writer,
-   then reconcile its memberships, routes, dependencies, and chunk revisions
-   through the shared spatial writer; never scan or replace a whole map
-6. construct the ordered per-map committed results, run the final failure seam,
-   commit exactly once, and restore connection state
+Snapshot dependencies must retain every fact required for full command
+validation, including cluster members, corridor endpoint/anchor hosts and
+referrers, corridor-bound stairs, and linked transition targets. Where reverse
+or inbound references cannot be derived from known snapshots, add a typed,
+revision-bound discovery request to `DungeonWindowStore`; a map-wide scan or
+implicit whole-map closure is forbidden.
 
-Every rejection explicitly rolls back. Any validation, constraint, injected
-failure, commit failure, or cleanup failure follows the established M4.4 error
-contract and cannot expose a partial map revision, authored row, topology row,
-membership, route, dependency, or chunk update. SQLite serializes writers, but
-canonical map ordering is still the required portable lock/CAS order.
+#### Command And Travel Hydration
 
-#### Surface Disposition And Deletion Gate
+- Semantic edits and inspector reads seed the selected stable ref and its
+  dependencies. Spatial room, corridor, stair, transition, and marker commands
+  additionally declare the affected chunks plus one ring and every blocker or
+  reverse-reference family required by the domain invariant.
+- Corridor planning includes endpoints, hosts, anchor referrers, rooms,
+  clusters, bound stairs, and both deterministic route candidates. Transition
+  linking loads exact source and target transition closures independently at
+  their catalog revisions.
+- Undo and redo seed the entity refs named by their forward or inverse patches,
+  expand their dependencies, rebase only after completeness, and commit through
+  the existing UoW. Successful commits update the workset from patch/result
+  facts; no post-commit readback is allowed.
+- A new `DungeonTravelAuthoredReader` loads the current position chunk plus ring,
+  exact stair/transition closure, and target transition plus target-position
+  window for cross-map travel. Missing maps, anchors, transitions, or incomplete
+  closure produce the existing typed unavailable/rejected outcome.
 
-| Surface | Decision | M4.5 consequence |
-| --- | --- | --- |
-| `DungeonCompoundPatch`, contained `DungeonPatch` values | Adopt | only compound commit input |
-| `DungeonUnitOfWork`, M4.4 patch gateway/entity/spatial writers | Adapt | one shared transaction owner for single and compound commits |
-| `DungeonEditHistory`, transition-link operations, authored workset | Adapt | advance only after atomic committed result |
-| `DungeonMapRepository.findById/firstMap`, full-record loader/mapper | Temporary read-only | M4.6 only; no write method or new consumer |
-| `saveAll`, `saveMaps`, `DungeonSqliteMapBatchGateway`, production `DungeonSqliteMapRecordWriter` | Reject | delete after both compound consumers move |
+#### Deletion Gate
 
-- Remove `DungeonMapRepository.saveAll`, its repository implementation,
-  `DungeonSqliteGateway.saveMaps`, `DungeonSqliteMapBatchGateway`, and the
-  production full-record writer. Replace its unrelated `deleteMap` use with a
-  narrow row-delete helper used by catalog deletion and identity reservation.
-- Test setup is not a compatibility exception. Existing full-record fixture
-  seeds may move to an explicitly test-source-only seeder until M4.6 deletes the
-  record model; production code cannot depend on or expose that seeder.
-- Retain `DungeonSqliteChunkWriter` only where the schema migration owns
-  canonical/destructive index construction; it is not a commit fallback.
-- Replace the M4.4 architecture allowance for the two named `saveAll` callers
-  with permanent rules that no authored production class exposes or calls a
-  full-record write and that both UoW overloads avoid repository, full-map,
-  record mapper/loader/writer, and batch gateway dependencies.
+Delete the whole-map production surface, including `DungeonMapRepository`,
+`DungeonMapRecord`, its mapper and loader chain, whole-map gateway methods,
+dummy identity reservation, full-map schema rebuild support, and Authored
+`loadMap/findMap/reloadMap` helpers. Split the mixed SQLite repository into a
+metadata-only catalog store and the separate identity allocator.
+
+Also delete every legacy create/recompute/materialization overload that still
+derives `next*Id` from an aggregate, accepts null or zero child identities, or
+silently allocates outside `DungeonIdentityAllocator`. Keeping an unused local
+maximum path is not an M4.6 compatibility allowance.
+
+Test setup is not a compatibility exception. Replace full-record fixture
+mapping/writing with explicit test map-header setup plus real patch/compound-UoW
+inserts. Malformed-source tests may corrupt only the exact target SQL rows after
+valid setup. Delete the test-only full-record fixture mapper, writer, and
+persistence-helper family; do not create a renamed parallel record model.
+
+Permanent architecture gates prove:
+
+- Authored production depends only on Catalog, Window, UoW, and Identity
+  Allocator ports
+- Travel depends on neither Authored service nor `DungeonMap`
+- no production or test fixture references whole-map repository, record,
+  loader, mapper, writer, or compatibility schema rebuild types
+- only the marked command workset may own a command-scoped aggregate
+- no full-map read or unconditional post-commit readback is reachable
 
 #### Implementation Order And Required Proof
 
-1. Freeze the compound result contract, history-step API, application
-   orchestration, and counting/fail-fast application tests.
-2. Refactor the SQLite patch gateway transaction seam so single and compound
-   commits share validation, CAS, entity, spatial, rollback, and result logic;
-   add real two-map transaction tests before moving production consumers.
-3. Move transition-link and compound history replay, then delete the entire
-   production batch/full-record writer family and tighten architecture gates.
-4. Run focused tests, the Dungeon Editor behavior oracle, literal
-   `./gradlew check`, and after green proof `./gradlew installDesktopApp`.
+1. Add catalog header reads, identity allocation, dependency-preserving closure,
+   the command read spec/workset/result, reverse-reference discovery where
+   required, and focused adapter tests.
+2. Move ordinary commands, inspector, history, and transition linking to
+   worksets; prove exact requests, typed closure failure, no mutation before
+   completeness, and no readback after commit.
+3. Move Travel to its typed authored reader, rewire composition, delete the
+   entire whole-map production and fixture surface, and tighten architecture
+   gates.
+4. Run focused Editor, Travel, SQLite, and architecture diagnostics, then the
+   literal merge-blocking `./gradlew check` and green
+   `./gradlew installDesktopApp`. Publish and merge the M4.6 PR after required CI
+   is green. Do not run an intermediate review panel.
 
-Required oracles:
-
-- a real two-map transition compound inserts/updates both maps and returns exact
-  ordered map/chunk revisions and patch facts with no readback
-- stale or missing first/second map, mismatched stored before-graph, real SQLite
-  constraint failure, and injected failures after preflight, an intermediate
-  CAS, authored writes, spatial writes, and before commit leave complete
-  before/after SQL row sets identical for both maps
-- compound command, undo, and redo use one UoW call, advance both revisions and
-  shared history stacks only after success, and perform no post-commit read;
-  rejection/failure changes neither publication nor in-memory candidates
-- deterministic patch-order permutations produce identical CAS/write order and
-  results; a one-map compound stays on the compound overload
-- source and architecture scans prove zero production `saveAll`, `saveMaps`,
-  batch-gateway, or full-record-writer surface while the remaining repository
-  methods are read-only and explicitly owned by M4.6
-- existing Editor behavior remains green through production routes; fixture
-  and focused adapter tests are supporting evidence, not acceptance substitutes
-
-There is no open architecture decision for an implementation worker. A third
-productive full-record write consumer, a compound change requiring cross-map
-adapter-invented authored facts, or an inability to validate every map before
-the first write is an M4.5 planning blocker and must return to this contract.
+There is no open architecture decision for an implementation worker. Discovery
+that a command invariant cannot be expressed as bounded chunks, stable refs,
+dependencies, or typed reverse-reference discovery is an M4.6 planning blocker;
+it is not permission to restore a whole-map loader.
 
 ## M0: Target Lock And Baseline
 

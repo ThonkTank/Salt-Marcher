@@ -3,11 +3,10 @@ package features.dungeon.adapter.sqlite.gateway;
 import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.List;
+import features.dungeon.application.authored.port.DungeonIdentityKind;
 import platform.persistence.SqliteSchemaColumnSupport;
 
 final class DungeonSqliteSchemaManager {
@@ -15,6 +14,7 @@ final class DungeonSqliteSchemaManager {
     static final int CANONICAL_SCHEMA_VERSION = 6;
 
     private static final List<String> REPLACED_DUNGEON_TABLES = List.of(
+            DungeonPersistenceSchema.IDENTITY_SEQUENCES_TABLE,
             DungeonPersistenceSchema.CORRIDOR_ROUTE_CELLS_TABLE,
             DungeonPersistenceSchema.CORRIDOR_ROUTE_DEPENDENCIES_TABLE,
             DungeonPersistenceSchema.ENTITY_CHUNKS_TABLE,
@@ -45,6 +45,21 @@ final class DungeonSqliteSchemaManager {
         createCanonicalSchema(connection);
     }
 
+    static void ensureIdentitySequences(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_IDENTITY_SEQUENCES_TABLE_SQL);
+        }
+        try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT OR IGNORE INTO " + DungeonPersistenceSchema.IDENTITY_SEQUENCES_TABLE
+                        + "(identity_kind, next_id) VALUES(?,1)")) {
+            for (DungeonIdentityKind kind : DungeonIdentityKind.values()) {
+                statement.setString(1, kind.name());
+                statement.addBatch();
+            }
+            statement.executeBatch();
+        }
+    }
+
     void replaceWithCanonicalSchema(Connection connection) throws SQLException {
         discardDungeonRows(connection);
         dropReplacedDungeonTables(connection);
@@ -70,29 +85,10 @@ final class DungeonSqliteSchemaManager {
             statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_CORRIDOR_ROUTE_CELLS_LOOKUP_INDEX_SQL);
             statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_ROOMS_CLUSTER_LOOKUP_INDEX_SQL);
         }
-        rebuildDerivedSpatialIndexes(connection);
     }
 
     void addCorridorRouteDependencyIndex(Connection connection) throws SQLException {
         replaceWithCanonicalSchema(connection);
-    }
-
-    private static void rebuildDerivedSpatialIndexes(Connection connection) throws SQLException {
-        List<Long> mapIds = new ArrayList<>();
-        try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT dungeon_map_id FROM " + DungeonPersistenceSchema.MAPS_TABLE
-                        + " ORDER BY dungeon_map_id");
-             ResultSet rows = statement.executeQuery()) {
-            while (rows.next()) {
-                mapIds.add(rows.getLong("dungeon_map_id"));
-            }
-        }
-        for (long mapId : mapIds) {
-            DungeonSqliteChunkWriter.replaceChunkInventory(
-                    connection,
-                    DungeonSqliteConnectionSupport.findMap(connection, mapId)
-                            .orElseThrow(() -> new SQLException("Missing Dungeon map during v5 index rebuild: " + mapId)));
-        }
     }
 
     private static void discardDungeonRows(Connection connection) throws SQLException {
@@ -121,5 +117,6 @@ final class DungeonSqliteSchemaManager {
                 statement.execute(createIndexSql);
             }
         }
+        ensureIdentitySequences(connection);
     }
 }

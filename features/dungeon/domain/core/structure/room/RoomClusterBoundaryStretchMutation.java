@@ -26,7 +26,31 @@ public final class RoomClusterBoundaryStretchMutation {
             List<Edge> sourceEdges,
             int deltaQ,
             int deltaR,
-            int deltaLevel
+            int deltaLevel,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
+    ) {
+        return moveBoundaryStretch(
+                topology,
+                rooms,
+                corridors,
+                clusterId,
+                sourceEdges,
+                deltaQ,
+                deltaR,
+                deltaLevel,
+                new RoomMutationIdCursor(ids));
+    }
+
+    Optional<RebuildResult> moveBoundaryStretch(
+            SpatialTopology topology,
+            RoomCatalog rooms,
+            List<Corridor> corridors,
+            long clusterId,
+            List<Edge> sourceEdges,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel,
+            RoomMutationIdCursor ids
     ) {
         if (invalidStretchRequest(clusterId, sourceEdges)) {
             return Optional.empty();
@@ -45,7 +69,7 @@ public final class RoomClusterBoundaryStretchMutation {
         if (mutation.isEmpty()) {
             return Optional.empty();
         }
-        return rebuiltStretch(topology, rooms, clusters, target.get(), mutation.get());
+        return rebuiltStretch(topology, clusters, target.get(), mutation.get(), ids);
     }
 
     private Optional<StretchMutationResult> applyStretchMutation(
@@ -61,12 +85,11 @@ public final class RoomClusterBoundaryStretchMutation {
 
     private Optional<RebuildResult> rebuiltStretch(
             SpatialTopology topology,
-            RoomCatalog roomCatalog,
             List<DungeonRoomTopologyClusterWork> clusters,
             DungeonRoomTopologyClusterWork target,
-            StretchMutationResult mutation
+            StretchMutationResult mutation,
+            RoomMutationIdCursor ids
     ) {
-        RoomTopologyWorkCatalog.IdAllocation ids = WORK_CATALOG.newIdAllocation(topology, roomCatalog);
         return ROOM_MUTATION.stretchCluster(
                 topology,
                 clusters,

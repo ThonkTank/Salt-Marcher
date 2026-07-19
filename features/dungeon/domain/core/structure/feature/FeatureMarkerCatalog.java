@@ -66,11 +66,4 @@ public record FeatureMarkerCatalog(
         return List.copyOf(result);
     }
 
-    public long nextMarkerId() {
-        long highest = 0L;
-        for (FeatureMarker marker : markers) {
-            highest = Math.max(highest, marker.markerId());
-        }
-        return highest + 1L;
-    }
 }

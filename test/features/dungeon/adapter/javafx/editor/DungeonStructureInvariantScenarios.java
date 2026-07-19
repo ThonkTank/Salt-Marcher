@@ -41,6 +41,7 @@ import features.dungeon.domain.core.structure.room.RoomClusterWallMap;
 import features.dungeon.domain.core.structure.room.RoomClusterWallRun;
 import features.dungeon.domain.core.structure.room.RoomClusterWallRunSource;
 import features.dungeon.domain.core.structure.room.RoomClusterWork;
+import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;
 import features.dungeon.domain.core.structure.stair.Stair;
 import features.dungeon.domain.core.structure.stair.StairCollection;
 import features.dungeon.domain.core.structure.stair.StairGeometrySpec;
@@ -210,6 +211,7 @@ final class DungeonStructureInvariantScenarios {
                         9L,
                         new Cell(3, 2, 0),
                         0L,
+                        1L,
                         hostCells);
         assertTrue(createdAnchor != null, "corridor anchor endpoint creates host anchor");
         createdAnchor = Objects.requireNonNull(createdAnchor);
@@ -225,6 +227,7 @@ final class DungeonStructureInvariantScenarios {
                         9L,
                         new Cell(4, 4, 0),
                         1L,
+                        2L,
                         hostCells);
         assertTrue(reusedById != null, "corridor anchor endpoint reuses preferred anchor id");
         reusedById = Objects.requireNonNull(reusedById);
@@ -237,6 +240,7 @@ final class DungeonStructureInvariantScenarios {
                         9L,
                         new Cell(2, 2, 0),
                         0L,
+                        3L,
                         hostCells);
         assertTrue(reusedByPosition != null, "corridor anchor endpoint reuses snapped position");
         reusedByPosition = Objects.requireNonNull(reusedByPosition);
@@ -558,7 +562,7 @@ final class DungeonStructureInvariantScenarios {
         List<RoomRegion> rooms = RoomClusterRoomPartition.roomsForBoundaryEdit(
                 work,
                 Map.of(0, List.of(split)),
-                20L);
+                new RoomTopologyWorkCatalog.ReservedIdentities(100L, 1, 20L, 2));
         assertEquals(List.of(7L, 20L), roomIds(rooms), "core room partition reuses anchor room and reserves split room");
         assertEquals(Map.of(0, left), rooms.getFirst().floorAnchors(),
                 "core room partition preserves existing room anchor");
@@ -771,7 +775,8 @@ final class DungeonStructureInvariantScenarios {
                 straightSpec.generatedExits(List.of(
                         new StairExit(11L, new Cell(0, 0, 0), "old"),
                         new StairExit(12L, new Cell(9, 9, 1), "old"),
-                        new StairExit(13L, new Cell(9, 9, 2), "old"))),
+                        new StairExit(13L, new Cell(9, 9, 2), "old")),
+                        List.of(21L, 22L, 23L)),
                 "core stair generated exits preserve existing ids by level offset");
         assertFalse(straightSpec.avoidsRoomInteriors(Set.of(new Cell(1, 0, 0))),
                 "core stair rejects path through room interior");
@@ -782,7 +787,7 @@ final class DungeonStructureInvariantScenarios {
                         .dimension1(),
                 "core stair circular dimension normalizes to odd value");
 
-        Stair stair = Stair.authored(8L, 2L, straightSpec);
+        Stair stair = Stair.authored(8L, 2L, straightSpec, List.of(31L, 32L, 33L));
         assertTrue(stair.isReadable(), "core stair with generated exits is readable");
         assertEquals(Set.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0),
                         new Cell(1, 0, 1), new Cell(2, 0, 2)),
@@ -792,7 +797,8 @@ final class DungeonStructureInvariantScenarios {
                 stair.withMovedHandle(1, 1, 1, 0).path().get(1),
                 "core stair handle movement updates path cell");
         Stair recomputed = stair.withRecomputedGeometry(
-                new StairGeometrySpec(StairShape.SQUARE, new Cell(4, 4, 0), Direction.SOUTH, 2, 1));
+                new StairGeometrySpec(StairShape.SQUARE, new Cell(4, 4, 0), Direction.SOUTH, 2, 1),
+                List.of(41L, 42L));
         assertEquals(StairShape.SQUARE, recomputed.shape(), "core stair recompute replaces shape");
         assertEquals(8L, recomputed.stairId(), "core stair recompute preserves stair id");
         assertEquals(2L, recomputed.mapId(), "core stair recompute preserves map id");
@@ -806,12 +812,13 @@ final class DungeonStructureInvariantScenarios {
                 2L,
                 30L,
                 List.of(new Cell(0, 0, 0), new Cell(0, 1, 0)),
-                new Cell(0, 1, 2));
+                new Cell(0, 1, 2),
+                List.of(51L, 52L, 53L));
         assertEquals(30L, corridorBound.corridorId(), "stair keeps corridor binding");
         assertEquals(List.of(
-                        new StairExit(0L, new Cell(0, 0, 0), ""),
-                        new StairExit(0L, new Cell(0, 1, 1), ""),
-                        new StairExit(0L, new Cell(0, 1, 2), "")),
+                        new StairExit(51L, new Cell(0, 0, 0), ""),
+                        new StairExit(52L, new Cell(0, 1, 1), ""),
+                        new StairExit(53L, new Cell(0, 1, 2), "")),
                 corridorBound.exits(),
                 "core stair corridor-bound construction creates level-spanning exits");
     }

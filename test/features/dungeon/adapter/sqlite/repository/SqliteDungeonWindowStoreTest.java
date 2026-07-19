@@ -8,32 +8,44 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSeeder;
 import features.dungeon.adapter.sqlite.gateway.DungeonSqliteWindowGateway;
-import features.dungeon.adapter.sqlite.model.DungeonClusterBoundaryRecord;
-import features.dungeon.adapter.sqlite.model.DungeonCorridorAnchorBindingRecord;
-import features.dungeon.adapter.sqlite.model.DungeonCorridorAnchorRefRecord;
-import features.dungeon.adapter.sqlite.model.DungeonCorridorRecord;
-import features.dungeon.adapter.sqlite.model.DungeonCorridorWaypointRecord;
-import features.dungeon.adapter.sqlite.model.DungeonFeatureMarkerRecord;
-import features.dungeon.adapter.sqlite.model.DungeonGridBoundsRecord;
-import features.dungeon.adapter.sqlite.model.DungeonMapRecord;
 import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
-import features.dungeon.adapter.sqlite.model.DungeonRoomCellRecord;
-import features.dungeon.adapter.sqlite.model.DungeonRoomClusterRecord;
-import features.dungeon.adapter.sqlite.model.DungeonRoomRecord;
-import features.dungeon.adapter.sqlite.model.DungeonStairExitRecord;
-import features.dungeon.adapter.sqlite.model.DungeonStairPathNodeRecord;
-import features.dungeon.adapter.sqlite.model.DungeonStairRecord;
-import features.dungeon.adapter.sqlite.model.DungeonTransitionRecord;
+import features.dungeon.application.authored.command.CorridorChange;
+import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.command.DungeonPatchEntityRef;
+import features.dungeon.application.authored.command.DungeonPatchResultFacts;
+import features.dungeon.application.authored.command.FeatureMarkerChange;
+import features.dungeon.application.authored.command.RoomClusterChange;
+import features.dungeon.application.authored.command.RoomRegionChange;
+import features.dungeon.application.authored.command.StairChange;
+import features.dungeon.application.authored.command.TransitionChange;
 import features.dungeon.application.authored.port.DungeonIdentityClosureRequest;
 import features.dungeon.application.authored.port.DungeonIdentityClosureResult;
 import features.dungeon.application.authored.port.DungeonWindow;
 import features.dungeon.application.authored.port.DungeonWindowEntityFragment;
 import features.dungeon.application.authored.port.DungeonWindowRequest;
 import features.dungeon.api.DungeonChunkKey;
+import features.dungeon.domain.core.component.CorridorAnchor;
+import features.dungeon.domain.core.component.CorridorAnchorRef;
+import features.dungeon.domain.core.component.CorridorWaypoint;
+import features.dungeon.domain.core.component.StairExit;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
+import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
+import features.dungeon.domain.core.structure.corridor.Corridor;
+import features.dungeon.domain.core.structure.corridor.CorridorBindings;
+import features.dungeon.domain.core.structure.feature.FeatureMarker;
+import features.dungeon.domain.core.structure.feature.FeatureMarkerKind;
+import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
+import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
+import features.dungeon.domain.core.structure.room.RoomCluster;
+import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.stair.Stair;
+import features.dungeon.domain.core.structure.stair.StairShape;
+import features.dungeon.domain.core.structure.transition.Transition;
+import features.dungeon.domain.core.structure.transition.TransitionAnchor;
+import features.dungeon.domain.core.structure.transition.TransitionDestination;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -43,6 +55,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import platform.diagnostics.NoopDiagnostics;
@@ -213,10 +227,7 @@ final class SqliteDungeonWindowStoreTest {
         try (SqliteDatabase ignored = savedGraphDatabase(path, 1)) {
             // Persist a populated canonical graph with its pre-upgrade derived chunk inventory.
         }
-        try (Connection connection = open(path); Statement statement = connection.createStatement()) {
-            statement.execute("DROP TABLE dungeon_corridor_route_cells");
-            statement.executeUpdate("UPDATE sm_schema_versions SET version=4 WHERE owner='dungeon'");
-        }
+        corruptPreDependencySchemaVersion(path);
 
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
             assertTrue(new SqliteDungeonWindowStore(database).loadWindow(new DungeonWindowRequest(
@@ -239,30 +250,17 @@ final class SqliteDungeonWindowStoreTest {
     void selfReferencedAnchorOnlyCorridorPublishesItsCanonicalBodyCell(@TempDir Path tempDir) throws Exception {
         Path path = tempDir.resolve("anchor-only-corridor.db");
         long corridorId = 701L;
-        long topologyId = 9_701L;
-        DungeonCorridorRecord corridor = new DungeonCorridorRecord(
-                corridorId,
-                MAP_ID,
-                0,
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of(new DungeonCorridorAnchorBindingRecord(
-                        corridorId, 1L, corridorId, 6, 5, 0, topologyId)),
-                List.of(new DungeonCorridorAnchorRefRecord(corridorId, corridorId, topologyId)));
+        long anchorId = 9_701L;
+        Corridor corridor = new Corridor(corridorId, MAP_ID, 0, List.of(), new CorridorBindings(
+                List.of(), List.of(),
+                List.of(new CorridorAnchor(anchorId, corridorId, new Cell(6, 5, 0))),
+                List.of(new CorridorAnchorRef(corridorId, anchorId))));
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            DungeonSqliteFixtureSeeder.seed(database, List.of(new DungeonMapRecord(
-                    MAP_ID,
-                    "Anchor-only corridor",
-                    REVISION,
-                    DungeonGridBoundsRecord.defaultGrid(),
-                    List.of(),
-                    List.of(),
-                    List.of(),
-                    List.of(corridor),
-                    List.of(),
-                    List.of(),
-                    List.of())));
+            DungeonSqliteFixtureSeeder.insertHeader(database, MAP_ID, "Anchor-only corridor", REVISION - 1L);
+            DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(
+                    new DungeonMapIdentity(MAP_ID),
+                    REVISION - 1L,
+                    List.of(new CorridorChange(null, corridor, Set.of(key(0, 0, 0))))));
             DungeonWindow window = new SqliteDungeonWindowStore(database).loadWindow(new DungeonWindowRequest(
                     new DungeonMapIdentity(MAP_ID), 20L, List.of(key(0, 0, 0))))
                     .orElseThrow();
@@ -300,7 +298,7 @@ final class SqliteDungeonWindowStoreTest {
 
         Path path = tempDir.resolve("bounded-large-off-window.db");
         try (SqliteDatabase database = savedGraphDatabase(path, 1)) {
-            insertLargeOffWindowRoomPopulation(path, 4_096);
+            insertLargeOffWindowRoomPopulation(database, 4_096);
             DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(database);
             DungeonWindow window = gateway.loadWindow(request).orElseThrow();
             DungeonWindowEntityFragment.Corridor corridor = fragment(
@@ -468,11 +466,10 @@ final class SqliteDungeonWindowStoreTest {
     void stairWindowValidatesGlobalRequiredFactsWhileKeepingOffWindowFactsClipped(@TempDir Path tempDir) {
         Path path = tempDir.resolve("window-stair-off-window-facts.db");
         try (SqliteDatabase database = savedDatabase(path)) {
-            try (Connection connection = open(path); Statement statement = connection.createStatement()) {
-                statement.executeUpdate("UPDATE dungeon_stairs SET corridor_id=302 WHERE stair_id=401");
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to bind valid same-map stair fixture.", exception);
-            }
+            DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(
+                    new DungeonMapIdentity(MAP_ID),
+                    REVISION,
+                    List.of(new StairChange(windowStair(null), windowStair(302L)))));
             SqliteDungeonWindowStore store = new SqliteDungeonWindowStore(database);
             DungeonWindowEntityFragment.Stair stair = fragment(
                     store.loadWindow(stairWindow()).orElseThrow(),
@@ -491,7 +488,10 @@ final class SqliteDungeonWindowStoreTest {
             assertTrue(stair.exits().stream().noneMatch(exit -> exit.cell().level() == 2));
             assertInstanceOf(
                     DungeonIdentityClosureResult.Complete.class,
-                    store.loadIdentityClosure(stairClosure()));
+                    store.loadIdentityClosure(new DungeonIdentityClosureRequest(
+                            new DungeonMapIdentity(MAP_ID),
+                            REVISION + 1L,
+                            List.of(DungeonPatchEntityRef.stair(401L)))));
         }
     }
 
@@ -501,14 +501,13 @@ final class SqliteDungeonWindowStoreTest {
         assertStairBindingRejected(
                 tempDir.resolve("stair-dangling-corridor.db"),
                 true,
+                false,
                 List.of("UPDATE dungeon_stairs SET corridor_id=9999 WHERE stair_id=401"));
         assertStairBindingRejected(
                 tempDir.resolve("stair-cross-map-corridor.db"),
                 false,
-                List.of(
-                        "INSERT INTO dungeon_maps(dungeon_map_id,name,revision) VALUES(78,'Other map',1)",
-                        "INSERT INTO dungeon_corridors(corridor_id,dungeon_map_id,level_z) VALUES(9999,78,0)",
-                        "UPDATE dungeon_stairs SET corridor_id=9999 WHERE stair_id=401"));
+                true,
+                List.of("UPDATE dungeon_stairs SET corridor_id=9999 WHERE stair_id=401"));
     }
 
     @Test
@@ -591,23 +590,23 @@ final class SqliteDungeonWindowStoreTest {
         assertTransitionLinkedIdAccepted(tempDir.resolve("transition-linked-positive.db"), 502L);
     }
 
-    private static void assertWindowRejected(Path path, String mutation) throws Exception {
+    private static void assertWindowRejected(Path path, String corruptionSql) throws Exception {
         assertWindowRejected(
                 path,
                 new DungeonWindowRequest(
                         new DungeonMapIdentity(MAP_ID), 1L, List.of(key(0, -1, -1))),
-                mutation);
+                corruptionSql);
     }
 
     private static void assertWindowRejected(
             Path path,
             DungeonWindowRequest request,
-            String mutation
+            String corruptionSql
     ) throws Exception {
         try (SqliteDatabase database = savedDatabase(path);
              Connection connection = open(path);
              Statement statement = connection.createStatement()) {
-            statement.executeUpdate(mutation);
+            applyTargetedCorruption(statement, corruptionSql);
             SqliteDungeonWindowStore store = new SqliteDungeonWindowStore(database);
             assertThrows(RuntimeException.class, () -> store.loadWindow(request));
         }
@@ -617,12 +616,12 @@ final class SqliteDungeonWindowStoreTest {
             Path path,
             DungeonIdentityClosureRequest request,
             DungeonIdentityClosureResult.Reason expected,
-            String mutation
+            String corruptionSql
     ) throws Exception {
         try (SqliteDatabase database = savedDatabase(path)) {
-            if (mutation != null) {
+            if (corruptionSql != null) {
                 try (Connection connection = open(path); Statement statement = connection.createStatement()) {
-                    statement.executeUpdate(mutation);
+                    applyTargetedCorruption(statement, corruptionSql);
                 }
             }
             DungeonIdentityClosureResult result = new SqliteDungeonWindowStore(database)
@@ -638,27 +637,27 @@ final class SqliteDungeonWindowStoreTest {
     private static void assertStairBindingRejected(
             Path path,
             boolean removeCorridorForeignKey,
-            List<String> mutations
+            boolean seedOtherMapCorridor,
+            List<String> corruptionSql
     ) throws Exception {
-        try (SqliteDatabase database = savedDatabase(path);
-             Connection connection = open(path);
-             Statement statement = connection.createStatement()) {
-            if (removeCorridorForeignKey) {
-                statement.execute("PRAGMA foreign_keys=OFF");
-                statement.execute("CREATE TABLE dungeon_stairs_without_corridor_fk ("
-                        + "stair_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                        + "dungeon_map_id INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
-                        + "name TEXT, shape TEXT NOT NULL DEFAULT 'LADDER',"
-                        + "direction INTEGER NOT NULL DEFAULT 0, dimension1 INTEGER NOT NULL DEFAULT 0,"
-                        + "dimension2 INTEGER NOT NULL DEFAULT 0, corridor_id INTEGER)");
-                statement.executeUpdate("INSERT INTO dungeon_stairs_without_corridor_fk"
-                        + " SELECT * FROM dungeon_stairs");
-                statement.execute("DROP TABLE dungeon_stairs");
-                statement.execute("ALTER TABLE dungeon_stairs_without_corridor_fk RENAME TO dungeon_stairs");
-                statement.execute("PRAGMA foreign_keys=ON");
+        try (SqliteDatabase database = savedDatabase(path)) {
+            if (seedOtherMapCorridor) {
+                DungeonSqliteFixtureSeeder.insertHeader(database, 78L, "Other map", 1L);
+                DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(
+                        new DungeonMapIdentity(78L),
+                        1L,
+                        List.of(new CorridorChange(
+                                null,
+                                new Corridor(9999L, 78L, 0, List.of(), CorridorBindings.empty()),
+                                Set.of()))));
             }
-            for (String mutation : mutations) {
-                statement.executeUpdate(mutation);
+            try (Connection connection = open(path); Statement statement = connection.createStatement()) {
+                if (removeCorridorForeignKey) {
+                    removeStairCorridorForeignKeyForCorruption(statement);
+                }
+                for (String statementSql : corruptionSql) {
+                    applyTargetedCorruption(statement, statementSql);
+                }
             }
             SqliteDungeonWindowStore store = new SqliteDungeonWindowStore(database);
             assertThrows(RuntimeException.class, () -> store.loadWindow(stairWindow()));
@@ -673,21 +672,10 @@ final class SqliteDungeonWindowStoreTest {
         try (SqliteDatabase database = savedDatabase(path);
              Connection connection = open(path);
              Statement statement = connection.createStatement()) {
-            statement.execute("PRAGMA foreign_keys=OFF");
-            statement.execute("CREATE TABLE dungeon_transitions_without_linked_fk ("
-                    + "transition_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                    + "dungeon_map_id INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
-                    + "description TEXT, cell_x INTEGER, cell_y INTEGER, level_z INTEGER,"
-                    + "anchor_type TEXT, anchor_edge_direction TEXT, destination_type TEXT NOT NULL,"
-                    + "target_overworld_map_id INTEGER, target_overworld_tile_id INTEGER,"
-                    + "target_dungeon_map_id INTEGER, target_transition_id INTEGER, linked_transition_id INTEGER)");
-            statement.executeUpdate("INSERT INTO dungeon_transitions_without_linked_fk"
-                    + " SELECT * FROM dungeon_transitions");
-            statement.execute("DROP TABLE dungeon_transitions");
-            statement.execute("ALTER TABLE dungeon_transitions_without_linked_fk RENAME TO dungeon_transitions");
-            statement.execute("PRAGMA foreign_keys=ON");
-            statement.executeUpdate("UPDATE dungeon_transitions SET linked_transition_id=" + linkedTransitionId
-                    + " WHERE transition_id=501");
+            removeTransitionLinkedIdForeignKeyForCorruption(statement);
+            applyTargetedCorruption(statement,
+                    "UPDATE dungeon_transitions SET linked_transition_id=" + linkedTransitionId
+                            + " WHERE transition_id=501");
 
             SqliteDungeonWindowStore store = new SqliteDungeonWindowStore(database);
             assertThrows(RuntimeException.class, () -> store.loadWindow(transitionWindow()));
@@ -701,14 +689,18 @@ final class SqliteDungeonWindowStoreTest {
     private static void assertTransitionLinkedIdAccepted(Path path, Long linkedTransitionId) throws Exception {
         try (SqliteDatabase database = savedDatabase(path)) {
             if (linkedTransitionId != null) {
-                try (Connection connection = open(path); Statement statement = connection.createStatement()) {
-                    statement.executeUpdate("INSERT INTO dungeon_transitions("
-                            + "transition_id,dungeon_map_id,description,cell_x,cell_y,level_z,"
-                            + "anchor_type,destination_type)"
-                            + " VALUES(502,77,'Linked transition',1,1,0,'CELL','UNLINKED_ENTRANCE')");
-                    statement.executeUpdate("UPDATE dungeon_transitions SET linked_transition_id=502"
-                            + " WHERE transition_id=501");
-                }
+                Transition target = new Transition(
+                        502L, MAP_ID, "Linked transition", TransitionAnchor.cell(new Cell(1, 1, 0)),
+                        TransitionDestination.unlinkedEntrance(), null);
+                DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(
+                        new DungeonMapIdentity(MAP_ID),
+                        REVISION,
+                        List.of(new TransitionChange(null, target))));
+                Transition before = windowTransition(null);
+                DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(
+                        new DungeonMapIdentity(MAP_ID),
+                        REVISION + 1L,
+                        List.of(new TransitionChange(before, windowTransition(linkedTransitionId)))));
             }
             SqliteDungeonWindowStore store = new SqliteDungeonWindowStore(database);
             DungeonWindowEntityFragment.Transition transition = fragment(
@@ -718,8 +710,21 @@ final class SqliteDungeonWindowStoreTest {
             assertEquals(linkedTransitionId, transition.linkedTransitionId());
             assertInstanceOf(
                     DungeonIdentityClosureResult.Complete.class,
-                    store.loadIdentityClosure(transitionClosure()));
+                    store.loadIdentityClosure(new DungeonIdentityClosureRequest(
+                            new DungeonMapIdentity(MAP_ID),
+                            linkedTransitionId == null ? REVISION : REVISION + 2L,
+                            List.of(DungeonPatchEntityRef.transition(501L)))));
         }
+    }
+
+    private static Transition windowTransition(Long linkedTransitionId) {
+        return new Transition(
+                501L,
+                MAP_ID,
+                "Window transition",
+                TransitionAnchor.cell(new Cell(-1, -1, 0)),
+                TransitionDestination.unlinkedEntrance(),
+                linkedTransitionId);
     }
 
     private static SqliteDatabase savedDatabase(Path path) {
@@ -728,108 +733,94 @@ final class SqliteDungeonWindowStoreTest {
 
     private static SqliteDatabase savedDatabase(Path path, int markerCount) {
         SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE);
-        DungeonSqliteFixtureSeeder.seed(database, List.of(authoredMap(markerCount, 1)));
+        seedAuthoredMap(database, markerCount, 1);
         return database;
     }
 
     private static SqliteDatabase savedGraphDatabase(Path path, int corridorCount) {
         SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE);
-        DungeonSqliteFixtureSeeder.seed(database, List.of(authoredMap(1, corridorCount)));
+        seedAuthoredMap(database, 1, corridorCount);
         return database;
     }
 
-    private static DungeonMapRecord authoredMap() {
-        return authoredMap(1);
-    }
-
-    private static DungeonMapRecord authoredMap(int markerCount) {
-        return authoredMap(markerCount, 1);
-    }
-
-    private static DungeonMapRecord authoredMap(int markerCount, int corridorCount) {
-        DungeonRoomRecord room = new DungeonRoomRecord(
-                101L,
-                MAP_ID,
-                201L,
-                "Window room",
-                "",
+    private static void seedAuthoredMap(SqliteDatabase database, int markerCount, int corridorCount) {
+        RoomRegion room = new RoomRegion(
+                101L, MAP_ID, 201L, "Window room",
+                Set.of(new Cell(-64, -64, 0), new Cell(10, 10, 0), new Cell(64, 0, 0)),
+                DungeonRoomNarration.empty());
+        RoomCluster cluster = RoomCluster.authored(
+                201L, MAP_ID, "Window cluster", new Cell(-64, -64, 0), Map.of(
+                        0, List.of(new DungeonClusterBoundary(
+                                201L,
+                                0,
+                                new Cell(0, 0, 0),
+                                Direction.NORTH,
+                                BoundaryKind.WALL,
+                                DungeonTopologyRef.wall(7001L)))));
+        Corridor host = new Corridor(301L, MAP_ID, 0, List.of(), new CorridorBindings(
+                List.of(), List.of(),
                 List.of(
-                        new DungeonRoomCellRecord(101L, 0, -64, -64),
-                        new DungeonRoomCellRecord(101L, 0, 10, 10),
-                        new DungeonRoomCellRecord(101L, 0, 64, 0)),
-                List.of());
-        DungeonRoomClusterRecord cluster = new DungeonRoomClusterRecord(
-                201L,
-                MAP_ID,
-                "Window cluster",
-                -64,
-                -64,
-                0,
-                List.of(new DungeonClusterBoundaryRecord(201L, 0, -64, -64, "NORTH", "WALL", 7001L)));
-        DungeonCorridorRecord host = new DungeonCorridorRecord(
-                301L,
-                MAP_ID,
-                0,
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of(
-                        new DungeonCorridorAnchorBindingRecord(301L, 1L, 301L, -1, -1, 0, 9001L),
-                        new DungeonCorridorAnchorBindingRecord(301L, 2L, 301L, 130, 0, 0, 9002L)),
-                List.of());
-        List<DungeonCorridorRecord> corridors = new ArrayList<>();
+                        new CorridorAnchor(9001L, 301L, new Cell(-1, -1, 0)),
+                        new CorridorAnchor(9002L, 301L, new Cell(130, 0, 0))),
+                List.of()));
+        List<Corridor> corridors = new ArrayList<>();
         corridors.add(host);
         for (int index = 0; index < corridorCount; index++) {
             long corridorId = 302L + index;
-            corridors.add(new DungeonCorridorRecord(
-                    corridorId,
-                    MAP_ID,
-                    0,
-                    List.of(),
-                    List.of(new DungeonCorridorWaypointRecord(corridorId, 201L, 128, 63, 0)),
-                    List.of(),
-                    List.of(),
-                    List.of(
-                            new DungeonCorridorAnchorRefRecord(corridorId, 301L, 9001L),
-                            new DungeonCorridorAnchorRefRecord(corridorId, 301L, 9002L))));
+            corridors.add(new Corridor(corridorId, MAP_ID, 0, List.of(), new CorridorBindings(
+                    List.of(new CorridorWaypoint(201L, new Cell(128, 63, 0), 0)),
+                    List.of(), List.of(),
+                    List.of(new CorridorAnchorRef(301L, 9001L), new CorridorAnchorRef(301L, 9002L)))));
         }
-        DungeonStairRecord stair = new DungeonStairRecord(
-                401L,
-                MAP_ID,
-                "Window stair",
-                "STRAIGHT",
-                0,
-                2,
-                1,
-                null,
-                List.of(
-                        new DungeonStairPathNodeRecord(401L, 0, 64, 1),
-                        new DungeonStairPathNodeRecord(401L, 0, 64, 2)),
-                List.of(
-                        new DungeonStairExitRecord(401L, 410L, 0, 64, 1, "Lower"),
-                        new DungeonStairExitRecord(401L, 411L, 0, 64, 2, "Upper")));
-        DungeonTransitionRecord transition = new DungeonTransitionRecord(
-                501L, MAP_ID, "Window transition", -1, -1, 0, "CELL", null,
-                "UNLINKED_ENTRANCE", null, null, null, null, null);
-        List<DungeonFeatureMarkerRecord> markers = new ArrayList<>();
+        Stair stair = windowStair(null);
+
+        Transition transition = windowTransition(null);
+        List<FeatureMarker> markers = new ArrayList<>();
         for (int index = 0; index < markerCount; index++) {
             long markerId = 601L + index;
-            markers.add(new DungeonFeatureMarkerRecord(
-                    markerId, MAP_ID, "OBJECT", 64 + index, 0, 0,
-                    "Window marker " + markerId, "Marker description " + markerId));
+            markers.add(new FeatureMarker(
+                    markerId,
+                    new DungeonMapIdentity(MAP_ID),
+                    FeatureMarkerKind.OBJECT,
+                    new Cell(64 + index, 0, 0),
+                    "Window marker " + markerId,
+                    "Marker description " + markerId));
         }
-        return new DungeonMapRecord(
-                MAP_ID,
-                "Window map",
-                REVISION,
-                DungeonGridBoundsRecord.defaultGrid(),
-                List.of(cluster),
-                List.of(room),
-                List.of(),
-                corridors,
-                List.of(stair),
-                List.of(transition),
-                markers);
+        List<features.dungeon.application.authored.command.DungeonPatchChange> changes = new ArrayList<>();
+        changes.add(new RoomClusterChange(null, cluster, Set.of()));
+        changes.add(new RoomRegionChange(null, room));
+        corridors.forEach(corridor -> changes.add(new CorridorChange(null, corridor, Set.of())));
+        changes.add(new StairChange(null, stair));
+        changes.add(new TransitionChange(null, transition));
+        markers.forEach(marker -> changes.add(new FeatureMarkerChange(null, marker)));
+        Set<DungeonChunkKey> touchedChunks = Set.of(
+                key(0, -1, -1),
+                key(0, 0, -1),
+                key(0, 1, -1),
+                key(0, 2, -1),
+                key(0, 0, 0),
+                key(0, 1, 0),
+                key(0, 2, 0),
+                key(1, 0, 1),
+                key(2, 0, 1));
+        DungeonSqliteFixtureSeeder.insertHeader(database, MAP_ID, "Window map", REVISION - 1L);
+        DungeonPatch base = DungeonPatch.of(new DungeonMapIdentity(MAP_ID), REVISION - 1L, changes);
+        DungeonSqliteFixtureSeeder.commit(database, new DungeonPatch(
+                base.mapId(),
+                base.expectedRevision(),
+                base.changes(),
+                touchedChunks,
+                new DungeonPatchResultFacts(base.resultFacts().affectedEntities()),
+                base.encodedBytes()));
+    }
+
+    private static Stair windowStair(Long corridorId) {
+        return new Stair(401L, MAP_ID, "Window stair", StairShape.STRAIGHT, Direction.NORTH, 2, 1,
+                List.of(new Cell(0, 64, 1), new Cell(0, 64, 2)),
+                List.of(
+                        new StairExit(410L, new Cell(0, 64, 1), "Lower"),
+                        new StairExit(411L, new Cell(0, 64, 2), "Upper")),
+                corridorId);
     }
 
     private static List<DungeonPatchEntityRef> allSixRefs() {
@@ -973,6 +964,7 @@ final class SqliteDungeonWindowStoreTest {
         return List.copyOf(cells);
     }
 
+    // Raw authored writes below deliberately damage an already valid UoW-seeded fixture.
     private static void insertUnindexedMalformedTransition(Path path) throws SQLException {
         try (Connection connection = open(path);
              PreparedStatement statement = connection.prepareStatement(
@@ -987,24 +979,68 @@ final class SqliteDungeonWindowStoreTest {
         }
     }
 
-    private static void insertLargeOffWindowRoomPopulation(Path path, int cellCount) throws SQLException {
+    private static void corruptPreDependencySchemaVersion(Path path) throws SQLException {
         try (Connection connection = open(path); Statement statement = connection.createStatement()) {
-            statement.executeUpdate(
-                    "INSERT INTO dungeon_room_clusters(cluster_id,dungeon_map_id,name)"
-                            + " VALUES(999,77,'Off-window cluster')");
-            statement.executeUpdate(
-                    "INSERT INTO dungeon_rooms(room_id,dungeon_map_id,cluster_id,name,visual_description)"
-                            + " VALUES(999,77,999,'Off-window room','')");
-            try (PreparedStatement insert = connection.prepareStatement(
-                    "INSERT INTO dungeon_room_cells(room_id,level_z,cell_x,cell_y) VALUES(999,0,?,?)")) {
-                for (int index = 0; index < cellCount; index++) {
-                    insert.setInt(1, 10_000 + index);
-                    insert.setInt(2, 10_000);
-                    insert.addBatch();
-                }
-                insert.executeBatch();
-            }
+            statement.execute("DROP TABLE dungeon_corridor_route_cells");
+            applyTargetedCorruption(
+                    statement,
+                    "UPDATE sm_schema_versions SET version=4 WHERE owner='dungeon'");
         }
+    }
+
+    private static void removeStairCorridorForeignKeyForCorruption(Statement statement) throws SQLException {
+        statement.execute("PRAGMA foreign_keys=OFF");
+        statement.execute("CREATE TABLE dungeon_stairs_without_corridor_fk ("
+                + "stair_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "dungeon_map_id INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                + "name TEXT, shape TEXT NOT NULL DEFAULT 'LADDER',"
+                + "direction INTEGER NOT NULL DEFAULT 0, dimension1 INTEGER NOT NULL DEFAULT 0,"
+                + "dimension2 INTEGER NOT NULL DEFAULT 0, corridor_id INTEGER)");
+        statement.executeUpdate("INSERT INTO dungeon_stairs_without_corridor_fk SELECT * FROM dungeon_stairs");
+        statement.execute("DROP TABLE dungeon_stairs");
+        statement.execute("ALTER TABLE dungeon_stairs_without_corridor_fk RENAME TO dungeon_stairs");
+        statement.execute("PRAGMA foreign_keys=ON");
+    }
+
+    private static void removeTransitionLinkedIdForeignKeyForCorruption(Statement statement) throws SQLException {
+        statement.execute("PRAGMA foreign_keys=OFF");
+        statement.execute("CREATE TABLE dungeon_transitions_without_linked_fk ("
+                + "transition_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "dungeon_map_id INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                + "description TEXT, cell_x INTEGER, cell_y INTEGER, level_z INTEGER,"
+                + "anchor_type TEXT, anchor_edge_direction TEXT, destination_type TEXT NOT NULL,"
+                + "target_overworld_map_id INTEGER, target_overworld_tile_id INTEGER,"
+                + "target_dungeon_map_id INTEGER, target_transition_id INTEGER, linked_transition_id INTEGER)");
+        statement.executeUpdate("INSERT INTO dungeon_transitions_without_linked_fk SELECT * FROM dungeon_transitions");
+        statement.execute("DROP TABLE dungeon_transitions");
+        statement.execute("ALTER TABLE dungeon_transitions_without_linked_fk RENAME TO dungeon_transitions");
+        statement.execute("PRAGMA foreign_keys=ON");
+    }
+
+    private static void applyTargetedCorruption(Statement statement, String sql) throws SQLException {
+        statement.executeUpdate(sql);
+    }
+
+    private static void insertLargeOffWindowRoomPopulation(SqliteDatabase database, int cellCount) {
+        Set<Cell> cells = new java.util.LinkedHashSet<>();
+        Set<DungeonChunkKey> chunks = new java.util.LinkedHashSet<>();
+        for (int index = 0; index < cellCount; index++) {
+            Cell cell = new Cell(10_000 + index, 10_000, 0);
+            cells.add(cell);
+            chunks.add(key(0,
+                    Math.floorDiv(cell.q(), DungeonChunkKey.CHUNK_SIZE),
+                    Math.floorDiv(cell.r(), DungeonChunkKey.CHUNK_SIZE)));
+        }
+        RoomCluster cluster = RoomCluster.authored(
+                999L, MAP_ID, "Off-window cluster", new Cell(10_000, 10_000, 0), Map.of());
+        RoomRegion room = new RoomRegion(
+                999L, MAP_ID, 999L, "Off-window room", cells, DungeonRoomNarration.empty());
+        DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(
+                new DungeonMapIdentity(MAP_ID),
+                REVISION,
+                List.of(
+                        new RoomClusterChange(null, cluster, chunks),
+                        new RoomRegionChange(null, room))));
     }
 
     private static Connection open(Path path) throws SQLException {

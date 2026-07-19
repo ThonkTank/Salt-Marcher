@@ -9,17 +9,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import features.dungeon.application.authored.command.DungeonCompoundPatch;
 import features.dungeon.application.authored.command.DungeonPatch;
-import features.dungeon.application.authored.port.DungeonCatalogStore;
+import features.dungeon.application.authored.command.DungeonPatchEntityRef;
 import features.dungeon.application.authored.port.DungeonCompoundUnitOfWorkResult;
-import features.dungeon.application.authored.port.DungeonIdentityClosureRequest;
 import features.dungeon.application.authored.port.DungeonIdentityClosureResult;
-import features.dungeon.application.authored.port.DungeonMapHeader;
-import features.dungeon.application.authored.port.DungeonMapRepository;
 import features.dungeon.application.authored.port.DungeonUnitOfWork;
 import features.dungeon.application.authored.port.DungeonUnitOfWorkResult;
-import features.dungeon.application.authored.port.DungeonWindow;
-import features.dungeon.application.authored.port.DungeonWindowRequest;
-import features.dungeon.application.authored.port.DungeonWindowStore;
 import features.dungeon.application.editor.session.DungeonEditorDungeonState;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapId;
 import features.dungeon.domain.core.geometry.Cell;
@@ -31,10 +25,7 @@ import features.dungeon.domain.core.structure.transition.TransitionAnchor;
 import features.dungeon.domain.core.structure.transition.TransitionCatalog;
 import features.dungeon.domain.core.structure.transition.TransitionDestination;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import platform.execution.DirectExecutionLane;
 import platform.ui.DirectUiDispatcher;
@@ -43,11 +34,12 @@ final class DungeonCompoundUnitOfWorkApplicationTest {
 
     @Test
     void transitionLinkUndoAndRedoUseOneCompoundCommitWithoutPostCommitReads() {
-        InMemoryStore store = twoMapStore();
+        TestDungeonCommandStore store = twoMapStore();
         RecordingUnitOfWork unitOfWork = new RecordingUnitOfWork();
         DungeonEditorDungeonState state = new DungeonEditorDungeonState();
         DungeonAuthoredApplicationService service = service(store, unitOfWork);
         DungeonAuthoredApplicationService.Session session = service.openSession(state);
+        assertTrue(session.loadInitialWindow(new MapId(11L), 0));
         long initialRevision = store.revision(11L);
 
         assertTrue(session.saveAuthoredTransitionLink(new MapId(11L), 1L, 12L, 2L, true));
@@ -59,37 +51,38 @@ final class DungeonCompoundUnitOfWorkApplicationTest {
         assertEquals(initialRevision + 1L, acceptedRevision(state, 11L));
         assertTrue(service.canUndo(new MapId(11L)));
         assertTrue(service.canUndo(new MapId(12L)));
-        int readsAfterCommand = store.findByIdCalls;
+        assertEquals(unitOfWork.lastReadCountAtCommit(), store.readCount(),
+                "link publication must not read back Window or identity state");
 
         service.undo(new MapId(11L), session);
 
-        assertEquals(readsAfterCommand, store.findByIdCalls,
-                "compound undo must reuse the committed authored workset");
+        assertEquals(unitOfWork.lastReadCountAtCommit(), store.readCount(),
+                "compound undo reads declared closures before commit and performs no readback");
         assertEquals(List.of(initialRevision + 1L, initialRevision + 1L), unitOfWork.expectedRevisions(1));
         assertEquals(initialRevision + 2L, acceptedRevision(state, 11L));
         assertTrue(service.canRedo(new MapId(12L)));
 
-        service.redo(new MapId(12L), session);
+        service.redo(new MapId(11L), session);
 
-        assertEquals(readsAfterCommand, store.findByIdCalls,
-                "compound redo must reuse the committed authored workset");
+        assertEquals(unitOfWork.lastReadCountAtCommit(), store.readCount(),
+                "compound redo reads declared closures before commit and performs no readback");
         assertEquals(List.of(initialRevision + 2L, initialRevision + 2L), unitOfWork.expectedRevisions(2));
-        assertEquals(initialRevision + 3L, acceptedRevision(state, 12L));
+        assertEquals(initialRevision + 3L, acceptedRevision(state, 11L));
         assertEquals(3, unitOfWork.compoundPatches.size());
         assertEquals(0, unitOfWork.singleCommitCalls);
     }
 
     @Test
     void rejectedCompoundUndoLeavesPublicationWorksetAndSharedHistoryCurrent() {
-        InMemoryStore store = twoMapStore();
+        TestDungeonCommandStore store = twoMapStore();
         RecordingUnitOfWork unitOfWork = new RecordingUnitOfWork();
         DungeonEditorDungeonState state = new DungeonEditorDungeonState();
         DungeonAuthoredApplicationService service = service(store, unitOfWork);
         DungeonAuthoredApplicationService.Session session = service.openSession(state);
+        assertTrue(session.loadInitialWindow(new MapId(11L), 0));
         long initialRevision = store.revision(11L);
         assertTrue(session.saveAuthoredTransitionLink(new MapId(11L), 1L, 12L, 2L, true));
         var beforeRejection = state.committedFacts(new MapId(11L));
-        int readsAfterCommand = store.findByIdCalls;
 
         unitOfWork.rejectNext(12L, DungeonUnitOfWorkResult.Reason.STALE_REVISION);
         service.undo(new MapId(11L), session);
@@ -101,19 +94,17 @@ final class DungeonCompoundUnitOfWorkApplicationTest {
         assertEquals(
                 beforeRejection.committedSnapshot(),
                 state.committedFacts(new MapId(11L)).committedSnapshot());
-        assertEquals(readsAfterCommand, store.findByIdCalls);
         assertTrue(service.canUndo(new MapId(11L)));
         assertTrue(service.canUndo(new MapId(12L)));
         assertFalse(service.canRedo(new MapId(11L)));
 
         unitOfWork.failNext(new IllegalStateException("injected compound undo failure"));
-        assertThrows(IllegalStateException.class, () -> service.undo(new MapId(12L), session));
-        assertEquals(readsAfterCommand, store.findByIdCalls);
+        assertThrows(IllegalStateException.class, () -> service.undo(new MapId(11L), session));
         assertTrue(service.canUndo(new MapId(11L)));
         assertTrue(service.canUndo(new MapId(12L)));
         assertFalse(service.canRedo(new MapId(12L)));
 
-        service.undo(new MapId(12L), session);
+        service.undo(new MapId(11L), session);
 
         assertEquals(List.of(initialRevision + 1L, initialRevision + 1L), unitOfWork.expectedRevisions(1));
         assertEquals(List.of(initialRevision + 1L, initialRevision + 1L), unitOfWork.expectedRevisions(2),
@@ -126,11 +117,12 @@ final class DungeonCompoundUnitOfWorkApplicationTest {
 
     @Test
     void failedOrMismatchedTransitionCommitInstallsNeitherCandidateNorHistory() {
-        InMemoryStore store = twoMapStore();
+        TestDungeonCommandStore store = twoMapStore();
         RecordingUnitOfWork unitOfWork = new RecordingUnitOfWork();
         DungeonEditorDungeonState state = new DungeonEditorDungeonState();
         DungeonAuthoredApplicationService service = service(store, unitOfWork);
         DungeonAuthoredApplicationService.Session session = service.openSession(state);
+        assertTrue(session.loadInitialWindow(new MapId(11L), 0));
         long initialRevision = store.revision(11L);
 
         unitOfWork.failNext(new IllegalStateException("injected compound storage failure"));
@@ -163,11 +155,12 @@ final class DungeonCompoundUnitOfWorkApplicationTest {
 
     @Test
     void oneMapCompoundHistoryAlwaysUsesTheCompoundOverload() {
-        InMemoryStore store = twoMapStore();
+        TestDungeonCommandStore store = twoMapStore();
         RecordingUnitOfWork unitOfWork = new RecordingUnitOfWork();
         DungeonEditorDungeonState state = new DungeonEditorDungeonState();
         DungeonAuthoredApplicationService service = service(store, unitOfWork);
         DungeonAuthoredApplicationService.Session session = service.openSession(state);
+        assertTrue(session.loadInitialWindow(new MapId(11L), 0));
 
         assertTrue(session.saveAuthoredTransitionLink(new MapId(11L), 1L, 12L, 2L, false));
         assertEquals(1, unitOfWork.compoundPatches.getFirst().patches().size());
@@ -179,15 +172,52 @@ final class DungeonCompoundUnitOfWorkApplicationTest {
         assertEquals(0, unitOfWork.singleCommitCalls);
     }
 
+    @Test
+    void incompleteCompoundHistoryClosureCommitsNothingAndLeavesSharedHistoryCurrent() {
+        TestDungeonCommandStore store = twoMapStore();
+        RecordingUnitOfWork unitOfWork = new RecordingUnitOfWork();
+        DungeonEditorDungeonState state = new DungeonEditorDungeonState();
+        DungeonAuthoredApplicationService service = service(store, unitOfWork);
+        DungeonAuthoredApplicationService.Session session = service.openSession(state);
+        MapId sourceMapId = new MapId(11L);
+        assertTrue(session.loadInitialWindow(sourceMapId, 0));
+        assertTrue(session.saveAuthoredTransitionLink(sourceMapId, 1L, 12L, 2L, true));
+        var committedBeforeFailure = state.committedFacts(sourceMapId).committedSnapshot();
+        int commitsBeforeFailure = unitOfWork.compoundPatches.size();
+
+        store.rejectNextClosure(DungeonIdentityClosureResult.Reason.INCOMPLETE_ENTITY);
+        service.undo(sourceMapId, session);
+
+        DungeonEditorCommandOutcome.Rejected rejected = assertInstanceOf(
+                DungeonEditorCommandOutcome.Rejected.class,
+                state.committedFacts(sourceMapId).commandOutcome());
+        assertEquals(
+                DungeonEditorCommandOutcome.RejectionReason.INSUFFICIENT_LOADED_CLOSURE,
+                rejected.reason());
+        assertEquals(committedBeforeFailure, state.committedFacts(sourceMapId).committedSnapshot());
+        assertEquals(commitsBeforeFailure, unitOfWork.compoundPatches.size());
+        assertTrue(service.canUndo(sourceMapId));
+        assertTrue(service.canUndo(new MapId(12L)));
+        assertFalse(service.canRedo(sourceMapId));
+
+        service.undo(sourceMapId, session);
+
+        assertFalse(service.canUndo(sourceMapId));
+        assertTrue(service.canRedo(sourceMapId));
+        assertTrue(store.closureRequests().getLast().entityRefs().stream()
+                .anyMatch(ref -> ref.kind() == DungeonPatchEntityRef.Kind.TRANSITION));
+    }
+
     private static DungeonAuthoredApplicationService service(
-            InMemoryStore store,
-            DungeonUnitOfWork unitOfWork
+            TestDungeonCommandStore store,
+            RecordingUnitOfWork unitOfWork
     ) {
+        unitOfWork.bind(store);
         return new DungeonAuthoredApplicationService(
                 store,
                 store,
-                FailFastWindowStore.INSTANCE,
                 unitOfWork,
+                new TestDungeonIdentityAllocator(),
                 DirectExecutionLane.INSTANCE,
                 new DungeonAuthoredPublishedState(DirectUiDispatcher.INSTANCE));
     }
@@ -199,8 +229,8 @@ final class DungeonCompoundUnitOfWorkApplicationTest {
         return accepted.authoredRevision();
     }
 
-    private static InMemoryStore twoMapStore() {
-        return new InMemoryStore(List.of(
+    private static TestDungeonCommandStore twoMapStore() {
+        return new TestDungeonCommandStore(List.of(
                 transitionMap(11L, 1L, "Source"),
                 transitionMap(12L, 2L, "Target")));
     }
@@ -219,6 +249,8 @@ final class DungeonCompoundUnitOfWorkApplicationTest {
 
     private static final class RecordingUnitOfWork implements DungeonUnitOfWork {
         private final List<DungeonCompoundPatch> compoundPatches = new ArrayList<>();
+        private final List<Integer> readCountsAtCommit = new ArrayList<>();
+        private TestDungeonCommandStore store;
         private int singleCommitCalls;
         private DungeonUnitOfWorkResult.Reason nextRejection;
         private long nextRejectedMapId;
@@ -246,13 +278,15 @@ final class DungeonCompoundUnitOfWorkApplicationTest {
                 return new DungeonCompoundUnitOfWorkResult.Rejected(
                         new DungeonMapIdentity(nextRejectedMapId), reason);
             }
-            List<DungeonPatch> committedPatches = omitLastMap
+            boolean incompleteResult = omitLastMap;
+            boolean mismatchedResult = mismatchFirstRevision;
+            List<DungeonPatch> committedPatches = incompleteResult
                     ? patch.patches().subList(0, patch.patches().size() - 1)
                     : patch.patches();
             omitLastMap = false;
             List<DungeonUnitOfWorkResult.Committed> committedMaps = new ArrayList<>(
                     committedPatches.stream().map(RecordingUnitOfWork::committed).toList());
-            if (mismatchFirstRevision) {
+            if (mismatchedResult) {
                 DungeonUnitOfWorkResult.Committed first = committedMaps.getFirst();
                 committedMaps.set(0, new DungeonUnitOfWorkResult.Committed(
                         first.mapId(),
@@ -260,6 +294,10 @@ final class DungeonCompoundUnitOfWorkApplicationTest {
                         first.chunkRevisions(),
                         first.resultFacts()));
                 mismatchFirstRevision = false;
+            }
+            if (!incompleteResult && !mismatchedResult) {
+                store.apply(patch);
+                readCountsAtCommit.add(store.readCount());
             }
             return new DungeonCompoundUnitOfWorkResult.Committed(
                     committedMaps);
@@ -289,6 +327,14 @@ final class DungeonCompoundUnitOfWorkApplicationTest {
                     .toList();
         }
 
+        private int lastReadCountAtCommit() {
+            return readCountsAtCommit.getLast();
+        }
+
+        private void bind(TestDungeonCommandStore commandStore) {
+            store = commandStore;
+        }
+
         private void rejectNext(long mapId, DungeonUnitOfWorkResult.Reason reason) {
             nextRejectedMapId = mapId;
             nextRejection = reason;
@@ -307,57 +353,4 @@ final class DungeonCompoundUnitOfWorkApplicationTest {
         }
     }
 
-    private static final class InMemoryStore implements DungeonCatalogStore, DungeonMapRepository {
-        private final Map<Long, DungeonMap> maps = new LinkedHashMap<>();
-        private int findByIdCalls;
-
-        private InMemoryStore(List<DungeonMap> maps) {
-            for (DungeonMap map : maps) {
-                this.maps.put(map.metadata().mapId().value(), map);
-            }
-        }
-
-        @Override public long nextStairId() { return 1L; }
-        @Override public long nextTransitionId() { return 1L; }
-
-        @Override
-        public Optional<DungeonMap> findById(DungeonMapIdentity mapId) {
-            findByIdCalls++;
-            return Optional.ofNullable(maps.get(mapId.value()));
-        }
-
-        @Override public Optional<DungeonMap> firstMap() { return maps.values().stream().findFirst(); }
-
-        private long revision(long mapId) {
-            return maps.get(mapId).revision();
-        }
-
-        @Override
-        public List<DungeonMapHeader> search(String query) {
-            return maps.values().stream()
-                    .map(map -> new DungeonMapHeader(
-                            map.metadata().mapId(), map.metadata().mapName(), map.revision()))
-                    .toList();
-        }
-
-        @Override public DungeonMapHeader create(String mapName) { throw new UnsupportedOperationException(); }
-        @Override public DungeonMapHeader rename(DungeonMapIdentity mapId, String mapName) {
-            throw new UnsupportedOperationException();
-        }
-        @Override public void delete(DungeonMapIdentity mapId) { throw new UnsupportedOperationException(); }
-    }
-
-    private enum FailFastWindowStore implements DungeonWindowStore {
-        INSTANCE;
-
-        @Override
-        public Optional<DungeonWindow> loadWindow(DungeonWindowRequest request) {
-            throw new AssertionError("Window read attempted during compound commit publication");
-        }
-
-        @Override
-        public DungeonIdentityClosureResult loadIdentityClosure(DungeonIdentityClosureRequest request) {
-            throw new AssertionError("identity-closure read attempted during compound commit publication");
-        }
-    }
 }
