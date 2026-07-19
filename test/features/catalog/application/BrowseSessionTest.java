@@ -124,6 +124,11 @@ final class BrowseSessionTest {
         @Override public CatalogSectionId id() { return id; }
         @Override public String initialQuery() { return ""; }
         @Override public Long key(Row row) { return row.id(); }
+        @Override public CatalogPresentationSpec<String, Row, Long> presentation() {
+            return new CatalogPresentationSpec<>("Test", "Rows", row -> Long.toString(row.id()),
+                    List.of(), List.of(new CatalogColumnSpec<>("Id", row -> Long.toString(row.id()))),
+                    java.util.Optional.empty(), List.of(), List.of(), false);
+        }
 
         @Override
         public CompletableFuture<CatalogBrowseResult<String, Row>> query(CatalogBrowseRequest<String> request) {

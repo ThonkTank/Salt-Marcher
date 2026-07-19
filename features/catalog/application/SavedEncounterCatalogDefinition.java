@@ -11,6 +11,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.List;
+import java.util.Optional;
 
 /** Saved-Encounter provider translation and explicit open action. */
 public final class SavedEncounterCatalogDefinition
@@ -48,6 +50,19 @@ public final class SavedEncounterCatalogDefinition
 
     @Override public Long key(SavedEncounterPlanSummary row) {
         return row.planId();
+    }
+
+    @Override
+    public CatalogPresentationSpec<NoCatalogQuery, SavedEncounterPlanSummary, Long> presentation() {
+        return new CatalogPresentationSpec<>(
+                "Gespeicherte Encounter", "Encounter", SavedEncounterPlanSummary::name, List.of(),
+                List.of(
+                        new CatalogColumnSpec<>("Name", SavedEncounterPlanSummary::name),
+                        new CatalogColumnSpec<>("Zusammenfassung", SavedEncounterPlanSummary::summaryText)),
+                Optional.of(new CatalogActionSpec(
+                        CatalogActionId.OPEN, "Im Encounter öffnen", "Gespeicherten Encounter öffnen", "Öffnen",
+                        CatalogActionSpec.Emphasis.PRIMARY)),
+                List.of(), List.of(), false);
     }
 
     @Override

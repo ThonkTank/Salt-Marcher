@@ -17,9 +17,10 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
+import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuButton;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
@@ -78,7 +79,7 @@ public final class CatalogInitialLoadTest {
             assertInitialCatalogRows(fixture.main(), "CATALOG-INITIAL-LOAD-001");
             org.junit.jupiter.api.Assertions.assertEquals(
                     List.of("Monster", "Items", "Encounter", "NPCs", "Fraktionen", "Orte", "Encounter-Tabellen"),
-                    fixture.controls().sectionTitles());
+                    sectionTitles(fixture.controls()));
         });
     }
 
@@ -142,8 +143,8 @@ public final class CatalogInitialLoadTest {
                     openedNpc::set,
                     () -> createRequested.set(true)).bind();
             binding.onActivate();
-            CatalogControlsHost controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, CatalogControlsHost.class);
-            CatalogContentHost content = slot(binding, ShellSlot.COCKPIT_MAIN, CatalogContentHost.class);
+            Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
+            Parent content = slot(binding, ShellSlot.COCKPIT_MAIN, Parent.class);
             Stage stage = new Stage();
             HBox root = new HBox(controls, content);
             stage.setScene(new Scene(root, 900.0, 650.0));
@@ -151,7 +152,7 @@ public final class CatalogInitialLoadTest {
             root.applyCss();
             root.layout();
 
-            controls.select(CatalogSectionId.NPCS);
+            selectSection(controls, CatalogSectionId.NPCS);
             Button create = button(controls, "NPC anlegen");
             create.fire();
 
@@ -188,8 +189,8 @@ public final class CatalogInitialLoadTest {
                             listener -> { listener.accept(m4WorldSnapshot()); return () -> { }; }));
             ShellBinding binding = runtime.contribution(routes.routes()).bind();
             binding.onActivate();
-            CatalogControlsHost controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, CatalogControlsHost.class);
-            CatalogContentHost content = slot(binding, ShellSlot.COCKPIT_MAIN, CatalogContentHost.class);
+            Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
+            Parent content = slot(binding, ShellSlot.COCKPIT_MAIN, Parent.class);
             Stage stage = new Stage();
             HBox root = new HBox(controls, content);
             stage.setScene(new Scene(root, 1_150.0, 700.0));
@@ -197,20 +198,24 @@ public final class CatalogInitialLoadTest {
 
             org.junit.jupiter.api.Assertions.assertEquals(
                     List.of("Monster", "Items", "Encounter", "NPCs", "Fraktionen", "Orte", "Encounter-Tabellen"),
-                    controls.sectionTitles());
+                    sectionTitles(controls));
             for (CatalogSectionId id : List.of(CatalogSectionId.values())) {
-                controls.select(id);
+                selectSection(controls, id);
                 root.applyCss();
                 root.layout();
-                assertTrue(content.getCenter() instanceof CatalogTableScaffold<?, ?>,
-                        id + " does not use the native shared scaffold");
-                CatalogTableScaffold<?, ?> scaffold = (CatalogTableScaffold<?, ?>) content.getCenter();
+                assertTrue(descendants(content).stream().filter(TableView.class::isInstance).count() == 1L,
+                        id + " does not use the one shared table renderer");
                 boolean paged = id == CatalogSectionId.MONSTERS || id == CatalogSectionId.ITEMS;
-                assertTrue((scaffold.getBottom() != null) == paged,
+                boolean hasPaging = descendants(content).stream().filter(Button.class::isInstance)
+                        .map(Button.class::cast)
+                        .anyMatch(button -> button.getAccessibleText() != null
+                                && button.getAccessibleText().startsWith("Nächste ")
+                                && button.getAccessibleText().endsWith("-Seite"));
+                assertTrue(hasPaging == paged,
                         id + " has the wrong paging capability");
             }
 
-            controls.select(CatalogSectionId.NPCS);
+            selectSection(controls, CatalogSectionId.NPCS);
             root.applyCss();
             root.layout();
             TableView<?> npcTable = descendant(content, TableView.class);
@@ -221,20 +226,20 @@ public final class CatalogInitialLoadTest {
             button(content, "Zum Encounter").fire();
             button(content, "Zur Scene").fire();
 
-            controls.select(CatalogSectionId.FACTIONS);
+            selectSection(controls, CatalogSectionId.FACTIONS);
             root.applyCss();
             root.layout();
             descendant(content, TableView.class).getSelectionModel().selectFirst();
             button(content, "Als Quelle").fire();
 
-            controls.select(CatalogSectionId.LOCATIONS);
+            selectSection(controls, CatalogSectionId.LOCATIONS);
             root.applyCss();
             root.layout();
             descendant(content, TableView.class).getSelectionModel().selectFirst();
             button(content, "Als Quelle").fire();
             button(content, "Als Ort").fire();
 
-            controls.select(CatalogSectionId.ENCOUNTER_TABLES);
+            selectSection(controls, CatalogSectionId.ENCOUNTER_TABLES);
             root.applyCss();
             root.layout();
             TableView<?> table = descendant(content, TableView.class);
@@ -257,11 +262,10 @@ public final class CatalogInitialLoadTest {
         seedCreatureCatalog();
         runOnFxThread(() -> {
             CatalogFixture fixture = setupCatalog();
-            CatalogControlsHost controls = fixture.controls();
-            CatalogContentHost content = fixture.workspace();
+            Parent controls = fixture.controls();
+            Parent content = fixture.workspace();
 
-            controls.select(CatalogSectionId.ITEMS);
-            Node itemsContent = content.getCenter();
+            selectSection(controls, CatalogSectionId.ITEMS);
             javafx.scene.control.TextField itemSearch = descendants(controls).stream()
                     .filter(javafx.scene.control.TextField.class::isInstance)
                     .map(javafx.scene.control.TextField.class::cast)
@@ -270,22 +274,22 @@ public final class CatalogInitialLoadTest {
                     .orElseThrow();
             itemSearch.setText("rapier");
 
-            for (String title : controls.sectionTitles()) {
-                controls.select(java.util.Arrays.stream(CatalogSectionId.values())
+            for (String title : sectionTitles(controls)) {
+                selectSection(controls, java.util.Arrays.stream(CatalogSectionId.values())
                         .filter(id -> id.label().equals(title)).findFirst().orElseThrow());
-                assertTrue(content.getCenter() != null, title + " has no main-slot content.");
+                assertTrue(descendants(content).stream().anyMatch(TableView.class::isInstance),
+                        title + " has no main-slot content.");
             }
 
-            controls.select(CatalogSectionId.ITEMS);
-            assertTrue(content.getCenter() == itemsContent, "Items content was recreated after section switches.");
+            selectSection(controls, CatalogSectionId.ITEMS);
             javafx.scene.control.TextField restoredSearch = descendants(controls).stream()
                     .filter(javafx.scene.control.TextField.class::isInstance)
                     .map(javafx.scene.control.TextField.class::cast)
                     .filter(field -> "Item-Name".equals(field.getAccessibleText()))
                     .findFirst()
                     .orElseThrow();
-            assertTrue(restoredSearch == itemSearch && "rapier".equals(restoredSearch.getText()),
-                    "Items controls did not preserve their draft state.");
+            assertTrue(restoredSearch != itemSearch && "rapier".equals(restoredSearch.getText()),
+                    "Items application state did not restore the draft into the rebuilt shared renderer.");
         });
     }
 
@@ -298,17 +302,16 @@ public final class CatalogInitialLoadTest {
             ShellBinding binding = runtime.contribution(
                     EmptyInspectorSink.INSTANCE, ignored -> { }, () -> { }, addedCreature::set).bind();
             binding.onActivate();
-            CatalogContentHost workspace = slot(binding, ShellSlot.COCKPIT_MAIN, CatalogContentHost.class);
-            CatalogTableScaffold<?, ?> monsters = descendant(workspace, CatalogTableScaffold.class);
+            Parent workspace = slot(binding, ShellSlot.COCKPIT_MAIN, Parent.class);
             Stage stage = new Stage();
             stage.setScene(new Scene(workspace, 1_100.0, 700.0));
             stage.show();
             workspace.applyCss();
             workspace.layout();
 
-            TableView<?> table = descendant(monsters, TableView.class);
+            TableView<?> table = descendant(workspace, TableView.class);
             table.getSelectionModel().selectFirst();
-            button(monsters, "+ Scene").fire();
+            button(workspace, "+ Scene").fire();
             assertTrue(addedCreature.get() > 0L, "Monster + Scene did not publish the selected creature id.");
         });
     }
@@ -317,9 +320,8 @@ public final class CatalogInitialLoadTest {
         CatalogTestRuntime runtime = services();
         ShellBinding binding = runtime.contribution(EmptyInspectorSink.INSTANCE).bind();
         binding.onActivate();
-        CatalogControlsHost controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, CatalogControlsHost.class);
-        CatalogContentHost workspace = slot(binding, ShellSlot.COCKPIT_MAIN, CatalogContentHost.class);
-        CatalogTableScaffold<?, ?> main = descendant(workspace, CatalogTableScaffold.class);
+        Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
+        Parent workspace = slot(binding, ShellSlot.COCKPIT_MAIN, Parent.class);
 
         Stage stage = new Stage();
         HBox root = new HBox(controls, workspace);
@@ -327,7 +329,7 @@ public final class CatalogInitialLoadTest {
         stage.show();
         root.applyCss();
         root.layout();
-        return new CatalogFixture(runtime, controls, workspace, main);
+        return new CatalogFixture(runtime, controls, workspace, workspace);
     }
 
     private static void assertInitialCatalogRows(Parent main, String label) {
@@ -354,11 +356,21 @@ public final class CatalogInitialLoadTest {
     }
 
     private static void assertWorldPlannerSourceControls(CatalogTestRuntime runtime, Parent controls, String label) {
-        Button factionButton = button(controls, "Fraktionen");
-        factionButton.fire();
-        CheckBox faction = popupDescendant(CheckBox.class, "Scarlet Knives");
-        faction.fire();
-        selectComboItem(comboBox(controls), "#501 | Old Gate");
+        MenuButton factionButton = descendants(controls).stream()
+                .filter(MenuButton.class::isInstance)
+                .map(MenuButton.class::cast)
+                .filter(button -> "World-Fraktionen".equals(button.getAccessibleText()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("World faction filter not found."));
+        CheckMenuItem faction = factionButton.getItems().stream()
+                .filter(CheckMenuItem.class::isInstance)
+                .map(CheckMenuItem.class::cast)
+                .filter(item -> "Scarlet Knives".equals(item.getText()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("World faction option not found."));
+        faction.setSelected(true);
+        faction.getOnAction().handle(new javafx.event.ActionEvent(faction, null));
+        selectComboItem(comboBox(controls), "Old Gate");
         TextField search = descendants(controls).stream()
                 .filter(TextField.class::isInstance).map(TextField.class::cast).findFirst().orElseThrow();
         search.fireEvent(new javafx.event.ActionEvent());
@@ -455,12 +467,30 @@ public final class CatalogInitialLoadTest {
                 .orElseThrow(() -> new AssertionError("Button not found: " + textPrefix));
     }
 
+    private static void selectSection(Parent controls, CatalogSectionId section) {
+        descendants(controls).stream()
+                .filter(javafx.scene.control.ToggleButton.class::isInstance)
+                .map(javafx.scene.control.ToggleButton.class::cast)
+                .filter(button -> ("Katalogbereich " + section.label()).equals(button.getAccessibleText()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Section button not found: " + section))
+                .fire();
+    }
+
+    private static List<String> sectionTitles(Parent controls) {
+        return descendants(controls).stream()
+                .filter(javafx.scene.control.ToggleButton.class::isInstance)
+                .map(javafx.scene.control.ToggleButton.class::cast)
+                .map(javafx.scene.control.ToggleButton::getText)
+                .toList();
+    }
+
     private static ComboBox<?> comboBox(Parent parent) {
         return descendants(parent).stream()
                 .filter(ComboBox.class::isInstance)
                 .map(ComboBox.class::cast)
                 .filter(comboBox -> comboBox.getItems().stream().anyMatch(
-                        item -> "#501 | Old Gate".equals(itemText(comboBox, item))))
+                        item -> "Old Gate".equals(itemText(comboBox, item))))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("World Planner location ComboBox not found."));
     }
@@ -483,34 +513,6 @@ public final class CatalogInitialLoadTest {
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static String itemText(ComboBox comboBox, Object item) {
         return comboBox.getConverter() == null ? String.valueOf(item) : comboBox.getConverter().toString(item);
-    }
-
-    private static <T extends Node> T popupDescendant(Class<T> type, String text) {
-        for (Window window : Window.getWindows()) {
-            Scene scene = window.getScene();
-            if (scene == null || scene.getRoot() == null) {
-                continue;
-            }
-            for (Node node : descendants(scene.getRoot())) {
-                if (type.isInstance(node) && textValue(node).contains(text)) {
-                    return type.cast(node);
-                }
-            }
-        }
-        throw new AssertionError("Popup descendant not found: " + text);
-    }
-
-    private static String textValue(Node node) {
-        if (node instanceof Button button) {
-            return button.getText();
-        }
-        if (node instanceof CheckBox checkBox) {
-            return checkBox.getText();
-        }
-        if (node instanceof Label label) {
-            return label.getText();
-        }
-        return "";
     }
 
     private static List<Node> descendants(Node node) {
@@ -579,9 +581,9 @@ public final class CatalogInitialLoadTest {
 
     private record CatalogFixture(
             CatalogTestRuntime runtime,
-            CatalogControlsHost controls,
-            CatalogContentHost workspace,
-            CatalogTableScaffold<?, ?> main
+            Parent controls,
+            Parent workspace,
+            Parent main
     ) {
     }
 

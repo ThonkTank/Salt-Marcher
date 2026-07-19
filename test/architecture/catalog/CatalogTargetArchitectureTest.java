@@ -3,6 +3,7 @@ package architecture.catalog;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import architecture.AnalyzeMainClasses;
@@ -12,8 +13,7 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
-import features.catalog.adapter.javafx.CatalogSection;
-import features.catalog.adapter.javafx.CatalogTableScaffold;
+import features.catalog.application.CatalogSectionDefinition;
 import features.catalog.application.CatalogWorkspacePublication;
 import features.creatures.api.CreatureReferenceIndexModel;
 import features.encounter.api.EncounterPoolFiltersModel;
@@ -21,9 +21,7 @@ import features.encounter.api.SavedEncounterPlanListModel;
 import features.encountertable.api.EncounterTableCatalogModel;
 import features.worldplanner.api.WorldPlannerSnapshotModel;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -37,14 +35,27 @@ public final class CatalogTargetArchitectureTest {
 
     private static final Set<String> RETIRED_TYPES = Set.of(
             "LegacyCatalogBindingAdapter", "CatalogDataSources", "CatalogActionRoutes");
-    private static final List<String> NATIVE_SECTION_NAMES = List.of(
+    private static final List<String> RETIRED_PRESENTATION_TYPES = List.of(
             "features.catalog.adapter.javafx.MonsterCatalogSection",
             "features.catalog.adapter.javafx.ItemsCatalogSection",
             "features.catalog.adapter.javafx.SavedEncounterCatalogSection",
             "features.catalog.adapter.javafx.NpcCatalogSection",
             "features.catalog.adapter.javafx.FactionCatalogSection",
             "features.catalog.adapter.javafx.LocationCatalogSection",
-            "features.catalog.adapter.javafx.EncounterTableCatalogSection");
+            "features.catalog.adapter.javafx.EncounterTableCatalogSection",
+            "features.catalog.adapter.javafx.MonsterCatalogControls",
+            "features.catalog.adapter.javafx.CatalogTableScaffold",
+            "features.catalog.adapter.javafx.CatalogSection",
+            "features.catalog.adapter.javafx.CatalogControlsHost",
+            "features.catalog.adapter.javafx.CatalogContentHost");
+    private static final List<Class<?>> TYPED_DEFINITIONS = List.of(
+            features.catalog.application.MonsterCatalogDefinition.class,
+            features.catalog.application.ItemsCatalogDefinition.class,
+            features.catalog.application.SavedEncounterCatalogDefinition.class,
+            features.catalog.application.NpcCatalogDefinition.class,
+            features.catalog.application.FactionCatalogDefinition.class,
+            features.catalog.application.LocationCatalogDefinition.class,
+            features.catalog.application.EncounterTableCatalogDefinition.class);
     private static final List<Class<?>> REQUIRED_ATOMIC_MODELS = List.of(
             CreatureReferenceIndexModel.class,
             EncounterPoolFiltersModel.class,
@@ -71,30 +82,37 @@ public final class CatalogTargetArchitectureTest {
                     .dependOnClassesThat()
                     .areAssignableTo(CatalogWorkspacePublication.class);
 
+    @ArchTest
+    static final ArchRule catalogApplicationMustRemainFrameworkNeutral =
+            noClasses()
+                    .that()
+                    .resideInAPackage("features.catalog.application..")
+                    .should()
+                    .dependOnClassesThat()
+                    .resideInAnyPackage("javafx..");
+
+    @ArchTest
+    static final ArchRule onlySharedCatalogPresentationMayConstructJavaFxControls =
+            classes()
+                    .that()
+                    .resideInAPackage("features.catalog.adapter.javafx..")
+                    .should(onlySharedPresentationDependsOnControls());
+
     @Test
-    void exactlySevenNativeSectionsUseTheCommonContractAndScaffold() throws ClassNotFoundException {
-        assertEquals(7, NATIVE_SECTION_NAMES.size());
-        for (String sectionName : NATIVE_SECTION_NAMES) {
-            Class<?> section = Class.forName(sectionName);
-            assertTrue(CatalogSection.class.isAssignableFrom(section),
-                    () -> section.getName() + " does not implement CatalogSection");
-            assertTrue(List.of(section.getDeclaredFields()).stream()
-                            .map(Field::getType)
-                            .anyMatch(CatalogTableScaffold.class::isAssignableFrom),
-                    () -> section.getName() + " does not own CatalogTableScaffold");
+    void exactlySevenTypedDefinitionsUseTheCommonContract() {
+        assertEquals(7, TYPED_DEFINITIONS.size());
+        for (Class<?> definition : TYPED_DEFINITIONS) {
+            assertTrue(CatalogSectionDefinition.class.isAssignableFrom(definition),
+                    () -> definition.getName() + " does not implement CatalogSectionDefinition");
         }
     }
 
     @Test
-    void scaffoldSelectionAbsenceIsExplicitlyTyped() throws NoSuchFieldException {
-        Field selectionAction = CatalogTableScaffold.class.getDeclaredField("selectionAction");
-        assertEquals("java.util.function.Consumer<java.util.Optional<Id>>",
-                selectionAction.getGenericType().getTypeName());
-        Method render = List.of(CatalogTableScaffold.class.getDeclaredMethods()).stream()
-                .filter(method -> method.getName().equals("render"))
-                .findFirst()
-                .orElseThrow();
-        assertEquals("java.util.Optional<Id>", render.getGenericParameterTypes()[1].getTypeName());
+    void parallelCatalogPresentationTypesStayDeleted() {
+        for (String retired : RETIRED_PRESENTATION_TYPES) {
+            assertThrows(ClassNotFoundException.class, () -> Class.forName(retired),
+                    () -> retired + " restored a parallel Catalog presentation path");
+        }
     }
 
     @Test
@@ -125,6 +143,27 @@ public final class CatalogTargetArchitectureTest {
                 if (RETIRED_TYPES.contains(item.getSimpleName())) {
                     events.add(SimpleConditionEvent.violated(
                             item, item.getName() + " is a retired Catalog migration type"));
+                }
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> onlySharedPresentationDependsOnControls() {
+        Set<String> owners = Set.of("CatalogSectionRenderer", "CatalogControlFactory");
+        return new ArchCondition<>("construct JavaFX controls only in the shared renderer or factory") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                boolean dependsOnControl = item.getDirectDependenciesFromSelf().stream()
+                        .anyMatch(dependency -> dependency.getTargetClass().getPackageName()
+                                .startsWith("javafx.scene.control"));
+                boolean sharedOwner = owners.contains(item.getSimpleName())
+                        || item.getName().startsWith(
+                                "features.catalog.adapter.javafx.CatalogSectionRenderer$")
+                        || item.getName().startsWith(
+                                "features.catalog.adapter.javafx.CatalogControlFactory$");
+                if (dependsOnControl && !sharedOwner) {
+                    events.add(SimpleConditionEvent.violated(
+                            item, item.getName() + " constructs a parallel Catalog control path"));
                 }
             }
         };

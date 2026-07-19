@@ -1,17 +1,9 @@
 package features.catalog.adapter.javafx;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import features.catalog.application.CatalogResultState;
 import features.catalog.application.CatalogSectionId;
-import features.catalog.application.MonsterCatalogFilterDraft;
-import features.catalog.application.MonsterCatalogIntent;
-import features.catalog.application.MonsterCatalogSort;
-import features.catalog.application.MonsterCatalogState;
-import features.creatures.api.CreatureFilterOptions;
-import features.creatures.api.CreatureCatalogRow;
 import features.creatures.domain.catalog.CreatureCatalogData;
 import features.creatures.domain.catalog.port.CreatureCatalogPort;
 import features.encounter.api.EncounterPoolFilters;
@@ -32,15 +24,15 @@ import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Control;
+import javafx.scene.control.Label;
+import javafx.scene.control.Labeled;
 import javafx.scene.control.Slider;
-import javafx.scene.control.Button;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.Pane;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.control.TextInputControl;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.junit.jupiter.api.AfterAll;
@@ -69,56 +61,14 @@ public final class CatalogControlsRawInputTest {
     }
 
     @Test
-    void passiveRenderPublishesNoIntentAndOneEditPublishesOneTypedIntent() throws Exception {
-        runOnFx(() -> {
-            List<MonsterCatalogIntent> intents = new ArrayList<>();
-            MonsterCatalogControls controls = new MonsterCatalogControls(intents::add);
-            controls.render(state("aboleth"), MonsterCatalogAuxiliaryOptions.empty());
-            assertTrue(intents.isEmpty(), "render must not publish an input intent");
-
-            textField(controls).setText("lich");
-            assertEquals(1, intents.size(), "one text edit must publish one intent");
-            MonsterCatalogIntent.ChangeFilters change =
-                    assertInstanceOf(MonsterCatalogIntent.ChangeFilters.class, intents.getFirst());
-            assertEquals("lich", change.filters().nameQuery());
-            assertTrue(descendants(controls).stream().noneMatch(Slider.class::isInstance),
-                    "Encounter tuning must stay outside Catalog controls");
-        });
-    }
-
-    @Test
-    void workspaceRenderPublishesNoSelectionAndOneUserTogglePublishesOneSelection() throws Exception {
-        runOnFx(() -> {
-            List<CatalogSectionId> selections = new ArrayList<>();
-            CatalogSection monsters = section(CatalogSectionId.MONSTERS);
-            CatalogSection items = section(CatalogSectionId.ITEMS);
-            CatalogControlsHost controls = new CatalogControlsHost(List.of(monsters, items), selections::add);
-
-            controls.show(monsters);
-            assertTrue(selections.isEmpty(), "application render must not publish a section selection");
-
-            descendants(controls).stream()
-                    .filter(javafx.scene.control.ToggleButton.class::isInstance)
-                    .map(javafx.scene.control.ToggleButton.class::cast)
-                    .filter(button -> "Katalogbereich Items".equals(button.getAccessibleText()))
-                    .findFirst()
-                    .orElseThrow()
-                    .fire();
-
-            assertEquals(List.of(CatalogSectionId.ITEMS), selections,
-                    "one user toggle must publish exactly one semantic section selection");
-        });
-    }
-
-    @Test
     void productionFilterEditRunsOneSearchAndOnePoolWriteWithoutTuningMutationOrEcho() throws Exception {
         runOnFx(() -> {
             CapturingCreatureCatalogPort creatures = new CapturingCreatureCatalogPort();
             CatalogTestRuntime runtime = runtime(creatures);
             ShellBinding binding = runtime.contribution(EmptyInspector.INSTANCE).bind();
             binding.onActivate();
-            Parent controls = (Parent) binding.slotContent().get(ShellSlot.COCKPIT_CONTROLS);
-            Stage stage = show(controls);
+            Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS);
+            Stage stage = show(controls, slot(binding, ShellSlot.COCKPIT_MAIN));
             int searchesBefore = creatures.searches.get();
             EncounterTuningSettings tuningBefore = runtime.builderInputs().current().tuning();
 
@@ -140,8 +90,8 @@ public final class CatalogControlsRawInputTest {
             CatalogTestRuntime runtime = runtime(creatures);
             ShellBinding binding = runtime.contribution(EmptyInspector.INSTANCE).bind();
             binding.onActivate();
-            Parent controls = (Parent) binding.slotContent().get(ShellSlot.COCKPIT_CONTROLS);
-            Stage stage = show(controls);
+            Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS);
+            Stage stage = show(controls, slot(binding, ShellSlot.COCKPIT_MAIN));
             int searchesBefore = creatures.searches.get();
             EncounterTuningSettings tuningBefore = runtime.builderInputs().current().tuning();
 
@@ -157,117 +107,50 @@ public final class CatalogControlsRawInputTest {
     }
 
     @Test
-    void scaffoldRoutesEnterDoubleClickAndExplicitEncounterSceneActions() throws Exception {
+    void productionCatalogUsesOneCompactVisualGrammarForAllSevenSections() throws Exception {
         runOnFx(() -> {
-            List<MonsterCatalogIntent> intents = new ArrayList<>();
-            MonsterCatalogSection section = new MonsterCatalogSection(intents::add);
-            CreatureCatalogRow row = new CreatureCatalogRow(
-                    41L, "Owlbear", "Large", "Monstrosity", "", "3", 700, 59, 13);
-            section.render(new MonsterCatalogState(
-                    1L,
-                    MonsterCatalogFilterDraft.empty(), CreatureFilterOptions.empty(), MonsterCatalogSort.NAME_ASC,
-                    50, 0, 1, 41L, CatalogResultState.ready(List.of(row)),
-                    List.of(), List.of(), List.of()));
-            Parent content = (Parent) section.content();
-            Stage stage = show(content);
-            TableView<?> table = descendants(content).stream().filter(TableView.class::isInstance)
-                    .map(TableView.class::cast).findFirst().orElseThrow();
-            table.getSelectionModel().selectFirst();
+            CatalogTestRuntime runtime = runtime(new CapturingCreatureCatalogPort());
+            ShellBinding binding = runtime.contribution(EmptyInspector.INSTANCE).bind();
+            binding.onActivate();
+            Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS);
+            Parent content = slot(binding, ShellSlot.COCKPIT_MAIN);
+            Stage stage = show(controls, content);
 
-            table.fireEvent(new KeyEvent(
-                    KeyEvent.KEY_PRESSED, "", "", KeyCode.ENTER,
-                    false, false, false, false));
-            table.fireEvent(new MouseEvent(
-                    MouseEvent.MOUSE_CLICKED, 0, 0, 0, 0, MouseButton.PRIMARY, 2,
-                    false, false, false, false, true, false, false, true, false, false, null));
-            button(content, "+ Encounter").fire();
-            button(content, "+ Scene").fire();
+            assertEquals(7, descendants(controls).stream().filter(ToggleButton.class::isInstance).count());
+            for (CatalogSectionId section : CatalogSectionId.values()) {
+                sectionButton(controls, section).fire();
+                controls.applyCss();
+                controls.layout();
+                content.applyCss();
+                content.layout();
 
-            assertEquals(2L, intents.stream().filter(MonsterCatalogIntent.OpenCreature.class::isInstance).count());
-            assertEquals(1L, intents.stream().filter(MonsterCatalogIntent.AddToEncounter.class::isInstance).count());
-            assertEquals(1L, intents.stream().filter(MonsterCatalogIntent.AddToScene.class::isInstance).count());
+                assertEquals(1, descendants(content).stream().filter(TableView.class::isInstance).count(),
+                        section + " must use the one result renderer");
+                List<Control> compact = descendants(controls).stream()
+                        .filter(Control.class::isInstance)
+                        .map(Control.class::cast)
+                        .filter(control -> control.getStyleClass().contains("catalog-filter-control"))
+                        .toList();
+                assertTrue(!compact.isEmpty(), section + " exposes no shared compact controls");
+                for (Control control : compact) {
+                    assertEquals(28.0, control.getMinHeight(), 0.01);
+                    assertEquals(28.0, control.getPrefHeight(), 0.01);
+                    assertEquals(28.0, control.getMaxHeight(), 0.01);
+                    if (control instanceof Labeled labeled) {
+                        assertEquals(12.0, labeled.getFont().getSize(), 0.01);
+                    } else if (control instanceof TextInputControl input) {
+                        assertEquals(12.0, input.getFont().getSize(), 0.01);
+                    }
+                }
+            }
+            assertTrue(descendants(controls).stream().noneMatch(Slider.class::isInstance),
+                    "Encounter tuning must stay outside Catalog controls");
+            assertTrue(descendants(controls).stream().filter(Label.class::isInstance)
+                    .map(Label.class::cast).map(Label::getText)
+                    .noneMatch(text -> "FILTER".equals(text) || "AKTIONEN".equals(text)),
+                    "redundant Catalog group headings must not return");
             stage.close();
         });
-    }
-
-    @Test
-    void scaffoldDeselectionEmitsOneSemanticClearSelectionIntent() throws Exception {
-        runOnFx(() -> {
-            List<MonsterCatalogIntent> intents = new ArrayList<>();
-            MonsterCatalogSection section = new MonsterCatalogSection(intents::add);
-            CreatureCatalogRow row = creature(41L, "Owlbear");
-            section.render(monsterState(41L, List.of(row)));
-            Parent content = (Parent) section.content();
-            Stage stage = show(content);
-            TableView<?> table = descendants(content).stream().filter(TableView.class::isInstance)
-                    .map(TableView.class::cast).findFirst().orElseThrow();
-            assertTrue(intents.isEmpty(), "rendered selection must not echo an intent");
-
-            table.getSelectionModel().clearSelection();
-
-            assertEquals(List.of(new MonsterCatalogIntent.SelectCreature(0L)), intents,
-                    "one explicit deselection must emit the existing clear-selection intent exactly once");
-            stage.close();
-        });
-    }
-
-    @Test
-    void rowButtonsEmitOnlyTheirNamedIntentAndLeaveSelectionUnchanged() throws Exception {
-        runOnFx(() -> {
-            List<MonsterCatalogIntent> intents = new ArrayList<>();
-            MonsterCatalogSection section = new MonsterCatalogSection(intents::add);
-            CreatureCatalogRow selected = creature(41L, "Owlbear");
-            CreatureCatalogRow actedOn = creature(42L, "Troll");
-            section.render(monsterState(41L, List.of(selected, actedOn)));
-            Parent content = (Parent) section.content();
-            Stage stage = show(content);
-            TableView<?> table = descendants(content).stream().filter(TableView.class::isInstance)
-                    .map(TableView.class::cast).findFirst().orElseThrow();
-
-            buttonAccessible(content, "Öffnen: Troll").fire();
-            assertEquals(List.of(new MonsterCatalogIntent.OpenCreature(42L)), intents);
-            assertEquals(selected, table.getSelectionModel().getSelectedItem());
-
-            intents.clear();
-            buttonAccessible(content, "+ Encounter: Troll").fire();
-            assertEquals(List.of(new MonsterCatalogIntent.AddToEncounter(42L)), intents);
-            assertEquals(selected, table.getSelectionModel().getSelectedItem());
-            stage.close();
-        });
-    }
-
-    private static CreatureCatalogRow creature(long id, String name) {
-        return new CreatureCatalogRow(id, name, "Large", "Monstrosity", "", "3", 700, 59, 13);
-    }
-
-    private static MonsterCatalogState monsterState(long selectedId, List<CreatureCatalogRow> rows) {
-        return new MonsterCatalogState(
-                1L,
-                MonsterCatalogFilterDraft.empty(), CreatureFilterOptions.empty(), MonsterCatalogSort.NAME_ASC,
-                50, 0, rows.size(), selectedId, CatalogResultState.ready(rows),
-                List.of(), List.of(), List.of());
-    }
-
-    private static MonsterCatalogState state(String name) {
-        return new MonsterCatalogState(
-                1L,
-                new MonsterCatalogFilterDraft(
-                        name, "", "", List.of(), List.of(), List.of(), List.of(), List.of(),
-                        List.of(), List.of(), 0L),
-                new CreatureFilterOptions(
-                        List.of("Medium"), List.of("Undead"), List.of(), List.of(), List.of(), List.of("1")),
-                MonsterCatalogSort.NAME_ASC, 50, 0, 0, 0L, CatalogResultState.ready(List.of()),
-                List.of(), List.of(), List.of());
-    }
-
-    private static CatalogSection section(CatalogSectionId id) {
-        Pane controls = new Pane();
-        Pane content = new Pane();
-        return new CatalogSection() {
-            @Override public CatalogSectionId id() { return id; }
-            @Override public Node controls() { return controls; }
-            @Override public Node content() { return content; }
-        };
     }
 
     private static CatalogTestRuntime runtime(CreatureCatalogPort creatures) {
@@ -285,28 +168,32 @@ public final class CatalogControlsRawInputTest {
                         }));
     }
 
-    private static Stage show(Parent root) {
+    private static Stage show(Parent controls, Parent content) {
         Stage stage = new Stage();
-        stage.setScene(new Scene(root, 760, 520));
+        HBox root = new HBox(controls, content);
+        Scene scene = new Scene(root, 900, 650);
+        scene.getStylesheets().add(CatalogControlsRawInputTest.class
+                .getResource("/salt-marcher.css").toExternalForm());
+        stage.setScene(scene);
         stage.show();
         root.applyCss();
         root.layout();
         return stage;
     }
 
+    private static Parent slot(ShellBinding binding, ShellSlot slot) {
+        return (Parent) binding.slotContent().get(slot);
+    }
+
     private static TextField textField(Parent root) {
         return descendants(root).stream().filter(TextField.class::isInstance).map(TextField.class::cast)
-                .filter(field -> "Monster suchen...".equals(field.getPromptText())).findFirst().orElseThrow();
+                .filter(field -> "Monster suchen".equals(field.getAccessibleText())).findFirst().orElseThrow();
     }
 
-    private static Button button(Parent root, String text) {
-        return descendants(root).stream().filter(Button.class::isInstance).map(Button.class::cast)
-                .filter(button -> text.equals(button.getText())).findFirst().orElseThrow();
-    }
-
-    private static Button buttonAccessible(Parent root, String accessibleText) {
-        return descendants(root).stream().filter(Button.class::isInstance).map(Button.class::cast)
-                .filter(button -> accessibleText.equals(button.getAccessibleText())).findFirst().orElseThrow();
+    private static ToggleButton sectionButton(Parent root, CatalogSectionId section) {
+        return descendants(root).stream().filter(ToggleButton.class::isInstance).map(ToggleButton.class::cast)
+                .filter(button -> ("Katalogbereich " + section.label()).equals(button.getAccessibleText()))
+                .findFirst().orElseThrow();
     }
 
     private static List<Node> descendants(Node root) {
@@ -360,28 +247,20 @@ public final class CatalogControlsRawInputTest {
             searches.incrementAndGet();
             return CreatureCatalogData.emptyCatalogPage(spec.pageSize(), spec.pageOffset());
         }
-        @Override public CreatureCatalogData.CreatureProfile loadCreatureDetail(long creatureId) {
-            return null;
-        }
+        @Override public CreatureCatalogData.CreatureProfile loadCreatureDetail(long creatureId) { return null; }
         @Override public List<CreatureCatalogData.EncounterCandidateProfile> loadEncounterCandidates(
                 CreatureCatalogData.EncounterCandidateSpec spec
-        ) {
-            return List.of();
-        }
+        ) { return List.of(); }
         @Override public List<CreatureCatalogData.EncounterCandidateProfile> loadCreatureFacts(
                 CreatureCatalogData.CreatureFactsSpec spec
-        ) {
-            return List.of();
-        }
+        ) { return List.of(); }
     }
 
     private static final class EmptyEncounterTables implements EncounterTableCatalogPort {
-        @Override public List<EncounterTableSummaryData> loadSummaries() {
-            return List.of();
-        }
-        @Override public List<EncounterTableCandidateData> loadGenerationCandidates(List<Long> ids, int maximumXp) {
-            return List.of();
-        }
+        @Override public List<EncounterTableSummaryData> loadSummaries() { return List.of(); }
+        @Override public List<EncounterTableCandidateData> loadGenerationCandidates(
+                List<Long> selectedTableIds, int maximumXp
+        ) { return List.of(); }
     }
 
     private enum EmptyInspector implements InspectorSink {

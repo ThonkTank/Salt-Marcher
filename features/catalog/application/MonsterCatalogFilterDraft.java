@@ -51,6 +51,73 @@ public record MonsterCatalogFilterDraft(
                 creatureSubtypes, biomes, alignments, encounterTableIds, worldFactionIds, worldLocationId);
     }
 
+    public MonsterCatalogFilterDraft withNameQuery(String value) {
+        return copy(value, challengeRatingMin, challengeRatingMax, sizes, creatureTypes, creatureSubtypes,
+                biomes, alignments, encounterTableIds, worldFactionIds, worldLocationId);
+    }
+
+    public MonsterCatalogFilterDraft withChallengeRating(String minimum, String maximum) {
+        return copy(nameQuery, minimum, maximum, sizes, creatureTypes, creatureSubtypes,
+                biomes, alignments, encounterTableIds, worldFactionIds, worldLocationId);
+    }
+
+    public MonsterCatalogFilterDraft withSizes(List<String> values) {
+        return copy(nameQuery, challengeRatingMin, challengeRatingMax, values, creatureTypes, creatureSubtypes,
+                biomes, alignments, encounterTableIds, worldFactionIds, worldLocationId);
+    }
+
+    public MonsterCatalogFilterDraft withCreatureTypes(List<String> values) {
+        return copy(nameQuery, challengeRatingMin, challengeRatingMax, sizes, values, creatureSubtypes,
+                biomes, alignments, encounterTableIds, worldFactionIds, worldLocationId);
+    }
+
+    public MonsterCatalogFilterDraft withCreatureSubtypes(List<String> values) {
+        return copy(nameQuery, challengeRatingMin, challengeRatingMax, sizes, creatureTypes, values,
+                biomes, alignments, encounterTableIds, worldFactionIds, worldLocationId);
+    }
+
+    public MonsterCatalogFilterDraft withBiomes(List<String> values) {
+        return copy(nameQuery, challengeRatingMin, challengeRatingMax, sizes, creatureTypes, creatureSubtypes,
+                values, alignments, encounterTableIds, worldFactionIds, worldLocationId);
+    }
+
+    public MonsterCatalogFilterDraft withAlignments(List<String> values) {
+        return copy(nameQuery, challengeRatingMin, challengeRatingMax, sizes, creatureTypes, creatureSubtypes,
+                biomes, values, encounterTableIds, worldFactionIds, worldLocationId);
+    }
+
+    public MonsterCatalogFilterDraft withEncounterTables(List<Long> values) {
+        return copy(nameQuery, challengeRatingMin, challengeRatingMax, sizes, creatureTypes, creatureSubtypes,
+                biomes, alignments, values, worldFactionIds, worldLocationId);
+    }
+
+    public MonsterCatalogFilterDraft withFactions(List<Long> values) {
+        return copy(nameQuery, challengeRatingMin, challengeRatingMax, sizes, creatureTypes, creatureSubtypes,
+                biomes, alignments, encounterTableIds, values, worldLocationId);
+    }
+
+    public MonsterCatalogFilterDraft withLocation(long value) {
+        return copy(nameQuery, challengeRatingMin, challengeRatingMax, sizes, creatureTypes, creatureSubtypes,
+                biomes, alignments, encounterTableIds, worldFactionIds, value);
+    }
+
+    private static MonsterCatalogFilterDraft copy(
+            String name,
+            String minimum,
+            String maximum,
+            List<String> sizes,
+            List<String> types,
+            List<String> subtypes,
+            List<String> biomes,
+            List<String> alignments,
+            List<Long> tables,
+            List<Long> factions,
+            long location
+    ) {
+        return new MonsterCatalogFilterDraft(
+                name, minimum, maximum, sizes, types, subtypes, biomes, alignments, tables, factions, location);
+    }
+
     private static String safe(@Nullable String value) {
         return value == null ? "" : value;
     }
