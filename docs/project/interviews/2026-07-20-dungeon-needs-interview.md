@@ -300,6 +300,23 @@ Feature-Dichte und Alexandrian-Hinweise können ergänzend auf unter- oder
 überfüllte Abschnitte hinweisen, ersetzen aber für Gefahr und Loot nicht die
 vorhandenen regelbasierten Budgets.
 
+### Wie vererben sich Ziellevel und Sitzungsbudgets?
+
+**Bestätigte Antwort:** Level vererben, Sitzungen explizit verteilen.
+
+Der Dungeon definiert ein Standard-Charakterlevel. Ebenen und Bereiche erben
+dieses Level, solange der GM dort kein eigenes Ziellevel setzt.
+
+Die geplante Sitzungszahl des gesamten Dungeons wird nicht automatisch
+vollständig auf jede Untereinheit vererbt. Der GM verteilt Sitzungsanteile
+explizit auf Ebenen oder Bereiche; nicht zugewiesene Anteile bleiben sichtbar.
+Teilbudgets und tatsächlicher Feature-Content werden in übergeordneten
+Auswertungen ohne Doppelzählung zusammengeführt.
+
+Ein Bereich ohne eigene Sitzungszuweisung erhält weiterhin neutrale
+Content-Heatmaps, Curiosity-Dichte und allgemeine Verteilungshinweise, aber
+keine irreführende XP-, Gold- oder Magic-Item-Budgetwarnung.
+
 Zusätzliche Designreferenzen:
 
 - https://thealexandrian.net/wordpress/45878/roleplaying-games/game-structure-sector-crawl
