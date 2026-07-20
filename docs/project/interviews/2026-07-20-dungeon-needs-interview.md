@@ -208,6 +208,23 @@ dagegen nicht automatisch für jede einzelne Rasterfläche eine eigene
 Inhaltsidentität. Durchlässe bleiben aufgrund ihrer Reisebedeutung
 eigenständige Objekte.
 
+### Wie werden Dungeon-Features räumlich verankert?
+
+**Bestätigte Antwort:** Exakte Voxelposition innerhalb eines Volumens.
+
+Encounter, Fallen, Loot, Curiosities und andere Dungeon-Features werden zunächst
+jeweils einer bestimmten dreidimensionalen Voxelposition zugeordnet. Der Anker
+gehört zum umgebenden Volumen. Wird dieses verschoben oder verformt, bewegt sich
+das Feature passend mit.
+
+Kann ein Anker nach einer destruktiven Geometrieänderung nicht mehr zuverlässig
+abgebildet werden, gilt dasselbe Verlustschutzziel wie für andere authored
+Inhalte: Das Feature bleibt erhalten und kann neu zugeordnet werden.
+
+Encounter sind zunächst ebenfalls ortsfest authored. Eine optionale spätere
+Fähigkeit macht ausgewählte Encounter beziehungsweise ihre beteiligten Gruppen
+mobil.
+
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
 **Bestätigte Antwort:** Fest gezeichnete Flächen und dynamisch erzeugte Pfade.
