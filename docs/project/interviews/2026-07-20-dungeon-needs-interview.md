@@ -240,6 +240,20 @@ abgeleiteter Erkennungsradius vorgesehen. Die genaue spätere
 Wahrnehmungsberechnung bleibt noch zu klären und muss mit den bereits
 vorgesehenen automatisierten Perception-Vergleichen zusammenpassen.
 
+### Welche geometrische Form besitzen Fallen-Triggerfelder?
+
+**Bestätigte Antwort:** Null bis mehrere frei markierbare Voxelbereiche.
+
+Eine Falle kann kein, ein oder mehrere Triggerfelder besitzen. Jedes Feld ist
+eine frei markierbare Menge von Voxeln und muss keinen Kreis oder festen Radius
+bilden. Die Voxel bleiben an ihre jeweiligen Volumen gekoppelt und folgen deren
+Verschiebung oder Verformung. Eine Türfalle kann dadurch beispielsweise
+Triggerfelder auf beiden Seiten des Durchlasses besitzen.
+
+Triggerfelder erzeugen ausschließlich Benachrichtigung und gegebenenfalls eine
+Reiseunterbrechung. Sie verändern keine Passierbarkeit und entscheiden weder
+Auslösungserfolg noch Folgen der Falle.
+
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
 **Bestätigte Antwort:** Fest gezeichnete Flächen und dynamisch erzeugte Pfade.
