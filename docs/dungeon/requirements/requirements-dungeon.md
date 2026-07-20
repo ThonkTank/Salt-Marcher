@@ -49,7 +49,10 @@ Room at a time; either may temporarily remain unassigned. Moving the Volume
 preserves that Room identity and association. After a Volume merge or split,
 SaltMarcher immediately makes a best-effort Room assignment for every resulting
 Volume; the GM may revise it, and unused authored Rooms remain preserved.
-Derived navigation areas
+After a split, the existing Room follows the best-matching result and every
+other Volume receives a new empty Room. Inherited attributes still apply;
+voxel-anchored Features and surface content follow geometry, while full Room
+prose is not duplicated automatically. Derived navigation areas
 structure a Volume, while room groups collect several Rooms or Volumes.
 
 A Room may provide descriptive defaults for its associated Volume. The GM may
