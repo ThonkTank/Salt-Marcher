@@ -70,7 +70,10 @@ Charges. The GM may manually correct the state. A far-future monster
 routine may explicitly reset a Trap. A placed Dungeon Encounter primarily uses
 the existing Encounter capability as the source of monster composition and
 statistics. Its Dungeon placement adds the voxel anchor, local notes, detection
-context, and any later schedule rather than duplicating Encounter truth.
+context, and any later schedule rather than duplicating Encounter truth. One
+concrete Encounter or monster group has at most one current Dungeon placement;
+equivalent repetitions require independent Encounter copies. Later movement
+changes the same group's anchor rather than creating another placement.
 Encounter detection provisionally uses a radius derived from the referenced
 monster statistics. Loot and Curiosities do not
 activate from proximity alone.
