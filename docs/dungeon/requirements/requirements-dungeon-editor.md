@@ -299,6 +299,13 @@ The editor lets the GM choose an entrance or heading to preview the relative
 read-aloud result. Geometry changes recompute only affected derived facts
 without overwriting or reordering GM-authored text and attributes.
 
+Description blocks and relevant authored objects may be normally visible,
+GM-only, or hidden until discovered. An undiscovered secret Passage is omitted
+from player-readable text and visible exits. Secret status remains authored
+truth; discovery by the current party is separate runtime state. The editor can
+preview both undiscovered and discovered renderings. Visibility does not alter
+explicit passability.
+
 Descriptions such as blocked, locked, heavy, cold, or damp affect generated
 wording and placement in the dynamic description. They MUST NOT silently create
 passability or action rules.
