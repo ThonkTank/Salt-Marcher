@@ -180,6 +180,17 @@ mehrfach zuweisen. Solche Instanzen bleiben mit der Vorlage gekoppelt.
 Instanzen übertragen. Der GM kann eine einzelne Instanz bewusst entkoppeln und
 anschließend individuell bearbeiten.
 
+Als gute Startannahme darf eine Vorlage frei ausgewählte authored Bausteine
+enthalten, beispielsweise eine vollständige Beschreibung, einzelne
+Textabschnitte, Attribute, Zustände oder Features. Geometrie, geometrische
+Zuordnung und stabile Objektidentität gehören nicht zur Vorlage. Nur die
+ausgewählten Bausteine bleiben gekoppelt; andere Instanzinhalte bleiben
+individuell bearbeitbar. Ein gekoppelter Baustein muss vor individueller
+Bearbeitung entkoppelt werden.
+
+Diese Granularität ist ausdrücklich eine überprüfbare Startannahme und soll nach
+praktischen Nutzungstests angepasst werden dürfen.
+
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
 **Bestätigte Antwort:** Fest gezeichnete Flächen und dynamisch erzeugte Pfade.
