@@ -67,8 +67,12 @@ activations and a Reset Duration that restores all Charges together. The GM
 chooses whether recharge begins at zero Charges or immediately below maximum.
 Further activation does not restart a running countdown; completion restores all
 Charges. The GM may manually correct the state. A far-future monster
-routine may explicitly reset a Trap. Encounter detection provisionally
-uses a radius derived from monster statistics. Loot and Curiosities do not
+routine may explicitly reset a Trap. A placed Dungeon Encounter primarily uses
+the existing Encounter capability as the source of monster composition and
+statistics. Its Dungeon placement adds the voxel anchor, local notes, detection
+context, and any later schedule rather than duplicating Encounter truth.
+Encounter detection provisionally uses a radius derived from the referenced
+monster statistics. Loot and Curiosities do not
 activate from proximity alone.
 
 The GM may copy a complete Room, door, or comparable authored identity, or
