@@ -160,7 +160,7 @@ The Dungeon capability includes:
 - Dungeon catalog management
 - square-cell, multi-level authored geometry
 - rooms, larger named room groups or areas, walls, doors, unified generated
-  3D connection Paths, transitions, markers, and GM-authored traps
+  3D connection Paths, transitions, and GM-authored traps
 - descriptions, inspection, stable Dungeon-Key numbering, and campaign-object
   references
 - synchronized raster-map, relationship-graph, and Dungeon-Key workflows
@@ -169,6 +169,9 @@ The Dungeon capability includes:
 - a human-readable document export containing the map, Dungeon Key, and stable
   references
 - a versioned portable Dungeon package for authored Dungeon truth
+
+There is no generic spatial Marker kind; placed content has a purpose-specific
+Dungeon role.
 
 New authored object families, tools, rules, and integrations MUST remain
 locally addable in source code. A runtime plugin system is not required.
@@ -190,7 +193,8 @@ truth.
 
 ## Campaign Relationships
 
-Rooms, areas, and markers may reference suitable campaign-owned places, NPCs,
+Rooms, areas, Passages, and Dungeon Features may reference suitable
+campaign-owned places, NPCs,
 factions, encounters, items, scenes, and similar objects. Dungeon stores stable
 references without copying or taking ownership of the referenced object's
 truth.
