@@ -312,13 +312,18 @@ entschieden.
 
 ### Welche Geschwindigkeit gilt für ein zusammengefasstes Gruppentoken?
 
-**Bestätigte Antwort:** Langsamstes Mitglied.
+**Bestätigte Antwort:** Langsamstes Mitglied als überschreibbarer Standard.
 
-Ein gemeinsames Gruppentoken bewegt sich mit der Geschwindigkeit seines
-langsamsten Mitglieds. Die Gruppe bleibt während dieser Reise zusammen und alle
-Mitglieder erreichen das Ziel gleichzeitig. Unterschiedliche interne
-Ankunftszeiten werden innerhalb eines zusammengefassten Tokens nicht
-modelliert.
+Ein gemeinsames Gruppentoken bewegt sich standardmäßig mit der Geschwindigkeit
+seines langsamsten berücksichtigten Mitglieds. Die Gruppe bleibt während dieser
+Reise zusammen und alle Mitglieder erreichen das Ziel gleichzeitig.
+Unterschiedliche interne Ankunftszeiten werden innerhalb eines
+zusammengefassten Tokens nicht modelliert.
+
+Im Reise-State-Tab kann der GM die berechnete Reisegeschwindigkeit der gesamten
+Gruppe überschreiben. Er kann außerdem einzelne Mitglieder aus der Berechnung
+ausschließen, beispielsweise wenn sie getragen werden, oder ihre für die Reise
+verwendete Geschwindigkeit individuell überschreiben.
 
 ### Welchen Zeittakt verwendet die Explorationsinitiative?
 
