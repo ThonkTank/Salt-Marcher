@@ -76,6 +76,12 @@ authored transition text. The GM may reorder blocks and suppress individual
 derived facts. Geometry changes update only affected derived content and never
 overwrite or reorder GM-authored text.
 
+Description blocks and relevant authored objects may be visible, GM-only, or
+hidden until discovered. Secret status is authored truth; discovery by the
+current party is separate runtime state. Undiscovered secrets remain absent
+from player-readable descriptions and exits without changing explicit
+passability.
+
 Every Dungeon Feature initially has an exact 3D voxel position anchored within
 one Volume. Moving or reshaping the Volume carries its Feature anchors with it.
 If destructive geometry makes reliable mapping impossible, the Feature remains
