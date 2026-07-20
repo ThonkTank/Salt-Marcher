@@ -142,6 +142,22 @@ Punkten sowie Inhalte wie Rätsel, Loot, Encounter und Curiosities überblicken
 und planen. Räumliche Verschiebungen im Graphen werden so weit wie möglich in
 die Rastergeometrie übertragen.
 
+### Wie werden Graph-Verschiebungen sicher in Rastergeometrie überführt?
+
+**Bestätigte Antwort:** Geschützter Graph-Edit-Preview.
+
+Graph-Verschiebungen werden zunächst als geschützter, noch nicht dauerhaft
+bestätigter Bearbeitungsstand gehalten. Eine Rastervorschau erscheint nicht
+innerhalb des Graphen, sondern erst wenn der GM zurück zur Rasterkarte
+wechselt. Dort sieht er die übertragene Geometrie und mögliche Probleme, kann
+sie mit den vorhandenen Raster-Editorwerkzeugen bereinigen und das
+Gesamtergebnis anschließend endgültig annehmen.
+
+Solange dieser Graph-Edit-Preview nicht final bestätigt wurde, kann der GM den
+gesamten Dungeon auf den Zustand unmittelbar vor Beginn der Graph-Bearbeitung
+zurücksetzen. Diese geschützte Rückkehr ist unabhängig von Tiefe und
+Speichergrenzen der gewöhnlichen Sitzungs-Undo/Redo-Historie.
+
 Die Raumliste beziehungsweise der Dungeon-Key dient der fokussierten
 Bearbeitung von Beschreibungen und anderem überwiegend textförmigem Inhalt.
 Große Bearbeitungsdialoge ermöglichen die schnelle Pflege einzelner Räume.
@@ -588,11 +604,9 @@ Requirements überführt.
 
 Die nächsten bereits vorbereiteten Fragen sind:
 
-1. Was geschieht, wenn eine Verschiebung im Beziehungsgraphen nicht eindeutig
-   oder kollisionsfrei in Rastergeometrie übertragen werden kann?
-2. Wie verhalten sich automatisch aus Geometrie erzeugte Beschreibungsteile zu
+1. Wie verhalten sich automatisch aus Geometrie erzeugte Beschreibungsteile zu
    frei authored Text, wenn sich die Geometrie später ändert?
-3. Wie bleibt die zellgenaue Exploration klar von einer vollständigen
+2. Wie bleibt die zellgenaue Exploration klar von einer vollständigen
    taktischen Battlemap und Encounter-Aktionsökonomie abgegrenzt?
 
 Danach sind mindestens folgende Bedarfsfragen offen:
