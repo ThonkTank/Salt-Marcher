@@ -78,6 +78,13 @@ The GM may explicitly convert a Path into a fixed Area for fully custom
 geometry. Conversion preserves its current materialized volume and ends
 automatic rerouting.
 
+Every Path endpoint belongs semantically to one navigation area of a Room and
+also has an exact 3D anchor on that Room's boundary. When the GM connects Rooms
+or navigation areas without choosing exact anchors, SaltMarcher proposes
+suitable boundary anchors. The GM can move or pin those anchors. Graph
+relationships retain the semantic attachment while raster geometry uses the
+exact anchor.
+
 Additional raster capabilities include:
 
 - draw and reshape room and area geometry
