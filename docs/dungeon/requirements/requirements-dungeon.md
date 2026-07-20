@@ -70,6 +70,12 @@ GM may explicitly suppress or clear an inherited key. Overlapping collections
 or tags may support filters and diagnostics but do not inherit. Attribute
 inheritance does not create rules, passability, or effects.
 
+A rendered Room description is a GM-ordered sequence of authored prose, derived
+geometry facts, effective attributes, exits, visible Passages, and optional
+authored transition text. The GM may reorder blocks and suppress individual
+derived facts. Geometry changes update only affected derived content and never
+overwrite or reorder GM-authored text.
+
 Every Dungeon Feature initially has an exact 3D voxel position anchored within
 one Volume. Moving or reshaping the Volume carries its Feature anchors with it.
 If destructive geometry makes reliable mapping impossible, the Feature remains
