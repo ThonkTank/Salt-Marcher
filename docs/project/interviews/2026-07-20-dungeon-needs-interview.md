@@ -321,6 +321,16 @@ weitere räumliche Exemplare zu erzeugen. Soll gleichartiger Loot an mehreren
 Orten existieren, erstellt der GM unabhängige Kopien. Eine spätere Bewegung
 ändert den vorhandenen Anker.
 
+### Ist ein Rätsel eine eigene Dungeon-Feature-Art?
+
+**Bestätigte Antwort:** Nein, sondern eine klassifizierte Curiosity.
+
+Curiosity bleibt das gemeinsame Inhaltsmodell für interaktive Besonderheiten.
+»Rätsel« ist eine eingebaute Kategorie beziehungsweise Kennzeichnung; weitere
+frei definierbare Tags dürfen hinzukommen. Die Heatmap kann dadurch sowohl alle
+Curiosities zählen als auch die Rätsel-Teilmenge gesondert darstellen.
+Curiosities werden weiterhin nicht qualitativ bewertet.
+
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
 **Bestätigte Antwort:** Fest gezeichnete Flächen und dynamisch erzeugte Pfade.
