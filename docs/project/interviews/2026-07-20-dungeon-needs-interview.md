@@ -181,6 +181,20 @@ Der Dungeon-Key ist demgegenüber ein sekundäres Feinschliff-Werkzeug. Er dient
 vor allem dazu, Beschreibungen und anderen textförmigen Inhalt nach der
 strukturellen Arbeit fokussiert auszuarbeiten.
 
+### Was entsteht im Raster, wenn der GM einen Raum im Graphen anlegt?
+
+**Bestätigte Antwort:** Automatisch erzeugte provisorische Rohgeometrie.
+
+Position und Beziehungen des neuen Graphknotens erzeugen einen einfachen
+provisorischen Raum samt erster Verbindungen in der Rasterdarstellung. Der GM
+kann im Graphen optional grobe Angaben wie Größe, Grundform oder Ebene setzen,
+ohne dort konkrete Zellgeometrie zeichnen zu müssen.
+
+Beim Wechsel zur Rasterkarte erscheint die Übertragung im geschützten
+Graph-Edit-Preview. Der GM kann die Rohgeometrie mit den gewöhnlichen
+Rasterwerkzeugen verfeinern, vollständig zurücksetzen oder anschließend
+endgültig annehmen.
+
 ### Wie funktionieren die Nummern im klassischen Dungeon-Key?
 
 **Bestätigte Antwort:** Stabil und editierbar.
