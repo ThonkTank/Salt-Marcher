@@ -170,8 +170,11 @@ The Dungeon capability includes:
   references
 - a versioned portable Dungeon package for authored Dungeon truth
 
-There is no generic spatial Marker kind; placed content has a purpose-specific
-Dungeon role.
+There is no generic spatial Marker or Prop kind; placed content has a
+purpose-specific Dungeon role. An individually authored furnishing, flavor
+element, or table-facing interaction is a Curiosity. Incidental furnishing may
+remain Room or surface description, and other Features such as Loot may
+reference a Curiosity.
 
 New authored object families, tools, rules, and integrations MUST remain
 locally addable in source code. A runtime plugin system is not required.
