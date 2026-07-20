@@ -238,7 +238,6 @@ superseded topology.
 ## References
 
 - [Catalog Requirements](../requirements/requirements-catalog.md)
-- [Catalog Greenfield Roadmap](../delivery/roadmap-catalog-greenfield.md)
 - [Persistence Lifecycle](../../project/contract/persistence-lifecycle.md)
 - [Source Architecture](../../project/architecture/source-architecture.md)
 - [Feature Boundaries](../../project/architecture/patterns/feature-boundaries.md)
