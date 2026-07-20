@@ -52,8 +52,11 @@ selected parts of its authored content, and assign the resulting content to
 other suitable geometry without violating one-to-one assignment. Ordinary
 copies receive independent identities. The GM may instead explicitly create a
 reusable template whose assigned instances remain linked and automatically
-receive template changes. A linked instance may be deliberately detached,
-preserving its current content for independent editing.
+receive template changes. A linked instance or content block may be deliberately detached,
+preserving its current content for independent editing. Templates initially
+contain GM-selected authored content blocks and never geometry, geometry
+assignment, or stable object identity. This granularity remains subject to
+practical usability validation.
 
 Spatial authoring has two foundational forms: directly drawn anchored Areas and
 dynamically generated Paths between two or more endpoints or waypoints.
