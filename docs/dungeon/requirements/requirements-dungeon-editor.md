@@ -154,6 +154,16 @@ such as The Alexandrian's approximate content-bearing-room guidance may add
 separate pacing hints, but MUST NOT replace the rule-based danger and Loot
 budgets.
 
+Target level inherits from the complete Dungeon into levels and areas unless the
+GM overrides it at a narrower scope. Planned sessions do not duplicate into
+every child scope. The GM explicitly allocates Dungeon session shares to levels
+or areas, and unallocated shares remain visible.
+
+Child budget and actual-content summaries roll up without double counting. A
+scope without allocated sessions still receives neutral heatmaps, Curiosity
+density, and general distribution hints, but no misleading XP, gold, or
+magic-item budget warning.
+
 The GM may rearrange rooms and room groups in the graph. SaltMarcher translates
 those changes into raster geometry as far as possible.
 
