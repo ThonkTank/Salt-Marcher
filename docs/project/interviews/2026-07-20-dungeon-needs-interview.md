@@ -173,6 +173,19 @@ Für vollständig individuelle Geometrie kann der GM einen Pfad bewusst in eine
 feste Fläche umwandeln. Die aktuelle Form wird dadurch direkt authored und
 anschließend nicht mehr automatisch geroutet.
 
+### Woran sind die Endpunkte eines Pfades befestigt?
+
+**Bestätigte Antwort:** Navigationsbereich plus exakter 3D-Grenzanker.
+
+Jeder Pfadendpunkt gehört semantisch zu einem bestimmten Navigationsbereich
+eines Raums und besitzt zusätzlich einen exakten dreidimensionalen Anker an
+dessen Grenze. Dadurch bewahrt der Graph die fachliche Verbindung, während die
+Rasteransicht den konkreten räumlichen Anschluss kennt.
+
+Der GM darf zunächst lediglich die zu verbindenden Räume beziehungsweise
+Navigationsbereiche bestimmen. SaltMarcher schlägt dafür geeignete Grenzanker
+vor. Der GM kann diese Anker anschließend verschieben oder fixieren.
+
 ### Für welchen langfristigen Nutzungshorizont gilt die Bedarfsbaseline?
 
 **Nachgeschärfte bestätigte Antwort:** Lokaler GM als einziger Bediener.
