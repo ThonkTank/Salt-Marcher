@@ -65,11 +65,16 @@ angelegt.
 
 ### Für welchen langfristigen Nutzungshorizont gilt die Bedarfsbaseline?
 
-**Bestätigte Antwort:** Lokaler GM allein.
+**Nachgeschärfte bestätigte Antwort:** Lokaler GM als einziger Bediener.
 
-Die Zielnutzung ist ein einzelner GM auf einem lokalen Desktop. Spieleransicht,
-Remotezugriff und Mehrbenutzerbetrieb sind keine langfristigen Anforderungen
-dieser Baseline.
+Die primäre Zielnutzung ist ein einzelner GM auf einem lokalen Desktop. Spieler
+erhalten keinen eigenen Steuerungszugang wie in einem VTT; Remotezugriff und
+Mehrbenutzerbearbeitung sind keine Anforderungen dieser Baseline.
+
+Als niedrig priorisierte spätere Erweiterung soll eine passive Spieleransicht
+auf einem zweiten Monitor möglich sein. Sie zeigt die Spielerperspektive mit
+Fog of War, verborgenen Geheimnissen, Lichtsimulation und vergleichbaren
+Sichtbarkeitsregeln, ohne das GM-only-Bedienmodell zu verändern.
 
 ### Welche langfristige Dungeon-Fähigkeit ist Produktbedarf?
 
@@ -117,11 +122,31 @@ festgelegt.
 
 ### Wie sollen Rasterkarte, Beziehungsgraph und Raumliste zusammenarbeiten?
 
-**Bestätigte Antwort:** Bidirektional synchron.
+**Bestätigte Antwort:** Spezialisierte, bidirektional synchronisierte
+Arbeitsflächen.
 
 Auswahl und Navigation springen zwischen demselben Raum oder Bereich in allen
 drei Darstellungen. Bearbeitungen erscheinen konsistent aus einer gemeinsamen
-Dungeon-Wahrheit.
+Dungeon-Wahrheit. Die Darstellungen haben dabei unterschiedliche Aufgaben.
+
+Die Rasterkarte ist im Editor die maßgebliche Arbeitsfläche zum Zeichnen und
+Bearbeiten von Geometrie, Kartenobjekten und räumlicher Platzierung. Im
+Reise-Kontext wird sie dagegen passiv dargestellt. Dort wählt der GM Räume,
+Objekte und andere Ziele aus, um deren Beschreibung im Detail-Pane zu öffnen;
+Geometrie wird in dieser Ansicht nicht bearbeitet.
+
+Der abstrakte Beziehungsgraph dient als Dungeon-Design- und Debug-Ansicht. Der
+GM kann Räume und Raumgruppen schnell umsortieren und herausgezoomt den Flow,
+die Verteilung von Entscheidungskomplexität, Reisezeiten zwischen wichtigen
+Punkten sowie Inhalte wie Rätsel, Loot, Encounter und Curiosities überblicken
+und planen. Räumliche Verschiebungen im Graphen werden so weit wie möglich in
+die Rastergeometrie übertragen.
+
+Die Raumliste beziehungsweise der Dungeon-Key dient der fokussierten
+Bearbeitung von Beschreibungen und anderem überwiegend textförmigem Inhalt.
+Große Bearbeitungsdialoge ermöglichen die schnelle Pflege einzelner Räume.
+Teile der angezeigten Raumbeschreibung werden automatisch aus der authored
+Geometrie abgeleitet.
 
 ### Wie funktionieren die Nummern im klassischen Dungeon-Key?
 
@@ -145,6 +170,16 @@ Ereignisse.
 Der GM kann die synchronisierte Raumliste in der App nutzen und zusammen mit
 Karte und Verweisen als druck- oder teilbares, menschenlesbares Dokument
 exportieren.
+
+### Wo befindet sich die Steuerung der Dungeon-Reise?
+
+**Bestätigte Antwort:** Im unabhängigen Reisen-State-Tab.
+
+Bewegungsgeschwindigkeiten, Übergangsauswahl, der Start längerer
+Routenplanungen und weitere Reisebefehle befinden sich im Reisen-State-Tab.
+Diese Steuerungsfläche ist unabhängig von der jeweils dargestellten
+Reise-Kartenansicht. Die passive Reise-Rasterkarte dient Auswahl, Orientierung
+und Detailanzeige, nicht als alleiniger Träger der Reisesteuerung.
 
 ## Bedienung und Editor-Verhalten
 
@@ -553,9 +588,11 @@ Requirements überführt.
 
 Die nächsten bereits vorbereiteten Fragen sind:
 
-1. Welche Bearbeitungen müssen direkt in Rasterkarte, Beziehungsgraph und
-   Raumliste möglich sein, statt dort nur synchron sichtbar zu werden?
-2. Wie bleibt die zellgenaue Exploration klar von einer vollständigen
+1. Was geschieht, wenn eine Verschiebung im Beziehungsgraphen nicht eindeutig
+   oder kollisionsfrei in Rastergeometrie übertragen werden kann?
+2. Wie verhalten sich automatisch aus Geometrie erzeugte Beschreibungsteile zu
+   frei authored Text, wenn sich die Geometrie später ändert?
+3. Wie bleibt die zellgenaue Exploration klar von einer vollständigen
    taktischen Battlemap und Encounter-Aktionsökonomie abgegrenzt?
 
 Danach sind mindestens folgende Bedarfsfragen offen:
