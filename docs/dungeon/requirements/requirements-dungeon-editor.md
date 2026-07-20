@@ -306,6 +306,12 @@ truth; discovery by the current party is separate runtime state. The editor can
 preview both undiscovered and discovered renderings. Visibility does not alter
 explicit passability.
 
+Hidden content may optionally define a search method, DC, private discovery
+notes, and the text or facts revealed afterward. SaltMarcher may compare passive
+values or a GM-entered active-check result and privately notify the GM. It MUST
+NOT reveal content without GM confirmation. The GM may manually reveal or hide
+it again.
+
 Descriptions such as blocked, locked, heavy, cold, or damp affect generated
 wording and placement in the dynamic description. They MUST NOT silently create
 passability or action rules.
