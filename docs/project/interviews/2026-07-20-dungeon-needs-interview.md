@@ -453,9 +453,16 @@ Polygon- beziehungsweise Flächenwerkzeug zieht per Click-and-drag Flächen in
 unterschiedlichen Formen auf. Der Radierer bietet dieselben Form- und
 Radiusmöglichkeiten zum Entfernen von Geometrie.
 
-Eine Auswahl kann vorhandene Geometrie verschieben, verzerren und detailliert
-bearbeiten. Boden, begehbares Volumen und Standarddecke bleiben dabei die
-gemeinsam betrachtete räumliche Form.
+Pinsel, Flächenwerkzeug und Radierer arbeiten unabhängig von einer aktuellen
+Auswahl direkt auf der Geometrie. Überlappende oder dadurch zusammenhängende
+Volumen werden automatisch vereinigt. Wird die Geometrie getrennt, entstehen
+automatisch mehrere Volumen. Nach Abschluss des Werkzeugs ist kein zusätzlicher
+Bestätigungsdialog erforderlich; Undo ist der normale Rückweg.
+
+Das Auswahlwerkzeug bleibt für das Verschieben, Verzerren und detaillierte
+Bearbeiten vorhandener Geometrie zuständig, steuert aber nicht das Ziel der
+Zeichen- und Radierwerkzeuge. Boden, begehbares Volumen und Standarddecke
+bleiben dabei die gemeinsam betrachtete räumliche Form.
 
 ### Sind Korridore und Treppen unterschiedliche Pfadmodelle?
 
