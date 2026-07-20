@@ -191,8 +191,11 @@ Heatmap facts come only from explicit authored Dungeon Features, not from
 guessing content out of room prose. Initial feature kinds include Encounter,
 Trap, Loot, and Curiosity.
 
-A Curiosity is the common Feature kind for puzzles and other interactive
-peculiarities. Puzzle is a built-in Curiosity classification rather than a
+A Curiosity is the common Feature kind for puzzles, individually authored
+flavor, table-facing interactions, and concrete furnishings such as a table,
+statue, or fountain. There is no separate generic Prop kind. Incidental
+furnishing may remain Room or surface description, while Loot or other
+purpose-specific Features may reference the Curiosity. Puzzle is a built-in Curiosity classification rather than a
 separate foundational Feature kind; additional GM-defined tags may be added.
 Its initial content consists of a name, player-readable or read-aloud free text,
 GM-only notes for operation, solution, or possible reactions, plus categories
