@@ -312,10 +312,12 @@ overlap for inheritance. Allowed parent paths are Dungeon to Room, Dungeon to
 room group to Room, Dungeon to Level to Room, and Dungeon to Level to room group
 to Room. A Dungeon-level group may span z-levels; a Level-owned group remains
 within that conceptual Level. Further nested room-group levels are initially
-excluded. A more specific value overrides the inherited value
-for its scope. Additional overlapping collections
-or tags may support filtering and heatmaps but do not inherit attributes. The editor exposes both the effective value and where it
-originates, and lets the GM restore inheritance. Attribute inheritance MUST NOT
+excluded. Different attribute keys accumulate through inheritance. A more
+specific value for the same key replaces only that key, while other inherited
+values remain. The GM may explicitly suppress or clear an inherited key.
+Additional overlapping collections or tags may support filtering and heatmaps
+but do not inherit attributes. The editor exposes every effective value and its
+origin and lets the GM restore inheritance. Attribute inheritance MUST NOT
 create rules, passability, or effects.
 
 ## Geometry And Authored-Content Lifecycles
