@@ -58,9 +58,9 @@ It supports two foundational geometry forms:
 - unified generated 3D Paths between two or more endpoints or waypoints; one
   Path may combine corridor, stair, ramp, ladder, shaft, and comparable segments
 
-Both forms produce bounded, standable Room volume. Chambers, corridors, and
-stair spaces remain semantically equivalent for travel even when their
-authoring behavior differs. A resulting Room may be partitioned into navigation
+Both forms produce bounded, standable geometric Volumes. Chambers, corridors,
+stair spaces, and comparable forms use equivalent movement semantics even when
+their authoring behavior differs. A Volume may be partitioned into navigation
 areas at meaningful internal decisions such as corridor junctions.
 
 A Path remains parametrically defined by endpoints, optional waypoints,
@@ -78,18 +78,18 @@ The GM may explicitly convert a Path into a fixed Area for fully custom
 geometry. Conversion preserves its current materialized volume and ends
 automatic rerouting.
 
-Every Path endpoint belongs semantically to one navigation area of a Room and
-also has an exact 3D anchor on that Room's boundary. When the GM connects Rooms
-or navigation areas without choosing exact anchors, SaltMarcher proposes
-suitable boundary anchors. The GM can move or pin those anchors. Graph
-relationships retain the semantic attachment while raster geometry uses the
-exact anchor.
+Every Path endpoint belongs semantically to one navigation area associated with
+a Room and also has an exact 3D anchor on the attached Volume's boundary. When
+the GM connects Rooms or navigation areas without choosing exact anchors,
+SaltMarcher proposes suitable boundary anchors. The GM can move or pin those
+anchors. Graph relationships retain the semantic attachment while raster
+geometry uses the exact anchor.
 
-A Path meets each Room through a separate authored Passage on the Room
-boundary. A Passage may be an open opening, door, hatch, secret door, or a
-comparable form. It owns its description and explicit binary passability fact;
-the Path owns route and travel properties. Path creation may initially create
-suitable open Passages, which the GM can later change into other Passage forms.
+A Path meets each Volume through a separate Passage at its boundary. A Passage
+may be an open opening, door, hatch, secret door, or a comparable form. Its
+authored identity owns description and explicit binary passability; the Path
+owns route and travel properties. Path creation may initially create suitable
+open Passages, which the GM can later change into other Passage forms.
 
 Additional raster capabilities include:
 
@@ -286,6 +286,22 @@ overwriting GM-authored attributes.
 Descriptions such as blocked, locked, heavy, cold, or damp affect generated
 wording and placement in the dynamic description. They MUST NOT silently create
 passability or action rules.
+
+## Geometry And Authored-Content Lifecycles
+
+- a Volume is geometric truth; a Room is stable GM-authored content associated
+  with a Volume
+- moving a Volume preserves its Room association and Room identity
+- after a Volume is removed, split, or made unrecognizable, SaltMarcher attempts
+  a safe reassociation to suitable resulting geometry
+- when reliable reassociation is not possible, the Room and all of its authored
+  content remain available without a geometry assignment
+- the same protection applies to other described authored identities, including
+  doors: deleting their geometry does not delete their description or semantic
+  content
+- only an explicit content-deletion action removes preserved GM-authored content
+- the reassociation mechanism is replaceable; the required outcome is visible,
+  recoverable preservation without silent data loss
 
 ## Commit, Preview, And History
 
