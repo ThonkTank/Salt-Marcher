@@ -341,6 +341,10 @@ passability or action rules.
   shared Loot object used by Encounter and Session Generation, rather than
   duplicating currencies, items, or magic-item truth
 - the Dungeon placement adds the voxel anchor and local Dungeon context
+- one concrete Loot object has at most one current Dungeon anchor; Encounter
+  and Session Generation references do not create additional spatial copies
+- repeated physical Loot requires independent copies, while movement changes
+  the existing anchor
 - Loot and Curiosity Features do not activate solely because the party is nearby
 - a Volume is geometric truth; a Room is stable GM-authored content associated
   with a Volume
