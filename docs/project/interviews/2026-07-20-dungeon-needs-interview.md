@@ -311,6 +311,16 @@ Charakterattribute herangezogen; die Zeitberechnung benötigt keine freie
 GM-Entscheidung. Die Erkennung eines potenziellen geometrischen Sonderwegs
 bleibt davon getrennt.
 
+### Wie wird diagonale und freie Weglänge auf dem Raster gemessen?
+
+**Bestätigte Antwort:** Geometrisch genau.
+
+SaltMarcher verwendet für diagonale und freie Wege die tatsächliche
+geometrische Streckenlänge. Die vereinfachten Rastermethoden mit pauschal 5 Fuß
+pro Diagonale oder abwechselnd 5 und 10 Fuß werden nicht verwendet. Die
+weiteren Regeln des D&D-5e-2014-Profils, insbesondere Terrain-, Kletter- und
+Bewegungsmodifikatoren, werden auf diese präzise Weglänge angewandt.
+
 ### Wie handeln getrennte Charaktere oder Gruppen in der Exploration?
 
 **Bestätigte Richtung:** Vom GM geführte Explorationsinitiative mit
@@ -520,13 +530,12 @@ Requirements überführt.
 
 Die nächsten bereits vorbereiteten Fragen sind:
 
-1. Welche D&D-5e-2014-Bewegungsdetails gehören verbindlich zum Regelprofil,
-   insbesondere Diagonalen, schwieriges Terrain, Klettern, Springen und
-   unterschiedliche Bewegungsraten?
-2. Welche Zustände von Türen, Durchlässen und Terrain beeinflussen sichtbare oder
+1. Welche Zustände von Türen, Durchlässen und Terrain beeinflussen sichtbare oder
    ausführbare Reiseoptionen?
-3. Welche Bearbeitungen müssen direkt in Rasterkarte, Beziehungsgraph und
+2. Welche Bearbeitungen müssen direkt in Rasterkarte, Beziehungsgraph und
    Raumliste möglich sein, statt dort nur synchron sichtbar zu werden?
+3. Wie bleibt die zellgenaue Exploration klar von einer vollständigen
+   taktischen Battlemap und Encounter-Aktionsökonomie abgegrenzt?
 
 Danach sind mindestens folgende Bedarfsfragen offen:
 
