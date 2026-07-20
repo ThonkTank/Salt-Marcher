@@ -63,10 +63,16 @@ stair spaces remain semantically equivalent for travel even when their
 authoring behavior differs. A resulting Room may be partitioned into navigation
 areas at meaningful internal decisions such as corridor junctions.
 
-A Path remains parametrically defined by endpoints, optional waypoints, width,
-and further path properties. Its voxel geometry derives from those facts.
-Moving a connected endpoint produces a rerouted preview rather than a silent
-commit. Normal path editing changes points or parameters.
+A Path remains parametrically defined by endpoints, optional waypoints,
+cross-section, and further path properties. It may carry an authored connection
+form for individual segments, including corridor, stair, ramp, ladder, or
+shaft. SaltMarcher may propose the segment forms and route, while the GM can
+force a form or pin its position. Segment forms remain properties of the same
+Path rather than separate foundational content objects.
+
+The Path's exact voxel geometry derives from those facts. Moving a connected
+endpoint produces a rerouted preview rather than a silent commit. Normal path
+editing changes points or parameters.
 
 The GM may explicitly convert a Path into a fixed Area for fully custom
 geometry. Conversion preserves its current materialized volume and ends
