@@ -107,20 +107,47 @@ Darstellung frei oder nicht exakt auf dem Grid liegen, sind eine
 niedrig priorisierte Erweiterung; das grundlegende Authoring darf zunächst
 gridgebunden bleiben.
 
-### Was ist fachlich ein Raum?
+### Wie unterscheiden sich Volumen und Raum?
 
-**Bestätigte Antwort:** Jedes begrenzte begehbare Innenvolumen.
+**Korrigierte bestätigte Antwort:** Geometrisches Volumen und semantischer Raum
+sind gekoppelt, aber nicht identisch.
 
-Ein Raum ist ein Volumen, das durch feste Grenzen wie Wände, Türen, Boden und
-Decke umschlossen wird und in dem eine Party stehen kann. Diese fachliche
-Bedeutung umfasst gewöhnliche Kammern ebenso wie Korridore und Treppenräume.
-Für Reise ist es kein grundsätzlicher Unterschied, ob die Party in einer
-Kammer oder einem Korridor steht.
+Ein Volumen ist reine Geometrie: ein durch feste Grenzen wie Wände, Türen,
+Boden und Decke umschlossener, begehbarer Innenbereich. Kammern, Korridore,
+Treppenräume und vergleichbare Formen können solche Volumen bilden. Für Reise
+besteht zwischen diesen geometrischen Formen kein grundsätzlich anderes
+Bewegungsmodell.
 
-Ein Raum darf in mehrere Navigationsbereiche zerlegt werden. Diese Bereiche
-strukturieren die für die Party relevanten Entscheidungen innerhalb desselben
-begrenzten Volumens. Bei einem verzweigten Korridor kann beispielsweise jeder
-Ast beziehungsweise die Verzweigung einen eigenen Navigationsbereich bilden.
+Ein Raum ist dagegen eine stabile GM-authored Inhaltsidentität, die einem
+Volumen zugeordnet ist. Er trägt Namen, Beschreibungen, Features, Referenzen und
+vergleichbare investierte GM-Arbeit. Verschiebt sich das zugeordnete Volumen,
+bleibt es derselbe Raum.
+
+Das zugeordnete Volumen darf in mehrere Navigationsbereiche zerlegt werden.
+Diese strukturieren die für die Party relevanten Entscheidungen. Bei einem
+verzweigten Korridor kann beispielsweise jeder Ast beziehungsweise die
+Verzweigung einen eigenen Navigationsbereich bilden.
+
+### Was geschieht mit authored Inhalten, wenn sich ihre Geometrie auflöst?
+
+**Bestätigte Antwort:** Erhalten und nach Möglichkeit neu zuordnen.
+
+Wird ein Volumen entfernt, geteilt oder so stark verändert, dass seine bisherige
+Zuordnung nicht mehr eindeutig ist, versucht SaltMarcher den Raum nach
+Möglichkeit einem passenden resultierenden Volumen wieder zuzuordnen. Gelingt
+das nicht zuverlässig, bleibt der Raum mitsamt allen authored Inhalten ohne
+Geometriezuordnung erhalten und kann später einem anderen Volumen zugewiesen
+werden.
+
+Dasselbe Schutzziel gilt für andere GM-authored Inhalte jenseits reiner
+Geometrie. Türgeometrie und Türidentität sind eng verbunden, aber nicht
+dasselbe. Wird die Geometrie einer beschriebenen Tür gelöscht, bleibt ihre
+Inhaltsidentität mit Beschreibung und weiteren authored Fakten erhalten, bis
+der GM sie erneut zuordnet oder ausdrücklich als Inhalt löscht.
+
+Diese Aussage beschreibt ein gewünschtes Nutzererlebnis und eine
+Verlustschutz-Garantie. Sie legt keinen technischen Speicheraufbau oder
+Zuordnungsalgorithmus fest.
 
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
@@ -131,9 +158,9 @@ dieser Form bestehen, bis der GM sie ausdrücklich verändert oder entfernt.
 
 Ein Pfad wird dynamisch zwischen zwei oder mehreren End- beziehungsweise
 Wegpunkten erzeugt. Korridore und Treppen sind typische Pfad-Authoring-Formen.
-Der erzeugte Pfad materialisiert begrenztes, begehbares Raumvolumen und wird
-für Beschreibung, Navigation und Reise anschließend wie jeder andere Raum
-behandelt.
+Der erzeugte Pfad materialisiert ein begrenztes, begehbares Volumen. Dieses
+kann wie andere Volumen einem Raum zugeordnet und für Beschreibung, Navigation
+und Reise verwendet werden.
 
 Fläche und Pfad bezeichnen damit primär unterschiedliche
 Erzeugungs- und Bearbeitungsweisen, nicht zwei inkompatible Arten von Raum, in
@@ -190,7 +217,8 @@ vor. Der GM kann diese Anker anschließend verschieben oder fixieren.
 
 **Bestätigte Antwort:** Eigenständige Durchlässe in der Raumgrenze.
 
-Ein Pfad endet an einem eigenen Durchlassobjekt in der jeweiligen Raumgrenze.
+Ein Pfad endet an einem eigenen Durchlassobjekt in der jeweiligen
+Volumengrenze.
 Der Durchlass kann ein offener Durchgang, eine Tür, Luke, Geheimtür oder eine
 vergleichbare Form sein. Er besitzt seine Beschreibung und den expliziten
 binären Passierbarkeitszustand.
