@@ -161,8 +161,8 @@ Speichergrenzen der gewöhnlichen Sitzungs-Undo/Redo-Historie.
 Die Raumliste beziehungsweise der Dungeon-Key dient der fokussierten
 Bearbeitung von Beschreibungen und anderem überwiegend textförmigem Inhalt.
 Große Bearbeitungsdialoge ermöglichen die schnelle Pflege einzelner Räume.
-Teile der angezeigten Raumbeschreibung werden automatisch aus der authored
-Geometrie abgeleitet.
+Raumbeschreibungen werden hybrid aus aktueller Geometrie und dauerhaft
+GM-authored Beschreibungsattributen erzeugt.
 
 ### Wie funktionieren die Nummern im klassischen Dungeon-Key?
 
@@ -178,6 +178,24 @@ umordnen oder ändern, ohne interne Identität oder Verknüpfungen zu verlieren.
 Ein Eintrag enthält Nummer, Name, Vorlesetext, GM-Notizen oder Beschreibung,
 Ausgänge und Verbindungen sowie verknüpfte Akteure, Objekte, Encounter und
 Ereignisse.
+
+### Wie entstehen lesbare Raumbeschreibungen?
+
+**Bestätigte Antwort:** Dynamische Komposition aus Geometriefakten und
+GM-authored Attributen.
+
+SaltMarcher setzt eine Raumbeschreibung bei der Anzeige aus zwei Arten von
+Fakten zusammen. Geometrie, räumliche Beziehungen und relative Richtungen
+werden dynamisch aus der aktuellen Karte und dem Heading der Party abgeleitet.
+Begriffe wie »vor euch«, »links« und »rechts« beziehen sich damit auf die
+tatsächliche Annäherungs- beziehungsweise Blickrichtung der Party.
+
+Der GM authored davon unabhängige beschreibende Attribute, etwa hohe oder
+runde Räume, graue Steinwände, feuchte und modrige Luft sowie schwere
+verschlossene Eisentüren, offene dunkle Torbögen oder einfache Holztüren.
+SaltMarcher komponiert beides zu einem lesbaren Gesamttext. Eine
+Geometrieänderung aktualisiert die abgeleiteten Beziehungen, ohne die
+GM-authored Eigenschaften zu überschreiben.
 
 ### Soll der Dungeon-Key außerhalb der App ausgebbar sein?
 
@@ -604,8 +622,8 @@ Requirements überführt.
 
 Die nächsten bereits vorbereiteten Fragen sind:
 
-1. Wie verhalten sich automatisch aus Geometrie erzeugte Beschreibungsteile zu
-   frei authored Text, wenn sich die Geometrie später ändert?
+1. Welche Richtungsdarstellung verwendet eine Raumbeschreibung außerhalb einer
+   laufenden Reise, wenn keine Party mit eindeutigem Heading als Bezug existiert?
 2. Wie bleibt die zellgenaue Exploration klar von einer vollständigen
    taktischen Battlemap und Encounter-Aktionsökonomie abgegrenzt?
 
