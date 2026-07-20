@@ -84,7 +84,14 @@ It MUST help the GM inspect and manage:
 - important relationships and transitions that are difficult to understand at
   raster scale
 
-The default abstraction follows Melan-diagram principles documented by The
+Graph detail is adjustable. At maximum detail the graph may show every
+individual door, room, and connection. At progressively reduced levels it
+collapses unbranched routes, individual rooms, and then room groups into
+higher-level routes and navigation decisions. Flow, travel-time, and content
+facts aggregate to the visible level without replacing or discarding their
+underlying authored facts.
+
+The strongest reduction follows Melan-diagram principles documented by The
 Alexandrian:
 
 - straighten non-branching routes and remove irrelevant turns
