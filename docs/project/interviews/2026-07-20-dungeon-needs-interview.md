@@ -366,6 +366,15 @@ Holz vertäfelt« und in einem einzelnen Raum »rot tapeziert« werden.
 Zusätzliche überlappende Sammlungen oder Tags dürfen Filter und Heatmaps
 unterstützen, vererben jedoch keine Attribute.
 
+Ein Raum wird ausdrücklich höchstens einer fachlichen Ebene zugeordnet.
+SaltMarcher darf anhand der Lage seines Volumens eine Ebene vorschlagen,
+erzwingt die Zuordnung jedoch nicht. Ein hoher Saal, Treppenraum oder anderes
+mehrere Z-Level überspannendes Volumen darf der konzeptionell passenden Ebene
+zugeordnet werden oder die Ebenenstufe überspringen und direkt unter dem
+Dungeon liegen. Seine Geometrie wird dafür weder geteilt noch verändert.
+
+Die Z-Level-Mengen fachlicher Ebenen überlappen sich für die Vererbung nicht.
+
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
 **Bestätigte Antwort:** Fest gezeichnete Flächen und dynamisch erzeugte Pfade.
