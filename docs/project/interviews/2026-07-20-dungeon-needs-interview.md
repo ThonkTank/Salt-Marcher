@@ -165,6 +165,47 @@ Der Graph muss Rasterdetails nicht eins zu eins spiegeln. Er darf Geometrie
 zusammenfassen, solange echte Wahlmöglichkeiten, Verbindungsarten, Zustände und
 Reiseauswirkungen verständlich erhalten bleiben.
 
+### Welche externe Designmethode dient als primäre Graph-Inspiration?
+
+**Bestätigte Antwort:** Stark reduzierte Melan-Diagramme nach The Alexandrian.
+
+Primäre Referenz sind die Dungeon-Graphen aus The Alexandrians Reihe
+»Xandering the Dungeon« und dem Addendum »How to Use a Melan Diagram«. Der
+Graph reduziert einen Dungeon stark auf grundlegende Navigationsentscheidungen
+und Flow:
+
+- bedeutungslose Kurven und lange eindeutige Wegführungen werden begradigt
+- Türen oder Zwischenräume ohne echte Routenwahl erzeugen keinen eigenen
+  Entscheidungsknoten
+- kurze, strukturell unbedeutende Sackgassen dürfen ausgeblendet werden
+- echte Gabelungen, Schleifen, Geheimwege, ungewöhnliche Pfade und
+  Ebenenverbindungen bleiben erkennbar
+- falsche Schleifen, deren Zweige unmittelbar wieder am selben Punkt enden,
+  werden nicht als echte Routenvielfalt gewertet
+- Kantenlänge darf Reiseaufwand oder Weglänge grob widerspiegeln, ohne die
+  Rasterkarte nachzuzeichnen
+
+The Alexandrian beschreibt Melan-Diagramme primär als Analysewerkzeug.
+SaltMarcher erweitert diese Form bewusst zu einer gleichwertigen
+Authoring-Ansicht, deren strukturelle Änderungen in einen geschützten
+Raster-Preview übersetzt werden.
+
+### Welche zusätzliche Debug-Wirkung soll der Graph haben?
+
+**Bestätigte Richtung:** Quantitative Flow- und Content-Verteilungsanalyse.
+
+Der Graph soll die navigative Komplexität nicht nur zeigen, sondern
+quantitativ vergleichbar machen. Zusätzlich werden Konzentration und Verteilung
+von Content-Typen wie Treasure, Encounter, Curiosities, Rätseln und ähnlichen
+Elementen auf unterschiedlichen möglichen Routen debug-artig dargestellt.
+Dadurch kann der GM alternative Wege gegeneinander balancieren, ohne dass
+SaltMarcher einen einzig richtigen Dungeonaufbau vorschreibt.
+
+Designreferenzen:
+
+- https://thealexandrian.net/wordpress/13085/roleplaying-games/xandering-the-dungeon
+- https://thealexandrian.net/wordpress/45711/roleplaying-games/xandering-the-dungeon-addendum-how-to-use-a-melan-diagram
+
 ### Wie werden Graph-Verschiebungen sicher in Rastergeometrie überführt?
 
 **Bestätigte Antwort:** Geschützter Graph-Edit-Preview.
