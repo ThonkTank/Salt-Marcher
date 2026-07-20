@@ -525,6 +525,13 @@ verankerter Inhalt besitzt einen konkreten fachlichen Zweck, beispielsweise als
 Raum, Durchlass, Dungeon-Feature oder externer Übergang. Eine bedeutungslose
 Sammelkategorie für Name, Symbol und Notiz gehört nicht zum Produktbedarf.
 
+Gewöhnliche konkrete Einrichtung wie Tisch, Bett, Statue oder Brunnen benötigt
+ebenfalls keine eigene Prop-Objektart. Sobald sie einzeln authored werden soll,
+ist sie eine Curiosity. Curiosity ist der gemeinsame Auffangtyp für alles, was
+Flavor oder eine Handlung am Spieltisch darstellt. Loot oder andere konkrete
+Features dürfen mit dieser Curiosity verknüpft werden; rein beiläufige
+Einrichtung kann stattdessen Teil der Raum- oder Flächenbeschreibung bleiben.
+
 ### Für welchen langfristigen Nutzungshorizont gilt die Bedarfsbaseline?
 
 **Nachgeschärfte bestätigte Antwort:** Lokaler GM als einziger Bediener.
