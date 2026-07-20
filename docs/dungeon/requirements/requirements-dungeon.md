@@ -47,6 +47,12 @@ Room at a time; either may temporarily remain unassigned. Moving the Volume
 preserves that Room identity and association. Navigation areas partition a
 Volume, while room groups collect several Rooms or Volumes.
 
+A Room may provide descriptive defaults for its associated Volume. The GM may
+assign overriding authored descriptions, attributes, or templates to selected
+contiguous wall, floor, or ceiling regions. Only explicitly described surface
+regions require stable content identities and preservation; undescribed voxel
+faces remain plain geometry.
+
 The GM may copy a complete Room, door, or comparable authored identity, or
 selected parts of its authored content, and assign the resulting content to
 other suitable geometry without violating one-to-one assignment. Ordinary
