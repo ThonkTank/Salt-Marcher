@@ -19,6 +19,9 @@ The editor MUST let the GM:
 - create, rename, load, reload, and delete Dungeons
 - author and inspect rooms, named room groups or areas, walls, doors, corridors,
   stairs, transitions, markers, traps, descriptions, and campaign references
+- copy a complete authored Room, door, or comparable content identity, or
+  selected reusable parts of its authored content, and assign the copy to
+  suitable geometry
 - work on positive and negative levels and coordinates without a fixed Dungeon
   boundary
 - select a stable authored object and find the same object in every applicable
@@ -291,6 +294,10 @@ passability or action rules.
 
 - a Volume is geometric truth; a Room is stable GM-authored content associated
   with a Volume
+- one Room is assigned to at most one Volume and one Volume to at most one Room
+  at a time; either may temporarily be unassigned
+- navigation areas partition a Volume, while room groups collect several Rooms
+  or Volumes
 - moving a Volume preserves its Room association and Room identity
 - after a Volume is removed, split, or made unrecognizable, SaltMarcher attempts
   a safe reassociation to suitable resulting geometry
@@ -300,6 +307,9 @@ passability or action rules.
   doors: deleting their geometry does not delete their description or semantic
   content
 - only an explicit content-deletion action removes preserved GM-authored content
+- the GM may duplicate whole authored identities or selected content parts and
+  assign the resulting content independently to other suitable geometry
+- whether copied content remains linked to a reusable source is not yet specified
 - the reassociation mechanism is replaceable; the required outcome is visible,
   recoverable preservation without silent data loss
 
