@@ -80,6 +80,28 @@ Die Rasterkarte ist eine Darstellung dieses einen Dungeons, kein eigener
 fachlicher Inhaltscontainer. Ein echter Übergang aus dieser Gesamtheit heraus
 kann zu einem anderen Dungeon oder einem externen Ort führen.
 
+### Welche räumliche Grundform besitzt der Dungeon?
+
+**Bestätigte Richtung:** Ein durchgehendes voxelartiges 3D-Grid.
+
+Der Dungeon wird als ein zusammenhängendes dreidimensionales Raster gedacht,
+vergleichbar mit einer vereinfachten Minecraft-Welt. Die horizontale
+Grundfläche arbeitet mit 5 x 5 Fuß. Vertikale Rastereinheiten bilden Höhe,
+übereinanderliegende Flächen und Zwischenebenen im selben räumlichen Modell ab.
+
+Der normale Raum- oder Flächen-Authoring-Flow darf den GM nicht zwingen, für
+jeden Raum Deckenhöhe, Boden und jeden vertikalen Zwischenraum einzeln
+einzustellen. Neue begehbare Flächen erhalten automatisch eine sinnvolle
+Standardhöhe, in der Charaktere stehen können. Abweichende Höhen bleiben
+möglich, sind aber bewusster Feinschliff statt Pflichtarbeit bei jeder
+Raumerstellung.
+
+Ebenen sind Ansichten oder Schnitte durch dieses gemeinsame 3D-Raster, keine
+getrennten Inhaltscontainer. Wände, die für eine spätere realistischere
+Darstellung frei oder nicht exakt auf dem Grid liegen, sind eine
+niedrig priorisierte Erweiterung; das grundlegende Authoring darf zunächst
+gridgebunden bleiben.
+
 ### Für welchen langfristigen Nutzungshorizont gilt die Bedarfsbaseline?
 
 **Nachgeschärfte bestätigte Antwort:** Lokaler GM als einziger Bediener.
