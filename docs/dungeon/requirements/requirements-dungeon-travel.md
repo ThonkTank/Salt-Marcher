@@ -153,8 +153,16 @@ proximity. A Trap may define zero or more arbitrary voxel-set trigger fields
 distinct from its own anchor; fields may lie in several adjacent Volumes and
 follow their Volume geometry. Entering a field may notify and interrupt travel,
 but the field never changes passability or decides the Trap outcome. Without a
-field, the Trap remains manually handled by the GM. Encounter detection
-provisionally uses a radius derived from monster statistics. Loot and Curiosity
+field, the Trap remains manually handled by the GM.
+
+A Trap may have Charges limiting how many times it can actually activate in
+succession and a Reset Duration describing how long Charge restoration takes.
+Charge use follows a GM-confirmed actual activation rather than mere entry into
+a trigger field. Exact refill timing and whether restoration is full or
+incremental remain to be confirmed. A future low-priority monster routine may
+perform an explicit manual reset.
+
+Encounter detection provisionally uses a radius derived from monster statistics. Loot and Curiosity
 Features do not open automatically from proximity alone.
 
 More interaction may be added later, but comprehensive trap simulation is not a
