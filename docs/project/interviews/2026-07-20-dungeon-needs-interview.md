@@ -502,6 +502,20 @@ Der Pfad selbst besitzt dagegen Verlauf und Reiseeigenschaften. Beim Erzeugen
 eines Pfades darf SaltMarcher zunächst passende offene Durchlässe anlegen. Der
 GM kann sie anschließend in Türen oder andere Durchlassformen ändern.
 
+### Welche Form besitzt ein echter Ausgang aus dem Dungeon?
+
+**Bestätigte Antwort:** Ein besonderer Durchlass mit externem Ziel.
+
+Ein Übergang liegt als besonderer Durchlass an einer exakten Volumengrenze. Er
+verweist auf einen anderen Dungeon oder einen externen Kampagnenort und besitzt
+Richtung, Beschreibung, explizite Passierbarkeit sowie optional zusätzliche
+Reisezeit.
+
+Eine Gegenseite darf sofort verknüpft werden, kann beim ersten Authoring aber
+noch fehlen. Ein beidseitiger Übergang besitzt auf jeder Seite einen eigenen
+Durchlass mit eigener Beschreibung und Passierbarkeit; beide Seiten verweisen
+aufeinander.
+
 ### Für welchen langfristigen Nutzungshorizont gilt die Bedarfsbaseline?
 
 **Nachgeschärfte bestätigte Antwort:** Lokaler GM als einziger Bediener.
