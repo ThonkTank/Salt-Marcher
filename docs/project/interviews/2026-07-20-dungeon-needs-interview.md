@@ -307,8 +307,18 @@ bleibt davon getrennt.
 Charaktere erhalten eigene Explorationshandlungen. Wenn ein Charakter oder eine
 abgetrennte Gruppe reist, werden ihre folgenden Runden automatisch mit Reise
 gefüllt, bis das Reiseziel beziehungsweise die anderen Charaktere erreicht
-ist. Gruppentempo und das Verhalten beim Einholen beweglicher Ziele sind noch
-nicht abschließend entschieden.
+ist. Das Verhalten beim Einholen beweglicher Ziele ist noch nicht abschließend
+entschieden.
+
+### Welche Geschwindigkeit gilt für ein zusammengefasstes Gruppentoken?
+
+**Bestätigte Antwort:** Langsamstes Mitglied.
+
+Ein gemeinsames Gruppentoken bewegt sich mit der Geschwindigkeit seines
+langsamsten Mitglieds. Die Gruppe bleibt während dieser Reise zusammen und alle
+Mitglieder erreichen das Ziel gleichzeitig. Unterschiedliche interne
+Ankunftszeiten werden innerhalb eines zusammengefassten Tokens nicht
+modelliert.
 
 ### Welchen Zeittakt verwendet die Explorationsinitiative?
 
@@ -433,13 +443,13 @@ Requirements überführt.
 
 Die nächsten bereits vorbereiteten Fragen sind:
 
-1. Bewegt sich ein zusammengefasstes Gruppentoken mit dem langsamsten Mitglied,
-   mit intern unterschiedlichen Ankunftszeiten oder mit einem vom GM gesetzten
-   Gruppentempo?
-2. Wie verhalten sich eine laufende Autoroute und ein bewegliches Ziel, wenn ein
+1. Wie verhalten sich eine laufende Autoroute und ein bewegliches Ziel, wenn ein
    Charakter eine andere Gruppe einholt?
-3. Welche Unterbrechungen außer Ereignis, ungültigem Weg und GM-Abbruch stoppen
+2. Welche Unterbrechungen außer Ereignis, ungültigem Weg und GM-Abbruch stoppen
    automatische Reise?
+3. Welche D&D-5e-2014-Bewegungsdetails gehören verbindlich zum Regelprofil,
+   insbesondere Diagonalen, schwieriges Terrain, Klettern, Springen und
+   unterschiedliche Bewegungsraten?
 
 Danach sind mindestens folgende Bedarfsfragen offen:
 
