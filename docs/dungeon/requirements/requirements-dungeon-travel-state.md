@@ -26,7 +26,7 @@ the map itself into a player-operated VTT.
 
 The state tab communicates at least:
 
-- active Dungeon map and current area
+- active Dungeon and current area
 - active party or selected actor/group
 - cell-precise position and heading
 - current movement, route, pursuit, loading, interruption, or failure status
@@ -106,7 +106,7 @@ next delivery.
 
 ## Acceptance Outcomes
 
-- the GM can inspect and adjust travel state without depending on which map
+- the GM can inspect and adjust travel state without depending on which Dungeon
   presentation is visible
 - a grouped token uses the slowest included member unless the GM overrides the
   calculation
