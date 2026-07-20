@@ -75,8 +75,11 @@ concrete Encounter or monster group has at most one current Dungeon placement;
 equivalent repetitions require independent Encounter copies. Later movement
 changes the same group's anchor rather than creating another placement.
 Encounter detection provisionally uses a radius derived from the referenced
-monster statistics. Loot and Curiosities do not
-activate from proximity alone.
+monster statistics. Dungeon Loot placement uses existing Loot content and ultimately
+the same shared Loot object as Encounter and Session Generation. The Dungeon
+adds voxel placement and local context rather than duplicating currencies,
+items, or magic-item truth. Loot and Curiosities do not activate from proximity
+alone.
 
 The GM may copy a complete Room, door, or comparable authored identity, or
 selected parts of its authored content, and assign the resulting content to
