@@ -84,6 +84,28 @@ It MUST help the GM inspect and manage:
 - important relationships and transitions that are difficult to understand at
   raster scale
 
+The default abstraction follows Melan-diagram principles documented by The
+Alexandrian:
+
+- straighten non-branching routes and remove irrelevant turns
+- collapse doors, intermediate spaces, and short dead ends that do not create a
+  meaningful macro-level navigation choice
+- preserve true forks, loops, secret or unusual paths, and level connections
+- avoid counting fake loops whose branches immediately rejoin without creating
+  meaningful route diversity
+- let edge length communicate approximate travel effort without reproducing
+  raster geometry
+
+Unlike the original analysis-only method, SaltMarcher's graph is also an
+authoring surface. It MUST preserve the distinction between abstract planned
+structure and protected provisional raster translation.
+
+The graph additionally supports debug-style content overlays and route
+comparisons. It can visualize and quantify the concentration and distribution
+of Treasure, Encounters, Curiosities, puzzles, and comparable authored content
+across alternative routes. These diagnostics inform GM judgment and MUST NOT
+enforce one supposedly correct Dungeon structure or content balance.
+
 The GM may rearrange rooms and room groups in the graph. SaltMarcher translates
 those changes into raster geometry as far as possible.
 
