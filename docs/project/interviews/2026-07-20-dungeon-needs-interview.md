@@ -489,6 +489,15 @@ Zwischenboden, entsteht eine offene vertikale Verbindung der betroffenen
 Geometrie. Böden und Wände bleiben auch unabhängig von der automatisch
 erzeugten Standardhülle editierbar.
 
+Ein Bodenmodus malt oder entfernt horizontale Flächen auf den Zellen der
+aktiven Höhe und verwendet die bestätigten Pinsel- und Radiererformen. Ein
+Wandmodus zieht Wände per Click-and-drag entlang der Zellkanten und kann ihre
+vertikale Ausdehnung über mehrere 5-Fuß-Schritte festlegen. Die Auswahl erlaubt
+anschließend Verschieben, Verlängern, Kürzen und Ändern der Höhe.
+
+Automatisch erzeugte Raumgrenzen sind danach normale editierbare Böden und
+Wände. Frei vom Grid liegende Wände bleiben eine spätere Erweiterung.
+
 ### Sind Korridore und Treppen unterschiedliche Pfadmodelle?
 
 **Bestätigte Antwort:** Ein einheitlicher dreidimensionaler Verbindungspfad.
