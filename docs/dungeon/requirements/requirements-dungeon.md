@@ -42,7 +42,14 @@ choices, including corridor junctions and branches.
 
 A Room is a stable GM-authored content identity associated with a Volume. It
 owns name, descriptions, Features, references, and comparable semantic work.
-Moving the Volume preserves that Room identity and association.
+One Room is associated with at most one Volume and one Volume with at most one
+Room at a time; either may temporarily remain unassigned. Moving the Volume
+preserves that Room identity and association. Navigation areas partition a
+Volume, while room groups collect several Rooms or Volumes.
+
+The GM may copy a complete Room, door, or comparable authored identity, or
+selected parts of its authored content, and assign the resulting content to
+other suitable geometry without violating one-to-one assignment.
 
 Spatial authoring has two foundational forms: directly drawn anchored Areas and
 dynamically generated Paths between two or more endpoints or waypoints.
