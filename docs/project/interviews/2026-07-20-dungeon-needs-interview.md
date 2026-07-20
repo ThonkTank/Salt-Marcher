@@ -107,6 +107,38 @@ Darstellung frei oder nicht exakt auf dem Grid liegen, sind eine
 niedrig priorisierte Erweiterung; das grundlegende Authoring darf zunächst
 gridgebunden bleiben.
 
+### Was ist fachlich ein Raum?
+
+**Bestätigte Antwort:** Jedes begrenzte begehbare Innenvolumen.
+
+Ein Raum ist ein Volumen, das durch feste Grenzen wie Wände, Türen, Boden und
+Decke umschlossen wird und in dem eine Party stehen kann. Diese fachliche
+Bedeutung umfasst gewöhnliche Kammern ebenso wie Korridore und Treppenräume.
+Für Reise ist es kein grundsätzlicher Unterschied, ob die Party in einer
+Kammer oder einem Korridor steht.
+
+Ein Raum darf in mehrere Navigationsbereiche zerlegt werden. Diese Bereiche
+strukturieren die für die Party relevanten Entscheidungen innerhalb desselben
+begrenzten Volumens. Bei einem verzweigten Korridor kann beispielsweise jeder
+Ast beziehungsweise die Verzweigung einen eigenen Navigationsbereich bilden.
+
+### Welche grundlegenden Formen räumlichen Authorings gibt es?
+
+**Bestätigte Antwort:** Fest gezeichnete Flächen und dynamisch erzeugte Pfade.
+
+Eine Fläche besitzt direkt gezeichnete, verankerte Geometrie. Sie bleibt in
+dieser Form bestehen, bis der GM sie ausdrücklich verändert oder entfernt.
+
+Ein Pfad wird dynamisch zwischen zwei oder mehreren End- beziehungsweise
+Wegpunkten erzeugt. Korridore und Treppen sind typische Pfad-Authoring-Formen.
+Der erzeugte Pfad materialisiert begrenztes, begehbares Raumvolumen und wird
+für Beschreibung, Navigation und Reise anschließend wie jeder andere Raum
+behandelt.
+
+Fläche und Pfad bezeichnen damit primär unterschiedliche
+Erzeugungs- und Bearbeitungsweisen, nicht zwei inkompatible Arten von Raum, in
+denen andere Reiseregeln gelten.
+
 ### Für welchen langfristigen Nutzungshorizont gilt die Bedarfsbaseline?
 
 **Nachgeschärfte bestätigte Antwort:** Lokaler GM als einziger Bediener.
