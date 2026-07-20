@@ -123,10 +123,12 @@ Volumen zugeordnet ist. Er trägt Namen, Beschreibungen, Features, Referenzen un
 vergleichbare investierte GM-Arbeit. Verschiebt sich das zugeordnete Volumen,
 bleibt es derselbe Raum.
 
-Das zugeordnete Volumen darf in mehrere Navigationsbereiche zerlegt werden.
-Diese strukturieren die für die Party relevanten Entscheidungen. Bei einem
-verzweigten Korridor kann beispielsweise jeder Ast beziehungsweise die
-Verzweigung einen eigenen Navigationsbereich bilden.
+SaltMarcher leitet Navigationsbereiche still aus der Geometrie eines Volumens
+ab. Sie strukturieren relevante Entscheidungen, beispielsweise Äste und
+Verzweigung eines Korridors, besitzen aber keine eigene fachliche Identität,
+Namen, Beschreibungen oder authored Inhalte. Bei Geometrieänderungen dürfen sie
+frei neu berechnet werden. Eine spätere manuelle Korrektur ist akzeptabel, aber
+nicht prioritär.
 
 ### Was geschieht mit authored Inhalten, wenn sich ihre Geometrie auflöst?
 
@@ -156,8 +158,8 @@ Zuordnungsalgorithmus fest.
 Ein Raum ist gleichzeitig höchstens einem Volumen zugeordnet und ein Volumen
 höchstens einem Raum. Sowohl reine, noch unbeschriebene Volumen als auch
 erhaltene Räume ohne aktuelle Geometriezuordnung sind zulässig.
-Navigationsbereiche unterteilen ein Volumen; Raumgruppen fassen mehrere Räume
-beziehungsweise Volumen zusammen.
+Abgeleitete Navigationsbereiche strukturieren ein Volumen; Raumgruppen fassen
+mehrere Räume beziehungsweise Volumen zusammen.
 
 ### Dürfen authored Inhalte wiederverwendet werden?
 
@@ -477,16 +479,16 @@ anschließend nicht mehr automatisch geroutet.
 
 ### Woran sind die Endpunkte eines Pfades befestigt?
 
-**Bestätigte Antwort:** Navigationsbereich plus exakter 3D-Grenzanker.
+**Korrigierte bestätigte Antwort:** Exakter 3D-Grenzanker am Volumen.
 
-Jeder Pfadendpunkt gehört semantisch zu einem bestimmten Navigationsbereich
-eines Raums und besitzt zusätzlich einen exakten dreidimensionalen Anker an
-dessen Grenze. Dadurch bewahrt der Graph die fachliche Verbindung, während die
-Rasteransicht den konkreten räumlichen Anschluss kennt.
+Jeder Pfadendpunkt besitzt einen exakten dreidimensionalen Anker an der Grenze
+eines Volumens. SaltMarcher kann daraus den jeweils aktuellen
+Navigationsbereich für Routing und Graphdarstellung ableiten, doch dieser ist
+keine stabile semantische Bindung.
 
-Der GM darf zunächst lediglich die zu verbindenden Räume beziehungsweise
-Navigationsbereiche bestimmen. SaltMarcher schlägt dafür geeignete Grenzanker
-vor. Der GM kann diese Anker anschließend verschieben oder fixieren.
+Der GM darf zunächst lediglich die zu verbindenden Räume bestimmen.
+SaltMarcher schlägt dafür geeignete Grenzanker vor. Der GM kann diese Anker
+anschließend verschieben oder fixieren.
 
 ### Gehören Türen und Öffnungen zum Pfad?
 
