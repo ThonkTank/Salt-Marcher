@@ -68,8 +68,14 @@ path.
 After every merge or split, SaltMarcher immediately makes a best-effort complete
 Room assignment for every resulting Volume. The assignment does not block
 geometry editing and the GM may change it afterward. Existing authored Rooms
-not selected for an assignment remain preserved without geometry. Selection
-remains relevant to transforms and detailed edits, not to
+not selected for an assignment remain preserved without geometry.
+
+After a split, the existing Room follows the best-matching resulting Volume.
+Every other resulting Volume receives a new initially empty Room. Inherited
+Dungeon, Level, and group attributes continue to apply. Voxel-anchored Features
+and described surface regions follow their geometry, while complete Room prose
+is not duplicated automatically. The GM may copy or reassign it afterward.
+Selection remains relevant to transforms and detailed edits, not to
 choosing the target of drawing or erasing.
 
 Floor, traversable Volume, and default ceiling remain one coordinated spatial
