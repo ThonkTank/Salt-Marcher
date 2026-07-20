@@ -191,6 +191,23 @@ Bearbeitung entkoppelt werden.
 Diese Granularität ist ausdrücklich eine überprüfbare Startannahme und soll nach
 praktischen Nutzungstests angepasst werden dürfen.
 
+### Können Wände, Böden und Decken eigene Inhaltsidentitäten tragen?
+
+**Bestätigte Antwort:** Ja, für ausdrücklich beschriebene Flächenbereiche.
+
+Ein Raum kann Standardattribute für sein gesamtes zugeordnetes Volumen
+enthalten, beispielsweise »Wände aus grauem Stein«. Der GM darf
+zusammenhängende Wand-, Boden- oder Deckenbereiche auswählen und ihnen
+abweichende Beschreibungen, Attribute oder Vorlagen zuweisen. Diese lokalen
+Angaben überschreiben die Raumstandards für den betroffenen Bereich.
+
+Ein ausdrücklich beschriebener Flächenbereich erhält denselben Verlustschutz
+wie Räume und Türen. Wird seine Geometrie entfernt oder unkenntlich, bleiben die
+authored Inhalte unzugeordnet erhalten. Reine, unbeschriebene Geometrie benötigt
+dagegen nicht automatisch für jede einzelne Rasterfläche eine eigene
+Inhaltsidentität. Durchlässe bleiben aufgrund ihrer Reisebedeutung
+eigenständige Objekte.
+
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
 **Bestätigte Antwort:** Fest gezeichnete Flächen und dynamisch erzeugte Pfade.
