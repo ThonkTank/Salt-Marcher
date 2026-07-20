@@ -74,6 +74,13 @@ MUST help the GM inspect and manage:
 The GM may rearrange rooms and room groups in the graph. SaltMarcher translates
 those changes into raster geometry as far as possible.
 
+Creating a room in the graph immediately creates provisional raster geometry.
+Graph position and relationships provide the initial room and connections. The
+GM may optionally supply rough size, shape, or level hints without drawing
+cells in the graph. The result remains protected Graph-Edit Preview state until
+the GM returns to the raster editor, refines or restores it, and explicitly
+accepts it.
+
 ### Protected Graph-Edit Preview
 
 - graph rearrangement begins a protected, transient edit mode
