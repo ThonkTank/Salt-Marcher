@@ -186,6 +186,19 @@ Der GM darf zunächst lediglich die zu verbindenden Räume beziehungsweise
 Navigationsbereiche bestimmen. SaltMarcher schlägt dafür geeignete Grenzanker
 vor. Der GM kann diese Anker anschließend verschieben oder fixieren.
 
+### Gehören Türen und Öffnungen zum Pfad?
+
+**Bestätigte Antwort:** Eigenständige Durchlässe in der Raumgrenze.
+
+Ein Pfad endet an einem eigenen Durchlassobjekt in der jeweiligen Raumgrenze.
+Der Durchlass kann ein offener Durchgang, eine Tür, Luke, Geheimtür oder eine
+vergleichbare Form sein. Er besitzt seine Beschreibung und den expliziten
+binären Passierbarkeitszustand.
+
+Der Pfad selbst besitzt dagegen Verlauf und Reiseeigenschaften. Beim Erzeugen
+eines Pfades darf SaltMarcher zunächst passende offene Durchlässe anlegen. Der
+GM kann sie anschließend in Türen oder andere Durchlassformen ändern.
+
 ### Für welchen langfristigen Nutzungshorizont gilt die Bedarfsbaseline?
 
 **Nachgeschärfte bestätigte Antwort:** Lokaler GM als einziger Bediener.
