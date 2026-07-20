@@ -147,6 +147,13 @@ A trap is an authored Dungeon Feature at an exact voxel anchor within a Volume;
 its trigger opens a description. The GM resolves it at the table and dismisses
 the prompt to continue or aborts travel. Other Dungeon Features, including
 initial Encounters, likewise begin with exact stationary voxel anchors.
+
+Only Traps and Encounters initially activate automatically through spatial
+proximity. A Trap may define optional trigger fields distinct from its own
+anchor; without one, it remains manually handled by the GM. Encounter detection
+provisionally uses a radius derived from monster statistics. Loot and Curiosity
+Features do not open automatically from proximity alone.
+
 More interaction may be added later, but comprehensive trap simulation is not a
 requirement.
 
