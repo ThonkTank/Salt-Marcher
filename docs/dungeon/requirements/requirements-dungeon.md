@@ -64,8 +64,9 @@ remain associated with their Volumes, may span several adjacent Volumes, and
 only control notification or travel interruption; they do not alter
 passability or decide outcomes. A Trap may own maximum and current Charges for consecutive GM-confirmed actual
 activations and a Reset Duration that restores all Charges together. The GM
-chooses whether recharge begins at zero Charges or immediately below maximum
-and may manually correct the state. A far-future monster
+chooses whether recharge begins at zero Charges or immediately below maximum.
+Further activation does not restart a running countdown; completion restores all
+Charges. The GM may manually correct the state. A far-future monster
 routine may explicitly reset a Trap. Encounter detection provisionally
 uses a radius derived from monster statistics. Loot and Curiosities do not
 activate from proximity alone.
