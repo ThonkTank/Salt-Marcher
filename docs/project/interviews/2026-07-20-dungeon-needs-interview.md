@@ -276,7 +276,10 @@ automatisch auslösen.
 Nach Ablauf der Reset Duration werden alle Charges gemeinsam vollständig
 wiederhergestellt. Der GM wählt pro Falle, ob der Countdown erst bei null
 Charges oder bereits beginnt, sobald die aktuellen Charges unter dem Maximum
-liegen. Aktuelle Charges und Reset dürfen jederzeit manuell korrigiert werden.
+liegen. Wird während eines laufenden Countdowns eine weitere Charge verbraucht,
+läuft der bestehende Countdown weiter und beginnt nicht erneut. Nach Ablauf
+werden unabhängig vom zwischenzeitlichen Verbrauch alle Charges aufgefüllt.
+Aktuelle Charges und Reset dürfen jederzeit manuell korrigiert werden.
 
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
