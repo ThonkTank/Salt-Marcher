@@ -55,8 +55,8 @@ It supports two foundational geometry forms:
 
 - directly drawn anchored Areas whose geometry changes only through explicit GM
   edit or removal
-- generated Paths between two or more endpoints or waypoints, including
-  corridor and stair authoring
+- unified generated 3D Paths between two or more endpoints or waypoints; one
+  Path may combine horizontal corridor and vertical stair segments
 
 Both forms produce bounded, standable Room volume. Chambers, corridors, and
 stair spaces remain semantically equivalent for travel even when their
@@ -66,8 +66,8 @@ areas at meaningful internal decisions such as corridor junctions.
 Additional raster capabilities include:
 
 - draw and reshape room and area geometry
-- place and edit walls, doors, corridors, stairs, transitions, markers, traps,
-  and other spatial objects
+- place and edit walls, doors, unified connection Paths, transitions, markers,
+  traps, and other spatial objects
 - select authored objects, rooms, and areas for detailed inspection
 - change levels, pan, zoom, jump to coordinates, fit selection, and fit authored
   content
