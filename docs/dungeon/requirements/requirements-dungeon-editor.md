@@ -308,7 +308,11 @@ Every inheriting object has one unambiguous parent path. A Room belongs to at
 most one Level; SaltMarcher may propose one from geometry, but the GM may assign
 the conceptual Level or skip the Level scope entirely. A multi-z-level Room is
 never geometrically split to satisfy inheritance. Level z-level sets do not
-overlap for inheritance. A more specific value overrides the inherited value
+overlap for inheritance. Allowed parent paths are Dungeon to Room, Dungeon to
+room group to Room, Dungeon to Level to Room, and Dungeon to Level to room group
+to Room. A Dungeon-level group may span z-levels; a Level-owned group remains
+within that conceptual Level. Further nested room-group levels are initially
+excluded. A more specific value overrides the inherited value
 for its scope. Additional overlapping collections
 or tags may support filtering and heatmaps but do not inherit attributes. The editor exposes both the effective value and where it
 originates, and lets the GM restore inheritance. Attribute inheritance MUST NOT
