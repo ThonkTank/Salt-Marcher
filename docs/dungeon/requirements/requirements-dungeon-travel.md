@@ -50,7 +50,7 @@ The runtime raster map:
 
 Travel options arise from both authored semantics and actual geometry.
 
-Authored doors, corridors, stairs, and transitions provide explicit meaning.
+Authored doors, unified generated connection Paths, and transitions provide explicit meaning.
 Geometry may additionally expose long-room and corridor travel, junctions,
 complex path forks, open vertical relationships, and potential climb, jump, or
 similar special routes.
