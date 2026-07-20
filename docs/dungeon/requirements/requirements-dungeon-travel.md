@@ -71,7 +71,10 @@ remain preserved even while no Passage geometry is assigned.
 Descriptions such as locked, blocked, heavy, hidden, cold, or difficult do not
 create additional passability logic. Authored secret status controls whether
 content appears in player-readable descriptions; current-party discovery is
-separate runtime state and likewise does not change passability. They affect generated description text and
+separate runtime state and likewise does not change passability. Hidden content
+may carry optional search method and DC facts. Passive values or a GM-entered
+active check may privately notify the GM, but reveal requires GM confirmation.
+These attributes affect generated description text and
 may expose a GM-authored prompt, but SaltMarcher does not infer what actors are
 allowed to attempt.
 
