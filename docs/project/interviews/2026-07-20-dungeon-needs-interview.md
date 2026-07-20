@@ -936,10 +936,25 @@ allein deshalb Produktbedarf.
       Kleinarbeit, Überraschungsverlust oder Über-Simulation soll SaltMarcher
       vermeiden?
 
-### Fortsetzungsreihenfolge
+### Korrigierte Fortsetzungsreihenfolge
 
-Die Befragung beginnt beim konkreten End-to-End-Authoring-Erlebnis und arbeitet
-sich danach werkzeugweise durch Raster, Inhalt, Graph, Dungeon-Key und
-Live-Nutzung. Erst wenn diese Produktfragen beantwortet sind, werden die
-kanonischen Requirements wieder auf `Active` gesetzt und Ergebnis 1
-abgeschlossen.
+Die Werkzeug- und Workflow-Fragen werden zurückgestellt, bis die fachliche Form
+der bearbeiteten Dungeon-Inhalte geklärt ist. Die Discovery arbeitet nun in
+dieser Reihenfolge:
+
+1. topologische Hierarchie aus Dungeon, Karten, Ebenen, Bereichen und Räumen
+2. räumliche Grundformen, Grenzen, Öffnungen und Verbindungen
+3. authored gegenüber abgeleiteten Fakten je Inhaltsart
+4. Dungeon-Features, ihre Verankerung, Attribute und Beziehungen
+5. Zustände, Trigger und klare Grenze zu freier GM-Auflösung
+6. Identität, Gruppierung, Verschachtelung, Kopieren und Lebenszyklus
+7. erst daraus abgeleitete Raster-, Graph- und Dungeon-Key-Werkzeuge
+8. End-to-End-Authoring und Live-Nutzung
+
+»Was wird bearbeitet?« wird damit vor »Wie wird es bearbeitet?« beantwortet.
+Interne Tabellen-, Klassen- oder Speicherentscheidungen bleiben technische
+Systemverantwortung; das Interview klärt die fachlich dauerhaften authored und
+abgeleiteten Fakten.
+
+Erst wenn diese Produktfragen beantwortet sind, werden die kanonischen
+Requirements wieder auf `Active` gesetzt und Ergebnis 1 abgeschlossen.
