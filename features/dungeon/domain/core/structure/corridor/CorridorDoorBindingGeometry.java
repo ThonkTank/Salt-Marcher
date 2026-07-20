@@ -1,5 +1,6 @@
 package features.dungeon.domain.core.structure.corridor;
 
+import features.dungeon.domain.core.component.CorridorDoorBinding;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -15,16 +16,16 @@ public final class CorridorDoorBindingGeometry {
     private CorridorDoorBindingGeometry() {
     }
 
-    public static Map<Long, CorridorDoorBindingState> bindingsByRoom(Iterable<CorridorDoorBindingState> bindings) {
-        Map<Long, CorridorDoorBindingState> result = new LinkedHashMap<>();
-        for (CorridorDoorBindingState binding : bindings) {
+    public static Map<Long, CorridorDoorBinding> bindingsByRoom(Iterable<CorridorDoorBinding> bindings) {
+        Map<Long, CorridorDoorBinding> result = new LinkedHashMap<>();
+        for (CorridorDoorBinding binding : bindings) {
             result.putIfAbsent(binding.roomId(), binding);
         }
         return result;
     }
 
     public static Cell absoluteRoomCell(
-            CorridorDoorBindingState binding,
+            CorridorDoorBinding binding,
             @Nullable Cell clusterCenter
     ) {
         Cell relativeCell = binding.relativeCell();
@@ -36,14 +37,14 @@ public final class CorridorDoorBindingGeometry {
     }
 
     public static Cell absoluteCorridorCell(
-            CorridorDoorBindingState binding,
+            CorridorDoorBinding binding,
             @Nullable Cell clusterCenter
     ) {
         return binding.direction().neighborOf(absoluteRoomCell(binding, clusterCenter));
     }
 
     public static Edge absoluteDoorEdge(
-            CorridorDoorBindingState binding,
+            CorridorDoorBinding binding,
             @Nullable Cell clusterCenter
     ) {
         return Edge.sideOf(absoluteRoomCell(binding, clusterCenter), binding.direction());
@@ -98,7 +99,7 @@ public final class CorridorDoorBindingGeometry {
             return result;
         }
         for (Corridor corridor : corridors) {
-            for (CorridorDoorBindingState binding : corridor.stateBindings().doorBindings()) {
+            for (CorridorDoorBinding binding : corridor.bindings().doorBindings()) {
                 if (binding.clusterId() == clusterId && binding.relativeCell().level() == level) {
                     result.add(DungeonBoundaryKey.from(absoluteDoorEdgeAtBindingLevel(binding, clusterCenter)));
                 }
@@ -108,7 +109,7 @@ public final class CorridorDoorBindingGeometry {
     }
 
     private static Edge absoluteDoorEdgeAtBindingLevel(
-            CorridorDoorBindingState binding,
+            CorridorDoorBinding binding,
             Cell clusterCenter
     ) {
         Cell relativeCell = binding.relativeCell();

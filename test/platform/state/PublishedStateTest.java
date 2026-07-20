@@ -70,6 +70,21 @@ final class PublishedStateTest {
         assertEquals(List.of("newer-inline-result"), delivered);
     }
 
+    @Test
+    void atomicObservationNeverDeliversQueuedCurrentAfterNewerInlineValue() {
+        ControlledDispatcher dispatcher = new ControlledDispatcher();
+        PublishedState<String> state = new PublishedState<>("queued-current", dispatcher);
+        List<String> delivered = new ArrayList<>();
+
+        state.observeLatest(delivered::add);
+        dispatcher.dispatchInline();
+        state.publish("newer-inline");
+
+        assertEquals(List.of("newer-inline"), delivered);
+        dispatcher.runAll();
+        assertEquals(List.of("newer-inline"), delivered);
+    }
+
     private static final class QueuedDispatcher implements UiDispatcher {
         private final Deque<Runnable> updates = new ArrayDeque<>();
 

@@ -36,7 +36,9 @@ final class CreatureFilterTempTables {
         CreatureFilterTempTableSchema.createTempTables(connection);
         clearFilters(connection);
         try {
+            CreatureFilterTempTableValues.insertSizes(connection, spec.sizes());
             CreatureFilterTempTableValues.insertTypes(connection, spec.types());
+            CreatureFilterTempTableValues.insertAlignments(connection, spec.alignments());
             CreatureFilterTempTableValues.insertSubtypes(connection, spec.subtypes());
             CreatureFilterTempTableValues.insertBiomes(connection, spec.biomes());
         } catch (SQLException exception) {

@@ -31,6 +31,7 @@ public final class HexTravelApplicationService implements features.hex.api.HexTr
     private final HexTravelPublishedState publishedState;
     private final ExecutionLane executionLane;
     private final Diagnostics diagnostics;
+    private long latestPartyPositionRevision = -1L;
 
     public HexTravelApplicationService(
             HexMapRepository repository,
@@ -62,11 +63,18 @@ public final class HexTravelApplicationService implements features.hex.api.HexTr
     }
 
     private void publishTravelPosition(PartyTravelPositionsResult result) {
+        PartyTravelPositionsResult safeResult = result == null
+                ? new PartyTravelPositionsResult(ReadStatus.STORAGE_ERROR, List.of(), null)
+                : result;
+        if (safeResult.revision() <= latestPartyPositionRevision) {
+            return;
+        }
+        latestPartyPositionRevision = safeResult.revision();
         try {
-            publishedState.publish(toSnapshot(projectTravel(result)));
+            publishedState.publish(toSnapshot(projectTravel(safeResult), safeResult.revision()));
         } catch (IllegalStateException exception) {
             diagnostics.failure(STORAGE_FAILURE, exception.getClass());
-            publishedState.publish(HexTravelSnapshot.empty(STORAGE_FAILURE_TEXT));
+            publishedState.publish(HexTravelSnapshot.empty(safeResult.revision(), STORAGE_FAILURE_TEXT));
         }
     }
 
@@ -86,18 +94,15 @@ public final class HexTravelApplicationService implements features.hex.api.HexTr
                     true));
         } catch (IllegalStateException exception) {
             diagnostics.failure(STORAGE_FAILURE, exception.getClass());
-            publishedState.publish(HexTravelSnapshot.empty(STORAGE_FAILURE_TEXT));
+            publishedState.publishStorageError(STORAGE_FAILURE_TEXT);
         }
     }
 
     private HexTravelPositionState projectTravel(PartyTravelPositionsResult result) {
-        PartyTravelPositionsResult safeResult = result == null
-                ? new PartyTravelPositionsResult(ReadStatus.STORAGE_ERROR, List.of(), null)
-                : result;
-        if (safeResult.status() != ReadStatus.SUCCESS) {
+        if (result.status() != ReadStatus.SUCCESS) {
             return HexTravelPositionState.empty("Hex-Reise konnte nicht geladen werden.");
         }
-        Object location = safeResult.partyTokenLocation();
+        Object location = result.partyTokenLocation();
         if (!(location instanceof PartyOverworldTravelLocationSnapshot overworld)) {
             return HexTravelPositionState.empty(NO_HEX_TRAVEL_SELECTED);
         }
@@ -113,17 +118,19 @@ public final class HexTravelApplicationService implements features.hex.api.HexTr
         return HexTravelPositionState.active(
                 summary.get(),
                 coordinate,
-                safeResult.partyTokenCharacterIds());
+                result.partyTokenCharacterIds());
     }
 
-    private static HexTravelSnapshot toSnapshot(HexTravelPositionState state) {
+    private static HexTravelSnapshot toSnapshot(HexTravelPositionState state, long partyPositionRevision) {
         HexTravelPositionState safeState = state == null
                 ? HexTravelPositionState.empty(NO_HEX_TRAVEL_SELECTED)
                 : state;
         if (!safeState.active()) {
-            return HexTravelSnapshot.empty(safeState.statusText());
+            return HexTravelSnapshot.empty(partyPositionRevision, safeState.statusText());
         }
         return new HexTravelSnapshot(
+                0L,
+                partyPositionRevision,
                 true,
                 safeState.mapId(),
                 safeState.q(),

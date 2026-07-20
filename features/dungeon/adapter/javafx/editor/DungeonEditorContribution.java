@@ -9,14 +9,14 @@ import shell.api.ShellContribution;
 import shell.api.ShellContributionSpec;
 import shell.api.ShellLeftBarTabMode;
 import shell.api.ShellLeftBarTabSpec;
-import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
+import features.dungeon.api.editor.DungeonEditorApi;
 
 public final class DungeonEditorContribution implements ShellContribution {
 
-    private final DungeonEditorRuntimeDependencies dependencies;
+    private final DungeonEditorApi editorApi;
 
-    public DungeonEditorContribution(DungeonEditorRuntimeDependencies dependencies) {
-        this.dependencies = Objects.requireNonNull(dependencies, "dependencies");
+    public DungeonEditorContribution(DungeonEditorApi editorApi) {
+        this.editorApi = Objects.requireNonNull(editorApi, "editorApi");
     }
 
     @Override
@@ -32,6 +32,6 @@ public final class DungeonEditorContribution implements ShellContribution {
 
     @Override
     public ShellBinding bind() {
-        return new DungeonEditorBinder(dependencies).bind();
+        return new DungeonEditorBinder(editorApi).bind();
     }
 }

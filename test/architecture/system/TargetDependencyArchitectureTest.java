@@ -2,6 +2,8 @@ package architecture.system;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+
 import architecture.AnalyzeMainClasses;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;
@@ -10,6 +12,9 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
+
+import platform.persistence.FeatureStoreMaintenance;
+import platform.persistence.SqliteDatabase;
 
 @AnalyzeMainClasses
 public final class TargetDependencyArchitectureTest {
@@ -25,6 +30,44 @@ public final class TargetDependencyArchitectureTest {
                     .should(respectTargetDependencyDirection())
                     .allowEmptyShould(true);
 
+    @ArchTest
+    static final ArchRule featuresNeverReceiveTheGlobalDatabaseLifecycle =
+            noClasses()
+                    .that()
+                    .resideInAPackage("features..")
+                    .should()
+                    .dependOnClassesThat()
+                    .areAssignableTo(SqliteDatabase.class);
+
+    @ArchTest
+    static final ArchRule onlyItemsCompositionAndSqliteMayReceiveStoreMaintenance =
+            noClasses()
+                    .that()
+                    .resideInAPackage("features..")
+                    .and()
+                    .resideOutsideOfPackages("features.items", "features.items.adapter.sqlite..")
+                    .should()
+                    .dependOnClassesThat()
+                    .areAssignableTo(FeatureStoreMaintenance.class);
+
+    @ArchTest
+    static final ArchRule desktopBootstrapNeverReceivesStoreMaintenance =
+            noClasses()
+                    .that()
+                    .haveFullyQualifiedName("app.AppBootstrap")
+                    .should()
+                    .dependOnClassesThat()
+                    .areAssignableTo(FeatureStoreMaintenance.class);
+
+    @ArchTest
+    static final ArchRule itemsDesktopAssemblyNeverReceivesStoreMaintenance =
+            noClasses()
+                    .that()
+                    .haveFullyQualifiedName("features.items.ItemsServiceAssembly")
+                    .should()
+                    .dependOnClassesThat()
+                    .areAssignableTo(FeatureStoreMaintenance.class);
+
     private static ArchCondition<JavaClass> respectTargetDependencyDirection() {
         return new ArchCondition<>("respect the permanent app, shell, platform, and feature boundaries") {
             @Override
@@ -33,19 +76,21 @@ public final class TargetDependencyArchitectureTest {
                 if (source.featureArea == FeatureArea.INVALID) {
                     events.add(SimpleConditionEvent.violated(
                             item,
-                            item.getName() + " must reside in a feature api, domain, application, "
-                                    + "adapter/sqlite, adapter/javafx, or exact feature-root package"));
+                            item.getName() + " must reside in a feature api, domain, application,"
+                                            + " adapter/sqlite, adapter/resource, adapter/http,"
+                                            + " adapter/javafx, or exact feature-root package"));
                 }
                 if (source.root == TargetRoot.PLATFORM
                         && !TargetPackage.isValidPlatformPackage(item.getPackageName())) {
                     events.add(SimpleConditionEvent.violated(
                             item,
-                            item.getName() + " must reside in platform.execution, platform.persistence, "
-                                    + "platform.diagnostics, platform.state, or platform.ui"));
+                            item.getName() + " must reside in platform.execution,"
+                                            + " platform.persistence, platform.diagnostics,"
+                                            + " platform.state, or platform.ui"));
                 }
                 for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
                     JavaClass targetClass = dependency.getTargetClass();
-                    if (source.forbidsMechanism(targetClass.getPackageName())) {
+                    if (source.forbidsMechanism(targetClass.getPackageName(), targetClass.getName())) {
                         events.add(SimpleConditionEvent.violated(
                                 item,
                                 item.getName() + " must not depend on mechanism " + targetClass.getName()));
@@ -149,8 +194,13 @@ public final class TargetDependencyArchitectureTest {
                 return switch (featureArea) {
                     case APPLICATION, COMPOSITION -> target.featureArea != FeatureArea.API;
                     case JAVAFX_ADAPTER -> target.featureArea != FeatureArea.API;
-                    case API, DOMAIN, SQLITE_ADAPTER, INVALID, NONE -> true;
+                    case API, DOMAIN, SQLITE_ADAPTER, RESOURCE_ADAPTER, HTTP_ADAPTER, INVALID, NONE -> true;
                 };
+            }
+            if (featureArea == FeatureArea.JAVAFX_ADAPTER
+                    && "dungeon".equals(feature)) {
+                return target.featureArea != FeatureArea.API
+                        && target.featureArea != FeatureArea.JAVAFX_ADAPTER;
             }
             return switch (featureArea) {
                 case API -> target.featureArea != FeatureArea.API;
@@ -160,6 +210,12 @@ public final class TargetDependencyArchitectureTest {
                         || target.featureArea == FeatureArea.COMPOSITION;
                 case SQLITE_ADAPTER -> target.featureArea == FeatureArea.JAVAFX_ADAPTER
                         || target.featureArea == FeatureArea.COMPOSITION;
+                case RESOURCE_ADAPTER -> target.featureArea != FeatureArea.API
+                        && target.featureArea != FeatureArea.DOMAIN
+                        && target.featureArea != FeatureArea.RESOURCE_ADAPTER;
+                case HTTP_ADAPTER -> target.featureArea != FeatureArea.API
+                        && target.featureArea != FeatureArea.DOMAIN
+                        && target.featureArea != FeatureArea.HTTP_ADAPTER;
                 case JAVAFX_ADAPTER -> target.featureArea != FeatureArea.API
                         && target.featureArea != FeatureArea.DOMAIN
                         && target.featureArea != FeatureArea.APPLICATION
@@ -174,7 +230,7 @@ public final class TargetDependencyArchitectureTest {
                     || featureArea == FeatureArea.COMPOSITION;
         }
 
-        private boolean forbidsMechanism(String packageName) {
+        private boolean forbidsMechanism(String packageName, String className) {
             boolean javaFx = inPackage(packageName, "javafx");
             boolean jdbc = inPackage(packageName, "java.sql")
                     || inPackage(packageName, "javax.sql")
@@ -192,7 +248,9 @@ public final class TargetDependencyArchitectureTest {
             }
             return switch (featureArea) {
                 case API, DOMAIN, APPLICATION -> javaFx || jdbc || fileIo;
-                case SQLITE_ADAPTER -> javaFx;
+                case SQLITE_ADAPTER, RESOURCE_ADAPTER -> javaFx;
+                case HTTP_ADAPTER -> javaFx || jdbc
+                        || (fileIo && !"java.io.IOException".equals(className));
                 case JAVAFX_ADAPTER, COMPOSITION -> jdbc || fileIo;
                 case INVALID, NONE -> javaFx || jdbc || fileIo;
             };
@@ -216,6 +274,8 @@ public final class TargetDependencyArchitectureTest {
                         packageName, "execution", "state", "ui", "diagnostics");
                 case SQLITE_ADAPTER -> !inAnyPlatformPackage(
                         packageName, "persistence", "diagnostics");
+                case RESOURCE_ADAPTER -> !inAnyPlatformPackage(packageName, "diagnostics");
+                case HTTP_ADAPTER -> !inAnyPlatformPackage(packageName, "diagnostics");
                 case JAVAFX_ADAPTER -> !inAnyPlatformPackage(packageName, "ui");
                 case COMPOSITION -> !isValidPlatformPackage(packageName);
                 case DOMAIN, INVALID, NONE -> true;
@@ -255,6 +315,8 @@ public final class TargetDependencyArchitectureTest {
         DOMAIN,
         APPLICATION,
         SQLITE_ADAPTER,
+        RESOURCE_ADAPTER,
+        HTTP_ADAPTER,
         JAVAFX_ADAPTER,
         COMPOSITION,
         INVALID,
@@ -267,6 +329,8 @@ public final class TargetDependencyArchitectureTest {
                 case "application" -> APPLICATION;
                 case "adapter" -> switch (nestedSegment) {
                     case "sqlite" -> SQLITE_ADAPTER;
+                    case "resource" -> RESOURCE_ADAPTER;
+                    case "http" -> HTTP_ADAPTER;
                     case "javafx" -> JAVAFX_ADAPTER;
                     default -> INVALID;
                 };

@@ -9,8 +9,8 @@ import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
 import features.dungeon.domain.core.structure.corridor.Corridor;
 import features.dungeon.domain.core.structure.corridor.CorridorNetwork;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 
 /**
  * Projection boundary for corridor, room, and cluster read facts supplied by
@@ -23,8 +23,8 @@ public final class DungeonCorridorReadProjection {
 
     public DungeonCorridorProjection project(
             List<Corridor> corridors,
-            Map<Long, DungeonRoomCluster> clustersById,
-            Map<Long, DungeonRoom> roomsById,
+            Map<Long, RoomCluster> clustersById,
+            Map<Long, RoomRegion> roomsById,
             Map<Long, List<Cell>> roomCellsByRoom,
             long boundaryIdCursor,
             Map<DungeonBoundaryKey, Long> existingDoorIdsByKey

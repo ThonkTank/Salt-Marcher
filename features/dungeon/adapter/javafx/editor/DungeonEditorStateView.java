@@ -22,6 +22,8 @@ public final class DungeonEditorStateView extends VBox {
     private static final String CORRIDOR_POINT_Q_ACCESSIBLE = "Korridorpunkt q";
     private static final String CORRIDOR_POINT_R_ACCESSIBLE = "Korridorpunkt r";
     private static final String TRANSITION_DESCRIPTION_ACCESSIBLE = "Übergang Beschreibung";
+    private static final String FEATURE_MARKER_LABEL_ACCESSIBLE = "Feature-Marker Name";
+    private static final String FEATURE_MARKER_DESCRIPTION_ACCESSIBLE = "Feature-Marker Beschreibung";
     private static final String STAIR_SHAPE_ACCESSIBLE = "Treppe Form";
     private static final String STAIR_DIRECTION_ACCESSIBLE = "Treppe Richtung";
     private static final String STAIR_DIMENSION_1_ACCESSIBLE = "Treppe Laenge";
@@ -39,6 +41,7 @@ public final class DungeonEditorStateView extends VBox {
     private final VBox corridorPointCards = new VBox();
     private final VBox transitionDestinationCards = new VBox();
     private final VBox transitionCards = new VBox();
+    private final VBox featureMarkerCards = new VBox();
     private final VBox stairGeometryCards = new VBox();
     private final VBox narrationCards = new VBox();
     private final VBox nameCards = new VBox();
@@ -54,6 +57,7 @@ public final class DungeonEditorStateView extends VBox {
         corridorPointCards.getStyleClass().add(STATE_CARD_STACK_STYLE);
         transitionDestinationCards.getStyleClass().add(STATE_CARD_STACK_STYLE);
         transitionCards.getStyleClass().add(STATE_CARD_STACK_STYLE);
+        featureMarkerCards.getStyleClass().add(STATE_CARD_STACK_STYLE);
         stairGeometryCards.getStyleClass().add(STATE_CARD_STACK_STYLE);
         narrationCards.getStyleClass().add(STATE_CARD_STACK_STYLE);
         nameCards.getStyleClass().add(STATE_CARD_STACK_STYLE);
@@ -61,6 +65,7 @@ public final class DungeonEditorStateView extends VBox {
                 new StateCard(body),
                 nameCards,
                 corridorPointCards,
+                featureMarkerCards,
                 transitionDestinationCards,
                 transitionCards,
                 stairGeometryCards,
@@ -108,6 +113,7 @@ public final class DungeonEditorStateView extends VBox {
     private void showProjection(DungeonEditorStatePanelModel.StateProjection projection) {
         body.setText(projection.stateText());
         showCorridorPoint(projection.corridorPoint(), projection.busy());
+        showFeatureMarker(projection.featureMarker(), projection.busy(), projection.statusText());
         showTransitionDestination(projection.transitionDestination(), projection.busy(), projection.statusText());
         showTransitionDescription(projection.transitionDescription(), projection.busy(), projection.statusText());
         showStairGeometry(projection.stairGeometry(), projection.busy(), projection.statusText());
@@ -117,6 +123,17 @@ public final class DungeonEditorStateView extends VBox {
                 projection.statusText(),
                 projection.narrationRenderStructureKey());
         showName(projection.name(), projection.busy());
+    }
+
+    private void showFeatureMarker(
+            DungeonEditorStatePanelModel.FeatureMarkerProjection featureMarker,
+            boolean busy,
+            String statusText
+    ) {
+        featureMarkerCards.getChildren().clear();
+        if (featureMarker != null) {
+            featureMarkerCards.getChildren().add(new FeatureMarkerCard(featureMarker, busy, statusText));
+        }
     }
 
     private void showCorridorPoint(
@@ -869,6 +886,44 @@ public final class DungeonEditorStateView extends VBox {
             updateDisabled.run();
             save.setOnAction(event -> emitNameInput(nameField, true));
             getChildren().addAll(new PanelTitle(name.label()), fieldLabel, nameField, save);
+            getStyleClass().addAll(CARD_SURFACE_STYLE, CONTENT_CARD_STYLE);
+        }
+
+        private Label labeled(String text, Node field) {
+            Label label = muted(text);
+            label.setLabelFor(field);
+            return label;
+        }
+    }
+
+    private final class FeatureMarkerCard extends VBox {
+
+        private FeatureMarkerCard(
+                DungeonEditorStatePanelModel.FeatureMarkerProjection marker,
+                boolean busy,
+                String statusText
+        ) {
+            TextField labelField = textField(marker.label());
+            labelField.setAccessibleText(FEATURE_MARKER_LABEL_ACCESSIBLE);
+            TextArea descriptionArea = textArea(marker.description());
+            descriptionArea.setAccessibleText(FEATURE_MARKER_DESCRIPTION_ACCESSIBLE);
+            Label status = stableStatusLabel(statusText);
+            Button save = new ToolbarActionButton("Speichern");
+            save.setAccessibleText("Feature-Marker speichern");
+            Runnable updateDisabled = () -> save.setDisable(busy || labelField.getText().isBlank());
+            labelField.textProperty().addListener((ignored, before, after) -> updateDisabled.run());
+            updateDisabled.run();
+            save.setOnAction(event -> stateInputHandler.accept(
+                    DungeonEditorStateInput.featureMarkerSemantics(
+                            marker.markerId(), labelField.getText(), descriptionArea.getText())));
+            getChildren().addAll(
+                    new PanelTitle("Feature-Marker"),
+                    labeled("Name", labelField),
+                    labelField,
+                    labeled("Beschreibung", descriptionArea),
+                    descriptionArea,
+                    status,
+                    save);
             getStyleClass().addAll(CARD_SURFACE_STYLE, CONTENT_CARD_STYLE);
         }
 

@@ -32,4 +32,14 @@ final class LatestStateTest {
         assertEquals(3L, state.current().revision());
         assertEquals("latest", state.current().value());
     }
+
+    @Test
+    void failedInitialReplayRollsBackSubscriberRegistration() {
+        LatestState<String> state = new LatestState<>("initial");
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
+                () -> state.subscribe(value -> { throw new IllegalStateException("boom"); }));
+
+        UpdateToken token = state.beginUpdate();
+        assertTrue(state.publish(token, "later"));
+    }
 }

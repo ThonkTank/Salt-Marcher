@@ -1,6 +1,7 @@
 package features.dungeon.application.editor;
 
 import java.util.Objects;
+import java.util.function.LongSupplier;
 import platform.execution.DirectExecutionLane;
 import platform.execution.ExecutionLane;
 import platform.ui.DirectUiDispatcher;
@@ -9,39 +10,53 @@ import features.dungeon.application.editor.DungeonEditorRuntimeApplicationServic
 import features.dungeon.api.DungeonEditorControlsModel;
 import features.dungeon.api.DungeonEditorMapSurfaceModel;
 import features.dungeon.api.DungeonEditorStateModel;
+import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
+import features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy;
 
 public record DungeonEditorRuntimeDependencies(
-        CompatibilityReadbackModels compatibilityReadbackModels,
+        DungeonEditorControlsModel controlsModel,
+        DungeonEditorMapSurfaceModel mapSurfaceModel,
+        DungeonEditorStateModel stateModel,
         DungeonEditorRuntimeApplicationService editorRuntimeApplicationService,
+        CorridorRoutingPolicy corridorRoutingPolicy,
+        LongSupplier requestGeneration,
         ExecutionLane executionLane,
         UiDispatcher uiDispatcher
 ) {
     public DungeonEditorRuntimeDependencies(
-            CompatibilityReadbackModels compatibilityReadbackModels,
+            DungeonEditorControlsModel controlsModel,
+            DungeonEditorMapSurfaceModel mapSurfaceModel,
+            DungeonEditorStateModel stateModel,
             DungeonEditorRuntimeApplicationService editorRuntimeApplicationService
     ) {
-        this(compatibilityReadbackModels, editorRuntimeApplicationService,
+        this(controlsModel, mapSurfaceModel, stateModel, editorRuntimeApplicationService,
+                new OrthogonalCorridorRoutingPolicy(),
+                () -> 0L,
                 DirectExecutionLane.INSTANCE, DirectUiDispatcher.INSTANCE);
     }
 
+    public DungeonEditorRuntimeDependencies(
+            DungeonEditorControlsModel controlsModel,
+            DungeonEditorMapSurfaceModel mapSurfaceModel,
+            DungeonEditorStateModel stateModel,
+            DungeonEditorRuntimeApplicationService editorRuntimeApplicationService,
+            ExecutionLane executionLane,
+            UiDispatcher uiDispatcher
+    ) {
+        this(controlsModel, mapSurfaceModel, stateModel, editorRuntimeApplicationService,
+                new OrthogonalCorridorRoutingPolicy(), () -> 0L, executionLane, uiDispatcher);
+    }
+
     public DungeonEditorRuntimeDependencies {
-        compatibilityReadbackModels =
-                Objects.requireNonNull(compatibilityReadbackModels, "compatibilityReadbackModels");
+        controlsModel = Objects.requireNonNull(controlsModel, "controlsModel");
+        mapSurfaceModel = Objects.requireNonNull(mapSurfaceModel, "mapSurfaceModel");
+        stateModel = Objects.requireNonNull(stateModel, "stateModel");
         editorRuntimeApplicationService =
                 Objects.requireNonNull(editorRuntimeApplicationService, "editorRuntimeApplicationService");
+        corridorRoutingPolicy = Objects.requireNonNull(corridorRoutingPolicy, "corridorRoutingPolicy");
+        requestGeneration = Objects.requireNonNull(requestGeneration, "requestGeneration");
         executionLane = Objects.requireNonNull(executionLane, "executionLane");
         uiDispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
     }
 
-    public record CompatibilityReadbackModels(
-            DungeonEditorControlsModel controlsModel,
-            DungeonEditorMapSurfaceModel mapSurfaceModel,
-            DungeonEditorStateModel stateModel
-    ) {
-        public CompatibilityReadbackModels {
-            controlsModel = Objects.requireNonNull(controlsModel, "controlsModel");
-            mapSurfaceModel = Objects.requireNonNull(mapSurfaceModel, "mapSurfaceModel");
-            stateModel = Objects.requireNonNull(stateModel, "stateModel");
-        }
-    }
 }

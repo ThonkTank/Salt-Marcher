@@ -2,13 +2,13 @@ package features.dungeon.application.editor;
 
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
-import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.DungeonEditorInteractionValues.CellKey;
 import features.dungeon.application.editor.DungeonEditorInteractionValues.VertexKey;
 import features.dungeon.application.editor.DungeonEditorInteractionValues.VertexTarget;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.BoundaryTarget;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.EdgeKey;
+import features.dungeon.application.editor.DungeonEditorWallRunDeleteUseCase.ResolvedDelete;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.InteractionState;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.PointerState;
 
@@ -21,7 +21,7 @@ final class DungeonEditorDirectWallDeleteUseCase {
     @Nullable DungeonEditorMainViewInterpretation press(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorToolAction selectedTool,
             InteractionState state
     ) {
         if (input == null || !wallDeleteGesture(selectedTool, input)) {
@@ -65,7 +65,7 @@ final class DungeonEditorDirectWallDeleteUseCase {
             InteractionState state
     ) {
         VertexTarget vertex = input.vertexTarget();
-        DungeonEditorWallDeleteTarget target =
+        ResolvedDelete target =
                 wallRuns.cornerRunDelete(snapshot, new VertexKey(vertex.q(), vertex.r(), vertex.level()));
         if (!DungeonEditorWorkspaceValues.hasId(target.clusterId())) {
             return draftEffects.clearBoundaryDraftPreview(state);
@@ -78,7 +78,7 @@ final class DungeonEditorDirectWallDeleteUseCase {
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             InteractionState state
     ) {
-        DungeonEditorWallDeleteTarget target =
+        ResolvedDelete target =
                 wallRuns.cellRunDelete(snapshot, new CellKey(input.q(), input.r(), input.level()));
         if (!DungeonEditorWorkspaceValues.hasId(target.clusterId())) {
             return null;
@@ -108,7 +108,7 @@ final class DungeonEditorDirectWallDeleteUseCase {
 
     private DungeonEditorMainViewInterpretation previewDelete(
             InteractionState state,
-            DungeonEditorWallDeleteTarget target
+            ResolvedDelete target
     ) {
         if (target.protectedExterior()) {
             return draftEffects.rejectExteriorWallDelete(state);
@@ -122,8 +122,7 @@ final class DungeonEditorDirectWallDeleteUseCase {
         return boundary != null && boundary.present() && !boundary.doorKind();
     }
 
-    private static boolean wallDeleteGesture(DungeonEditorSessionValues.Tool selectedTool, PointerState input) {
-        return input.secondaryButtonDown()
-                && (selectedTool.deleteMode() || selectedTool == DungeonEditorSessionValues.Tool.WALL_CREATE);
+    private static boolean wallDeleteGesture(DungeonEditorToolAction selectedTool, PointerState input) {
+        return input.secondaryButtonDown() && selectedTool.deleteMode();
     }
 }

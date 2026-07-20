@@ -14,6 +14,9 @@ import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonTopologyElementRef;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
+import features.dungeon.api.editor.DungeonEditorToolOptions;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonMapSummary;
@@ -74,7 +77,7 @@ final class DungeonEditorStairScenarios {
         runtime.database().seedF7StairAnchor(mapId);
         selectMap(controls, "Stair Anchor Move Map");
         click(button(controls, "Auswahl"));
-        assertEquals("SELECT", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.select(), runtime.controlsModel().current().toolSelection(),
                 "DE-STAIR-005 input route uses the select tool");
         var stairHandle = runtime.mapSurfaceModel().current().surface().map().editorHandles().stream()
                 .filter(handle -> "STAIR_ANCHOR".equals(handle.ref().kind().name()))
@@ -87,6 +90,7 @@ final class DungeonEditorStairScenarios {
         List<String> stableRowsBefore = runtime.database().stairStableState(mapId);
         List<String> pathRowsBefore = runtime.database().stairPathState(mapId);
         List<String> exitRowsBefore = runtime.database().stairExitState(mapId);
+        long revisionBeforeMove = runtime.database().mapRevision(mapId);
         String pathRowBefore = pathRowsBefore.stream()
                 .filter(row -> row.contains("|sort_order=0|")
                         && row.contains("|cell_x=2|")
@@ -155,6 +159,8 @@ final class DungeonEditorStairScenarios {
                 "DE-STAIR-005 keeps stair exit coordinates unchanged for direct path-node movement");
         assertEquals(stableRowsBefore, runtime.database().stairStableState(mapId),
                 "DE-STAIR-005 keeps stair identity, shape, dimensions, and topology refs stable");
+        assertEquals(revisionBeforeMove + 1L, runtime.database().mapRevision(mapId),
+                "DE-STAIR-005 stair-handle patch commits exactly one aggregate revision");
         DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
         assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
                 "DE-STAIR-005 clears move preview after release");
@@ -164,6 +170,20 @@ final class DungeonEditorStairScenarios {
                 "DE-STAIR-005");
         assertCanvasPaintedAtScene(mapView, 3.5, 2.5,
                 "DE-STAIR-005 rendered canvas paints the moved stair handle");
+
+        fireMapShortcut(mapView, KeyCode.Z, true, false);
+        assertEquals(pathRowsBefore, runtime.database().stairPathState(mapId),
+                "DE-STAIR-005 patch undo restores the original stair path node");
+        assertEquals(revisionBeforeMove + 2L, runtime.database().mapRevision(mapId),
+                "DE-STAIR-005 patch undo restores content as one new revision");
+        assertEquals(stableRowsBefore, runtime.database().stairStableState(mapId),
+                "DE-STAIR-005 patch undo keeps stable stair identity facts");
+
+        fireMapShortcut(mapView, KeyCode.Y, true, false);
+        assertEquals(pathRowsAfter, runtime.database().stairPathState(mapId),
+                "DE-STAIR-005 patch redo restores the moved stair path node");
+        assertEquals(revisionBeforeMove + 3L, runtime.database().mapRevision(mapId),
+                "DE-STAIR-005 patch redo restores content as one new revision");
 
         selectMap(controls, "Stair Anchor Move Reload Hop");
         selectMap(controls, "Stair Anchor Move Map");
@@ -292,8 +312,8 @@ final class DungeonEditorStairScenarios {
         assertTrue(editedSurface.surface().map().features().stream()
                         .filter(feature -> feature.id() == stairId)
                         .flatMap(feature -> feature.cells().stream())
-                        .anyMatch(cell -> cell.q() == 5 && cell.r() == 2 && cell.level() == 2),
-                "DE-STAIR-006 published feature exposes generated top-floor exit");
+                        .allMatch(cell -> cell.level() == editedSurface.projectionLevel()),
+                "DE-STAIR-006 committed readback clips generated stair facts to the active level");
         assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(
                         Set.of("2,2,0", "3,2,0", "4,2,0", "5,2,0")),
                 "DE-STAIR-004 render state exposes recomputed active-level path");
@@ -350,8 +370,8 @@ final class DungeonEditorStairScenarios {
         assertTrue(squareSurface.surface().map().features().stream()
                         .filter(feature -> feature.id() == stairId)
                         .flatMap(feature -> feature.cells().stream())
-                        .anyMatch(cell -> cell.q() == -1 && cell.r() == 3 && cell.level() == 1),
-                "DE-STATE-003 published feature exposes generated square intermediate exit");
+                        .allMatch(cell -> cell.level() == squareSurface.projectionLevel()),
+                "DE-STATE-003 square readback clips generated stair facts to the active level");
         assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(expectedSquarePath),
                 "DE-STATE-003 render state exposes square active-level path");
         click(button(controls, "+"));
@@ -409,10 +429,18 @@ final class DungeonEditorStairScenarios {
         assertTrue(circularSurface.surface().map().features().stream()
                         .filter(feature -> feature.id() == stairId)
                         .flatMap(feature -> feature.cells().stream())
-                        .anyMatch(cell -> cell.q() == 4 && cell.r() == 2 && cell.level() == 1),
-                "DE-STATE-003 published feature exposes generated circular top exit");
+                        .allMatch(cell -> cell.level() == circularSurface.projectionLevel()),
+                "DE-STATE-003 circular readback clips generated stair facts to the active level");
         assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(expectedCircularPath),
                 "DE-STATE-003 render state exposes circular active-level path");
+        assertTrue(runtime.controlsModel().current().commandOutcome()
+                        instanceof features.dungeon.api.editor.DungeonEditorCommandOutcome.Accepted,
+                "DE-STATE-003 publishes typed accepted stair edit outcome");
+        assertEquals(
+                runtime.mapSurfaceModel().current().surface().revision(),
+                (int) ((features.dungeon.api.editor.DungeonEditorCommandOutcome.Accepted)
+                        runtime.controlsModel().current().commandOutcome()).authoredRevision(),
+                "DE-STATE-003 accepted outcome identifies committed authored revision");
         click(button(controls, "+"));
         assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).contains("4,2,1"),
                 "DE-STATE-003 render state exposes circular top crossed-floor exit");
@@ -440,6 +468,11 @@ final class DungeonEditorStairScenarios {
                 "DE-STAIR-007 zero-level span");
         assertEquals("Treppengeometrie ungueltig.", runtime.controlsModel().current().statusText(),
                 "DE-STAIR-007 zero-level span publishes rejection status");
+        assertEquals(
+                features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.INVALID_STAIR_GEOMETRY,
+                ((features.dungeon.api.editor.DungeonEditorCommandOutcome.Rejected)
+                        runtime.controlsModel().current().commandOutcome()).reason(),
+                "DE-STAIR-007 publishes typed invalid-geometry rejection");
 
         invalidBaselineSurface = runtime.mapSurfaceModel().current();
         invalidBaselineRenderCells = renderSurfaceCellOriginsWithZ(binding.mapContentModel());
@@ -598,7 +631,8 @@ final class DungeonEditorStairScenarios {
         click(button(controls, "Treppe"));
         assertTrue(popupButtonVisible("Gerade"), "DE-STAIR-001 straight stair option is visible");
         click(popupButton("Gerade"));
-        assertEquals("STAIR_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.stair(DungeonEditorToolOptions.Stair.Shape.STRAIGHT),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-STAIR-001 input route selects the straight stair creation tool");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         clickMap(
@@ -724,7 +758,8 @@ final class DungeonEditorStairScenarios {
         click(button(controls, "Treppe"));
         assertTrue(popupButtonVisible("Eckspirale"), "DE-STAIR-002 square stair option is visible");
         click(popupButton("Eckspirale"));
-        assertEquals("STAIR_CREATE_SQUARE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.stair(DungeonEditorToolOptions.Stair.Shape.SQUARE),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-STAIR-002 input route selects the square stair creation tool");
         clickMap(
                 mapView,
@@ -846,7 +881,8 @@ final class DungeonEditorStairScenarios {
         click(button(controls, "Treppe"));
         assertTrue(popupButtonVisible("Rundspirale"), "DE-STAIR-003 round stair option is visible");
         click(popupButton("Rundspirale"));
-        assertEquals("STAIR_CREATE_CIRCULAR", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.stair(DungeonEditorToolOptions.Stair.Shape.CIRCULAR),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-STAIR-003 input route selects the circular stair creation tool");
         clickMap(
                 mapView,
@@ -958,7 +994,8 @@ final class DungeonEditorStairScenarios {
         assertTrue(!runtime.database().stairExitState(mapId).isEmpty(),
                 "DE-STAIR-009 unbound fixture starts with stair exit rows");
         click(button(controls, "Treppe"));
-        assertEquals("STAIR_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.stair(DungeonEditorToolOptions.Stair.Shape.STRAIGHT),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-STAIR-009 input route selects the stair family tool");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         clickMap(
@@ -1142,9 +1179,11 @@ final class DungeonEditorStairScenarios {
         Set<Long> corridorIdsBefore = runtime.database().corridorIdsForMap(mapId);
         List<String> stairRowsBefore = runtime.database().stairStableState(mapId);
         assertTrue(stairRowsBefore.isEmpty(), "DE-STAIR-008 fixture starts without stair rows");
+        long revisionBeforeCorridor = runtime.database().mapRevision(mapId);
         click(button(controls, "-"));
         click(button(controls, "Korridor"));
-        assertEquals("CORRIDOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.CORRIDOR),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-STAIR-008 corridor family selects corridor-create tool");
         Point2D levelZeroDoor = doorHandleCenterAt(
                 runtime.mapSurfaceModel().current(),
@@ -1169,6 +1208,24 @@ final class DungeonEditorStairScenarios {
                 2,
                 1,
                 "DE-STAIR-008 upper door");
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(levelOneDoor.getX()),
+                viewport.sceneToScreenY(levelOneDoor.getY()),
+                false);
+        DungeonEditorMapSurfaceSnapshot hoverPreview = runtime.mapSurfaceModel().current();
+        Set<String> previewCorridorCells = previewCells(hoverPreview, "CORRIDOR");
+        Set<String> previewStairCells = previewCells(hoverPreview, "STAIR");
+        assertEquals(Set.of("4,2,0", "4,2,1"), previewCorridorCells,
+                "DE-STAIR-008 hover previews the complete cross-level corridor geometry");
+        assertEquals(Set.of("4,2,0", "4,2,1"), previewStairCells,
+                "DE-STAIR-008 hover previews the complete corridor-bound stair geometry");
+        assertEquals(corridorIdsBefore, runtime.database().corridorIdsForMap(mapId),
+                "DE-STAIR-008 hover remains repository-free corridor work");
+        assertEquals(stairRowsBefore, runtime.database().stairStableState(mapId),
+                "DE-STAIR-008 hover remains repository-free stair work");
         fireMapMousePressed(
                 mapView,
                 MouseButton.PRIMARY,
@@ -1178,6 +1235,8 @@ final class DungeonEditorStairScenarios {
 
         long newCorridorId = singleNewCorridorId(corridorIdsBefore, runtime.database().corridorIdsForMap(mapId),
                 "DE-STAIR-008");
+        assertEquals(revisionBeforeCorridor + 1L, runtime.database().mapRevision(mapId),
+                "DE-STAIR-008 cross-level corridor and bound stair commit exactly one aggregate revision");
         List<String> stableCorridorState = runtime.database().corridorStableConnectionState(mapId);
         assertCorridorDoorBindingCount(stableCorridorState, newCorridorId, 2, "DE-STAIR-008");
         List<String> stairRowsAfter = runtime.database().stairStableState(mapId);
@@ -1202,8 +1261,14 @@ final class DungeonEditorStairScenarios {
 
         DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
         var corridorArea = corridorAreaById(committedSurface, newCorridorId, "DE-STAIR-008 committed corridor");
-        assertEquals(Set.of("4,2,0", "4,2,1"), areaCellSet(corridorArea),
-                "DE-STAIR-008 published corridor route cells");
+        assertEquals(Set.of("4,2," + committedSurface.projectionLevel()), areaCellSet(corridorArea),
+                "DE-STAIR-008 published corridor route cells are clipped to the active level");
+        assertEquals(cellsAtLevel(previewCorridorCells, committedSurface.projectionLevel()), areaCellSet(corridorArea),
+                "DE-STAIR-008 active-level hover corridor exactly matches the committed Surface");
+        assertEquals(
+                cellsAtLevel(previewStairCells, committedSurface.projectionLevel()),
+                committedFeatureCells(committedSurface, "STAIR", stairId),
+                "DE-STAIR-008 active-level hover stair exactly matches the committed Surface");
         assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
                 "DE-STAIR-008 preview clears after commit");
         assertCrossLevelStairInSnapshot(committedSurface, stairId, "DE-STAIR-008 committed stair");
@@ -1288,6 +1353,49 @@ final class DungeonEditorStairScenarios {
         return cells;
     }
 
+    private static Set<String> previewCells(
+            DungeonEditorMapSurfaceSnapshot snapshot,
+            String kind
+    ) {
+        if (snapshot == null || snapshot.surface() == null || snapshot.surface().previewMap() == null) {
+            return Set.of();
+        }
+        if ("CORRIDOR".equals(kind)) {
+            return snapshot.surface().previewMap().areas().stream()
+                    .filter(area -> kind.equals(area.kind()))
+                    .filter(area -> area.id() == Long.MAX_VALUE)
+                    .flatMap(area -> area.cells().stream())
+                    .map(DungeonEditorStairScenarios::cellKey)
+                    .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        }
+        return snapshot.surface().previewMap().features().stream()
+                .filter(feature -> kind.equals(feature.kind()))
+                .filter(feature -> feature.id() == Long.MAX_VALUE)
+                .flatMap(feature -> feature.cells().stream())
+                .map(DungeonEditorStairScenarios::cellKey)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private static Set<String> committedFeatureCells(
+            DungeonEditorMapSurfaceSnapshot snapshot,
+            String kind,
+            long id
+    ) {
+        return snapshot.surface().map().features().stream()
+                .filter(feature -> kind.equals(feature.kind()))
+                .filter(feature -> feature.id() == id)
+                .flatMap(feature -> feature.cells().stream())
+                .map(DungeonEditorStairScenarios::cellKey)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private static Set<String> cellsAtLevel(Set<String> cells, int level) {
+        String suffix = "," + level;
+        return cells.stream()
+                .filter(cell -> cell.endsWith(suffix))
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+    }
+
     private static String cellKey(DungeonCellRef cell) {
         return cell.q() + "," + cell.r() + "," + cell.level();
     }
@@ -1353,12 +1461,20 @@ final class DungeonEditorStairScenarios {
         assertEquals(Set.of("4,2,0", "4,2,1", "4,2,2"),
                 stairExitCells(runtime.database().stairExitState(mapId), stairId),
                 scenario + " persists an exit for every crossed level");
+        DungeonEditorMapSurfaceSnapshot activeSurface = runtime.mapSurfaceModel().current();
+        assertTrue(activeSurface.surface().map().features().stream()
+                        .filter(feature -> "STAIR".equals(feature.kind()))
+                        .filter(feature -> feature.id() == stairId)
+                        .flatMap(feature -> feature.cells().stream())
+                        .allMatch(cell -> cell.level() == activeSurface.projectionLevel()),
+                scenario + " committed feature is clipped to the active exit level");
+        click(button(controls, "-"));
         assertTrue(runtime.mapSurfaceModel().current().surface().map().features().stream()
                         .filter(feature -> "STAIR".equals(feature.kind()))
                         .filter(feature -> feature.id() == stairId)
                         .flatMap(feature -> feature.cells().stream())
                         .anyMatch(cell -> cell.q() == 4 && cell.r() == 2 && cell.level() == 1),
-                scenario + " published feature exposes the intermediate exit level");
+                scenario + " level reload exposes the intermediate exit level");
         selectMap(controls, "Cross Level Corridor Multi Exit Reload Hop");
         selectMap(controls, "Cross Level Corridor Multi Exit Map");
         assertEquals(Set.of("4,2,0", "4,2,1", "4,2,2"),

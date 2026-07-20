@@ -1,0 +1,60 @@
+Modifier_ID	Modifier_Kind	Name	Loot_Type	Allowed_Profiles_Cache	Allowed_Categories_Cache	Text_Template	Details	Component_Type	Min_Qty	Max_Qty	Flat_Value_CP	Active	Source_Row
+modifier:modular:engraved	modular	Engraved	all	blade_weapon,ranged_weapon,firearm,armor,shield,tool,instrument,book,holy_symbol,arcane_focus,druidic_focus,art_object,utility_object,relic,gear		Engraved {item}		none	0.0	0.0	1000.0	true	2.0
+modifier:modular:ornate	modular	Ornate	all	blade_weapon,ranged_weapon,firearm,armor,shield,tool,instrument,book,holy_symbol,arcane_focus,druidic_focus,textile,pack_or_case,mount_gear,art_object,utility_object,relic,gear		Ornate {item}		none	0.0	0.0	1500.0	true	3.0
+modifier:modular:silvered	modular	Silvered	all	blade_weapon,shield,armor,holy_symbol,ammunition		Silvered {item}		none	0.0	0.0	10000.0	true	4.0
+modifier:modular:gold-inlaid	modular	Gold-inlaid	all	blade_weapon,ranged_weapon,firearm,shield,armor,tool,instrument,book,holy_symbol,arcane_focus,druidic_focus,art_object		Gold-inlaid {item}		none	0.0	0.0	25000.0	true	5.0
+modifier:modular:gem-set	modular	Gem-set	all	blade_weapon,shield,armor,book,holy_symbol,arcane_focus,druidic_focus,art_object,tool,instrument		{item} set with {qty}x {component}		gem	1.0	5.0	0.0	true	6.0
+modifier:modular:jeweled	modular	Jeweled	all	book,holy_symbol,art_object,textile,pack_or_case,mount_gear		Jeweled {item} set with {qty}x {component}		gem	1.0	3.0	0.0	true	7.0
+modifier:modular:ivory-inlaid	modular	Ivory-inlaid	all	tool,instrument,book,holy_symbol,art_object,arcane_focus,druidic_focus		Ivory-inlaid {item}		none	0.0	0.0	20000.0	true	8.0
+modifier:modular:silk-lined	modular	Silk-lined	all	textile,pack_or_case,instrument,book		Silk-lined {item}		none	0.0	0.0	5000.0	true	9.0
+modifier:modular:embroidered	modular	Embroidered	all	textile,pack_or_case,mount_gear		Embroidered {item}		none	0.0	0.0	1500.0	true	10.0
+modifier:modular:celestial-motif	modular	Celestial motif	all	blade_weapon,shield,armor,book,holy_symbol,arcane_focus		{item} with celestial motifs		none	0.0	0.0	1500.0	true	11.0
+modifier:modular:serpent-motif	modular	Serpent motif	all	blade_weapon,shield,armor,book,druidic_focus		{item} with serpent motifs		none	0.0	0.0	1500.0	true	12.0
+modifier:modular:dwarven-runes	modular	Dwarven runes	all	blade_weapon,armor,shield,tool		{item} marked with dwarven runes		none	0.0	0.0	1500.0	true	13.0
+modifier:modular:elven-vinework	modular	Elven vinework	all	blade_weapon,instrument,book,druidic_focus,arcane_focus		{item} decorated with elven vinework		none	0.0	0.0	1500.0	true	14.0
+modifier:modular:velvet-case	modular	Velvet case	all	tool,instrument,book,arcane_focus,holy_symbol,utility_object		{item} in a velvet-lined case		none	0.0	0.0	3000.0	true	15.0
+modifier:modular:lacquered-case	modular	Lacquered case	all	tool,instrument,book,arcane_focus,holy_symbol,utility_object		{item} in a lacquered case		none	0.0	0.0	2500.0	true	16.0
+modifier:modular:silver-fittings	modular	Silver fittings	all	blade_weapon,shield,armor,book,holy_symbol,arcane_focus,druidic_focus,art_object,tool,instrument,relic		{item} with silver fittings		none	0.0	0.0	10000.0	true	17.0
+modifier:modular:gilded	modular	Gilded	all	blade_weapon,shield,armor,book,holy_symbol,arcane_focus,druidic_focus,art_object,tool,instrument		Gilded {item}		none	0.0	0.0	15000.0	true	18.0
+modifier:modular:gem-centered	modular	Gem-centered	all	holy_symbol,arcane_focus,druidic_focus,art_object,shield		{item} centered with {qty}x {component}		gem	1.0	1.0	0.0	true	19.0
+modifier:variant:worn	variant	Worn	object	all	all	Worn {item}			0.0	0.0	0.0	true	2.0
+modifier:variant:well-made	variant	Well-made	object	all	all	Well-made {item}			0.0	0.0	500.0	true	3.0
+modifier:variant:masterwork	variant	Masterwork	object	blade_weapon,ranged_weapon,firearm,armor,shield,tool,instrument,book,holy_symbol,arcane_focus,druidic_focus,art_object	all	Masterwork {item}			0.0	0.0	10000.0	true	4.0
+modifier:variant:ceremonial	variant	Ceremonial	object	blade_weapon,ranged_weapon,firearm,armor,shield,tool,instrument,book,holy_symbol,arcane_focus,druidic_focus,art_object,relic	all	Ceremonial {item}			0.0	0.0	2500.0	true	5.0
+modifier:variant:antique	variant	Antique	object	book,holy_symbol,instrument,art_object,relic,tool	all	Antique {item}			0.0	0.0	2000.0	true	6.0
+modifier:variant:guild-made	variant	Guild-made	object	tool,instrument,utility_object,pack_or_case	all	Guild-made {item}			0.0	0.0	1500.0	true	7.0
+modifier:variant:temple-made	variant	Temple-made	object	holy_symbol,relic,book	all	Temple-made {item}			0.0	0.0	1500.0	true	8.0
+modifier:variant:cultural-style	variant	Cultural style	object	blade_weapon,ranged_weapon,firearm,armor,shield,tool,instrument,book,holy_symbol,arcane_focus,druidic_focus,textile,pack_or_case,art_object,relic	all	{detail}-style {item}	Dwarven|Elven|Orcish|Imperial|Nomad|Fey|Infernal|Draconic|Giant-crafted|Coastal		0.0	0.0	1500.0	true	9.0
+modifier:variant:book-contents	variant	Book Contents	object	book	Book_Document	{item} containing {detail}	smuggling debts|local tax records|monster sketches|heretical prayers|weathered star charts|battlefield maps|merchant debts|funeral rites|forged contracts|alchemy recipes|genealogies of a minor noble house|notes on ruined watchtowers		0.0	0.0	500.0	true	10.0
+modifier:variant:annotated-book	variant	Annotated Book	object	book	Book_Document	Annotated {item} on {detail}	goblin patrol routes|old trade roads|temple politics|herbal remedies|shipwreck locations|noble scandals|local monster lairs|forgotten tunnels|buried shrines|battle tactics		0.0	0.0	500.0	true	11.0
+modifier:variant:illuminated-book	variant	Illuminated Book	object	book	Book_Document	Illuminated {item}			0.0	0.0	2500.0	true	12.0
+modifier:variant:sealed-document	variant	Sealed Document	object	book	Book_Document	Sealed {item}			0.0	0.0	500.0	true	13.0
+modifier:variant:textile-material	variant	Textile Material	object	textile	Clothing	{detail} {item}	Silk|Woolen|Linen|Fur-lined|Velvet|Dyed cotton|Brocade|Fine leather		0.0	0.0	1000.0	true	14.0
+modifier:variant:travel-stained	variant	Travel-stained	object	textile,book,pack_or_case	all	Travel-stained {item}			0.0	0.0	0.0	true	15.0
+modifier:variant:noble-crest	variant	Noble crest	object	textile,armor,shield,pack_or_case	all	Noble-crested {item}			0.0	0.0	1500.0	true	16.0
+modifier:variant:compact	variant	Compact	object	tool,utility_object,gear	all	Compact {item}			0.0	0.0	500.0	true	17.0
+modifier:variant:collapsible	variant	Collapsible	object	tool,utility_object,gear	all	Collapsible {item}			0.0	0.0	1000.0	true	18.0
+modifier:variant:matched-set	variant	Matched set	object	tool,instrument	all	Matched set of {item}			0.0	0.0	2500.0	true	19.0
+modifier:variant:intricately-carved	variant	Intricately carved	object	art_object,holy_symbol,arcane_focus,druidic_focus,instrument,tool,relic	all	Intricately carved {item}			0.0	0.0	2500.0	true	20.0
+modifier:variant:coded-markings	variant	Coded markings	object	book,tool,utility_object,arcane_focus	all	{item} with coded markings			0.0	0.0	1000.0	true	21.0
+modifier:variant:consecrated	variant	Consecrated	object	holy_symbol,relic,book	all	Consecrated {item}			0.0	0.0	1500.0	true	22.0
+modifier:variant:sealed-material	variant	Sealed Material	material	all	Potion,Poison,Hazard_Item,Trade_Good,Survival_Supply,Component_Material	Sealed {item}			0.0	0.0	100.0	true	23.0
+modifier:variant:wax-sealed-material	variant	Wax-sealed Material	material	all	Potion,Poison,Hazard_Item,Trade_Good,Component_Material	Wax-sealed {item}			0.0	0.0	200.0	true	24.0
+modifier:variant:aged-material	variant	Aged Material	material	all	Trade_Good	Aged {item}			0.0	0.0	500.0	true	25.0
+modifier:variant:dyed-material	variant	Dyed Material	material	all	Trade_Good,Survival_Supply	Dyed {item}			0.0	0.0	500.0	true	26.0
+modifier:variant:refined-material	variant	Refined Material	material	all	Trade_Good,Component_Material	Refined {item}			0.0	0.0	1000.0	true	27.0
+modifier:variant:unworked-material	variant	Unworked Material	material	all	Trade_Good	Unworked {item}			0.0	0.0	0.0	true	28.0
+modifier:variant:polished-gem	variant	Polished Gem	material	all	Gemstone	Polished {item}			0.0	0.0	500.0	true	29.0
+modifier:variant:faceted-gem	variant	Faceted Gem	material	all	Gemstone	Faceted {item}			0.0	0.0	1000.0	true	30.0
+modifier:variant:perfumed-material	variant	Perfumed Material	material	all	Trade_Good,Survival_Supply,Component_Material	Faintly perfumed {item}			0.0	0.0	200.0	true	31.0
+modifier:variant:spoiled-material	variant	Spoiled Material	material	all	Survival_Supply,Trade_Good	Spoiled {item}			0.0	0.0	0.0	true	32.0
+modifier:variant:well-trained-livestock	variant	Well-trained Livestock	livestock	all	all	Well-trained {item}			0.0	0.0	1000.0	true	33.0
+modifier:variant:scarred-livestock	variant	Scarred Livestock	livestock	all	all	Scarred {item}			0.0	0.0	0.0	true	34.0
+modifier:variant:branded-livestock	variant	Branded Livestock	livestock	all	all	Branded {item}			0.0	0.0	0.0	true	35.0
+modifier:variant:skittish-livestock	variant	Skittish Livestock	livestock	all	all	Skittish {item}			0.0	0.0	0.0	true	36.0
+modifier:variant:sure-footed-livestock	variant	Sure-footed Livestock	livestock	all	all	Sure-footed {item}			0.0	0.0	500.0	true	37.0
+modifier:variant:weathered-vehicle	variant	Weathered Vehicle	vehicle	all	all	Weathered {item}			0.0	0.0	0.0	true	38.0
+modifier:variant:painted-vehicle	variant	Painted Vehicle	vehicle	all	all	Painted {item}			0.0	0.0	2000.0	true	39.0
+modifier:variant:military-vehicle	variant	Military Vehicle	vehicle	all	all	Military-issue {item}			0.0	0.0	5000.0	true	40.0
+modifier:variant:merchant-vehicle	variant	Merchant Vehicle	vehicle	all	all	Merchant's {item}			0.0	0.0	1000.0	true	41.0
+modifier:variant:river-worn-vehicle	variant	River-worn Vehicle	vehicle	all	all	River-worn {item}			0.0	0.0	0.0	true	42.0

@@ -1,8 +1,7 @@
 package features.dungeon.adapter.javafx.editor;
 
-import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonEditorViewMode;
-import features.dungeon.application.editor.DungeonEditorOverlaySettings;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 
 record DungeonEditorControlsInput(
         MapInput map,
@@ -50,18 +49,11 @@ record DungeonEditorControlsInput(
     }
 
     record ToolInput(
-            String requestedFamilyKey,
-            DungeonEditorTool selectedTool,
-            String selectedOptionKey,
+            DungeonEditorToolSelection selection,
             boolean dismissControlActivated
     ) {
-        ToolInput {
-            requestedFamilyKey = requestedFamilyKey == null ? "" : requestedFamilyKey.strip();
-            selectedOptionKey = selectedOptionKey == null ? "" : selectedOptionKey.strip();
-        }
-
         static ToolInput none() {
-            return new ToolInput("", null, "", false);
+            return new ToolInput(null, false);
         }
     }
 
@@ -85,7 +77,7 @@ record DungeonEditorControlsInput(
     }
 
     record OverlayInput(
-            DungeonEditorOverlaySettings.Mode mode,
+            OverlayMode mode,
             int levelRange,
             double opacity,
             String selectedLevelsText
@@ -99,5 +91,11 @@ record DungeonEditorControlsInput(
         static OverlayInput none() {
             return new OverlayInput(null, 0, 0.0, "");
         }
+    }
+
+    enum OverlayMode {
+        OFF,
+        NEARBY,
+        SELECTED
     }
 }

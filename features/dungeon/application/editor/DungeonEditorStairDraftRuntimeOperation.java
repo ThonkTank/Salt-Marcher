@@ -8,13 +8,12 @@ import features.dungeon.domain.core.structure.stair.StairShape;
 import features.dungeon.application.editor.session.DungeonEditorSessionEffect;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
-import features.dungeon.api.DungeonEditorTool;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
 
 final class DungeonEditorStairDraftRuntimeOperation {
     private static final String INVALID_PREFIX = "Treppengeometrie ungueltig: ";
     private static final String START_STATUS = "Treppenstart gesetzt. Zielpunkt auf anderer Ebene waehlen.";
     private static final String ROOM_INTERIOR_STATUS = INVALID_PREFIX + "Pfad kreuzt Rauminneres.";
-    private static final DungeonEditorToolRegistry TOOL_REGISTRY = DungeonEditorToolRegistry.current();
 
     private final DungeonEditorRuntimeContext context;
     private final StairGeometryDerivation derivation = new StairGeometryDerivation();
@@ -24,13 +23,13 @@ final class DungeonEditorStairDraftRuntimeOperation {
         this.context = Objects.requireNonNull(context, "context");
     }
 
-    static boolean handles(DungeonEditorTool tool) {
-        return TOOL_REGISTRY.isStairCreateTool(tool);
+    static boolean handles(DungeonEditorToolAction tool) {
+        return tool != null && tool.family() == DungeonEditorToolFamily.STAIR && !tool.deleteMode();
     }
 
     DungeonEditorRuntimeContext.Result apply(
             PointerAction action,
-            DungeonEditorTool tool,
+            DungeonEditorToolAction tool,
             PointerSample sample,
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
@@ -58,8 +57,8 @@ final class DungeonEditorStairDraftRuntimeOperation {
         draft = Draft.inactive();
     }
 
-    private DungeonEditorRuntimeContext.Result press(DungeonEditorTool tool, Cell pointerCell) {
-        if (!draft.active() || draft.tool() != tool) {
+    private DungeonEditorRuntimeContext.Result press(DungeonEditorToolAction tool, Cell pointerCell) {
+        if (!draft.active() || !draft.tool().equals(tool)) {
             StairShape shape = shapeFor(tool);
             draft = new Draft(tool, pointerCell, pointerCell);
             return publishPreview(shape, derivation.derive(pointerCell, pointerCell, shape), START_STATUS);
@@ -78,11 +77,11 @@ final class DungeonEditorStairDraftRuntimeOperation {
                 mapId -> context.createStair(mapId, spec)));
     }
 
-    private DungeonEditorRuntimeContext.Result preview(DungeonEditorTool tool, Cell pointerCell) {
+    private DungeonEditorRuntimeContext.Result preview(DungeonEditorToolAction tool, Cell pointerCell) {
         if (!draft.active()) {
             return DungeonEditorRuntimeContext.Result.none();
         }
-        if (draft.tool() != tool) {
+        if (!draft.tool().equals(tool)) {
             StairShape shape = shapeFor(tool);
             draft = new Draft(tool, pointerCell, pointerCell);
             return publishPreview(shape, derivation.derive(pointerCell, pointerCell, shape), START_STATUS);
@@ -150,16 +149,16 @@ final class DungeonEditorStairDraftRuntimeOperation {
                 context.projectionLevel());
     }
 
-    private static StairShape shapeFor(DungeonEditorTool tool) {
-        return TOOL_REGISTRY.stairShape(tool);
+    private static StairShape shapeFor(DungeonEditorToolAction tool) {
+        return tool.stairShape();
     }
 
-    private static DungeonEditorWorkspaceValues.Cell workspaceCell(Cell cell) {
+    private static features.dungeon.domain.core.geometry.Cell workspaceCell(Cell cell) {
         Cell safeCell = cell == null ? new Cell(0, 0, 0) : cell;
-        return new DungeonEditorWorkspaceValues.Cell(safeCell.q(), safeCell.r(), safeCell.level());
+        return new features.dungeon.domain.core.geometry.Cell(safeCell.q(), safeCell.r(), safeCell.level());
     }
 
-    private record Draft(DungeonEditorTool tool, Cell start, Cell end) {
+    private record Draft(DungeonEditorToolAction tool, Cell start, Cell end) {
         static Draft inactive() {
             return new Draft(null, null, null);
         }

@@ -1,30 +1,35 @@
 package features.worldplanner;
 
-import java.util.Objects;
+import features.creatures.api.CreatureReferenceApi;
+import features.creatures.api.CreatureReferenceIndexModel;
+import features.encountertable.api.EncounterTableCatalogModel;
+import features.encountertable.api.EncounterTableReferenceApi;
+import features.worldplanner.adapter.javafx.WorldPlannerInspectorController;
+import features.worldplanner.adapter.sqlite.repository.SqliteWorldPlannerRepository;
+import features.worldplanner.api.WorldPlannerApi;
+import features.worldplanner.api.WorldPlannerEncounterSink;
+import features.worldplanner.api.WorldPlannerSnapshotModel;
+import features.worldplanner.application.WorldPlannerApplicationService;
+import features.worldplanner.application.WorldPlannerPublishedState;
+import features.worldplanner.application.WorldPlannerSnapshotProjection;
+import features.worldplanner.domain.world.port.WorldPlannerReferencePort;
+import features.worldplanner.domain.world.repository.WorldPlannerRepository;
+
+import org.jspecify.annotations.Nullable;
+
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
 import platform.diagnostics.NoopDiagnostics;
 import platform.execution.DirectExecutionLane;
 import platform.execution.ExecutionLane;
-import platform.persistence.SqliteDatabase;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
 import platform.ui.DirectUiDispatcher;
 import platform.ui.UiDispatcher;
+
 import shell.api.InspectorSink;
-import shell.api.ShellContribution;
-import features.creatures.api.CreatureCatalogModel;
-import features.creatures.api.CreatureReferenceApi;
-import features.encountertable.api.EncounterTableCatalogModel;
-import features.encountertable.api.EncounterTableReferenceApi;
-import features.worldplanner.adapter.javafx.WorldPlannerContribution;
-import features.worldplanner.adapter.sqlite.repository.SqliteWorldPlannerRepository;
-import features.worldplanner.api.WorldPlannerApi;
-import features.worldplanner.api.WorldPlannerEncounterSink;
-import features.worldplanner.domain.world.port.WorldPlannerReferencePort;
-import features.worldplanner.domain.world.repository.WorldPlannerRepository;
-import features.worldplanner.api.WorldPlannerSnapshotModel;
-import features.worldplanner.application.WorldPlannerApplicationService;
-import features.worldplanner.application.WorldPlannerPublishedState;
-import features.worldplanner.application.WorldPlannerSnapshotProjection;
+
+import java.util.Objects;
 
 public final class WorldPlannerServiceAssembly {
 
@@ -37,6 +42,10 @@ public final class WorldPlannerServiceAssembly {
     private final ExecutionLane executionLane;
     private final Diagnostics diagnostics;
     private boolean initialSnapshotScheduled;
+
+    public static FeatureStoreDefinition storeDefinition() {
+        return SqliteWorldPlannerRepository.storeDefinition();
+    }
 
     public WorldPlannerServiceAssembly(
             WorldPlannerRepository repository,
@@ -51,7 +60,7 @@ public final class WorldPlannerServiceAssembly {
     }
 
     public static Component create(
-            SqliteDatabase database,
+            FeatureStoreHandle store,
             CreatureReferenceApi creatures,
             EncounterTableReferenceApi encounterTables,
             ExecutionLane executionLane,
@@ -59,12 +68,15 @@ public final class WorldPlannerServiceAssembly {
             Diagnostics diagnostics
     ) {
         WorldPlannerServiceAssembly assembly = new WorldPlannerServiceAssembly(
-                new SqliteWorldPlannerRepository(Objects.requireNonNull(database, "database")),
+                new SqliteWorldPlannerRepository(store),
                 WorldPlannerReferenceAssembly.catalogReferences(creatures, encounterTables),
                 executionLane,
                 uiDispatcher,
                 diagnostics);
-        return new Component(assembly.createApplicationService(), assembly.snapshotModel());
+        return new Component(
+                assembly,
+                assembly.createApplicationServiceWithoutStarting(),
+                assembly.snapshotModelWithoutStarting());
     }
 
     public WorldPlannerServiceAssembly(
@@ -83,6 +95,10 @@ public final class WorldPlannerServiceAssembly {
 
     public WorldPlannerApplicationService createApplicationService() {
         scheduleInitialSnapshot();
+        return createApplicationServiceWithoutStarting();
+    }
+
+    private WorldPlannerApplicationService createApplicationServiceWithoutStarting() {
         return new WorldPlannerApplicationService(
                 repository,
                 referenceValidator,
@@ -93,6 +109,10 @@ public final class WorldPlannerServiceAssembly {
 
     public WorldPlannerSnapshotModel snapshotModel() {
         scheduleInitialSnapshot();
+        return snapshotModelWithoutStarting();
+    }
+
+    private WorldPlannerSnapshotModel snapshotModelWithoutStarting() {
         return publishedState.snapshotModel();
     }
 
@@ -117,11 +137,15 @@ public final class WorldPlannerServiceAssembly {
 
         private final WorldPlannerApplicationService application;
         private final WorldPlannerSnapshotModel snapshot;
+        private final WorldPlannerServiceAssembly assembly;
+        private @Nullable WorldPlannerInspectorController activeInspectorController;
 
         private Component(
+                WorldPlannerServiceAssembly assembly,
                 WorldPlannerApplicationService application,
                 WorldPlannerSnapshotModel snapshot
         ) {
+            this.assembly = Objects.requireNonNull(assembly, "assembly");
             this.application = Objects.requireNonNull(application, "application");
             this.snapshot = Objects.requireNonNull(snapshot, "snapshot");
         }
@@ -134,19 +158,94 @@ public final class WorldPlannerServiceAssembly {
             return snapshot;
         }
 
-        public ShellContribution contribution(
+        public void start() {
+            assembly.scheduleInitialSnapshot();
+        }
+
+        public void openNpcInspector(
+                long npcId,
                 WorldPlannerEncounterSink encounter,
-                CreatureCatalogModel creatureCatalog,
+                CreatureReferenceIndexModel creatureCatalog,
                 EncounterTableCatalogModel encounterTableCatalog,
                 InspectorSink inspector
         ) {
-            return new WorldPlannerContribution(
-                    application,
-                    encounter,
-                    snapshot,
-                    creatureCatalog,
-                    encounterTableCatalog,
-                    inspector);
+            inspectorController(
+                    application, encounter, snapshot, creatureCatalog, encounterTableCatalog, inspector)
+                    .openNpcInspector(npcId);
+        }
+
+        public void openFactionInspector(
+                long factionId,
+                WorldPlannerEncounterSink encounter,
+                CreatureReferenceIndexModel creatureCatalog,
+                EncounterTableCatalogModel encounterTableCatalog,
+                InspectorSink inspector
+        ) {
+            inspectorController(
+                    application, encounter, snapshot, creatureCatalog, encounterTableCatalog, inspector)
+                    .openFactionInspector(factionId);
+        }
+
+        public void openLocationInspector(
+                long locationId,
+                WorldPlannerEncounterSink encounter,
+                CreatureReferenceIndexModel creatureCatalog,
+                EncounterTableCatalogModel encounterTableCatalog,
+                InspectorSink inspector
+        ) {
+            inspectorController(
+                    application, encounter, snapshot, creatureCatalog, encounterTableCatalog, inspector)
+                    .openLocationInspector(locationId);
+        }
+
+        public void openNpcCreator(
+                WorldPlannerEncounterSink encounter,
+                CreatureReferenceIndexModel creatureCatalog,
+                EncounterTableCatalogModel encounterTableCatalog,
+                InspectorSink inspector
+        ) {
+            inspectorController(application, encounter, snapshot, creatureCatalog, encounterTableCatalog, inspector)
+                    .openNpcCreator();
+        }
+
+        public void openFactionCreator(
+                WorldPlannerEncounterSink encounter,
+                CreatureReferenceIndexModel creatureCatalog,
+                EncounterTableCatalogModel encounterTableCatalog,
+                InspectorSink inspector
+        ) {
+            inspectorController(application, encounter, snapshot, creatureCatalog, encounterTableCatalog, inspector)
+                    .openFactionCreator();
+        }
+
+        public void openLocationCreator(
+                WorldPlannerEncounterSink encounter,
+                CreatureReferenceIndexModel creatureCatalog,
+                EncounterTableCatalogModel encounterTableCatalog,
+                InspectorSink inspector
+        ) {
+            inspectorController(application, encounter, snapshot, creatureCatalog, encounterTableCatalog, inspector)
+                    .openLocationCreator();
+        }
+
+        private synchronized WorldPlannerInspectorController inspectorController(
+                WorldPlannerApi application,
+                WorldPlannerEncounterSink encounter,
+                WorldPlannerSnapshotModel snapshot,
+                CreatureReferenceIndexModel creatureCatalog,
+                EncounterTableCatalogModel encounterTableCatalog,
+                InspectorSink inspector
+        ) {
+            if (activeInspectorController != null && activeInspectorController.matches(
+                    encounter, snapshot, creatureCatalog, encounterTableCatalog, inspector)) {
+                return activeInspectorController;
+            }
+            if (activeInspectorController != null) {
+                activeInspectorController.close();
+            }
+            activeInspectorController = new WorldPlannerInspectorController(
+                    application, encounter, snapshot, creatureCatalog, encounterTableCatalog, inspector);
+            return activeInspectorController;
         }
     }
 }

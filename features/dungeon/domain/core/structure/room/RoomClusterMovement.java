@@ -34,6 +34,7 @@ public final class RoomClusterMovement {
                 target.corridors(),
                 target.stairs(),
                 target.transitionCatalog(),
+                target.featureMarkers(),
                 target.revision() + 1L);
         return CORRIDOR_MOVEMENT.moveAffectedCorridors(target, clusterMovedMap);
     }
@@ -45,9 +46,9 @@ public final class RoomClusterMovement {
             int deltaR,
             int deltaLevel
     ) {
-        List<DungeonRoomCluster> movedClusters = new ArrayList<>();
+        List<RoomCluster> movedClusters = new ArrayList<>();
         boolean changed = false;
-        for (DungeonRoomCluster cluster : topology.roomClusters()) {
+        for (RoomCluster cluster : topology.roomClusters()) {
             if (cluster.clusterId() == clusterId) {
                 movedClusters.add(cluster.movedBy(deltaQ, deltaR, deltaLevel));
                 changed = true;
@@ -65,9 +66,9 @@ public final class RoomClusterMovement {
             int deltaR,
             int deltaLevel
     ) {
-        List<DungeonRoom> movedRooms = new ArrayList<>();
+        List<RoomRegion> movedRooms = new ArrayList<>();
         boolean changed = false;
-        for (DungeonRoom room : rooms.rooms()) {
+        for (RoomRegion room : rooms.rooms()) {
             if (room.clusterId() == clusterId) {
                 movedRooms.add(movedRoom(room, deltaQ, deltaR, deltaLevel));
                 changed = true;
@@ -78,21 +79,20 @@ public final class RoomClusterMovement {
         return changed ? new RoomCatalog(movedRooms) : rooms;
     }
 
-    private static DungeonRoom movedRoom(DungeonRoom room, int deltaQ, int deltaR, int deltaLevel) {
-        Map<Integer, Cell> movedAnchors = new LinkedHashMap<>();
-        for (Map.Entry<Integer, Cell> entry : room.floorAnchors().entrySet()) {
-            Cell anchor = entry.getValue();
-            int nextLevel = entry.getKey() + deltaLevel;
-            movedAnchors.put(
-                    nextLevel,
-                    new Cell(anchor.q() + deltaQ, anchor.r() + deltaR, anchor.level() + deltaLevel));
+    private static RoomRegion movedRoom(RoomRegion room, int deltaQ, int deltaR, int deltaLevel) {
+        java.util.Set<Cell> movedCells = new java.util.LinkedHashSet<>();
+        for (Cell cell : room.floorCells()) {
+            movedCells.add(new Cell(
+                    cell.q() + deltaQ,
+                    cell.r() + deltaR,
+                    cell.level() + deltaLevel));
         }
-        return new DungeonRoom(
+        return new RoomRegion(
                 room.roomId(),
                 room.mapId(),
                 room.clusterId(),
                 room.name(),
-                movedAnchors,
+                movedCells,
                 room.narration());
     }
 }

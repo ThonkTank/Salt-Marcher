@@ -1,7 +1,6 @@
 package features.dungeon.application.editor;
 
 import features.dungeon.application.editor.session.DungeonEditorSessionEffect;
-import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.DragSession;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.InteractionState;
@@ -34,7 +33,7 @@ final class InterpretDungeonEditorMainViewDragUseCase {
     DungeonEditorMainViewInterpretation interpretBoundary(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool boundaryTool,
+            DungeonEditorToolAction boundaryTool,
             InteractionState state
     ) {
         if (!boundaryDragMatchesTool(input, boundaryTool)) {
@@ -69,7 +68,7 @@ final class InterpretDungeonEditorMainViewDragUseCase {
 
     private static boolean boundaryDragMatchesTool(
             PointerState input,
-            DungeonEditorSessionValues.Tool boundaryTool
+            DungeonEditorToolAction boundaryTool
     ) {
         return boundaryTool.deleteMode() ? input.secondaryButtonDown() : input.primaryButtonDown();
     }

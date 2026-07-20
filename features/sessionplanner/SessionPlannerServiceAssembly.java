@@ -1,151 +1,152 @@
 package features.sessionplanner;
 
-import java.util.Objects;
-import org.jspecify.annotations.Nullable;
-import platform.diagnostics.Diagnostics;
-import platform.diagnostics.NoopDiagnostics;
-import platform.execution.DirectExecutionLane;
-import platform.execution.ExecutionLane;
-import platform.persistence.SqliteDatabase;
-import platform.ui.DirectUiDispatcher;
-import platform.ui.UiDispatcher;
-import shell.api.ShellContribution;
 import features.encounter.api.EncounterApi;
-import features.encounter.api.EncounterPlanBudgetModel;
 import features.encounter.api.SavedEncounterPlanListModel;
 import features.party.api.PartyApi;
-import features.party.api.ActivePartyModel;
-import features.party.api.AdventuringDayCalculationModel;
-import features.sessionplanner.domain.session.repository.SessionPlanRepository;
+import features.sessiongeneration.api.SessionGenerationApi;
 import features.sessionplanner.adapter.javafx.SessionPlannerContribution;
+import features.sessionplanner.adapter.javafx.SessionPlannerWorkspaceApplyObservation;
 import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
+import features.sessionplanner.api.PreparedSceneCatalogModel;
 import features.sessionplanner.api.SessionPlannerApi;
-import features.sessionplanner.api.SessionPlannerCatalogModel;
-import features.sessionplanner.api.SessionPlannerCurrentSessionModel;
-import features.sessionplanner.api.SessionPlannerParticipantsModel;
-import features.sessionplanner.api.SessionPlannerSceneTimelineModel;
-import features.sessionplanner.api.SessionPlannerStatePanelModel;
-import features.worldplanner.api.WorldPlannerSnapshotModel;
+import features.sessionplanner.api.SessionPlannerWorkspaceModel;
 import features.sessionplanner.application.SessionPlannerApplicationService;
-import features.sessionplanner.application.SessionPlannerForeignFacts;
-import features.sessionplanner.application.SessionPlannerProjection;
-import features.sessionplanner.application.SessionPlannerPublishedState;
+import features.sessionplanner.application.SessionPlannerWorkspaceAssembler;
+import features.sessionplanner.application.SessionPlannerWorkspacePublicationCoordinator;
+import features.sessionplanner.application.SessionPlannerWorkspaceSource;
+import features.sessionplanner.application.SessionPreparationCoordinator;
+import features.sessionplanner.application.SessionPreparedSessionStore;
+import features.sessionplanner.domain.session.repository.SessionPlanRepository;
+import features.worldplanner.api.WorldPlannerSnapshotModel;
+import org.jspecify.annotations.Nullable;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.DiagnosticId;
+import platform.diagnostics.Measurement;
+import platform.execution.ExecutionLane;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+import platform.ui.UiDispatcher;
+import shell.api.ShellContribution;
+
+import java.util.Objects;
 
 public final class SessionPlannerServiceAssembly {
 
-    private final Runtime runtime;
+    private static final DiagnosticId JAVAFX_APPLY =
+            new DiagnosticId("sessionplanner.javafx.workspace-apply");
 
-    public SessionPlannerServiceAssembly(
-            SessionPlanRepository repository,
-            PartyApi party,
-            ActivePartyModel activeParty,
-            AdventuringDayCalculationModel dayCalculation,
-            EncounterApi encounters,
-            SavedEncounterPlanListModel savedPlans,
-            EncounterPlanBudgetModel planBudget,
-            @Nullable WorldPlannerSnapshotModel worldPlanner
-    ) {
-        this(repository, party, activeParty, dayCalculation, encounters, savedPlans, planBudget, worldPlanner,
-                DirectExecutionLane.INSTANCE, DirectUiDispatcher.INSTANCE, NoopDiagnostics.INSTANCE);
+    private final Runtime runtime;
+    private final Diagnostics diagnostics;
+
+    public static FeatureStoreDefinition storeDefinition() {
+        return SqliteSessionPlanRepository.storeDefinition();
     }
 
     public static SessionPlannerServiceAssembly create(
-            SqliteDatabase database,
+            FeatureStoreHandle store,
             PartyApi party,
-            ActivePartyModel activeParty,
-            AdventuringDayCalculationModel dayCalculation,
             EncounterApi encounters,
             SavedEncounterPlanListModel savedPlans,
-            EncounterPlanBudgetModel planBudget,
             @Nullable WorldPlannerSnapshotModel worldPlanner,
-            ExecutionLane executionLane,
+            SessionGenerationApi generation,
+            ExecutionLane authoredExecutionLane,
+            ExecutionLane preparationCpuLane,
+            ExecutionLane preparationIoLane,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
+        SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(store);
         return new SessionPlannerServiceAssembly(
-                new SqliteSessionPlanRepository(Objects.requireNonNull(database, "database")),
-                party,
-                activeParty,
-                dayCalculation,
-                encounters,
-                savedPlans,
-                planBudget,
-                worldPlanner,
-                executionLane,
-                uiDispatcher,
-                diagnostics);
+                repository, repository, repository, party, encounters, savedPlans, worldPlanner,
+                generation, authoredExecutionLane, preparationCpuLane, preparationIoLane,
+                uiDispatcher, diagnostics);
     }
 
     public SessionPlannerServiceAssembly(
             SessionPlanRepository repository,
+            SessionPlannerWorkspaceSource workspaceSource,
+            SessionPreparedSessionStore preparedSessions,
             PartyApi party,
-            ActivePartyModel activeParty,
-            AdventuringDayCalculationModel dayCalculation,
             EncounterApi encounters,
             SavedEncounterPlanListModel savedPlans,
-            EncounterPlanBudgetModel planBudget,
             @Nullable WorldPlannerSnapshotModel worldPlanner,
-            ExecutionLane executionLane,
+            SessionGenerationApi generation,
+            ExecutionLane authoredExecutionLane,
+            ExecutionLane preparationCpuLane,
+            ExecutionLane preparationIoLane,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
         SessionPlanRepository safeRepository = Objects.requireNonNull(repository, "repository");
-        SessionPlannerForeignFacts facts = new SessionPlannerForeignFacts(
-                party, activeParty, dayCalculation, encounters, savedPlans, planBudget, worldPlanner);
-        SessionPlannerPublishedState publishedState =
-                new SessionPlannerPublishedState(
-                        safeRepository,
-                        facts,
-                        new SessionPlannerProjection(),
-                        Objects.requireNonNull(uiDispatcher, "uiDispatcher"));
-        SessionPlannerApplicationService application = new SessionPlannerApplicationService(
+        PartyApi safeParty = Objects.requireNonNull(party, "party");
+        EncounterApi safeEncounters = Objects.requireNonNull(encounters, "encounters");
+        SavedEncounterPlanListModel safeSavedPlans = Objects.requireNonNull(savedPlans, "savedPlans");
+        ExecutionLane authoredLane = Objects.requireNonNull(authoredExecutionLane, "authoredExecutionLane");
+        ExecutionLane cpuLane = Objects.requireNonNull(preparationCpuLane, "preparationCpuLane");
+        ExecutionLane ioLane = Objects.requireNonNull(preparationIoLane, "preparationIoLane");
+        this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
+        SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
+                Objects.requireNonNull(workspaceSource, "workspaceSource"), safeParty, safeEncounters,
+                Objects.requireNonNull(generation, "generation"), worldPlanner, ioLane, diagnostics);
+        SessionPlannerWorkspacePublicationCoordinator publication =
+                new SessionPlannerWorkspacePublicationCoordinator(
+                        assembler, safeEncounters, Objects.requireNonNull(uiDispatcher, "uiDispatcher"),
+                        diagnostics);
+        SessionPreparationCoordinator preparation = new SessionPreparationCoordinator(
                 safeRepository,
-                facts,
-                publishedState,
-                Objects.requireNonNull(executionLane, "executionLane"),
-                Objects.requireNonNull(diagnostics, "diagnostics"));
-        facts.subscribeLocationRefresh(application::refreshForeignFacts);
-        runtime = new Runtime(
-                publishedState,
-                application);
+                Objects.requireNonNull(preparedSessions, "preparedSessions"),
+                safeParty,
+                publication,
+                generation,
+                safeEncounters,
+                cpuLane,
+                ioLane,
+                authoredLane,
+                diagnostics);
+        SessionPlannerApplicationService application = new SessionPlannerApplicationService(
+                safeRepository, publication, preparation, authoredLane, diagnostics);
+        safeParty.activeParty().subscribe(ignored -> application.refreshPartyFacts());
+        safeSavedPlans.subscribe(ignored -> application.refreshForeignFacts());
+        if (worldPlanner != null) {
+            worldPlanner.subscribe(ignored -> application.refreshForeignFacts());
+        }
+        runtime = new Runtime(publication, application);
     }
 
     public SessionPlannerApi application() {
         return runtime.applicationService();
     }
 
-    public SessionPlannerCurrentSessionModel currentSessionModel() {
-        return runtime.publishedState().currentSessionModel();
+    public SessionPlannerWorkspaceModel workspaceModel() {
+        return runtime.publication().model();
     }
 
-    public SessionPlannerCatalogModel catalogModel() {
-        return runtime.publishedState().catalogModel();
-    }
-
-    public SessionPlannerParticipantsModel participantsModel() {
-        return runtime.publishedState().participantsModel();
-    }
-
-    public SessionPlannerSceneTimelineModel sceneTimelineModel() {
-        return runtime.publishedState().sceneTimelineModel();
-    }
-
-    public SessionPlannerStatePanelModel statePanelModel() {
-        return runtime.publishedState().statePanelModel();
+    public PreparedSceneCatalogModel preparedScenes() {
+        return runtime.publication().preparedScenes();
     }
 
     public ShellContribution contribution() {
-        return new SessionPlannerContribution(
-                runtime.applicationService(),
-                currentSessionModel(),
-                catalogModel(),
-                participantsModel(),
-                sceneTimelineModel(),
-                statePanelModel());
+        return contribution(ignored -> { });
+    }
+
+    public ShellContribution contribution(
+            java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> observer
+    ) {
+        java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> safeObserver =
+                Objects.requireNonNull(observer, "observer");
+        return new SessionPlannerContribution(runtime.applicationService(), workspaceModel(), observation -> {
+            diagnostics.measurement(new Measurement(
+                    JAVAFX_APPLY,
+                    observation.snapshot().preparation().attemptId(),
+                    observation.durationNanos(),
+                    observation.materializedUnitCount(),
+                    0));
+            safeObserver.accept(observation);
+        });
     }
 
     private record Runtime(
-            SessionPlannerPublishedState publishedState,
+            SessionPlannerWorkspacePublicationCoordinator publication,
             SessionPlannerApplicationService applicationService
     ) {
     }

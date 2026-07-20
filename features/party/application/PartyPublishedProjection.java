@@ -83,8 +83,8 @@ final class PartyPublishedProjection {
                 new AdventuringDaySummary(List.of(), 0, 0, 0, 0, 0, List.of()));
     }
 
-    static PartyTravelPositionsResult failedPartyTravelPositionsResult() {
-        return new PartyTravelPositionsResult(ReadStatus.STORAGE_ERROR, List.of(), null);
+    static PartyTravelPositionsResult failedPartyTravelPositionsResult(long revision) {
+        return new PartyTravelPositionsResult(ReadStatus.STORAGE_ERROR, List.of(), null, revision);
     }
 
     static AdventuringDayCalculationResult failedAdventuringDayCalculationResult() {
@@ -132,7 +132,7 @@ final class PartyPublishedProjection {
         return mapAdventuringDaySummaryResult(adventuringDayStatus(roster.projection().activeMembers()));
     }
 
-    static PartyTravelPositionsResult partyTravelPositionsResult(PartyRoster roster) {
+    static PartyTravelPositionsResult partyTravelPositionsResult(PartyRoster roster, long revision) {
         List<PartyTravelPositionSnapshot> positions = new ArrayList<>();
         @Nullable PartyTravelLocationSnapshot partyTokenLocation = null;
         for (PartyCharacter character : roster.characters()) {
@@ -145,7 +145,7 @@ final class PartyPublishedProjection {
                 partyTokenLocation = location;
             }
         }
-        return new PartyTravelPositionsResult(ReadStatus.SUCCESS, positions, partyTokenLocation);
+        return new PartyTravelPositionsResult(ReadStatus.SUCCESS, positions, partyTokenLocation, revision);
     }
 
     static MutationResult mutationResult(PartyMutationStatus status) {

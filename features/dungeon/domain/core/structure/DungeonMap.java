@@ -1,22 +1,25 @@
 package features.dungeon.domain.core.structure;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.corridor.Corridor;
-import features.dungeon.domain.core.structure.corridor.DungeonCorridorEndpoint;
+import features.dungeon.domain.core.structure.corridor.CorridorNetwork;
 import features.dungeon.domain.core.structure.feature.FeatureMarkerCatalog;
-import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
 import features.dungeon.domain.core.structure.room.RoomCatalog;
+import features.dungeon.domain.core.structure.room.RoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import features.dungeon.domain.core.structure.stair.StairCollection;
+import features.dungeon.domain.core.structure.stair.Stair;
 import features.dungeon.domain.core.structure.stair.StairGeometrySpec;
 import features.dungeon.domain.core.structure.topology.DungeonMapTopology;
 import features.dungeon.domain.core.structure.topology.SpatialTopology;
 import features.dungeon.domain.core.structure.transition.TransitionCatalog;
+import features.dungeon.domain.core.structure.transition.Transition;
 
 /**
  * Canonical aggregate root state for one authored dungeon map.
@@ -32,10 +35,6 @@ public record DungeonMap(
         FeatureMarkerCatalog featureMarkers,
         long revision
 ) {
-    private static final long NO_TRANSITION_ID = 0L;
-    private static final long NO_ROOM_ID = 0L;
-    private static final long NO_CLUSTER_ID = 0L;
-
     public DungeonMap(
             DungeonMapMetadata metadata,
             SpatialTopology topology,
@@ -104,8 +103,15 @@ public record DungeonMap(
         return ROOM_AUTHORING.moveCluster(this, clusterId, deltaQ, deltaR, deltaLevel);
     }
 
-    public DungeonMap moveClusterCorner(long clusterId, Cell corner, int deltaQ, int deltaR, int deltaLevel) {
-        return ROOM_AUTHORING.moveClusterCorner(this, clusterId, corner, deltaQ, deltaR, deltaLevel);
+    public DungeonMap moveClusterCorner(
+            long clusterId,
+            Cell corner,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
+    ) {
+        return ROOM_AUTHORING.moveClusterCorner(this, clusterId, corner, deltaQ, deltaR, deltaLevel, ids);
     }
 
     public DungeonMap moveDoorBinding(
@@ -183,137 +189,11 @@ public record DungeonMap(
             List<Edge> sourceEdges,
             int deltaQ,
             int deltaR,
-            int deltaLevel
+            int deltaLevel,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
     ) {
-        return ROOM_AUTHORING.moveBoundaryStretch(this, clusterId, sourceEdges, deltaQ, deltaR, deltaLevel);
-    }
-
-    public DungeonMap saveRoomNarration(long roomId, DungeonRoomNarration narration) {
-        if (roomId <= 0L || narration == null) {
-            return this;
-        }
-        var nextRooms = new ArrayList<>(rooms.rooms());
-        boolean changed = false;
-        for (int index = 0; index < nextRooms.size(); index++) {
-            var room = nextRooms.get(index);
-            if (room.roomId() == roomId) {
-                nextRooms.set(index, room.withNarration(narration));
-                changed = true;
-            }
-        }
-        return changed
-                ? new DungeonMap(
-                        metadata,
-                        topology,
-                        topologyIndex,
-                        new RoomCatalog(nextRooms),
-                        corridors,
-                        stairs,
-                        transitionCatalog,
-                        featureMarkers,
-                        revision + 1L)
-                : this;
-    }
-
-    public DungeonMap saveRoomName(long roomId, String name) {
-        if (roomId <= NO_ROOM_ID) {
-            return this;
-        }
-        var nextRooms = new ArrayList<>(rooms.rooms());
-        boolean changed = false;
-        for (int index = 0; index < nextRooms.size(); index++) {
-            var room = nextRooms.get(index);
-            if (room.roomId() == roomId) {
-                var renamed = room.withName(name);
-                nextRooms.set(index, renamed);
-                changed = changed || !renamed.equals(room);
-            }
-        }
-        return changed
-                ? new DungeonMap(
-                        metadata,
-                        topology,
-                        topologyIndex,
-                        new RoomCatalog(nextRooms),
-                        corridors,
-                        stairs,
-                        transitionCatalog,
-                        featureMarkers,
-                        revision + 1L)
-                : this;
-    }
-
-    public DungeonMap saveClusterName(long clusterId, String name) {
-        if (clusterId <= NO_CLUSTER_ID) {
-            return this;
-        }
-        SpatialTopology renamedTopology = topology.withRoomClusterName(clusterId, name);
-        return !renamedTopology.equals(topology)
-                ? new DungeonMap(
-                        metadata,
-                        renamedTopology,
-                        topologyIndex,
-                        rooms,
-                        corridors,
-                        stairs,
-                        transitionCatalog,
-                        featureMarkers,
-                        revision + 1L)
-                : this;
-    }
-
-    public DungeonMap saveTransitionDescription(long transitionId, String description) {
-        if (transitionId <= NO_TRANSITION_ID) {
-            return this;
-        }
-        TransitionCatalog nextTransitions = transitionCatalog.withDescription(transitionId, description);
-        return nextTransitions.equals(transitionCatalog)
-                ? this
-                : withTransitionCatalog(nextTransitions, topologyIndex);
-    }
-
-    public boolean canDeleteTransition(long transitionId) {
-        return transitionCatalog.canDelete(transitionId);
-    }
-
-    public DungeonMap deleteTransition(long transitionId) {
-        if (!canDeleteTransition(transitionId)) {
-            return this;
-        }
-        return withTransitionCatalog(transitionCatalog.withoutTransition(transitionId), null);
-    }
-
-    public long nextFeatureMarkerId() {
-        return featureMarkers.nextMarkerId();
-    }
-
-    public boolean canDeleteFeatureMarker(long markerId) {
-        return featureMarkers.canDelete(markerId);
-    }
-
-    public DungeonMap deleteFeatureMarker(long markerId) {
-        if (!canDeleteFeatureMarker(markerId)) {
-            return this;
-        }
-        return withFeatureMarkers(featureMarkers.withoutMarker(markerId));
-    }
-
-    public boolean canDeleteStair(long stairId) {
-        return stairId > 0L && stairs.canDeleteUnboundStair(stairId);
-    }
-
-    public DungeonMap deleteStair(long stairId) {
-        if (!canDeleteStair(stairId)) {
-            return this;
-        }
-        return withStairs(stairs.withoutUnboundStair(stairId));
-    }
-
-    public DungeonMap createStair(
-            long stairId,
-            StairGeometrySpec spec
-    ) {
-        return STAIR_AUTHORING.createStair(this, stairId, spec);
+        return ROOM_AUTHORING.moveBoundaryStretch(
+                this, clusterId, sourceEdges, deltaQ, deltaR, deltaLevel, ids);
     }
 
     public boolean canCreateStair(StairGeometrySpec spec) {
@@ -327,39 +207,31 @@ public record DungeonMap(
         return STAIR_AUTHORING.canSaveStairGeometry(this, stairId, spec);
     }
 
-    public DungeonMap saveStairGeometry(
-            long stairId,
-            StairGeometrySpec spec
+    public DungeonMap paintRoomRectangle(
+            Cell start,
+            Cell end,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
     ) {
-        if (!canSaveStairGeometry(stairId, spec)) {
-            return this;
-        }
-        return STAIR_AUTHORING.saveStairGeometry(this, stairId, spec);
+        return ROOM_AUTHORING.paintRoomRectangle(this, start, end, ids);
     }
 
-    public DungeonMap paintRoomRectangle(Cell start, Cell end) {
-        return ROOM_AUTHORING.paintRoomRectangle(this, start, end);
-    }
-
-    public DungeonMap deleteRoomRectangle(Cell start, Cell end) {
-        return ROOM_AUTHORING.deleteRoomRectangle(this, start, end);
+    public DungeonMap deleteRoomRectangle(
+            Cell start,
+            Cell end,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
+    ) {
+        return ROOM_AUTHORING.deleteRoomRectangle(this, start, end, ids);
     }
 
     public DungeonMap editClusterBoundaries(
             long clusterId,
             List<Edge> edges,
             BoundaryKind kind,
-            boolean deleteBoundary
+            boolean deleteBoundary,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
     ) {
-        return ROOM_AUTHORING.editClusterBoundaries(this, clusterId, edges, kind, deleteBoundary);
-    }
-
-    public DungeonMap createCorridor(
-            long stairId,
-            DungeonCorridorEndpoint start,
-            DungeonCorridorEndpoint end
-    ) {
-        return CONNECTION_AUTHORING.createCorridor(this, stairId, start, end);
+        return ROOM_AUTHORING.editClusterBoundaries(
+                this, clusterId, edges, kind, deleteBoundary, ids);
     }
 
     DungeonMap withStairs(StairCollection nextStairs) {
@@ -391,6 +263,83 @@ public record DungeonMap(
                 stairs,
                 transitionCatalog,
                 resolvedFeatureMarkers,
+                revision + 1L);
+    }
+
+    public DungeonMap withExactRoomRegionChange(
+            @Nullable RoomRegion before,
+            @Nullable RoomRegion after
+    ) {
+        RoomCatalog nextRooms = rooms.withExactChange(before, after);
+        return new DungeonMap(
+                metadata,
+                topology,
+                topologyIndex,
+                nextRooms,
+                corridors,
+                stairs,
+                transitionCatalog,
+                featureMarkers,
+                revision + 1L);
+    }
+
+    public DungeonMap withExactRoomClusterChange(
+            @Nullable RoomCluster before,
+            @Nullable RoomCluster after
+    ) {
+        SpatialTopology nextTopology = topology.withExactRoomClusterChange(before, after);
+        return new DungeonMap(
+                metadata,
+                nextTopology,
+                topologyIndex,
+                rooms,
+                corridors,
+                stairs,
+                transitionCatalog,
+                featureMarkers,
+                revision + 1L);
+    }
+
+    public DungeonMap withExactStairChange(
+            @Nullable Stair before,
+            @Nullable Stair after
+    ) {
+        StairCollection nextStairs = stairs.withExactChange(before, after);
+        return new DungeonMap(
+                metadata,
+                topology,
+                topologyIndex,
+                rooms,
+                corridors,
+                nextStairs,
+                transitionCatalog,
+                featureMarkers,
+                revision + 1L);
+    }
+
+    public DungeonMap withExactTransitionChange(
+            @Nullable Transition before,
+            @Nullable Transition after
+    ) {
+        return withTransitionCatalog(transitionCatalog.withExactChange(before, after), null);
+    }
+
+    public DungeonMap withExactCorridorChange(
+            @Nullable Corridor before,
+            @Nullable Corridor after
+    ) {
+        List<Corridor> nextCorridors = new CorridorNetwork(corridors)
+                .withExactChange(before, after)
+                .corridors();
+        return new DungeonMap(
+                metadata,
+                topology,
+                topologyIndex,
+                rooms,
+                nextCorridors,
+                stairs,
+                transitionCatalog,
+                featureMarkers,
                 revision + 1L);
     }
 

@@ -13,6 +13,8 @@ import features.dungeon.domain.core.geometry.Route;
 import features.dungeon.domain.core.structure.corridor.CorridorBindings;
 import features.dungeon.domain.core.structure.corridor.CorridorRoute;
 import features.dungeon.domain.core.structure.corridor.CorridorRoutePlan;
+import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
+import features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryStretchPlan;
@@ -24,6 +26,7 @@ import features.dungeon.domain.core.structure.stair.StairShape;
 import features.dungeon.application.editor.DungeonEditorRuntimeDraftOwnerProbe;
 
 final class DungeonPathInvariantScenarios {
+    private static final CorridorRoutingPolicy ROUTING_POLICY = new OrthogonalCorridorRoutingPolicy();
 
 
     private DungeonPathInvariantScenarios() {
@@ -64,7 +67,7 @@ final class DungeonPathInvariantScenarios {
     }
 
     private static void assertCorridorPathOwner() {
-        CorridorRoute route = CorridorRoute.unblockedBetween(new Cell(0, 0, 0), new Cell(2, 1, 1), Set.of());
+        CorridorRoute route = ROUTING_POLICY.route(new Cell(0, 0, 0), new Cell(2, 1, 1), Set.of());
         assertEquals(List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0),
                         new Cell(2, 1, 0)),
                 route.cells(),
@@ -76,19 +79,19 @@ final class DungeonPathInvariantScenarios {
                 "corridor path owner keeps unrelated room cells from blocking route");
         assertEquals(List.of(new Cell(0, 0, 0), new Cell(0, 1, 0), new Cell(1, 1, 0),
                         new Cell(2, 1, 0)),
-                CorridorRoute.unblockedBetween(
+                ROUTING_POLICY.route(
                                 new Cell(0, 0, 0),
                                 new Cell(2, 1, 1),
                                 Set.of(new Cell(1, 0, 0)))
                         .cells(),
                 "corridor path owner falls back to vertical-first when horizontal-first is blocked");
-        assertFalse(CorridorRoute.unblockedBetween(
+        assertFalse(ROUTING_POLICY.route(
                         new Cell(0, 0, 0),
                         new Cell(2, 1, 1),
                         Set.of(new Cell(1, 0, 0), new Cell(0, 1, 0)))
                 .present(),
                 "corridor path owner rejects when both orthogonal candidates are blocked");
-        assertFalse(CorridorRoute.unblockedBetween(null, new Cell(1, 0, 0), Set.of()).present(),
+        assertFalse(ROUTING_POLICY.route(null, new Cell(1, 0, 0), Set.of()).present(),
                 "corridor path owner reports missing endpoint route as no-op");
 
         CorridorRoutePlan plan = new CorridorRoutePlan(
@@ -118,15 +121,15 @@ final class DungeonPathInvariantScenarios {
                 Direction.EAST,
                 3,
                 2);
-        Stair stair = Stair.authored(8L, 2L, spec);
+        Stair stair = Stair.authored(8L, 2L, spec, List.of(101L, 102L, 103L));
 
         assertEquals(List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),
                 spec.generatedPath(),
                 "stair path owner generates straight path cells");
         assertEquals(List.of(
-                        new StairExit(0L, new Cell(0, 0, 0), ""),
-                        new StairExit(0L, new Cell(1, 0, 1), ""),
-                        new StairExit(0L, new Cell(2, 0, 2), "")),
+                        new StairExit(101L, new Cell(0, 0, 0), ""),
+                        new StairExit(102L, new Cell(1, 0, 1), ""),
+                        new StairExit(103L, new Cell(2, 0, 2), "")),
                 stair.exits(),
                 "stair path owner derives level exits from generated path");
         assertTrue(stair.isReadable(), "stair path owner reports readable generated path");

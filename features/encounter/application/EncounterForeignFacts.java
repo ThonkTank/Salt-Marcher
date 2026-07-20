@@ -162,6 +162,11 @@ public final class EncounterForeignFacts implements EncounterGenerator.ForeignFa
                 source.effectiveEncounterTableIds(original.encounterTableIds()),
                 original.worldFactionIds(),
                 original.worldLocationId(),
+                original.nameQuery(),
+                original.challengeRatingMin(),
+                original.challengeRatingMax(),
+                original.sizes(),
+                original.alignments(),
                 source.invalid() ? Map.of() : source.finiteStockCaps());
         return new EncounterGenerationRequest(
                 resolvedInputs,
@@ -215,6 +220,11 @@ public final class EncounterForeignFacts implements EncounterGenerator.ForeignFa
                     safeCriteria.creatureTypes(),
                     safeCriteria.creatureSubtypes(),
                     safeCriteria.biomes(),
+                    safeCriteria.nameQuery(),
+                    safeCriteria.challengeRatingMin(),
+                    safeCriteria.challengeRatingMax(),
+                    safeCriteria.sizes(),
+                    safeCriteria.alignments(),
                     minimumXp,
                     maximumXp,
                     normalizeLimit(safeCriteria.limit())));

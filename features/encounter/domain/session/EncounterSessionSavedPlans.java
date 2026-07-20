@@ -21,7 +21,15 @@ final class EncounterSessionSavedPlans {
         activeSavedPlanId = OptionalLong.empty();
     }
 
-    void saveCurrentPlan(
+    long activeSavedPlanId() {
+        return activeSavedPlanId.orElse(0L);
+    }
+
+    void restore(long planId) {
+        activeSavedPlanId = planId > 0L ? OptionalLong.of(planId) : OptionalLong.empty();
+    }
+
+    boolean saveCurrentPlan(
             EncounterSession.SessionRepository access,
             EncounterSessionContext context,
             List<EncounterCreatureData> roster,
@@ -29,7 +37,7 @@ final class EncounterSessionSavedPlans {
     ) {
         if (roster.isEmpty()) {
             context.setStatus(SAVE_NEEDS_CREATURE_STATUS);
-            return;
+            return false;
         }
         PlanOutcome result = access.savePlan(new EncounterPlan(
                 activeSavedPlanId.orElse(0L),
@@ -39,12 +47,13 @@ final class EncounterSessionSavedPlans {
         if (!result.success()) {
             context.setStatus(result.message().isBlank() ? SAVE_FAILURE_STATUS : result.message());
             context.refreshSavedPlans(access);
-            return;
+            return false;
         }
         EncounterPlan plan = result.plan().orElseThrow();
         activeSavedPlanId = OptionalLong.of(plan.id());
         context.setStatus(plan.name() + " gespeichert.");
         context.refreshSavedPlans(access);
+        return true;
     }
 
     boolean openSavedPlan(

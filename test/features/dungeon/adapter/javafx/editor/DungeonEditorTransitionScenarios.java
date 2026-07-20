@@ -13,6 +13,8 @@ import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonTopologyElementRef;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonMapSummary;
@@ -199,6 +201,11 @@ final class DungeonEditorTransitionScenarios {
                 "DE-TRN-003 invalid entrance-link target map leaves target transitions unchanged");
         assertEquals(sourceRef, runtime.mapSurfaceModel().current().selection().topologyRef(),
                 "DE-TRN-003 invalid entrance-link target map keeps source selected");
+        assertEquals(
+                features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.MISSING_TRANSITION_DESTINATION,
+                ((features.dungeon.api.editor.DungeonEditorCommandOutcome.Rejected)
+                        runtime.controlsModel().current().commandOutcome()).reason(),
+                "DE-TRN-003 invalid target map publishes typed missing-destination rejection");
         assertTransitionEntranceLinkDraft(
                 stateView,
                 targetMapId + 1000L,
@@ -458,7 +465,8 @@ final class DungeonEditorTransitionScenarios {
                 "DE-TRN-001 fixture starts without transition rows");
 
         click(button(controls, "Übergang"));
-        assertEquals("TRANSITION_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.TRANSITION),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-TRN-001 transition family selects transition creation");
         ComboBox<?> destinationType = comboBox(stateView, "Übergang Zieltyp");
         assertTrue(comboBoxContainsDisplayText(destinationType, "Weltkarte"),
@@ -1018,7 +1026,8 @@ final class DungeonEditorTransitionScenarios {
                 "DE-TRN-002 transition marker carries a transition topology ref");
         assertCompactTransitionGlyph(binding.mapContentModel(), transitionRef, "DE-TRN-002");
         click(button(controls, "Übergang"));
-        assertEquals("TRANSITION_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.TRANSITION),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-TRN-002 transition family selects the transition family tool");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
@@ -1140,6 +1149,11 @@ final class DungeonEditorTransitionScenarios {
                 scenario + " keeps projection level stable");
         assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
                 scenario + " keeps preview empty");
+        assertEquals(
+                features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.REFERENCED_CONNECTION,
+                ((features.dungeon.api.editor.DungeonEditorCommandOutcome.Rejected)
+                        runtime.controlsModel().current().commandOutcome()).reason(),
+                scenario + " publishes typed referenced-connection rejection");
         assertTrue(renderHasGlyphAt(binding.mapContentModel(), transitionRef, transitionCenter.getX(), transitionCenter.getY(), false),
                 scenario + " keeps rendered transition marker");
     }

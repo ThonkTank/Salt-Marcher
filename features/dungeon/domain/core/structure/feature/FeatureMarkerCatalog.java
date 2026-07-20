@@ -2,15 +2,13 @@ package features.dungeon.domain.core.structure.feature;
 
 import java.util.ArrayList;
 import java.util.List;
-import features.dungeon.domain.core.geometry.Cell;
-import features.dungeon.domain.core.structure.DungeonMapIdentity;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.structure.topology.DungeonMapTopology.DungeonTopologyBinding;
 
 public record FeatureMarkerCatalog(
         List<FeatureMarker> markers
 ) {
-    private static final long NO_MARKER_ID = 0L;
-
     public FeatureMarkerCatalog {
         markers = markers == null ? List.of() : List.copyOf(markers);
     }
@@ -19,46 +17,39 @@ public record FeatureMarkerCatalog(
         return new FeatureMarkerCatalog(List.of());
     }
 
-    public FeatureMarkerCatalog withCreated(
-            long markerId,
-            DungeonMapIdentity mapId,
-            FeatureMarkerKind kind,
-            Cell anchor,
-            String label,
-            String description
-    ) {
-        List<FeatureMarker> nextMarkers = new ArrayList<>(markers);
-        nextMarkers.add(new FeatureMarker(
-                markerId,
-                mapId,
-                kind,
-                anchor,
-                label,
-                description));
-        return new FeatureMarkerCatalog(nextMarkers);
-    }
-
-    public boolean canDelete(long markerId) {
-        if (markerId <= NO_MARKER_ID) {
-            return false;
-        }
+    public @Nullable FeatureMarker marker(long markerId) {
         for (FeatureMarker marker : markers) {
             if (marker.markerId() == markerId) {
-                return true;
+                return marker;
             }
         }
-        return false;
+        return null;
     }
 
-    public FeatureMarkerCatalog withoutMarker(long markerId) {
-        if (!canDelete(markerId)) {
-            return this;
+    public FeatureMarkerCatalog withExactChange(
+            @Nullable FeatureMarker before,
+            @Nullable FeatureMarker after
+    ) {
+        FeatureMarker identity = after == null ? before : after;
+        if (identity == null) {
+            throw new IllegalArgumentException("feature marker change requires identity");
+        }
+        FeatureMarker current = marker(identity.markerId());
+        if (!Objects.equals(current, before)) {
+            throw new IllegalStateException("feature marker patch does not match current authored truth");
         }
         List<FeatureMarker> nextMarkers = new ArrayList<>();
         for (FeatureMarker marker : markers) {
-            if (marker.markerId() != markerId) {
+            if (marker.markerId() == identity.markerId()) {
+                if (after != null) {
+                    nextMarkers.add(after);
+                }
+            } else {
                 nextMarkers.add(marker);
             }
+        }
+        if (before == null && after != null) {
+            nextMarkers.add(after);
         }
         return new FeatureMarkerCatalog(nextMarkers);
     }
@@ -75,11 +66,4 @@ public record FeatureMarkerCatalog(
         return List.copyOf(result);
     }
 
-    public long nextMarkerId() {
-        long highest = 0L;
-        for (FeatureMarker marker : markers) {
-            highest = Math.max(highest, marker.markerId());
-        }
-        return highest + 1L;
-    }
 }

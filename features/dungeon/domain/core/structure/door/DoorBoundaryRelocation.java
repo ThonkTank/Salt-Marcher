@@ -7,8 +7,8 @@ import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.DungeonMap;
-import features.dungeon.domain.core.structure.corridor.CorridorDoorBindingState;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.component.CorridorDoorBinding;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.topology.SpatialTopology;
 
 /**
@@ -21,15 +21,15 @@ public final class DoorBoundaryRelocation {
 
     public @Nullable DoorBoundaryMovePlan planMovedDoorBinding(
             DungeonMap sourceMap,
-            CorridorDoorBindingState oldBinding,
-            CorridorDoorBindingState newBinding
+            CorridorDoorBinding oldBinding,
+            CorridorDoorBinding newBinding
     ) {
         DungeonMap safeSourceMap = Objects.requireNonNull(sourceMap, "sourceMap");
         DoorBindingMoveContext context = DoorBindingMoveContext.from(safeSourceMap, oldBinding, newBinding);
         if (context == null || !MOVE_MATERIALIZATION.targetMaterializesDoor(safeSourceMap, context)) {
             return null;
         }
-        DungeonRoomCluster movedCluster = MOVED_CLUSTER.movedCluster(context);
+        RoomCluster movedCluster = MOVED_CLUSTER.movedCluster(context);
         if (movedCluster.equals(context.targetCluster())) {
             return null;
         }
@@ -65,7 +65,7 @@ public final class DoorBoundaryRelocation {
                 DoorBoundaryRelocationGeometry.boundaryAt(context.targetCluster(), context.nextDoorEdge()))) {
             return null;
         }
-        DungeonRoomCluster movedCluster = MOVED_CLUSTER.movedStandaloneDoor(
+        RoomCluster movedCluster = MOVED_CLUSTER.movedStandaloneDoor(
                 context.targetCluster(),
                 context.oldDoorBoundary(),
                 context.nextDoorEdge(),
@@ -83,9 +83,9 @@ public final class DoorBoundaryRelocation {
     ) {
         DungeonMap safeSourceMap = Objects.requireNonNull(sourceMap, "sourceMap");
         DoorBoundaryMovePlan safePlan = Objects.requireNonNull(plan, "plan");
-        List<DungeonRoomCluster> nextClusters = new ArrayList<>();
+        List<RoomCluster> nextClusters = new ArrayList<>();
         boolean changed = false;
-        for (DungeonRoomCluster candidate : safeSourceMap.topology().roomClusters()) {
+        for (RoomCluster candidate : safeSourceMap.topology().roomClusters()) {
             if (candidate.clusterId() == safePlan.clusterId()) {
                 nextClusters.add(safePlan.movedCluster());
                 changed = true;
@@ -100,7 +100,7 @@ public final class DoorBoundaryRelocation {
 
     public record DoorBoundaryMovePlan(
             long clusterId,
-            DungeonRoomCluster movedCluster
+            RoomCluster movedCluster
     ) {
         public DoorBoundaryMovePlan {
             movedCluster = Objects.requireNonNull(movedCluster, "movedCluster");

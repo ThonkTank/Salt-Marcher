@@ -13,7 +13,7 @@ import features.dungeon.domain.core.component.CorridorAnchor;
 import features.dungeon.domain.core.component.CorridorAnchorRef;
 import features.dungeon.domain.core.component.CorridorWaypoint;
 import features.dungeon.domain.core.structure.corridor.Corridor;
-import features.dungeon.domain.core.structure.corridor.CorridorDoorBindingState;
+import features.dungeon.domain.core.component.CorridorDoorBinding;
 import features.dungeon.domain.core.structure.topology.DungeonMapTopology;
 
 final class DungeonCorridorConnectionWriteMapperSupport {
@@ -30,13 +30,13 @@ final class DungeonCorridorConnectionWriteMapperSupport {
                     corridor.mapId(),
                     corridor.level(),
                     corridor.roomIds(),
-                    toWaypointRecords(corridor.corridorId(), corridor.stateBindings().waypoints()),
-                    toDoorBindingRecords(corridor.corridorId(), corridor.stateBindings().doorBindings()),
+                    toWaypointRecords(corridor.corridorId(), corridor.bindings().waypoints()),
+                    toDoorBindingRecords(corridor.corridorId(), corridor.bindings().doorBindings()),
                     toAnchorBindingRecords(
                             corridor.corridorId(),
-                            corridor.stateBindings().anchorBindings(),
+                            corridor.bindings().anchorBindings(),
                             topologyIdsByAnchor),
-                    toAnchorRefRecords(corridor.corridorId(), corridor.stateBindings().anchorRefs(), topologyIdsByAnchor)));
+                    toAnchorRefRecords(corridor.corridorId(), corridor.bindings().anchorRefs(), topologyIdsByAnchor)));
         }
         return List.copyOf(result);
     }
@@ -60,17 +60,18 @@ final class DungeonCorridorConnectionWriteMapperSupport {
 
     private static List<DungeonCorridorDoorBindingRecord> toDoorBindingRecords(
             long corridorId,
-            List<CorridorDoorBindingState> doorBindings
+            List<CorridorDoorBinding> doorBindings
     ) {
         List<DungeonCorridorDoorBindingRecord> result = new ArrayList<>();
-        for (CorridorDoorBindingState binding
-                : doorBindings == null ? List.<CorridorDoorBindingState>of() : doorBindings) {
+        for (CorridorDoorBinding binding
+                : doorBindings == null ? List.<CorridorDoorBinding>of() : doorBindings) {
             result.add(new DungeonCorridorDoorBindingRecord(
                     corridorId,
                     binding.roomId(),
                     binding.clusterId(),
                     binding.relativeCell().q(),
                     binding.relativeCell().r(),
+                    binding.relativeCell().level(),
                     binding.direction().name(),
                     binding.topologyRef().present() ? binding.topologyRef().id() : null));
         }
@@ -123,7 +124,7 @@ final class DungeonCorridorConnectionWriteMapperSupport {
         Map<AnchorKey, Long> result = new LinkedHashMap<>();
         for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
             if (corridor != null) {
-                result.putAll(topologyIdsByAnchorForBindings(corridor.stateBindings().anchorBindings(), topologyIndex));
+                result.putAll(topologyIdsByAnchorForBindings(corridor.bindings().anchorBindings(), topologyIndex));
             }
         }
         return Map.copyOf(result);

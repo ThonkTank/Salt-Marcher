@@ -2,9 +2,13 @@ package features.dungeon.application.editor.session;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import features.dungeon.api.DungeonEditorViewMode;
+import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Inspector;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapId;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 
 public final class DungeonEditorSessionSnapshot {
 
@@ -15,45 +19,47 @@ public final class DungeonEditorSessionSnapshot {
         return new SnapshotData(
                 List.of(),
                 null,
-                DungeonEditorSessionValues.ViewMode.defaultMode(),
-                DungeonEditorSessionValues.Tool.defaultTool(),
+                DungeonEditorViewMode.GRID,
+                DungeonEditorToolSelection.select(),
                 0,
-                DungeonEditorSessionValues.OverlaySettings.defaults(),
+                DungeonOverlaySettings.defaults(),
                 DungeonEditorSessionValues.Selection.empty(),
                 null,
                 DungeonEditorSessionValues.Preview.none(),
-                statusText);
+                statusText,
+                DungeonEditorCommandOutcome.idle());
     }
 
     public record SnapshotData(
             List<DungeonEditorWorkspaceValues.MapSummary> maps,
             @Nullable MapId selectedMapId,
-            DungeonEditorSessionValues.ViewMode viewMode,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorViewMode viewMode,
+            DungeonEditorToolSelection toolSelection,
             int projectionLevel,
-            DungeonEditorSessionValues.OverlaySettings overlaySettings,
+            DungeonOverlaySettings overlaySettings,
             DungeonEditorSessionValues.Selection selection,
             @Nullable SurfaceData surface,
             DungeonEditorSessionValues.Preview preview,
-            String statusText
+            String statusText,
+            DungeonEditorCommandOutcome commandOutcome
     ) {
         public SnapshotData {
             maps = maps == null ? List.of() : List.copyOf(maps);
-            viewMode = viewMode == null ? DungeonEditorSessionValues.ViewMode.defaultMode() : viewMode;
-            selectedTool = selectedTool == null ? DungeonEditorSessionValues.Tool.defaultTool() : selectedTool;
-            overlaySettings = overlaySettings == null ? DungeonEditorSessionValues.OverlaySettings.defaults() : overlaySettings;
+            viewMode = viewMode == null ? DungeonEditorViewMode.GRID : viewMode;
+            toolSelection = toolSelection == null ? DungeonEditorToolSelection.select() : toolSelection;
+            overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
             selection = selection == null ? DungeonEditorSessionValues.Selection.empty() : selection;
             preview = preview == null ? DungeonEditorSessionValues.Preview.none() : preview;
             statusText = statusText == null ? "" : statusText;
+            commandOutcome = commandOutcome == null ? DungeonEditorCommandOutcome.idle() : commandOutcome;
         }
 
-        @Override
-        public DungeonEditorSessionValues.Tool selectedTool() {
-            return DungeonEditorSessionValues.Tool.valueOf(selectedTool.name());
-        }
     }
 
     public record SurfaceData(
+            DungeonEditorWorkspaceValues.@Nullable MapId mapId,
+            long requestGeneration,
+            long acceptedRevision,
             String mapName,
             int revision,
             MapSnapshot map,
@@ -61,6 +67,8 @@ public final class DungeonEditorSessionSnapshot {
             @Nullable Inspector inspector
     ) {
         public SurfaceData {
+            requestGeneration = Math.max(0L, requestGeneration);
+            acceptedRevision = Math.max(0L, acceptedRevision);
             mapName = mapName == null || mapName.isBlank() ? "Dungeon" : mapName;
             map = map == null ? DungeonEditorWorkspaceValues.MapSnapshot.empty() : map;
         }
@@ -71,10 +79,11 @@ public final class DungeonEditorSessionSnapshot {
         return new ControlsData(
                 safeSession.selectedMapId(),
                 safeSession.viewMode(),
-                safeSession.selectedTool(),
+                safeSession.toolSelection(),
                 safeSession.projectionLevel(),
                 safeSession.overlaySettings(),
-                safeSession.statusText());
+                safeSession.statusText(),
+                safeSession.commandOutcome());
     }
 
     public static SessionFrameData sessionFrameData(@Nullable DungeonEditorSession session) {
@@ -87,23 +96,21 @@ public final class DungeonEditorSessionSnapshot {
 
     public record ControlsData(
             @Nullable MapId selectedMapId,
-            DungeonEditorSessionValues.ViewMode viewMode,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorViewMode viewMode,
+            DungeonEditorToolSelection toolSelection,
             int projectionLevel,
-            DungeonEditorSessionValues.OverlaySettings overlaySettings,
-            String statusText
+            DungeonOverlaySettings overlaySettings,
+            String statusText,
+            DungeonEditorCommandOutcome commandOutcome
     ) {
         public ControlsData {
-            viewMode = viewMode == null ? DungeonEditorSessionValues.ViewMode.defaultMode() : viewMode;
-            selectedTool = selectedTool == null ? DungeonEditorSessionValues.Tool.defaultTool() : selectedTool;
-            overlaySettings = overlaySettings == null ? DungeonEditorSessionValues.OverlaySettings.defaults() : overlaySettings;
+            viewMode = viewMode == null ? DungeonEditorViewMode.GRID : viewMode;
+            toolSelection = toolSelection == null ? DungeonEditorToolSelection.select() : toolSelection;
+            overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
             statusText = statusText == null ? "" : statusText;
+            commandOutcome = commandOutcome == null ? DungeonEditorCommandOutcome.idle() : commandOutcome;
         }
 
-        @Override
-        public DungeonEditorSessionValues.Tool selectedTool() {
-            return DungeonEditorSessionValues.Tool.valueOf(selectedTool.name());
-        }
     }
 
     public record SessionFrameData(
@@ -117,19 +124,19 @@ public final class DungeonEditorSessionSnapshot {
             preview = preview == null ? DungeonEditorSessionValues.Preview.none() : preview;
         }
 
-        public DungeonEditorSessionValues.ViewMode viewMode() {
+        public DungeonEditorViewMode viewMode() {
             return controlsData.viewMode();
         }
 
-        public DungeonEditorSessionValues.Tool selectedTool() {
-            return controlsData.selectedTool();
+        public DungeonEditorToolSelection toolSelection() {
+            return controlsData.toolSelection();
         }
 
         public int projectionLevel() {
             return controlsData.projectionLevel();
         }
 
-        public DungeonEditorSessionValues.OverlaySettings overlaySettings() {
+        public DungeonOverlaySettings overlaySettings() {
             return controlsData.overlaySettings();
         }
 

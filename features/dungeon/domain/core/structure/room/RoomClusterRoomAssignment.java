@@ -16,11 +16,11 @@ final class RoomClusterRoomAssignment {
     }
 
     static Map<Long, List<Cell>> cellsByRoom(
-            RoomCluster cluster,
-            List<Room> rooms,
+            RoomClusterGeometry cluster,
+            List<RoomRegion> rooms,
             Map<Integer, ? extends Iterable<Edge>> barriersByLevel
     ) {
-        List<Room> safeRooms = rooms == null ? List.of() : rooms;
+        List<RoomRegion> safeRooms = rooms == null ? List.of() : rooms;
         Map<Long, List<Cell>> result = new LinkedHashMap<>();
         for (Integer level : levels(cluster, safeRooms, barriersByLevel)) {
             assignLevelCells(
@@ -30,7 +30,7 @@ final class RoomClusterRoomAssignment {
                     level,
                     RoomClusterBoundaryTraversal.barriersAt(barriersByLevel, level));
         }
-        for (Room room : safeRooms) {
+        for (RoomRegion room : safeRooms) {
             if (room != null) {
                 roomCells(result, room.roomId()).add(primaryAnchor(room));
             }
@@ -40,17 +40,20 @@ final class RoomClusterRoomAssignment {
 
     private static void assignLevelCells(
             Map<Long, List<Cell>> result,
-            RoomCluster cluster,
-            List<Room> rooms,
+            RoomClusterGeometry cluster,
+            List<RoomRegion> rooms,
             int level,
             Set<EdgeKey> barriers
     ) {
         Set<Cell> clusterCells = clusterCells(cluster, rooms, level);
         for (Set<Cell> component : RoomClusterBoundaryTraversal.connectedComponents(clusterCells, barriers)) {
+            List<RoomRegion> componentRooms = RoomCellOwnerSelection.roomsWithAnchorsIn(rooms, level, component);
             assignComponentCells(
                     result,
                     component,
-                    RoomCellOwnerSelection.roomsWithAnchorsIn(rooms, level, component),
+                    componentRooms.isEmpty()
+                            ? RoomCellOwnerSelection.roomsWithAnchorAt(rooms, level)
+                            : componentRooms,
                     level);
         }
     }
@@ -58,24 +61,24 @@ final class RoomClusterRoomAssignment {
     private static void assignComponentCells(
             Map<Long, List<Cell>> result,
             Set<Cell> component,
-            List<Room> componentRooms,
+            List<RoomRegion> componentRooms,
             int level
     ) {
         if (componentRooms.isEmpty()) {
             return;
         }
         for (Cell cell : RoomClusterCells.sortedCells(component)) {
-            Room owner = RoomCellOwnerSelection.nearestRoom(cell, componentRooms, level);
+            RoomRegion owner = RoomCellOwnerSelection.nearestRoom(cell, componentRooms, level);
             roomCells(result, owner.roomId()).add(cell);
         }
     }
 
-    private static Set<Cell> clusterCells(RoomCluster cluster, List<Room> rooms, int level) {
+    private static Set<Cell> clusterCells(RoomClusterGeometry cluster, List<RoomRegion> rooms, int level) {
         Set<Cell> cells = new LinkedHashSet<>(cluster.cellsAt(level));
         if (!cells.isEmpty()) {
             return cells;
         }
-        for (Room room : rooms == null ? List.<Room>of() : rooms) {
+        for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
             if (room != null && room.floorAnchors().containsKey(level)) {
                 cells.add(room.floorAnchors().get(level));
             }
@@ -87,8 +90,8 @@ final class RoomClusterRoomAssignment {
     }
 
     private static Set<Integer> levels(
-            RoomCluster cluster,
-            List<Room> rooms,
+            RoomClusterGeometry cluster,
+            List<RoomRegion> rooms,
             Map<Integer, ? extends Iterable<Edge>> barriersByLevel
     ) {
         Set<Integer> levels = new LinkedHashSet<>();
@@ -97,7 +100,7 @@ final class RoomClusterRoomAssignment {
         if (barriersByLevel != null) {
             levels.addAll(barriersByLevel.keySet());
         }
-        for (Room room : rooms == null ? List.<Room>of() : rooms) {
+        for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
             if (room != null) {
                 levels.addAll(room.floorAnchors().keySet());
             }
@@ -122,7 +125,7 @@ final class RoomClusterRoomAssignment {
         return cells;
     }
 
-    private static Cell primaryAnchor(Room room) {
+    private static Cell primaryAnchor(RoomRegion room) {
         int level = 0;
         Cell result = null;
         for (Map.Entry<Integer, Cell> entry : room.floorAnchors().entrySet()) {

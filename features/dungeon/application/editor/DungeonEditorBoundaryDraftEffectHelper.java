@@ -6,6 +6,7 @@ import java.util.Set;
 import features.dungeon.application.editor.session.DungeonEditorSessionEffect;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.BoundaryDraft;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.EdgeKey;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.InteractionState;
@@ -28,7 +29,7 @@ final class DungeonEditorBoundaryDraftEffectHelper {
                 new DungeonEditorSessionValues.ClusterBoundariesPreview(
                         clusterId,
                         edgeRefs(edges),
-                        DungeonEditorWorkspaceValues.BoundaryKind.WALL,
+                        features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.WALL,
                         true)));
     }
 
@@ -76,7 +77,8 @@ final class DungeonEditorBoundaryDraftEffectHelper {
     DungeonEditorMainViewInterpretation rejectExteriorWallDelete(InteractionState state) {
         return new DungeonEditorMainViewInterpretation(
                 state.withBoundaryDraft(BoundaryDraft.none()),
-                DungeonEditorSessionEffect.clearPreviewWithStatus("Cluster-Aussenwand kann nicht gelöscht werden."));
+                DungeonEditorSessionEffect.rejected(
+                        DungeonEditorCommandOutcome.RejectionReason.PROTECTED_EXTERIOR_WALL));
     }
 
     private static DungeonEditorSessionValues.ClusterBoundariesPreview boundaryPreview(
@@ -87,12 +89,12 @@ final class DungeonEditorBoundaryDraftEffectHelper {
         return new DungeonEditorSessionValues.ClusterBoundariesPreview(
                 clusterId,
                 edgeRefs(edges),
-                DungeonEditorWorkspaceValues.BoundaryKind.WALL,
+                features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.WALL,
                 deleteMode);
     }
 
-    static List<DungeonEditorWorkspaceValues.Edge> edgeRefs(Set<EdgeKey> edges) {
-        List<DungeonEditorWorkspaceValues.Edge> result = new ArrayList<>();
+    static List<features.dungeon.domain.core.geometry.Edge> edgeRefs(Set<EdgeKey> edges) {
+        List<features.dungeon.domain.core.geometry.Edge> result = new ArrayList<>();
         for (EdgeKey edge : edges) {
             result.add(edge.toEdgeRef());
         }

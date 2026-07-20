@@ -8,27 +8,30 @@ import java.util.Set;
 import features.dungeon.domain.core.component.CorridorWaypoint;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.corridor.Corridor;
-import features.dungeon.domain.core.structure.corridor.CorridorRoute;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.corridor.CorridorEndpointOrdering;
+import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
+import features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 
 /**
  * Projection boundary for authored corridor route facts supplied by core
  * structure owners.
  */
 final class DungeonCorridorCellProjection {
+    private static final CorridorRoutingPolicy ROUTING_POLICY = new OrthogonalCorridorRoutingPolicy();
     private static final int SINGLE_ROUTE_TERMINUS_COUNT = 1;
     private static final int FULL_ROUTE_TERMINUS_COUNT = 2;
 
     List<Cell> corridorCells(
             Corridor corridor,
-            Map<Long, DungeonRoomCluster> clustersById,
+            Map<Long, RoomCluster> clustersById,
             List<DungeonCorridorEndpointResolver.CorridorEndpoint> endpoints,
             Set<Cell> roomCells
     ) {
-        boolean authoredBackbone = !corridor.stateBindings().waypoints().isEmpty();
+        boolean authoredBackbone = !corridor.bindings().waypoints().isEmpty();
         List<Cell> backbone = !authoredBackbone
                 ? endpointCells(endpoints)
-                : authoredRouteCells(corridor.stateBindings().waypoints(), clustersById, endpoints);
+                : authoredRouteCells(corridor.bindings().waypoints(), clustersById, endpoints);
         Set<Cell> cells = new LinkedHashSet<>();
         addRouteCells(cells, backbone, roomCells, !authoredBackbone);
         if (cells.isEmpty()) {
@@ -56,7 +59,7 @@ final class DungeonCorridorCellProjection {
 
     private static List<Cell> authoredRouteCells(
             List<CorridorWaypoint> waypoints,
-            Map<Long, DungeonRoomCluster> clustersById,
+            Map<Long, RoomCluster> clustersById,
             List<DungeonCorridorEndpointResolver.CorridorEndpoint> endpoints
     ) {
         List<Cell> waypointCells = corridorWaypoints(waypoints, clustersById);
@@ -88,21 +91,39 @@ final class DungeonCorridorCellProjection {
             }
         }
         if (doorEndpoints.size() >= FULL_ROUTE_TERMINUS_COUNT) {
-            return List.of(doorEndpoints.getFirst(), doorEndpoints.getLast());
+            return canonicalPair(doorEndpoints.getFirst(), doorEndpoints.getLast());
         }
         if (allEndpoints.size() <= FULL_ROUTE_TERMINUS_COUNT) {
-            return List.copyOf(allEndpoints);
+            return allEndpoints.size() == FULL_ROUTE_TERMINUS_COUNT
+                    ? canonicalPair(allEndpoints.getFirst(), allEndpoints.getLast())
+                    : List.copyOf(allEndpoints);
         }
-        return List.of(allEndpoints.getFirst(), allEndpoints.getLast());
+        return canonicalPair(allEndpoints.getFirst(), allEndpoints.getLast());
+    }
+
+    private static List<DungeonCorridorEndpointResolver.CorridorEndpoint> canonicalPair(
+            DungeonCorridorEndpointResolver.CorridorEndpoint first,
+            DungeonCorridorEndpointResolver.CorridorEndpoint second
+    ) {
+        CorridorEndpointOrdering.EndpointRole firstRole = first.isDoor()
+                ? CorridorEndpointOrdering.EndpointRole.DOOR
+                : CorridorEndpointOrdering.EndpointRole.ANCHOR;
+        CorridorEndpointOrdering.EndpointRole secondRole = second.isDoor()
+                ? CorridorEndpointOrdering.EndpointRole.DOOR
+                : CorridorEndpointOrdering.EndpointRole.ANCHOR;
+        return CorridorEndpointOrdering.canonicalOrder(firstRole, secondRole)
+                == CorridorEndpointOrdering.InputOrder.KEEP
+                ? List.of(first, second)
+                : List.of(second, first);
     }
 
     private static List<Cell> corridorWaypoints(
             List<CorridorWaypoint> waypoints,
-            Map<Long, DungeonRoomCluster> clustersById
+            Map<Long, RoomCluster> clustersById
     ) {
         List<Cell> result = new ArrayList<>();
         for (CorridorWaypoint waypoint : waypoints) {
-            DungeonRoomCluster cluster = clustersById.get(waypoint.clusterId());
+            RoomCluster cluster = clustersById.get(waypoint.clusterId());
             Cell center = cluster == null
                     ? new Cell(0, 0, waypoint.level())
                     : cluster.center();
@@ -138,7 +159,7 @@ final class DungeonCorridorCellProjection {
             return List.of();
         }
         Set<Cell> blockedCells = roomCells == null ? Set.of() : roomCells;
-        return CorridorRoute.unblockedBetweenWithLevelTransition(start, end, blockedCells).cells();
+        return ROUTING_POLICY.routeWithLevelTransition(start, end, blockedCells).cells();
     }
 
     private static int compareCells(Cell left, Cell right) {

@@ -1,9 +1,11 @@
 import org.gradle.api.plugins.JavaApplication
 import org.gradle.api.tasks.PathSensitivity
+import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.application.tasks.CreateStartScripts
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import saltmarcher.buildlogic.tasks.MainClassesSystemPropertyProvider
+import saltmarcher.buildlogic.tasks.RequiredCommandLineArgumentsProvider
 
 plugins {
     java
@@ -18,6 +20,9 @@ val preloaderClassName = providers.gradleProperty("saltMarcherPreloaderClass")
     .orElse("app.SaltMarcherPreloader")
 val javafxVersion = "21.0.2"
 val verificationMaxParallelForks = 1
+val catalogRehearsalDatabase = providers.gradleProperty("catalogRehearsalDatabase")
+val catalogSnapshotSource = providers.gradleProperty("catalogSnapshotSource")
+val catalogSnapshotTarget = providers.gradleProperty("catalogSnapshotTarget")
 
 val preloaderJvmArg = preloaderClassName.map { "-Djavafx.preloader=$it" }
 
@@ -60,11 +65,11 @@ dependencies {
 
     implementation("org.jspecify:jspecify:1.0.0")
     implementation("org.xerial:sqlite-jdbc:3.53.2.0")
-    testImplementation("org.junit.jupiter:junit-jupiter:6.1.1")
+    testImplementation("org.junit.jupiter:junit-jupiter:6.1.2")
     testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")
     testRuntimeOnly(monocleDependency)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.1")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.2")
 }
 
 extensions.configure<JavaApplication> {
@@ -74,6 +79,40 @@ extensions.configure<JavaApplication> {
 
 tasks.withType<CreateStartScripts>().configureEach {
     applicationName = launcherName.get()
+}
+
+tasks.register<JavaExec>("importSrdItems") {
+    group = "application"
+    description = "Explicitly replace the local Items catalog from the public D&D 5e 2014 SRD API."
+    dependsOn(tasks.named("classes"))
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("app.ItemsImportCommand")
+}
+
+tasks.register<JavaExec>("rehearseCatalogData") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Migrate and semantically read back an explicitly isolated Catalog data copy."
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("app.CatalogInstalledDataRehearsal")
+    argumentProviders.add(objects.newInstance<RequiredCommandLineArgumentsProvider>().apply {
+        arguments.add(catalogRehearsalDatabase.orElse(""))
+        propertyNames.add("catalogRehearsalDatabase")
+    })
+}
+
+tasks.register<JavaExec>("snapshotCatalogData") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Create a coherent, restore-tested copy for Catalog migration rehearsal."
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("app.CatalogInstalledDataSnapshot")
+    argumentProviders.add(objects.newInstance<RequiredCommandLineArgumentsProvider>().apply {
+        arguments.add(catalogSnapshotSource.orElse(""))
+        arguments.add(catalogSnapshotTarget.orElse(""))
+        propertyNames.add("catalogSnapshotSource")
+        propertyNames.add("catalogSnapshotTarget")
+    })
 }
 
 tasks.test {

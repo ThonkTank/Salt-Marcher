@@ -6,14 +6,14 @@ import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomCellCoverage;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization;
 import features.dungeon.domain.core.structure.room.RoomClusterDoorBoundaryMove;
 
 final class DoorBoundaryMovedCluster {
-    DungeonRoomCluster movedCluster(DoorBindingMoveContext context) {
+    RoomCluster movedCluster(DoorBindingMoveContext context) {
         DoorIndex doorIndex = DoorIndex.from(boundaryDoors(context.targetCluster()));
         Door movedDoor = new Door(
                 context.expectedTopologyRef().id(),
@@ -33,12 +33,12 @@ final class DoorBoundaryMovedCluster {
                 context.expectedTopologyRef()));
     }
 
-    DungeonRoomCluster movedStandaloneDoor(
-            DungeonRoomCluster cluster,
+    RoomCluster movedStandaloneDoor(
+            RoomCluster cluster,
             DungeonClusterBoundary oldDoorBoundary,
             Edge nextDoorEdge,
             DungeonTopologyRef topologyRef,
-            List<DungeonRoom> rooms
+            List<RoomRegion> rooms
     ) {
         RoomClusterBoundaryMaterialization.BoundaryRow materialized =
                 RoomClusterBoundaryMaterialization.forEdge(
@@ -67,7 +67,7 @@ final class DoorBoundaryMovedCluster {
                 topologyRef));
     }
 
-    private static List<Door> boundaryDoors(DungeonRoomCluster cluster) {
+    private static List<Door> boundaryDoors(RoomCluster cluster) {
         List<Door> result = new ArrayList<>();
         Cell center = cluster.center();
         for (DungeonClusterBoundary boundary : cluster.orderedAuthoredBoundaries()) {

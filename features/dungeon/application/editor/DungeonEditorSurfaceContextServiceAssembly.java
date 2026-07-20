@@ -58,10 +58,10 @@ final class DungeonEditorSurfaceContextServiceAssembly {
 
     private static void addWorkspaceCellLevels(
             SortedSet<Integer> levels,
-            List<features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Cell> cells
+            List<features.dungeon.domain.core.geometry.Cell> cells
     ) {
-        for (features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Cell cell
-                : cells == null ? List.<features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Cell>of() : cells) {
+        for (features.dungeon.domain.core.geometry.Cell cell
+                : cells == null ? List.<features.dungeon.domain.core.geometry.Cell>of() : cells) {
             levels.add(cell.level());
         }
     }

@@ -1,23 +1,24 @@
 package features.encounter.application;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
-import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
-import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
-import features.worldplanner.adapter.sqlite.repository.SqliteWorldPlannerRepository;
+import features.creatures.CreaturesServiceAssembly;
 import features.creatures.domain.catalog.CreatureCatalogData;
 import features.creatures.domain.catalog.port.CreatureCatalogPort;
-import features.creatures.CreaturesServiceAssembly;
-import features.encounter.api.EncounterApi;
 import features.encounter.EncounterServiceAssembly;
+import features.encounter.api.ApplyEncounterStateCommand;
+import features.encounter.api.EncounterApi;
+import features.encounter.api.EncounterBuilderInputs;
+import features.encounter.api.EncounterRuntimeContextApi;
+import features.encounter.api.EncounterRuntimeContextId;
+import features.encounter.api.EncounterRuntimeContextSpec;
+import features.encounter.api.EncounterRuntimeContextSyncResult;
+import features.encounter.api.EncounterRuntimeNpcRole;
+import features.encounter.api.EncounterRuntimeNpcSpec;
+import features.encounter.api.EncounterStateModel;
+import features.encounter.api.EncounterStateSnapshot;
+import features.encounter.api.OpenSavedEncounterPlanCommand;
+import features.encounter.api.OpenSavedEncounterPlanResult;
+import features.encounter.api.SynchronizeEncounterRuntimeContextsCommand;
+import features.encounter.api.UpdateEncounterBuilderInputsCommand;
 import features.encounter.domain.generation.EncounterCandidateProfile;
 import features.encounter.domain.generation.EncounterCreatureFacts;
 import features.encounter.domain.generation.EncounterDifficultyIntent;
@@ -26,24 +27,24 @@ import features.encounter.domain.generation.EncounterDraft;
 import features.encounter.domain.generation.EncounterDraftEntry;
 import features.encounter.domain.generation.EncounterDraftGenerationModel;
 import features.encounter.domain.generation.EncounterTuningIntent;
-import features.encounter.api.EncounterBuilderInputs;
-import features.encounter.api.EncounterStateModel;
-import features.encounter.api.EncounterStateSnapshot;
-import features.encounter.api.ApplyEncounterStateCommand;
-import features.encounter.api.UpdateEncounterBuilderInputsCommand;
+import features.encounter.domain.plan.EncounterPlan;
+import features.encounter.domain.plan.EncounterPlanCreature;
+import features.encounter.domain.plan.EncounterPlanSummary;
+import features.encounter.domain.plan.repository.EncounterPlanRepository;
+import features.encountertable.EncounterTableServiceAssembly;
 import features.encountertable.domain.catalog.EncounterTableCandidateData;
 import features.encountertable.domain.catalog.EncounterTableSummaryData;
 import features.encountertable.domain.catalog.port.EncounterTableCatalogPort;
-import features.encountertable.EncounterTableServiceAssembly;
-import features.party.api.PartyApi;
 import features.party.PartyServiceAssembly;
+import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
 import features.party.api.CalculateAdventuringDayCommand;
 import features.party.api.CharacterDraft;
 import features.party.api.CreateCharacterCommand;
 import features.party.api.MembershipState;
-import features.worldplanner.application.WorldPlannerApplicationService;
+import features.party.api.PartyApi;
 import features.worldplanner.WorldPlannerReferenceAssembly;
 import features.worldplanner.WorldPlannerServiceAssembly;
+import features.worldplanner.adapter.sqlite.repository.SqliteWorldPlannerRepository;
 import features.worldplanner.api.AddWorldFactionNpcCommand;
 import features.worldplanner.api.AddWorldLocationEncounterTableCommand;
 import features.worldplanner.api.AddWorldLocationFactionCommand;
@@ -53,18 +54,40 @@ import features.worldplanner.api.CreateWorldNpcCommand;
 import features.worldplanner.api.SetWorldFactionInventoryLimitCommand;
 import features.worldplanner.api.WorldPlannerSnapshot;
 import features.worldplanner.api.WorldPlannerSnapshotModel;
+import features.worldplanner.application.WorldPlannerApplicationService;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import platform.persistence.TestFeatureStores;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 @TestMethodOrder(OrderAnnotation.class)
 public final class WorldPlannerEncounterTest {
 
-    private static TestRuntime runtime;
+    private TestRuntime runtime;
 
     private WorldPlannerEncounterTest() {
     }
 
-    @BeforeAll
-    static void createRuntime() {
-        runtime = TestRuntime.create();
+    @BeforeEach
+    void createRuntime() {
+        runtime = TestRuntime.create(TestFeatureStores.current());
+    }
+
+    @AfterEach
+    void closeRuntime() {
+        runtime.close();
     }
 
     @Test
@@ -101,6 +124,117 @@ public final class WorldPlannerEncounterTest {
     @Order(6)
     void WORLD_PLANNER_ENCOUNTER_006() {
         assertMissingReferencesAreRejectedByProductionAdapter(runtime);
+    }
+
+    @Test
+    @Order(7)
+    void sceneContextScopesPartyBudgetAndGenerationLocation() {
+        EncounterRoute route = runtime.encounterRoute();
+        long assignedMemberId = runtime.components.party().activeParty().current().members().getFirst().id();
+        EncounterRuntimeContextId sceneId = new EncounterRuntimeContextId("scene-1");
+
+        EncounterRuntimeContextSyncResult synchronizedResult = route.contexts().synchronize(
+                new SynchronizeEncounterRuntimeContextsCommand(
+                        1L,
+                        sceneId,
+                        List.of(new EncounterRuntimeContextSpec(
+                                sceneId,
+                                List.of(assignedMemberId),
+                                runtime.seedIds().locationId(),
+                                0L,
+                                List.of()))))
+                .toCompletableFuture()
+                .join();
+
+        assertEquals(EncounterRuntimeContextSyncResult.Status.APPLIED, synchronizedResult.status(), "scene sync");
+        assertEquals("Party: 1, Lv 3", route.state().current().builderPane().partySummary(), "scene party scope");
+        assertEquals(75, route.state().current().builderPane().thresholds().easyThreshold(), "scene budget scope");
+
+        route.tables().reset();
+        route.generate(inputs(List.of(), List.of(), 0L));
+        assertEquals(
+                List.of(301L, 302L, 201L),
+                route.tables().lastTableIds(),
+                "synchronized scene location overrides builder location");
+    }
+
+    @Test
+    @Order(8)
+    void combatReinforcementRequiresDiscardConfirmationBeforeOpeningSavedPlan() {
+        EncounterRoute route = runtime.encounterRoute();
+        long planId = route.plans().save(new EncounterPlan(
+                0L,
+                "Guard Post",
+                "",
+                List.of(new EncounterPlanCreature(101L, 1))))
+                .id();
+        assertEquals(
+                OpenSavedEncounterPlanResult.Status.OPENED,
+                route.service().openSavedPlan(new OpenSavedEncounterPlanCommand(planId, true))
+                        .toCompletableFuture()
+                        .join()
+                        .status(),
+                "initial saved plan open");
+        route.service().applyState(ApplyEncounterStateCommand.openInitiative());
+        List<String> initiativeIds = route.state().current().initiativePane().rows().stream()
+                .map(EncounterStateSnapshot.InitiativeRow::combatantId)
+                .toList();
+        route.service().applyState(ApplyEncounterStateCommand.confirmInitiative(
+                initiativeIds,
+                initiativeIds.stream().map(ignored -> 12).toList()));
+        route.service().applyState(ApplyEncounterStateCommand.addCreature(102L));
+
+        OpenSavedEncounterPlanResult guarded = route.service()
+                .openSavedPlan(new OpenSavedEncounterPlanCommand(planId, false))
+                .toCompletableFuture()
+                .join();
+
+        assertEquals(
+                OpenSavedEncounterPlanResult.Status.CONFIRMATION_REQUIRED,
+                guarded.status(),
+                "combat reinforcement discard guard");
+    }
+
+    @Test
+    @Order(9)
+    void sceneAlliesEnterInitiativeExactlyOnceWithTheirAllyRole() {
+        EncounterRoute route = runtime.encounterRoute();
+        long assignedMemberId = runtime.components.party().activeParty().current().members().getFirst().id();
+        EncounterRuntimeContextId sceneId = new EncounterRuntimeContextId("scene-allies");
+        route.contexts().synchronize(new SynchronizeEncounterRuntimeContextsCommand(
+                2L,
+                sceneId,
+                List.of(new EncounterRuntimeContextSpec(
+                        sceneId,
+                        List.of(assignedMemberId),
+                        runtime.seedIds().locationId(),
+                        0L,
+                        List.of(
+                                new EncounterRuntimeNpcSpec(9901L, 101L, EncounterRuntimeNpcRole.ALLY),
+                                new EncounterRuntimeNpcSpec(9902L, 102L, EncounterRuntimeNpcRole.ENEMY))))))
+                .toCompletableFuture()
+                .join();
+
+        route.service().applyState(ApplyEncounterStateCommand.openInitiative());
+        List<EncounterStateSnapshot.InitiativeRow> rows = route.state().current().initiativePane().rows();
+
+        assertEquals(1L, rows.stream().filter(row -> "Verbündeter".equals(row.kindLabel())).count(),
+                "one ally initiative row");
+        assertEquals(1L, rows.stream().filter(row -> "Monster".equals(row.kindLabel())).count(),
+                "one enemy initiative row");
+        assertEquals((long) rows.size(),
+                rows.stream().map(EncounterStateSnapshot.InitiativeRow::combatantId).distinct().count(),
+                "initiative ids stay unique");
+
+        route.service().applyState(ApplyEncounterStateCommand.confirmInitiative(
+                rows.stream().map(EncounterStateSnapshot.InitiativeRow::combatantId).toList(),
+                rows.stream().map(ignored -> 12).toList()));
+        assertEquals(
+                1L,
+                route.state().current().combatPane().combatCards().stream()
+                        .filter(card -> card.worldNpcId() == 9901L)
+                        .count(),
+                "friendly NPC enters combat exactly once");
     }
 
     private static void assertLocationLimitsTablesAndFactionStock(TestRuntime runtime) {
@@ -309,7 +443,9 @@ public final class WorldPlannerEncounterTest {
     private record EncounterRoute(
             EncounterApi service,
             EncounterStateModel state,
-            RecordingEncounterTableCatalogPort tables
+            RecordingEncounterTableCatalogPort tables,
+            EncounterRuntimeContextApi contexts,
+            EncounterPlanRepository plans
     ) {
 
         EncounterStateSnapshot generate(EncounterBuilderInputs inputs) {
@@ -322,27 +458,30 @@ public final class WorldPlannerEncounterTest {
     private record SeedIds(long cinderCourtId, long locationId) {
     }
 
-    private static final class TestRuntime {
+    private static final class TestRuntime implements AutoCloseable {
 
+        private final TestFeatureStores.TestResource stores;
         private final RecordingEncounterTableCatalogPort encounterTables;
         private final Components components;
         private final SeedIds seedIds;
 
         private TestRuntime(
+                TestFeatureStores.TestResource stores,
                 RecordingEncounterTableCatalogPort encounterTables,
                 Components components,
                 SeedIds seedIds
         ) {
+            this.stores = Objects.requireNonNull(stores, "stores");
             this.encounterTables = Objects.requireNonNull(encounterTables, "encounterTables");
             this.components = Objects.requireNonNull(components, "components");
             this.seedIds = Objects.requireNonNull(seedIds, "seedIds");
         }
 
-        static TestRuntime create() {
+        static TestRuntime create(TestFeatureStores.TestResource stores) {
             FixtureCreatureCatalogPort creatures = new FixtureCreatureCatalogPort();
             RecordingEncounterTableCatalogPort encounterTables = new RecordingEncounterTableCatalogPort();
-            Components components = components(creatures, encounterTables);
-            return new TestRuntime(encounterTables, components, seedProductionState(components));
+            Components components = components(stores, creatures, encounterTables);
+            return new TestRuntime(stores, encounterTables, components, seedProductionState(components));
         }
 
         SeedIds seedIds() {
@@ -353,6 +492,7 @@ public final class WorldPlannerEncounterTest {
             CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(components.creaturePort());
             EncounterTableServiceAssembly.Component tables =
                     EncounterTableServiceAssembly.create(components.tablePort());
+            InMemoryPlanRepository plans = new InMemoryPlanRepository();
             EncounterServiceAssembly.Component encounter = EncounterServiceAssembly.create(
                     creatures.application(),
                     creatures.detail(),
@@ -365,26 +505,38 @@ public final class WorldPlannerEncounterTest {
                     components.party().activeComposition(),
                     components.party().adventuringDaySummary(),
                     components.party().mutation(),
-                    new SqliteEncounterPlanRepository());
+                    plans);
             return new EncounterRoute(
                     encounter.application(),
                     encounter.state(),
-                    encounterTables);
+                    encounterTables,
+                    encounter.runtimeContexts(),
+                    plans);
         }
 
         private static Components components(
+                TestFeatureStores.TestResource stores,
                 CreatureCatalogPort creaturePort,
                 EncounterTableCatalogPort tablePort
         ) {
-            PartyServiceAssembly.Component party = PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+            PartyServiceAssembly.Component party = PartyServiceAssembly.create(new SqlitePartyRosterRepository(
+                                    stores.store(
+                                            SqlitePartyRosterRepository.storeDefinition())));
             CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(creaturePort);
             EncounterTableServiceAssembly.Component tables = EncounterTableServiceAssembly.create(tablePort);
             WorldPlannerServiceAssembly worldAssembly = new WorldPlannerServiceAssembly(
-                    new SqliteWorldPlannerRepository(),
+                    new SqliteWorldPlannerRepository(
+                                    stores.store(
+                                            SqliteWorldPlannerRepository.storeDefinition())),
                     WorldPlannerReferenceAssembly.catalogReferences(creatures.references(), tables.references()));
             WorldPlannerApplicationService worldApplication = worldAssembly.createApplicationService();
             WorldPlannerSnapshotModel worldSnapshot = worldAssembly.snapshotModel();
             return new Components(creaturePort, tablePort, party, worldApplication, worldSnapshot);
+        }
+
+        @Override
+        public void close() {
+            stores.close();
         }
 
         private static SeedIds seedProductionState(Components components) {
@@ -425,7 +577,10 @@ public final class WorldPlannerEncounterTest {
             party.createCharacter(new CreateCharacterCommand(
                     new CharacterDraft("Asha", "Mira", 3, 12, 16),
                     MembershipState.ACTIVE));
-            party.calculateAdventuringDay(new CalculateAdventuringDayCommand(List.of(3), 0));
+            party.createCharacter(new CreateCharacterCommand(
+                    new CharacterDraft("Borin", "Kestrel", 10, 12, 16),
+                    MembershipState.ACTIVE));
+            party.calculateAdventuringDay(new CalculateAdventuringDayCommand(List.of(3, 10), 0));
         }
 
         private static long npcId(WorldPlannerSnapshot snapshot, String name) {
@@ -462,6 +617,70 @@ public final class WorldPlannerEncounterTest {
     ) {
     }
 
+    private static final class InMemoryPlanRepository implements EncounterPlanRepository,
+            GeneratedEncounterBatchRepository,
+            features.encounter.application.SavedEncounterPlanSearchRepository {
+
+        private final Map<Long, EncounterPlan> plans = new LinkedHashMap<>();
+        private long nextId = 1L;
+
+        @Override
+        public EncounterPlan save(EncounterPlan plan) {
+            long id = plan.id() > 0L ? plan.id() : nextId++;
+            EncounterPlan saved = new EncounterPlan(id, plan.name(), plan.generatedLabel(), plan.creatures());
+            plans.put(Long.valueOf(id), saved);
+            return saved;
+        }
+
+        @Override
+        public Optional<EncounterPlan> load(long planId) {
+            return Optional.ofNullable(plans.get(Long.valueOf(planId)));
+        }
+
+        @Override
+        public List<EncounterPlanSummary> list() {
+            return plans.values().stream()
+                    .map(plan -> new EncounterPlanSummary(
+                            plan.id(),
+                            plan.name(),
+                            plan.generatedLabel(),
+                            plan.creatureCount()))
+                    .toList();
+        }
+
+        @Override
+        public CommitOutcome commit(features.encounter.api.PreparedEncounterBatch batch) {
+            List<Mapping> mappings = new ArrayList<>();
+            for (var roster : batch.rosters()) {
+                EncounterPlan saved = save(new EncounterPlan(
+                        0L,
+                        roster.displayLabel(),
+                        roster.displayLabel(),
+                        roster.creatures().stream()
+                                .map(creature -> new features.encounter.domain.plan.EncounterPlanCreature(
+                                        creature.creatureId(), creature.quantity(), creature.displayName()))
+                                .toList()));
+                mappings.add(new Mapping(roster.encounterNumber(), saved.id()));
+            }
+            return new CommitOutcome(CommitOutcome.Status.COMMITTED, mappings);
+        }
+
+        @Override
+        public List<EncounterPlan> loadPlansByIds(List<Long> planIds) {
+            return planIds.stream().map(plans::get).filter(Objects::nonNull).toList();
+        }
+
+        @Override
+        public SearchRead searchSavedPlans(String normalizedQuery, int rootLimit) {
+            List<EncounterPlanSummary> matches = list().stream()
+                    .filter(plan -> (plan.name() + " " + plan.generatedLabel()).toLowerCase(java.util.Locale.ROOT)
+                            .contains(normalizedQuery))
+                    .limit(rootLimit)
+                    .toList();
+            return new SearchRead(matches, 0);
+        }
+    }
+
     private static final class FixtureCreatureCatalogPort implements CreatureCatalogPort {
 
         private final Map<Long, CreatureCatalogData.CreatureProfile> profiles = Map.of(
@@ -495,6 +714,19 @@ public final class WorldPlannerEncounterTest {
                 }
             }
             return candidates.stream().limit(Math.max(0, spec.limit())).toList();
+        }
+
+        @Override
+        public List<CreatureCatalogData.EncounterCandidateProfile> loadCreatureFacts(
+                CreatureCatalogData.CreatureFactsSpec spec
+        ) {
+            return profiles.values().stream()
+                    .filter(profile -> spec.mode() == CreatureCatalogData.CreatureFactsSpec.FactsMode.CREATURE_IDS
+                            ? spec.values().contains(Long.valueOf(profile.id()))
+                            : spec.values().contains(Long.valueOf(profile.xp())))
+                    .map(FixtureCreatureCatalogPort::candidate)
+                    .sorted(java.util.Comparator.comparingLong(CreatureCatalogData.EncounterCandidateProfile::id))
+                    .toList();
         }
 
         private static CreatureCatalogData.CreatureProfile profile(long id, String name, int xp) {

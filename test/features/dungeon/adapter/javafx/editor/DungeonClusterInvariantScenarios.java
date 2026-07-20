@@ -8,12 +8,13 @@ import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization;
 import features.dungeon.domain.core.structure.room.RoomClusterFloorMap;
 import features.dungeon.domain.core.structure.room.RoomClusterWallMap;
 import features.dungeon.domain.core.structure.room.RoomClusterWallRun;
+import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;
 
 final class DungeonClusterInvariantScenarios {
 
@@ -46,14 +47,21 @@ final class DungeonClusterInvariantScenarios {
                 List.of(Edge.sideOf(new Cell(1, 1, 0), Direction.NORTH), Edge.sideOf(new Cell(2, 1, 0), Direction.NORTH)),
                 0,
                 -1,
-                0);
+                0,
+                roomIds(100L, 100L));
         assertEquals(clusterId, firstClusterId(stretched), "DGI-CLUSTER-001 wall-run stretch keeps cluster id");
-        DungeonMap cornerMoved = map.moveClusterCorner(clusterId, new Cell(1, 1, 0), -1, -1, 0);
+        DungeonMap cornerMoved = map.moveClusterCorner(
+                clusterId,
+                new Cell(1, 1, 0),
+                -1,
+                -1,
+                0,
+                roomIds(200L, 200L));
         assertEquals(clusterId, firstClusterId(cornerMoved), "DGI-CLUSTER-001 corner movement keeps cluster id");
     }
 
     private static void assertTrueCornerFacts() {
-        DungeonRoomCluster cluster = nonRectangularCluster();
+        RoomCluster cluster = nonRectangularCluster();
         List<Cell> vertices = cluster.authoredBoundaryVertices(0);
         assertTrue(vertices.contains(new Cell(13, 11, 0)), "DGI-CLUSTER-002 includes true inset corner");
         assertTrue(!vertices.contains(new Cell(13, 13, 0)), "DGI-CLUSTER-002 omits missing bounding-box corner");
@@ -87,9 +95,11 @@ final class DungeonClusterInvariantScenarios {
         List<Edge> topRun = List.of(
                 Edge.sideOf(new Cell(1, 1, 0), Direction.NORTH),
                 Edge.sideOf(new Cell(2, 1, 0), Direction.NORTH));
-        DungeonMap accepted = map.moveBoundaryStretch(clusterId, topRun, 0, -1, 0);
+        DungeonMap accepted = map.moveBoundaryStretch(
+                clusterId, topRun, 0, -1, 0, roomIds(300L, 300L));
         assertTrue(!accepted.equals(map), "DGI-CLUSTER-004 valid wall-run movement changes map");
-        DungeonMap rejected = map.moveBoundaryStretch(clusterId, topRun, 0, 12, 0);
+        DungeonMap rejected = map.moveBoundaryStretch(
+                clusterId, topRun, 0, 12, 0, roomIds(400L, 400L));
         assertEquals(map, rejected, "DGI-CLUSTER-004 invalid wall-run movement leaves map unchanged");
     }
 
@@ -113,7 +123,8 @@ final class DungeonClusterInvariantScenarios {
                 List.of(edge(3, 1, 3, 2), edge(3, 2, 3, 3)),
                 -1,
                 0,
-                0);
+                0,
+                roomIds(500L, 500L));
 
         assertTrue(hasBoundary(moved, edge(2, 1, 2, 2)), "DGI-CLUSTER-006 T moved upper segment 1");
         assertTrue(hasBoundary(moved, edge(2, 2, 2, 3)), "DGI-CLUSTER-006 T moved upper segment 2");
@@ -140,7 +151,8 @@ final class DungeonClusterInvariantScenarios {
                 List.of(edge(3, 1, 3, 2), edge(3, 2, 3, 3)),
                 -1,
                 0,
-                0);
+                0,
+                roomIds(600L, 600L));
 
         assertTrue(hasBoundary(moved, edge(2, 1, 2, 2)), "DGI-CLUSTER-006 X moved upper segment 1");
         assertTrue(hasBoundary(moved, edge(2, 2, 2, 3)), "DGI-CLUSTER-006 X moved upper segment 2");
@@ -152,12 +164,14 @@ final class DungeonClusterInvariantScenarios {
 
     private static DungeonMap interiorJunctionMap(List<Edge> walls) {
         DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(10L), "Cluster Junction Test")
-                .paintRoomRectangle(new Cell(1, 1, 0), new Cell(5, 5, 0));
+                .paintRoomRectangle(
+                        new Cell(1, 1, 0), new Cell(5, 5, 0), roomIds(10L, 10L));
         return map.editClusterBoundaries(
                 firstClusterId(map),
                 walls,
                 RoomClusterBoundaryMaterialization.BoundaryKind.WALL,
-                false);
+                false,
+                roomIds(700L, 700L));
     }
 
     private static Edge edge(int fromQ, int fromR, int toQ, int toR) {
@@ -169,40 +183,38 @@ final class DungeonClusterInvariantScenarios {
     }
 
     private static void assertClusterDefaultAndCustomNames() {
-        DungeonRoomCluster defaultCluster = DungeonRoomCluster.fromPersistenceState(
+        RoomCluster defaultCluster = RoomCluster.authored(
                 42L,
                 7L,
                 "",
                 new Cell(0, 0, 0),
-                new RoomClusterFloorMap(Map.of()),
                 Map.of());
         assertEquals("Cluster 42", defaultCluster.name(), "DGI-CLUSTER-005 default cluster name");
         assertEquals("North Hall", defaultCluster.withName("  North Hall  ").name(),
                 "DGI-CLUSTER-005 custom cluster name trims");
 
-        DungeonMap map = twoByTwoMap();
-        long clusterId = firstClusterId(map);
-        DungeonMap renamed = map.saveClusterName(clusterId, "  Gallery Cluster  ");
-        assertEquals("Gallery Cluster", firstClusterName(renamed), "DGI-CLUSTER-005 aggregate saves cluster name");
     }
 
     private static DungeonMap twoByTwoMap() {
         return DungeonMapAuthoring.empty(new DungeonMapIdentity(9L), "Cluster Test")
-                .paintRoomRectangle(new Cell(1, 1, 0), new Cell(2, 2, 0));
+                .paintRoomRectangle(
+                        new Cell(1, 1, 0), new Cell(2, 2, 0), roomIds(20L, 20L));
     }
 
-    private static DungeonRoomCluster nonRectangularCluster() {
-        return DungeonRoomCluster.fromPersistenceState(
+    private static RoomTopologyWorkCatalog.ReservedIdentities roomIds(
+            long firstClusterId,
+            long firstRoomId
+    ) {
+        return new RoomTopologyWorkCatalog.ReservedIdentities(
+                firstClusterId, 64, firstRoomId, 64);
+    }
+
+    private static RoomCluster nonRectangularCluster() {
+        return RoomCluster.authored(
                 15L,
                 9L,
                 "",
                 new Cell(10, 10, 0),
-                new RoomClusterFloorMap(Map.of(0, List.of(
-                        new Cell(10, 10, 0),
-                        new Cell(11, 10, 0),
-                        new Cell(12, 10, 0),
-                        new Cell(10, 11, 0),
-                        new Cell(10, 12, 0)))),
                 Map.of(0, List.of(
                         boundary(0, 0, Direction.NORTH),
                         boundary(1, 0, Direction.NORTH),

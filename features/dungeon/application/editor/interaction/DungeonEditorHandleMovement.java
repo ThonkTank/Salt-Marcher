@@ -1,12 +1,13 @@
 package features.dungeon.application.editor.interaction;
 
+import features.dungeon.api.DungeonEditorHandleKind;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 
 public record DungeonEditorHandleMovement(
-        DungeonEditorHandleMovementKind kind,
+        DungeonEditorHandleKind kind,
         DungeonTopologyRef topologyRef,
         long ownerId,
         long clusterId,
@@ -18,7 +19,7 @@ public record DungeonEditorHandleMovement(
         Edge sourceEdge
 ) {
     public DungeonEditorHandleMovement {
-        kind = kind == null ? DungeonEditorHandleMovementKind.defaultKind() : kind;
+        kind = kind == null ? DungeonEditorHandleKind.CLUSTER_LABEL : kind;
         topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
         ownerId = Math.max(0L, ownerId);
         clusterId = Math.max(0L, clusterId);

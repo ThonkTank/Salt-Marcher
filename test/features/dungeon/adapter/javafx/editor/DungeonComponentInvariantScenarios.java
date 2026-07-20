@@ -9,7 +9,6 @@ import features.dungeon.domain.core.component.StairExit;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
-import features.dungeon.domain.core.structure.corridor.CorridorDoorBindingState;
 
 final class DungeonComponentInvariantScenarios {
 
@@ -103,7 +102,7 @@ final class DungeonComponentInvariantScenarios {
         assertTrue(presentRef.present(), "anchor ref present");
 
         assertThrowsNullCorridorBindingComponentValues();
-        assertRetainedCorridorBindingAdapterCompatibility();
+        assertCorridorBindingTopologyIdentity();
     }
 
     private static void assertThrowsNullCorridorBindingComponentValues() {
@@ -118,35 +117,28 @@ final class DungeonComponentInvariantScenarios {
                 "corridor waypoint null relative cell");
     }
 
-    private static void assertRetainedCorridorBindingAdapterCompatibility() {
-        CorridorDoorBindingState defaultedDoor = new CorridorDoorBindingState(-1L, -2L, null, null, null);
-        assertEquals(0L, defaultedDoor.roomId(), "adapter door room lower bound");
-        assertEquals(0L, defaultedDoor.clusterId(), "adapter door cluster lower bound");
-        assertEquals(new Cell(0, 0, 0), defaultedDoor.relativeCell(), "adapter door null cell default");
-        assertEquals(Direction.NORTH, defaultedDoor.direction(), "adapter door null direction default");
-        assertEquals(DungeonTopologyRef.empty(), defaultedDoor.topologyRef(), "adapter door null topology ref");
-
-        CorridorDoorBindingState retainedDoor = new CorridorDoorBindingState(
+    private static void assertCorridorBindingTopologyIdentity() {
+        CorridorDoorBinding retainedDoor = new CorridorDoorBinding(
                 12L,
                 14L,
                 new Cell(2, 3, 1),
                 Direction.WEST,
                 DungeonTopologyRef.door(21L));
-        assertEquals(12L, retainedDoor.roomId(), "adapter door room id preservation");
-        assertEquals(14L, retainedDoor.clusterId(), "adapter door cluster id preservation");
-        assertEquals(new Cell(2, 3, 1), retainedDoor.relativeCell(), "adapter door relative cell");
-        assertEquals(Direction.WEST, retainedDoor.direction(), "adapter door direction");
-        assertTrue(retainedDoor.topologyRef().present(), "adapter door topology ref present");
+        assertEquals(12L, retainedDoor.roomId(), "door binding room id preservation");
+        assertEquals(14L, retainedDoor.clusterId(), "door binding cluster id preservation");
+        assertEquals(new Cell(2, 3, 1), retainedDoor.relativeCell(), "door binding relative cell");
+        assertEquals(Direction.WEST, retainedDoor.direction(), "door binding direction");
+        assertTrue(retainedDoor.topologyRef().present(), "door binding topology ref present");
 
         CorridorWaypoint defaultedWaypoint = corridorWaypoint(-9L, null, 2);
-        assertEquals(0L, defaultedWaypoint.clusterId(), "adapter waypoint cluster lower bound");
-        assertEquals(new Cell(0, 0, 2), defaultedWaypoint.relativeCell(), "adapter waypoint null default");
+        assertEquals(0L, defaultedWaypoint.clusterId(), "waypoint cluster lower bound");
+        assertEquals(new Cell(0, 0, 2), defaultedWaypoint.relativeCell(), "waypoint null default");
         assertEquals(new Cell(4, 5, 2), defaultedWaypoint.absoluteCell(new Cell(4, 5, 2)),
-                "adapter waypoint absolute default");
+                "waypoint absolute default");
         CorridorWaypoint retainedWaypoint = corridorWaypoint(17L, new Cell(1, -2, 3), 3);
-        assertEquals(17L, retainedWaypoint.clusterId(), "adapter waypoint cluster preservation");
+        assertEquals(17L, retainedWaypoint.clusterId(), "waypoint cluster preservation");
         assertEquals(new Cell(8, 5, 3), retainedWaypoint.absoluteCell(new Cell(7, 7, 3)),
-                "adapter waypoint absolute retained");
+                "waypoint absolute retained");
     }
 
     private static CorridorWaypoint corridorWaypoint(long clusterId, Cell relativeCell, int level) {

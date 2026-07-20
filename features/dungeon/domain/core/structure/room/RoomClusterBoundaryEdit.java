@@ -190,15 +190,15 @@ final class RoomClusterBoundaryEdit {
             return changed;
         }
 
-        List<DungeonRoom> partitionEditedRooms(
+        List<RoomRegion> partitionEditedRooms(
                 DungeonRoomTopologyClusterWork target,
-                RoomTopologyWorkCatalog.IdAllocation ids
+                RoomTopologyWorkCatalog.ReservedIdentities ids
         ) {
             return new DungeonRoomBoundaryPartition()
                     .roomsForBoundaryEdit(target, groupedCompatibilityBoundaries(), ids);
         }
 
-        DungeonRoomCluster rebuiltEditedCluster(DungeonRoomTopologyClusterWork target) {
+        RoomCluster rebuiltEditedCluster(DungeonRoomTopologyClusterWork target) {
             return new RoomTopologyRebuilder()
                     .clusterWithBoundaries(target, groupedCompatibilityBoundaries());
         }

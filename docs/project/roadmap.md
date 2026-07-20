@@ -1,6 +1,6 @@
 Status: Active
 Owner: Aaron (Product Owner)
-Last Reviewed: 2026-07-10
+Last Reviewed: 2026-07-18
 Source of Truth: Owner-confirmed SaltMarcher Now, Next, and Later direction
 linked to GitHub issues.
 
@@ -31,7 +31,9 @@ linked to GitHub issues.
 - Manage a music library and scene-based ambience layers
   ([#437](https://github.com/ThonkTank/Salt-Marcher/issues/437)).
 - Support dungeon and hex maps with travel tracking
-  ([#432](https://github.com/ThonkTank/Salt-Marcher/issues/432)).
+  ([#432](https://github.com/ThonkTank/Salt-Marcher/issues/432)); the ordered
+  technical migration and deletion gates live in the temporary
+  [Dungeon Greenfield Roadmap](../dungeon/delivery/roadmap-dungeon-greenfield.md).
 - Explore a future player app or shared player view
   ([#440](https://github.com/ThonkTank/Salt-Marcher/issues/440)).
 

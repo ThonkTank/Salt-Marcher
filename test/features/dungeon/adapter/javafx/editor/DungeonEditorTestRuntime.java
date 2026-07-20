@@ -5,7 +5,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javafx.application.Platform;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.canvas.Canvas;
+import javafx.stage.Stage;
 import javafx.stage.Window;
+import features.dungeon.adapter.javafx.map.DungeonMapView;
+import platform.ui.mapcanvas.MapCanvasLayer;
+import platform.ui.mapcanvas.MapCanvasPane;
 
 class DungeonEditorTestRuntime extends DungeonEditorTestPersistence {
 
@@ -54,11 +62,48 @@ class DungeonEditorTestRuntime extends DungeonEditorTestPersistence {
         runOnFxThread(DungeonEditorTestRuntime::hideWindowsWithoutImplicitExit);
     }
 
+    static void releaseProofWindowsBeforeBinding() {
+        hideWindowsWithoutImplicitExit();
+    }
+
     private static void hideWindowsWithoutImplicitExit() {
         Platform.setImplicitExit(false);
         for (Window window : List.copyOf(Window.getWindows())) {
-            window.hide();
+            Scene scene = window.getScene();
+            if (scene != null) {
+                releaseNode(scene.getRoot());
+            }
+            if (window instanceof Stage stage) {
+                stage.hide();
+                stage.setScene(null);
+                stage.close();
+            } else {
+                window.hide();
+            }
         }
+    }
+
+    private static void releaseNode(Node node) {
+        if (node instanceof DungeonMapView mapView) {
+            mapView.bind(null);
+        }
+        if (node instanceof MapCanvasPane pane) {
+            releaseCanvas(pane.canvas(MapCanvasLayer.BASE));
+            releaseCanvas(pane.canvas(MapCanvasLayer.INTERACTION));
+            releaseCanvas(pane.canvas(MapCanvasLayer.ACTOR));
+        }
+        if (node instanceof Parent parent) {
+            for (Node child : List.copyOf(parent.getChildrenUnmodifiable())) {
+                releaseNode(child);
+            }
+        }
+    }
+
+    private static void releaseCanvas(Canvas canvas) {
+        canvas.widthProperty().unbind();
+        canvas.heightProperty().unbind();
+        canvas.setWidth(0.0);
+        canvas.setHeight(0.0);
     }
 
     static void runRoute(ThrowingRunnable action) throws Exception {

@@ -5,13 +5,29 @@ import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceGeometry;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceGeometry.EdgeKey;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Cell;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Edge;
+import features.dungeon.domain.core.geometry.EdgeKey;
+import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Handle;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.HandleRef;
 
 public final class PreviewDungeonEditorSurfaceHandleMoveHelper {
+
+    public List<Handle> movedActiveHandle(
+            List<Handle> handles,
+            HandleRef active,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        List<Handle> result = new ArrayList<>();
+        for (Handle handle : handles) {
+            result.add(sameHandleRef(handle.ref(), active)
+                    ? movedHandle(handle, deltaQ, deltaR, deltaLevel)
+                    : handle);
+        }
+        return List.copyOf(result);
+    }
 
     public List<Handle> movedClusterHandles(List<Handle> handles, long clusterId, int deltaQ, int deltaR, int deltaLevel) {
         List<Handle> result = new ArrayList<>();
@@ -49,7 +65,7 @@ public final class PreviewDungeonEditorSurfaceHandleMoveHelper {
         List<Handle> result = new ArrayList<>();
         for (Handle handle : handles) {
             Edge sourceEdge = handle.ref().sourceEdge();
-            result.add(sourceEdge != null && sourceEdgeKeys.contains(EdgeKey.of(sourceEdge))
+            result.add(sourceEdge != null && sourceEdgeKeys.contains(EdgeKey.from(sourceEdge))
                     ? movedHandle(handle, deltaQ, deltaR, deltaLevel)
                     : handle);
         }

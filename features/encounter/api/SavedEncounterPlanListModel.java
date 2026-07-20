@@ -9,22 +9,30 @@ public final class SavedEncounterPlanListModel {
 
     private final Supplier<SavedEncounterPlanListResult> currentSupplier;
     private final Function<Consumer<SavedEncounterPlanListResult>, Runnable> subscribeAction;
+    private final Function<Consumer<SavedEncounterPlanListResult>, Runnable> observeLatestAction;
 
     public SavedEncounterPlanListModel(
             Supplier<SavedEncounterPlanListResult> currentSupplier,
-            Function<Consumer<SavedEncounterPlanListResult>, Runnable> subscribeAction
+            Function<Consumer<SavedEncounterPlanListResult>, Runnable> subscribeAction,
+            Function<Consumer<SavedEncounterPlanListResult>, Runnable> observeLatestAction
     ) {
-        this.currentSupplier = currentSupplier == null
-                ? () -> new SavedEncounterPlanListResult(SavedEncounterPlanStatus.STORAGE_ERROR, java.util.List.of(), "")
-                : currentSupplier;
-        this.subscribeAction = subscribeAction == null ? listener -> () -> { } : subscribeAction;
+        this.currentSupplier = Objects.requireNonNull(currentSupplier, "currentSupplier");
+        this.subscribeAction = Objects.requireNonNull(subscribeAction, "subscribeAction");
+        this.observeLatestAction = Objects.requireNonNull(observeLatestAction, "observeLatestAction");
     }
 
     public SavedEncounterPlanListResult current() {
-        return currentSupplier.get();
+        return Objects.requireNonNull(currentSupplier.get(), "current saved plans");
     }
 
     public Runnable subscribe(Consumer<SavedEncounterPlanListResult> listener) {
-        return subscribeAction.apply(Objects.requireNonNull(listener, "listener"));
+        return Objects.requireNonNull(
+                subscribeAction.apply(Objects.requireNonNull(listener, "listener")), "unsubscribe");
     }
+
+    public Runnable observeLatest(Consumer<SavedEncounterPlanListResult> observer) {
+        return Objects.requireNonNull(observeLatestAction.apply(Objects.requireNonNull(observer, "observer")),
+                "unsubscribe");
+    }
+
 }

@@ -1,0 +1,25 @@
+Pattern_ID	Role_1	Role_2	Role_3	Role_Count	Active	Sort_Order
+pattern:minion	Minion			1.0	true	1.0
+pattern:support	Support			1.0	true	2.0
+pattern:support-minion	Support	Minion		2.0	true	3.0
+pattern:standard	Standard			1.0	true	4.0
+pattern:standard-support	Standard	Support		2.0	true	5.0
+pattern:standard-minion	Standard	Minion		2.0	true	6.0
+pattern:elite	Elite			1.0	true	7.0
+pattern:elite-standard	Elite	Standard		2.0	true	8.0
+pattern:elite-support	Elite	Support		2.0	true	9.0
+pattern:elite-minion	Elite	Minion		2.0	true	10.0
+pattern:elite-standard-support	Elite	Standard	Support	3.0	true	11.0
+pattern:elite-standard-minion	Elite	Standard	Minion	3.0	true	12.0
+pattern:elite-support-minion	Elite	Support	Minion	3.0	true	13.0
+pattern:boss	Boss			1.0	true	14.0
+pattern:boss-elite	Boss	Elite		2.0	true	15.0
+pattern:boss-standard	Boss	Standard		2.0	true	16.0
+pattern:boss-support	Boss	Support		2.0	true	17.0
+pattern:boss-minion	Boss	Minion		2.0	true	18.0
+pattern:boss-elite-standard	Boss	Elite	Standard	3.0	true	19.0
+pattern:boss-elite-support	Boss	Elite	Support	3.0	true	20.0
+pattern:boss-elite-minion	Boss	Elite	Minion	3.0	true	21.0
+pattern:boss-standard-support	Boss	Standard	Support	3.0	true	22.0
+pattern:boss-standard-minion	Boss	Standard	Minion	3.0	true	23.0
+pattern:boss-support-minion	Boss	Support	Minion	3.0	true	24.0

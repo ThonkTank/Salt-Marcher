@@ -6,7 +6,7 @@ import java.util.Optional;
 import java.util.Set;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.room.RoomTopologyRebuilder.RebuildResult;
-import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog.IdAllocation;
+import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog.ReservedIdentities;
 import features.dungeon.domain.core.structure.topology.SpatialTopology;
 
 final class RoomPartitionPreservingPaint {
@@ -25,7 +25,7 @@ final class RoomPartitionPreservingPaint {
             Cell start,
             Cell end,
             long mapId,
-            IdAllocation allocation
+            ReservedIdentities allocation
     ) {
         Set<Cell> paintedCells = RoomClusterCells.rectangle(start, end);
         if (paintedCells.isEmpty()) {

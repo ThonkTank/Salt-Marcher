@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-19
 Source of Truth: Creatures reference catalog ownership, public lookup
 language, and domain rationale.
 
@@ -14,14 +14,20 @@ Context Name: Creatures
 - `creatures` is a reference catalog context over imported creature truth.
 - Its public boundary is `CreaturesApi`.
 - The feature intentionally exposes catalog search, filtering, detail lookup,
-  and encounter-candidate lookup without owning encounter generation policy or
-  creature lifecycle truth.
+  encounter-candidate lookup, and direct one-shot facts snapshots without
+  owning encounter generation policy or creature lifecycle truth.
 
 ## Published Language
 
 `CreaturesApi` owns public catalog queries, result pages, lookup statuses,
-filter options, creature details, action details, catalog rows, and
-encounter-candidate reference profiles.
+filter options, creature details, action details, catalog rows,
+encounter-candidate reference profiles, and direct facts snapshots selected by
+an XP-value union or creature-ID union.
+
+A direct facts query is one complete, unpaged read. It returns every matching
+creature in stable creature-ID order and never inherits UI paging or catalog
+result limits. Consumers may apply their own ranking policy only after this
+immutable query result crosses the API boundary.
 
 Creatures API carriers describe imported creature facts and lookup results.
 They do not encode encounter ranking, choice, balancing, or composition policy.
@@ -55,7 +61,8 @@ Derived state:
 - filtered catalog result pages
 - normalized filter option sets
 - creature detail projections
-- encounter-candidate reference profiles for downstream generator policy
+- encounter-candidate reference profiles and one-shot facts snapshots for
+  downstream generator policy
 
 ## Invariants
 

@@ -14,12 +14,13 @@ import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonTopologyElementRef;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonMapSummary;
 import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.api.DungeonTopologyElementRef;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreviewRenderDiffFrame;
 import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
 import features.dungeon.adapter.javafx.map.DungeonMapView;
@@ -83,12 +84,13 @@ final class DungeonEditorCorridorScenarios {
                 .filter(handle -> "CORRIDOR_ANCHOR".equals(handle.ref().kind().name()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("F5_CORRIDOR_WITH_ANCHOR anchor handle not loaded."));
+        long anchorId = editorTopologyRef(corridorAnchor.ref().topologyRef()).id();
         List<String> anchorRowsBefore = runtime.database().corridorAnchorState(mapId);
         List<String> stableRowsBefore = runtime.database().corridorStableConnectionState(mapId);
         List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
         String a1AnchorRow = anchorRowsBefore.stream()
-                .filter(row -> row.contains("anchor_id=1")
+                .filter(row -> row.contains("anchor_id=" + anchorId)
                         && row.contains("cell_x=6")
                         && row.contains("cell_y=5")
                         && row.contains("cell_z=0"))
@@ -188,8 +190,7 @@ final class DungeonEditorCorridorScenarios {
         List<String> anchorRowsBefore = runtime.database().corridorAnchorState(mapId);
         List<String> stableRowsBefore = runtime.database().corridorStableConnectionState(mapId);
         String a1AnchorRowBefore = anchorRowsBefore.stream()
-                .filter(row -> row.contains("anchor_id=1")
-                        && row.contains("cell_x=6")
+                .filter(row -> row.contains("cell_x=6")
                         && row.contains("cell_y=5")
                         && row.contains("cell_z=0"))
                 .findFirst()
@@ -341,7 +342,7 @@ final class DungeonEditorCorridorScenarios {
         List<String> stableRowsBeforeMove = runtime.database().corridorStableConnectionState(mapId);
         List<String> anchorRowsBeforeMove = runtime.database().corridorAnchorState(mapId);
         assertTrue(anchorRowsBeforeMove.stream().anyMatch(row ->
-                        row.contains("anchor_id=1")
+                        row.contains("anchor_id=" + anchorRef.id())
                                 && row.contains("cell_x=6")
                                 && row.contains("cell_y=5")
                                 && row.contains("cell_z=0")),
@@ -352,7 +353,7 @@ final class DungeonEditorCorridorScenarios {
 
         List<String> anchorRowsAfterMove = runtime.database().corridorAnchorState(mapId);
         assertTrue(anchorRowsAfterMove.stream().anyMatch(row ->
-                        row.contains("anchor_id=1")
+                        row.contains("anchor_id=" + anchorRef.id())
                                 && row.contains("cell_x=6")
                                 && row.contains("cell_y=4")
                                 && row.contains("cell_z=0")),
@@ -422,10 +423,12 @@ final class DungeonEditorCorridorScenarios {
                 "DE-COR-NET dependent first click");
         fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
                 viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
+        Set<String> expectedCanonicalCells = Set.of(
+                "4,2,0", "5,2,0", "6,2,0", "6,3,0", "6,4,0", "6,5,0");
         assertVisibleCorridorPreview(
                 runtime,
                 binding,
-                Set.of("4,2,0", "5,2,0", "6,2,0", "6,3,0", "6,4,0", "6,5,0"),
+                expectedCanonicalCells,
                 "DE-COR-NET dependent hover");
         fireMapMousePressed(mapView, MouseButton.PRIMARY,
                 viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
@@ -438,7 +441,7 @@ final class DungeonEditorCorridorScenarios {
                 runtime.mapSurfaceModel().current(),
                 binding.mapContentModel(),
                 dependentCorridorId,
-                Set.of("4,2,0", "5,2,0", "6,2,0", "6,3,0", "6,4,0", "6,5,0"),
+                expectedCanonicalCells,
                 "DE-COR-NET dependent created");
         return dependentCorridorId;
     }
@@ -459,6 +462,9 @@ final class DungeonEditorCorridorScenarios {
         List<String> stableRowsBeforeMove = runtime.database().corridorStableConnectionState(mapId);
         List<String> authoredStateBeforeMove = runtime.database().authoredGeometryState(mapId);
         long geometryRowsBeforeMove = runtime.database().countAuthoredGeometryRows(mapId);
+        long anchorId = editorTopologyRef(firstCorridorAnchorHandle(
+                runtime.mapSurfaceModel().current(),
+                "DE-CLUSTER-COR-001 host").ref().topologyRef()).id();
         click(button(controls, "Auswahl"));
         DungeonEditorHandleSnapshot clusterLabel = runtime.mapSurfaceModel().current().surface().map().editorHandles().stream()
                 .filter(handle -> "CLUSTER_LABEL".equals(handle.ref().kind().name()))
@@ -501,17 +507,17 @@ final class DungeonEditorCorridorScenarios {
                 viewport.sceneToScreenY(clusterLabelR),
                 false);
 
-        assertEquals(movedRoomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 4, 2, 0),
-                "DE-CLUSTER-COR-001 cluster move persists translated cluster center at (4,2,0)");
+        assertEquals(movedRoomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 3, 1, 0),
+                "DE-CLUSTER-COR-001 cluster move persists translated derived anchor at (3,1,0)");
         List<String> anchorRowsAfterMove = runtime.database().corridorAnchorState(mapId);
         assertTrue(anchorRowsAfterMove.stream().anyMatch(row ->
-                        row.contains("anchor_id=1")
+                        row.contains("anchor_id=" + anchorId)
                                 && row.contains("cell_x=6")
                                 && row.contains("cell_y=4")
                                 && row.contains("cell_z=0")),
                 "DE-CLUSTER-COR-001 cluster move updates host A1 to (6,4,0): " + anchorRowsAfterMove);
         assertTrue(!anchorRowsAfterMove.stream().anyMatch(row ->
-                        row.contains("anchor_id=1")
+                        row.contains("anchor_id=" + anchorId)
                                 && row.contains("cell_x=6")
                                 && row.contains("cell_y=5")
                                 && row.contains("cell_z=0")),
@@ -564,6 +570,7 @@ final class DungeonEditorCorridorScenarios {
         assertPointerTarget(binding.mapContentModel(), doorTwo,
                 DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, "DE-COR-014 second door");
         AuthoredCorridorState beforeFirstClick = AuthoredCorridorState.capture(runtime, binding, mapId);
+        long revisionBeforeCreate = runtime.database().mapRevision(mapId);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
         clickMap(mapView, MouseButton.PRIMARY,
@@ -592,6 +599,8 @@ final class DungeonEditorCorridorScenarios {
 
         long newCorridorId = singleNewCorridorId(corridorIdsBefore, runtime.database().corridorIdsForMap(mapId),
                 "DE-COR-014");
+        assertEquals(revisionBeforeCreate + 1L, runtime.database().mapRevision(mapId),
+                "DE-COR-014 corridor create commits exactly one aggregate revision");
         assertCorridorDoorBindingCount(runtime.database().corridorStableConnectionState(mapId), newCorridorId, 2,
                 "DE-COR-014");
         assertEquals(doorRowsBefore, runtime.database().doorBoundaryState(mapId),
@@ -609,6 +618,26 @@ final class DungeonEditorCorridorScenarios {
                 runtimePointerTarget(binding.mapContentModel(), fallbackCorridorBody.getX(), fallbackCorridorBody.getY())
                         .elementKind(),
                 "DE-COR-014 fallback body remains a semantic corridor target");
+
+        fireMapShortcut(mapView, KeyCode.Z, true, false);
+        assertEquals(corridorIdsBefore, runtime.database().corridorIdsForMap(mapId),
+                "DE-COR-014 patch undo removes the created corridor");
+        assertEquals(revisionBeforeCreate + 2L, runtime.database().mapRevision(mapId),
+                "DE-COR-014 patch undo restores content as one new revision");
+        assertEquals(doorRowsBefore, runtime.database().doorBoundaryState(mapId),
+                "DE-COR-014 patch undo preserves reused door identities");
+
+        fireMapShortcut(mapView, KeyCode.Y, true, false);
+        assertTrue(runtime.database().corridorIdsForMap(mapId).contains(newCorridorId),
+                "DE-COR-014 patch redo restores the created corridor identity");
+        assertEquals(revisionBeforeCreate + 3L, runtime.database().mapRevision(mapId),
+                "DE-COR-014 patch redo restores content as one new revision");
+        assertCorridorCreatedInSnapshot(
+                runtime.mapSurfaceModel().current(),
+                binding.mapContentModel(),
+                newCorridorId,
+                expectedCells,
+                "DE-COR-014 redo");
         selectMap(controls, "Corridor Vertical Fallback Reload Hop");
         selectMap(controls, "Corridor Vertical Fallback Map");
         assertCorridorCreatedInSnapshot(
@@ -644,7 +673,8 @@ final class DungeonEditorCorridorScenarios {
         Point2D doorOne = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
         Point2D doorThree = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 6.5, 9.0);
         click(button(controls, "Korridor"));
-        assertEquals("CORRIDOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.CORRIDOR),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-COR-004 corridor family selects corridor-create tool");
         assertPointerTarget(binding.mapContentModel(), doorOne,
                 DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, "DE-COR-004 D1");
@@ -727,6 +757,7 @@ final class DungeonEditorCorridorScenarios {
                 "DE-COR-006 fixture starts with authored A1 at (6,5,0)");
         click(button(controls, "Korridor"));
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        long revisionBeforeDelete = runtime.database().mapRevision(mapId);
 
         clickMap(
                 mapView,
@@ -735,6 +766,8 @@ final class DungeonEditorCorridorScenarios {
                 viewport.sceneToScreenY(anchorCenter.getY()),
                 false);
 
+        assertEquals(revisionBeforeDelete + 1L, runtime.database().mapRevision(mapId),
+                "DE-COR-006 corridor branch delete commits exactly one aggregate revision");
         assertCorridorDoorBindingCount(runtime.database().corridorStableConnectionState(mapId), corridorId, 2,
                 "DE-COR-006 keeps both surviving door endpoints");
         assertNoCorridorAnchorRef(runtime.database().corridorStableConnectionState(mapId), corridorId, anchorRef.id(),
@@ -837,7 +870,8 @@ final class DungeonEditorCorridorScenarios {
         Point2D genericCorridorPoint = new Point2D(6.05, 5.05);
         Point2D doorOne = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
         click(button(controls, "Korridor"));
-        assertEquals("CORRIDOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.CORRIDOR),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-COR-013 existing-anchor corridor family selects corridor-create tool");
         assertPointerTarget(
                 binding.mapContentModel(),
@@ -917,7 +951,8 @@ final class DungeonEditorCorridorScenarios {
         Point2D genericCorridorPoint = new Point2D(6.05, 4.05);
         Point2D doorOne = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
         click(button(controls, "Korridor"));
-        assertEquals("CORRIDOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.CORRIDOR),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-COR-013 new-anchor corridor family selects corridor-create tool");
         assertPointerTarget(
                 binding.mapContentModel(),
@@ -1047,6 +1082,11 @@ final class DungeonEditorCorridorScenarios {
                 "DE-COR-008 invalid route clears published preview state");
         assertTrue(runtime.controlsModel().current().statusText().contains("blockiert"),
                 "DE-COR-008 status reports route rejection");
+        assertEquals(
+                features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.BLOCKED_ROUTE,
+                ((features.dungeon.api.editor.DungeonEditorCommandOutcome.Rejected)
+                        runtime.controlsModel().current().commandOutcome()).reason(),
+                "DE-COR-008 publishes typed blocked-route rejection");
         assertEquals(0L, runtime.mapSurfaceModel().current().surface().map().areas().stream()
                         .filter(area -> "CORRIDOR".equalsIgnoreCase(area.kind()))
                         .count(),
@@ -1127,20 +1167,20 @@ final class DungeonEditorCorridorScenarios {
         assertEquals(1L, runtime.database().countDoorBoundariesAt(mapId, 1, 0, "EAST"),
                 "DE-COR-013 generic-room materializes exactly one east-facing door on R1");
         assertTrue(doorRowsAfter.stream().anyMatch(row ->
-                        row.startsWith("door_edges|cluster_id=" + roomIds.clusterId() + "|")
-                                && row.contains("|cell_x=1|")
-                                && row.contains("|cell_y=0|")
+                row.startsWith("door_edges|cluster_id=" + roomIds.clusterId() + "|")
+                                && row.contains("|cell_x=3|")
+                                && row.contains("|cell_y=2|")
                                 && row.contains("|edge_direction=EAST|")
                                 && row.contains("|edge_type=DOOR|")
                                 && row.contains("|topology_element_id=" + materializedDoorRef)),
-                "DE-COR-013 generic-room materialized door row is the R1 east edge: " + doorRowsAfter);
+                "DE-COR-013 generic-room materialized door row uses the absolute R1 east edge: " + doorRowsAfter);
         assertTrue(stableState.stream().anyMatch(row ->
                         row.startsWith("dungeon_corridor_door_overrides|corridor_id=" + newCorridorId + "|")
-                                && row.contains("|relative_cell_x=1|")
-                                && row.contains("|relative_cell_y=0|")
+                                && row.contains("|relative_cell_x=2|")
+                                && row.contains("|relative_cell_y=1|")
                                 && row.contains("|edge_direction=EAST|")
                                 && row.contains("|topology_element_id=" + materializedDoorRef)),
-                "DE-COR-013 generic-room endpoint binds the materialized east-facing door edge");
+                "DE-COR-013 generic-room endpoint binds the materialized east-facing door edge: " + stableState);
         assertCorridorCreatedInSnapshot(
                 runtime.mapSurfaceModel().current(),
                 binding.mapContentModel(),
@@ -1242,7 +1282,7 @@ final class DungeonEditorCorridorScenarios {
         addedPreviewCells.removeAll(committedCells);
         assertEquals(expectedAddedPreviewCells, addedPreviewCells,
                 message + " preview map adds exactly the candidate corridor route cells");
-        PreviewRenderDiffFrame previewRenderDiff = PreviewRenderDiffFrame.from(snapshot);
+        PreviewDiff previewRenderDiff = PreviewDiff.from(snapshot);
         assertTrue(!previewRenderDiff.isEmpty(),
                 message + " publishes runtime-prepared preview diff facts");
         boolean structuredRoutePublished = previewRenderDiff.changedAreas().stream()

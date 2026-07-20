@@ -101,4 +101,38 @@ public final class DungeonMapAuthoring {
                 dungeonMap.featureMarkers(),
                 dungeonMap.revision() + 1L);
     }
+
+    /** Restores previously committed authored content while keeping revision monotonic. */
+    public static DungeonMap restoreContent(DungeonMap snapshot, long revision) {
+        if (snapshot == null) {
+            throw new IllegalArgumentException("snapshot must not be null");
+        }
+        return new DungeonMap(
+                snapshot.metadata(),
+                snapshot.topology(),
+                snapshot.topologyIndex(),
+                snapshot.rooms(),
+                snapshot.corridors(),
+                snapshot.stairs(),
+                snapshot.transitionCatalog(),
+                snapshot.featureMarkers(),
+                Math.max(snapshot.revision(), revision));
+    }
+
+    /** Seals one user command as exactly one committed map revision. */
+    public static DungeonMap committedContent(DungeonMap content, long revision) {
+        if (content == null) {
+            throw new IllegalArgumentException("content must not be null");
+        }
+        return new DungeonMap(
+                content.metadata(),
+                content.topology(),
+                content.topologyIndex(),
+                content.rooms(),
+                content.corridors(),
+                content.stairs(),
+                content.transitionCatalog(),
+                content.featureMarkers(),
+                Math.max(1L, revision));
+    }
 }

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import features.dungeon.api.DungeonCellRef;
 import features.dungeon.api.DungeonEditorStateSnapshot;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreviewAreaDiffFrame;
 import features.dungeon.adapter.javafx.map.DungeonMapRenderState.CellKind;
 
 final class DungeonMapPreviewAreaDiffProjector {

@@ -8,6 +8,7 @@ import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.application.travel.projection.TravelActionKind;
 import features.dungeon.application.travel.projection.TravelHeading;
+import features.dungeon.api.DungeonTravelActionId;
 
 public final class TravelDungeonSessionSurface {
 
@@ -323,14 +324,14 @@ public final class TravelDungeonSessionSurface {
     }
 
     public record AvailableAction(
-            String id,
+            DungeonTravelActionId actionId,
             TravelActionKind kind,
             String label,
             String destinationLabel,
             String helpText
     ) {
         public AvailableAction {
-            id = id == null ? "" : id.trim();
+            actionId = java.util.Objects.requireNonNull(actionId, "actionId");
             kind = kind == null ? TravelActionKind.defaultKind() : kind;
             label = label == null || label.isBlank() ? kind.name() : label.trim();
             destinationLabel = destinationLabel == null ? "" : destinationLabel.trim();

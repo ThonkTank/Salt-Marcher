@@ -3,7 +3,7 @@ package features.dungeon.application.editor;
 import java.util.Objects;
 import features.dungeon.domain.core.graph.DungeonTopologyElementKind;
 import features.dungeon.application.editor.session.DungeonEditorSessionEffect;
-import features.dungeon.api.DungeonEditorTool;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
 
 final class DungeonEditorStairDeleteRuntimeOperation {
     private static final long NO_STAIR_ID = 0L;
@@ -14,8 +14,8 @@ final class DungeonEditorStairDeleteRuntimeOperation {
         this.context = Objects.requireNonNull(context, "context");
     }
 
-    static boolean handles(DungeonEditorTool tool) {
-        return tool == DungeonEditorTool.STAIR_DELETE;
+    static boolean handles(DungeonEditorToolAction tool) {
+        return tool != null && tool.family() == DungeonEditorToolFamily.STAIR && tool.deleteMode();
     }
 
     DungeonEditorRuntimeContext.Result apply(
@@ -41,7 +41,9 @@ final class DungeonEditorStairDeleteRuntimeOperation {
         boolean deleted = context.deleteStair(context.selectedMapId(), stairId);
         if (deleted) {
             context.applySessionEffect(DungeonEditorSessionEffect.clearedSelection());
-            context.clearPreviewWithStatus(context.currentFacts().mutationStatusText());
+            context.clearPreviewWithCommandOutcome(context.currentFacts().commandOutcome());
+        } else {
+            context.reject(features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.REFERENCED_CONNECTION);
         }
         return context.publishCurrent();
     }

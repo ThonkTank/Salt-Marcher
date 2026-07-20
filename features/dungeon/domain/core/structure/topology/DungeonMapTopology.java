@@ -1,7 +1,7 @@
 package features.dungeon.domain.core.structure.topology;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
@@ -9,10 +9,10 @@ import features.dungeon.domain.core.component.CorridorAnchor;
 import features.dungeon.domain.core.graph.DungeonTopologyElementKind;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.corridor.Corridor;
-import features.dungeon.domain.core.structure.corridor.CorridorDoorBindingState;
+import features.dungeon.domain.core.component.CorridorDoorBinding;
 import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomCatalog;
 import features.dungeon.domain.core.structure.stair.Stair;
 import features.dungeon.domain.core.structure.transition.Transition;
@@ -66,7 +66,7 @@ public record DungeonMapTopology(
     }
 
     private static void appendRoomBindings(List<DungeonTopologyBinding> result, RoomCatalog rooms) {
-        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms.rooms()) {
+        for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms.rooms()) {
             if (room == null) {
                 continue;
             }
@@ -91,7 +91,7 @@ public record DungeonMapTopology(
     }
 
     private static void appendDoorBindings(List<DungeonTopologyBinding> result, Corridor corridor) {
-        for (CorridorDoorBindingState doorBinding : corridor.stateBindings().doorBindings()) {
+        for (CorridorDoorBinding doorBinding : corridor.bindings().doorBindings()) {
             if (doorBinding.topologyRef().present()) {
                 result.add(new DungeonTopologyBinding(
                         doorBinding.topologyRef(),
@@ -103,7 +103,7 @@ public record DungeonMapTopology(
     }
 
     private static void appendAnchorBindings(List<DungeonTopologyBinding> result, Corridor corridor) {
-        for (CorridorAnchor anchor : corridor.stateBindings().anchorBindings()) {
+        for (CorridorAnchor anchor : corridor.bindings().anchorBindings()) {
             if (anchor != null && anchor.anchorId() > 0L) {
                 DungeonTopologyRef ref = DungeonTopologyRef.corridorAnchor(anchor.anchorId());
                 result.add(new DungeonTopologyBinding(
@@ -148,7 +148,7 @@ public record DungeonMapTopology(
     }
 
     private static void appendBoundaryBindings(List<DungeonTopologyBinding> result, SpatialTopology topology) {
-        for (DungeonRoomCluster cluster : topology == null ? List.<DungeonRoomCluster>of() : topology.roomClusters()) {
+        for (RoomCluster cluster : topology == null ? List.<RoomCluster>of() : topology.roomClusters()) {
             for (DungeonClusterBoundary boundary : cluster.orderedAuthoredBoundaries()) {
                 if (!boundary.kind().renderable()) {
                     continue;
@@ -164,80 +164,46 @@ public record DungeonMapTopology(
     }
 
     public static DungeonMapTopology merge(@Nullable DungeonMapTopology primary, DungeonMapTopology fallback) {
-        Map<DungeonTopologyRef, DungeonTopologyBinding> result = new LinkedHashMap<>();
-        addPrimaryBindings(result, primary);
-        addFallbackBindings(result, fallback);
-        return new DungeonMapTopology(new ArrayList<>(result.values()));
-    }
-
-    private static void addPrimaryBindings(
-            Map<DungeonTopologyRef, DungeonTopologyBinding> result,
-            @Nullable DungeonMapTopology primary
-    ) {
-        for (DungeonTopologyBinding binding : primary == null ? List.<DungeonTopologyBinding>of() : primary.bindings()) {
-            if (binding.ref().present()) {
-                result.put(binding.ref(), binding);
+        List<DungeonTopologyBinding> primaryBindings = primary == null ? List.of() : primary.bindings();
+        Map<DungeonTopologyRef, DungeonTopologyBinding> previousByRef = new HashMap<>();
+        Map<AnchorIdentity, DungeonTopologyBinding> previousAnchors = new HashMap<>();
+        for (DungeonTopologyBinding binding : primaryBindings) {
+            previousByRef.putIfAbsent(binding.ref(), binding);
+            if (binding.ref().kind() == DungeonTopologyElementKind.CORRIDOR_ANCHOR) {
+                previousAnchors.putIfAbsent(AnchorIdentity.from(binding), binding);
             }
         }
-    }
-
-    private static void addFallbackBindings(
-            Map<DungeonTopologyRef, DungeonTopologyBinding> result,
-            DungeonMapTopology fallback
-    ) {
-        for (DungeonTopologyBinding binding : fallback == null ? List.<DungeonTopologyBinding>of() : fallback.bindings()) {
-            addFallbackBinding(result, binding);
-        }
-    }
-
-    private static void addFallbackBinding(
-            Map<DungeonTopologyRef, DungeonTopologyBinding> result,
-            DungeonTopologyBinding binding
-    ) {
-        if (!binding.ref().present()) {
-            return;
-        }
-        DungeonTopologyBinding existing = result.get(binding.ref());
-        if (existing != null) {
-            result.put(binding.ref(), withLocalIdentity(existing, binding));
-            return;
-        }
-        if (!hasSameCorridorAnchorLocalIdentity(result, binding)) {
-            result.put(binding.ref(), binding);
-        }
-    }
-
-    private static DungeonTopologyBinding withLocalIdentity(
-            DungeonTopologyBinding existing,
-            DungeonTopologyBinding fallback
-    ) {
-        if (existing.ref().kind() == DungeonTopologyElementKind.CORRIDOR_ANCHOR
-                && fallback.ref().kind() == DungeonTopologyElementKind.CORRIDOR_ANCHOR) {
-            return new DungeonTopologyBinding(
-                    fallback.ref(),
-                    fallback.clusterId(),
-                    fallback.corridorId(),
-                    existing.localElementId(),
-                    fallback.label());
-        }
-        return existing;
-    }
-
-    private static boolean hasSameCorridorAnchorLocalIdentity(
-            Map<DungeonTopologyRef, DungeonTopologyBinding> bindings,
-            DungeonTopologyBinding candidate
-    ) {
-        if (candidate.ref().kind() != DungeonTopologyElementKind.CORRIDOR_ANCHOR) {
-            return false;
-        }
-        for (DungeonTopologyBinding existing : bindings.values()) {
-            if (existing.ref().kind() == DungeonTopologyElementKind.CORRIDOR_ANCHOR
-                    && existing.corridorId() == candidate.corridorId()
-                    && existing.localElementId() == candidate.localElementId()) {
-                return true;
+        List<DungeonTopologyBinding> result = new ArrayList<>();
+        for (DungeonTopologyBinding derived
+                : fallback == null ? List.<DungeonTopologyBinding>of() : fallback.bindings()) {
+            if (!derived.ref().present()) {
+                continue;
             }
+            DungeonTopologyBinding previous = derived.ref().kind() == DungeonTopologyElementKind.CORRIDOR_ANCHOR
+                    ? previousAnchors.get(AnchorIdentity.from(derived))
+                    : previousByRef.get(derived.ref());
+            result.add(previous == null ? derived : withStableFacts(previous, derived));
         }
-        return false;
+        return new DungeonMapTopology(result);
+    }
+
+    private static DungeonTopologyBinding withStableFacts(
+            DungeonTopologyBinding previous,
+            DungeonTopologyBinding derived
+    ) {
+        boolean corridorAnchor = derived.ref().kind() == DungeonTopologyElementKind.CORRIDOR_ANCHOR;
+        return new DungeonTopologyBinding(
+                corridorAnchor ? previous.ref() : derived.ref(),
+                derived.clusterId(),
+                derived.corridorId(),
+                corridorAnchor ? previous.localElementId() : derived.localElementId(),
+                previous.label());
+    }
+
+    private record AnchorIdentity(long corridorId, long localElementId) {
+        private static AnchorIdentity from(DungeonTopologyBinding binding) {
+            return new AnchorIdentity(binding.corridorId(), binding.localElementId());
+        }
     }
 
     public @Nullable DungeonTopologyBinding binding(DungeonTopologyRef ref) {

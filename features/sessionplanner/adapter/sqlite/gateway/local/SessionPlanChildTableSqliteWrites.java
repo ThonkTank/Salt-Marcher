@@ -5,7 +5,8 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 import features.sessionplanner.adapter.sqlite.model.SessionEncounterRecord;
-import features.sessionplanner.adapter.sqlite.model.SessionLootPlaceholderRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionGeneratedRewardRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionManualLootNoteRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionParticipantRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionRestPlacementRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionPlannerPersistenceSchema;
@@ -87,26 +88,53 @@ final class SessionPlanChildTableSqliteWrites {
         }
     }
 
-    void replaceLootPlaceholders(
+    void replaceManualLootNotes(
             Connection connection,
             long sessionId,
-            List<SessionLootPlaceholderRecord> lootPlaceholders
+            List<SessionManualLootNoteRecord> manualLootNotes
     ) throws SQLException {
-        deleteSessionLootPlaceholders(connection, sessionId);
-        if (lootPlaceholders == null || lootPlaceholders.isEmpty()) {
+        deleteSessionManualLootNotes(connection, sessionId);
+        if (manualLootNotes == null || manualLootNotes.isEmpty()) {
             return;
         }
         try (PreparedStatement insert = connection.prepareStatement(
                 INSERT_INTO
-                        + SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE
+                        + SessionPlannerPersistenceSchema.SESSION_MANUAL_LOOT_NOTES_TABLE
                         + " "
-                        + "(session_id, loot_id, encounter_id, label, sort_order) VALUES (?, ?, ?, ?, ?)")) {
-            for (SessionLootPlaceholderRecord record : lootPlaceholders) {
+                        + "(session_id, note_id, scene_id, note_text, sort_order) VALUES (?, ?, ?, ?, ?)")) {
+            for (SessionManualLootNoteRecord record : manualLootNotes) {
                 insert.setLong(1, sessionId);
-                insert.setLong(2, record.lootId());
-                insert.setLong(3, record.encounterId());
-                insert.setString(4, record.label());
+                insert.setLong(2, record.noteId());
+                insert.setLong(3, record.sceneId());
+                insert.setString(4, record.noteText());
                 insert.setInt(5, record.sortOrder());
+                insert.addBatch();
+            }
+            insert.executeBatch();
+        }
+    }
+
+    void replaceGeneratedRewards(
+            Connection connection,
+            long sessionId,
+            List<SessionGeneratedRewardRecord> generatedRewards
+    ) throws SQLException {
+        deleteGeneratedRewards(connection, sessionId);
+        if (generatedRewards == null || generatedRewards.isEmpty()) {
+            return;
+        }
+        try (PreparedStatement insert = connection.prepareStatement(
+                INSERT_INTO
+                        + SessionPlannerPersistenceSchema.SESSION_GENERATED_REWARDS_TABLE
+                        + " (session_id, scene_id, generation_id, treasure_id, last_known_label, sort_order) "
+                        + "VALUES (?, ?, ?, ?, ?, ?)")) {
+            for (SessionGeneratedRewardRecord record : generatedRewards) {
+                insert.setLong(1, sessionId);
+                insert.setLong(2, record.sceneId());
+                insert.setString(3, record.generationId());
+                insert.setLong(4, record.treasureId());
+                insert.setString(5, record.lastKnownLabel());
+                insert.setInt(6, record.sortOrder());
                 insert.addBatch();
             }
             insert.executeBatch();
@@ -137,9 +165,17 @@ final class SessionPlanChildTableSqliteWrites {
         }
     }
 
-    private static void deleteSessionLootPlaceholders(Connection connection, long sessionId) throws SQLException {
+    private static void deleteSessionManualLootNotes(Connection connection, long sessionId) throws SQLException {
         try (PreparedStatement delete = connection.prepareStatement(
-                DELETE_FROM + SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE + WHERE_SESSION_ID)) {
+                DELETE_FROM + SessionPlannerPersistenceSchema.SESSION_MANUAL_LOOT_NOTES_TABLE + WHERE_SESSION_ID)) {
+            delete.setLong(1, sessionId);
+            delete.executeUpdate();
+        }
+    }
+
+    private static void deleteGeneratedRewards(Connection connection, long sessionId) throws SQLException {
+        try (PreparedStatement delete = connection.prepareStatement(
+                DELETE_FROM + SessionPlannerPersistenceSchema.SESSION_GENERATED_REWARDS_TABLE + WHERE_SESSION_ID)) {
             delete.setLong(1, sessionId);
             delete.executeUpdate();
         }

@@ -3,7 +3,7 @@ package features.dungeon.application.editor;
 import features.dungeon.domain.core.structure.transition.TransitionDestinationType;
 import features.dungeon.api.DungeonEditorControlsSnapshot;
 import features.dungeon.api.DungeonEditorStateSnapshot;
-import features.dungeon.api.DungeonEditorTool;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
 import features.dungeon.api.DungeonTopologyElementRef;
 
 public final class DungeonEditorStatePanelTransitionDestinationDrafts {
@@ -60,7 +60,8 @@ public final class DungeonEditorStatePanelTransitionDestinationDrafts {
     }
 
     static Target target(DungeonEditorControlsSnapshot controls, DungeonEditorStateSnapshot state) {
-        boolean transitionCreate = controls != null && DungeonEditorTool.TRANSITION_CREATE == controls.selectedTool();
+        boolean transitionCreate = controls != null
+                && controls.toolSelection().family() == DungeonEditorToolFamily.TRANSITION;
         long selectedTransitionId = selectedTransitionId(state == null ? null : state.selection());
         return transitionCreate
                 ? new Target(true, 0L)

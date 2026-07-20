@@ -28,8 +28,8 @@ import features.dungeon.domain.core.structure.corridor.CorridorRoomSet;
 import features.dungeon.domain.core.structure.corridor.CorridorRoutePlan;
 import features.dungeon.domain.core.structure.door.DoorBoundaryMaterialization;
 import features.dungeon.domain.core.structure.room.BoundaryStretchOrientation;
-import features.dungeon.domain.core.structure.room.Room;
-import features.dungeon.domain.core.structure.room.RoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomClusterGeometry;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryOrdering;
@@ -41,6 +41,7 @@ import features.dungeon.domain.core.structure.room.RoomClusterWallMap;
 import features.dungeon.domain.core.structure.room.RoomClusterWallRun;
 import features.dungeon.domain.core.structure.room.RoomClusterWallRunSource;
 import features.dungeon.domain.core.structure.room.RoomClusterWork;
+import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;
 import features.dungeon.domain.core.structure.stair.Stair;
 import features.dungeon.domain.core.structure.stair.StairCollection;
 import features.dungeon.domain.core.structure.stair.StairGeometrySpec;
@@ -52,8 +53,6 @@ import features.dungeon.domain.core.structure.transition.TransitionCatalog.Autho
 import features.dungeon.domain.core.structure.transition.TransitionCatalog.TransitionEndpoint;
 import features.dungeon.domain.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
 import features.dungeon.domain.core.structure.transition.TransitionDestination;
-import features.dungeon.domain.core.structure.corridor.CorridorBindingState;
-import features.dungeon.domain.core.structure.corridor.CorridorDoorBindingState;
 
 final class DungeonStructureInvariantScenarios {
 
@@ -169,7 +168,7 @@ final class DungeonStructureInvariantScenarios {
                 CorridorResolvedEndpoint.forDoor(firstDoor, CorridorEndpointSemantics.forDoor(firstDoor))
                         .binding()
                         .doorBinding(),
-                "resolved corridor endpoint exposes core door binding");
+                "resolved corridor endpoint exposes door binding");
         assertEquals(
                 new Cell(1, 2, 1),
                 CorridorAnchorSnap.nearestHostCell(
@@ -205,20 +204,21 @@ final class DungeonStructureInvariantScenarios {
                 "corridor host cells preserve host cell order");
         assertEquals(new Cell(2, 2, 0), hostCells.snapToHostCell(9L, new Cell(3, 2, 0)),
                 "corridor host cells snap by host corridor id");
-        Corridor hostCorridor = new Corridor(9L, 1L, 0, List.of(), CorridorBindingState.empty());
+        Corridor hostCorridor = new Corridor(9L, 1L, 0, List.of(), CorridorBindings.empty());
         CorridorAnchorEndpointMaterialization createdAnchor =
                 CorridorAnchorEndpointMaterialization.materialize(
                         List.of(hostCorridor),
                         9L,
                         new Cell(3, 2, 0),
                         0L,
+                        1L,
                         hostCells);
         assertTrue(createdAnchor != null, "corridor anchor endpoint creates host anchor");
         createdAnchor = Objects.requireNonNull(createdAnchor);
         assertEquals(new CorridorAnchor(1L, 9L, new Cell(2, 2, 0)), createdAnchor.anchor(),
                 "corridor anchor endpoint materialization snaps created anchor");
         assertEquals(List.of(new CorridorAnchor(1L, 9L, new Cell(2, 2, 0))),
-                createdAnchor.corridors().getFirst().coreBindings().anchorBindings(),
+                createdAnchor.corridors().getFirst().bindings().anchorBindings(),
                 "corridor anchor endpoint materialization updates host corridor");
         assertTrue(createdAnchor.changed(), "corridor anchor endpoint reports created anchor change");
         CorridorAnchorEndpointMaterialization reusedById =
@@ -227,6 +227,7 @@ final class DungeonStructureInvariantScenarios {
                         9L,
                         new Cell(4, 4, 0),
                         1L,
+                        2L,
                         hostCells);
         assertTrue(reusedById != null, "corridor anchor endpoint reuses preferred anchor id");
         reusedById = Objects.requireNonNull(reusedById);
@@ -239,6 +240,7 @@ final class DungeonStructureInvariantScenarios {
                         9L,
                         new Cell(2, 2, 0),
                         0L,
+                        3L,
                         hostCells);
         assertTrue(reusedByPosition != null, "corridor anchor endpoint reuses snapped position");
         reusedByPosition = Objects.requireNonNull(reusedByPosition);
@@ -299,9 +301,9 @@ final class DungeonStructureInvariantScenarios {
     private static void assertCoreAnchorIdentityReplacement() {
         CorridorAnchor first = new CorridorAnchor(3L, 12L, new Cell(1, 1, 0));
         CorridorAnchor replacement = new CorridorAnchor(5L, 12L, new Cell(2, 2, 0));
-        CorridorBindingState bindings = new CorridorBindingState(List.of(), List.of(), List.of(first), List.of());
+        CorridorBindings bindings = new CorridorBindings(List.of(), List.of(), List.of(first), List.of());
 
-        CorridorBindingState replaced = bindings.replaceAnchorBindings(List.of(replacement));
+        CorridorBindings replaced = bindings.replaceAnchorBindings(List.of(replacement));
         assertEquals(List.of(replacement), replaced.anchorBindings(),
                 "core anchor replacement follows local anchor identity");
 
@@ -313,7 +315,7 @@ final class DungeonStructureInvariantScenarios {
                 "core anchor ref replacement follows host/local anchor identity");
 
         CorridorAnchor splitAnchor = new CorridorAnchor(7L, 40L, new Cell(1, 0, 0));
-        CorridorBindingState splitBindings = CorridorBindingState.empty().withInteriorRouteAnchors(
+        CorridorBindings splitBindings = CorridorBindings.empty().withInteriorRouteAnchors(
                 new CorridorRoutePlan(
                         List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),
                         10L,
@@ -322,12 +324,12 @@ final class DungeonStructureInvariantScenarios {
         assertEquals(List.of(new CorridorAnchorRef(40L, splitAnchor.anchorId())),
                 splitBindings.anchorRefs(),
                 "core route split preserves selected local anchor id");
-        CorridorBindingState existingCustomRef = new CorridorBindingState(
+        CorridorBindings existingCustomRef = new CorridorBindings(
                 List.of(),
                 List.of(),
                 List.of(),
                 List.of(new CorridorAnchorRef(40L, splitAnchor.anchorId())));
-        CorridorBindingState deduplicatedSplitBindings = existingCustomRef.withInteriorRouteAnchors(
+        CorridorBindings deduplicatedSplitBindings = existingCustomRef.withInteriorRouteAnchors(
                 new CorridorRoutePlan(
                         List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),
                         10L,
@@ -340,9 +342,9 @@ final class DungeonStructureInvariantScenarios {
 
     private static void assertRetainedCorridorRoomSetAdapterCompatibility() {
         CorridorDoorBinding secondDoor = new CorridorDoorBinding(6L, 11L, new Cell(2, 3, 0), Direction.EAST);
-        CorridorBindingState bindings = new CorridorBindingState(
+        CorridorBindings bindings = new CorridorBindings(
                 List.of(),
-                List.of(new CorridorDoorBindingState(
+                List.of(new CorridorDoorBinding(
                         4L, 10L, new Cell(0, 1, 0), Direction.NORTH, null)),
                 List.of(),
                 List.of());
@@ -356,7 +358,7 @@ final class DungeonStructureInvariantScenarios {
                 corridor.mapId(),
                 corridor.level(),
                 corridor.roomIds(),
-                CorridorBindingState.empty());
+                CorridorBindings.empty());
         assertEquals(List.of(4L, 6L), coreCorridor.withDoorBinding(secondDoor).roomIds(),
                 "core corridor adds door room through core room set");
     }
@@ -380,22 +382,22 @@ final class DungeonStructureInvariantScenarios {
                         List.of(anchorRef)));
 
         Corridor withoutDoor = corridor.withoutDoorTarget(firstDoor, true, 0, 2);
-        assertEquals(List.of(6L), withoutDoor.roomIds(), "core door target delete removes room");
-        assertEquals(List.of(secondDoor), withoutDoor.coreBindings().doorBindings(),
-                "core door target delete removes door binding");
-        assertEquals(List.of(secondWaypoint), withoutDoor.stateBindings().waypoints(),
-                "core door target delete prunes branch waypoints");
+        assertEquals(List.of(6L), withoutDoor.roomIds(), "door target delete removes room");
+        assertEquals(List.of(secondDoor), withoutDoor.bindings().doorBindings(),
+                "door target delete removes door binding");
+        assertEquals(List.of(secondWaypoint), withoutDoor.bindings().waypoints(),
+                "door target delete prunes branch waypoints");
 
         Corridor withoutDoorWithoutEndpointFacts = corridor.withoutDoorTarget(firstDoor, false, -1, -1);
         assertEquals(List.of(firstWaypoint, secondWaypoint, thirdWaypoint),
-                withoutDoorWithoutEndpointFacts.stateBindings().waypoints(),
-                "core door target delete preserves waypoints when adapter lacks endpoint facts");
+                withoutDoorWithoutEndpointFacts.bindings().waypoints(),
+                "door target delete preserves waypoints without endpoint facts");
 
         Corridor withoutAnchor = corridor.withoutAnchorTarget(5L);
-        assertEquals(List.of(), withoutAnchor.stateBindings().anchorRefs(), "core anchor target delete removes anchor ref");
-        assertEquals(List.of(), withoutAnchor.stateBindings().waypoints(), "core anchor target delete clears route waypoints");
+        assertEquals(List.of(), withoutAnchor.bindings().anchorRefs(), "anchor target delete removes anchor ref");
+        assertEquals(List.of(), withoutAnchor.bindings().waypoints(), "anchor target delete clears route waypoints");
         assertEquals(List.of(firstWaypoint, thirdWaypoint),
-                corridor.withoutWaypointTarget(1).stateBindings().waypoints(),
+                corridor.withoutWaypointTarget(1).bindings().waypoints(),
                 "core waypoint target delete removes selected waypoint");
     }
 
@@ -431,9 +433,9 @@ final class DungeonStructureInvariantScenarios {
         CorridorNetwork prunedNetwork = network.withoutDetachedAnchors();
         Corridor prunedOwner = prunedNetwork.corridors().getFirst();
         Corridor prunedOrphanRef = prunedNetwork.corridors().get(2);
-        assertEquals(List.of(ownedAnchor), prunedOwner.coreBindings().anchorBindings(),
+        assertEquals(List.of(ownedAnchor), prunedOwner.bindings().anchorBindings(),
                 "core network prunes detached owned anchors");
-        assertEquals(List.of(), prunedOrphanRef.stateBindings().anchorRefs(),
+        assertEquals(List.of(), prunedOrphanRef.bindings().anchorRefs(),
                 "core network prunes refs to missing hosted anchors");
     }
 
@@ -549,18 +551,18 @@ final class DungeonStructureInvariantScenarios {
         Cell middle = new Cell(1, 0, 0);
         Cell right = new Cell(2, 0, 0);
         Edge split = Edge.sideOf(left, Direction.EAST);
-        RoomCluster cluster = new RoomCluster(
+        RoomClusterGeometry cluster = new RoomClusterGeometry(
                 9L,
                 2L,
                 left,
                 new RoomClusterFloorMap(Map.of(0, List.of(left, middle, right))));
-        Room existingRoom = new Room(7L, 2L, 9L, "Bestand", Map.of(0, left));
+        RoomRegion existingRoom = new RoomRegion(7L, 2L, 9L, "Bestand", Map.of(0, left));
         RoomClusterWork work = new RoomClusterWork(cluster, List.of(existingRoom));
 
-        List<Room> rooms = RoomClusterRoomPartition.roomsForBoundaryEdit(
+        List<RoomRegion> rooms = RoomClusterRoomPartition.roomsForBoundaryEdit(
                 work,
                 Map.of(0, List.of(split)),
-                20L);
+                new RoomTopologyWorkCatalog.ReservedIdentities(100L, 1, 20L, 2));
         assertEquals(List.of(7L, 20L), roomIds(rooms), "core room partition reuses anchor room and reserves split room");
         assertEquals(Map.of(0, left), rooms.getFirst().floorAnchors(),
                 "core room partition preserves existing room anchor");
@@ -737,9 +739,9 @@ final class DungeonStructureInvariantScenarios {
                 "core room stretch rejects movement outside the boundary normal");
     }
 
-    private static List<Long> roomIds(List<Room> rooms) {
+    private static List<Long> roomIds(List<RoomRegion> rooms) {
         List<Long> result = new java.util.ArrayList<>();
-        for (Room room : rooms) {
+        for (RoomRegion room : rooms) {
             result.add(room.roomId());
         }
         return List.copyOf(result);
@@ -773,7 +775,8 @@ final class DungeonStructureInvariantScenarios {
                 straightSpec.generatedExits(List.of(
                         new StairExit(11L, new Cell(0, 0, 0), "old"),
                         new StairExit(12L, new Cell(9, 9, 1), "old"),
-                        new StairExit(13L, new Cell(9, 9, 2), "old"))),
+                        new StairExit(13L, new Cell(9, 9, 2), "old")),
+                        List.of(21L, 22L, 23L)),
                 "core stair generated exits preserve existing ids by level offset");
         assertFalse(straightSpec.avoidsRoomInteriors(Set.of(new Cell(1, 0, 0))),
                 "core stair rejects path through room interior");
@@ -784,7 +787,7 @@ final class DungeonStructureInvariantScenarios {
                         .dimension1(),
                 "core stair circular dimension normalizes to odd value");
 
-        Stair stair = Stair.authored(8L, 2L, straightSpec);
+        Stair stair = Stair.authored(8L, 2L, straightSpec, List.of(31L, 32L, 33L));
         assertTrue(stair.isReadable(), "core stair with generated exits is readable");
         assertEquals(Set.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0),
                         new Cell(1, 0, 1), new Cell(2, 0, 2)),
@@ -794,7 +797,8 @@ final class DungeonStructureInvariantScenarios {
                 stair.withMovedHandle(1, 1, 1, 0).path().get(1),
                 "core stair handle movement updates path cell");
         Stair recomputed = stair.withRecomputedGeometry(
-                new StairGeometrySpec(StairShape.SQUARE, new Cell(4, 4, 0), Direction.SOUTH, 2, 1));
+                new StairGeometrySpec(StairShape.SQUARE, new Cell(4, 4, 0), Direction.SOUTH, 2, 1),
+                List.of(41L, 42L));
         assertEquals(StairShape.SQUARE, recomputed.shape(), "core stair recompute replaces shape");
         assertEquals(8L, recomputed.stairId(), "core stair recompute preserves stair id");
         assertEquals(2L, recomputed.mapId(), "core stair recompute preserves map id");
@@ -808,12 +812,13 @@ final class DungeonStructureInvariantScenarios {
                 2L,
                 30L,
                 List.of(new Cell(0, 0, 0), new Cell(0, 1, 0)),
-                new Cell(0, 1, 2));
-        assertEquals(30L, corridorBound.corridorId(), "core stair keeps corridor binding");
+                new Cell(0, 1, 2),
+                List.of(51L, 52L, 53L));
+        assertEquals(30L, corridorBound.corridorId(), "stair keeps corridor binding");
         assertEquals(List.of(
-                        new StairExit(0L, new Cell(0, 0, 0), ""),
-                        new StairExit(0L, new Cell(0, 1, 1), ""),
-                        new StairExit(0L, new Cell(0, 1, 2), "")),
+                        new StairExit(51L, new Cell(0, 0, 0), ""),
+                        new StairExit(52L, new Cell(0, 1, 1), ""),
+                        new StairExit(53L, new Cell(0, 1, 2), "")),
                 corridorBound.exits(),
                 "core stair corridor-bound construction creates level-spanning exits");
     }
@@ -857,11 +862,13 @@ final class DungeonStructureInvariantScenarios {
                         null);
         features.dungeon.domain.core.structure.DungeonMap map = transitionMap(source, oldTarget, target, remoteReference);
 
-        assertFalse(map.canDeleteTransition(1L),
+        assertFalse(map.transitionCatalog().canDelete(1L),
                 "core transition ownership preserves source reverse-link delete protection");
-        assertFalse(map.canDeleteTransition(3L),
+        assertFalse(map.transitionCatalog().canDelete(3L),
                 "core transition ownership preserves referenced-transition delete protection");
-        assertEquals(List.of(1L, 2L, 3L), transitionIds(map.deleteTransition(4L).transitionCatalog().transitions()),
+        assertEquals(List.of(1L, 2L, 3L), transitionIds(map.withExactTransitionChange(
+                        map.transitionCatalog().transition(4L),
+                        null).transitionCatalog().transitions()),
                 "core transition ownership removes deletable transition through core catalog");
         features.dungeon.domain.core.structure.DungeonMap linkedMap =
                 map.withTransitionCatalog(map.transitionCatalog().withMapLocalAuthoredTransitionLink(

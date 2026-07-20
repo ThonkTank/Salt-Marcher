@@ -13,7 +13,7 @@ import features.dungeon.domain.core.structure.corridor.Corridor;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryStretchPlan.BoundaryVertex;
 import features.dungeon.domain.core.structure.room.RoomBoundaryStretchValues.ConnectorAction;
-import features.dungeon.domain.core.structure.room.RoomBoundaryStretchValues.StretchSelection;
+import features.dungeon.domain.core.structure.room.RoomClusterBoundaryStretchPlan.Selection;
 
 final class RoomBoundaryStretchConnectors {
 
@@ -25,7 +25,7 @@ final class RoomBoundaryStretchConnectors {
     boolean applyStretchConnectors(
             List<Corridor> corridors,
             DungeonRoomTopologyClusterWork target,
-            StretchSelection stretch,
+            Selection stretch,
             Set<Cell> clusterCells,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries
     ) {
@@ -36,7 +36,7 @@ final class RoomBoundaryStretchConnectors {
             boolean touchesOuter = endpoint && BOUNDARY_LOOKUP.touchesOuterBoundary(clusterCells, vertex);
             boolean hasAttachment = BOUNDARY_LOOKUP.hasPerpendicularBoundary(
                     boundaries,
-                    stretch.sourceKeys(),
+                    stretch.boundaryKeys(),
                     vertex,
                     stretch.orientation());
             if (!touchesOuter && !hasAttachment) {
@@ -52,7 +52,7 @@ final class RoomBoundaryStretchConnectors {
     boolean applyConnectorPath(
             List<Corridor> corridors,
             DungeonRoomTopologyClusterWork target,
-            StretchSelection stretch,
+            Selection stretch,
             Set<Cell> clusterCells,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
             BoundaryVertex endpoint
@@ -72,12 +72,12 @@ final class RoomBoundaryStretchConnectors {
         List<DungeonBoundaryKey> pathKeys = boundaryKeys(connectorPath);
         boolean preserveExistingPath = BOUNDARY_LOOKUP.hasPerpendicularBoundaryOutsidePath(
                 boundaries,
-                stretch.sourceKeys(),
+                stretch.boundaryKeys(),
                 new LinkedHashSet<>(pathKeys),
                 endpoint,
                 stretch.orientation());
         Optional<ConnectorAction> connectorAction =
-                connectorAction(boundaries, stretch.sourceKeys(), connectorPath, pathKeys, preserveExistingPath);
+                connectorAction(boundaries, stretch.boundaryKeys(), connectorPath, pathKeys, preserveExistingPath);
         if (connectorAction.isEmpty()) {
             return false;
         }

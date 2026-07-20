@@ -3,10 +3,16 @@ package features.party.application;
 import static features.party.api.PartyDungeonTravelLocationKind.TRANSITION;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
+import platform.diagnostics.Measurement;
 import platform.execution.ExecutionLane;
 import features.party.domain.roster.PartyCharacterDraft;
 import features.party.domain.roster.PartyDungeonTravelLocationKind;
@@ -29,8 +35,12 @@ import features.party.api.CreateCharacterCommand;
 import features.party.api.DeleteCharacterCommand;
 import features.party.api.MembershipState;
 import features.party.api.MovePartyCharactersCommand;
+import features.party.api.MutationResult;
 import features.party.api.PartyDungeonTravelLocationSnapshot;
 import features.party.api.PartyMutationModel;
+import features.party.api.PartyPlanningFactsQuery;
+import features.party.api.PartyPlanningFactsResponse;
+import features.party.api.PartyMemberSummary;
 import features.party.api.PartyOverworldTravelLocationSnapshot;
 import features.party.api.PartySnapshotModel;
 import features.party.api.PartyTravelLocationSnapshot;
@@ -47,10 +57,12 @@ import features.party.api.UpdateCharacterCommand;
 public final class PartyApplicationService implements features.party.api.PartyApi {
 
     private static final DiagnosticId STORAGE_FAILURE = new DiagnosticId("party.storage-failure");
+    private static final DiagnosticId PLANNING_FACTS_READ = new DiagnosticId("party.planning-facts.read");
 
     private final PartyRosterRepository repository;
     private final PartyPublishedState publishedState;
     private final ExecutionLane executionLane;
+    private final ExecutionLane planningFactsLane;
     private final Diagnostics diagnostics;
     private final AdventuringDayProgressCalculationHelper adventuringDayProgress =
             new AdventuringDayProgressCalculationHelper();
@@ -59,11 +71,13 @@ public final class PartyApplicationService implements features.party.api.PartyAp
             PartyRosterRepository repository,
             PartyPublishedState publishedState,
             ExecutionLane executionLane,
+            ExecutionLane planningFactsLane,
             Diagnostics diagnostics
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
+        this.planningFactsLane = Objects.requireNonNull(planningFactsLane, "planningFactsLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
@@ -121,15 +135,78 @@ public final class PartyApplicationService implements features.party.api.PartyAp
                 command == null ? PartyRestType.SHORT_REST : restType(command.restType()))));
     }
 
-    public void moveCharacters(MovePartyCharactersCommand command) {
-        executionLane.execute(() -> runRosterMutation(roster -> roster.moveCharacters(
-                command == null ? List.of() : command.characterIds(),
-                travelLocation(command == null ? null : command.target()),
-                command == null || command.attachToPartyToken())));
+    public CompletionStage<MutationResult> moveCharacters(MovePartyCharactersCommand command) {
+        CompletableFuture<MutationResult> completion = new CompletableFuture<>();
+        try {
+            executionLane.execute(() -> completion.complete(runRosterMutation(roster -> roster.moveCharacters(
+                    command == null ? List.of() : command.characterIds(),
+                    travelLocation(command == null ? null : command.target()),
+                    command == null || command.attachToPartyToken()))));
+        } catch (RuntimeException exception) {
+            diagnostics.failure(STORAGE_FAILURE, exception.getClass());
+            MutationResult result = PartyPublishedProjection.storageErrorMutationResult();
+            publishedState.publishMutation(result);
+            completion.complete(result);
+        }
+        return completion;
     }
 
     public void calculateAdventuringDay(CalculateAdventuringDayCommand command) {
         executionLane.execute(() -> calculateAdventuringDayOnLane(command));
+    }
+
+    @Override
+    public CompletionStage<PartyPlanningFactsResponse> loadPlanningFacts(PartyPlanningFactsQuery query) {
+        CompletableFuture<PartyPlanningFactsResponse> result = new CompletableFuture<>();
+        if (query == null) {
+            result.complete(PartyPlanningFactsResponse.failure("Party-Planungsdaten konnten nicht geladen werden."));
+            return result;
+        }
+        try {
+            planningFactsLane.execute(() -> completePlanningFacts(query, result));
+        } catch (RuntimeException exception) {
+            diagnostics.failure(STORAGE_FAILURE, exception.getClass());
+            result.complete(PartyPlanningFactsResponse.failure(
+                    "Party-Planungsdaten konnten nicht geladen werden."));
+        }
+        return result;
+    }
+
+    private void completePlanningFacts(
+            PartyPlanningFactsQuery query,
+            CompletableFuture<PartyPlanningFactsResponse> result
+    ) {
+        long startedNanos = System.nanoTime();
+        try {
+            PartyRoster roster = repository.load();
+            List<PartyMemberSummary> active = PartyPublishedProjection.activePartyResult(roster).members();
+            Map<Long, PartyMemberSummary> byId = active.stream()
+                    .collect(Collectors.toUnmodifiableMap(PartyMemberSummary::id, Function.identity()));
+            List<PartyPlanningFactsResponse.ResolvedParticipant> participants = query.participantIds().stream()
+                    .map(id -> new PartyPlanningFactsResponse.ResolvedParticipant(id, byId.get(id)))
+                    .toList();
+            List<Integer> levels = participants.stream()
+                    .filter(PartyPlanningFactsResponse.ResolvedParticipant::available)
+                    .map(participant -> participant.member().level())
+                    .toList();
+            result.complete(new PartyPlanningFactsResponse(
+                    features.party.api.ReadStatus.SUCCESS,
+                    active,
+                    participants,
+                    PartyPublishedProjection.adventuringDayCalculationResult(
+                            levels, query.plannedGroupXp(), adventuringDayProgress).planningSummary(),
+                    ""));
+            diagnostics.measurement(new Measurement(
+                    PLANNING_FACTS_READ,
+                    0L,
+                    Math.max(0L, System.nanoTime() - startedNanos),
+                    query.participantIds().size(),
+                    0));
+        } catch (RuntimeException exception) {
+            diagnostics.failure(STORAGE_FAILURE, exception.getClass());
+            result.complete(PartyPlanningFactsResponse.failure(
+                    "Party-Planungsdaten konnten nicht geladen werden."));
+        }
     }
 
     private void calculateAdventuringDayOnLane(CalculateAdventuringDayCommand command) {
@@ -146,18 +223,21 @@ public final class PartyApplicationService implements features.party.api.PartyAp
         }
     }
 
-    private void runRosterMutation(RosterMutationAction action) {
+    private MutationResult runRosterMutation(RosterMutationAction action) {
+        MutationResult result;
         try {
             PartyRosterMutation mutation = action.apply(repository.load());
             if (mutation.successful()) {
                 repository.save(mutation.roster());
                 publishRepositoryBackedState(mutation.roster());
             }
-            publishedState.publishMutation(PartyPublishedProjection.mutationResult(mutation.status()));
+            result = PartyPublishedProjection.mutationResult(mutation.status());
         } catch (IllegalStateException exception) {
             diagnostics.failure(STORAGE_FAILURE, exception.getClass());
-            publishedState.publishMutation(PartyPublishedProjection.storageErrorMutationResult());
+            result = PartyPublishedProjection.storageErrorMutationResult();
         }
+        publishedState.publishMutation(result);
+        return result;
     }
 
     private void publishRepositoryBackedState(PartyRoster roster) {

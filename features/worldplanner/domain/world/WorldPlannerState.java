@@ -16,10 +16,39 @@ public record WorldPlannerState(
         npcs = npcs == null ? List.of() : List.copyOf(npcs);
         factions = factions == null ? List.of() : List.copyOf(factions);
         locations = locations == null ? List.of() : List.copyOf(locations);
+        validateSingleFactionMembership(factions);
         nextNpcId = Math.max(1L, nextNpcId);
         nextFactionId = Math.max(1L, nextFactionId);
         nextLocationId = Math.max(1L, nextLocationId);
         statusText = WorldNpc.text(statusText);
+    }
+
+    public long factionIdForNpc(long npcId) {
+        return factions.stream()
+                .filter(faction -> faction.npcIds().contains(npcId))
+                .mapToLong(WorldFaction::factionId)
+                .findFirst()
+                .orElse(0L);
+    }
+
+    public int effectiveDisposition(WorldNpc npc) {
+        if (npc == null) {
+            return 0;
+        }
+        WorldFaction faction = faction(factionIdForNpc(npc.npcId()));
+        int base = faction == null ? 0 : faction.disposition();
+        return WorldDisposition.clamp(base + npc.dispositionModifier());
+    }
+
+    private static void validateSingleFactionMembership(List<WorldFaction> factions) {
+        java.util.Set<Long> assigned = new java.util.HashSet<>();
+        for (WorldFaction faction : factions) {
+            for (Long npcId : faction.npcIds()) {
+                if (!assigned.add(npcId)) {
+                    throw new IllegalArgumentException("NPC may belong to at most one faction");
+                }
+            }
+        }
     }
 
     public static WorldPlannerState empty() {

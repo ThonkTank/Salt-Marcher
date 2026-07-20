@@ -1,12 +1,9 @@
 package features.dungeon.application.travel;
 
-import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import features.dungeon.application.authored.DungeonAuthoredApplicationService;
-import features.dungeon.domain.core.structure.DungeonMap;
-import features.dungeon.domain.core.structure.DungeonMapIdentity;
-import features.dungeon.application.travel.projection.TravelAuthoredSurfaceProjectionMapper;
+import features.dungeon.application.travel.DungeonTravelAuthoredReadResult.Loaded;
+import features.dungeon.application.travel.projection.TravelAuthoredSurface;
 import features.dungeon.application.travel.projection.TravelDungeonSessionProjectionMapper;
 import features.dungeon.application.travel.projection.TravelPositionFacts;
 import features.dungeon.application.travel.projection.TravelSurfaceFacts;
@@ -14,21 +11,21 @@ import features.dungeon.application.travel.projection.TravelSurfaceProjection;
 import features.dungeon.application.travel.session.TravelDungeonActiveState;
 import features.dungeon.application.travel.session.TravelDungeonActiveState.ActiveTravelStateData;
 import features.dungeon.application.travel.session.TravelDungeonActiveState.PartyLocationData;
-import features.dungeon.application.travel.session.TravelDungeonSessionSurface.ContextKind;
+import features.dungeon.application.travel.session.TravelDungeonSessionSurface;
 import features.dungeon.application.travel.session.TravelDungeonSessionSurface.PositionData;
 import features.dungeon.application.travel.session.TravelDungeonSessionSurface.SurfaceData;
 
 public final class DungeonTravelSurfaceLoader {
 
-    private final DungeonAuthoredApplicationService authoredMaps;
+    private final DungeonTravelAuthoredReader authoredReader;
     private final DungeonTravelPartyGateway partyGateway;
     private final TravelSurfaceProjection projector = new TravelSurfaceProjection();
 
     public DungeonTravelSurfaceLoader(
-            DungeonAuthoredApplicationService authoredMaps,
+            DungeonTravelAuthoredReader authoredReader,
             DungeonTravelPartyGateway partyGateway
     ) {
-        this.authoredMaps = Objects.requireNonNull(authoredMaps, "authoredMaps");
+        this.authoredReader = Objects.requireNonNull(authoredReader, "authoredReader");
         this.partyGateway = Objects.requireNonNull(partyGateway, "partyGateway");
     }
 
@@ -41,8 +38,11 @@ public final class DungeonTravelSurfaceLoader {
     }
 
     SurfaceData currentSurface(@Nullable PositionData effectivePosition) {
-        return TravelDungeonSessionProjectionMapper.toRuntimeSurface(
-                loadSurface(new Input(null, 0L), effectivePosition));
+        return loadRuntimeSurface(new Input(null, 0L), effectivePosition).surface();
+    }
+
+    SurfaceData loadCommittedPosition() {
+        return loadOrInitialize(new Input(null, 0L));
     }
 
     private SurfaceData loadOrInitialize(Input input) {
@@ -54,49 +54,41 @@ public final class DungeonTravelSurfaceLoader {
         }
         PositionData effectivePosition =
                 effectiveTravelPosition(safeInput, activeTravel.partyLocation());
-        SurfaceData surface = TravelDungeonSessionProjectionMapper.toRuntimeSurface(
-                loadSurface(safeInput, effectivePosition));
-        if (shouldSavePosition(safeInput, activeTravel)) {
-            boolean saved = partyGateway.saveDungeonPosition(
-                    surface.position(),
-                    activeTravel.travelCharacterIds());
-            return saved ? surface : failedInitialSaveSurface(surface);
-        }
-        return surface;
+        SurfaceLoad loaded = loadRuntimeSurface(safeInput, effectivePosition);
+        return loaded.surface();
     }
 
-    private TravelSurfaceFacts loadSurface(
+    private SurfaceLoad loadRuntimeSurface(
             Input input,
             @Nullable PositionData effectivePosition
     ) {
+        DungeonTravelAuthoredReadResult readResult;
+        @Nullable TravelPositionFacts position = null;
         if (effectivePosition != null) {
-            return loadSurface(TravelDungeonSessionProjectionMapper.toRuntimePositionFacts(effectivePosition), null);
+            position = TravelDungeonSessionProjectionMapper.toRuntimePositionFacts(effectivePosition);
+            readResult = authoredReader.readCurrentPosition(position);
+        } else if (input.hasSelectedMapId()) {
+            readResult = authoredReader.readSelectedMap(input.selectedMapId());
+        } else {
+            readResult = authoredReader.readFirstCatalogMap();
         }
-        if (input.hasSelectedMapId()) {
-            return loadSurface(null, input.selectedMapId());
+        if (readResult instanceof Loaded loaded) {
+            TravelSurfaceFacts facts = projector.project(
+                    loaded.surface(), position, "Token auf der Karte ziehen");
+            return new SurfaceLoad(
+                    TravelDungeonSessionProjectionMapper.toRuntimeSurface(facts),
+                    true);
         }
-        return loadSurface((TravelPositionFacts) null, null);
-    }
-
-    private TravelSurfaceFacts loadSurface(
-            @Nullable TravelPositionFacts position,
-            @Nullable Long selectedMapId
-    ) {
-        DungeonMap dungeonMap = loadMap(selectedMapId, position);
-        return projector.project(
-                TravelAuthoredSurfaceProjectionMapper.from(dungeonMap, authoredMaps.derive(dungeonMap)),
-                position,
-                "Token auf der Karte ziehen");
-    }
-
-    private DungeonMap loadMap(@Nullable Long requestedMapId, @Nullable TravelPositionFacts position) {
-        if (position != null) {
-            return authoredMaps.loadMap(new DungeonMapIdentity(position.mapId()));
+        long knownMapId = position == null ? input.selectedMapId() : position.mapId();
+        if (knownMapId <= 0L) {
+            return new SurfaceLoad(TravelDungeonSessionSurface.outsideDungeonSurface(0L), false);
         }
-        if (requestedMapId != null && requestedMapId > 0L) {
-            return authoredMaps.loadMap(new DungeonMapIdentity(requestedMapId));
-        }
-        return authoredMaps.loadMap(null);
+        TravelAuthoredSurface unavailable = new TravelAuthoredSurface(
+                new TravelAuthoredSurface.Header(knownMapId, "Dungeon", 0L),
+                null);
+        TravelSurfaceFacts facts = projector.project(
+                unavailable, position, "Dungeon ist nicht verfügbar.");
+        return new SurfaceLoad(TravelDungeonSessionProjectionMapper.toRuntimeSurface(facts), false);
     }
 
     private static @Nullable PositionData effectiveTravelPosition(
@@ -113,35 +105,6 @@ public final class DungeonTravelSurfaceLoader {
         return null;
     }
 
-    private static boolean shouldSavePosition(
-            Input input,
-            ActiveTravelStateData activeTravel
-    ) {
-        if (activeTravel.travelCharacterIds().isEmpty()) {
-            return false;
-        }
-        return input.requestedTravelPosition() != null
-                || input.hasSelectedMapId()
-                || activeTravel.partyLocation() == null;
-    }
-
-    private static SurfaceData failedInitialSaveSurface(SurfaceData surface) {
-        return new SurfaceData(
-                ContextKind.DUNGEON,
-                surface.mapName(),
-                surface.revision(),
-                surface.map(),
-                surface.position(),
-                surface.surfaceTitle(),
-                surface.areaLabel(),
-                surface.tileLabel(),
-                surface.headingLabel(),
-                "Position could not be saved.",
-                surface.visualDescription(),
-                List.of(),
-                false);
-    }
-
     private record Input(
             @Nullable PositionData requestedTravelPosition,
             long selectedMapId
@@ -156,6 +119,12 @@ public final class DungeonTravelSurfaceLoader {
 
         private boolean hasSelectedMapId() {
             return selectedMapId > 0L;
+        }
+    }
+
+    private record SurfaceLoad(SurfaceData surface, boolean available) {
+        private SurfaceLoad {
+            surface = Objects.requireNonNull(surface, "surface");
         }
     }
 }

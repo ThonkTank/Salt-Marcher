@@ -1,6 +1,6 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
+Last Reviewed: 2026-07-18
 Source of Truth: User-facing behavior and acceptance criteria for the
 encounter feature.
 
@@ -17,12 +17,15 @@ Provide a runtime encounter builder that:
 - lets catalog creature rows build a manual encounter roster
 - saves and opens created encounter rosters as persistent encounter plans
 - can use selected encounter tables as curated generator sources
+- resolves one ordered group of Session Generation intents into concrete
+  creature rosters and makes the complete group available as saved plans
 
 ## Non-Goals
 
 - saving initiative, combat HP, defeated state, XP-result state, or loot-result
   state as part of an encounter plan
 - room-aware dungeon population
+- owning Session Generation runs, generated rewards, or Session Planner scenes
 
 ## Primary User Flow
 
@@ -38,19 +41,24 @@ Provide a runtime encounter builder that:
    plan into the builder.
 7. The user starts initiative and combat from the current builder roster.
 
+Generated preparation is a separate Session Planner-driven flow:
+
+1. Session Planner requests a complete ordered group of generated encounters.
+2. Encounter resolves every requested encounter into a concrete roster while
+   preserving request order.
+3. Success makes the complete group available as saved plans; failure leaves
+   the previously visible saved-plan set unchanged.
+
 ## Expected Capabilities
 
 - show active-party thresholds for easy, medium, hard, and deadly encounters
 - show daily-budget context from the party feature
 - generate multiple ranked alternatives instead of one opaque result
-- expose a runtime budget load path so the state UI can show thresholds before
-  generation
 - support multi-select creature filters with visible active-filter chips
 - support generator tuning for creature amount, XP-spread balance, and
   statblock diversity
 - support Auto difficulty and Auto tuning for amount, XP-spread balance, and
-  statblock diversity; Auto values are sent as sentinel request values and are
-  resolved by the generator for each generation pass
+  statblock diversity, with the resolved choices visible in diagnostics
 - return compact generation diagnostics with resolved difficulty, resolved
   tuning, solution quality, search stop category, candidate-pool size,
   attempt count, and candidate-evaluation count
@@ -68,13 +76,15 @@ Provide a runtime encounter builder that:
 - list saved encounter plans from the encounter title row
 - open a saved encounter plan into Creation mode and clear initiative, combat,
   result, and generated-alternative runtime state
+- return concrete creature identities, quantities, display names, total count,
+  adjusted XP, and difficulty in every prepared roster summary
+- list and open generated rosters through the same saved-plan interaction as
+  manually saved rosters
 
 ## Acceptance Criteria
 
-- the encounter feature depends only on public party, creature, and
-  encounter-table APIs for generation
-- saved encounter plans persist only creature identity, quantity, display name,
-  and generated label; creature statblocks remain creature-owned
+- saved encounter plans reopen with the same creature identities, quantities,
+  display names, and generated label while showing current creature detail
 - generated alternatives remain derived runtime output until explicitly saved
 - a party with no active members yields a clear empty-state message
 - generator output includes adjusted XP and a difficulty-band label
@@ -90,6 +100,12 @@ Provide a runtime encounter builder that:
   generated statblock counts from exceeding finite faction stock caps
 - opening a saved plan replaces the builder roster and returns the state tab to
   Creation mode
+- generated preparation publishes every concrete roster in request order or
+  publishes none of them
+- invalid, unresolvable, or failed generated preparation leaves the previously
+  visible saved-plan set unchanged
+- retrying an identical completed preparation creates no visible duplicate
+  plans
 
 ## References
 
@@ -97,3 +113,5 @@ Provide a runtime encounter builder that:
 - [Encounter Domain Model](../domain/domain-encounter.md) (line 1)
 - [Encounter Persistence Contract](../contract/contract-encounter-persistence.md) (line 1)
 - [Encounter Table Feature Spec](../../encountertable/requirements/requirements-encountertable.md) (line 1)
+- [Generated Preparation Contract](../contract/contract-encounter-generated-import.md)
+- [Architecture](../architecture/architecture-encounter.md)

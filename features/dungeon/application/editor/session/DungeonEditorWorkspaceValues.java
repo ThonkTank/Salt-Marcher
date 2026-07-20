@@ -4,11 +4,15 @@ import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.DungeonTopology;
+import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.Direction;
+import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.graph.DungeonTopologyElementKind;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.projection.DungeonAreaType;
 import features.dungeon.domain.core.projection.DungeonFeatureType;
-import features.dungeon.application.editor.interaction.DungeonEditorHandleType;
+import features.dungeon.api.DungeonEditorHandleKind;
+import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 
 public final class DungeonEditorWorkspaceValues {
 
@@ -93,135 +97,8 @@ public final class DungeonEditorWorkspaceValues {
         }
     }
 
-    public static final class BoundaryKind {
-        public static final BoundaryKind WALL = new BoundaryKind("WALL", "wall");
-        public static final BoundaryKind DOOR = new BoundaryKind("DOOR", "door");
-
-        private final String name;
-        private final String externalKind;
-
-        private BoundaryKind(String name, String externalKind) {
-            this.name = name;
-            this.externalKind = externalKind;
-        }
-
-        public static BoundaryKind fromExternalKind(@Nullable String kind) {
-            return "door".equalsIgnoreCase(kind) ? DOOR : WALL;
-        }
-
-        public static BoundaryKind defaultKind() {
-            return WALL;
-        }
-
-        public String name() {
-            return name;
-        }
-
-        public String externalKind() {
-            return externalKind;
-        }
-
-        public boolean isDoor() {
-            return this == DOOR;
-        }
-
-        @Override
-        public String toString() {
-            return name;
-        }
-    }
-
-    public static final class Cell {
-        private final int q;
-        private final int r;
-        private final int level;
-
-        public Cell(int q, int r, int level) {
-            this.q = q;
-            this.r = r;
-            this.level = level;
-        }
-
-        public static Cell empty() {
-            return new Cell(0, 0, 0);
-        }
-
-        public int q() {
-            return q;
-        }
-
-        public int r() {
-            return r;
-        }
-
-        public int level() {
-            return level;
-        }
-
-        @Override
-        public boolean equals(Object other) {
-            if (this == other) {
-                return true;
-            }
-            if (!(other instanceof Cell that)) {
-                return false;
-            }
-            return q == that.q && r == that.r && level == that.level;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(q, r, level);
-        }
-
-        @Override
-        public String toString() {
-            return "Cell[q=%d, r=%d, level=%d]".formatted(q, r, level);
-        }
-    }
-
-    public static final class Edge {
-        private final Cell from;
-        private final Cell to;
-
-        public Edge(Cell from, Cell to) {
-            Cell safeFrom = from == null ? Cell.empty() : from;
-            this.from = safeFrom;
-            this.to = to == null ? safeFrom : to;
-        }
-
-        public Cell from() {
-            return from;
-        }
-
-        public Cell to() {
-            return to;
-        }
-
-        @Override
-        public boolean equals(Object other) {
-            if (this == other) {
-                return true;
-            }
-            if (!(other instanceof Edge that)) {
-                return false;
-            }
-            return Objects.equals(from, that.from) && Objects.equals(to, that.to);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(from, to);
-        }
-
-        @Override
-        public String toString() {
-            return "Edge[from=%s, to=%s]".formatted(from, to);
-        }
-    }
-
     public record HandleRef(
-            DungeonEditorHandleType kind,
+            DungeonEditorHandleKind kind,
             DungeonTopologyRef topologyRef,
             long ownerId,
             long clusterId,
@@ -229,12 +106,12 @@ public final class DungeonEditorWorkspaceValues {
             long roomId,
             int index,
             Cell cell,
-            String direction,
+            Direction direction,
             Edge sourceEdge,
             List<Edge> sourceEdges
     ) {
         public HandleRef {
-            kind = kind == null ? DungeonEditorHandleType.CLUSTER_LABEL : kind;
+            kind = kind == null ? DungeonEditorHandleKind.CLUSTER_LABEL : kind;
             topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
             ownerId = Math.max(0L, ownerId);
             clusterId = Math.max(0L, clusterId);
@@ -242,13 +119,13 @@ public final class DungeonEditorWorkspaceValues {
             roomId = Math.max(0L, roomId);
             index = Math.max(0, index);
             cell = cell == null ? Cell.empty() : cell;
-            direction = direction == null ? "" : direction.trim();
+            direction = direction == null ? Direction.NORTH : direction;
             sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
         }
 
         public static HandleRef empty() {
             return new HandleRef(
-                    DungeonEditorHandleType.CLUSTER_LABEL,
+                    DungeonEditorHandleKind.CLUSTER_LABEL,
                     DungeonTopologyRef.empty(),
                     0L,
                     0L,
@@ -256,7 +133,7 @@ public final class DungeonEditorWorkspaceValues {
                     0L,
                     0,
                     Cell.empty(),
-                    "",
+                    Direction.NORTH,
                     null,
                     List.of());
         }
@@ -622,14 +499,14 @@ public final class DungeonEditorWorkspaceValues {
             long roomId,
             long clusterId,
             Cell roomCell,
-            String direction,
+            Direction direction,
             DungeonTopologyRef topologyRef
     ) implements CorridorEndpoint {
         public CorridorDoorEndpoint {
             roomId = Math.max(0L, roomId);
             clusterId = Math.max(0L, clusterId);
             roomCell = roomCell == null ? Cell.empty() : roomCell;
-            direction = direction == null ? "" : direction.trim();
+            direction = direction == null ? Direction.NORTH : direction;
             topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
         }
     }

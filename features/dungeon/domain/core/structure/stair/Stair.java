@@ -40,9 +40,11 @@ public record Stair(
     public static Stair authored(
             long stairId,
             long mapId,
-            StairGeometrySpec spec
+            StairGeometrySpec spec,
+            List<Long> reservedExitIds
     ) {
         Objects.requireNonNull(spec);
+        requireStableIdentity(stairId, mapId);
         return new Stair(
                 stairId,
                 mapId,
@@ -52,7 +54,7 @@ public record Stair(
                 spec.dimension1(),
                 spec.dimension2(),
                 spec.generatedPath(),
-                spec.generatedExits(List.of()),
+                spec.generatedExits(List.of(), Objects.requireNonNull(reservedExitIds, "reservedExitIds")),
                 null);
     }
 
@@ -61,8 +63,13 @@ public record Stair(
             long mapId,
             long corridorId,
             List<Cell> path,
-            Cell upperExit
+            Cell upperExit,
+            List<Long> reservedExitIds
     ) {
+        requireStableIdentity(stairId, mapId);
+        if (corridorId <= 0L) {
+            throw new IllegalArgumentException("corridor identity must be positive");
+        }
         if (path == null || path.isEmpty()) {
             return empty(stairId, mapId);
         }
@@ -77,7 +84,7 @@ public record Stair(
                 Math.max(1, path.size()),
                 levelSpan,
                 path,
-                corridorBoundExits(startExit, upperExit),
+                corridorBoundExits(startExit, upperExit, reservedExitIds),
                 corridorId);
     }
 
@@ -117,7 +124,7 @@ public record Stair(
         return !path.isEmpty() && exitLevelCount() >= 2;
     }
 
-    public Stair withRecomputedGeometry(StairGeometrySpec spec) {
+    public Stair withRecomputedGeometry(StairGeometrySpec spec, List<Long> reservedExitIds) {
         Objects.requireNonNull(spec);
         return new Stair(
                 stairId,
@@ -128,7 +135,7 @@ public record Stair(
                 spec.dimension1(),
                 spec.dimension2(),
                 spec.generatedPath(),
-                spec.generatedExits(exits),
+                spec.generatedExits(exits, Objects.requireNonNull(reservedExitIds, "reservedExitIds")),
                 corridorId);
     }
 
@@ -224,6 +231,12 @@ public record Stair(
         return DEFAULT_NAME_PREFIX + stairId;
     }
 
+    private static void requireStableIdentity(long stairId, long mapId) {
+        if (stairId <= 0L || mapId <= 0L) {
+            throw new IllegalArgumentException("stair and map identities must be positive");
+        }
+    }
+
     private static Cell movedCell(Cell cell, int deltaQ, int deltaR, int deltaLevel) {
         return new Cell(cell.q() + deltaQ, cell.r() + deltaR, cell.level() + deltaLevel);
     }
@@ -241,16 +254,33 @@ public record Stair(
         return Direction.NORTH;
     }
 
-    private static List<StairExit> corridorBoundExits(Cell startExit, Cell targetExit) {
+    private static List<StairExit> corridorBoundExits(
+            Cell startExit,
+            Cell targetExit,
+            List<Long> reservedExitIds
+    ) {
         List<StairExit> result = new ArrayList<>();
-        result.add(new StairExit(0L, startExit, ""));
+        int reservedIndex = 0;
+        result.add(new StairExit(reservedExitId(reservedExitIds, reservedIndex++), startExit, ""));
         int levelStep = Integer.compare(targetExit.level(), startExit.level());
         for (int level = startExit.level() + levelStep; level != targetExit.level() + levelStep; level += levelStep) {
             result.add(new StairExit(
-                    0L,
+                    reservedExitId(reservedExitIds, reservedIndex++),
                     new Cell(targetExit.q(), targetExit.r(), level),
                     ""));
         }
         return List.copyOf(result);
+    }
+
+    private static long reservedExitId(List<Long> reservedExitIds, int index) {
+        Objects.requireNonNull(reservedExitIds, "reservedExitIds");
+        if (index >= reservedExitIds.size()) {
+            throw new IllegalStateException("stair-exit identity reservation exhausted");
+        }
+        Long exitId = reservedExitIds.get(index);
+        if (exitId == null || exitId <= 0L) {
+            throw new IllegalArgumentException("stair-exit identities must be positive");
+        }
+        return exitId;
     }
 }

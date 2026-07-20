@@ -26,9 +26,9 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import org.jspecify.annotations.Nullable;
-import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonEditorViewMode;
-import features.dungeon.application.editor.DungeonEditorOverlaySettings;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
+import features.dungeon.adapter.javafx.editor.DungeonEditorControlsInput.OverlayMode;
 
 public final class DungeonEditorControlsView extends VBox {
 
@@ -223,7 +223,7 @@ public final class DungeonEditorControlsView extends VBox {
             emitCurrentPopupOverlay(selectedPopupOverlayMode());
         }
 
-        private void emitCurrentPopupOverlay(DungeonEditorOverlaySettings.Mode mode) {
+        private void emitCurrentPopupOverlay(OverlayMode mode) {
             emitOverlayInput(
                     rendering,
                     mode,
@@ -275,7 +275,7 @@ public final class DungeonEditorControlsView extends VBox {
             }
         }
 
-        private DungeonEditorOverlaySettings.Mode selectedPopupOverlayMode() {
+        private OverlayMode selectedPopupOverlayMode() {
             for (Node node : popupOverlayModeRow.getChildren()) {
                 if (node instanceof Button button
                         && button.getStyleClass().contains(SELECTED_STYLE_CLASS)
@@ -339,13 +339,13 @@ public final class DungeonEditorControlsView extends VBox {
             selectButton.setToggleGroup(toolGroup);
             selectButton.setSelected(true);
             selectButton.setAccessibleText("Auswahlwerkzeug aktivieren");
-            selectButton.setOnAction(event -> emitToolSelection("", toolControls.select().tool()));
+            selectButton.setOnAction(event -> emitToolSelection(toolControls.select().selection()));
         }
 
         private void configureFamilyButton(
                 Button button,
                 DungeonEditorControlsPanelModel.ToolFamilyButton family,
-                DungeonEditorTool selectTool
+                DungeonEditorToolSelection selectTool
         ) {
             button.setAccessibleText(family.label() + "werkzeug wählen");
             button.setOnAction(event -> activateFamily(button, family, selectTool));
@@ -354,13 +354,12 @@ public final class DungeonEditorControlsView extends VBox {
         private void activateFamily(
                 Button anchor,
                 DungeonEditorControlsPanelModel.ToolFamilyButton family,
-                DungeonEditorTool selectTool
+                DungeonEditorToolSelection selectTool
         ) {
-            DungeonEditorControlsPanelModel.ToolButton selectedOption = family.selectedOption();
-            String selectedOptionKey = selectedOption.key();
-            emitToolSelection(family.familyKey(), selectedOption.tool(), selectedOptionKey);
+            DungeonEditorControlsPanelModel.ToolButton selectedOption = family.selectedButton();
+            emitToolSelection(selectedOption.selection());
             if (family.hasSecondaryOptions()) {
-                showFamilyOptions(anchor, family, selectedOptionKey, selectTool);
+                showFamilyOptions(anchor, family, selectedOption.selection(), selectTool);
             } else {
                 optionMenu.hide();
             }
@@ -369,18 +368,18 @@ public final class DungeonEditorControlsView extends VBox {
         private void showFamilyOptions(
                 Button anchor,
                 DungeonEditorControlsPanelModel.ToolFamilyButton family,
-                String selectedOptionKey,
-                DungeonEditorTool selectTool
+                DungeonEditorToolSelection selectedOption,
+                DungeonEditorToolSelection selectTool
         ) {
             HBox options = row();
             for (DungeonEditorControlsPanelModel.ToolButton option : family.options()) {
-                options.getChildren().add(optionButton(family.familyKey(), option, selectedOptionKey));
+                options.getChildren().add(optionButton(option, selectedOption));
             }
             options.getStyleClass().addAll("dropdown-window", "dropdown-form", "dungeon-editor-popup");
             options.setOnMouseExited(event -> optionMenu.hide());
             options.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
                 if (event.getCode() == KeyCode.ESCAPE) {
-                    emitToolSelection("", selectTool);
+                    emitToolSelection(selectTool);
                     optionMenu.hide();
                     event.consume();
                 }
@@ -388,30 +387,29 @@ public final class DungeonEditorControlsView extends VBox {
             CustomMenuItem item = new CustomMenuItem(options, false);
             optionMenu.getItems().setAll(item);
             optionMenu.show(anchor, Side.BOTTOM, 0.0, 2.0);
-            requestOptionFocus(options, selectedOptionKey);
+            requestOptionFocus(options);
         }
 
         private Button optionButton(
-                String familyKey,
                 DungeonEditorControlsPanelModel.ToolButton option,
-                String selectedOptionKey
+                DungeonEditorToolSelection selectedOption
         ) {
             Button button = toolButton(option.label());
-            boolean selected = option.key().equals(selectedOptionKey);
+            boolean selected = option.selection().equals(selectedOption);
             setStyleClassPresence(button, SELECTED_STYLE_CLASS, selected);
             button.setDisable(!option.enabled());
             button.setAccessibleText(option.label()
                     + (option.enabled() ? (selected ? " aktiv" : " wählen") : " noch nicht verfügbar"));
             if (option.enabled()) {
                 button.setOnAction(event -> {
-                    emitToolSelection(familyKey, option.tool(), option.key());
+                    emitToolSelection(option.selection());
                     optionMenu.hide();
                 });
             }
             return button;
         }
 
-        private void requestOptionFocus(HBox options, String selectedOptionKey) {
+        private void requestOptionFocus(HBox options) {
             Node fallbackOption = null;
             for (Node node : options.getChildren()) {
                 if (fallbackOption == null) {
@@ -431,32 +429,33 @@ public final class DungeonEditorControlsView extends VBox {
                 DungeonEditorControlsPanelModel.ToolProjection projection,
                 DungeonEditorControlsPanelModel.ToolControls toolControls
         ) {
-            String defaultToolLabel = toolControls.defaultTool();
-            String selectedTool = projection == null ? defaultToolLabel : projection.selectedTool();
+            DungeonEditorToolSelection selection = projection == null
+                    ? DungeonEditorToolSelection.select()
+                    : projection.selection();
             DungeonEditorControlsPanelModel.ToolControls currentToolControls =
                     projection == null ? toolControls : projection.toolControls();
-            selectButton.setSelected(defaultToolLabel.equals(selectedTool));
-            if (defaultToolLabel.equals(selectedTool)) {
+            selectButton.setSelected(selection.equals(DungeonEditorToolSelection.select()));
+            if (selection.equals(DungeonEditorToolSelection.select())) {
                 optionMenu.hide();
             }
-            DungeonEditorTool selectTool = currentToolControls.select().tool();
-            bindFamilyButton(roomButton, selectedTool, currentToolControls.room(), selectTool);
-            bindFamilyButton(wallButton, selectedTool, currentToolControls.wall(), selectTool);
-            bindFamilyButton(doorButton, selectedTool, currentToolControls.door(), selectTool);
-            bindFamilyButton(corridorButton, selectedTool, currentToolControls.corridor(), selectTool);
-            bindFamilyButton(featureButton, selectedTool, currentToolControls.feature(), selectTool);
-            bindFamilyButton(stairButton, selectedTool, currentToolControls.stair(), selectTool);
-            bindFamilyButton(transitionButton, selectedTool, currentToolControls.transition(), selectTool);
+            DungeonEditorToolSelection selectTool = currentToolControls.select().selection();
+            bindFamilyButton(roomButton, selection, currentToolControls.room(), selectTool);
+            bindFamilyButton(wallButton, selection, currentToolControls.wall(), selectTool);
+            bindFamilyButton(doorButton, selection, currentToolControls.door(), selectTool);
+            bindFamilyButton(corridorButton, selection, currentToolControls.corridor(), selectTool);
+            bindFamilyButton(featureButton, selection, currentToolControls.feature(), selectTool);
+            bindFamilyButton(stairButton, selection, currentToolControls.stair(), selectTool);
+            bindFamilyButton(transitionButton, selection, currentToolControls.transition(), selectTool);
         }
 
         private void bindFamilyButton(
                 Button button,
-                String selectedTool,
+                DungeonEditorToolSelection selection,
                 DungeonEditorControlsPanelModel.ToolFamilyButton family,
-                DungeonEditorTool selectTool
+                DungeonEditorToolSelection selectTool
         ) {
             configureFamilyButton(button, family, selectTool);
-            markSelectedFamily(button, selectedTool, family, family.selectedOptionKey());
+            markSelectedFamily(button, selection, family);
         }
     }
 
@@ -500,25 +499,10 @@ public final class DungeonEditorControlsView extends VBox {
                 DungeonEditorControlsInput.OverlayInput.none()));
     }
 
-    private void emitToolSelection(String requestedFamilyKey, DungeonEditorTool selectedTool) {
-        emitToolSelection(
-                requestedFamilyKey,
-                selectedTool,
-                selectedTool == null ? "" : selectedTool.name());
-    }
-
-    private void emitToolSelection(
-            String requestedFamilyKey,
-            DungeonEditorTool selectedTool,
-            String selectedOptionKey
-    ) {
+    private void emitToolSelection(DungeonEditorToolSelection selection) {
         controlsInputHandler.accept(new DungeonEditorControlsInput(
                 DungeonEditorControlsInput.MapInput.none(),
-                new DungeonEditorControlsInput.ToolInput(
-                        requestedFamilyKey,
-                        selectedTool,
-                        selectedOptionKey,
-                        false),
+                new DungeonEditorControlsInput.ToolInput(selection, false),
                 DungeonEditorControlsInput.ProjectionInput.none(),
                 DungeonEditorControlsInput.OverlayInput.none()));
     }
@@ -533,14 +517,14 @@ public final class DungeonEditorControlsView extends VBox {
     private void emitToolDismiss() {
         controlsInputHandler.accept(new DungeonEditorControlsInput(
                 DungeonEditorControlsInput.MapInput.none(),
-                new DungeonEditorControlsInput.ToolInput("", null, "", true),
+                new DungeonEditorControlsInput.ToolInput(null, true),
                 DungeonEditorControlsInput.ProjectionInput.none(),
                 DungeonEditorControlsInput.OverlayInput.none()));
     }
 
     private void emitOverlayInput(
             boolean[] rendering,
-            DungeonEditorOverlaySettings.Mode mode,
+            OverlayMode mode,
             int levelRange,
             double opacity,
             String selectedLevelsText
@@ -622,36 +606,23 @@ public final class DungeonEditorControlsView extends VBox {
         }
     }
 
-    private static DungeonEditorOverlaySettings.Mode selectedOverlayMode(
+    private static OverlayMode selectedOverlayMode(
             ComboBox<Object> modeSelector
     ) {
         DungeonEditorControlsPanelModel.OverlayModeOption option = asOverlayModeOption(comboValue(modeSelector));
-        return option == null ? DungeonEditorOverlaySettings.Mode.OFF : option.mode();
+        return option == null ? OverlayMode.OFF : option.mode();
     }
 
     private static void markSelectedFamily(
             Button button,
-            String selectedTool,
-            DungeonEditorControlsPanelModel.ToolFamilyButton family,
-            String selectedOptionKey
+            DungeonEditorToolSelection selection,
+            DungeonEditorControlsPanelModel.ToolFamilyButton family
     ) {
-        boolean selected = family.selectedByLabel(selectedTool);
-        DungeonEditorControlsPanelModel.ToolButton option = toolOption(family, selectedOptionKey);
+        boolean selected = family.selectedBy(selection);
+        DungeonEditorControlsPanelModel.ToolButton option = family.selectedButton();
         setStyleClassPresence(button, SELECTED_STYLE_CLASS, selected);
         button.setAccessibleText(family.label() + "werkzeug"
                 + (selected ? " aktiv, Option " + option.label() : ", letzte Option " + option.label()));
-    }
-
-    private static DungeonEditorControlsPanelModel.ToolButton toolOption(
-            DungeonEditorControlsPanelModel.ToolFamilyButton family,
-            String selectedOptionKey
-    ) {
-        for (DungeonEditorControlsPanelModel.ToolButton option : family.options()) {
-            if (option.key().equals(selectedOptionKey)) {
-                return option;
-            }
-        }
-        return family.selectedOption();
     }
 
     private static void setNodeVisibility(Node node, boolean visible) {

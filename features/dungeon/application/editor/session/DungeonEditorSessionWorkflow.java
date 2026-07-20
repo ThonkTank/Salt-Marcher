@@ -1,6 +1,11 @@
 package features.dungeon.application.editor.session;
 
+import features.dungeon.api.DungeonEditorViewMode;
+import features.dungeon.api.DungeonOverlaySettings;
 import org.jspecify.annotations.Nullable;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 
 public final class DungeonEditorSessionWorkflow {
     public static final String MAP_CREATED = "CREATED";
@@ -36,22 +41,22 @@ public final class DungeonEditorSessionWorkflow {
         });
     }
 
-    public void setViewMode(DungeonEditorSessionValues.ViewMode viewMode) {
-        DungeonEditorSessionValues.ViewMode safeViewMode = viewMode == null
-                ? DungeonEditorSessionValues.ViewMode.defaultMode()
+    public void setViewMode(DungeonEditorViewMode viewMode) {
+        DungeonEditorViewMode safeViewMode = viewMode == null
+                ? DungeonEditorViewMode.GRID
                 : viewMode;
         session.replace(session.current().withViewMode(safeViewMode)
                 .clearTransientState(""));
     }
 
-    public void setTool(DungeonEditorSessionValues.Tool tool) {
-        DungeonEditorSessionValues.Tool nextTool = tool == null
-                ? DungeonEditorSessionValues.Tool.defaultTool()
-                : tool;
+    public void setTool(DungeonEditorToolSelection selection) {
+        DungeonEditorToolSelection nextSelection = selection == null
+                ? DungeonEditorToolSelection.select()
+                : selection;
         DungeonEditorSession nextSession = session.current()
-                .withSelectedTool(nextTool)
+                .withToolSelection(nextSelection)
                 .clearTransientState("");
-        if (!nextTool.isSelect()) {
+        if (nextSelection.family() != DungeonEditorToolFamily.SELECT) {
             nextSession = nextSession.clearSelection();
         }
         session.replace(nextSession);
@@ -61,9 +66,9 @@ public final class DungeonEditorSessionWorkflow {
         session.replace(session.current().shiftProjectionLevel(projectionLevelDelta).clearPreview().withStatusText(""));
     }
 
-    public void setOverlay(DungeonEditorSessionValues.OverlaySettings overlaySettings) {
-        DungeonEditorSessionValues.OverlaySettings safeOverlaySettings = overlaySettings == null
-                ? DungeonEditorSessionValues.OverlaySettings.defaults()
+    public void setOverlay(DungeonOverlaySettings overlaySettings) {
+        DungeonOverlaySettings safeOverlaySettings = overlaySettings == null
+                ? DungeonOverlaySettings.defaults()
                 : overlaySettings;
         session.replace(session.current().withOverlaySettings(safeOverlaySettings).withStatusText(""));
     }
@@ -77,6 +82,9 @@ public final class DungeonEditorSessionWorkflow {
         }
         if (effect.getStatusText() != null) {
             session.replace(session.current().withStatusText(effect.getStatusText()));
+        }
+        if (effect.getRejection() != null) {
+            session.replace(session.current().withCommandOutcome(effect.getRejection()));
         }
         if (effect.isClearSelection()) {
             session.replace(session.current().clearSelection().clearPreview());
@@ -94,6 +102,10 @@ public final class DungeonEditorSessionWorkflow {
 
     public void clearPreviewWithStatus(String statusText) {
         session.replace(session.current().clearPreview().withStatusText(statusText));
+    }
+
+    public void clearPreviewWithCommandOutcome(DungeonEditorCommandOutcome outcome) {
+        session.replace(session.current().clearPreviewWithCommandOutcome(outcome));
     }
 
     public DungeonEditorSessionSnapshot.SnapshotData reconcileSnapshot(

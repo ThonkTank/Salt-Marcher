@@ -11,34 +11,34 @@ public final class RoomClusterRoomPartition {
     private RoomClusterRoomPartition() {
     }
 
-    public static List<Room> roomsForBoundaryEdit(
+    public static List<RoomRegion> roomsForBoundaryEdit(
             RoomClusterWork work,
             Map<Integer, ? extends Iterable<Edge>> closedBoundaryEdgesByLevel,
-            long nextRoomId
+            RoomTopologyWorkCatalog.ReservedIdentities identities
     ) {
         return RoomClusterRoomComponents.roomsForMutation(
                 safeWork(work),
                 closedBoundaryEdgesByLevel,
-                nextRoomId,
+                new RoomMutationIdCursor(identities),
                 null);
     }
 
-    public static List<Room> roomsForMutation(
+    static List<RoomRegion> roomsForMutation(
             RoomClusterWork work,
             Map<Integer, ? extends Iterable<Edge>> closedBoundaryEdgesByLevel,
-            long nextRoomId,
+            RoomMutationIdCursor ids,
             Map<Long, List<Cell>> previousCellsByRoom
     ) {
         return RoomClusterRoomComponents.roomsForMutation(
                 safeWork(work),
                 closedBoundaryEdgesByLevel,
-                nextRoomId,
+                ids,
                 previousCellsByRoom);
     }
 
     public static Map<Long, List<Cell>> cellsByRoom(
-            RoomCluster cluster,
-            List<Room> rooms,
+            RoomClusterGeometry cluster,
+            List<RoomRegion> rooms,
             Map<Integer, ? extends Iterable<Edge>> closedBoundaryEdgesByLevel
     ) {
         return RoomClusterRoomAssignment.cellsByRoom(safeCluster(cluster), rooms, closedBoundaryEdgesByLevel);
@@ -48,8 +48,8 @@ public final class RoomClusterRoomPartition {
         return work == null ? new RoomClusterWork(null, List.of()) : work;
     }
 
-    private static RoomCluster safeCluster(RoomCluster cluster) {
-        return cluster == null ? RoomCluster.fromCells(0L, 0L, Set.of()) : cluster;
+    private static RoomClusterGeometry safeCluster(RoomClusterGeometry cluster) {
+        return cluster == null ? RoomClusterGeometry.fromCells(0L, 0L, Set.of()) : cluster;
     }
 
 }

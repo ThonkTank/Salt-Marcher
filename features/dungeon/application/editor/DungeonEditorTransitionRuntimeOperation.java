@@ -8,10 +8,9 @@ import features.dungeon.domain.core.graph.DungeonTopologyElementKind;
 import features.dungeon.domain.core.structure.transition.TransitionAnchor;
 import features.dungeon.domain.core.structure.transition.TransitionDestinationType;
 import features.dungeon.application.editor.session.DungeonEditorSessionEffect;
-import features.dungeon.api.DungeonEditorTool;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
 
 final class DungeonEditorTransitionRuntimeOperation {
-    private static final String INVALID_TRANSITION_DESTINATION_STATUS = "Uebergangsziel ungueltig.";
     private static final long NO_TRANSITION_ID = 0L;
 
     private final DungeonEditorRuntimeContext context;
@@ -20,13 +19,13 @@ final class DungeonEditorTransitionRuntimeOperation {
         this.context = Objects.requireNonNull(context, "context");
     }
 
-    static boolean handles(DungeonEditorTool tool) {
-        return tool == DungeonEditorTool.TRANSITION_CREATE || tool == DungeonEditorTool.TRANSITION_DELETE;
+    static boolean handles(DungeonEditorToolAction tool) {
+        return tool != null && tool.family() == DungeonEditorToolFamily.TRANSITION;
     }
 
     DungeonEditorRuntimeContext.Result apply(
             PointerAction action,
-            DungeonEditorTool tool,
+            DungeonEditorToolAction tool,
             PointerSample sample,
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
@@ -34,10 +33,10 @@ final class DungeonEditorTransitionRuntimeOperation {
         if (!PointerAction.isPressed(action)) {
             return DungeonEditorRuntimeContext.Result.none();
         }
-        if (tool == DungeonEditorTool.TRANSITION_CREATE) {
+        if (!tool.deleteMode()) {
             return createTransition(sample, wallSingleClickMode, transitionDestination);
         }
-        if (tool == DungeonEditorTool.TRANSITION_DELETE) {
+        if (tool.deleteMode()) {
             return deleteTransition(sample, wallSingleClickMode, transitionDestination);
         }
         return DungeonEditorRuntimeContext.Result.none();
@@ -62,7 +61,9 @@ final class DungeonEditorTransitionRuntimeOperation {
         boolean deleted = context.deleteTransition(context.selectedMapId(), transitionId);
         if (deleted) {
             context.applySessionEffect(DungeonEditorSessionEffect.clearedSelection());
-            context.clearPreviewWithStatus(context.currentFacts().mutationStatusText());
+            context.clearPreviewWithCommandOutcome(context.currentFacts().commandOutcome());
+        } else {
+            context.reject(features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.REFERENCED_CONNECTION);
         }
         return context.publishCurrent();
     }
@@ -86,11 +87,11 @@ final class DungeonEditorTransitionRuntimeOperation {
                 context.selectedMapId(),
                 anchor,
                 destination)) {
-            context.clearPreviewWithStatus(INVALID_TRANSITION_DESTINATION_STATUS);
+            context.reject(features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.MISSING_TRANSITION_DESTINATION);
             return context.publishCurrent();
         }
         context.createTransition(context.selectedMapId(), anchor, destination);
-        context.clearPreviewWithStatus(context.currentFacts().mutationStatusText());
+        context.clearPreviewWithCommandOutcome(context.currentFacts().commandOutcome());
         return context.publishCurrent();
     }
 

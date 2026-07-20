@@ -1,57 +1,84 @@
 package shell.host;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import features.catalog.CatalogFeature;
+import features.catalog.CatalogProviders;
+import features.catalog.CatalogRoutes;
+import features.creatures.CreaturesServiceAssembly;
+import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
+import features.dungeon.DungeonTestAssembly;
+import features.dungeon.adapter.javafx.editor.DungeonEditorContribution;
+import features.dungeon.adapter.javafx.travel.DungeonTravelContribution;
+import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
+import features.dungeon.application.authored.DungeonCachedWindowStore;
+import features.dungeon.application.editor.DungeonEditorApiFacade;
+import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
+import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
+import features.encounter.EncounterServiceAssembly;
+import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
+import features.encountertable.EncounterTableServiceAssembly;
+import features.encountertable.adapter.sqlite.query.SqliteEncounterTableCatalogAdapter;
+import features.hex.HexServiceAssembly;
+import features.hex.adapter.javafx.hexmap.HexMapContribution;
+import features.hex.adapter.javafx.hexmap.HexMapControlsView;
+import features.hex.adapter.javafx.hexmap.HexMapMainView;
+import features.hex.adapter.sqlite.repository.SqliteHexMapRepository;
+import features.party.PartyServiceAssembly;
+import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
+import features.sessiongeneration.api.CommitGenerationRunCommand;
+import features.sessiongeneration.api.GenerationDraftResponse;
+import features.sessiongeneration.api.GenerationRequest;
+import features.sessiongeneration.api.GenerationRewardBatchQuery;
+import features.sessiongeneration.api.GenerationRewardBatchResponse;
+import features.sessiongeneration.api.GenerationRunId;
+import features.sessiongeneration.api.GenerationRunResponse;
+import features.sessiongeneration.api.SessionGenerationApi;
+import features.sessionplanner.SessionPlannerServiceAssembly;
+import features.sessionplanner.adapter.javafx.SessionPlannerContribution;
+import features.sessionplanner.adapter.javafx.SessionPlannerControlsView;
+import features.sessionplanner.adapter.javafx.SessionPlannerStateView;
+import features.sessionplanner.adapter.javafx.SessionPlannerTimelineMainView;
+import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
+
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
 import javafx.scene.control.ContentDisplay;
+import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import platform.diagnostics.NoopDiagnostics;
+import platform.execution.DirectExecutionLane;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
+import platform.ui.DirectUiDispatcher;
+import platform.ui.catalogcrud.CatalogCrudControlsView;
+
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
-import shell.api.ShellContributionSpec;
-import shell.api.ShellSlot;
-import shell.api.ShellLeftBarTabSpec;
 import shell.api.ShellBinding;
+import shell.api.ShellContributionSpec;
 import shell.api.ShellLeftBarTabMode;
-import features.encounter.adapter.javafx.catalog.CatalogContribution;
-import features.dungeon.adapter.javafx.editor.DungeonEditorContribution;
-import features.dungeon.adapter.javafx.travel.DungeonTravelContribution;
-import features.hex.adapter.javafx.hexmap.HexMapContribution;
-import features.hex.adapter.javafx.hexmap.HexMapControlsView;
-import features.hex.adapter.javafx.hexmap.HexMapMainView;
-import features.sessionplanner.adapter.javafx.SessionPlannerContribution;
-import features.sessionplanner.adapter.javafx.SessionPlannerControlsView;
-import features.sessionplanner.adapter.javafx.SessionPlannerTimelineMainView;
-import platform.ui.catalogcrud.CatalogCrudControlsView;
-import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
-import features.dungeon.adapter.sqlite.repository.SqliteDungeonMapRepository;
-import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
-import features.encountertable.adapter.sqlite.query.SqliteEncounterTableCatalogAdapter;
-import features.hex.adapter.sqlite.repository.SqliteHexMapRepository;
-import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
-import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
-import features.creatures.CreaturesServiceAssembly;
-import features.dungeon.DungeonTestAssembly;
-import features.encounter.EncounterServiceAssembly;
-import features.encountertable.EncounterTableServiceAssembly;
-import features.hex.HexServiceAssembly;
-import features.party.PartyServiceAssembly;
-import features.sessionplanner.SessionPlannerServiceAssembly;
-import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
+import shell.api.ShellLeftBarTabSpec;
+import shell.api.ShellSlot;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @org.junit.jupiter.api.Tag("ui")
 public final class SessionPlannerShellLayoutTest {
@@ -83,6 +110,12 @@ public final class SessionPlannerShellLayoutTest {
         Stage stage = new Stage();
         stage.setScene(new Scene(workspace, 1_120.0, 620.0));
         stage.show();
+        services.session().application().createSession(
+                new features.sessionplanner.api.SessionPlannerCatalogCommand.CreateSessionCommand("Layout"));
+        services.session().application().addScene(new features.sessionplanner.api.AddSessionSceneCommand(
+                new features.sessionplanner.api.SessionPlannerAuthoredTarget(
+                        services.session().workspaceModel().current().sourceSessionId(),
+                        services.session().workspaceModel().current().sourceSessionRevision())));
         layout(workspace);
 
         VBox controlsPanel = descendants(workspace).stream()
@@ -102,6 +135,7 @@ public final class SessionPlannerShellLayoutTest {
                 descendant(controlsPanel, SessionPlannerControlsView.class);
         SessionPlannerTimelineMainView plannerMain =
                 descendant(workspace, SessionPlannerTimelineMainView.class);
+        SessionPlannerStateView plannerState = descendant(workspace, SessionPlannerStateView.class);
 
         assertTrue(VBox.getVgrow(controlsPanel) == javafx.scene.layout.Priority.ALWAYS,
                 "shell controls panel grows vertically");
@@ -119,15 +153,23 @@ public final class SessionPlannerShellLayoutTest {
                 "planner main keeps vertical scrolling available");
         assertTrue(plannerMain.isFitToWidth(), "planner main scroll content fits available width");
         assertTrue(descendants(plannerMain).stream()
-                        .filter(Parent.class::isInstance)
-                        .map(Parent.class::cast)
-                        .anyMatch(node -> node.getStyleClass().contains("session-planner-setup-strip")),
-                "planner main renders the compact setup strip in the main slot");
-        assertTrue(descendants(plannerMain).stream()
+                        .filter(javafx.scene.control.Button.class::isInstance)
+                        .map(javafx.scene.control.Button.class::cast)
+                        .anyMatch(button -> "Szene hinzufügen".equals(button.getText())),
+                "planner main renders the scene board in the main slot");
+        Node selectedInspector = descendants(plannerMain).stream()
+                .filter(node -> node.getStyleClass().contains("session-planner-selected-scene-inspector"))
+                .findFirst().orElseThrow(() -> new AssertionError("Selected scene inspector not found."));
+        assertTrue(descendants(plannerControls).stream()
                         .filter(Label.class::isInstance)
                         .map(Label.class::cast)
-                        .anyMatch(label -> "0 / ca. 0 Szenen".equals(label.getText())),
-                "planner main setup strip renders the compact scene target");
+                        .anyMatch(label -> "Encounter-Tage".equals(label.getText())),
+                "planner controls host the compact preparation toolbar");
+        assertTrue(descendants(plannerState).stream()
+                        .filter(Label.class::isInstance)
+                        .map(Label.class::cast)
+                        .anyMatch(label -> "Ausgewählte Szene".equals(label.getText())),
+                "planner state slot keeps selected-scene context without a participant duplicate");
 
         ScrollPane stateScroll = descendants(workspace).stream()
                 .filter(ScrollPane.class::isInstance)
@@ -138,6 +180,22 @@ public final class SessionPlannerShellLayoutTest {
         assertTrue(stateScroll.getVbarPolicy() == ScrollPane.ScrollBarPolicy.AS_NEEDED,
                 "shell state panel keeps vertical scrolling globally available");
         assertTrue(stateScroll.isFitToWidth(), "shell state panel scroll content fits available width");
+
+        stage.setWidth(820.0);
+        stage.setHeight(500.0);
+        layout(workspace);
+        assertTrue(plannerControls.getHbarPolicy() == ScrollPane.ScrollBarPolicy.NEVER,
+                "compact toolbar wraps without horizontal scrolling at narrow width");
+        assertTrue(plannerMain.getHbarPolicy() == ScrollPane.ScrollBarPolicy.NEVER,
+                "timeline and selected inspector do not expose horizontal scrolling at narrow width");
+        assertTrue(plannerControls.getContent().getLayoutBounds().getWidth()
+                        <= plannerControls.getViewportBounds().getWidth() + 1.0,
+                "compact controls content fits the narrow viewport");
+        assertTrue(plannerMain.getContent().getLayoutBounds().getWidth()
+                        <= plannerMain.getViewportBounds().getWidth() + 1.0,
+                "timeline content fits the narrow viewport");
+        assertTrue(selectedInspector.getBoundsInParent().getWidth() <= plannerMain.getViewportBounds().getWidth() + 1.0,
+                "real selected-scene inspector fits the 820x500 shell without horizontal clipping");
 
         ShellNavigationSidebar sidebar = new ShellNavigationSidebar();
         registerSidebarTab(
@@ -153,7 +211,7 @@ public final class SessionPlannerShellLayoutTest {
         registerSidebarTab(
                 sidebar,
                 catalog(services).registrationSpec(),
-                "Encounter-Planer",
+                "Katalog",
                 "/view/leftbartabs/catalog/navigation-icon.svg");
         registerSidebarTab(
                 sidebar,
@@ -183,7 +241,7 @@ public final class SessionPlannerShellLayoutTest {
         assertButton(navButtons.get(1), "Dungeon-Editor", false);
         assertButton(navButtons.get(2), "Dungeon-Reise", false);
         assertButton(navButtons.get(3), "Hex-Karte", false);
-        assertButton(navButtons.get(4), "Encounter-Planer", false);
+        assertButton(navButtons.get(4), "Katalog", false);
         assertTrue(sidebarChildren.get(1).getStyleClass().contains("nav-separator"),
                 "sidebar separates runtime and editor tabs");
         assertTrue(sidebarChildren.get(3).getStyleClass().contains("nav-separator"),
@@ -193,31 +251,58 @@ public final class SessionPlannerShellLayoutTest {
         assertTrue(malformedGraphic.getStyleClass().contains("nav-icon-missing"),
                 "malformed navigation resource uses missing graphic fallback");
         assertLoadedNavigationGraphic(
-                "/view/leftbartabs/worldplanner/navigation-icon.svg",
-                "World Planner navigation icon loads from its stable resource path");
+                "/view/leftbartabs/scene/navigation-icon.svg",
+                "Scene navigation icon loads from its stable resource path");
         assertHexMapShellLayout();
     }
 
     private static LayoutServices services() {
-        PartyServiceAssembly.Component party = PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+        PartyServiceAssembly.Component party = PartyServiceAssembly.create(new SqlitePartyRosterRepository(
+                                TestFeatureStores.current().store(
+                                        SqlitePartyRosterRepository.storeDefinition())));
         CreaturesServiceAssembly.Component creatures =
-                CreaturesServiceAssembly.create(new SqliteCreatureCatalogQueryAdapter());
+                CreaturesServiceAssembly.create(new SqliteCreatureCatalogQueryAdapter(
+                                TestFeatureStores.current().store(
+                                        SqliteCreatureCatalogQueryAdapter.storeDefinition())));
         EncounterTableServiceAssembly.Component tables =
-                EncounterTableServiceAssembly.create(new SqliteEncounterTableCatalogAdapter());
+                EncounterTableServiceAssembly.create(new SqliteEncounterTableCatalogAdapter(
+                                TestFeatureStores.current().store(
+                                        SqliteEncounterTableCatalogAdapter.storeDefinition())));
         EncounterServiceAssembly.Component encounter = EncounterServiceAssembly.create(
                 creatures.application(), creatures.detail(), creatures.encounterCandidates(),
                 tables.application(), tables.candidates(), null,
                 party.application(), party.activeParty(), party.activeComposition(),
-                party.adventuringDaySummary(), party.mutation(), new SqliteEncounterPlanRepository());
+                party.adventuringDaySummary(), party.mutation(), new SqliteEncounterPlanRepository(
+                                TestFeatureStores.current().store(
+                                        SqliteEncounterPlanRepository.storeDefinition())));
+        SqliteSessionPlanRepository sessionRepository = new SqliteSessionPlanRepository(
+                        TestFeatureStores.current().store(
+                                SqliteSessionPlanRepository.storeDefinition()));
         SessionPlannerServiceAssembly session = new SessionPlannerServiceAssembly(
-                new SqliteSessionPlanRepository(), party.application(), party.activeParty(),
-                party.adventuringDayCalculation(), encounter.application(), encounter.savedPlans(),
-                encounter.planBudget(), null);
+                sessionRepository, sessionRepository, sessionRepository, party.application(),
+                encounter.application(), encounter.savedPlans(), null, unsupportedGeneration(),
+                DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE,
+                DirectUiDispatcher.INSTANCE, NoopDiagnostics.INSTANCE);
         HexServiceAssembly hex = new HexServiceAssembly(
-                new SqliteHexMapRepository(), party.travelPositions(), party.application());
+                new SqliteHexMapRepository(
+                                TestFeatureStores.current().store(
+                                        SqliteHexMapRepository.storeDefinition())), party.travelPositions(), party.application());
+        platform.persistence.FeatureStoreHandle dungeonStore =
+                TestFeatureStores.current().store(
+                        features.dungeon.adapter.sqlite.gateway.DungeonStoreDefinition.create());
+        SqliteDungeonCatalogStore dungeonCatalog = new SqliteDungeonCatalogStore(
+                        dungeonStore);
         DungeonTestAssembly.Component dungeon = DungeonTestAssembly.create(
-                new SqliteDungeonMapRepository(), party.activeParty(), party.travelPositions(),
-                party.application(), party.mutation());
+                dungeonCatalog,
+                new DungeonCachedWindowStore(new SqliteDungeonWindowStore(dungeonStore)),
+                new SqliteDungeonUnitOfWork(dungeonStore),
+                party.activeParty(),
+                party.travelPositions(),
+                party.application(),
+                party.mutation(),
+                DirectExecutionLane.INSTANCE,
+                DirectUiDispatcher.INSTANCE,
+                NoopDiagnostics.INSTANCE);
         return new LayoutServices(party, creatures, tables, encounter, session, hex, dungeon);
     }
 
@@ -263,9 +348,35 @@ public final class SessionPlannerShellLayoutTest {
 
     private static SessionPlannerContribution sessionPlanner(LayoutServices services) {
         return new SessionPlannerContribution(
-                services.session().application(), services.session().currentSessionModel(),
-                services.session().catalogModel(), services.session().participantsModel(),
-                services.session().sceneTimelineModel(), services.session().statePanelModel());
+                services.session().application(), services.session().workspaceModel(), ignored -> { });
+    }
+
+    private static SessionGenerationApi unsupportedGeneration() {
+        return new SessionGenerationApi() {
+            @Override
+            public java.util.concurrent.CompletionStage<GenerationDraftResponse> draft(GenerationRequest request) {
+                throw new UnsupportedOperationException("generation is not exercised by this layout test");
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<GenerationRunResponse> commit(
+                    CommitGenerationRunCommand command
+            ) {
+                throw new UnsupportedOperationException("generation is not exercised by this layout test");
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<GenerationRunResponse> load(GenerationRunId runId) {
+                throw new UnsupportedOperationException("generation is not exercised by this layout test");
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<GenerationRewardBatchResponse> loadRewards(
+                    GenerationRewardBatchQuery query
+            ) {
+                throw new UnsupportedOperationException("generation is not exercised by this layout test");
+            }
+        };
     }
 
     private static HexMapContribution hexMap(LayoutServices services) {
@@ -280,20 +391,84 @@ public final class SessionPlannerShellLayoutTest {
     }
 
     private static DungeonEditorContribution dungeonEditor(LayoutServices services) {
-        return new DungeonEditorContribution(new DungeonEditorRuntimeDependencies(
-                new DungeonEditorRuntimeDependencies.CompatibilityReadbackModels(
-                        services.dungeon().editorControls(), services.dungeon().editorMapSurface(),
-                        services.dungeon().editorState()),
-                services.dungeon().editor()));
+        DungeonEditorRuntimeDependencies dependencies = new DungeonEditorRuntimeDependencies(
+                services.dungeon().editorControls(), services.dungeon().editorMapSurface(),
+                services.dungeon().editorState(),
+                services.dungeon().editor());
+        DungeonEditorFeatureRuntimeRoot root = DungeonEditorFeatureRuntimeRoot.create(dependencies);
+        return new DungeonEditorContribution(new DungeonEditorApiFacade(root, dependencies.uiDispatcher()));
     }
 
-    private static CatalogContribution catalog(LayoutServices services) {
-        return new CatalogContribution(
-                services.creatures().application(), services.tables().application(),
-                services.encounter().application(), services.encounter().builderInputs(),
-                services.creatures().filterOptions(), services.creatures().catalog(),
-                services.creatures().detail(), services.tables().catalog(),
-                services.encounter().tuningPreview(), null, EmptyInspectorSink.INSTANCE);
+    private static shell.api.ShellContribution catalog(LayoutServices services) {
+        features.worldplanner.api.WorldPlannerSnapshotModel world =
+                new features.worldplanner.api.WorldPlannerSnapshotModel(
+                        () -> new features.worldplanner.api.WorldPlannerSnapshot(
+                                features.worldplanner.api.WorldPlannerReadStatus.SUCCESS,
+                                List.of(), List.of(), List.of(), ""),
+                        listener -> () -> { },
+                        listener -> {
+                            listener.accept(new features.worldplanner.api.WorldPlannerSnapshot(
+                                    features.worldplanner.api.WorldPlannerReadStatus.SUCCESS,
+                                    List.of(), List.of(), List.of(), ""));
+                            return () -> { };
+                        });
+        CatalogRoutes.WorldInspectorRoutes worldRoutes = new CatalogRoutes.WorldInspectorRoutes() {
+            @Override public void openNpc(long npcId) { }
+            @Override public void openFaction(long factionId) { }
+            @Override public void openLocation(long locationId) { }
+            @Override public void createNpc() { }
+            @Override public void createFaction() { }
+            @Override public void createLocation() { }
+        };
+        CatalogRoutes.EncounterHandoff encounterRoutes = new CatalogRoutes.EncounterHandoff() {
+            @Override public void updatePoolFilters(features.encounter.api.EncounterPoolFilters filters) { }
+            @Override public void addCreature(long creatureId) { }
+            @Override public void addWorldNpc(long creatureId, long npcId) { }
+            @Override public void useFactionSource(long factionId) { }
+            @Override public void useLocationSource(long locationId) { }
+            @Override public void useEncounterTableSource(long tableId) { }
+            @Override public java.util.concurrent.CompletionStage<features.encounter.api.OpenSavedEncounterPlanResult>
+                    openSavedEncounter(long planId, boolean discard) {
+                return java.util.concurrent.CompletableFuture.completedFuture(
+                        new features.encounter.api.OpenSavedEncounterPlanResult(
+                                features.encounter.api.OpenSavedEncounterPlanResult.Status.OPENED, planId, ""));
+            }
+        };
+        CatalogRoutes.SceneHandoff sceneRoutes = new CatalogRoutes.SceneHandoff() {
+            @Override public void addCreature(long creatureId) { }
+            @Override public void addNpc(long npcId) { }
+            @Override public void setLocation(long locationId) { }
+        };
+        return CatalogFeature.create(
+                new CatalogProviders(
+                        new CatalogProviders.MonsterProviders(
+                                services.creatures().catalogQueries(), services.encounter().poolFilters()),
+                        new CatalogProviders.ItemsProviders(unavailableItems()),
+                        new CatalogProviders.SavedEncounterProviders(services.encounter().savedPlans()),
+                        new CatalogProviders.WorldReferenceProviders(
+                                services.creatures().referenceIndex(), world),
+                        new CatalogProviders.EncounterTableProviders(
+                                services.tables().application(), services.tables().catalog()),
+                        platform.ui.DirectUiDispatcher.INSTANCE),
+                new CatalogRoutes(ignored -> { }, ignored -> { }, worldRoutes, encounterRoutes, sceneRoutes))
+                .contribution();
+    }
+
+    private static features.items.api.ItemsCatalogApi unavailableItems() {
+        return new features.items.api.ItemsCatalogApi() {
+            public java.util.concurrent.CompletionStage<FilterOptionsResult> loadFilterOptions() {
+                return java.util.concurrent.CompletableFuture.completedFuture(new FilterOptionsResult(
+                        CatalogStatus.UNAVAILABLE, List.of(), List.of(), List.of()));
+            }
+            public java.util.concurrent.CompletionStage<PageResult> search(ItemQuery query) {
+                return java.util.concurrent.CompletableFuture.completedFuture(new PageResult(
+                        CatalogStatus.UNAVAILABLE, List.of(), 0, 50, 0));
+            }
+            public java.util.concurrent.CompletionStage<DetailResult> loadDetail(String sourceKey) {
+                return java.util.concurrent.CompletableFuture.completedFuture(
+                        new DetailResult(CatalogStatus.UNAVAILABLE, null));
+            }
+        };
     }
 
     private record LayoutServices(

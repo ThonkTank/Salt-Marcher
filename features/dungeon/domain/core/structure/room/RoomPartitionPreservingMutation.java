@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.Set;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.room.RoomTopologyRebuilder.RebuildResult;
-import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog.IdAllocation;
+import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog.ReservedIdentities;
 import features.dungeon.domain.core.structure.topology.SpatialTopology;
 
 final class RoomPartitionPreservingMutation {
@@ -27,7 +27,7 @@ final class RoomPartitionPreservingMutation {
             Cell start,
             Cell end,
             long mapId,
-            IdAllocation allocation
+            ReservedIdentities allocation
     ) {
         return PAINT.paintRectangle(topology, clusters, start, end, mapId, allocation);
     }
@@ -37,7 +37,7 @@ final class RoomPartitionPreservingMutation {
             List<DungeonRoomTopologyClusterWork> clusters,
             Cell start,
             Cell end,
-            IdAllocation allocation
+            ReservedIdentities allocation
     ) {
         return DELETE.deleteRectangle(topology, clusters, start, end, allocation);
     }
@@ -48,12 +48,11 @@ final class RoomPartitionPreservingMutation {
             DungeonRoomTopologyClusterWork target,
             Map<Integer, List<Cell>> nextCellsByLevel,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel,
-            IdAllocation allocation
+            RoomMutationIdCursor ids
     ) {
         if (target == null || unsupportedClusterSplit(nextCellsByLevel)) {
             return Optional.empty();
         }
-        RoomMutationIdCursor ids = new RoomMutationIdCursor(allocation);
         DungeonRoomTopologyClusterWork partitioned = WORK_BUILDER.stretchPartitionedWork(
                 target,
                 nextCellsByLevel,

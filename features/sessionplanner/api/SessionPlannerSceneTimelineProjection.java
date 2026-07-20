@@ -3,82 +3,55 @@ package features.sessionplanner.api;
 import java.math.BigDecimal;
 import java.util.List;
 
+/** Collection-free master rows plus rest separators. */
 public record SessionPlannerSceneTimelineProjection(
-        List<SessionScene> sessionScenes,
+        List<SceneHeader> sceneHeaders,
         List<RestGap> restGaps
 ) {
     public SessionPlannerSceneTimelineProjection {
-        sessionScenes = copy(sessionScenes);
+        sceneHeaders = copy(sceneHeaders);
         restGaps = copy(restGaps);
-    }
-
-    @Override
-    public List<SessionScene> sessionScenes() {
-        return List.copyOf(sessionScenes);
-    }
-
-    @Override
-    public List<RestGap> restGaps() {
-        return List.copyOf(restGaps);
     }
 
     public static SessionPlannerSceneTimelineProjection empty() {
         return new SessionPlannerSceneTimelineProjection(List.of(), List.of());
     }
 
-    public record SessionScene(
+    public record SceneHeader(
             long sceneToken,
+            String displayTitle,
             long linkedEncounterPlanId,
             boolean linkedEncounterPlan,
             String linkedEncounterName,
             String linkedEncounterGeneratedLabel,
             int linkedEncounterCreatureCount,
-            int linkedEncounterTotalBaseXp,
             int linkedEncounterAdjustedXp,
-            double linkedEncounterXpMultiplier,
             String linkedEncounterDifficultyLabel,
+            String linkedEncounterStatus,
             BigDecimal budgetPercentage,
             int targetXp,
             boolean selected,
-            String sceneTitle,
-            String sceneNotes,
-            long locationId,
-            List<LootPlaceholder> lootPlaceholders
+            String locationLabel,
+            boolean canMoveUp,
+            boolean canMoveDown
     ) {
-
-        public SessionScene {
+        public SceneHeader {
             sceneToken = Math.max(0L, sceneToken);
+            displayTitle = text(displayTitle);
             linkedEncounterPlanId = Math.max(0L, linkedEncounterPlanId);
-            linkedEncounterName = linkedEncounterName == null ? "" : linkedEncounterName.trim();
-            linkedEncounterGeneratedLabel =
-                    linkedEncounterGeneratedLabel == null ? "" : linkedEncounterGeneratedLabel.trim();
+            linkedEncounterName = text(linkedEncounterName);
+            linkedEncounterGeneratedLabel = text(linkedEncounterGeneratedLabel);
             linkedEncounterCreatureCount = Math.max(0, linkedEncounterCreatureCount);
-            linkedEncounterTotalBaseXp = Math.max(0, linkedEncounterTotalBaseXp);
             linkedEncounterAdjustedXp = Math.max(0, linkedEncounterAdjustedXp);
-            linkedEncounterXpMultiplier = linkedEncounterXpMultiplier <= 0.0 ? 1.0 : linkedEncounterXpMultiplier;
-            linkedEncounterDifficultyLabel =
-                    linkedEncounterDifficultyLabel == null ? "" : linkedEncounterDifficultyLabel.trim();
+            linkedEncounterDifficultyLabel = text(linkedEncounterDifficultyLabel);
+            linkedEncounterStatus = text(linkedEncounterStatus);
             budgetPercentage = budgetPercentage == null ? BigDecimal.ZERO : budgetPercentage;
             targetXp = Math.max(0, targetXp);
-            sceneTitle = sceneTitle == null ? "" : sceneTitle.trim();
-            sceneNotes = sceneNotes == null ? "" : sceneNotes.trim();
-            locationId = Math.max(0L, locationId);
-            lootPlaceholders = copy(lootPlaceholders);
-        }
-
-        @Override
-        public List<LootPlaceholder> lootPlaceholders() {
-            return List.copyOf(lootPlaceholders);
+            locationLabel = text(locationLabel);
         }
     }
 
-    public record RestGap(
-            int gapIndex,
-            long leftSceneToken,
-            long rightSceneToken,
-            SessionPlannerRestKind restKind
-    ) {
-
+    public record RestGap(int gapIndex, long leftSceneToken, long rightSceneToken, SessionPlannerRestKind restKind) {
         public RestGap {
             gapIndex = Math.max(0, gapIndex);
             leftSceneToken = Math.max(0L, leftSceneToken);
@@ -87,15 +60,8 @@ public record SessionPlannerSceneTimelineProjection(
         }
     }
 
-    public record LootPlaceholder(
-            long token,
-            String label
-    ) {
-
-        public LootPlaceholder {
-            token = Math.max(0L, token);
-            label = label == null ? "" : label.trim();
-        }
+    private static String text(String value) {
+        return value == null ? "" : value.trim();
     }
 
     private static <T> List<T> copy(List<T> values) {

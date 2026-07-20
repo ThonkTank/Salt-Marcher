@@ -17,10 +17,10 @@ final class RoomClusterRoomComponents {
     private RoomClusterRoomComponents() {
     }
 
-    static List<Room> roomsForMutation(
+    static List<RoomRegion> roomsForMutation(
             RoomClusterWork work,
             Map<Integer, ? extends Iterable<Edge>> barriersByLevel,
-            long nextRoomId,
+            RoomMutationIdCursor ids,
             Map<Long, List<Cell>> previousCellsByRoom
     ) {
         List<RoomComponent> components = roomComponents(work, barriersByLevel);
@@ -28,11 +28,11 @@ final class RoomClusterRoomComponents {
                 ? RoomClusterRoomPartition.cellsByRoom(work.cluster(), work.rooms(), barriersByLevel)
                 : previousCellsByRoom;
         Map<Long, Set<Cell>> previousCellSetsByRoom = previousCellSetsByRoom(resolvedPreviousCellsByRoom);
-        RoomIdCursor idCursor = new RoomIdCursor(nextRoomId);
+        RoomMutationIdCursor idCursor = java.util.Objects.requireNonNull(ids, "ids");
         Set<Long> usedRoomIds = new LinkedHashSet<>();
-        List<Room> rooms = new ArrayList<>();
+        List<RoomRegion> rooms = new ArrayList<>();
         for (RoomComponent component : components) {
-            Optional<Room> template = RoomComponentTemplateSelection.templateFor(
+            Optional<RoomRegion> template = RoomComponentTemplateSelection.templateFor(
                     work.rooms(),
                     previousCellSetsByRoom,
                     component,
@@ -51,24 +51,25 @@ final class RoomClusterRoomComponents {
     }
 
     private static void addRoom(
-            List<Room> rooms,
+            List<RoomRegion> rooms,
             RoomClusterWork work,
             RoomComponent component,
-            Room template,
-            RoomIdCursor idCursor,
+            RoomRegion template,
+            RoomMutationIdCursor idCursor,
             Set<Long> usedRoomIds
     ) {
-        long roomId = template == null ? idCursor.reserveUnusedRoomId(usedRoomIds) : template.roomId();
+        long roomId = template == null ? reserveUnusedRoomId(idCursor, usedRoomIds) : template.roomId();
         usedRoomIds.add(roomId);
-        rooms.add(new Room(
+        rooms.add(new RoomRegion(
                 roomId,
                 work.cluster().mapId(),
                 work.cluster().clusterId(),
                 template == null ? "Raum " + roomId : template.name(),
-                Map.of(component.level(), anchorFor(component, template))));
+                Set.copyOf(component.cells()),
+                template == null ? DungeonRoomNarration.empty() : template.narration()));
     }
 
-    private static Cell anchorFor(RoomComponent component, Room template) {
+    private static Cell anchorFor(RoomComponent component, RoomRegion template) {
         if (template == null) {
             return component.anchor();
         }
@@ -100,22 +101,15 @@ final class RoomClusterRoomComponents {
         return CellOrdering.compareCells(left.anchor(), right.anchor());
     }
 
-    private static final class RoomIdCursor {
-        private long nextRoomId;
-
-        RoomIdCursor(long nextRoomId) {
-            this.nextRoomId = Math.max(1L, nextRoomId);
+    private static long reserveUnusedRoomId(
+            RoomMutationIdCursor ids,
+            Set<Long> usedRoomIds
+    ) {
+        long roomId = ids.reserveRoomId();
+        while (usedRoomIds.contains(roomId)) {
+            roomId = ids.reserveRoomId();
         }
-
-        long reserveUnusedRoomId(Set<Long> usedRoomIds) {
-            long roomId = nextRoomId;
-            nextRoomId += 1L;
-            while (usedRoomIds.contains(roomId)) {
-                roomId += 1L;
-                nextRoomId = Math.max(nextRoomId, roomId + 1L);
-            }
-            return roomId;
-        }
+        return roomId;
     }
 
     record RoomComponent(

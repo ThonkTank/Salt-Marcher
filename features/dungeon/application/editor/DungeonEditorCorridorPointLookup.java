@@ -1,7 +1,7 @@
 package features.dungeon.application.editor;
 
 import org.jspecify.annotations.Nullable;
-import features.dungeon.application.editor.interaction.DungeonEditorHandleType;
+import features.dungeon.api.DungeonEditorHandleKind;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.PointerState;
@@ -34,13 +34,13 @@ final class DungeonEditorCorridorPointLookup {
     ) {
         return ref != null
                 && ref.corridorId() == corridorId
-                && (ref.kind() == DungeonEditorHandleType.CORRIDOR_ANCHOR
-                        || ref.kind() == DungeonEditorHandleType.CORRIDOR_WAYPOINT);
+                && (ref.kind() == DungeonEditorHandleKind.CORRIDOR_ANCHOR
+                        || ref.kind() == DungeonEditorHandleKind.CORRIDOR_WAYPOINT);
     }
 
     private static boolean sameCell(
             PointerState input,
-            DungeonEditorWorkspaceValues.Cell cell
+            features.dungeon.domain.core.geometry.Cell cell
     ) {
         return input.q() == cell.q()
                 && input.r() == cell.r()

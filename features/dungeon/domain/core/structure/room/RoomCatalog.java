@@ -4,13 +4,15 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Authored rooms loaded from the dungeon write model.
  */
 public record RoomCatalog(
-        List<DungeonRoom> rooms
+        List<RoomRegion> rooms
 ) {
 
     public RoomCatalog {
@@ -21,8 +23,8 @@ public record RoomCatalog(
         return new RoomCatalog(List.of());
     }
 
-    public Optional<DungeonRoom> findRoom(long roomId) {
-        for (DungeonRoom room : rooms) {
+    public Optional<RoomRegion> findRoom(long roomId) {
+        for (RoomRegion room : rooms) {
             if (room != null && room.roomId() == roomId) {
                 return Optional.of(room);
             }
@@ -30,9 +32,37 @@ public record RoomCatalog(
         return Optional.empty();
     }
 
-    public List<DungeonRoom> roomsInCluster(long clusterId) {
-        List<DungeonRoom> result = new ArrayList<>();
-        for (DungeonRoom room : rooms) {
+    public RoomCatalog withExactChange(
+            @Nullable RoomRegion before,
+            @Nullable RoomRegion after
+    ) {
+        RoomRegion identity = after == null ? before : after;
+        if (identity == null) {
+            throw new IllegalArgumentException("room change requires identity");
+        }
+        RoomRegion current = findRoom(identity.roomId()).orElse(null);
+        if (!Objects.equals(current, before)) {
+            throw new IllegalStateException("room patch does not match current authored truth");
+        }
+        List<RoomRegion> nextRooms = new ArrayList<>();
+        for (RoomRegion room : rooms) {
+            if (room.roomId() == identity.roomId()) {
+                if (after != null) {
+                    nextRooms.add(after);
+                }
+            } else {
+                nextRooms.add(room);
+            }
+        }
+        if (before == null && after != null) {
+            nextRooms.add(after);
+        }
+        return new RoomCatalog(nextRooms);
+    }
+
+    public List<RoomRegion> roomsInCluster(long clusterId) {
+        List<RoomRegion> result = new ArrayList<>();
+        for (RoomRegion room : rooms) {
             if (room != null && room.clusterId() == clusterId) {
                 result.add(room);
             }
@@ -40,28 +70,18 @@ public record RoomCatalog(
         return List.copyOf(result);
     }
 
-    public Map<Long, List<DungeonRoom>> roomsByCluster() {
-        Map<Long, List<DungeonRoom>> result = new LinkedHashMap<>();
-        for (DungeonRoom room : rooms) {
+    public Map<Long, List<RoomRegion>> roomsByCluster() {
+        Map<Long, List<RoomRegion>> result = new LinkedHashMap<>();
+        for (RoomRegion room : rooms) {
             if (room != null) {
                 result.computeIfAbsent(room.clusterId(), unused -> new ArrayList<>()).add(room);
             }
         }
-        Map<Long, List<DungeonRoom>> copied = new LinkedHashMap<>();
-        for (Map.Entry<Long, List<DungeonRoom>> entry : result.entrySet()) {
+        Map<Long, List<RoomRegion>> copied = new LinkedHashMap<>();
+        for (Map.Entry<Long, List<RoomRegion>> entry : result.entrySet()) {
             copied.put(entry.getKey(), List.copyOf(entry.getValue()));
         }
         return Map.copyOf(copied);
-    }
-
-    public long nextRoomId() {
-        long result = 0L;
-        for (DungeonRoom room : rooms) {
-            if (room != null && room.roomId() > result) {
-                result = room.roomId();
-            }
-        }
-        return result + 1L;
     }
 
 }

@@ -1,53 +1,64 @@
 package features.encounter.adapter.javafx.state;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.Statement;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import javafx.application.Platform;
-import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.control.Labeled;
-import javafx.scene.control.ScrollPane;
-import shell.api.InspectorEntrySpec;
-import shell.api.InspectorSink;
-import shell.api.ShellBinding;
-import shell.api.ShellSlot;
-import features.creatures.adapter.sqlite.model.CreaturesPersistenceSchema;
 import features.creatures.CreaturesServiceAssembly;
+import features.creatures.adapter.sqlite.model.CreaturesPersistenceSchema;
 import features.creatures.domain.catalog.CreatureCatalogData;
 import features.creatures.domain.catalog.CreatureCatalogData.CreatureProfile;
 import features.creatures.domain.catalog.port.CreatureCatalogPort;
-import features.encounter.application.EncounterApplicationService;
 import features.encounter.EncounterServiceAssembly;
+import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
+import features.encounter.api.ApplyEncounterStateCommand;
+import features.encounter.api.EncounterPoolFilters;
+import features.encounter.api.EncounterTuningSettings;
+import features.encounter.api.OpenSavedEncounterPlanCommand;
+import features.encounter.api.OpenSavedEncounterPlanResult;
+import features.encounter.api.UpdateEncounterPoolFiltersCommand;
+import features.encounter.api.UpdateEncounterTuningCommand;
 import features.encounter.domain.plan.EncounterPlan;
 import features.encounter.domain.plan.EncounterPlanCreature;
 import features.encounter.domain.plan.repository.EncounterPlanRepository;
-import features.encounter.api.ApplyEncounterStateCommand;
+import features.encountertable.EncounterTableServiceAssembly;
 import features.encountertable.domain.catalog.EncounterTableCandidateData;
 import features.encountertable.domain.catalog.EncounterTableSummaryData;
 import features.encountertable.domain.catalog.port.EncounterTableCatalogPort;
-import features.party.api.PartyApi;
 import features.party.PartyServiceAssembly;
-import features.encountertable.EncounterTableServiceAssembly;
-import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
 import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
 import features.party.api.CalculateAdventuringDayCommand;
 import features.party.api.CharacterDraft;
 import features.party.api.CreateCharacterCommand;
 import features.party.api.MembershipState;
+import features.party.api.PartyApi;
+
+import javafx.application.Platform;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.control.Labeled;
+import javafx.scene.control.ScrollPane;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import platform.persistence.TestFeatureStores;
+
+import shell.api.InspectorEntrySpec;
+import shell.api.InspectorSink;
+import shell.api.ShellBinding;
+import shell.api.ShellSlot;
+
+import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @org.junit.jupiter.api.Tag("ui")
 public final class EncounterStateTabTest {
@@ -75,6 +86,70 @@ public final class EncounterStateTabTest {
     @Test
     void ENCOUNTER_STATE_TAB_002() throws Exception {
         runOnFxThread(EncounterStateTabTest::assertSavedEncounterReadbackRendersInStateTab);
+    }
+
+    @Test
+    void ENCOUNTER_STATE_TAB_003_hostsCollapsibleTuning() throws Exception {
+        runOnFxThread(() -> {
+            EncounterStateView view = encounterStateView(TestRuntime.create().contribution().bind());
+            assertTextPresent(view, "Encounter abstimmen", "Encounter tuning title");
+        });
+    }
+
+    @Test
+    void savedCatalogOpenRequiresDiscardConfirmationForUnsavedRoster() {
+        TestRuntime runtime = TestRuntime.create();
+        runtime.encounter.application().applyState(ApplyEncounterStateCommand.addCreature(GOBLIN_ID));
+
+        OpenSavedEncounterPlanResult guarded = runtime.encounter.application()
+                .openSavedPlan(new OpenSavedEncounterPlanCommand(runtime.planId, false))
+                .toCompletableFuture()
+                .join();
+        org.junit.jupiter.api.Assertions.assertEquals(
+                OpenSavedEncounterPlanResult.Status.CONFIRMATION_REQUIRED,
+                guarded.status());
+
+        OpenSavedEncounterPlanResult opened = runtime.encounter.application()
+                .openSavedPlan(new OpenSavedEncounterPlanCommand(runtime.planId, true))
+                .toCompletableFuture()
+                .join();
+        org.junit.jupiter.api.Assertions.assertEquals(OpenSavedEncounterPlanResult.Status.OPENED, opened.status());
+    }
+
+    @Test
+    void savedCatalogOpenRequiresDiscardConfirmationAfterLastRosterEntryWasRemoved() {
+        TestRuntime runtime = TestRuntime.create();
+        OpenSavedEncounterPlanResult opened = runtime.encounter.application()
+                .openSavedPlan(new OpenSavedEncounterPlanCommand(runtime.planId, true))
+                .toCompletableFuture()
+                .join();
+        org.junit.jupiter.api.Assertions.assertEquals(OpenSavedEncounterPlanResult.Status.OPENED, opened.status());
+
+        runtime.encounter.application().applyState(ApplyEncounterStateCommand.removeCreature(GOBLIN_ID));
+        OpenSavedEncounterPlanResult guarded = runtime.encounter.application()
+                .openSavedPlan(new OpenSavedEncounterPlanCommand(runtime.planId, false))
+                .toCompletableFuture()
+                .join();
+
+        org.junit.jupiter.api.Assertions.assertEquals(
+                OpenSavedEncounterPlanResult.Status.CONFIRMATION_REQUIRED,
+                guarded.status());
+    }
+
+    @Test
+    void poolAndTuningUpdatesMergeWithoutOverwritingEachOther() {
+        TestRuntime runtime = TestRuntime.create();
+        runtime.encounter.application().updatePoolFilters(new UpdateEncounterPoolFiltersCommand(
+                new EncounterPoolFilters("goblin", "1/4", "2", List.of("Small"), List.of("Humanoid"),
+                        List.of(), List.of("Forest"), List.of("Neutral Evil"), List.of(), List.of(), 0L)));
+        runtime.encounter.application().updateTuning(new UpdateEncounterTuningCommand(
+                new EncounterTuningSettings(false, 4, false, 5, false, 2.5, false, 2)));
+
+        var inputs = runtime.encounter.builderInputs().current();
+        org.junit.jupiter.api.Assertions.assertEquals("goblin", inputs.nameQuery());
+        org.junit.jupiter.api.Assertions.assertEquals(List.of("Small"), inputs.sizes());
+        org.junit.jupiter.api.Assertions.assertEquals(4, inputs.difficultyLevel());
+        org.junit.jupiter.api.Assertions.assertEquals(2.5, inputs.amountValue());
     }
 
     private static void assertEncounterStateTabOpensThroughShellBinding() {
@@ -202,14 +277,18 @@ public final class EncounterStateTabTest {
 
         static TestRuntime create() {
             PartyServiceAssembly.Component party =
-                    PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+                    PartyServiceAssembly.create(new SqlitePartyRosterRepository(
+                                    TestFeatureStores.current().store(
+                                            SqlitePartyRosterRepository.storeDefinition())));
             seedParty(party.application());
             seedCreatureCatalogPersistence();
             CreaturesServiceAssembly.Component creatures =
                     CreaturesServiceAssembly.create(new FixtureCreatureCatalogPort());
             EncounterTableServiceAssembly.Component tables =
                     EncounterTableServiceAssembly.create(new EmptyEncounterTableCatalogPort());
-            SqliteEncounterPlanRepository plans = new SqliteEncounterPlanRepository();
+            SqliteEncounterPlanRepository plans = new SqliteEncounterPlanRepository(
+                            TestFeatureStores.current().store(
+                                    SqliteEncounterPlanRepository.storeDefinition()));
             EncounterServiceAssembly.Component encounter = EncounterServiceAssembly.create(
                     creatures.application(), creatures.detail(), creatures.encounterCandidates(),
                     tables.application(), tables.candidates(), null,
@@ -225,8 +304,8 @@ public final class EncounterStateTabTest {
 
         EncounterStateContribution contribution() {
             return new EncounterStateContribution(
-                    creatures.detail(), creatures.application(), encounter.state(), encounter.application(),
-                    null, new NoopInspectorSink());
+                    creatures.application(), encounter.state(), encounter.application(),
+                    encounter.builderInputs(), null, ignored -> { });
         }
 
         private static void seedParty(PartyApi party) {
@@ -371,6 +450,18 @@ public final class EncounterStateTabTest {
                     .filter(profile -> profile.xp() >= spec.minimumXp() && profile.xp() <= spec.maximumXp())
                     .map(FixtureCreatureCatalogPort::candidate)
                     .limit(Math.max(0, spec.limit()))
+                    .toList();
+        }
+
+        @Override
+        public List<CreatureCatalogData.EncounterCandidateProfile> loadCreatureFacts(
+                CreatureCatalogData.CreatureFactsSpec spec
+        ) {
+            return PROFILES.values().stream()
+                    .filter(profile -> spec.mode() == CreatureCatalogData.CreatureFactsSpec.FactsMode.CREATURE_IDS
+                            ? spec.values().contains(Long.valueOf(profile.id()))
+                            : spec.values().contains(Long.valueOf(profile.xp())))
+                    .map(FixtureCreatureCatalogPort::candidate)
                     .toList();
         }
 

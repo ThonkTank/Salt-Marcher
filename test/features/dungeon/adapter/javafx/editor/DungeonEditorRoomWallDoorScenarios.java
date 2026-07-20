@@ -17,13 +17,14 @@ import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonTopologyElementRef;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonMapSummary;
 import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.api.DungeonTopologyElementRef;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreviewRenderDiffFrame;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
 import features.dungeon.adapter.javafx.map.DungeonMapView;
 import javafx.event.ActionEvent;
@@ -545,7 +546,7 @@ final class DungeonEditorRoomWallDoorScenarios {
                         new Cell(11, 9, 0),
                         new Cell(12, 9, 0)),
                 "DE-WALLRUN-DOOR-001 preview map moves the embedded door with the wall run");
-        PreviewRenderDiffFrame previewRenderDiff = PreviewRenderDiffFrame.from(previewSurface);
+        PreviewDiff previewRenderDiff = PreviewDiff.from(previewSurface);
         assertTrue(previewRenderDiff.changedBoundaries().stream()
                         .anyMatch(boundary -> "door".equalsIgnoreCase(boundary.kind())
                                 && sameEdge(boundary.edge(), new Cell(11, 9, 0), new Cell(12, 9, 0))),
@@ -919,8 +920,8 @@ final class DungeonEditorRoomWallDoorScenarios {
         RoomClusterIds roomIds = runtime.database().roomByName(mapId, "R1");
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
         List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
-        assertEquals(roomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 2, 2, 0),
-                "DE-SEL-009 starts with R1 cluster centered at (2,2,0)");
+        assertEquals(roomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 1, 1, 0),
+                "DE-SEL-009 starts with R1 derived cluster anchor at (1,1,0)");
         assertEquals(roomIds, runtime.database().roomByComponent(mapId, 2, 2, 0),
                 "DE-SEL-009 starts with R1 component at (2,2,0)");
         assertEquals(cellRect(1, 1, 3, 3, 0), persistedClusterCellsThroughRepository(mapId, roomIds.clusterId(), 0),
@@ -988,8 +989,8 @@ final class DungeonEditorRoomWallDoorScenarios {
                 "DE-SEL-009 drag preview leaves authored DB row count unchanged");
         assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
                 "DE-SEL-009 drag preview leaves all authored geometry stores unchanged");
-        assertEquals(roomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 2, 2, 0),
-                "DE-SEL-009 drag preview leaves persisted cluster center unchanged");
+        assertEquals(roomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 1, 1, 0),
+                "DE-SEL-009 drag preview leaves persisted derived cluster anchor unchanged");
         assertTrue(previewSurface.preview() instanceof DungeonEditorPreview.MoveHandlePreview,
                 "DE-SEL-009 publishes a move-handle preview during cluster-label drag");
         DungeonEditorPreview.MoveHandlePreview preview =
@@ -1022,12 +1023,12 @@ final class DungeonEditorRoomWallDoorScenarios {
 
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
                 "DE-SEL-009 release keeps authored DB row count stable");
-        assertEquals(roomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 4, 3, 0),
-                "DE-SEL-009 persists translated cluster center at (4,3,0)");
+        assertEquals(roomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 3, 2, 0),
+                "DE-SEL-009 persists translated derived cluster anchor at (3,2,0)");
         assertEquals(roomIds, runtime.database().roomByComponent(mapId, 4, 3, 0),
                 "DE-SEL-009 persists translated room component at (4,3,0)");
-        assertEquals(0L, runtime.database().countClustersAtCenter(mapId, 2, 2, 0),
-                "DE-SEL-009 removes old cluster-center coordinates");
+        assertEquals(0L, runtime.database().countClustersAtCenter(mapId, 1, 1, 0),
+                "DE-SEL-009 removes old derived cluster-anchor coordinates");
         assertEquals(cellRect(3, 2, 5, 4, 0), persistedClusterCellsThroughRepository(mapId, roomIds.clusterId(), 0),
                 "DE-SEL-009 persisted readback translates the whole cluster cells");
         assertEquals(Set.of("3,2,0", "6,2,0", "6,5,0", "3,5,0"),
@@ -1070,7 +1071,8 @@ final class DungeonEditorRoomWallDoorScenarios {
         Set<String> expandedCells = cellRect(1, 1, 4, 4, 0);
 
         click(button(controls, "Raum"));
-        assertEquals("ROOM_PAINT", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.ROOM),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-SEL-010 room family selects room paint tool");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         double startX = viewport.sceneToScreenX(1.5);
@@ -1311,7 +1313,8 @@ final class DungeonEditorRoomWallDoorScenarios {
         long doorRowsBefore = runtime.database().countDoorBoundariesAt(mapId, 1, 0, "EAST");
         assertEquals(0L, doorRowsBefore, "DE-DOOR-001 starts with an east wall, not a door");
         click(button(controls, "Tür"));
-        assertEquals("DOOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.DOOR),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-DOOR-001 door family selects door-create tool");
         var nearCornerTarget =
                 runtimePointerTarget(binding.mapContentModel(), 3.96, 1.20, true);
@@ -1487,7 +1490,8 @@ final class DungeonEditorRoomWallDoorScenarios {
                         new Cell(4, 3, 0)),
                 "DE-DOOR-002 unbound fixture publishes the east door boundary");
         click(button(controls, "Tür"));
-        assertEquals("DOOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.DOOR),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-DOOR-002 door family selects the door family tool");
         Point2D doorMidpoint = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
@@ -1611,7 +1615,8 @@ final class DungeonEditorRoomWallDoorScenarios {
         long mapId = createMapThroughControls(controls, runtime, "Room Preview Map");
         List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
         click(button(controls, "Raum"));
-        assertEquals("ROOM_PAINT", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.ROOM),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-PREVIEW-001 room family selects room paint tool");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
@@ -1647,7 +1652,7 @@ final class DungeonEditorRoomWallDoorScenarios {
                 "DE-PREVIEW-001 publishes a preview map before release");
         assertEquals(cellRect(1, 1, 3, 3, 0), mapSnapshotCellSet(previewSurface.surface().previewMap()),
                 "DE-PREVIEW-001 preview map contains the painted room cells");
-        PreviewRenderDiffFrame previewRenderDiff = PreviewRenderDiffFrame.from(previewSurface);
+        PreviewDiff previewRenderDiff = PreviewDiff.from(previewSurface);
         assertEquals(1L, (long) previewRenderDiff.changedAreas().size(),
                 "DE-PREVIEW-001 structured preview diff publishes one changed room area");
         assertEquals(cellRect(1, 1, 3, 3, 0),
@@ -1687,7 +1692,8 @@ final class DungeonEditorRoomWallDoorScenarios {
         Set<String> expectedCells = cellRect(1, 1, 3, 3, 0);
 
         click(button(controls, "Raum"));
-        assertEquals("ROOM_PAINT", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.ROOM),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-ROOM-001 room family selects room paint tool");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         double startX = viewport.sceneToScreenX(1.5);
@@ -1765,7 +1771,8 @@ final class DungeonEditorRoomWallDoorScenarios {
         boundingBoxOnlyCells.removeAll(expectedUnionCells);
 
         click(button(controls, "Raum"));
-        assertEquals("ROOM_PAINT", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.ROOM),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-ROOM-002 room family selects room paint tool");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         fireMapMouse(mapView, MouseEvent.MOUSE_PRESSED, MouseButton.PRIMARY,
@@ -1846,7 +1853,8 @@ final class DungeonEditorRoomWallDoorScenarios {
                 "DE-ROOM-005 fixture starts with persisted R2 narration");
 
         click(button(controls, "Raum"));
-        assertEquals("ROOM_PAINT", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.ROOM),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-ROOM-005 room family selects room paint tool");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         fireMapMouse(
@@ -1940,7 +1948,8 @@ final class DungeonEditorRoomWallDoorScenarios {
                 "DE-ROOM-003 initial published R1 cells match F1_SINGLE_ROOM");
 
         click(button(controls, "Raum"));
-        assertEquals("ROOM_PAINT", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.ROOM),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-ROOM-003 room family selects room paint tool");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         double startX = viewport.sceneToScreenX(4.5);
@@ -2033,7 +2042,8 @@ final class DungeonEditorRoomWallDoorScenarios {
                 "DE-ROOM-004 starts with selected R1 cluster before delete");
 
         click(button(controls, "Raum"));
-        assertEquals("ROOM_PAINT", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.ROOM),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-ROOM-004 room family keeps paint as primary selected tool");
         fireMapMouse(
                 mapView,
@@ -2102,7 +2112,8 @@ final class DungeonEditorRoomWallDoorScenarios {
         List<String> boundaryStateBefore = runtime.database().roomBoundaryEdgeState(mapId);
 
         click(button(controls, "Wand"));
-        assertEquals("WALL_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.WALL),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-WALL-001 wall family selects the create tool through DungeonEditorControlsView");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         fireMapMouse(
@@ -2406,7 +2417,8 @@ final class DungeonEditorRoomWallDoorScenarios {
         List<String> boundaryStateBefore = runtime.database().roomBoundaryEdgeState(mapId);
 
         click(button(controls, "Wand"));
-        assertEquals("WALL_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.WALL),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-WALL-011 wall family keeps path mode as the default wall-create tool");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         fireMapMouseWithControl(
@@ -2653,6 +2665,11 @@ final class DungeonEditorRoomWallDoorScenarios {
                 "DE-WALL-014 exterior delete rejection leaves rendered geometry unchanged");
         assertTrue(runtime.controlsModel().current().statusText().contains("Aussenwand"),
                 "DE-WALL-014 exterior delete rejection publishes a concrete status");
+        assertEquals(
+                features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.PROTECTED_EXTERIOR_WALL,
+                ((features.dungeon.api.editor.DungeonEditorCommandOutcome.Rejected)
+                        runtime.controlsModel().current().commandOutcome()).reason(),
+                "DE-WALL-014 publishes typed exterior-wall rejection");
         assertEquals(0L, rejectionMapSurfacePublications.get(),
                 "DE-WALL-014 exterior delete rejection does not publish map surface");
         assertEquals(0L, rejectionStatePublications.get(),
@@ -2783,7 +2800,7 @@ final class DungeonEditorRoomWallDoorScenarios {
         DungeonEditorMapSurfaceSnapshot canceledSurface = runtime.mapSurfaceModel().current();
         assertEquals(DungeonEditorPreview.none(), canceledSurface.preview(),
                 "DE-PREVIEW-002 Esc cancel clears the preview");
-        assertEquals("SELECT", canceledSurface.selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.select(), canceledSurface.toolSelection(),
                 "DE-PREVIEW-002 Esc cancel returns selected tool to Auswahl");
         assertTrue(canceledSurface.surface().map().areas().isEmpty(),
                 "DE-PREVIEW-002 committed published map remains empty after cancel");
@@ -2800,7 +2817,7 @@ final class DungeonEditorRoomWallDoorScenarios {
         DungeonEditorMapSurfaceSnapshot releasedSurface = runtime.mapSurfaceModel().current();
         assertEquals(DungeonEditorPreview.none(), releasedSurface.preview(),
                 "DE-PREVIEW-002 post-Esc release keeps preview cleared");
-        assertEquals("SELECT", releasedSurface.selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.select(), releasedSurface.toolSelection(),
                 "DE-PREVIEW-002 post-Esc release keeps selected tool on Auswahl");
         assertTrue(releasedSurface.surface().map().areas().isEmpty(),
                 "DE-PREVIEW-002 committed published map remains empty after post-Esc release");

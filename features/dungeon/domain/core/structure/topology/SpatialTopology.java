@@ -1,8 +1,10 @@
 package features.dungeon.domain.core.structure.topology;
 
 import java.util.List;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.DungeonTopology;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 
 /**
  * Minimal authored spatial truth for the current dungeon parity foundation.
@@ -17,10 +19,8 @@ public record SpatialTopology(
         int height,
         int roomAnchorQ,
         int roomAnchorR,
-        List<DungeonRoomCluster> roomClusters
+        List<RoomCluster> roomClusters
 ) {
-    private static final long NO_CLUSTER_ID = 0L;
-
     public SpatialTopology(
             DungeonTopology topology,
             int width,
@@ -48,26 +48,44 @@ public record SpatialTopology(
         return new SpatialTopology(DungeonTopology.SQUARE, 10, 8, 2, 2);
     }
 
-    public SpatialTopology withRoomClusters(List<DungeonRoomCluster> clusters) {
+    public SpatialTopology withRoomClusters(List<RoomCluster> clusters) {
         return new SpatialTopology(topology, width, height, roomAnchorQ, roomAnchorR, clusters);
     }
 
-    public SpatialTopology withRoomClusterName(long clusterId, String name) {
-        if (clusterId <= NO_CLUSTER_ID) {
-            return this;
-        }
-        List<DungeonRoomCluster> nextClusters = new java.util.ArrayList<>();
-        boolean changed = false;
-        for (DungeonRoomCluster cluster : roomClusters) {
+    public @Nullable RoomCluster roomCluster(long clusterId) {
+        for (RoomCluster cluster : roomClusters) {
             if (cluster.clusterId() == clusterId) {
-                DungeonRoomCluster renamed = cluster.withName(name);
-                nextClusters.add(renamed);
-                changed = changed || !renamed.equals(cluster);
+                return cluster;
+            }
+        }
+        return null;
+    }
+
+    public SpatialTopology withExactRoomClusterChange(
+            @Nullable RoomCluster before,
+            @Nullable RoomCluster after
+    ) {
+        RoomCluster identity = after == null ? before : after;
+        if (identity == null) {
+            throw new IllegalArgumentException("room cluster change requires identity");
+        }
+        if (!Objects.equals(roomCluster(identity.clusterId()), before)) {
+            throw new IllegalStateException("room cluster patch does not match current authored truth");
+        }
+        List<RoomCluster> nextClusters = new java.util.ArrayList<>();
+        for (RoomCluster cluster : roomClusters) {
+            if (cluster.clusterId() == identity.clusterId()) {
+                if (after != null) {
+                    nextClusters.add(after);
+                }
             } else {
                 nextClusters.add(cluster);
             }
         }
-        return changed ? withRoomClusters(nextClusters) : this;
+        if (before == null && after != null) {
+            nextClusters.add(after);
+        }
+        return withRoomClusters(nextClusters);
     }
 
     public boolean hasAuthoredRooms() {

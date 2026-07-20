@@ -12,8 +12,10 @@ import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.api.DungeonTravelActionKind;
 import features.dungeon.api.DungeonTravelActionSnapshot;
 import features.dungeon.api.DungeonTravelContextKind;
+import features.dungeon.api.DungeonTravelContextSnapshot;
 import features.dungeon.api.DungeonTravelHeading;
 import features.dungeon.api.DungeonTravelLocationKind;
+import features.dungeon.api.DungeonTravelMoveOutcome;
 import features.dungeon.api.DungeonTravelPosition;
 import features.dungeon.api.DungeonTravelSurfaceSnapshot;
 import features.dungeon.api.TravelDungeonAction;
@@ -25,16 +27,87 @@ final class DungeonTravelPublishedProjection {
     private DungeonTravelPublishedProjection() {
     }
 
-    static TravelDungeonSnapshot snapshot(TravelDungeonSessionSnapshot.SnapshotData snapshot) {
+    static TravelDungeonSnapshot snapshot(
+            TravelDungeonSessionSnapshot.SnapshotData snapshot,
+            DungeonTravelMoveOutcome moveOutcome,
+            long partyPositionRevision
+    ) {
         if (snapshot == null) {
             return TravelDungeonSnapshot.empty();
         }
         SurfaceData surface = snapshot.surface();
         return new TravelDungeonSnapshot(
                 workspaceState(surface),
-                surfaceSnapshot(surface),
+                surfaceSnapshot(surface, partyPositionRevision),
                 overlaySettings(snapshot.overlayState()),
-                snapshot.projectionLevel());
+                snapshot.projectionLevel(),
+                moveOutcome);
+    }
+
+    static DungeonTravelContextSnapshot context(
+            TravelDungeonSnapshot detailed,
+            long sourceRevision,
+            long partyPositionRevision
+    ) {
+        DungeonTravelSurfaceSnapshot surface = detailed == null ? null : detailed.travelSurface();
+        if (surface == null || surface.contextKind() != DungeonTravelContextKind.DUNGEON) {
+            return DungeonTravelContextSnapshot.empty(sourceRevision, partyPositionRevision);
+        }
+        DungeonTravelMoveOutcome outcome = detailed.moveOutcome();
+        return new DungeonTravelContextSnapshot(
+                sourceRevision,
+                partyPositionRevision,
+                true,
+                surface.position().mapId().value(),
+                surface.revision(),
+                surface.mapName(),
+                surface.areaLabel(),
+                surface.tileLabel(),
+                surface.headingLabel(),
+                contextStatus(surface, outcome),
+                contextHint(surface, outcome));
+    }
+
+    private static String contextStatus(
+            DungeonTravelSurfaceSnapshot surface,
+            DungeonTravelMoveOutcome outcome
+    ) {
+        return switch (outcome.status()) {
+            case MOVING -> "Bewegung laeuft";
+            case ACCEPTED -> "Bewegung abgeschlossen";
+            case REJECTED -> "Bewegung blockiert";
+            case IDLE -> surface.statusLabel();
+        };
+    }
+
+    private static String contextHint(
+            DungeonTravelSurfaceSnapshot surface,
+            DungeonTravelMoveOutcome outcome
+    ) {
+        return switch (outcome.status()) {
+            case MOVING -> "Dungeon-Bewegung wird aufgeloest.";
+            case ACCEPTED -> surface.visualDescription().isBlank()
+                    ? "Dungeon-Position aktualisiert."
+                    : surface.visualDescription();
+            case REJECTED -> rejectionHint(outcome.rejectionReason());
+            case IDLE -> surface.visualDescription().isBlank()
+                    ? "Dungeon-Reise im Reisearbeitsbereich steuern."
+                    : surface.visualDescription();
+        };
+    }
+
+    private static String rejectionHint(features.dungeon.api.DungeonTravelRejectionReason reason) {
+        return switch (reason) {
+            case OFF_WINDOW -> "Zielfeld liegt ausserhalb des geladenen Bereichs.";
+            case NON_TRAVERSABLE -> "Zielfeld ist nicht begehbar.";
+            case UNREACHABLE -> "Zielfeld ist nicht erreichbar.";
+            case STALE_PARTY_POSITION -> "Reiseposition wurde zwischenzeitlich aktualisiert.";
+            case PARTY_REJECTED -> "Party-Bewegung wurde abgelehnt.";
+            case PARTY_STORAGE_FAILURE, PARTY_FAILURE -> "Party-Bewegung konnte nicht gespeichert werden.";
+            case ACTION_UNAVAILABLE, TRANSITION_UNAVAILABLE -> "Reiseaktion ist nicht mehr verfuegbar.";
+            case AUTHORED_UNAVAILABLE -> "Dungeon-Daten sind nicht verfuegbar.";
+            case INVALID_INPUT, NO_ACTIVE_POSITION, NONE -> "Dungeon-Bewegung ist nicht verfuegbar.";
+        };
     }
 
     private static DungeonOverlaySettings overlaySettings(OverlayState overlayState) {
@@ -60,12 +133,17 @@ final class DungeonTravelPublishedProjection {
                 surface.actions().stream().map(DungeonTravelPublishedProjection::workspaceAction).toList());
     }
 
-    private static DungeonTravelSurfaceSnapshot surfaceSnapshot(SurfaceData surface) {
+    private static DungeonTravelSurfaceSnapshot surfaceSnapshot(
+            SurfaceData surface,
+            long partyPositionRevision
+    ) {
         if (surface == null) {
             return null;
         }
         return new DungeonTravelSurfaceSnapshot(
-                DungeonTravelContextKind.valueOf(surface.contextKind().name()),
+                surface.contextKind().isOverworld()
+                        ? DungeonTravelContextKind.OVERWORLD
+                        : DungeonTravelContextKind.DUNGEON,
                 surface.mapName(),
                 surface.revision(),
                 mapSnapshot(surface.map()),
@@ -76,7 +154,8 @@ final class DungeonTravelPublishedProjection {
                 surface.headingLabel(),
                 surface.statusLabel(),
                 surface.visualDescription(),
-                surface.actions().stream().map(DungeonTravelPublishedProjection::surfaceAction).toList());
+                surface.actions().stream().map(DungeonTravelPublishedProjection::surfaceAction).toList(),
+                partyPositionRevision);
     }
 
     private static DungeonTravelPosition travelPosition(PositionData position) {
@@ -90,15 +169,18 @@ final class DungeonTravelPublishedProjection {
         }
         return new DungeonTravelPosition(
                 new DungeonMapId(position.mapId()),
-                DungeonTravelLocationKind.valueOf(position.locationKind().name()),
+                publishedLocationKind(position.locationKind()),
                 position.ownerId(),
                 cell(position.tile()),
-                DungeonTravelHeading.valueOf(position.heading().name()));
+                publishedHeading(position.heading()));
     }
 
     private static DungeonTravelActionSnapshot surfaceAction(AvailableAction action) {
         return new DungeonTravelActionSnapshot(
-                DungeonTravelActionKind.valueOf(action.kind().name()),
+                action.actionId(),
+                action.kind() == features.dungeon.application.travel.projection.TravelActionKind.TRANSITION
+                        ? DungeonTravelActionKind.TRANSITION
+                        : DungeonTravelActionKind.TRAVERSAL,
                 action.label(),
                 action.destinationLabel(),
                 action.helpText());
@@ -106,6 +188,7 @@ final class DungeonTravelPublishedProjection {
 
     private static TravelDungeonAction workspaceAction(AvailableAction action) {
         return new TravelDungeonAction(
+                action.actionId(),
                 action.displayLabel(),
                 action.helpText());
     }
@@ -113,7 +196,9 @@ final class DungeonTravelPublishedProjection {
     private static features.dungeon.api.DungeonMapSnapshot mapSnapshot(MapData map) {
         MapData safeMap = map == null ? MapData.empty() : map;
         return new features.dungeon.api.DungeonMapSnapshot(
-                features.dungeon.api.DungeonTopologyKind.valueOf(safeMap.topology().name()),
+                safeMap.topology() == features.dungeon.application.travel.session.TravelDungeonSessionSurface.TopologyKind.HEX
+                        ? features.dungeon.api.DungeonTopologyKind.HEX
+                        : features.dungeon.api.DungeonTopologyKind.SQUARE,
                 safeMap.width(),
                 safeMap.height(),
                 safeMap.areas().stream().map(DungeonTravelPublishedProjection::area).toList(),
@@ -135,7 +220,9 @@ final class DungeonTravelPublishedProjection {
             features.dungeon.application.travel.session.TravelDungeonSessionSurface.AreaData area
     ) {
         return new features.dungeon.api.DungeonAreaSnapshot(
-                features.dungeon.api.DungeonAreaKind.valueOf(area.kind().name()),
+                area.kind() == features.dungeon.application.travel.session.TravelDungeonSessionSurface.AreaKind.CORRIDOR
+                        ? features.dungeon.api.DungeonAreaKind.CORRIDOR
+                        : features.dungeon.api.DungeonAreaKind.ROOM,
                 area.id(),
                 0L,
                 area.label(),
@@ -158,7 +245,9 @@ final class DungeonTravelPublishedProjection {
             features.dungeon.application.travel.session.TravelDungeonSessionSurface.FeatureData feature
     ) {
         return new features.dungeon.api.DungeonFeatureSnapshot(
-                features.dungeon.api.DungeonFeatureKind.valueOf(feature.kind().name()),
+                feature.kind() == features.dungeon.application.travel.session.TravelDungeonSessionSurface.FeatureKind.TRANSITION
+                        ? features.dungeon.api.DungeonFeatureKind.TRANSITION
+                        : features.dungeon.api.DungeonFeatureKind.STAIR,
                 feature.id(),
                 feature.label(),
                 feature.cells().stream().map(DungeonTravelPublishedProjection::cell).toList(),
@@ -193,10 +282,52 @@ final class DungeonTravelPublishedProjection {
     private static features.dungeon.api.DungeonTopologyElementKind publishedTopologyKind(
             features.dungeon.domain.core.graph.DungeonTopologyRef ref
     ) {
-        try {
-            return features.dungeon.api.DungeonTopologyElementKind.valueOf(ref.kind().name());
-        } catch (IllegalArgumentException exception) {
-            return features.dungeon.api.DungeonTopologyElementKind.EMPTY;
+        var kind = ref.kind();
+        if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.ROOM) {
+            return features.dungeon.api.DungeonTopologyElementKind.ROOM;
         }
+        if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.CORRIDOR) {
+            return features.dungeon.api.DungeonTopologyElementKind.CORRIDOR;
+        }
+        if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.CORRIDOR_ANCHOR) {
+            return features.dungeon.api.DungeonTopologyElementKind.CORRIDOR_ANCHOR;
+        }
+        if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.DOOR) {
+            return features.dungeon.api.DungeonTopologyElementKind.DOOR;
+        }
+        if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.WALL) {
+            return features.dungeon.api.DungeonTopologyElementKind.WALL;
+        }
+        if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.STAIR) {
+            return features.dungeon.api.DungeonTopologyElementKind.STAIR;
+        }
+        if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.TRANSITION) {
+            return features.dungeon.api.DungeonTopologyElementKind.TRANSITION;
+        }
+        if (kind == features.dungeon.domain.core.graph.DungeonTopologyElementKind.FEATURE_MARKER) {
+            return features.dungeon.api.DungeonTopologyElementKind.FEATURE_MARKER;
+        }
+        return features.dungeon.api.DungeonTopologyElementKind.EMPTY;
+    }
+
+    private static DungeonTravelLocationKind publishedLocationKind(
+            features.dungeon.application.travel.session.TravelDungeonSessionSurface.LocationKind kind
+    ) {
+        return switch (kind) {
+            case TILE -> DungeonTravelLocationKind.TILE;
+            case STAIR_EXIT -> DungeonTravelLocationKind.STAIR_EXIT;
+            case TRANSITION -> DungeonTravelLocationKind.TRANSITION;
+        };
+    }
+
+    private static DungeonTravelHeading publishedHeading(
+            features.dungeon.application.travel.projection.TravelHeading heading
+    ) {
+        return switch (heading) {
+            case NORTH -> DungeonTravelHeading.NORTH;
+            case EAST -> DungeonTravelHeading.EAST;
+            case SOUTH -> DungeonTravelHeading.SOUTH;
+            case WEST -> DungeonTravelHeading.WEST;
+        };
     }
 }

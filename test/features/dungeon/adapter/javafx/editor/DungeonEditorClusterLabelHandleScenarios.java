@@ -17,11 +17,10 @@ import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorMapSnapshot;
 import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonEditorStateSnapshot;
-import features.dungeon.adapter.javafx.editor.DungeonEditorFeatureShellBinding;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreviewRenderDiffFrame;
 import features.dungeon.application.editor.DungeonEditorRuntimeLabelTarget;
-import features.dungeon.application.editor.DungeonEditorRuntimeOperations;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
 import features.dungeon.adapter.javafx.map.DungeonMapView;
 import static features.dungeon.adapter.javafx.editor.DungeonEditorTestSupport.*;
@@ -156,6 +155,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
         DungeonEditorMapSurfaceSnapshot initial = runtime.mapSurfaceModel().current();
         DungeonEditorHandleSnapshot clusterLabel = singleClusterLabel(initial, "DE-LABEL-005");
         long clusterId = clusterLabel.ref().clusterId();
+        String initialClusterName = runtime.database().clusterName(clusterId);
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
         List<String> boundaryRowsBefore = runtime.database().roomBoundaryEdgeState(mapId);
         double labelQ = clusterLabel.cell().q() + 0.5;
@@ -172,7 +172,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 "DE-LABEL-005 state panel draft is projected through a fresh runtime publication");
         assertEquals("   West Wing   ", republishedClusterName.getText(),
                 "DE-LABEL-005 state panel publishes unsaved cluster name draft before save");
-        assertEquals("", runtime.database().clusterName(clusterId),
+        assertEquals(initialClusterName, runtime.database().clusterName(clusterId),
                 "DE-LABEL-005 unsaved cluster name draft does not persist before save");
         click(buttonWithAccessibleText(binding.stateView(), "Cluster-Name speichern"));
         assertEquals("West Wing", runtime.database().clusterName(clusterId),
@@ -227,18 +227,28 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 roomLabelCenter,
                 "DE-LABEL-010 passive room label hover");
         assertRoomLabelHitAndEditorPresentation(binding, runtime, roomIds, roomLabelCenter, roomLabelText);
-        DungeonEditorRuntimeOperations operations =
-                new DungeonEditorFeatureShellBinding(runtime.editorDependencies()).operations();
-        operations.catalog().selectMap(roomMapId);
-        operations.transitionStairs().saveLabelName(
-                DungeonEditorRuntimeLabelTarget.room(roomIds.roomId()),
-                "   Lantern Room   ");
+        var editorApi = runtime.editorApi();
+        editorApi.dispatch(new features.dungeon.api.editor.DungeonEditorIntent.SelectMap(
+                new features.dungeon.api.DungeonMapId(roomMapId)));
+        editorApi.dispatch(new features.dungeon.api.editor.DungeonEditorIntent.CommitLabelName(
+                new features.dungeon.api.editor.DungeonEditorIntent.LabelTarget(
+                        features.dungeon.api.editor.DungeonEditorIntent.LabelTargetKind.ROOM,
+                        roomIds.roomId()),
+                "   Lantern Room   "));
         assertEquals("Lantern Room", runtime.database().roomName(roomIds.roomId()),
                 "DE-LABEL-006 shared label-name operation trims and saves custom room label");
         assertEquals(roomGeometryRowsBefore, runtime.database().countAuthoredGeometryRows(roomMapId),
                 "DE-LABEL-006 room rename leaves authored geometry row count unchanged");
         assertEquals(roomBoundaryRowsBefore, runtime.database().roomBoundaryEdgeState(roomMapId),
                 "DE-LABEL-006 room rename leaves boundary geometry unchanged");
+        assertEquals("Lantern Room", editorApi.current().selectedWindow().map().areas().stream()
+                        .filter(area -> area.id() == roomIds.roomId())
+                        .map(features.dungeon.api.DungeonEditorMapSnapshot.Area::label)
+                        .findFirst()
+                        .orElse("missing"),
+                "DE-LABEL-006 atomic editor state updates custom room label");
+        assertEquals(editorApi.current().publicationRevision(), binding.mapContentModel().appliedPublicationRevision(),
+                "DE-LABEL-006 JavaFX consumer receives latest atomic publication");
         LabelCenter renamedRoomLabelCenter = labelCenter(
                 binding.mapContentModel(),
                 displayRoomLabel("Lantern Room"),
@@ -316,6 +326,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
         click(button(controls, "Auswahl"));
 
         RoomClusterIds ids = runtime.database().roomByComponent(mapId, 2, 2, 0);
+        String initialClusterName = runtime.database().clusterName(ids.clusterId());
         LabelCenter clusterLabelCenter = labelCenter(
                 binding.mapContentModel(),
                 "Cluster " + ids.clusterId(),
@@ -345,7 +356,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
         assertTrue(!inlineEditor.isVisible(), "DE-LABEL-008 Escape cancel hides inline cluster label editor");
         assertTrue(!binding.mapContentModel().currentInlineLabelEditState().active(),
                 "DE-LABEL-008 Escape cancel clears runtime inline-label projection");
-        assertEquals("", runtime.database().clusterName(ids.clusterId()),
+        assertEquals(initialClusterName, runtime.database().clusterName(ids.clusterId()),
                 "DE-LABEL-008 cancelled inline draft does not persist");
 
         doubleClickRenderedLabel(binding, clusterLabelCenter, false);
@@ -380,12 +391,15 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 "DE-LABEL-008 typed inline draft preserves collapsed selection through runtime publication");
         assertEquals("   Inline Cluster   ", binding.mapContentModel().currentInlineLabelEditState().text(),
                 "DE-LABEL-008 inline draft is projected through runtime publication before commit");
-        assertEquals("", runtime.database().clusterName(ids.clusterId()),
+        assertEquals(initialClusterName, runtime.database().clusterName(ids.clusterId()),
                 "DE-LABEL-008 unsaved inline draft does not persist before Enter commit");
+        assertEquals(ids.clusterId(), binding.mapContentModel().currentInlineLabelEditState().target().ownerId(),
+                "DE-LABEL-008 inline cluster edit retains the cluster identity before commit");
         pressInlineEditorKey(inlineEditor, KeyCode.ENTER);
         assertTrue(!inlineEditor.isVisible(), "DE-LABEL-008 Enter commit hides inline cluster label editor");
         assertEquals("Inline Cluster", runtime.database().clusterName(ids.clusterId()),
-                "DE-LABEL-008 inline cluster label edit trims and persists authored cluster name");
+                "DE-LABEL-008 inline cluster label edit trims and persists authored cluster name outcome="
+                        + runtime.stateModel().current().statusText());
         assertEquals("R1", runtime.database().roomName(ids.roomId()),
                 "DE-LABEL-008 inline cluster label edit does not mutate room name");
         assertTrue(renderHasLabelAt(binding.mapContentModel(), "Inline Cluster", clusterLabelCenter.q(), clusterLabelCenter.r()),
@@ -1078,7 +1092,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 "DE-CLUSTER-003 publishes a preview map during true-corner drag");
         assertTrue(!mapSnapshotCellSet(previewSurface.surface().previewMap()).equals(cellsBefore),
                 "DE-CLUSTER-003 preview map changes affected cluster cells before release");
-        PreviewRenderDiffFrame previewRenderDiff = PreviewRenderDiffFrame.from(previewSurface);
+        PreviewDiff previewRenderDiff = PreviewDiff.from(previewSurface);
         assertTrue(previewRenderDiff.changedHandles().stream().anyMatch(handle ->
                         handle.ref().kind() == cornerHandle.ref().kind()
                                 && handle.cell().q() == 14
@@ -1223,7 +1237,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
         assertTrue(!mapSnapshotCellSet(previewSurface.surface().previewMap())
                         .equals(mapSnapshotCellSet(previewSurface.surface().map())),
                 "DE-HANDLE-003 preview map differs from the committed cluster cells");
-        PreviewRenderDiffFrame previewRenderDiff = PreviewRenderDiffFrame.from(previewSurface);
+        PreviewDiff previewRenderDiff = PreviewDiff.from(previewSurface);
         assertTrue(previewRenderDiff.changedBoundaries().stream()
                         .map(boundary -> boundary.edge())
                         .collect(java.util.stream.Collectors.toSet())
@@ -1510,7 +1524,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                         new Cell(4, 3, 0),
                         new Cell(4, 4, 0)),
                 "DE-HANDLE-006 door drag preview map contains the moved door boundary");
-        PreviewRenderDiffFrame previewRenderDiff = PreviewRenderDiffFrame.from(previewSurface);
+        PreviewDiff previewRenderDiff = PreviewDiff.from(previewSurface);
         assertTrue(previewRenderDiff.changedBoundaries().stream()
                         .anyMatch(boundary -> "door".equalsIgnoreCase(boundary.kind())
                                 && sameEdge(boundary.edge(), new Cell(4, 3, 0), new Cell(4, 4, 0))),
@@ -1543,15 +1557,15 @@ final class DungeonEditorClusterLabelHandleScenarios {
         List<String> stableRowsAfter = runtime.database().corridorStableConnectionState(mapId);
         assertTrue(stableRowsAfter.stream().anyMatch(row ->
                         row.startsWith("dungeon_corridor_door_overrides|")
-                                && row.contains("|relative_cell_x=1|")
-                                && row.contains("|relative_cell_y=1|")
+                                && row.contains("|relative_cell_x=2|")
+                                && row.contains("|relative_cell_y=2|")
                                 && row.contains("|edge_direction=EAST|")
                                 && row.contains("|topology_element_id=" + doorHandle.ref().topologyRef().id())),
                 "DE-DOOR-004 release moves the bound corridor endpoint with the door: " + stableRowsAfter);
         assertTrue(stableRowsAfter.stream().noneMatch(row ->
                         row.startsWith("dungeon_corridor_door_overrides|")
-                                && row.contains("|relative_cell_x=1|")
-                                && row.contains("|relative_cell_y=0|")
+                                && row.contains("|relative_cell_x=2|")
+                                && row.contains("|relative_cell_y=1|")
                                 && row.contains("|edge_direction=EAST|")
                                 && row.contains("|topology_element_id=" + doorHandle.ref().topologyRef().id())),
                 "DE-DOOR-004 release leaves no stale source corridor binding: " + stableRowsAfter);
@@ -1643,7 +1657,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                         new Cell(4, 3, 0),
                         new Cell(4, 4, 0)),
                 "DE-HANDLE-006 standalone door drag preview map contains the moved door boundary");
-        PreviewRenderDiffFrame previewRenderDiff = PreviewRenderDiffFrame.from(previewSurface);
+        PreviewDiff previewRenderDiff = PreviewDiff.from(previewSurface);
         assertTrue(previewRenderDiff.changedBoundaries().stream()
                         .anyMatch(boundary -> "door".equalsIgnoreCase(boundary.kind())
                                 && sameEdge(boundary.edge(), new Cell(4, 3, 0), new Cell(4, 4, 0))),
@@ -1671,17 +1685,17 @@ final class DungeonEditorClusterLabelHandleScenarios {
 
         List<String> doorRowsAfter = runtime.database().doorBoundaryState(mapId);
         assertTrue(doorRowsAfter.stream().anyMatch(row ->
-                        row.startsWith("door_edges|cluster_id=" + doorHandle.ref().clusterId() + "|")
-                                && row.contains("|cell_x=1|")
-                                && row.contains("|cell_y=1|")
+                row.startsWith("door_edges|cluster_id=" + doorHandle.ref().clusterId() + "|")
+                                && row.contains("|cell_x=3|")
+                                && row.contains("|cell_y=3|")
                                 && row.contains("|edge_direction=EAST|")
                                 && row.contains("|edge_type=DOOR|")
                                 && row.contains("|topology_element_id=" + doorHandle.ref().topologyRef().id())),
                 "DE-DOOR-004 standalone release moves the authored door row: " + doorRowsAfter);
         assertTrue(doorRowsAfter.stream().noneMatch(row ->
-                        row.startsWith("door_edges|cluster_id=" + doorHandle.ref().clusterId() + "|")
-                                && row.contains("|cell_x=1|")
-                                && row.contains("|cell_y=0|")
+                row.startsWith("door_edges|cluster_id=" + doorHandle.ref().clusterId() + "|")
+                                && row.contains("|cell_x=3|")
+                                && row.contains("|cell_y=2|")
                                 && row.contains("|edge_direction=EAST|")
                                 && row.contains("|edge_type=DOOR|")
                                 && row.contains("|topology_element_id=" + doorHandle.ref().topologyRef().id())),
@@ -1704,8 +1718,8 @@ final class DungeonEditorClusterLabelHandleScenarios {
         List<String> reloadedDoorRows = runtime.database().doorBoundaryState(mapId);
         assertTrue(reloadedDoorRows.stream().anyMatch(row ->
                         row.startsWith("door_edges|cluster_id=" + doorHandle.ref().clusterId() + "|")
-                                && row.contains("|cell_x=1|")
-                                && row.contains("|cell_y=1|")
+                                && row.contains("|cell_x=3|")
+                                && row.contains("|cell_y=3|")
                                 && row.contains("|edge_direction=EAST|")
                                 && row.contains("|edge_type=DOOR|")
                                 && row.contains("|topology_element_id=" + doorHandle.ref().topologyRef().id())),
@@ -1765,7 +1779,8 @@ final class DungeonEditorClusterLabelHandleScenarios {
         assertTrue(!runtime.controlsModel().current().statusText().isBlank(),
                 "DE-DOOR-005 standalone invalid release publishes user-visible rejection feedback");
         assertEquals(surfaceBefore.surface().map(), rejectedSurface.surface().map(),
-                "DE-DOOR-005 standalone invalid release keeps published map unchanged");
+                "DE-DOOR-005 standalone invalid release keeps published map unchanged outcome="
+                        + runtime.controlsModel().current().commandOutcome());
         assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "DOOR", 4.0, 2.5),
                 "DE-DOOR-005 standalone invalid render keeps the source door boundary");
         assertTrue(!renderHasBoundaryNear(binding.mapContentModel(), "DOOR", 4.0, 6.5),
@@ -2097,7 +2112,8 @@ final class DungeonEditorClusterLabelHandleScenarios {
             String message
     ) {
         click(button(controls, "Raum"));
-        assertEquals("ROOM_PAINT", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.ROOM),
+                runtime.controlsModel().current().toolSelection(),
                 message + " selects room paint");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         fireMapMouse(
@@ -2248,7 +2264,10 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 .filter(label -> text.equals(label.text()))
                 .map(label -> new LabelCenter(label.centerX(), label.centerY()))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError(message + " label not rendered: " + text));
+                .orElseThrow(() -> new AssertionError(message + " label not rendered: " + text
+                        + "; rendered labels=" + mapContentModel.canvasStateProperty().get().renderScene().texts().stream()
+                                .map(label -> label.text())
+                                .toList()));
     }
 
     private static LabelText labelText(DungeonMapContentModel mapContentModel, String text, String message) {

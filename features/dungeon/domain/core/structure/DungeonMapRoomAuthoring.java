@@ -6,6 +6,7 @@ import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import features.dungeon.domain.core.structure.room.RoomClusterMovement;
 import features.dungeon.domain.core.structure.room.RoomTopologyAuthoring;
+import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;
 
 final class DungeonMapRoomAuthoring {
     private final RoomTopologyAuthoring roomAuthoring = new RoomTopologyAuthoring();
@@ -21,9 +22,11 @@ final class DungeonMapRoomAuthoring {
             Cell corner,
             int deltaQ,
             int deltaR,
-            int deltaLevel
+            int deltaLevel,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
     ) {
-        return roomAuthoring.moveClusterCorner(dungeonMap, clusterId, corner, deltaQ, deltaR, deltaLevel);
+        return roomAuthoring.moveClusterCorner(
+                dungeonMap, clusterId, corner, deltaQ, deltaR, deltaLevel, ids);
     }
 
     DungeonMap moveBoundaryStretch(
@@ -32,17 +35,29 @@ final class DungeonMapRoomAuthoring {
             List<Edge> sourceEdges,
             int deltaQ,
             int deltaR,
-            int deltaLevel
+            int deltaLevel,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
     ) {
-        return roomAuthoring.moveBoundaryStretch(dungeonMap, clusterId, sourceEdges, deltaQ, deltaR, deltaLevel);
+        return roomAuthoring.moveBoundaryStretch(
+                dungeonMap, clusterId, sourceEdges, deltaQ, deltaR, deltaLevel, ids);
     }
 
-    DungeonMap paintRoomRectangle(DungeonMap dungeonMap, Cell start, Cell end) {
-        return roomAuthoring.paintRectangle(dungeonMap, start, end);
+    DungeonMap paintRoomRectangle(
+            DungeonMap dungeonMap,
+            Cell start,
+            Cell end,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
+    ) {
+        return roomAuthoring.paintRectangle(dungeonMap, start, end, ids);
     }
 
-    DungeonMap deleteRoomRectangle(DungeonMap dungeonMap, Cell start, Cell end) {
-        return roomAuthoring.deleteRectangle(dungeonMap, start, end);
+    DungeonMap deleteRoomRectangle(
+            DungeonMap dungeonMap,
+            Cell start,
+            Cell end,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
+    ) {
+        return roomAuthoring.deleteRectangle(dungeonMap, start, end, ids);
     }
 
     DungeonMap editClusterBoundaries(
@@ -50,8 +65,10 @@ final class DungeonMapRoomAuthoring {
             long clusterId,
             List<Edge> edges,
             BoundaryKind kind,
-            boolean deleteBoundary
+            boolean deleteBoundary,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
     ) {
-        return roomAuthoring.editBoundaries(dungeonMap, clusterId, edges, kind, deleteBoundary);
+        return roomAuthoring.editBoundaries(
+                dungeonMap, clusterId, edges, kind, deleteBoundary, ids);
     }
 }

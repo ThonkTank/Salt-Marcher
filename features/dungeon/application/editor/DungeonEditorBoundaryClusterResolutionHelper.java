@@ -28,7 +28,7 @@ final class DungeonEditorBoundaryClusterResolutionHelper {
     }
 
     private static boolean areaTouchesCells(DungeonEditorWorkspaceValues.Area area, List<CellKey> touchingCells) {
-        for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {
+        for (features.dungeon.domain.core.geometry.Cell cell : area.cells()) {
             if (touchingCells.contains(new CellKey(cell.q(), cell.r(), cell.level()))) {
                 return true;
             }

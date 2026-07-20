@@ -1,5 +1,6 @@
 package features.dungeon.domain.core.structure.corridor;
 
+import features.dungeon.domain.core.component.CorridorDoorBinding;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -8,7 +9,7 @@ import features.dungeon.domain.core.component.CorridorAnchorRef;
 import features.dungeon.domain.core.graph.DungeonTopologyElementKind;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.DungeonMap;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
+import features.dungeon.domain.core.structure.room.RoomRegion;
 
 /**
  * Owns corridor endpoint equivalence and deduplication semantics.
@@ -23,8 +24,8 @@ final class CorridorEndpointMatching {
         if (start == null || end == null || !start.isDoorEndpoint() || !end.isDoorEndpoint()) {
             return false;
         }
-        DungeonRoom left = CorridorMapLookup.room(dungeonMap, start.roomId());
-        DungeonRoom right = CorridorMapLookup.room(dungeonMap, end.roomId());
+        RoomRegion left = CorridorMapLookup.room(dungeonMap, start.roomId());
+        RoomRegion right = CorridorMapLookup.room(dungeonMap, end.roomId());
         return left != null && right != null && left.clusterId() == right.clusterId();
     }
 
@@ -44,10 +45,10 @@ final class CorridorEndpointMatching {
 
     private static Set<CorridorEndpointSemantics> explicitEndpointSemantics(Corridor corridor) {
         Set<CorridorEndpointSemantics> result = new LinkedHashSet<>();
-        for (CorridorDoorBindingState binding : corridor.stateBindings().doorBindings()) {
+        for (CorridorDoorBinding binding : corridor.bindings().doorBindings()) {
             result.add(doorSemantics(binding));
         }
-        for (CorridorAnchorRef ref : corridor.stateBindings().anchorRefs()) {
+        for (CorridorAnchorRef ref : corridor.bindings().anchorRefs()) {
             if (ref != null && ref.present()) {
                 result.add(CorridorEndpointSemantics.forAnchor(ref));
             }
@@ -60,10 +61,10 @@ final class CorridorEndpointMatching {
         return endpoint.semantics();
     }
 
-    static CorridorEndpointSemantics doorSemantics(CorridorDoorBindingState binding) {
+    static CorridorEndpointSemantics doorSemantics(CorridorDoorBinding binding) {
         return isDoorTopologyRef(binding.topologyRef())
                 ? CorridorEndpointSemantics.forStableDoor(binding.topologyRef().id())
-                : CorridorEndpointSemantics.forDoor(binding.toCore());
+                : CorridorEndpointSemantics.forDoor(binding.withoutTopologyRef());
     }
 
     private static boolean isDoorTopologyRef(DungeonTopologyRef ref) {

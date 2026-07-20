@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import platform.diagnostics.Diagnostics;
+import platform.diagnostics.Measurement;
 
 @AnalyzeMainClasses
 public final class PlatformDiagnosticsArchitectureTest {
@@ -42,5 +43,12 @@ public final class PlatformDiagnosticsArchitectureTest {
                                     || Throwable.class.isAssignableFrom(type)),
                     () -> method + " must accept only stable diagnostic ids and failure types");
         }
+        assertFalse(Arrays.stream(Measurement.class.getRecordComponents()).anyMatch(component -> {
+                    Class<?> type = component.getType();
+                    return type == String.class
+                            || type == Object.class
+                            || type == Map.class
+                            || Throwable.class.isAssignableFrom(type);
+                }), "measurements must contain only stable ids and bounded numeric facts");
     }
 }

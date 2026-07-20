@@ -23,6 +23,7 @@ public record CorridorAnchorEndpointMaterialization(
             long hostCorridorId,
             Cell desiredCell,
             long preferredAnchorId,
+            long reservedAnchorId,
             CorridorHostCells hostCells
     ) {
         long normalizedHostId = Math.max(0L, hostCorridorId);
@@ -36,7 +37,10 @@ public record CorridorAnchorEndpointMaterialization(
         if (existing != null) {
             return new CorridorAnchorEndpointMaterialization(normalizedCorridors, existing, false);
         }
-        CorridorAnchor created = new CorridorAnchor(nextAnchorId(normalizedCorridors), normalizedHostId, anchorCell);
+        if (reservedAnchorId <= 0L) {
+            return null;
+        }
+        CorridorAnchor created = new CorridorAnchor(reservedAnchorId, normalizedHostId, anchorCell);
         return new CorridorAnchorEndpointMaterialization(
                 withHostAnchor(normalizedCorridors, coreHostWithAnchor(host, created)),
                 created,
@@ -47,6 +51,7 @@ public record CorridorAnchorEndpointMaterialization(
             List<Corridor> corridors,
             DungeonCorridorEndpoint endpoint,
             long preferredAnchorId,
+            long reservedAnchorId,
             CorridorHostCells hostCells
     ) {
         Corridor host = hostCorridor(corridors, endpoint.hostCorridorId());
@@ -58,6 +63,7 @@ public record CorridorAnchorEndpointMaterialization(
                 endpoint.hostCorridorId(),
                 endpoint.anchorCell(),
                 preferredAnchorId,
+                reservedAnchorId,
                 hostCells);
         if (materialized == null) {
             return null;
@@ -101,7 +107,7 @@ public record CorridorAnchorEndpointMaterialization(
                         corridor.mapId(),
                         corridor.level(),
                         new CorridorRoomSet(corridor.roomIds()),
-                        corridor.coreBindings()));
+                        corridor.bindings()));
             }
         }
         return List.copyOf(result);
@@ -112,27 +118,12 @@ public record CorridorAnchorEndpointMaterialization(
             long preferredAnchorId,
             Cell anchorCell
     ) {
-        for (CorridorAnchor anchor : host.coreBindings().anchorBindings()) {
+        for (CorridorAnchor anchor : host.bindings().anchorBindings()) {
             if (preferredAnchorId > 0L && anchor.anchorId() == preferredAnchorId || anchor.matchesPosition(anchorCell)) {
                 return anchor;
             }
         }
         return null;
-    }
-
-    private static long nextAnchorId(List<Corridor> corridors) {
-        long result = 0L;
-        for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
-            if (corridor == null) {
-                continue;
-            }
-            for (CorridorAnchor anchor : corridor.coreBindings().anchorBindings()) {
-                if (anchor.anchorId() > result) {
-                    result = anchor.anchorId();
-                }
-            }
-        }
-        return result + 1L;
     }
 
     private static List<Corridor> withHostAnchor(List<Corridor> corridors, Corridor host) {
@@ -151,7 +142,7 @@ public record CorridorAnchorEndpointMaterialization(
                 host.mapId(),
                 host.level(),
                 new CorridorRoomSet(host.roomIds()),
-                host.coreBindings().withAnchorBinding(created));
+                host.bindings().withAnchorBinding(created));
     }
 
     public record AuthoredEndpointMaterialization(

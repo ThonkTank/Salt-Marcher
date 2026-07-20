@@ -6,8 +6,6 @@ import org.jspecify.annotations.Nullable;
 import features.dungeon.api.DungeonEdgeRef;
 import features.dungeon.api.DungeonEditorMapSnapshot;
 import features.dungeon.api.DungeonTopologyElementRef;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreparedLabelKind;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreparedTopologyKind;
 
 final class DungeonMapRenderElementFactory {
 

@@ -3,7 +3,7 @@ package features.dungeon.application.editor;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.application.editor.DungeonEditorRuntimeApplicationService;
-import features.dungeon.application.editor.interaction.DungeonEditorHandleType;
+import features.dungeon.api.DungeonEditorHandleKind;
 import features.dungeon.application.editor.session.DungeonEditorSessionEffect;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
@@ -57,7 +57,7 @@ final class DungeonEditorSelectedHandleRuntimeOperation {
                 || !context.hasSelectedMap()) {
             return DungeonEditorRuntimeContext.Result.none();
         }
-        DungeonEditorWorkspaceValues.Cell sourceCell = handleRef.cell();
+        features.dungeon.domain.core.geometry.Cell sourceCell = handleRef.cell();
         int deltaQ = q - sourceCell.q();
         int deltaR = r - sourceCell.r();
         if (deltaQ == 0 && deltaR == 0) {
@@ -73,7 +73,7 @@ final class DungeonEditorSelectedHandleRuntimeOperation {
             return DungeonEditorRuntimeContext.Result.none();
         }
         context.moveCorridorHandle(selectedMapId, preview);
-        context.clearPreviewWithStatus(context.currentFacts().mutationStatusText());
+        context.clearPreviewWithCommandOutcome(context.currentFacts().commandOutcome());
         return context.publishCurrent();
     }
 
@@ -118,6 +118,9 @@ final class DungeonEditorSelectedHandleRuntimeOperation {
                 InterpretDungeonEditorMainViewInputUseCase.PointerAction.RELEASE,
                 input,
                 null);
+        if (effect.isNoop()) {
+            return context.publishCurrent();
+        }
         return context.fromPublication(
                 currentGrid.snapshot(),
                 context.applyEffectPublication(effect, commitFor(effect.getApplyPreview())));
@@ -154,7 +157,7 @@ final class DungeonEditorSelectedHandleRuntimeOperation {
         if (DungeonEditorSessionPreviewHelper.directCorridorMoveCommitHandle(move.handleRef().kind())) {
             return mapId -> context.moveCorridorHandle(mapId, move);
         }
-        if (move.handleRef().kind() == DungeonEditorHandleType.STAIR_ANCHOR) {
+        if (move.handleRef().kind() == DungeonEditorHandleKind.STAIR_ANCHOR) {
             return mapId -> context.moveStairHandle(mapId, move);
         }
         return null;

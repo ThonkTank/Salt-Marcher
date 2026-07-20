@@ -8,8 +8,11 @@ import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.api.DungeonOverlaySettings;
-import features.dungeon.api.DungeonEditorTool;
-import features.dungeon.application.editor.DungeonEditorOverlaySettings;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
+import features.dungeon.api.editor.DungeonEditorToolOptions;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
+import features.dungeon.adapter.javafx.DungeonEditorToolPresentation;
+import features.dungeon.adapter.javafx.editor.DungeonEditorControlsInput.OverlayMode;
 
 final class DungeonEditorControlsPanelModel {
     private final MapCatalogPanel mapCatalog = new MapCatalogPanel();
@@ -39,7 +42,7 @@ final class DungeonEditorControlsPanelModel {
             String viewMode,
             DungeonOverlaySettings overlaySettings,
             int projectionLevel,
-            String selectedTool
+            DungeonEditorToolSelection toolSelection
     ) {
         MapProjection nextMapProjection = mapCatalog.showMapCatalog(maps, selectedKey, busy, statusText);
         boolean hasMap = !nextMapProjection.selectedKey().isBlank();
@@ -50,7 +53,7 @@ final class DungeonEditorControlsPanelModel {
                 overlaySettings,
                 projectionLevel,
                 viewMode);
-        toolPalette.showSelectedTool(selectedTool);
+        toolPalette.showSelectedTool(toolSelection);
     }
 
     List<OverlayModeOption> overlayModeOptions() {
@@ -61,12 +64,8 @@ final class DungeonEditorControlsPanelModel {
         return toolPalette.toolControls();
     }
 
-    void rememberToolSelection(
-            String requestedFamilyKey,
-            DungeonEditorTool selectedTool,
-            String selectedOptionKey
-    ) {
-        toolPalette.rememberToolSelection(requestedFamilyKey, selectedTool, selectedOptionKey);
+    void rememberToolSelection(DungeonEditorToolSelection selection) {
+        toolPalette.rememberToolSelection(selection);
     }
 
     MapEditorUiState currentMapEditorUiState() {
@@ -237,7 +236,7 @@ final class DungeonEditorControlsPanelModel {
     }
 
     record OverlayModeOption(
-            DungeonEditorOverlaySettings.Mode mode,
+            OverlayMode mode,
             String label,
             boolean rangeVisible,
             boolean selectedLevelsVisible
@@ -257,8 +256,8 @@ final class DungeonEditorControlsPanelModel {
         }
     }
 
-    private static DungeonEditorOverlaySettings.Mode defaultOverlayMode() {
-        return DungeonEditorOverlaySettings.defaults().mode();
+    private static OverlayMode defaultOverlayMode() {
+        return OverlayMode.OFF;
     }
 
     record OverlayPanelState(
@@ -308,11 +307,9 @@ final class DungeonEditorControlsPanelModel {
         }
     }
 
-    record ToolProjection(String selectedTool, ToolControls toolControls) {
+    record ToolProjection(DungeonEditorToolSelection selection, ToolControls toolControls) {
         ToolProjection {
-            selectedTool = selectedTool == null || selectedTool.isBlank()
-                    ? defaultToolLabel()
-                    : selectedTool;
+            selection = selection == null ? DungeonEditorToolSelection.select() : selection;
             toolControls = toolControls == null
                     ? ToolPalettePanel.defaultToolControls()
                     : toolControls;
@@ -320,7 +317,7 @@ final class DungeonEditorControlsPanelModel {
 
         static ToolProjection initial() {
             return new ToolProjection(
-                    defaultToolLabel(),
+                    DungeonEditorToolSelection.select(),
                     ToolPalettePanel.defaultToolControls());
         }
     }
@@ -341,51 +338,46 @@ final class DungeonEditorControlsPanelModel {
     }
 
     record ToolFamilyButton(
-            String familyKey,
+            DungeonEditorToolFamily family,
             String label,
-            String selectedOptionKey,
+            DungeonEditorToolSelection selectedOption,
             List<ToolButton> options
     ) {
         ToolFamilyButton {
-            familyKey = familyKey == null ? "" : familyKey;
+            family = family == null ? DungeonEditorToolFamily.SELECT : family;
             label = label == null ? "" : label;
-            selectedOptionKey = selectedOptionKey == null ? "" : selectedOptionKey;
+            selectedOption = selectedOption == null ? DungeonEditorToolSelection.family(family) : selectedOption;
             options = options == null ? List.of() : List.copyOf(options);
         }
 
-        ToolButton selectedOption() {
+        ToolButton selectedButton() {
             for (ToolButton option : options) {
-                if (option.key().equals(selectedOptionKey)) {
+                if (option.selection().equals(selectedOption)) {
                     return option;
                 }
             }
-            return options.isEmpty() ? new ToolButton(label, label, selectedOptionKey) : options.getFirst();
+            return options.isEmpty() ? new ToolButton(label, label, selectedOption, true) : options.getFirst();
         }
 
         boolean hasSecondaryOptions() {
             return options.size() > 1;
         }
 
-        boolean selectedByLabel(String selectedToolLabel) {
-            for (ToolButton option : options) {
-                if (option.selectedLabel().equals(selectedToolLabel)) {
-                    return true;
-                }
-            }
-            return false;
+        boolean selectedBy(DungeonEditorToolSelection selection) {
+            return selection != null && family == selection.family();
         }
     }
 
-    record ToolButton(String label, String selectedLabel, String key, DungeonEditorTool tool, boolean enabled) {
+    record ToolButton(
+            String label,
+            String selectedLabel,
+            DungeonEditorToolSelection selection,
+            boolean enabled
+    ) {
         ToolButton {
             label = label == null ? "" : label;
             selectedLabel = selectedLabel == null ? "" : selectedLabel;
-            key = key == null ? "" : key;
-            tool = tool == null ? DungeonEditorTool.SELECT : tool;
-        }
-
-        ToolButton(String label, String selectedLabel, String key) {
-            this(label, selectedLabel, key, DungeonEditorTool.SELECT, true);
+            selection = selection == null ? DungeonEditorToolSelection.select() : selection;
         }
 
     }
@@ -402,8 +394,8 @@ final class DungeonEditorControlsPanelModel {
         return ToolPalettePanel.graphViewLabel();
     }
 
-    boolean wallSingleClickModeSelected() {
-        return toolPalette.wallSingleClickModeSelected();
+    static String labelOf(DungeonEditorToolSelection selection) {
+        return ToolPalettePanel.labelOf(selection);
     }
 
     static String normalizeViewModeKey(@Nullable String viewModeKey) {
@@ -519,17 +511,17 @@ final class DungeonEditorControlsPanelModel {
     List<DungeonEditorControlsPanelModel.OverlayModeOption> overlayModeOptions() {
         return List.of(
                 new DungeonEditorControlsPanelModel.OverlayModeOption(
-                        DungeonEditorOverlaySettings.Mode.OFF,
+                        OverlayMode.OFF,
                         "Aus",
                         false,
                         false),
                 new DungeonEditorControlsPanelModel.OverlayModeOption(
-                        DungeonEditorOverlaySettings.Mode.NEARBY,
+                        OverlayMode.NEARBY,
                         "Nahe Ebenen",
                         true,
                         false),
                 new DungeonEditorControlsPanelModel.OverlayModeOption(
-                        DungeonEditorOverlaySettings.Mode.SELECTED,
+                        OverlayMode.SELECTED,
                         defaultToolLabel(),
                         false,
                         true));
@@ -616,291 +608,137 @@ final class DungeonEditorControlsPanelModel {
     }
 
     private static final class ToolPalettePanel {
-    private static final DungeonEditorTool SELECT_TOOL = DungeonEditorTool.SELECT;
-    private static final DungeonEditorTool ROOM_PAINT_TOOL = DungeonEditorTool.ROOM_PAINT;
-    private static final DungeonEditorTool WALL_CREATE_TOOL = DungeonEditorTool.WALL_CREATE;
-    private static final DungeonEditorTool DOOR_CREATE_TOOL = DungeonEditorTool.DOOR_CREATE;
-    private static final DungeonEditorTool CORRIDOR_CREATE_TOOL = DungeonEditorTool.CORRIDOR_CREATE;
-    private static final DungeonEditorTool STAIR_CREATE_TOOL = DungeonEditorTool.STAIR_CREATE;
-    private static final DungeonEditorTool STAIR_CREATE_SQUARE_TOOL = DungeonEditorTool.STAIR_CREATE_SQUARE;
-    private static final DungeonEditorTool STAIR_CREATE_CIRCULAR_TOOL = DungeonEditorTool.STAIR_CREATE_CIRCULAR;
-    private static final DungeonEditorTool TRANSITION_CREATE_TOOL = DungeonEditorTool.TRANSITION_CREATE;
-    private static final DungeonEditorTool FEATURE_POI_CREATE_TOOL = DungeonEditorTool.FEATURE_POI_CREATE;
-    private static final DungeonEditorTool FEATURE_OBJECT_CREATE_TOOL = DungeonEditorTool.FEATURE_OBJECT_CREATE;
-    private static final DungeonEditorTool FEATURE_ENCOUNTER_CREATE_TOOL = DungeonEditorTool.FEATURE_ENCOUNTER_CREATE;
-    private static final String WALL_PATH_MODE_OPTION_KEY = "WALL_PATH";
-    private static final String WALL_SINGLE_CLICK_MODE_OPTION_KEY = "WALL_SINGLE_CLICK";
-    private static final String GRID_VIEW_LABEL = "Grid";
-    private static final String GRAPH_VIEW_LABEL = "Graph";
+        private static final String GRID_VIEW_LABEL = "Grid";
+        private static final String GRAPH_VIEW_LABEL = "Graph";
 
-    private final ReadOnlyObjectWrapper<DungeonEditorControlsPanelModel.ToolProjection> toolProjection =
-            new ReadOnlyObjectWrapper<>(DungeonEditorControlsPanelModel.ToolProjection.initial());
-    private final Map<ToolFamily, String> selectedFamilyOptionKeys = new EnumMap<>(ToolFamily.class);
+        private final ReadOnlyObjectWrapper<DungeonEditorControlsPanelModel.ToolProjection> toolProjection =
+                new ReadOnlyObjectWrapper<>(DungeonEditorControlsPanelModel.ToolProjection.initial());
+        private final Map<DungeonEditorToolFamily, DungeonEditorToolOptions> selectedFamilyOptions =
+                new EnumMap<>(DungeonEditorToolFamily.class);
 
-    ReadOnlyObjectProperty<DungeonEditorControlsPanelModel.ToolProjection> toolProjectionProperty() {
-        return toolProjection.getReadOnlyProperty();
-    }
-
-    DungeonEditorControlsPanelModel.ToolControls toolControls() {
-        return currentToolControls(selectedFamilyOptionKeys);
-    }
-
-    void showSelectedTool(String selectedTool) {
-        if (defaultToolLabel().equals(selectedTool)) {
-            selectedFamilyOptionKeys.clear();
+        ReadOnlyObjectProperty<DungeonEditorControlsPanelModel.ToolProjection> toolProjectionProperty() {
+            return toolProjection.getReadOnlyProperty();
         }
-        toolProjection.set(new DungeonEditorControlsPanelModel.ToolProjection(selectedTool, toolControls()));
-    }
 
-    void rememberToolSelection(
-            String requestedFamilyKey,
-            DungeonEditorTool selectedTool,
-            String selectedOptionKey
-    ) {
-        ToolFamily requestedFamily = ToolFamily.fromKey(requestedFamilyKey);
-        DungeonEditorTool safeSelectedTool = selectedTool == null ? SELECT_TOOL : selectedTool;
-        ToolFamily selectedFamily = ToolFamily.fromTool(safeSelectedTool);
-        ToolFamily family = selectedFamily == null ? requestedFamily : selectedFamily;
-        String optionKey = selectedOptionKey == null || selectedOptionKey.isBlank()
-                ? safeSelectedTool.name()
-                : selectedOptionKey;
-        if (family != null && family.containsOptionKey(optionKey)) {
-            selectedFamilyOptionKeys.put(family, optionKey);
+        DungeonEditorControlsPanelModel.ToolControls toolControls() {
+            return currentToolControls(selectedFamilyOptions);
+        }
+
+        void showSelectedTool(DungeonEditorToolSelection selection) {
+            DungeonEditorToolSelection safeSelection = selection == null
+                    ? DungeonEditorToolSelection.select()
+                    : selection;
+            if (safeSelection.family() == DungeonEditorToolFamily.SELECT) {
+                selectedFamilyOptions.clear();
+            } else {
+                selectedFamilyOptions.put(safeSelection.family(), safeSelection.options());
+            }
+            toolProjection.set(new DungeonEditorControlsPanelModel.ToolProjection(safeSelection, toolControls()));
+        }
+
+        void rememberToolSelection(DungeonEditorToolSelection selection) {
+            if (selection == null || selection.family() == DungeonEditorToolFamily.SELECT) {
+                return;
+            }
+            selectedFamilyOptions.put(selection.family(), selection.options());
             toolProjection.set(new DungeonEditorControlsPanelModel.ToolProjection(
-                    toolProjection.get().selectedTool(),
+                    toolProjection.get().selection(),
                     toolControls()));
         }
-    }
 
-    boolean wallSingleClickModeSelected() {
-        return wallSingleClickModeOptionKey().equals(selectedFamilyOptionKeys.get(ToolFamily.WALL));
-    }
-
-    static DungeonEditorControlsPanelModel.ToolControls defaultToolControls() {
-        return currentToolControls(Map.of());
-    }
-
-    static String defaultToolLabel() {
-        return labelOf(SELECT_TOOL);
-    }
-
-    static String gridViewLabel() {
-        return GRID_VIEW_LABEL;
-    }
-
-    static String graphViewLabel() {
-        return GRAPH_VIEW_LABEL;
-    }
-
-    static String wallPathModeOptionKey() {
-        return WALL_PATH_MODE_OPTION_KEY;
-    }
-
-    static String wallSingleClickModeOptionKey() {
-        return WALL_SINGLE_CLICK_MODE_OPTION_KEY;
-    }
-
-    static String labelOf(@Nullable DungeonEditorTool tool) {
-        return ToolPresentation.labelOf(tool);
-    }
-
-    static String normalizeViewModeKey(@Nullable String viewModeKey) {
-        return ToolPresentation.normalizeViewModeKey(viewModeKey);
-    }
-
-    private static DungeonEditorControlsPanelModel.ToolControls currentToolControls(
-            Map<ToolFamily, String> selectedFamilyOptionKeys
-    ) {
-        return new DungeonEditorControlsPanelModel.ToolControls(
-                defaultToolLabel(),
-                gridViewLabel(),
-                graphViewLabel(),
-                new DungeonEditorControlsPanelModel.ToolButton(
-                        defaultToolLabel(),
-                        defaultToolLabel(),
-                        SELECT_TOOL.name(),
-                        SELECT_TOOL,
-                        true),
-                ToolFamily.ROOM.toButton(selectedFamilyOptionKeys),
-                ToolFamily.WALL.toButton(selectedFamilyOptionKeys),
-                ToolFamily.DOOR.toButton(selectedFamilyOptionKeys),
-                ToolFamily.CORRIDOR.toButton(selectedFamilyOptionKeys),
-                ToolFamily.FEATURE.toButton(selectedFamilyOptionKeys),
-                ToolFamily.STAIR.toButton(selectedFamilyOptionKeys),
-                ToolFamily.TRANSITION.toButton(selectedFamilyOptionKeys));
-    }
-
-    private enum ToolFamily {
-        ROOM("ROOM", "Raum", ROOM_PAINT_TOOL),
-        WALL(
-                "WALL",
-                "Wand",
-                WALL_CREATE_TOOL,
-                new ToolOptionSpec(
-                        wallPathModeOptionKey(),
-                        "Pfad",
-                        WALL_CREATE_TOOL,
-                        true),
-                new ToolOptionSpec(
-                        wallSingleClickModeOptionKey(),
-                        "Einzeln",
-                        WALL_CREATE_TOOL,
-                        true)),
-        DOOR("DOOR", "Tür", DOOR_CREATE_TOOL),
-        CORRIDOR("CORRIDOR", "Korridor", CORRIDOR_CREATE_TOOL),
-        FEATURE(
-                "FEATURE",
-                "Feature",
-                FEATURE_POI_CREATE_TOOL,
-                new ToolOptionSpec(
-                        "FEATURE_POI",
-                        "POI",
-                        FEATURE_POI_CREATE_TOOL,
-                        true),
-                new ToolOptionSpec(
-                        "FEATURE_OBJECT",
-                        "Objekt",
-                        FEATURE_OBJECT_CREATE_TOOL,
-                        true),
-                new ToolOptionSpec(
-                        "FEATURE_ENCOUNTER",
-                        "Encounter",
-                        FEATURE_ENCOUNTER_CREATE_TOOL,
-                        true)),
-        STAIR(
-                "STAIR",
-                "Treppe",
-                STAIR_CREATE_TOOL,
-                new ToolOptionSpec(
-                        "STAIR_STRAIGHT",
-                        "Gerade",
-                        STAIR_CREATE_TOOL,
-                        true),
-                new ToolOptionSpec(
-                        "STAIR_ANGULAR_SPIRAL",
-                        "Eckspirale",
-                        STAIR_CREATE_SQUARE_TOOL,
-                        true),
-                new ToolOptionSpec(
-                        "STAIR_ROUND_SPIRAL",
-                        "Rundspirale",
-                        STAIR_CREATE_CIRCULAR_TOOL,
-                        true)),
-        TRANSITION("TRANSITION", "Übergang", TRANSITION_CREATE_TOOL);
-
-        private final String key;
-        private final String label;
-        private final DungeonEditorTool primaryTool;
-        private final List<ToolOptionSpec> optionSpecs;
-
-        ToolFamily(String key, String label, DungeonEditorTool primaryTool, ToolOptionSpec... optionSpecs) {
-            this.key = key;
-            this.label = label;
-            this.primaryTool = primaryTool;
-            this.optionSpecs = List.copyOf(List.of(optionSpecs));
+        static DungeonEditorControlsPanelModel.ToolControls defaultToolControls() {
+            return currentToolControls(Map.of());
         }
 
-        private DungeonEditorControlsPanelModel.ToolFamilyButton toButton(
-                Map<ToolFamily, String> selectedFamilyOptionKeys
-        ) {
-            return new DungeonEditorControlsPanelModel.ToolFamilyButton(
-                    key,
-                    label,
-                    selectedOptionKey(selectedFamilyOptionKeys),
-                    toolOptions());
+        static String defaultToolLabel() {
+            return labelOf(DungeonEditorToolSelection.select());
         }
 
-        private String selectedOptionKey(Map<ToolFamily, String> selectedFamilyOptionKeys) {
-            String rememberedKey = selectedFamilyOptionKeys.get(this);
-            return containsOptionKey(rememberedKey) ? rememberedKey : toolOptions().getFirst().key();
+        static String gridViewLabel() {
+            return GRID_VIEW_LABEL;
         }
 
-        private boolean containsTool(@Nullable DungeonEditorTool tool) {
-            if (primaryTool == tool) {
-                return true;
-            }
-            for (DungeonEditorControlsPanelModel.ToolButton option : toolOptions()) {
-                if (option.tool() == tool) {
-                    return true;
-                }
-            }
-            return false;
+        static String graphViewLabel() {
+            return GRAPH_VIEW_LABEL;
         }
 
-        private boolean containsOptionKey(@Nullable String optionKey) {
-            if (optionKey == null || optionKey.isBlank()) {
-                return false;
-            }
-            for (DungeonEditorControlsPanelModel.ToolButton option : toolOptions()) {
-                if (option.enabled() && option.key().equals(optionKey)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private List<DungeonEditorControlsPanelModel.ToolButton> toolOptions() {
-            if (optionSpecs.isEmpty()) {
-                return List.of(toToolButton(primaryTool));
-            }
-            return optionSpecs.stream()
-                    .map(option -> new DungeonEditorControlsPanelModel.ToolButton(
-                            option.label(),
-                            labelOf(option.tool()),
-                            option.key(),
-                            option.tool(),
-                            option.enabled()))
-                    .toList();
-        }
-
-        private static DungeonEditorControlsPanelModel.ToolButton toToolButton(DungeonEditorTool tool) {
-            String label = labelOf(tool);
-            return new DungeonEditorControlsPanelModel.ToolButton(label, label, tool.name(), tool, true);
-        }
-
-        private static @Nullable ToolFamily fromKey(@Nullable String familyKey) {
-            if (familyKey == null || familyKey.isBlank()) {
-                return null;
-            }
-            for (ToolFamily family : values()) {
-                if (family.key.equalsIgnoreCase(familyKey.strip())) {
-                    return family;
-                }
-            }
-            return null;
-        }
-
-        private static @Nullable ToolFamily fromTool(@Nullable DungeonEditorTool selectedTool) {
-            if (selectedTool == null) {
-                return null;
-            }
-            for (ToolFamily family : values()) {
-                if (family.containsTool(selectedTool)) {
-                    return family;
-                }
-            }
-            return null;
-        }
-    }
-
-    private record ToolOptionSpec(String key, String label, DungeonEditorTool tool, boolean enabled) {
-        ToolOptionSpec {
-            key = key == null ? "" : key;
-            label = label == null ? "" : label;
-            tool = tool == null ? SELECT_TOOL : tool;
-        }
-    }
-
-    private interface ToolPresentation {
-
-        static String labelOf(@Nullable DungeonEditorTool tool) {
-            return DungeonEditorTool.labelFor(tool);
+        static String labelOf(DungeonEditorToolSelection selection) {
+            return DungeonEditorToolPresentation.label(selection);
         }
 
         static String normalizeViewModeKey(@Nullable String viewModeKey) {
             return graphViewLabel().equals(viewModeKey) ? graphViewLabel() : gridViewLabel();
         }
-    }
+
+        private static DungeonEditorControlsPanelModel.ToolControls currentToolControls(
+                Map<DungeonEditorToolFamily, DungeonEditorToolOptions> selectedFamilyOptions
+        ) {
+            return new DungeonEditorControlsPanelModel.ToolControls(
+                    defaultToolLabel(),
+                    gridViewLabel(),
+                    graphViewLabel(),
+                    toolButton(DungeonEditorToolSelection.select()),
+                    familyButton(DungeonEditorToolFamily.ROOM, selectedFamilyOptions),
+                    familyButton(DungeonEditorToolFamily.WALL, selectedFamilyOptions),
+                    familyButton(DungeonEditorToolFamily.DOOR, selectedFamilyOptions),
+                    familyButton(DungeonEditorToolFamily.CORRIDOR, selectedFamilyOptions),
+                    familyButton(DungeonEditorToolFamily.FEATURE, selectedFamilyOptions),
+                    familyButton(DungeonEditorToolFamily.STAIR, selectedFamilyOptions),
+                    familyButton(DungeonEditorToolFamily.TRANSITION, selectedFamilyOptions));
+        }
+
+        private static DungeonEditorControlsPanelModel.ToolFamilyButton familyButton(
+                DungeonEditorToolFamily family,
+                Map<DungeonEditorToolFamily, DungeonEditorToolOptions> selectedFamilyOptions
+        ) {
+            List<DungeonEditorToolSelection> selections = selections(family);
+            DungeonEditorToolSelection selected = new DungeonEditorToolSelection(
+                    family,
+                    selectedFamilyOptions.get(family));
+            if (!selections.contains(selected)) {
+                selected = selections.getFirst();
+            }
+            return new DungeonEditorControlsPanelModel.ToolFamilyButton(
+                    family,
+                    DungeonEditorToolPresentation.familyLabel(family),
+                    selected,
+                    selections.stream().map(ToolPalettePanel::toolButton).toList());
+        }
+
+        private static DungeonEditorControlsPanelModel.ToolButton toolButton(
+                DungeonEditorToolSelection selection
+        ) {
+            return new DungeonEditorControlsPanelModel.ToolButton(
+                    DungeonEditorToolPresentation.optionLabel(selection),
+                    labelOf(selection),
+                    selection,
+                    true);
+        }
+
+        private static List<DungeonEditorToolSelection> selections(DungeonEditorToolFamily family) {
+            return switch (family) {
+                case WALL -> List.of(
+                        new DungeonEditorToolSelection(family, new DungeonEditorToolOptions.Wall(
+                                DungeonEditorToolOptions.Wall.Mode.PATH)),
+                        new DungeonEditorToolSelection(family, new DungeonEditorToolOptions.Wall(
+                                DungeonEditorToolOptions.Wall.Mode.SINGLE)));
+                case STAIR -> List.of(
+                        new DungeonEditorToolSelection(family, new DungeonEditorToolOptions.Stair(
+                                DungeonEditorToolOptions.Stair.Shape.STRAIGHT)),
+                        new DungeonEditorToolSelection(family, new DungeonEditorToolOptions.Stair(
+                                DungeonEditorToolOptions.Stair.Shape.SQUARE)),
+                        new DungeonEditorToolSelection(family, new DungeonEditorToolOptions.Stair(
+                                DungeonEditorToolOptions.Stair.Shape.CIRCULAR)));
+                case FEATURE -> List.of(
+                        new DungeonEditorToolSelection(family, new DungeonEditorToolOptions.Feature(
+                                DungeonEditorToolOptions.Feature.Kind.POINT_OF_INTEREST)),
+                        new DungeonEditorToolSelection(family, new DungeonEditorToolOptions.Feature(
+                                DungeonEditorToolOptions.Feature.Kind.OBJECT)),
+                        new DungeonEditorToolSelection(family, new DungeonEditorToolOptions.Feature(
+                                DungeonEditorToolOptions.Feature.Kind.ENCOUNTER)));
+                default -> List.of(DungeonEditorToolSelection.family(family));
+            };
+        }
     }
 
 }

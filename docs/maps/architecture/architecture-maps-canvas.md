@@ -8,7 +8,7 @@ reusable passive map canvas.
 
 ## Purpose And Concerns
 
-This specification defines the reusable canvas owned by the Maps feature. It
+This specification defines reusable mechanisms owned by `platform.ui.mapcanvas`. It
 serves maintainers of map presentation and adopting features that translate
 their own map facts into canvas-native scenes.
 
@@ -25,20 +25,19 @@ domain invariants.
 ## Target Ownership
 
 ```text
-features/maps/
-  api/             immutable canvas scene, hit, pointer, and capability types
-  domain/          canvas-native camera and viewport invariants
-  application/     passive scene, camera, hit, and input orchestration
-  adapter/javafx/  rendering, viewport observation, and pointer capture
-  <feature root>   Maps composition entry point used by app
+platform/ui/mapcanvas/
+  camera and viewport values
+  bounded viewport caches
+  logical paint phases on one bounded JavaFX canvas host
+  technical scene, hit, and pointer values
 ```
 
-The Maps API is the only cross-feature boundary. Adopters may depend on
-`features.maps.api`; Maps must not import an adopter's API or implementation.
+The platform package is a feature-neutral mechanism boundary. JavaFX adapters
+may depend on it; it must not import any adopter API or implementation.
 
 ## Boundaries
 
-- All scene geometry and pointer coordinates crossing the Maps API are
+- All scene geometry and pointer coordinates crossing the mechanism boundary are
   canvas-native.
 - One immutable scene revision supplies both draw order and ordered hit evidence.
 - The JavaFX adapter renders the supplied scene and captures technical input. It
@@ -46,7 +45,7 @@ The Maps API is the only cross-feature boundary. Adopters may depend on
 - Camera, pan, zoom, viewport, resize, and reset behavior remain Maps-owned
   passive presentation behavior.
 - Each adopter owns one translation boundary in its `adapter/javafx` package
-  between its feature API and the Maps API.
+  between its feature API and canvas-native values.
 - Adopter domain and application packages never depend on JavaFX or Maps
   presentation types.
 - Maps owns no SQLite state under the current contract.
@@ -55,25 +54,27 @@ The Maps API is the only cross-feature boundary. Adopters may depend on
 
 ## Composition View
 
-`app` constructs the Maps feature explicitly, obtains its typed canvas
-capability, and passes that capability to each adopting feature entry point. An
-adopter entry point constructs its own API, application, adapters, and shell
-contribution. The shell receives already constructed contributions and does not
-discover or locate canvas or adopter services.
+`app` constructs adopter features. Their JavaFX adapters instantiate passive
+map-canvas mechanisms directly; the platform mechanism has no feature entry
+point, lifecycle, discovery, or service lookup.
 
 ## Capability Paths
 
 ### Surface Read
 
-`adopter API state -> adopter JavaFX adapter -> Maps API scene -> Maps application -> Maps JavaFX adapter`
+`adopter API state -> adopter JavaFX translation -> platform map canvas`
 
 ### Pointer Input
 
-`Maps JavaFX adapter -> Maps API pointer sample -> adopter JavaFX adapter -> adopter API command`
+`platform pointer sample -> adopter JavaFX translation -> adopter API command`
 
 ### Draw And Hit
 
-`one Maps API scene revision -> ordered draw primitives + ordered hit evidence -> Maps JavaFX adapter`
+`one canvas scene revision -> ordered draw primitives + ordered hit evidence -> bounded JavaFX canvas`
+
+Base, interaction, and actor paint remain separate invalidation phases. They
+share one backing surface so each open editor does not multiply a full-window
+pixel buffer; transient repaint replays the retained base phase first.
 
 The adopter translation boundary derives canvas-native geometry and stable hit
 references from adopter API state. It also translates a technical hit reference

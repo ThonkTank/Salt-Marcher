@@ -1,15 +1,11 @@
 package features.sessionplanner.api;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 public record SessionPlannerSessionSnapshot(
         SessionState session,
         XpBudgetState xpBudget,
         RestAdviceState restAdvice,
-        GoldBudgetState goldBudget,
-        List<AvailableEncounterPlan> availableEncounterPlans,
-        List<LocationReference> locationReferences,
         String status
 ) {
 
@@ -17,20 +13,7 @@ public record SessionPlannerSessionSnapshot(
         session = session == null ? SessionState.empty() : session;
         xpBudget = xpBudget == null ? XpBudgetState.empty() : xpBudget;
         restAdvice = restAdvice == null ? RestAdviceState.empty() : restAdvice;
-        goldBudget = goldBudget == null ? GoldBudgetState.placeholder(0) : goldBudget;
-        availableEncounterPlans = copy(availableEncounterPlans);
-        locationReferences = copy(locationReferences);
         status = status == null ? "" : status;
-    }
-
-    @Override
-    public List<AvailableEncounterPlan> availableEncounterPlans() {
-        return List.copyOf(availableEncounterPlans);
-    }
-
-    @Override
-    public List<LocationReference> locationReferences() {
-        return List.copyOf(locationReferences);
     }
 
     public static SessionPlannerSessionSnapshot empty(String status) {
@@ -38,9 +21,6 @@ public record SessionPlannerSessionSnapshot(
                 SessionState.empty(),
                 XpBudgetState.empty(),
                 RestAdviceState.empty(),
-                GoldBudgetState.placeholder(0),
-                List.of(),
-                List.of(),
                 status);
     }
 
@@ -119,58 +99,4 @@ public record SessionPlannerSessionSnapshot(
         }
     }
 
-    public record GoldBudgetState(
-            boolean available,
-            String headline,
-            String detail
-    ) {
-
-        public GoldBudgetState {
-            headline = headline == null ? "" : headline;
-            detail = detail == null ? "" : detail;
-        }
-
-        public static GoldBudgetState placeholder(int lootPlaceholderCount) {
-            return new GoldBudgetState(
-                    false,
-                    "Goldbudget offen",
-                    lootPlaceholderCount <= 0
-                            ? "Loot-Platzhalter sind vorbereitet, aber Gold wird noch nicht berechnet."
-                            : lootPlaceholderCount + " Loot-Platzhalter sichtbar, Goldbudget weiterhin offen.");
-        }
-    }
-
-    public record AvailableEncounterPlan(
-            long planId,
-            String name,
-            String summaryText,
-            int adjustedXp,
-            String difficultyLabel,
-            String statusText,
-            boolean importEnabled
-    ) {
-
-        public AvailableEncounterPlan {
-            planId = Math.max(0L, planId);
-            name = name == null ? "" : name.trim();
-            summaryText = summaryText == null ? "" : summaryText.trim();
-            adjustedXp = Math.max(0, adjustedXp);
-            difficultyLabel = difficultyLabel == null ? "" : difficultyLabel.trim();
-            statusText = statusText == null ? "" : statusText.trim();
-        }
-    }
-
-    public record LocationReference(long locationId, String displayName) {
-
-        public LocationReference {
-            locationId = Math.max(0L, locationId);
-            displayName = displayName == null || displayName.isBlank()
-                    ? "Location #" + locationId
-                    : displayName.trim();
-        }
-    }
-
-    private static <T> List<T> copy(List<T> values) {
-        return values == null ? List.of() : List.copyOf(values);
-    }
 }

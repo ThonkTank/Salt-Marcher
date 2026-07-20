@@ -4,8 +4,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Cell;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Edge;
+import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.Edge;
+import features.dungeon.domain.core.geometry.EdgeKey;
 
 public final class DungeonEditorWorkspaceGeometry {
     private DungeonEditorWorkspaceGeometry() {
@@ -78,52 +79,52 @@ public final class DungeonEditorWorkspaceGeometry {
         return Set.copyOf(result);
     }
 
-    private static List<EdgeKey> unitEdgeKeys(Edge edge) {
-        Cell from = edge.from();
-        Cell to = edge.to();
-        if (from.level() != to.level()) {
-            return List.of(EdgeKey.of(edge));
-        }
-        int deltaQ = Integer.compare(to.q(), from.q());
-        int deltaR = Integer.compare(to.r(), from.r());
-        if (deltaQ != 0 && deltaR != 0) {
-            return List.of(EdgeKey.of(edge));
-        }
-        List<EdgeKey> result = new ArrayList<>();
-        for (int q = from.q(), r = from.r(); q != to.q() || r != to.r(); q += deltaQ, r += deltaR) {
-            result.add(new EdgeKey(
-                    new CellKey(q, r, from.level()),
-                    new CellKey(q + deltaQ, r + deltaR, from.level())));
+    public static List<Edge> unitEdges(List<Edge> edges) {
+        List<Edge> result = new ArrayList<>();
+        for (Edge edge : edges == null ? List.<Edge>of() : edges) {
+            result.addAll(unitEdges(edge));
         }
         return List.copyOf(result);
     }
 
-    public record CellKey(int q, int r, int level) {
-        static CellKey of(Cell cell) {
-            return new CellKey(cell.q(), cell.r(), cell.level());
+    private static List<Edge> unitEdges(Edge edge) {
+        Cell from = edge.from();
+        Cell to = edge.to();
+        if (from.level() != to.level()) {
+            return List.of(edge);
         }
+        int deltaQ = Integer.compare(to.q(), from.q());
+        int deltaR = Integer.compare(to.r(), from.r());
+        if (deltaQ != 0 && deltaR != 0) {
+            return List.of(edge);
+        }
+        List<Edge> result = new ArrayList<>();
+        for (int q = from.q(), r = from.r(); q != to.q() || r != to.r(); q += deltaQ, r += deltaR) {
+            result.add(new Edge(
+                    new Cell(q, r, from.level()),
+                    new Cell(q + deltaQ, r + deltaR, from.level())));
+        }
+        return List.copyOf(result);
     }
 
-    public record EdgeKey(CellKey first, CellKey second) {
-        public EdgeKey {
-            if (compare(second, first) < 0) {
-                CellKey originalFirst = first;
-                first = second;
-                second = originalFirst;
-            }
+    private static List<EdgeKey> unitEdgeKeys(Edge edge) {
+        Cell from = edge.from();
+        Cell to = edge.to();
+        if (from.level() != to.level()) {
+            return List.of(EdgeKey.from(edge));
         }
-
-        public static EdgeKey of(Edge edge) {
-            return new EdgeKey(CellKey.of(edge.from()), CellKey.of(edge.to()));
+        int deltaQ = Integer.compare(to.q(), from.q());
+        int deltaR = Integer.compare(to.r(), from.r());
+        if (deltaQ != 0 && deltaR != 0) {
+            return List.of(EdgeKey.from(edge));
         }
-
-        private static int compare(CellKey left, CellKey right) {
-            int level = Integer.compare(left.level(), right.level());
-            if (level != 0) {
-                return level;
-            }
-            int q = Integer.compare(left.q(), right.q());
-            return q != 0 ? q : Integer.compare(left.r(), right.r());
+        List<EdgeKey> result = new ArrayList<>();
+        for (int q = from.q(), r = from.r(); q != to.q() || r != to.r(); q += deltaQ, r += deltaR) {
+            result.add(new EdgeKey(
+                    new Cell(q, r, from.level()),
+                    new Cell(q + deltaQ, r + deltaR, from.level())));
         }
+        return List.copyOf(result);
     }
+
 }

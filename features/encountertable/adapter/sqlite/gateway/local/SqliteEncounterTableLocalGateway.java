@@ -1,32 +1,44 @@
 package features.encountertable.adapter.sqlite.gateway.local;
 
+import features.encountertable.adapter.sqlite.model.EncounterTableCandidateRecord;
+import features.encountertable.adapter.sqlite.model.EncounterTableSummaryRecord;
+import features.encountertable.adapter.sqlite.model.EncounterTablePersistenceSchema;
+
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+import platform.persistence.SqliteMigration;
+import platform.persistence.SqliteSchemaValidator;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Objects;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteConnectionSource;
-import platform.persistence.SqliteDatabase;
-import platform.persistence.SqliteMigration;
-import features.encountertable.adapter.sqlite.model.EncounterTableCandidateRecord;
-import features.encountertable.adapter.sqlite.model.EncounterTableSummaryRecord;
 
 public final class SqliteEncounterTableLocalGateway {
 
-    private final SqliteConnectionSource connections;
+    private final FeatureStoreHandle connections;
     private final EncounterTableSqliteStore store = new EncounterTableSqliteStore();
 
-    public SqliteEncounterTableLocalGateway() {
-        this(SqliteDatabase.defaultDatabase(
-                SqliteDatabase.DEFAULT_DATABASE_FILE_NAME,
-                NoopDiagnostics.INSTANCE));
+    public static FeatureStoreDefinition storeDefinition() {
+        EncounterTableSchemaMigrator schemaMigrator = new EncounterTableSchemaMigrator();
+        SqliteSchemaValidator targetSchema = SqliteSchemaValidator.builder()
+                .table(EncounterTablePersistenceSchema.ENCOUNTER_TABLES)
+                .primaryKey(EncounterTablePersistenceSchema.ENCOUNTER_TABLES_TABLE, "table_id")
+                .table(EncounterTablePersistenceSchema.ENCOUNTER_TABLE_ENTRIES)
+                .primaryKey(EncounterTablePersistenceSchema.ENCOUNTER_TABLE_ENTRIES_TABLE,
+                        "table_id", "creature_id")
+                .table(EncounterTablePersistenceSchema.ENCOUNTER_TABLE_LOOT_LINKS)
+                .primaryKey(EncounterTablePersistenceSchema.ENCOUNTER_TABLE_LOOT_LINKS_TABLE, "table_id")
+                .index("idx_encounter_table_entries_table",
+                        EncounterTablePersistenceSchema.ENCOUNTER_TABLE_ENTRIES_TABLE, false, "table_id")
+                .index("idx_encounter_table_entries_creature",
+                        EncounterTablePersistenceSchema.ENCOUNTER_TABLE_ENTRIES_TABLE, false, "creature_id")
+                .build();
+        return FeatureStoreDefinition.validated(
+                "encounter-table", targetSchema, new SqliteMigration(1, schemaMigrator::ensureSchema));
     }
 
-    public SqliteEncounterTableLocalGateway(SqliteDatabase database) {
-        EncounterTableSchemaMigrator schemaMigrator = new EncounterTableSchemaMigrator();
-        this.connections = Objects.requireNonNull(database, "database").connections(
-                "encounter-table",
-                new SqliteMigration(1, schemaMigrator::ensureSchema));
+    public SqliteEncounterTableLocalGateway(FeatureStoreHandle store) {
+        this.connections = FeatureStoreHandle.requireOwner(store, "encounter-table");
     }
 
     public List<EncounterTableSummaryRecord> loadSummaries() {

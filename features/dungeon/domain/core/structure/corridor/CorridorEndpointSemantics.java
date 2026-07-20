@@ -49,7 +49,7 @@ public record CorridorEndpointSemantics(
     public boolean matchesDoorBinding(CorridorDoorBinding binding) {
         return switch (kind) {
             case STABLE_DOOR -> binding != null;
-            case DOOR_LOCATION -> doorBinding.equals(binding);
+            case DOOR_LOCATION -> binding != null && doorBinding.equals(binding.withoutTopologyRef());
             case ANCHOR -> false;
         };
     }

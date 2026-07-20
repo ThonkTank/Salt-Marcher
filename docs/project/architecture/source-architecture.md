@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-17
 Source of Truth: Target source shape, dependency direction, and
 architecture-significant quality constraints for the SaltMarcher desktop app.
 
@@ -34,7 +34,9 @@ feature publishes `api` only for capabilities consumed outside its
 implementation, owns `domain` only for business truth and invariants, and owns
 `application` only for use-case orchestration. A feature with stored truth owns
 an `adapter/sqlite`; a feature with JavaFX presentation owns an
-`adapter/javafx`. Empty role packages are forbidden. Dungeon remains one
+`adapter/javafx`; bundled read-only reference data belongs in an
+`adapter/resource`; explicit remote protocol integration belongs in an
+`adapter/http`. Empty role packages are forbidden. Dungeon remains one
 feature and publishes separate Authored, Editor, and Travel APIs.
 
 ## Permanent Boundaries
@@ -51,6 +53,9 @@ feature and publishes separate Authored, Editor, and Travel APIs.
   `app`, `shell`, or feature code. Its capability packages are
   `platform.execution`, `platform.persistence`, `platform.diagnostics`,
   `platform.state`, and `platform.ui`; new catch-all packages are forbidden.
+  Passive map camera, viewport, layered-canvas, cache, and technical pointer
+  mechanisms live in `platform.ui.mapcanvas`; they do not form a Maps feature
+  or own adopter coordinates and behavior.
 - A feature MUST expose cross-feature capabilities only from its `api` package.
   Application, JavaFX adapter, and composition code may consume foreign APIs;
   no consumer may import another feature's domain, application, adapters, or
@@ -59,7 +64,7 @@ feature and publishes separate Authored, Editor, and Travel APIs.
   contracts may use feature-neutral state and UI-dispatch contracts.
   Application code may use execution, state, UI-dispatch, and diagnostics
   contracts; SQLite adapters may use persistence and diagnostics; JavaFX
-  adapters may use UI contracts; feature composition may wire any platform
+  adapters may use UI contracts; HTTP adapters may use diagnostics; feature composition may wire any platform
   capability.
 - Feature API calls that can touch persistence or files MUST be non-blocking.
   JavaFX state changes MUST be dispatched explicitly to the UI thread.
@@ -72,6 +77,12 @@ feature and publishes separate Authored, Editor, and Travel APIs.
 - Technical diagnostics MUST remain local and MUST NOT record feature payloads,
   secrets, or user-authored content.
 
+The global compact travel context is owned by a feature-neutral Travel
+capability. It consumes Party position plus Dungeon and Hex API readbacks,
+publishes one immutable `TravelContextSnapshot`, and owns the single global
+`Reise` state contribution. Dungeon and Hex retain their movement semantics and
+detailed workspaces; `app` only composes these APIs.
+
 Internal Java types have no compatibility obligation while all consumers move
 atomically in one green slice. Persisted data and observable behavior retain
 their contract and requirement owners.
@@ -79,8 +90,8 @@ their contract and requirement owners.
 ## Delivery State
 
 Temporary repository state, verification scope, and the next deletion boundary
-live only in [Active Delivery](../delivery/README.md). They do not modify this
-target.
+live only in feature-owned `docs/<feature>/delivery/` documents routed from the
+feature README. They do not modify this target.
 
 The target-package ArchUnit rules are mechanically enforced by
 `architectureTest` and `check`.

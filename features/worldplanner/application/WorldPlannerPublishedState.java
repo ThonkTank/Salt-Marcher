@@ -16,7 +16,8 @@ public final class WorldPlannerPublishedState {
 
     public WorldPlannerPublishedState(UiDispatcher dispatcher) {
         snapshot = new PublishedState<>(WorldPlannerSnapshotProjection.from(WorldPlannerState.empty()), dispatcher);
-        snapshotModel = new WorldPlannerSnapshotModel(snapshot::current, snapshot::subscribe);
+        snapshotModel = new WorldPlannerSnapshotModel(
+                snapshot::current, snapshot::subscribe, snapshot::observeLatest);
     }
 
     public WorldPlannerSnapshotModel snapshotModel() {

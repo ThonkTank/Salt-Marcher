@@ -8,21 +8,27 @@ import features.dungeon.application.editor.DungeonEditorMainViewInteractionValue
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.InteractionState;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.PendingCorridorTarget;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.PointerState;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 
 final class DungeonEditorCorridorInteractionUseCase {
     private final DungeonEditorCorridorTargetHelper targetService = new DungeonEditorCorridorTargetHelper();
     private final DungeonEditorCorridorFacingTargetHelper facingTargetHelper =
             new DungeonEditorCorridorFacingTargetHelper();
-    private final DungeonEditorCorridorRoutePreviewValidationHelper routeValidationHelper =
-            new DungeonEditorCorridorRoutePreviewValidationHelper();
+    private final DungeonEditorCorridorRoutePreviewValidationHelper routeValidationHelper;
+
+    DungeonEditorCorridorInteractionUseCase(
+            features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy routingPolicy
+    ) {
+        routeValidationHelper = new DungeonEditorCorridorRoutePreviewValidationHelper(routingPolicy);
+    }
 
     DungeonEditorMainViewInterpretation press(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorToolAction selectedTool,
             InteractionState state
     ) {
-        if (selectedTool == DungeonEditorSessionValues.Tool.CORRIDOR_DELETE) {
+        if (selectedTool.deleteMode()) {
             PendingCorridorTarget target = targetService.resolveDeleteTarget(input, snapshot);
             InteractionState nextState = state.withCorridorDraft(CorridorDraft.none());
             DungeonEditorSessionValues.DeleteCorridorPreview preview = deletePreview(target);
@@ -63,7 +69,9 @@ final class DungeonEditorCorridorInteractionUseCase {
         if (!routeValidationHelper.hasValidRoute(snapshot, facingTargets.start(), facingTargets.target())) {
             return new DungeonEditorMainViewInterpretation(
                     nextState,
-                    DungeonEditorSessionEffect.select(facingTargets.target().selection(), "Korridorroute blockiert."));
+                    DungeonEditorSessionEffect.selectRejected(
+                            facingTargets.target().selection(),
+                            DungeonEditorCommandOutcome.RejectionReason.BLOCKED_ROUTE));
         }
         return new DungeonEditorMainViewInterpretation(
                 nextState,
@@ -73,10 +81,10 @@ final class DungeonEditorCorridorInteractionUseCase {
     DungeonEditorSessionEffect preview(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool selectedTool,
+            DungeonEditorToolAction selectedTool,
             InteractionState state
     ) {
-        if (selectedTool == DungeonEditorSessionValues.Tool.CORRIDOR_DELETE) {
+        if (selectedTool.deleteMode()) {
             PendingCorridorTarget target = targetService.resolveDeleteTarget(input, snapshot);
             DungeonEditorSessionValues.DeleteCorridorPreview preview = deletePreview(target);
             if (preview == null || !DungeonEditorWorkspaceValues.hasId(preview.corridorId())) {

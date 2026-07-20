@@ -1,0 +1,98 @@
+package features.dungeon.application.authored.command;
+
+import features.dungeon.api.DungeonChunkKey;
+import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.structure.DungeonMapIdentity;
+import features.dungeon.domain.core.structure.room.DungeonRoomExitDescription;
+import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashSet;
+import java.util.Objects;
+import java.util.Set;
+
+/** Exact before/after delta for one authored room identity. */
+public record RoomRegionChange(RoomRegion before, RoomRegion after) implements DungeonPatchChange {
+    private static final long FIXED_ENCODING_BYTES = 128L;
+    private static final long CELL_ENCODING_BYTES = 16L;
+
+    public RoomRegionChange {
+        if (before == null && after == null) {
+            throw new IllegalArgumentException("a room change requires before or after state");
+        }
+        if (before != null && after != null) {
+            if (before.equals(after)) {
+                throw new IllegalArgumentException("a room change requires distinct before and after state");
+            }
+            if (before.roomId() != after.roomId() || before.mapId() != after.mapId()) {
+                throw new IllegalArgumentException("room identity must remain stable");
+            }
+        }
+    }
+
+    @Override
+    public DungeonMapIdentity mapId() {
+        return new DungeonMapIdentity(state().mapId());
+    }
+
+    @Override
+    public DungeonPatchEntityRef entityRef() {
+        return DungeonPatchEntityRef.room(state().roomId());
+    }
+
+    @Override
+    public Set<DungeonChunkKey> touchedChunks() {
+        Set<DungeonChunkKey> result = new LinkedHashSet<>();
+        addChunks(result, before);
+        addChunks(result, after);
+        return Set.copyOf(result);
+    }
+
+    @Override
+    public long encodedBytes() {
+        return FIXED_ENCODING_BYTES + encodedBytes(before) + encodedBytes(after);
+    }
+
+    @Override
+    public RoomRegionChange inverse() {
+        return new RoomRegionChange(after, before);
+    }
+
+    private RoomRegion state() {
+        return after == null ? before : after;
+    }
+
+    private static void addChunks(Set<DungeonChunkKey> result, RoomRegion room) {
+        if (room == null) {
+            return;
+        }
+        for (Cell cell : room.floorCells()) {
+            result.add(new DungeonChunkKey(
+                    room.mapId(),
+                    cell.level(),
+                    Math.floorDiv(cell.q(), DungeonChunkKey.CHUNK_SIZE),
+                    Math.floorDiv(cell.r(), DungeonChunkKey.CHUNK_SIZE)));
+        }
+    }
+
+    private static long encodedBytes(RoomRegion room) {
+        if (room == null) {
+            return 1L;
+        }
+        return CELL_ENCODING_BYTES * room.floorCells().size()
+                + textBytes(room.name())
+                + narrationBytes(room.narration());
+    }
+
+    private static long narrationBytes(DungeonRoomNarration narration) {
+        long result = textBytes(narration.visualDescription());
+        for (DungeonRoomExitDescription exit : narration.exitDescriptions()) {
+            result += CELL_ENCODING_BYTES + textBytes(exit.description());
+        }
+        return result;
+    }
+
+    private static long textBytes(String value) {
+        return Objects.requireNonNullElse(value, "").getBytes(StandardCharsets.UTF_8).length;
+    }
+}

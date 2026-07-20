@@ -10,6 +10,7 @@ import features.dungeon.api.TravelDungeonWorkspaceState;
 import features.dungeon.api.DungeonMapCatalogResponse;
 import features.dungeon.api.DungeonMapSummary;
 import features.dungeon.api.DungeonOverlaySettings;
+import features.dungeon.api.DungeonTravelActionId;
 import platform.ui.catalogcrud.CatalogCrudControlsContentModel;
 
 public final class DungeonTravelContributionModel {
@@ -101,10 +102,16 @@ public final class DungeonTravelContributionModel {
 
     static final class ActionProjection {
 
+        private final DungeonTravelActionId actionId;
         private final String buttonLabel;
         private final String descriptionText;
 
-        private ActionProjection(String buttonLabel, String descriptionText) {
+        private ActionProjection(
+                DungeonTravelActionId actionId,
+                String buttonLabel,
+                String descriptionText
+        ) {
+            this.actionId = java.util.Objects.requireNonNull(actionId, "actionId");
             this.buttonLabel = buttonLabel == null || buttonLabel.isBlank()
                     ? "Aktion"
                     : buttonLabel.trim();
@@ -112,10 +119,14 @@ public final class DungeonTravelContributionModel {
         }
 
         static ActionProjection from(TravelDungeonAction action) {
-            if (action == null) {
-                return new ActionProjection("Aktion", "");
-            }
-            return new ActionProjection(action.label(), action.description());
+            return new ActionProjection(
+                    action.actionId(),
+                    action.label(),
+                    action.description());
+        }
+
+        DungeonTravelActionId actionId() {
+            return actionId;
         }
 
         String buttonLabel() {
@@ -131,22 +142,16 @@ public final class DungeonTravelContributionModel {
         if (projections == null) {
             return List.of();
         }
-        List<DungeonTravelStateContentModel.ActionItem> items = new java.util.ArrayList<>();
-        for (int index = 0; index < projections.size(); index++) {
-            items.add(toStateActionItem(index, projections.get(index)));
-        }
-        return List.copyOf(items);
+        return projections.stream()
+                .map(DungeonTravelContributionModel::toStateActionItem)
+                .toList();
     }
 
     private static DungeonTravelStateContentModel.ActionItem toStateActionItem(
-            int rowIndex,
             ActionProjection projection
     ) {
-        if (projection == null) {
-            return DungeonTravelStateContentModel.ActionItem.of(rowIndex, "", "");
-        }
         return DungeonTravelStateContentModel.ActionItem.of(
-                rowIndex,
+                projection.actionId(),
                 projection.buttonLabel(),
                 projection.descriptionText());
     }

@@ -23,7 +23,7 @@ final class DungeonEditorStateProjectionServiceAssembly {
                 preview(snapshot.preview()),
                 snapshot.statusText(),
                 DungeonEditorValueProjectionServiceAssembly.viewMode(snapshot.viewMode()),
-                DungeonEditorValueProjectionServiceAssembly.tool(snapshot.selectedTool()),
+                snapshot.toolSelection(),
                 DungeonEditorValueProjectionServiceAssembly.overlay(snapshot.overlaySettings()),
                 snapshot.projectionLevel());
     }
@@ -43,7 +43,7 @@ final class DungeonEditorStateProjectionServiceAssembly {
                 preview(safeFrameData.preview()),
                 safeFrameData.statusText(),
                 DungeonEditorValueProjectionServiceAssembly.viewMode(safeFrameData.viewMode()),
-                DungeonEditorValueProjectionServiceAssembly.tool(safeFrameData.selectedTool()),
+                safeFrameData.toolSelection(),
                 DungeonEditorValueProjectionServiceAssembly.overlay(safeFrameData.overlaySettings()),
                 safeFrameData.projectionLevel());
     }
@@ -106,11 +106,11 @@ final class DungeonEditorStateProjectionServiceAssembly {
     }
 
     private static List<features.dungeon.api.DungeonEdgeRef> edges(
-            List<features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Edge> edges
+            List<features.dungeon.domain.core.geometry.Edge> edges
     ) {
         List<features.dungeon.api.DungeonEdgeRef> result = new ArrayList<>();
-        for (features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Edge edge
-                : edges == null ? List.<features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Edge>of() : edges) {
+        for (features.dungeon.domain.core.geometry.Edge edge
+                : edges == null ? List.<features.dungeon.domain.core.geometry.Edge>of() : edges) {
             result.add(DungeonEditorValueProjectionServiceAssembly.edge(edge));
         }
         return List.copyOf(result);

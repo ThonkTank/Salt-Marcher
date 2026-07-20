@@ -15,12 +15,12 @@ import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.stair.Stair;
 import features.dungeon.application.editor.interaction.DungeonEditorAffordanceModel;
 import features.dungeon.application.editor.interaction.DungeonEditorHandleProjection;
-import features.dungeon.application.editor.interaction.DungeonEditorHandleProjectionKind;
+import features.dungeon.api.DungeonEditorHandleKind;
 import features.dungeon.domain.core.structure.corridor.Corridor;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 
 /**
  * Publishes authored editor handles from one dungeon map snapshot.
@@ -45,13 +45,13 @@ public final class PublishDungeonEditorHandlesUseCase {
     private static void appendDoorHandles(
             List<DungeonEditorHandleProjection> result,
             DungeonMap dungeonMap,
-            Map<Long, DungeonRoom> primaryRoomsByCluster
+            Map<Long, RoomRegion> primaryRoomsByCluster
     ) {
         Set<DoorBoundaryRef> publishedDoorRefs = new java.util.LinkedHashSet<>();
         for (Corridor corridor : dungeonMap.corridors()) {
-            for (int index = 0; index < corridor.stateBindings().doorBindings().size(); index++) {
-                var binding = corridor.stateBindings().doorBindings().get(index);
-                DungeonRoomCluster cluster = cluster(dungeonMap, binding.clusterId());
+            for (int index = 0; index < corridor.bindings().doorBindings().size(); index++) {
+                var binding = corridor.bindings().doorBindings().get(index);
+                RoomCluster cluster = cluster(dungeonMap, binding.clusterId());
                 Cell roomCell = binding.relativeCell();
                 Cell absoluteRoomCell = cluster == null
                         ? roomCell
@@ -62,7 +62,7 @@ public final class PublishDungeonEditorHandlesUseCase {
                 Cell corridorCell = binding.direction().neighborOf(absoluteRoomCell);
                 Edge doorEdge = binding.direction().edgeOf(absoluteRoomCell);
                 result.add(new DungeonEditorHandleProjection(
-                        DungeonEditorHandleProjectionKind.DOOR,
+                        DungeonEditorHandleKind.DOOR,
                         binding.topologyRef(),
                         binding.topologyRef().present() ? binding.topologyRef().id() : corridor.corridorId(),
                         binding.clusterId(),
@@ -83,7 +83,7 @@ public final class PublishDungeonEditorHandlesUseCase {
                         binding.direction()));
             }
         }
-        for (DungeonRoomCluster cluster : dungeonMap.topology().roomClusters()) {
+        for (RoomCluster cluster : dungeonMap.topology().roomClusters()) {
             appendStandaloneDoorHandles(
                     result,
                     cluster,
@@ -94,8 +94,8 @@ public final class PublishDungeonEditorHandlesUseCase {
 
     private static void appendStandaloneDoorHandles(
             List<DungeonEditorHandleProjection> result,
-            DungeonRoomCluster cluster,
-            @Nullable DungeonRoom room,
+            RoomCluster cluster,
+            @Nullable RoomRegion room,
             Set<DoorBoundaryRef> publishedDoorRefs
     ) {
         if (cluster == null) {
@@ -123,7 +123,7 @@ public final class PublishDungeonEditorHandlesUseCase {
             Edge doorEdge = boundary.direction().edgeOf(absoluteRoomCell);
             Cell handleCell = boundary.direction().neighborOf(absoluteRoomCell);
             result.add(new DungeonEditorHandleProjection(
-                    DungeonEditorHandleProjectionKind.DOOR,
+                    DungeonEditorHandleKind.DOOR,
                     topologyRef,
                     topologyRef.present() ? topologyRef.id() : 0L,
                     cluster.clusterId(),
@@ -147,14 +147,14 @@ public final class PublishDungeonEditorHandlesUseCase {
 
     private static void appendWaypointHandles(List<DungeonEditorHandleProjection> result, DungeonMap dungeonMap) {
         for (Corridor corridor : dungeonMap.corridors()) {
-            for (int index = 0; index < corridor.stateBindings().waypoints().size(); index++) {
-                var waypoint = corridor.stateBindings().waypoints().get(index);
-                DungeonRoomCluster cluster = cluster(dungeonMap, waypoint.clusterId());
+            for (int index = 0; index < corridor.bindings().waypoints().size(); index++) {
+                var waypoint = corridor.bindings().waypoints().get(index);
+                RoomCluster cluster = cluster(dungeonMap, waypoint.clusterId());
                 Cell absolute = cluster == null
                         ? waypoint.relativeCell()
                         : waypoint.absoluteCell(cluster.center());
                 result.add(new DungeonEditorHandleProjection(
-                        DungeonEditorHandleProjectionKind.CORRIDOR_WAYPOINT,
+                        DungeonEditorHandleKind.CORRIDOR_WAYPOINT,
                         new DungeonTopologyRef(DungeonTopologyElementKind.CORRIDOR, corridor.corridorId()),
                         corridor.corridorId(),
                         waypoint.clusterId(),
@@ -174,11 +174,11 @@ public final class PublishDungeonEditorHandlesUseCase {
 
     private static void appendAnchorHandles(List<DungeonEditorHandleProjection> result, DungeonMap dungeonMap) {
         for (Corridor corridor : dungeonMap.corridors()) {
-            for (int index = 0; index < corridor.stateBindings().anchorBindings().size(); index++) {
-                var anchor = corridor.stateBindings().anchorBindings().get(index);
+            for (int index = 0; index < corridor.bindings().anchorBindings().size(); index++) {
+                var anchor = corridor.bindings().anchorBindings().get(index);
                 Cell anchorCell = anchor.position();
                 result.add(new DungeonEditorHandleProjection(
-                        DungeonEditorHandleProjectionKind.CORRIDOR_ANCHOR,
+                        DungeonEditorHandleKind.CORRIDOR_ANCHOR,
                         dungeonMap.topologyIndex().corridorAnchorRef(anchor.hostCorridorId(), anchor.anchorId()),
                         anchor.anchorId(),
                         0L,
@@ -213,7 +213,7 @@ public final class PublishDungeonEditorHandlesUseCase {
 
     private static DungeonEditorHandleProjection stairHandle(Stair stair, Cell cell, int index, String label) {
         return new DungeonEditorHandleProjection(
-                DungeonEditorHandleProjectionKind.STAIR_ANCHOR,
+                DungeonEditorHandleKind.STAIR_ANCHOR,
                 new DungeonTopologyRef(DungeonTopologyElementKind.STAIR, stair.stairId()),
                 stair.stairId(),
                 0L,
@@ -229,8 +229,8 @@ public final class PublishDungeonEditorHandlesUseCase {
                 List.of());
     }
 
-    private static @Nullable DungeonRoomCluster cluster(DungeonMap dungeonMap, long clusterId) {
-        for (DungeonRoomCluster candidate : dungeonMap.topology().roomClusters()) {
+    private static @Nullable RoomCluster cluster(DungeonMap dungeonMap, long clusterId) {
+        for (RoomCluster candidate : dungeonMap.topology().roomClusters()) {
             if (candidate.clusterId() == clusterId) {
                 return candidate;
             }
@@ -238,13 +238,13 @@ public final class PublishDungeonEditorHandlesUseCase {
         return null;
     }
 
-    private static Map<Long, DungeonRoom> primaryRoomsByCluster(DungeonMap dungeonMap) {
-        Map<Long, DungeonRoom> result = new LinkedHashMap<>();
-        for (DungeonRoom room : dungeonMap.rooms().rooms()) {
+    private static Map<Long, RoomRegion> primaryRoomsByCluster(DungeonMap dungeonMap) {
+        Map<Long, RoomRegion> result = new LinkedHashMap<>();
+        for (RoomRegion room : dungeonMap.rooms().rooms()) {
             if (room == null) {
                 continue;
             }
-            DungeonRoom existing = result.get(room.clusterId());
+            RoomRegion existing = result.get(room.clusterId());
             if (existing == null || room.roomId() < existing.roomId()) {
                 result.put(room.clusterId(), room);
             }

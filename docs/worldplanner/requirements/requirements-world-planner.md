@@ -1,6 +1,6 @@
-Status: Draft
+Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-26
+Last Reviewed: 2026-07-17
 Source of Truth: User-facing behavior and acceptance criteria for the World
 Planner NPC, faction, location, and encounter-source workflows.
 
@@ -8,7 +8,8 @@ Planner NPC, faction, location, and encounter-source workflows.
 
 ## Goal
 
-Provide one World Planner left-bar workspace that lets the user:
+Provide authored campaign-world records through the shared Catalog and
+Inspector surfaces so the user can:
 
 - create and maintain NPCs linked to existing creature statblocks
 - record NPC appearance, behavior, history, and notes
@@ -32,23 +33,25 @@ Provide one World Planner left-bar workspace that lets the user:
 
 ## Primary User Flows
 
-1. The user opens the World Planner left-bar tab.
-2. The user creates NPCs and selects an existing creature statblock for each
+1. The user opens the Catalog and selects `NPCs`, `Fraktionen`, or `Orte`.
+2. Selection opens the record's details and existing editing actions in the
+   Inspector.
+3. The user creates NPCs and selects an existing creature statblock for each
    NPC.
-3. The user records appearance, behavior, history, and notes for NPCs.
-4. The user creates factions, assigns one primary encounter table, and adds any
+4. The user records appearance, behavior, history, and notes for NPCs.
+5. The user creates factions, assigns one primary encounter table, and adds any
    number of NPCs.
-5. The user optionally sets finite faction stock limits per creature
+6. The user optionally sets finite faction stock limits per creature
    statblock. Missing limits mean unlimited stock.
-6. The user creates locations, links factions, and attaches location-owned
+7. The user creates locations, links factions, and attaches location-owned
    encounter tables.
-7. The user chooses factions or a location in the Encounter Planner to limit
+8. The user chooses factions or a location in the Catalog to limit
    random encounter generation.
-8. The user adds NPCs to combat.
-9. At combat end, the Encounter state tab shows candidate losses and the user
+9. The user adds NPCs to combat.
+10. At combat end, the Encounter state tab shows candidate losses and the user
    confirms which losses should update World Planner state.
-10. Defeated NPCs stop counting as available until the user reactivates them.
-11. Later Session Planner-owned work can read World Planner location choices
+11. Defeated NPCs stop counting as available until the user reactivates them.
+12. Later Session Planner-owned work can read World Planner location choices
    through a public boundary without World Planner defining session records.
 
 ## Source Constraint Behavior
@@ -76,6 +79,8 @@ Provide one World Planner left-bar workspace that lets the user:
 - add or remove NPCs from factions without mutating creature truth
 - configure faction stock as finite or unlimited per creature statblock
 - configure location-to-faction and location-to-table links
+- remove faction membership and location links without deleting the referenced
+  provider records
 - select factions and locations in encounter-generation controls
 - add an NPC to combat while preserving its World Planner identity
 - show a post-combat loss confirmation before durable NPC or inventory state
@@ -83,11 +88,17 @@ Provide one World Planner left-bar workspace that lets the user:
 - reactivate a defeated named NPC
 - expose location choices through a public boundary for future
   Session Planner-owned integration
+- store faction disposition and NPC modifiers toward the PCs so runtime scenes
+  can derive friendly, neutral, and hostile Encounter roles
 
 ## Acceptance Criteria
 
 - World Planner persists authored NPC, faction, location, lifecycle, notes,
   links, and inventory-limit truth as its own feature state.
+- the shell exposes no separate World Planner left-bar entry and no World
+  Planner-owned state pane
+- Catalog list selection opens World Planner details and existing editing
+  actions in the Inspector while the global Encounter state remains visible
 - NPCs store creature statblock references, not copied statblock fields.
 - Factions can contain any number of NPCs and one primary encounter table.
 - Faction statblock limits are optional and unlimited by default.
@@ -101,6 +112,10 @@ Provide one World Planner left-bar workspace that lets the user:
   reactivated.
 - World Planner exposes location references without storing or defining
   Session Planner-owned records.
+- an NPC belongs to at most one faction and its effective disposition is the
+  clamped sum of faction base and NPC modifier
+- deleting an NPC removes its faction membership; deleting a faction removes
+  its location links; deleting a location removes only the location
 - Creature statblocks, encounter-table membership, encounter rosters, party
   members, combat HP, dungeon maps, and hex maps stay in their owning
   contexts.

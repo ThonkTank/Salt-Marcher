@@ -1,23 +1,40 @@
 package features.hex.adapter.javafx.hexmap;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
-import javafx.event.ActionEvent;
+import features.hex.HexServiceAssembly;
+import features.hex.adapter.sqlite.model.HexPersistenceSchema;
+import features.hex.adapter.sqlite.repository.SqliteHexMapRepository;
+import features.hex.api.CreateHexMapCommand;
+import features.hex.api.HexEditorApi;
+import features.hex.api.HexEditorMode;
+import features.hex.api.HexEditorModel;
+import features.hex.api.HexEditorSnapshot;
+import features.hex.api.HexMapId;
+import features.hex.api.HexMarkerKind;
+import features.hex.api.HexTerrain;
+import features.hex.api.HexTravelApi;
+import features.hex.api.HexTravelModel;
+import features.hex.api.HexTravelSnapshot;
+import features.hex.api.LoadHexEditorCommand;
+import features.hex.api.PaintHexTerrainCommand;
+import features.hex.api.RenameHexMapCommand;
+import features.hex.api.SaveHexMarkerCommand;
+import features.hex.api.SelectHexMapCommand;
+import features.hex.api.SelectHexTileCommand;
+import features.hex.api.SetHexEditorToolCommand;
+import features.hex.api.UpdateHexMapCommand;
+import features.hex.domain.map.HexCoordinate;
+import features.party.PartyServiceAssembly;
+import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
+import features.party.api.CharacterDraft;
+import features.party.api.CreateCharacterCommand;
+import features.party.api.MembershipState;
+import features.party.api.MovePartyCharactersCommand;
+import features.party.api.PartyApi;
+import features.party.api.PartyOverworldTravelLocationSnapshot;
+import features.party.api.PartySnapshotModel;
+
 import javafx.application.Platform;
+import javafx.event.ActionEvent;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -34,47 +51,34 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import platform.persistence.TestFeatureStores;
+import platform.ui.catalogcrud.CatalogCrudControlsView;
+import platform.ui.catalogcrud.CatalogCrudControlsViewInputEvent;
+
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
 import shell.api.ShellBinding;
 import shell.api.ShellSlot;
-import features.hex.adapter.sqlite.repository.SqliteHexMapRepository;
-import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
-import features.hex.HexServiceAssembly;
-import features.hex.adapter.sqlite.model.HexPersistenceSchema;
-import features.hex.api.HexEditorApi;
-import features.hex.api.HexTravelApi;
-import features.hex.api.HexEditorMode;
-import features.hex.domain.map.HexCoordinate;
-import features.hex.api.HexMarkerKind;
-import features.hex.api.HexTerrain;
-import features.hex.api.CreateHexMapCommand;
-import features.hex.api.HexEditorModel;
-import features.hex.api.HexEditorSnapshot;
-import features.hex.api.HexMapId;
-import features.hex.api.HexTravelModel;
-import features.hex.api.HexTravelSnapshot;
-import features.hex.api.LoadHexEditorCommand;
-import features.hex.api.PaintHexTerrainCommand;
-import features.hex.api.RenameHexMapCommand;
-import features.hex.api.SaveHexMarkerCommand;
-import features.hex.api.SelectHexMapCommand;
-import features.hex.api.SelectHexTileCommand;
-import features.hex.api.SetHexEditorToolCommand;
-import features.hex.api.UpdateHexMapCommand;
-import features.party.api.PartyApi;
-import features.party.PartyServiceAssembly;
-import features.party.api.CharacterDraft;
-import features.party.api.CreateCharacterCommand;
-import features.party.api.MembershipState;
-import features.party.api.MovePartyCharactersCommand;
-import features.party.api.PartySnapshotModel;
-import features.party.api.PartyOverworldTravelLocationSnapshot;
-import platform.ui.catalogcrud.CatalogCrudControlsView;
-import platform.ui.catalogcrud.CatalogCrudControlsViewInputEvent;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 @org.junit.jupiter.api.Tag("ui")
 public final class HexMapEditorBehaviorTest {
@@ -956,6 +960,8 @@ public final class HexMapEditorBehaviorTest {
         assertEquals(beforeTravelDraws, tileDrawCount(tileCanvas),
                 "HEX-TRAVEL-005 first travel overlay update does not redraw tiles");
         viewModel.applyTravelSnapshot(new HexTravelSnapshot(
+                0L,
+                0L,
                 true,
                 selectedMapId(snapshot).value(),
                 0,
@@ -1699,9 +1705,13 @@ public final class HexMapEditorBehaviorTest {
     ) {
         static RuntimeSurface create() {
             PartyServiceAssembly.Component party =
-                    PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+                    PartyServiceAssembly.create(new SqlitePartyRosterRepository(
+                                    TestFeatureStores.current().store(
+                                            SqlitePartyRosterRepository.storeDefinition())));
             HexServiceAssembly hex = new HexServiceAssembly(
-                    new SqliteHexMapRepository(), party.travelPositions(), party.application());
+                    new SqliteHexMapRepository(
+                                    TestFeatureStores.current().store(
+                                            SqliteHexMapRepository.storeDefinition())), party.travelPositions(), party.application());
             return new RuntimeSurface(
                     hex.editorApplication(),
                     hex.editorModel(),

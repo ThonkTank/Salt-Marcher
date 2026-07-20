@@ -2,10 +2,9 @@ package features.dungeon.adapter.javafx.map;
 
 import org.jspecify.annotations.Nullable;
 import features.dungeon.api.DungeonEditorMapSnapshot;
+import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonEditorSurface;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreviewRenderDiffFrame;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreviewRenderFrame;
 
 final class DungeonMapEditorRenderProjector {
     private final DungeonMapRoomLabelPlanner roomLabelPlanner;
@@ -19,9 +18,9 @@ final class DungeonMapEditorRenderProjector {
             String placeholderTitle,
             @Nullable DungeonEditorSurface surface,
             DungeonEditorStateSnapshot.Selection selection,
+            DungeonEditorPreview preview,
             PreviewRenderFrame previewRender,
             PreviewRenderDiffFrame previewRenderDiff,
-            DungeonMapContentModel.MapInteractionFrame interactionFrame,
             boolean editorMode
     ) {
         if (surface == null) {
@@ -33,7 +32,7 @@ final class DungeonMapEditorRenderProjector {
                 previewRender == null ? PreviewRenderFrame.empty() : previewRender,
                 previewRenderDiff,
                 selection == null ? DungeonEditorStateSnapshot.Selection.empty() : selection,
-                interactionFrame == null ? DungeonMapContentModel.MapInteractionFrame.empty() : interactionFrame);
+                preview == null ? DungeonEditorPreview.none() : preview);
         return projection.renderState(surface, map, editorMode);
     }
 
@@ -42,15 +41,15 @@ final class DungeonMapEditorRenderProjector {
             PreviewRenderFrame previewRender,
             PreviewRenderDiffFrame previewRenderDiff,
             DungeonEditorStateSnapshot.Selection selection,
-            DungeonMapContentModel.MapInteractionFrame interactionFrame
+            DungeonEditorPreview preview
     ) {
         DungeonMapEditorProjectionAccumulator projection = new DungeonMapEditorProjectionAccumulator(roomLabelPlanner, previewDiffProjector);
         projection.addAreas(map, selection);
         projection.addClusterLabels(map, selection);
         projection.addPreviewAndBoundaries(map, selection, previewRender);
         projection.addFeatures(map, selection);
-        projection.addHandles(map, selection, interactionFrame);
-        projection.addPreviewRenderDiff(previewRenderDiff, selection, interactionFrame);
+        projection.addHandles(map, selection, preview);
+        projection.addPreviewRenderDiff(previewRenderDiff, selection);
         projection.addFallbackGraphLinks();
         return projection;
     }

@@ -1,7 +1,5 @@
 package features.creatures.adapter.sqlite.query;
 
-import org.jspecify.annotations.Nullable;
-import platform.persistence.SqliteDatabase;
 import features.creatures.adapter.sqlite.gateway.local.SqliteCreatureCatalogLocalGateway;
 import features.creatures.adapter.sqlite.mapper.CreatureCatalogQueryMappingFacade;
 import features.creatures.domain.catalog.CreatureCatalogData.CatalogPageData;
@@ -12,18 +10,28 @@ import features.creatures.domain.catalog.CreatureCatalogData.EncounterCandidateP
 import features.creatures.domain.catalog.CreatureCatalogData.EncounterCandidateSpec;
 import features.creatures.domain.catalog.port.CreatureCatalogPort;
 
+import org.jspecify.annotations.Nullable;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+
 import java.util.List;
 
 public final class SqliteCreatureCatalogQueryAdapter implements CreatureCatalogPort {
 
     private final SqliteCreatureCatalogLocalGateway gateway;
 
-    public SqliteCreatureCatalogQueryAdapter() {
-        this(new SqliteCreatureCatalogLocalGateway());
+    public static FeatureStoreDefinition storeDefinition() {
+        return SqliteCreatureCatalogLocalGateway.storeDefinition();
     }
 
-    public SqliteCreatureCatalogQueryAdapter(SqliteDatabase database) {
-        this(new SqliteCreatureCatalogLocalGateway(database));
+    public SqliteCreatureCatalogQueryAdapter(FeatureStoreHandle store) {
+        this(store, NoopDiagnostics.INSTANCE);
+    }
+
+    public SqliteCreatureCatalogQueryAdapter(FeatureStoreHandle store, Diagnostics diagnostics) {
+        this(new SqliteCreatureCatalogLocalGateway(store, diagnostics));
     }
 
     SqliteCreatureCatalogQueryAdapter(SqliteCreatureCatalogLocalGateway gateway) {
@@ -50,6 +58,13 @@ public final class SqliteCreatureCatalogQueryAdapter implements CreatureCatalogP
     public List<EncounterCandidateProfile> loadEncounterCandidates(EncounterCandidateSpec spec) {
         return CreatureCatalogQueryMappingFacade.toDomain(
                 gateway.loadEncounterCandidates(CreatureCatalogQueryMappingFacade.toEncounterCriteria(spec)));
+    }
+
+    @Override
+    public List<EncounterCandidateProfile> loadCreatureFacts(
+            features.creatures.domain.catalog.CreatureCatalogData.CreatureFactsSpec spec
+    ) {
+        return CreatureCatalogQueryMappingFacade.toDomain(gateway.loadCreatureFacts(spec));
     }
 
     private static SqliteCreatureCatalogLocalGateway requireGateway(SqliteCreatureCatalogLocalGateway gateway) {

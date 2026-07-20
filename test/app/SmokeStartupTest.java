@@ -1,11 +1,5 @@
 package app;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Comparator;
-import java.util.List;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -15,10 +9,28 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.Pane;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import platform.diagnostics.NoopDiagnostics;
+import platform.execution.ExecutionLane;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
+import platform.ui.DirectUiDispatcher;
+
 import shell.api.ContributionKey;
 import shell.host.AppShell;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteDatabase;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.sql.DriverManager;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 @org.junit.jupiter.api.Tag("ui")
 public final class SmokeStartupTest {
@@ -29,56 +41,144 @@ public final class SmokeStartupTest {
     }
 
     @AfterAll
-    static void shutdownFx() {
-        testsupport.JavaFxRuntime.shutdown();
+    static void shutdownFx() throws Exception {
+        runOnFx(testsupport.JavaFxRuntime::shutdown);
     }
 
     @Test
     void SMOKE_STARTUP_001() throws Exception {
         Instant deadline = Instant.now().plus(TIMEOUT);
-        testsupport.JavaFxRuntime.startup(() -> {
+        runOnFx(() -> {
+            try (AppBootstrap bootstrap = new AppBootstrap()) {
+                AppShell shell = bootstrap.createShell();
+                new Scene(shell, 1150, 700);
+                shell.applyCss();
+                shell.layout();
+                List<ToggleButton> navigation = navigationButtons(shell);
+                require(
+                        navigation.stream().map(Node::getAccessibleText).toList().equals(List.of(
+                                "Szenen",
+                                "Session Planner",
+                                "Dungeon-Editor",
+                                "Dungeon-Reise",
+                                "Hex-Karte",
+                                "Katalog")),
+                        "Expected exact explicit navigation manifest in shell order.");
+                require(
+                        shell.lookup(".title-large") instanceof Label title
+                                && "Dungeon-Editor".equals(title.getText()),
+                        "Expected Dungeon-Editor as explicit default landing.");
+                require(
+                        navigation.stream().filter(ToggleButton::isSelected).map(Node::getAccessibleText).toList()
+                                .equals(List.of("Dungeon-Editor")),
+                                "Expected only the default landing navigation entry to be"
+                                    + " selected.");
+                require(
+                        shell.lookup(".toolbar") instanceof Pane toolbar && toolbar.getChildren().size() == 4,
+                                "Expected title, spacer, and exactly two explicit top-bar"
+                                    + " contributions.");
+                List<String> topBarTooltips = shell.lookupAll(".toolbar .button").stream()
+                        .filter(Button.class::isInstance)
+                        .map(Button.class::cast)
+                        .map(Button::getTooltip)
+                        .filter(java.util.Objects::nonNull)
+                        .map(javafx.scene.control.Tooltip::getText)
+                        .sorted()
+                        .toList();
+                require(topBarTooltips.equals(List.of(
+                                "Adventuring-Day-Rechner öffnen",
+                                "Party-Panel öffnen (Alt+P)")),
+                                "Expected distinct Adventuring Day and Party top-bar surfaces, but"
+                                    + " was "
+                                        + topBarTooltips + ".");
+                assertStateTabManifest(shell, navigation);
+                require(Instant.now().isBefore(deadline), "Smoke startup exceeded timeout.");
+            }
         });
-        try (AppBootstrap bootstrap = new AppBootstrap()) {
-            AppShell shell = bootstrap.createShell();
-            new Scene(shell, 1150, 700);
-            shell.applyCss();
-            shell.layout();
-            List<ToggleButton> navigation = navigationButtons(shell);
-            require(
-                    navigation.stream().map(Node::getAccessibleText).toList().equals(List.of(
-                            "Session Planner",
-                            "World Planner",
-                            "Dungeon-Editor",
-                            "Dungeon-Reise",
-                            "Hex-Karte",
-                            "Encounter-Planer")),
-                    "Expected exact explicit navigation manifest in shell order.");
-            require(
-                    shell.lookup(".title-large") instanceof Label title && "Dungeon-Editor".equals(title.getText()),
-                    "Expected Dungeon-Editor as explicit default landing.");
-            require(
-                    navigation.stream().filter(ToggleButton::isSelected).map(Node::getAccessibleText).toList()
-                            .equals(List.of("Dungeon-Editor")),
-                    "Expected only the default landing navigation entry to be selected.");
-            require(
-                    shell.lookup(".toolbar") instanceof Pane toolbar && toolbar.getChildren().size() == 4,
-                    "Expected title, spacer, and exactly two explicit top-bar contributions.");
-            List<String> topBarTooltips = shell.lookupAll(".toolbar .button").stream()
-                    .filter(Button.class::isInstance)
-                    .map(Button.class::cast)
-                    .map(Button::getTooltip)
-                    .filter(java.util.Objects::nonNull)
-                    .map(javafx.scene.control.Tooltip::getText)
-                    .sorted()
-                    .toList();
-            require(topBarTooltips.equals(List.of(
-                            "Adventuring-Day-Rechner öffnen",
-                            "Party-Panel öffnen (Alt+P)")),
-                    "Expected distinct Adventuring Day and Party top-bar surfaces, but was " + topBarTooltips + ".");
-            assertStateTabManifest(shell, navigation);
-            require(Instant.now().isBefore(deadline), "Smoke startup exceeded timeout.");
-        }
         openTempSqliteConnection();
+    }
+
+    @Test
+    void preparesStoresBeforeWorkAndKeepsProductionCatalogReadLanesIndependent(
+            @TempDir Path temporaryDirectory
+    ) throws Exception {
+        runOnFx(() -> {
+            Path databasePath = temporaryDirectory.resolve("startup-order.sqlite");
+            try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
+                StoragePreparedLane orderedLane = new StoragePreparedLane(databasePath);
+                StoragePreparedLane creatureReadLane = new StoragePreparedLane(databasePath);
+                StoragePreparedLane itemReadLane = new StoragePreparedLane(databasePath);
+                try (AppBootstrap bootstrap = new AppBootstrap(
+                        NoopDiagnostics.INSTANCE,
+                        orderedLane,
+                        creatureReadLane,
+                        itemReadLane,
+                        orderedLane,
+                        orderedLane,
+                        orderedLane,
+                        orderedLane,
+                        orderedLane,
+                        orderedLane,
+                        DirectUiDispatcher.INSTANCE,
+                        database)) {
+                    AppShell shell = bootstrap.createShell();
+                    new Scene(shell, 1_150, 700);
+                    require(orderedLane.executions > 0, "Expected explicitly started service work.");
+                    require(creatureReadLane.executions == 0 && itemReadLane.executions == 0,
+                            "inactive Catalog providers performed startup reads");
+
+                    shell.navigateTo(new ContributionKey("catalog"));
+                    shell.applyCss();
+                    shell.layout();
+                    require(creatureReadLane.executions >= 2,
+                            "Monster activation did not use the production Creature read lane");
+                    require(itemReadLane.executions == 0,
+                            "inactive Items performed work on its production read lane");
+
+                    ToggleButton items = shell.lookupAll(".catalog-section-button").stream()
+                            .filter(ToggleButton.class::isInstance)
+                            .map(ToggleButton.class::cast)
+                            .filter(button -> "Katalogbereich Items".equals(button.getAccessibleText()))
+                            .findFirst()
+                            .orElseThrow(() -> new AssertionError("Items Catalog section missing"));
+                    items.fire();
+                    require(itemReadLane.executions >= 2,
+                            "Items activation did not use its independent production read lane");
+                }
+            }
+        });
+    }
+
+    private static void runOnFx(ThrowingRunnable action) throws Exception {
+        if (Platform.isFxApplicationThread()) {
+            action.run();
+            return;
+        }
+        CountDownLatch completed = new CountDownLatch(1);
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        testsupport.JavaFxRuntime.startup(() -> {
+            try {
+                Platform.setImplicitExit(false);
+                action.run();
+            } catch (Throwable throwable) {
+                failure.set(throwable);
+            } finally {
+                completed.countDown();
+            }
+        });
+        if (!completed.await(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)) {
+            throw new IllegalStateException("Timed out waiting for JavaFX smoke startup work.");
+        }
+        Throwable thrown = failure.get();
+        if (thrown instanceof Exception exception) {
+            throw exception;
+        }
+        if (thrown instanceof Error error) {
+            throw error;
+        }
+        if (thrown != null) {
+            throw new IllegalStateException("JavaFX smoke startup work failed.", thrown);
+        }
     }
 
     private static List<ToggleButton> navigationButtons(AppShell shell) {
@@ -91,8 +191,8 @@ public final class SmokeStartupTest {
     }
 
     private static void assertStateTabManifest(AppShell shell, List<ToggleButton> navigation) {
-        require(navigation.stream().anyMatch(button -> "Encounter-Planer".equals(button.getAccessibleText())),
-                "Encounter-Planer navigation entry missing.");
+        require(navigation.stream().anyMatch(button -> "Katalog".equals(button.getAccessibleText())),
+                "Katalog navigation entry missing.");
         shell.navigateTo(new ContributionKey("catalog"));
         shell.applyCss();
         shell.layout();
@@ -113,7 +213,8 @@ public final class SmokeStartupTest {
         Path database = Path.of(xdgDataHome, "salt-marcher", "game.db").toAbsolutePath().normalize();
         Files.createDirectories(database.getParent());
         try (SqliteDatabase lifecycle = new SqliteDatabase(database, NoopDiagnostics.INSTANCE);
-             var connection = lifecycle.connections("smoke").openConnection();
+             var connection = TestFeatureStores.store(
+                     lifecycle, FeatureStoreDefinition.of("smoke")).openConnection();
              var statement = connection.createStatement()) {
             try (var result = statement.executeQuery("PRAGMA integrity_check")) {
                 require(result.next() && "ok".equalsIgnoreCase(result.getString(1)), "SQLite integrity check failed.");
@@ -125,5 +226,61 @@ public final class SmokeStartupTest {
         if (!condition) {
             throw new IllegalStateException(message);
         }
+    }
+
+    private static final class StoragePreparedLane implements ExecutionLane {
+
+        private static final Set<String> EXPECTED_OWNERS = Set.of(
+                "creatures",
+                "dungeon",
+                "encounter",
+                "encounter-table",
+                "hex",
+                "items",
+                "party",
+                "scene",
+                "session-generation",
+                "session-planner",
+                "world-planner");
+
+        private final Path databasePath;
+        private int executions;
+
+        private StoragePreparedLane(Path databasePath) {
+            this.databasePath = databasePath;
+        }
+
+        @Override
+        public void execute(Runnable work) {
+            assertAllStoresPrepared();
+            executions++;
+            work.run();
+        }
+
+        private void assertAllStoresPrepared() {
+            try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+                    var statement = connection.createStatement();
+                    var result = statement.executeQuery("SELECT owner FROM sm_schema_versions")) {
+                java.util.HashSet<String> actual = new java.util.HashSet<>();
+                while (result.next()) {
+                    actual.add(result.getString(1));
+                }
+                require(
+                        actual.equals(EXPECTED_OWNERS),
+                        "Service work started before all feature stores were prepared: " + actual);
+            } catch (java.sql.SQLException exception) {
+                throw new IllegalStateException("Service work started before storage preparation.", exception);
+            }
+        }
+
+        @Override
+        public void close() {
+            // Owned by the bootstrap; no external resources in this proof lane.
+        }
+    }
+
+    @FunctionalInterface
+    private interface ThrowingRunnable {
+        void run() throws Exception;
     }
 }

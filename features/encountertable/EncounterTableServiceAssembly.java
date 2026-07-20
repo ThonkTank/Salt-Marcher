@@ -1,25 +1,28 @@
 package features.encountertable;
 
-import java.util.Objects;
-import platform.diagnostics.DiagnosticId;
-import platform.diagnostics.Diagnostics;
-import platform.diagnostics.NoopDiagnostics;
-import platform.execution.DirectExecutionLane;
-import platform.execution.ExecutionLane;
-import platform.persistence.SqliteDatabase;
-import platform.ui.DirectUiDispatcher;
-import platform.ui.UiDispatcher;
 import features.encountertable.adapter.sqlite.query.SqliteEncounterTableCatalogAdapter;
 import features.encountertable.api.EncounterTableApi;
-import features.encountertable.application.EncounterTableApplicationService;
-import features.encountertable.application.EncounterTableCatalogProjection;
-import features.encountertable.application.EncounterTablePublishedState;
-import features.encountertable.domain.catalog.port.EncounterTableCatalogPort;
 import features.encountertable.api.EncounterTableCandidatesModel;
 import features.encountertable.api.EncounterTableCatalogModel;
 import features.encountertable.api.EncounterTableCatalogResult;
 import features.encountertable.api.EncounterTableReadStatus;
 import features.encountertable.api.EncounterTableReferenceApi;
+import features.encountertable.application.EncounterTableApplicationService;
+import features.encountertable.application.EncounterTableCatalogProjection;
+import features.encountertable.application.EncounterTablePublishedState;
+import features.encountertable.domain.catalog.port.EncounterTableCatalogPort;
+
+import platform.diagnostics.DiagnosticId;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.NoopDiagnostics;
+import platform.execution.DirectExecutionLane;
+import platform.execution.ExecutionLane;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+import platform.ui.DirectUiDispatcher;
+import platform.ui.UiDispatcher;
+
+import java.util.Objects;
 
 public final class EncounterTableServiceAssembly {
 
@@ -27,6 +30,10 @@ public final class EncounterTableServiceAssembly {
             new DiagnosticId("encountertable.reference.storage-failure");
 
     private EncounterTableServiceAssembly() {
+    }
+
+    public static FeatureStoreDefinition storeDefinition() {
+        return SqliteEncounterTableCatalogAdapter.storeDefinition();
     }
 
     public static Component create(EncounterTableCatalogPort catalogPort) {
@@ -38,13 +45,13 @@ public final class EncounterTableServiceAssembly {
     }
 
     public static Component create(
-            SqliteDatabase database,
+            FeatureStoreHandle store,
             ExecutionLane executionLane,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
         return create(
-                new SqliteEncounterTableCatalogAdapter(Objects.requireNonNull(database, "database")),
+                new SqliteEncounterTableCatalogAdapter(store),
                 executionLane,
                 uiDispatcher,
                 diagnostics);

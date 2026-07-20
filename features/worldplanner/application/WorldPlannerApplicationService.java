@@ -25,9 +25,20 @@ import features.worldplanner.api.CreateWorldFactionCommand;
 import features.worldplanner.api.CreateWorldLocationCommand;
 import features.worldplanner.api.CreateWorldNpcCommand;
 import features.worldplanner.api.RefreshWorldPlannerCommand;
+import features.worldplanner.api.SetWorldFactionDispositionCommand;
 import features.worldplanner.api.SetWorldFactionInventoryLimitCommand;
+import features.worldplanner.api.SetWorldNpcDispositionModifierCommand;
 import features.worldplanner.api.SetWorldNpcLifecycleStatusCommand;
 import features.worldplanner.api.UpdateWorldNpcNotesCommand;
+import features.worldplanner.api.UpdateWorldNpcCommand;
+import features.worldplanner.api.DeleteWorldNpcCommand;
+import features.worldplanner.api.UpdateWorldFactionCommand;
+import features.worldplanner.api.RemoveWorldFactionNpcCommand;
+import features.worldplanner.api.DeleteWorldFactionCommand;
+import features.worldplanner.api.UpdateWorldLocationCommand;
+import features.worldplanner.api.RemoveWorldLocationFactionCommand;
+import features.worldplanner.api.RemoveWorldLocationEncounterTableCommand;
+import features.worldplanner.api.DeleteWorldLocationCommand;
 
 public final class WorldPlannerApplicationService implements features.worldplanner.api.WorldPlannerApi {
 
@@ -130,6 +141,47 @@ public final class WorldPlannerApplicationService implements features.worldplann
         });
     }
 
+    @Override
+    public void updateNpc(UpdateWorldNpcCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            WorldNpc npc = state.npc(command.npcId());
+            long statblockId = command.creatureStatblockId();
+            if (npc == null || !WorldPlannerIds.isPositive(statblockId)
+                    || !referenceExists(() -> referenceValidator.creatureStatblockExists(statblockId))) {
+                save(state.withStatus("NPC oder Creature Statblock nicht gefunden."));
+                return;
+            }
+            WorldNpc.Notes notes = new WorldNpc.Notes(
+                    command.appearanceNotes(), command.behaviorNotes(), command.historyNotes(), command.generalNotes());
+            save(replaceNpc(state, npc.updateDetails(command.displayName(), statblockId, notes),
+                    "NPC aktualisiert."));
+        });
+    }
+
+    @Override
+    public void deleteNpc(DeleteWorldNpcCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            if (state.npc(command.npcId()) == null) {
+                save(state.withStatus("NPC nicht gefunden."));
+                return;
+            }
+            List<WorldFaction> factions = state.factions().stream()
+                    .map(faction -> faction.npcIds().contains(command.npcId())
+                            ? faction.removeNpc(command.npcId()) : faction)
+                    .toList();
+            save(new WorldPlannerState(
+                    state.npcs().stream().filter(npc -> npc.npcId() != command.npcId()).toList(),
+                    factions,
+                    state.locations(),
+                    state.nextNpcId(), state.nextFactionId(), state.nextLocationId(),
+                    "NPC gelöscht."));
+        });
+    }
+
     public void setNpcLifecycleStatus(SetWorldNpcLifecycleStatusCommand command) {
         Objects.requireNonNull(command, COMMAND_PARAMETER);
         execute(() -> {
@@ -197,11 +249,114 @@ public final class WorldPlannerApplicationService implements features.worldplann
                 save(state.withStatus("Fraktion oder NPC nicht gefunden."));
                 return;
             }
-            if (faction.npcIds().contains(command.npcId())) {
+            if (faction.npcIds().contains(command.npcId())
+                    && state.factionIdForNpc(command.npcId()) == faction.factionId()) {
                 save(state.withStatus("NPC ist bereits Teil der Fraktion."));
                 return;
             }
-            save(replaceFaction(state, faction.addNpc(command.npcId()), "NPC zur Fraktion hinzugefuegt."));
+            List<WorldFaction> reassigned = new ArrayList<>();
+            for (WorldFaction existing : state.factions()) {
+                WorldFaction withoutNpc = existing.npcIds().contains(command.npcId())
+                        ? existing.removeNpc(command.npcId())
+                        : existing;
+                reassigned.add(withoutNpc.factionId() == faction.factionId()
+                        ? withoutNpc.addNpc(command.npcId())
+                        : withoutNpc);
+            }
+            save(new WorldPlannerState(
+                    state.npcs(),
+                    reassigned,
+                    state.locations(),
+                    state.nextNpcId(),
+                    state.nextFactionId(),
+                    state.nextLocationId(),
+                    "NPC-Fraktion aktualisiert."));
+        });
+    }
+
+    @Override
+    public void removeFactionNpc(RemoveWorldFactionNpcCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            WorldFaction faction = state.faction(command.factionId());
+            if (faction == null || !faction.npcIds().contains(command.npcId())) {
+                save(state.withStatus("Fraktion oder verknüpfter NPC nicht gefunden."));
+                return;
+            }
+            save(replaceFaction(state, faction.removeNpc(command.npcId()), "NPC aus Fraktion entfernt."));
+        });
+    }
+
+    @Override
+    public void updateFaction(UpdateWorldFactionCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            WorldFaction faction = state.faction(command.factionId());
+            long tableId = command.primaryEncounterTableId();
+            if (faction == null || !WorldPlannerIds.isPositive(tableId)
+                    || !referenceExists(() -> referenceValidator.encounterTableExists(tableId))) {
+                save(state.withStatus("Fraktion oder Encounter Table nicht gefunden."));
+                return;
+            }
+            save(replaceFaction(state,
+                    faction.updateDetails(command.displayName(), command.notes(), tableId),
+                    "Fraktion aktualisiert."));
+        });
+    }
+
+    @Override
+    public void deleteFaction(DeleteWorldFactionCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            if (state.faction(command.factionId()) == null) {
+                save(state.withStatus("Fraktion nicht gefunden."));
+                return;
+            }
+            List<WorldLocation> locations = state.locations().stream()
+                    .map(location -> location.factionIds().contains(command.factionId())
+                            ? location.removeFaction(command.factionId()) : location)
+                    .toList();
+            save(new WorldPlannerState(
+                    state.npcs(),
+                    state.factions().stream().filter(faction -> faction.factionId() != command.factionId()).toList(),
+                    locations,
+                    state.nextNpcId(), state.nextFactionId(), state.nextLocationId(),
+                    "Fraktion gelöscht."));
+        });
+    }
+
+    public void setFactionDisposition(SetWorldFactionDispositionCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            WorldFaction faction = state.faction(command.factionId());
+            if (faction == null) {
+                save(state.withStatus("Fraktion nicht gefunden."));
+                return;
+            }
+            save(replaceFaction(
+                    state,
+                    faction.withDisposition(command.disposition()),
+                    "Fraktionshaltung aktualisiert."));
+        });
+    }
+
+    public void setNpcDispositionModifier(SetWorldNpcDispositionModifierCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            WorldNpc npc = state.npc(command.npcId());
+            if (npc == null) {
+                save(state.withStatus("NPC nicht gefunden."));
+                return;
+            }
+            save(replaceNpc(
+                    state,
+                    npc.withDispositionModifier(command.modifier()),
+                    "NPC-Haltung aktualisiert."));
         });
     }
 
@@ -261,6 +416,21 @@ public final class WorldPlannerApplicationService implements features.worldplann
         });
     }
 
+    @Override
+    public void removeLocationFaction(RemoveWorldLocationFactionCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            WorldLocation location = state.location(command.locationId());
+            if (location == null || !location.factionIds().contains(command.factionId())) {
+                save(state.withStatus("Location oder verknüpfte Fraktion nicht gefunden."));
+                return;
+            }
+            save(replaceLocation(state, location.removeFaction(command.factionId()),
+                    "Fraktion aus Location entfernt."));
+        });
+    }
+
     public void addLocationEncounterTable(AddWorldLocationEncounterTableCommand command) {
         Objects.requireNonNull(command, COMMAND_PARAMETER);
         execute(() -> {
@@ -278,6 +448,53 @@ public final class WorldPlannerApplicationService implements features.worldplann
                 return;
             }
             save(replaceLocation(state, location.addEncounterTable(tableId), "Encounter Table zur Location hinzugefuegt."));
+        });
+    }
+
+    @Override
+    public void removeLocationEncounterTable(RemoveWorldLocationEncounterTableCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            WorldLocation location = state.location(command.locationId());
+            if (location == null || !location.encounterTableIds().contains(command.encounterTableId())) {
+                save(state.withStatus("Location oder verknüpfte Encounter Table nicht gefunden."));
+                return;
+            }
+            save(replaceLocation(state, location.removeEncounterTable(command.encounterTableId()),
+                    "Encounter Table aus Location entfernt."));
+        });
+    }
+
+    @Override
+    public void updateLocation(UpdateWorldLocationCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            WorldLocation location = state.location(command.locationId());
+            if (location == null) {
+                save(state.withStatus("Location nicht gefunden."));
+                return;
+            }
+            save(replaceLocation(state, location.updateDetails(command.displayName(), command.notes()),
+                    "Location aktualisiert."));
+        });
+    }
+
+    @Override
+    public void deleteLocation(DeleteWorldLocationCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            if (state.location(command.locationId()) == null) {
+                save(state.withStatus("Location nicht gefunden."));
+                return;
+            }
+            save(new WorldPlannerState(
+                    state.npcs(), state.factions(),
+                    state.locations().stream().filter(location -> location.locationId() != command.locationId()).toList(),
+                    state.nextNpcId(), state.nextFactionId(), state.nextLocationId(),
+                    "Location gelöscht."));
         });
     }
 

@@ -41,7 +41,8 @@ lives under `docs/<feature>/`; see [docs/README.md](../README.md).
 
 ## Delivery
 
-- [Active delivery index](delivery/README.md)
+- [Active Project Delivery](delivery/README.md) routes temporary migrations.
+  Feature roadmaps remain owned and retired by their feature.
 
 ## Verification
 

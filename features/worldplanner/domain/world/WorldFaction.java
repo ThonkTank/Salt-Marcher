@@ -9,9 +9,21 @@ public record WorldFaction(
         String displayName,
         String notes,
         long primaryEncounterTableId,
+        int disposition,
         List<Long> npcIds,
         List<WorldFactionInventoryLimit> inventoryLimits
 ) {
+    public WorldFaction(
+            long factionId,
+            String displayName,
+            String notes,
+            long primaryEncounterTableId,
+            List<Long> npcIds,
+            List<WorldFactionInventoryLimit> inventoryLimits
+    ) {
+        this(factionId, displayName, notes, primaryEncounterTableId, 0, npcIds, inventoryLimits);
+    }
+
     public WorldFaction {
         if (!WorldPlannerIds.isPositive(factionId)) {
             throw new IllegalArgumentException("factionId must be positive");
@@ -21,6 +33,7 @@ public record WorldFaction(
         }
         displayName = WorldNpc.normalize(displayName, "Faction #" + factionId);
         notes = WorldNpc.text(notes);
+        disposition = WorldDisposition.clamp(disposition);
         npcIds = WorldPlannerIds.normalize(npcIds);
         inventoryLimits = normalizeInventoryLimits(inventoryLimits);
     }
@@ -47,8 +60,31 @@ public record WorldFaction(
                 displayName,
                 notes,
                 primaryEncounterTableId,
+                disposition,
                 WorldPlannerIds.addUnique(npcIds, npcId),
                 inventoryLimits);
+    }
+
+    public WorldFaction removeNpc(long npcId) {
+        return new WorldFaction(
+                factionId, displayName, notes, primaryEncounterTableId, disposition,
+                npcIds.stream().filter(id -> id != npcId).toList(), inventoryLimits);
+    }
+
+    public WorldFaction updateDetails(String nextDisplayName, String nextNotes, long nextPrimaryEncounterTableId) {
+        return new WorldFaction(
+                factionId,
+                nextDisplayName,
+                nextNotes,
+                nextPrimaryEncounterTableId,
+                disposition,
+                npcIds,
+                inventoryLimits);
+    }
+
+    public WorldFaction withDisposition(int value) {
+        return new WorldFaction(
+                factionId, displayName, notes, primaryEncounterTableId, value, npcIds, inventoryLimits);
     }
 
     public WorldFaction setInventoryLimit(WorldFactionInventoryLimit limit) {
@@ -65,6 +101,7 @@ public record WorldFaction(
                 displayName,
                 notes,
                 primaryEncounterTableId,
+                disposition,
                 npcIds,
                 nextLimits);
     }

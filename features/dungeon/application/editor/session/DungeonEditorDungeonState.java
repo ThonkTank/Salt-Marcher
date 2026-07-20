@@ -6,6 +6,7 @@ import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapId;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSummary;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 
 public final class DungeonEditorDungeonState {
 
@@ -43,6 +44,10 @@ public final class DungeonEditorDungeonState {
         mutable.replaceMutation(mutation);
     }
 
+    public void replaceCommandOutcome(DungeonEditorCommandOutcome commandOutcome) {
+        mutable.replaceCommandOutcome(commandOutcome);
+    }
+
     public void replacePreview(@Nullable PreviewFacts preview) {
         mutable.replacePreview(preview);
     }
@@ -55,29 +60,57 @@ public final class DungeonEditorDungeonState {
         return mutable.facts(mapId, selection, preview);
     }
 
-    public record SnapshotFacts(String mapName, int revision, MapSnapshot map) {
+    public record SnapshotFacts(
+            @Nullable MapId mapId,
+            long requestGeneration,
+            long acceptedRevision,
+            String mapName,
+            int revision,
+            MapSnapshot map
+    ) {
         public SnapshotFacts {
+            requestGeneration = Math.max(0L, requestGeneration);
+            acceptedRevision = Math.max(0L, acceptedRevision);
             mapName = mapName == null || mapName.isBlank() ? "Dungeon Map" : mapName;
             revision = Math.max(0, revision);
             map = map == null ? DungeonEditorWorkspaceValues.MapSnapshot.empty() : map;
         }
+
+        public boolean ownedBy(@Nullable MapId requestedMapId) {
+            return mapId != null && mapId.equals(requestedMapId);
+        }
+
+        SnapshotFacts withRequestGeneration(long generation) {
+            return new SnapshotFacts(
+                    mapId,
+                    generation,
+                    acceptedRevision,
+                    mapName,
+                    revision,
+                    map);
+        }
     }
 
-    public record MutationFacts(SnapshotFacts snapshot, String statusText) {
+    public record MutationFacts(SnapshotFacts snapshot, DungeonEditorCommandOutcome commandOutcome) {
         public MutationFacts {
             snapshot = snapshot == null
-                    ? new SnapshotFacts("Dungeon Map", 0, DungeonEditorWorkspaceValues.MapSnapshot.empty())
+                    ? emptySnapshot()
                     : snapshot;
-            statusText = statusText == null ? "" : statusText;
+            commandOutcome = commandOutcome == null ? DungeonEditorCommandOutcome.idle() : commandOutcome;
         }
     }
 
     public record PreviewFacts(SnapshotFacts snapshot, String statusText) {
         public PreviewFacts {
             snapshot = snapshot == null
-                    ? new SnapshotFacts("Dungeon Map", 0, DungeonEditorWorkspaceValues.MapSnapshot.empty())
+                    ? emptySnapshot()
                     : snapshot;
             statusText = statusText == null ? "" : statusText;
         }
+    }
+
+    private static SnapshotFacts emptySnapshot() {
+        return new SnapshotFacts(
+                null, 0L, 0L, "Dungeon Map", 0, DungeonEditorWorkspaceValues.MapSnapshot.empty());
     }
 }

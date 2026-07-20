@@ -2,7 +2,6 @@ package features.dungeon.adapter.javafx.map;
 
 import java.util.EnumMap;
 import java.util.Map;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreparedLabelKind;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel.PaintStyle;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel.RenderColor;
 

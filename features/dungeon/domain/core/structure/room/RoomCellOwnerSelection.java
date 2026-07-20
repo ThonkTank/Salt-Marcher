@@ -10,9 +10,9 @@ final class RoomCellOwnerSelection {
     private RoomCellOwnerSelection() {
     }
 
-    static List<Room> roomsWithAnchorsIn(List<Room> rooms, int level, Set<Cell> component) {
-        List<Room> result = new ArrayList<>();
-        for (Room room : rooms == null ? List.<Room>of() : rooms) {
+    static List<RoomRegion> roomsWithAnchorsIn(List<RoomRegion> rooms, int level, Set<Cell> component) {
+        List<RoomRegion> result = new ArrayList<>();
+        for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
             if (room != null && component.contains(room.floorAnchors().get(level))) {
                 result.add(room);
             }
@@ -20,10 +20,20 @@ final class RoomCellOwnerSelection {
         return List.copyOf(result);
     }
 
-    static Room nearestRoom(Cell cell, List<Room> rooms, int level) {
-        Room result = null;
+    static List<RoomRegion> roomsWithAnchorAt(List<RoomRegion> rooms, int level) {
+        List<RoomRegion> result = new ArrayList<>();
+        for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
+            if (room != null && room.floorAnchors().containsKey(level)) {
+                result.add(room);
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    static RoomRegion nearestRoom(Cell cell, List<RoomRegion> rooms, int level) {
+        RoomRegion result = null;
         int bestDistance = Integer.MAX_VALUE;
-        for (Room room : rooms) {
+        for (RoomRegion room : rooms) {
             Cell anchor = room.floorAnchors().get(level);
             int distance = gridDistance(cell, anchor);
             if (result == null || distance < bestDistance

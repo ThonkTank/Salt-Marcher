@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-08
+Last Reviewed: 2026-07-17
 Source of Truth: Dungeon write model, ownership boundaries, and domain
 invariants.
 
@@ -42,16 +42,12 @@ Published dungeon carriers must not own:
 
 Only authored write-model state and stable identities may persist.
 
-Target authored room geometry is owned as cluster-local floor and boundary truth
-inside the `DungeonMap` aggregate. Current persistence and domain readback use
-cluster-owned floor cells and wall or boundary facts as durable authored truth
-for room geometry. Published corner and midpoint handles already derive from
-boundary facts through the wall facade. Room cell membership, room anchors, room
-labels, and cluster centroids continue migrating toward derivation from authored
-floor and boundary truth rather than from an independent room-cell source.
-Retired cluster-vertex persistence is not target authoritative room geometry
-and must not participate in current schema read/write or cleanup paths or be
-expanded into a second write-model owner.
+Each `RoomRegion` owns its stable room identity, cluster identity, authored
+floor-cell set, name, and narration. Each `RoomCluster` owns its stable cluster
+identity, name, and authored boundary set. Cluster floor, anchors, centroids,
+corner handles, wall-run handles, and perimeter projections derive from member
+room cells plus authored boundaries and MUST NOT become independent authored
+owners.
 
 Derived state must not become a second source of truth. This includes:
 
@@ -66,6 +62,12 @@ exist outside the authored write model when they are not persisted as dungeon
 truth. Pointer interpretation, transient interaction state, and draft workflows
 are application concerns, not authored domain truth.
 
+Chunks are a spatial partition of authored facts, not a second write model.
+Chunk identity, viewport membership, cache residency, request generation, and
+authored bounds are derived indexing or application state. Stable entity and
+topology identities remain map-wide even when an entity touches several
+chunks.
+
 ## Aggregate Model
 
 Aggregate Root: `DungeonMap`
@@ -74,24 +76,78 @@ Aggregate Root: `DungeonMap`
 DungeonMap
 - DungeonMapId id
 - DungeonMapMetadata metadata
-- topology-backed authored geometry
-- stable topology identity and binding catalogs
-- authored room semantics
-- authored connection semantics
-- authored feature semantics
+- List<RoomRegion> rooms
+- List<RoomCluster> clusters
+- List<Boundary> boundaries
+- List<Connection> connections
+- List<FeatureMarker> markers
+- stable topology identity and bindings
 - long revision
 ```
 
 The aggregate is the transaction boundary and the behavioral owner of mutable
 topology.
 
-`DungeonMap` remains the aggregate root, transaction boundary, revision owner,
-and persistence frame. It must not become the central policy owner for floor,
+`DungeonMap` remains the logical aggregate root, transaction boundary, and
+revision owner even when an application command hydrates only the window and
+identity closure it requires. It must not become the central policy owner for floor,
 wall, path, door, or transition behavior. Room clusters, corridors, stairs,
 doors, and transitions compose durable core owners for those concepts inside
 the aggregate boundary; those owners keep their own local and collection-wide
 invariants while `DungeonMap` coordinates cross-owner consistency and
 publication.
+
+## Canonical Model Language
+
+Each authored concept has one domain representation. `Cell`, `Edge`,
+`Direction`, topology identity, room region, boundary, connection, transition,
+and marker values MUST NOT have same-layer wrapper and core variants that
+convert through names or copied fields. Public immutable API state and
+source-local persistence records may translate at their respective boundaries,
+but neither becomes a second domain owner.
+
+Canonical authored structure uses:
+
+- `RoomRegion` for room-owned floor cells and room semantics
+- `RoomCluster` for cluster identity and cluster semantics; its floor is the
+  union of member room cells
+- `Boundary` for authored wall, door, or explicit open-edge truth
+- `Connection` variants for corridor, stair, and transition semantics
+- `FeatureMarker` for object, encounter, and point-of-interest annotations
+
+The topology index, room anchors, cluster floor, authored bounds, traversal
+links, and render handles derive from these values. They may be indexed for
+query performance but are not parallel authored models.
+
+Editor tools use product language rather than storage or operation variants:
+
+- `ToolFamily` identifies selection, room, wall, door, corridor, stair,
+  transition, or feature work
+- `ToolOptions` carries family-specific shape, mode, destination, or marker
+  choices
+- `PointerGesture` identifies primary, secondary, or modified intent
+
+Create, delete, and alternate behavior derive from the family plus gesture. The
+domain does not own JavaFX buttons, pointer coordinates, or dropdown state.
+
+## Command Outcomes And Patches
+
+An authored command returns one of two outcomes:
+
+- `Rejected` contains a stable typed reason and leaves authored truth and
+  revision unchanged
+- `Accepted` contains a `DungeonPatch`, its inverse, touched chunks, and result
+  facts required for publication
+
+Typed rejection reasons own domain meaning such as protected boundary,
+referenced connection, blocked route, invalid stair geometry, insufficient
+loaded closure, missing destination, or stale revision. User-visible text is a
+presentation mapping from these reasons, not domain truth.
+
+A patch expresses changed stable identities and authored facts; it is not a
+second write model. `DungeonCompoundPatch` groups changes for more than one map
+when one user command, such as a bidirectional transition link, must commit and
+undo atomically.
 
 ## Stair Geometry Domain Truth
 
@@ -185,15 +241,20 @@ surfaces remain reserved for `CELL` anchors.
 
 ## Application Ports And Foreign APIs
 
-The Dungeon application owns non-blocking persistence and search ports for
-authored maps. Its SQLite adapter implements those ports; adapters never surface
-JDBC types or exceptions through Dungeon APIs.
+The Dungeon application owns non-blocking catalog, window-read, identity
+allocation, and unit-of-work ports for authored maps. Identity allocation
+reserves bounded stable ranges for every map-wide authored identity family that
+commands may create, without inserting placeholder maps, topology elements,
+authored entities, or child rows. Its SQLite adapter implements those ports;
+adapters never surface JDBC types or exceptions through Dungeon APIs.
 
 Party-aware travel composition consumes `PartyApi`, supplied explicitly during
 application composition, for party state and outbound travel-position changes.
 Dungeon does not own party roster truth or persisted party travel position.
 `DungeonEditorApi` and `DungeonTravelApi` expose the typed, revisioned editor
-and travel capabilities without publishing repositories or adapters.
+and travel capabilities without publishing repositories or adapters. A
+feature-neutral Travel capability may consume Dungeon travel readback to select
+the global compact `Reise` context, but it does not own Dungeon movement rules.
 
 ## Invariants
 
@@ -205,10 +266,12 @@ and travel capabilities without publishing repositories or adapters.
 - authored feature markers use `FEATURE_MARKER` topology refs and do not reuse
   stair or transition identity
 - preview state never mutates authored truth
-- room geometry authority comes from reusable floor-cell and boundary-segment
-  component ownership; boundary-corner and wall-run handles derive through
-  that component boundary, and persistence adapters translate its segments
-  without creating a second relative-row domain truth
+- one successful user command advances the authored map revision exactly once
+- per-session undo and redo apply inverse or forward patches as new commits;
+  their stacks and encoded memory weights are not durable domain truth
+- room geometry authority comes from room-owned floor cells and cluster-owned
+  boundary segments; cluster floor, boundary-corner, and wall-run handles derive
+  without creating a second authored floor or relative-row domain truth
 - runtime travel state never becomes authored dungeon persistence
 - data rows and view models may transport dungeon facts, but they are not the
   owner of dungeon meaning
@@ -219,13 +282,15 @@ and travel capabilities without publishing repositories or adapters.
   models or SQLite adapters
 - bound stair segments cannot outlive the owning corridor and cannot be deleted
   independently from that owning corridor branch
+- a compound command commits or rejects every involved map together
+- command rejection has a typed reason and never relies only on object equality
+- partial hydration never authorizes a command to infer unseen authored truth
 
 ## Cross-Context Boundary
 
-- `dungeon` publishes authored `DungeonSnapshot`,
-  `DungeonOperationResult`, `DungeonInspectorSnapshot`, editor runtime
-  snapshots, travel runtime session snapshots, and travel-action results rooted
-  in authored dungeon truth
+- `dungeon` publishes `DungeonViewportSnapshot`, one `DungeonEditorState` with
+  typed `DungeonEditorCommandOutcome`, `DungeonTravelState`, and stable
+  travel-action results rooted in authored dungeon truth
 - the Dungeon authored core owns authored truth and the structures
   that mutate it
 - `DungeonEditorApi` and its application owner own editor session values,
@@ -233,6 +298,8 @@ and travel capabilities without publishing repositories or adapters.
   authored facts
 - `DungeonTravelApi` and its application owner own travel-session composition that
   combines raw dungeon facts with party-owned position state
+- the feature-neutral Travel capability owns only global compact-context
+  selection across Dungeon and Hex readbacks
 - `dungeon` does not own party roster truth or persisted party travel position
 - `dungeon` does not publish render-ready cells, edges, labels, markers,
   graph nodes, or graph links for the map canvas; those are presentation-owned

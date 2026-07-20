@@ -41,7 +41,7 @@ public final class CombatRosterMutation {
     public List<ResultEnemyData> resultEnemies(CombatRoster roster) {
         List<ResultEnemyData> enemies = new ArrayList<>();
         for (Combatant combatant : roster.combatants()) {
-            if (combatant.isPlayerCharacter()) {
+            if (!combatant.kind().enemy()) {
                 continue;
             }
             enemies.add(new ResultEnemyData(

@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-17
 Source of Truth: Target boundary between the shipped Hex feature and the Maps capability.
 
 # Hex Adoption of the Maps Capability
@@ -8,7 +8,7 @@ Source of Truth: Target boundary between the shipped Hex feature and the Maps ca
 ## Purpose
 
 Hex is a shipped feature. This specification owns how its editor and travel
-surfaces adopt the target Maps API without leaking canvas mechanisms into the
+surfaces adopt the platform map-canvas mechanism without leaking it into the
 Hex domain or duplicating coordinate and interaction truth.
 
 It does not own Hex gameplay, persistence, or the generic Maps contract.
@@ -18,10 +18,11 @@ It does not own Hex gameplay, persistence, or the generic Maps contract.
 - Hex lives below `features/hex` with `api`, `domain`, `application`,
   `adapter/sqlite`, `adapter/javafx`, and an exact-root feature composition
   package.
-- Maps exposes its reusable canvas capability through `features.maps.api`.
-- `app` explicitly composes that capability into the Hex feature. Runtime
-  discovery, registries, and service locators are forbidden.
-- The Hex JavaFX adapter is the only Hex role allowed to consume the Maps API.
+- The reusable passive canvas mechanism lives in `platform.ui.mapcanvas`.
+- Hex's JavaFX adapter instantiates and translates that mechanism from injected
+  platform services. Runtime discovery, registries, and service locators are
+  forbidden.
+- The Hex JavaFX adapter is the only Hex role allowed to consume the map-canvas mechanism.
   The Hex domain and application layers remain independent of JavaFX, canvas,
   camera, viewport, and pointer mechanisms.
 

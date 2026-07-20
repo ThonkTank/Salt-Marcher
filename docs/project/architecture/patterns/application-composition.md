@@ -14,6 +14,9 @@ shell remains passive and feature behavior remains feature-owned.
 
 - `app` MUST construct platform services and feature entry points explicitly in
   dependency order.
+- `app` MUST compose immutable feature storage definitions and complete
+  owner-scoped storage preparation before constructing or starting any service
+  that can enqueue persistence work.
 - `app` may import a feature's exact composition-root package and public API;
   it MUST NOT import that feature's domain, application, or adapter packages.
 - `app` MUST pass typed dependencies into feature and shell constructors.
@@ -26,6 +29,9 @@ shell remains passive and feature behavior remains feature-owned.
   discovery, service registries, and service locators are forbidden.
 - `app` MUST own lifecycle shutdown for executors, database resources, and the
   JavaFX application. It MUST NOT own feature state or business decisions.
+- Startup phases are explicit: compose definitions, prepare storage, construct
+  services, start feature work, register shell contributions. Constructor or
+  composition side effects MUST NOT perform persistence work.
 
 `architectureTest` mechanically enforces the target dependency direction.
 Startup behavior remains production-route JUnit proof.

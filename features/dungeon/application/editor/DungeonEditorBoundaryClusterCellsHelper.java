@@ -35,7 +35,7 @@ final class DungeonEditorBoundaryClusterCellsHelper {
             cells = new LinkedHashSet<>();
             result.put(area.clusterId(), cells);
         }
-        for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {
+        for (features.dungeon.domain.core.geometry.Cell cell : area.cells()) {
             if (cell.level() == level) {
                 cells.add(new CellKey(cell.q(), cell.r(), cell.level()));
             }

@@ -11,7 +11,7 @@ final class RoomClusterCornerSideEdges {
     }
 
     static List<Edge> adjacentWallRunEdges(
-            DungeonRoomCluster cluster,
+            RoomCluster cluster,
             Cell corner,
             boolean vertical
     ) {

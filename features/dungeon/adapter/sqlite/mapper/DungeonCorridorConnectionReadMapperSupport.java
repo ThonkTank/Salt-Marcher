@@ -17,8 +17,8 @@ import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.domain.core.graph.DungeonTopologyElementKind;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.corridor.Corridor;
-import features.dungeon.domain.core.structure.corridor.CorridorBindingState;
-import features.dungeon.domain.core.structure.corridor.CorridorDoorBindingState;
+import features.dungeon.domain.core.structure.corridor.CorridorBindings;
+import features.dungeon.domain.core.component.CorridorDoorBinding;
 import features.dungeon.domain.core.structure.topology.DungeonMapTopology.DungeonTopologyBinding;
 
 final class DungeonCorridorConnectionReadMapperSupport {
@@ -35,7 +35,7 @@ final class DungeonCorridorConnectionReadMapperSupport {
                     record.mapId(),
                     record.levelZ(),
                     record.roomIds(),
-                    new CorridorBindingState(
+                    new CorridorBindings(
                             toWaypoints(record.waypoints()),
                             toDoorBindings(record.doorBindings()),
                             toAnchorBindings(record.anchorBindings()),
@@ -77,14 +77,14 @@ final class DungeonCorridorConnectionReadMapperSupport {
         return List.copyOf(result);
     }
 
-    private static List<CorridorDoorBindingState> toDoorBindings(List<DungeonCorridorDoorBindingRecord> records) {
-        List<CorridorDoorBindingState> result = new ArrayList<>();
+    private static List<CorridorDoorBinding> toDoorBindings(List<DungeonCorridorDoorBindingRecord> records) {
+        List<CorridorDoorBinding> result = new ArrayList<>();
         for (DungeonCorridorDoorBindingRecord record
                 : records == null ? List.<DungeonCorridorDoorBindingRecord>of() : records) {
-            result.add(new CorridorDoorBindingState(
+            result.add(new CorridorDoorBinding(
                     record.roomId(),
                     record.clusterId(),
-                    new Cell(record.relativeCellX(), record.relativeCellY(), 0),
+                    new Cell(record.relativeCellX(), record.relativeCellY(), record.relativeCellZ()),
                     Direction.parse(record.edgeDirection()),
                     record.topologyElementId() == null
                             ? DungeonTopologyRef.empty()

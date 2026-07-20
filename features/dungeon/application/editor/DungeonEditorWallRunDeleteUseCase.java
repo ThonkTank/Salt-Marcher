@@ -1,5 +1,7 @@
 package features.dungeon.application.editor;
 
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import features.dungeon.domain.core.structure.room.RoomClusterWallDeleteTarget;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
@@ -11,13 +13,13 @@ final class DungeonEditorWallRunDeleteUseCase {
     private final DungeonEditorBoundaryClusterCellsHelper clusterCells =
             new DungeonEditorBoundaryClusterCellsHelper();
 
-    DungeonEditorWallDeleteTarget interiorRunForBoundary(
+    ResolvedDelete interiorRunForBoundary(
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             long clusterId,
-            DungeonEditorWorkspaceValues.Edge edge
+            features.dungeon.domain.core.geometry.Edge edge
     ) {
         if (edge == null || edge.from() == null) {
-            return DungeonEditorWallDeleteTarget.none(clusterId);
+            return ResolvedDelete.none(clusterId);
         }
         return targetFor(
                 wallFacts(snapshot, edge.from().level()),
@@ -27,13 +29,13 @@ final class DungeonEditorWallRunDeleteUseCase {
                         DungeonEditorCoreWallGeometry.edge(edge)));
     }
 
-    DungeonEditorWallDeleteTarget cornerRunDelete(
+    ResolvedDelete cornerRunDelete(
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             VertexKey vertex
     ) {
         DungeonEditorCoreWallFactsByLevel wallFacts = wallFacts(snapshot, vertex.level());
         for (Long clusterId : wallFacts.clusterIds()) {
-            DungeonEditorWallDeleteTarget target = targetFor(
+            ResolvedDelete target = targetFor(
                     wallFacts,
                     clusterId,
                     wallMap -> wallMap.wallDeleteResolver().cornerDeleteTarget(
@@ -43,16 +45,16 @@ final class DungeonEditorWallRunDeleteUseCase {
                 return target;
             }
         }
-        return DungeonEditorWallDeleteTarget.none(0L);
+        return ResolvedDelete.none(0L);
     }
 
-    DungeonEditorWallDeleteTarget cellRunDelete(
+    ResolvedDelete cellRunDelete(
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             CellKey cell
     ) {
         DungeonEditorCoreWallFactsByLevel wallFacts = wallFacts(snapshot, cell.level());
         for (Long clusterId : wallFacts.clusterIds()) {
-            DungeonEditorWallDeleteTarget target = targetFor(
+            ResolvedDelete target = targetFor(
                     wallFacts,
                     clusterId,
                     wallMap -> wallMap.wallDeleteResolver().cellDeleteTarget(
@@ -62,7 +64,7 @@ final class DungeonEditorWallRunDeleteUseCase {
                 return target;
             }
         }
-        return DungeonEditorWallDeleteTarget.none(0L);
+        return ResolvedDelete.none(0L);
     }
 
     Set<EdgeKey> cornerRunsForCluster(
@@ -79,13 +81,13 @@ final class DungeonEditorWallRunDeleteUseCase {
                 .edges();
     }
 
-    private DungeonEditorWallDeleteTarget targetFor(
+    private ResolvedDelete targetFor(
             DungeonEditorCoreWallFactsByLevel wallFacts,
             long clusterId,
             CoreWallTargetSelector selector
     ) {
         DungeonEditorCoreWallFacts wallMap = wallFacts.forCluster(clusterId);
-        return DungeonEditorWallDeleteTarget.fromCore(clusterId, selector.select(wallMap));
+        return new ResolvedDelete(clusterId, selector.select(wallMap));
     }
 
     private DungeonEditorCoreWallFactsByLevel wallFacts(
@@ -98,5 +100,40 @@ final class DungeonEditorWallRunDeleteUseCase {
     @FunctionalInterface
     private interface CoreWallTargetSelector {
         RoomClusterWallDeleteTarget select(DungeonEditorCoreWallFacts wallMap);
+    }
+
+    record ResolvedDelete(long clusterId, RoomClusterWallDeleteTarget target) {
+        ResolvedDelete {
+            target = target == null
+                    ? new RoomClusterWallDeleteTarget(List.of(), RoomClusterWallDeleteTarget.TargetKind.NONE)
+                    : target;
+            clusterId = active(target) ? clusterId : 0L;
+        }
+
+        static ResolvedDelete none(long clusterId) {
+            return new ResolvedDelete(
+                    clusterId,
+                    new RoomClusterWallDeleteTarget(List.of(), RoomClusterWallDeleteTarget.TargetKind.NONE));
+        }
+
+        boolean protectedExterior() {
+            return target.isProtectedExterior();
+        }
+
+        boolean active() {
+            return active(target);
+        }
+
+        Set<EdgeKey> edges() {
+            Set<EdgeKey> result = new LinkedHashSet<>();
+            for (features.dungeon.domain.core.geometry.Edge edge : target.edges()) {
+                result.add(DungeonEditorCoreWallGeometry.runtimeEdge(edge));
+            }
+            return Set.copyOf(result);
+        }
+
+        private static boolean active(RoomClusterWallDeleteTarget target) {
+            return target.isProtectedExterior() || target.interiorRun();
+        }
     }
 }

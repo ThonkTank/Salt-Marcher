@@ -12,14 +12,15 @@ import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonEditorSurface;
-import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonEditorMapSnapshot;
 import features.dungeon.api.DungeonOverlaySettings;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts;
 import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
-import features.dungeon.application.editor.DungeonEditorRenderFrame;
+import features.dungeon.api.editor.DungeonEditorDraftState;
+import features.dungeon.api.editor.DungeonEditorState;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
 import features.dungeon.adapter.javafx.map.DungeonMapView;
 import javafx.event.ActionEvent;
@@ -295,9 +296,8 @@ final class DungeonEditorSelectionScenarios {
                         .anyMatch(feature -> feature.cells().stream()
                                 .anyMatch(cell -> cell.q() == 2 && cell.r() == 2 && cell.level() == 0)),
                 "DE-SEL-003 published stair feature includes anchor coordinate");
-        assertTrue(stairFeature.cells().stream()
-                        .anyMatch(cell -> cell.q() == 2 && cell.r() == 0 && cell.level() == 1),
-                "DE-SEL-003 published stair feature includes upper exit coordinate");
+        assertTrue(stairFeature.cells().stream().noneMatch(cell -> cell.level() != 0),
+                "DE-SEL-003 active-level authored window excludes off-level stair exit geometry");
         assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(),
                                 glyphCenterForRef(binding.mapContentModel(), stairRef).getX(),
                                 glyphCenterForRef(binding.mapContentModel(), stairRef).getY())
@@ -614,7 +614,8 @@ final class DungeonEditorSelectionScenarios {
 
         DungeonEditorStateSnapshot clearedState = runtime.stateModel().current();
         DungeonEditorMapSurfaceSnapshot clearedSurface = runtime.mapSurfaceModel().current();
-        assertEquals("DOOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
+        assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.DOOR),
+                runtime.controlsModel().current().toolSelection(),
                 "DE-SEL-014 tool switch applies the requested non-selection tool");
         assertEmptySelection(clearedState.selection(), "DE-SEL-014 state model after non-selection tool switch");
         assertEmptySelection(clearedSurface.selection(), "DE-SEL-014 map surface after non-selection tool switch");
@@ -933,7 +934,7 @@ final class DungeonEditorSelectionScenarios {
                 secondEdge,
                 wallRef);
         DungeonEditorMapSurfaceSnapshot snapshot = syntheticBoundarySnapshot(firstBoundary, secondBoundary);
-        mapContentModel.applyEditorRenderFrame(syntheticBoundaryRenderFrame(snapshot));
+        mapContentModel.applyEditorState(syntheticBoundaryState(snapshot));
         double sceneX = 0.5;
         double sceneY = 0.0;
         var target = runtimePointerTarget(mapContentModel, sceneX, sceneY, true);
@@ -959,39 +960,28 @@ final class DungeonEditorSelectionScenarios {
                 message + " leaves sibling edge stroke unchanged");
     }
 
-    private static DungeonEditorRenderFrame syntheticBoundaryRenderFrame(
+    private static DungeonEditorState syntheticBoundaryState(
             DungeonEditorMapSurfaceSnapshot snapshot
     ) {
         DungeonEditorMapSurfaceSnapshot safeSnapshot = snapshot == null
                 ? DungeonEditorMapSurfaceSnapshot.empty()
                 : snapshot;
-        DungeonEditorPreparedFrameFacts facts = new DungeonEditorPreparedFrameFacts(
-                List.of(),
-                "",
+        return new DungeonEditorState(
+                1L,
                 0L,
-                List.of(safeSnapshot.projectionLevel()),
-                false,
-                "",
-                safeSnapshot.viewMode().name(),
-                DungeonEditorPreparedFrameFacts.labelForViewMode(safeSnapshot.viewMode().name()),
+                List.of(),
+                null,
+                safeSnapshot.surface(),
+                safeSnapshot.viewMode(),
+                DungeonEditorToolSelection.select(),
                 safeSnapshot.overlaySettings(),
-                DungeonEditorPreparedFrameFacts.OverlayFrame.from(safeSnapshot.overlaySettings()),
                 safeSnapshot.projectionLevel(),
-                safeSnapshot.selectedTool().name(),
-                safeSnapshot.selectedTool().displayLabel(),
-                new DungeonEditorPreparedFrameFacts.MapSurfaceFrame(
-                        safeSnapshot.surface(),
-                        safeSnapshot.selection(),
-                        safeSnapshot.preview(),
-                        DungeonEditorPreparedFrameFacts.PreviewRenderFrame.from(safeSnapshot),
-                        DungeonEditorPreparedFrameFacts.PreviewRenderDiffFrame.from(safeSnapshot),
-                        safeSnapshot.viewMode(),
-                        safeSnapshot.overlaySettings(),
-                        safeSnapshot.projectionLevel(),
-                        safeSnapshot.selectedTool()),
-                DungeonEditorPreparedFrameFacts.MapInteractionFrame.from(safeSnapshot),
-                DungeonEditorPreparedFrameFacts.StatePanelFrame.empty());
-        return new DungeonEditorRenderFrame(facts, null, null);
+                List.of(safeSnapshot.projectionLevel()),
+                safeSnapshot.selection(),
+                DungeonEditorDraftState.empty(),
+                safeSnapshot.preview(),
+                safeSnapshot.surface() == null ? null : safeSnapshot.surface().inspector(),
+                DungeonEditorState.CommandStatus.idle());
     }
 
     private static DungeonEditorMapSurfaceSnapshot syntheticBoundarySnapshot(
@@ -1018,7 +1008,7 @@ final class DungeonEditorSelectionScenarios {
                 DungeonEditorViewMode.GRID,
                 DungeonOverlaySettings.defaults(),
                 0,
-                DungeonEditorTool.SELECT);
+                DungeonEditorToolSelection.select());
     }
 
     private static String selectionRef(DungeonTopologyElementRef ref) {

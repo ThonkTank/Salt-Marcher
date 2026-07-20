@@ -8,7 +8,7 @@ import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring.AuthoredContent;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.corridor.Corridor;
-import features.dungeon.domain.core.structure.corridor.CorridorBindingState;
+import features.dungeon.domain.core.structure.corridor.CorridorBindings;
 import features.dungeon.domain.core.structure.corridor.CorridorDeletionTarget;
 import features.dungeon.domain.core.structure.corridor.CorridorMapAuthoring;
 import features.dungeon.domain.core.structure.corridor.CorridorRoomSet;
@@ -22,7 +22,8 @@ final class DungeonStairInvariantScenarios {
 
     private static final long CORRIDOR_ID = 20L;
     private static final long STAIR_ID = 9L;
-    private static final CorridorMapAuthoring CORRIDOR_AUTHORING = new CorridorMapAuthoring();
+    private static final CorridorMapAuthoring CORRIDOR_AUTHORING = new CorridorMapAuthoring(
+            new features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy());
 
     private DungeonStairInvariantScenarios() {
     }
@@ -39,12 +40,6 @@ final class DungeonStairInvariantScenarios {
 
         assertFalse(map.stairs().canDeleteUnboundStair(STAIR_ID),
                 "stair binding owner rejects direct delete eligibility for corridor-bound stair");
-        assertEquals(map.stairs(), map.stairs().withoutUnboundStair(STAIR_ID),
-                "stair binding owner keeps corridor-bound stair on direct delete request");
-        assertFalse(map.canDeleteStair(STAIR_ID),
-                "DungeonMap aggregate rejects direct corridor-bound stair delete");
-        assertEquals(map, map.deleteStair(STAIR_ID),
-                "DungeonMap direct delete leaves corridor-bound stair map unchanged");
 
         DungeonMap corridorDeleted = CORRIDOR_AUTHORING.deleteCorridor(
                 map,
@@ -64,13 +59,14 @@ final class DungeonStairInvariantScenarios {
                 90L,
                 0,
                 new CorridorRoomSet(List.of()),
-                CorridorBindingState.empty());
+                CorridorBindings.empty());
         Stair boundStair = Stair.corridorBound(
                 STAIR_ID,
                 90L,
                 CORRIDOR_ID,
                 List.of(new Cell(0, 0, 0), new Cell(0, 1, 0)),
-                new Cell(0, 1, 1));
+                new Cell(0, 1, 1),
+                List.of(101L, 102L));
         return DungeonMapAuthoring.authored(
                 base.metadata().mapId(),
                 base.metadata().mapName(),

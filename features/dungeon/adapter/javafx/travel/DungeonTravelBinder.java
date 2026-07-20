@@ -6,7 +6,7 @@ import javafx.scene.Node;
 import shell.api.ShellBinding;
 import shell.api.ShellControls;
 import shell.api.ShellSlot;
-import features.dungeon.application.travel.DungeonTravelRuntimeApplicationService;
+import features.dungeon.api.travel.DungeonTravelApi;
 import features.dungeon.api.DungeonMapCatalogModel;
 import features.dungeon.api.TravelDungeonModel;
 import features.dungeon.api.TravelDungeonSnapshot;
@@ -17,12 +17,12 @@ import features.dungeon.adapter.javafx.map.DungeonMapView;
 
 final class DungeonTravelBinder {
 
-    private final DungeonTravelRuntimeApplicationService travel;
+    private final DungeonTravelApi travel;
     private final DungeonMapCatalogModel mapCatalogModel;
     private final TravelDungeonModel travelModel;
 
     DungeonTravelBinder(
-            DungeonTravelRuntimeApplicationService travel,
+            DungeonTravelApi travel,
             DungeonMapCatalogModel mapCatalogModel,
             TravelDungeonModel travelModel
     ) {

@@ -1,12 +1,14 @@
 package features.party.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.party.PartyServiceAssembly;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 import org.junit.jupiter.api.Test;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
@@ -20,6 +22,8 @@ import features.party.domain.roster.PartyTravelLocation;
 import features.party.api.CharacterDraft;
 import features.party.api.CreateCharacterCommand;
 import features.party.api.MembershipState;
+import features.party.api.MovePartyCharactersCommand;
+import features.party.api.MutationResult;
 import features.party.api.MutationStatus;
 import features.party.api.PartyOverworldTravelLocationSnapshot;
 import features.party.api.PartyTravelPositionsResult;
@@ -35,7 +39,7 @@ final class PartyRuntimeMechanismsTest {
         repository.seedOverworldTravel();
 
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(
-                repository, lane, dispatcher, new RecordingDiagnostics());
+                repository, lane, lane, dispatcher, new RecordingDiagnostics());
         List<Integer> observedActiveCounts = new ArrayList<>();
         List<PartyTravelPositionsResult> observedTravel = new ArrayList<>();
         party.snapshot().subscribe(result -> observedActiveCounts.add(
@@ -74,7 +78,7 @@ final class PartyRuntimeMechanismsTest {
         repository.failLoads = true;
 
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(
-                repository, lane, dispatcher, diagnostics);
+                repository, lane, lane, dispatcher, diagnostics);
         List<ReadStatus> snapshotStatuses = new ArrayList<>();
         List<ReadStatus> travelStatuses = new ArrayList<>();
         party.snapshot().subscribe(result -> snapshotStatuses.add(result.status()));
@@ -87,8 +91,17 @@ final class PartyRuntimeMechanismsTest {
 
         assertEquals(List.of(ReadStatus.STORAGE_ERROR), snapshotStatuses);
         assertEquals(List.of(ReadStatus.STORAGE_ERROR), travelStatuses);
+        assertEquals(1L, party.travelPositions().current().revision());
         assertEquals(List.of("party.storage-failure"), diagnostics.ids);
         assertEquals(List.of(IllegalStateException.class), diagnostics.failureTypes);
+
+        repository.failLoads = false;
+        ((PartyApplicationService) party.application()).refreshPublishedState();
+        lane.runNext();
+
+        assertEquals(ReadStatus.SUCCESS, party.travelPositions().current().status());
+        assertEquals(2L, party.travelPositions().current().revision(),
+                "a successful publication follows the failed publication monotonically");
     }
 
     @Test
@@ -99,7 +112,7 @@ final class PartyRuntimeMechanismsTest {
         RecordingRepository repository = new RecordingRepository();
 
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(
-                repository, lane, dispatcher, diagnostics);
+                repository, lane, lane, dispatcher, diagnostics);
 
         assertEquals(0, repository.loads);
         assertEquals(1, lane.pending());
@@ -133,7 +146,7 @@ final class PartyRuntimeMechanismsTest {
         RecordingDiagnostics diagnostics = new RecordingDiagnostics();
         RecordingRepository repository = new RecordingRepository();
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(
-                repository, lane, update -> update.run(), diagnostics);
+                repository, lane, lane, update -> update.run(), diagnostics);
         lane.runNext();
         repository.failLoads = true;
 
@@ -147,12 +160,97 @@ final class PartyRuntimeMechanismsTest {
         assertEquals(MutationStatus.STORAGE_ERROR, party.mutation().current().status());
     }
 
+    @Test
+    void queuedMovePublishesPositionAndHigherRevisionBeforeItsCompletion() {
+        RecordingLane lane = new RecordingLane();
+        RecordingRepository repository = new RecordingRepository();
+        repository.seedOverworldTravel();
+        PartyServiceAssembly.Component party = PartyServiceAssembly.create(
+                repository, lane, lane, update -> update.run(), new RecordingDiagnostics());
+        lane.runNext();
+        PartyTravelPositionsResult before = party.travelPositions().current();
+        List<MutationStatus> statusAtCompletion = new ArrayList<>();
+        List<Long> revisionAtCompletion = new ArrayList<>();
+        List<Long> tileAtCompletion = new ArrayList<>();
+
+        CompletionStage<MutationResult> move = party.application().moveCharacters(new MovePartyCharactersCommand(
+                List.of(1L),
+                new PartyOverworldTravelLocationSnapshot(7L, 84L),
+                true));
+        move.thenAccept(result -> {
+            PartyTravelPositionsResult published = party.travelPositions().current();
+            statusAtCompletion.add(result.status());
+            revisionAtCompletion.add(published.revision());
+            tileAtCompletion.add(((PartyOverworldTravelLocationSnapshot) published.partyTokenLocation()).tileId());
+        });
+
+        assertFalse(move.toCompletableFuture().isDone(), "queued move remains open before lane execution");
+        assertEquals(before, party.travelPositions().current(), "queued move does not publish early");
+        lane.runNext();
+
+        assertEquals(MutationStatus.SUCCESS, move.toCompletableFuture().join().status());
+        assertEquals(List.of(MutationStatus.SUCCESS), statusAtCompletion);
+        assertEquals(List.of(before.revision() + 1L), revisionAtCompletion);
+        assertEquals(List.of(84L), tileAtCompletion);
+        assertEquals(1, repository.saves);
+    }
+
+    @Test
+    void rejectedMoveCompletesWithItsOwnResultWithoutPublishingFalseRevision() {
+        RecordingLane lane = new RecordingLane();
+        RecordingRepository repository = new RecordingRepository();
+        repository.seedOverworldTravel();
+        PartyServiceAssembly.Component party = PartyServiceAssembly.create(
+                repository, lane, lane, update -> update.run(), new RecordingDiagnostics());
+        lane.runNext();
+        PartyTravelPositionsResult before = party.travelPositions().current();
+
+        CompletionStage<MutationResult> move = party.application().moveCharacters(new MovePartyCharactersCommand(
+                List.of(999L),
+                new PartyOverworldTravelLocationSnapshot(7L, 84L),
+                true));
+
+        assertFalse(move.toCompletableFuture().isDone());
+        lane.runNext();
+
+        assertEquals(MutationStatus.NOT_FOUND, move.toCompletableFuture().join().status());
+        assertEquals(before, party.travelPositions().current());
+        assertEquals(0, repository.saves);
+    }
+
+    @Test
+    void failedMoveSaveCompletesWithStorageErrorWithoutPublishingFalseRevision() {
+        RecordingLane lane = new RecordingLane();
+        RecordingDiagnostics diagnostics = new RecordingDiagnostics();
+        RecordingRepository repository = new RecordingRepository();
+        repository.seedOverworldTravel();
+        PartyServiceAssembly.Component party = PartyServiceAssembly.create(
+                repository, lane, lane, update -> update.run(), diagnostics);
+        lane.runNext();
+        PartyTravelPositionsResult before = party.travelPositions().current();
+        repository.failSaves = true;
+
+        CompletionStage<MutationResult> move = party.application().moveCharacters(new MovePartyCharactersCommand(
+                List.of(1L),
+                new PartyOverworldTravelLocationSnapshot(7L, 84L),
+                true));
+
+        assertFalse(move.toCompletableFuture().isDone());
+        lane.runNext();
+
+        assertEquals(MutationStatus.STORAGE_ERROR, move.toCompletableFuture().join().status());
+        assertEquals(before, party.travelPositions().current());
+        assertEquals(MutationStatus.STORAGE_ERROR, party.mutation().current().status());
+        assertEquals(List.of("party.storage-failure"), diagnostics.ids);
+    }
+
     private static final class RecordingRepository implements PartyRosterRepository {
 
         private PartyRoster roster = new PartyRoster(1L, List.of());
         private int loads;
         private int saves;
         private boolean failLoads;
+        private boolean failSaves;
 
         void seedOverworldTravel() {
             roster = roster.createCharacter(
@@ -176,6 +274,9 @@ final class PartyRuntimeMechanismsTest {
         @Override
         public void save(PartyRoster nextRoster) {
             saves++;
+            if (failSaves) {
+                throw new IllegalStateException("user-authored roster payload must not enter diagnostics");
+            }
             roster = nextRoster;
         }
     }

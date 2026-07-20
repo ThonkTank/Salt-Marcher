@@ -16,7 +16,7 @@ import features.dungeon.domain.core.structure.door.Door;
 import features.dungeon.domain.core.structure.door.DoorBoundaryMaterialization;
 import features.dungeon.domain.core.structure.door.DoorIndex;
 import features.dungeon.domain.core.structure.room.BoundaryStretchOrientation;
-import features.dungeon.domain.core.structure.room.RoomCluster;
+import features.dungeon.domain.core.structure.room.RoomClusterGeometry;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
@@ -26,7 +26,8 @@ import features.dungeon.domain.core.structure.room.RoomClusterFloorMap;
 import features.dungeon.domain.core.structure.room.RoomClusterWallDeleteResolver;
 import features.dungeon.domain.core.structure.room.RoomClusterWallDeleteTarget;
 import features.dungeon.domain.core.structure.room.RoomClusterWallMap;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 
@@ -67,7 +68,7 @@ final class DungeonWallInvariantScenarios {
                         RoomClusterBoundaryMaterialization.BoundaryKind.OPEN),
                 new BoundaryRow(42L, 1, new Cell(0, 0, 1), Direction.SOUTH,
                         RoomClusterBoundaryMaterialization.BoundaryKind.DOOR)));
-        RoomCluster cluster = new RoomCluster(
+        RoomClusterGeometry cluster = new RoomClusterGeometry(
                 42L,
                 7L,
                 center,
@@ -283,7 +284,8 @@ final class DungeonWallInvariantScenarios {
                 firstClusterId,
                 List.of(firstNorthWall),
                 BoundaryKind.OPEN,
-                false);
+                false,
+                roomIds(500L, 500L));
         Set<Edge> openedWalls = wallEdges(new DungeonDerivedStateProjection().project(opened));
         assertFalse(openedWalls.contains(firstNorthWall),
                 "wall projection changes only after routing boundary mutation through DungeonMap structure ownership");
@@ -293,34 +295,41 @@ final class DungeonWallInvariantScenarios {
 
     private static DungeonMap projectionMap() {
         DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(81L), "Wall Projection")
-                .paintRoomRectangle(new Cell(1, 1, 0), new Cell(2, 1, 0))
-                .paintRoomRectangle(new Cell(5, 1, 0), new Cell(6, 1, 0));
+                .paintRoomRectangle(
+                        new Cell(1, 1, 0), new Cell(2, 1, 0), roomIds(100L, 100L));
+        map = map.paintRoomRectangle(
+                new Cell(5, 1, 0), new Cell(6, 1, 0), roomIds(200L, 200L));
         Edge firstNorthWall = Edge.sideOf(new Cell(1, 1, 0), Direction.NORTH);
         Edge secondNorthWall = Edge.sideOf(new Cell(5, 1, 0), Direction.NORTH);
         map = map.editClusterBoundaries(
                 clusterIdForAnchor(map, new Cell(1, 1, 0)),
                 List.of(firstNorthWall),
                 BoundaryKind.WALL,
-                false);
+                false,
+                roomIds(300L, 300L));
         return map.editClusterBoundaries(
                 clusterIdForAnchor(map, new Cell(5, 1, 0)),
                 List.of(secondNorthWall),
                 BoundaryKind.WALL,
-                false);
+                false,
+                roomIds(400L, 400L));
     }
 
     private static void assertWallPathAtomicCommitAndDelete() {
         DungeonMap map = roomMap();
         long clusterId = clusterIdForAnchor(map, new Cell(1, 1, 0));
         List<Edge> run = internalVerticalRun();
-        DungeonMap withRun = map.editClusterBoundaries(clusterId, run, BoundaryKind.WALL, false);
+        DungeonMap withRun = map.editClusterBoundaries(
+                clusterId, run, BoundaryKind.WALL, false, roomIds(600L, 600L));
         Set<Edge> walls = wallEdges(new DungeonDerivedStateProjection().project(withRun));
-        DungeonMap canceled = map.editClusterBoundaries(clusterId, List.of(), BoundaryKind.WALL, false);
+        DungeonMap canceled = map.editClusterBoundaries(
+                clusterId, List.of(), BoundaryKind.WALL, false, roomIds(700L, 700L));
 
         assertTrue(walls.containsAll(run),
                 "wall owner commits every segment in one accumulated wall path");
         assertEquals(walls, wallEdges(new DungeonDerivedStateProjection()
-                        .project(withRun.editClusterBoundaries(clusterId, run, BoundaryKind.WALL, false))),
+                        .project(withRun.editClusterBoundaries(
+                                clusterId, run, BoundaryKind.WALL, false, roomIds(800L, 800L)))),
                 "wall owner treats duplicate accumulated path commit as stable wall facts");
         assertEquals(wallEdges(new DungeonDerivedStateProjection().project(map)),
                 wallEdges(new DungeonDerivedStateProjection().project(canceled)),
@@ -336,7 +345,8 @@ final class DungeonWallInvariantScenarios {
         Edge southTarget = new Edge(new Cell(2, 3, 0), new Cell(2, 4, 0));
         Edge eastTarget = new Edge(new Cell(2, 3, 0), new Cell(3, 3, 0));
         Edge eastSecond = new Edge(new Cell(3, 3, 0), new Cell(4, 3, 0));
-        DungeonMap withShape = map.editClusterBoundaries(clusterId, wallShape, BoundaryKind.WALL, false);
+        DungeonMap withShape = map.editClusterBoundaries(
+                clusterId, wallShape, BoundaryKind.WALL, false, roomIds(900L, 900L));
         RoomClusterWallDeleteResolver wallDeleteResolver =
                 RoomClusterWallMap.authoredWallDeleteResolver(wallShape);
         RoomClusterWallDeleteTarget segmentTarget =
@@ -351,13 +361,15 @@ final class DungeonWallInvariantScenarios {
                 clusterId,
                 segmentTarget.edges(),
                 BoundaryKind.WALL,
-                true);
+                true,
+                roomIds(1_000L, 1_000L));
         Set<Edge> segmentDeletedWalls = wallEdges(new DungeonDerivedStateProjection().project(segmentDeleted));
         DungeonMap cornerDeleted = withShape.editClusterBoundaries(
                 clusterId,
                 cornerTarget.edges(),
                 BoundaryKind.WALL,
-                true);
+                true,
+                roomIds(1_100L, 1_100L));
         Set<Edge> cornerDeletedWalls = wallEdges(new DungeonDerivedStateProjection().project(cornerDeleted));
 
         assertTrue(segmentTarget.interiorRun(), "wall owner classifies segment target as eligible interior run");
@@ -398,8 +410,15 @@ final class DungeonWallInvariantScenarios {
                         Edge.sideOf(new Cell(3, 1, 0), Direction.NORTH)),
                 0,
                 4,
-                0);
-        DungeonMap rejectedCorner = map.moveClusterCorner(clusterId, new Cell(4, 4, 0), -4, -4, 0);
+                0,
+                roomIds(1_200L, 1_200L));
+        DungeonMap rejectedCorner = map.moveClusterCorner(
+                clusterId,
+                new Cell(4, 4, 0),
+                -4,
+                -4,
+                0,
+                roomIds(1_300L, 1_300L));
 
         assertEquals(before, wallEdges(new DungeonDerivedStateProjection().project(rejectedStretch)),
                 "wall owner rejects inward wall-run shrink that would erase the room");
@@ -416,7 +435,8 @@ final class DungeonWallInvariantScenarios {
                 clusterId,
                 List.of(interiorTarget),
                 BoundaryKind.WALL,
-                false);
+                false,
+                roomIds(1_400L, 1_400L));
         RoomClusterWallDeleteResolver wallDeleteResolver =
                 RoomClusterWallMap.authoredWallDeleteResolver(List.of(exteriorNorth, interiorTarget));
         RoomClusterWallDeleteTarget protectedTarget =
@@ -428,12 +448,18 @@ final class DungeonWallInvariantScenarios {
                         roomMapCells(),
                         new Cell(2, 1, 0));
         Set<Edge> before = wallEdges(new DungeonDerivedStateProjection().project(map));
-        DungeonMap rejected = map.editClusterBoundaries(clusterId, List.of(exteriorNorth), BoundaryKind.WALL, true);
+        DungeonMap rejected = map.editClusterBoundaries(
+                clusterId,
+                List.of(exteriorNorth),
+                BoundaryKind.WALL,
+                true,
+                roomIds(1_500L, 1_500L));
         DungeonMap interiorDeleted = withInteriorWall.editClusterBoundaries(
                 clusterId,
                 cellTarget.edges(),
                 BoundaryKind.WALL,
-                true);
+                true,
+                roomIds(1_600L, 1_600L));
 
         assertTrue(protectedTarget.isProtectedExterior(),
                 "wall owner classifies cluster exterior target as protected before delete mutation");
@@ -449,7 +475,18 @@ final class DungeonWallInvariantScenarios {
 
     private static DungeonMap roomMap() {
         return DungeonMapAuthoring.empty(new DungeonMapIdentity(82L), "Wall Path")
-                .paintRoomRectangle(new Cell(1, 1, 0), new Cell(3, 3, 0));
+                .paintRoomRectangle(
+                        new Cell(1, 1, 0),
+                        new Cell(3, 3, 0),
+                        roomIds(10L, 10L));
+    }
+
+    private static RoomTopologyWorkCatalog.ReservedIdentities roomIds(
+            long firstClusterId,
+            long firstRoomId
+    ) {
+        return new RoomTopologyWorkCatalog.ReservedIdentities(
+                firstClusterId, 64, firstRoomId, 64);
     }
 
     private static List<Edge> internalVerticalRun() {
@@ -492,7 +529,7 @@ final class DungeonWallInvariantScenarios {
     }
 
     private static long clusterIdForAnchor(DungeonMap map, Cell anchor) {
-        for (DungeonRoom room : map.rooms().rooms()) {
+        for (RoomRegion room : map.rooms().rooms()) {
             if (room.primaryAnchor().equals(anchor)) {
                 return room.clusterId();
             }

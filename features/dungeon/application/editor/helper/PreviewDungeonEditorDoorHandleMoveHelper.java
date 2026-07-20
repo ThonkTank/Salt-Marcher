@@ -3,8 +3,8 @@ package features.dungeon.application.editor.helper;
 import java.util.ArrayList;
 import java.util.List;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Cell;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Edge;
+import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Handle;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.HandleRef;
 

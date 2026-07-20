@@ -39,21 +39,21 @@ public final class TravelDungeonSessionProjectionMapper {
         }
         return new TravelPositionFacts(
                 position.mapId(),
-                LocationKind.fromName(position.locationKind().name()),
+                position.locationKind(),
                 position.ownerId(),
                 position.tile(),
                 position.heading());
     }
 
     private static TravelDungeonSessionSurface.AvailableAction toRuntimeAction(
-            @Nullable TravelActionFacts action
+            TravelActionFacts action
     ) {
         return new TravelDungeonSessionSurface.AvailableAction(
-                action == null ? "" : action.actionId(),
-                action == null ? TravelActionKind.defaultKind() : action.kind(),
-                action == null ? "" : action.label(),
-                action == null ? "" : action.destinationLabel(),
-                action == null ? "" : action.description());
+                action.actionId(),
+                action.kind(),
+                action.label(),
+                action.destinationLabel(),
+                action.description());
     }
 
     private static PositionData toRuntimePosition(@Nullable TravelPositionFacts position) {
@@ -61,7 +61,7 @@ public final class TravelDungeonSessionProjectionMapper {
                 position == null ? 1L : position.mapId(),
                 position == null
                         ? LocationKind.defaultKind()
-                        : LocationKind.fromName(position.locationKind().name()),
+                        : position.locationKind(),
                 position == null ? 0L : position.ownerId(),
                 position == null ? new Cell(0, 0, 0) : position.tile(),
                 position == null ? TravelHeading.defaultHeading() : position.heading());

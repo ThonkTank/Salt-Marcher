@@ -105,7 +105,7 @@ public final class CreatureCatalogProjection {
                         .toList());
     }
 
-    static CreatureEncounterCandidate encounterCandidate(CreatureCatalogData.EncounterCandidateProfile candidate) {
+    public static CreatureEncounterCandidate encounterCandidate(CreatureCatalogData.EncounterCandidateProfile candidate) {
         return new CreatureEncounterCandidate(
                 candidate.id(),
                 candidate.name(),

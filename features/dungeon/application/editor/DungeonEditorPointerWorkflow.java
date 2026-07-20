@@ -1,20 +1,27 @@
 package features.dungeon.application.editor;
 
 import java.util.Objects;
-import features.dungeon.application.editor.session.DungeonEditorSessionValues;
-import features.dungeon.api.DungeonEditorTool;
+import java.util.concurrent.atomic.AtomicLong;
+import platform.execution.ExecutionLane;
+import platform.execution.LatestWinsTaskQueue;
+import features.dungeon.api.editor.DungeonEditorPointerGesture;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
 
 final class DungeonEditorPointerWorkflow implements DungeonEditorPointerInteractionOperations {
     private final RuntimeFamilies runtimeFamilies;
     private final DungeonEditorRuntimeCommands commandPublisher;
     private final DungeonEditorPointerSession pointerSession = new DungeonEditorPointerSession();
+    private final LatestWinsTaskQueue hoverQueue;
+    private final AtomicLong interactionGeneration = new AtomicLong();
 
     DungeonEditorPointerWorkflow(
             RuntimeFamilies runtimeFamilies,
-            DungeonEditorRuntimeCommands commandPublisher
+            DungeonEditorRuntimeCommands commandPublisher,
+            ExecutionLane executionLane
     ) {
         this.runtimeFamilies = Objects.requireNonNull(runtimeFamilies, "runtimeFamilies");
         this.commandPublisher = Objects.requireNonNull(commandPublisher, "commandPublisher");
+        hoverQueue = new LatestWinsTaskQueue(Objects.requireNonNull(executionLane, "executionLane"));
     }
 
     @Override
@@ -23,7 +30,7 @@ final class DungeonEditorPointerWorkflow implements DungeonEditorPointerInteract
                 ? emptyRequest()
                 : request;
         PointerWorkflowIntent intent =
-                DungeonEditorPointerWorkflowIntentResolver.resolve(safeRequest.selectedTool(), safeRequest.gesture());
+                DungeonEditorPointerWorkflowIntentResolver.resolve(safeRequest.toolSelection(), safeRequest.gesture());
         if (!intent.workflowAccepted()) {
             commandPublisher.execute(pointerSession::clear);
             return PointerInteractionResult.ignored();
@@ -47,12 +54,31 @@ final class DungeonEditorPointerWorkflow implements DungeonEditorPointerInteract
                 hoverTarget,
                 safeRequest.projectionLevel());
         PointerSample sample = DungeonEditorPointerSamplePolicy.pointerSample(targets, sampleTarget, intent);
-        commandPublisher.execute(() -> applyPointerInExecutionLane(safeRequest, intent, sample));
+        enqueuePointerSample(safeRequest, intent, sample);
         return new PointerInteractionResult(true, hoverTarget);
+    }
+
+    private void enqueuePointerSample(
+            PointerInteractionRequest request,
+            PointerWorkflowIntent intent,
+            PointerSample sample
+    ) {
+        if (PointerAction.isMoved(request.action())) {
+            long generation = interactionGeneration.get();
+            hoverQueue.submit(() -> {
+                if (generation == interactionGeneration.get()) {
+                    applyPointerInExecutionLane(request, intent, sample);
+                }
+            });
+            return;
+        }
+        interactionGeneration.incrementAndGet();
+        commandPublisher.execute(() -> applyPointerInExecutionLane(request, intent, sample));
     }
 
     @Override
     public void clearPointerSession() {
+        interactionGeneration.incrementAndGet();
         commandPublisher.execute(pointerSession::clear);
     }
 
@@ -63,13 +89,13 @@ final class DungeonEditorPointerWorkflow implements DungeonEditorPointerInteract
     ) {
         boolean accepted = pointerSession.accept(
                 request.action(),
-                intent.effectiveTool(),
+                intent.toolAction(),
                 sample,
                 request.projectionLevel());
         if (accepted && request.action() != null) {
             commandPublisher.applyInExecutionLane(() -> applyPointer(
                     request.action(),
-                    intent.effectiveTool(),
+                    intent.toolAction(),
                     sample,
                     intent.wallSingleClickMode(),
                     request.transitionDestination()));
@@ -79,8 +105,8 @@ final class DungeonEditorPointerWorkflow implements DungeonEditorPointerInteract
     private static PointerInteractionRequest emptyRequest() {
         return new PointerInteractionRequest(
                 null,
-                "",
-                PointerWorkflowGesture.empty(),
+                DungeonEditorToolSelection.select(),
+                DungeonEditorPointerGesture.none(),
                 PointerInteractionTargets.empty(),
                 0,
                 TransitionDestination.empty());
@@ -88,7 +114,7 @@ final class DungeonEditorPointerWorkflow implements DungeonEditorPointerInteract
 
     private DungeonEditorRuntimeContext.Result applyPointer(
             PointerAction action,
-            DungeonEditorTool tool,
+            DungeonEditorToolAction tool,
             PointerSample sample,
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
@@ -110,7 +136,7 @@ final class DungeonEditorPointerWorkflow implements DungeonEditorPointerInteract
 
     private DraftPointerResult applyDraftPointer(
             PointerAction action,
-            DungeonEditorTool tool,
+            DungeonEditorToolAction tool,
             PointerSample sample,
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
@@ -152,15 +178,14 @@ final class DungeonEditorPointerWorkflow implements DungeonEditorPointerInteract
 
     private DungeonEditorRuntimeContext.Result applyPointPointer(
             PointerAction action,
-            DungeonEditorTool editorTool,
+            DungeonEditorToolAction editorTool,
             PointerSample sample,
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
     ) {
-        DungeonEditorSessionValues.Tool roomTool = DungeonEditorRoomPaintRuntimeOperation.roomTool(editorTool);
-        if (roomTool != null) {
+        if (DungeonEditorRoomPaintRuntimeOperation.handles(editorTool)) {
             return runtimeFamilies.roomPaintOperation()
-                    .apply(action, roomTool, sample, wallSingleClickMode, transitionDestination);
+                    .apply(action, editorTool, sample, wallSingleClickMode, transitionDestination);
         }
         if (DungeonEditorStairDeleteRuntimeOperation.handles(editorTool)) {
             return runtimeFamilies.stairDeleteOperation().apply(action, sample, wallSingleClickMode, transitionDestination);
@@ -178,12 +203,12 @@ final class DungeonEditorPointerWorkflow implements DungeonEditorPointerInteract
 
     private DungeonEditorRuntimeContext.Result applySelectionPointer(
             PointerAction action,
-            DungeonEditorTool tool,
+            DungeonEditorToolAction tool,
             PointerSample sample,
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
     ) {
-        if (DungeonEditorTool.SELECT == tool) {
+        if (tool.isSelect()) {
             return runtimeFamilies.selectedHandleOperation().apply(action, sample, wallSingleClickMode, transitionDestination);
         }
         return null;

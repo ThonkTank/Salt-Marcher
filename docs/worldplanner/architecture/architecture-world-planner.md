@@ -1,6 +1,6 @@
-Status: Active Target
+Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-17
 Source of Truth: World Planner feature ownership, public seams, and target
 dependency direction.
 
@@ -32,6 +32,11 @@ features/worldplanner/WorldPlannerFeature
 `WorldPlannerFeature` receives `CreaturesApi` and `EncounterTableApi` from the
 application composition and exposes `WorldPlannerApi` plus constructed shell
 contributions.
+
+World Planner does not own shell navigation. Its JavaFX adapter contributes the
+NPC, faction, and location Catalog contents and Inspector editors to the shared
+Catalog shell contribution. The global Encounter state pane remains owned by
+Encounter.
 
 ## Boundaries
 

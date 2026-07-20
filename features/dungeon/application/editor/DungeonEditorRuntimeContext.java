@@ -16,8 +16,11 @@ import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapId;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
-import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonEditorViewMode;
+import features.dungeon.api.DungeonOverlaySettings;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
+import features.dungeon.api.editor.DungeonEditorViewportInput;
 
 final class DungeonEditorRuntimeContext {
     private final DungeonEditorRuntimeApplicationService.RuntimeSession session;
@@ -41,7 +44,9 @@ final class DungeonEditorRuntimeContext {
                 Objects.requireNonNull(interactionState, "interactionState");
         DungeonEditorDungeonState dungeonState = new DungeonEditorDungeonState();
         InterpretDungeonEditorMainViewInputUseCase interpreter =
-                new InterpretDungeonEditorMainViewInputUseCase(safeInteractionState);
+                new InterpretDungeonEditorMainViewInputUseCase(
+                        safeInteractionState,
+                        safeDependencies.corridorRoutingPolicy());
         return safeDependencies.editorRuntimeApplicationService().openSession(
                 dungeonState,
                 runtimeSession -> new DungeonEditorRuntimeContext(runtimeSession, interpreter));
@@ -69,6 +74,14 @@ final class DungeonEditorRuntimeContext {
 
     void clearPreviewWithStatus(String statusText) {
         session.clearPreviewWithStatus(statusText);
+    }
+
+    void clearPreviewWithCommandOutcome(DungeonEditorCommandOutcome outcome) {
+        session.clearPreviewWithCommandOutcome(outcome);
+    }
+
+    void reject(DungeonEditorCommandOutcome.RejectionReason reason) {
+        clearPreviewWithCommandOutcome(DungeonEditorCommandOutcome.rejected(reason));
     }
 
     DungeonEditorDungeonFacts currentFacts() {
@@ -101,6 +114,14 @@ final class DungeonEditorRuntimeContext {
         return fromSnapshot(session.selectMap(mapIdValue));
     }
 
+    Result reloadMap(long mapIdValue) {
+        return fromSnapshot(session.reloadMap(mapIdValue));
+    }
+
+    Result setViewport(DungeonEditorViewportInput viewport) {
+        return fromSnapshot(session.setViewport(viewport));
+    }
+
     Result publishCurrent() {
         return fromSnapshot(session.publishCurrent());
     }
@@ -117,28 +138,36 @@ final class DungeonEditorRuntimeContext {
         return fromSnapshot(session.deleteMap(mapIdValue));
     }
 
+    Result undo() {
+        return fromSnapshot(session.undo());
+    }
+
+    Result redo() {
+        return fromSnapshot(session.redo());
+    }
+
     Result setViewMode(DungeonEditorViewMode viewMode) {
-        return fromSessionFrame(session.setViewMode(DungeonEditorRuntimeInputTranslator.viewMode(viewMode)));
+        return fromSessionFrame(session.setViewMode(viewMode));
     }
 
-    Result setTool(DungeonEditorTool tool) {
-        return fromControls(session.setToolControlsOnly(DungeonEditorRuntimeInputTranslator.tool(tool)));
+    Result setTool(DungeonEditorToolSelection selection) {
+        return fromControls(session.setToolControlsOnly(selection));
     }
 
-    Result setToolAndPublishSnapshot(DungeonEditorTool tool) {
-        return fromSnapshot(session.setTool(DungeonEditorRuntimeInputTranslator.tool(tool)));
+    Result setToolAndPublishSnapshot(DungeonEditorToolSelection selection) {
+        return fromSnapshot(session.setTool(selection));
     }
 
     Result cancelActivePreviewSession() {
-        return fromSnapshot(session.setTool(DungeonEditorSessionValues.Tool.SELECT));
+        return fromSnapshot(session.setTool(DungeonEditorToolSelection.select()));
     }
 
     Result shiftProjectionLevel(int levelShift) {
-        return fromSessionFrame(session.shiftProjectionLevel(levelShift));
+        return fromSnapshot(session.shiftProjectionLevel(levelShift));
     }
 
-    Result setOverlay(DungeonEditorOverlaySettings overlaySettings) {
-        return fromSessionFrame(session.setOverlay(DungeonEditorRuntimeInputTranslator.overlaySettings(overlaySettings)));
+    Result setOverlay(DungeonOverlaySettings overlaySettings) {
+        return fromSessionFrame(session.setOverlay(overlaySettings));
     }
 
     Result saveRoomNarration(RoomNarration narration) {
@@ -174,6 +203,12 @@ final class DungeonEditorRuntimeContext {
                 new DungeonAuthoredApplicationService.TransitionDescriptionInput(
                         transitionId,
                         description)));
+    }
+
+    Result saveFeatureMarkerSemantics(long markerId, String label, String description) {
+        return fromSnapshot(session.saveFeatureMarkerSemantics(
+                new DungeonAuthoredApplicationService.FeatureMarkerSemanticsInput(
+                        markerId, label, description)));
     }
 
     Result saveStairGeometry(StairGeometryDraftInput input) {
@@ -250,7 +285,7 @@ final class DungeonEditorRuntimeContext {
     void applyDoorBoundary(
             MapId mapId,
             long clusterId,
-            DungeonEditorWorkspaceValues.Edge edge,
+            features.dungeon.domain.core.geometry.Edge edge,
             boolean deleteMode
     ) {
         session.applyDoorBoundary(mapId, clusterId, edge, deleteMode);
@@ -259,7 +294,7 @@ final class DungeonEditorRuntimeContext {
     void applyWallBoundary(
             MapId mapId,
             long clusterId,
-            java.util.List<DungeonEditorWorkspaceValues.Edge> edges,
+            java.util.List<features.dungeon.domain.core.geometry.Edge> edges,
             boolean deleteMode
     ) {
         session.applyWallBoundary(mapId, clusterId, edges, deleteMode);
@@ -289,7 +324,7 @@ final class DungeonEditorRuntimeContext {
             InterpretDungeonEditorMainViewInputUseCase.PointerAction action,
             DungeonEditorMainViewInput input,
             MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool corridorTool
+            DungeonEditorToolAction corridorTool
     ) {
         return mainViewInterpreter.corridor(
                 action,
@@ -303,7 +338,7 @@ final class DungeonEditorRuntimeContext {
             InterpretDungeonEditorMainViewInputUseCase.PointerAction action,
             DungeonEditorMainViewInput input,
             MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool boundaryTool
+            DungeonEditorToolAction boundaryTool
     ) {
         return mainViewInterpreter.doorBoundaryOperation(
                 action,
@@ -317,7 +352,7 @@ final class DungeonEditorRuntimeContext {
             InterpretDungeonEditorMainViewInputUseCase.PointerAction action,
             DungeonEditorMainViewInput input,
             MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool boundaryTool
+            DungeonEditorToolAction boundaryTool
     ) {
         return mainViewInterpreter.wallBoundaryOperation(
                 action,
@@ -331,7 +366,7 @@ final class DungeonEditorRuntimeContext {
     DungeonEditorRoomPaintInterpretation roomPaintInterpretation(
             InterpretDungeonEditorMainViewInputUseCase.PointerAction action,
             DungeonEditorMainViewInput input,
-            DungeonEditorSessionValues.Tool tool
+            DungeonEditorToolAction tool
     ) {
         return mainViewInterpreter.roomPaintOperation(
                 action,
@@ -361,7 +396,7 @@ final class DungeonEditorRuntimeContext {
     }
 
     Result fromSnapshot(DungeonEditorSessionSnapshot.@Nullable SnapshotData snapshot) {
-        return snapshot == null ? Result.publishAfterStateModelSideEffect() : Result.publish();
+        return snapshot == null ? Result.none() : Result.publish();
     }
 
     Result fromPublication(DungeonEditorRuntimeApplicationService.PublicationResult publication) {
@@ -369,9 +404,7 @@ final class DungeonEditorRuntimeContext {
     }
 
     Result fromOperationResult(DungeonAuthoredApplicationService.OperationResult result) {
-        return result == null || !result.present()
-                ? Result.none()
-                : Result.publishAfterStateModelSideEffect();
+        return Result.none();
     }
 
     Result fromPublication(
@@ -388,11 +421,11 @@ final class DungeonEditorRuntimeContext {
     }
 
     Result fromSessionFrame(DungeonEditorSessionSnapshot.@Nullable SessionFrameData frameData) {
-        return frameData == null ? Result.publishAfterStateModelSideEffect() : fromControls(frameData.controlsData());
+        return frameData == null ? Result.none() : fromControls(frameData.controlsData());
     }
 
     Result fromControls(DungeonEditorSessionSnapshot.@Nullable ControlsData controls) {
-        return controls == null ? Result.publishAfterStateModelSideEffect() : Result.publish();
+        return controls == null ? Result.none() : Result.publish();
     }
 
     private static DungeonAuthoredApplicationService.LabelTargetKind labelTargetKind(
@@ -406,31 +439,22 @@ final class DungeonEditorRuntimeContext {
         };
     }
 
-    record Result(
-            boolean publishRuntimeFrame,
-            boolean publishSuppressedStateModelFrame
-    ) {
+    record Result(boolean publicationRequested) {
         static Result none() {
-            return new Result(false, true);
+            return new Result(false);
         }
 
         static Result publish() {
-            return new Result(true, true);
-        }
-
-        static Result publishAfterStateModelSideEffect() {
-            return new Result(false, true);
+            return new Result(true);
         }
 
         Result merge(Result next) {
             Result safeNext = next == null ? none() : next;
-            return new Result(
-                    publishRuntimeFrame || safeNext.publishRuntimeFrame(),
-                    publishSuppressedStateModelFrame || safeNext.publishSuppressedStateModelFrame());
+            return new Result(publicationRequested || safeNext.publicationRequested());
         }
 
-        boolean shouldPublish(boolean stateModelFrameSuppressed) {
-            return publishRuntimeFrame || stateModelFrameSuppressed && publishSuppressedStateModelFrame;
+        boolean shouldPublish(boolean ownerReadbackChanged) {
+            return publicationRequested || ownerReadbackChanged;
         }
     }
 }

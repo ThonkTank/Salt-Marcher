@@ -17,15 +17,18 @@ public final class TravelDungeonActiveState {
             @Nullable PositionData requestedTravelPosition,
             @Nullable PartyLocationData partyLocation
     ) {
-        return requestedTravelPosition == null ? toTravelPosition(partyLocation) : requestedTravelPosition;
+        PositionData committedPosition = toTravelPosition(partyLocation);
+        return committedPosition == null ? requestedTravelPosition : committedPosition;
     }
 
     public record ActiveTravelStateData(
             List<Long> travelCharacterIds,
-            @Nullable PartyLocationData partyLocation
+            @Nullable PartyLocationData partyLocation,
+            long positionRevision
     ) {
         public ActiveTravelStateData {
             travelCharacterIds = travelCharacterIds == null ? List.of() : List.copyOf(travelCharacterIds);
+            positionRevision = Math.max(0L, positionRevision);
         }
 
         @Override
@@ -36,10 +39,12 @@ public final class TravelDungeonActiveState {
 
     public record PartyLocationData(
             @Nullable PositionData dungeonPosition,
+            long overworldMapId,
             long overworldTileId,
             boolean outsideDungeon
     ) {
         public PartyLocationData {
+            overworldMapId = Math.max(0L, overworldMapId);
             overworldTileId = Math.max(0L, overworldTileId);
         }
     }

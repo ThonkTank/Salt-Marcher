@@ -4,7 +4,8 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import features.sessionplanner.adapter.sqlite.model.SessionEncounterRecord;
-import features.sessionplanner.adapter.sqlite.model.SessionLootPlaceholderRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionGeneratedRewardRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionManualLootNoteRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionParticipantRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionPlanRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionPlanSnapshotRecord;
@@ -12,8 +13,10 @@ import features.sessionplanner.adapter.sqlite.model.SessionRestPlacementRecord;
 import features.sessionplanner.domain.session.EncounterDays;
 import features.sessionplanner.domain.session.SessionEncounter;
 import features.sessionplanner.domain.session.SessionEncounterAllocation;
-import features.sessionplanner.domain.session.SessionLootPlaceholder;
+import features.sessionplanner.domain.session.SessionGeneratedRewardReference;
+import features.sessionplanner.domain.session.SessionManualLootNote;
 import features.sessionplanner.domain.session.SessionPlan;
+import features.sessionplanner.domain.session.SessionRevision;
 import features.sessionplanner.domain.session.SessionRestPlacement;
 
 public final class SessionPlanMapper {
@@ -25,6 +28,7 @@ public final class SessionPlanMapper {
         return new SessionPlanSnapshotRecord(
                 new SessionPlanRecord(
                         plan.sessionId(),
+                        plan.revision().value(),
                         plan.displayName(),
                         plan.encounterDays().displayText(),
                         plan.selectedEncounterId(),
@@ -34,7 +38,8 @@ public final class SessionPlanMapper {
                 toParticipantRecords(plan),
                 toEncounterRecords(plan),
                 toRestRecords(plan),
-                toLootRecords(plan));
+                toManualLootNoteRecords(plan),
+                toGeneratedRewardRecords(plan));
     }
 
     public static SessionPlan toDomain(SessionPlanSnapshotRecord snapshot) {
@@ -50,6 +55,7 @@ public final class SessionPlanMapper {
                 .toList();
         return new SessionPlan(
                 plan.sessionId(),
+                new SessionRevision(plan.revision()),
                 plan.displayName(),
                 snapshot.participants().stream()
                         .map(SessionParticipantRecord::characterId)
@@ -62,7 +68,14 @@ public final class SessionPlanMapper {
                                 record.rightEncounterId(),
                                 record.restKind()))
                         .toList(),
-                toDomainLoot(snapshot.lootPlaceholders(), encounters),
+                toDomainManualLootNotes(snapshot.manualLootNotes()),
+                snapshot.generatedRewards().stream()
+                        .map(record -> new SessionGeneratedRewardReference(
+                                record.sceneId(),
+                                record.generationId(),
+                                record.treasureId(),
+                                record.lastKnownLabel()))
+                        .toList(),
                 plan.selectedEncounterId(),
                 plan.statusText(),
                 plan.nextEncounterId(),
@@ -94,24 +107,31 @@ public final class SessionPlanMapper {
                 index));
     }
 
-    private static List<SessionLootPlaceholderRecord> toLootRecords(SessionPlan plan) {
-        return mapIndexed(plan.lootPlaceholders(), (placeholder, index) -> new SessionLootPlaceholderRecord(
-                placeholder.lootId(),
-                placeholder.encounterId(),
-                placeholder.label(),
+    private static List<SessionManualLootNoteRecord> toManualLootNoteRecords(SessionPlan plan) {
+        return mapIndexed(plan.manualLootNotes(), (note, index) -> new SessionManualLootNoteRecord(
+                note.noteId(),
+                note.sceneId(),
+                note.authoredText(),
                 index));
     }
 
-    private static List<SessionLootPlaceholder> toDomainLoot(
-            List<SessionLootPlaceholderRecord> records,
-            List<SessionEncounter> encounters
+    private static List<SessionGeneratedRewardRecord> toGeneratedRewardRecords(SessionPlan plan) {
+        return mapIndexed(plan.generatedRewards(), (reward, index) -> new SessionGeneratedRewardRecord(
+                reward.sceneId(),
+                reward.generationId(),
+                reward.treasureId(),
+                reward.lastKnownLabel(),
+                index));
+    }
+
+    private static List<SessionManualLootNote> toDomainManualLootNotes(
+            List<SessionManualLootNoteRecord> records
     ) {
-        long fallbackEncounterId = encounters.isEmpty() ? 0L : encounters.getFirst().encounterId();
         return records.stream()
-                .map(record -> new SessionLootPlaceholder(
-                        record.lootId(),
-                        record.encounterId() > 0L ? record.encounterId() : fallbackEncounterId,
-                        record.label()))
+                .map(record -> new SessionManualLootNote(
+                        record.noteId(),
+                        record.sceneId(),
+                        record.noteText()))
                 .toList();
     }
 

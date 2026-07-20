@@ -3,6 +3,7 @@ package features.dungeon.adapter.javafx.map;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
@@ -33,6 +34,12 @@ import features.dungeon.adapter.javafx.map.DungeonMapContentModel.PaintStyle;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel.RelationPrimitive;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel.RenderScene;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel.Viewport;
+import platform.ui.mapcanvas.MapCanvasLayer;
+import platform.ui.mapcanvas.MapCanvasPaintObserver;
+import platform.ui.mapcanvas.MapCanvasPaintSample;
+import platform.ui.mapcanvas.MapCanvasPane;
+import platform.ui.mapcanvas.MapCanvasViewport;
+import platform.ui.mapcanvas.MapCanvasWindow;
 
 public class DungeonMapView extends BorderPane {
 
@@ -58,6 +65,8 @@ public class DungeonMapView extends BorderPane {
     private static final DungeonMapViewInputEvent.CanvasInput LABEL_EDIT_TEXT_CHANGED_INPUT =
             rawLabelEditTextChangedInput();
     private static final Runnable NO_CANVAS_BINDING = () -> {};
+    private static final String UNDO_COMMAND = "UNDO";
+    private static final String REDO_COMMAND = "REDO";
     private static final int[] GRID_STEPS = {1, 5, 10, 25};
     private static final Map<DungeonMapContentModel.RenderColor, Color> FX_COLOR_CACHE = new HashMap<>();
     private static final Color BACKGROUND_COLOR = PaintPalette.color(0x12, 0x18, 0x1c, 1.0);
@@ -68,22 +77,31 @@ public class DungeonMapView extends BorderPane {
             PaintPalette.color(0xb1, 0xbc, 0xc5, 0.28)
     };
     private final StackPane host = ViewChrome.createHost();
-    private final Pane canvasLayer = ViewChrome.createCanvasLayer();
-    private final Canvas canvas = ViewChrome.createCanvas();
+    private final MapCanvasPane canvasLayer = ViewChrome.createCanvasLayer();
+    private final Canvas canvas = canvasLayer.canvas(MapCanvasLayer.BASE);
+    private final Canvas interactionCanvas = canvasLayer.canvas(MapCanvasLayer.INTERACTION);
+    private final Canvas actorCanvas = canvasLayer.canvas(MapCanvasLayer.ACTOR);
     private final TextField inlineLabelEditor = ViewChrome.createInlineLabelEditor();
     private final Label overlayMessage = ViewChrome.createOverlayMessage();
     private final ChangeListener<String> inlineLabelEditorTextListener =
             (ignored, before, after) -> InputSnapshots.emitLabelEditEvent(this, LABEL_EDIT_TEXT_CHANGED_INPUT, after);
     private Consumer<DungeonMapViewInputEvent> viewInputEventHandler = ignored -> {};
+    private Consumer<DungeonMapVisibleCellBounds> visibleCellBoundsHandler = ignored -> {};
     private Runnable removeCanvasBinding = NO_CANVAS_BINDING;
+    private DungeonMapContentModel boundPresentationModel;
+    private DungeonMapVisibleCellBounds lastPublishedVisibleBounds;
     private double[] polygonXBuffer = new double[0];
     private double[] polygonYBuffer = new double[0];
+    private MapCanvasPaintObserver paintObserver = MapCanvasPaintObserver.passive();
+    private long paintOperationId;
+    private long lastBaseRevision = -1L;
+    private long lastInteractionRevision = -1L;
+    private long lastActorRevision = -1L;
+    private double lastPaintWidth = -1.0;
+    private double lastPaintHeight = -1.0;
 
     public DungeonMapView() {
         getStyleClass().addAll("surface-root", "dungeon-map-surface");
-        canvas.widthProperty().bind(canvasLayer.widthProperty());
-        canvas.heightProperty().bind(canvasLayer.heightProperty());
-        ViewChrome.installCanvas(canvasLayer, canvas);
         ViewChrome.installHost(host, canvasLayer, inlineLabelEditor, overlayMessage);
         InputEvents.installInlineLabelEditor(inlineLabelEditor, this);
         setCenter(host);
@@ -92,6 +110,8 @@ public class DungeonMapView extends BorderPane {
 
     public void bind(DungeonMapContentModel presentationModel) {
         removeCurrentCanvasListeners();
+        boundPresentationModel = presentationModel;
+        lastPublishedVisibleBounds = null;
         if (presentationModel == null) {
             return;
         }
@@ -99,6 +119,7 @@ public class DungeonMapView extends BorderPane {
                 (ignored, before, after) -> {
                     redraw(after, presentationModel);
                     showInlineLabelEditor(presentationModel.currentInlineLabelEditorPresentation(), true);
+                    publishVisibleCellBounds(after == null ? null : after.viewport());
                 };
         ChangeListener<InlineLabelEditState> inlineLabelEditListener =
                 (ignored, before, after) -> {
@@ -112,6 +133,7 @@ public class DungeonMapView extends BorderPane {
         InvalidationListener canvasSizeListener = ignored -> {
             redraw(presentationModel.currentCanvasState(), presentationModel);
             showInlineLabelEditor(presentationModel.currentInlineLabelEditorPresentation(), true);
+            publishVisibleCellBounds(presentationModel.currentCanvasState().viewport());
         };
         presentationModel.canvasStateProperty().addListener(canvasStateListener);
         presentationModel.inlineLabelEditStateProperty().addListener(inlineLabelEditListener);
@@ -125,42 +147,142 @@ public class DungeonMapView extends BorderPane {
         };
         redraw(presentationModel.currentCanvasState(), presentationModel);
         showInlineLabelEditor(presentationModel.currentInlineLabelEditorPresentation(), false);
+        publishVisibleCellBounds(presentationModel.currentCanvasState().viewport());
     }
 
     public void onViewInputEvent(Consumer<DungeonMapViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> {} : handler;
     }
 
+    public void onVisibleCellBoundsChanged(Consumer<DungeonMapVisibleCellBounds> handler) {
+        visibleCellBoundsHandler = handler == null ? ignored -> {} : handler;
+        if (boundPresentationModel != null) {
+            publishVisibleCellBounds(boundPresentationModel.currentCanvasState().viewport());
+        }
+    }
+
+    public void onPaintSample(MapCanvasPaintObserver observer) {
+        paintObserver = observer == null ? MapCanvasPaintObserver.passive() : observer;
+    }
+
+    int physicalCanvasCount() {
+        return canvasLayer.canvasCount();
+    }
+
+    Canvas physicalCanvas(MapCanvasLayer layer) {
+        return canvasLayer.canvas(layer);
+    }
+
+    private void publishVisibleCellBounds(Viewport viewport) {
+        double width = canvas.getWidth();
+        double height = canvas.getHeight();
+        if (viewport == null || width <= 1.0 || height <= 1.0) {
+            return;
+        }
+        DungeonMapVisibleCellBounds bounds = visibleCellBounds(viewport, width, height);
+        if (!bounds.equals(lastPublishedVisibleBounds)) {
+            lastPublishedVisibleBounds = bounds;
+            visibleCellBoundsHandler.accept(bounds);
+        }
+    }
+
+    static DungeonMapVisibleCellBounds visibleCellBounds(Viewport viewport, double width, double height) {
+        Viewport safeViewport = Objects.requireNonNull(viewport, "viewport");
+        MapCanvasWindow window = MapCanvasWindow.visible(
+                new MapCanvasViewport(
+                        safeViewport.panX(),
+                        safeViewport.panY(),
+                        safeViewport.zoom(),
+                        DungeonMapViewportScale.baseGrid()),
+                width,
+                height,
+                0.0);
+        return new DungeonMapVisibleCellBounds(
+                floorCell(window.minX()),
+                floorCell(window.minY()),
+                ceilingCell(window.maxX()),
+                ceilingCell(window.maxY()));
+    }
+
+    private static int floorCell(double coordinate) {
+        return saturatingInt(Math.floor(coordinate));
+    }
+
+    private static int ceilingCell(double coordinate) {
+        return saturatingInt(Math.ceil(coordinate) - 1.0);
+    }
+
+    private static int saturatingInt(double value) {
+        if (value <= Integer.MIN_VALUE) {
+            return Integer.MIN_VALUE;
+        }
+        if (value >= Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE;
+        }
+        return (int) value;
+    }
+
     private void redraw(
             DungeonMapContentModel.CanvasState canvasState,
-            DungeonMapContentModel measurementSink
+            DungeonMapContentModel ignoredMeasurementSink
     ) {
         if (canvasState == null) {
             return;
         }
-        long startedNanos = System.nanoTime();
-        try {
-            CanvasRenderer.render(
-                    this,
-                    CanvasSurface.graphicsContext(canvas),
-                    canvasState,
-                    CanvasSurface.renderWidth(canvas),
-                CanvasSurface.renderHeight(canvas));
-        } finally {
-            if (measurementSink != null) {
-                measurementSink.recordCanvasRedraw(System.nanoTime() - startedNanos);
-            }
-        }
+        redrawChangedLayers(canvasState);
         ViewChrome.showOverlay(overlayMessage, canvasState);
+    }
+
+    private void redrawChangedLayers(DungeonMapContentModel.CanvasState canvasState) {
+        RenderScene scene = canvasState.baseRenderScene();
+        Viewport viewport = canvasState.viewport();
+        double width = CanvasSurface.renderWidth(canvas);
+        double height = CanvasSurface.renderHeight(canvas);
+        boolean sizeChanged = Double.compare(lastPaintWidth, width) != 0
+                || Double.compare(lastPaintHeight, height) != 0;
+        long operationId = ++paintOperationId;
+        if (sizeChanged || lastBaseRevision != canvasState.baseRevision()) {
+            observePaint(MapCanvasLayer.BASE, operationId,
+                    () -> CanvasRenderer.renderBase(this, CanvasSurface.graphicsContext(canvas),
+                            scene, viewport, width, height));
+            lastBaseRevision = canvasState.baseRevision();
+        }
+        if (sizeChanged || lastInteractionRevision != canvasState.interactionRevision()) {
+            observePaint(MapCanvasLayer.INTERACTION, operationId,
+                    () -> CanvasRenderer.renderInteraction(this,
+                            CanvasSurface.graphicsContext(interactionCanvas), canvasState, scene,
+                            viewport, width, height));
+            lastInteractionRevision = canvasState.interactionRevision();
+        }
+        if (sizeChanged || lastActorRevision != canvasState.actorRevision()) {
+            observePaint(MapCanvasLayer.ACTOR, operationId,
+                    () -> CanvasRenderer.renderActor(this, CanvasSurface.graphicsContext(actorCanvas),
+                            scene, viewport, width, height));
+            lastActorRevision = canvasState.actorRevision();
+        }
+        lastPaintWidth = width;
+        lastPaintHeight = height;
+    }
+
+    private void observePaint(MapCanvasLayer layer, long operationId, LayerPainter painter) {
+        long startedNanos = System.nanoTime();
+        PaintCounts counts = painter.paint();
+        paintObserver.onPaint(new MapCanvasPaintSample(
+                layer,
+                operationId,
+                System.nanoTime() - startedNanos,
+                counts.visited(),
+                counts.painted()));
     }
 
     private void removeCurrentCanvasListeners() {
         removeCanvasBinding.run();
         removeCanvasBinding = NO_CANVAS_BINDING;
+        boundPresentationModel = null;
     }
 
     private void requestCanvasFocus() {
-        canvasLayer.requestFocus();
+        canvas.requestFocus();
     }
 
     private void emitInput(DungeonMapViewInputEvent inputEvent) {
@@ -341,6 +463,28 @@ public class DungeonMapView extends BorderPane {
                     canvas.getWidth(),
                     canvas.getHeight(),
                     0.0);
+            event.consume();
+            return;
+        }
+        if (event.isShortcutDown() && code == KeyCode.Z) {
+            InputSnapshots.emitKeyboardCommand(
+                    this,
+                    ESCAPE_PRESSED_INPUT,
+                    event,
+                    canvas.getWidth(),
+                    canvas.getHeight(),
+                    event.isShiftDown() ? REDO_COMMAND : UNDO_COMMAND);
+            event.consume();
+            return;
+        }
+        if (event.isShortcutDown() && code == KeyCode.Y) {
+            InputSnapshots.emitKeyboardCommand(
+                    this,
+                    ESCAPE_PRESSED_INPUT,
+                    event,
+                    canvas.getWidth(),
+                    canvas.getHeight(),
+                    REDO_COMMAND);
             event.consume();
         }
     }
@@ -536,6 +680,27 @@ public class DungeonMapView extends BorderPane {
                     text,
                     0));
         }
+
+        static void emitKeyboardCommand(
+                DungeonMapView view,
+                DungeonMapViewInputEvent.CanvasInput input,
+                KeyEvent event,
+                double canvasWidth,
+                double canvasHeight,
+                String command
+        ) {
+            view.emitInput(new DungeonMapViewInputEvent(
+                    input,
+                    new DungeonMapViewInputEvent.CanvasButtons(false, false, false),
+                    new DungeonMapViewInputEvent.CanvasModifiers(
+                            event.isControlDown(),
+                            event.isShiftDown(),
+                            event.isAltDown()),
+                    new DungeonMapViewInputEvent.CanvasPosition(canvasWidth / 2.0, canvasHeight / 2.0),
+                    0.0,
+                    command,
+                    0));
+        }
     }
 
     private interface ViewChrome {
@@ -547,8 +712,8 @@ public class DungeonMapView extends BorderPane {
             return newHost;
         }
 
-        static Pane createCanvasLayer() {
-            Pane newCanvasLayer = new Pane();
+        static MapCanvasPane createCanvasLayer() {
+            MapCanvasPane newCanvasLayer = new MapCanvasPane();
             newCanvasLayer.setMinSize(0.0, 0.0);
             newCanvasLayer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
             newCanvasLayer.setFocusTraversable(true);
@@ -556,12 +721,6 @@ public class DungeonMapView extends BorderPane {
             newCanvasLayer.setAccessibleHelp(
                     "Arrow keys move the map focus. Enter or Space activates the current target.");
             return newCanvasLayer;
-        }
-
-        static Canvas createCanvas() {
-            Canvas newCanvas = new Canvas(960.0, 640.0);
-            newCanvas.getStyleClass().add("dungeon-map-canvas");
-            return newCanvas;
         }
 
         static Label createOverlayMessage() {
@@ -578,10 +737,6 @@ public class DungeonMapView extends BorderPane {
             editor.setAccessibleText("Dungeon map label editor");
             editor.getStyleClass().add(MAP_LABEL_STYLE_CLASS);
             return editor;
-        }
-
-        static void installCanvas(Pane canvasLayer, Canvas canvas) {
-            canvasLayer.getChildren().setAll(canvas);
         }
 
         static void installHost(
@@ -628,33 +783,66 @@ public class DungeonMapView extends BorderPane {
 
     private interface CanvasRenderer {
 
-        static void render(
+        static PaintCounts renderBase(
                 DungeonMapView view,
                 GraphicsContext gc,
-                DungeonMapContentModel.CanvasState canvasState,
+                RenderScene renderScene,
+                Viewport viewport,
                 double width,
                 double height
         ) {
-            RenderScene renderScene = canvasState.baseRenderScene();
-            Viewport viewport = canvasState.viewport();
             clear(gc, width, height);
             drawGrid(gc, renderScene, viewport, width, height);
-            drawRelations(gc, renderScene.relations(), viewport);
-            drawSurfaces(view, gc, renderScene.baseSurfaces(), viewport);
-            drawBoundaries(gc, renderScene.baseBoundaries(), viewport);
-            drawGlyphs(view, gc, renderScene.baseGlyphs(), viewport);
-            drawTexts(gc, renderScene.baseTexts(), viewport);
-            drawSurfaces(view, gc, canvasState.hoverSurfaces(), viewport);
-            drawBoundaries(gc, canvasState.hoverBoundaries(), viewport);
-            drawGlyphs(view, gc, canvasState.hoverGlyphs(), viewport);
-            drawTexts(gc, canvasState.hoverTexts(), viewport);
-            drawSurfaces(view, gc, renderScene.actors(), viewport);
+            MapCanvasWindow visibleWindow = visibleWindow(viewport, width, height);
+            return drawRelations(gc, renderScene.relations(), viewport, visibleWindow)
+                    .plus(drawSurfaces(view, gc, renderScene.baseSurfaces(), viewport, visibleWindow))
+                    .plus(drawBoundaries(gc, renderScene.baseBoundaries(), viewport, visibleWindow))
+                    .plus(drawGlyphs(view, gc, renderScene.baseGlyphs(), viewport, visibleWindow))
+                    .plus(drawTexts(gc, renderScene.baseTexts(), viewport, visibleWindow));
+        }
+
+        static PaintCounts renderInteraction(
+                DungeonMapView view,
+                GraphicsContext gc,
+                DungeonMapContentModel.CanvasState canvasState,
+                RenderScene renderScene,
+                Viewport viewport,
+                double width,
+                double height
+        ) {
+            clearTransparent(gc, width, height);
+            MapCanvasWindow visibleWindow = visibleWindow(viewport, width, height);
+            return drawSurfaces(view, gc, renderScene.interactionSurfaces(), viewport, visibleWindow)
+                    .plus(drawBoundaries(gc, renderScene.interactionBoundaries(), viewport, visibleWindow))
+                    .plus(drawGlyphs(view, gc, renderScene.interactionGlyphs(), viewport, visibleWindow))
+                    .plus(drawTexts(gc, renderScene.interactionTexts(), viewport, visibleWindow))
+                    .plus(drawSurfaces(view, gc, canvasState.hoverSurfaces(), viewport, visibleWindow))
+                    .plus(drawBoundaries(gc, canvasState.hoverBoundaries(), viewport, visibleWindow))
+                    .plus(drawGlyphs(view, gc, canvasState.hoverGlyphs(), viewport, visibleWindow))
+                    .plus(drawTexts(gc, canvasState.hoverTexts(), viewport, visibleWindow));
+        }
+
+        static PaintCounts renderActor(
+                DungeonMapView view,
+                GraphicsContext gc,
+                RenderScene renderScene,
+                Viewport viewport,
+                double width,
+                double height
+        ) {
+            clearTransparent(gc, width, height);
+            return drawSurfaces(view, gc, renderScene.actors(), viewport,
+                    visibleWindow(viewport, width, height));
         }
 
         static void clear(GraphicsContext gc, double width, double height) {
             gc.clearRect(0.0, 0.0, width, height);
             gc.setFill(BACKGROUND_COLOR);
             gc.fillRect(0.0, 0.0, width, height);
+        }
+
+        static void clearTransparent(GraphicsContext gc, double width, double height) {
+            gc.clearRect(0.0, 0.0, width, height);
         }
 
         static void drawGrid(
@@ -689,46 +877,70 @@ public class DungeonMapView extends BorderPane {
             return spacing >= 10.0;
         }
 
-        static void drawSurfaces(
+        static PaintCounts drawSurfaces(
                 DungeonMapView view,
                 GraphicsContext gc,
                 List<MapCanvasPolygonPrimitive> surfaces,
-                Viewport viewport
+                Viewport viewport,
+                MapCanvasWindow visibleWindow
         ) {
+            long painted = 0L;
             for (MapCanvasPolygonPrimitive surface : surfaces) {
-                PrimitivePainter.drawPolygon(view, gc, surface.polygon(), surface.style(), viewport);
+                if (PrimitivePainter.visible(surface.polygon(), visibleWindow)) {
+                    PrimitivePainter.drawPolygon(view, gc, surface.polygon(), surface.style(), viewport);
+                    painted++;
+                }
             }
+            return new PaintCounts(surfaces.size(), painted);
         }
 
-        static void drawBoundaries(
+        static PaintCounts drawBoundaries(
                 GraphicsContext gc,
                 List<BoundaryPrimitive> boundaries,
-                Viewport viewport
+                Viewport viewport,
+                MapCanvasWindow visibleWindow
         ) {
+            long painted = 0L;
             for (BoundaryPrimitive boundary : boundaries) {
-                PrimitivePainter.drawPolyline(gc, boundary.polyline(), boundary.style(), viewport);
+                if (PrimitivePainter.visible(boundary.polyline(), visibleWindow)) {
+                    PrimitivePainter.drawPolyline(gc, boundary.polyline(), boundary.style(), viewport);
+                    painted++;
+                }
             }
+            return new PaintCounts(boundaries.size(), painted);
         }
 
-        static void drawRelations(
+        static PaintCounts drawRelations(
                 GraphicsContext gc,
                 List<RelationPrimitive> relations,
-                Viewport viewport
+                Viewport viewport,
+                MapCanvasWindow visibleWindow
         ) {
+            long painted = 0L;
             for (RelationPrimitive relation : relations) {
-                PrimitivePainter.drawPolyline(gc, relation.polyline(), relation.style(), viewport);
+                if (PrimitivePainter.visible(relation.polyline(), visibleWindow)) {
+                    PrimitivePainter.drawPolyline(gc, relation.polyline(), relation.style(), viewport);
+                    painted++;
+                }
             }
+            return new PaintCounts(relations.size(), painted);
         }
 
-        static void drawGlyphs(
+        static PaintCounts drawGlyphs(
                 DungeonMapView view,
                 GraphicsContext gc,
                 List<GlyphPrimitive> glyphs,
-                Viewport viewport
+                Viewport viewport,
+                MapCanvasWindow visibleWindow
         ) {
             gc.setTextAlign(TextAlignment.CENTER);
+            long painted = 0L;
             for (GlyphPrimitive glyph : glyphs) {
+                if (!PrimitivePainter.visible(glyph.polygon(), visibleWindow)) {
+                    continue;
+                }
                 PrimitivePainter.drawPolygon(view, gc, glyph.polygon(), glyph.style(), viewport);
+                painted++;
                 String label = glyph.label();
                 if (!label.isBlank()) {
                     gc.setFill(PaintPalette.defaultTextColor(glyph.labelColor()));
@@ -739,15 +951,27 @@ public class DungeonMapView extends BorderPane {
                 }
             }
             gc.setTextAlign(TextAlignment.LEFT);
+            return new PaintCounts(glyphs.size(), painted);
         }
 
-        static void drawTexts(
+        static PaintCounts drawTexts(
                 GraphicsContext gc,
                 List<DungeonMapContentModel.TextPrimitive> texts,
-                Viewport viewport
+                Viewport viewport,
+                MapCanvasWindow visibleWindow
         ) {
             gc.setTextAlign(TextAlignment.CENTER);
+            long painted = 0L;
             for (DungeonMapContentModel.TextPrimitive text : texts) {
+                double halfWidth = Math.max(0.0, text.width()) / 2.0;
+                double halfHeight = Math.max(0.0, text.height()) / 2.0;
+                if (!visibleWindow.intersects(
+                        text.centerX() - halfWidth,
+                        text.centerY() - halfHeight,
+                        text.centerX() + halfWidth,
+                        text.centerY() + halfHeight)) {
+                    continue;
+                }
                 double width = text.width() * viewport.gridSize();
                 double height = text.height() * viewport.gridSize();
                 double centerX = viewport.sceneToScreenX(text.centerX());
@@ -771,10 +995,35 @@ public class DungeonMapView extends BorderPane {
                 gc.setFont(PaintPalette.fxFont(text.typography()));
                 gc.fillText(text.text(), centerX, y + height * 0.69, Math.max(1.0, width * 0.92));
                 gc.restore();
+                painted++;
             }
             gc.setTextAlign(TextAlignment.LEFT);
+            return new PaintCounts(texts.size(), painted);
         }
 
+        private static MapCanvasWindow visibleWindow(Viewport viewport, double width, double height) {
+            return MapCanvasWindow.visible(
+                    new MapCanvasViewport(
+                            viewport.panX(),
+                            viewport.panY(),
+                            viewport.zoom(),
+                            DungeonMapViewportScale.baseGrid()),
+                    width,
+                    height,
+                    2.0);
+        }
+
+    }
+
+    @FunctionalInterface
+    private interface LayerPainter {
+        PaintCounts paint();
+    }
+
+    private record PaintCounts(long visited, long painted) {
+        private PaintCounts plus(PaintCounts other) {
+            return new PaintCounts(visited + other.visited, painted + other.painted);
+        }
     }
 
     private interface PrimitivePainter {
@@ -829,6 +1078,23 @@ public class DungeonMapView extends BorderPane {
 
         static boolean polylineDrawable(List<MapCanvasPoint> points) {
             return points.size() >= 2;
+        }
+
+        static boolean visible(List<MapCanvasPoint> points, MapCanvasWindow visibleWindow) {
+            if (points == null || points.isEmpty() || visibleWindow == null) {
+                return false;
+            }
+            double minimumX = Double.POSITIVE_INFINITY;
+            double minimumY = Double.POSITIVE_INFINITY;
+            double maximumX = Double.NEGATIVE_INFINITY;
+            double maximumY = Double.NEGATIVE_INFINITY;
+            for (MapCanvasPoint point : points) {
+                minimumX = Math.min(minimumX, point.x());
+                minimumY = Math.min(minimumY, point.y());
+                maximumX = Math.max(maximumX, point.x());
+                maximumY = Math.max(maximumY, point.y());
+            }
+            return visibleWindow.intersects(minimumX, minimumY, maximumX, maximumY);
         }
 
         static void drawLabelBox(

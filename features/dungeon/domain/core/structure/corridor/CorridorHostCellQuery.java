@@ -6,8 +6,8 @@ import java.util.Map;
 import java.util.Set;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.DungeonMap;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 
 final class CorridorHostCellQuery {
     private static final CorridorHostRoomCells ROOM_CELLS = new CorridorHostRoomCells();
@@ -18,8 +18,8 @@ final class CorridorHostCellQuery {
         if (dungeonMap == null) {
             return Map.of();
         }
-        Map<Long, DungeonRoomCluster> clustersById = ROOM_CELLS.clustersById(dungeonMap);
-        Map<Long, DungeonRoom> roomsById = ROOM_CELLS.roomsById(dungeonMap);
+        Map<Long, RoomCluster> clustersById = ROOM_CELLS.clustersById(dungeonMap);
+        Map<Long, RoomRegion> roomsById = ROOM_CELLS.roomsById(dungeonMap);
         Map<Long, List<Cell>> roomCellsByRoom = ROOM_CELLS.roomCellsByRoom(dungeonMap);
         Set<Cell> allRoomCells = ROOM_CELLS.allRoomCells(roomCellsByRoom);
         Map<CorridorNetwork.AnchorKey, features.dungeon.domain.core.component.CorridorAnchor> anchorsByKey =

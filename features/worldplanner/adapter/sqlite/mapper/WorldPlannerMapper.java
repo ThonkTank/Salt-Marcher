@@ -61,6 +61,7 @@ public final class WorldPlannerMapper {
                 record.behaviorNotes(),
                 record.historyNotes(),
                 record.generalNotes(),
+                record.dispositionModifier(),
                 toStatus(record.status()));
     }
 
@@ -73,6 +74,7 @@ public final class WorldPlannerMapper {
                 record.displayName(),
                 record.notes(),
                 record.primaryEncounterTableId(),
+                record.disposition(),
                 record.npcIds(),
                 record.inventoryLimits().stream()
                         .map(limit -> new WorldFactionInventoryLimit(
@@ -103,6 +105,7 @@ public final class WorldPlannerMapper {
                 npc.behaviorNotes(),
                 npc.historyNotes(),
                 npc.generalNotes(),
+                npc.dispositionModifier(),
                 npc.status().name());
     }
 
@@ -115,6 +118,7 @@ public final class WorldPlannerMapper {
                 faction.displayName(),
                 faction.notes(),
                 faction.primaryEncounterTableId(),
+                faction.disposition(),
                 faction.npcIds(),
                 faction.inventoryLimits().stream()
                         .map(limit -> new WorldFactionInventoryLimitRecord(

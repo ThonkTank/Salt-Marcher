@@ -1,51 +1,66 @@
 package features.party;
 
-import java.util.Objects;
-import platform.diagnostics.Diagnostics;
-import platform.diagnostics.NoopDiagnostics;
-import platform.execution.DirectExecutionLane;
-import platform.execution.ExecutionLane;
-import platform.persistence.SqliteDatabase;
-import platform.ui.DirectUiDispatcher;
-import platform.ui.UiDispatcher;
-import shell.api.ShellContribution;
 import features.party.adapter.javafx.adventuringday.AdventuringDayTopBarContribution;
 import features.party.adapter.javafx.party.PartyTopBarContribution;
 import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
-import features.party.api.PartyApi;
-import features.party.application.PartyApplicationService;
-import features.party.application.PartyPublishedState;
-import features.party.domain.roster.repository.PartyRosterRepository;
 import features.party.api.ActivePartyCompositionModel;
 import features.party.api.ActivePartyModel;
 import features.party.api.AdventuringDayCalculationModel;
 import features.party.api.AdventuringDaySummaryModel;
+import features.party.api.PartyApi;
 import features.party.api.PartyMutationModel;
 import features.party.api.PartySnapshotModel;
 import features.party.api.PartyTravelPositionsModel;
+import features.party.application.PartyApplicationService;
+import features.party.application.PartyPublishedState;
+import features.party.domain.roster.repository.PartyRosterRepository;
+
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.NoopDiagnostics;
+import platform.execution.DirectExecutionLane;
+import platform.execution.ExecutionLane;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+import platform.ui.DirectUiDispatcher;
+import platform.ui.UiDispatcher;
+
+import shell.api.ShellContribution;
+
+import java.util.Objects;
 
 public final class PartyServiceAssembly {
 
     private PartyServiceAssembly() {
     }
 
+    public static FeatureStoreDefinition storeDefinition() {
+        return SqlitePartyRosterRepository.storeDefinition();
+    }
+
     public static Component create(PartyRosterRepository repository) {
-        return create(
+        Component component = assemble(
                 repository,
+                DirectExecutionLane.INSTANCE,
                 DirectExecutionLane.INSTANCE,
                 DirectUiDispatcher.INSTANCE,
                 NoopDiagnostics.INSTANCE);
+        start(component);
+        return component;
     }
 
     public static Component create(
-            SqliteDatabase database,
+            FeatureStoreHandle store,
             ExecutionLane executionLane,
+            ExecutionLane planningFactsLane,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
-        return create(
-                new SqlitePartyRosterRepository(Objects.requireNonNull(database, "database")),
+        return assemble(
+                new SqlitePartyRosterRepository(
+                        Objects.requireNonNull(store, "store"),
+                        Objects.requireNonNull(diagnostics, "diagnostics")),
                 executionLane,
+                planningFactsLane,
                 uiDispatcher,
                 diagnostics);
     }
@@ -53,6 +68,19 @@ public final class PartyServiceAssembly {
     public static Component create(
             PartyRosterRepository repository,
             ExecutionLane executionLane,
+            ExecutionLane planningFactsLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics
+    ) {
+        Component component = assemble(repository, executionLane, planningFactsLane, uiDispatcher, diagnostics);
+        start(component);
+        return component;
+    }
+
+    private static Component assemble(
+            PartyRosterRepository repository,
+            ExecutionLane executionLane,
+            ExecutionLane planningFactsLane,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
@@ -69,8 +97,8 @@ public final class PartyServiceAssembly {
                 Objects.requireNonNull(repository, "repository"),
                 publishedState,
                 Objects.requireNonNull(executionLane, "executionLane"),
+                Objects.requireNonNull(planningFactsLane, "planningFactsLane"),
                 Objects.requireNonNull(diagnostics, "diagnostics"));
-        application.refreshPublishedState();
         return new Component(
                 application,
                 snapshot,
@@ -82,6 +110,11 @@ public final class PartyServiceAssembly {
                 dayCalculation,
                 new PartyTopBarContribution(application, snapshot, daySummary, mutation),
                 new AdventuringDayTopBarContribution(daySummary, dayCalculation, application));
+    }
+
+    public static void start(Component component) {
+        PartyApi application = Objects.requireNonNull(component, "component").application();
+        ((PartyApplicationService) application).refreshPublishedState();
     }
 
     public record Component(

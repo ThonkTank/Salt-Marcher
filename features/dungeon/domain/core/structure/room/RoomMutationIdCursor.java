@@ -1,37 +1,38 @@
 package features.dungeon.domain.core.structure.room;
 
-import java.util.List;
-import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog.IdAllocation;
+import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog.ReservedIdentities;
 
 final class RoomMutationIdCursor {
     private long nextClusterId;
+    private final long clusterLimitExclusive;
     private long nextRoomId;
+    private final long roomLimitExclusive;
 
-    RoomMutationIdCursor(IdAllocation allocation) {
-        IdAllocation safeAllocation = allocation == null ? new IdAllocation(1L, 1L) : allocation;
-        nextClusterId = safeAllocation.nextClusterId();
-        nextRoomId = safeAllocation.nextRoomId();
+    RoomMutationIdCursor(ReservedIdentities identities) {
+        ReservedIdentities reserved = java.util.Objects.requireNonNull(identities, "identities");
+        nextClusterId = reserved.firstClusterId();
+        clusterLimitExclusive = reserved.clusterLimitExclusive();
+        nextRoomId = reserved.firstRoomId();
+        roomLimitExclusive = reserved.roomLimitExclusive();
     }
 
     long reserveClusterId() {
+        requireAvailable(nextClusterId, clusterLimitExclusive, "room-cluster");
         long clusterId = nextClusterId;
         nextClusterId += 1L;
         return clusterId;
     }
 
     long reserveRoomId() {
+        requireAvailable(nextRoomId, roomLimitExclusive, "room");
         long roomId = nextRoomId;
         nextRoomId += 1L;
         return roomId;
     }
 
-    long nextRoomId() {
-        return nextRoomId;
-    }
-
-    void observeRooms(List<DungeonRoom> rooms) {
-        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
-            nextRoomId = Math.max(nextRoomId, room.roomId() + 1L);
+    private static void requireAvailable(long candidate, long limitExclusive, String kind) {
+        if (candidate >= limitExclusive) {
+            throw new IllegalStateException(kind + " identity reservation exhausted");
         }
     }
 }

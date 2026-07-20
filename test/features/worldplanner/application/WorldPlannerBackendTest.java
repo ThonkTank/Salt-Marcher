@@ -1,7 +1,55 @@
 package features.worldplanner.application;
 
+import features.creatures.CreaturesServiceAssembly;
+import features.creatures.domain.catalog.CreatureCatalogData;
+import features.creatures.domain.catalog.port.CreatureCatalogPort;
+import features.encountertable.EncounterTableServiceAssembly;
+import features.encountertable.domain.catalog.EncounterTableCandidateData;
+import features.encountertable.domain.catalog.EncounterTableSummaryData;
+import features.encountertable.domain.catalog.port.EncounterTableCatalogPort;
 import features.worldplanner.WorldPlannerReferenceAssembly;
 import features.worldplanner.WorldPlannerServiceAssembly;
+import features.worldplanner.adapter.sqlite.mapper.WorldPlannerMapper;
+import features.worldplanner.adapter.sqlite.model.WorldNpcRecord;
+import features.worldplanner.adapter.sqlite.model.WorldPlannerPersistenceSchema;
+import features.worldplanner.adapter.sqlite.model.WorldPlannerSnapshotRecord;
+import features.worldplanner.adapter.sqlite.repository.SqliteWorldPlannerRepository;
+import features.worldplanner.api.AddWorldFactionNpcCommand;
+import features.worldplanner.api.AddWorldLocationEncounterTableCommand;
+import features.worldplanner.api.AddWorldLocationFactionCommand;
+import features.worldplanner.api.CreateWorldFactionCommand;
+import features.worldplanner.api.CreateWorldLocationCommand;
+import features.worldplanner.api.CreateWorldNpcCommand;
+import features.worldplanner.api.DeleteWorldFactionCommand;
+import features.worldplanner.api.DeleteWorldLocationCommand;
+import features.worldplanner.api.DeleteWorldNpcCommand;
+import features.worldplanner.api.RefreshWorldPlannerCommand;
+import features.worldplanner.api.RemoveWorldFactionNpcCommand;
+import features.worldplanner.api.RemoveWorldLocationEncounterTableCommand;
+import features.worldplanner.api.RemoveWorldLocationFactionCommand;
+import features.worldplanner.api.SetWorldFactionDispositionCommand;
+import features.worldplanner.api.SetWorldFactionInventoryLimitCommand;
+import features.worldplanner.api.SetWorldNpcDispositionModifierCommand;
+import features.worldplanner.api.SetWorldNpcLifecycleStatusCommand;
+import features.worldplanner.api.UpdateWorldFactionCommand;
+import features.worldplanner.api.UpdateWorldLocationCommand;
+import features.worldplanner.api.UpdateWorldNpcCommand;
+import features.worldplanner.api.WorldDispositionKind;
+import features.worldplanner.api.WorldNpcLifecycleStatus;
+import features.worldplanner.api.WorldPlannerReadStatus;
+import features.worldplanner.api.WorldPlannerSnapshot;
+import features.worldplanner.api.WorldPlannerSnapshotModel;
+import features.worldplanner.domain.world.WorldFactionInventoryLimit;
+import features.worldplanner.domain.world.WorldNpc;
+import features.worldplanner.domain.world.WorldNpcLifecycleState;
+import features.worldplanner.domain.world.WorldPlannerState;
+import features.worldplanner.domain.world.port.WorldPlannerReferencePort;
+import features.worldplanner.domain.world.repository.WorldPlannerRepository;
+
+import org.junit.jupiter.api.Test;
+
+import platform.persistence.TestFeatureStores;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -9,39 +57,6 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-import org.junit.jupiter.api.Test;
-import features.creatures.CreaturesServiceAssembly;
-import features.creatures.domain.catalog.CreatureCatalogData;
-import features.creatures.domain.catalog.port.CreatureCatalogPort;
-import features.encountertable.domain.catalog.EncounterTableCandidateData;
-import features.encountertable.domain.catalog.EncounterTableSummaryData;
-import features.encountertable.domain.catalog.port.EncounterTableCatalogPort;
-import features.encountertable.EncounterTableServiceAssembly;
-import features.worldplanner.adapter.sqlite.repository.SqliteWorldPlannerRepository;
-import features.worldplanner.adapter.sqlite.mapper.WorldPlannerMapper;
-import features.worldplanner.adapter.sqlite.model.WorldNpcRecord;
-import features.worldplanner.adapter.sqlite.model.WorldPlannerPersistenceSchema;
-import features.worldplanner.adapter.sqlite.model.WorldPlannerSnapshotRecord;
-import features.worldplanner.domain.world.WorldFactionInventoryLimit;
-import features.worldplanner.domain.world.WorldNpc;
-import features.worldplanner.domain.world.WorldNpcLifecycleState;
-import features.worldplanner.domain.world.WorldPlannerState;
-import features.worldplanner.domain.world.port.WorldPlannerReferencePort;
-import features.worldplanner.domain.world.repository.WorldPlannerRepository;
-import features.worldplanner.api.AddWorldFactionNpcCommand;
-import features.worldplanner.api.AddWorldLocationEncounterTableCommand;
-import features.worldplanner.api.AddWorldLocationFactionCommand;
-import features.worldplanner.api.CreateWorldFactionCommand;
-import features.worldplanner.api.CreateWorldLocationCommand;
-import features.worldplanner.api.CreateWorldNpcCommand;
-import features.worldplanner.api.RefreshWorldPlannerCommand;
-import features.worldplanner.api.SetWorldFactionInventoryLimitCommand;
-import features.worldplanner.api.SetWorldNpcLifecycleStatusCommand;
-import features.worldplanner.api.UpdateWorldNpcNotesCommand;
-import features.worldplanner.api.WorldNpcLifecycleStatus;
-import features.worldplanner.api.WorldPlannerReadStatus;
-import features.worldplanner.api.WorldPlannerSnapshot;
-import features.worldplanner.api.WorldPlannerSnapshotModel;
 
 public final class WorldPlannerBackendTest {
 
@@ -50,6 +65,7 @@ public final class WorldPlannerBackendTest {
 
     @Test
     void WORLD_PLANNER_BACKEND_001() {
+        resetDatabase();
         WorldPlannerRuntime runtime = productionRuntime();
         WorldPlannerApplicationService service = runtime.application();
         WorldPlannerSnapshotModel model = runtime.snapshot();
@@ -63,6 +79,8 @@ public final class WorldPlannerBackendTest {
                 "knows the pass"));
         service.createFaction(new CreateWorldFactionCommand("Ash Guard", "border patrol", 201L));
         service.addFactionNpc(new AddWorldFactionNpcCommand(1L, 1L));
+        service.setFactionDisposition(new SetWorldFactionDispositionCommand(1L, -20));
+        service.setNpcDispositionModifier(new SetWorldNpcDispositionModifierCommand(1L, 5));
         service.setFactionInventoryLimit(new SetWorldFactionInventoryLimitCommand(
                 1L,
                 101L,
@@ -81,6 +99,22 @@ public final class WorldPlannerBackendTest {
         service.createLocation(new CreateWorldLocationCommand("Old Gate", "wind-cut ruins"));
         service.addLocationFaction(new AddWorldLocationFactionCommand(1L, 1L));
         service.addLocationEncounterTable(new AddWorldLocationEncounterTableCommand(1L, 201L));
+        service.updateNpc(new UpdateWorldNpcCommand(
+                1L, "Captain Vale Updated", 101L, "scarred", "watchful", "former scout", "knows the pass"));
+        service.updateFaction(new UpdateWorldFactionCommand(1L, "Ash Guard Updated", "border patrol", 201L));
+        service.updateLocation(new UpdateWorldLocationCommand(1L, "Old Gate Updated", "wind-cut ruins"));
+        service.removeFactionNpc(new RemoveWorldFactionNpcCommand(1L, 1L));
+        service.addFactionNpc(new AddWorldFactionNpcCommand(1L, 1L));
+        service.removeLocationFaction(new RemoveWorldLocationFactionCommand(1L, 1L));
+        service.addLocationFaction(new AddWorldLocationFactionCommand(1L, 1L));
+        service.removeLocationEncounterTable(new RemoveWorldLocationEncounterTableCommand(1L, 201L));
+        service.addLocationEncounterTable(new AddWorldLocationEncounterTableCommand(1L, 201L));
+        service.createNpc(new CreateWorldNpcCommand("Temporary NPC", 101L, "", "", "", ""));
+        service.deleteNpc(new DeleteWorldNpcCommand(2L));
+        service.createFaction(new CreateWorldFactionCommand("Temporary Faction", "", 201L));
+        service.deleteFaction(new DeleteWorldFactionCommand(2L));
+        service.createLocation(new CreateWorldLocationCommand("Temporary Location", ""));
+        service.deleteLocation(new DeleteWorldLocationCommand(2L));
         service.createNpc(new CreateWorldNpcCommand("Invalid", -1L, "", "", "", ""));
         service.addFactionNpc(new AddWorldFactionNpcCommand(1L, 1L));
         service.addLocationFaction(new AddWorldLocationFactionCommand(1L, 1L));
@@ -92,12 +126,16 @@ public final class WorldPlannerBackendTest {
 
         WorldPlannerSnapshot current = model.current();
         assertEquals(1, current.npcs().size(), "npc count");
-        assertEquals("Captain Vale", current.npcs().get(0).displayName(), "npc name");
+        assertEquals("Captain Vale Updated", current.npcs().get(0).displayName(), "npc name");
         assertEquals(WorldNpcLifecycleStatus.ACTIVE, current.npcs().get(0).status(), "npc lifecycle");
         assertEquals("NPC Status nicht gefunden.", current.statusText(), "transient null lifecycle status");
         assertEquals(1, current.factions().size(), "faction count");
         assertEquals(1, current.factions().get(0).npcIds().size(), "duplicate faction npc rejected");
         assertEquals(1L, current.factions().get(0).npcIds().get(0), "faction npc membership");
+        assertEquals(-20, current.factions().getFirst().disposition(), "faction disposition");
+        assertEquals(5, current.npcs().getFirst().dispositionModifier(), "npc disposition modifier");
+        assertEquals(-15, current.npcs().getFirst().effectiveDisposition(), "effective disposition");
+        assertEquals(WorldDispositionKind.HOSTILE, current.npcs().getFirst().disposition(), "disposition kind");
         assertEquals(3, current.factions().get(0).inventoryLimits().get(0).quantity(), "finite stock");
         assertEquals(2, current.factions().get(0).inventoryLimits().size(), "explicit unlimited stock retained");
         assertEquals(false, current.factions().get(0).inventoryLimits().get(1).finite(), "explicit unlimited finite flag");
@@ -109,9 +147,13 @@ public final class WorldPlannerBackendTest {
         assertEquals(201L, current.locations().get(0).encounterTableIds().get(0), "location table link");
 
         WorldPlannerSnapshot reloaded = reloadedSnapshot();
-        assertEquals("Captain Vale", reloaded.npcs().get(0).displayName(), "persisted npc name");
+        assertEquals("Captain Vale Updated", reloaded.npcs().get(0).displayName(), "persisted npc name");
+        assertEquals("Ash Guard Updated", reloaded.factions().get(0).displayName(), "persisted faction rename");
+        assertEquals("Old Gate Updated", reloaded.locations().get(0).displayName(), "persisted location rename");
         assertEquals(WorldNpcLifecycleStatus.ACTIVE, reloaded.npcs().get(0).status(), "persisted lifecycle");
         assertEquals(201L, reloaded.factions().get(0).primaryEncounterTableId(), "persisted faction table");
+        assertEquals(-20, reloaded.factions().getFirst().disposition(), "persisted faction disposition");
+        assertEquals(5, reloaded.npcs().getFirst().dispositionModifier(), "persisted npc disposition modifier");
         assertEquals(2, reloaded.factions().get(0).inventoryLimits().size(), "persisted inventory limits");
         assertEquals(false, reloaded.factions().get(0).inventoryLimits().get(1).finite(), "persisted unlimited flag");
         assertEquals(201L, reloaded.locations().get(0).encounterTableIds().get(0), "persisted location table");
@@ -135,7 +177,9 @@ public final class WorldPlannerBackendTest {
     }
 
     private static WorldPlannerRuntime productionRuntime() {
-        return runtime(new SqliteWorldPlannerRepository(), new PositiveReferencePort());
+        return runtime(new SqliteWorldPlannerRepository(
+                        TestFeatureStores.current().store(
+                                SqliteWorldPlannerRepository.storeDefinition())), new PositiveReferencePort());
     }
 
     private static WorldPlannerRuntime runtime(
@@ -425,6 +469,13 @@ public final class WorldPlannerBackendTest {
         @Override
         public List<CreatureCatalogData.EncounterCandidateProfile> loadEncounterCandidates(
                 CreatureCatalogData.EncounterCandidateSpec spec
+        ) {
+            throw unavailable();
+        }
+
+        @Override
+        public List<CreatureCatalogData.EncounterCandidateProfile> loadCreatureFacts(
+                CreatureCatalogData.CreatureFactsSpec spec
         ) {
             throw unavailable();
         }

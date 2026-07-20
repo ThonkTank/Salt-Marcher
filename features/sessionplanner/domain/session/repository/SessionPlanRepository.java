@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import features.sessionplanner.domain.session.SessionPlan;
 import features.sessionplanner.domain.session.SessionPlanSummary;
+import features.sessionplanner.domain.session.SessionRevision;
 
 public interface SessionPlanRepository {
 
@@ -13,11 +14,15 @@ public interface SessionPlanRepository {
 
     List<SessionPlanSummary> listSessions();
 
-    SessionPlan save(SessionPlan sessionPlan);
+    SessionPlanSaveResult insert(SessionPlan sessionPlan);
 
-    void rename(long sessionId, String displayName);
+    SessionPlanSaveResult save(SessionPlan sessionPlan);
 
-    void delete(long sessionId);
+    SessionPlanDeleteResult deleteGuarded(
+            long sessionId,
+            SessionRevision expectedRevision,
+            List<Long> replacementParticipantRefs
+    );
 
     long nextSessionId();
 

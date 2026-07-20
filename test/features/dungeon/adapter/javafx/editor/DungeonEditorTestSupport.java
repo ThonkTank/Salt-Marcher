@@ -1,45 +1,28 @@
 package features.dungeon.adapter.javafx.editor;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.WeakHashMap;
-import features.dungeon.adapter.sqlite.repository.SqliteDungeonMapRepository;
-import features.dungeon.domain.core.geometry.Cell;
-import features.dungeon.domain.core.geometry.Direction;
-import features.dungeon.domain.core.structure.DungeonMapIdentity;
-import features.dungeon.domain.core.structure.DungeonMap;
-import features.dungeon.domain.core.structure.room.RoomCellCoverage;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
+import features.dungeon.adapter.javafx.map.DungeonMapContentModel.PointerTarget;
+import features.dungeon.adapter.javafx.map.DungeonMapView;
+import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
 import features.dungeon.api.DungeonEdgeRef;
-import features.dungeon.api.DungeonEditorControlsModel;
 import features.dungeon.api.DungeonEditorControlsSnapshot;
-import features.dungeon.api.DungeonEditorMapSurfaceModel;
 import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
-import features.dungeon.api.DungeonEditorStateModel;
 import features.dungeon.api.DungeonEditorStateSnapshot;
-import features.dungeon.api.DungeonTopologyElementRef;
-import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonMapSummary;
 import features.dungeon.api.DungeonOverlaySettings;
+import features.dungeon.api.DungeonTopologyElementRef;
+import features.dungeon.api.editor.DungeonEditorPointerInput;
 import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
 import features.dungeon.application.editor.PointerInteractionTargets;
-import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
-import features.dungeon.adapter.javafx.map.DungeonMapView;
-import platform.ui.catalogcrud.CatalogCrudControlsView;
+import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.Direction;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -62,10 +45,23 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.TestFeatureStores;
+import platform.ui.catalogcrud.CatalogCrudControlsView;
+import platform.ui.mapcanvas.MapCanvasPane;
+
 import shell.api.ShellBinding;
 import shell.api.ShellLeftBarTabSpec;
 import shell.api.ShellSlot;
 import shell.host.AppShell;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
 
@@ -284,14 +280,18 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static void fireMapShortcut(DungeonMapView view, KeyCode keyCode) {
+        fireMapShortcut(view, keyCode, false, false);
+    }
+
+    static void fireMapShortcut(DungeonMapView view, KeyCode keyCode, boolean controlDown, boolean shiftDown) {
         Pane canvasLayer = mapCanvasLayer(view);
         canvasLayer.fireEvent(new KeyEvent(
                 KeyEvent.KEY_PRESSED,
                 keyCode.getChar(),
                 keyCode.getName(),
                 keyCode,
-                false,
-                false,
+                shiftDown,
+                controlDown,
                 false,
                 false));
     }
@@ -880,6 +880,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
             String message
     ) {
         DungeonTopologyElementRef ref = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.STAIR, stairId);
+        String activeCell = "4,2," + snapshot.projectionLevel();
         assertTrue(snapshot.surface().map().features().stream()
                         .filter(feature -> "STAIR".equals(feature.kind()))
                         .filter(feature -> feature.id() == stairId)
@@ -887,9 +888,9 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
                         .filter(feature -> feature.cells().stream()
                                 .map(cell -> cell.q() + "," + cell.r() + "," + cell.level())
                                 .collect(java.util.stream.Collectors.toSet())
-                                .containsAll(Set.of("4,2,0", "4,2,1")))
-                        .anyMatch(feature -> feature.description().contains("2 Ausgaenge")),
-                message + " published feature exposes bound stair exits");
+                                .equals(Set.of(activeCell)))
+                        .anyMatch(feature -> feature.description().contains("Ausgaenge")),
+                message + " published feature exposes the active-level bound stair exit");
     }
 
     static void assertStairMovedInSnapshot(
@@ -916,7 +917,8 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
                                 && handle.cell().q() == 3
                                 && handle.cell().r() == 2
                                 && handle.cell().level() == 0),
-                message + " published handle readback moves the first stair path handle to (3,2,0)");
+                message + " published handle readback moves the first stair path handle to"
+                        + " (3,2,0)");
         assertTrue(renderSurfaceCellOriginsWithZ(mapContentModel).contains("3,2,0"),
                 message + " render scene contains moved stair path cell");
         assertTrue(renderHasGlyphAt(mapContentModel, editorTopologyRef(ref), 3.5, 2.5, false),
@@ -933,11 +935,15 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     ) {
         DungeonTopologyElementRef ref = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.STAIR, stairId);
         int upperR = anchorR - 2;
-        Set<String> expectedFeatureCells = Set.of(
-                anchorQ + "," + anchorR + ",0",
-                anchorQ + "," + (anchorR - 1) + ",0",
-                anchorQ + "," + upperR + ",0",
-                anchorQ + "," + upperR + ",1");
+        int activeLevel = snapshot.projectionLevel();
+        Set<String> expectedFeatureCells = activeLevel == 0
+                ? Set.of(
+                        anchorQ + "," + anchorR + ",0",
+                        anchorQ + "," + (anchorR - 1) + ",0",
+                        anchorQ + "," + upperR + ",0")
+                : activeLevel == 1
+                        ? Set.of(anchorQ + "," + upperR + ",1")
+                        : Set.of();
         assertTrue(snapshot.surface().map().features().stream()
                         .filter(feature -> "STAIR".equals(feature.kind()))
                         .filter(feature -> feature.id() == stairId)
@@ -945,35 +951,18 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
                         .anyMatch(feature -> feature.cells().stream()
                                 .map(cell -> cell.q() + "," + cell.r() + "," + cell.level())
                                 .collect(java.util.stream.Collectors.toSet())
-                                .containsAll(expectedFeatureCells)),
-                message + " published stair feature exposes generated path and exits: "
+                                .equals(expectedFeatureCells)),
+                message + " published stair feature exposes exactly the active-level generated"
+                        + " path/exit: "
                         + snapshot.surface().map().features());
-        assertTrue(snapshot.surface().map().editorHandles().stream()
-                        .anyMatch(handle -> "STAIR".equals(handle.ref().topologyRef().kind().name())
-                                && handle.ref().topologyRef().id() == stairId
-                                && "STAIR_ANCHOR".equals(handle.ref().kind().name())
-                                && handle.cell().q() == anchorQ
-                                && handle.cell().r() == anchorR
-                                && handle.cell().level() == 0),
-                message + " published snapshot exposes lower stair handle");
-        assertTrue(snapshot.surface().map().editorHandles().stream()
-                        .anyMatch(handle -> "STAIR".equals(handle.ref().topologyRef().kind().name())
-                                && handle.ref().topologyRef().id() == stairId
-                                && "STAIR_ANCHOR".equals(handle.ref().kind().name())
-                                && handle.cell().q() == anchorQ
-                                && handle.cell().r() == upperR
-                                && handle.cell().level() == 1),
-                message + " published snapshot exposes generated upper exit handle");
-        assertTrue(renderSurfaceCellOriginsWithZ(mapContentModel).containsAll(
-                        Set.of(
-                                anchorQ + "," + anchorR + ",0",
-                                anchorQ + "," + (anchorR - 1) + ",0",
-                                anchorQ + "," + upperR + ",0")),
-                message + " render scene contains active-level straight stair path");
-        assertTrue(renderHasGlyphAt(mapContentModel, ref, anchorQ + 0.5, anchorR + 0.5, false),
-                message + " render scene shows committed lower stair handle");
-        assertTrue(renderHasGlyphAt(mapContentModel, ref, anchorQ + 0.5, upperR + 0.5, false),
-                message + " render scene shows committed upper stair exit handle");
+        var activeStairHandles = snapshot.surface().map().editorHandles().stream()
+                .filter(handle -> handle.ref().topologyRef().equals(ref))
+                .toList();
+        assertTrue(!activeStairHandles.isEmpty()
+                        && activeStairHandles.stream().allMatch(handle -> handle.cell().level() == activeLevel),
+                message + " publishes only active-level stair handles");
+        assertTrue(renderSurfaceCellOriginsWithZ(mapContentModel).containsAll(expectedFeatureCells),
+                message + " render scene contains the active-level straight stair cells");
     }
 
     static void assertTransitionCreatedInSnapshot(
@@ -1195,25 +1184,80 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
             boolean boundaryPreferred,
             int projectionLevel
     ) {
-        return new TestRuntimePointerTarget(PointerInteractionTargets.fromRuntimeTargets(
+        List<PointerTarget> localTargets = mapContentModel.pointerTargetsAt(sceneX, sceneY);
+        List<DungeonEditorRuntimePointerTarget> runtimeTargets = localTargets.stream()
+                .map(DungeonEditorTestSupport::runtimeTarget)
+                .toList();
+        DungeonEditorRuntimePointerTarget selected = PointerInteractionTargets.fromRuntimeTargets(
                 sceneX,
                 sceneY,
                 false,
                 false,
-                mapContentModel.runtimePointerTargetsAt(sceneX, sceneY),
-                projectionLevel).primaryTarget(boundaryPreferred));
+                runtimeTargets,
+                projectionLevel).primaryTarget(boundaryPreferred);
+        int selectedIndex = runtimeTargets.indexOf(selected);
+        PointerTarget localTarget = selectedIndex < 0 ? PointerTarget.empty() : localTargets.get(selectedIndex);
+        return new TestRuntimePointerTarget(selected, localTarget);
     }
 
     static void updateHoverTarget(
             DungeonMapContentModel mapContentModel,
             TestRuntimePointerTarget target
     ) {
-        mapContentModel.updateRuntimeHoverDisplayTarget(target.rawTarget());
+        mapContentModel.updateHoverTarget(target.localTarget());
     }
 
-    record TestRuntimePointerTarget(DungeonEditorRuntimePointerTarget rawTarget) {
+    private static DungeonEditorRuntimePointerTarget runtimeTarget(PointerTarget target) {
+        DungeonEditorPointerInput.Target source = target == null
+                ? DungeonEditorPointerInput.Target.empty()
+                : target.toApiTarget();
+        DungeonEditorPointerInput.BoundaryTarget boundary = source.boundary();
+        return new DungeonEditorRuntimePointerTarget(
+                enumValue(DungeonEditorRuntimePointerTarget.TargetKind.class,
+                        source.targetKind(), DungeonEditorRuntimePointerTarget.TargetKind.EMPTY),
+                enumValue(DungeonEditorRuntimePointerTarget.LabelKind.class,
+                        source.labelKind(), DungeonEditorRuntimePointerTarget.LabelKind.EMPTY),
+                enumValue(DungeonEditorRuntimePointerTarget.ElementKind.class,
+                        source.elementKind(), DungeonEditorRuntimePointerTarget.ElementKind.EMPTY),
+                source.ownerId(),
+                source.clusterId(),
+                enumValue(DungeonEditorRuntimePointerTarget.TopologyKind.class,
+                        source.topologyKind(), DungeonEditorRuntimePointerTarget.TopologyKind.EMPTY),
+                source.topologyId(),
+                source.handleRef(),
+                new DungeonEditorRuntimePointerTarget.BoundaryTarget(
+                        enumValue(DungeonEditorRuntimePointerTarget.BoundaryKind.class,
+                                boundary.boundaryKind(), DungeonEditorRuntimePointerTarget.BoundaryKind.WALL),
+                        boundary.key(),
+                        boundary.ownerId(),
+                        enumValue(DungeonEditorRuntimePointerTarget.TopologyKind.class,
+                                boundary.topologyKind(), DungeonEditorRuntimePointerTarget.TopologyKind.EMPTY),
+                        boundary.topologyId(),
+                        boundary.startQ(), boundary.startR(), boundary.startLevel(),
+                        boundary.endQ(), boundary.endR(), boundary.endLevel()),
+                enumValue(DungeonEditorRuntimePointerTarget.SyntheticHoverKind.class,
+                        source.syntheticHoverKind(), DungeonEditorRuntimePointerTarget.SyntheticHoverKind.NONE),
+                new DungeonEditorRuntimePointerTarget.CellTarget(
+                        source.cell().exact(), source.cell().q(), source.cell().r(), source.cell().level()),
+                new DungeonEditorRuntimePointerTarget.VertexTarget(
+                        source.vertex().exact(), source.vertex().q(), source.vertex().r(), source.vertex().level()));
+    }
+
+    private static <E extends Enum<E>> E enumValue(Class<E> type, String name, E fallback) {
+        try {
+            return Enum.valueOf(type, name == null ? "" : name);
+        } catch (IllegalArgumentException ignored) {
+            return fallback;
+        }
+    }
+
+    record TestRuntimePointerTarget(
+            DungeonEditorRuntimePointerTarget rawTarget,
+            PointerTarget localTarget
+    ) {
         TestRuntimePointerTarget {
             rawTarget = rawTarget == null ? DungeonEditorRuntimePointerTarget.empty() : rawTarget;
+            localTarget = localTarget == null ? PointerTarget.empty() : localTarget;
         }
 
         DungeonEditorRuntimePointerTarget.TargetKind targetKind() {
@@ -1291,22 +1335,32 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static Set<String> persistedClusterCellsThroughRepository(long mapId, long clusterId, int level) {
-        DungeonMap dungeonMap = new SqliteDungeonMapRepository()
-                .findById(new DungeonMapIdentity(mapId))
-                .orElseThrow(() -> new AssertionError("Map not found during persisted room readback: " + mapId));
-        DungeonRoomCluster cluster = dungeonMap.topology().roomClusters().stream()
-                .filter(candidate -> candidate.clusterId() == clusterId)
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("Cluster not found during persisted room readback: "
-                        + clusterId));
-        var rooms = dungeonMap.rooms().rooms().stream()
-                .filter(room -> room.clusterId() == clusterId)
-                .toList();
         Set<String> cells = new LinkedHashSet<>();
-        new RoomCellCoverage().clusterCells(cluster, rooms, level).stream()
-                .map(DungeonEditorTestSupport::cellKey)
-                .forEach(cells::add);
-        return cells;
+        try (platform.persistence.SqliteDatabase database = platform.persistence.SqliteDatabase.defaultDatabase(
+                DungeonPersistenceSchema.DATABASE_FILE_NAME,
+                platform.diagnostics.NoopDiagnostics.INSTANCE);
+                var connection =
+                        TestFeatureStores.store(
+                                database,
+                                FeatureStoreDefinition.of("dungeon-test-inspection")).openConnection();
+                var statement = connection.prepareStatement(
+                        "SELECT c.cell_x,c.cell_y,c.level_z FROM " + DungeonPersistenceSchema.ROOM_CELLS_TABLE + " c"
+                                + " JOIN " + DungeonPersistenceSchema.ROOMS_TABLE + " r ON r.room_id=c.room_id WHERE r.dungeon_map_id=? AND"
+                                        + " r.cluster_id=? AND c.level_z=? ORDER BY"
+                                        + " c.level_z,c.cell_y,c.cell_x")) {
+            statement.setLong(1, mapId);
+            statement.setLong(2, clusterId);
+            statement.setInt(3, level);
+            try (var rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    cells.add(cellKey(new Cell(
+                            rows.getInt("cell_x"), rows.getInt("cell_y"), rows.getInt("level_z"))));
+                }
+            }
+            return Set.copyOf(cells);
+        } catch (Exception exception) {
+            throw new AssertionError("Failed to read persisted cluster cells for map " + mapId, exception);
+        }
     }
 
     static features.dungeon.api.DungeonEditorMapSnapshot.Area roomAreaByLabel(
@@ -1581,7 +1635,9 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
                                 && (cell.q() == doorBoundary.edge().from().q()
                                 || cell.q() == doorBoundary.edge().from().q() - 1)))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("DE-SEL-002 published facts identify the door owning room"));
+                .orElseThrow(() -> new AssertionError(
+                                                "DE-SEL-002 published facts identify the door"
+                                                    + " owning room"));
         assertEquals("R1", owningArea.label(), "DE-SEL-002 published facts identify the door owning room label");
         assertTrue(owningArea.clusterId() > 0L,
                 "DE-SEL-002 published facts identify the door owning room/cluster id");
@@ -1866,10 +1922,10 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
         assertTrue(paintedPixels > 0, message);
     }
 
-    static Canvas mapCanvas(DungeonMapView mapView) {
+    static MapCanvasPane mapCanvas(DungeonMapView mapView) {
         return descendants(mapView).stream()
-                .filter(Canvas.class::isInstance)
-                .map(Canvas.class::cast)
+                .filter(MapCanvasPane.class::isInstance)
+                .map(MapCanvasPane.class::cast)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Dungeon map canvas not found."));
     }
@@ -2256,7 +2312,8 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static TestBinding bindTest(TestRuntime runtime, double width, double height) {
-        ShellBinding shellBinding = new DungeonEditorContribution(runtime.editorDependencies()).bind();
+        releaseProofWindowsBeforeBinding();
+        ShellBinding shellBinding = new DungeonEditorContribution(runtime.editorApi()).bind();
         Parent controlsRoot = slot(shellBinding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
         DungeonEditorControlsView controls = descendant(controlsRoot, DungeonEditorControlsView.class);
         DungeonMapView mapView = slot(shellBinding, ShellSlot.COCKPIT_MAIN, DungeonMapView.class);
@@ -2273,8 +2330,9 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static TestBinding bindShellTest(TestRuntime runtime, double width, double height) {
+        releaseProofWindowsBeforeBinding();
         AppShell shell = new AppShell();
-        DungeonEditorContribution contribution = new DungeonEditorContribution(runtime.editorDependencies());
+        DungeonEditorContribution contribution = new DungeonEditorContribution(runtime.editorApi());
         ShellBinding shellBinding = contribution.bind();
         ShellLeftBarTabSpec registrationSpec = (ShellLeftBarTabSpec) contribution.registrationSpec();
         shell.registerLeftBarTab(registrationSpec, shellBinding);

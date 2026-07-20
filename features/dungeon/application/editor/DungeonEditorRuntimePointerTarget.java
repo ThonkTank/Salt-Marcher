@@ -210,60 +210,6 @@ public record DungeonEditorRuntimePointerTarget(
                 new VertexTarget(true, q, r, level));
     }
 
-    public static DungeonEditorRuntimePointerTarget fromPreparedFrame(
-            DungeonEditorPreparedFrameFacts.PreparedPointerTargetFrame target
-    ) {
-        DungeonEditorPreparedFrameFacts.PreparedPointerTargetFrame safeTarget = target == null
-                ? DungeonEditorPreparedFrameFacts.PreparedPointerTargetFrame.empty()
-                : target;
-        return new DungeonEditorRuntimePointerTarget(
-                TargetKind.fromPrepared(safeTarget.targetKind()),
-                LabelKind.fromPrepared(safeTarget.labelKind()),
-                ElementKind.fromPrepared(safeTarget.elementKind()),
-                safeTarget.ownerId(),
-                safeTarget.clusterId(),
-                TopologyKind.fromPrepared(safeTarget.topologyKind()),
-                safeTarget.topologyId(),
-                safeTarget.handleRef(),
-                runtimeBoundaryTarget(safeTarget.boundary()),
-                SyntheticHoverKind.fromPrepared(safeTarget.syntheticHoverKind()),
-                runtimeCellTarget(safeTarget),
-                new VertexTarget(
-                        safeTarget.vertex().exact(),
-                        safeTarget.vertex().q(),
-                        safeTarget.vertex().r(),
-                        safeTarget.vertex().level()));
-    }
-
-    private static CellTarget runtimeCellTarget(
-            DungeonEditorPreparedFrameFacts.PreparedPointerTargetFrame target
-    ) {
-        if (target.cell().exact()) {
-            return new CellTarget(true, target.cell().q(), target.cell().r(), target.cell().level());
-        }
-        return CellTarget.empty();
-    }
-
-    private static BoundaryTarget runtimeBoundaryTarget(
-            DungeonEditorPreparedFrameFacts.PreparedBoundaryTargetFrame boundary
-    ) {
-        DungeonEditorPreparedFrameFacts.PreparedBoundaryTargetFrame safeBoundary = boundary == null
-                ? DungeonEditorPreparedFrameFacts.PreparedBoundaryTargetFrame.empty()
-                : boundary;
-        return new BoundaryTarget(
-                BoundaryKind.fromPrepared(safeBoundary.boundaryKind()),
-                safeBoundary.key(),
-                safeBoundary.ownerId(),
-                TopologyKind.fromPrepared(safeBoundary.topologyKind()),
-                safeBoundary.topologyId(),
-                safeBoundary.startQ(),
-                safeBoundary.startR(),
-                safeBoundary.startLevel(),
-                safeBoundary.endQ(),
-                safeBoundary.endR(),
-                safeBoundary.endLevel());
-    }
-
     DungeonTopologyElementKind topologyElementKind() {
         return topologyKind.domainKind();
     }
@@ -435,10 +381,6 @@ public record DungeonEditorRuntimePointerTarget(
             }
         };
 
-        static TargetKind fromPrepared(DungeonEditorPreparedFrameFacts.PreparedTargetKind kind) {
-            return kind == null ? EMPTY : TargetKind.valueOf(kind.name());
-        }
-
         SyntheticHoverKind syntheticHoverKind(
                 long ownerId,
                 TopologyKind topologyKind,
@@ -457,10 +399,6 @@ public record DungeonEditorRuntimePointerTarget(
 
         static LabelKind defaultKind() {
             return EMPTY;
-        }
-
-        static LabelKind fromPrepared(DungeonEditorPreparedFrameFacts.PreparedLabelKind kind) {
-            return kind == null ? EMPTY : LabelKind.valueOf(kind.name());
         }
 
         boolean isRoomLabel() {
@@ -503,10 +441,6 @@ public record DungeonEditorRuntimePointerTarget(
 
         public static ElementKind fromBoundary(BoundaryKind boundaryKind) {
             return boundaryKind != null && boundaryKind.isDoor() ? DOOR : WALL;
-        }
-
-        static ElementKind fromPrepared(DungeonEditorPreparedFrameFacts.PreparedElementKind kind) {
-            return kind == null ? EMPTY : ElementKind.valueOf(kind.name());
         }
 
     }
@@ -564,10 +498,6 @@ public record DungeonEditorRuntimePointerTarget(
             };
         }
 
-        static TopologyKind fromPrepared(DungeonEditorPreparedFrameFacts.PreparedTopologyKind kind) {
-            return kind == null ? EMPTY : TopologyKind.valueOf(kind.name());
-        }
-
         static TopologyKind defaultKind() {
             return EMPTY;
         }
@@ -623,10 +553,6 @@ public record DungeonEditorRuntimePointerTarget(
             return WALL;
         }
 
-        static BoundaryKind fromPrepared(DungeonEditorPreparedFrameFacts.PreparedBoundaryKind kind) {
-            return kind == null ? WALL : BoundaryKind.valueOf(kind.name());
-        }
-
         boolean isDoor() {
             return this == DOOR;
         }
@@ -642,9 +568,6 @@ public record DungeonEditorRuntimePointerTarget(
         BOUNDARY,
         VERTEX;
 
-        static SyntheticHoverKind fromPrepared(DungeonEditorPreparedFrameFacts.PreparedSyntheticHoverKind kind) {
-            return kind == null ? NONE : SyntheticHoverKind.valueOf(kind.name());
-        }
     }
 
     public record CellTarget(boolean exact, int q, int r, int level) {

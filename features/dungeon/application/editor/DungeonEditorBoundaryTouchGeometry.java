@@ -5,8 +5,8 @@ import java.util.Collection;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Area;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Cell;
-import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Edge;
+import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.DungeonEditorInteractionValues.CellKey;
@@ -67,7 +67,7 @@ record DungeonEditorBoundaryTouchGeometry(Cell start, Cell end) {
             return "";
         }
         DungeonEditorMainViewInteractionValues.EdgeKey boundaryKey =
-                DungeonEditorMainViewInteractionValues.EdgeKey.from(new DungeonEditorWorkspaceValues.Edge(start, end));
+                DungeonEditorMainViewInteractionValues.EdgeKey.from(new features.dungeon.domain.core.geometry.Edge(start, end));
         CellKey cellKey = new CellKey(cell.q(), cell.r(), cell.level());
         for (TravelHeading direction : TravelHeading.values()) {
             if (DungeonEditorMainViewInteractionValues.EdgeKey.sideOf(cellKey, direction).equals(boundaryKey)) {

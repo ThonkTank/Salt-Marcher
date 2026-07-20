@@ -20,22 +20,22 @@ public final class DungeonEditorWorkspaceBoundaryProjectionHelper {
 
     private static DungeonEditorWorkspaceValues.Boundary boundary(DungeonBoundaryFacts boundary) {
         return new DungeonEditorWorkspaceValues.Boundary(
-                DungeonEditorWorkspaceValues.BoundaryKind.fromExternalKind(boundary.kind()),
+                features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.fromExternalKind(boundary.kind()),
                 boundary.id(),
                 boundary.label(),
                 workspaceEdge(boundary.edge()),
                 boundary.topologyRef());
     }
 
-    private static DungeonEditorWorkspaceValues.Edge workspaceEdge(@Nullable Edge edge) {
+    private static features.dungeon.domain.core.geometry.Edge workspaceEdge(@Nullable Edge edge) {
         return edge == null
-                ? new DungeonEditorWorkspaceValues.Edge(cell(null), cell(null))
-                : new DungeonEditorWorkspaceValues.Edge(cell(edge.from()), cell(edge.to()));
+                ? new features.dungeon.domain.core.geometry.Edge(cell(null), cell(null))
+                : new features.dungeon.domain.core.geometry.Edge(cell(edge.from()), cell(edge.to()));
     }
 
-    private static DungeonEditorWorkspaceValues.Cell cell(@Nullable Cell cell) {
+    private static features.dungeon.domain.core.geometry.Cell cell(@Nullable Cell cell) {
         return cell == null
-                ? DungeonEditorWorkspaceValues.Cell.empty()
-                : new DungeonEditorWorkspaceValues.Cell(cell.q(), cell.r(), cell.level());
+                ? features.dungeon.domain.core.geometry.Cell.empty()
+                : new features.dungeon.domain.core.geometry.Cell(cell.q(), cell.r(), cell.level());
     }
 }

@@ -20,11 +20,13 @@ public record SessionPlannerCatalogSnapshot(
 
     public record SessionSummary(
             long sessionId,
+            long revision,
             String displayName
     ) {
 
         public SessionSummary {
             sessionId = Math.max(1L, sessionId);
+            revision = Math.max(1L, revision);
             displayName = displayName == null || displayName.isBlank()
                     ? "Session #" + sessionId
                     : displayName.trim();

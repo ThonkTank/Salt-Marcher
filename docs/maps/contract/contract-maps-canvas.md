@@ -1,18 +1,18 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
-Source of Truth: Feature API contract for passive map scenes, hits, and pointer
-samples shared with adopting features.
+Last Reviewed: 2026-07-17
+Source of Truth: Platform contract for passive map scenes, hits, and pointer
+samples shared with adopting feature adapters.
 
 # Maps Canvas Contract
 
 ## Purpose, Owners, And Consumers
 
-This feature-boundary contract defines the canvas-native values exchanged
-through `features/maps/api`.
+This technical contract defines canvas-native values exchanged through
+`platform.ui.mapcanvas`.
 
-- provider: Maps feature
-- consumers: adopting feature JavaFX adapters and application composition
+- provider: platform map-canvas mechanism
+- consumers: adopting feature JavaFX adapters
 - non-owners: adopter domain, application, persistence, and gameplay semantics
 
 The API owns technical scene, camera, hit, and pointer semantics. It does not own
@@ -88,7 +88,7 @@ adopter truth.
 
 ## Validation And Error Behavior
 
-- Non-finite coordinates or geometry are rejected at the Maps API boundary.
+- Non-finite coordinates or geometry are rejected at the map-canvas boundary.
 - A pointer sample without a hit still carries a valid canvas point and scene
   revision.
 - A hit whose revision is stale or unknown is returned as no-hit; Maps does not
@@ -114,7 +114,9 @@ migration with every adopter updated together.
 - Production-route JUnit tests cover empty and populated scenes, draw/hit
   consistency, every pointer phase, stale revisions, camera stability, and
   adopter round-trip identity.
-- `architectureTest` checks that adopters depend only on `features.maps.api`.
+- `architectureTest` checks that only adopting JavaFX adapters depend on
+  `platform.ui.mapcanvas` and that the platform mechanism has no feature
+  dependency.
 - This contract is Review-Owned for payload semantics not expressed by those
   tests.
 

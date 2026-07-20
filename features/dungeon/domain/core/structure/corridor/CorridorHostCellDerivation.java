@@ -7,22 +7,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import features.dungeon.domain.core.geometry.Cell;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 
 final class CorridorHostCellDerivation {
+    private static final CorridorRoutingPolicy ROUTING_POLICY = new OrthogonalCorridorRoutingPolicy();
     private static final int SINGLE_ROUTE_TERMINUS_COUNT = 1;
     private static final CorridorHostBackboneCells BACKBONE_CELLS = new CorridorHostBackboneCells();
     private static final int FULL_ROUTE_TERMINUS_COUNT = 2;
 
     List<Cell> corridorCells(
             Corridor corridor,
-            Map<Long, DungeonRoomCluster> clustersById,
+            Map<Long, RoomCluster> clustersById,
             List<CorridorHostEndpoint> endpoints,
             Set<Cell> roomCells
     ) {
-        boolean authoredBackbone = !corridor.stateBindings().waypoints().isEmpty();
+        boolean authoredBackbone = !corridor.bindings().waypoints().isEmpty();
         List<Cell> backbone = authoredBackbone
-                ? BACKBONE_CELLS.authoredBackbone(corridor.stateBindings().waypoints(), clustersById, endpoints)
+                ? BACKBONE_CELLS.authoredBackbone(corridor.bindings().waypoints(), clustersById, endpoints)
                 : BACKBONE_CELLS.endpointBackbone(endpoints);
         Set<Cell> cells = new LinkedHashSet<>();
         addRouteCells(cells, backbone, roomCells, !authoredBackbone);
@@ -72,7 +73,7 @@ final class CorridorHostCellDerivation {
         Cell current = routeNodes.get(index);
         return previous == null || current == null
                 ? List.of()
-                : CorridorRoute.unblockedBetweenWithLevelTransition(previous, current, roomCells).cells();
+                : ROUTING_POLICY.routeWithLevelTransition(previous, current, roomCells).cells();
     }
 
     private static void addIfKept(

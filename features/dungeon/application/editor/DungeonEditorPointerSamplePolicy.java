@@ -1,6 +1,6 @@
 package features.dungeon.application.editor;
 
-import features.dungeon.api.DungeonEditorTool;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
 
 final class DungeonEditorPointerSamplePolicy {
     private DungeonEditorPointerSamplePolicy() {
@@ -42,7 +42,7 @@ final class DungeonEditorPointerSamplePolicy {
             DungeonEditorRuntimePointerTarget target,
             PointerWorkflowIntent intent
     ) {
-        if (intent.effectiveTool() != DungeonEditorTool.WALL_CREATE) {
+        if (intent.toolAction().family() != DungeonEditorToolFamily.WALL) {
             return targets.sceneX();
         }
         if (intent.wallSingleClickMode() && target.isBoundaryTarget()) {
@@ -59,7 +59,7 @@ final class DungeonEditorPointerSamplePolicy {
             DungeonEditorRuntimePointerTarget target,
             PointerWorkflowIntent intent
     ) {
-        if (intent.effectiveTool() != DungeonEditorTool.WALL_CREATE) {
+        if (intent.toolAction().family() != DungeonEditorToolFamily.WALL) {
             return targets.sceneY();
         }
         if (intent.wallSingleClickMode() && target.isBoundaryTarget()) {

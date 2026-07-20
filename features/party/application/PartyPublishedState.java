@@ -16,6 +16,7 @@ import features.party.api.PartySnapshotResult;
 import features.party.api.PartyTravelPositionsModel;
 import features.party.api.PartyTravelPositionsResult;
 import features.party.domain.roster.PartyRoster;
+import java.util.concurrent.atomic.AtomicLong;
 import platform.state.PublishedState;
 import platform.ui.UiDispatcher;
 
@@ -28,6 +29,7 @@ public final class PartyPublishedState {
     private final PublishedState<PartyTravelPositionsResult> travelPositions;
     private final PublishedState<MutationResult> mutation;
     private final PublishedState<AdventuringDayCalculationResult> adventuringDayCalculation;
+    private final AtomicLong travelPositionRevision = new AtomicLong();
     private final PartySnapshotModel snapshotModel;
     private final ActivePartyModel activePartyModel;
     private final ActivePartyCompositionModel activeCompositionModel;
@@ -44,7 +46,7 @@ public final class PartyPublishedState {
         adventuringDaySummary = new PublishedState<>(
                 PartyPublishedProjection.failedAdventuringDaySummaryResult(), dispatcher);
         travelPositions = new PublishedState<>(
-                PartyPublishedProjection.failedPartyTravelPositionsResult(), dispatcher);
+                PartyPublishedProjection.failedPartyTravelPositionsResult(0L), dispatcher);
         mutation = new PublishedState<>(new MutationResult(MutationStatus.SUCCESS), dispatcher);
         adventuringDayCalculation = new PublishedState<>(
                 PartyPublishedProjection.failedAdventuringDayCalculationResult(), dispatcher);
@@ -94,7 +96,8 @@ public final class PartyPublishedState {
         activeParty.publish(PartyPublishedProjection.activePartyResult(roster));
         activeComposition.publish(PartyPublishedProjection.activePartyCompositionResult(roster));
         adventuringDaySummary.publish(PartyPublishedProjection.adventuringDaySummaryResult(roster));
-        travelPositions.publish(PartyPublishedProjection.partyTravelPositionsResult(roster));
+        travelPositions.publish(PartyPublishedProjection.partyTravelPositionsResult(
+                roster, travelPositionRevision.incrementAndGet()));
     }
 
     void publishRosterStorageFailure() {
@@ -102,7 +105,8 @@ public final class PartyPublishedState {
         activeParty.publish(PartyPublishedProjection.failedActivePartyResult());
         activeComposition.publish(PartyPublishedProjection.failedActivePartyCompositionResult());
         adventuringDaySummary.publish(PartyPublishedProjection.failedAdventuringDaySummaryResult());
-        travelPositions.publish(PartyPublishedProjection.failedPartyTravelPositionsResult());
+        travelPositions.publish(PartyPublishedProjection.failedPartyTravelPositionsResult(
+                travelPositionRevision.incrementAndGet()));
     }
 
     void publishMutation(MutationResult result) {

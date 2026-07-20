@@ -30,12 +30,13 @@ final class DungeonEditorControlsProjectionServiceAssembly {
                 safeCurrent.maps(),
                 toPublishedMapId(safeControls.selectedMapId()),
                 DungeonEditorValueProjectionServiceAssembly.viewMode(safeControls.viewMode()),
-                DungeonEditorValueProjectionServiceAssembly.tool(safeControls.selectedTool()),
+                safeControls.toolSelection(),
                 safeControls.projectionLevel(),
                 DungeonEditorValueProjectionServiceAssembly.overlay(safeControls.overlaySettings()),
                 safeCurrent.reachableLevels(),
                 safeCurrent.surfaceLoaded(),
-                safeControls.statusText());
+                statusText(safeControls.statusText(), safeControls.commandOutcome()),
+                safeControls.commandOutcome());
     }
 
     private static features.dungeon.api.DungeonEditorControlsSnapshot snapshot(
@@ -47,12 +48,21 @@ final class DungeonEditorControlsProjectionServiceAssembly {
                 publishedMapSummaries(snapshot.maps()),
                 toPublishedMapId(snapshot.selectedMapId()),
                 DungeonEditorValueProjectionServiceAssembly.viewMode(snapshot.viewMode()),
-                DungeonEditorValueProjectionServiceAssembly.tool(snapshot.selectedTool()),
+                snapshot.toolSelection(),
                 snapshot.projectionLevel(),
                 DungeonEditorValueProjectionServiceAssembly.overlay(snapshot.overlaySettings()),
                 reachableLevels,
                 surfacePresent,
-                snapshot.statusText());
+                statusText(snapshot.statusText(), snapshot.commandOutcome()),
+                snapshot.commandOutcome());
+    }
+
+    private static String statusText(
+            String fallback,
+            features.dungeon.api.editor.DungeonEditorCommandOutcome outcome
+    ) {
+        String outcomeText = DungeonEditorCommandStatusMessages.message(outcome);
+        return outcomeText.isBlank() ? fallback : outcomeText;
     }
 
     private static List<features.dungeon.api.DungeonMapSummary> publishedMapSummaries(

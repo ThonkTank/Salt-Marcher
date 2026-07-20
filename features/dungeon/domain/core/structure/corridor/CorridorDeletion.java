@@ -1,5 +1,6 @@
 package features.dungeon.domain.core.structure.corridor;
 
+import features.dungeon.domain.core.component.CorridorDoorBinding;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -21,8 +22,11 @@ final class CorridorDeletion {
             new CorridorConnectionNormalization();
     private static final CorridorTargetDeletion TARGET_DELETION =
             new CorridorTargetDeletion();
-    private static final CorridorReplacementRouteValidation REPLACEMENT_ROUTE_VALIDATION =
-            new CorridorReplacementRouteValidation();
+    private final CorridorReplacementRouteValidation replacementRouteValidation;
+
+    CorridorDeletion(CorridorRoutingPolicy routingPolicy) {
+        replacementRouteValidation = new CorridorReplacementRouteValidation(routingPolicy);
+    }
 
     DungeonMap deleteCorridor(
             DungeonMap dungeonMap,
@@ -68,9 +72,9 @@ final class CorridorDeletion {
         if (updatedCore.equals(existing)) {
             return dungeonMap;
         }
-        Corridor updated = Corridor.fromCore(existing, updatedCore, null);
+        Corridor updated = updatedCore;
         List<Corridor> candidateCorridors = withUpdatedCorridor(dungeonMap, updated);
-        if (!REPLACEMENT_ROUTE_VALIDATION.hasValidReplacementRoute(dungeonMap, updated, candidateCorridors)) {
+        if (!replacementRouteValidation.hasValidReplacementRoute(dungeonMap, updated, candidateCorridors)) {
             return dungeonMap;
         }
         return CONNECTION_NORMALIZATION.copyWithConnections(
@@ -106,10 +110,10 @@ final class CorridorDeletion {
 
     private static List<DoorBindingTarget> doorTargets(DungeonMap dungeonMap, Corridor corridor) {
         List<DoorBindingTarget> result = new ArrayList<>();
-        for (CorridorDoorBindingState binding : corridor.stateBindings().doorBindings()) {
+        for (CorridorDoorBinding binding : corridor.bindings().doorBindings()) {
             if (binding != null) {
                 result.add(new DoorBindingTarget(
-                        binding.toCore(),
+                        binding,
                         binding.topologyRef().id(),
                         absoluteDoorCorridorCell(dungeonMap, binding)));
             }
@@ -119,7 +123,7 @@ final class CorridorDeletion {
 
     private static List<AnchorTarget> anchorTargets(Corridor corridor) {
         List<AnchorTarget> result = new ArrayList<>();
-        for (var anchor : corridor.stateBindings().anchorBindings()) {
+        for (var anchor : corridor.bindings().anchorBindings()) {
             if (anchor != null) {
                 result.add(new AnchorTarget(anchor.position()));
             }
@@ -129,7 +133,7 @@ final class CorridorDeletion {
 
     private static List<WaypointTarget> waypointTargets(DungeonMap dungeonMap, Corridor corridor) {
         List<WaypointTarget> result = new ArrayList<>();
-        for (CorridorWaypoint waypoint : corridor.stateBindings().waypoints()) {
+        for (CorridorWaypoint waypoint : corridor.bindings().waypoints()) {
             Cell center = CorridorMapLookup.clusterCenterOrOrigin(
                     dungeonMap,
                     waypoint.clusterId(),
@@ -139,7 +143,7 @@ final class CorridorDeletion {
         return List.copyOf(result);
     }
 
-    private static Cell absoluteDoorCorridorCell(DungeonMap dungeonMap, CorridorDoorBindingState binding) {
+    private static Cell absoluteDoorCorridorCell(DungeonMap dungeonMap, CorridorDoorBinding binding) {
         Cell center = CorridorMapLookup.clusterCenterOrOrigin(
                 dungeonMap,
                 binding.clusterId(),

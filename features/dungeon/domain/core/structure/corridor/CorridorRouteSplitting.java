@@ -7,7 +7,7 @@ import features.dungeon.domain.core.component.CorridorAnchor;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.corridor.CorridorEndpointResolution.ResolvedEndpointResult;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 
 final class CorridorRouteSplitting {
     private static final int MINIMUM_INTERIOR_SPLIT_ROUTE_CELLS = 3;
@@ -34,8 +34,8 @@ final class CorridorRouteSplitting {
                 nonNullRouteCells(routeCells),
                 waypointClusterId,
                 clusterCenter);
-        return corridor.withStateBindings(
-                corridor.stateBindings().withInteriorRouteAnchors(routePlan, routeAnchors(dungeonMap)));
+        return corridor.withBindings(
+                corridor.bindings().withInteriorRouteAnchors(routePlan, routeAnchors(dungeonMap)));
     }
 
     private static long waypointClusterId(
@@ -56,14 +56,14 @@ final class CorridorRouteSplitting {
         if (clusterId <= MISSING_CLUSTER_ID) {
             return null;
         }
-        DungeonRoomCluster target = CorridorMapLookup.cluster(dungeonMap, clusterId);
+        RoomCluster target = CorridorMapLookup.cluster(dungeonMap, clusterId);
         return target == null ? null : target.center();
     }
 
     private static List<CorridorAnchor> routeAnchors(DungeonMap dungeonMap) {
         List<CorridorAnchor> result = new ArrayList<>();
         for (Corridor corridor : dungeonMap.corridors()) {
-            for (CorridorAnchor anchor : corridor.stateBindings().anchorBindings()) {
+            for (CorridorAnchor anchor : corridor.bindings().anchorBindings()) {
                 if (anchor != null) {
                     result.add(anchor);
                 }

@@ -51,6 +51,8 @@ truth only; it does not persist character positions.
 
 ## Validation And Error Behavior
 
+Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
+
 - party writes MUST reject malformed character identity, roster, progression,
   or travel-location payloads instead of silently persisting partial character
   truth

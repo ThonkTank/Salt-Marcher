@@ -2,9 +2,9 @@ package features.dungeon.application.editor;
 
 import org.jspecify.annotations.Nullable;
 import features.dungeon.application.editor.DungeonEditorRuntimeApplicationService;
-import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
-import features.dungeon.api.DungeonEditorTool;
+import features.dungeon.application.editor.session.DungeonEditorSessionValues;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
 
 final class DungeonEditorCorridorDraftRuntimeOperation {
     private final DungeonEditorRuntimeContext context;
@@ -13,13 +13,13 @@ final class DungeonEditorCorridorDraftRuntimeOperation {
         this.context = java.util.Objects.requireNonNull(context, "context");
     }
 
-    static boolean handles(DungeonEditorTool tool) {
-        return tool == DungeonEditorTool.CORRIDOR_CREATE || tool == DungeonEditorTool.CORRIDOR_DELETE;
+    static boolean handles(DungeonEditorToolAction tool) {
+        return tool != null && tool.family() == DungeonEditorToolFamily.CORRIDOR;
     }
 
     DungeonEditorRuntimeContext.Result apply(
             PointerAction action,
-            DungeonEditorTool corridorTool,
+            DungeonEditorToolAction corridorTool,
             PointerSample sample,
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
@@ -28,19 +28,13 @@ final class DungeonEditorCorridorDraftRuntimeOperation {
                 sample,
                 wallSingleClickMode,
                 transitionDestination);
-        if (corridorTool == DungeonEditorTool.CORRIDOR_CREATE) {
-            return applyWorkflow(action, input, DungeonEditorSessionValues.Tool.CORRIDOR_CREATE);
-        } else if (corridorTool == DungeonEditorTool.CORRIDOR_DELETE) {
-            return applyWorkflow(action, input, DungeonEditorSessionValues.Tool.CORRIDOR_DELETE);
-        } else {
-            throw new IllegalArgumentException("Unsupported corridor draft tool: " + corridorTool);
-        }
+        return applyWorkflow(action, input, corridorTool);
     }
 
     private DungeonEditorRuntimeContext.Result applyWorkflow(
             PointerAction action,
             DungeonEditorMainViewInput input,
-            DungeonEditorSessionValues.Tool corridorTool
+            DungeonEditorToolAction corridorTool
     ) {
         DungeonEditorRuntimeApplicationService.CurrentGridPublication currentGrid =
                 context.currentGridOrPublishCurrentResult();
@@ -61,7 +55,7 @@ final class DungeonEditorCorridorDraftRuntimeOperation {
     }
 
     private DungeonEditorRuntimeApplicationService.@Nullable AuthoredCommit commitFor(
-            DungeonEditorSessionValues.@Nullable Preview preview
+            features.dungeon.application.editor.session.DungeonEditorSessionValues.@Nullable Preview preview
     ) {
         return switch (preview) {
             case DungeonEditorSessionValues.CorridorCreatePreview corridor ->

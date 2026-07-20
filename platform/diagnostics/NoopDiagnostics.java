@@ -6,4 +6,8 @@ public enum NoopDiagnostics implements Diagnostics {
     @Override
     public void failure(DiagnosticId id, Class<? extends Throwable> failureType) {
     }
+
+    @Override
+    public void measurement(Measurement measurement) {
+    }
 }

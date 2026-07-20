@@ -13,7 +13,7 @@ import features.dungeon.domain.core.structure.DungeonMap;
 
 final class CorridorAnchorDependencyUpdate {
     private static final CorridorReplacementRouteValidation REPLACEMENT_ROUTE_VALIDATION =
-            new CorridorReplacementRouteValidation();
+            new CorridorReplacementRouteValidation(new OrthogonalCorridorRoutingPolicy());
 
     DependencyUpdateResult rerouteDependents(
             DungeonMap currentMap,
@@ -78,7 +78,7 @@ final class CorridorAnchorDependencyUpdate {
             Corridor corridor,
             Map<CorridorNetwork.AnchorKey, AnchorMovement> movedAnchors
     ) {
-        if (corridor.stateBindings().waypoints().isEmpty() || corridor.stateBindings().anchorRefs().isEmpty()) {
+        if (corridor.bindings().waypoints().isEmpty() || corridor.bindings().anchorRefs().isEmpty()) {
             return corridor;
         }
         Map<CorridorNetwork.AnchorKey, AnchorMovement> referencedAnchorMoves = referencedAnchorMoves(corridor, movedAnchors);
@@ -87,13 +87,13 @@ final class CorridorAnchorDependencyUpdate {
         }
         List<CorridorWaypoint> updatedWaypoints = new ArrayList<>();
         boolean changed = false;
-        for (CorridorWaypoint waypoint : corridor.stateBindings().waypoints()) {
+        for (CorridorWaypoint waypoint : corridor.bindings().waypoints()) {
             CorridorWaypoint updated = reroutedWaypoint(sourceMap, currentMap, waypoint, referencedAnchorMoves);
             updatedWaypoints.add(updated);
             changed = changed || !updated.equals(waypoint);
         }
         return changed
-                ? corridor.withStateBindings(corridor.stateBindings().replaceWaypoints(updatedWaypoints))
+                ? corridor.withBindings(corridor.bindings().replaceWaypoints(updatedWaypoints))
                 : corridor;
     }
 
@@ -132,7 +132,7 @@ final class CorridorAnchorDependencyUpdate {
             Map<CorridorNetwork.AnchorKey, AnchorMovement> movedAnchors
     ) {
         Map<CorridorNetwork.AnchorKey, AnchorMovement> result = new LinkedHashMap<>();
-        for (CorridorAnchorRef ref : corridor.stateBindings().anchorRefs()) {
+        for (CorridorAnchorRef ref : corridor.bindings().anchorRefs()) {
             if (ref == null || !ref.present()) {
                 continue;
             }

@@ -19,9 +19,10 @@ final class DungeonMapSceneAssembler {
                     RenderScene.empty(DungeonMapContentModel.defaultTitle()),
                     SceneBuckets.empty());
         }
-        SceneBuckets buckets = displayModel.isGraphView()
-                ? graphSceneAssembler.assemble(displayModel, hoverTarget)
-                : gridSceneAssembler.assemble(displayModel, hoverTarget);
+        SceneBuckets base = assemble(displayModel.baseLayerProjection(), PointerTarget.empty());
+        SceneBuckets interaction = assemble(displayModel.interactionLayerProjection(), PointerTarget.empty());
+        SceneBuckets actor = assemble(displayModel.actorLayerProjection(), PointerTarget.empty());
+        SceneBuckets buckets = assemble(displayModel, PointerTarget.empty());
         return new RenderSceneProjection(
                 new RenderScene(
                         displayModel.title(),
@@ -32,17 +33,27 @@ final class DungeonMapSceneAssembler {
                         displayModel.mapLoaded(),
                         displayModel.overlayMessage(),
                         !displayModel.isGraphView(),
-                        buckets.surfaces(),
-                        buckets.boundaries(),
-                        buckets.glyphs(),
-                        buckets.texts(),
-                        buckets.relations(),
-                        buckets.actors(),
+                        base.surfaces(),
+                        base.boundaries(),
+                        base.glyphs(),
+                        base.texts(),
+                        base.relations(),
+                        interaction.surfaces(),
+                        interaction.boundaries(),
+                        interaction.glyphs(),
+                        interaction.texts(),
+                        actor.actors(),
                         List.of(),
                         List.of(),
                         List.of(),
                         List.of()),
                 buckets);
+    }
+
+    private SceneBuckets assemble(DungeonMapRenderState displayModel, PointerTarget hoverTarget) {
+        return displayModel.isGraphView()
+                ? graphSceneAssembler.assemble(displayModel, hoverTarget)
+                : gridSceneAssembler.assemble(displayModel, hoverTarget);
     }
 
     SceneBuckets toHoverOverlay(DungeonMapRenderState displayModel, PointerTarget hoverTarget) {

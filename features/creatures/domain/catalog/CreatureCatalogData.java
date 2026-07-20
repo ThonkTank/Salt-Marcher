@@ -127,17 +127,33 @@ public final class CreatureCatalogData {
     }
 
     public record EncounterCandidateSpec(
+            @Nullable String nameQuery,
             List<String> types,
             List<String> subtypes,
             List<String> biomes,
+            List<String> sizes,
+            List<String> alignments,
             int minimumXp,
             int maximumXp,
             int limit
     ) {
+        public EncounterCandidateSpec(
+                List<String> types,
+                List<String> subtypes,
+                List<String> biomes,
+                int minimumXp,
+                int maximumXp,
+                int limit
+        ) {
+            this(null, types, subtypes, biomes, List.of(), List.of(), minimumXp, maximumXp, limit);
+        }
+
         public EncounterCandidateSpec {
             types = copyStrings(types);
             subtypes = copyStrings(subtypes);
             biomes = copyStrings(biomes);
+            sizes = copyStrings(sizes);
+            alignments = copyStrings(alignments);
         }
 
         @Override
@@ -153,6 +169,35 @@ public final class CreatureCatalogData {
         @Override
         public List<String> biomes() {
             return copyStrings(biomes);
+        }
+
+        @Override
+        public List<String> sizes() {
+            return copyStrings(sizes);
+        }
+
+        @Override
+        public List<String> alignments() {
+            return copyStrings(alignments);
+        }
+    }
+
+    public record CreatureFactsSpec(FactsMode mode, List<Long> values) {
+        public enum FactsMode { XP_VALUES, CREATURE_IDS }
+
+        public CreatureFactsSpec {
+            if (mode == null) {
+                throw new IllegalArgumentException("mode is required");
+            }
+            values = values == null ? List.of() : List.copyOf(values);
+            if (values.isEmpty()) {
+                throw new IllegalArgumentException("values must not be empty");
+            }
+        }
+
+        @Override
+        public List<Long> values() {
+            return List.copyOf(values);
         }
     }
 

@@ -6,7 +6,6 @@ import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.application.editor.interaction.DungeonEditorHandleProjection;
-import features.dungeon.application.editor.interaction.DungeonEditorHandleType;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorWorkspaceHandleProjectionHelper {
@@ -20,9 +19,9 @@ public final class DungeonEditorWorkspaceHandleProjectionHelper {
     }
 
     private static DungeonEditorWorkspaceValues.Handle handle(DungeonEditorHandleProjection handle) {
-        DungeonEditorWorkspaceValues.Cell workspaceCell = cell(handle.cell());
+        features.dungeon.domain.core.geometry.Cell workspaceCell = cell(handle.cell());
         DungeonEditorWorkspaceValues.HandleRef ref = new DungeonEditorWorkspaceValues.HandleRef(
-                DungeonEditorHandleType.valueOf(handle.kind().name()),
+                handle.kind(),
                 handle.topologyRef(),
                 handle.ownerId(),
                 handle.clusterId(),
@@ -30,28 +29,28 @@ public final class DungeonEditorWorkspaceHandleProjectionHelper {
                 handle.roomId(),
                 handle.index(),
                 workspaceCell,
-                handle.direction().name(),
+                handle.direction(),
                 edge(handle.sourceEdge()),
                 edges(handle.sourceEdges()));
         return new DungeonEditorWorkspaceValues.Handle(ref, handle.label(), workspaceCell);
     }
 
-    private static DungeonEditorWorkspaceValues.Cell cell(@Nullable Cell cell) {
+    private static features.dungeon.domain.core.geometry.Cell cell(@Nullable Cell cell) {
         return cell == null
-                ? DungeonEditorWorkspaceValues.Cell.empty()
-                : new DungeonEditorWorkspaceValues.Cell(cell.q(), cell.r(), cell.level());
+                ? features.dungeon.domain.core.geometry.Cell.empty()
+                : new features.dungeon.domain.core.geometry.Cell(cell.q(), cell.r(), cell.level());
     }
 
-    private static DungeonEditorWorkspaceValues.Edge edge(@Nullable Edge edge) {
+    private static features.dungeon.domain.core.geometry.Edge edge(@Nullable Edge edge) {
         return edge == null
                 ? null
-                : new DungeonEditorWorkspaceValues.Edge(cell(edge.from()), cell(edge.to()));
+                : new features.dungeon.domain.core.geometry.Edge(cell(edge.from()), cell(edge.to()));
     }
 
-    private static List<DungeonEditorWorkspaceValues.Edge> edges(List<Edge> edges) {
-        List<DungeonEditorWorkspaceValues.Edge> result = new ArrayList<>();
+    private static List<features.dungeon.domain.core.geometry.Edge> edges(List<Edge> edges) {
+        List<features.dungeon.domain.core.geometry.Edge> result = new ArrayList<>();
         for (Edge edge : edges == null ? List.<Edge>of() : edges) {
-            DungeonEditorWorkspaceValues.Edge workspaceEdge = edge(edge);
+            features.dungeon.domain.core.geometry.Edge workspaceEdge = edge(edge);
             if (workspaceEdge != null) {
                 result.add(workspaceEdge);
             }

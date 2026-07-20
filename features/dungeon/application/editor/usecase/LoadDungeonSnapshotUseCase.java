@@ -17,21 +17,24 @@ public final class LoadDungeonSnapshotUseCase {
     }
 
     public static DungeonSnapshotData snapshotData(
+            long mapId,
             String mapName,
             DungeonDerivedState derived,
             List<DungeonEditorHandleProjection> editorHandles,
             long revision
     ) {
-        return new DungeonSnapshotData(mapName, derived, editorHandles, revision);
+        return new DungeonSnapshotData(mapId, mapName, derived, editorHandles, revision);
     }
 
     public record DungeonSnapshotData(
+            long mapId,
             String mapName,
             DungeonDerivedState derived,
             List<DungeonEditorHandleProjection> editorHandles,
             long revision
     ) {
         public DungeonSnapshotData {
+            mapId = Math.max(0L, mapId);
             editorHandles = editorHandles == null ? List.of() : List.copyOf(editorHandles);
         }
     }

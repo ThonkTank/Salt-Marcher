@@ -1,45 +1,50 @@
 package features.encounter;
 
-import org.jspecify.annotations.Nullable;
-import platform.diagnostics.Diagnostics;
-import platform.diagnostics.NoopDiagnostics;
-import platform.execution.DirectExecutionLane;
-import platform.execution.ExecutionLane;
-import platform.persistence.SqliteDatabase;
-import platform.ui.DirectUiDispatcher;
-import platform.ui.UiDispatcher;
-import shell.api.InspectorSink;
-import shell.api.ShellContribution;
-import features.creatures.api.CreaturesApi;
-import features.creatures.api.CreatureCatalogModel;
 import features.creatures.api.CreatureDetailModel;
 import features.creatures.api.CreatureEncounterCandidatesModel;
-import features.creatures.api.CreatureFilterOptionsModel;
-import features.encounter.adapter.javafx.catalog.CatalogContribution;
+import features.creatures.api.CreaturesApi;
 import features.encounter.adapter.javafx.state.EncounterStateContribution;
+import features.encounter.adapter.sqlite.gateway.local.SqliteEncounterRuntimeContextRepository;
 import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
 import features.encounter.api.EncounterApi;
+import features.encounter.api.EncounterRuntimeContextApi;
 import features.encounter.application.EncounterApplicationService;
 import features.encounter.application.EncounterForeignFacts;
 import features.encounter.application.EncounterPlanGateway;
 import features.encounter.application.EncounterPublishedState;
 import features.encounter.application.EncounterSessionRuntimeAccess;
+import features.encounter.application.GeneratedEncounterBatchRepository;
+import features.encounter.application.GeneratedEncounterBatchService;
 import features.encounter.domain.generation.EncounterGenerator;
 import features.encounter.domain.plan.repository.EncounterPlanRepository;
 import features.encountertable.api.EncounterTableApi;
 import features.encountertable.api.EncounterTableCandidatesModel;
-import features.encountertable.api.EncounterTableCatalogModel;
-import features.party.api.PartyApi;
 import features.party.api.ActivePartyCompositionModel;
 import features.party.api.ActivePartyModel;
 import features.party.api.AdventuringDaySummaryModel;
+import features.party.api.PartyApi;
 import features.party.api.PartyMutationModel;
-import features.worldplanner.api.WorldPlannerSnapshotModel;
 import features.worldplanner.api.WorldPlannerApi;
+import features.worldplanner.api.WorldPlannerSnapshotModel;
+import org.jspecify.annotations.Nullable;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.NoopDiagnostics;
+import platform.execution.DirectExecutionLane;
+import platform.execution.ExecutionLane;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+import platform.ui.DirectUiDispatcher;
+import platform.ui.UiDispatcher;
+import shell.api.ShellContribution;
 
 public final class EncounterServiceAssembly {
 
-    public static Component create(
+    public static FeatureStoreDefinition storeDefinition() {
+        return SqliteEncounterPlanRepository.storeDefinition();
+    }
+
+    public static <T extends EncounterPlanRepository & GeneratedEncounterBatchRepository
+            & features.encounter.application.SavedEncounterPlanSearchRepository> Component create(
             CreaturesApi creatures,
             CreatureDetailModel creatureDetails,
             CreatureEncounterCandidatesModel creatureCandidates,
@@ -51,7 +56,7 @@ public final class EncounterServiceAssembly {
             ActivePartyCompositionModel activePartyComposition,
             AdventuringDaySummaryModel daySummary,
             PartyMutationModel partyMutation,
-            EncounterPlanRepository planRepository
+            T planRepository
     ) {
         return create(
                 creatures, creatureDetails, creatureCandidates, encounterTables, tableCandidates,
@@ -60,7 +65,7 @@ public final class EncounterServiceAssembly {
     }
 
     public static Component create(
-            SqliteDatabase database,
+            FeatureStoreHandle store,
             CreaturesApi creatures,
             CreatureDetailModel creatureDetails,
             CreatureEncounterCandidatesModel creatureCandidates,
@@ -73,9 +78,13 @@ public final class EncounterServiceAssembly {
             AdventuringDaySummaryModel daySummary,
             PartyMutationModel partyMutation,
             ExecutionLane executionLane,
+            ExecutionLane generatedCpuLane,
+            ExecutionLane generatedIoLane,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
+        FeatureStoreHandle safeStore = FeatureStoreHandle.requireOwner(store, "encounter");
+        SqliteEncounterPlanRepository planRepository = new SqliteEncounterPlanRepository(safeStore);
         return create(
                 creatures,
                 creatureDetails,
@@ -88,13 +97,75 @@ public final class EncounterServiceAssembly {
                 activePartyComposition,
                 daySummary,
                 partyMutation,
-                new SqliteEncounterPlanRepository(java.util.Objects.requireNonNull(database, "database")),
+                planRepository,
+                new SqliteEncounterRuntimeContextRepository(safeStore),
                 executionLane,
+                generatedCpuLane,
+                generatedIoLane,
+                planRepository,
+                planRepository,
                 uiDispatcher,
-                diagnostics);
+                diagnostics,
+                false);
     }
 
     public static Component create(
+            FeatureStoreHandle store,
+            CreaturesApi creatures,
+            CreatureDetailModel creatureDetails,
+            CreatureEncounterCandidatesModel creatureCandidates,
+            EncounterTableApi encounterTables,
+            EncounterTableCandidatesModel tableCandidates,
+            @Nullable WorldPlannerSnapshotModel worldPlanner,
+            PartyApi party,
+            ActivePartyModel activeParty,
+            ActivePartyCompositionModel activePartyComposition,
+            AdventuringDaySummaryModel daySummary,
+            PartyMutationModel partyMutation,
+            ExecutionLane executionLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics
+    ) {
+        return create(
+                store, creatures, creatureDetails, creatureCandidates, encounterTables, tableCandidates,
+                worldPlanner, party, activeParty, activePartyComposition, daySummary, partyMutation,
+                executionLane, executionLane, executionLane, uiDispatcher, diagnostics);
+    }
+
+    public static <T extends EncounterPlanRepository & GeneratedEncounterBatchRepository
+            & features.encounter.application.SavedEncounterPlanSearchRepository> Component create(
+            CreaturesApi creatures,
+            CreatureDetailModel creatureDetails,
+            CreatureEncounterCandidatesModel creatureCandidates,
+            EncounterTableApi encounterTables,
+            EncounterTableCandidatesModel tableCandidates,
+            @Nullable WorldPlannerSnapshotModel worldPlanner,
+            PartyApi party,
+            ActivePartyModel activeParty,
+            ActivePartyCompositionModel activePartyComposition,
+            AdventuringDaySummaryModel daySummary,
+            PartyMutationModel partyMutation,
+            T planRepository,
+            ExecutionLane executionLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics
+    ) {
+        return create(
+                creatures, creatureDetails, creatureCandidates, encounterTables, tableCandidates,
+                worldPlanner, party, activeParty, activePartyComposition, daySummary, partyMutation,
+                planRepository,
+                new InMemoryRuntimeContextRepository(),
+                executionLane,
+                executionLane,
+                executionLane,
+                planRepository,
+                planRepository,
+                uiDispatcher,
+                diagnostics,
+                true);
+    }
+
+    private static Component create(
             CreaturesApi creatures,
             CreatureDetailModel creatureDetails,
             CreatureEncounterCandidatesModel creatureCandidates,
@@ -107,9 +178,15 @@ public final class EncounterServiceAssembly {
             AdventuringDaySummaryModel daySummary,
             PartyMutationModel partyMutation,
             EncounterPlanRepository planRepository,
+            features.encounter.application.EncounterRuntimeContextRepository contextRepository,
             ExecutionLane executionLane,
+            ExecutionLane generatedCpuLane,
+            ExecutionLane generatedIoLane,
+            GeneratedEncounterBatchRepository generatedRepository,
+            features.encounter.application.SavedEncounterPlanSearchRepository searchRepository,
             UiDispatcher uiDispatcher,
-            Diagnostics diagnostics
+            Diagnostics diagnostics,
+            boolean start
     ) {
         EncounterPublishedState publishedState = new EncounterPublishedState(
                 java.util.Objects.requireNonNull(uiDispatcher, "uiDispatcher"));
@@ -122,63 +199,84 @@ public final class EncounterServiceAssembly {
                 facts,
                 plans,
                 new EncounterGenerator(facts));
+        GeneratedEncounterBatchService generatedBatches = new GeneratedEncounterBatchService(
+                creatures,
+                activePartyComposition,
+                java.util.Objects.requireNonNull(generatedRepository, "generatedRepository"),
+                java.util.Objects.requireNonNull(generatedCpuLane, "generatedCpuLane"),
+                java.util.Objects.requireNonNull(generatedIoLane, "generatedIoLane"),
+                diagnostics);
+        features.encounter.application.SavedEncounterPlanSearchService savedPlanSearch =
+                new features.encounter.application.SavedEncounterPlanSearchService(
+                        java.util.Objects.requireNonNull(searchRepository, "searchRepository"),
+                        generatedIoLane,
+                        diagnostics);
         EncounterApplicationService application = new EncounterApplicationService(
-                runtime, plans, publishedState, java.util.Objects.requireNonNull(executionLane, "executionLane"));
-        return new Component(
+                runtime,
+                plans,
+                publishedState,
+                contextRepository,
+                java.util.Objects.requireNonNull(executionLane, "executionLane"),
+                generatedBatches,
+                savedPlanSearch);
+        Component component = new Component(
                 application,
+                application.runtimeContexts(),
                 publishedState.stateModel(),
                 publishedState.builderInputsModel(),
+                publishedState.poolFiltersModel(),
                 publishedState.tuningPreviewModel(),
                 publishedState.savedPlansModel(),
                 publishedState.planBudgetModel());
+        if (start) {
+            component.start();
+        }
+        return component;
     }
 
     public record Component(
             EncounterApi application,
+            EncounterRuntimeContextApi runtimeContexts,
             features.encounter.api.EncounterStateModel state,
             features.encounter.api.EncounterBuilderInputsModel builderInputs,
+            features.encounter.api.EncounterPoolFiltersModel poolFilters,
             features.encounter.api.EncounterTuningPreviewModel tuningPreview,
             features.encounter.api.SavedEncounterPlanListModel savedPlans,
             features.encounter.api.EncounterPlanBudgetModel planBudget
     ) {
 
-        public ShellContribution catalogContribution(
-                CreaturesApi creatures,
-                EncounterTableApi encounterTables,
-                CreatureFilterOptionsModel filterOptions,
-                CreatureCatalogModel catalog,
-                CreatureDetailModel detail,
-                EncounterTableCatalogModel encounterTableCatalog,
-                @Nullable WorldPlannerSnapshotModel worldPlanner,
-                InspectorSink inspector
-        ) {
-            return new CatalogContribution(
-                    creatures,
-                    encounterTables,
-                    application,
-                    builderInputs,
-                    filterOptions,
-                    catalog,
-                    detail,
-                    encounterTableCatalog,
-                    tuningPreview,
-                    worldPlanner,
-                    inspector);
+        public void start() {
+            ((EncounterApplicationService) application).initialize();
         }
 
         public ShellContribution stateContribution(
-                CreatureDetailModel detail,
                 CreaturesApi creatures,
                 @Nullable WorldPlannerApi worldPlanner,
-                InspectorSink inspector
+                java.util.function.LongConsumer openCreatureInspector
         ) {
             return new EncounterStateContribution(
-                    detail,
                     creatures,
                     state,
                     application,
+                    builderInputs,
                     worldPlanner,
-                    inspector);
+                    openCreatureInspector);
+        }
+    }
+
+    private static final class InMemoryRuntimeContextRepository
+            implements features.encounter.application.EncounterRuntimeContextRepository {
+
+        private StoredRuntimeContexts value = StoredRuntimeContexts.empty();
+
+        @Override
+        public StoredRuntimeContexts load() {
+            return value;
+        }
+
+        @Override
+        public void replace(StoredRuntimeContexts contexts) {
+            value = contexts;
         }
     }
 

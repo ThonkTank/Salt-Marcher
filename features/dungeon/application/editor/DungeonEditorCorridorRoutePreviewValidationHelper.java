@@ -4,29 +4,53 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.Cell;
-import features.dungeon.domain.core.structure.corridor.CorridorRoute;
+import features.dungeon.domain.core.geometry.Direction;
+import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.DungeonEditorInteractionValues.CellKey;
 import features.dungeon.application.editor.DungeonEditorInteractionValues.TravelHeading;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.PendingCorridorTarget;
 
 final class DungeonEditorCorridorRoutePreviewValidationHelper {
+    private final CorridorRoutingPolicy routingPolicy;
+
+    DungeonEditorCorridorRoutePreviewValidationHelper(CorridorRoutingPolicy routingPolicy) {
+        this.routingPolicy = java.util.Objects.requireNonNull(routingPolicy, "routingPolicy");
+    }
 
     boolean hasValidRoute(
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             PendingCorridorTarget start,
             PendingCorridorTarget end
     ) {
-        DungeonEditorWorkspaceValues.Cell startCell = corridorCell(start.endpoint());
-        DungeonEditorWorkspaceValues.Cell endCell = corridorCell(end.endpoint());
+        features.dungeon.domain.core.geometry.Cell startCell = corridorCell(start.endpoint());
+        features.dungeon.domain.core.geometry.Cell endCell = corridorCell(end.endpoint());
         if (snapshot == null || startCell == null || endCell == null || startCell.level() != endCell.level()) {
             return true;
         }
-        Set<CellKey> roomCells = roomCells(snapshot);
-        return CorridorRoute.unblockedBetween(toCoreCell(startCell), toCoreCell(endCell), coreCells(roomCells)).present();
+        if (features.dungeon.domain.core.structure.corridor.CorridorEndpointOrdering.canonicalOrder(
+                        endpointRole(start.endpoint()), endpointRole(end.endpoint()))
+                == features.dungeon.domain.core.structure.corridor.CorridorEndpointOrdering.InputOrder.SWAP) {
+            Cell originalStart = startCell;
+            startCell = endCell;
+            endCell = originalStart;
+        }
+        return routingPolicy.route(startCell, endCell, roomCells(snapshot)).present();
     }
 
-    DungeonEditorWorkspaceValues.@Nullable Cell corridorCell(
+    private static features.dungeon.domain.core.structure.corridor.CorridorEndpointOrdering.EndpointRole endpointRole(
+            DungeonEditorWorkspaceValues.CorridorEndpoint endpoint
+    ) {
+        return switch (endpoint) {
+            case DungeonEditorWorkspaceValues.CorridorDoorEndpoint ignored ->
+                    features.dungeon.domain.core.structure.corridor.CorridorEndpointOrdering.EndpointRole.DOOR;
+            case DungeonEditorWorkspaceValues.CorridorAnchorEndpoint ignored ->
+                    features.dungeon.domain.core.structure.corridor.CorridorEndpointOrdering.EndpointRole.ANCHOR;
+            case null -> features.dungeon.domain.core.structure.corridor.CorridorEndpointOrdering.EndpointRole.EMPTY;
+        };
+    }
+
+    @Nullable Cell corridorCell(
             DungeonEditorWorkspaceValues.CorridorEndpoint endpoint
     ) {
         return switch (endpoint) {
@@ -37,41 +61,29 @@ final class DungeonEditorCorridorRoutePreviewValidationHelper {
         };
     }
 
-    private static Set<CellKey> roomCells(DungeonEditorWorkspaceValues.MapSnapshot snapshot) {
-        Set<CellKey> result = new LinkedHashSet<>();
+    private static Set<Cell> roomCells(DungeonEditorWorkspaceValues.MapSnapshot snapshot) {
+        Set<Cell> result = new LinkedHashSet<>();
         for (DungeonEditorWorkspaceValues.Area area : snapshot.areas()) {
             if (area.kind().isRoom()) {
-                for (DungeonEditorWorkspaceValues.Cell cell : area.cells()) {
-                    result.add(new CellKey(cell.q(), cell.r(), cell.level()));
+                for (features.dungeon.domain.core.geometry.Cell cell : area.cells()) {
+                    result.add(cell);
                 }
             }
         }
         return Set.copyOf(result);
     }
 
-    private static Set<Cell> coreCells(Set<CellKey> cells) {
-        Set<Cell> result = new LinkedHashSet<>();
-        for (CellKey cell : cells == null ? Set.<CellKey>of() : cells) {
-            result.add(new Cell(cell.q(), cell.r(), cell.level()));
-        }
-        return Set.copyOf(result);
-    }
-
-    private static Cell toCoreCell(DungeonEditorWorkspaceValues.Cell cell) {
-        return new Cell(cell.q(), cell.r(), cell.level());
-    }
-
-    private static DungeonEditorWorkspaceValues.Cell neighbor(
-            DungeonEditorWorkspaceValues.Cell cell,
+    private static features.dungeon.domain.core.geometry.Cell neighbor(
+            features.dungeon.domain.core.geometry.Cell cell,
             TravelHeading direction
     ) {
         CellKey key = new CellKey(cell.q(), cell.r(), cell.level()).neighbor(direction);
-        return new DungeonEditorWorkspaceValues.Cell(key.q(), key.r(), key.level());
+        return new features.dungeon.domain.core.geometry.Cell(key.q(), key.r(), key.level());
     }
 
-    private static TravelHeading travelHeading(@Nullable String direction) {
+    private static TravelHeading travelHeading(@Nullable Direction direction) {
         for (TravelHeading heading : TravelHeading.values()) {
-            if (heading.name().equals(direction)) {
+            if (direction != null && heading.name().equals(direction.name())) {
                 return heading;
             }
         }

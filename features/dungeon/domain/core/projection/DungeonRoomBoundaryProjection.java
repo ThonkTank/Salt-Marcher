@@ -5,8 +5,8 @@ import java.util.Map;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
 import features.dungeon.domain.core.graph.DungeonRelationGraph;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomCluster;
 
 public record DungeonRoomBoundaryProjection(
         List<DungeonState> aggregates,
@@ -16,8 +16,8 @@ public record DungeonRoomBoundaryProjection(
         List<DungeonRelationGraph.ConnectionRelation> connections,
         Map<Long, List<Cell>> allRoomCells,
         Map<DungeonBoundaryKey, Long> boundaryIdsByKey,
-        Map<Long, DungeonRoom> roomsById,
-        Map<Long, DungeonRoomCluster> clustersById,
+        Map<Long, RoomRegion> roomsById,
+        Map<Long, RoomCluster> clustersById,
         long nextBoundaryId
 ) {
     public DungeonRoomBoundaryProjection {

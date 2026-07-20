@@ -11,16 +11,16 @@ import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.DungeonMapMetadata;
 import features.dungeon.domain.core.structure.corridor.Corridor;
-import features.dungeon.domain.core.structure.corridor.CorridorBindingState;
-import features.dungeon.domain.core.structure.corridor.CorridorDoorBindingState;
+import features.dungeon.domain.core.structure.corridor.CorridorBindings;
+import features.dungeon.domain.core.component.CorridorDoorBinding;
 import features.dungeon.domain.core.structure.door.Door;
 import features.dungeon.domain.core.structure.door.DoorBoundaryMaterialization;
 import features.dungeon.domain.core.structure.door.DoorIndex;
 import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
-import features.dungeon.domain.core.structure.room.DungeonRoom;
-import features.dungeon.domain.core.structure.room.DungeonRoomCluster;
-import features.dungeon.domain.core.structure.room.RoomCatalog;
+import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.RoomCluster;
+import features.dungeon.domain.core.structure.room.RoomCatalog;
+import features.dungeon.domain.core.structure.room.RoomClusterGeometry;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import features.dungeon.domain.core.structure.room.RoomClusterFloorMap;
@@ -79,7 +79,7 @@ final class DungeonDoorInvariantScenarios {
         ArrayList<Door> doors = new ArrayList<>(List.of(later, duplicate, first));
         doors.add(null);
         DoorIndex index = DoorIndex.from(doors);
-        RoomCluster cluster = new RoomCluster(
+        RoomClusterGeometry cluster = new RoomClusterGeometry(
                 42L,
                 4L,
                 new Cell(0, 0, 0),
@@ -168,7 +168,7 @@ final class DungeonDoorInvariantScenarios {
         assertFalse(source.equals(moved), "door move changes the aggregate for a valid target");
         assertEquals(
                 new Cell(1, 1, 0),
-                moved.corridors().getFirst().stateBindings().doorBindings().getFirst().relativeCell(),
+                moved.corridors().getFirst().bindings().doorBindings().getFirst().relativeCell(),
                 "door move updates the corridor door binding to the moved boundary cell");
         assertTrue(boundaryIs(moved, new Cell(1, 0, 0), Direction.EAST, BoundaryKind.WALL),
                 "door move restores the old authored room boundary to wall");
@@ -206,26 +206,26 @@ final class DungeonDoorInvariantScenarios {
                 new DungeonClusterBoundary(clusterId, 0, new Cell(1, 1, 0), Direction.EAST,
                         duplicateDoorAtTarget ? BoundaryKind.DOOR : BoundaryKind.WALL,
                         duplicateDoorAtTarget ? DungeonTopologyRef.door(201L) : DungeonTopologyRef.wall(201L))));
-        DungeonRoomCluster cluster = DungeonRoomCluster.fromPersistenceState(
+        RoomCluster cluster = RoomCluster.authored(
                 clusterId,
                 mapId,
                 "R1",
                 new Cell(0, 0, 0),
-                RoomClusterFloorMap.fromCells(List.of(
-                        new Cell(0, 0, 0),
-                        new Cell(0, 1, 0),
-                        new Cell(1, 0, 0),
-                        new Cell(1, 1, 0))),
                 DungeonClusterBoundary.orderedByLevel(boundaries));
-        DungeonRoom room = new DungeonRoom(roomId, mapId, clusterId, "R1", Map.of(0, new Cell(0, 0, 0)), null);
+        RoomRegion room = new RoomRegion(
+                roomId, mapId, clusterId, "R1",
+                java.util.Set.of(
+                        new Cell(0, 0, 0), new Cell(0, 1, 0),
+                        new Cell(1, 0, 0), new Cell(1, 1, 0)),
+                null);
         Corridor corridor = new Corridor(
                 20L,
                 mapId,
                 0,
                 List.of(roomId),
-                new CorridorBindingState(
+                new CorridorBindings(
                         List.of(),
-                        List.of(new CorridorDoorBindingState(
+                        List.of(new CorridorDoorBinding(
                                 roomId,
                                 clusterId,
                                 new Cell(1, 0, 0),
@@ -255,7 +255,7 @@ final class DungeonDoorInvariantScenarios {
     }
 
     private static DungeonTopologyRef boundaryRef(DungeonMap map, Cell relativeCell, Direction direction) {
-        DungeonRoomCluster cluster = map.topology().roomClusters().getFirst();
+        RoomCluster cluster = map.topology().roomClusters().getFirst();
         for (DungeonClusterBoundary boundary : cluster.orderedAuthoredBoundaries()) {
             if (relativeCell.equals(boundary.relativeCell()) && direction == boundary.direction()) {
                 return boundary.resolvedTopologyRef(cluster.center());

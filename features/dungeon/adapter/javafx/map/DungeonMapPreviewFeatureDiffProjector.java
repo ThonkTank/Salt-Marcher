@@ -6,8 +6,6 @@ import features.dungeon.api.DungeonCellRef;
 import features.dungeon.api.DungeonEdgeRef;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonFeatureKind;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreparedLabelKind;
-import features.dungeon.application.editor.DungeonEditorPreparedFrameFacts.PreviewFeatureDiffFrame;
 
 final class DungeonMapPreviewFeatureDiffProjector {
 

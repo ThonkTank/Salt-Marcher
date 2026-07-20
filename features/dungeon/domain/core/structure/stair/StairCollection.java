@@ -2,6 +2,7 @@ package features.dungeon.domain.core.structure.stair;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.component.StairExit;
@@ -21,21 +22,8 @@ public record StairCollection(List<Stair> stairs) {
     }
 
     public boolean canDeleteUnboundStair(long stairId) {
-        Stair stair = stairById(stairId);
+        Stair stair = stair(stairId);
         return stair != null && stair.corridorId() == null;
-    }
-
-    public StairCollection withoutUnboundStair(long stairId) {
-        if (!canDeleteUnboundStair(stairId)) {
-            return this;
-        }
-        List<Stair> result = new ArrayList<>();
-        for (Stair stair : stairs) {
-            if (stair.stairId() != stairId) {
-                result.add(stair);
-            }
-        }
-        return new StairCollection(result);
     }
 
     public StairCollection withoutCorridorBoundStairs(long corridorId) {
@@ -83,13 +71,15 @@ public record StairCollection(List<Stair> stairs) {
             long mapId,
             long corridorId,
             @Nullable List<Cell> path,
-            @Nullable Cell upperExit
+            @Nullable Cell upperExit,
+            List<Long> reservedExitIds
     ) {
         if (!canCreateCorridorBoundStair(stairId, mapId, corridorId, path, upperExit) || path == null) {
             return this;
         }
         List<Stair> result = new ArrayList<>(stairs);
-        result.add(Stair.corridorBound(stairId, mapId, corridorId, path, upperExit));
+        result.add(Stair.corridorBound(
+                stairId, mapId, corridorId, path, upperExit, reservedExitIds));
         return new StairCollection(result);
     }
 
@@ -111,20 +101,6 @@ public record StairCollection(List<Stair> stairs) {
         return supportedAuthoredSpec(spec) && spec.avoidsRoomInteriors(roomCells);
     }
 
-    public StairCollection withAuthoredStair(
-            long stairId,
-            long mapId,
-            @Nullable StairGeometrySpec spec,
-            @Nullable Set<Cell> roomCells
-    ) {
-        if (!canCreateAuthoredStair(stairId, mapId, spec, roomCells)) {
-            return this;
-        }
-        List<Stair> result = new ArrayList<>(stairs);
-        result.add(Stair.authored(stairId, mapId, spec));
-        return new StairCollection(result);
-    }
-
     public boolean canRecomputeStair(
             long stairId,
             @Nullable StairGeometrySpec spec,
@@ -132,7 +108,7 @@ public record StairCollection(List<Stair> stairs) {
     ) {
         return stairId > NO_STAIR_ID
                 && supportedAuthoredSpec(spec)
-                && canRecompute(stairById(stairId))
+                && canRecompute(stair(stairId))
                 && spec.avoidsRoomInteriors(roomCells);
     }
 
@@ -142,29 +118,6 @@ public record StairCollection(List<Stair> stairs) {
             @Nullable Set<Cell> roomCells
     ) {
         return canRecomputeStair(stairId, spec, roomCells);
-    }
-
-    public StairCollection withRecomputedStair(
-            long stairId,
-            @Nullable StairGeometrySpec spec,
-            @Nullable Set<Cell> roomCells
-    ) {
-        if (!canRecomputeStair(stairId, spec, roomCells)) {
-            return this;
-        }
-        List<Stair> result = new ArrayList<>();
-        for (Stair stair : stairs) {
-            result.add(stair.stairId() == stairId ? stair.withRecomputedGeometry(spec) : stair);
-        }
-        return new StairCollection(result);
-    }
-
-    public StairCollection withRecomputedAuthoredStair(
-            long stairId,
-            @Nullable StairGeometrySpec spec,
-            @Nullable Set<Cell> roomCells
-    ) {
-        return withRecomputedStair(stairId, spec, roomCells);
     }
 
     public StairCollection withMovedHandle(long stairId, int handleIndex, int deltaQ, int deltaR, int deltaLevel) {
@@ -186,10 +139,10 @@ public record StairCollection(List<Stair> stairs) {
     }
 
     public @Nullable Cell anchorOf(long stairId) {
-        return anchorOf(stairById(stairId));
+        return anchorOf(stair(stairId));
     }
 
-    private @Nullable Stair stairById(long stairId) {
+    public @Nullable Stair stair(long stairId) {
         if (stairId <= NO_STAIR_ID) {
             return null;
         }
@@ -199,6 +152,33 @@ public record StairCollection(List<Stair> stairs) {
             }
         }
         return null;
+    }
+
+    public StairCollection withExactChange(
+            @Nullable Stair before,
+            @Nullable Stair after
+    ) {
+        Stair identity = after == null ? before : after;
+        if (identity == null) {
+            throw new IllegalArgumentException("stair change requires identity");
+        }
+        if (!Objects.equals(stair(identity.stairId()), before)) {
+            throw new IllegalStateException("stair patch does not match current authored truth");
+        }
+        List<Stair> nextStairs = new ArrayList<>();
+        for (Stair stair : stairs) {
+            if (stair.stairId() == identity.stairId()) {
+                if (after != null) {
+                    nextStairs.add(after);
+                }
+            } else {
+                nextStairs.add(stair);
+            }
+        }
+        if (before == null && after != null) {
+            nextStairs.add(after);
+        }
+        return new StairCollection(nextStairs);
     }
 
     private static boolean supportedAuthoredSpec(@Nullable StairGeometrySpec spec) {

@@ -1,36 +1,46 @@
 package features.dungeon.application.editor;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import features.dungeon.api.DungeonEditorTool;
 import features.dungeon.api.DungeonEditorViewMode;
+import features.dungeon.api.DungeonOverlaySettings;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
+import features.dungeon.api.editor.DungeonEditorViewportInput;
 
 public final class DungeonEditorFeatureRuntimeRoot
-        implements DungeonEditorRuntimeOperations,
-                DungeonEditorMapCatalogOperations,
+        implements DungeonEditorMapCatalogOperations,
                 DungeonEditorControlOperations,
                 DungeonEditorPointerInteractionOperations,
                 DungeonEditorStatePanelDraftOperations,
                 DungeonEditorInlineLabelOperations,
                 DungeonEditorTransitionStairOperations {
-    private final DungeonEditorRuntimeFramePublisher framePublisher;
+    private final DungeonEditorStatePublisher statePublisher;
     private final DungeonEditorRuntimeCommands commands;
     private final DungeonEditorPointerWorkflow pointerWorkflow;
+    private final DungeonEditorRuntimeContext context;
+    private final AtomicBoolean initializationRequested = new AtomicBoolean();
 
     public static DungeonEditorFeatureRuntimeRoot create(DungeonEditorRuntimeDependencies dependencies) {
+        DungeonEditorFeatureRuntimeRoot runtime = createUnstarted(dependencies);
+        runtime.initialize();
+        return runtime;
+    }
+
+    public static DungeonEditorFeatureRuntimeRoot createUnstarted(DungeonEditorRuntimeDependencies dependencies) {
         DungeonEditorRuntimeDependencies safeDependencies =
                 Objects.requireNonNull(dependencies, "dependencies");
-        DungeonEditorRuntimeDependencies.CompatibilityReadbackModels readback =
-                safeDependencies.compatibilityReadbackModels();
         DungeonEditorMainViewInteractionState interactionState = new DungeonEditorMainViewInteractionState();
         DungeonEditorRuntimeContext context =
                 DungeonEditorRuntimeContext.create(safeDependencies, interactionState);
         return new DungeonEditorFeatureRuntimeRoot(
-                readback.controlsModel(),
-                readback.mapSurfaceModel(),
-                readback.stateModel(),
+                safeDependencies.controlsModel(),
+                safeDependencies.mapSurfaceModel(),
+                safeDependencies.stateModel(),
                 interactionState,
                 context,
+                safeDependencies.requestGeneration(),
                 safeDependencies.executionLane());
     }
 
@@ -40,6 +50,7 @@ public final class DungeonEditorFeatureRuntimeRoot
             features.dungeon.api.DungeonEditorStateModel stateModel,
             DungeonEditorMainViewInteractionState interactionState,
             DungeonEditorRuntimeContext context,
+            java.util.function.LongSupplier requestGeneration,
             platform.execution.ExecutionLane executionLane
     ) {
         features.dungeon.api.DungeonEditorControlsModel safeControlsModel =
@@ -51,14 +62,16 @@ public final class DungeonEditorFeatureRuntimeRoot
         DungeonEditorMainViewInteractionState safeInteractionState =
                 Objects.requireNonNull(interactionState, "interactionState");
         DungeonEditorRuntimeContext safeContext = Objects.requireNonNull(context, "context");
+        this.context = safeContext;
         platform.execution.ExecutionLane safeExecutionLane =
                 Objects.requireNonNull(executionLane, "executionLane");
         DungeonEditorRuntimeDraftSession draftSession = new DungeonEditorRuntimeDraftSession();
-        framePublisher = new DungeonEditorRuntimeFramePublisher(
+        statePublisher = new DungeonEditorStatePublisher(
                 safeControlsModel,
                 safeMapSurfaceModel,
                 safeStateModel,
                 draftSession,
+                requestGeneration,
                 safeExecutionLane);
         DungeonEditorStairDraftRuntimeOperation stairDraftOperation =
                 new DungeonEditorStairDraftRuntimeOperation(safeContext);
@@ -71,7 +84,7 @@ public final class DungeonEditorFeatureRuntimeRoot
                 safeStateModel,
                 safeInteractionState,
                 draftSession,
-                framePublisher,
+                statePublisher,
                 stairDraftOperation,
                 selectedHandleOperation,
                 safeExecutionLane);
@@ -86,56 +99,37 @@ public final class DungeonEditorFeatureRuntimeRoot
                         new DungeonEditorTransitionRuntimeOperation(safeContext),
                         new DungeonEditorFeatureMarkerRuntimeOperation(safeContext),
                         selectedHandleOperation),
-                commands);
+                commands,
+                safeExecutionLane);
         commands.bindPointerOperations(pointerWorkflow);
-        commands.apply(safeContext::publishCurrent);
     }
 
-    public DungeonEditorRuntimeOperations operations() {
-        return this;
+    public void initialize() {
+        if (initializationRequested.compareAndSet(false, true)) {
+            commands.apply(context::publishCurrent);
+        }
     }
 
-    @Override
-    public DungeonEditorMapCatalogOperations catalog() {
-        return this;
+    public void setViewport(DungeonEditorViewportInput viewport) {
+        commands.setViewport(viewport);
     }
 
-    @Override
-    public DungeonEditorControlOperations controls() {
-        return this;
+    public features.dungeon.api.editor.DungeonEditorState currentState() {
+        return statePublisher.currentState();
     }
 
-    @Override
-    public DungeonEditorPointerInteractionOperations pointer() {
-        return this;
-    }
-
-    @Override
-    public DungeonEditorStatePanelDraftOperations statePanelDrafts() {
-        return this;
-    }
-
-    @Override
-    public DungeonEditorInlineLabelOperations inlineLabels() {
-        return this;
-    }
-
-    @Override
-    public DungeonEditorTransitionStairOperations transitionStairs() {
-        return this;
-    }
-
-    public DungeonEditorRenderFrame currentFrame() {
-        return framePublisher.currentFrame();
-    }
-
-    public Runnable subscribe(Consumer<DungeonEditorRenderFrame> subscriber) {
-        return framePublisher.subscribe(subscriber);
+    public Runnable subscribe(Consumer<features.dungeon.api.editor.DungeonEditorState> subscriber) {
+        return statePublisher.subscribe(subscriber);
     }
 
     @Override
     public void selectMap(long mapIdValue) {
         commands.selectMap(mapIdValue);
+    }
+
+    @Override
+    public void reloadMap(long mapIdValue) {
+        commands.reloadMap(mapIdValue);
     }
 
     @Override
@@ -159,8 +153,8 @@ public final class DungeonEditorFeatureRuntimeRoot
     }
 
     @Override
-    public void setTool(DungeonEditorTool tool) {
-        commands.setTool(tool);
+    public void setTool(DungeonEditorToolSelection selection) {
+        commands.setTool(selection);
     }
 
     @Override
@@ -169,12 +163,22 @@ public final class DungeonEditorFeatureRuntimeRoot
     }
 
     @Override
+    public void undo() {
+        commands.undo();
+    }
+
+    @Override
+    public void redo() {
+        commands.redo();
+    }
+
+    @Override
     public void shiftProjectionLevel(int levelShift) {
         commands.shiftProjectionLevel(levelShift);
     }
 
     @Override
-    public void setOverlay(DungeonEditorOverlaySettings overlaySettings) {
+    public void setOverlay(DungeonOverlaySettings overlaySettings) {
         commands.setOverlay(overlaySettings);
     }
 
@@ -191,6 +195,10 @@ public final class DungeonEditorFeatureRuntimeRoot
     @Override
     public void clearPointerSession() {
         pointerWorkflow.clearPointerSession();
+    }
+
+    public void rejectCommand(DungeonEditorCommandOutcome.RejectionReason reason) {
+        commands.rejectCommand(reason);
     }
 
     @Override
@@ -266,6 +274,10 @@ public final class DungeonEditorFeatureRuntimeRoot
     @Override
     public void saveTransitionDescription(long transitionId, String description) {
         commands.saveTransitionDescription(transitionId, description);
+    }
+
+    public void saveFeatureMarkerSemantics(long markerId, String label, String description) {
+        commands.saveFeatureMarkerSemantics(markerId, label, description);
     }
 
     @Override
