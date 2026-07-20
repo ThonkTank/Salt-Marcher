@@ -167,8 +167,12 @@ completion restores all Charges regardless of intervening use. The GM may
 manually correct current Charges and reset state. A
 future low-priority monster routine may perform an explicit manual reset.
 
-Encounter detection provisionally uses a radius derived from monster statistics. Loot and Curiosity
-Features do not open automatically from proximity alone.
+A Dungeon Encounter placement primarily uses the existing SaltMarcher Encounter
+capability for monster composition and statistics. The Dungeon adds its voxel
+anchor, local notes, detection context, and any later schedule. Encounter
+detection provisionally uses a radius derived from the referenced monster
+statistics. Loot and Curiosity Features do not open automatically from
+proximity alone.
 
 More interaction may be added later, but comprehensive trap simulation is not a
 requirement.
