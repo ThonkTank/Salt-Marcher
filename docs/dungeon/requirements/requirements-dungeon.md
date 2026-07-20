@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-20
+Last Reviewed: 2026-07-21
 Source of Truth: Confirmed solution-neutral user capabilities and quality needs
 for the Dungeon feature.
 
@@ -34,6 +34,12 @@ floor, traversable volume, and a default ceiling together with 10 feet of clear
 height. The GM may later change height in 5-foot steps, including intentional
 5-foot crawlspaces and taller chambers. Stacked spaces and minor elevation
 shifts remain part of the same Dungeon.
+
+The raster editor presents an active 10-foot 2D story over two 5-foot vertical
+steps and onion-slices geometry above and below. The GM may change slices during
+a gesture, allowing click-and-drag operations to span a 3D Volume. Stacked
+stories share the same Dungeon geometry; intermediate floors, floors generally,
+and walls remain independently editable.
 
 A Volume is bounded, standable geometric interior space. Chambers, corridors,
 stair spaces, and comparable geometric forms share movement semantics. A
