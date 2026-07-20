@@ -50,6 +50,10 @@ route may be derived. Generated Paths materialize ordinary bounded Room volume;
 Area and Path describe construction behavior rather than incompatible runtime
 space types.
 
+Each Path endpoint belongs to one Room navigation area and carries an exact 3D
+anchor on its boundary. SaltMarcher may propose boundary anchors when the GM
+connects semantic areas; the GM may reposition or pin them.
+
 The Dungeon capability includes:
 
 - Dungeon catalog management
