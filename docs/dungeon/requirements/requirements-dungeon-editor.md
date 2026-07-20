@@ -301,9 +301,12 @@ Common categories such as material, condition, light, temperature, moisture,
 smell, sound, and atmosphere accept freely authored values. The GM may add
 custom named attributes and exceptional free-text phrasing.
 
-Descriptive attributes inherit through Dungeon, room-group, Room, and explicitly
-described surface-region scopes. A more specific value overrides the inherited
-value for its scope. The editor exposes both the effective value and where it
+Descriptive attributes inherit through Dungeon, optional Level, optional room
+group, Room, and explicitly described surface-region scopes. A Level is a
+GM-defined set of z-levels in the same continuous 3D Dungeon, not another map.
+Every inheriting object has one unambiguous parent path. A more specific value
+overrides the inherited value for its scope. Additional overlapping collections
+or tags may support filtering and heatmaps but do not inherit attributes. The editor exposes both the effective value and where it
 originates, and lets the GM restore inheritance. Attribute inheritance MUST NOT
 create rules, passability, or effects.
 
