@@ -53,6 +53,12 @@ contiguous wall, floor, or ceiling regions. Only explicitly described surface
 regions require stable content identities and preservation; undescribed voxel
 faces remain plain geometry.
 
+Descriptive attributes use common freely valued categories plus GM-defined
+attributes and exceptional free text. Values inherit from Dungeon to room group
+to Room and finally to explicitly described surface region. More specific
+values override inherited defaults for their scope without creating rules,
+passability, or effects.
+
 Every Dungeon Feature initially has an exact 3D voxel position anchored within
 one Volume. Moving or reshaping the Volume carries its Feature anchors with it.
 If destructive geometry makes reliable mapping impossible, the Feature remains
