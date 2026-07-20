@@ -382,6 +382,14 @@ zusammenfassen. Eine Gruppe unter einer Ebene bleibt auf deren fachlichen
 Bereich beschränkt. Weitere verschachtelte Gruppenstufen sind zunächst nicht
 vorgesehen.
 
+Unterschiedliche Attribute werden gemeinsam geerbt. So können beispielsweise
+»Grundmaterial: Ziegel« und »Oberflächenverkleidung: Holz« gleichzeitig wirken.
+Setzt eine konkretere Ebene denselben Attributschlüssel erneut, ersetzt sie nur
+diesen Wert. Ein Raum kann dadurch die geerbte Holzverkleidung mit roter Tapete
+überschreiben und das Grundmaterial weiterhin erben. Der GM darf einen geerbten
+Wert außerdem ausdrücklich unterdrücken oder leeren. SaltMarcher zeigt den
+wirksamen Wert und seine Herkunft.
+
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
 **Bestätigte Antwort:** Fest gezeichnete Flächen und dynamisch erzeugte Pfade.
