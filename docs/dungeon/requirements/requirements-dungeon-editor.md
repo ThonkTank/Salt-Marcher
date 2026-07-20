@@ -118,6 +118,17 @@ A later full-path comparison may build on these facts but has lower priority
 than the immediate node-and-edge heatmap. Diagnostics inform GM judgment and
 MUST NOT enforce one supposedly correct Dungeon structure or content balance.
 
+The GM can toggle individual heatmap layers for danger, Encounters, Treasure,
+other rewards, Curiosities, puzzles, secrets, and additional content types.
+One active layer uses a clear intensity scale across nodes and edges. A combined
+overview uses distinguishable icons, bars, or a comparable multi-category
+encoding rather than one ambiguous mixed color.
+
+The graph can switch between absolute content amount and concentration relative
+to travel time or route extent. Collapsing graph detail aggregates the
+underlying node and edge values to the visible level without losing category
+distinctions.
+
 The GM may rearrange rooms and room groups in the graph. SaltMarcher translates
 those changes into raster geometry as far as possible.
 
