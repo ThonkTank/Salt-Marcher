@@ -53,6 +53,12 @@ contiguous wall, floor, or ceiling regions. Only explicitly described surface
 regions require stable content identities and preservation; undescribed voxel
 faces remain plain geometry.
 
+Every Dungeon Feature initially has an exact 3D voxel position anchored within
+one Volume. Moving or reshaping the Volume carries its Feature anchors with it.
+If destructive geometry makes reliable mapping impossible, the Feature remains
+preserved without an anchor until reassigned. Encounters are initially
+stationary; optional mobility is a later capability.
+
 The GM may copy a complete Room, door, or comparable authored identity, or
 selected parts of its authored content, and assign the resulting content to
 other suitable geometry without violating one-to-one assignment. Ordinary
