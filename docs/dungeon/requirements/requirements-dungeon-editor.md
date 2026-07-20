@@ -85,6 +85,12 @@ suitable boundary anchors. The GM can move or pin those anchors. Graph
 relationships retain the semantic attachment while raster geometry uses the
 exact anchor.
 
+A Path meets each Room through a separate authored Passage on the Room
+boundary. A Passage may be an open opening, door, hatch, secret door, or a
+comparable form. It owns its description and explicit binary passability fact;
+the Path owns route and travel properties. Path creation may initially create
+suitable open Passages, which the GM can later change into other Passage forms.
+
 Additional raster capabilities include:
 
 - draw and reshape room and area geometry
