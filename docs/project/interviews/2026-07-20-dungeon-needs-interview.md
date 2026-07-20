@@ -254,6 +254,23 @@ Triggerfelder erzeugen ausschließlich Benachrichtigung und gegebenenfalls eine
 Reiseunterbrechung. Sie verändern keine Passierbarkeit und entscheiden weder
 Auslösungserfolg noch Folgen der Falle.
 
+### Welche wiederholbare Aktivierung darf eine Falle besitzen?
+
+**Bestätigte Antwort:** Optionale Charges und Reset Duration.
+
+Eine Falle darf eine Anzahl von Charges besitzen. Diese beschreibt, wie oft sie
+hintereinander tatsächlich ausgelöst werden kann. Zusätzlich darf sie eine
+Reset Duration besitzen, die angibt, wie lange die Wiederherstellung ihrer
+Charges dauert.
+
+In einer deutlich späteren Erweiterung darf auch ein manueller Reset der Falle
+als Handlung innerhalb eines einfachen Monster-Tagesablaufs vorkommen. Diese
+Automatisierung hat sehr geringe Priorität und ändert nichts daran, dass
+SaltMarcher die konkrete Wirkung der Falle nicht adjudiziert.
+
+Noch zu klären ist, wann eine Charge verbraucht wird und ob ein Reset alle oder
+einzelne Charges wiederherstellt.
+
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
 **Bestätigte Antwort:** Fest gezeichnete Flächen und dynamisch erzeugte Pfade.
