@@ -268,8 +268,15 @@ als Handlung innerhalb eines einfachen Monster-Tagesablaufs vorkommen. Diese
 Automatisierung hat sehr geringe Priorität und ändert nichts daran, dass
 SaltMarcher die konkrete Wirkung der Falle nicht adjudiziert.
 
-Noch zu klären ist, wann eine Charge verbraucht wird und ob ein Reset alle oder
-einzelne Charges wiederherstellt.
+Eine Charge wird erst verbraucht, wenn der GM eine tatsächliche Auslösung
+bestätigt, nicht bereits beim Betreten eines Triggerfelds. Die Falle besitzt
+maximale und aktuelle Charges. Bei null Charges kann sie nicht erneut
+automatisch auslösen.
+
+Nach Ablauf der Reset Duration werden alle Charges gemeinsam vollständig
+wiederhergestellt. Der GM wählt pro Falle, ob der Countdown erst bei null
+Charges oder bereits beginnt, sobald die aktuellen Charges unter dem Maximum
+liegen. Aktuelle Charges und Reset dürfen jederzeit manuell korrigiert werden.
 
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
