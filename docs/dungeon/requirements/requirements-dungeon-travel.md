@@ -149,8 +149,11 @@ the prompt to continue or aborts travel. Other Dungeon Features, including
 initial Encounters, likewise begin with exact stationary voxel anchors.
 
 Only Traps and Encounters initially activate automatically through spatial
-proximity. A Trap may define optional trigger fields distinct from its own
-anchor; without one, it remains manually handled by the GM. Encounter detection
+proximity. A Trap may define zero or more arbitrary voxel-set trigger fields
+distinct from its own anchor; fields may lie in several adjacent Volumes and
+follow their Volume geometry. Entering a field may notify and interrupt travel,
+but the field never changes passability or decides the Trap outcome. Without a
+field, the Trap remains manually handled by the GM. Encounter detection
 provisionally uses a radius derived from monster statistics. Loot and Curiosity
 Features do not open automatically from proximity alone.
 
