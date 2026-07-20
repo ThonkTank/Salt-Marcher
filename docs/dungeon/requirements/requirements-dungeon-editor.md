@@ -289,9 +289,15 @@ During travel, relative language such as “in front of you”, “left”, and
 the Dungeon Key, editor, and document export use stable map directions such as
 north or southwest.
 
+The rendered description is an ordered sequence of blocks. Blocks may contain
+GM-authored read-aloud prose, derived geometry facts, inherited or local
+attributes, exits and visible Passages, and additional authored transitions or
+prose. The GM may reorder blocks, suppress individual derived facts, and insert
+authored text between them.
+
 The editor lets the GM choose an entrance or heading to preview the relative
-read-aloud result. Geometry changes recompute geometric relations without
-overwriting GM-authored attributes.
+read-aloud result. Geometry changes recompute only affected derived facts
+without overwriting or reordering GM-authored text and attributes.
 
 Descriptions such as blocked, locked, heavy, cold, or damp affect generated
 wording and placement in the dynamic description. They MUST NOT silently create
