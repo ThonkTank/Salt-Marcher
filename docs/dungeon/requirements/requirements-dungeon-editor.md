@@ -337,6 +337,10 @@ passability or action rules.
   another placement
 - Encounter detection initially uses a radius derived from referenced monster
   statistics; its exact perception behavior remains subject to later validation
+- Dungeon Loot placement uses existing Loot content and ultimately the same
+  shared Loot object used by Encounter and Session Generation, rather than
+  duplicating currencies, items, or magic-item truth
+- the Dungeon placement adds the voxel anchor and local Dungeon context
 - Loot and Curiosity Features do not activate solely because the party is nearby
 - a Volume is geometric truth; a Room is stable GM-authored content associated
   with a Volume
