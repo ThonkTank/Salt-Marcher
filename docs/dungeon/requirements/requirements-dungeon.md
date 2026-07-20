@@ -54,10 +54,13 @@ regions require stable content identities and preservation; undescribed voxel
 faces remain plain geometry.
 
 Descriptive attributes use common freely valued categories plus GM-defined
-attributes and exceptional free text. Values inherit from Dungeon to room group
-to Room and finally to explicitly described surface region. More specific
-values override inherited defaults for their scope without creating rules,
-passability, or effects.
+attributes and exceptional free text. Values inherit from Dungeon through an
+optional Level, an optional room group, Room, and finally an explicitly
+described surface region. A Level is a GM-defined set of z-levels within the
+same continuous 3D Dungeon, not a map. Each inheritance path is unambiguous.
+Overlapping collections or tags may support filters and diagnostics but do not
+inherit. More specific values override inherited defaults without creating
+rules, passability, or effects.
 
 Every Dungeon Feature initially has an exact 3D voxel position anchored within
 one Volume. Moving or reshaping the Volume carries its Feature anchors with it.
