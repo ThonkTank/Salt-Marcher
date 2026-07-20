@@ -169,8 +169,10 @@ future low-priority monster routine may perform an explicit manual reset.
 
 A Dungeon Encounter placement primarily uses the existing SaltMarcher Encounter
 capability for monster composition and statistics. The Dungeon adds its voxel
-anchor, local notes, detection context, and any later schedule. Encounter
-detection provisionally uses a radius derived from the referenced monster
+anchor, local notes, detection context, and any later schedule. One concrete
+Encounter or monster group has at most one current Dungeon placement; repeated
+equivalent groups require copied Encounters. Movement changes the same group's
+anchor. Encounter detection provisionally uses a radius derived from the referenced monster
 statistics. Loot and Curiosity Features do not open automatically from
 proximity alone.
 
