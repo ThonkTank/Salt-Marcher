@@ -50,9 +50,10 @@ Volume, while room groups collect several Rooms or Volumes.
 The GM may copy a complete Room, door, or comparable authored identity, or
 selected parts of its authored content, and assign the resulting content to
 other suitable geometry without violating one-to-one assignment. Ordinary
-copies receive independent identities. Named templates provide reusable
-starting content, but template changes affect existing instances only through a
-deliberate GM action.
+copies receive independent identities. The GM may instead explicitly create a
+reusable template whose assigned instances remain linked and automatically
+receive template changes. A linked instance may be deliberately detached,
+preserving its current content for independent editing.
 
 Spatial authoring has two foundational forms: directly drawn anchored Areas and
 dynamically generated Paths between two or more endpoints or waypoints.
