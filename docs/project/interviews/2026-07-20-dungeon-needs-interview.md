@@ -390,6 +390,20 @@ diesen Wert. Ein Raum kann dadurch die geerbte Holzverkleidung mit roter Tapete
 Wert außerdem ausdrücklich unterdrücken oder leeren. SaltMarcher zeigt den
 wirksamen Wert und seine Herkunft.
 
+### Wie setzt sich die GM-kontrollierte Raumbeschreibung zusammen?
+
+**Bestätigte Antwort:** Aus geordneten authored und dynamischen Blöcken.
+
+Eine Raumbeschreibung kann frei authored Vorlesetext, geometrisch erzeugte
+Fakten, geerbte und lokale Attribute, Ausgänge und sichtbare Durchlässe sowie
+weitere freie Textblöcke enthalten. Der GM darf diese Blöcke umsortieren,
+einzelne automatisch erzeugte Fakten ausblenden und eigene Übergangstexte
+einfügen.
+
+Geometrieänderungen aktualisieren ausschließlich die betroffenen abgeleiteten
+Fakten. GM-authored Text bleibt unverändert. SaltMarcher zeigt eine Vorschau für
+eine vom GM gewählte Blick- beziehungsweise Eintrittsrichtung.
+
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
 **Bestätigte Antwort:** Fest gezeichnete Flächen und dynamisch erzeugte Pfade.
