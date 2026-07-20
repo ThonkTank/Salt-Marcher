@@ -37,15 +37,17 @@ shifts remain part of the same Dungeon.
 
 A Volume is bounded, standable geometric interior space. Chambers, corridors,
 stair spaces, and comparable geometric forms share movement semantics. A
-Volume may contain several navigation areas that expose meaningful internal
-choices, including corridor junctions and branches.
+SaltMarcher silently derives navigation areas from Volume geometry to expose
+meaningful internal choices such as corridor junctions and branches. They have
+no stable identity, name, description, or authored content and may be freely
+recalculated after geometry changes. Manual correction is low priority.
 
 A Room is a stable GM-authored content identity associated with a Volume. It
 owns name, descriptions, Features, references, and comparable semantic work.
 One Room is associated with at most one Volume and one Volume with at most one
 Room at a time; either may temporarily remain unassigned. Moving the Volume
-preserves that Room identity and association. Navigation areas partition a
-Volume, while room groups collect several Rooms or Volumes.
+preserves that Room identity and association. Derived navigation areas
+structure a Volume, while room groups collect several Rooms or Volumes.
 
 A Room may provide descriptive defaults for its associated Volume. The GM may
 assign overriding authored descriptions, attributes, or templates to selected
@@ -139,10 +141,10 @@ position constraints are authored properties of the Path, while its exact voxel
 route may be derived. Generated Paths materialize ordinary bounded Volumes; Area and Path describe
 construction behavior rather than incompatible runtime space types.
 
-Each Path endpoint belongs semantically to one navigation area associated with
-a Room and carries an exact 3D anchor on the attached Volume's boundary.
-SaltMarcher may propose boundary anchors when the GM connects semantic areas;
-the GM may reposition or pin them.
+Each Path endpoint carries an exact 3D anchor on a Volume boundary.
+SaltMarcher may propose boundary anchors when the GM connects Rooms; the GM may
+reposition or pin them. A current navigation area may be derived for routing
+but is not part of endpoint identity.
 
 A Path connects through separate Passages in Volume boundaries. Openings,
 doors, hatches, secret doors, and comparable forms share this Passage role. The
