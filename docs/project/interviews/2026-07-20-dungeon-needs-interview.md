@@ -236,6 +236,22 @@ dieser Grundlage ergänzt werden, ist aber gegenüber der unmittelbaren
 Content-Heatmap nachrangig. SaltMarcher liefert Diagnose und Vergleichsdaten,
 schreibt jedoch keine einzig richtige Balance vor.
 
+### Wie werden mehrere Content-Dimensionen dargestellt?
+
+**Bestätigte Antwort:** Layer plus kombinierte Mehrfachkodierung.
+
+Der GM kann einzelne Heatmap-Layer für Gefahr, Encounter, Treasure, sonstige
+Belohnung, Curiosities, Rätsel, Geheimnisse und weitere Content-Typen
+umschalten. Ein einzelner Layer verwendet eine klare Farbdichte auf Knoten und
+Routen.
+
+Eine kombinierte Übersicht zeigt mehrere Kategorien gleichzeitig durch kleine
+Symbole, Balken oder eine vergleichbar unterscheidbare Mehrfachkodierung statt
+durch eine schwer lesbare Mischfarbe. Der GM kann zwischen absoluter
+Content-Menge und Konzentration relativ zu Reisezeit oder Routenumfang
+wechseln. Beim Reduzieren des Graph-Detailgrads werden die Werte der
+zusammengefassten Räume und Routen passend aggregiert.
+
 Designreferenzen:
 
 - https://thealexandrian.net/wordpress/13085/roleplaying-games/xandering-the-dungeon
