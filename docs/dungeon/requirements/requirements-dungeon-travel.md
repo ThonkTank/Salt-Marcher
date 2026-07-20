@@ -143,8 +143,10 @@ A triggered event opens the relevant GM context and interrupts travel when
 resolution is required. SaltMarcher may open, repeat, or dismiss a prompt, but
 does not decide or log its fictional outcome.
 
-A trap is an authored Dungeon feature whose trigger opens a description. The GM
-resolves it at the table and dismisses the prompt to continue or aborts travel.
+A trap is an authored Dungeon Feature at an exact voxel anchor within a Volume;
+its trigger opens a description. The GM resolves it at the table and dismisses
+the prompt to continue or aborts travel. Other Dungeon Features, including
+initial Encounters, likewise begin with exact stationary voxel anchors.
 More interaction may be added later, but comprehensive trap simulation is not a
 requirement.
 
