@@ -80,7 +80,10 @@ Description blocks and relevant authored objects may be visible, GM-only, or
 hidden until discovered. Secret status is authored truth; discovery by the
 current party is separate runtime state. Undiscovered secrets remain absent
 from player-readable descriptions and exits without changing explicit
-passability.
+passability. Hidden content may optionally define a search method, DC, private
+discovery notes, and revealed text or facts. A passive or GM-entered active
+result may prompt the GM privately, but only GM confirmation reveals the
+content; manual reveal and re-hide remain available.
 
 Every Dungeon Feature initially has an exact 3D voxel position anchored within
 one Volume. Moving or reshaping the Volume carries its Feature anchors with it.
