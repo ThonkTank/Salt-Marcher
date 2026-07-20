@@ -139,10 +139,20 @@ consequences such as changing lights or unlocking a referenced door.
 Diagnostics count Curiosities but MUST NOT assign them a qualitative score.
 
 The graph may show advisory pacing warnings for probable underfilling,
-overfilling, or local content concentration. Such warnings MUST identify their
-selected reference profile and evidence, remain overridable, and never block
-authoring. Reference guidance such as The Alexandrian's approximate
-content-bearing-room density is a profile input, not a universal quality law.
+overfilling, or local content concentration. Warnings remain explainable,
+overridable, and non-blocking.
+
+Danger and Loot diagnostics use the existing DMG-guided budget models already
+owned by SaltMarcher. The GM can define intended character level and planned
+session count for a complete Dungeon, one level, or one area. Authored Encounter,
+Trap, and Loot Features are compared with the resulting XP, gold, and magic-item
+budgets.
+
+Curiosity diagnostics use count and local density only. They MUST NOT infer
+quality or importance from Curiosity prose. General content-density references
+such as The Alexandrian's approximate content-bearing-room guidance may add
+separate pacing hints, but MUST NOT replace the rule-based danger and Loot
+budgets.
 
 The GM may rearrange rooms and room groups in the graph. SaltMarcher translates
 those changes into raster geometry as far as possible.
