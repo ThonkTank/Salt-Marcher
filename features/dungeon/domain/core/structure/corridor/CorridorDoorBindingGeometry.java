@@ -1,15 +1,15 @@
 package features.dungeon.domain.core.structure.corridor;
 
 import features.dungeon.domain.core.component.CorridorDoorBinding;
+import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
+import features.dungeon.domain.core.geometry.Edge;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
-import features.dungeon.domain.core.geometry.Cell;
-import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
-import features.dungeon.domain.core.geometry.Edge;
 
 public final class CorridorDoorBindingGeometry {
 
@@ -24,35 +24,20 @@ public final class CorridorDoorBindingGeometry {
         return result;
     }
 
-    public static Cell absoluteRoomCell(
-            CorridorDoorBinding binding,
-            @Nullable Cell clusterCenter
-    ) {
-        Cell relativeCell = binding.relativeCell();
-        Cell center = clusterCenter == null ? new Cell(0, 0, relativeCell.level()) : clusterCenter;
-        return new Cell(
-                center.q() + relativeCell.q(),
-                center.r() + relativeCell.r(),
-                center.level());
+    public static Cell roomCell(CorridorDoorBinding binding) {
+        return binding.roomCell();
     }
 
-    public static Cell absoluteCorridorCell(
-            CorridorDoorBinding binding,
-            @Nullable Cell clusterCenter
-    ) {
-        return binding.direction().neighborOf(absoluteRoomCell(binding, clusterCenter));
+    public static Cell corridorCell(CorridorDoorBinding binding) {
+        return binding.direction().neighborOf(binding.roomCell());
     }
 
-    public static Edge absoluteDoorEdge(
-            CorridorDoorBinding binding,
-            @Nullable Cell clusterCenter
-    ) {
-        return Edge.sideOf(absoluteRoomCell(binding, clusterCenter), binding.direction());
+    public static Edge doorEdge(CorridorDoorBinding binding) {
+        return Edge.sideOf(binding.roomCell(), binding.direction());
     }
 
     public static boolean touchesDoorBindingKeys(
             Iterable<Corridor> corridors,
-            @Nullable Cell clusterCenter,
             long clusterId,
             int level,
             Set<DungeonBoundaryKey> keys
@@ -60,18 +45,12 @@ public final class CorridorDoorBindingGeometry {
         if (keys == null || keys.isEmpty()) {
             return false;
         }
-        Set<DungeonBoundaryKey> bindingKeys = doorBindingKeys(corridors, clusterCenter, clusterId, level);
-        for (DungeonBoundaryKey key : keys) {
-            if (bindingKeys.contains(key)) {
-                return true;
-            }
-        }
-        return false;
+        Set<DungeonBoundaryKey> bindingKeys = doorBindingKeys(corridors, clusterId, level);
+        return keys.stream().anyMatch(bindingKeys::contains);
     }
 
     public static boolean touchesDoorBindingPath(
             Iterable<Corridor> corridors,
-            @Nullable Cell clusterCenter,
             long clusterId,
             int level,
             List<Edge> path
@@ -79,52 +58,26 @@ public final class CorridorDoorBindingGeometry {
         if (path == null || path.isEmpty()) {
             return false;
         }
-        Set<DungeonBoundaryKey> bindingKeys = doorBindingKeys(corridors, clusterCenter, clusterId, level);
-        for (Edge edge : path) {
-            if (bindingKeys.contains(DungeonBoundaryKey.from(edge))) {
-                return true;
-            }
-        }
-        return false;
+        Set<DungeonBoundaryKey> bindingKeys = doorBindingKeys(corridors, clusterId, level);
+        return path.stream().map(DungeonBoundaryKey::from).anyMatch(bindingKeys::contains);
     }
 
     private static Set<DungeonBoundaryKey> doorBindingKeys(
             Iterable<Corridor> corridors,
-            @Nullable Cell clusterCenter,
             long clusterId,
             int level
     ) {
         Set<DungeonBoundaryKey> result = new LinkedHashSet<>();
-        if (invalidBindingLookup(corridors, clusterCenter, clusterId)) {
-            return result;
+        if (corridors == null || clusterId <= 0L) {
+            return Set.of();
         }
         for (Corridor corridor : corridors) {
             for (CorridorDoorBinding binding : corridor.bindings().doorBindings()) {
-                if (binding.clusterId() == clusterId && binding.relativeCell().level() == level) {
-                    result.add(DungeonBoundaryKey.from(absoluteDoorEdgeAtBindingLevel(binding, clusterCenter)));
+                if (binding.clusterId() == clusterId && binding.roomCell().level() == level) {
+                    result.add(DungeonBoundaryKey.from(doorEdge(binding)));
                 }
             }
         }
         return Set.copyOf(result);
-    }
-
-    private static Edge absoluteDoorEdgeAtBindingLevel(
-            CorridorDoorBinding binding,
-            Cell clusterCenter
-    ) {
-        Cell relativeCell = binding.relativeCell();
-        Cell roomCell = new Cell(
-                clusterCenter.q() + relativeCell.q(),
-                clusterCenter.r() + relativeCell.r(),
-                relativeCell.level());
-        return Edge.sideOf(roomCell, binding.direction());
-    }
-
-    private static boolean invalidBindingLookup(
-            Iterable<Corridor> corridors,
-            @Nullable Cell clusterCenter,
-            long clusterId
-    ) {
-        return corridors == null || clusterCenter == null || clusterId <= 0L;
     }
 }

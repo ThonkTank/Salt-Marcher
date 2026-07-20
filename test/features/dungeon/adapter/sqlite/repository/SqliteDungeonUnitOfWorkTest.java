@@ -198,7 +198,7 @@ final class SqliteDungeonUnitOfWorkTest {
 
     private static Facts facts(String prefix, boolean expanded) {
         Cell center = new Cell(1, 1, 0);
-        RoomCluster cluster = RoomCluster.authored(10L, MAP_ID, prefix + " cluster", center, Map.of());
+        RoomCluster cluster = RoomCluster.authored(10L, MAP_ID, prefix + " cluster", List.of());
         Set<Cell> cells = expanded ? Set.of(center, new Cell(2, 1, 0)) : Set.of(center);
         RoomRegion room = new RoomRegion(
                 20L, MAP_ID, 10L, prefix + " room", cells, new DungeonRoomNarration(prefix, List.of()));
@@ -223,7 +223,7 @@ final class SqliteDungeonUnitOfWorkTest {
     }
 
     private static CorridorWaypoint waypoint(int q) {
-        return new CorridorWaypoint(10L, new Cell(q, 0, 0), 0);
+        return new CorridorWaypoint(10L, new Cell(q + 1, 1, 0));
     }
 
     private static long scalar(Path path, String sql) throws Exception {

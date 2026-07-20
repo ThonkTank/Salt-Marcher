@@ -7,21 +7,21 @@ public record PointerInteractionTargets(
         double sceneY,
         boolean primaryButtonDown,
         boolean secondaryButtonDown,
-        DungeonEditorRuntimePointerTarget primaryTarget,
-        DungeonEditorRuntimePointerTarget boundaryPreferredTarget,
-        DungeonEditorRuntimePointerTarget wallBoundaryHoverTarget
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target primaryTarget,
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target boundaryPreferredTarget,
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target wallBoundaryHoverTarget
 ) {
     private static final double EMPTY_SEGMENT_LENGTH = 0.0;
 
     public PointerInteractionTargets {
         sceneX = finiteOrZero(sceneX);
         sceneY = finiteOrZero(sceneY);
-        primaryTarget = primaryTarget == null ? DungeonEditorRuntimePointerTarget.empty() : primaryTarget;
+        primaryTarget = primaryTarget == null ? features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty() : primaryTarget;
         boundaryPreferredTarget = boundaryPreferredTarget == null
                 ? primaryTarget
                 : boundaryPreferredTarget;
         wallBoundaryHoverTarget = wallBoundaryHoverTarget == null
-                ? DungeonEditorRuntimePointerTarget.empty()
+                ? features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty()
                 : wallBoundaryHoverTarget;
     }
 
@@ -31,20 +31,20 @@ public record PointerInteractionTargets(
                 0.0,
                 false,
                 false,
-                DungeonEditorRuntimePointerTarget.empty(),
-                DungeonEditorRuntimePointerTarget.empty(),
-                DungeonEditorRuntimePointerTarget.empty());
+                features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty(),
+                features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty(),
+                features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty());
     }
 
-    public static PointerInteractionTargets fromRuntimeTargets(
+    public static PointerInteractionTargets fromTargets(
             double sceneX,
             double sceneY,
             boolean primaryButtonDown,
             boolean secondaryButtonDown,
-            List<DungeonEditorRuntimePointerTarget> pointerTargets,
+            List<features.dungeon.api.editor.DungeonEditorPointerInput.Target> pointerTargets,
             int projectionLevel
     ) {
-        List<DungeonEditorRuntimePointerTarget> safeTargets =
+        List<features.dungeon.api.editor.DungeonEditorPointerInput.Target> safeTargets =
                 pointerTargets == null ? List.of() : List.copyOf(pointerTargets);
         return new PointerInteractionTargets(
                 sceneX,
@@ -56,20 +56,20 @@ public record PointerInteractionTargets(
                 nearestWallBoundaryHoverTarget(sceneX, sceneY, projectionLevel));
     }
 
-    public DungeonEditorRuntimePointerTarget primaryTarget(boolean boundaryPreferred) {
+    public features.dungeon.api.editor.DungeonEditorPointerInput.Target primaryTarget(boolean boundaryPreferred) {
         return boundaryPreferred ? boundaryPreferredTarget : primaryTarget;
     }
 
-    private static DungeonEditorRuntimePointerTarget choosePrimary(
-            List<DungeonEditorRuntimePointerTarget> pointerTargets,
+    private static features.dungeon.api.editor.DungeonEditorPointerInput.Target choosePrimary(
+            List<features.dungeon.api.editor.DungeonEditorPointerInput.Target> pointerTargets,
             double sceneX,
             double sceneY,
             boolean preferBoundary
     ) {
-        DungeonEditorRuntimePointerTarget bestTarget = DungeonEditorRuntimePointerTarget.empty();
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target bestTarget = features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty();
         int bestPriority = Integer.MAX_VALUE;
         double bestBoundaryDistance = Double.POSITIVE_INFINITY;
-        for (DungeonEditorRuntimePointerTarget candidate : pointerTargets) {
+        for (features.dungeon.api.editor.DungeonEditorPointerInput.Target candidate : pointerTargets) {
             int candidatePriority = priority(candidate, preferBoundary);
             double candidateBoundaryDistance = boundaryDistance(candidate, sceneX, sceneY);
             if (betterCandidate(
@@ -87,14 +87,14 @@ public record PointerInteractionTargets(
         return bestTarget;
     }
 
-    private static int priority(DungeonEditorRuntimePointerTarget target, boolean preferBoundary) {
-        DungeonEditorRuntimePointerTarget safeTarget = target == null
-                ? DungeonEditorRuntimePointerTarget.empty()
+    private static int priority(features.dungeon.api.editor.DungeonEditorPointerInput.Target target, boolean preferBoundary) {
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target safeTarget = target == null
+                ? features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty()
                 : target;
         return preferBoundary ? boundaryPreferredPriority(safeTarget) : normalPriority(safeTarget);
     }
 
-    private static int boundaryPreferredPriority(DungeonEditorRuntimePointerTarget target) {
+    private static int boundaryPreferredPriority(features.dungeon.api.editor.DungeonEditorPointerInput.Target target) {
         if (target.isBoundaryTarget()) {
             return 0;
         }
@@ -108,7 +108,7 @@ public record PointerInteractionTargets(
         return normalPriority + 1;
     }
 
-    private static int normalPriority(DungeonEditorRuntimePointerTarget target) {
+    private static int normalPriority(features.dungeon.api.editor.DungeonEditorPointerInput.Target target) {
         if (target.isLabelTarget()) {
             return labelPriority(target);
         }
@@ -122,18 +122,18 @@ public record PointerInteractionTargets(
         };
     }
 
-    private static int labelPriority(DungeonEditorRuntimePointerTarget target) {
+    private static int labelPriority(features.dungeon.api.editor.DungeonEditorPointerInput.Target target) {
         if (target.isClusterLabelTarget()) {
             return 1;
         }
         return target.isRoomLabelTarget() ? 2 : 6;
     }
 
-    private static int markerPriority(DungeonEditorRuntimePointerTarget target) {
+    private static int markerPriority(features.dungeon.api.editor.DungeonEditorPointerInput.Target target) {
         return target.hasTransitionElement() ? -1 : 2;
     }
 
-    private static int cellPriority(DungeonEditorRuntimePointerTarget target) {
+    private static int cellPriority(features.dungeon.api.editor.DungeonEditorPointerInput.Target target) {
         if (target.hasTransitionElement()) {
             return 0;
         }
@@ -147,8 +147,8 @@ public record PointerInteractionTargets(
     }
 
     private static boolean betterCandidate(
-            DungeonEditorRuntimePointerTarget candidate,
-            DungeonEditorRuntimePointerTarget bestTarget,
+            features.dungeon.api.editor.DungeonEditorPointerInput.Target candidate,
+            features.dungeon.api.editor.DungeonEditorPointerInput.Target bestTarget,
             int candidatePriority,
             int bestPriority,
             double candidateBoundaryDistance,
@@ -167,15 +167,15 @@ public record PointerInteractionTargets(
         return boundaryTieBreakKey(candidate).compareTo(boundaryTieBreakKey(bestTarget)) < 0;
     }
 
-    private static boolean boundaryCandidate(DungeonEditorRuntimePointerTarget target) {
+    private static boolean boundaryCandidate(features.dungeon.api.editor.DungeonEditorPointerInput.Target target) {
         return target != null && target.isBoundaryTarget();
     }
 
-    private static double boundaryDistance(DungeonEditorRuntimePointerTarget target, double sceneX, double sceneY) {
+    private static double boundaryDistance(features.dungeon.api.editor.DungeonEditorPointerInput.Target target, double sceneX, double sceneY) {
         if (!boundaryCandidate(target)) {
             return Double.POSITIVE_INFINITY;
         }
-        DungeonEditorRuntimePointerTarget.BoundaryTarget boundary = target.boundary();
+        features.dungeon.api.editor.DungeonEditorPointerInput.BoundaryTarget boundary = target.boundary();
         return distanceToSegment(
                 sceneX,
                 sceneY,
@@ -204,11 +204,11 @@ public record PointerInteractionTargets(
         return Math.hypot(x - (startX + clamped * dx), y - (startY + clamped * dy));
     }
 
-    private static String boundaryTieBreakKey(DungeonEditorRuntimePointerTarget target) {
+    private static String boundaryTieBreakKey(features.dungeon.api.editor.DungeonEditorPointerInput.Target target) {
         if (!boundaryCandidate(target)) {
             return "";
         }
-        DungeonEditorRuntimePointerTarget.BoundaryTarget boundary = target.boundary();
+        features.dungeon.api.editor.DungeonEditorPointerInput.BoundaryTarget boundary = target.boundary();
         return boundary.boundaryKind().name()
                 + ":"
                 + boundary.ownerId()
@@ -220,7 +220,7 @@ public record PointerInteractionTargets(
                 + boundary.key();
     }
 
-    private static DungeonEditorRuntimePointerTarget nearestWallBoundaryHoverTarget(
+    private static features.dungeon.api.editor.DungeonEditorPointerInput.Target nearestWallBoundaryHoverTarget(
             double sceneX,
             double sceneY,
             int projectionLevel
@@ -247,7 +247,7 @@ public record PointerInteractionTargets(
         return syntheticWallBoundaryTarget(cellQ + 1, cellR, projectionLevel, cellQ + 1, cellR + 1, projectionLevel);
     }
 
-    private static DungeonEditorRuntimePointerTarget syntheticWallBoundaryTarget(
+    private static features.dungeon.api.editor.DungeonEditorPointerInput.Target syntheticWallBoundaryTarget(
             double startQ,
             double startR,
             int startLevel,
@@ -257,11 +257,11 @@ public record PointerInteractionTargets(
     ) {
         String key = "hover-boundary:WALL:" + startQ + ":" + startR + ":" + startLevel
                 + ":" + endQ + ":" + endR + ":" + endLevel;
-        return DungeonEditorRuntimePointerTarget.boundary(new DungeonEditorRuntimePointerTarget.BoundaryTarget(
-                DungeonEditorRuntimePointerTarget.BoundaryKind.WALL,
+        return features.dungeon.api.editor.DungeonEditorPointerInput.Target.boundary(new features.dungeon.api.editor.DungeonEditorPointerInput.BoundaryTarget(
+                features.dungeon.api.editor.DungeonEditorPointerInput.BoundaryKind.WALL,
                 key,
                 0L,
-                DungeonEditorRuntimePointerTarget.TopologyKind.EMPTY,
+                features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.EMPTY,
                 0L,
                 startQ,
                 startR,

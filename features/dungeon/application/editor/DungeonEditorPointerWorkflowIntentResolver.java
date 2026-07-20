@@ -43,10 +43,10 @@ final class DungeonEditorPointerWorkflowIntentResolver {
 
     private static PointerTargetChoice hoverTargetChoice(
             PointerWorkflowIntent intent,
-            DungeonEditorRuntimePointerTarget primaryTarget
+            features.dungeon.api.editor.DungeonEditorPointerInput.Target primaryTarget
     ) {
         DungeonEditorToolAction tool = intent.toolAction();
-        DungeonEditorRuntimePointerTarget safeTarget = safeTarget(primaryTarget);
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target safeTarget = safeTarget(primaryTarget);
         return switch (tool.family()) {
             case SELECT -> selectableHoverTarget(safeTarget)
                     ? PointerTargetChoice.primary()
@@ -98,23 +98,23 @@ final class DungeonEditorPointerWorkflowIntentResolver {
         return DungeonEditorToolAction.selected(safeSelection);
     }
 
-    private static PointerTargetChoice wallSingleHoverTarget(DungeonEditorRuntimePointerTarget target) {
+    private static PointerTargetChoice wallSingleHoverTarget(features.dungeon.api.editor.DungeonEditorPointerInput.Target target) {
         return target.isBoundaryTarget() ? PointerTargetChoice.primary() : PointerTargetChoice.wallBoundaryHover();
     }
 
-    private static PointerTargetChoice boundaryHoverTarget(DungeonEditorRuntimePointerTarget target) {
+    private static PointerTargetChoice boundaryHoverTarget(features.dungeon.api.editor.DungeonEditorPointerInput.Target target) {
         return target.isBoundaryTarget() ? PointerTargetChoice.primary() : PointerTargetChoice.empty();
     }
 
-    private static PointerTargetChoice corridorHoverTarget(DungeonEditorRuntimePointerTarget target) {
+    private static PointerTargetChoice corridorHoverTarget(features.dungeon.api.editor.DungeonEditorPointerInput.Target target) {
         if (target.isWallOrDoorBoundaryTarget()) {
             return PointerTargetChoice.primary();
         }
         return target.isCorridorCellTarget() ? PointerTargetChoice.primary() : PointerTargetChoice.empty();
     }
 
-    private static boolean selectableHoverTarget(DungeonEditorRuntimePointerTarget target) {
-        DungeonEditorRuntimePointerTarget safeTarget = safeTarget(target);
+    private static boolean selectableHoverTarget(features.dungeon.api.editor.DungeonEditorPointerInput.Target target) {
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target safeTarget = safeTarget(target);
         if (safeTarget.hasSyntheticHover() || safeTarget.isRoomLabelTarget()) {
             return false;
         }
@@ -126,7 +126,7 @@ final class DungeonEditorPointerWorkflowIntentResolver {
                 || safeTarget.isDoorBoundaryTarget();
     }
 
-    private static DungeonEditorRuntimePointerTarget safeTarget(DungeonEditorRuntimePointerTarget target) {
-        return target == null ? DungeonEditorRuntimePointerTarget.empty() : target;
+    private static features.dungeon.api.editor.DungeonEditorPointerInput.Target safeTarget(features.dungeon.api.editor.DungeonEditorPointerInput.Target target) {
+        return target == null ? features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty() : target;
     }
 }

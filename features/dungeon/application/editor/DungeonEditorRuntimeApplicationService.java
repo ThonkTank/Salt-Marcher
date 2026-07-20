@@ -41,14 +41,22 @@ import features.dungeon.application.editor.helper.DungeonEditorSnapshotStateProj
 public final class DungeonEditorRuntimeApplicationService {
 
     private final DungeonAuthoredApplicationService authoredService;
-    private final DungeonEditorPublishedState editorPublishedState;
+    private final DungeonEditorProjectionState projectionState;
 
-    public DungeonEditorRuntimeApplicationService(
+    public DungeonEditorRuntimeApplicationService(DungeonAuthoredApplicationService authoredService) {
+        this(authoredService, new DungeonEditorProjectionState());
+    }
+
+    DungeonEditorRuntimeApplicationService(
             DungeonAuthoredApplicationService authoredService,
-            DungeonEditorPublishedState editorPublishedState
+            DungeonEditorProjectionState projectionState
     ) {
         this.authoredService = Objects.requireNonNull(authoredService, "authoredService");
-        this.editorPublishedState = Objects.requireNonNull(editorPublishedState, "editorPublishedState");
+        this.projectionState = Objects.requireNonNull(projectionState, "projectionState");
+    }
+
+    DungeonEditorProjectionState projectionState() {
+        return projectionState;
     }
 
     public <T> T openSession(DungeonEditorDungeonState dungeonState, RuntimeSessionFactory<T> factory) {
@@ -56,7 +64,7 @@ public final class DungeonEditorRuntimeApplicationService {
         RuntimeSession session = new RuntimeSession(
                 authoredService,
                 authoredService.openSession(Objects.requireNonNull(dungeonState, "dungeonState")),
-                editorPublishedState,
+                projectionState,
                 dungeonState);
         return safeFactory.create(session);
     }
@@ -69,7 +77,7 @@ public final class DungeonEditorRuntimeApplicationService {
     public static final class RuntimeSession {
         private final DungeonAuthoredApplicationService authoredService;
         private final DungeonAuthoredApplicationService.Session authored;
-        private final DungeonEditorPublishedState editorPublishedState;
+        private final DungeonEditorProjectionState projectionState;
         private final DungeonEditorDungeonState dungeonState;
         private final DungeonEditorSessionWorkflow workflow = new DungeonEditorSessionWorkflow();
         private final SnapshotBuilder snapshotBuilder;
@@ -79,12 +87,12 @@ public final class DungeonEditorRuntimeApplicationService {
         private RuntimeSession(
                 DungeonAuthoredApplicationService authoredService,
                 DungeonAuthoredApplicationService.Session authored,
-                DungeonEditorPublishedState editorPublishedState,
+                DungeonEditorProjectionState projectionState,
                 DungeonEditorDungeonState dungeonState
         ) {
             this.authoredService = Objects.requireNonNull(authoredService, "authoredService");
             this.authored = Objects.requireNonNull(authored, "authored");
-            this.editorPublishedState = Objects.requireNonNull(editorPublishedState, "editorPublishedState");
+            this.projectionState = Objects.requireNonNull(projectionState, "projectionState");
             this.dungeonState = Objects.requireNonNull(dungeonState, "dungeonState");
             snapshotBuilder = new SnapshotBuilder(this.authored, this.dungeonState);
             previewLifecycle = new PreviewLifecycle();
@@ -147,7 +155,7 @@ public final class DungeonEditorRuntimeApplicationService {
             refreshAndAcceptAuthoredSurface();
             DungeonEditorSessionSnapshot.SnapshotData snapshot =
                     workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session()));
-            editorPublishedState.publishEditorSnapshot(snapshot);
+            projectionState.publishSnapshot(snapshot);
             return snapshot;
         }
 
@@ -181,7 +189,7 @@ public final class DungeonEditorRuntimeApplicationService {
             acceptedViewport = acceptedViewport(mapId, safeViewport);
             DungeonEditorSessionSnapshot.SnapshotData snapshot =
                     workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session()));
-            editorPublishedState.publishEditorSnapshot(snapshot);
+            projectionState.publishSnapshot(snapshot);
             return snapshot;
         }
 
@@ -329,13 +337,13 @@ public final class DungeonEditorRuntimeApplicationService {
             return authoredService.canRedo(workflow.session().selectedMapId());
         }
 
-        public DungeonEditorSessionSnapshot.SessionFrameData setViewMode(
+        public DungeonEditorSessionSnapshot.ViewData setViewMode(
                 DungeonEditorViewMode viewMode
         ) {
             workflow.setViewMode(viewMode);
-            DungeonEditorSessionSnapshot.SessionFrameData frameData =
-                    DungeonEditorSessionSnapshot.sessionFrameData(workflow.session());
-            editorPublishedState.publishEditorSessionFrame(frameData);
+            DungeonEditorSessionSnapshot.ViewData frameData =
+                    DungeonEditorSessionSnapshot.viewData(workflow.session());
+            projectionState.publishView(frameData, false);
             return frameData;
         }
 
@@ -345,7 +353,7 @@ public final class DungeonEditorRuntimeApplicationService {
             workflow.setTool(selection);
             DungeonEditorSessionSnapshot.ControlsData controls =
                     DungeonEditorSessionSnapshot.controlsData(workflow.session());
-            editorPublishedState.publishEditorControls(controls);
+            projectionState.publishControls(controls);
             return controls;
         }
 
@@ -355,7 +363,7 @@ public final class DungeonEditorRuntimeApplicationService {
             workflow.setTool(selection);
             DungeonEditorSessionSnapshot.SnapshotData snapshot =
                     workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session()));
-            editorPublishedState.publishEditorSnapshot(snapshot);
+            projectionState.publishSnapshot(snapshot);
             return snapshot;
         }
 
@@ -364,13 +372,13 @@ public final class DungeonEditorRuntimeApplicationService {
             return refreshAuthoredSnapshot();
         }
 
-        public DungeonEditorSessionSnapshot.SessionFrameData setOverlay(
+        public DungeonEditorSessionSnapshot.ViewData setOverlay(
                 DungeonOverlaySettings overlaySettings
         ) {
             workflow.setOverlay(overlaySettings);
-            DungeonEditorSessionSnapshot.SessionFrameData frameData =
-                    DungeonEditorSessionSnapshot.sessionFrameData(workflow.session());
-            editorPublishedState.publishEditorSessionFramePreservingSurface(frameData);
+            DungeonEditorSessionSnapshot.ViewData frameData =
+                    DungeonEditorSessionSnapshot.viewData(workflow.session());
+            projectionState.publishView(frameData, true);
             return frameData;
         }
 
@@ -648,13 +656,13 @@ public final class DungeonEditorRuntimeApplicationService {
             if (outcome.controlsOnly()) {
                 DungeonEditorSessionSnapshot.ControlsData controls =
                         DungeonEditorSessionSnapshot.controlsData(workflow.session());
-                editorPublishedState.publishEditorControls(controls);
+                projectionState.publishControls(controls);
                 return PublicationResult.controls(controls);
             }
             DungeonEditorSessionSnapshot.SnapshotData snapshot =
                     workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session()));
             acceptPublishedMutationRevision();
-            editorPublishedState.publishEditorSnapshot(snapshot);
+            projectionState.publishSnapshot(snapshot);
             return PublicationResult.full(snapshot);
         }
 
@@ -663,7 +671,7 @@ public final class DungeonEditorRuntimeApplicationService {
             DungeonEditorSessionSnapshot.SnapshotData snapshot =
                     workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session()));
             acceptPublishedMutationRevision();
-            editorPublishedState.publishEditorSnapshot(snapshot);
+            projectionState.publishSnapshot(snapshot);
             return snapshot;
         }
 

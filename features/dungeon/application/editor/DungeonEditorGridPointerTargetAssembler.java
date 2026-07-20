@@ -2,20 +2,18 @@ package features.dungeon.application.editor;
 
 import java.util.Map;
 import features.dungeon.api.DungeonEditorMapSnapshot;
-import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
-import features.dungeon.api.DungeonEditorStateSnapshot;
 
 final class DungeonEditorGridPointerTargetAssembler {
     private DungeonEditorGridPointerTargetAssembler() {
     }
 
     static void addTargets(
-            Map<String, DungeonEditorRuntimePointerTarget> targets,
+            Map<String, features.dungeon.api.editor.DungeonEditorPointerInput.Target> targets,
             DungeonEditorMapSnapshot map,
-            DungeonEditorStateSnapshot.Selection selection,
+            features.dungeon.api.editor.DungeonEditorSelection selection,
             DungeonEditorPreview preview,
-            DungeonEditorMapSurfaceSnapshot snapshot
+            DungeonEditorSurfaceProjection snapshot
     ) {
         DungeonEditorCellFeaturePointerTargets.addTargets(targets, map, snapshot);
         DungeonEditorBoundaryPointerTargets.addTargets(targets, map, snapshot);

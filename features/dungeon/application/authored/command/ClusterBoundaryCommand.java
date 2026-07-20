@@ -4,7 +4,7 @@ import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import features.dungeon.application.authored.port.DungeonIdentityRange;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.structure.DungeonMap;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 import java.util.List;
 
 /** Plans one exact room-cluster boundary edit patch. */

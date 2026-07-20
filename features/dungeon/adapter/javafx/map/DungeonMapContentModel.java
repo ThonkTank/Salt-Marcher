@@ -1627,19 +1627,19 @@ public final class DungeonMapContentModel {
 
         public DungeonEditorPointerInput.Target toApiTarget() {
             return new DungeonEditorPointerInput.Target(
-                    targetKind.name(),
-                    labelKind.name(),
-                    elementKind.name(),
+                    apiTargetKind(targetKind),
+                    apiLabelKind(labelKind),
+                    apiElementKind(elementKind),
                     ownerId,
                     clusterId,
-                    topologyKind.name(),
+                    apiTopologyKind(topologyKind),
                     topologyId,
                     handleRef,
                     new DungeonEditorPointerInput.BoundaryTarget(
-                            boundaryRef.boundaryKind().name(),
+                            apiBoundaryKind(boundaryRef.boundaryKind()),
                             boundaryRef.key(),
                             boundaryRef.ownerId(),
-                            boundaryRef.topologyKind().name(),
+                            apiTopologyKind(boundaryRef.topologyKind()),
                             boundaryRef.topologyId(),
                             boundaryRef.startQ(),
                             boundaryRef.startR(),
@@ -1647,11 +1647,83 @@ public final class DungeonMapContentModel {
                             boundaryRef.endQ(),
                             boundaryRef.endR(),
                             boundaryRef.endLevel()),
-                    syntheticHoverKind.name(),
+                    apiSyntheticHoverKind(syntheticHoverKind),
                     new DungeonEditorPointerInput.CellTarget(
                             cellRef.exact(), cellRef.q(), cellRef.r(), cellRef.level()),
                     new DungeonEditorPointerInput.VertexTarget(
                             vertexRef.exact(), vertexRef.q(), vertexRef.r(), vertexRef.level()));
+        }
+
+        private static DungeonEditorPointerInput.TargetKind apiTargetKind(PreparedTargetKind kind) {
+            return switch (kind) {
+                case EMPTY, PARTY_TOKEN -> DungeonEditorPointerInput.TargetKind.EMPTY;
+                case CELL -> DungeonEditorPointerInput.TargetKind.CELL;
+                case LABEL -> DungeonEditorPointerInput.TargetKind.LABEL;
+                case MARKER -> DungeonEditorPointerInput.TargetKind.MARKER;
+                case GRAPH_NODE -> DungeonEditorPointerInput.TargetKind.GRAPH_NODE;
+                case HANDLE -> DungeonEditorPointerInput.TargetKind.HANDLE;
+                case BOUNDARY -> DungeonEditorPointerInput.TargetKind.BOUNDARY;
+                case VERTEX -> DungeonEditorPointerInput.TargetKind.VERTEX;
+            };
+        }
+
+        private static DungeonEditorPointerInput.LabelKind apiLabelKind(PreparedLabelKind kind) {
+            return switch (kind) {
+                case EMPTY -> DungeonEditorPointerInput.LabelKind.EMPTY;
+                case ROOM_LABEL -> DungeonEditorPointerInput.LabelKind.ROOM_LABEL;
+                case CLUSTER_LABEL -> DungeonEditorPointerInput.LabelKind.CLUSTER_LABEL;
+                case FEATURE_LABEL -> DungeonEditorPointerInput.LabelKind.FEATURE_LABEL;
+            };
+        }
+
+        private static DungeonEditorPointerInput.ElementKind apiElementKind(PreparedElementKind kind) {
+            return switch (kind) {
+                case EMPTY -> DungeonEditorPointerInput.ElementKind.EMPTY;
+                case ROOM -> DungeonEditorPointerInput.ElementKind.ROOM;
+                case CORRIDOR -> DungeonEditorPointerInput.ElementKind.CORRIDOR;
+                case CORRIDOR_ANCHOR -> DungeonEditorPointerInput.ElementKind.CORRIDOR_ANCHOR;
+                case STAIR -> DungeonEditorPointerInput.ElementKind.STAIR;
+                case TRANSITION -> DungeonEditorPointerInput.ElementKind.TRANSITION;
+                case FEATURE_MARKER -> DungeonEditorPointerInput.ElementKind.FEATURE_MARKER;
+                case FEATURE_OBJECT -> DungeonEditorPointerInput.ElementKind.FEATURE_OBJECT;
+                case FEATURE_ENCOUNTER -> DungeonEditorPointerInput.ElementKind.FEATURE_ENCOUNTER;
+                case FEATURE_POI -> DungeonEditorPointerInput.ElementKind.FEATURE_POI;
+                case WALL -> DungeonEditorPointerInput.ElementKind.WALL;
+                case DOOR -> DungeonEditorPointerInput.ElementKind.DOOR;
+                case WALL_VERTEX -> DungeonEditorPointerInput.ElementKind.WALL_VERTEX;
+            };
+        }
+
+        private static DungeonEditorPointerInput.TopologyKind apiTopologyKind(PreparedTopologyKind kind) {
+            return switch (kind) {
+                case EMPTY -> DungeonEditorPointerInput.TopologyKind.EMPTY;
+                case ROOM -> DungeonEditorPointerInput.TopologyKind.ROOM;
+                case CORRIDOR -> DungeonEditorPointerInput.TopologyKind.CORRIDOR;
+                case CORRIDOR_ANCHOR -> DungeonEditorPointerInput.TopologyKind.CORRIDOR_ANCHOR;
+                case DOOR -> DungeonEditorPointerInput.TopologyKind.DOOR;
+                case WALL -> DungeonEditorPointerInput.TopologyKind.WALL;
+                case STAIR -> DungeonEditorPointerInput.TopologyKind.STAIR;
+                case TRANSITION -> DungeonEditorPointerInput.TopologyKind.TRANSITION;
+                case FEATURE_MARKER -> DungeonEditorPointerInput.TopologyKind.FEATURE_MARKER;
+            };
+        }
+
+        private static DungeonEditorPointerInput.BoundaryKind apiBoundaryKind(PreparedBoundaryKind kind) {
+            return switch (kind) {
+                case WALL -> DungeonEditorPointerInput.BoundaryKind.WALL;
+                case DOOR -> DungeonEditorPointerInput.BoundaryKind.DOOR;
+            };
+        }
+
+        private static DungeonEditorPointerInput.SyntheticHoverKind apiSyntheticHoverKind(
+                PreparedSyntheticHoverKind kind
+        ) {
+            return switch (kind) {
+                case NONE -> DungeonEditorPointerInput.SyntheticHoverKind.NONE;
+                case CELL -> DungeonEditorPointerInput.SyntheticHoverKind.CELL;
+                case BOUNDARY -> DungeonEditorPointerInput.SyntheticHoverKind.BOUNDARY;
+                case VERTEX -> DungeonEditorPointerInput.SyntheticHoverKind.VERTEX;
+            };
         }
 
         public DungeonMapRenderState.TopologyRef topologyRef() {

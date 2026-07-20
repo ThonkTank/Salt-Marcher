@@ -5,7 +5,7 @@ import features.dungeon.api.DungeonEdgeRef;
 import features.dungeon.api.DungeonEditorHandleRef;
 import features.dungeon.api.DungeonEditorHandleSnapshot;
 import features.dungeon.api.DungeonEditorMapSnapshot;
-import features.dungeon.api.DungeonEditorStateSnapshot;
+import features.dungeon.api.editor.DungeonEditorSelection;
 
 final class DungeonMapRenderMarkers {
 
@@ -50,7 +50,7 @@ final class DungeonMapRenderMarkers {
 
     static DungeonMapRenderState.Marker handleMarker(
             DungeonEditorHandleSnapshot handle,
-            DungeonEditorStateSnapshot.Selection selection,
+            DungeonEditorSelection selection,
             boolean preview
     ) {
         DungeonEditorHandleRef ref = handle.ref();

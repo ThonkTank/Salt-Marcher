@@ -36,18 +36,18 @@ final class DungeonEditorPointerWorkflow implements DungeonEditorPointerInteract
             return PointerInteractionResult.ignored();
         }
         PointerInteractionTargets targets = safeRequest.targets();
-        DungeonEditorRuntimePointerTarget primaryTarget = targets.primaryTarget(intent.boundaryTargetsPreferred());
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target primaryTarget = targets.primaryTarget(intent.boundaryTargetsPreferred());
         PointerInteractionDecision decision = DungeonEditorPointerWorkflowIntentResolver.resolveInteraction(
                 safeRequest.action(),
                 intent,
                 new PointerInteractionCandidates(primaryTarget));
-        DungeonEditorRuntimePointerTarget hoverTarget = DungeonEditorPointerSamplePolicy.pointerTargetChoice(
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target hoverTarget = DungeonEditorPointerSamplePolicy.pointerTargetChoice(
                 decision.hoverTargetChoice(),
                 targets,
                 primaryTarget,
-                DungeonEditorRuntimePointerTarget.empty(),
+                features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty(),
                 safeRequest.projectionLevel());
-        DungeonEditorRuntimePointerTarget sampleTarget = DungeonEditorPointerSamplePolicy.pointerTargetChoice(
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target sampleTarget = DungeonEditorPointerSamplePolicy.pointerTargetChoice(
                 decision.sampleTargetChoice(),
                 targets,
                 primaryTarget,

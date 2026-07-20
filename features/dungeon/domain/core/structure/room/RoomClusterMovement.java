@@ -23,6 +23,9 @@ public final class RoomClusterMovement {
         }
         SpatialTopology nextTopology = moveTopologyCluster(target.topology(), clusterId, deltaQ, deltaR, deltaLevel);
         RoomCatalog nextRooms = moveRoomsForCluster(target.rooms(), clusterId, deltaQ, deltaR, deltaLevel);
+        List<features.dungeon.domain.core.structure.corridor.Corridor> nextCorridors =
+                CORRIDOR_MOVEMENT.moveDoorBindingsForCluster(
+                        target.corridors(), clusterId, deltaQ, deltaR, deltaLevel);
         if (nextTopology.equals(target.topology()) && nextRooms.equals(target.rooms())) {
             return target;
         }
@@ -31,7 +34,7 @@ public final class RoomClusterMovement {
                 nextTopology,
                 target.topologyIndex(),
                 nextRooms,
-                target.corridors(),
+                nextCorridors,
                 target.stairs(),
                 target.transitionCatalog(),
                 target.featureMarkers(),

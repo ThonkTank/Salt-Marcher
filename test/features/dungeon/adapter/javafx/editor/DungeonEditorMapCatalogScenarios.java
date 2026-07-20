@@ -7,13 +7,8 @@ import java.util.stream.Collectors;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.api.DungeonEdgeRef;
-import features.dungeon.api.DungeonEditorControlsModel;
-import features.dungeon.api.DungeonEditorControlsSnapshot;
-import features.dungeon.api.DungeonEditorMapSurfaceModel;
-import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
+import features.dungeon.api.editor.DungeonEditorState;
 import features.dungeon.api.DungeonEditorPreview;
-import features.dungeon.api.DungeonEditorStateSnapshot;
-import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonMapSummary;
@@ -73,11 +68,11 @@ final class DungeonEditorMapCatalogScenarios {
 
         long gammaRows = runtime.database().countMapsNamed("Gamma");
         assertEquals(1L, gammaRows, "DE-MAP-001 persisted one Gamma dungeon_maps row");
-        DungeonEditorControlsSnapshot controlsSnapshot = runtime.controlsModel().current();
+        DungeonEditorState controlsSnapshot = runtime.editorApi().current();
         assertTrue(
-                controlsSnapshot.maps().stream().anyMatch(map -> "Gamma".equals(map.mapName())),
+                controlsSnapshot.catalog().stream().anyMatch(map -> "Gamma".equals(map.mapName())),
                 "DE-MAP-001 published catalog contains Gamma");
-        DungeonMapSummary selected = controlsSnapshot.maps().stream()
+        DungeonMapSummary selected = controlsSnapshot.catalog().stream()
                 .filter(map -> "Gamma".equals(map.mapName()))
                 .findFirst()
                 .orElseThrow();
@@ -99,7 +94,7 @@ final class DungeonEditorMapCatalogScenarios {
                 "DE-MAP-001 prepared-frame catalog list");
         assertEquals(0L, runtime.database().countAuthoredGeometryRows(selected.mapId().value()),
                 "DE-MAP-001 created map starts without authored geometry rows");
-        assertEmptyMapSurface(runtime.mapSurfaceModel().current(), "Gamma");
+        assertEmptyMapSurface(runtime.editorApi().current(), "Gamma");
         assertVisiblePlaceholder(binding.mapView(), "DE-MAP-001");
 
     }
@@ -130,11 +125,11 @@ final class DungeonEditorMapCatalogScenarios {
                 "DE-MAP-002 leaves authored geometry rows unchanged");
         assertEquals(2L, runtime.database().mapRevision(alphaMapId),
                 "DE-MAP-002 metadata-only rename advances the map revision once");
-        DungeonEditorControlsSnapshot controlsSnapshot = runtime.controlsModel().current();
+        DungeonEditorState controlsSnapshot = runtime.editorApi().current();
         assertEquals(alphaMapId, controlsSnapshot.selectedMapId().value(),
                 "DE-MAP-002 selection remains on the renamed map id");
         assertTrue(
-                controlsSnapshot.maps().stream().anyMatch(map ->
+                controlsSnapshot.catalog().stream().anyMatch(map ->
                         map.mapId().value() == alphaMapId
                                 && "Alpha Prime".equals(map.mapName())
                                 && map.revision() == 2L),
@@ -144,8 +139,8 @@ final class DungeonEditorMapCatalogScenarios {
                 List.of("Alpha Prime", "Beta"),
                 List.of("Alpha"),
                 "DE-MAP-002 prepared-frame catalog list");
-        DungeonEditorMapSurfaceSnapshot surfaceSnapshot = runtime.mapSurfaceModel().current();
-        assertEquals("Alpha Prime", surfaceSnapshot.surface().mapName(),
+        DungeonEditorState surfaceSnapshot = runtime.editorApi().current();
+        assertEquals("Alpha Prime", surfaceSnapshot.selectedWindow().mapName(),
                 "DE-MAP-002 map surface name reflects rename");
         assertTrue(surfaceContainsLevel(surfaceSnapshot, 0),
                 "DE-MAP-002 render-facing map surface keeps authored level 0 cells");
@@ -192,7 +187,7 @@ final class DungeonEditorMapCatalogScenarios {
                 "DE-MAP-003 fallback Alpha dungeon_maps row remains");
         assertEquals(alphaGeometryRowsBefore, runtime.database().countAuthoredGeometryRows(alphaMapId),
                 "DE-MAP-003 fallback Alpha authored rows remain unchanged");
-        DungeonEditorControlsSnapshot controlsSnapshot = runtime.controlsModel().current();
+        DungeonEditorState controlsSnapshot = runtime.editorApi().current();
         assertEquals(alphaMapId, controlsSnapshot.selectedMapId().value(),
                 "DE-MAP-003 selected map falls back to name-ordered Alpha instead of lower-id Zeta");
         assertPreparedSelectedMapAligned(
@@ -211,16 +206,16 @@ final class DungeonEditorMapCatalogScenarios {
                 List.of("Alpha", "Zeta"),
                 List.of("Beta"),
                 "DE-MAP-003 prepared-frame catalog delete omission");
-        assertTrue(controlsSnapshot.maps().stream().noneMatch(map -> map.mapId().value() == betaMapId),
+        assertTrue(controlsSnapshot.catalog().stream().noneMatch(map -> map.mapId().value() == betaMapId),
                 "DE-MAP-003 published catalog omits deleted Beta");
-        assertEquals("Dungeon-Map gelöscht.", controlsSnapshot.statusText(),
+        assertEquals("Dungeon-Map gelöscht.", controlsSnapshot.commandStatus().message(),
                 "DE-MAP-003 published controls status reports deletion");
         assertPreparedStatusProjected(
                 binding,
                 "Dungeon-Map gelöscht.",
                 "DE-MAP-003 delete fallback prepared status projection");
-        DungeonEditorMapSurfaceSnapshot surfaceSnapshot = runtime.mapSurfaceModel().current();
-        assertEquals("Alpha", surfaceSnapshot.surface().mapName(),
+        DungeonEditorState surfaceSnapshot = runtime.editorApi().current();
+        assertEquals("Alpha", surfaceSnapshot.selectedWindow().mapName(),
                 "DE-MAP-003 map surface falls back to Alpha");
         assertEmptySelection(surfaceSnapshot.selection(), "DE-MAP-003 fallback surface");
         assertEquals(DungeonEditorPreview.none(), surfaceSnapshot.preview(),
@@ -243,7 +238,7 @@ final class DungeonEditorMapCatalogScenarios {
                 "DE-MAP-006 primary Neu works after delete and persists Gamma");
         assertEquals(0L, runtime.database().countAuthoredGeometryRows(gammaMapId),
                 "DE-MAP-006 post-delete Gamma starts without authored geometry rows");
-        DungeonEditorControlsSnapshot afterPostDeleteCreate = runtime.controlsModel().current();
+        DungeonEditorState afterPostDeleteCreate = runtime.editorApi().current();
         assertEquals(gammaMapId, afterPostDeleteCreate.selectedMapId().value(),
                 "DE-MAP-006 post-delete create selects Gamma");
         assertPreparedSelectedMapAligned(
@@ -257,11 +252,11 @@ final class DungeonEditorMapCatalogScenarios {
                 List.of("Alpha", "Gamma", "Zeta"),
                 List.of("Beta"),
                 "DE-MAP-006 prepared-frame catalog after delete/create");
-        assertTrue(afterPostDeleteCreate.maps().stream().anyMatch(map ->
+        assertTrue(afterPostDeleteCreate.catalog().stream().anyMatch(map ->
                         map.mapId().value() == gammaMapId && "Gamma".equals(map.mapName())),
                 "DE-MAP-006 published catalog contains Gamma after delete");
-        DungeonEditorMapSurfaceSnapshot postDeleteCreateSurface = runtime.mapSurfaceModel().current();
-        assertEquals("Gamma", postDeleteCreateSurface.surface().mapName(),
+        DungeonEditorState postDeleteCreateSurface = runtime.editorApi().current();
+        assertEquals("Gamma", postDeleteCreateSurface.selectedWindow().mapName(),
                 "DE-MAP-006 map surface switches to Gamma after delete-then-create");
         assertVisiblePlaceholder(binding.mapView(), "DE-MAP-006");
 
@@ -285,7 +280,7 @@ final class DungeonEditorMapCatalogScenarios {
         selectMap(controls, "Alpha");
         selectMap(controls, "Beta");
 
-        DungeonEditorControlsSnapshot controlsSnapshot = runtime.controlsModel().current();
+        DungeonEditorState controlsSnapshot = runtime.editorApi().current();
         assertEquals(betaMapId, controlsSnapshot.selectedMapId().value(), "DE-MAP-004 controls selects Beta");
         assertPreparedSelectedMapAligned(
                 runtime,
@@ -298,18 +293,18 @@ final class DungeonEditorMapCatalogScenarios {
                 "Beta",
                 "",
                 "DE-MAP-004 loaded catalog row keeps selected label and Mehr geometry stable");
-        DungeonEditorMapSurfaceSnapshot surfaceSnapshot = runtime.mapSurfaceModel().current();
-        assertEquals("Beta", surfaceSnapshot.surface().mapName(), "DE-MAP-004 map surface name");
+        DungeonEditorState surfaceSnapshot = runtime.editorApi().current();
+        assertEquals("Beta", surfaceSnapshot.selectedWindow().mapName(), "DE-MAP-004 map surface name");
         assertEquals(
                 Set.of("10,10,0", "10,11,0", "11,10,0", "11,11,0"),
                 surfaceCellSet(surfaceSnapshot),
                 "DE-MAP-004 Beta surface contains exactly B1 cells");
-        assertEquals(1L, surfaceSnapshot.surface().map().areas().size(), "DE-MAP-004 Beta has one room area");
-        assertEquals(0L, surfaceSnapshot.surface().map().features().size(), "DE-MAP-004 Beta has no doors or corridors");
-        assertTrue(surfaceSnapshot.surface().map().boundaries().stream().noneMatch(boundary ->
+        assertEquals(1L, surfaceSnapshot.selectedWindow().map().areas().size(), "DE-MAP-004 Beta has one room area");
+        assertEquals(0L, surfaceSnapshot.selectedWindow().map().features().size(), "DE-MAP-004 Beta has no doors or corridors");
+        assertTrue(surfaceSnapshot.selectedWindow().map().boundaries().stream().noneMatch(boundary ->
                         "door".equalsIgnoreCase(boundary.kind())),
                 "DE-MAP-004 Beta has no door boundaries");
-        assertTrue(surfaceSnapshot.surface().map().boundaries().size() > 0,
+        assertTrue(surfaceSnapshot.selectedWindow().map().boundaries().size() > 0,
                 "DE-MAP-004 Beta surface includes authored wall boundaries");
         assertEquals(
                 Set.of("10,10", "10,11", "11,10", "11,11"),
@@ -342,7 +337,7 @@ final class DungeonEditorMapCatalogScenarios {
         List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
         assertEquals(
                 Set.of("1,1,0", "1,2,0", "1,3,0", "2,1,0", "2,2,0", "2,3,0", "3,1,0", "3,2,0", "3,3,0"),
-                surfaceCellSet(runtime.mapSurfaceModel().current()),
+                surfaceCellSet(runtime.editorApi().current()),
                 "DE-MAP-005 initial selected surface shows R1 cells");
 
         click(button(controls, "Raum"));
@@ -367,7 +362,7 @@ final class DungeonEditorMapCatalogScenarios {
 
         assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
                 "DE-MAP-005 live preview does not mutate authored DB rows before reload");
-        assertTrue(runtime.mapSurfaceModel().current().preview() instanceof DungeonEditorPreview.RoomRectanglePreview,
+        assertTrue(runtime.editorApi().current().preview() instanceof DungeonEditorPreview.RoomRectanglePreview,
                 "DE-MAP-005 starts reload from a real non-empty room preview");
         assertTrue(renderSurfaceCellOriginsWithZ(mapContentModel).containsAll(previewCells),
                 "DE-MAP-005 render scene shows transient preview cells before reload");
@@ -376,7 +371,7 @@ final class DungeonEditorMapCatalogScenarios {
         List<String> authoredStateAfterExternalChange = runtime.database().authoredGeometryState(mapId);
         assertTrue(!authoredStateBefore.equals(authoredStateAfterExternalChange),
                 "DE-MAP-005 fixture external persisted change updates DB oracle");
-        assertTrue(!surfaceCellSet(runtime.mapSurfaceModel().current()).contains("10,10,0"),
+        assertTrue(!surfaceCellSet(runtime.editorApi().current()).contains("10,10,0"),
                 "DE-MAP-005 external persisted change is not visible before reload");
         assertTrue(!renderSurfaceCellOrigins(binding.mapContentModel()).contains("10,10"),
                 "DE-MAP-005 render scene is not refreshed before reload");
@@ -385,7 +380,7 @@ final class DungeonEditorMapCatalogScenarios {
 
         assertEquals(authoredStateAfterExternalChange, runtime.database().authoredGeometryState(mapId),
                 "DE-MAP-005 reload does not add authored DB rows beyond the external persisted change");
-        DungeonEditorControlsSnapshot controlsSnapshot = runtime.controlsModel().current();
+        DungeonEditorState controlsSnapshot = runtime.editorApi().current();
         assertEquals(mapId, controlsSnapshot.selectedMapId().value(),
                 "DE-MAP-005 controls keep the reloaded map selected");
         assertPreparedSelectedMapAligned(
@@ -394,8 +389,8 @@ final class DungeonEditorMapCatalogScenarios {
                 mapId,
                 "Reload Map",
                 "DE-MAP-005 reload prepared-frame selected-map projection");
-        DungeonEditorMapSurfaceSnapshot reloadedSurface = runtime.mapSurfaceModel().current();
-        assertEquals("Reload Map", reloadedSurface.surface().mapName(),
+        DungeonEditorState reloadedSurface = runtime.editorApi().current();
+        assertEquals("Reload Map", reloadedSurface.selectedWindow().mapName(),
                 "DE-MAP-005 reloaded surface keeps the selected map name");
         assertEquals(DungeonEditorPreview.none(), reloadedSurface.preview(),
                 "DE-MAP-005 reload clears transient preview state");
@@ -411,7 +406,7 @@ final class DungeonEditorMapCatalogScenarios {
         fireMapMouse(mapView, MouseEvent.MOUSE_RELEASED, MouseButton.PRIMARY, previewEndX, previewEndY, false);
         assertEquals(authoredStateAfterExternalChange, runtime.database().authoredGeometryState(mapId),
                 "DE-MAP-005 post-reload release does not commit the stale preview");
-        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
+        assertEquals(DungeonEditorPreview.none(), runtime.editorApi().current().preview(),
                 "DE-MAP-005 post-reload release keeps preview cleared");
         assertTrue(!renderSurfaceCellOriginsWithZ(mapContentModel).contains("5,5,0"),
                 "DE-MAP-005 post-reload release keeps stale preview render cleared");
@@ -463,12 +458,12 @@ final class DungeonEditorMapCatalogScenarios {
             String expectedMapName,
             String message
     ) {
-        DungeonEditorControlsSnapshot controlsSnapshot = runtime.controlsModel().current();
+        DungeonEditorState controlsSnapshot = runtime.editorApi().current();
         assertEquals(expectedMapId, controlsSnapshot.selectedMapId().value(),
                 message + ": controls selected-map value");
         assertCatalogSelectorSurface(binding.controls(), expectedMapName, "", message + ": prepared key projection");
-        DungeonEditorMapSurfaceSnapshot surfaceSnapshot = runtime.mapSurfaceModel().current();
-        assertEquals(expectedMapName, surfaceSnapshot.surface().mapName(),
+        DungeonEditorState surfaceSnapshot = runtime.editorApi().current();
+        assertEquals(expectedMapName, surfaceSnapshot.selectedWindow().mapName(),
                 message + ": rendered surface map name");
     }
 

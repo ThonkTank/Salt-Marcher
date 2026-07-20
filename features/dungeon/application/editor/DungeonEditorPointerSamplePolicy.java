@@ -8,11 +8,11 @@ final class DungeonEditorPointerSamplePolicy {
 
     static PointerSample pointerSample(
             PointerInteractionTargets targets,
-            DungeonEditorRuntimePointerTarget target,
+            features.dungeon.api.editor.DungeonEditorPointerInput.Target target,
             PointerWorkflowIntent intent
     ) {
-        DungeonEditorRuntimePointerTarget safeTarget = target == null
-                ? DungeonEditorRuntimePointerTarget.empty()
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target safeTarget = target == null
+                ? features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty()
                 : target;
         return new PointerSample(
                 sampleSceneX(targets, safeTarget, intent),
@@ -22,11 +22,11 @@ final class DungeonEditorPointerSamplePolicy {
                 safeTarget);
     }
 
-    static DungeonEditorRuntimePointerTarget pointerTargetChoice(
+    static features.dungeon.api.editor.DungeonEditorPointerInput.Target pointerTargetChoice(
             PointerTargetChoice choice,
             PointerInteractionTargets targets,
-            DungeonEditorRuntimePointerTarget primaryTarget,
-            DungeonEditorRuntimePointerTarget hoverTarget,
+            features.dungeon.api.editor.DungeonEditorPointerInput.Target primaryTarget,
+            features.dungeon.api.editor.DungeonEditorPointerInput.Target hoverTarget,
             int projectionLevel
     ) {
         PointerInteractionTargets safeTargets = targets == null ? PointerInteractionTargets.empty() : targets;
@@ -39,7 +39,7 @@ final class DungeonEditorPointerSamplePolicy {
 
     private static double sampleSceneX(
             PointerInteractionTargets targets,
-            DungeonEditorRuntimePointerTarget target,
+            features.dungeon.api.editor.DungeonEditorPointerInput.Target target,
             PointerWorkflowIntent intent
     ) {
         if (intent.toolAction().family() != DungeonEditorToolFamily.WALL) {
@@ -56,7 +56,7 @@ final class DungeonEditorPointerSamplePolicy {
 
     private static double sampleSceneY(
             PointerInteractionTargets targets,
-            DungeonEditorRuntimePointerTarget target,
+            features.dungeon.api.editor.DungeonEditorPointerInput.Target target,
             PointerWorkflowIntent intent
     ) {
         if (intent.toolAction().family() != DungeonEditorToolFamily.WALL) {

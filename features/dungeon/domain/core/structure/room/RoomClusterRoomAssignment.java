@@ -79,8 +79,8 @@ final class RoomClusterRoomAssignment {
             return cells;
         }
         for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
-            if (room != null && room.floorAnchors().containsKey(level)) {
-                cells.add(room.floorAnchors().get(level));
+            if (room != null && !room.cellsAt(level).isEmpty()) {
+                cells.add(room.cellsAt(level).getFirst());
             }
         }
         if (cells.isEmpty()) {
@@ -102,7 +102,7 @@ final class RoomClusterRoomAssignment {
         }
         for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
             if (room != null) {
-                levels.addAll(room.floorAnchors().keySet());
+                levels.addAll(room.cellsByLevel().keySet());
             }
         }
         return Set.copyOf(levels);
@@ -126,14 +126,6 @@ final class RoomClusterRoomAssignment {
     }
 
     private static Cell primaryAnchor(RoomRegion room) {
-        int level = 0;
-        Cell result = null;
-        for (Map.Entry<Integer, Cell> entry : room.floorAnchors().entrySet()) {
-            if (entry.getKey() != null && (result == null || entry.getKey() < level)) {
-                level = entry.getKey();
-                result = entry.getValue();
-            }
-        }
-        return result == null ? new Cell(0, 0, 0) : result;
+        return room.primaryAnchor();
     }
 }

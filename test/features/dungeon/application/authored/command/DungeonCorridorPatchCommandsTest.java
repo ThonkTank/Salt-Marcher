@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import features.dungeon.domain.core.component.CorridorAnchor;
 import features.dungeon.domain.core.component.CorridorAnchorRef;
@@ -24,6 +25,8 @@ import features.dungeon.domain.core.structure.corridor.DungeonCorridorEndpoint;
 import features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 final class DungeonCorridorPatchCommandsTest {
@@ -151,7 +154,12 @@ final class DungeonCorridorPatchCommandsTest {
 
         assertTrue(created.patch().touchedChunks().stream().anyMatch(chunk -> chunk.chunkQ() == -3));
         assertTrue(created.patch().touchedChunks().stream().anyMatch(chunk -> chunk.chunkQ() == -2));
-        assertTrue(created.patch().touchedChunks().stream().allMatch(chunk -> chunk.chunkR() == -1));
+        assertEquals(
+                Set.of(-1, 0),
+                created.patch().touchedChunks().stream()
+                        .map(DungeonChunkKey::chunkR)
+                        .collect(Collectors.toSet()),
+                "canonical boundary edges touch their adjacent exterior chunk as well as the negative room chunk");
     }
 
     @Test

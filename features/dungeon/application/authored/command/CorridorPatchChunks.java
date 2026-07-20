@@ -47,19 +47,11 @@ final class CorridorPatchChunks {
             return;
         }
         for (CorridorWaypoint waypoint : corridor.bindings().waypoints()) {
-            RoomCluster cluster = map.topology().roomCluster(waypoint.clusterId());
-            addChunk(result, map, waypoint.absoluteCell(cluster == null
-                    ? new Cell(0, 0, waypoint.level())
-                    : cluster.center()));
+            addChunk(result, map, waypoint.cell());
         }
         corridor.bindings().anchorBindings().forEach(anchor -> addChunk(result, map, anchor.position()));
         for (CorridorDoorBinding door : corridor.bindings().doorBindings()) {
-            RoomCluster cluster = map.topology().roomCluster(door.clusterId());
-            Cell center = cluster == null ? new Cell(0, 0, door.relativeCell().level()) : cluster.center();
-            Cell roomCell = new Cell(
-                    center.q() + door.relativeCell().q(),
-                    center.r() + door.relativeCell().r(),
-                    door.relativeCell().level());
+            Cell roomCell = door.roomCell();
             addChunk(result, map, roomCell);
             addChunk(result, map, door.direction().neighborOf(roomCell));
         }

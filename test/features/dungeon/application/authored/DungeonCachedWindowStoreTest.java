@@ -114,7 +114,8 @@ final class DungeonCachedWindowStoreTest {
                 return Optional.empty();
             }
             return Optional.of(new DungeonWindow(
-                    header(), request.requestGeneration(), request.chunks(), List.of(), List.of()));
+                    header(), request.requestGeneration(), request.chunks(), List.of(), List.of(), List.of(),
+                    features.dungeon.application.authored.port.DungeonContinuationPage.empty()));
         }
 
         private static DungeonMapHeader header() {

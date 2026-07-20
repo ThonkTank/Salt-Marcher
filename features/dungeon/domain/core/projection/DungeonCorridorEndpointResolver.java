@@ -93,8 +93,8 @@ final class DungeonCorridorEndpointResolver {
                 CorridorEndpointKind.DOOR,
                 roomId,
                 null,
-                CorridorDoorBindingGeometry.absoluteCorridorCell(binding, cluster.center()),
-                CorridorDoorBindingGeometry.absoluteDoorEdge(binding, cluster.center()),
+                CorridorDoorBindingGeometry.corridorCell(binding),
+                CorridorDoorBindingGeometry.doorEdge(binding),
                 binding.topologyRef());
     }
 

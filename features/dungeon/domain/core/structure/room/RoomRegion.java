@@ -19,27 +19,6 @@ public record RoomRegion(
         Set<Cell> floorCells,
         DungeonRoomNarration narration
 ) {
-    public RoomRegion(
-            long roomId,
-            long mapId,
-            long clusterId,
-            String name,
-            Map<Integer, Cell> floorAnchors
-    ) {
-        this(roomId, mapId, clusterId, name, cellsFromAnchors(floorAnchors), DungeonRoomNarration.empty());
-    }
-
-    public RoomRegion(
-            long roomId,
-            long mapId,
-            long clusterId,
-            String name,
-            Map<Integer, Cell> floorAnchors,
-            DungeonRoomNarration narration
-    ) {
-        this(roomId, mapId, clusterId, name, cellsFromAnchors(floorAnchors), narration);
-    }
-
     public RoomRegion {
         roomId = Math.max(0L, roomId);
         mapId = Math.max(0L, mapId);
@@ -72,11 +51,6 @@ public record RoomRegion(
         return cellsByLevel().getOrDefault(level, List.of());
     }
 
-    /** Derived compatibility index; authored ownership remains {@link #floorCells()}. */
-    public Map<Integer, Cell> floorAnchors() {
-        return anchorsByLevel(cellsByLevel());
-    }
-
     public Cell primaryAnchor() {
         List<Cell> sorted = CellOrdering.sortedCells(floorCells);
         return sorted.isEmpty() ? new Cell(0, 0, 0) : sorted.getFirst();
@@ -84,19 +58,6 @@ public record RoomRegion(
 
     public int primaryLevel() {
         return primaryAnchor().level();
-    }
-
-    public static Map<Integer, Cell> anchorsByLevel(
-            Map<Integer, ? extends Iterable<Cell>> cellsByLevel
-    ) {
-        Map<Integer, Cell> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, ? extends Iterable<Cell>> entry : cellsByLevel.entrySet()) {
-            List<Cell> sortedCells = RoomClusterCells.sortedCells(entry.getValue());
-            if (entry.getKey() != null && !sortedCells.isEmpty()) {
-                result.put(entry.getKey(), sortedCells.getFirst());
-            }
-        }
-        return Map.copyOf(result);
     }
 
     public RoomRegion withFloorCells(Iterable<Cell> nextFloorCells) {
@@ -117,10 +78,6 @@ public record RoomRegion(
 
     public RoomRegion inCluster(long nextClusterId) {
         return new RoomRegion(roomId, mapId, nextClusterId, name, floorCells, narration);
-    }
-
-    private static Set<Cell> cellsFromAnchors(Map<Integer, Cell> floorAnchors) {
-        return floorAnchors == null ? Set.of() : copyFloorCells(floorAnchors.values());
     }
 
     private static Set<Cell> copyFloorCells(Iterable<Cell> source) {

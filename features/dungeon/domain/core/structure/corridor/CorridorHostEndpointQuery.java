@@ -85,7 +85,7 @@ final class CorridorHostEndpointQuery {
                 true,
                 binding.roomId(),
                 NO_HOST_CORRIDOR_ID,
-                CorridorDoorBindingGeometry.absoluteCorridorCell(binding, cluster.center()));
+                CorridorDoorBindingGeometry.corridorCell(binding));
     }
 
     private static @Nullable CorridorHostEndpoint derivedEndpoint(

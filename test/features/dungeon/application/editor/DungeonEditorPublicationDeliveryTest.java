@@ -16,8 +16,8 @@ final class DungeonEditorPublicationDeliveryTest {
     void queuedDeliveryRejectsStaleFrames() {
         QueuedDispatcher dispatcher = new QueuedDispatcher();
         List<DungeonEditorState> delivered = new ArrayList<>();
-        DungeonEditorApiFacade.StateDelivery delivery =
-                new DungeonEditorApiFacade.StateDelivery(delivered::add, dispatcher);
+        DungeonEditorFeatureRuntimeRoot.StateDelivery delivery =
+                new DungeonEditorFeatureRuntimeRoot.StateDelivery(delivered::add, dispatcher);
         DungeonEditorState stale = DungeonEditorState.empty();
         DungeonEditorState current = DungeonEditorState.empty();
 
@@ -33,8 +33,8 @@ final class DungeonEditorPublicationDeliveryTest {
     void queuedDeliveryRejectsFramesAfterClose() {
         QueuedDispatcher dispatcher = new QueuedDispatcher();
         List<DungeonEditorState> delivered = new ArrayList<>();
-        DungeonEditorApiFacade.StateDelivery delivery =
-                new DungeonEditorApiFacade.StateDelivery(delivered::add, dispatcher);
+        DungeonEditorFeatureRuntimeRoot.StateDelivery delivery =
+                new DungeonEditorFeatureRuntimeRoot.StateDelivery(delivered::add, dispatcher);
 
         delivery.deliver(DungeonEditorState.empty());
         delivery.close();

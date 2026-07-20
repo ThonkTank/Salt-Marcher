@@ -101,8 +101,8 @@ final class DungeonEditorTransitionRuntimeOperation {
             TransitionDestination transitionDestination,
             int projectionLevel
     ) {
-        DungeonEditorRuntimePointerTarget target = sample == null
-                ? DungeonEditorRuntimePointerTarget.empty()
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target target = sample == null
+                ? features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty()
                 : sample.target();
         if (target.isWallOrDoorBoundaryTarget()) {
             return transitionEdgeAnchor(sample, target.boundary());
@@ -119,7 +119,7 @@ final class DungeonEditorTransitionRuntimeOperation {
 
     private static TransitionAnchor transitionEdgeAnchor(
             PointerSample sample,
-            DungeonEditorRuntimePointerTarget.BoundaryTarget boundary
+            features.dungeon.api.editor.DungeonEditorPointerInput.BoundaryTarget boundary
     ) {
         if (boundary.startLevel() != boundary.endLevel()) {
             return TransitionAnchor.none();
@@ -143,7 +143,7 @@ final class DungeonEditorTransitionRuntimeOperation {
 
     private static TransitionAnchor matchingEdgeAnchor(
             Cell cell,
-            DungeonEditorRuntimePointerTarget.BoundaryTarget boundary
+            features.dungeon.api.editor.DungeonEditorPointerInput.BoundaryTarget boundary
     ) {
         for (Direction direction : Direction.values()) {
             Edge edge = direction.edgeOf(cell);
@@ -156,7 +156,7 @@ final class DungeonEditorTransitionRuntimeOperation {
 
     private static boolean matchesBoundary(
             Edge edge,
-            DungeonEditorRuntimePointerTarget.BoundaryTarget boundary
+            features.dungeon.api.editor.DungeonEditorPointerInput.BoundaryTarget boundary
     ) {
         return boundary.startLevel() == edge.from().level()
                 && boundary.endLevel() == edge.to().level()

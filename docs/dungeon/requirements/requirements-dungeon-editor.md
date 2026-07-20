@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-17
+Last Reviewed: 2026-07-19
 Source of Truth: Editor-facing dungeon behavior, visible states, and acceptance criteria.
 
 # Dungeon Editor Requirements
@@ -15,27 +15,6 @@ commit supported mutations without inventing a second authored state source.
 
 This document does not own shared canvas contract design, renderer scene
 structure, authored dungeon invariants, or SQLite schema detail.
-
-## Current State
-
-- SaltMarcher already ships map CRUD, grid or graph view switching, level and
-  overlay controls, stable selection, live preview, room paint and delete,
-  wall and door editing, handle or cluster movement, and room narration cards.
-- SaltMarcher already keeps corridor, stair, and transition tool families
-  directly visible in the editor controls, but their end-to-end authored
-  behavior is still only partially present compared with the richer sibling
-  repo surface.
-- Current live editor controls still expose some create/delete variants as
-  separate top-level buttons; that is drift from the target family-button model,
-  not a target interaction pattern.
-- Current manual testing found drift in corridor, cluster, wall, label, and
-  stair workflows; the target behavior below supersedes older verification rows
-  that contradict this document.
-- The sibling `salt-marcher` repo shows the fuller visible target-state editor
-  experience for corridor creation or merge, stair parameter editing, and
-  transition destination selection.
-- The editor owns per-session committed history and exposes undo/redo through
-  the standard platform shortcuts. History is not persisted across restarts.
 
 ## Visible Structure
 
@@ -210,19 +189,16 @@ cards.
   before authored geometry exists there
 - overlay controls that affect presentation only
 
-Corridor, stair, and transition editing are still partial in current
-SaltMarcher builds, but they remain visible target-state surface obligations in
-this requirements document because the user-facing feature shape is already
-evidenced in the sibling repo.
-
 ## Clarified Geometry Behavior
 
 - room paint merges only when the newly painted rectangle overlaps at least one authored cell of an existing room or cluster
 - a single-cluster overlap merge MUST keep existing room and cluster identity, add the newly painted non-overlapping cells, and recompute the perimeter without duplicated overlap cells
 - adjacent room paint with no overlapping authored cell MUST create a distinct room and cluster even when the new rectangle touches an existing room edge
-- a freshly painted or adjacent new room uses the painted rectangle's minimum cell as its room component and cluster center until a later explicit move or stretch changes it
+- a freshly painted or adjacent new room uses the painted rectangle's minimum
+  cell as its deterministic derived primary cell; this is not separate authored
+  cluster geometry
 - freshly painted or adjacent new rooms MUST read back after commit and reload with the full painted floor-cell set and a closed perimeter wall around that floor set
-- freshly painted or adjacent new room perimeter walls MUST be authored durable wall truth after commit; absent perimeter wall rows are old-map compatibility input only, not the target output of fresh room creation
+- freshly painted or adjacent new room perimeter walls MUST be authored durable wall truth after commit; absent perimeter wall rows are not valid output of fresh room creation
 - intentional wall deletion on a room perimeter MUST be observable as an authored open edge, distinct from an absent un-authored edge whose perimeter wall may still be derived
 - overlap merges MUST NOT leave stale old boundary rows visible as internal walls inside the merged room
 - wall finalization is idempotent: existing wall segments reuse topology, absent boundary segments create or mark that segment as wall, and neither path creates duplicate topology rows
@@ -277,7 +253,7 @@ Shape options:
 The stair family dropdown owns only the creation-time shape option and the
 last-used shape option. It MUST NOT mutate an existing stair. The state panel
 owns selected-stair parameter edits: shape, direction, dimensions, exit-level
-span, and any future explicit exit labels.
+span, and explicit authored exit labels.
 
 Parameter meanings:
 
@@ -338,7 +314,7 @@ Exit and label behavior:
 - recompute preserves an existing exit id by its ordered level role when that
   role still exists; removed roles delete their exit rows and new roles receive
   new ids
-- future user-authored exit labels remain state-panel-owned and must be
+- user-authored exit labels remain state-panel-owned and must be
   preserved by exit id during recompute
 
 Delete and corridor binding behavior:
@@ -374,8 +350,8 @@ Delete and corridor binding behavior:
 - Preview, cancel, rejection, and invalid edits never persist authored truth; supported commits persist, publish, render, and reload the same authored result.
 - Authored object, encounter, and point-of-interest markers publish with marker category and stable marker identity, render without persistent feature labels, and may show names only as hover-only overlay text; travel affordances still include only stairs and transitions.
 - Map CRUD, selection clearing, room paint/delete/merge/adjacency, room narration, door create/delete/protected-delete, and transition link save preserve the behavior described above without partial mutation.
-- Tool-family controls stay directly visible, fit the `960px` tool-panel
-  target, use shared map gestures, remember dropdown sub-options, close
+- Tool-family controls stay directly visible, fit the tool panel in a `960px`
+  app window, use shared map gestures, remember dropdown sub-options, close
   dropdowns on pointer leave, and reset to `Auswahl` on `Esc`.
 - Wall paths keep draft state until explicit completion, never finalize merely
   because a second point is clicked, delete only eligible interior straight
@@ -397,8 +373,6 @@ Delete and corridor binding behavior:
   report concrete feedback without persistence, and second click commits the
   exact derived `StairGeometrySpec`; state-panel stair edits preserve identity
   and recompute deterministically.
-- Advanced tool families stay directly visible even when specific authored
-  mutations are still delivered incrementally.
 - Undo and redo are observable through the real map-view shortcut route,
   persist the restored authored result, and keep revision monotonic.
 - Negative-coordinate chunk assignment, one-ring loading, preview workset

@@ -15,11 +15,11 @@ import features.dungeon.domain.core.structure.corridor.CorridorRoute;
 import features.dungeon.domain.core.structure.corridor.CorridorRoutePlan;
 import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
 import features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundaryMap;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryStretchPlan;
 import features.dungeon.domain.core.structure.room.RoomClusterFloorMap;
-import features.dungeon.domain.core.structure.room.RoomClusterWallMap;
 import features.dungeon.domain.core.structure.stair.Stair;
 import features.dungeon.domain.core.structure.stair.StairGeometrySpec;
 import features.dungeon.domain.core.structure.stair.StairShape;
@@ -96,8 +96,7 @@ final class DungeonPathInvariantScenarios {
 
         CorridorRoutePlan plan = new CorridorRoutePlan(
                 route.cells(),
-                10L,
-                new Cell(0, 0, 0));
+                10L);
         CorridorAnchor higherHostAnchor = new CorridorAnchor(9L, 30L, new Cell(1, 0, 0));
         CorridorAnchor selectedAnchor = new CorridorAnchor(5L, 20L, new Cell(1, 0, 0));
         CorridorBindings planned = plan.bindInteriorAnchors(
@@ -105,11 +104,11 @@ final class DungeonPathInvariantScenarios {
                 List.of(higherHostAnchor, selectedAnchor));
         assertEquals(List.of(new CorridorAnchorRef(20L, 5L)), planned.anchorRefs(),
                 "corridor path owner selects deterministic interior route anchor");
-        assertEquals(List.of(new CorridorWaypoint(10L, new Cell(1, 0, 0), 0)),
+        assertEquals(List.of(new CorridorWaypoint(10L, new Cell(1, 0, 0))),
                 planned.waypoints(),
-                "corridor path owner creates relative interior waypoint");
+                "corridor path owner creates absolute interior waypoint");
         assertEquals(CorridorBindings.empty(),
-                new CorridorRoutePlan(List.of(new Cell(0, 0, 0), new Cell(1, 0, 0)), 10L, new Cell(0, 0, 0))
+                new CorridorRoutePlan(List.of(new Cell(0, 0, 0), new Cell(1, 0, 0)), 10L)
                         .bindInteriorAnchors(CorridorBindings.empty(), List.of(selectedAnchor)),
                 "corridor path owner treats short split route as no-op");
     }
@@ -147,14 +146,15 @@ final class DungeonPathInvariantScenarios {
         Cell left = new Cell(0, 0, 0);
         Cell right = new Cell(1, 0, 0);
         RoomClusterFloorMap floorMap = RoomClusterFloorMap.fromCells(List.of(left, right));
-        Cell center = new Cell(0, 0, 0);
-        BoundaryRow leftRow = new BoundaryRow(42L, 0, new Cell(0, 0, 0), Direction.NORTH, BoundaryKind.WALL);
-        BoundaryRow rightRow = new BoundaryRow(42L, 0, new Cell(1, 0, 0), Direction.NORTH, BoundaryKind.WALL);
-        RoomClusterWallMap wallMap = new RoomClusterWallMap(center, List.of(leftRow, rightRow));
-        RoomClusterBoundaryStretchPlan.Selection selection = wallMap
-                .stretchSelection(
-                        floorMap,
+        BoundaryMap boundaries = new BoundaryMap(List.of(
+                BoundarySegment.fromEdge(Edge.sideOf(left, Direction.NORTH), BoundaryKind.WALL,
+                        features.dungeon.domain.core.graph.DungeonTopologyRef.empty()),
+                BoundarySegment.fromEdge(Edge.sideOf(right, Direction.NORTH), BoundaryKind.WALL,
+                        features.dungeon.domain.core.graph.DungeonTopologyRef.empty())));
+        RoomClusterBoundaryStretchPlan.Selection selection = RoomClusterBoundaryStretchPlan.resolve(
+                        floorMap.allCells(),
                         List.of(Edge.sideOf(right, Direction.NORTH), Edge.sideOf(left, Direction.NORTH)),
+                        boundaries.segmentsByKey(),
                         0,
                         -1,
                         0)

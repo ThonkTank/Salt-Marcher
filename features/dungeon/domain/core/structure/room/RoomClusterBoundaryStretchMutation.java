@@ -1,5 +1,7 @@
 package features.dungeon.domain.core.structure.room;
 
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -60,7 +62,7 @@ public final class RoomClusterBoundaryStretchMutation {
         if (target.isEmpty()) {
             return Optional.empty();
         }
-        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = target.get().cluster().boundaryMap();
+        Map<DungeonBoundaryKey, BoundarySegment> boundaries = target.get().cluster().boundaryMap();
         Optional<Selection> stretch = target.get().boundaryStretchSelection(sourceEdges, deltaQ, deltaR, deltaLevel);
         if (stretch.isEmpty() || stretch.get().movement() == 0) {
             return Optional.empty();
@@ -76,7 +78,7 @@ public final class RoomClusterBoundaryStretchMutation {
             List<Corridor> corridors,
             DungeonRoomTopologyClusterWork target,
             Selection stretch,
-            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries
+            Map<DungeonBoundaryKey, BoundarySegment> boundaries
     ) {
         return stretch.outer()
                 ? MUTATION.applyOuterStretch(corridors, target, stretch, boundaries)

@@ -11,6 +11,7 @@ import features.dungeon.application.editor.DungeonEditorMainViewInteractionValue
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.EdgeKey;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.PathResult;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.PointerState;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 
 final class DungeonEditorBoundaryPathUseCase {
     private final DungeonEditorBoundaryEdgesHelper boundaryEdges = new DungeonEditorBoundaryEdgesHelper();
@@ -65,7 +66,7 @@ final class DungeonEditorBoundaryPathUseCase {
                 snapshot,
                 cells,
                 start.level(),
-                features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.DOOR);
+                BoundaryKind.DOOR);
         Set<EdgeKey> committed = new LinkedHashSet<>(route);
         committed.removeAll(doors);
         return new PathResult(route, committed);
@@ -81,7 +82,7 @@ final class DungeonEditorBoundaryPathUseCase {
                 snapshot,
                 cells,
                 start.level(),
-                features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.WALL);
+                BoundaryKind.WALL);
         List<EdgeKey> route = pathFinder.shortestPath(start, goal, walls);
         return route.isEmpty() ? PathResult.empty() : new PathResult(route, new LinkedHashSet<>(route));
     }

@@ -1,8 +1,5 @@
 package features.dungeon.application.editor;
 
-import features.dungeon.api.DungeonEditorControlsModel;
-import features.dungeon.api.DungeonEditorMapSurfaceModel;
-import features.dungeon.api.DungeonEditorStateModel;
 import features.dungeon.api.editor.DungeonEditorState;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,9 +12,7 @@ import platform.execution.ExecutionLane;
 
 /** Execution-lane owner for immutable atomic Dungeon Editor state publications. */
 final class DungeonEditorStatePublisher {
-    private final DungeonEditorControlsModel controlsModel;
-    private final DungeonEditorMapSurfaceModel mapSurfaceModel;
-    private final DungeonEditorStateModel stateModel;
+    private final DungeonEditorProjectionState projectionState;
     private final DungeonEditorRuntimeDraftSession draftSession;
     private final LongSupplier requestGeneration;
     private final ExecutionLane executionLane;
@@ -27,16 +22,12 @@ final class DungeonEditorStatePublisher {
     private long publicationRevision;
 
     DungeonEditorStatePublisher(
-            DungeonEditorControlsModel controlsModel,
-            DungeonEditorMapSurfaceModel mapSurfaceModel,
-            DungeonEditorStateModel stateModel,
+            DungeonEditorProjectionState projectionState,
             DungeonEditorRuntimeDraftSession draftSession,
             LongSupplier requestGeneration,
             ExecutionLane executionLane
     ) {
-        this.controlsModel = Objects.requireNonNull(controlsModel, "controlsModel");
-        this.mapSurfaceModel = Objects.requireNonNull(mapSurfaceModel, "mapSurfaceModel");
-        this.stateModel = Objects.requireNonNull(stateModel, "stateModel");
+        this.projectionState = Objects.requireNonNull(projectionState, "projectionState");
         this.draftSession = Objects.requireNonNull(draftSession, "draftSession");
         this.requestGeneration = Objects.requireNonNull(requestGeneration, "requestGeneration");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
@@ -83,15 +74,14 @@ final class DungeonEditorStatePublisher {
     }
 
     private DungeonEditorState assembleCurrentState() {
-        DungeonEditorRuntimeReadbackFrameInputs readback = DungeonEditorRuntimeReadbackFrameInputs.from(
-                controlsModel, mapSurfaceModel, stateModel);
+        DungeonEditorProjectionState.Projection readback = projectionState.current();
         return assembler.assemble(
                 publicationRevision,
                 requestGeneration.getAsLong(),
                 readback.controls(),
                 readback.mapSurface(),
                 readback.state(),
-                draftSession.draftFrame(readback.controls(), readback.state()));
+                draftSession.draftProjection(readback.controls(), readback.state()));
     }
 
     private void executeIfOpen(Runnable work) {

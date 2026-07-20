@@ -2,8 +2,7 @@ package features.dungeon.adapter.javafx.editor;
 
 import java.util.List;
 import java.util.Set;
-import features.dungeon.api.DungeonEditorControlsSnapshot;
-import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
+import features.dungeon.api.editor.DungeonEditorState;
 import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
@@ -64,8 +63,8 @@ final class DungeonEditorProjectionOverlayScenarios {
 
         click(button(controls, "+"));
 
-        DungeonEditorControlsSnapshot afterPlusControls = runtime.controlsModel().current();
-        DungeonEditorMapSurfaceSnapshot afterPlusSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState afterPlusControls = runtime.editorApi().current();
+        DungeonEditorState afterPlusSurface = runtime.editorApi().current();
         assertEquals(1L, afterPlusControls.projectionLevel(), "DE-LVL-001 controls projection level increments");
         assertEquals(1L, afterPlusSurface.projectionLevel(), "DE-LVL-001 map surface projection level increments");
         long plusGeneration = runtime.editorApi().current().requestGeneration();
@@ -86,8 +85,8 @@ final class DungeonEditorProjectionOverlayScenarios {
 
         click(button(controls, "-"));
 
-        DungeonEditorControlsSnapshot afterMinusControls = runtime.controlsModel().current();
-        DungeonEditorMapSurfaceSnapshot afterMinusSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState afterMinusControls = runtime.editorApi().current();
+        DungeonEditorState afterMinusSurface = runtime.editorApi().current();
         assertEquals(0L, afterMinusControls.projectionLevel(), "DE-LVL-002 controls projection level decrements");
         assertEquals(0L, afterMinusSurface.projectionLevel(), "DE-LVL-002 map surface projection level decrements");
         assertTrue(runtime.editorApi().current().requestGeneration() > plusGeneration,
@@ -131,8 +130,8 @@ final class DungeonEditorProjectionOverlayScenarios {
 
         click(button(controls, "+"));
 
-        DungeonEditorControlsSnapshot afterPlusControls = runtime.controlsModel().current();
-        DungeonEditorMapSurfaceSnapshot afterPlusSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState afterPlusControls = runtime.editorApi().current();
+        DungeonEditorState afterPlusSurface = runtime.editorApi().current();
         assertEquals(1L, afterPlusControls.projectionLevel(),
                 "DE-LVL-005 controls projection level reaches empty positive level");
         assertEquals(1L, afterPlusSurface.projectionLevel(),
@@ -147,8 +146,8 @@ final class DungeonEditorProjectionOverlayScenarios {
         click(button(controls, "-"));
         click(button(controls, "-"));
 
-        DungeonEditorControlsSnapshot afterMinusControls = runtime.controlsModel().current();
-        DungeonEditorMapSurfaceSnapshot afterMinusSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState afterMinusControls = runtime.editorApi().current();
+        DungeonEditorState afterMinusSurface = runtime.editorApi().current();
         assertEquals(-1L, afterMinusControls.projectionLevel(),
                 "DE-LVL-006 controls projection level reaches empty negative level");
         assertEquals(-1L, afterMinusSurface.projectionLevel(),
@@ -170,7 +169,7 @@ final class DungeonEditorProjectionOverlayScenarios {
         fireMapMouse(binding.mapView(), MouseEvent.MOUSE_DRAGGED, MouseButton.PRIMARY, endX, endY, false);
         fireMapMouse(binding.mapView(), MouseEvent.MOUSE_RELEASED, MouseButton.PRIMARY, endX, endY, false);
 
-        DungeonEditorMapSurfaceSnapshot afterPaintSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState afterPaintSurface = runtime.editorApi().current();
         assertEquals(-1L, afterPaintSurface.projectionLevel(),
                 "DE-LVL-007 room paint keeps the selected negative projection level");
         assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(cellRect(6, 6, 7, 7, -1)),
@@ -202,8 +201,8 @@ final class DungeonEditorProjectionOverlayScenarios {
 
         fireMapShortcut(mapView, KeyCode.E);
 
-        DungeonEditorControlsSnapshot afterEControls = runtime.controlsModel().current();
-        DungeonEditorMapSurfaceSnapshot afterESurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState afterEControls = runtime.editorApi().current();
+        DungeonEditorState afterESurface = runtime.editorApi().current();
         assertEquals(1L, afterEControls.projectionLevel(), "DE-LVL-003 controls projection level increments");
         assertEquals(1L, afterESurface.projectionLevel(), "DE-LVL-003 map surface projection level increments");
         assertTrue(afterEControls.reachableLevels().contains(1),
@@ -219,8 +218,8 @@ final class DungeonEditorProjectionOverlayScenarios {
 
         fireMapShortcut(mapView, KeyCode.Q);
 
-        DungeonEditorControlsSnapshot afterQControls = runtime.controlsModel().current();
-        DungeonEditorMapSurfaceSnapshot afterQSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState afterQControls = runtime.editorApi().current();
+        DungeonEditorState afterQSurface = runtime.editorApi().current();
         assertEquals(0L, afterQControls.projectionLevel(), "DE-LVL-004 controls projection level decrements");
         assertEquals(0L, afterQSurface.projectionLevel(), "DE-LVL-004 map surface projection level decrements");
         assertTrue(surfaceContainsLevel(afterQSurface, 0),
@@ -251,8 +250,8 @@ final class DungeonEditorProjectionOverlayScenarios {
 
         click(button(controls, "Graph"));
 
-        DungeonEditorControlsSnapshot graphControls = runtime.controlsModel().current();
-        DungeonEditorMapSurfaceSnapshot graphSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState graphControls = runtime.editorApi().current();
+        DungeonEditorState graphSurface = runtime.editorApi().current();
         assertEquals(DungeonEditorViewMode.GRAPH, graphControls.viewMode(), "DE-VIEW-001 controls view mode");
         assertEquals(DungeonEditorViewMode.GRAPH, graphSurface.viewMode(), "DE-VIEW-001 map surface view mode");
         assertTrue(toggleSelected(controls, "Graph"), "DE-VIEW-001 graph control is visibly selected");
@@ -264,8 +263,8 @@ final class DungeonEditorProjectionOverlayScenarios {
 
         click(button(controls, "Grid"));
 
-        DungeonEditorControlsSnapshot gridControls = runtime.controlsModel().current();
-        DungeonEditorMapSurfaceSnapshot gridSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState gridControls = runtime.editorApi().current();
+        DungeonEditorState gridSurface = runtime.editorApi().current();
         assertEquals(DungeonEditorViewMode.GRID, gridControls.viewMode(), "DE-VIEW-002 controls view mode");
         assertEquals(DungeonEditorViewMode.GRID, gridSurface.viewMode(), "DE-VIEW-002 map surface view mode");
         assertTrue(toggleSelected(controls, "Grid"), "DE-VIEW-002 grid control is visibly selected");
@@ -303,14 +302,14 @@ final class DungeonEditorProjectionOverlayScenarios {
                 false);
         fireMapMouse(mapView, MouseEvent.MOUSE_DRAGGED, MouseButton.PRIMARY, dragEndX, dragEndY, false);
 
-        assertTrue(runtime.mapSurfaceModel().current().preview() instanceof DungeonEditorPreview.RoomRectanglePreview,
+        assertTrue(runtime.editorApi().current().preview() instanceof DungeonEditorPreview.RoomRectanglePreview,
                 "DE-VIEW-003 starts from a live room preview before view-mode change");
         assertTrue(renderPreviewSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(cellRect(1, 1, 3, 3, 0)),
                 "DE-VIEW-003 preview render is visible before view-mode change");
 
         click(button(controls, "Graph"));
 
-        DungeonEditorMapSurfaceSnapshot graphSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState graphSurface = runtime.editorApi().current();
         assertEquals(DungeonEditorViewMode.GRAPH, graphSurface.viewMode(), "DE-VIEW-003 map surface view mode");
         assertEquals(DungeonEditorPreview.none(), graphSurface.preview(),
                 "DE-VIEW-003 view-mode change clears active room preview");
@@ -323,7 +322,7 @@ final class DungeonEditorProjectionOverlayScenarios {
 
         fireMapMouse(mapView, MouseEvent.MOUSE_RELEASED, MouseButton.PRIMARY, dragEndX, dragEndY, false);
 
-        DungeonEditorMapSurfaceSnapshot releasedSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState releasedSurface = runtime.editorApi().current();
         assertEquals(DungeonEditorViewMode.GRAPH, releasedSurface.viewMode(),
                 "DE-VIEW-003 stale release keeps graph view mode");
         assertEquals(DungeonEditorPreview.none(), releasedSurface.preview(),
@@ -432,9 +431,9 @@ final class DungeonEditorProjectionOverlayScenarios {
         selectComboItem(overlayModeSelector, "Nahe Ebenen");
         selectComboItem(overlayModeSelector, "Aus");
 
-        assertOverlaySettings(runtime.controlsModel().current().overlaySettings(), "OFF", 2, 0.35, List.of(),
+        assertOverlaySettings(runtime.editorApi().current().overlaySettings(), "OFF", 2, 0.35, List.of(),
                 "DE-OVR-001 controls overlay settings");
-        assertOverlaySettings(runtime.mapSurfaceModel().current().overlaySettings(), "OFF", 2, 0.35, List.of(),
+        assertOverlaySettings(runtime.editorApi().current().overlaySettings(), "OFF", 2, 0.35, List.of(),
                 "DE-OVR-001 map surface overlay settings");
         assertTrue(buttonVisible(controls, "Overlay: Aus"),
                 "DE-OVR-001 overlay trigger text summarizes off settings");
@@ -448,9 +447,9 @@ final class DungeonEditorProjectionOverlayScenarios {
         setSpinnerValue(spinner(controls), 1);
         setSliderValue(slider(controls), 35.0);
 
-        assertOverlaySettings(runtime.controlsModel().current().overlaySettings(), "NEARBY", 1, 0.35, List.of(),
+        assertOverlaySettings(runtime.editorApi().current().overlaySettings(), "NEARBY", 1, 0.35, List.of(),
                 "DE-OVR-002 controls overlay settings");
-        assertOverlaySettings(runtime.mapSurfaceModel().current().overlaySettings(), "NEARBY", 1, 0.35, List.of(),
+        assertOverlaySettings(runtime.editorApi().current().overlaySettings(), "NEARBY", 1, 0.35, List.of(),
                 "DE-OVR-002 map surface overlay settings");
         assertTrue(buttonVisible(controls, "Overlay: Nachbarn +/-1 35%"),
                 "DE-OVR-002 overlay trigger text summarizes nearby settings");
@@ -464,9 +463,9 @@ final class DungeonEditorProjectionOverlayScenarios {
         selectedLevelsField.setText("-1,1,2");
         selectedLevelsField.fireEvent(new ActionEvent());
 
-        assertOverlaySettings(runtime.controlsModel().current().overlaySettings(), "SELECTED", 1, 0.35, List.of(-1, 1, 2),
+        assertOverlaySettings(runtime.editorApi().current().overlaySettings(), "SELECTED", 1, 0.35, List.of(-1, 1, 2),
                 "DE-OVR-003 controls overlay settings");
-        assertOverlaySettings(runtime.mapSurfaceModel().current().overlaySettings(), "SELECTED", 1, 0.35, List.of(-1, 1, 2),
+        assertOverlaySettings(runtime.editorApi().current().overlaySettings(), "SELECTED", 1, 0.35, List.of(-1, 1, 2),
                 "DE-OVR-003 map surface overlay settings");
         assertTrue(buttonVisible(controls, "Overlay: Auswahl z=-1, 1, 2 35%"),
                 "DE-OVR-003 overlay trigger text summarizes selected levels");
@@ -506,9 +505,9 @@ final class DungeonEditorProjectionOverlayScenarios {
         setSpinnerValue(spinner(popupContainer()), 1);
         setSliderValue(slider(popupContainer()), 35.0);
 
-        assertOverlaySettings(runtime.controlsModel().current().overlaySettings(), "NEARBY", 1, 0.35, List.of(),
+        assertOverlaySettings(runtime.editorApi().current().overlaySettings(), "NEARBY", 1, 0.35, List.of(),
                 "DE-OVR-004 controls overlay settings");
-        assertOverlaySettings(runtime.mapSurfaceModel().current().overlaySettings(), "NEARBY", 1, 0.35, List.of(),
+        assertOverlaySettings(runtime.editorApi().current().overlaySettings(), "NEARBY", 1, 0.35, List.of(),
                 "DE-OVR-004 map surface overlay settings");
         assertTrue(popupContainerVisible(), "DE-OVR-004 overlay popup remains visible while editing");
         assertTrue(buttonVisible(controls, "Overlay: Nachbarn +/-1 35%"),
@@ -545,7 +544,7 @@ final class DungeonEditorProjectionOverlayScenarios {
                 false);
         fireMapMouse(mapView, MouseEvent.MOUSE_DRAGGED, MouseButton.PRIMARY, dragEndX, dragEndY, false);
 
-        assertTrue(runtime.mapSurfaceModel().current().preview() instanceof DungeonEditorPreview.RoomRectanglePreview,
+        assertTrue(runtime.editorApi().current().preview() instanceof DungeonEditorPreview.RoomRectanglePreview,
                 "DE-OVR-005 starts from a live room preview before overlay change");
         assertTrue(renderPreviewSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(cellRect(1, 1, 3, 3, 0)),
                 "DE-OVR-005 preview render is visible before overlay change");
@@ -553,11 +552,11 @@ final class DungeonEditorProjectionOverlayScenarios {
         ComboBox<?> overlayModeSelector = comboBoxWithDisplayedItem(controls, "Nahe Ebenen");
         selectComboItem(overlayModeSelector, "Nahe Ebenen");
 
-        assertOverlaySettings(runtime.controlsModel().current().overlaySettings(), "NEARBY", 2, 0.35, List.of(),
+        assertOverlaySettings(runtime.editorApi().current().overlaySettings(), "NEARBY", 2, 0.35, List.of(),
                 "DE-OVR-005 controls overlay settings");
-        assertOverlaySettings(runtime.mapSurfaceModel().current().overlaySettings(), "NEARBY", 2, 0.35, List.of(),
+        assertOverlaySettings(runtime.editorApi().current().overlaySettings(), "NEARBY", 2, 0.35, List.of(),
                 "DE-OVR-005 map surface overlay settings");
-        assertTrue(runtime.mapSurfaceModel().current().preview() instanceof DungeonEditorPreview.RoomRectanglePreview,
+        assertTrue(runtime.editorApi().current().preview() instanceof DungeonEditorPreview.RoomRectanglePreview,
                 "DE-OVR-005 overlay change preserves active room preview");
         assertTrue(renderPreviewSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(cellRect(1, 1, 3, 3, 0)),
                 "DE-OVR-005 overlay change preserves preview render");

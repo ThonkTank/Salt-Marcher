@@ -1,5 +1,7 @@
 package features.dungeon.domain.core.structure.room;
 
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
+
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +49,7 @@ final class RoomPartitionPreservingMutation {
             List<DungeonRoomTopologyClusterWork> clusters,
             DungeonRoomTopologyClusterWork target,
             Map<Integer, List<Cell>> nextCellsByLevel,
-            Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel,
+            Map<Integer, List<BoundarySegment>> boundariesByLevel,
             RoomMutationIdCursor ids
     ) {
         if (target == null || unsupportedClusterSplit(nextCellsByLevel)) {

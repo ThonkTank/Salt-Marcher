@@ -1,5 +1,4 @@
 package features.dungeon.adapter.javafx.editor;
-
 import org.junit.jupiter.api.Test;
 
 @org.junit.jupiter.api.Tag("ui")

@@ -7,7 +7,6 @@ import features.dungeon.api.DungeonCellRef;
 import features.dungeon.api.DungeonEdgeRef;
 import features.dungeon.api.DungeonEditorHandleKind;
 import features.dungeon.api.DungeonEditorHandleRef;
-import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonTopologyElementKind;
 
 final class DungeonEditorStatePanelCorridorPointTarget {
@@ -17,9 +16,9 @@ final class DungeonEditorStatePanelCorridorPointTarget {
     private DungeonEditorStatePanelCorridorPointTarget() {
     }
 
-    static DungeonEditorWorkspaceValues.HandleRef from(DungeonEditorStateSnapshot.Selection selection) {
-        DungeonEditorStateSnapshot.Selection safeSelection = selection == null
-                ? DungeonEditorStateSnapshot.Selection.empty()
+    static DungeonEditorWorkspaceValues.HandleRef from(features.dungeon.api.editor.DungeonEditorSelection selection) {
+        features.dungeon.api.editor.DungeonEditorSelection safeSelection = selection == null
+                ? features.dungeon.api.editor.DungeonEditorSelection.empty()
                 : selection;
         DungeonEditorHandleRef handleRef = safeSelection.handleRef();
         if (handleRef == null || !isEditable(handleRef)) {
@@ -50,7 +49,7 @@ final class DungeonEditorStatePanelCorridorPointTarget {
         return new DungeonEditorWorkspaceValues.HandleRef(
                 handleRef.kind(),
                 new DungeonTopologyRef(
-                        DungeonEditorMainViewInteractionValues.toTopologyKind(handleRef.topologyRef().kind().name()),
+                        DungeonEditorMainViewInteractionValues.domainTopologyKind(handleRef.topologyRef().kind()),
                         handleRef.topologyRef().id()),
                 handleRef.ownerId(),
                 handleRef.clusterId(),

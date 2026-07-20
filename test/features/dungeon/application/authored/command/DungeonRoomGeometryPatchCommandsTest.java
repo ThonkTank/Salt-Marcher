@@ -16,7 +16,7 @@ import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.corridor.DungeonCorridorEndpoint;
 import features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import java.util.List;
 import java.util.Set;
@@ -84,7 +84,12 @@ final class DungeonRoomGeometryPatchCommandsTest {
                 .anyMatch(change -> change instanceof RoomClusterChange cluster
                         && cluster.before() == null
                         && cluster.after() != null));
-        assertEquals(Set.of(new DungeonChunkKey(73L, 0, -1, -1)), paintedResult.patch().touchedChunks());
+        assertEquals(
+                Set.of(
+                        new DungeonChunkKey(73L, 0, -1, -1),
+                        new DungeonChunkKey(73L, 0, -1, 0),
+                        new DungeonChunkKey(73L, 0, 0, -1)),
+                paintedResult.patch().touchedChunks());
         DungeonMap painted = paintedResult.patch().applyTo(empty);
         assertEquals(empty.revision() + 1L, painted.revision());
         assertTrue(painted.topology().roomClusters().getFirst().orderedAuthoredBoundaries().stream()

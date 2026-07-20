@@ -1,4 +1,5 @@
 package features.dungeon.adapter.javafx.editor;
+import features.dungeon.api.editor.DungeonEditorSelection;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,19 +13,14 @@ import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.api.DungeonEdgeRef;
-import features.dungeon.api.DungeonEditorControlsModel;
-import features.dungeon.api.DungeonEditorControlsSnapshot;
-import features.dungeon.api.DungeonEditorMapSurfaceModel;
-import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
+import features.dungeon.api.editor.DungeonEditorState;
 import features.dungeon.api.DungeonEditorPreview;
-import features.dungeon.api.DungeonEditorStateModel;
-import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonMapSummary;
 import features.dungeon.api.DungeonOverlaySettings;
-import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
+import features.dungeon.api.editor.DungeonEditorPointerInput.Target;
 import features.dungeon.application.editor.PointerInteractionTargets;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel.PointerTarget;
@@ -98,12 +94,12 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     static void assertInvalidStairGeometryLeavesViewState(
             TestRuntime runtime,
             TestBinding binding,
-            DungeonEditorMapSurfaceSnapshot surfaceBefore,
+            DungeonEditorState surfaceBefore,
             Set<String> renderCellsBefore,
             String message
     ) {
-        DungeonEditorMapSurfaceSnapshot surfaceAfter = runtime.mapSurfaceModel().current();
-        assertEquals(surfaceBefore.surface().map(), surfaceAfter.surface().map(),
+        DungeonEditorState surfaceAfter = runtime.editorApi().current();
+        assertEquals(surfaceBefore.selectedWindow().map(), surfaceAfter.selectedWindow().map(),
                 message + " keeps published map stable");
         assertEquals(surfaceBefore.selection(), surfaceAfter.selection(),
                 message + " keeps selected stair stable");
@@ -183,7 +179,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static DungeonEditorPreview.ClusterBoundariesPreview assertWallPreview(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             int expectedEdgeCount,
             boolean deleteMode,
             String message
@@ -219,7 +215,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static void assertInternalWallPublishedAndRendered(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             DungeonMapContentModel mapContentModel,
             String message
     ) {
@@ -265,11 +261,11 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
         click(button(controls, "Neu"));
         catalogPopupTextField(controls, "Dungeon-Name").setText(mapName);
         click(catalogPopupButton(controls, "Erstellen"));
-        return selectedMapId(runtime.controlsModel().current(), mapName);
+        return selectedMapId(runtime.editorApi().current(), mapName);
     }
 
-    static long selectedMapId(DungeonEditorControlsSnapshot snapshot, String expectedMapName) {
-        DungeonMapSummary selected = snapshot.maps().stream()
+    static long selectedMapId(DungeonEditorState snapshot, String expectedMapName) {
+        DungeonMapSummary selected = snapshot.catalog().stream()
                 .filter(map -> expectedMapName.equals(map.mapName()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Map not selected after create: " + expectedMapName));
@@ -579,19 +575,19 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
         return nodes;
     }
 
-    static boolean surfaceContainsLevel(DungeonEditorMapSurfaceSnapshot snapshot, int level) {
-        return snapshot.surface() != null
-                && snapshot.surface().map().areas().stream()
+    static boolean surfaceContainsLevel(DungeonEditorState snapshot, int level) {
+        return snapshot.selectedWindow() != null
+                && snapshot.selectedWindow().map().areas().stream()
                         .flatMap(area -> area.cells().stream())
                         .anyMatch(cell -> cell.level() == level);
     }
 
-    static Set<String> surfaceCellSet(DungeonEditorMapSurfaceSnapshot snapshot) {
+    static Set<String> surfaceCellSet(DungeonEditorState snapshot) {
         Set<String> cells = new LinkedHashSet<>();
-        if (snapshot.surface() == null) {
+        if (snapshot.selectedWindow() == null) {
             return cells;
         }
-        mapSnapshotCellSet(snapshot.surface().map()).forEach(cells::add);
+        mapSnapshotCellSet(snapshot.selectedWindow().map()).forEach(cells::add);
         return cells;
     }
 
@@ -618,11 +614,11 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static features.dungeon.api.DungeonEditorMapSnapshot.Area corridorAreaById(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             long corridorId,
             String message
     ) {
-        return snapshot.surface().map().areas().stream()
+        return snapshot.selectedWindow().map().areas().stream()
                 .filter(area -> "CORRIDOR".equalsIgnoreCase(area.kind()))
                 .filter(area -> area.id() == corridorId)
                 .findFirst()
@@ -745,7 +741,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static void assertCorridorCreatedInSnapshot(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             DungeonMapContentModel mapContentModel,
             long corridorId,
             Set<String> expectedCells,
@@ -838,13 +834,13 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static void assertCorridorAnchorHandleAt(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             int cellX,
             int cellY,
             int cellZ,
             String message
     ) {
-        assertTrue(snapshot.surface().map().editorHandles().stream()
+        assertTrue(snapshot.selectedWindow().map().editorHandles().stream()
                         .anyMatch(handle -> "CORRIDOR_ANCHOR".equals(handle.ref().kind().name())
                                 && handle.cell().q() == cellX
                                 && handle.cell().r() == cellY
@@ -853,18 +849,18 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static void assertOnlyCorridorWaypointHandleAt(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             long corridorId,
             int cellX,
             int cellY,
             int cellZ,
             String message
     ) {
-        long waypointHandles = snapshot.surface().map().editorHandles().stream()
+        long waypointHandles = snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(handle -> "CORRIDOR_WAYPOINT".equals(handle.ref().kind().name()))
                 .filter(handle -> handle.ref().corridorId() == corridorId)
                 .count();
-        long matchingHandles = snapshot.surface().map().editorHandles().stream()
+        long matchingHandles = snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(handle -> "CORRIDOR_WAYPOINT".equals(handle.ref().kind().name()))
                 .filter(handle -> handle.ref().corridorId() == corridorId)
                 .filter(handle -> handle.cell().q() == cellX)
@@ -877,13 +873,13 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static void assertCrossLevelStairInSnapshot(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             long stairId,
             String message
     ) {
         DungeonTopologyElementRef ref = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.STAIR, stairId);
         String activeCell = "4,2," + snapshot.projectionLevel();
-        assertTrue(snapshot.surface().map().features().stream()
+        assertTrue(snapshot.selectedWindow().map().features().stream()
                         .filter(feature -> "STAIR".equals(feature.kind()))
                         .filter(feature -> feature.id() == stairId)
                         .filter(feature -> feature.topologyRef().equals(ref))
@@ -896,24 +892,24 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static void assertStairMovedInSnapshot(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             DungeonMapContentModel mapContentModel,
             DungeonTopologyElementRef ref,
             String message
     ) {
-        assertTrue(snapshot.surface().map().features().stream()
+        assertTrue(snapshot.selectedWindow().map().features().stream()
                         .filter(feature -> "STAIR".equals(feature.kind()))
                         .filter(feature -> feature.topologyRef().equals(editorTopologyRef(ref)))
                         .anyMatch(feature -> feature.cells().stream()
                                 .anyMatch(cell -> cell.q() == 3 && cell.r() == 2 && cell.level() == 0)),
                 message + " published stair feature includes moved path node");
-        assertTrue(snapshot.surface().map().features().stream()
+        assertTrue(snapshot.selectedWindow().map().features().stream()
                         .filter(feature -> "STAIR".equals(feature.kind()))
                         .filter(feature -> feature.topologyRef().equals(editorTopologyRef(ref)))
                         .anyMatch(feature -> feature.cells().stream()
                                 .anyMatch(cell -> cell.q() == 2 && cell.r() == 2 && cell.level() == 0)),
                 message + " published stair feature keeps lower exit cell");
-        assertTrue(snapshot.surface().map().editorHandles().stream()
+        assertTrue(snapshot.selectedWindow().map().editorHandles().stream()
                         .anyMatch(handle -> handle.ref().topologyRef().equals(ref)
                                 && handle.ref().kind().name().equals("STAIR_ANCHOR")
                                 && handle.cell().q() == 3
@@ -927,7 +923,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static void assertStraightStairCreatedInSnapshot(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             DungeonMapContentModel mapContentModel,
             long stairId,
             int anchorQ,
@@ -945,7 +941,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
                 : activeLevel == 1
                         ? Set.of(anchorQ + "," + upperR + ",1")
                         : Set.of();
-        assertTrue(snapshot.surface().map().features().stream()
+        assertTrue(snapshot.selectedWindow().map().features().stream()
                         .filter(feature -> "STAIR".equals(feature.kind()))
                         .filter(feature -> feature.id() == stairId)
                         .filter(feature -> feature.topologyRef().equals(ref))
@@ -954,8 +950,8 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
                                 .collect(java.util.stream.Collectors.toSet())
                                 .equals(expectedFeatureCells)),
                 message + " published stair feature exposes exactly the active-level generated path/exit: "
-                        + snapshot.surface().map().features());
-        var activeStairHandles = snapshot.surface().map().editorHandles().stream()
+                        + snapshot.selectedWindow().map().features());
+        var activeStairHandles = snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(handle -> handle.ref().topologyRef().equals(ref))
                 .toList();
         assertTrue(!activeStairHandles.isEmpty()
@@ -966,7 +962,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static void assertTransitionCreatedInSnapshot(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             DungeonMapContentModel mapContentModel,
             long transitionId,
             int q,
@@ -978,7 +974,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
             String message
     ) {
         DungeonTopologyElementRef ref = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.TRANSITION, transitionId);
-        assertTrue(snapshot.surface().map().features().stream()
+        assertTrue(snapshot.selectedWindow().map().features().stream()
                         .filter(feature -> "TRANSITION".equals(feature.kind()))
                         .filter(feature -> feature.id() == transitionId)
                         .filter(feature -> feature.topologyRef().equals(ref))
@@ -986,13 +982,13 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
                                 .anyMatch(cell -> cell.q() == q && cell.r() == r && cell.level() == level)
                                 && destinationLabel.equals(feature.destinationLabel())),
                 message + " published transition feature exposes cell and destination label: "
-                        + snapshot.surface().map().features());
+                        + snapshot.selectedWindow().map().features());
         assertTrue(renderHasGlyphAt(mapContentModel, ref, renderX, renderY, false),
                 message + " render scene shows committed transition marker");
     }
 
     static void assertFeatureMarkerCreatedInSnapshot(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             DungeonMapContentModel mapContentModel,
             String kind,
             long markerId,
@@ -1002,15 +998,15 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
             String message
     ) {
         DungeonTopologyElementRef ref = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.FEATURE_MARKER, markerId);
-        assertTrue(snapshot.surface().map().features().stream()
+        assertTrue(snapshot.selectedWindow().map().features().stream()
                         .filter(feature -> kind.equals(feature.kind()))
                         .filter(feature -> feature.id() == markerId)
                         .filter(feature -> feature.topologyRef().equals(ref))
                         .anyMatch(feature -> feature.cells().stream()
                                 .anyMatch(cell -> cell.q() == q && cell.r() == r && cell.level() == level)),
                 message + " published feature exposes " + kind + " marker cell: "
-                        + snapshot.surface().map().features());
-        assertTrue(snapshot.surface().map().editorHandles().stream().noneMatch(handle ->
+                        + snapshot.selectedWindow().map().features());
+        assertTrue(snapshot.selectedWindow().map().editorHandles().stream().noneMatch(handle ->
                         handle.ref().topologyRef().equals(ref)),
                 message + " marker remains non-handle-indexed");
         assertTrue(renderSurfaceCellOriginsWithZ(mapContentModel).contains(q + "," + r + "," + level),
@@ -1022,18 +1018,18 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static void assertFeatureMarkerAbsentFromSnapshotAndRender(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             DungeonMapContentModel mapContentModel,
             DungeonTopologyElementRef ref,
             Point2D formerCenter,
             String message
     ) {
-        assertTrue(snapshot.surface().map().features().stream().noneMatch(feature ->
+        assertTrue(snapshot.selectedWindow().map().features().stream().noneMatch(feature ->
                         feature.id() == ref.id()
                                 && feature.topologyRef().kind()
                                 == features.dungeon.api.DungeonTopologyElementKind.FEATURE_MARKER),
                 message + " published feature list omits the deleted feature marker");
-        assertTrue(snapshot.surface().map().editorHandles().stream().noneMatch(handle ->
+        assertTrue(snapshot.selectedWindow().map().editorHandles().stream().noneMatch(handle ->
                         handle.ref().topologyRef().equals(ref)),
                 message + " published handle list still omits feature-marker handles");
         assertTrue(!renderHasGlyphAt(mapContentModel, ref, formerCenter.getX(), formerCenter.getY(), false),
@@ -1052,26 +1048,26 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static features.dungeon.api.DungeonEditorHandleSnapshot firstStairHandle(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             String message
     ) {
-        return snapshot.surface().map().editorHandles().stream()
+        return snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(handle -> "STAIR_ANCHOR".equals(handle.ref().kind().name()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException(message + " stair handle not loaded."));
     }
 
     static void assertStairAbsentFromSnapshotAndRender(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             DungeonMapContentModel mapContentModel,
             DungeonTopologyElementRef ref,
             Point2D formerCenter,
             String message
     ) {
-        assertTrue(snapshot.surface().map().features().stream().noneMatch(feature ->
+        assertTrue(snapshot.selectedWindow().map().features().stream().noneMatch(feature ->
                         feature.id() == ref.id() && "STAIR".equals(feature.kind())),
                 message + " published feature list omits deleted stair");
-        assertTrue(snapshot.surface().map().editorHandles().stream().noneMatch(handle ->
+        assertTrue(snapshot.selectedWindow().map().editorHandles().stream().noneMatch(handle ->
                         handle.ref().topologyRef().id() == ref.id()
                                 && "STAIR".equals(handle.ref().topologyRef().kind().name())),
                 message + " published handle list omits deleted stair handles");
@@ -1084,23 +1080,23 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static features.dungeon.api.DungeonEditorHandleSnapshot firstCorridorAnchorHandle(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             String message
     ) {
-        return snapshot.surface().map().editorHandles().stream()
+        return snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(handle -> "CORRIDOR_ANCHOR".equals(handle.ref().kind().name()))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError(message + " corridor anchor handle not published"));
     }
 
     static features.dungeon.api.DungeonEditorHandleSnapshot firstDoorHandleAt(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             int cellX,
             int cellY,
             int cellZ,
             String message
     ) {
-        return snapshot.surface().map().editorHandles().stream()
+        return snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(handle -> "DOOR".equals(handle.ref().kind().name()))
                 .filter(handle -> handle.cell().q() == cellX)
                 .filter(handle -> handle.cell().r() == cellY)
@@ -1110,7 +1106,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static Point2D doorHandleCenterAt(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             DungeonMapContentModel mapContentModel,
             int cellX,
             int cellY,
@@ -1124,13 +1120,13 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static features.dungeon.api.DungeonEditorHandleSnapshot firstClusterCornerHandleAt(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             int cellX,
             int cellY,
             int cellZ,
             String message
     ) {
-        return snapshot.surface().map().editorHandles().stream()
+        return snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(handle -> "CLUSTER_CORNER".equals(handle.ref().kind().name()))
                 .filter(handle -> handle.cell().q() == cellX)
                 .filter(handle -> handle.cell().r() == cellY)
@@ -1140,7 +1136,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static void assertClusterCornerHandleAt(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             int cellX,
             int cellY,
             int cellZ,
@@ -1152,7 +1148,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     static void assertPointerTarget(
             DungeonMapContentModel mapContentModel,
             Point2D scenePoint,
-            DungeonEditorRuntimePointerTarget.TargetKind expectedKind,
+            features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind expectedKind,
             String message
     ) {
         assertEquals(expectedKind,
@@ -1185,10 +1181,10 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
             int projectionLevel
     ) {
         List<PointerTarget> localTargets = mapContentModel.pointerTargetsAt(sceneX, sceneY);
-        List<DungeonEditorRuntimePointerTarget> runtimeTargets = localTargets.stream()
+        List<features.dungeon.api.editor.DungeonEditorPointerInput.Target> runtimeTargets = localTargets.stream()
                 .map(DungeonEditorTestSupport::runtimeTarget)
                 .toList();
-        DungeonEditorRuntimePointerTarget selected = PointerInteractionTargets.fromRuntimeTargets(
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target selected = PointerInteractionTargets.fromTargets(
                 sceneX,
                 sceneY,
                 false,
@@ -1207,68 +1203,30 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
         mapContentModel.updateHoverTarget(target.localTarget());
     }
 
-    private static DungeonEditorRuntimePointerTarget runtimeTarget(PointerTarget target) {
-        DungeonEditorPointerInput.Target source = target == null
+    private static features.dungeon.api.editor.DungeonEditorPointerInput.Target runtimeTarget(PointerTarget target) {
+        return target == null
                 ? DungeonEditorPointerInput.Target.empty()
                 : target.toApiTarget();
-        DungeonEditorPointerInput.BoundaryTarget boundary = source.boundary();
-        return new DungeonEditorRuntimePointerTarget(
-                enumValue(DungeonEditorRuntimePointerTarget.TargetKind.class,
-                        source.targetKind(), DungeonEditorRuntimePointerTarget.TargetKind.EMPTY),
-                enumValue(DungeonEditorRuntimePointerTarget.LabelKind.class,
-                        source.labelKind(), DungeonEditorRuntimePointerTarget.LabelKind.EMPTY),
-                enumValue(DungeonEditorRuntimePointerTarget.ElementKind.class,
-                        source.elementKind(), DungeonEditorRuntimePointerTarget.ElementKind.EMPTY),
-                source.ownerId(),
-                source.clusterId(),
-                enumValue(DungeonEditorRuntimePointerTarget.TopologyKind.class,
-                        source.topologyKind(), DungeonEditorRuntimePointerTarget.TopologyKind.EMPTY),
-                source.topologyId(),
-                source.handleRef(),
-                new DungeonEditorRuntimePointerTarget.BoundaryTarget(
-                        enumValue(DungeonEditorRuntimePointerTarget.BoundaryKind.class,
-                                boundary.boundaryKind(), DungeonEditorRuntimePointerTarget.BoundaryKind.WALL),
-                        boundary.key(),
-                        boundary.ownerId(),
-                        enumValue(DungeonEditorRuntimePointerTarget.TopologyKind.class,
-                                boundary.topologyKind(), DungeonEditorRuntimePointerTarget.TopologyKind.EMPTY),
-                        boundary.topologyId(),
-                        boundary.startQ(), boundary.startR(), boundary.startLevel(),
-                        boundary.endQ(), boundary.endR(), boundary.endLevel()),
-                enumValue(DungeonEditorRuntimePointerTarget.SyntheticHoverKind.class,
-                        source.syntheticHoverKind(), DungeonEditorRuntimePointerTarget.SyntheticHoverKind.NONE),
-                new DungeonEditorRuntimePointerTarget.CellTarget(
-                        source.cell().exact(), source.cell().q(), source.cell().r(), source.cell().level()),
-                new DungeonEditorRuntimePointerTarget.VertexTarget(
-                        source.vertex().exact(), source.vertex().q(), source.vertex().r(), source.vertex().level()));
-    }
-
-    private static <E extends Enum<E>> E enumValue(Class<E> type, String name, E fallback) {
-        try {
-            return Enum.valueOf(type, name == null ? "" : name);
-        } catch (IllegalArgumentException ignored) {
-            return fallback;
-        }
     }
 
     record TestRuntimePointerTarget(
-            DungeonEditorRuntimePointerTarget rawTarget,
+            features.dungeon.api.editor.DungeonEditorPointerInput.Target rawTarget,
             PointerTarget localTarget
     ) {
         TestRuntimePointerTarget {
-            rawTarget = rawTarget == null ? DungeonEditorRuntimePointerTarget.empty() : rawTarget;
+            rawTarget = rawTarget == null ? features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty() : rawTarget;
             localTarget = localTarget == null ? PointerTarget.empty() : localTarget;
         }
 
-        DungeonEditorRuntimePointerTarget.TargetKind targetKind() {
+        features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind targetKind() {
             return rawTarget.targetKind();
         }
 
-        DungeonEditorRuntimePointerTarget.LabelKind labelKind() {
+        features.dungeon.api.editor.DungeonEditorPointerInput.LabelKind labelKind() {
             return rawTarget.labelKind();
         }
 
-        DungeonEditorRuntimePointerTarget.ElementKind elementKind() {
+        features.dungeon.api.editor.DungeonEditorPointerInput.ElementKind elementKind() {
             return rawTarget.elementKind();
         }
 
@@ -1280,13 +1238,13 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
             return rawTarget.clusterId();
         }
 
-        DungeonEditorRuntimePointerTarget.TopologyKind topologyKind() {
+        features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind topologyKind() {
             return rawTarget.topologyKind();
         }
 
         String topologyRefText() {
-            DungeonEditorRuntimePointerTarget.TopologyKind kind = rawTarget.topologyKind();
-            return kind == DungeonEditorRuntimePointerTarget.TopologyKind.EMPTY ? "" : kind.name();
+            features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind kind = rawTarget.topologyKind();
+            return kind == features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.EMPTY ? "" : kind.name();
         }
 
         long topologyId() {
@@ -1297,16 +1255,16 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
             return rawTarget.handleRef();
         }
 
-        DungeonEditorRuntimePointerTarget.BoundaryTarget boundaryRef() {
+        features.dungeon.api.editor.DungeonEditorPointerInput.BoundaryTarget boundaryRef() {
             return rawTarget.boundary();
         }
 
-        DungeonEditorRuntimePointerTarget.CellTarget cellRef() {
+        features.dungeon.api.editor.DungeonEditorPointerInput.CellTarget cellRef() {
             return rawTarget.cell();
         }
 
         boolean isEmptyTarget() {
-            return rawTarget.targetKind() == DungeonEditorRuntimePointerTarget.TargetKind.EMPTY;
+            return rawTarget.targetKind() == features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.EMPTY;
         }
 
         boolean isBoundaryTarget() {
@@ -1361,11 +1319,11 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static features.dungeon.api.DungeonEditorMapSnapshot.Area roomAreaByLabel(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             String label,
             String message
     ) {
-        return snapshot.surface().map().areas().stream()
+        return snapshot.selectedWindow().map().areas().stream()
                 .filter(area -> "ROOM".equalsIgnoreCase(area.kind()))
                 .filter(area -> label.equals(area.label()))
                 .findFirst()
@@ -1373,11 +1331,11 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static features.dungeon.api.DungeonEditorMapSnapshot.Area roomAreaByCells(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             Set<String> expectedCells,
             String message
     ) {
-        return snapshot.surface().map().areas().stream()
+        return snapshot.selectedWindow().map().areas().stream()
                 .filter(area -> "ROOM".equalsIgnoreCase(area.kind()))
                 .filter(area -> areaCellSet(area).equals(expectedCells))
                 .findFirst()
@@ -1385,11 +1343,11 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static void assertNoOverlappingSurfaceCellOwnership(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             String message
     ) {
         Set<String> seenCells = new LinkedHashSet<>();
-        for (var area : snapshot.surface().map().areas()) {
+        for (var area : snapshot.selectedWindow().map().areas()) {
             for (var cell : area.cells()) {
                 String key = cell.q() + "," + cell.r() + "," + cell.level();
                 assertTrue(seenCells.add(key), message + " overlapping cell ownership at " + key);
@@ -1621,10 +1579,10 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static void assertDoorOwningRoomFacts(
-            DungeonEditorMapSurfaceSnapshot surface,
+            DungeonEditorState surface,
             features.dungeon.api.DungeonEditorMapSnapshot.Boundary doorBoundary
     ) {
-        var owningArea = surface.surface().map().areas().stream()
+        var owningArea = surface.selectedWindow().map().areas().stream()
                 .filter(area -> "ROOM".equalsIgnoreCase(area.kind()))
                 .filter(area -> area.cells().stream().anyMatch(cell ->
                         cell.level() == doorBoundary.edge().from().level()
@@ -1656,8 +1614,8 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
         return cell.q() + "," + cell.r() + "," + cell.level();
     }
 
-    static String surfaceBoundarySummary(DungeonEditorMapSurfaceSnapshot snapshot) {
-        return snapshot.surface().map().boundaries().stream()
+    static String surfaceBoundarySummary(DungeonEditorState snapshot) {
+        return snapshot.selectedWindow().map().boundaries().stream()
                 .map(boundary -> boundary.kind()
                         + ":"
                         + boundary.edge().from().q()
@@ -1672,7 +1630,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static void assertNoPublishedBoundaryBetween(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             int q,
             int r,
             int level,
@@ -1681,19 +1639,19 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     ) {
         Cell from = new Cell(q, r, level);
         Cell to = direction.neighborOf(from);
-        boolean present = snapshot.surface().map().boundaries().stream()
+        boolean present = snapshot.selectedWindow().map().boundaries().stream()
                 .map(boundary -> boundary.edge())
                 .anyMatch(edge -> sameEdge(edge, from, to));
         assertTrue(!present, message + " boundaries=" + surfaceBoundarySummary(snapshot));
     }
 
     static boolean surfaceHasBoundaryKindAt(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             String kind,
             Cell from,
             Cell to
     ) {
-        return snapshot.surface().map().boundaries().stream()
+        return snapshot.selectedWindow().map().boundaries().stream()
                 .filter(boundary -> kind.equalsIgnoreCase(boundary.kind()))
                 .map(boundary -> boundary.edge())
                 .anyMatch(edge -> sameEdge(edge, from, to));
@@ -1766,7 +1724,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     static void assertSelectionMatches(
             DungeonTopologyElementRef expectedRef,
             long expectedClusterId,
-            DungeonEditorStateSnapshot.Selection selection,
+            DungeonEditorSelection selection,
             String message
     ) {
         assertEquals(expectedRef, selection.topologyRef(), message + " selected topology ref");
@@ -1790,7 +1748,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static void assertEmptySelection(
-            DungeonEditorStateSnapshot.Selection selection,
+            DungeonEditorSelection selection,
             String message
     ) {
         assertEquals(DungeonTopologyElementRef.empty(), selection.topologyRef(), message + " topology ref");
@@ -1965,14 +1923,14 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     record CanvasSnapshot(WritableImage image, DungeonMapContentModel.Viewport viewport) {
     }
 
-    static void assertEmptyMapSurface(DungeonEditorMapSurfaceSnapshot snapshot, String expectedMapName) {
-        assertTrue(snapshot.surface() != null, "DE-MAP-001 map surface is published");
-        assertEquals(expectedMapName, snapshot.surface().mapName(), "DE-MAP-001 map surface name");
-        assertTrue(snapshot.surface().previewMap() == null, "DE-MAP-001 created map has no preview map");
-        assertTrue(snapshot.surface().map().areas().isEmpty(), "DE-MAP-001 created map has no areas");
-        assertTrue(snapshot.surface().map().boundaries().isEmpty(), "DE-MAP-001 created map has no boundaries");
-        assertTrue(snapshot.surface().map().features().isEmpty(), "DE-MAP-001 created map has no features");
-        assertTrue(snapshot.surface().map().editorHandles().isEmpty(),
+    static void assertEmptyMapSurface(DungeonEditorState snapshot, String expectedMapName) {
+        assertTrue(snapshot.selectedWindow() != null, "DE-MAP-001 map surface is published");
+        assertEquals(expectedMapName, snapshot.selectedWindow().mapName(), "DE-MAP-001 map surface name");
+        assertTrue(snapshot.selectedWindow().previewMap() == null, "DE-MAP-001 created map has no preview map");
+        assertTrue(snapshot.selectedWindow().map().areas().isEmpty(), "DE-MAP-001 created map has no areas");
+        assertTrue(snapshot.selectedWindow().map().boundaries().isEmpty(), "DE-MAP-001 created map has no boundaries");
+        assertTrue(snapshot.selectedWindow().map().features().isEmpty(), "DE-MAP-001 created map has no features");
+        assertTrue(snapshot.selectedWindow().map().editorHandles().isEmpty(),
                 "DE-MAP-001 created map has no editor handles");
     }
 

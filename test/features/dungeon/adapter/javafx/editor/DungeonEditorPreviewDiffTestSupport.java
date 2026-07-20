@@ -4,7 +4,7 @@ import features.dungeon.api.DungeonCellRef;
 import features.dungeon.api.DungeonEdgeRef;
 import features.dungeon.api.DungeonEditorHandleSnapshot;
 import features.dungeon.api.DungeonEditorMapSnapshot;
-import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
+import features.dungeon.api.editor.DungeonEditorState;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -18,12 +18,12 @@ record PreviewDiff(
         List<Handle> changedHandles,
         List<Feature> changedFeatures
 ) {
-    static PreviewDiff from(DungeonEditorMapSurfaceSnapshot snapshot) {
-        if (snapshot == null || snapshot.surface() == null || snapshot.surface().previewMap() == null) {
+    static PreviewDiff from(DungeonEditorState snapshot) {
+        if (snapshot == null || snapshot.selectedWindow() == null || snapshot.selectedWindow().previewMap() == null) {
             return new PreviewDiff(List.of(), List.of(), List.of(), List.of());
         }
-        DungeonEditorMapSnapshot committed = snapshot.surface().map();
-        DungeonEditorMapSnapshot preview = snapshot.surface().previewMap();
+        DungeonEditorMapSnapshot committed = snapshot.selectedWindow().map();
+        DungeonEditorMapSnapshot preview = snapshot.selectedWindow().previewMap();
         return new PreviewDiff(
                 map(changed(committed.areas(), preview.areas(), value -> value.kind() + ":" + value.id()),
                         value -> new Area(value.kind(), value.cells())),

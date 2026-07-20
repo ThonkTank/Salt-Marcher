@@ -6,7 +6,6 @@ import java.util.Set;
 import features.dungeon.api.DungeonEditorHandleRef;
 import features.dungeon.api.DungeonEditorHandleSnapshot;
 import features.dungeon.api.DungeonEditorMapSnapshot;
-import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 
 final class DungeonEditorLabelPointerTargets {
     private static final String CLUSTER_LABEL_KIND = "CLUSTER_LABEL";
@@ -15,17 +14,17 @@ final class DungeonEditorLabelPointerTargets {
     }
 
     static void addTargets(
-            Map<String, DungeonEditorRuntimePointerTarget> targets,
+            Map<String, features.dungeon.api.editor.DungeonEditorPointerInput.Target> targets,
             DungeonEditorMapSnapshot map,
-            DungeonEditorMapSurfaceSnapshot snapshot
+            DungeonEditorSurfaceProjection snapshot
     ) {
         addClusterLabelTargets(targets, map, snapshot);
     }
 
     private static void addClusterLabelTargets(
-            Map<String, DungeonEditorRuntimePointerTarget> targets,
+            Map<String, features.dungeon.api.editor.DungeonEditorPointerInput.Target> targets,
             DungeonEditorMapSnapshot map,
-            DungeonEditorMapSurfaceSnapshot snapshot
+            DungeonEditorSurfaceProjection snapshot
     ) {
         Set<Long> renderedClusterIds = new LinkedHashSet<>();
         for (DungeonEditorHandleSnapshot handle : map.editorHandles()) {
@@ -41,11 +40,11 @@ final class DungeonEditorLabelPointerTargets {
                             ref.clusterId(),
                             ref.topologyRef(),
                             CLUSTER_LABEL_KIND).value(),
-                    DungeonEditorRuntimePointerTarget.label(
-                            DungeonEditorRuntimePointerTarget.LabelKind.CLUSTER_LABEL,
+                    features.dungeon.api.editor.DungeonEditorPointerInput.Target.label(
+                            features.dungeon.api.editor.DungeonEditorPointerInput.LabelKind.CLUSTER_LABEL,
                             ref.ownerId(),
                             ref.clusterId(),
-                            DungeonEditorRuntimePointerTarget.TopologyKind.fromPublished(ref.topologyRef().kind()),
+                            features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.fromPublished(ref.topologyRef().kind()),
                             DungeonEditorTopologyHitRefs.topologyId(ref.topologyRef())));
         }
     }

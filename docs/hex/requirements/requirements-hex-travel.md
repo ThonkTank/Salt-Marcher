@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-19
+Last Reviewed: 2026-07-19
 Source of Truth: Travel-facing hex-map behavior, visible states, and acceptance
 criteria.
 
@@ -17,19 +17,6 @@ party-owned runtime position.
 - hex editor behavior
 - shared map-canvas contract design
 - persistence schema detail
-
-## Current State
-
-- SaltMarcher ships Hex travel inside the `Hex-Karte` surface rather than as a
-  separate left-bar tab.
-- The Hex map shows the party token when the party-owned overworld travel
-  position points at a valid Hex tile id on the selected Hex map.
-- The `Reisegruppe` tool moves the existing party token to a clicked Hex tile
-  through the party-owned travel-position service.
-- Visible travel context currently includes the active Hex location on the
-  `Hex-Karte` state panel and compact location, status, pace, and hint
-  readback in the runtime `Reise` state tab. Weather and time of day remain
-  unavailable until a later travel-context source publishes them.
 
 ## Visible Structure
 

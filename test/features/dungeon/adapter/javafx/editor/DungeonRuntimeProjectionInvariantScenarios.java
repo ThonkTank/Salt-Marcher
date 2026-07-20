@@ -52,7 +52,7 @@ import features.dungeon.application.authored.port.DungeonWindowStore;
 import features.dungeon.domain.core.structure.DungeonMapMetadata;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
-import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
+import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomCatalog;
@@ -600,7 +600,8 @@ final class DungeonRuntimeProjectionInvariantScenarios {
                 .toList();
         return TravelWindowProjectionMapper.from(
                 header,
-                new DungeonWindow(header, 0L, chunkHeaders, fragments, List.of()),
+                new DungeonWindow(header, 0L, chunkHeaders, fragments, List.of(), List.of(),
+                        features.dungeon.application.authored.port.DungeonContinuationPage.empty()),
                 closure);
     }
 
@@ -649,8 +650,7 @@ final class DungeonRuntimeProjectionInvariantScenarios {
                 clusterId,
                 mapId,
                 mapName,
-                new Cell(0, 0, 0),
-                DungeonClusterBoundary.orderedByLevel(List.of()));
+                List.of());
         DungeonMap map = new DungeonMap(
                 new DungeonMapMetadata(new DungeonMapIdentity(mapId), mapName),
                 SpatialTopology.defaultGrid().withRoomClusters(List.of(cluster)),
@@ -660,7 +660,7 @@ final class DungeonRuntimeProjectionInvariantScenarios {
                         clusterId,
                         mapName,
                         java.util.Set.copyOf(roomCells),
-                        null))),
+                        DungeonRoomNarration.empty()))),
                 List.of(),
                 new StairCollection(List.of()),
                 new TransitionCatalog(List.of()),
@@ -740,7 +740,8 @@ final class DungeonRuntimeProjectionInvariantScenarios {
                         .map(key -> new DungeonWindowChunkHeader(key, map.revision()))
                         .toList();
                 return Optional.of(new DungeonWindow(
-                        header(map), request.requestGeneration(), chunkHeaders, fragments, List.of()));
+                        header(map), request.requestGeneration(), chunkHeaders, fragments, List.of(), List.of(),
+                        features.dungeon.application.authored.port.DungeonContinuationPage.empty()));
             }
 
             @Override

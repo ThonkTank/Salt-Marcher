@@ -8,26 +8,26 @@ import features.dungeon.domain.core.graph.DungeonTopologyRef;
 public record CorridorDoorBinding(
         long roomId,
         long clusterId,
-        Cell relativeCell,
+        Cell roomCell,
         Direction direction,
         DungeonTopologyRef topologyRef
 ) {
 
-    public CorridorDoorBinding(long roomId, long clusterId, Cell relativeCell, Direction direction) {
-        this(roomId, clusterId, relativeCell, direction, DungeonTopologyRef.empty());
+    public CorridorDoorBinding(long roomId, long clusterId, Cell roomCell, Direction direction) {
+        this(roomId, clusterId, roomCell, direction, DungeonTopologyRef.empty());
     }
 
     public CorridorDoorBinding {
         roomId = Math.max(0L, roomId);
         clusterId = Math.max(0L, clusterId);
-        Objects.requireNonNull(relativeCell);
+        Objects.requireNonNull(roomCell);
         Objects.requireNonNull(direction);
         topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
     }
 
     public CorridorDoorBinding withoutTopologyRef() {
         return topologyRef.present()
-                ? new CorridorDoorBinding(roomId, clusterId, relativeCell, direction)
+                ? new CorridorDoorBinding(roomId, clusterId, roomCell, direction)
                 : this;
     }
 }

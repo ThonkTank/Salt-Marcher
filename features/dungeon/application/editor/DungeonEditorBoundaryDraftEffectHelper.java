@@ -10,6 +10,7 @@ import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.BoundaryDraft;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.EdgeKey;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.InteractionState;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 
 final class DungeonEditorBoundaryDraftEffectHelper {
     DungeonEditorMainViewInterpretation previewWallDelete(
@@ -29,7 +30,7 @@ final class DungeonEditorBoundaryDraftEffectHelper {
                 new DungeonEditorSessionValues.ClusterBoundariesPreview(
                         clusterId,
                         edgeRefs(edges),
-                        features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.WALL,
+                        BoundaryKind.WALL,
                         true)));
     }
 
@@ -89,7 +90,7 @@ final class DungeonEditorBoundaryDraftEffectHelper {
         return new DungeonEditorSessionValues.ClusterBoundariesPreview(
                 clusterId,
                 edgeRefs(edges),
-                features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.WALL,
+                BoundaryKind.WALL,
                 deleteMode);
     }
 

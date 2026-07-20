@@ -1,5 +1,7 @@
 package features.dungeon.domain.core.structure.room;
 
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
+
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -10,7 +12,7 @@ import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.structure.corridor.CorridorDoorBindingGeometry;
 import features.dungeon.domain.core.structure.corridor.Corridor;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryStretchPlan.BoundaryVertex;
 import features.dungeon.domain.core.structure.room.RoomBoundaryStretchValues.ConnectorAction;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryStretchPlan.Selection;
@@ -27,7 +29,7 @@ final class RoomBoundaryStretchConnectors {
             DungeonRoomTopologyClusterWork target,
             Selection stretch,
             Set<Cell> clusterCells,
-            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries
+            Map<DungeonBoundaryKey, BoundarySegment> boundaries
     ) {
         List<BoundaryVertex> vertices = stretch.vertices();
         for (int index = 0; index < vertices.size(); index++) {
@@ -54,7 +56,7 @@ final class RoomBoundaryStretchConnectors {
             DungeonRoomTopologyClusterWork target,
             Selection stretch,
             Set<Cell> clusterCells,
-            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
+            Map<DungeonBoundaryKey, BoundarySegment> boundaries,
             BoundaryVertex endpoint
     ) {
         List<Edge> connectorPath = stretch.connectorPath(endpoint);
@@ -63,7 +65,6 @@ final class RoomBoundaryStretchConnectors {
         }
         if (CorridorDoorBindingGeometry.touchesDoorBindingPath(
                 corridors,
-                target.cluster().center(),
                 target.cluster().clusterId(),
                 stretch.level(),
                 connectorPath)) {
@@ -81,12 +82,12 @@ final class RoomBoundaryStretchConnectors {
         if (connectorAction.isEmpty()) {
             return false;
         }
-        applyConnectorAction(boundaries, connectorAction.get(), target.cluster().center(), clusterCells, target.cluster().clusterId());
+        applyConnectorAction(boundaries, connectorAction.get(), clusterCells);
         return true;
     }
 
     private Optional<ConnectorAction> connectorAction(
-            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
+            Map<DungeonBoundaryKey, BoundarySegment> boundaries,
             Set<DungeonBoundaryKey> sourceKeys,
             List<Edge> path,
             List<DungeonBoundaryKey> keys,
@@ -103,7 +104,7 @@ final class RoomBoundaryStretchConnectors {
             return Optional.empty();
         }
         for (DungeonBoundaryKey key : keys) {
-            DungeonClusterBoundary boundary = boundaries.get(key);
+            BoundarySegment boundary = boundaries.get(key);
             if (boundary == null || sourceKeys.contains(key) || boundary.kind() == BoundaryKind.DOOR) {
                 return Optional.empty();
             }
@@ -120,7 +121,7 @@ final class RoomBoundaryStretchConnectors {
     }
 
     private long presentBoundaryCount(
-            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
+            Map<DungeonBoundaryKey, BoundarySegment> boundaries,
             Set<DungeonBoundaryKey> sourceKeys,
             List<DungeonBoundaryKey> keys
     ) {
@@ -134,11 +135,9 @@ final class RoomBoundaryStretchConnectors {
     }
 
     private void applyConnectorAction(
-            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
+            Map<DungeonBoundaryKey, BoundarySegment> boundaries,
             ConnectorAction action,
-            Cell center,
-            Set<Cell> clusterCells,
-            long clusterId
+            Set<Cell> clusterCells
     ) {
         if (action.removesBoundaries()) {
             for (Edge edge : action.path()) {
@@ -151,10 +150,8 @@ final class RoomBoundaryStretchConnectors {
             if (boundaries.containsKey(key)) {
                 continue;
             }
-            DungeonClusterBoundary connector = GEOMETRY.boundaryForEdge(
+            BoundarySegment connector = GEOMETRY.boundaryForEdge(
                     clusterCells,
-                    center,
-                    clusterId,
                     edge,
                     BoundaryKind.WALL,
                     null);

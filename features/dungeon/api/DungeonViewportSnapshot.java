@@ -44,10 +44,6 @@ public record DungeonViewportSnapshot(
         authoredBounds = authoredBounds == null ? AuthoredBounds.empty() : authoredBounds;
     }
 
-    public List<DungeonViewportContinuation> continuations() {
-        return continuationPage.entries();
-    }
-
     public record AuthoredBounds(boolean present, int minimumQ, int minimumR, int maximumQ, int maximumR) {
         public AuthoredBounds {
             present = present && maximumQ >= minimumQ && maximumR >= minimumR;

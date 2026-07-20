@@ -19,14 +19,14 @@ record PointerWorkflowIntent(
 }
 
 record PointerInteractionCandidates(
-        DungeonEditorRuntimePointerTarget primaryTarget
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target primaryTarget
 ) {
     PointerInteractionCandidates {
-        primaryTarget = primaryTarget == null ? DungeonEditorRuntimePointerTarget.empty() : primaryTarget;
+        primaryTarget = primaryTarget == null ? features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty() : primaryTarget;
     }
 
     static PointerInteractionCandidates empty() {
-        return new PointerInteractionCandidates(DungeonEditorRuntimePointerTarget.empty());
+        return new PointerInteractionCandidates(features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty());
     }
 }
 
@@ -49,46 +49,46 @@ record PointerSample(
         double sceneY,
         boolean primaryButtonDown,
         boolean secondaryButtonDown,
-        DungeonEditorRuntimePointerTarget target
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target target
 ) {
     PointerSample {
-        target = target == null ? DungeonEditorRuntimePointerTarget.empty() : target;
+        target = target == null ? features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty() : target;
     }
 }
 
 enum PointerTargetChoice {
     EMPTY {
         @Override
-        DungeonEditorRuntimePointerTarget target(
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target target(
                 PointerInteractionTargets targets,
-                DungeonEditorRuntimePointerTarget primaryTarget,
-                DungeonEditorRuntimePointerTarget hoverTarget,
+                features.dungeon.api.editor.DungeonEditorPointerInput.Target primaryTarget,
+                features.dungeon.api.editor.DungeonEditorPointerInput.Target hoverTarget,
                 int projectionLevel
         ) {
-            return DungeonEditorRuntimePointerTarget.empty();
+            return features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty();
         }
     },
     PRIMARY {
         @Override
-        DungeonEditorRuntimePointerTarget target(
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target target(
                 PointerInteractionTargets targets,
-                DungeonEditorRuntimePointerTarget primaryTarget,
-                DungeonEditorRuntimePointerTarget hoverTarget,
+                features.dungeon.api.editor.DungeonEditorPointerInput.Target primaryTarget,
+                features.dungeon.api.editor.DungeonEditorPointerInput.Target hoverTarget,
                 int projectionLevel
         ) {
-            return primaryTarget == null ? DungeonEditorRuntimePointerTarget.empty() : primaryTarget;
+            return primaryTarget == null ? features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty() : primaryTarget;
         }
     },
     ROOM_CELL_HOVER {
         @Override
-        DungeonEditorRuntimePointerTarget target(
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target target(
                 PointerInteractionTargets targets,
-                DungeonEditorRuntimePointerTarget primaryTarget,
-                DungeonEditorRuntimePointerTarget hoverTarget,
+                features.dungeon.api.editor.DungeonEditorPointerInput.Target primaryTarget,
+                features.dungeon.api.editor.DungeonEditorPointerInput.Target hoverTarget,
                 int projectionLevel
         ) {
-            return DungeonEditorRuntimePointerTarget.syntheticCell(
-                    DungeonEditorRuntimePointerTarget.ElementKind.ROOM,
+            return features.dungeon.api.editor.DungeonEditorPointerInput.Target.syntheticCell(
+                    features.dungeon.api.editor.DungeonEditorPointerInput.ElementKind.ROOM,
                     (int) targets.sceneX(),
                     (int) targets.sceneY(),
                     projectionLevel);
@@ -96,13 +96,13 @@ enum PointerTargetChoice {
     },
     WALL_VERTEX_HOVER {
         @Override
-        DungeonEditorRuntimePointerTarget target(
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target target(
                 PointerInteractionTargets targets,
-                DungeonEditorRuntimePointerTarget primaryTarget,
-                DungeonEditorRuntimePointerTarget hoverTarget,
+                features.dungeon.api.editor.DungeonEditorPointerInput.Target primaryTarget,
+                features.dungeon.api.editor.DungeonEditorPointerInput.Target hoverTarget,
                 int projectionLevel
         ) {
-            return DungeonEditorRuntimePointerTarget.vertex(
+            return features.dungeon.api.editor.DungeonEditorPointerInput.Target.vertex(
                     Math.toIntExact(Math.round(targets.sceneX())),
                     Math.toIntExact(Math.round(targets.sceneY())),
                     projectionLevel);
@@ -110,10 +110,10 @@ enum PointerTargetChoice {
     },
     WALL_BOUNDARY_HOVER {
         @Override
-        DungeonEditorRuntimePointerTarget target(
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target target(
                 PointerInteractionTargets targets,
-                DungeonEditorRuntimePointerTarget primaryTarget,
-                DungeonEditorRuntimePointerTarget hoverTarget,
+                features.dungeon.api.editor.DungeonEditorPointerInput.Target primaryTarget,
+                features.dungeon.api.editor.DungeonEditorPointerInput.Target hoverTarget,
                 int projectionLevel
         ) {
             return targets.wallBoundaryHoverTarget();
@@ -121,19 +121,19 @@ enum PointerTargetChoice {
     },
     TRANSITION_PLACEMENT {
         @Override
-        DungeonEditorRuntimePointerTarget target(
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target target(
                 PointerInteractionTargets targets,
-                DungeonEditorRuntimePointerTarget primaryTarget,
-                DungeonEditorRuntimePointerTarget hoverTarget,
+                features.dungeon.api.editor.DungeonEditorPointerInput.Target primaryTarget,
+                features.dungeon.api.editor.DungeonEditorPointerInput.Target hoverTarget,
                 int projectionLevel
         ) {
-            DungeonEditorRuntimePointerTarget safePrimary =
-                    primaryTarget == null ? DungeonEditorRuntimePointerTarget.empty() : primaryTarget;
+            features.dungeon.api.editor.DungeonEditorPointerInput.Target safePrimary =
+                    primaryTarget == null ? features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty() : primaryTarget;
             if (safePrimary.isBoundaryTarget() || safePrimary.isCellTarget()) {
                 return safePrimary;
             }
-            return DungeonEditorRuntimePointerTarget.syntheticCell(
-                    DungeonEditorRuntimePointerTarget.ElementKind.TRANSITION,
+            return features.dungeon.api.editor.DungeonEditorPointerInput.Target.syntheticCell(
+                    features.dungeon.api.editor.DungeonEditorPointerInput.ElementKind.TRANSITION,
                     (int) Math.floor(targets.sceneX()),
                     (int) Math.floor(targets.sceneY()),
                     projectionLevel);
@@ -141,20 +141,20 @@ enum PointerTargetChoice {
     },
     HOVER_TARGET {
         @Override
-        DungeonEditorRuntimePointerTarget target(
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target target(
                 PointerInteractionTargets targets,
-                DungeonEditorRuntimePointerTarget primaryTarget,
-                DungeonEditorRuntimePointerTarget hoverTarget,
+                features.dungeon.api.editor.DungeonEditorPointerInput.Target primaryTarget,
+                features.dungeon.api.editor.DungeonEditorPointerInput.Target hoverTarget,
                 int projectionLevel
         ) {
-            return hoverTarget == null ? DungeonEditorRuntimePointerTarget.empty() : hoverTarget;
+            return hoverTarget == null ? features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty() : hoverTarget;
         }
     };
 
-    abstract DungeonEditorRuntimePointerTarget target(
+    abstract features.dungeon.api.editor.DungeonEditorPointerInput.Target target(
             PointerInteractionTargets targets,
-            DungeonEditorRuntimePointerTarget primaryTarget,
-            DungeonEditorRuntimePointerTarget hoverTarget,
+            features.dungeon.api.editor.DungeonEditorPointerInput.Target primaryTarget,
+            features.dungeon.api.editor.DungeonEditorPointerInput.Target hoverTarget,
             int projectionLevel);
 
     static PointerTargetChoice empty() {

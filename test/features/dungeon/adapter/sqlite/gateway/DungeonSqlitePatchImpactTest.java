@@ -42,7 +42,7 @@ final class DungeonSqlitePatchImpactTest {
     private static final DungeonChunkKey NEW_CHUNK = new DungeonChunkKey(MAP_ID, 0, 1, 0);
 
     @Test
-    void oneCellRoomEditReprojectsOwningClusterAndCorridorButKeepsOffChunkRowsStable(
+    void oneCellRoomEditReprojectsOwningClusterButKeepsAbsoluteCorridorAndOffChunkRowsStable(
             @TempDir Path directory
     ) throws Exception {
         Path path = directory.resolve("patch-impact.sqlite");
@@ -56,11 +56,11 @@ final class DungeonSqlitePatchImpactTest {
 
             assertEquals(List.of("0|65|1"), rows(path,
                     "SELECT level_z,cell_x,cell_y FROM dungeon_room_cells WHERE room_id=11"));
-            assertEquals(List.of("CORRIDOR|31|0|1|0", "ROOM|11|0|1|0", "ROOM_CLUSTER|21|0|1|0"),
+            assertEquals(List.of("CORRIDOR|31|0|0|0", "ROOM|11|0|1|0", "ROOM_CLUSTER|21|0|1|0"),
                     rows(path, "SELECT entity_kind,entity_id,level_z,chunk_q,chunk_r "
                             + "FROM dungeon_entity_chunks WHERE entity_id IN (11,21,31) "
                             + "ORDER BY entity_kind"));
-            assertEquals(List.of("67|4|1", "68|4|1", "69|4|1", "70|4|1"), rows(path,
+            assertEquals(List.of("3|4|0", "4|4|0", "5|4|0", "6|4|0"), rows(path,
                     "SELECT cell_x,cell_y,chunk_q FROM dungeon_corridor_route_cells "
                             + "WHERE corridor_id=31 ORDER BY segment_order,cell_order"));
             assertEquals(List.of("0|3", "1|3"), rows(path,
@@ -73,10 +73,10 @@ final class DungeonSqlitePatchImpactTest {
             assertEquals(List.of(), rows(path,
                     "SELECT operation FROM patch_mutation_audit WHERE table_name='topology'"),
                     "unchanged topology bindings must not be rewritten");
-            assertEquals(List.of("DELETE|3", "INSERT|3"), rows(path,
+            assertEquals(List.of("DELETE|2", "INSERT|2"), rows(path,
                     "SELECT operation,COUNT(*) FROM patch_mutation_audit "
                             + "WHERE table_name='membership' GROUP BY operation ORDER BY operation"));
-            assertEquals(List.of("DELETE|4", "INSERT|4"), rows(path,
+            assertEquals(List.of(), rows(path,
                     "SELECT operation,COUNT(*) FROM patch_mutation_audit "
                             + "WHERE table_name='route' GROUP BY operation ORDER BY operation"));
             assertEquals(List.of("INSERT|1", "UPDATE|1"), rows(path,
@@ -107,13 +107,11 @@ final class DungeonSqlitePatchImpactTest {
         return DungeonPatch.of(MAP, expectedRevision, List.of(new RoomRegionChange(before, after)))
                 .withImpact(
                         Set.of(OLD_CHUNK, NEW_CHUNK),
-                        List.of(
-                                DungeonPatchEntityRef.roomCluster(CLUSTER_ID),
-                                DungeonPatchEntityRef.corridor(CORRIDOR_ID)));
+                        List.of(DungeonPatchEntityRef.roomCluster(CLUSTER_ID)));
     }
 
     private static DungeonPatch missingCorridorDependencyPatch() {
-        return DungeonPatch.of(MAP, 3L, List.of(new RoomRegionChange(roomAt(65), roomAt(1))))
+        return DungeonPatch.of(MAP, 3L, List.of(new RoomRegionChange(roomAt(65), roomAt(4, 4))))
                 .withImpact(
                         Set.of(OLD_CHUNK, NEW_CHUNK),
                         List.of(DungeonPatchEntityRef.roomCluster(CLUSTER_ID)));
@@ -122,12 +120,12 @@ final class DungeonSqlitePatchImpactTest {
     private static void seedAuthoredMap(SqliteDatabase database) {
         RoomRegion changedRoom = room(ROOM_ID, CLUSTER_ID, 1);
         RoomCluster changedCluster = cluster(CLUSTER_ID, 1);
-        Corridor changedCorridor = corridor(CORRIDOR_ID, ROOM_ID, CLUSTER_ID);
+        Corridor changedCorridor = corridor(CORRIDOR_ID, ROOM_ID, CLUSTER_ID, 1);
         long unrelatedRoomId = 12L;
         long unrelatedClusterId = 22L;
         RoomRegion unrelatedRoom = room(unrelatedRoomId, unrelatedClusterId, 257);
         RoomCluster unrelatedCluster = cluster(unrelatedClusterId, 257);
-        Corridor unrelatedCorridor = corridor(32L, unrelatedRoomId, unrelatedClusterId);
+        Corridor unrelatedCorridor = corridor(32L, unrelatedRoomId, unrelatedClusterId, 257);
         DungeonChunkKey unrelatedChunk = new DungeonChunkKey(MAP_ID, 0, 4, 0);
         DungeonSqliteFixtureSeeder.insertHeader(database, MAP_ID, "Impact map", 1L);
         DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(MAP, 1L, List.of(
@@ -146,25 +144,28 @@ final class DungeonSqlitePatchImpactTest {
     }
 
     private static RoomCluster cluster(long clusterId, int x) {
-        return RoomCluster.authored(clusterId, MAP_ID, "Cluster " + clusterId, new Cell(x, 1, 0),
-                java.util.Map.of());
+        return RoomCluster.authored(clusterId, MAP_ID, "Cluster " + clusterId, List.of());
     }
 
-    private static Corridor corridor(long corridorId, long roomId, long clusterId) {
+    private static Corridor corridor(long corridorId, long roomId, long clusterId, int clusterQ) {
         return new Corridor(corridorId, MAP_ID, 0, List.of(roomId), new CorridorBindings(
                 List.of(
-                        new CorridorWaypoint(clusterId, new Cell(2, 3, 0), 0),
-                        new CorridorWaypoint(clusterId, new Cell(5, 3, 0), 0)),
+                        new CorridorWaypoint(clusterId, new Cell(clusterQ + 2, 4, 0)),
+                        new CorridorWaypoint(clusterId, new Cell(clusterQ + 5, 4, 0))),
                 List.of(), List.of(), List.of()));
     }
 
     private static RoomRegion roomAt(int x) {
+        return roomAt(x, 1);
+    }
+
+    private static RoomRegion roomAt(int x, int y) {
         return new RoomRegion(
                 ROOM_ID,
                 MAP_ID,
                 CLUSTER_ID,
                 "Room " + ROOM_ID,
-                Set.of(new Cell(x, 1, 0)),
+                Set.of(new Cell(x, y, 0)),
                 DungeonRoomNarration.empty());
     }
 

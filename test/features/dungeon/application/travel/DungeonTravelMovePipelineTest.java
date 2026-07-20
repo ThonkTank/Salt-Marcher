@@ -267,7 +267,10 @@ final class DungeonTravelMovePipelineTest {
                     request.requestGeneration(),
                     List.of(new DungeonWindowChunkHeader(chunk, header.revision())),
                     List.of(room(), cluster(), transitionFragment()),
-                    List.of()));
+                    List.of(),
+                    List.of(),
+                    new features.dungeon.application.authored.port.DungeonContinuationPage(
+                            List.of(), java.util.Optional.empty())));
         }
 
         @Override

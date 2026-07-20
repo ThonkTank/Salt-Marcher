@@ -81,19 +81,19 @@ final class SqliteDungeonRouteDependencyUnitOfWorkTest {
 
     private static void seedAuthoredMap(SqliteDatabase database) {
         RoomCluster blockerCluster = RoomCluster.authored(
-                BLOCKER_CLUSTER_ID, MAP_ID, "Blocker cluster", new Cell(1, 0, 0), java.util.Map.of());
+                BLOCKER_CLUSTER_ID, MAP_ID, "Blocker cluster", List.of());
         RoomRegion blocker = blockerAtOneZero();
         long anchorClusterId = 21L;
         long anchorRoomId = 12L;
         RoomCluster anchorCluster = RoomCluster.authored(
-                anchorClusterId, MAP_ID, "Stable cluster", new Cell(-10, -10, 0), java.util.Map.of());
+                anchorClusterId, MAP_ID, "Stable cluster", List.of());
         RoomRegion anchorRoom = new RoomRegion(
                 anchorRoomId, MAP_ID, anchorClusterId, "Stable room",
                 Set.of(new Cell(-10, -10, 0)), DungeonRoomNarration.empty());
         Corridor corridor = new Corridor(CORRIDOR_ID, MAP_ID, 0, List.of(), new CorridorBindings(
                 List.of(
-                        new CorridorWaypoint(anchorClusterId, new Cell(10, 10, 0), 0),
-                        new CorridorWaypoint(anchorClusterId, new Cell(12, 12, 0), 0)),
+                        new CorridorWaypoint(anchorClusterId, new Cell(0, 0, 0)),
+                        new CorridorWaypoint(anchorClusterId, new Cell(2, 2, 0))),
                 List.of(), List.of(), List.of()));
         DungeonSqliteFixtureSeeder.insertHeader(database, MAP_ID, "Route dependency", 1L);
         DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(MAP, 1L, List.of(

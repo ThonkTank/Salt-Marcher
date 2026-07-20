@@ -1,5 +1,7 @@
 package features.dungeon.domain.core.structure.room;
 
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
+
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -19,7 +21,7 @@ final class RoomPartitionedWorkBuilder {
     DungeonRoomTopologyClusterWork partitionedWork(
             DungeonRoomTopologyClusterWork previous,
             Map<Integer, List<Cell>> nextCellsByLevel,
-            Map<Integer, List<DungeonClusterBoundary>> preservedBoundariesByLevel,
+            Map<Integer, List<BoundarySegment>> preservedBoundariesByLevel,
             RoomMutationIdCursor ids,
             Map<Long, List<Cell>> previousCellsByRoom
     ) {
@@ -35,7 +37,7 @@ final class RoomPartitionedWorkBuilder {
     DungeonRoomTopologyClusterWork stretchPartitionedWork(
             DungeonRoomTopologyClusterWork previous,
             Map<Integer, List<Cell>> nextCellsByLevel,
-            Map<Integer, List<DungeonClusterBoundary>> preservedBoundariesByLevel,
+            Map<Integer, List<BoundarySegment>> preservedBoundariesByLevel,
             RoomMutationIdCursor ids,
             Map<Long, List<Cell>> previousCellsByRoom
     ) {
@@ -51,7 +53,7 @@ final class RoomPartitionedWorkBuilder {
     private DungeonRoomTopologyClusterWork partitionedWork(
             DungeonRoomTopologyClusterWork previous,
             Map<Integer, List<Cell>> nextCellsByLevel,
-            Map<Integer, List<DungeonClusterBoundary>> preservedBoundariesByLevel,
+            Map<Integer, List<BoundarySegment>> preservedBoundariesByLevel,
             RoomMutationIdCursor ids,
             Map<Long, List<Cell>> previousCellsByRoom,
             boolean stretch
@@ -72,7 +74,7 @@ final class RoomPartitionedWorkBuilder {
 
     private RoomCluster rebuiltCluster(
             DungeonRoomTopologyClusterWork partitionWork,
-            Map<Integer, List<DungeonClusterBoundary>> preservedBoundariesByLevel,
+            Map<Integer, List<BoundarySegment>> preservedBoundariesByLevel,
             boolean stretch
     ) {
         return stretch
@@ -106,12 +108,12 @@ final class RoomPartitionedWorkBuilder {
         return new DungeonRoomTopologyClusterWork(target.cluster(), rooms, cellsByLevel);
     }
 
-    Map<Integer, List<DungeonClusterBoundary>> preservedBoundariesFor(
+    Map<Integer, List<BoundarySegment>> preservedBoundariesFor(
             RoomCluster targetCluster,
             List<DungeonRoomTopologyClusterWork> sources,
             Map<Integer, List<Cell>> nextCellsByLevel
     ) {
-        List<DungeonClusterBoundary> boundaries = new ArrayList<>();
+        List<BoundarySegment> boundaries = new ArrayList<>();
         for (DungeonRoomTopologyClusterWork source : RoomMutationWorkSets.safeClusters(sources)) {
             boundaries.addAll(DungeonBoundaryRehoming.flatten(DungeonBoundaryRehoming.byLevel(
                     source.cluster(),
@@ -120,7 +122,7 @@ final class RoomPartitionedWorkBuilder {
                     targetCluster.geometry(nextCellsByLevel),
                     nextCellsByLevel)));
         }
-        return DungeonClusterBoundary.orderedByLevel(boundaries);
+        return BoundarySegment.orderedByLevel(boundaries);
     }
 
     private static boolean shouldRehome(RoomRegion room, Set<Long> excludedRoomIds, Set<Long> seenRoomIds) {

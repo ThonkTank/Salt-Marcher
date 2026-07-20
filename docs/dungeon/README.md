@@ -1,6 +1,6 @@
-Status: Active Target
+Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-17
+Last Reviewed: 2026-07-19
 Source of Truth: Routing entrypoint for the dungeon gameplay and domain
 documentation bundle.
 
@@ -21,14 +21,11 @@ Dungeon architecture owns how its API facts adopt those mechanisms.
 1. Start here to find the owning document family.
 2. Read [Dungeon Architecture](./architecture/architecture-dungeon-domain.md)
    for feature ownership, authored-core boundaries, runtime capabilities, and
-   target dependency direction.
+   dependency direction.
 3. Read [Dungeon Domain Model](./domain/domain-dungeon.md) for domain truth,
    write-model ownership, API language, and invariants.
 4. Read the relevant requirements document for user-visible behavior. Executable
    evidence lives in the matching JUnit tests.
-5. Read the temporary [Dungeon Greenfield Roadmap](./delivery/roadmap-dungeon-greenfield.md)
-   only when implementing or reviewing migration work. It owns sequencing and
-   deletion gates, not durable behavior or architecture.
 
 ### Architecture
 
@@ -48,10 +45,6 @@ Dungeon architecture owns how its API facts adopt those mechanisms.
 ### Domain
 
 - [Dungeon Domain Model](./domain/domain-dungeon.md)
-
-### Temporary Delivery
-
-- [Dungeon Greenfield Roadmap](./delivery/roadmap-dungeon-greenfield.md)
 
 ### Related Map Canvas Docs
 

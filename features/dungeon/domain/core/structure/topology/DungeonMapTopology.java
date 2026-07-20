@@ -10,7 +10,7 @@ import features.dungeon.domain.core.graph.DungeonTopologyElementKind;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.corridor.Corridor;
 import features.dungeon.domain.core.component.CorridorDoorBinding;
-import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomCatalog;
@@ -149,11 +149,11 @@ public record DungeonMapTopology(
 
     private static void appendBoundaryBindings(List<DungeonTopologyBinding> result, SpatialTopology topology) {
         for (RoomCluster cluster : topology == null ? List.<RoomCluster>of() : topology.roomClusters()) {
-            for (DungeonClusterBoundary boundary : cluster.orderedAuthoredBoundaries()) {
+            for (BoundarySegment boundary : cluster.orderedAuthoredBoundaries()) {
                 if (!boundary.kind().renderable()) {
                     continue;
                 }
-                DungeonTopologyRef ref = boundary.resolvedTopologyRef(cluster.center());
+                DungeonTopologyRef ref = boundary.resolvedTopologyRef();
                 result.add(new DungeonTopologyBinding(
                         ref,
                         cluster.clusterId(),

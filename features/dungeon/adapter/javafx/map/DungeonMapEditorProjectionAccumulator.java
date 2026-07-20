@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import features.dungeon.api.DungeonEditorMapSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
-import features.dungeon.api.DungeonEditorStateSnapshot;
+import features.dungeon.api.editor.DungeonEditorSelection;
 import features.dungeon.api.DungeonEditorSurface;
 
 final class DungeonMapEditorProjectionAccumulator {
@@ -25,17 +25,17 @@ final class DungeonMapEditorProjectionAccumulator {
         this.previewDiffProjector = previewDiffProjector;
     }
 
-    void addAreas(DungeonEditorMapSnapshot map, DungeonEditorStateSnapshot.Selection selection) {
+    void addAreas(DungeonEditorMapSnapshot map, DungeonEditorSelection selection) {
         DungeonMapEditorAreaProjector.addAreas(cells, labels, graphNodes, map, selection, roomLabelPlanner);
     }
 
-    void addClusterLabels(DungeonEditorMapSnapshot map, DungeonEditorStateSnapshot.Selection selection) {
+    void addClusterLabels(DungeonEditorMapSnapshot map, DungeonEditorSelection selection) {
         DungeonMapEditorAreaProjector.addClusterLabels(labels, map, selection);
     }
 
     void addPreviewAndBoundaries(
             DungeonEditorMapSnapshot map,
-            DungeonEditorStateSnapshot.Selection selection,
+            DungeonEditorSelection selection,
             PreviewRenderFrame previewRender
     ) {
         DungeonMapPreparedPreviewProjector.addPreparedPreview(cells, edges, labels, markers, previewRender);
@@ -53,13 +53,13 @@ final class DungeonMapEditorProjectionAccumulator {
         }
     }
 
-    void addFeatures(DungeonEditorMapSnapshot map, DungeonEditorStateSnapshot.Selection selection) {
+    void addFeatures(DungeonEditorMapSnapshot map, DungeonEditorSelection selection) {
         DungeonMapEditorFeatureProjector.addFeatures(cells, markers, map, selection);
     }
 
     void addHandles(
             DungeonEditorMapSnapshot map,
-            DungeonEditorStateSnapshot.Selection selection,
+            DungeonEditorSelection selection,
             DungeonEditorPreview preview
     ) {
         DungeonMapEditorHandleProjector.addHandles(markers, map, selection, preview);
@@ -67,7 +67,7 @@ final class DungeonMapEditorProjectionAccumulator {
 
     void addPreviewRenderDiff(
             PreviewRenderDiffFrame previewRenderDiff,
-            DungeonEditorStateSnapshot.Selection selection
+            DungeonEditorSelection selection
     ) {
         previewDiffProjector.addPreviewRenderDiff(
                 cells,
@@ -96,11 +96,13 @@ final class DungeonMapEditorProjectionAccumulator {
             DungeonEditorMapSnapshot map,
             boolean editorMode
     ) {
+        DungeonMapPresentationExtent extent = DungeonMapPresentationExtent.from(
+                cells, edges, labels, markers, null);
         return new DungeonMapRenderState(
                 surface.mapName(),
                 true,
-                map.width(),
-                map.height(),
+                extent.width(),
+                extent.height(),
                 DungeonMapRenderState.Topology.fromName(map.topology()),
                 DungeonMapRenderState.ViewMode.grid(),
                 DungeonMapRenderState.LevelOverlaySettings.off(),

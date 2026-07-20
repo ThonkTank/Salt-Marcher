@@ -38,7 +38,7 @@ final class DungeonEditorPointerSession {
             boolean vertexPresent,
             int vertexQ,
             int vertexR,
-            DungeonEditorRuntimePointerTarget target
+            features.dungeon.api.editor.DungeonEditorPointerInput.Target target
     ) {
         private static HoverSample from(
                 DungeonEditorToolAction tool,
@@ -46,7 +46,7 @@ final class DungeonEditorPointerSession {
                 int projectionLevel
         ) {
             PointerSample safeSample = sample == null
-                    ? new PointerSample(0.0, 0.0, false, false, DungeonEditorRuntimePointerTarget.empty())
+                    ? new PointerSample(0.0, 0.0, false, false, features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty())
                     : sample;
             int vertexQ = Math.toIntExact(Math.round(safeSample.sceneX()));
             int vertexR = Math.toIntExact(Math.round(safeSample.sceneY()));

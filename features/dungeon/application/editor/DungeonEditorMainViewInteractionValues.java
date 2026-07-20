@@ -8,7 +8,11 @@ import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.graph.DungeonTopologyElementKind;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.geometry.Direction;
+import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.structure.room.BoundaryStretchOrientation;
+import features.dungeon.api.DungeonCellRef;
+import features.dungeon.api.DungeonEdgeRef;
+import features.dungeon.api.DungeonEditorHandleRef;
 import features.dungeon.api.DungeonEditorHandleKind;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
@@ -26,34 +30,108 @@ final class DungeonEditorMainViewInteractionValues {
     private DungeonEditorMainViewInteractionValues() {
     }
 
-    static DungeonTopologyElementKind toTopologyKind(@Nullable String kind) {
-        return switch (kind == null ? "" : kind.trim().toUpperCase(java.util.Locale.ROOT)) {
-            case "ROOM" -> DungeonTopologyElementKind.ROOM;
-            case "CORRIDOR" -> DungeonTopologyElementKind.CORRIDOR;
-            case "CORRIDOR_ANCHOR" -> DungeonTopologyElementKind.CORRIDOR_ANCHOR;
-            case "DOOR" -> DungeonTopologyElementKind.DOOR;
-            case "WALL" -> DungeonTopologyElementKind.WALL;
-            case "STAIR" -> DungeonTopologyElementKind.STAIR;
-            case "TRANSITION" -> DungeonTopologyElementKind.TRANSITION;
-            case "FEATURE_MARKER" -> DungeonTopologyElementKind.FEATURE_MARKER;
-            default -> DungeonTopologyElementKind.EMPTY;
+    static DungeonTopologyElementKind domainTopologyKind(
+            features.dungeon.api.@Nullable DungeonTopologyElementKind kind
+    ) {
+        return switch (kind == null ? features.dungeon.api.DungeonTopologyElementKind.EMPTY : kind) {
+            case ROOM -> DungeonTopologyElementKind.ROOM;
+            case CORRIDOR -> DungeonTopologyElementKind.CORRIDOR;
+            case CORRIDOR_ANCHOR -> DungeonTopologyElementKind.CORRIDOR_ANCHOR;
+            case DOOR -> DungeonTopologyElementKind.DOOR;
+            case WALL -> DungeonTopologyElementKind.WALL;
+            case STAIR -> DungeonTopologyElementKind.STAIR;
+            case TRANSITION -> DungeonTopologyElementKind.TRANSITION;
+            case FEATURE_MARKER -> DungeonTopologyElementKind.FEATURE_MARKER;
+            case EMPTY -> DungeonTopologyElementKind.EMPTY;
         };
     }
 
-    static DungeonEditorRuntimePointerTarget.TopologyKind topologyKind(
+    static features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind topologyKind(
             @Nullable DungeonTopologyElementKind kind
     ) {
-        return DungeonEditorRuntimePointerTarget.TopologyKind.fromDomain(kind);
+        if (kind == DungeonTopologyElementKind.ROOM) {
+            return features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.ROOM;
+        }
+        if (kind == DungeonTopologyElementKind.CORRIDOR) {
+            return features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.CORRIDOR;
+        }
+        if (kind == DungeonTopologyElementKind.CORRIDOR_ANCHOR) {
+            return features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.CORRIDOR_ANCHOR;
+        }
+        if (kind == DungeonTopologyElementKind.DOOR) {
+            return features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.DOOR;
+        }
+        if (kind == DungeonTopologyElementKind.WALL) {
+            return features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.WALL;
+        }
+        if (kind == DungeonTopologyElementKind.STAIR) {
+            return features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.STAIR;
+        }
+        if (kind == DungeonTopologyElementKind.TRANSITION) {
+            return features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.TRANSITION;
+        }
+        if (kind == DungeonTopologyElementKind.FEATURE_MARKER) {
+            return features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.FEATURE_MARKER;
+        }
+        return features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.EMPTY;
     }
 
     static DungeonTopologyRef topologyRef(
-            DungeonEditorRuntimePointerTarget.@Nullable TopologyKind kind,
+            features.dungeon.api.editor.DungeonEditorPointerInput.@Nullable TopologyKind kind,
             long id
     ) {
-        DungeonEditorRuntimePointerTarget.TopologyKind safeKind = kind == null
-                ? DungeonEditorRuntimePointerTarget.TopologyKind.defaultKind()
+        features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind safeKind = kind == null
+                ? features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.defaultKind()
                 : kind;
-        return safeKind.ref(id);
+        DungeonTopologyElementKind domainKind = switch (safeKind) {
+            case ROOM -> DungeonTopologyElementKind.ROOM; case CORRIDOR -> DungeonTopologyElementKind.CORRIDOR;
+            case CORRIDOR_ANCHOR -> DungeonTopologyElementKind.CORRIDOR_ANCHOR; case DOOR -> DungeonTopologyElementKind.DOOR;
+            case WALL -> DungeonTopologyElementKind.WALL; case STAIR -> DungeonTopologyElementKind.STAIR;
+            case TRANSITION -> DungeonTopologyElementKind.TRANSITION; case FEATURE_MARKER -> DungeonTopologyElementKind.FEATURE_MARKER;
+            case EMPTY -> DungeonTopologyElementKind.EMPTY;
+        };
+        return new DungeonTopologyRef(domainKind, Math.max(0L, id));
+    }
+
+    static DungeonEditorWorkspaceValues.HandleRef handleRef(DungeonEditorHandleRef handle) {
+        DungeonEditorHandleRef safeHandle = handle == null
+                ? DungeonEditorHandleRef.empty()
+                : handle;
+        DungeonCellRef cell = safeHandle.cell();
+        DungeonTopologyRef topologyRef = topologyRef(
+                features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind
+                        .fromPublished(safeHandle.topologyRef().kind()),
+                safeHandle.topologyRef().id());
+        return new DungeonEditorWorkspaceValues.HandleRef(
+                safeHandle.kind(),
+                topologyRef,
+                safeHandle.ownerId(),
+                safeHandle.clusterId(),
+                safeHandle.corridorId(),
+                safeHandle.roomId(),
+                safeHandle.index(),
+                new features.dungeon.domain.core.geometry.Cell(cell.q(), cell.r(), cell.level()),
+                Direction.parse(safeHandle.direction()),
+                edge(safeHandle.sourceEdge()),
+                edges(safeHandle.sourceEdges()));
+    }
+
+    private static @Nullable Edge edge(@Nullable DungeonEdgeRef edge) {
+        if (edge == null || edge.from() == null || edge.to() == null) {
+            return null;
+        }
+        return new Edge(
+                new features.dungeon.domain.core.geometry.Cell(
+                        edge.from().q(), edge.from().r(), edge.from().level()),
+                new features.dungeon.domain.core.geometry.Cell(
+                        edge.to().q(), edge.to().r(), edge.to().level()));
+    }
+
+    private static List<Edge> edges(List<DungeonEdgeRef> edges) {
+        return edges.stream()
+                .map(DungeonEditorMainViewInteractionValues::edge)
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     static String roomTargetKey(long roomId) {
@@ -128,7 +206,7 @@ final class DungeonEditorMainViewInteractionValues {
     }
 
     static DungeonEditorWorkspaceValues.HandleRef clusterLabelHandleRef(
-            DungeonEditorRuntimePointerTarget.TopologyKind topologyRefKind,
+            features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind topologyRefKind,
             long topologyRefId,
             long ownerId,
             long clusterId
@@ -159,24 +237,24 @@ final class DungeonEditorMainViewInteractionValues {
 
     record BoundaryTarget(
             boolean present,
-            DungeonEditorRuntimePointerTarget.BoundaryKind boundaryKind,
+            features.dungeon.api.editor.DungeonEditorPointerInput.BoundaryKind boundaryKind,
             String key,
             long ownerId,
             long clusterId,
-            DungeonEditorRuntimePointerTarget.TopologyKind topologyKind,
+            features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind topologyKind,
             long topologyRefId,
             CellTarget start,
             CellTarget end
     ) {
         BoundaryTarget {
             boundaryKind = boundaryKind == null
-                    ? DungeonEditorRuntimePointerTarget.BoundaryKind.defaultKind()
+                    ? features.dungeon.api.editor.DungeonEditorPointerInput.BoundaryKind.defaultKind()
                     : boundaryKind;
             key = key == null ? "" : key.strip();
             ownerId = Math.max(0L, ownerId);
             clusterId = Math.max(0L, clusterId);
             topologyKind = topologyKind == null
-                    ? DungeonEditorRuntimePointerTarget.TopologyKind.defaultKind()
+                    ? features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.defaultKind()
                     : topologyKind;
             topologyRefId = Math.max(0L, topologyRefId);
             start = start == null ? CellTarget.empty() : start;
@@ -186,11 +264,11 @@ final class DungeonEditorMainViewInteractionValues {
         static BoundaryTarget empty() {
             return new BoundaryTarget(
                     false,
-                    DungeonEditorRuntimePointerTarget.BoundaryKind.defaultKind(),
+                    features.dungeon.api.editor.DungeonEditorPointerInput.BoundaryKind.defaultKind(),
                     "",
                     0L,
                     0L,
-                    DungeonEditorRuntimePointerTarget.TopologyKind.defaultKind(),
+                    features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.defaultKind(),
                     0L,
                     CellTarget.empty(),
                     CellTarget.empty());
@@ -213,9 +291,9 @@ final class DungeonEditorMainViewInteractionValues {
             HitKind kind,
             long ownerId,
             long clusterId,
-            DungeonEditorRuntimePointerTarget.TopologyKind topologyKind,
+            features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind topologyKind,
             long topologyRefId,
-            DungeonEditorRuntimePointerTarget.LabelKind labelKind,
+            features.dungeon.api.editor.DungeonEditorPointerInput.LabelKind labelKind,
             DungeonEditorWorkspaceValues.HandleRef handleRef,
             BoundaryTarget boundaryTarget
     ) {
@@ -224,10 +302,10 @@ final class DungeonEditorMainViewInteractionValues {
             ownerId = Math.max(0L, ownerId);
             clusterId = Math.max(0L, clusterId);
             topologyKind = topologyKind == null
-                    ? DungeonEditorRuntimePointerTarget.TopologyKind.defaultKind()
+                    ? features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.defaultKind()
                     : topologyKind;
             topologyRefId = Math.max(0L, topologyRefId);
-            labelKind = labelKind == null ? DungeonEditorRuntimePointerTarget.LabelKind.defaultKind() : labelKind;
+            labelKind = labelKind == null ? features.dungeon.api.editor.DungeonEditorPointerInput.LabelKind.defaultKind() : labelKind;
             handleRef = handleRef == null ? DungeonEditorWorkspaceValues.HandleRef.empty() : handleRef;
             boundaryTarget = boundaryTarget == null ? BoundaryTarget.empty() : boundaryTarget;
         }
@@ -237,9 +315,9 @@ final class DungeonEditorMainViewInteractionValues {
                     HitKind.EMPTY,
                     0L,
                     0L,
-                    DungeonEditorRuntimePointerTarget.TopologyKind.defaultKind(),
+                    features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.defaultKind(),
                     0L,
-                    DungeonEditorRuntimePointerTarget.LabelKind.defaultKind(),
+                    features.dungeon.api.editor.DungeonEditorPointerInput.LabelKind.defaultKind(),
                     DungeonEditorWorkspaceValues.HandleRef.empty(),
                     BoundaryTarget.empty());
         }
@@ -275,7 +353,8 @@ final class DungeonEditorMainViewInteractionValues {
         }
 
         private boolean clusterLabelTarget() {
-            return kind == HitKind.LABEL && labelKind.isClusterLabel();
+            return kind == HitKind.LABEL
+                    && labelKind == features.dungeon.api.editor.DungeonEditorPointerInput.LabelKind.CLUSTER_LABEL;
         }
 
         DungeonEditorSessionValues.Selection toSelection() {

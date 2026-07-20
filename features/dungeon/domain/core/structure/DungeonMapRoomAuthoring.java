@@ -3,7 +3,7 @@ package features.dungeon.domain.core.structure;
 import java.util.List;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Edge;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 import features.dungeon.domain.core.structure.room.RoomClusterMovement;
 import features.dungeon.domain.core.structure.room.RoomTopologyAuthoring;
 import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;

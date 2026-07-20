@@ -3,10 +3,9 @@ package features.dungeon.domain.core.structure.room;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import features.dungeon.domain.core.component.boundary.BoundaryMap;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.geometry.EdgeKey;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 
 public record RoomClusterWallRunSource(
         Edge sourceEdge,
@@ -23,10 +22,10 @@ public record RoomClusterWallRunSource(
 
     static RoomClusterWallRunSource fromDirectionalRun(
             List<EdgeKey> edgeKeys,
-            Map<EdgeKey, BoundaryRow> rowsByKey
+            BoundaryMap boundaryMap
     ) {
         List<Edge> sourceEdges = edges(edgeKeys);
-        Edge sourceEdge = sourceEdge(edgeKeys, rowsByKey);
+        Edge sourceEdge = sourceEdge(edgeKeys, boundaryMap);
         return new RoomClusterWallRunSource(sourceEdge, sourceEdges);
     }
 
@@ -40,7 +39,7 @@ public record RoomClusterWallRunSource(
         return List.copyOf(result);
     }
 
-    private static Edge sourceEdge(List<EdgeKey> edgeKeys, Map<EdgeKey, BoundaryRow> rowsByKey) {
+    private static Edge sourceEdge(List<EdgeKey> edgeKeys, BoundaryMap boundaryMap) {
         List<EdgeKey> safeEdgeKeys = edgeKeys == null ? List.of() : edgeKeys;
         if (safeEdgeKeys.isEmpty()) {
             return null;
@@ -48,11 +47,11 @@ public record RoomClusterWallRunSource(
         int midpointIndex = safeEdgeKeys.size() / 2;
         for (int offset = 0; offset < safeEdgeKeys.size(); offset++) {
             int before = midpointIndex - offset;
-            if (before >= 0 && !doorRow(safeEdgeKeys.get(before), rowsByKey)) {
+            if (before >= 0 && !doorRow(safeEdgeKeys.get(before), boundaryMap)) {
                 return edge(safeEdgeKeys.get(before));
             }
             int after = midpointIndex + offset;
-            if (after < safeEdgeKeys.size() && !doorRow(safeEdgeKeys.get(after), rowsByKey)) {
+            if (after < safeEdgeKeys.size() && !doorRow(safeEdgeKeys.get(after), boundaryMap)) {
                 return edge(safeEdgeKeys.get(after));
             }
         }
@@ -65,9 +64,10 @@ public record RoomClusterWallRunSource(
                 : new Edge(key.lower(), key.upper());
     }
 
-    private static boolean doorRow(EdgeKey edgeKey, Map<EdgeKey, BoundaryRow> rowsByKey) {
-        BoundaryRow row = rowsByKey == null ? null : rowsByKey.get(edgeKey);
-        return row != null && row.kind() == BoundaryKind.DOOR;
+    private static boolean doorRow(EdgeKey edgeKey, BoundaryMap boundaryMap) {
+        return boundaryMap != null
+                && boundaryMap.segmentsByKey().get(edgeKey) != null
+                && boundaryMap.segmentsByKey().get(edgeKey).isDoor();
     }
 
     private static Edge representativeSourceEdge(Edge sourceEdge, List<Edge> sourceEdges) {

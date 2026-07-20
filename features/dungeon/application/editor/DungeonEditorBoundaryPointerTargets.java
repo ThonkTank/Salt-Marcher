@@ -3,7 +3,6 @@ package features.dungeon.application.editor;
 import java.util.Map;
 import features.dungeon.api.DungeonEdgeRef;
 import features.dungeon.api.DungeonEditorMapSnapshot;
-import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonTopologyElementRef;
 
 final class DungeonEditorBoundaryPointerTargets {
@@ -11,9 +10,9 @@ final class DungeonEditorBoundaryPointerTargets {
     }
 
     static void addTargets(
-            Map<String, DungeonEditorRuntimePointerTarget> targets,
+            Map<String, features.dungeon.api.editor.DungeonEditorPointerInput.Target> targets,
             DungeonEditorMapSnapshot map,
-            DungeonEditorMapSurfaceSnapshot snapshot
+            DungeonEditorSurfaceProjection snapshot
     ) {
         for (DungeonEditorMapSnapshot.Boundary boundary : map.boundaries()) {
             DungeonEdgeRef edge = boundary.edge();
@@ -21,14 +20,14 @@ final class DungeonEditorBoundaryPointerTargets {
                 continue;
             }
             String kind = boundaryKind(boundary.kind());
-            DungeonEditorRuntimePointerTarget.BoundaryTarget target =
-                    new DungeonEditorRuntimePointerTarget.BoundaryTarget(
+            features.dungeon.api.editor.DungeonEditorPointerInput.BoundaryTarget target =
+                    new features.dungeon.api.editor.DungeonEditorPointerInput.BoundaryTarget(
                             "DOOR".equals(kind)
-                                    ? DungeonEditorRuntimePointerTarget.BoundaryKind.DOOR
-                                    : DungeonEditorRuntimePointerTarget.BoundaryKind.WALL,
+                                    ? features.dungeon.api.editor.DungeonEditorPointerInput.BoundaryKind.DOOR
+                                    : features.dungeon.api.editor.DungeonEditorPointerInput.BoundaryKind.WALL,
                             boundaryKey(kind, boundary.id(), boundary.topologyRef(), edge),
                             boundary.id(),
-                            DungeonEditorRuntimePointerTarget.TopologyKind.fromPublished(
+                            features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.fromPublished(
                                     boundary.topologyRef().kind()),
                             DungeonEditorTopologyHitRefs.topologyId(boundary.topologyRef()),
                             edge.from().q(),
@@ -38,7 +37,7 @@ final class DungeonEditorBoundaryPointerTargets {
                             edge.to().r(),
                             edge.to().level());
             targets.put(DungeonEditorEdgeHitRefs.edge(kind, boundary.id(), boundary.topologyRef(), edge).value(),
-                    DungeonEditorRuntimePointerTarget.boundary(target));
+                    features.dungeon.api.editor.DungeonEditorPointerInput.Target.boundary(target));
         }
     }
 

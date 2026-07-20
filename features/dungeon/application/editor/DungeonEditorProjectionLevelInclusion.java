@@ -1,13 +1,12 @@
 package features.dungeon.application.editor;
 
-import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonOverlaySettings;
 
 final class DungeonEditorProjectionLevelInclusion {
     private DungeonEditorProjectionLevelInclusion() {
     }
 
-    static boolean includes(DungeonEditorMapSurfaceSnapshot snapshot, int level) {
+    static boolean includes(DungeonEditorSurfaceProjection snapshot, int level) {
         if (level == snapshot.projectionLevel()) {
             return true;
         }

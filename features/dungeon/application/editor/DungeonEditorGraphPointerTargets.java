@@ -9,13 +9,13 @@ final class DungeonEditorGraphPointerTargets {
     }
 
     static void addTargets(
-            Map<String, DungeonEditorRuntimePointerTarget> targets,
+            Map<String, features.dungeon.api.editor.DungeonEditorPointerInput.Target> targets,
             DungeonEditorMapSnapshot map
     ) {
         for (DungeonEditorMapSnapshot.Area area : map.areas()) {
             if (!area.cells().isEmpty()) {
                 targets.put(DungeonEditorGraphHitRefs.graphNode(area.id(), area.clusterId()).value(),
-                        DungeonEditorRuntimePointerTarget.graphNode(
+                        features.dungeon.api.editor.DungeonEditorPointerInput.Target.graphNode(
                                 area.id(),
                                 area.clusterId(),
                                 topologyKind(area.topologyRef()),
@@ -24,10 +24,10 @@ final class DungeonEditorGraphPointerTargets {
         }
     }
 
-    private static DungeonEditorRuntimePointerTarget.TopologyKind topologyKind(
+    private static features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind topologyKind(
             DungeonTopologyElementRef topologyRef
     ) {
-        return DungeonEditorRuntimePointerTarget.TopologyKind.fromPublished(
+        return features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.fromPublished(
                 topologyRef == null ? null : topologyRef.kind());
     }
 }

@@ -11,7 +11,7 @@ import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
 import features.dungeon.domain.core.structure.room.RoomClusterGeometry;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 import features.dungeon.domain.core.structure.room.RoomClusterRoomPartition;
 import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;
 
@@ -97,7 +97,8 @@ final class DungeonRoomInvariantScenarios {
         Cell middle = new Cell(1, 0, 0);
         Cell right = new Cell(2, 0, 0);
         RoomClusterGeometry cluster = RoomClusterGeometry.fromCells(9L, 2L, Set.of(left, middle, right));
-        List<RoomRegion> rooms = List.of(new RoomRegion(7L, 2L, 9L, "Left", Map.of(0, left)));
+        List<RoomRegion> rooms = List.of(new RoomRegion(
+                7L, 2L, 9L, "Left", Set.of(left), DungeonRoomNarration.empty()));
         Map<Long, List<Cell>> assigned = RoomClusterRoomPartition.cellsByRoom(cluster, rooms, Map.of());
         Set<Cell> assignedCells = assigned.values().stream()
                 .flatMap(List::stream)
@@ -130,7 +131,13 @@ final class DungeonRoomInvariantScenarios {
     }
 
     private static void assertDefaultAndCustomRoomNames() {
-        RoomRegion defaultRoom = new RoomRegion(12L, 4L, 3L, "", Map.of(0, new Cell(1, 1, 0)), null);
+        RoomRegion defaultRoom = new RoomRegion(
+                12L,
+                4L,
+                3L,
+                "",
+                Set.of(new Cell(1, 1, 0)),
+                DungeonRoomNarration.empty());
         assertEquals("Raum 12", defaultRoom.name(), "DGI-ROOM-003 default room name");
         assertEquals("Library", defaultRoom.withName("  Library  ").name(), "DGI-ROOM-003 custom room name trims");
     }
@@ -140,12 +147,13 @@ final class DungeonRoomInvariantScenarios {
         Cell middle = new Cell(1, 0, 0);
         Cell right = new Cell(2, 0, 0);
         RoomClusterGeometry cluster = RoomClusterGeometry.fromCells(9L, 2L, Set.of(left, middle, right));
-        RoomRegion room = new RoomRegion(7L, 2L, 9L, "", Map.of(0, left));
+        RoomRegion room = new RoomRegion(
+                7L, 2L, 9L, "", Set.of(left), DungeonRoomNarration.empty());
         Map<Long, List<Cell>> cellsByRoom = RoomClusterRoomPartition.cellsByRoom(cluster, List.of(room), Map.of());
         assertEquals(List.of(left, middle, right), cellsByRoom.get(room.roomId()),
                 "DGI-ROOM-004 room label source cells come from room partition owner");
-        Map<Integer, Cell> anchors = RoomRegion.anchorsByLevel(Map.of(0, cellsByRoom.get(room.roomId())));
-        assertEquals(left, anchors.get(0), "DGI-ROOM-004 room anchor comes from sorted floor cells");
+        assertEquals(left, cellsByRoom.get(room.roomId()).getFirst(),
+                "DGI-ROOM-004 room label source starts at the sorted exact floor cell");
     }
 
     private static DungeonMap twoByTwoMap() {

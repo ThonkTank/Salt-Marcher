@@ -2,13 +2,13 @@ package features.dungeon.application.editor;
 
 public record PointerInteractionResult(
         boolean workflowAccepted,
-        DungeonEditorRuntimePointerTarget hoverTarget
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target hoverTarget
 ) {
     public PointerInteractionResult {
-        hoverTarget = hoverTarget == null ? DungeonEditorRuntimePointerTarget.empty() : hoverTarget;
+        hoverTarget = hoverTarget == null ? features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty() : hoverTarget;
     }
 
     public static PointerInteractionResult ignored() {
-        return new PointerInteractionResult(false, DungeonEditorRuntimePointerTarget.empty());
+        return new PointerInteractionResult(false, features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty());
     }
 }

@@ -27,14 +27,13 @@ final class RoomMutationClusterCreation {
     ) {
         RoomClusterGeometry coreCluster = RoomClusterGeometry.fromCells(clusterId, mapId, flattenedCells(cellsByLevel));
         RoomCluster baseCluster = RoomCluster.authored(
-                clusterId, mapId, "", coreCluster.center(), Map.of());
+                clusterId, mapId, "", List.of());
         RoomCluster cluster = RoomCluster.authored(
                 clusterId,
                 mapId,
                 "",
-                coreCluster.center(),
-                RoomPerimeterBoundaryMaterialization.fromFloorCells(
-                        baseCluster, coreCluster.floorMap().allCells(), Map.of()));
+                DungeonBoundaryRehoming.flatten(RoomPerimeterBoundaryMaterialization.fromFloorCells(
+                        baseCluster, coreCluster.floorMap().allCells(), Map.of())));
         return new DungeonRoomTopologyClusterWork(cluster, rooms, cellsByLevel);
     }
 

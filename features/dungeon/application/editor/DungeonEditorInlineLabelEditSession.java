@@ -74,12 +74,12 @@ public record DungeonEditorInlineLabelEditSession(
     }
 
     public static DungeonEditorInlineLabelEditSession active(
-            DungeonEditorRuntimePointerTarget target,
+            features.dungeon.api.editor.DungeonEditorPointerInput.Target target,
             String draftText,
             Placement placement
     ) {
-        DungeonEditorRuntimePointerTarget safeTarget = target == null
-                ? DungeonEditorRuntimePointerTarget.empty()
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target safeTarget = target == null
+                ? features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty()
                 : target;
         return active(inlineLabelTarget(safeTarget), draftText, placement);
     }
@@ -116,7 +116,7 @@ public record DungeonEditorInlineLabelEditSession(
         }
     }
 
-    private static Target inlineLabelTarget(DungeonEditorRuntimePointerTarget target) {
+    private static Target inlineLabelTarget(features.dungeon.api.editor.DungeonEditorPointerInput.Target target) {
         return new Target(
                 labelNameTarget(target),
                 labelKind(target.labelKind()),
@@ -126,7 +126,7 @@ public record DungeonEditorInlineLabelEditSession(
                 target.topologyId());
     }
 
-    private static DungeonEditorRuntimeLabelTarget labelNameTarget(DungeonEditorRuntimePointerTarget target) {
+    private static DungeonEditorRuntimeLabelTarget labelNameTarget(features.dungeon.api.editor.DungeonEditorPointerInput.Target target) {
         if (target.isLabelTarget() && target.isClusterLabelTarget() && target.clusterId() > 0L) {
             return DungeonEditorRuntimeLabelTarget.cluster(target.clusterId());
         }
@@ -136,14 +136,14 @@ public record DungeonEditorInlineLabelEditSession(
         return DungeonEditorRuntimeLabelTarget.empty();
     }
 
-    private static String labelKind(DungeonEditorRuntimePointerTarget.LabelKind labelKind) {
+    private static String labelKind(features.dungeon.api.editor.DungeonEditorPointerInput.LabelKind labelKind) {
         String kindName = labelKind == null ? EMPTY_KIND_NAME : labelKind.name();
         return EMPTY_KIND_NAME.equals(kindName)
                 ? ""
                 : kindName;
     }
 
-    private static String topologyKind(DungeonEditorRuntimePointerTarget.TopologyKind topologyKind) {
+    private static String topologyKind(features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind topologyKind) {
         return topologyKind == null ? "" : topologyKind.stableName();
     }
 

@@ -1,6 +1,6 @@
-Status: Active Target
+Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-17
+Last Reviewed: 2026-07-19
 Source of Truth: Dungeon write model, ownership boundaries, and domain
 invariants.
 
@@ -169,8 +169,6 @@ path node is a narrower mutation and does not imply a full geometry recompute.
 Stair invariants:
 
 - supported editor-authored shapes are `STRAIGHT`, `SQUARE`, and `CIRCULAR`
-- older or imported stored shapes may be loaded for compatibility, but new
-  editor-authored stair creation must use one of the supported shapes above
 - direction is a cardinal dungeon edge direction
 - dimensions must already satisfy the requirements-owned min/max bounds before
   the aggregate accepts the mutation
@@ -179,8 +177,8 @@ Stair invariants:
 - generated path cells are deterministic and unique for one stair
 - generated exits are ordered by level role and own stable exit ids where the
   same role survives recompute
-- generated exit labels are domain-owned defaults unless a future state-panel
-  label edit creates explicit authored labels
+- generated exit labels are domain-owned defaults unless an explicit authored
+  label exists
 
 Cross-level corridor binding:
 
@@ -196,10 +194,7 @@ preserves the previous stair, path, exits, topology binding, selection target,
 and authored revision. Editor-authored create and full-recompute routes reject
 unsupported editor shapes, non-cardinal directions, out-of-range dimensions,
 nonunique generated path cells, and room-interior crossings outside generated
-exits when those values reach the aggregate. The current real View route
-constrains selected-stair shape and direction to supported values and proves
-rejection of invalid dimensions and room-interior crossings without mutating
-authored truth.
+exits when those values reach the aggregate.
 
 ## Feature Marker Domain Truth
 
@@ -207,7 +202,7 @@ authored truth.
 A feature marker has only:
 
 - stable marker id and map-owned `FEATURE_MARKER` topology ref
-- optional map id for future projection or persistence mapping
+- optional map id for boundary correlation
 - marker kind: `OBJECT`, `ENCOUNTER`, or `POI`
 - anchor cell
 - label

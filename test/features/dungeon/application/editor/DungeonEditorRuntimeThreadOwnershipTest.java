@@ -48,9 +48,7 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
     void stalePointerInputPublishesTypedRejectionWithoutChangingAuthoredState() {
         InMemoryDungeonRepository repository = new InMemoryDungeonRepository();
         repository.seed(1L, "Only");
-        DungeonEditorApi api = new DungeonEditorApiFacade(
-                createRuntimeDirect(repository),
-                DirectUiDispatcher.INSTANCE);
+        DungeonEditorApi api = createRuntimeDirect(repository);
         DungeonEditorState before = api.current();
 
         api.dispatch(new DungeonEditorIntent.Pointer(new DungeonEditorPointerInput(
@@ -82,7 +80,7 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
         InMemoryDungeonRepository repository = new InMemoryDungeonRepository();
         repository.seed(1L, "Only");
         DungeonEditorFeatureRuntimeRoot runtime = createRuntimeDirect(repository);
-        DungeonEditorApi api = new DungeonEditorApiFacade(runtime, DirectUiDispatcher.INSTANCE);
+        DungeonEditorApi api = runtime;
         DungeonEditorToolSelection pathSelection = DungeonEditorToolSelection.family(
                 DungeonEditorToolFamily.WALL);
         DungeonEditorToolSelection singleSelection = new DungeonEditorToolSelection(
@@ -95,16 +93,17 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
 
         assertEquals(singleSelection, api.current().toolSelection());
         assertTrue(api.current().publicationRevision() > pathRevision,
-                "an option-only change must publish even when its legacy tool value stays equal");
+                "an option-only change must publish even when its derived tool value stays equal");
     }
 
     @Test
     void editorApiPublishesOneAtomicStateAndDispatchesThroughTheRuntimeOwner() {
         InMemoryDungeonRepository repository = new InMemoryDungeonRepository();
         repository.seed(1L, "Only");
-        DungeonEditorFeatureRuntimeRoot runtime = createRuntimeDirect(repository);
         QueuedUiDispatcher dispatcher = new QueuedUiDispatcher();
-        DungeonEditorApi api = new DungeonEditorApiFacade(runtime, dispatcher);
+        DungeonEditorFeatureRuntimeRoot runtime = createRuntime(
+                repository, DirectExecutionLane.INSTANCE, dispatcher);
+        DungeonEditorApi api = runtime;
         api.dispatch(new DungeonEditorIntent.SetViewport(
                 new DungeonEditorViewportInput(0, -8, -8, 8, 8)));
         List<DungeonEditorState> delivered = new ArrayList<>();
@@ -148,22 +147,25 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
 
         assertEquals(0, repository.reads,
                 "runtime construction must not perform persistence-backed readback on the caller");
-        assertEquals(null, runtime.currentState().selectedMapId());
+        assertEquals(null, runtime.current().selectedMapId());
         assertEquals(2, lane.pending(), "initialization must precede queued subscriber registration");
 
         lane.runNext();
 
         assertTrue(repository.reads > 0, "initial readback must run on the supplied execution lane");
-        assertEquals(1, runtime.currentState().catalog().size());
-        assertEquals("Only", runtime.currentState().catalog().getFirst().mapName());
+        assertEquals(1, runtime.current().catalog().size());
+        assertEquals("Only", runtime.current().catalog().getFirst().mapName());
         assertTrue(delivered.isEmpty(), "subscriber registration is still queued behind initialization");
 
         lane.runNext();
 
+        assertTrue(delivered.isEmpty(), "public API delivery waits for the UI dispatcher");
+        dispatcher.runAll();
         assertEquals(1, delivered.size());
         assertEquals("Only", delivered.getFirst().catalog().getFirst().mapName());
-        dispatcher.runAll();
-        lane.runAll();
+        if (lane instanceof QueuedExecutionLane queuedLane) {
+            queuedLane.runAll();
+        }
         assertEquals(1, delivered.size(), "deferred model callbacks must not duplicate the completed frame");
     }
 
@@ -175,7 +177,7 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
         DungeonEditorFeatureRuntimeRoot runtime = createRuntimeDirect(repository);
 
         assertTrue(repository.reads > 0);
-        assertEquals("Only", runtime.currentState().catalog().getFirst().mapName());
+        assertEquals("Only", runtime.current().catalog().getFirst().mapName());
     }
 
     @Test
@@ -194,19 +196,19 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
         runtime.selectMap(2L);
         runtime.beginInlineLabelEdit(activeEdit("before-owner-run"));
 
-        assertFalse(runtime.currentState().draft().inlineLabel().active(),
+        assertFalse(runtime.current().draft().inlineLabel().active(),
                 "caller methods must not mutate the cached frame before owner execution");
         assertEquals(2, lane.pending());
 
         lane.runNext();
-        assertEquals(2L, runtime.currentState().selectedMapId().value());
-        assertFalse(runtime.currentState().draft().inlineLabel().active());
+        assertEquals(2L, runtime.current().selectedMapId().value());
+        assertFalse(runtime.current().draft().inlineLabel().active());
         assertTrue(repository.reads > 0, "map switch must exercise repository-backed readback on the owner lane");
 
         lane.runNext();
-        assertTrue(runtime.currentState().draft().inlineLabel().active());
-        assertEquals("before-owner-run", runtime.currentState().draft().inlineLabel().text());
-        assertEquals(2L, runtime.currentState().selectedMapId().value());
+        assertTrue(runtime.current().draft().inlineLabel().active());
+        assertEquals("before-owner-run", runtime.current().draft().inlineLabel().text());
+        assertEquals(2L, runtime.current().selectedMapId().value());
 
         dispatcher.runAll();
         lane.runAll();
@@ -217,7 +219,7 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
 
         assertEquals(deliveredBeforeClose, delivered.size(),
                 "queued unsubscribe must close runtime delivery before later owner publications");
-        assertEquals("after-close", runtime.currentState().draft().inlineLabel().text());
+        assertEquals("after-close", runtime.current().draft().inlineLabel().text());
     }
 
     @Test
@@ -250,6 +252,7 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
         runtime.selectMap(1L);
         runtime.subscribe(delivered::add);
         lane.runAll();
+        dispatcher.runAll();
 
         assertEquals(1, delivered.size());
         assertEquals(1L, delivered.getFirst().selectedMapId().value());
@@ -257,12 +260,14 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
 
     private static DungeonEditorFeatureRuntimeRoot createRuntime(
             InMemoryDungeonRepository repository,
-            QueuedExecutionLane lane,
+            ExecutionLane lane,
             UiDispatcher dispatcher
     ) {
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(
                 new InMemoryPartyRepository(), lane, lane, dispatcher, (id, type) -> { });
-        lane.runAll();
+        if (lane instanceof QueuedExecutionLane queuedLane) {
+            queuedLane.runAll();
+        }
         DungeonTestAssembly.Component dungeon = DungeonTestAssembly.create(
                 repository,
                 repository,
@@ -274,10 +279,7 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
                 dispatcher,
                 (id, type) -> { });
         return DungeonEditorFeatureRuntimeRoot.create(new DungeonEditorRuntimeDependencies(
-                dungeon.editorControls(), dungeon.editorMapSurface(), dungeon.editorState(),
-                dungeon.editor(),
-                lane,
-                dispatcher));
+                dungeon.editor(), lane, dispatcher));
     }
 
     private static DungeonEditorFeatureRuntimeRoot createRuntimeDirect(InMemoryDungeonRepository repository) {
@@ -298,10 +300,7 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
                 DirectUiDispatcher.INSTANCE,
                 (id, type) -> { });
         return DungeonEditorFeatureRuntimeRoot.create(new DungeonEditorRuntimeDependencies(
-                dungeon.editorControls(), dungeon.editorMapSurface(), dungeon.editorState(),
-                dungeon.editor(),
-                DirectExecutionLane.INSTANCE,
-                DirectUiDispatcher.INSTANCE));
+                dungeon.editor(), DirectExecutionLane.INSTANCE, DirectUiDispatcher.INSTANCE));
     }
 
     private static DungeonEditorInlineLabelEditSession activeEdit(String text) {
@@ -445,7 +444,10 @@ final class DungeonEditorRuntimeThreadOwnershipTest {
                             .map(key -> new DungeonWindowChunkHeader(key, 0L))
                             .toList(),
                     List.of(),
-                    List.of()));
+                    List.of(),
+                    List.of(),
+                    new features.dungeon.application.authored.port.DungeonContinuationPage(
+                            List.of(), java.util.Optional.empty())));
         }
 
         @Override

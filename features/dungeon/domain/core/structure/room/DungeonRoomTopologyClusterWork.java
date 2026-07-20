@@ -1,5 +1,7 @@
 package features.dungeon.domain.core.structure.room;
 
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,7 +40,7 @@ public record DungeonRoomTopologyClusterWork(
         return CellOrdering.sortedCells(result);
     }
 
-    public RoomCluster rebuiltClusterWithBoundaries(Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel) {
+    public RoomCluster rebuiltClusterWithBoundaries(Map<Integer, List<BoundarySegment>> boundariesByLevel) {
         return cluster.rebuiltForTopologyWork(cellsByLevel, boundariesByLevel);
     }
 
@@ -83,8 +85,7 @@ public record DungeonRoomTopologyClusterWork(
                                 coreWork.cluster().clusterId(),
                                 coreWork.cluster().mapId(),
                                 "",
-                                coreWork.cluster().center(),
-                                Map.of())
+                                List.of())
                         : previous.cluster(),
                 nextRooms,
                 copiedCellsByLevel(coreWork.cellsByLevel()));

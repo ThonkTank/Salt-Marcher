@@ -2,10 +2,8 @@ package features.dungeon.domain.core.structure.corridor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import features.dungeon.domain.core.component.CorridorWaypoint;
 import features.dungeon.domain.core.geometry.Cell;
-import features.dungeon.domain.core.structure.room.RoomCluster;
 
 final class CorridorHostBackboneCells {
     private static final int SINGLE_ROUTE_TERMINUS_COUNT = 1;
@@ -13,10 +11,9 @@ final class CorridorHostBackboneCells {
 
     List<Cell> authoredBackbone(
             List<CorridorWaypoint> waypoints,
-            Map<Long, RoomCluster> clustersById,
             List<CorridorHostEndpoint> endpoints
     ) {
-        List<Cell> waypointCells = waypointCells(waypoints, clustersById);
+        List<Cell> waypointCells = waypointCells(waypoints);
         List<CorridorHostEndpoint> termini = routeTermini(endpoints);
         if (termini.isEmpty()) {
             return waypointCells;
@@ -60,25 +57,12 @@ final class CorridorHostBackboneCells {
         return List.of(allEndpoints.getFirst(), allEndpoints.getLast());
     }
 
-    private static List<Cell> waypointCells(
-            List<CorridorWaypoint> waypoints,
-            Map<Long, RoomCluster> clustersById
-    ) {
+    private static List<Cell> waypointCells(List<CorridorWaypoint> waypoints) {
         List<Cell> result = new ArrayList<>();
         for (CorridorWaypoint waypoint : waypoints == null ? List.<CorridorWaypoint>of() : waypoints) {
-            result.add(absoluteWaypointCell(waypoint, clustersById));
+            result.add(waypoint.cell());
         }
         return List.copyOf(result);
     }
 
-    private static Cell absoluteWaypointCell(
-            CorridorWaypoint waypoint,
-            Map<Long, RoomCluster> clustersById
-    ) {
-        RoomCluster cluster = clustersById.get(waypoint.clusterId());
-        Cell center = cluster == null
-                ? new Cell(0, 0, waypoint.level())
-                : cluster.center();
-        return waypoint.absoluteCell(center);
-    }
 }

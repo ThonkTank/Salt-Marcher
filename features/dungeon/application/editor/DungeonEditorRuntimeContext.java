@@ -147,7 +147,7 @@ final class DungeonEditorRuntimeContext {
     }
 
     Result setViewMode(DungeonEditorViewMode viewMode) {
-        return fromSessionFrame(session.setViewMode(viewMode));
+        return fromView(session.setViewMode(viewMode));
     }
 
     Result setTool(DungeonEditorToolSelection selection) {
@@ -167,7 +167,7 @@ final class DungeonEditorRuntimeContext {
     }
 
     Result setOverlay(DungeonOverlaySettings overlaySettings) {
-        return fromSessionFrame(session.setOverlay(overlaySettings));
+        return fromView(session.setOverlay(overlaySettings));
     }
 
     Result saveRoomNarration(RoomNarration narration) {
@@ -175,7 +175,15 @@ final class DungeonEditorRuntimeContext {
         return fromSnapshot(session.saveRoomNarration(new DungeonAuthoredApplicationService.RoomNarrationInput(
                 safeNarration.roomId(),
                 safeNarration.visualDescription(),
-                DungeonEditorRuntimeInputTranslator.exitInputs(safeNarration))));
+                safeNarration.exits().stream()
+                        .map(exit -> new DungeonAuthoredApplicationService.RoomNarrationExitInput(
+                                exit.label(),
+                                exit.q(),
+                                exit.r(),
+                                exit.level(),
+                                exit.direction(),
+                                exit.description()))
+                        .toList())));
     }
 
     Result saveLabelName(DungeonEditorRuntimeLabelTarget target, String name) {
@@ -420,7 +428,7 @@ final class DungeonEditorRuntimeContext {
         };
     }
 
-    Result fromSessionFrame(DungeonEditorSessionSnapshot.@Nullable SessionFrameData frameData) {
+    Result fromView(DungeonEditorSessionSnapshot.@Nullable ViewData frameData) {
         return frameData == null ? Result.none() : fromControls(frameData.controlsData());
     }
 

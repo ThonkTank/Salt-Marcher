@@ -5,7 +5,6 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.application.editor.session.DungeonEditorSessionSnapshot;
 import features.dungeon.application.editor.session.DungeonEditorSessionValues;
-import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonEditorSurface;
 
 final class DungeonEditorStateProjectionServiceAssembly {
@@ -13,11 +12,11 @@ final class DungeonEditorStateProjectionServiceAssembly {
     private DungeonEditorStateProjectionServiceAssembly() {
     }
 
-    static features.dungeon.api.DungeonEditorStateSnapshot snapshot(
+    static DungeonEditorInspectorProjection snapshot(
             features.dungeon.application.editor.session.DungeonEditorSessionSnapshot.SnapshotData snapshot,
             @Nullable DungeonEditorSurface surface
     ) {
-        return new features.dungeon.api.DungeonEditorStateSnapshot(
+        return new DungeonEditorInspectorProjection(
                 selection(snapshot.selection()),
                 surface == null ? null : surface.inspector(),
                 preview(snapshot.preview()),
@@ -28,16 +27,16 @@ final class DungeonEditorStateProjectionServiceAssembly {
                 snapshot.projectionLevel());
     }
 
-    static DungeonEditorStateSnapshot snapshot(
-            DungeonEditorSessionSnapshot.SessionFrameData frameData,
-            DungeonEditorStateSnapshot current
+    static DungeonEditorInspectorProjection snapshot(
+            DungeonEditorSessionSnapshot.ViewData frameData,
+            DungeonEditorInspectorProjection current
     ) {
-        DungeonEditorSessionSnapshot.SessionFrameData safeFrameData =
-                frameData == null ? DungeonEditorSessionSnapshot.sessionFrameData(null) : frameData;
-        DungeonEditorStateSnapshot safeCurrent = current == null
-                ? DungeonEditorStateSnapshot.empty(safeFrameData.statusText())
+        DungeonEditorSessionSnapshot.ViewData safeFrameData =
+                frameData == null ? DungeonEditorSessionSnapshot.viewData(null) : frameData;
+        DungeonEditorInspectorProjection safeCurrent = current == null
+                ? DungeonEditorInspectorProjection.empty(safeFrameData.statusText())
                 : current;
-        return new DungeonEditorStateSnapshot(
+        return new DungeonEditorInspectorProjection(
                 selection(safeFrameData.selection()),
                 safeCurrent.inspector(),
                 preview(safeFrameData.preview()),
@@ -48,13 +47,13 @@ final class DungeonEditorStateProjectionServiceAssembly {
                 safeFrameData.projectionLevel());
     }
 
-    static features.dungeon.api.DungeonEditorStateSnapshot.Selection selection(
+    static features.dungeon.api.editor.DungeonEditorSelection selection(
             DungeonEditorSessionValues.@Nullable Selection selection
     ) {
         DungeonEditorSessionValues.Selection safeSelection = selection == null
                 ? DungeonEditorSessionValues.Selection.empty()
                 : selection;
-        return new features.dungeon.api.DungeonEditorStateSnapshot.Selection(
+        return new features.dungeon.api.editor.DungeonEditorSelection(
                 DungeonEditorValueProjectionServiceAssembly.topologyRef(safeSelection.topologyRef()),
                 safeSelection.clusterId(),
                 safeSelection.clusterSelection(),

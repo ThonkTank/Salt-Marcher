@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import features.dungeon.domain.core.component.CorridorAnchor;
+import features.dungeon.domain.core.component.CorridorDoorBinding;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.DungeonMap;
 
@@ -19,6 +20,23 @@ public final class RoomClusterCorridorMovement {
     private static final CorridorConnectionNormalization CONNECTION_NORMALIZATION =
             new CorridorConnectionNormalization();
 
+    /** Moves the door endpoints owned by a moved room cluster. */
+    public List<Corridor> moveDoorBindingsForCluster(
+            List<Corridor> corridors,
+            long clusterId,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        List<Corridor> result = new java.util.ArrayList<>();
+        for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
+            if (corridor != null) {
+                result.add(moveDoorBindingsForCluster(corridor, clusterId, deltaQ, deltaR, deltaLevel));
+            }
+        }
+        return List.copyOf(result);
+    }
+
     public DungeonMap moveAffectedCorridors(DungeonMap sourceMap, DungeonMap clusterMovedMap) {
         Objects.requireNonNull(sourceMap, "sourceMap");
         Objects.requireNonNull(clusterMovedMap, "clusterMovedMap");
@@ -26,7 +44,7 @@ public final class RoomClusterCorridorMovement {
         if (movedCorridorIds.isEmpty()) {
             return clusterMovedMap;
         }
-        return NETWORK_MOVEMENT.moveCorridors(
+        return NETWORK_MOVEMENT.moveCorridorsForClusterRelocation(
                 sourceMap,
                 clusterMovedMap,
                 clusterMovedMap.corridors(),
@@ -49,6 +67,34 @@ public final class RoomClusterCorridorMovement {
             }
         }
         return Set.copyOf(result);
+    }
+
+    private static Corridor moveDoorBindingsForCluster(
+            Corridor corridor,
+            long clusterId,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        List<CorridorDoorBinding> movedBindings = new java.util.ArrayList<>();
+        boolean changed = false;
+        for (CorridorDoorBinding binding : corridor.bindings().doorBindings()) {
+            CorridorDoorBinding moved = binding != null && binding.clusterId() == clusterId
+                    ? new CorridorDoorBinding(
+                            binding.roomId(),
+                            binding.clusterId(),
+                            translated(binding.roomCell(), deltaQ, deltaR, deltaLevel),
+                            binding.direction(),
+                            binding.topologyRef())
+                    : binding;
+            movedBindings.add(moved);
+            changed = changed || !Objects.equals(binding, moved);
+        }
+        return changed ? corridor.withBindings(corridor.bindings().withDoorBindings(movedBindings)) : corridor;
+    }
+
+    private static Cell translated(Cell cell, int deltaQ, int deltaR, int deltaLevel) {
+        return new Cell(cell.q() + deltaQ, cell.r() + deltaR, cell.level() + deltaLevel);
     }
 
     private static boolean hasMovedOwnedAnchor(

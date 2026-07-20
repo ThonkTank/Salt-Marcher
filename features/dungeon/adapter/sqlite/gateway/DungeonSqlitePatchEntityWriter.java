@@ -138,7 +138,13 @@ final class DungeonSqlitePatchEntityWriter {
                 "SELECT dungeon_map_id,name FROM dungeon_room_clusters WHERE cluster_id=?", id),
                 List.of(row(expected.mapId(), expected.name())));
         List<List<Object>> boundaries = new ArrayList<>();
-        for (DungeonClusterBoundaryRecord boundary : expected.boundaries()) {
+        List<DungeonClusterBoundaryRecord> orderedBoundaries = expected.boundaries().stream()
+                .sorted(java.util.Comparator.comparingInt(DungeonClusterBoundaryRecord::levelZ)
+                        .thenComparingInt(DungeonClusterBoundaryRecord::cellY)
+                        .thenComparingInt(DungeonClusterBoundaryRecord::cellX)
+                        .thenComparing(DungeonClusterBoundaryRecord::edgeDirection))
+                .toList();
+        for (DungeonClusterBoundaryRecord boundary : orderedBoundaries) {
             boundaries.add(row(boundary.levelZ(), boundary.cellX(), boundary.cellY(), boundary.edgeDirection(),
                     boundary.edgeType(), boundary.topologyElementId()));
         }
@@ -1257,7 +1263,7 @@ final class DungeonSqlitePatchEntityWriter {
 
     private static void addBoundaryTopology(Set<TopologyKey> result, RoomCluster cluster) {
         for (var boundary : cluster.orderedAuthoredBoundaries()) {
-            DungeonTopologyRef ref = boundary.resolvedTopologyRef(cluster.center());
+            DungeonTopologyRef ref = boundary.resolvedTopologyRef();
             if (ref.present()) {
                 result.add(new TopologyKey(ref.kind().name(), ref.id()));
             }

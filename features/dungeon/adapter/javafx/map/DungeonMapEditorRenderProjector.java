@@ -3,7 +3,7 @@ package features.dungeon.adapter.javafx.map;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.api.DungeonEditorMapSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
-import features.dungeon.api.DungeonEditorStateSnapshot;
+import features.dungeon.api.editor.DungeonEditorSelection;
 import features.dungeon.api.DungeonEditorSurface;
 
 final class DungeonMapEditorRenderProjector {
@@ -17,7 +17,7 @@ final class DungeonMapEditorRenderProjector {
     DungeonMapRenderState project(
             String placeholderTitle,
             @Nullable DungeonEditorSurface surface,
-            DungeonEditorStateSnapshot.Selection selection,
+            DungeonEditorSelection selection,
             DungeonEditorPreview preview,
             PreviewRenderFrame previewRender,
             PreviewRenderDiffFrame previewRenderDiff,
@@ -31,7 +31,7 @@ final class DungeonMapEditorRenderProjector {
                 map,
                 previewRender == null ? PreviewRenderFrame.empty() : previewRender,
                 previewRenderDiff,
-                selection == null ? DungeonEditorStateSnapshot.Selection.empty() : selection,
+                selection == null ? DungeonEditorSelection.empty() : selection,
                 preview == null ? DungeonEditorPreview.none() : preview);
         return projection.renderState(surface, map, editorMode);
     }
@@ -40,7 +40,7 @@ final class DungeonMapEditorRenderProjector {
             DungeonEditorMapSnapshot map,
             PreviewRenderFrame previewRender,
             PreviewRenderDiffFrame previewRenderDiff,
-            DungeonEditorStateSnapshot.Selection selection,
+            DungeonEditorSelection selection,
             DungeonEditorPreview preview
     ) {
         DungeonMapEditorProjectionAccumulator projection = new DungeonMapEditorProjectionAccumulator(roomLabelPlanner, previewDiffProjector);

@@ -66,14 +66,13 @@ import features.dungeon.application.authored.command.TransitionLinkCommand;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
-import features.dungeon.domain.core.structure.DungeonMapOperationFeedbackRules;
 import features.dungeon.domain.core.structure.corridor.CorridorDeletionTarget;
 import features.dungeon.domain.core.structure.corridor.Corridor;
 import features.dungeon.domain.core.structure.corridor.CorridorRoutingPolicy;
 import features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy;
 import features.dungeon.domain.core.structure.corridor.DungeonCorridorEndpoint;
 import features.dungeon.domain.core.structure.feature.FeatureMarkerKind;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.stair.StairGeometrySpec;
@@ -102,8 +101,6 @@ import features.dungeon.application.editor.usecase.InspectDungeonSelectionUseCas
 import features.dungeon.application.editor.usecase.LoadDungeonSnapshotUseCase;
 import features.dungeon.application.editor.usecase.PreviewDungeonEditorSurfaceMoveUseCase;
 import features.dungeon.application.editor.usecase.PublishDungeonEditorHandlesUseCase;
-import features.dungeon.api.DungeonAuthoredMutationModel;
-import features.dungeon.api.DungeonAuthoredReadModel;
 import features.dungeon.api.DungeonMapCatalogModel;
 import features.dungeon.api.authored.DungeonAuthoredApi;
 import features.dungeon.api.editor.DungeonEditorCommandOutcome;
@@ -114,8 +111,6 @@ import java.util.concurrent.CompletionStage;
 import platform.execution.ExecutionLane;
 
 public final class DungeonAuthoredApplicationService implements DungeonAuthoredApi {
-    private static final DungeonMapOperationFeedbackRules OPERATION_FEEDBACK_POLICY =
-            new DungeonMapOperationFeedbackRules();
     private static final long ABSENT_ID = 0L;
     private static final long MIN_CLUSTER_ID = 0L;
     private static final String DEFAULT_MAP_NAME = "Dungeon Map";
@@ -224,16 +219,6 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                 previewOperations,
                 detailSaveOperations,
                 Objects.requireNonNull(dungeonState, "dungeonState"));
-    }
-
-    @Override
-    public DungeonAuthoredReadModel authoredMaps() {
-        return publishedState.authoredReadModel();
-    }
-
-    @Override
-    public DungeonAuthoredMutationModel authoredMutations() {
-        return publishedState.authoredMutationModel();
     }
 
     @Override
@@ -525,8 +510,6 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         OperationResultData result = new OperationResultData(
                 mutationPipeline.snapshotData(selected.workset(), selected.spec(), selectedPatch),
                 true,
-                List.of(),
-                List.of(undo ? "undo applied" : "redo applied"),
                 DungeonEditorCommandOutcome.accepted(selectedPatch.committedRevision()));
         publicationOperations.publishMutation(result, session.dungeonState());
     }
@@ -1046,8 +1029,6 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             return new OperationResultData(
                     snapshotData(workset, spec, patch),
                     true,
-                    OPERATION_FEEDBACK_POLICY.validationMessages(current, candidate),
-                    OPERATION_FEEDBACK_POLICY.reactionMessages(current, candidate),
                     DungeonEditorCommandOutcome.accepted(committed.committedRevision()));
             }
         }
@@ -1097,8 +1078,6 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         return new OperationResultData(
                 null,
                 false,
-                List.of(),
-                List.of(),
                 DungeonEditorCommandOutcome.rejected(reason));
     }
 
@@ -1177,7 +1156,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         }
         RoomCluster cluster = map.topology().roomCluster(clusterId);
         if (cluster != null) {
-            cluster.orderedAuthoredBoundaries().forEach(boundary -> result.add(boundary.absoluteCell(cluster.center())));
+            cluster.orderedAuthoredBoundaries().forEach(boundary -> result.addAll(boundary.edge().touchingCells()));
         }
         return Set.copyOf(result);
     }
@@ -1197,16 +1176,13 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             corridor.bindings().waypoints().forEach(waypoint -> {
                 RoomCluster cluster = map.topology().roomCluster(waypoint.clusterId());
                 if (cluster != null) {
-                    cells.add(waypoint.absoluteCell(cluster.center()));
+                    cells.add(waypoint.cell());
                 }
             });
             corridor.bindings().doorBindings().forEach(door -> {
                 RoomCluster cluster = map.topology().roomCluster(door.clusterId());
                 if (cluster != null) {
-                    Cell roomCell = new Cell(
-                            cluster.center().q() + door.relativeCell().q(),
-                            cluster.center().r() + door.relativeCell().r(),
-                            door.relativeCell().level());
+                    Cell roomCell = door.roomCell();
                     cells.add(roomCell);
                     cells.add(door.direction().neighborOf(roomCell));
                 }
@@ -1320,14 +1296,13 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                 LoadDungeonSnapshotUseCase.@Nullable DungeonSnapshotData snapshot,
                 DungeonEditorDungeonState state
         ) {
-            SnapshotPublication publication = snapshotPublication(snapshot);
-            if (publication == null) {
+            DungeonEditorDungeonState.SnapshotFacts facts = snapshotFacts(snapshot);
+            if (facts == null) {
                 state.replaceSnapshot(null);
                 return;
             }
-            if (acceptCommittedPublication(publication.stateFacts())) {
-                state.replaceSnapshot(publication.stateFacts());
-                publishedState.publishSnapshot(publication.publishedSnapshot());
+            if (acceptCommittedPublication(facts)) {
+                state.replaceSnapshot(facts);
             }
         }
 
@@ -1348,11 +1323,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                 LoadDungeonSnapshotUseCase.@Nullable InspectorSnapshotData inspector,
                 DungeonEditorDungeonState state
         ) {
-            InspectorPublication publication = assembler.inspector(inspector);
-            state.replaceInspector(publication == null ? null : publication.workspaceInspector());
-            if (publication != null) {
-                publishedState.publishInspector(publication.publishedInspector());
-            }
+            state.replaceInspector(assembler.inspector(inspector));
         }
 
         private synchronized void publishMutation(
@@ -1366,20 +1337,13 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                 state.replaceCommandOutcome(mutation.commandOutcome());
                 return;
             }
-            SnapshotPublication snapshotPublication = snapshotPublication(mutation.snapshot());
-            DungeonEditorDungeonState.SnapshotFacts snapshot = snapshotPublication == null
-                    ? null
-                    : snapshotPublication.stateFacts();
+            DungeonEditorDungeonState.SnapshotFacts snapshot = snapshotFacts(mutation.snapshot());
             if (snapshot == null || !acceptCommittedPublication(snapshot)) {
                 return;
             }
             state.replaceMutation(new DungeonEditorDungeonState.MutationFacts(
                     snapshot,
                     mutation.commandOutcome()));
-            publishedState.publishMutation(new DungeonAuthoredPublication.Mutation(
-                    snapshotPublication.publishedSnapshot(),
-                    mutation.validationMessages(),
-                    mutation.reactionMessages()));
         }
 
         private boolean acceptCommittedPublication(
@@ -1398,7 +1362,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             return true;
         }
 
-        private @Nullable SnapshotPublication snapshotPublication(
+        private DungeonEditorDungeonState.@Nullable SnapshotFacts snapshotFacts(
                 LoadDungeonSnapshotUseCase.@Nullable DungeonSnapshotData snapshot
         ) {
             if (snapshot == null) {
@@ -2271,8 +2235,6 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     mutationPipeline.snapshotData(
                             loadedSource.workset(), loadedSource.spec(), sourcePatch),
                     true,
-                    List.of(),
-                    List.of("transition link saved"),
                     DungeonEditorCommandOutcome.accepted(sourcePatch.committedRevision()));
             } finally {
                 closeLeases(editLeases);
@@ -2740,24 +2702,10 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
     private record OperationResultData(
             LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot,
             boolean changed,
-            List<String> validationMessages,
-            List<String> reactionMessages,
             DungeonEditorCommandOutcome commandOutcome
     ) {
         OperationResultData {
-            validationMessages = validationMessages == null ? List.of() : List.copyOf(validationMessages);
-            reactionMessages = reactionMessages == null ? List.of() : List.copyOf(reactionMessages);
             commandOutcome = commandOutcome == null ? DungeonEditorCommandOutcome.idle() : commandOutcome;
-        }
-
-        @Override
-        public List<String> validationMessages() {
-            return List.copyOf(validationMessages);
-        }
-
-        @Override
-        public List<String> reactionMessages() {
-            return List.copyOf(reactionMessages);
         }
     }
 
@@ -2765,18 +2713,6 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
     @FunctionalInterface
     private interface AuthoredPatchCommand {
         DungeonCommandResult plan(DungeonMap current);
-    }
-
-    private record SnapshotPublication(
-            DungeonEditorDungeonState.SnapshotFacts stateFacts,
-            DungeonAuthoredPublication.Snapshot publishedSnapshot
-    ) {
-    }
-
-    private record InspectorPublication(
-            DungeonEditorWorkspaceValues.Inspector workspaceInspector,
-            DungeonAuthoredPublication.Inspector publishedInspector
-    ) {
     }
 
     private static final class PublicationAssembler {
@@ -2789,7 +2725,7 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
         private final DungeonEditorWorkspaceHandleProjectionHelper handles =
                 new DungeonEditorWorkspaceHandleProjectionHelper();
 
-        private SnapshotPublication snapshot(
+        private DungeonEditorDungeonState.SnapshotFacts snapshot(
                 long mapId,
                 String mapName,
                 @Nullable DungeonDerivedState derived,
@@ -2799,30 +2735,20 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
             List<DungeonEditorHandleProjection> safeEditorHandles = editorHandles == null
                     ? List.of()
                     : List.copyOf(editorHandles);
-            return new SnapshotPublication(
-                    stateFacts(mapId, mapName, derived, safeEditorHandles, revision),
-                    DungeonAuthoredPublication.snapshot(mapName, derived, safeEditorHandles, revision));
+            return stateFacts(mapId, mapName, derived, safeEditorHandles, revision);
         }
 
-        private @Nullable InspectorPublication inspector(
+        private DungeonEditorWorkspaceValues.@Nullable Inspector inspector(
                 LoadDungeonSnapshotUseCase.@Nullable InspectorSnapshotData inspector
         ) {
             if (inspector == null) {
                 return null;
             }
-            StatePanelPublication statePanel = statePanelFacts(inspector.statePanelFacts());
-            List<RoomNarrationPublication> rooms = roomNarrations(inspector.roomNarrations());
-            return new InspectorPublication(
-                    new DungeonEditorWorkspaceValues.Inspector(
-                            inspector.title(),
-                            inspector.description(),
-                            statePanel.workspaceFacts(),
-                            rooms.stream().map(RoomNarrationPublication::workspaceCard).toList()),
-                    new DungeonAuthoredPublication.Inspector(
-                            inspector.title(),
-                            inspector.description(),
-                            statePanel.publishedFacts(),
-                            rooms.stream().map(RoomNarrationPublication::publishedCard).toList()));
+            return new DungeonEditorWorkspaceValues.Inspector(
+                    inspector.title(),
+                    inspector.description(),
+                    statePanelFacts(inspector.statePanelFacts()),
+                    roomNarrations(inspector.roomNarrations()));
         }
 
         private DungeonEditorDungeonState.SnapshotFacts stateFacts(
@@ -2856,113 +2782,79 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     handles.project(sourceHandles));
         }
 
-        private static StatePanelPublication statePanelFacts(
+        private static DungeonEditorWorkspaceValues.InspectorStatePanelState statePanelFacts(
                 LoadDungeonSnapshotUseCase.StatePanelFacts facts
         ) {
             LoadDungeonSnapshotUseCase.StatePanelFacts safeFacts = facts == null
                     ? LoadDungeonSnapshotUseCase.StatePanelFacts.empty()
                     : facts;
-            StairGeometryPublication stair = stairGeometryFacts(safeFacts.stairGeometry());
-            TransitionDestinationPublication transition = transitionDestinationFacts(safeFacts.transitionDestination());
-            return new StatePanelPublication(
-                    new DungeonEditorWorkspaceValues.InspectorStatePanelState(
-                            stair.workspaceFacts(),
-                            transition.workspaceFacts()),
-                    new DungeonAuthoredPublication.StatePanelFacts(
-                            stair.publishedFacts(),
-                            transition.publishedFacts()));
+            return new DungeonEditorWorkspaceValues.InspectorStatePanelState(
+                    stairGeometryFacts(safeFacts.stairGeometry()),
+                    transitionDestinationFacts(safeFacts.transitionDestination()));
         }
 
-        private static StairGeometryPublication stairGeometryFacts(
+        private static DungeonEditorWorkspaceValues.InspectorStairGeometryState stairGeometryFacts(
                 LoadDungeonSnapshotUseCase.StairGeometryPanelFacts facts
         ) {
             LoadDungeonSnapshotUseCase.StairGeometryPanelFacts safeFacts = facts == null
                     ? LoadDungeonSnapshotUseCase.StairGeometryPanelFacts.empty()
                     : facts;
-            return new StairGeometryPublication(
-                    new DungeonEditorWorkspaceValues.InspectorStairGeometryState(
-                            safeFacts.present(),
-                            safeFacts.stairId(),
-                            safeFacts.shapeName(),
-                            safeFacts.directionName(),
-                            safeFacts.dimension1(),
-                            safeFacts.dimension2()),
-                    new DungeonAuthoredPublication.StairGeometry(
-                            safeFacts.present(),
-                            safeFacts.stairId(),
-                            safeFacts.shapeName(),
-                            safeFacts.directionName(),
-                            safeFacts.dimension1(),
-                            safeFacts.dimension2()));
+            return new DungeonEditorWorkspaceValues.InspectorStairGeometryState(
+                    safeFacts.present(),
+                    safeFacts.stairId(),
+                    safeFacts.shapeName(),
+                    safeFacts.directionName(),
+                    safeFacts.dimension1(),
+                    safeFacts.dimension2());
         }
 
-        private static TransitionDestinationPublication transitionDestinationFacts(
+        private static DungeonEditorWorkspaceValues.InspectorTransitionDestinationState transitionDestinationFacts(
                 LoadDungeonSnapshotUseCase.TransitionDestinationPanelFacts facts
         ) {
             LoadDungeonSnapshotUseCase.TransitionDestinationPanelFacts safeFacts = facts == null
                     ? LoadDungeonSnapshotUseCase.TransitionDestinationPanelFacts.empty()
                     : facts;
-            return new TransitionDestinationPublication(
-                    new DungeonEditorWorkspaceValues.InspectorTransitionDestinationState(
-                            safeFacts.present(),
-                            safeFacts.destinationTypeKey(),
-                            safeFacts.mapId(),
-                            safeFacts.tileId(),
-                            safeFacts.transitionId()),
-                    new DungeonAuthoredPublication.TransitionDestination(
-                            safeFacts.present(),
-                            safeFacts.destinationTypeKey(),
-                            safeFacts.mapId(),
-                            safeFacts.tileId(),
-                            safeFacts.transitionId()));
+            return new DungeonEditorWorkspaceValues.InspectorTransitionDestinationState(
+                    safeFacts.present(),
+                    safeFacts.destinationTypeKey(),
+                    safeFacts.mapId(),
+                    safeFacts.tileId(),
+                    safeFacts.transitionId());
         }
 
-        private static List<RoomNarrationPublication> roomNarrations(
+        private static List<DungeonEditorWorkspaceValues.RoomNarrationCard> roomNarrations(
                 List<LoadDungeonSnapshotUseCase.RoomNarrationData> roomNarrations
         ) {
-            List<RoomNarrationPublication> result = new ArrayList<>();
+            List<DungeonEditorWorkspaceValues.RoomNarrationCard> result = new ArrayList<>();
             for (LoadDungeonSnapshotUseCase.RoomNarrationData roomNarration : roomNarrations) {
                 result.add(roomNarration(roomNarration));
             }
             return List.copyOf(result);
         }
 
-        private static RoomNarrationPublication roomNarration(
+        private static DungeonEditorWorkspaceValues.RoomNarrationCard roomNarration(
                 LoadDungeonSnapshotUseCase.RoomNarrationData roomNarration
         ) {
-            List<RoomExitPublication> exits = roomExits(roomNarration.exits());
-            return new RoomNarrationPublication(
-                    new DungeonEditorWorkspaceValues.RoomNarrationCard(
-                            roomNarration.roomId(),
-                            roomNarration.roomName(),
-                            roomNarration.visualDescription(),
-                            exits.stream().map(RoomExitPublication::workspaceExit).toList()),
-                    new DungeonAuthoredPublication.RoomNarration(
-                            roomNarration.roomId(),
-                            roomNarration.roomName(),
-                            roomNarration.visualDescription(),
-                            exits.stream().map(RoomExitPublication::publishedExit).toList()));
+            return new DungeonEditorWorkspaceValues.RoomNarrationCard(
+                    roomNarration.roomId(),
+                    roomNarration.roomName(),
+                    roomNarration.visualDescription(),
+                    roomExits(roomNarration.exits()));
         }
 
-        private static List<RoomExitPublication> roomExits(
+        private static List<DungeonEditorWorkspaceValues.RoomExitNarration> roomExits(
                 List<LoadDungeonSnapshotUseCase.RoomExitNarrationData> exits
         ) {
-            List<RoomExitPublication> result = new ArrayList<>();
+            List<DungeonEditorWorkspaceValues.RoomExitNarration> result = new ArrayList<>();
             for (LoadDungeonSnapshotUseCase.RoomExitNarrationData exit : exits) {
                 Cell cell = exit.cell();
-                result.add(new RoomExitPublication(
-                        new DungeonEditorWorkspaceValues.RoomExitNarration(
-                                exit.label(),
-                                cell == null
-                                        ? Cell.empty()
-                                        : new Cell(cell.q(), cell.r(), cell.level()),
-                                exit.direction().name(),
-                                exit.description()),
-                        new DungeonAuthoredPublication.RoomExitNarration(
-                                exit.label(),
-                                exit.cell(),
-                                exit.direction(),
-                                exit.description())));
+                result.add(new DungeonEditorWorkspaceValues.RoomExitNarration(
+                        exit.label(),
+                        cell == null
+                                ? Cell.empty()
+                                : new Cell(cell.q(), cell.r(), cell.level()),
+                        exit.direction().name(),
+                        exit.description()));
             }
             return List.copyOf(result);
         }
@@ -2980,34 +2872,5 @@ public final class DungeonAuthoredApplicationService implements DungeonAuthoredA
                     : derived.map();
         }
 
-        private record StatePanelPublication(
-                DungeonEditorWorkspaceValues.InspectorStatePanelState workspaceFacts,
-                DungeonAuthoredPublication.StatePanelFacts publishedFacts
-        ) {
-        }
-
-        private record StairGeometryPublication(
-                DungeonEditorWorkspaceValues.InspectorStairGeometryState workspaceFacts,
-                DungeonAuthoredPublication.StairGeometry publishedFacts
-        ) {
-        }
-
-        private record TransitionDestinationPublication(
-                DungeonEditorWorkspaceValues.InspectorTransitionDestinationState workspaceFacts,
-                DungeonAuthoredPublication.TransitionDestination publishedFacts
-        ) {
-        }
-
-        private record RoomNarrationPublication(
-                DungeonEditorWorkspaceValues.RoomNarrationCard workspaceCard,
-                DungeonAuthoredPublication.RoomNarration publishedCard
-        ) {
-        }
-
-        private record RoomExitPublication(
-                DungeonEditorWorkspaceValues.RoomExitNarration workspaceExit,
-                DungeonAuthoredPublication.RoomExitNarration publishedExit
-        ) {
-        }
     }
 }

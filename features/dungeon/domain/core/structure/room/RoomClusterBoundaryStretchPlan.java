@@ -13,7 +13,7 @@ import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.geometry.EdgeKey;
 import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
 
 public final class RoomClusterBoundaryStretchPlan {
 
@@ -23,7 +23,7 @@ public final class RoomClusterBoundaryStretchPlan {
     public static Optional<Selection> resolve(
             Iterable<Cell> clusterCells,
             List<Edge> sourceEdges,
-            Map<EdgeKey, BoundaryRow> boundaries,
+            Map<EdgeKey, BoundarySegment> boundaries,
             int deltaQ,
             int deltaR,
             int deltaLevel
@@ -31,7 +31,7 @@ public final class RoomClusterBoundaryStretchPlan {
         if (deltaLevel != 0) {
             return Optional.empty();
         }
-        Map<EdgeKey, BoundaryRow> safeBoundaries = boundaries == null ? Map.of() : boundaries;
+        Map<EdgeKey, BoundarySegment> safeBoundaries = boundaries == null ? Map.of() : boundaries;
         Optional<Seed> seed = seedForTarget(clusterCells, sourceEdges, safeBoundaries);
         if (seed.isEmpty()) {
             return Optional.empty();
@@ -65,7 +65,7 @@ public final class RoomClusterBoundaryStretchPlan {
     private static Optional<Seed> seedForTarget(
             Iterable<Cell> clusterCells,
             List<Edge> sourceEdges,
-            Map<EdgeKey, BoundaryRow> boundaries
+            Map<EdgeKey, BoundarySegment> boundaries
     ) {
         if (sourceEdges == null || sourceEdges.isEmpty()) {
             return Optional.empty();
@@ -83,7 +83,7 @@ public final class RoomClusterBoundaryStretchPlan {
     }
 
     private static Optional<Seed> stretchSeed(
-            Map<EdgeKey, BoundaryRow> boundaries,
+            Map<EdgeKey, BoundarySegment> boundaries,
             Edge edge,
             Set<Cell> clusterCells
     ) {
@@ -97,7 +97,7 @@ public final class RoomClusterBoundaryStretchPlan {
             return Optional.empty();
         }
         EdgeKey key = EdgeKey.from(edge);
-        BoundaryRow existing = boundaries.get(key);
+        BoundarySegment existing = boundaries.get(key);
         boolean outer = touch.insideCount() == 1;
         if (!outer && existing == null) {
             return Optional.empty();
@@ -113,7 +113,7 @@ public final class RoomClusterBoundaryStretchPlan {
 
     private static Optional<StretchEdge> matchingStretchEdge(
             Seed seed,
-            Map<EdgeKey, BoundaryRow> boundaries,
+            Map<EdgeKey, BoundarySegment> boundaries,
             Edge edge
     ) {
         BoundaryStretchOrientation orientation = BoundaryStretchOrientation.from(edge);
@@ -125,7 +125,7 @@ public final class RoomClusterBoundaryStretchPlan {
             return Optional.empty();
         }
         EdgeKey key = EdgeKey.from(edge);
-        BoundaryRow existing = boundaries.get(key);
+        BoundarySegment existing = boundaries.get(key);
         if (!boundaryPresenceMatches(seed, existing)) {
             return Optional.empty();
         }
@@ -153,14 +153,14 @@ public final class RoomClusterBoundaryStretchPlan {
                 && seed.side() == BoundarySide.resolve(orientation, touch, seed.fixedCoordinate());
     }
 
-    private static boolean boundaryPresenceMatches(Seed seed, @Nullable BoundaryRow existing) {
+    private static boolean boundaryPresenceMatches(Seed seed, @Nullable BoundarySegment existing) {
         return seed.outer() || existing != null;
     }
 
     private static List<StretchEdge> sortedStretchEdges(
             Seed seed,
             List<Edge> sourceEdges,
-            Map<EdgeKey, BoundaryRow> boundaries
+            Map<EdgeKey, BoundarySegment> boundaries
     ) {
         List<StretchEdge> stretchEdges = new ArrayList<>();
         for (Edge edge : sourceEdges == null ? List.<Edge>of() : sourceEdges) {
@@ -247,7 +247,7 @@ public final class RoomClusterBoundaryStretchPlan {
     public record StretchEdge(
             Edge edge,
             EdgeKey key,
-            @Nullable BoundaryRow existing
+            @Nullable BoundarySegment existing
     ) {
     }
 

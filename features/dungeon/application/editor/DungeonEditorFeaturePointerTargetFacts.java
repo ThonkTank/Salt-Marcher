@@ -1,8 +1,8 @@
 package features.dungeon.application.editor;
 
-import static features.dungeon.application.editor.DungeonEditorRuntimePointerTarget.ElementKind.FEATURE_MARKER;
-import static features.dungeon.application.editor.DungeonEditorRuntimePointerTarget.ElementKind.STAIR;
-import static features.dungeon.application.editor.DungeonEditorRuntimePointerTarget.ElementKind.TRANSITION;
+import static features.dungeon.api.editor.DungeonEditorPointerInput.ElementKind.FEATURE_MARKER;
+import static features.dungeon.api.editor.DungeonEditorPointerInput.ElementKind.STAIR;
+import static features.dungeon.api.editor.DungeonEditorPointerInput.ElementKind.TRANSITION;
 
 import java.util.Locale;
 import features.dungeon.api.DungeonCellRef;
@@ -28,7 +28,7 @@ final class DungeonEditorFeaturePointerTargetFacts {
         };
     }
 
-    static DungeonEditorRuntimePointerTarget.ElementKind pointerElementKind(String cellKind) {
+    static features.dungeon.api.editor.DungeonEditorPointerInput.ElementKind pointerElementKind(String cellKind) {
         return switch (cellKind) {
             case FEATURE_OBJECT_KIND, FEATURE_ENCOUNTER_KIND, FEATURE_POI_KIND -> FEATURE_MARKER;
             case TRANSITION_KIND -> TRANSITION;

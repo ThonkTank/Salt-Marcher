@@ -10,10 +10,10 @@ import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.corridor.DungeonCorridorEndpoint;
 import features.dungeon.domain.core.structure.corridor.CorridorMapAuthoring;
-import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.RoomCluster;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;
 import features.dungeon.domain.core.structure.transition.Transition;
 import features.dungeon.domain.core.structure.transition.TransitionAnchor;
@@ -279,7 +279,7 @@ final class DungeonTopologyInvariantScenarios {
 
     private static boolean hasDoorBoundary(DungeonMap map, long clusterId, Edge edge) {
         RoomCluster cluster = clusterById(map, clusterId);
-        DungeonClusterBoundary boundary = cluster.boundaryAt(edge);
+        BoundarySegment boundary = cluster.boundaryAt(edge);
         return boundary != null && boundary.isDoor();
     }
 

@@ -58,14 +58,17 @@ public final class RoomCellCoverage {
             }
         }
         if (cells.isEmpty()) {
-            cells.add(new Cell(cluster.center().q(), cluster.center().r(), level));
+            cluster.orderedAuthoredBoundaries().stream()
+                    .filter(boundary -> boundary.level() == level)
+                    .flatMap(boundary -> boundary.edge().touchingCells().stream())
+                    .findFirst()
+                    .ifPresent(cells::add);
         }
         return Set.copyOf(cells);
     }
 
     private static Set<Integer> levels(RoomCluster cluster, List<RoomRegion> rooms) {
         Set<Integer> levels = new LinkedHashSet<>();
-        levels.add(cluster.center().level());
         levels.addAll(cluster.boundaryLevels());
         for (RoomRegion room : rooms) {
             levels.addAll(room.cellsByLevel().keySet());

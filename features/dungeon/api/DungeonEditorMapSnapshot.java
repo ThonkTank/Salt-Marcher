@@ -5,8 +5,6 @@ import org.jspecify.annotations.Nullable;
 
 public record DungeonEditorMapSnapshot(
         String topology,
-        int width,
-        int height,
         List<Area> areas,
         List<Boundary> boundaries,
         List<Feature> features,
@@ -15,8 +13,6 @@ public record DungeonEditorMapSnapshot(
 
     public DungeonEditorMapSnapshot {
         topology = topology == null || topology.isBlank() ? "SQUARE" : topology.trim();
-        width = Math.max(1, width);
-        height = Math.max(1, height);
         areas = areas == null ? List.of() : List.copyOf(areas);
         boundaries = boundaries == null ? List.of() : List.copyOf(boundaries);
         features = features == null ? List.of() : List.copyOf(features);
@@ -24,7 +20,7 @@ public record DungeonEditorMapSnapshot(
     }
 
     public static DungeonEditorMapSnapshot empty() {
-        return new DungeonEditorMapSnapshot("SQUARE", 1, 1, List.of(), List.of(), List.of(), List.of());
+        return new DungeonEditorMapSnapshot("SQUARE", List.of(), List.of(), List.of(), List.of());
     }
 
     public record Area(

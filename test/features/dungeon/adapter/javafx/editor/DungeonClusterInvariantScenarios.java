@@ -1,7 +1,8 @@
 package features.dungeon.adapter.javafx.editor;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
 
 import java.util.List;
-import java.util.Map;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.domain.core.geometry.Edge;
@@ -9,11 +10,6 @@ import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.room.RoomCluster;
-import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization;
-import features.dungeon.domain.core.structure.room.RoomClusterFloorMap;
-import features.dungeon.domain.core.structure.room.RoomClusterWallMap;
-import features.dungeon.domain.core.structure.room.RoomClusterWallRun;
 import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;
 
 final class DungeonClusterInvariantScenarios {
@@ -26,8 +22,6 @@ final class DungeonClusterInvariantScenarios {
         assertClusterIdentitySurvivesMutations();
 
         assertTrueCornerFacts();
-
-        assertWallRunDerivation();
 
         assertWallRunMutationAcceptReject();
 
@@ -65,28 +59,6 @@ final class DungeonClusterInvariantScenarios {
         List<Cell> vertices = cluster.authoredBoundaryVertices(0);
         assertTrue(vertices.contains(new Cell(13, 11, 0)), "DGI-CLUSTER-002 includes true inset corner");
         assertTrue(!vertices.contains(new Cell(13, 13, 0)), "DGI-CLUSTER-002 omits missing bounding-box corner");
-    }
-
-    private static void assertWallRunDerivation() {
-        RoomClusterWallMap wallMap = new RoomClusterWallMap(new Cell(0, 0, 0), List.of(
-                new RoomClusterBoundaryMaterialization.BoundaryRow(
-                        42L,
-                        0,
-                        new Cell(0, 0, 0),
-                        Direction.NORTH,
-                        RoomClusterBoundaryMaterialization.BoundaryKind.WALL),
-                new RoomClusterBoundaryMaterialization.BoundaryRow(
-                        42L,
-                        0,
-                        new Cell(1, 0, 0),
-                        Direction.NORTH,
-                        RoomClusterBoundaryMaterialization.BoundaryKind.WALL)));
-        List<RoomClusterWallRun> runs = wallMap.authoredWallRuns(0);
-        assertEquals(1, runs.size(), "DGI-CLUSTER-003 derives one contiguous two-segment wall run");
-        assertEquals(Direction.NORTH, runs.getFirst().direction(),
-                "DGI-CLUSTER-003 preserves wall-run direction");
-        assertTrue(Double.isFinite(runs.getFirst().markerQ()) && Double.isFinite(runs.getFirst().markerR()),
-                "DGI-CLUSTER-003 derives finite wall-run midpoint facts");
     }
 
     private static void assertWallRunMutationAcceptReject() {
@@ -169,7 +141,7 @@ final class DungeonClusterInvariantScenarios {
         return map.editClusterBoundaries(
                 firstClusterId(map),
                 walls,
-                RoomClusterBoundaryMaterialization.BoundaryKind.WALL,
+                BoundaryKind.WALL,
                 false,
                 roomIds(700L, 700L));
     }
@@ -187,8 +159,7 @@ final class DungeonClusterInvariantScenarios {
                 42L,
                 7L,
                 "",
-                new Cell(0, 0, 0),
-                Map.of());
+                List.of());
         assertEquals("Cluster 42", defaultCluster.name(), "DGI-CLUSTER-005 default cluster name");
         assertEquals("North Hall", defaultCluster.withName("  North Hall  ").name(),
                 "DGI-CLUSTER-005 custom cluster name trims");
@@ -214,8 +185,7 @@ final class DungeonClusterInvariantScenarios {
                 15L,
                 9L,
                 "",
-                new Cell(10, 10, 0),
-                Map.of(0, List.of(
+                List.of(
                         boundary(0, 0, Direction.NORTH),
                         boundary(1, 0, Direction.NORTH),
                         boundary(2, 0, Direction.NORTH),
@@ -227,28 +197,23 @@ final class DungeonClusterInvariantScenarios {
                         boundary(0, 2, Direction.SOUTH),
                         boundary(0, 2, Direction.WEST),
                         boundary(0, 1, Direction.WEST),
-                        boundary(0, 0, Direction.WEST))));
+                        boundary(0, 0, Direction.WEST)));
     }
 
-    private static DungeonClusterBoundary boundary(
+    private static BoundarySegment boundary(
             int q,
             int r,
             Direction direction
     ) {
-        return new DungeonClusterBoundary(
-                15L,
-                0,
-                new Cell(q, r, 0),
-                direction,
-                RoomClusterBoundaryMaterialization.BoundaryKind.WALL);
+        Cell absoluteCell = new Cell(10 + q, 10 + r, 0);
+        return BoundarySegment.fromEdge(
+                direction.edgeOf(absoluteCell),
+                BoundaryKind.WALL,
+                features.dungeon.domain.core.graph.DungeonTopologyRef.empty());
     }
 
     private static long firstClusterId(DungeonMap map) {
         return map.topology().roomClusters().getFirst().clusterId();
-    }
-
-    private static String firstClusterName(DungeonMap map) {
-        return map.topology().roomClusters().getFirst().name();
     }
 
     private static void assertEquals(Object expected, Object actual, String message) {

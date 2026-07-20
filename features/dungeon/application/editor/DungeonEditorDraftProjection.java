@@ -1,6 +1,6 @@
 package features.dungeon.application.editor;
 
-record DungeonEditorRuntimeDraftFrame(
+record DungeonEditorDraftProjection(
         DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts roomNarrationDrafts,
         DungeonEditorStatePanelLabelNameDrafts.Draft labelNameDraft,
         DungeonEditorStatePanelCorridorPointDrafts.Draft corridorPointDraft,
@@ -9,27 +9,20 @@ record DungeonEditorRuntimeDraftFrame(
         DungeonEditorStatePanelStairGeometryDrafts.Draft stairGeometryDraft,
         DungeonEditorInlineLabelEditSession inlineLabelEditSession
 ) {
-    DungeonEditorRuntimeDraftFrame {
+    DungeonEditorDraftProjection {
         roomNarrationDrafts = roomNarrationDrafts == null
-                ? DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts.empty()
-                : roomNarrationDrafts;
+                ? DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts.empty() : roomNarrationDrafts;
         labelNameDraft = labelNameDraft == null
-                ? DungeonEditorStatePanelLabelNameDrafts.Draft.empty()
-                : labelNameDraft;
+                ? DungeonEditorStatePanelLabelNameDrafts.Draft.empty() : labelNameDraft;
         corridorPointDraft = corridorPointDraft == null
-                ? DungeonEditorStatePanelCorridorPointDrafts.Draft.empty()
-                : corridorPointDraft;
+                ? DungeonEditorStatePanelCorridorPointDrafts.Draft.empty() : corridorPointDraft;
         transitionDescriptionDraft = transitionDescriptionDraft == null
-                ? DungeonEditorStatePanelTransitionDescriptionDrafts.Draft.empty()
-                : transitionDescriptionDraft;
+                ? DungeonEditorStatePanelTransitionDescriptionDrafts.Draft.empty() : transitionDescriptionDraft;
         transitionDestinationDraft = transitionDestinationDraft == null
-                ? DungeonEditorStatePanelTransitionDestinationDrafts.Draft.empty()
-                : transitionDestinationDraft;
+                ? DungeonEditorStatePanelTransitionDestinationDrafts.Draft.empty() : transitionDestinationDraft;
         stairGeometryDraft = stairGeometryDraft == null
-                ? DungeonEditorStatePanelStairGeometryDrafts.Draft.empty()
-                : stairGeometryDraft;
+                ? DungeonEditorStatePanelStairGeometryDrafts.Draft.empty() : stairGeometryDraft;
         inlineLabelEditSession = inlineLabelEditSession == null
-                ? DungeonEditorInlineLabelEditSession.inactive()
-                : inlineLabelEditSession;
+                ? DungeonEditorInlineLabelEditSession.inactive() : inlineLabelEditSession;
     }
 }

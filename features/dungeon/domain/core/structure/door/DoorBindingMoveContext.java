@@ -7,16 +7,16 @@ import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.corridor.CorridorDoorBindingGeometry;
 import features.dungeon.domain.core.component.CorridorDoorBinding;
-import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.RoomCluster;
 
 record DoorBindingMoveContext(
         RoomCluster targetCluster,
-        DungeonClusterBoundary oldDoorBoundary,
+        BoundarySegment oldDoorBoundary,
         DungeonTopologyRef expectedTopologyRef,
         Edge nextDoorEdge,
-        @Nullable DungeonClusterBoundary nextBoundary,
+        @Nullable BoundarySegment nextBoundary,
         CorridorDoorBinding newBinding
 ) {
     static @Nullable DoorBindingMoveContext from(
@@ -32,11 +32,11 @@ record DoorBindingMoveContext(
             return null;
         }
         Edge oldDoorEdge = doorEdge(targetCluster, oldBinding);
-        DungeonClusterBoundary oldDoorBoundary = boundaryAt(targetCluster, oldDoorEdge);
+        BoundarySegment oldDoorBoundary = boundaryAt(targetCluster, oldDoorEdge);
         if (oldDoorBoundary == null || !oldDoorBoundary.isDoor()) {
             return null;
         }
-        DungeonTopologyRef expectedTopologyRef = oldDoorBoundary.resolvedTopologyRef(targetCluster.center());
+        DungeonTopologyRef expectedTopologyRef = oldDoorBoundary.resolvedTopologyRef();
         Edge nextDoorEdge = doorEdge(targetCluster, newBinding);
         if (!matchingTopology(expectedTopologyRef, oldBinding, newBinding)
                 || sameBoundaryKey(oldDoorEdge, nextDoorEdge)) {
@@ -92,25 +92,19 @@ record DoorBindingMoveContext(
     ) {
         return oldBinding.roomId() == newBinding.roomId()
                 && oldBinding.clusterId() == newBinding.clusterId()
-                && oldBinding.relativeCell().equals(newBinding.relativeCell())
+                && oldBinding.roomCell().equals(newBinding.roomCell())
                 && oldBinding.direction() == newBinding.direction();
     }
 
-    private static @Nullable DungeonClusterBoundary boundaryAt(RoomCluster cluster, Edge edge) {
+    private static @Nullable BoundarySegment boundaryAt(RoomCluster cluster, Edge edge) {
         if (cluster == null || edge == null) {
             return null;
         }
-        DungeonBoundaryKey key = DungeonBoundaryKey.from(edge);
-        for (DungeonClusterBoundary boundary : cluster.orderedAuthoredBoundaries()) {
-            if (boundary != null && key.equals(DungeonBoundaryKey.from(boundary.absoluteEdge(cluster.center())))) {
-                return boundary;
-            }
-        }
-        return null;
+        return cluster.boundaryAt(edge);
     }
 
     private static Edge doorEdge(RoomCluster cluster, CorridorDoorBinding binding) {
-        return CorridorDoorBindingGeometry.absoluteDoorEdge(binding, cluster.center());
+        return CorridorDoorBindingGeometry.doorEdge(binding);
     }
 
     private static @Nullable RoomCluster cluster(DungeonMap dungeonMap, long clusterId) {

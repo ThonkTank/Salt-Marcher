@@ -1,5 +1,7 @@
 package features.dungeon.domain.core.structure.room;
 
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +27,7 @@ public final class RoomTopologyRebuilder {
 
     public RoomCluster clusterWithBoundaries(
             DungeonRoomTopologyClusterWork work,
-            Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
+            Map<Integer, List<BoundarySegment>> boundariesByLevel
     ) {
         DungeonRoomTopologyClusterWork safeWork = Objects.requireNonNull(work, "work");
         return safeWork.rebuiltClusterWithBoundaries(RoomPerimeterBoundaryMaterialization.fromFloorCells(
@@ -36,7 +38,7 @@ public final class RoomTopologyRebuilder {
 
     public RoomCluster clusterForStretch(
             DungeonRoomTopologyClusterWork work,
-            Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
+            Map<Integer, List<BoundarySegment>> boundariesByLevel
     ) {
         return Objects.requireNonNull(work, "work").rebuiltClusterWithBoundaries(boundariesByLevel);
     }

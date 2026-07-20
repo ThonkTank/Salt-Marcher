@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import features.dungeon.domain.core.structure.room.RoomClusterWallDeleteResolver;
-import features.dungeon.domain.core.structure.room.RoomClusterWallMap;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 import features.dungeon.application.editor.DungeonEditorInteractionValues.CellKey;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.EdgeKey;
@@ -20,7 +19,7 @@ final class DungeonEditorCoreWallFactsByLevel {
     ) {
         this.cellsByCluster = cellsByCluster == null ? Map.of() : Map.copyOf(cellsByCluster);
         this.wallDeleteResolver = wallDeleteResolver == null
-                ? RoomClusterWallMap.authoredWallDeleteResolver(List.of())
+                ? RoomClusterWallDeleteResolver.authored(List.of())
                 : wallDeleteResolver;
     }
 
@@ -32,7 +31,7 @@ final class DungeonEditorCoreWallFactsByLevel {
         Map<Long, Set<CellKey>> cellsByCluster = clusterCells.collect(snapshot, level);
         return new DungeonEditorCoreWallFactsByLevel(
                 cellsByCluster,
-                RoomClusterWallMap.authoredWallDeleteResolver(
+                RoomClusterWallDeleteResolver.authored(
                         DungeonEditorCoreWallGeometry.edges(wallEdges(snapshot, level))));
     }
 

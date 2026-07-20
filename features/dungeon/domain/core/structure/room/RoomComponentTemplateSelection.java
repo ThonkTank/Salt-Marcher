@@ -38,7 +38,8 @@ final class RoomComponentTemplateSelection {
             Map<Long, Set<Cell>> previousCellSetsByRoom,
             RoomClusterRoomComponents.RoomComponent component
     ) {
-        Cell anchor = room.floorAnchors().get(component.level());
+        List<Cell> levelCells = room.cellsAt(component.level());
+        Cell anchor = levelCells.isEmpty() ? null : levelCells.getFirst();
         boolean anchorMatch = anchor != null && component.cells().contains(anchor);
         int overlap = overlapCount(component.cells(), previousCellSetsByRoom.get(room.roomId()));
         return new Candidate(room, anchorMatch, overlap);

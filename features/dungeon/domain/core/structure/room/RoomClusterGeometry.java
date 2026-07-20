@@ -11,21 +11,10 @@ public record RoomClusterGeometry(
         long mapId,
         Cell center,
         RoomClusterFloorMap floorMap,
-        RoomClusterWallMap wallMap,
         DoorIndex doorIndex
 ) {
     public RoomClusterGeometry(long clusterId, long mapId, Cell center, RoomClusterFloorMap floorMap) {
-        this(clusterId, mapId, center, floorMap, new RoomClusterWallMap(center, List.of()));
-    }
-
-    public RoomClusterGeometry(
-            long clusterId,
-            long mapId,
-            Cell center,
-            RoomClusterFloorMap floorMap,
-            RoomClusterWallMap wallMap
-    ) {
-        this(clusterId, mapId, center, floorMap, wallMap, DoorIndex.from(List.of()));
+        this(clusterId, mapId, center, floorMap, DoorIndex.from(List.of()));
     }
 
     public RoomClusterGeometry {
@@ -33,7 +22,6 @@ public record RoomClusterGeometry(
         mapId = Math.max(0L, mapId);
         center = center == null ? new Cell(0, 0, 0) : center;
         floorMap = floorMap == null ? new RoomClusterFloorMap(Map.of()) : floorMap;
-        wallMap = wallMap == null ? new RoomClusterWallMap(center, List.of()) : wallMap;
         doorIndex = doorIndex == null ? DoorIndex.from(List.of()) : doorIndex;
     }
 

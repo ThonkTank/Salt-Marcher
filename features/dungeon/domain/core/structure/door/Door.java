@@ -8,7 +8,7 @@ public record Door(
         long doorId,
         long roomId,
         long clusterId,
-        Cell relativeCell,
+        Cell roomCell,
         Direction direction
 ) {
 
@@ -16,7 +16,7 @@ public record Door(
         doorId = Math.max(0L, doorId);
         roomId = Math.max(0L, roomId);
         clusterId = Math.max(0L, clusterId);
-        Objects.requireNonNull(relativeCell);
+        Objects.requireNonNull(roomCell);
         Objects.requireNonNull(direction);
     }
 
@@ -29,18 +29,18 @@ public record Door(
     }
 
     private BoundaryState boundaryState(BoundaryState.Kind kind) {
-        return new BoundaryState(clusterId, relativeCell.level(), relativeCell, direction, kind);
+        return new BoundaryState(clusterId, roomCell.level(), roomCell, direction, kind);
     }
 
     public record BoundaryState(
             long clusterId,
             int level,
-            Cell relativeCell,
+            Cell roomCell,
             Direction direction,
             Kind kind
     ) {
         public BoundaryState {
-            Objects.requireNonNull(relativeCell);
+            Objects.requireNonNull(roomCell);
             Objects.requireNonNull(direction);
             Objects.requireNonNull(kind);
         }

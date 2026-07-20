@@ -13,7 +13,8 @@ final class RoomCellOwnerSelection {
     static List<RoomRegion> roomsWithAnchorsIn(List<RoomRegion> rooms, int level, Set<Cell> component) {
         List<RoomRegion> result = new ArrayList<>();
         for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
-            if (room != null && component.contains(room.floorAnchors().get(level))) {
+            if (room != null && !room.cellsAt(level).isEmpty()
+                    && component.contains(room.cellsAt(level).getFirst())) {
                 result.add(room);
             }
         }
@@ -23,7 +24,7 @@ final class RoomCellOwnerSelection {
     static List<RoomRegion> roomsWithAnchorAt(List<RoomRegion> rooms, int level) {
         List<RoomRegion> result = new ArrayList<>();
         for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
-            if (room != null && room.floorAnchors().containsKey(level)) {
+            if (room != null && !room.cellsAt(level).isEmpty()) {
                 result.add(room);
             }
         }
@@ -34,7 +35,7 @@ final class RoomCellOwnerSelection {
         RoomRegion result = null;
         int bestDistance = Integer.MAX_VALUE;
         for (RoomRegion room : rooms) {
-            Cell anchor = room.floorAnchors().get(level);
+            Cell anchor = room.cellsAt(level).getFirst();
             int distance = gridDistance(cell, anchor);
             if (result == null || distance < bestDistance
                     || distance == bestDistance && room.roomId() < result.roomId()) {

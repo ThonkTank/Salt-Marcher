@@ -134,23 +134,12 @@ final class CorridorDeletion {
     private static List<WaypointTarget> waypointTargets(DungeonMap dungeonMap, Corridor corridor) {
         List<WaypointTarget> result = new ArrayList<>();
         for (CorridorWaypoint waypoint : corridor.bindings().waypoints()) {
-            Cell center = CorridorMapLookup.clusterCenterOrOrigin(
-                    dungeonMap,
-                    waypoint.clusterId(),
-                    waypoint.relativeCell().level());
-            result.add(WaypointTarget.from(waypoint, center));
+            result.add(WaypointTarget.from(waypoint));
         }
         return List.copyOf(result);
     }
 
     private static Cell absoluteDoorCorridorCell(DungeonMap dungeonMap, CorridorDoorBinding binding) {
-        Cell center = CorridorMapLookup.clusterCenterOrOrigin(
-                dungeonMap,
-                binding.clusterId(),
-                binding.relativeCell().level());
-        return binding.direction().neighborOf(new Cell(
-                binding.relativeCell().q() + center.q(),
-                binding.relativeCell().r() + center.r(),
-                binding.relativeCell().level()));
+        return binding.direction().neighborOf(binding.roomCell());
     }
 }

@@ -21,6 +21,24 @@ public final class BoundaryMap {
         this.segmentsByKey = BoundaryMaps.copySegmentsByKey(normalizedSegments(segments));
     }
 
+    public List<BoundarySegment> segments() {
+        return List.copyOf(segmentsByKey.values());
+    }
+
+    public Map<EdgeKey, BoundarySegment> segmentsByKey() {
+        return Map.copyOf(segmentsByKey);
+    }
+
+    public Optional<BoundarySegment> segmentAt(Edge edge) {
+        return edge == null ? Optional.empty() : Optional.ofNullable(segmentsByKey.get(EdgeKey.from(edge)));
+    }
+
+    public BoundaryMap movedBy(int deltaQ, int deltaR, int deltaLevel) {
+        return new BoundaryMap(segmentsByKey.values().stream()
+                .map(segment -> segment.movedBy(deltaQ, deltaR, deltaLevel))
+                .toList());
+    }
+
     public List<WallRun> wallRunsAt(int level) {
         return WallRunDerivation.wallRunsAt(segmentsByKey, level);
     }
@@ -187,7 +205,7 @@ public final class BoundaryMap {
     }
 
     private static boolean wallRunSegment(BoundarySegment segment) {
-        return segment != null && (BoundaryKind.wall().equals(segment.kind()) || BoundaryKind.door().equals(segment.kind()));
+        return segment != null && (BoundaryKind.WALL.equals(segment.kind()) || BoundaryKind.DOOR.equals(segment.kind()));
     }
 
     private static final class WallRunCornerDerivation {
@@ -249,7 +267,7 @@ public final class BoundaryMap {
                 BoundarySegment segment,
                 int level
         ) {
-            if (segment == null || !BoundaryKind.wall().equals(segment.kind())) {
+            if (segment == null || !BoundaryKind.WALL.equals(segment.kind())) {
                 return;
             }
             EdgeKey key = segment.edgeKey();
@@ -325,7 +343,7 @@ public final class BoundaryMap {
         ) {
             Map<EdgeKey, Edge> result = new LinkedHashMap<>();
             for (BoundarySegment segment : segmentsByKey.values()) {
-                if (segment == null || !BoundaryKind.wall().equals(segment.kind())) {
+                if (segment == null || !BoundaryKind.WALL.equals(segment.kind())) {
                     continue;
                 }
                 EdgeKey key = segment.edgeKey();

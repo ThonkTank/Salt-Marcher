@@ -7,7 +7,7 @@ public record DungeonEditorToolSelection(
 ) {
     public DungeonEditorToolSelection {
         family = family == null ? DungeonEditorToolFamily.SELECT : family;
-        options = compatibleOptions(family, options);
+        options = normalizedOptions(family, options);
     }
 
     public static DungeonEditorToolSelection select() {
@@ -37,7 +37,7 @@ public record DungeonEditorToolSelection(
                 new DungeonEditorToolOptions.Feature(kind));
     }
 
-    private static DungeonEditorToolOptions compatibleOptions(
+    private static DungeonEditorToolOptions normalizedOptions(
             DungeonEditorToolFamily family,
             DungeonEditorToolOptions options
     ) {

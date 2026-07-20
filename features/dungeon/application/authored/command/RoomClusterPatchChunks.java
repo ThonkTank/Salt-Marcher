@@ -4,7 +4,7 @@ import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.corridor.Corridor;
-import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
 import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import java.util.LinkedHashSet;
@@ -75,11 +75,8 @@ final class RoomClusterPatchChunks {
             result.addAll(mapChunks);
             return;
         }
-        for (DungeonClusterBoundary boundary : cluster.orderedAuthoredBoundaries()) {
-            addChunk(mapChunks, map, boundary.absoluteCell(cluster.center()));
-        }
-        if (mapChunks.isEmpty()) {
-            addChunk(mapChunks, map, cluster.center());
+        for (BoundarySegment boundary : cluster.orderedAuthoredBoundaries()) {
+            boundary.edge().touchingCells().forEach(cell -> addChunk(mapChunks, map, cell));
         }
         result.addAll(mapChunks);
     }

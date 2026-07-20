@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 import features.dungeon.domain.core.structure.corridor.CorridorDeletionTarget;
 
 public final class DungeonEditorSessionValues {
@@ -108,13 +109,13 @@ public final class DungeonEditorSessionValues {
     public record ClusterBoundariesPreview(
             long clusterId,
             List<features.dungeon.domain.core.geometry.Edge> edges,
-            features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind boundaryKind,
+            BoundaryKind boundaryKind,
             boolean deleteMode
     ) implements Preview {
         public ClusterBoundariesPreview {
             clusterId = Math.max(0L, clusterId);
             edges = edges == null ? List.of() : List.copyOf(edges);
-            boundaryKind = boundaryKind == null ? features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.defaultKind() : boundaryKind;
+            boundaryKind = boundaryKind == null ? BoundaryKind.WALL : boundaryKind;
         }
 
         @Override

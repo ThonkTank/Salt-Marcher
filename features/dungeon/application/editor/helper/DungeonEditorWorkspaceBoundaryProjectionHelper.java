@@ -7,6 +7,7 @@ import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.projection.DungeonBoundaryFacts;
 import features.dungeon.domain.core.projection.DungeonMapFacts;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorWorkspaceBoundaryProjectionHelper {
@@ -20,11 +21,22 @@ public final class DungeonEditorWorkspaceBoundaryProjectionHelper {
 
     private static DungeonEditorWorkspaceValues.Boundary boundary(DungeonBoundaryFacts boundary) {
         return new DungeonEditorWorkspaceValues.Boundary(
-                features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.fromExternalKind(boundary.kind()),
+                boundaryKind(boundary.kind()),
                 boundary.id(),
                 boundary.label(),
                 workspaceEdge(boundary.edge()),
                 boundary.topologyRef());
+    }
+
+    private static BoundaryKind boundaryKind(String externalKind) {
+        String normalized = externalKind == null
+                ? ""
+                : externalKind.trim().toUpperCase(java.util.Locale.ROOT);
+        return switch (normalized) {
+            case "DOOR" -> BoundaryKind.DOOR;
+            case "OPEN" -> BoundaryKind.OPEN;
+            default -> BoundaryKind.WALL;
+        };
     }
 
     private static features.dungeon.domain.core.geometry.Edge workspaceEdge(@Nullable Edge edge) {

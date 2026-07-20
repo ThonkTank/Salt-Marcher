@@ -3,7 +3,7 @@ package features.dungeon.adapter.javafx.map;
 import features.dungeon.api.DungeonEditorHandleRef;
 import features.dungeon.api.DungeonEditorHandleSnapshot;
 import features.dungeon.api.DungeonEditorMapSnapshot;
-import features.dungeon.api.DungeonEditorStateSnapshot;
+import features.dungeon.api.editor.DungeonEditorSelection;
 import features.dungeon.adapter.javafx.map.DungeonMapRenderState.CellKind;
 
 final class DungeonMapRenderSelection {
@@ -13,7 +13,7 @@ final class DungeonMapRenderSelection {
 
     static boolean selectedArea(
             DungeonEditorMapSnapshot.Area area,
-            DungeonEditorStateSnapshot.Selection selection
+            DungeonEditorSelection selection
     ) {
         if (selection == null) {
             return false;
@@ -28,7 +28,7 @@ final class DungeonMapRenderSelection {
 
     static boolean selectedAreaSurface(
             DungeonEditorMapSnapshot.Area area,
-            DungeonEditorStateSnapshot.Selection selection
+            DungeonEditorSelection selection
     ) {
         return selection != null
                 && !selection.clusterSelection()
@@ -38,7 +38,7 @@ final class DungeonMapRenderSelection {
 
     static boolean selectedFeature(
             DungeonEditorMapSnapshot.Feature feature,
-            DungeonEditorStateSnapshot.Selection selection
+            DungeonEditorSelection selection
     ) {
         return DungeonMapRenderCells.featureTopologyRef(feature)
                 .equals(DungeonMapRenderElementFactory.topologyRef(selection.topologyRef()));
@@ -46,7 +46,7 @@ final class DungeonMapRenderSelection {
 
     static boolean selectedBoundary(
             DungeonEditorMapSnapshot.Boundary boundary,
-            DungeonEditorStateSnapshot.Selection selection
+            DungeonEditorSelection selection
     ) {
         return DungeonMapRenderElementFactory.topologyRef(boundary.topologyRef())
                 .equals(DungeonMapRenderElementFactory.topologyRef(selection.topologyRef()));
@@ -54,7 +54,7 @@ final class DungeonMapRenderSelection {
 
     static boolean selectedHandle(
             DungeonEditorHandleRef ref,
-            DungeonEditorStateSnapshot.Selection selection
+            DungeonEditorSelection selection
     ) {
         DungeonEditorHandleRef selected = selection.handleRef();
         return selected != null
@@ -63,7 +63,7 @@ final class DungeonMapRenderSelection {
 
     static boolean selectedClusterLabel(
             DungeonEditorHandleSnapshot handle,
-            DungeonEditorStateSnapshot.Selection selection
+            DungeonEditorSelection selection
     ) {
         if (selection.clusterSelection()) {
             return handle.ref().clusterId() > 0L && handle.ref().clusterId() == selection.clusterId();

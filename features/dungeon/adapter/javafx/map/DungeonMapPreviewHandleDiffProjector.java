@@ -2,14 +2,14 @@ package features.dungeon.adapter.javafx.map;
 
 import java.util.List;
 import features.dungeon.api.DungeonEdgeRef;
-import features.dungeon.api.DungeonEditorStateSnapshot;
+import features.dungeon.api.editor.DungeonEditorSelection;
 
 final class DungeonMapPreviewHandleDiffProjector {
 
     void addPreviewHandleDiff(
             List<DungeonMapRenderState.Marker> markers,
             List<PreviewHandleDiffFrame> handles,
-            DungeonEditorStateSnapshot.Selection selection
+            DungeonEditorSelection selection
     ) {
         for (PreviewHandleDiffFrame handle : handles) {
             markers.add(previewHandleMarker(handle, selection));
@@ -18,7 +18,7 @@ final class DungeonMapPreviewHandleDiffProjector {
 
     private static DungeonMapRenderState.Marker previewHandleMarker(
             PreviewHandleDiffFrame handle,
-            DungeonEditorStateSnapshot.Selection selection
+            DungeonEditorSelection selection
     ) {
         return DungeonMapRenderMarkers.handleMarker(
                 handle.ref(),

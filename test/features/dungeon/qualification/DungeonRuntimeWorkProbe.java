@@ -26,7 +26,7 @@ import features.dungeon.application.authored.port.DungeonWindowRequest;
 import java.util.Objects;
 import java.util.Optional;
 
-/** Narrow cumulative counters around the production ports used by M5 qualification. */
+/** Narrow cumulative counters around production ports used to enforce bounded runtime work. */
 public final class DungeonRuntimeWorkProbe {
     private long indexCalls;
     private long contentCalls;

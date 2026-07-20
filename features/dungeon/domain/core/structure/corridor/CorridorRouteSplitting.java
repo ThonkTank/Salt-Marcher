@@ -2,12 +2,10 @@ package features.dungeon.domain.core.structure.corridor;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.component.CorridorAnchor;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.corridor.CorridorEndpointResolution.ResolvedEndpointResult;
-import features.dungeon.domain.core.structure.room.RoomCluster;
 
 final class CorridorRouteSplitting {
     private static final int MINIMUM_INTERIOR_SPLIT_ROUTE_CELLS = 3;
@@ -26,14 +24,12 @@ final class CorridorRouteSplitting {
         long waypointClusterId = waypointClusterId(
                 startResolved.endpoint().binding(),
                 endResolved.endpoint().binding());
-        Cell clusterCenter = clusterCenter(dungeonMap, waypointClusterId);
-        if (clusterCenter == null) {
+        if (waypointClusterId <= MISSING_CLUSTER_ID) {
             return corridor;
         }
         CorridorRoutePlan routePlan = new CorridorRoutePlan(
                 nonNullRouteCells(routeCells),
-                waypointClusterId,
-                clusterCenter);
+                waypointClusterId);
         return corridor.withBindings(
                 corridor.bindings().withInteriorRouteAnchors(routePlan, routeAnchors(dungeonMap)));
     }
@@ -49,15 +45,6 @@ final class CorridorRouteSplitting {
             return end.doorBinding().clusterId();
         }
         return MISSING_CLUSTER_ID;
-    }
-
-    @Nullable
-    private static Cell clusterCenter(DungeonMap dungeonMap, long clusterId) {
-        if (clusterId <= MISSING_CLUSTER_ID) {
-            return null;
-        }
-        RoomCluster target = CorridorMapLookup.cluster(dungeonMap, clusterId);
-        return target == null ? null : target.center();
     }
 
     private static List<CorridorAnchor> routeAnchors(DungeonMap dungeonMap) {

@@ -21,6 +21,7 @@ import features.dungeon.api.DungeonTravelSurfaceSnapshot;
 import features.dungeon.api.TravelDungeonAction;
 import features.dungeon.api.TravelDungeonSnapshot;
 import features.dungeon.api.TravelDungeonWorkspaceState;
+import java.util.List;
 
 final class DungeonTravelPublishedProjection {
 
@@ -199,11 +200,10 @@ final class DungeonTravelPublishedProjection {
                 safeMap.topology() == features.dungeon.application.travel.session.TravelDungeonSessionSurface.TopologyKind.HEX
                         ? features.dungeon.api.DungeonTopologyKind.HEX
                         : features.dungeon.api.DungeonTopologyKind.SQUARE,
-                safeMap.width(),
-                safeMap.height(),
                 safeMap.areas().stream().map(DungeonTravelPublishedProjection::area).toList(),
                 safeMap.boundaries().stream().map(DungeonTravelPublishedProjection::boundary).toList(),
-                safeMap.features().stream().map(DungeonTravelPublishedProjection::feature).toList());
+                safeMap.features().stream().map(DungeonTravelPublishedProjection::feature).toList(),
+                List.of());
     }
 
     private static DungeonCellRef cell(features.dungeon.domain.core.geometry.Cell cell) {

@@ -140,23 +140,22 @@ final class DungeonCorridorInvariantScenarios {
 
         CorridorRoutePlan crossingPlan = new CorridorRoutePlan(
                 List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),
-                30L,
-                new Cell(0, 0, 0));
+                30L);
         CorridorAnchor laterHost = new CorridorAnchor(9L, 99L, new Cell(1, 0, 0));
         CorridorAnchor selected = new CorridorAnchor(4L, 10L, new Cell(1, 0, 0));
         CorridorBindings planned = crossingPlan.bindInteriorAnchors(CorridorBindings.empty(), List.of(laterHost, selected));
         assertEquals(List.of(new CorridorAnchorRef(10L, 4L)), planned.anchorRefs(),
                 "corridor route owner chooses deterministic crossing anchor by host and anchor id");
-        assertEquals(List.of(new CorridorWaypoint(30L, new Cell(1, 0, 0), 0)), planned.waypoints(),
+        assertEquals(List.of(new CorridorWaypoint(30L, new Cell(1, 0, 0))), planned.waypoints(),
                 "corridor route owner creates the deterministic crossing waypoint");
     }
 
     private static void assertDeleteOwner() {
         CorridorDoorBinding removedDoor = new CorridorDoorBinding(4L, 40L, new Cell(0, 0, 0), Direction.EAST);
         CorridorDoorBinding survivingDoor = new CorridorDoorBinding(5L, 50L, new Cell(4, 0, 0), Direction.WEST);
-        CorridorWaypoint first = new CorridorWaypoint(30L, new Cell(1, 0, 0), 0);
-        CorridorWaypoint second = new CorridorWaypoint(30L, new Cell(2, 0, 0), 1);
-        CorridorWaypoint third = new CorridorWaypoint(30L, new Cell(3, 0, 0), 2);
+        CorridorWaypoint first = new CorridorWaypoint(30L, new Cell(1, 0, 0));
+        CorridorWaypoint second = new CorridorWaypoint(30L, new Cell(2, 0, 1));
+        CorridorWaypoint third = new CorridorWaypoint(30L, new Cell(3, 0, 2));
         CorridorAnchorRef survivingAnchor = new CorridorAnchorRef(7L, 70L);
         Corridor branch = new Corridor(
                 20L,
@@ -278,9 +277,9 @@ final class DungeonCorridorInvariantScenarios {
                 new CorridorRoomSet(List.of()),
                 new CorridorBindings(
                         List.of(
-                                new CorridorWaypoint(0L, new Cell(0, 0, 0), 0),
-                                new CorridorWaypoint(0L, new Cell(1, 0, 0), 0),
-                                new CorridorWaypoint(0L, new Cell(2, 0, 0), 0)),
+                                new CorridorWaypoint(0L, new Cell(0, 0, 0)),
+                                new CorridorWaypoint(0L, new Cell(1, 0, 0)),
+                                new CorridorWaypoint(0L, new Cell(2, 0, 0))),
                         List.of(),
                         anchors,
                         List.of(new CorridorAnchorRef(10L, 1L))));

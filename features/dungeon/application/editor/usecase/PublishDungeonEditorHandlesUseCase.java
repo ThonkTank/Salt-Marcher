@@ -10,6 +10,7 @@ import features.dungeon.domain.core.component.StairExit;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.domain.core.geometry.Edge;
+import features.dungeon.domain.core.geometry.EdgeKey;
 import features.dungeon.domain.core.graph.DungeonTopologyElementKind;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.stair.Stair;
@@ -18,7 +19,7 @@ import features.dungeon.application.editor.interaction.DungeonEditorHandleProjec
 import features.dungeon.api.DungeonEditorHandleKind;
 import features.dungeon.domain.core.structure.corridor.Corridor;
 import features.dungeon.domain.core.structure.DungeonMap;
-import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.RoomCluster;
 
@@ -51,16 +52,9 @@ public final class PublishDungeonEditorHandlesUseCase {
         for (Corridor corridor : dungeonMap.corridors()) {
             for (int index = 0; index < corridor.bindings().doorBindings().size(); index++) {
                 var binding = corridor.bindings().doorBindings().get(index);
-                RoomCluster cluster = cluster(dungeonMap, binding.clusterId());
-                Cell roomCell = binding.relativeCell();
-                Cell absoluteRoomCell = cluster == null
-                        ? roomCell
-                        : new Cell(
-                                cluster.center().q() + roomCell.q(),
-                                cluster.center().r() + roomCell.r(),
-                                roomCell.level());
-                Cell corridorCell = binding.direction().neighborOf(absoluteRoomCell);
-                Edge doorEdge = binding.direction().edgeOf(absoluteRoomCell);
+                Cell roomCell = binding.roomCell();
+                Cell corridorCell = binding.direction().neighborOf(roomCell);
+                Edge doorEdge = binding.direction().edgeOf(roomCell);
                 result.add(new DungeonEditorHandleProjection(
                         DungeonEditorHandleKind.DOOR,
                         binding.topologyRef(),
@@ -79,8 +73,7 @@ public final class PublishDungeonEditorHandlesUseCase {
                 publishedDoorRefs.add(new DoorBoundaryRef(
                         binding.topologyRef(),
                         binding.clusterId(),
-                        binding.relativeCell(),
-                        binding.direction()));
+                        EdgeKey.from(doorEdge)));
             }
         }
         for (RoomCluster cluster : dungeonMap.topology().roomClusters()) {
@@ -101,27 +94,22 @@ public final class PublishDungeonEditorHandlesUseCase {
         if (cluster == null) {
             return;
         }
-        List<DungeonClusterBoundary> boundaries = cluster.orderedAuthoredBoundaries();
+        List<BoundarySegment> boundaries = cluster.orderedAuthoredBoundaries();
         int doorIndex = 0;
-        for (DungeonClusterBoundary boundary : boundaries) {
+        for (BoundarySegment boundary : boundaries) {
             if (boundary == null || !boundary.isDoor()) {
                 continue;
             }
-            DungeonTopologyRef topologyRef = boundary.resolvedTopologyRef(cluster.center());
+            DungeonTopologyRef topologyRef = boundary.resolvedTopologyRef();
+            Edge doorEdge = boundary.edge();
             DoorBoundaryRef boundaryRef = new DoorBoundaryRef(
                     topologyRef,
                     cluster.clusterId(),
-                    boundary.relativeCell(),
-                    boundary.direction());
+                    EdgeKey.from(doorEdge));
             if (!publishedDoorRefs.add(boundaryRef)) {
                 continue;
             }
-            Cell absoluteRoomCell = new Cell(
-                    cluster.center().q() + boundary.relativeCell().q(),
-                    cluster.center().r() + boundary.relativeCell().r(),
-                    boundary.relativeCell().level());
-            Edge doorEdge = boundary.direction().edgeOf(absoluteRoomCell);
-            Cell handleCell = boundary.direction().neighborOf(absoluteRoomCell);
+            DoorSide doorSide = doorSide(doorEdge, room);
             result.add(new DungeonEditorHandleProjection(
                     DungeonEditorHandleKind.DOOR,
                     topologyRef,
@@ -130,10 +118,10 @@ public final class PublishDungeonEditorHandlesUseCase {
                     0L,
                     room == null ? 0L : room.roomId(),
                     doorIndex,
-                    handleCell,
+                    doorSide.handleCell(),
                     midpoint(doorEdge.from().q(), doorEdge.to().q()),
                     midpoint(doorEdge.from().r(), doorEdge.to().r()),
-                    boundary.direction(),
+                    doorSide.direction(),
                     "Tür " + (topologyRef.present() ? topologyRef.id() : (doorIndex + 1)),
                     doorEdge,
                     List.of(doorEdge)));
@@ -145,14 +133,42 @@ public final class PublishDungeonEditorHandlesUseCase {
         return (first + second) / 2.0;
     }
 
+    private static DoorSide doorSide(Edge edge, @Nullable RoomRegion room) {
+        List<Cell> touchingCells = edge.touchingCells();
+        if (room != null) {
+            for (Cell cell : touchingCells) {
+                if (room.floorCells().contains(cell)) {
+                    Direction direction = directionFor(cell, edge);
+                    if (direction != null) {
+                        return new DoorSide(direction.neighborOf(cell), direction);
+                    }
+                }
+            }
+        }
+        for (Cell cell : touchingCells) {
+            Direction direction = directionFor(cell, edge);
+            if (direction != null) {
+                return new DoorSide(direction.neighborOf(cell), direction);
+            }
+        }
+        return new DoorSide(edge.from(), Direction.NORTH);
+    }
+
+    private static @Nullable Direction directionFor(Cell cell, Edge edge) {
+        EdgeKey edgeKey = EdgeKey.from(edge);
+        for (Direction direction : Direction.values()) {
+            if (EdgeKey.from(direction.edgeOf(cell)).equals(edgeKey)) {
+                return direction;
+            }
+        }
+        return null;
+    }
+
     private static void appendWaypointHandles(List<DungeonEditorHandleProjection> result, DungeonMap dungeonMap) {
         for (Corridor corridor : dungeonMap.corridors()) {
             for (int index = 0; index < corridor.bindings().waypoints().size(); index++) {
                 var waypoint = corridor.bindings().waypoints().get(index);
-                RoomCluster cluster = cluster(dungeonMap, waypoint.clusterId());
-                Cell absolute = cluster == null
-                        ? waypoint.relativeCell()
-                        : waypoint.absoluteCell(cluster.center());
+                Cell absolute = waypoint.cell();
                 result.add(new DungeonEditorHandleProjection(
                         DungeonEditorHandleKind.CORRIDOR_WAYPOINT,
                         new DungeonTopologyRef(DungeonTopologyElementKind.CORRIDOR, corridor.corridorId()),
@@ -229,15 +245,6 @@ public final class PublishDungeonEditorHandlesUseCase {
                 List.of());
     }
 
-    private static @Nullable RoomCluster cluster(DungeonMap dungeonMap, long clusterId) {
-        for (RoomCluster candidate : dungeonMap.topology().roomClusters()) {
-            if (candidate.clusterId() == clusterId) {
-                return candidate;
-            }
-        }
-        return null;
-    }
-
     private static Map<Long, RoomRegion> primaryRoomsByCluster(DungeonMap dungeonMap) {
         Map<Long, RoomRegion> result = new LinkedHashMap<>();
         for (RoomRegion room : dungeonMap.rooms().rooms()) {
@@ -255,7 +262,12 @@ public final class PublishDungeonEditorHandlesUseCase {
     private record DoorBoundaryRef(
             DungeonTopologyRef topologyRef,
             long clusterId,
-            Cell relativeCell,
+            EdgeKey edgeKey
+    ) {
+    }
+
+    private record DoorSide(
+            Cell handleCell,
             Direction direction
     ) {
     }

@@ -9,9 +9,9 @@ import features.dungeon.domain.core.component.CorridorAnchorRef;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.structure.DungeonMap;
-import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
 import features.dungeon.domain.core.structure.room.RoomCluster;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMutation;
 import features.dungeon.domain.core.structure.room.RoomTopologyRebuilder.RebuildResult;
 import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;
@@ -60,19 +60,16 @@ final class CorridorEndpointResolution {
         Edge edge = Edge.sideOf(endpoint.roomCell(), endpoint.direction());
         DungeonMap mapped = ensureDoorBoundary(dungeonMap, endpoint.clusterId(), edge, roomIds);
         RoomCluster mappedCluster = CorridorMapLookup.cluster(mapped, endpoint.clusterId());
-        DungeonClusterBoundary boundary = boundaryAt(mapped, endpoint.clusterId(), edge);
+        BoundarySegment boundary = boundaryAt(mapped, endpoint.clusterId(), edge);
         if (mappedCluster == null || boundary == null || !boundary.isDoor()) {
             return null;
         }
         CorridorDoorBinding binding = new CorridorDoorBinding(
                 endpoint.roomId(),
                 endpoint.clusterId(),
-                new Cell(
-                        endpoint.roomCell().q() - mappedCluster.center().q(),
-                        endpoint.roomCell().r() - mappedCluster.center().r(),
-                        endpoint.roomCell().level()),
+                endpoint.roomCell(),
                 endpoint.direction(),
-                boundary.resolvedTopologyRef(mappedCluster.center()));
+                boundary.resolvedTopologyRef());
         return new ResolvedEndpointResult(
                 mapped,
                 CorridorResolvedEndpoint.forDoor(binding, CorridorEndpointMatching.doorSemantics(binding)));
@@ -114,7 +111,7 @@ final class CorridorEndpointResolution {
             Edge edge,
             RoomTopologyWorkCatalog.ReservedIdentities roomIds
     ) {
-        DungeonClusterBoundary existing = boundaryAt(dungeonMap, clusterId, edge);
+        BoundarySegment existing = boundaryAt(dungeonMap, clusterId, edge);
         if (existing != null && existing.isDoor()) {
             return dungeonMap;
         }
@@ -145,7 +142,7 @@ final class CorridorEndpointResolution {
                 dungeonMap.revision() + 1L);
     }
 
-    private static @Nullable DungeonClusterBoundary boundaryAt(DungeonMap dungeonMap, long clusterId, Edge edge) {
+    private static @Nullable BoundarySegment boundaryAt(DungeonMap dungeonMap, long clusterId, Edge edge) {
         RoomCluster cluster = CorridorMapLookup.cluster(dungeonMap, clusterId);
         if (cluster == null || edge == null) {
             return null;

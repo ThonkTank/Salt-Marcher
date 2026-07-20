@@ -7,6 +7,7 @@ import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
 import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.DungeonMapMetadata;
@@ -16,15 +17,11 @@ import features.dungeon.domain.core.component.CorridorDoorBinding;
 import features.dungeon.domain.core.structure.door.Door;
 import features.dungeon.domain.core.structure.door.DoorBoundaryMaterialization;
 import features.dungeon.domain.core.structure.door.DoorIndex;
-import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
 import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
 import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomCatalog;
-import features.dungeon.domain.core.structure.room.RoomClusterGeometry;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
-import features.dungeon.domain.core.structure.room.RoomClusterFloorMap;
-import features.dungeon.domain.core.structure.room.RoomClusterWallMap;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 import features.dungeon.domain.core.structure.stair.StairCollection;
 import features.dungeon.domain.core.structure.topology.SpatialTopology;
 import features.dungeon.domain.core.structure.transition.TransitionCatalog;
@@ -58,7 +55,7 @@ final class DungeonDoorInvariantScenarios {
         assertEquals(7L, door.doorId(), "door owner preserves stable door id");
         assertEquals(11L, door.roomId(), "door owner preserves room relation");
         assertEquals(42L, door.clusterId(), "door owner preserves cluster relation");
-        assertEquals(new Cell(2, 3, 1), door.relativeCell(), "door owner preserves boundary cell");
+        assertEquals(new Cell(2, 3, 1), door.roomCell(), "door owner preserves absolute room cell");
         assertEquals(Direction.EAST, door.direction(), "door owner preserves wall-facing direction");
         assertEquals(Door.BoundaryState.Kind.DOOR, door.doorBoundaryState().kind(),
                 "door owner publishes door boundary state");
@@ -79,17 +76,8 @@ final class DungeonDoorInvariantScenarios {
         ArrayList<Door> doors = new ArrayList<>(List.of(later, duplicate, first));
         doors.add(null);
         DoorIndex index = DoorIndex.from(doors);
-        RoomClusterGeometry cluster = new RoomClusterGeometry(
-                42L,
-                4L,
-                new Cell(0, 0, 0),
-                RoomClusterFloorMap.fromCells(List.of(new Cell(0, 0, 0))),
-                new RoomClusterWallMap(new Cell(0, 0, 0), List.of()),
-                index);
-
         assertEquals(List.of(first, later), index.doors(),
                 "door index filters null rows, sorts deterministically, and keeps one door per boundary");
-        assertEquals(index, cluster.doorIndex(), "room cluster composes the door owner");
         assertEquals(first, index.doorAt(42L, new Cell(2, 3, 1), Direction.EAST).orElseThrow(),
                 "door index returns stable identity for boundary lookup");
         assertTrue(index.doorAt(42L, new Cell(2, 3, 1), Direction.NORTH).isEmpty(),
@@ -168,7 +156,7 @@ final class DungeonDoorInvariantScenarios {
         assertFalse(source.equals(moved), "door move changes the aggregate for a valid target");
         assertEquals(
                 new Cell(1, 1, 0),
-                moved.corridors().getFirst().bindings().doorBindings().getFirst().relativeCell(),
+                moved.corridors().getFirst().bindings().doorBindings().getFirst().roomCell(),
                 "door move updates the corridor door binding to the moved boundary cell");
         assertTrue(boundaryIs(moved, new Cell(1, 0, 0), Direction.EAST, BoundaryKind.WALL),
                 "door move restores the old authored room boundary to wall");
@@ -201,23 +189,26 @@ final class DungeonDoorInvariantScenarios {
         long clusterId = 42L;
         long roomId = 11L;
         DungeonTopologyRef doorRef = DungeonTopologyRef.door(200L);
-        List<DungeonClusterBoundary> boundaries = new ArrayList<>(List.of(
-                new DungeonClusterBoundary(clusterId, 0, new Cell(1, 0, 0), Direction.EAST, BoundaryKind.DOOR, doorRef),
-                new DungeonClusterBoundary(clusterId, 0, new Cell(1, 1, 0), Direction.EAST,
+        List<BoundarySegment> boundaries = List.of(
+                BoundarySegment.fromEdge(
+                        Direction.EAST.edgeOf(new Cell(1, 0, 0)),
+                        BoundaryKind.DOOR,
+                        doorRef),
+                BoundarySegment.fromEdge(
+                        Direction.EAST.edgeOf(new Cell(1, 1, 0)),
                         duplicateDoorAtTarget ? BoundaryKind.DOOR : BoundaryKind.WALL,
-                        duplicateDoorAtTarget ? DungeonTopologyRef.door(201L) : DungeonTopologyRef.wall(201L))));
+                        duplicateDoorAtTarget ? DungeonTopologyRef.door(201L) : DungeonTopologyRef.wall(201L)));
         RoomCluster cluster = RoomCluster.authored(
                 clusterId,
                 mapId,
                 "R1",
-                new Cell(0, 0, 0),
-                DungeonClusterBoundary.orderedByLevel(boundaries));
+                boundaries);
         RoomRegion room = new RoomRegion(
                 roomId, mapId, clusterId, "R1",
                 java.util.Set.of(
                         new Cell(0, 0, 0), new Cell(0, 1, 0),
                         new Cell(1, 0, 0), new Cell(1, 1, 0)),
-                null);
+                DungeonRoomNarration.empty());
         Corridor corridor = new Corridor(
                 20L,
                 mapId,
@@ -243,25 +234,16 @@ final class DungeonDoorInvariantScenarios {
                 0L);
     }
 
-    private static boolean boundaryIs(DungeonMap map, Cell relativeCell, Direction direction, BoundaryKind kind) {
-        for (DungeonClusterBoundary boundary : map.topology().roomClusters().getFirst().orderedAuthoredBoundaries()) {
-            if (relativeCell.equals(boundary.relativeCell())
-                    && direction == boundary.direction()
-                    && kind == boundary.kind()) {
-                return true;
-            }
-        }
-        return false;
+    private static boolean boundaryIs(DungeonMap map, Cell roomCell, Direction direction, BoundaryKind kind) {
+        BoundarySegment boundary = map.topology().roomClusters().getFirst()
+                .boundaryAt(direction.edgeOf(roomCell));
+        return boundary != null && boundary.kind() == kind;
     }
 
-    private static DungeonTopologyRef boundaryRef(DungeonMap map, Cell relativeCell, Direction direction) {
+    private static DungeonTopologyRef boundaryRef(DungeonMap map, Cell roomCell, Direction direction) {
         RoomCluster cluster = map.topology().roomClusters().getFirst();
-        for (DungeonClusterBoundary boundary : cluster.orderedAuthoredBoundaries()) {
-            if (relativeCell.equals(boundary.relativeCell()) && direction == boundary.direction()) {
-                return boundary.resolvedTopologyRef(cluster.center());
-            }
-        }
-        return DungeonTopologyRef.empty();
+        BoundarySegment boundary = cluster.boundaryAt(direction.edgeOf(roomCell));
+        return boundary == null ? DungeonTopologyRef.empty() : boundary.resolvedTopologyRef();
     }
 
     private static void assertEquals(Object expected, Object actual, String message) {

@@ -2,7 +2,6 @@ package features.dungeon.application.editor;
 
 import org.jspecify.annotations.Nullable;
 import features.dungeon.application.editor.session.DungeonEditorSessionSnapshot;
-import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorSurface;
 
 final class DungeonEditorMapSurfaceProjectionServiceAssembly {
@@ -10,11 +9,11 @@ final class DungeonEditorMapSurfaceProjectionServiceAssembly {
     private DungeonEditorMapSurfaceProjectionServiceAssembly() {
     }
 
-    static features.dungeon.api.DungeonEditorMapSurfaceSnapshot snapshot(
+    static DungeonEditorSurfaceProjection snapshot(
             features.dungeon.application.editor.session.DungeonEditorSessionSnapshot.SnapshotData snapshot,
             @Nullable DungeonEditorSurface surface
     ) {
-        return new features.dungeon.api.DungeonEditorMapSurfaceSnapshot(
+        return new DungeonEditorSurfaceProjection(
                 surface,
                 DungeonEditorStateProjectionServiceAssembly.selection(snapshot.selection()),
                 DungeonEditorStateProjectionServiceAssembly.preview(snapshot.preview()),
@@ -24,16 +23,16 @@ final class DungeonEditorMapSurfaceProjectionServiceAssembly {
                 snapshot.toolSelection());
     }
 
-    static DungeonEditorMapSurfaceSnapshot snapshot(
-            DungeonEditorSessionSnapshot.SessionFrameData frameData,
-            DungeonEditorMapSurfaceSnapshot current
+    static DungeonEditorSurfaceProjection snapshot(
+            DungeonEditorSessionSnapshot.ViewData frameData,
+            DungeonEditorSurfaceProjection current
     ) {
-        DungeonEditorSessionSnapshot.SessionFrameData safeFrameData =
-                frameData == null ? DungeonEditorSessionSnapshot.sessionFrameData(null) : frameData;
-        DungeonEditorMapSurfaceSnapshot safeCurrent = current == null
-                ? DungeonEditorMapSurfaceSnapshot.empty()
+        DungeonEditorSessionSnapshot.ViewData safeFrameData =
+                frameData == null ? DungeonEditorSessionSnapshot.viewData(null) : frameData;
+        DungeonEditorSurfaceProjection safeCurrent = current == null
+                ? DungeonEditorSurfaceProjection.empty()
                 : current;
-        return new DungeonEditorMapSurfaceSnapshot(
+        return new DungeonEditorSurfaceProjection(
                 committedSurface(safeCurrent.surface()),
                 DungeonEditorStateProjectionServiceAssembly.selection(safeFrameData.selection()),
                 DungeonEditorStateProjectionServiceAssembly.preview(safeFrameData.preview()),
@@ -43,16 +42,16 @@ final class DungeonEditorMapSurfaceProjectionServiceAssembly {
                 safeFrameData.toolSelection());
     }
 
-    static DungeonEditorMapSurfaceSnapshot snapshotPreservingSurface(
-            DungeonEditorSessionSnapshot.SessionFrameData frameData,
-            DungeonEditorMapSurfaceSnapshot current
+    static DungeonEditorSurfaceProjection snapshotPreservingSurface(
+            DungeonEditorSessionSnapshot.ViewData frameData,
+            DungeonEditorSurfaceProjection current
     ) {
-        DungeonEditorSessionSnapshot.SessionFrameData safeFrameData =
-                frameData == null ? DungeonEditorSessionSnapshot.sessionFrameData(null) : frameData;
-        DungeonEditorMapSurfaceSnapshot safeCurrent = current == null
-                ? DungeonEditorMapSurfaceSnapshot.empty()
+        DungeonEditorSessionSnapshot.ViewData safeFrameData =
+                frameData == null ? DungeonEditorSessionSnapshot.viewData(null) : frameData;
+        DungeonEditorSurfaceProjection safeCurrent = current == null
+                ? DungeonEditorSurfaceProjection.empty()
                 : current;
-        return new DungeonEditorMapSurfaceSnapshot(
+        return new DungeonEditorSurfaceProjection(
                 safeCurrent.surface(),
                 DungeonEditorStateProjectionServiceAssembly.selection(safeFrameData.selection()),
                 DungeonEditorStateProjectionServiceAssembly.preview(safeFrameData.preview()),
