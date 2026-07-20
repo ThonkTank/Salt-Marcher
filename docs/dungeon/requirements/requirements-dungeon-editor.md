@@ -326,8 +326,13 @@ passability or action rules.
 - the GM may manually correct current Charges and reset state
 - a future low-priority monster routine may perform an explicit manual Trap
   reset
-- Encounter detection initially uses a radius derived from monster statistics;
-  its exact perception behavior remains subject to later validation
+- a placed Dungeon Encounter primarily references the existing SaltMarcher
+  Encounter capability for monster composition and statistics rather than
+  duplicating them
+- the Dungeon placement adds its voxel anchor, local Dungeon notes, detection
+  behavior, and any later schedule
+- Encounter detection initially uses a radius derived from referenced monster
+  statistics; its exact perception behavior remains subject to later validation
 - Loot and Curiosity Features do not activate solely because the party is nearby
 - a Volume is geometric truth; a Room is stable GM-authored content associated
   with a Volume
