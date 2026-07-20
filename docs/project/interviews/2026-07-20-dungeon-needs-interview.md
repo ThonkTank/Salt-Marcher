@@ -89,12 +89,17 @@ vergleichbar mit einer vereinfachten Minecraft-Welt. Die horizontale
 Grundfläche arbeitet mit 5 x 5 Fuß. Vertikale Rastereinheiten bilden Höhe,
 übereinanderliegende Flächen und Zwischenebenen im selben räumlichen Modell ab.
 
-Der normale Raum- oder Flächen-Authoring-Flow darf den GM nicht zwingen, für
-jeden Raum Deckenhöhe, Boden und jeden vertikalen Zwischenraum einzeln
-einzustellen. Neue begehbare Flächen erhalten automatisch eine sinnvolle
-Standardhöhe, in der Charaktere stehen können. Abweichende Höhen bleiben
-möglich, sind aber bewusster Feinschliff statt Pflichtarbeit bei jeder
-Raumerstellung.
+Der normale Raum- oder Flächen-Authoring-Flow verwendet 5 x 5 Fuß
+horizontale Zellen und eine vertikale Auflösung von 5 Fuß. Neue begehbare
+Flächen erhalten automatisch 10 Fuß lichte Standardhöhe. Boden, begehbares
+Volumen und Standarddecke entstehen gemeinsam; der GM muss die vertikalen
+Schichten nicht einzeln zeichnen.
+
+Die Höhe kann später in 5-Fuß-Schritten verändert werden. Ein 5 Fuß hoher
+Abschnitt kann bewusst einen niedrigen Tunnel, Kriechgang oder engen
+Zwischenraum bilden; 15, 20 oder mehr Fuß hohe Räume bleiben ebenso möglich.
+Übereinanderliegende Räume und kleine Höhenversätze existieren im selben
+Dungeon-Raster.
 
 Ebenen sind Ansichten oder Schnitte durch dieses gemeinsame 3D-Raster, keine
 getrennten Inhaltscontainer. Wände, die für eine spätere realistischere
