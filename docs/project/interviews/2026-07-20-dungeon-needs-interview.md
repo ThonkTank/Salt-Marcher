@@ -66,6 +66,20 @@ angelegt.
 
 ## Nutzer, Umfang und Non-Goals
 
+### Was ist ein Dungeon als räumliche Einheit?
+
+**Bestätigte Antwort:** Eine einzige zusammenhängende Dungeon-Gesamtheit.
+
+Ein Dungeon umfasst die Gesamtheit aller zu ihm gehörenden Räume, Flächen,
+Ebenen und räumlichen Inhalte. Er wird nicht in mehrere interne Dungeon-Karten
+aufgeteilt, zwischen denen der GM wechseln muss. Auch weit auseinanderliegende
+oder vertikal getrennte Abschnitte bleiben im selben Dungeon und in derselben
+räumlichen Wahrheit.
+
+Die Rasterkarte ist eine Darstellung dieses einen Dungeons, kein eigener
+fachlicher Inhaltscontainer. Ein echter Übergang aus dieser Gesamtheit heraus
+kann zu einem anderen Dungeon oder einem externen Ort führen.
+
 ### Für welchen langfristigen Nutzungshorizont gilt die Bedarfsbaseline?
 
 **Nachgeschärfte bestätigte Antwort:** Lokaler GM als einziger Bediener.
