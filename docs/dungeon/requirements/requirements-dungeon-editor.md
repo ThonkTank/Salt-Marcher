@@ -292,6 +292,15 @@ passability or action rules.
 
 ## Geometry And Authored-Content Lifecycles
 
+- a Room may provide default descriptive attributes for its complete associated
+  Volume
+- the GM may select a contiguous wall, floor, or ceiling region and assign
+  overriding descriptions, attributes, or templates to that surface region
+- an explicitly described surface region receives a stable authored content
+  identity and the same preservation and reassignment guarantees as Rooms and
+  doors
+- raw undescribed voxel faces do not each require a separate content identity
+- Passages remain explicit independent objects because they affect travel
 - a Volume is geometric truth; a Room is stable GM-authored content associated
   with a Volume
 - one Room is assigned to at most one Volume and one Volume to at most one Room
