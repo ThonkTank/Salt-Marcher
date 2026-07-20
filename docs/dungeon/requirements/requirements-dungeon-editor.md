@@ -31,6 +31,16 @@ placement are replaceable UX design. Required outcomes are fast selection,
 understandable preview, explicit completion or cancellation, safe rejection,
 and discoverable tools.
 
+## Authoring Entry Points
+
+The raster map and relationship graph are equal primary entry points for a new
+Dungeon. A GM may begin and continue structural authoring in either view.
+Changes in each view synchronously affect the same Dungeon structure; neither
+view is merely a downstream presentation of the other.
+
+The Dungeon Key is a secondary refinement surface for descriptions and other
+primarily textual content after or alongside structural authoring.
+
 ## Raster Authoring View
 
 The editor raster view owns direct spatial authoring:
