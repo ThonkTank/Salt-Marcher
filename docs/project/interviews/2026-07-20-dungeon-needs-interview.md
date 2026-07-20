@@ -443,6 +443,20 @@ Fläche und Pfad bezeichnen damit primär unterschiedliche
 Erzeugungs- und Bearbeitungsweisen, nicht zwei inkompatible Arten von Raum, in
 denen andere Reiseregeln gelten.
 
+### Welche grundlegenden Rasterwerkzeuge bearbeiten feste Flächen?
+
+**Bestätigte Antwort:** Formbarer Pinsel, Flächenwerkzeug, entsprechender
+Radierer und transformierende Auswahl.
+
+Der Pinsel bietet verschiedene Formen und einen einstellbaren Radius. Das
+Polygon- beziehungsweise Flächenwerkzeug zieht per Click-and-drag Flächen in
+unterschiedlichen Formen auf. Der Radierer bietet dieselben Form- und
+Radiusmöglichkeiten zum Entfernen von Geometrie.
+
+Eine Auswahl kann vorhandene Geometrie verschieben, verzerren und detailliert
+bearbeiten. Boden, begehbares Volumen und Standarddecke bleiben dabei die
+gemeinsam betrachtete räumliche Form.
+
 ### Sind Korridore und Treppen unterschiedliche Pfadmodelle?
 
 **Bestätigte Antwort:** Ein einheitlicher dreidimensionaler Verbindungspfad.
