@@ -35,10 +35,14 @@ height. The GM may later change height in 5-foot steps, including intentional
 5-foot crawlspaces and taller chambers. Stacked spaces and minor elevation
 shifts remain part of the same Dungeon.
 
-A Room is any bounded, standable interior volume. Chambers, corridors, and
-stair spaces share this semantic role during inspection and travel. One Room
-may contain several navigation areas that expose meaningful internal choices,
-including corridor junctions and branches.
+A Volume is bounded, standable geometric interior space. Chambers, corridors,
+stair spaces, and comparable geometric forms share movement semantics. A
+Volume may contain several navigation areas that expose meaningful internal
+choices, including corridor junctions and branches.
+
+A Room is a stable GM-authored content identity associated with a Volume. It
+owns name, descriptions, Features, references, and comparable semantic work.
+Moving the Volume preserves that Room identity and association.
 
 Spatial authoring has two foundational forms: directly drawn anchored Areas and
 dynamically generated Paths between two or more endpoints or waypoints.
@@ -46,17 +50,17 @@ Corridors, stairs, ramps, ladders, shafts, and comparable connection segments
 are generated parts of one unified 3D Path model. One Path may combine several
 forms between endpoints at different elevations. Segment forms and optional
 position constraints are authored properties of the Path, while its exact voxel
-route may be derived. Generated Paths materialize ordinary bounded Room volume;
-Area and Path describe construction behavior rather than incompatible runtime
-space types.
+route may be derived. Generated Paths materialize ordinary bounded Volumes; Area and Path describe
+construction behavior rather than incompatible runtime space types.
 
-Each Path endpoint belongs to one Room navigation area and carries an exact 3D
-anchor on its boundary. SaltMarcher may propose boundary anchors when the GM
-connects semantic areas; the GM may reposition or pin them.
+Each Path endpoint belongs semantically to one navigation area associated with
+a Room and carries an exact 3D anchor on the attached Volume's boundary.
+SaltMarcher may propose boundary anchors when the GM connects semantic areas;
+the GM may reposition or pin them.
 
-A Path connects through separate authored Passages in Room boundaries.
-Openings, doors, hatches, secret doors, and comparable forms share this Passage
-role. The Passage owns description and explicit binary passability; the Path
+A Path connects through separate Passages in Volume boundaries. Openings,
+doors, hatches, secret doors, and comparable forms share this Passage role. The
+Passage identity owns description and explicit binary passability; the Path
 owns route and travel properties.
 
 The Dungeon capability includes:
@@ -103,6 +107,12 @@ truth.
 
 - every completed, validated authoring action persists immediately
 - previews and canceled gestures remain transient
+- removing, splitting, or making geometry unrecognizable does not silently
+  delete associated Rooms, door descriptions, or other GM-authored semantic
+  content
+- SaltMarcher attempts safe reassociation after geometry changes; content that
+  cannot be reliably reassociated remains available without geometry until the
+  GM reassigns or explicitly deletes it
 - saved Dungeons survive restarts and application updates
 - migrations, backup, and restore protect authored data
 - import MUST preview identity conflicts and missing external references
