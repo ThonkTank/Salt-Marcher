@@ -10,7 +10,6 @@ architecture, contracts, proof history, or feature status beyond these links.
 
 ## Active Migrations
 
-- [Catalog Greenfield Roadmap](../../catalog/delivery/roadmap-catalog-greenfield.md)
 - [Dungeon Greenfield Roadmap](../../dungeon/delivery/roadmap-dungeon-greenfield.md)
 - [Session Planner Greenfield Roadmap](../../sessionplanner/delivery/roadmap-session-planner-greenfield.md)
 

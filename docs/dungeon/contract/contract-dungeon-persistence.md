@@ -67,6 +67,13 @@ Persisted authored truth includes:
 - compatibility detail tables remain source-local storage and correlation
   detail, not alternate semantic owners
 
+The current owner target is schema v7. Canonical v6 remains the destructive
+replacement boundary. V7 repairs the previously recorded empty v6 signature to
+the complete indexed-bounds target. A populated old-v6 signature is
+`MIGRATION_FAILED` without deleting rows or advancing the owner ledger; the
+application does not guess how to reconstruct exact derived bounds from an
+unsupported persisted shape.
+
 `dungeon_maps.revision` stores the last committed authored revision. Adapters
 MUST read and write that value; they MUST NOT replace it with a constant
 readback revision.
@@ -271,6 +278,8 @@ encounter/object foreign-key semantics, preview state, render state, or travel
 behavior.
 
 ## Validation And Error Behavior
+
+Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
 
 - authored persistence writes MUST reject incomplete identity, topology, or
   semantic-binding payloads instead of synthesizing replacement authored truth

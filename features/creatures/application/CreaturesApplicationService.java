@@ -104,6 +104,7 @@ public final class CreaturesApplicationService
     private final CreatureCatalogPort lookup;
     private final CreaturesPublishedState publishedState;
     private final ExecutionLane executionLane;
+    private final ExecutionLane catalogReadLane;
     private final ExecutionLane factsLane;
     private final Diagnostics diagnostics;
     private final Object referenceIndexLock = new Object();
@@ -118,6 +119,7 @@ public final class CreaturesApplicationService
                 publishedState,
                 DirectExecutionLane.INSTANCE,
                 DirectExecutionLane.INSTANCE,
+                DirectExecutionLane.INSTANCE,
                 NoopDiagnostics.INSTANCE);
     }
 
@@ -128,9 +130,21 @@ public final class CreaturesApplicationService
             ExecutionLane factsLane,
             Diagnostics diagnostics
     ) {
+        this(lookup, publishedState, executionLane, executionLane, factsLane, diagnostics);
+    }
+
+    public CreaturesApplicationService(
+            CreatureCatalogPort lookup,
+            CreaturesPublishedState publishedState,
+            ExecutionLane executionLane,
+            ExecutionLane catalogReadLane,
+            ExecutionLane factsLane,
+            Diagnostics diagnostics
+    ) {
         this.lookup = Objects.requireNonNull(lookup, "lookup");
         this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
+        this.catalogReadLane = Objects.requireNonNull(catalogReadLane, "catalogReadLane");
         this.factsLane = Objects.requireNonNull(factsLane, "factsLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
@@ -139,7 +153,7 @@ public final class CreaturesApplicationService
     public CompletionStage<CreatureFilterOptionsResult> loadFilterOptions() {
         CompletableFuture<CreatureFilterOptionsResult> completion = new CompletableFuture<>();
         try {
-            executionLane.execute(() -> completion.complete(loadFilterOptionsInLane()));
+            catalogReadLane.execute(() -> completion.complete(loadFilterOptionsInLane()));
         } catch (RuntimeException exception) {
             diagnostics.failure(FILTER_OPTIONS_FAILURE, exception.getClass());
             completion.complete(filterOptionsStorageError());
@@ -171,7 +185,7 @@ public final class CreaturesApplicationService
         CatalogRequest request = CatalogRequest.from(query);
         CompletableFuture<CreatureCatalogPageResult> completion = new CompletableFuture<>();
         try {
-            executionLane.execute(() -> completion.complete(searchInLane(request)));
+            catalogReadLane.execute(() -> completion.complete(searchInLane(request)));
         } catch (RuntimeException exception) {
             diagnostics.failure(CATALOG_FAILURE, exception.getClass());
             completion.complete(new CreatureCatalogPageResult(

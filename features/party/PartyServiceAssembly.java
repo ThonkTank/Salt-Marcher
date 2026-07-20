@@ -1,32 +1,40 @@
 package features.party;
 
-import java.util.Objects;
-import platform.diagnostics.Diagnostics;
-import platform.diagnostics.NoopDiagnostics;
-import platform.execution.DirectExecutionLane;
-import platform.execution.ExecutionLane;
-import platform.persistence.SqliteDatabase;
-import platform.ui.DirectUiDispatcher;
-import platform.ui.UiDispatcher;
-import shell.api.ShellContribution;
 import features.party.adapter.javafx.adventuringday.AdventuringDayTopBarContribution;
 import features.party.adapter.javafx.party.PartyTopBarContribution;
 import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
-import features.party.api.PartyApi;
-import features.party.application.PartyApplicationService;
-import features.party.application.PartyPublishedState;
-import features.party.domain.roster.repository.PartyRosterRepository;
 import features.party.api.ActivePartyCompositionModel;
 import features.party.api.ActivePartyModel;
 import features.party.api.AdventuringDayCalculationModel;
 import features.party.api.AdventuringDaySummaryModel;
+import features.party.api.PartyApi;
 import features.party.api.PartyMutationModel;
 import features.party.api.PartySnapshotModel;
 import features.party.api.PartyTravelPositionsModel;
+import features.party.application.PartyApplicationService;
+import features.party.application.PartyPublishedState;
+import features.party.domain.roster.repository.PartyRosterRepository;
+
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.NoopDiagnostics;
+import platform.execution.DirectExecutionLane;
+import platform.execution.ExecutionLane;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+import platform.ui.DirectUiDispatcher;
+import platform.ui.UiDispatcher;
+
+import shell.api.ShellContribution;
+
+import java.util.Objects;
 
 public final class PartyServiceAssembly {
 
     private PartyServiceAssembly() {
+    }
+
+    public static FeatureStoreDefinition storeDefinition() {
+        return SqlitePartyRosterRepository.storeDefinition();
     }
 
     public static Component create(PartyRosterRepository repository) {
@@ -41,7 +49,7 @@ public final class PartyServiceAssembly {
     }
 
     public static Component create(
-            SqliteDatabase database,
+            FeatureStoreHandle store,
             ExecutionLane executionLane,
             ExecutionLane planningFactsLane,
             UiDispatcher uiDispatcher,
@@ -49,7 +57,7 @@ public final class PartyServiceAssembly {
     ) {
         return assemble(
                 new SqlitePartyRosterRepository(
-                        Objects.requireNonNull(database, "database"),
+                        Objects.requireNonNull(store, "store"),
                         Objects.requireNonNull(diagnostics, "diagnostics")),
                 executionLane,
                 planningFactsLane,

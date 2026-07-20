@@ -1,34 +1,41 @@
 package features.creatures;
 
-import java.util.Objects;
+import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
+import features.creatures.api.CreatureCatalogQueryApi;
+import features.creatures.api.CreatureDetailModel;
+import features.creatures.api.CreatureDetailQueryApi;
+import features.creatures.api.CreatureDetailResult;
+import features.creatures.api.CreatureEncounterCandidatesModel;
+import features.creatures.api.CreatureLookupStatus;
+import features.creatures.api.CreatureReferenceApi;
+import features.creatures.api.CreatureReferenceIndexModel;
+import features.creatures.api.CreaturesApi;
+import features.creatures.application.CreatureCatalogProjection;
+import features.creatures.application.CreaturesApplicationService;
+import features.creatures.application.CreaturesPublishedState;
+import features.creatures.domain.catalog.port.CreatureCatalogPort;
+
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
 import platform.diagnostics.NoopDiagnostics;
 import platform.execution.DirectExecutionLane;
 import platform.execution.ExecutionLane;
-import platform.persistence.SqliteDatabase;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
 import platform.ui.DirectUiDispatcher;
 import platform.ui.UiDispatcher;
-import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
-import features.creatures.api.CreaturesApi;
-import features.creatures.api.CreatureCatalogQueryApi;
-import features.creatures.application.CreatureCatalogProjection;
-import features.creatures.application.CreaturesApplicationService;
-import features.creatures.application.CreaturesPublishedState;
-import features.creatures.domain.catalog.port.CreatureCatalogPort;
-import features.creatures.api.CreatureDetailModel;
-import features.creatures.api.CreatureDetailQueryApi;
-import features.creatures.api.CreatureDetailResult;
-import features.creatures.api.CreatureEncounterCandidatesModel;
-import features.creatures.api.CreatureReferenceIndexModel;
-import features.creatures.api.CreatureLookupStatus;
-import features.creatures.api.CreatureReferenceApi;
+
+import java.util.Objects;
 
 public final class CreaturesServiceAssembly {
 
     private static final DiagnosticId REFERENCE_FAILURE = new DiagnosticId("creatures.reference.storage-failure");
 
     private CreaturesServiceAssembly() {
+    }
+
+    public static FeatureStoreDefinition storeDefinition() {
+        return SqliteCreatureCatalogQueryAdapter.storeDefinition();
     }
 
     public static Component create(CreatureCatalogPort catalogPort) {
@@ -41,17 +48,29 @@ public final class CreaturesServiceAssembly {
     }
 
     public static Component create(
-            SqliteDatabase database,
+            FeatureStoreHandle store,
             ExecutionLane executionLane,
+            ExecutionLane factsLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics
+    ) {
+        return create(store, executionLane, executionLane, factsLane, uiDispatcher, diagnostics);
+    }
+
+    public static Component create(
+            FeatureStoreHandle store,
+            ExecutionLane executionLane,
+            ExecutionLane catalogReadLane,
             ExecutionLane factsLane,
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
         return create(
                 new SqliteCreatureCatalogQueryAdapter(
-                        Objects.requireNonNull(database, "database"),
+                        Objects.requireNonNull(store, "store"),
                         Objects.requireNonNull(diagnostics, "diagnostics")),
                 executionLane,
+                catalogReadLane,
                 factsLane,
                 uiDispatcher,
                 diagnostics);
@@ -64,8 +83,20 @@ public final class CreaturesServiceAssembly {
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
+        return create(catalogPort, executionLane, executionLane, factsLane, uiDispatcher, diagnostics);
+    }
+
+    public static Component create(
+            CreatureCatalogPort catalogPort,
+            ExecutionLane executionLane,
+            ExecutionLane catalogReadLane,
+            ExecutionLane factsLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics
+    ) {
         CreatureCatalogPort safeCatalogPort = Objects.requireNonNull(catalogPort, "catalogPort");
         ExecutionLane safeExecutionLane = Objects.requireNonNull(executionLane, "executionLane");
+        ExecutionLane safeCatalogReadLane = Objects.requireNonNull(catalogReadLane, "catalogReadLane");
         UiDispatcher safeUiDispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
         Diagnostics safeDiagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
         CreaturesPublishedState publishedState = new CreaturesPublishedState(safeUiDispatcher);
@@ -74,7 +105,7 @@ public final class CreaturesServiceAssembly {
         CreatureDetailQueryApi detailQueries = creatureId -> {
             java.util.concurrent.CompletableFuture<CreatureDetailResult> result = new java.util.concurrent.CompletableFuture<>();
             try {
-                safeExecutionLane.execute(() -> result.complete(loadDetail(
+                safeCatalogReadLane.execute(() -> result.complete(loadDetail(
                         safeCatalogPort, safeDiagnostics, creatureId)));
             } catch (RuntimeException exception) {
                 safeDiagnostics.failure(REFERENCE_FAILURE, exception.getClass());
@@ -87,6 +118,7 @@ public final class CreaturesServiceAssembly {
                 safeCatalogPort,
                 publishedState,
                 safeExecutionLane,
+                safeCatalogReadLane,
                 Objects.requireNonNull(factsLane, "factsLane"),
                 safeDiagnostics);
         CreatureReferenceApi references = creatureId -> {

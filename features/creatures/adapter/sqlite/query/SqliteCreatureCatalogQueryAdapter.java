@@ -1,8 +1,5 @@
 package features.creatures.adapter.sqlite.query;
 
-import org.jspecify.annotations.Nullable;
-import platform.persistence.SqliteDatabase;
-import platform.diagnostics.Diagnostics;
 import features.creatures.adapter.sqlite.gateway.local.SqliteCreatureCatalogLocalGateway;
 import features.creatures.adapter.sqlite.mapper.CreatureCatalogQueryMappingFacade;
 import features.creatures.domain.catalog.CreatureCatalogData.CatalogPageData;
@@ -13,22 +10,28 @@ import features.creatures.domain.catalog.CreatureCatalogData.EncounterCandidateP
 import features.creatures.domain.catalog.CreatureCatalogData.EncounterCandidateSpec;
 import features.creatures.domain.catalog.port.CreatureCatalogPort;
 
+import org.jspecify.annotations.Nullable;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+
 import java.util.List;
 
 public final class SqliteCreatureCatalogQueryAdapter implements CreatureCatalogPort {
 
     private final SqliteCreatureCatalogLocalGateway gateway;
 
-    public SqliteCreatureCatalogQueryAdapter() {
-        this(new SqliteCreatureCatalogLocalGateway());
+    public static FeatureStoreDefinition storeDefinition() {
+        return SqliteCreatureCatalogLocalGateway.storeDefinition();
     }
 
-    public SqliteCreatureCatalogQueryAdapter(SqliteDatabase database) {
-        this(new SqliteCreatureCatalogLocalGateway(database));
+    public SqliteCreatureCatalogQueryAdapter(FeatureStoreHandle store) {
+        this(store, NoopDiagnostics.INSTANCE);
     }
 
-    public SqliteCreatureCatalogQueryAdapter(SqliteDatabase database, Diagnostics diagnostics) {
-        this(new SqliteCreatureCatalogLocalGateway(database, diagnostics));
+    public SqliteCreatureCatalogQueryAdapter(FeatureStoreHandle store, Diagnostics diagnostics) {
+        this(new SqliteCreatureCatalogLocalGateway(store, diagnostics));
     }
 
     SqliteCreatureCatalogQueryAdapter(SqliteCreatureCatalogLocalGateway gateway) {

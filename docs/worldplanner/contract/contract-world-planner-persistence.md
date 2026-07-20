@@ -64,6 +64,8 @@ World Planner persistence does not store:
 
 ## Validation And Error Behavior
 
+Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
+
 - Writes must reject malformed NPC, faction, location, creature statblock, or
   encounter-table references.
 - Writes must reject duplicate membership or duplicate link rows instead of

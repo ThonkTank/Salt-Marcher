@@ -1,11 +1,44 @@
 package features.sessionplanner.adapter.javafx;
 
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.CompletableFuture;
+import features.encounter.api.EncounterApi;
+import features.encounter.api.SavedEncounterPlanListModel;
+import features.encounter.api.SavedEncounterPlanListResult;
+import features.encounter.api.SavedEncounterPlanStatus;
+import features.encounter.api.SavedEncounterPlanSummary;
+import features.encounter.application.EncounterApplicationService;
+import features.encounter.application.EncounterApplicationServiceFakes;
+import features.party.PartyServiceAssembly;
+import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
+import features.party.api.CharacterDraft;
+import features.party.api.CreateCharacterCommand;
+import features.party.api.MembershipState;
+import features.party.api.PartyApi;
+import features.sessiongeneration.api.GenerationDraft;
+import features.sessiongeneration.api.GenerationDraftResponse;
+import features.sessiongeneration.api.GenerationRequest;
+import features.sessiongeneration.api.GenerationResult;
+import features.sessiongeneration.api.GenerationRunId;
+import features.sessiongeneration.api.GenerationRunResponse;
+import features.sessiongeneration.api.SessionGenerationApi;
+import features.sessionplanner.SessionPlannerServiceAssembly;
+import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
+import features.sessionplanner.api.SessionPlannerCatalogCommand;
+import features.sessionplanner.api.SessionPlannerCatalogSnapshot;
+import features.sessionplanner.api.SessionPlannerRestKind;
+import features.sessionplanner.api.SessionPlannerSceneTimelineProjection;
+import features.sessionplanner.api.SessionPlannerSessionSnapshot;
+import features.sessionplanner.api.SessionPreparationSnapshot;
+import features.sessionplanner.api.SessionPreparationStatus;
+import features.sessionplanner.domain.session.EncounterDays;
+import features.sessionplanner.domain.session.SessionPlan;
+import features.worldplanner.WorldPlannerServiceAssembly;
+import features.worldplanner.adapter.sqlite.repository.SqliteWorldPlannerRepository;
+import features.worldplanner.api.CreateWorldLocationCommand;
+import features.worldplanner.api.WorldLocationSummary;
+import features.worldplanner.api.WorldPlannerSnapshotModel;
+import features.worldplanner.application.WorldPlannerApplicationService;
+import features.worldplanner.domain.world.port.WorldPlannerReferencePort;
+
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -19,57 +52,29 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import platform.persistence.TestFeatureStores;
+
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
 import shell.api.ShellBinding;
 import shell.api.ShellSlot;
-import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
-import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
-import features.worldplanner.adapter.sqlite.repository.SqliteWorldPlannerRepository;
 import features.sessionplanner.adapter.sqlite.mapper.SessionPlanMapper;
 import features.sessionplanner.adapter.sqlite.model.SessionEncounterRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionManualLootNoteRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionPlanRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionPlanSnapshotRecord;
-import features.encounter.application.EncounterApplicationService;
-import features.encounter.application.EncounterApplicationServiceFakes;
-import features.encounter.api.EncounterApi;
-import features.encounter.api.SavedEncounterPlanListModel;
-import features.encounter.api.SavedEncounterPlanListResult;
-import features.encounter.api.SavedEncounterPlanStatus;
-import features.encounter.api.SavedEncounterPlanSummary;
-import features.party.api.PartyApi;
-import features.party.PartyServiceAssembly;
-import features.party.api.CharacterDraft;
-import features.party.api.CreateCharacterCommand;
-import features.party.api.MembershipState;
-import features.sessionplanner.domain.session.EncounterDays;
-import features.sessionplanner.domain.session.SessionPlan;
-import features.sessionplanner.SessionPlannerServiceAssembly;
-import features.sessionplanner.api.SessionPlannerCatalogCommand;
-import features.sessionplanner.api.SessionPlannerCatalogSnapshot;
-import features.sessionplanner.api.SessionPlannerRestKind;
-import features.sessionplanner.api.SessionPlannerSceneTimelineProjection;
-import features.sessionplanner.api.SessionPlannerSessionSnapshot;
 import features.sessionplanner.api.SessionPlannerWorkspaceModel;
-import features.sessionplanner.api.SessionPreparationSnapshot;
-import features.sessionplanner.api.SessionPreparationStatus;
-import features.sessiongeneration.api.GenerationDraft;
-import features.sessiongeneration.api.GenerationDraftResponse;
-import features.sessiongeneration.api.GenerationRequest;
-import features.sessiongeneration.api.GenerationResult;
-import features.sessiongeneration.api.GenerationRunId;
-import features.sessiongeneration.api.GenerationRunResponse;
-import features.sessiongeneration.api.SessionGenerationApi;
-import features.worldplanner.application.WorldPlannerApplicationService;
-import features.worldplanner.WorldPlannerServiceAssembly;
-import features.worldplanner.domain.world.port.WorldPlannerReferencePort;
-import features.worldplanner.api.CreateWorldLocationCommand;
-import features.worldplanner.api.WorldLocationSummary;
-import features.worldplanner.api.WorldPlannerSnapshotModel;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @org.junit.jupiter.api.Tag("ui")
 public final class SessionPlannerCatalogTest {
@@ -696,9 +701,13 @@ public final class SessionPlannerCatalogTest {
 
     private static SessionPlannerTestServices services(SessionGenerationApi generation) {
         PartyServiceAssembly.Component party =
-                PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+                PartyServiceAssembly.create(new SqlitePartyRosterRepository(
+                                TestFeatureStores.current().store(
+                                        SqlitePartyRosterRepository.storeDefinition())));
         WorldPlannerServiceAssembly world = new WorldPlannerServiceAssembly(
-                new SqliteWorldPlannerRepository(), new PositiveReferencePort());
+                new SqliteWorldPlannerRepository(
+                                TestFeatureStores.current().store(
+                                        SqliteWorldPlannerRepository.storeDefinition())), new PositiveReferencePort());
         WorldPlannerApplicationService worldApplication = world.createApplicationService();
         SavedEncounterPlanListModel savedPlans = new SavedEncounterPlanListModel(
                 SessionPlannerCatalogTest::savedEncounterPlans,
@@ -712,7 +721,9 @@ public final class SessionPlannerCatalogTest {
                     return () -> {
                     };
                 });
-        SqliteSessionPlanRepository sessionRepository = new SqliteSessionPlanRepository();
+        SqliteSessionPlanRepository sessionRepository = new SqliteSessionPlanRepository(
+                        TestFeatureStores.current().store(
+                                SqliteSessionPlanRepository.storeDefinition()));
         SessionPlannerServiceAssembly planner = new SessionPlannerServiceAssembly(
                 sessionRepository, sessionRepository, sessionRepository, party.application(),
                 generatedEncounterApi(), savedPlans, world.snapshotModel(), generation,

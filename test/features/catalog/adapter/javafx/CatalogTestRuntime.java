@@ -3,22 +3,23 @@ package features.catalog.adapter.javafx;
 import features.catalog.CatalogFeature;
 import features.catalog.CatalogProviders;
 import features.catalog.CatalogRoutes;
+import features.creatures.CreaturesServiceAssembly;
+import features.creatures.domain.catalog.port.CreatureCatalogPort;
+import features.encounter.EncounterServiceAssembly;
+import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
 import features.encounter.api.ApplyEncounterStateCommand;
 import features.encounter.api.EncounterPoolFilters;
 import features.encounter.api.OpenSavedEncounterPlanCommand;
 import features.encounter.api.UpdateEncounterPoolFiltersCommand;
-import platform.ui.DirectUiDispatcher;
-import shell.api.ShellContribution;
-import shell.api.InspectorSink;
-import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
-import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
-import features.creatures.CreaturesServiceAssembly;
-import features.creatures.domain.catalog.port.CreatureCatalogPort;
-import features.encounter.EncounterServiceAssembly;
 import features.encountertable.EncounterTableServiceAssembly;
 import features.encountertable.domain.catalog.port.EncounterTableCatalogPort;
 import features.party.PartyServiceAssembly;
+import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
 import features.worldplanner.api.WorldPlannerSnapshotModel;
+
+import platform.persistence.TestFeatureStores;
+import shell.api.InspectorSink;
+import shell.api.ShellContribution;
 
 final class CatalogTestRuntime {
 
@@ -46,12 +47,16 @@ final class CatalogTestRuntime {
     ) {
         CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(creatureCatalog);
         EncounterTableServiceAssembly.Component tables = EncounterTableServiceAssembly.create(encounterTables);
-        PartyServiceAssembly.Component party = PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+        PartyServiceAssembly.Component party = PartyServiceAssembly.create(new SqlitePartyRosterRepository(
+                                TestFeatureStores.current().store(
+                                        SqlitePartyRosterRepository.storeDefinition())));
         EncounterServiceAssembly.Component encounter = EncounterServiceAssembly.create(
                 creatures.application(), creatures.detail(), creatures.encounterCandidates(),
                 tables.application(), tables.candidates(), worldPlanner,
                 party.application(), party.activeParty(), party.activeComposition(),
-                party.adventuringDaySummary(), party.mutation(), new SqliteEncounterPlanRepository());
+                party.adventuringDaySummary(), party.mutation(), new SqliteEncounterPlanRepository(
+                                TestFeatureStores.current().store(
+                                        SqliteEncounterPlanRepository.storeDefinition())));
         return new CatalogTestRuntime(creatures, tables, encounter, worldPlanner);
     }
 

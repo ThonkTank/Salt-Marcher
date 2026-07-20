@@ -1,5 +1,61 @@
 package features.dungeon.adapter.javafx.editor;
 
+import features.dungeon.DungeonTestAssembly;
+import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSeeder;
+import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonIdentityAllocator;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
+import features.dungeon.api.DungeonChunkKey;
+import features.dungeon.api.DungeonEditorControlsModel;
+import features.dungeon.api.DungeonEditorMapSurfaceModel;
+import features.dungeon.api.DungeonEditorStateModel;
+import features.dungeon.api.editor.DungeonEditorApi;
+import features.dungeon.application.authored.command.CorridorChange;
+import features.dungeon.application.authored.command.DungeonCompoundPatch;
+import features.dungeon.application.authored.command.DungeonPatch;
+import features.dungeon.application.authored.command.DungeonPatchChange;
+import features.dungeon.application.authored.command.RoomClusterChange;
+import features.dungeon.application.authored.command.RoomRegionChange;
+import features.dungeon.application.authored.command.StairChange;
+import features.dungeon.application.authored.command.TransitionChange;
+import features.dungeon.application.authored.port.DungeonCatalogStore;
+import features.dungeon.application.authored.port.DungeonIdentityAllocator;
+import features.dungeon.application.authored.port.DungeonIdentityKind;
+import features.dungeon.application.authored.port.DungeonUnitOfWork;
+import features.dungeon.application.authored.port.DungeonWindowStore;
+import features.dungeon.application.editor.DungeonEditorApiFacade;
+import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
+import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
+import features.dungeon.domain.core.component.CorridorAnchor;
+import features.dungeon.domain.core.component.CorridorAnchorRef;
+import features.dungeon.domain.core.component.CorridorDoorBinding;
+import features.dungeon.domain.core.component.CorridorWaypoint;
+import features.dungeon.domain.core.component.StairExit;
+import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.Direction;
+import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
+import features.dungeon.domain.core.geometry.Edge;
+import features.dungeon.domain.core.graph.DungeonTopologyRef;
+import features.dungeon.domain.core.structure.DungeonMapIdentity;
+import features.dungeon.domain.core.structure.corridor.Corridor;
+import features.dungeon.domain.core.structure.corridor.CorridorBindings;
+import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
+import features.dungeon.domain.core.structure.room.RoomCluster;
+import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.stair.Stair;
+import features.dungeon.domain.core.structure.stair.StairShape;
+import features.dungeon.domain.core.structure.transition.Transition;
+import features.dungeon.domain.core.structure.transition.TransitionAnchor;
+import features.dungeon.domain.core.structure.transition.TransitionDestination;
+import features.party.PartyServiceAssembly;
+import features.party.adapter.sqlite.model.PartyPersistenceSchema;
+import features.party.domain.roster.PartyRoster;
+import features.party.domain.roster.repository.PartyRosterRepository;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -15,62 +71,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
-import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSeeder;
-import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
-import features.dungeon.adapter.sqlite.repository.SqliteDungeonIdentityAllocator;
-import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
-import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
 import features.dungeon.application.authored.DungeonCachedWindowStore;
-import features.party.adapter.sqlite.model.PartyPersistenceSchema;
-import features.dungeon.DungeonTestAssembly;
-import features.dungeon.domain.core.geometry.Cell;
-import features.dungeon.domain.core.geometry.Direction;
-import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
-import features.dungeon.domain.core.geometry.Edge;
-import features.dungeon.domain.core.structure.DungeonMapIdentity;
-import features.dungeon.domain.core.component.CorridorAnchor;
-import features.dungeon.domain.core.component.CorridorAnchorRef;
-import features.dungeon.domain.core.component.CorridorDoorBinding;
-import features.dungeon.domain.core.component.CorridorWaypoint;
-import features.dungeon.domain.core.component.StairExit;
-import features.dungeon.domain.core.graph.DungeonTopologyRef;
-import features.dungeon.domain.core.structure.corridor.Corridor;
-import features.dungeon.domain.core.structure.corridor.CorridorBindings;
-import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
-import features.dungeon.domain.core.structure.room.RoomCluster;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
-import features.dungeon.domain.core.structure.room.RoomRegion;
-import features.dungeon.domain.core.structure.stair.Stair;
-import features.dungeon.domain.core.structure.stair.StairShape;
-import features.dungeon.domain.core.structure.transition.Transition;
-import features.dungeon.domain.core.structure.transition.TransitionAnchor;
-import features.dungeon.domain.core.structure.transition.TransitionDestination;
-import features.dungeon.application.authored.command.DungeonPatch;
-import features.dungeon.application.authored.command.DungeonPatchChange;
-import features.dungeon.application.authored.command.DungeonCompoundPatch;
-import features.dungeon.application.authored.command.CorridorChange;
-import features.dungeon.application.authored.command.RoomClusterChange;
-import features.dungeon.application.authored.command.RoomRegionChange;
-import features.dungeon.application.authored.command.StairChange;
-import features.dungeon.application.authored.command.TransitionChange;
-import features.dungeon.application.authored.port.DungeonCatalogStore;
-import features.dungeon.application.authored.port.DungeonIdentityAllocator;
-import features.dungeon.application.authored.port.DungeonIdentityKind;
-import features.dungeon.application.authored.port.DungeonUnitOfWork;
-import features.dungeon.application.authored.port.DungeonWindowStore;
-import features.dungeon.api.DungeonChunkKey;
-import features.dungeon.api.DungeonEditorControlsModel;
-import features.dungeon.api.DungeonEditorMapSurfaceModel;
-import features.dungeon.api.DungeonEditorStateModel;
-import features.party.PartyServiceAssembly;
-import features.party.domain.roster.PartyRoster;
-import features.party.domain.roster.repository.PartyRosterRepository;
-import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
-import features.dungeon.application.editor.DungeonEditorApiFacade;
-import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
-import features.dungeon.api.editor.DungeonEditorApi;
-import platform.persistence.SqliteDatabase;
 
 class DungeonEditorTestPersistence {
 
@@ -103,12 +104,15 @@ class DungeonEditorTestPersistence {
             SqliteDatabase sqliteDatabase = new SqliteDatabase(
                     database.databasePath,
                     platform.diagnostics.NoopDiagnostics.INSTANCE);
-            SqliteDungeonCatalogStore catalog = new SqliteDungeonCatalogStore(sqliteDatabase);
+            var dungeonStore = TestFeatureStores.store(
+                    sqliteDatabase,
+                    features.dungeon.adapter.sqlite.gateway.DungeonStoreDefinition.create());
+            SqliteDungeonCatalogStore catalog = new SqliteDungeonCatalogStore(dungeonStore);
             DungeonTestAssembly.Component dungeon = createDungeonServices(
                     catalog,
-                    new DungeonCachedWindowStore(new SqliteDungeonWindowStore(sqliteDatabase)),
-                    new SqliteDungeonUnitOfWork(sqliteDatabase),
-                    new SqliteDungeonIdentityAllocator(sqliteDatabase));
+                    new DungeonCachedWindowStore(new SqliteDungeonWindowStore(dungeonStore)),
+                    new SqliteDungeonUnitOfWork(dungeonStore),
+                    new SqliteDungeonIdentityAllocator(dungeonStore));
             DungeonEditorRuntimeDependencies dependencies =
                     DungeonEditorTestPersistence.editorDependencies(dungeon);
             DungeonEditorApi api = new DungeonEditorApiFacade(
@@ -236,14 +240,21 @@ class DungeonEditorTestPersistence {
                 statement.execute(PartyPersistenceSchema.CREATE_PARTY_ROSTER_METADATA_TABLE_SQL);
                 statement.execute(PartyPersistenceSchema.INITIALIZE_METADATA_SQL);
                 statement.executeUpdate("DELETE FROM player_characters");
-                statement.executeUpdate("UPDATE party_roster_metadata SET next_character_id=1 WHERE singleton_id=1");
+                statement.executeUpdate(
+                        "UPDATE party_roster_metadata SET next_character_id=1 WHERE"
+                            + " singleton_id=1");
             } catch (SQLException exception) {
                 throw new IllegalStateException("Failed to reset Party behavior DB.", exception);
             }
         }
 
         long createPersistedMap(String mapName) {
-            return new SqliteDungeonCatalogStore(sqliteDatabase()).create(mapName).mapId().value();
+            SqliteDatabase database = sqliteDatabase();
+            return new SqliteDungeonCatalogStore(
+                            TestFeatureStores.store(
+                                    database,
+                                    features.dungeon.adapter.sqlite.gateway.DungeonStoreDefinition
+                                            .create())).create(mapName).mapId().value();
         }
 
         long countMapIdWithName(long mapId, String mapName) {
@@ -256,7 +267,9 @@ class DungeonEditorTestPersistence {
             rows += count("SELECT COUNT(*) FROM dungeon_room_clusters WHERE dungeon_map_id=?", mapId);
             rows += count("SELECT COUNT(*) FROM dungeon_room_cells WHERE room_id IN ("
                     + "SELECT room_id FROM dungeon_rooms WHERE dungeon_map_id=?)", mapId);
-            rows += count("SELECT COUNT(*) FROM dungeon_room_cluster_edges WHERE dungeon_map_id=?", mapId);
+            rows += count(
+                            "SELECT COUNT(*) FROM dungeon_room_cluster_edges WHERE"
+                                + " dungeon_map_id=?", mapId);
             rows += count("SELECT COUNT(*) FROM dungeon_corridors WHERE dungeon_map_id=?", mapId);
             rows += count("SELECT COUNT(*) FROM dungeon_topology_elements WHERE dungeon_map_id=?", mapId);
             rows += count("SELECT COUNT(*) FROM dungeon_stairs WHERE dungeon_map_id=?", mapId);
@@ -285,8 +298,8 @@ class DungeonEditorTestPersistence {
                 return 0L;
             }
             return count(
-                    "SELECT COUNT(*) FROM dungeon_room_cluster_vertices WHERE cluster_id IN ("
-                            + "SELECT cluster_id FROM dungeon_room_clusters WHERE dungeon_map_id=?)",
+                    "SELECT COUNT(*) FROM dungeon_room_cluster_vertices WHERE cluster_id IN (SELECT"
+                        + " cluster_id FROM dungeon_room_clusters WHERE dungeon_map_id=?)",
                     mapId);
         }
 
@@ -306,7 +319,8 @@ class DungeonEditorTestPersistence {
         Set<Long> corridorIdsForMap(long mapId) {
             try (Connection connection = open();
                  PreparedStatement statement = connection.prepareStatement(
-                         "SELECT corridor_id FROM dungeon_corridors WHERE dungeon_map_id=? ORDER BY corridor_id")) {
+                                    "SELECT corridor_id FROM dungeon_corridors WHERE"
+                                        + " dungeon_map_id=? ORDER BY corridor_id")) {
                 bind(statement, mapId);
                 try (ResultSet resultSet = statement.executeQuery()) {
                     Set<Long> ids = new LinkedHashSet<>();
@@ -329,32 +343,31 @@ class DungeonEditorTestPersistence {
 
         long countWallBoundariesForDirection(long mapId, String direction) {
             return count(
-                    "SELECT COUNT(*) FROM dungeon_room_cluster_edges edge_row"
-                            + " JOIN dungeon_room_clusters cluster_row ON cluster_row.cluster_id=edge_row.cluster_id"
-                            + " WHERE cluster_row.dungeon_map_id=?"
-                            + " AND edge_row.edge_direction=?"
-                            + " AND edge_row.edge_type='WALL'",
+                    "SELECT COUNT(*) FROM dungeon_room_cluster_edges edge_row JOIN"
+                        + " dungeon_room_clusters cluster_row ON"
+                        + " cluster_row.cluster_id=edge_row.cluster_id WHERE"
+                        + " cluster_row.dungeon_map_id=? AND edge_row.edge_direction=? AND"
+                        + " edge_row.edge_type='WALL'",
                     mapId,
                     direction);
         }
 
         long countWallBoundaryRows(long mapId) {
             return count(
-                    "SELECT COUNT(*) FROM dungeon_room_cluster_edges edge_row"
-                            + " JOIN dungeon_room_clusters cluster_row ON cluster_row.cluster_id=edge_row.cluster_id"
-                            + " WHERE cluster_row.dungeon_map_id=?"
-                            + " AND edge_row.edge_type='WALL'",
+                    "SELECT COUNT(*) FROM dungeon_room_cluster_edges edge_row JOIN"
+                        + " dungeon_room_clusters cluster_row ON"
+                        + " cluster_row.cluster_id=edge_row.cluster_id WHERE"
+                        + " cluster_row.dungeon_map_id=? AND edge_row.edge_type='WALL'",
                     mapId);
         }
 
         long countDistinctWallBoundaryTopologyRefs(long mapId) {
             return count(
-                    "SELECT COUNT(DISTINCT edge_row.topology_element_id)"
-                            + " FROM dungeon_room_cluster_edges edge_row"
-                            + " JOIN dungeon_room_clusters cluster_row ON cluster_row.cluster_id=edge_row.cluster_id"
-                            + " WHERE cluster_row.dungeon_map_id=?"
-                            + " AND edge_row.edge_type='WALL'"
-                            + " AND edge_row.topology_element_id IS NOT NULL",
+                    "SELECT COUNT(DISTINCT edge_row.topology_element_id) FROM"
+                        + " dungeon_room_cluster_edges edge_row JOIN dungeon_room_clusters"
+                        + " cluster_row ON cluster_row.cluster_id=edge_row.cluster_id WHERE"
+                        + " cluster_row.dungeon_map_id=? AND edge_row.edge_type='WALL' AND"
+                        + " edge_row.topology_element_id IS NOT NULL",
                     mapId);
         }
 
@@ -376,13 +389,11 @@ class DungeonEditorTestPersistence {
         Set<String> wallBoundaryAbsoluteRowsForDirection(long mapId, String direction) {
             try (Connection connection = open();
                  PreparedStatement statement = connection.prepareStatement(
-                         "SELECT edge_row.cell_x AS absolute_x,"
-                                 + " edge_row.cell_y AS absolute_y,"
-                                 + " edge_row.level_z, edge_row.edge_direction, edge_row.edge_type"
-                                 + " FROM dungeon_room_cluster_edges edge_row"
-                                 + " WHERE edge_row.dungeon_map_id=?"
-                                 + " AND edge_row.edge_direction=?"
-                                 + " AND edge_row.edge_type='WALL'"
+                                    "SELECT edge_row.cell_x AS absolute_x, edge_row.cell_y AS"
+                                        + " absolute_y, edge_row.level_z, edge_row.edge_direction,"
+                                        + " edge_row.edge_type FROM dungeon_room_cluster_edges"
+                                        + " edge_row WHERE edge_row.dungeon_map_id=? AND"
+                                        + " edge_row.edge_direction=? AND edge_row.edge_type='WALL'"
                                  + " ORDER BY edge_row.level_z, absolute_x, absolute_y")) {
                 bind(statement, mapId, direction);
                 try (ResultSet resultSet = statement.executeQuery()) {
@@ -405,46 +416,44 @@ class DungeonEditorTestPersistence {
 
         long countOpenBoundariesForDirection(long mapId, String direction) {
             return count(
-                    "SELECT COUNT(*) FROM dungeon_room_cluster_edges edge_row"
-                            + " JOIN dungeon_room_clusters cluster_row ON cluster_row.cluster_id=edge_row.cluster_id"
-                            + " WHERE cluster_row.dungeon_map_id=?"
-                            + " AND edge_row.edge_direction=?"
-                            + " AND edge_row.edge_type='OPEN'"
-                            + " AND edge_row.topology_element_id IS NULL",
+                    "SELECT COUNT(*) FROM dungeon_room_cluster_edges edge_row JOIN"
+                        + " dungeon_room_clusters cluster_row ON"
+                        + " cluster_row.cluster_id=edge_row.cluster_id WHERE"
+                        + " cluster_row.dungeon_map_id=? AND edge_row.edge_direction=? AND"
+                        + " edge_row.edge_type='OPEN' AND edge_row.topology_element_id IS NULL",
                     mapId,
                     direction);
         }
 
         long countInternalWallBoundaries(long clusterId) {
             return count(
-                    "SELECT COUNT(*) FROM dungeon_room_cluster_edges edge_row"
-                            + " WHERE edge_row.cluster_id=?"
-                            + " AND edge_row.edge_type='WALL'"
-                            + " AND edge_row.topology_element_id IS NOT NULL"
-                            + " AND EXISTS (SELECT 1 FROM dungeon_room_cells cell_row"
-                            + " JOIN dungeon_rooms room_row ON room_row.room_id=cell_row.room_id"
-                            + " WHERE room_row.cluster_id=edge_row.cluster_id"
-                            + " AND cell_row.level_z=edge_row.level_z"
-                            + " AND cell_row.cell_x=edge_row.cell_x"
-                            + " AND cell_row.cell_y=edge_row.cell_y)"
-                            + " AND EXISTS (SELECT 1 FROM dungeon_room_cells cell_row"
-                            + " JOIN dungeon_rooms room_row ON room_row.room_id=cell_row.room_id"
-                            + " WHERE room_row.cluster_id=edge_row.cluster_id"
-                            + " AND cell_row.level_z=edge_row.level_z"
-                            + " AND cell_row.cell_x=edge_row.cell_x"
-                            + " + CASE edge_row.edge_direction WHEN 'EAST' THEN 1 WHEN 'WEST' THEN -1 ELSE 0 END"
-                            + " AND cell_row.cell_y=edge_row.cell_y"
-                            + " + CASE edge_row.edge_direction WHEN 'SOUTH' THEN 1 WHEN 'NORTH' THEN -1 ELSE 0 END)",
+                    "SELECT COUNT(*) FROM dungeon_room_cluster_edges edge_row WHERE"
+                        + " edge_row.cluster_id=? AND edge_row.edge_type='WALL' AND"
+                        + " edge_row.topology_element_id IS NOT NULL AND EXISTS (SELECT 1 FROM"
+                        + " dungeon_room_cells cell_row JOIN dungeon_rooms room_row ON"
+                        + " room_row.room_id=cell_row.room_id WHERE"
+                        + " room_row.cluster_id=edge_row.cluster_id AND"
+                        + " cell_row.level_z=edge_row.level_z AND cell_row.cell_x=edge_row.cell_x"
+                        + " AND cell_row.cell_y=edge_row.cell_y) AND EXISTS (SELECT 1 FROM"
+                        + " dungeon_room_cells cell_row JOIN dungeon_rooms room_row ON"
+                        + " room_row.room_id=cell_row.room_id WHERE"
+                        + " room_row.cluster_id=edge_row.cluster_id AND"
+                        + " cell_row.level_z=edge_row.level_z AND cell_row.cell_x=edge_row.cell_x +"
+                        + " CASE edge_row.edge_direction WHEN 'EAST' THEN 1 WHEN 'WEST' THEN -1"
+                        + " ELSE 0 END AND cell_row.cell_y=edge_row.cell_y + CASE"
+                        + " edge_row.edge_direction WHEN 'SOUTH' THEN 1 WHEN 'NORTH' THEN -1 ELSE 0"
+                        + " END)",
                     clusterId);
         }
 
         List<String> openBoundaryRowsForDirection(long clusterId, String direction) {
             try (Connection connection = open();
                  PreparedStatement statement = connection.prepareStatement(
-                         "SELECT level_z, cell_x, cell_y, edge_direction, edge_type, topology_element_id"
-                                 + " FROM dungeon_room_cluster_edges"
-                                 + " WHERE cluster_id=? AND edge_direction=? AND edge_type='OPEN'"
-                                 + " ORDER BY level_z, cell_x, cell_y, edge_direction")) {
+                                    "SELECT level_z, cell_x, cell_y, edge_direction, edge_type,"
+                                        + " topology_element_id FROM dungeon_room_cluster_edges"
+                                        + " WHERE cluster_id=? AND edge_direction=? AND"
+                                        + " edge_type='OPEN' ORDER BY level_z, cell_x, cell_y,"
+                                        + " edge_direction")) {
                 bind(statement, clusterId, direction);
                 try (ResultSet resultSet = statement.executeQuery()) {
                     List<String> rows = new ArrayList<>();
@@ -514,10 +523,9 @@ class DungeonEditorTestPersistence {
         Set<String> clusterFloorCells(long clusterId) {
             try (Connection connection = open();
                  PreparedStatement statement = connection.prepareStatement(
-                         "SELECT cell_x, cell_y, level_z"
-                                 + " FROM dungeon_room_cells WHERE room_id IN ("
-                                 + "SELECT room_id FROM dungeon_rooms WHERE cluster_id=?)"
-                                 + " ORDER BY level_z, cell_y, cell_x")) {
+                                    "SELECT cell_x, cell_y, level_z FROM dungeon_room_cells WHERE"
+                                        + " room_id IN (SELECT room_id FROM dungeon_rooms WHERE"
+                                        + " cluster_id=?) ORDER BY level_z, cell_y, cell_x")) {
                 statement.setLong(1, clusterId);
                 try (ResultSet resultSet = statement.executeQuery()) {
                     Set<String> cells = new LinkedHashSet<>();
@@ -538,20 +546,24 @@ class DungeonEditorTestPersistence {
         long clusterIdByCenter(long mapId, int centerX, int centerY, int level) {
             try (Connection connection = open();
                  PreparedStatement statement = connection.prepareStatement(
-                         "SELECT cluster_row.cluster_id FROM dungeon_room_clusters cluster_row"
-                                 + " WHERE cluster_row.dungeon_map_id=?"
-                                 + " AND (SELECT cell_x FROM dungeon_room_cells cell_row"
-                                 + " JOIN dungeon_rooms room_row ON room_row.room_id=cell_row.room_id"
-                                 + " WHERE room_row.cluster_id=cluster_row.cluster_id"
-                                 + " ORDER BY cell_row.level_z, cell_row.cell_y, cell_row.cell_x LIMIT 1)=?"
-                                 + " AND (SELECT cell_y FROM dungeon_room_cells cell_row"
-                                 + " JOIN dungeon_rooms room_row ON room_row.room_id=cell_row.room_id"
-                                 + " WHERE room_row.cluster_id=cluster_row.cluster_id"
-                                 + " ORDER BY cell_row.level_z, cell_row.cell_y, cell_row.cell_x LIMIT 1)=?"
-                                 + " AND (SELECT level_z FROM dungeon_room_cells cell_row"
-                                 + " JOIN dungeon_rooms room_row ON room_row.room_id=cell_row.room_id"
-                                 + " WHERE room_row.cluster_id=cluster_row.cluster_id"
-                                 + " ORDER BY cell_row.level_z, cell_row.cell_y, cell_row.cell_x LIMIT 1)=?")) {
+                                    "SELECT cluster_row.cluster_id FROM dungeon_room_clusters"
+                                        + " cluster_row WHERE cluster_row.dungeon_map_id=? AND"
+                                        + " (SELECT cell_x FROM dungeon_room_cells cell_row JOIN"
+                                        + " dungeon_rooms room_row ON"
+                                        + " room_row.room_id=cell_row.room_id WHERE"
+                                        + " room_row.cluster_id=cluster_row.cluster_id ORDER BY"
+                                        + " cell_row.level_z, cell_row.cell_y, cell_row.cell_x"
+                                        + " LIMIT 1)=? AND (SELECT cell_y FROM dungeon_room_cells"
+                                        + " cell_row JOIN dungeon_rooms room_row ON"
+                                        + " room_row.room_id=cell_row.room_id WHERE"
+                                        + " room_row.cluster_id=cluster_row.cluster_id ORDER BY"
+                                        + " cell_row.level_z, cell_row.cell_y, cell_row.cell_x"
+                                        + " LIMIT 1)=? AND (SELECT level_z FROM dungeon_room_cells"
+                                        + " cell_row JOIN dungeon_rooms room_row ON"
+                                        + " room_row.room_id=cell_row.room_id WHERE"
+                                        + " room_row.cluster_id=cluster_row.cluster_id ORDER BY"
+                                        + " cell_row.level_z, cell_row.cell_y, cell_row.cell_x"
+                                        + " LIMIT 1)=?")) {
                 bind(statement, mapId, centerX, centerY, level);
                 return scalar(statement);
             } catch (SQLException exception) {
@@ -561,20 +573,20 @@ class DungeonEditorTestPersistence {
 
         long countClustersAtCenter(long mapId, int centerX, int centerY, int level) {
             return count(
-                    "SELECT COUNT(*) FROM dungeon_room_clusters cluster_row"
-                            + " WHERE cluster_row.dungeon_map_id=?"
-                            + " AND (SELECT cell_x FROM dungeon_room_cells cell_row"
-                            + " JOIN dungeon_rooms room_row ON room_row.room_id=cell_row.room_id"
-                            + " WHERE room_row.cluster_id=cluster_row.cluster_id"
-                            + " ORDER BY cell_row.level_z, cell_row.cell_y, cell_row.cell_x LIMIT 1)=?"
-                            + " AND (SELECT cell_y FROM dungeon_room_cells cell_row"
-                            + " JOIN dungeon_rooms room_row ON room_row.room_id=cell_row.room_id"
-                            + " WHERE room_row.cluster_id=cluster_row.cluster_id"
-                            + " ORDER BY cell_row.level_z, cell_row.cell_y, cell_row.cell_x LIMIT 1)=?"
-                            + " AND (SELECT level_z FROM dungeon_room_cells cell_row"
-                            + " JOIN dungeon_rooms room_row ON room_row.room_id=cell_row.room_id"
-                            + " WHERE room_row.cluster_id=cluster_row.cluster_id"
-                            + " ORDER BY cell_row.level_z, cell_row.cell_y, cell_row.cell_x LIMIT 1)=?",
+                    "SELECT COUNT(*) FROM dungeon_room_clusters cluster_row WHERE"
+                        + " cluster_row.dungeon_map_id=? AND (SELECT cell_x FROM dungeon_room_cells"
+                        + " cell_row JOIN dungeon_rooms room_row ON"
+                        + " room_row.room_id=cell_row.room_id WHERE"
+                        + " room_row.cluster_id=cluster_row.cluster_id ORDER BY cell_row.level_z,"
+                        + " cell_row.cell_y, cell_row.cell_x LIMIT 1)=? AND (SELECT cell_y FROM"
+                        + " dungeon_room_cells cell_row JOIN dungeon_rooms room_row ON"
+                        + " room_row.room_id=cell_row.room_id WHERE"
+                        + " room_row.cluster_id=cluster_row.cluster_id ORDER BY cell_row.level_z,"
+                        + " cell_row.cell_y, cell_row.cell_x LIMIT 1)=? AND (SELECT level_z FROM"
+                        + " dungeon_room_cells cell_row JOIN dungeon_rooms room_row ON"
+                        + " room_row.room_id=cell_row.room_id WHERE"
+                        + " room_row.cluster_id=cluster_row.cluster_id ORDER BY cell_row.level_z,"
+                        + " cell_row.cell_y, cell_row.cell_x LIMIT 1)=?",
                     mapId,
                     centerX,
                     centerY,
@@ -584,10 +596,11 @@ class DungeonEditorTestPersistence {
         RoomClusterIds roomByComponent(long mapId, int componentX, int componentY, int level) {
             try (Connection connection = open();
                  PreparedStatement statement = connection.prepareStatement(
-                         "SELECT room_row.room_id, room_row.cluster_id FROM dungeon_rooms room_row"
-                                 + " JOIN dungeon_room_cells cell_row ON cell_row.room_id=room_row.room_id"
-                                 + " WHERE room_row.dungeon_map_id=? AND cell_row.cell_x=?"
-                                 + " AND cell_row.cell_y=? AND cell_row.level_z=?")) {
+                                    "SELECT room_row.room_id, room_row.cluster_id FROM"
+                                        + " dungeon_rooms room_row JOIN dungeon_room_cells cell_row"
+                                        + " ON cell_row.room_id=room_row.room_id WHERE"
+                                        + " room_row.dungeon_map_id=? AND cell_row.cell_x=? AND"
+                                        + " cell_row.cell_y=? AND cell_row.level_z=?")) {
                 bind(statement, mapId, componentX, componentY, level);
                 try (ResultSet resultSet = statement.executeQuery()) {
                     if (!resultSet.next()) {
@@ -619,32 +632,32 @@ class DungeonEditorTestPersistence {
                         connection,
                         state,
                         "dungeon_room_clusters",
-                        "SELECT cluster_id, dungeon_map_id, name"
-                                + " FROM dungeon_room_clusters WHERE cluster_id=? ORDER BY cluster_id",
+                        "SELECT cluster_id, dungeon_map_id, name FROM dungeon_room_clusters WHERE"
+                            + " cluster_id=? ORDER BY cluster_id",
                         ids.clusterId());
                 appendRows(
                         connection,
                         state,
                         "dungeon_room_cells",
-                        "SELECT room_id, level_z, cell_x, cell_y"
-                                + " FROM dungeon_room_cells WHERE room_id=? ORDER BY level_z, cell_y, cell_x",
+                        "SELECT room_id, level_z, cell_x, cell_y FROM dungeon_room_cells WHERE"
+                            + " room_id=? ORDER BY level_z, cell_y, cell_x",
                         ids.roomId());
                 appendRows(
                         connection,
                         state,
                         "dungeon_room_cluster_edges",
-                        "SELECT cluster_id, level_z, cell_x, cell_y, edge_direction, edge_type, topology_element_id"
-                                + " FROM dungeon_room_cluster_edges WHERE cluster_id=?"
-                                + " ORDER BY level_z, cell_x, cell_y, edge_direction",
+                        "SELECT cluster_id, level_z, cell_x, cell_y, edge_direction, edge_type,"
+                            + " topology_element_id FROM dungeon_room_cluster_edges WHERE"
+                            + " cluster_id=? ORDER BY level_z, cell_x, cell_y, edge_direction",
                         ids.clusterId());
                 appendRows(
                         connection,
                         state,
                         "dungeon_topology_elements",
-                        "SELECT dungeon_map_id, element_kind, element_id, cluster_id, corridor_id, label, sort_order"
-                                + " FROM dungeon_topology_elements"
-                                + " WHERE dungeon_map_id=? AND cluster_id=?"
-                                + " ORDER BY element_kind, element_id",
+                        "SELECT dungeon_map_id, element_kind, element_id, cluster_id, corridor_id,"
+                            + " label, sort_order FROM dungeon_topology_elements WHERE"
+                            + " dungeon_map_id=? AND cluster_id=? ORDER BY element_kind,"
+                            + " element_id",
                         mapId,
                         ids.clusterId());
                 return state;
@@ -656,7 +669,8 @@ class DungeonEditorTestPersistence {
         RoomClusterIds roomByName(long mapId, String roomName) {
             try (Connection connection = open();
                  PreparedStatement statement = connection.prepareStatement(
-                         "SELECT room_id, cluster_id FROM dungeon_rooms WHERE dungeon_map_id=? AND name=?")) {
+                                    "SELECT room_id, cluster_id FROM dungeon_rooms WHERE"
+                                        + " dungeon_map_id=? AND name=?")) {
                 bind(statement, mapId, roomName);
                 try (ResultSet resultSet = statement.executeQuery()) {
                     if (!resultSet.next()) {
@@ -715,12 +729,11 @@ class DungeonEditorTestPersistence {
 
         private Set<String> boundaryDerivedClusterCorners(Connection connection, long clusterId) throws SQLException {
             try (PreparedStatement statement = connection.prepareStatement(
-                         "SELECT edge_row.level_z, edge_row.cell_x, edge_row.cell_y, edge_row.edge_direction"
-                                 + " FROM dungeon_room_cluster_edges edge_row"
-                                 + " WHERE edge_row.cluster_id=?"
-                                 + " AND edge_row.edge_type IN ('WALL', 'DOOR')"
-                                 + " ORDER BY edge_row.level_z, edge_row.cell_y, edge_row.cell_x,"
-                                 + " edge_row.edge_direction")) {
+                            "SELECT edge_row.level_z, edge_row.cell_x, edge_row.cell_y,"
+                                + " edge_row.edge_direction FROM dungeon_room_cluster_edges"
+                                + " edge_row WHERE edge_row.cluster_id=? AND edge_row.edge_type IN"
+                                + " ('WALL', 'DOOR') ORDER BY edge_row.level_z, edge_row.cell_y,"
+                                + " edge_row.cell_x, edge_row.edge_direction")) {
                 statement.setLong(1, clusterId);
                 Map<Cell, BoundaryEndpointFacts> endpointFacts = new LinkedHashMap<>();
                 try (ResultSet resultSet = statement.executeQuery()) {
@@ -784,7 +797,8 @@ class DungeonEditorTestPersistence {
         void saveRoomVisualDescription(long roomId, String visualDescription) {
             try (Connection connection = open();
                  PreparedStatement statement = connection.prepareStatement(
-                         "UPDATE dungeon_rooms SET visual_description=? WHERE room_id=?")) {
+                                    "UPDATE dungeon_rooms SET visual_description=? WHERE"
+                                        + " room_id=?")) {
                 bind(statement, visualDescription, roomId);
                 if (statement.executeUpdate() != 1) {
                     throw new SQLException("Expected exactly one room row for visual description update.");
@@ -802,8 +816,8 @@ class DungeonEditorTestPersistence {
                 String description
         ) {
             return count(
-                    "SELECT COUNT(*) FROM dungeon_room_exit_descriptions"
-                            + " WHERE room_id=? AND cell_x=? AND cell_y=? AND edge_direction=? AND description=?",
+                    "SELECT COUNT(*) FROM dungeon_room_exit_descriptions WHERE room_id=? AND"
+                        + " cell_x=? AND cell_y=? AND edge_direction=? AND description=?",
                     roomId,
                     cellX,
                     cellY,
@@ -813,23 +827,23 @@ class DungeonEditorTestPersistence {
 
         long countDoorBoundariesAt(long mapId, int relativeCellX, int relativeCellY, String direction) {
             return count(
-                    "SELECT COUNT(*) FROM dungeon_room_cluster_edges edge_row"
-                            + " JOIN dungeon_room_clusters cluster_row ON cluster_row.cluster_id=edge_row.cluster_id"
-                            + " JOIN dungeon_topology_elements topology_row"
-                            + " ON topology_row.dungeon_map_id=cluster_row.dungeon_map_id"
-                            + " AND topology_row.element_kind='DOOR'"
-                            + " AND topology_row.element_id=edge_row.topology_element_id"
-                            + " WHERE cluster_row.dungeon_map_id=?"
-                            + " AND edge_row.cell_x - (SELECT (MIN(cell_row.cell_x) + MAX(cell_row.cell_x)) / 2"
-                            + " FROM dungeon_room_cells cell_row JOIN dungeon_rooms room_row"
-                            + " ON room_row.room_id=cell_row.room_id"
-                            + " WHERE room_row.cluster_id=cluster_row.cluster_id)=?"
-                            + " AND edge_row.cell_y - (SELECT (MIN(cell_row.cell_y) + MAX(cell_row.cell_y)) / 2"
-                            + " FROM dungeon_room_cells cell_row JOIN dungeon_rooms room_row"
-                            + " ON room_row.room_id=cell_row.room_id"
-                            + " WHERE room_row.cluster_id=cluster_row.cluster_id)=?"
-                            + " AND edge_row.edge_direction=?"
-                            + " AND edge_row.edge_type='DOOR'",
+                    "SELECT COUNT(*) FROM dungeon_room_cluster_edges edge_row JOIN"
+                        + " dungeon_room_clusters cluster_row ON"
+                        + " cluster_row.cluster_id=edge_row.cluster_id JOIN"
+                        + " dungeon_topology_elements topology_row ON"
+                        + " topology_row.dungeon_map_id=cluster_row.dungeon_map_id AND"
+                        + " topology_row.element_kind='DOOR' AND"
+                        + " topology_row.element_id=edge_row.topology_element_id WHERE"
+                        + " cluster_row.dungeon_map_id=? AND edge_row.cell_x - (SELECT"
+                        + " (MIN(cell_row.cell_x) + MAX(cell_row.cell_x)) / 2 FROM"
+                        + " dungeon_room_cells cell_row JOIN dungeon_rooms room_row ON"
+                        + " room_row.room_id=cell_row.room_id WHERE"
+                        + " room_row.cluster_id=cluster_row.cluster_id)=? AND edge_row.cell_y -"
+                        + " (SELECT (MIN(cell_row.cell_y) + MAX(cell_row.cell_y)) / 2 FROM"
+                        + " dungeon_room_cells cell_row JOIN dungeon_rooms room_row ON"
+                        + " room_row.room_id=cell_row.room_id WHERE"
+                        + " room_row.cluster_id=cluster_row.cluster_id)=? AND"
+                        + " edge_row.edge_direction=? AND edge_row.edge_type='DOOR'",
                     mapId,
                     relativeCellX,
                     relativeCellY,
@@ -850,48 +864,47 @@ class DungeonEditorTestPersistence {
                         connection,
                         state,
                         "dungeon_room_clusters",
-                        "SELECT cluster_id, dungeon_map_id, name"
-                                + " FROM dungeon_room_clusters WHERE dungeon_map_id=? ORDER BY cluster_id",
+                        "SELECT cluster_id, dungeon_map_id, name FROM dungeon_room_clusters WHERE"
+                            + " dungeon_map_id=? ORDER BY cluster_id",
                         mapId);
                 appendRows(
                         connection,
                         state,
                         "dungeon_room_cells",
-                        "SELECT room_cell.room_id, room_cell.level_z, room_cell.cell_x, room_cell.cell_y"
-                                + " FROM dungeon_room_cells room_cell"
-                                + " JOIN dungeon_rooms room ON room.room_id=room_cell.room_id"
-                                + " WHERE room.dungeon_map_id=?"
-                                + " ORDER BY room_cell.room_id, room_cell.level_z,"
-                                + " room_cell.cell_y, room_cell.cell_x",
+                        "SELECT room_cell.room_id, room_cell.level_z, room_cell.cell_x,"
+                            + " room_cell.cell_y FROM dungeon_room_cells room_cell JOIN"
+                            + " dungeon_rooms room ON room.room_id=room_cell.room_id WHERE"
+                            + " room.dungeon_map_id=? ORDER BY room_cell.room_id,"
+                            + " room_cell.level_z, room_cell.cell_y, room_cell.cell_x",
                         mapId);
                 appendRows(
                         connection,
                         state,
                         "dungeon_room_cluster_edges",
-                        "SELECT edge_row.cluster_id, edge_row.level_z, edge_row.cell_x, edge_row.cell_y,"
-                                + " edge_row.edge_direction, edge_row.edge_type, edge_row.topology_element_id"
-                                + " FROM dungeon_room_cluster_edges edge_row"
-                                + " WHERE edge_row.dungeon_map_id=?"
-                                + " ORDER BY edge_row.cluster_id, edge_row.level_z, edge_row.cell_x,"
+                        "SELECT edge_row.cluster_id, edge_row.level_z, edge_row.cell_x,"
+                            + " edge_row.cell_y, edge_row.edge_direction, edge_row.edge_type,"
+                            + " edge_row.topology_element_id FROM dungeon_room_cluster_edges"
+                            + " edge_row WHERE edge_row.dungeon_map_id=? ORDER BY"
+                            + " edge_row.cluster_id, edge_row.level_z, edge_row.cell_x,"
                                 + " edge_row.cell_y, edge_row.edge_direction",
                         mapId);
                 appendRows(
                         connection,
                         state,
                         "dungeon_corridors",
-                        "SELECT corridor_id, dungeon_map_id, level_z"
-                                + " FROM dungeon_corridors WHERE dungeon_map_id=? ORDER BY corridor_id",
+                        "SELECT corridor_id, dungeon_map_id, level_z FROM dungeon_corridors WHERE"
+                            + " dungeon_map_id=? ORDER BY corridor_id",
                         mapId);
                 appendRows(
                         connection,
                         state,
                         "dungeon_corridor_members",
                         "SELECT member_row.corridor_id, member_row.room_id, member_row.member_order"
-                                + " FROM dungeon_corridor_members member_row"
-                                + " JOIN dungeon_corridors corridor_row"
-                                + " ON corridor_row.corridor_id=member_row.corridor_id"
-                                + " WHERE corridor_row.dungeon_map_id=?"
-                                + " ORDER BY member_row.corridor_id, member_row.member_order, member_row.room_id",
+                                + " FROM dungeon_corridor_members member_row JOIN dungeon_corridors"
+                            + " corridor_row ON corridor_row.corridor_id=member_row.corridor_id"
+                            + " WHERE corridor_row.dungeon_map_id=? ORDER BY"
+                            + " member_row.corridor_id, member_row.member_order,"
+                            + " member_row.room_id",
                         mapId);
                 appendRows(
                         connection,
@@ -906,15 +919,14 @@ class DungeonEditorTestPersistence {
                         connection,
                         state,
                         "dungeon_corridor_door_overrides",
-                        "SELECT override_row.corridor_id, override_row.room_id, override_row.cluster_id,"
-                                + " override_row.relative_cell_x, override_row.relative_cell_y,"
-                                + " override_row.edge_direction, override_row.topology_element_id,"
-                                + " override_row.sort_order"
-                                + " FROM dungeon_corridor_door_overrides override_row"
-                                + " JOIN dungeon_corridors corridor_row"
-                                + " ON corridor_row.corridor_id=override_row.corridor_id"
-                                + " WHERE corridor_row.dungeon_map_id=?"
-                                + " ORDER BY override_row.corridor_id, override_row.sort_order,"
+                        "SELECT override_row.corridor_id, override_row.room_id,"
+                            + " override_row.cluster_id, override_row.relative_cell_x,"
+                            + " override_row.relative_cell_y, override_row.edge_direction,"
+                            + " override_row.topology_element_id, override_row.sort_order FROM"
+                            + " dungeon_corridor_door_overrides override_row JOIN dungeon_corridors"
+                            + " corridor_row ON corridor_row.corridor_id=override_row.corridor_id"
+                            + " WHERE corridor_row.dungeon_map_id=? ORDER BY"
+                            + " override_row.corridor_id, override_row.sort_order,"
                                 + " override_row.room_id",
                         mapId);
                 appendRows(
@@ -923,12 +935,12 @@ class DungeonEditorTestPersistence {
                         "dungeon_corridor_anchors",
                         "SELECT anchor_row.corridor_id, anchor_row.anchor_id,"
                                 + " anchor_row.host_corridor_id, anchor_row.cell_x, anchor_row.cell_y,"
-                                + " anchor_row.cell_z, anchor_row.topology_element_id, anchor_row.sort_order"
-                                + " FROM dungeon_corridor_anchors anchor_row"
-                                + " JOIN dungeon_corridors corridor_row"
-                                + " ON corridor_row.corridor_id=anchor_row.corridor_id"
-                                + " WHERE corridor_row.dungeon_map_id=?"
-                                + " ORDER BY anchor_row.corridor_id, anchor_row.sort_order, anchor_row.anchor_id",
+                                + " anchor_row.cell_z, anchor_row.topology_element_id,"
+                            + " anchor_row.sort_order FROM dungeon_corridor_anchors anchor_row JOIN"
+                            + " dungeon_corridors corridor_row ON"
+                            + " corridor_row.corridor_id=anchor_row.corridor_id WHERE"
+                            + " corridor_row.dungeon_map_id=? ORDER BY anchor_row.corridor_id,"
+                            + " anchor_row.sort_order, anchor_row.anchor_id",
                         mapId);
                 appendRows(
                         connection,
@@ -962,11 +974,11 @@ class DungeonEditorTestPersistence {
                         "dungeon_room_exit_descriptions",
                         "SELECT exit_row.room_id, exit_row.cell_x, exit_row.cell_y,"
                                 + " exit_row.edge_direction, exit_row.description, exit_row.sort_order"
-                                + " FROM dungeon_room_exit_descriptions exit_row"
-                                + " JOIN dungeon_rooms room_row ON room_row.room_id=exit_row.room_id"
-                                + " WHERE room_row.dungeon_map_id=?"
-                                + " ORDER BY exit_row.room_id, exit_row.sort_order, exit_row.cell_x,"
-                                + " exit_row.cell_y, exit_row.edge_direction",
+                                + " FROM dungeon_room_exit_descriptions exit_row JOIN dungeon_rooms"
+                            + " room_row ON room_row.room_id=exit_row.room_id WHERE"
+                            + " room_row.dungeon_map_id=? ORDER BY exit_row.room_id,"
+                            + " exit_row.sort_order, exit_row.cell_x, exit_row.cell_y,"
+                            + " exit_row.edge_direction",
                         mapId);
                 appendRows(
                         connection,
@@ -981,33 +993,33 @@ class DungeonEditorTestPersistence {
                         state,
                         "dungeon_stair_path_nodes",
                         "SELECT path_node.stair_id, path_node.sort_order, path_node.cell_x,"
-                                + " path_node.cell_y, path_node.cell_z"
-                                + " FROM dungeon_stair_path_nodes path_node"
-                                + " JOIN dungeon_stairs stair_row ON stair_row.stair_id=path_node.stair_id"
-                                + " WHERE stair_row.dungeon_map_id=?"
-                                + " ORDER BY path_node.stair_id, path_node.sort_order",
+                                + " path_node.cell_y, path_node.cell_z FROM dungeon_stair_path_nodes"
+                            + " path_node JOIN dungeon_stairs stair_row ON"
+                            + " stair_row.stair_id=path_node.stair_id WHERE"
+                            + " stair_row.dungeon_map_id=? ORDER BY path_node.stair_id,"
+                            + " path_node.sort_order",
                         mapId);
                 appendRows(
                         connection,
                         state,
                         "dungeon_stair_exits",
-                        "SELECT stair_exit.stair_exit_id, stair_exit.stair_id,"
-                                + " stair_exit.cell_x, stair_exit.cell_y, stair_exit.cell_z, stair_exit.label"
-                                + " FROM dungeon_stair_exits stair_exit"
-                                + " JOIN dungeon_stairs stair_row ON stair_row.stair_id=stair_exit.stair_id"
-                                + " WHERE stair_row.dungeon_map_id=?"
-                                + " ORDER BY stair_exit.stair_id, stair_exit.stair_exit_id",
+                        "SELECT stair_exit.stair_exit_id, stair_exit.stair_id, stair_exit.cell_x,"
+                            + " stair_exit.cell_y, stair_exit.cell_z, stair_exit.label FROM"
+                            + " dungeon_stair_exits stair_exit JOIN dungeon_stairs stair_row ON"
+                            + " stair_row.stair_id=stair_exit.stair_id WHERE"
+                            + " stair_row.dungeon_map_id=? ORDER BY stair_exit.stair_id,"
+                            + " stair_exit.stair_exit_id",
                         mapId);
                 appendRows(
                         connection,
                         state,
                         "dungeon_transitions",
                         "SELECT transition_id, dungeon_map_id, description, cell_x, cell_y,"
-                                + " level_z, anchor_type, anchor_edge_direction,"
-                                + " destination_type, target_overworld_map_id,"
-                                + " target_overworld_tile_id, target_dungeon_map_id,"
-                                + " target_transition_id, linked_transition_id"
-                                + " FROM dungeon_transitions WHERE dungeon_map_id=? ORDER BY transition_id",
+                                + " level_z, anchor_type, anchor_edge_direction, destination_type,"
+                            + " target_overworld_map_id, target_overworld_tile_id,"
+                            + " target_dungeon_map_id, target_transition_id, linked_transition_id"
+                            + " FROM dungeon_transitions WHERE dungeon_map_id=? ORDER BY"
+                            + " transition_id",
                         mapId);
                 return state;
             } catch (SQLException exception) {
@@ -1022,12 +1034,13 @@ class DungeonEditorTestPersistence {
                         connection,
                         state,
                         "door_edges",
-                        "SELECT edge_row.cluster_id, edge_row.level_z, edge_row.cell_x, edge_row.cell_y,"
-                                + " edge_row.edge_direction, edge_row.edge_type, edge_row.topology_element_id"
-                                + " FROM dungeon_room_cluster_edges edge_row"
-                                + " JOIN dungeon_room_clusters cluster_row ON cluster_row.cluster_id=edge_row.cluster_id"
-                                + " WHERE cluster_row.dungeon_map_id=? AND edge_row.edge_type='DOOR'"
-                                + " ORDER BY edge_row.cluster_id, edge_row.cell_x, edge_row.cell_y,"
+                        "SELECT edge_row.cluster_id, edge_row.level_z, edge_row.cell_x,"
+                            + " edge_row.cell_y, edge_row.edge_direction, edge_row.edge_type,"
+                            + " edge_row.topology_element_id FROM dungeon_room_cluster_edges"
+                            + " edge_row JOIN dungeon_room_clusters cluster_row ON"
+                            + " cluster_row.cluster_id=edge_row.cluster_id WHERE"
+                            + " cluster_row.dungeon_map_id=? AND edge_row.edge_type='DOOR' ORDER BY"
+                            + " edge_row.cluster_id, edge_row.cell_x, edge_row.cell_y,"
                                 + " edge_row.edge_direction",
                         mapId);
                 return state;
@@ -1043,13 +1056,14 @@ class DungeonEditorTestPersistence {
                         connection,
                         state,
                         "dungeon_room_cluster_edges",
-                        "SELECT edge_row.cluster_id, edge_row.level_z, edge_row.cell_x, edge_row.cell_y,"
-                                + " edge_row.edge_direction, edge_row.edge_type, edge_row.topology_element_id"
-                                + " FROM dungeon_room_cluster_edges edge_row"
-                                + " JOIN dungeon_room_clusters cluster_row ON cluster_row.cluster_id=edge_row.cluster_id"
-                                + " WHERE cluster_row.dungeon_map_id=?"
-                                + " ORDER BY edge_row.cluster_id, edge_row.level_z, edge_row.cell_x,"
-                                + " edge_row.cell_y, edge_row.edge_direction",
+                        "SELECT edge_row.cluster_id, edge_row.level_z, edge_row.cell_x,"
+                            + " edge_row.cell_y, edge_row.edge_direction, edge_row.edge_type,"
+                            + " edge_row.topology_element_id FROM dungeon_room_cluster_edges"
+                            + " edge_row JOIN dungeon_room_clusters cluster_row ON"
+                            + " cluster_row.cluster_id=edge_row.cluster_id WHERE"
+                            + " cluster_row.dungeon_map_id=? ORDER BY edge_row.cluster_id,"
+                            + " edge_row.level_z, edge_row.cell_x, edge_row.cell_y,"
+                            + " edge_row.edge_direction",
                         mapId);
                 return state;
             } catch (SQLException exception) {
@@ -1066,12 +1080,12 @@ class DungeonEditorTestPersistence {
                         "dungeon_corridor_anchors",
                         "SELECT anchor_row.corridor_id, anchor_row.anchor_id,"
                                 + " anchor_row.host_corridor_id, anchor_row.cell_x, anchor_row.cell_y,"
-                                + " anchor_row.cell_z, anchor_row.topology_element_id, anchor_row.sort_order"
-                                + " FROM dungeon_corridor_anchors anchor_row"
-                                + " JOIN dungeon_corridors corridor_row"
-                                + " ON corridor_row.corridor_id=anchor_row.corridor_id"
-                                + " WHERE corridor_row.dungeon_map_id=?"
-                                + " ORDER BY anchor_row.corridor_id, anchor_row.anchor_id",
+                                + " anchor_row.cell_z, anchor_row.topology_element_id,"
+                            + " anchor_row.sort_order FROM dungeon_corridor_anchors anchor_row JOIN"
+                            + " dungeon_corridors corridor_row ON"
+                            + " corridor_row.corridor_id=anchor_row.corridor_id WHERE"
+                            + " corridor_row.dungeon_map_id=? ORDER BY anchor_row.corridor_id,"
+                            + " anchor_row.anchor_id",
                         mapId);
                 return state;
             } catch (SQLException exception) {
@@ -1081,11 +1095,11 @@ class DungeonEditorTestPersistence {
 
         long countCorridorAnchorsAt(long mapId, int cellX, int cellY, int cellZ) {
             return count(
-                    "SELECT COUNT(*) FROM dungeon_corridor_anchors anchor_row"
-                            + " JOIN dungeon_corridors corridor_row"
-                            + " ON corridor_row.corridor_id=anchor_row.corridor_id"
-                            + " WHERE corridor_row.dungeon_map_id=?"
-                            + " AND anchor_row.cell_x=? AND anchor_row.cell_y=? AND anchor_row.cell_z=?",
+                    "SELECT COUNT(*) FROM dungeon_corridor_anchors anchor_row JOIN"
+                        + " dungeon_corridors corridor_row ON"
+                        + " corridor_row.corridor_id=anchor_row.corridor_id WHERE"
+                        + " corridor_row.dungeon_map_id=? AND anchor_row.cell_x=? AND"
+                        + " anchor_row.cell_y=? AND anchor_row.cell_z=?",
                     mapId,
                     cellX,
                     cellY,
@@ -1099,23 +1113,22 @@ class DungeonEditorTestPersistence {
                         connection,
                         state,
                         "dungeon_corridor_waypoints",
-                        "SELECT waypoint_row.corridor_id, waypoint_row.sort_order,"
-                                + " (SELECT cell_x FROM dungeon_room_cells cell_row"
-                                + " JOIN dungeon_rooms room_row ON room_row.room_id=cell_row.room_id"
-                                + " WHERE room_row.cluster_id=waypoint_row.cluster_id"
-                                + " ORDER BY cell_row.level_z, cell_row.cell_y, cell_row.cell_x LIMIT 1)"
-                                + " + waypoint_row.relative_x AS cell_x,"
-                                + " (SELECT cell_y FROM dungeon_room_cells cell_row"
-                                + " JOIN dungeon_rooms room_row ON room_row.room_id=cell_row.room_id"
-                                + " WHERE room_row.cluster_id=waypoint_row.cluster_id"
-                                + " ORDER BY cell_row.level_z, cell_row.cell_y, cell_row.cell_x LIMIT 1)"
-                                + " + waypoint_row.relative_y AS cell_y,"
-                                + " waypoint_row.relative_z AS cell_z"
-                                + " FROM dungeon_corridor_waypoints waypoint_row"
-                                + " JOIN dungeon_corridors corridor_row"
-                                + " ON corridor_row.corridor_id=waypoint_row.corridor_id"
-                                + " WHERE corridor_row.dungeon_map_id=?"
-                                + " ORDER BY waypoint_row.corridor_id, waypoint_row.sort_order",
+                        "SELECT waypoint_row.corridor_id, waypoint_row.sort_order, (SELECT cell_x"
+                            + " FROM dungeon_room_cells cell_row JOIN dungeon_rooms room_row ON"
+                            + " room_row.room_id=cell_row.room_id WHERE"
+                            + " room_row.cluster_id=waypoint_row.cluster_id ORDER BY"
+                            + " cell_row.level_z, cell_row.cell_y, cell_row.cell_x LIMIT 1) +"
+                            + " waypoint_row.relative_x AS cell_x, (SELECT cell_y FROM"
+                            + " dungeon_room_cells cell_row JOIN dungeon_rooms room_row ON"
+                            + " room_row.room_id=cell_row.room_id WHERE"
+                            + " room_row.cluster_id=waypoint_row.cluster_id ORDER BY"
+                            + " cell_row.level_z, cell_row.cell_y, cell_row.cell_x LIMIT 1) +"
+                            + " waypoint_row.relative_y AS cell_y, waypoint_row.relative_z AS"
+                            + " cell_z FROM dungeon_corridor_waypoints waypoint_row JOIN"
+                            + " dungeon_corridors corridor_row ON"
+                            + " corridor_row.corridor_id=waypoint_row.corridor_id WHERE"
+                            + " corridor_row.dungeon_map_id=? ORDER BY waypoint_row.corridor_id,"
+                            + " waypoint_row.sort_order",
                         mapId);
                 return state;
             } catch (SQLException exception) {
@@ -1130,33 +1143,32 @@ class DungeonEditorTestPersistence {
                         connection,
                         state,
                         "dungeon_corridors",
-                        "SELECT corridor_id, dungeon_map_id, level_z"
-                                + " FROM dungeon_corridors WHERE dungeon_map_id=? ORDER BY corridor_id",
+                        "SELECT corridor_id, dungeon_map_id, level_z FROM dungeon_corridors WHERE"
+                            + " dungeon_map_id=? ORDER BY corridor_id",
                         mapId);
                 appendRows(
                         connection,
                         state,
                         "dungeon_corridor_members",
                         "SELECT member_row.corridor_id, member_row.room_id, member_row.member_order"
-                                + " FROM dungeon_corridor_members member_row"
-                                + " JOIN dungeon_corridors corridor_row"
-                                + " ON corridor_row.corridor_id=member_row.corridor_id"
-                                + " WHERE corridor_row.dungeon_map_id=?"
-                                + " ORDER BY member_row.corridor_id, member_row.member_order, member_row.room_id",
+                                + " FROM dungeon_corridor_members member_row JOIN dungeon_corridors"
+                            + " corridor_row ON corridor_row.corridor_id=member_row.corridor_id"
+                            + " WHERE corridor_row.dungeon_map_id=? ORDER BY"
+                            + " member_row.corridor_id, member_row.member_order,"
+                            + " member_row.room_id",
                         mapId);
                 appendRows(
                         connection,
                         state,
                         "dungeon_corridor_door_overrides",
-                        "SELECT override_row.corridor_id, override_row.room_id, override_row.cluster_id,"
-                                + " override_row.relative_cell_x, override_row.relative_cell_y,"
-                                + " override_row.edge_direction, override_row.topology_element_id,"
-                                + " override_row.sort_order"
-                                + " FROM dungeon_corridor_door_overrides override_row"
-                                + " JOIN dungeon_corridors corridor_row"
-                                + " ON corridor_row.corridor_id=override_row.corridor_id"
-                                + " WHERE corridor_row.dungeon_map_id=?"
-                                + " ORDER BY override_row.corridor_id, override_row.sort_order,"
+                        "SELECT override_row.corridor_id, override_row.room_id,"
+                            + " override_row.cluster_id, override_row.relative_cell_x,"
+                            + " override_row.relative_cell_y, override_row.edge_direction,"
+                            + " override_row.topology_element_id, override_row.sort_order FROM"
+                            + " dungeon_corridor_door_overrides override_row JOIN dungeon_corridors"
+                            + " corridor_row ON corridor_row.corridor_id=override_row.corridor_id"
+                            + " WHERE corridor_row.dungeon_map_id=? ORDER BY"
+                            + " override_row.corridor_id, override_row.sort_order,"
                                 + " override_row.room_id",
                         mapId);
                 appendRows(
@@ -1234,10 +1246,9 @@ class DungeonEditorTestPersistence {
                         connection,
                         state,
                         "dungeon_feature_markers",
-                        "SELECT feature_marker_id, dungeon_map_id, marker_kind, cell_x, cell_y, level_z,"
-                                + " label, description"
-                                + " FROM dungeon_feature_markers WHERE dungeon_map_id=?"
-                                + " ORDER BY feature_marker_id",
+                        "SELECT feature_marker_id, dungeon_map_id, marker_kind, cell_x, cell_y,"
+                            + " level_z, label, description FROM dungeon_feature_markers WHERE"
+                            + " dungeon_map_id=? ORDER BY feature_marker_id",
                         mapId);
                 appendRows(
                         connection,
@@ -1277,8 +1288,8 @@ class DungeonEditorTestPersistence {
 
         long countFeatureMarkerTopologyElementById(long mapId, long markerId) {
             return count(
-                    "SELECT COUNT(*) FROM dungeon_topology_elements"
-                            + " WHERE dungeon_map_id=? AND element_kind='FEATURE_MARKER' AND element_id=?",
+                    "SELECT COUNT(*) FROM dungeon_topology_elements WHERE dungeon_map_id=? AND"
+                        + " element_kind='FEATURE_MARKER' AND element_id=?",
                     mapId,
                     markerId);
         }
@@ -1291,11 +1302,11 @@ class DungeonEditorTestPersistence {
                         state,
                         "dungeon_stair_path_nodes",
                         "SELECT path_node.stair_id, path_node.sort_order, path_node.cell_x,"
-                                + " path_node.cell_y, path_node.cell_z"
-                                + " FROM dungeon_stair_path_nodes path_node"
-                                + " JOIN dungeon_stairs stair_row ON stair_row.stair_id=path_node.stair_id"
-                                + " WHERE stair_row.dungeon_map_id=?"
-                                + " ORDER BY path_node.stair_id, path_node.sort_order",
+                                + " path_node.cell_y, path_node.cell_z FROM dungeon_stair_path_nodes"
+                            + " path_node JOIN dungeon_stairs stair_row ON"
+                            + " stair_row.stair_id=path_node.stair_id WHERE"
+                            + " stair_row.dungeon_map_id=? ORDER BY path_node.stair_id,"
+                            + " path_node.sort_order",
                         mapId);
                 return state;
             } catch (SQLException exception) {
@@ -1316,12 +1327,12 @@ class DungeonEditorTestPersistence {
                         connection,
                         state,
                         "dungeon_stair_exits",
-                        "SELECT stair_exit.stair_exit_id, stair_exit.stair_id,"
-                                + " stair_exit.cell_x, stair_exit.cell_y, stair_exit.cell_z, stair_exit.label"
-                                + " FROM dungeon_stair_exits stair_exit"
-                                + " JOIN dungeon_stairs stair_row ON stair_row.stair_id=stair_exit.stair_id"
-                                + " WHERE stair_row.dungeon_map_id=?"
-                                + " ORDER BY stair_exit.stair_id, stair_exit.stair_exit_id",
+                        "SELECT stair_exit.stair_exit_id, stair_exit.stair_id, stair_exit.cell_x,"
+                            + " stair_exit.cell_y, stair_exit.cell_z, stair_exit.label FROM"
+                            + " dungeon_stair_exits stair_exit JOIN dungeon_stairs stair_row ON"
+                            + " stair_row.stair_id=stair_exit.stair_id WHERE"
+                            + " stair_row.dungeon_map_id=? ORDER BY stair_exit.stair_id,"
+                            + " stair_exit.stair_exit_id",
                         mapId);
                 return state;
             } catch (SQLException exception) {
@@ -1342,12 +1353,12 @@ class DungeonEditorTestPersistence {
                         connection,
                         state,
                         "dungeon_transitions",
-                        "SELECT transition_id, dungeon_map_id, cell_x, cell_y,"
-                                + " level_z, anchor_type, anchor_edge_direction,"
-                                + " destination_type, target_overworld_map_id,"
-                                + " target_overworld_tile_id, target_dungeon_map_id,"
-                                + " target_transition_id, linked_transition_id"
-                                + " FROM dungeon_transitions WHERE dungeon_map_id=? ORDER BY transition_id",
+                        "SELECT transition_id, dungeon_map_id, cell_x, cell_y, level_z,"
+                            + " anchor_type, anchor_edge_direction, destination_type,"
+                            + " target_overworld_map_id, target_overworld_tile_id,"
+                            + " target_dungeon_map_id, target_transition_id, linked_transition_id"
+                            + " FROM dungeon_transitions WHERE dungeon_map_id=? ORDER BY"
+                            + " transition_id",
                         mapId);
                 return state;
             } catch (SQLException exception) {
@@ -1370,8 +1381,9 @@ class DungeonEditorTestPersistence {
         long transitionIdAt(long mapId, int cellX, int cellY, int level) {
             try (Connection connection = open();
                  PreparedStatement statement = connection.prepareStatement(
-                         "SELECT transition_id FROM dungeon_transitions"
-                                 + " WHERE dungeon_map_id=? AND cell_x=? AND cell_y=? AND level_z=?")) {
+                                    "SELECT transition_id FROM dungeon_transitions WHERE"
+                                        + " dungeon_map_id=? AND cell_x=? AND cell_y=? AND"
+                                        + " level_z=?")) {
                 bind(statement, mapId, cellX, cellY, level);
                 return scalar(statement);
             } catch (SQLException exception) {
@@ -1398,15 +1410,16 @@ class DungeonEditorTestPersistence {
 
         long countTransitionById(long mapId, long transitionId) {
             return count(
-                    "SELECT COUNT(*) FROM dungeon_transitions WHERE dungeon_map_id=? AND transition_id=?",
+                    "SELECT COUNT(*) FROM dungeon_transitions WHERE dungeon_map_id=? AND"
+                        + " transition_id=?",
                     mapId,
                     transitionId);
         }
 
         long countTransitionTopologyElementById(long mapId, long transitionId) {
             return count(
-                    "SELECT COUNT(*) FROM dungeon_topology_elements"
-                            + " WHERE dungeon_map_id=? AND element_kind='TRANSITION' AND element_id=?",
+                    "SELECT COUNT(*) FROM dungeon_topology_elements WHERE dungeon_map_id=? AND"
+                        + " element_kind='TRANSITION' AND element_id=?",
                     mapId,
                     transitionId);
         }
@@ -1521,15 +1534,16 @@ class DungeonEditorTestPersistence {
             seedMalformedCoordinateFixture(
                     mapId,
                     "Malformed partial coordinate anchor.",
-                    "UPDATE dungeon_transitions SET cell_y=NULL, level_z=NULL WHERE transition_id=?");
+                    "UPDATE dungeon_transitions SET cell_y=NULL, level_z=NULL WHERE"
+                        + " transition_id=?");
         }
 
         void seedMalformedNoneAnchorWithCoordinateFixture(long mapId) {
             seedMalformedCoordinateFixture(
                     mapId,
                     "Malformed none coordinate anchor.",
-                    "UPDATE dungeon_transitions"
-                            + " SET cell_x=NULL, level_z=NULL, anchor_type='NONE' WHERE transition_id=?");
+                    "UPDATE dungeon_transitions SET cell_x=NULL, level_z=NULL, anchor_type='NONE'"
+                        + " WHERE transition_id=?");
         }
 
         private void seedMalformedCoordinateFixture(long mapId, String description, String corruptionSql) {
@@ -1564,8 +1578,8 @@ class DungeonEditorTestPersistence {
                     mapId,
                     "Malformed incomplete edge anchor.",
                     new Cell(2, 1, 0),
-                    "UPDATE dungeon_transitions"
-                            + " SET anchor_type='EDGE', anchor_edge_direction='UP' WHERE transition_id=?");
+                    "UPDATE dungeon_transitions SET anchor_type='EDGE', anchor_edge_direction='UP'"
+                        + " WHERE transition_id=?");
         }
 
         void seedMalformedImplicitAnchorWithEdgeDirectionFixture(long mapId) {
@@ -1573,8 +1587,8 @@ class DungeonEditorTestPersistence {
                     mapId,
                     "Malformed implicit anchor edge direction.",
                     new Cell(2, 1, 0),
-                    "UPDATE dungeon_transitions"
-                            + " SET anchor_type=NULL, anchor_edge_direction='EAST' WHERE transition_id=?");
+                    "UPDATE dungeon_transitions SET anchor_type=NULL, anchor_edge_direction='EAST'"
+                        + " WHERE transition_id=?");
         }
 
         void seedMalformedDestinationTypeFixture(long mapId) {
@@ -1582,7 +1596,8 @@ class DungeonEditorTestPersistence {
                     mapId,
                     "Malformed destination.",
                     new Cell(3, 1, 0),
-                    "UPDATE dungeon_transitions SET destination_type='PORTAL_TARGET' WHERE transition_id=?");
+                    "UPDATE dungeon_transitions SET destination_type='PORTAL_TARGET' WHERE"
+                        + " transition_id=?");
         }
 
         void seedMalformedDestinationTargetFixture(long mapId) {
@@ -1957,7 +1972,8 @@ class DungeonEditorTestPersistence {
                  PreparedStatement map = connection.prepareStatement(
                          "UPDATE dungeon_maps SET revision=? WHERE dungeon_map_id=?");
                  PreparedStatement chunks = connection.prepareStatement(
-                         "UPDATE dungeon_chunks SET content_revision=? WHERE dungeon_map_id=?")) {
+                                    "UPDATE dungeon_chunks SET content_revision=? WHERE"
+                                        + " dungeon_map_id=?")) {
                 bind(map, baselineRevision, mapId);
                 map.executeUpdate();
                 bind(chunks, baselineRevision, mapId);
@@ -1968,7 +1984,12 @@ class DungeonEditorTestPersistence {
         }
 
         private SqliteDungeonIdentityAllocator identityAllocator() {
-            return new SqliteDungeonIdentityAllocator(sqliteDatabase());
+            SqliteDatabase database = sqliteDatabase();
+            return new SqliteDungeonIdentityAllocator(
+                    TestFeatureStores.store(
+                            database,
+                            features.dungeon.adapter.sqlite.gateway.DungeonStoreDefinition
+                                    .create()));
         }
 
         private long commitTransition(long mapId, String description, Cell anchor) {

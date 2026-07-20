@@ -3,26 +3,29 @@ package features.catalog.adapter.javafx;
 import features.catalog.application.CatalogActionSpec;
 import features.catalog.application.CatalogChoice;
 import features.catalog.application.CatalogColumnSpec;
+import features.catalog.application.CatalogConfirmation;
 import features.catalog.application.CatalogFilterSpec;
+import features.catalog.application.CatalogFilterToken;
 import features.catalog.application.CatalogPresentationSpec;
 import features.catalog.application.CatalogResultState;
+import features.catalog.application.CatalogSectionCommands;
 import features.catalog.application.CatalogSectionDefinition;
 import features.catalog.application.CatalogSectionId;
+import features.catalog.application.CatalogSortOrder;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
-import javafx.scene.control.CheckMenuItem;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.MenuButton;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -37,24 +40,23 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.util.StringConverter;
 
-/** The only Catalog section control, result, action, status, selection, and paging renderer. */
+/** The only Catalog workspace, filter, result, action, status, selection, sort and paging renderer. */
 final class CatalogSectionRenderer {
 
     private final CatalogControlFactory controls = new CatalogControlFactory();
-    private final VBox controlRoot = new VBox();
+    private final BorderPane workspaceRoot = new BorderPane();
+    private final VBox workspaceTop = new VBox();
     private final VBox activeControls = new VBox();
-    private final BorderPane contentRoot = new BorderPane();
     private final Map<CatalogSectionId, ToggleButton> sectionButtons = new EnumMap<>(CatalogSectionId.class);
     private ActiveSection<?, ?, ?> active;
     private boolean applyingSection;
 
     CatalogSectionRenderer(Consumer<CatalogSectionId> sectionSelection) {
         Consumer<CatalogSectionId> select = Objects.requireNonNull(sectionSelection, "sectionSelection");
-        controlRoot.getStyleClass().addAll("catalog-controls-host", "catalog-renderer-controls");
+        workspaceRoot.getStyleClass().addAll("catalog-workspace", "catalog-renderer-content");
+        workspaceTop.getStyleClass().add("catalog-workspace-top");
         activeControls.getStyleClass().add("catalog-active-controls");
-        contentRoot.getStyleClass().addAll("catalog-content-host", "catalog-renderer-content");
         ToggleGroup group = new ToggleGroup();
         FlowPane rail = new FlowPane();
         rail.getStyleClass().add("catalog-section-rail");
@@ -77,20 +79,12 @@ final class CatalogSectionRenderer {
             }
             select.accept((CatalogSectionId) after.getUserData());
         });
-        javafx.scene.control.ScrollPane scroll = new javafx.scene.control.ScrollPane(activeControls);
-        scroll.getStyleClass().add("catalog-section-controls-scroll");
-        scroll.setFitToWidth(true);
-        scroll.setHbarPolicy(javafx.scene.control.ScrollPane.ScrollBarPolicy.NEVER);
-        controlRoot.getChildren().setAll(rail, scroll);
-        VBox.setVgrow(scroll, Priority.ALWAYS);
-    }
-
-    Node controls() {
-        return controlRoot;
+        workspaceTop.getChildren().setAll(rail, activeControls);
+        workspaceRoot.setTop(workspaceTop);
     }
 
     Node content() {
-        return contentRoot;
+        return workspaceRoot;
     }
 
     void selectSection(CatalogSectionId id) {
@@ -110,16 +104,18 @@ final class CatalogSectionRenderer {
             CatalogRenderState<Q, R, K> state,
             CatalogSectionCommands<Q, K> commands
     ) {
-        CatalogPresentationSpec<Q, R, K> spec = Objects.requireNonNull(
-                definition, "definition").presentation();
-        Objects.requireNonNull(spec, "spec");
+        CatalogSectionDefinition<Q, R, K> requiredDefinition =
+                Objects.requireNonNull(definition, "definition");
         Objects.requireNonNull(state, "state");
         Objects.requireNonNull(commands, "commands");
-        if (active == null || active.definition != definition) {
-            ActiveSection<Q, R, K> next = new ActiveSection<>(definition, spec, commands);
+        if (active == null || active.definition != requiredDefinition) {
+            CatalogPresentationSpec<Q, R, K> spec =
+                    Objects.requireNonNull(requiredDefinition.presentation(), "spec");
+            ActiveSection<Q, R, K> next = new ActiveSection<>(requiredDefinition, spec, commands);
             active = next;
             activeControls.getChildren().setAll(next.controlPane);
-            contentRoot.setCenter(next.contentPane);
+            workspaceRoot.setCenter(next.table);
+            workspaceRoot.setBottom(next.footer);
             next.render(state, commands);
             return;
         }
@@ -133,23 +129,29 @@ final class CatalogSectionRenderer {
         private final CatalogSectionDefinition<Q, R, K> definition;
         private CatalogSectionCommands<Q, K> commands;
         private final VBox controlPane = new VBox();
+        private final HBox toolbar = new HBox();
         private final FlowPane filterPane = new FlowPane();
         private final FlowPane chips = new FlowPane();
-        private final FlowPane sectionActions = new FlowPane();
-        private final Label actionMessage = new Label();
         private final Label confirmationMessage = new Label();
         private final HBox confirmationActions = new HBox();
-        private final BorderPane contentPane = new BorderPane();
+        private final HBox footer = new HBox();
+        private final HBox pagination = new HBox();
         private final Label count = new Label();
         private final Label status = new Label();
+        private final Label actionMessage = new Label();
         private final Label page = new Label();
-        private final Button previous = controls.action("Zurück", "Vorherige Seite", false);
-        private final Button next = controls.action("Weiter", "Nächste Seite", false);
-        private final Button selectedAction;
+        private final Button previous = controls.action("‹", "Vorherige Seite", false);
+        private final Button next = controls.action("›", "Nächste Seite", false);
+        private final Button reset = controls.action("Filter zurücksetzen", "Alle Filter zurücksetzen", false);
         private final TableView<R> table = new TableView<>();
         private final List<FilterBinding<Q>> filterBindings = new ArrayList<>();
+        private final Map<String, TableColumn<R, ?>> columnsById = new LinkedHashMap<>();
         private Q draft;
         private CatalogRenderState<Q, R, K> state;
+        private Q renderedDraft;
+        private List<R> renderedRows;
+        private Optional<K> renderedSelection;
+        private CatalogSortOrder renderedSortOrder;
         private boolean rendering;
         private long renderedRevision = -1L;
 
@@ -161,40 +163,59 @@ final class CatalogSectionRenderer {
             this.definition = definition;
             this.spec = spec;
             this.commands = commands;
+            toolbar.getStyleClass().add("catalog-toolbar");
             filterPane.getStyleClass().add("catalog-filter-row");
             chips.getStyleClass().add("catalog-chip-row");
-            sectionActions.getStyleClass().add("catalog-section-actions");
             confirmationActions.getStyleClass().add("catalog-confirmation-actions");
+            footer.getStyleClass().add("catalog-results-footer");
+            pagination.getStyleClass().add("catalog-main-pagination");
+
+            List<Node> searchNodes = new ArrayList<>();
             for (CatalogFilterSpec<Q> filter : spec.filters()) {
                 FilterBinding<Q> binding = createFilter(filter);
                 filterBindings.add(binding);
-                filterPane.getChildren().add(binding.node());
+                if (filter instanceof CatalogFilterSpec.Text<?> && searchNodes.isEmpty()) {
+                    searchNodes.add(binding.node());
+                } else {
+                    filterPane.getChildren().add(binding.node());
+                }
             }
+            toolbar.getChildren().addAll(searchNodes);
+            Region toolbarSpacer = new Region();
+            HBox.setHgrow(toolbarSpacer, Priority.ALWAYS);
+            toolbar.getChildren().add(toolbarSpacer);
+            reset.setOnAction(ignored -> resetFilters());
+            toolbar.getChildren().add(reset);
             for (CatalogActionSpec action : spec.sectionActions()) {
                 Button button = actionButton(action);
                 button.setOnAction(ignored -> this.commands.sectionAction().accept(action.id()));
-                sectionActions.getChildren().add(button);
+                toolbar.getChildren().add(button);
             }
-            actionMessage.setWrapText(true);
-            actionMessage.setAccessibleText(spec.accessibleTableName() + " Aktionsstatus");
-            actionMessage.getStyleClass().add("text-secondary");
+
             confirmationMessage.setWrapText(true);
             confirmationMessage.setAccessibleText("Ungespeicherte Änderungen bestätigen");
-            Button confirm = controls.action(
-                    "Verwerfen und öffnen", "Verwerfen und öffnen", true);
-            confirm.setOnAction(ignored -> this.commands.confirm().run());
+            Button confirm = controls.action("Verwerfen und öffnen", "Verwerfen und öffnen", true);
+            confirm.setOnAction(ignored -> this.commands.confirm().accept(state.confirmation()));
             Button cancel = controls.action("Abbrechen", "Öffnen abbrechen", false);
-            cancel.setOnAction(ignored -> this.commands.cancel().run());
+            cancel.setOnAction(ignored -> this.commands.cancel().accept(state.confirmation()));
             confirmationActions.getChildren().setAll(confirm, cancel);
             controlPane.getStyleClass().add("catalog-section-surface");
-            controlPane.getChildren().setAll(filterPane, chips, sectionActions, actionMessage,
-                    confirmationMessage, confirmationActions);
+            controlPane.getChildren().setAll(toolbar, filterPane, chips, confirmationMessage, confirmationActions);
 
             table.setAccessibleText(spec.accessibleTableName());
-            count.setAccessibleText(spec.accessibleTableName() + " Anzahl");
-            status.setAccessibleText(spec.accessibleTableName() + " Status");
-            table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+            table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+            table.getStyleClass().add("catalog-results-table");
             table.getColumns().setAll(createColumns());
+            table.setSortPolicy(ignored -> {
+                if (!rendering && !table.getSortOrder().isEmpty()) {
+                    TableColumn<R, ?> sorted = table.getSortOrder().getFirst();
+                    String columnId = Objects.toString(sorted.getUserData(), "");
+                    CatalogSortOrder.Direction direction = sorted.getSortType() == TableColumn.SortType.DESCENDING
+                            ? CatalogSortOrder.Direction.DESCENDING : CatalogSortOrder.Direction.ASCENDING;
+                    this.commands.sort().accept(new CatalogSortOrder(columnId, direction));
+                }
+                return true;
+            });
             table.getSelectionModel().selectedItemProperty().addListener((ignored, before, selected) -> {
                 if (!rendering) {
                     this.commands.select().accept(Optional.ofNullable(selected).map(definition::key));
@@ -213,23 +234,16 @@ final class CatalogSectionRenderer {
                     }
                 });
             });
-            selectedAction = spec.primaryAction().map(action -> {
-                Button button = actionButton(action);
-                button.setAccessibleText(action.tooltip());
-                button.setOnAction(ignored -> state.selectedKey().ifPresent(
-                        key -> this.commands.rowAction().accept(action.id(), key)));
-                return button;
-            }).orElse(null);
-            Region spacer = new Region();
-            HBox.setHgrow(spacer, Priority.ALWAYS);
-            List<Node> headerNodes = new ArrayList<>(List.of(count, spacer, status));
-            if (selectedAction != null) {
-                headerNodes.add(selectedAction);
-            }
-            HBox header = new HBox(headerNodes.toArray(Node[]::new));
-            header.getStyleClass().add("catalog-main-topbar");
-            contentPane.setTop(header);
-            contentPane.setCenter(table);
+
+            count.setAccessibleText(spec.accessibleTableName() + " Anzahl");
+            status.setAccessibleText(spec.accessibleTableName() + " Status");
+            actionMessage.setAccessibleText(spec.accessibleTableName() + " Aktionsstatus");
+            status.getStyleClass().add("catalog-footer-status");
+            actionMessage.getStyleClass().add("catalog-footer-feedback");
+            Region footerSpacer = new Region();
+            HBox.setHgrow(footerSpacer, Priority.ALWAYS);
+            footer.getChildren().setAll(count, status, actionMessage, footerSpacer, pagination);
+
             if (spec.paging()) {
                 String pageName = accessibilityNoun() + "-Seite";
                 previous.setAccessibleText("Vorherige " + pageName);
@@ -237,9 +251,7 @@ final class CatalogSectionRenderer {
                 page.setAccessibleText(pageName);
                 previous.setOnAction(ignored -> this.commands.shiftPage().accept(-1));
                 next.setOnAction(ignored -> this.commands.shiftPage().accept(1));
-                HBox footer = new HBox(previous, page, next);
-                footer.getStyleClass().add("catalog-main-pagination");
-                contentPane.setBottom(footer);
+                pagination.getChildren().setAll(previous, page, next);
             }
         }
 
@@ -254,75 +266,126 @@ final class CatalogSectionRenderer {
             }
             renderedRevision = nextState.revision();
             draft = nextState.draft();
+            boolean draftChanged = !Objects.equals(renderedDraft, draft);
+            boolean rowsChanged = !Objects.equals(renderedRows, nextState.result().rows());
+            boolean selectionChanged = rowsChanged
+                    || !Objects.equals(renderedSelection, nextState.selectedKey());
+            boolean sortChanged = !Objects.equals(renderedSortOrder, nextState.sortOrder());
             rendering = true;
             try {
-                filterBindings.forEach(binding -> binding.render(draft));
-                renderChips();
-                table.getItems().setAll(nextState.result().rows());
-                table.getSelectionModel().clearSelection();
-                nextState.selectedKey().flatMap(key -> table.getItems().stream()
-                        .filter(row -> key.equals(definition.key(row))).findFirst())
-                        .ifPresent(table.getSelectionModel()::select);
+                if (draftChanged) {
+                    filterBindings.forEach(binding -> binding.render(draft));
+                    renderChips();
+                }
+                if (rowsChanged) {
+                    table.getItems().setAll(nextState.result().rows());
+                }
+                if (selectionChanged) {
+                    table.getSelectionModel().clearSelection();
+                    nextState.selectedKey().flatMap(key -> table.getItems().stream()
+                            .filter(row -> key.equals(definition.key(row))).findFirst())
+                            .ifPresent(table.getSelectionModel()::select);
+                }
+                if (sortChanged) {
+                    renderSort(nextState.sortOrder());
+                }
             } finally {
                 rendering = false;
             }
+            renderedDraft = draft;
+            renderedRows = nextState.result().rows();
+            renderedSelection = nextState.selectedKey();
+            renderedSortOrder = nextState.sortOrder();
             count.setText(nextState.totalCount() + " " + spec.resultLabel() + " gefunden");
             status.setText(statusText(nextState.result()));
             table.setPlaceholder(new Label(placeholderText(nextState.result())));
             actionMessage.setText(nextState.actionMessage());
+            setManaged(status, !status.getText().isBlank());
+            setManaged(actionMessage, !actionMessage.getText().isBlank());
             renderConfirmation(nextState.confirmation());
-            if (selectedAction != null) {
-                selectedAction.setDisable(nextState.selectedKey().isEmpty());
-            }
-            if (spec.paging()) {
-                int pageCount = nextState.totalCount() == 0 ? 1
-                        : (int) Math.ceil((double) nextState.totalCount() / nextState.pageSize());
-                int currentPage = nextState.totalCount() == 0 ? 1
-                        : (nextState.pageOffset() / nextState.pageSize()) + 1;
-                page.setText("Seite " + currentPage + " von " + pageCount);
-                boolean busy = nextState.result().status() == CatalogResultState.Status.LOADING;
-                previous.setDisable(nextState.pageOffset() <= 0 || busy);
-                next.setDisable(nextState.pageOffset() + nextState.pageSize() >= nextState.totalCount() || busy);
-            }
+            renderPagination(nextState);
             hideEmptyControls();
+        }
+
+        private void renderSort(CatalogSortOrder sortOrder) {
+            TableColumn<R, ?> column = columnsById.get(sortOrder.columnId());
+            if (column == null) {
+                return;
+            }
+            column.setSortType(sortOrder.direction() == CatalogSortOrder.Direction.DESCENDING
+                    ? TableColumn.SortType.DESCENDING : TableColumn.SortType.ASCENDING);
+            if (!table.getSortOrder().equals(List.of(column))) {
+                table.getSortOrder().setAll(column);
+            }
+        }
+
+        private void renderPagination(CatalogRenderState<Q, R, K> nextState) {
+            if (!spec.paging()) {
+                setManaged(pagination, false);
+                return;
+            }
+            int pageCount = nextState.totalCount() == 0 ? 1
+                    : (int) Math.ceil((double) nextState.totalCount() / nextState.pageSize());
+            int currentPage = nextState.totalCount() == 0 ? 1
+                    : (nextState.pageOffset() / nextState.pageSize()) + 1;
+            page.setText("Seite " + currentPage + " von " + pageCount);
+            boolean busy = nextState.result().status() == CatalogResultState.Status.LOADING;
+            previous.setDisable(nextState.pageOffset() <= 0 || busy);
+            next.setDisable(nextState.pageOffset() + nextState.pageSize() >= nextState.totalCount() || busy);
+            setManaged(pagination, pageCount > 1);
         }
 
         private void renderChips() {
             chips.getChildren().clear();
-            for (CatalogFilterSpec<Q> filter : spec.filters()) {
-                String summary = Objects.requireNonNullElse(filter.activeSummary().apply(draft), "");
-                if (!summary.isBlank()) {
-                    Button chip = controls.chip(summary);
-                    chip.setAccessibleText(summary + " entfernen");
-                    chip.setOnAction(ignored -> commands.editDraft().accept(filter.clear().apply(draft)));
-                    chips.getChildren().add(chip);
-                }
+            List<CatalogFilterToken<Q>> tokens = activeTokens(draft);
+            for (CatalogFilterToken<Q> token : tokens) {
+                Button chip = controls.chip(token.label());
+                chip.setAccessibleText(token.label() + " entfernen");
+                chip.setOnAction(ignored -> commands.commitDraft().accept(token.remove().apply(draft)));
+                chips.getChildren().add(chip);
             }
+            reset.setDisable(tokens.isEmpty());
         }
 
-        private void renderConfirmation(CatalogRenderState.Confirmation<K> confirmation) {
+        private List<CatalogFilterToken<Q>> activeTokens(Q query) {
+            return spec.filters().stream().flatMap(filter -> filter.activeTokens().apply(query).stream()).toList();
+        }
+
+        private void resetFilters() {
+            Q cleared = draft;
+            for (CatalogFilterSpec<Q> filter : spec.filters()) {
+                cleared = filter.clear().apply(cleared);
+            }
+            commands.commitDraft().accept(cleared);
+        }
+
+        private void renderConfirmation(CatalogConfirmation<K> confirmation) {
             boolean visible = confirmation.required();
             confirmationMessage.setText(visible
                     ? confirmation.label() + " öffnen und ungespeicherte Änderungen verwerfen?" : "");
-            confirmationMessage.setManaged(visible);
-            confirmationMessage.setVisible(visible);
-            confirmationActions.setManaged(visible);
-            confirmationActions.setVisible(visible);
+            setManaged(confirmationMessage, visible);
+            setManaged(confirmationActions, visible);
         }
 
         private void hideEmptyControls() {
-            setManaged(filterPane, !filterPane.getChildren().isEmpty());
+            boolean filtersVisible = filterPane.getChildren().stream().anyMatch(Node::isManaged);
+            setManaged(filterPane, filtersVisible);
             setManaged(chips, !chips.getChildren().isEmpty());
-            setManaged(sectionActions, !sectionActions.getChildren().isEmpty());
-            setManaged(actionMessage, !actionMessage.getText().isBlank());
+            setManaged(reset, !spec.filters().isEmpty());
+            boolean toolbarVisible = toolbar.getChildren().stream()
+                    .filter(node -> !(node instanceof Region region && region.getStyleClass().isEmpty()))
+                    .anyMatch(Node::isManaged);
+            setManaged(toolbar, toolbarVisible);
         }
 
         private List<TableColumn<R, ?>> createColumns() {
             List<TableColumn<R, ?>> columns = new ArrayList<>();
             for (int index = 0; index < spec.columns().size(); index++) {
                 CatalogColumnSpec<R> column = spec.columns().get(index);
-                columns.add(index == 0 && spec.primaryAction().isPresent()
-                        ? primaryColumn(column, spec.primaryAction().orElseThrow()) : textColumn(column));
+                TableColumn<R, ?> rendered = index == 0 && spec.primaryAction().isPresent()
+                        ? primaryColumn(column, spec.primaryAction().orElseThrow()) : textColumn(column);
+                configureColumn(rendered, column);
+                columns.add(rendered);
             }
             if (!spec.rowActions().isEmpty()) {
                 columns.add(actionColumn());
@@ -330,17 +393,19 @@ final class CatalogSectionRenderer {
             return List.copyOf(columns);
         }
 
+        private void configureColumn(TableColumn<R, ?> rendered, CatalogColumnSpec<R> column) {
+            rendered.setUserData(column.id());
+            rendered.setSortable(column.sortable());
+            columnsById.put(column.id(), rendered);
+        }
+
         private TableColumn<R, String> textColumn(CatalogColumnSpec<R> specColumn) {
             TableColumn<R, String> column = new TableColumn<>(specColumn.label());
-            column.setCellValueFactory(data -> new SimpleStringProperty(
-                    specColumn.value().apply(data.getValue())));
+            column.setCellValueFactory(data -> new SimpleStringProperty(specColumn.value().apply(data.getValue())));
             return column;
         }
 
-        private TableColumn<R, R> primaryColumn(
-                CatalogColumnSpec<R> specColumn,
-                CatalogActionSpec action
-        ) {
+        private TableColumn<R, R> primaryColumn(CatalogColumnSpec<R> specColumn, CatalogActionSpec action) {
             TableColumn<R, R> column = new TableColumn<>(specColumn.label());
             column.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue()));
             column.setCellFactory(ignored -> new TableCell<>() {
@@ -425,73 +490,64 @@ final class CatalogSectionRenderer {
         }
 
         private <V> FilterBinding<Q> choiceBinding(CatalogFilterSpec.Choice<Q, V> specFilter) {
-            ComboBox<CatalogChoice<V>> box = controls.choice(specFilter.prompt(), specFilter.accessibleText());
-            box.setConverter(choiceConverter());
-            box.valueProperty().addListener((ignored, before, after) -> {
-                if (!rendering && after != null) {
-                    commands.editDraft().accept(specFilter.update().apply(draft, after.value()));
+            CatalogPicker<V> picker = new CatalogPicker<>(specFilter.prompt(), specFilter.accessibleText(), false);
+            AtomicReference<List<CatalogChoice<V>>> shown = new AtomicReference<>(List.of());
+            picker.setOnCommit(values -> {
+                V value = values.isEmpty() ? neutralValue(shown.get()) : values.getFirst();
+                if (value != null) {
+                    commands.editDraft().accept(specFilter.update().apply(draft, value));
                 }
             });
-            return binding(box, query -> {
+            return binding(picker, query -> {
                 List<CatalogChoice<V>> choices = specFilter.choices().apply(query);
-                if (!box.getItems().equals(choices)) {
-                    box.getItems().setAll(choices);
-                }
-                V value = specFilter.value().apply(query);
-                box.setValue(choices.stream().filter(choice -> choice.value().equals(value))
-                        .findFirst().orElse(null));
+                shown.set(choices);
+                picker.setChoices(choices);
+                picker.setSelection(List.of(specFilter.value().apply(query)));
             });
         }
 
         private <V> FilterBinding<Q> multiBinding(CatalogFilterSpec.MultiChoice<Q, V> specFilter) {
-            MenuButton button = controls.multiChoice(specFilter.prompt(), specFilter.accessibleText());
-            return binding(button, query -> {
-                List<V> selected = specFilter.values().apply(query);
-                List<CatalogChoice<V>> choices = specFilter.choices().apply(query);
-                button.getItems().clear();
-                for (CatalogChoice<V> choice : choices) {
-                    CheckMenuItem item = controls.multiChoiceItem(
-                            choice.label(), selected.contains(choice.value()));
-                    item.setOnAction(ignored -> {
-                        List<V> values = new ArrayList<>();
-                        for (int index = 0; index < button.getItems().size(); index++) {
-                            CheckMenuItem candidate = (CheckMenuItem) button.getItems().get(index);
-                            if (candidate.isSelected()) {
-                                values.add(choices.get(index).value());
-                            }
-                        }
-                        commands.editDraft().accept(specFilter.update().apply(draft, List.copyOf(values)));
-                    });
-                    button.getItems().add(item);
-                }
-                button.setText(selected.isEmpty()
-                        ? specFilter.prompt() : specFilter.prompt() + " (" + selected.size() + ")");
+            CatalogPicker<V> picker = new CatalogPicker<>(specFilter.prompt(), specFilter.accessibleText(), true);
+            picker.setOnCommit(values -> commands.editDraft().accept(specFilter.update().apply(draft, values)));
+            return binding(picker, query -> {
+                picker.setChoices(specFilter.choices().apply(query));
+                picker.setSelection(specFilter.values().apply(query));
             });
         }
 
         private <V> FilterBinding<Q> choiceRangeBinding(CatalogFilterSpec.ChoiceRange<Q, V> specFilter) {
-            ComboBox<CatalogChoice<V>> minimum = controls.choice(
-                    specFilter.prompt() + " ab", specFilter.accessibleText() + " Minimum");
-            ComboBox<CatalogChoice<V>> maximum = controls.choice(
-                    specFilter.prompt() + " bis", specFilter.accessibleText() + " Maximum");
-            minimum.setConverter(choiceConverter());
-            maximum.setConverter(choiceConverter());
-            Runnable update = () -> {
-                if (!rendering && minimum.getValue() != null && maximum.getValue() != null) {
-                    commands.editDraft().accept(specFilter.update().apply(
-                            draft, minimum.getValue().value(), maximum.getValue().value()));
+            CatalogPicker<V> minimum = new CatalogPicker<>(
+                    specFilter.prompt() + " ab", specFilter.accessibleText() + " Minimum", false);
+            CatalogPicker<V> maximum = new CatalogPicker<>(
+                    specFilter.prompt() + " bis", specFilter.accessibleText() + " Maximum", false);
+            AtomicReference<List<CatalogChoice<V>>> shown = new AtomicReference<>(List.of());
+            AtomicReference<V> currentMinimum = new AtomicReference<>();
+            AtomicReference<V> currentMaximum = new AtomicReference<>();
+            minimum.setOnCommit(values -> {
+                V value = values.isEmpty() ? neutralValue(shown.get()) : values.getFirst();
+                if (value != null) {
+                    commands.editDraft().accept(specFilter.update().apply(draft, value, currentMaximum.get()));
                 }
-            };
-            minimum.valueProperty().addListener((ignored, before, after) -> update.run());
-            maximum.valueProperty().addListener((ignored, before, after) -> update.run());
+            });
+            maximum.setOnCommit(values -> {
+                V value = values.isEmpty() ? neutralValue(shown.get()) : values.getFirst();
+                if (value != null) {
+                    commands.editDraft().accept(specFilter.update().apply(draft, currentMinimum.get(), value));
+                }
+            });
             HBox row = new HBox(minimum, maximum);
             row.getStyleClass().add("catalog-range-control");
             return binding(row, query -> {
                 List<CatalogChoice<V>> choices = specFilter.choices().apply(query);
-                minimum.getItems().setAll(choices);
-                maximum.getItems().setAll(choices);
-                selectChoice(minimum, choices, specFilter.minimum().apply(query));
-                selectChoice(maximum, choices, specFilter.maximum().apply(query));
+                shown.set(choices);
+                currentMinimum.set(specFilter.minimum().apply(query));
+                currentMaximum.set(specFilter.maximum().apply(query));
+                minimum.setChoices(choices);
+                maximum.setChoices(choices);
+                minimum.setSelection(List.of(currentMinimum.get()));
+                maximum.setSelection(List.of(currentMaximum.get()));
+                boolean managed = minimum.isManaged() || maximum.isManaged();
+                setManaged(row, managed);
             });
         }
 
@@ -500,8 +556,7 @@ final class CatalogSectionRenderer {
             var maximum = controls.text(specFilter.prompt() + " bis", specFilter.accessibleText() + " Maximum");
             Runnable update = () -> {
                 if (!rendering) {
-                    commands.editDraft().accept(specFilter.update().apply(
-                            draft, minimum.getText(), maximum.getText()));
+                    commands.editDraft().accept(specFilter.update().apply(draft, minimum.getText(), maximum.getText()));
                 }
             };
             minimum.textProperty().addListener((ignored, before, after) -> update.run());
@@ -517,19 +572,22 @@ final class CatalogSectionRenderer {
         }
 
         private FilterBinding<Q> triStateBinding(CatalogFilterSpec.TriState<Q> specFilter) {
-            ComboBox<TriStateChoice> box = controls.choice(specFilter.prompt(), specFilter.accessibleText());
-            box.getItems().setAll(TriStateChoice.values());
-            box.valueProperty().addListener((ignored, before, after) -> {
-                if (!rendering && after != null) {
-                    commands.editDraft().accept(specFilter.update().apply(draft, after.value));
-                }
+            CatalogPicker<TriStateChoice> picker = new CatalogPicker<>(
+                    specFilter.prompt(), specFilter.accessibleText(), false);
+            picker.setChoices(List.of(
+                    new CatalogChoice<>(TriStateChoice.NEUTRAL, "Beliebig"),
+                    new CatalogChoice<>(TriStateChoice.YES, "Ja"),
+                    new CatalogChoice<>(TriStateChoice.NO, "Nein")));
+            picker.setOnCommit(values -> {
+                TriStateChoice choice = values.isEmpty() ? TriStateChoice.NEUTRAL : values.getFirst();
+                commands.editDraft().accept(specFilter.update().apply(draft, choice.value));
             });
-            return binding(box, query -> box.setValue(TriStateChoice.from(specFilter.value().apply(query))));
+            return binding(picker, query -> picker.setSelection(
+                    List.of(TriStateChoice.from(specFilter.value().apply(query)))));
         }
 
         private Button actionButton(CatalogActionSpec action) {
-            Button button = controls.action(
-                    action.label(), action.accessiblePrefix(),
+            Button button = controls.action(action.label(), action.accessiblePrefix(),
                     action.emphasis() == CatalogActionSpec.Emphasis.PRIMARY);
             if (!action.tooltip().isBlank()) {
                 button.setTooltip(new Tooltip(action.tooltip()));
@@ -544,30 +602,20 @@ final class CatalogSectionRenderer {
         }
     }
 
-    private static <Q> FilterBinding<Q> binding(Node node, java.util.function.Consumer<Q> renderer) {
+    private static <V> V neutralValue(List<CatalogChoice<V>> choices) {
+        return choices.stream().filter(CatalogSectionRenderer::neutral).map(CatalogChoice::value)
+                .findFirst().orElse(null);
+    }
+
+    private static boolean neutral(CatalogChoice<?> choice) {
+        return "Alle".equalsIgnoreCase(choice.label()) || "Beliebig".equalsIgnoreCase(choice.label());
+    }
+
+    private static <Q> FilterBinding<Q> binding(Node node, Consumer<Q> renderer) {
         return new FilterBinding<>() {
             @Override public Node node() { return node; }
             @Override public void render(Q query) { renderer.accept(query); }
         };
-    }
-
-    private static <V> StringConverter<CatalogChoice<V>> choiceConverter() {
-        return new StringConverter<>() {
-            @Override public String toString(CatalogChoice<V> value) {
-                return value == null ? "" : value.label();
-            }
-            @Override public CatalogChoice<V> fromString(String value) {
-                throw new UnsupportedOperationException("Catalog choices are selected, not parsed.");
-            }
-        };
-    }
-
-    private static <V> void selectChoice(
-            ComboBox<CatalogChoice<V>> box,
-            List<CatalogChoice<V>> choices,
-            V value
-    ) {
-        box.setValue(choices.stream().filter(choice -> choice.value().equals(value)).findFirst().orElse(null));
     }
 
     private static void setText(javafx.scene.control.TextField field, String value) {
@@ -585,8 +633,8 @@ final class CatalogSectionRenderer {
     private static String statusText(CatalogResultState<?> result) {
         return switch (result.status()) {
             case UNINITIALIZED -> "";
-            case LOADING -> "Lade...";
-            case REFRESHING -> "Aktualisiere...";
+            case LOADING -> "Lade…";
+            case REFRESHING -> "Aktualisiere…";
             case READY -> "";
             case EMPTY -> "Keine Einträge gefunden.";
             case INVALID_INPUT -> result.message().isBlank() ? "Eingabe ist ungültig." : result.message();
@@ -606,22 +654,16 @@ final class CatalogSectionRenderer {
     }
 
     private enum TriStateChoice {
-        ALL("Alle", null), YES("Ja", true), NO("Nein", false);
+        NEUTRAL(null), YES(true), NO(false);
 
-        private final String label;
         private final Boolean value;
 
-        TriStateChoice(String label, Boolean value) {
-            this.label = label;
+        TriStateChoice(Boolean value) {
             this.value = value;
         }
 
         private static TriStateChoice from(Boolean value) {
-            return value == null ? ALL : value ? YES : NO;
-        }
-
-        @Override public String toString() {
-            return label;
+            return value == null ? NEUTRAL : value ? YES : NO;
         }
     }
 }

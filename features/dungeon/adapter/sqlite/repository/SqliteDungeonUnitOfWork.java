@@ -6,23 +6,20 @@ import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.port.DungeonCompoundUnitOfWorkResult;
 import features.dungeon.application.authored.port.DungeonUnitOfWork;
 import features.dungeon.application.authored.port.DungeonUnitOfWorkResult;
+import platform.persistence.FeatureStoreHandle;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import platform.persistence.SqliteDatabase;
 
 /** SQLite-backed patch transactions with no full-map carrier or readback. */
 public final class SqliteDungeonUnitOfWork implements DungeonUnitOfWork {
 
     private final DungeonSqlitePatchGateway gateway;
 
-    public SqliteDungeonUnitOfWork() {
-        this(new DungeonSqlitePatchGateway());
-    }
-
-    public SqliteDungeonUnitOfWork(SqliteDatabase database) {
-        this(new DungeonSqlitePatchGateway(database));
+    public SqliteDungeonUnitOfWork(FeatureStoreHandle store) {
+        this(new DungeonSqlitePatchGateway(store));
     }
 
     SqliteDungeonUnitOfWork(DungeonSqlitePatchGateway gateway) {

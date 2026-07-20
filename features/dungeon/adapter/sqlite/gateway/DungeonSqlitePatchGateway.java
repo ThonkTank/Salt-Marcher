@@ -1,11 +1,11 @@
 package features.dungeon.adapter.sqlite.gateway;
 
-import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
+import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.application.authored.command.DungeonCompoundPatch;
 import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.port.DungeonUnitOfWorkResult;
-import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
+import platform.persistence.FeatureStoreHandle;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -16,30 +16,24 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteConnectionSource;
-import platform.persistence.SqliteDatabase;
-import platform.persistence.SqliteMigration;
 
 /** Transaction owner for revision-checked row-level Dungeon patches. */
 public final class DungeonSqlitePatchGateway {
 
-    private final SqliteConnectionSource connections;
+    private final ConnectionSource connections;
     private final FailureHook failureHook;
 
-    public DungeonSqlitePatchGateway() {
-        this(SqliteDatabase.defaultDatabase(DungeonPersistenceSchema.DATABASE_FILE_NAME, NoopDiagnostics.INSTANCE));
+    public DungeonSqlitePatchGateway(FeatureStoreHandle store) {
+        this(store, FailureHook.NONE);
     }
 
-    public DungeonSqlitePatchGateway(SqliteDatabase database) {
-        this(connections(database), FailureHook.NONE);
+    DungeonSqlitePatchGateway(FeatureStoreHandle store, FailureHook failureHook) {
+        this(
+                FeatureStoreHandle.requireOwner(store, DungeonStoreDefinition.OWNER)
+                        ::openConnection, failureHook);
     }
 
-    DungeonSqlitePatchGateway(SqliteDatabase database, FailureHook failureHook) {
-        this(connections(database), failureHook);
-    }
-
-    DungeonSqlitePatchGateway(SqliteConnectionSource connections, FailureHook failureHook) {
+    DungeonSqlitePatchGateway(ConnectionSource connections, FailureHook failureHook) {
         this.connections = Objects.requireNonNull(connections, "connections");
         this.failureHook = Objects.requireNonNull(failureHook, "failureHook");
     }
@@ -154,16 +148,9 @@ public final class DungeonSqlitePatchGateway {
                         : DungeonUnitOfWorkResult.Reason.STALE_REVISION);
     }
 
-    private static SqliteConnectionSource connections(SqliteDatabase database) {
-        DungeonSqliteSchemaManager schema = new DungeonSqliteSchemaManager();
-        return Objects.requireNonNull(database, "database").connections(
-                "dungeon",
-                new SqliteMigration(1, schema::ensureSchema),
-                new SqliteMigration(2, schema::ensureSchema),
-                new SqliteMigration(3, schema::replaceWithCanonicalSchema),
-                new SqliteMigration(4, schema::addCorridorDoorLevel),
-                new SqliteMigration(5, schema::addCorridorRouteCellIndex),
-                new SqliteMigration(6, schema::addCorridorRouteDependencyIndex));
+    @FunctionalInterface
+    interface ConnectionSource {
+        Connection openConnection() throws SQLException;
     }
 
     private static void validatePatches(List<DungeonPatch> patches) {
@@ -199,7 +186,8 @@ public final class DungeonSqlitePatchGateway {
 
     private static CasResult compareAndSetRevision(Connection connection, DungeonPatch patch) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "UPDATE dungeon_maps SET revision=? WHERE dungeon_map_id=? AND revision=?")) {
+                        "UPDATE dungeon_maps SET revision=? WHERE dungeon_map_id=? AND"
+                            + " revision=?")) {
             statement.setLong(1, patch.committedRevision());
             statement.setLong(2, patch.mapId().value());
             statement.setLong(3, patch.expectedRevision());

@@ -133,6 +133,13 @@ final class EncounterSchemaMigrator {
         }
     }
 
+    void repairTargetSchema(Connection connection) throws SQLException {
+        ensureSchema(connection);
+        ensureGeneratedPlanOrigins(connection);
+        ensureRuntimeContexts(connection);
+        ensureGeneratedBatchV4(connection);
+    }
+
     private static void addColumnIfMissing(
             Connection connection, String table, String column, String declaration
     ) throws SQLException {

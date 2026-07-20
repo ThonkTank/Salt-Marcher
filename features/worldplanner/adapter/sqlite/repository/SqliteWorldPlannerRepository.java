@@ -1,22 +1,25 @@
 package features.worldplanner.adapter.sqlite.repository;
 
-import java.util.Objects;
-import platform.persistence.SqliteDatabase;
 import features.worldplanner.adapter.sqlite.gateway.local.SqliteWorldPlannerLocalGateway;
 import features.worldplanner.adapter.sqlite.mapper.WorldPlannerMapper;
 import features.worldplanner.domain.world.WorldPlannerState;
 import features.worldplanner.domain.world.repository.WorldPlannerRepository;
 
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+
+import java.util.Objects;
+
 public final class SqliteWorldPlannerRepository implements WorldPlannerRepository {
 
     private final SqliteWorldPlannerLocalGateway gateway;
 
-    public SqliteWorldPlannerRepository() {
-        this(new SqliteWorldPlannerLocalGateway());
+    public static FeatureStoreDefinition storeDefinition() {
+        return SqliteWorldPlannerLocalGateway.storeDefinition();
     }
 
-    public SqliteWorldPlannerRepository(SqliteDatabase database) {
-        this(new SqliteWorldPlannerLocalGateway(database));
+    public SqliteWorldPlannerRepository(FeatureStoreHandle store) {
+        this(new SqliteWorldPlannerLocalGateway(store));
     }
 
     SqliteWorldPlannerRepository(SqliteWorldPlannerLocalGateway gateway) {

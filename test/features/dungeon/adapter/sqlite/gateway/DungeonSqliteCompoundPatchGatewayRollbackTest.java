@@ -12,15 +12,18 @@ import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.feature.FeatureMarker;
 import features.dungeon.domain.core.structure.feature.FeatureMarkerKind;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
+
 import java.nio.file.Path;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteDatabase;
 
 final class DungeonSqliteCompoundPatchGatewayRollbackTest {
 
@@ -48,11 +51,13 @@ final class DungeonSqliteCompoundPatchGatewayRollbackTest {
             int failureOccurrence
     ) throws Exception {
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            SqliteDungeonCatalogStore catalog = new SqliteDungeonCatalogStore(database);
+            var fixture = DungeonSqliteFixtureSeeder.prepare(database);
+            SqliteDungeonCatalogStore catalog = new SqliteDungeonCatalogStore(fixture.store());
             DungeonMapHeader first = catalog.create("First rollback map");
             DungeonMapHeader second = catalog.create("Second rollback map");
             AtomicInteger phaseCount = new AtomicInteger();
-            DungeonSqlitePatchGateway gateway = new DungeonSqlitePatchGateway(database, phase -> {
+            DungeonSqlitePatchGateway gateway = new DungeonSqlitePatchGateway(
+                            fixture.store(), phase -> {
                 if (phase == failurePhase && phaseCount.incrementAndGet() == failureOccurrence) {
                     throw new SQLException("injected at " + failurePhase);
                 }

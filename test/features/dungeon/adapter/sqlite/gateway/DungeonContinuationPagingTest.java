@@ -29,7 +29,8 @@ final class DungeonContinuationPagingTest {
     void pagesAtMost257RowsWithoutGapsAndBindsCursorToWindowIdentity(@TempDir Path tempDir) throws Exception {
         Path path = tempDir.resolve("continuations.db");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(database);
+            var fixture = DungeonSqliteFixtureSeeder.prepare(database);
+            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(fixture.store());
             gateway.loadIndex(new DungeonWindowRequest(new DungeonMapIdentity(77L), 1L, List.of()));
             seed(path, 513);
 

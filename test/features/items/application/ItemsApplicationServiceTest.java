@@ -28,7 +28,7 @@ class ItemsApplicationServiceTest {
     void catalogStorageRunsOnlyOnTheExecutionLaneAndReportsTypedStates() {
         QueuedLane lane = new QueuedLane();
         FakeCatalog catalog = new FakeCatalog(false);
-        ItemsApplicationService service = service(catalog, List.of(), new RecordingStore(), lane);
+        ItemsApplicationService service = catalogService(catalog, lane);
 
         CompletionStage<PageResult> pending = service.search(ItemQuery.firstPage());
 
@@ -44,7 +44,7 @@ class ItemsApplicationServiceTest {
     void invalidCostRangeNeverReachesStorage() {
         QueuedLane lane = new QueuedLane();
         FakeCatalog catalog = new FakeCatalog(true);
-        ItemsApplicationService service = service(catalog, completeFeed(), new RecordingStore(), lane);
+        ItemsApplicationService service = catalogService(catalog, lane);
 
         var pending = service.search(invertedCostQuery());
         lane.runNext();
@@ -57,7 +57,7 @@ class ItemsApplicationServiceTest {
     void importValidatesBothFeedsBeforeBackupAndReplacement() {
         QueuedLane lane = new QueuedLane();
         RecordingStore store = new RecordingStore();
-        ItemsApplicationService service = service(new FakeCatalog(true), completeFeed(), store, lane);
+        ItemsImportService service = importService(completeFeed(), store, lane);
 
         var pending = service.importPublicSrd();
         lane.runNext();
@@ -70,8 +70,7 @@ class ItemsApplicationServiceTest {
     void incompletePublicFeedCannotTouchSQLite() {
         QueuedLane lane = new QueuedLane();
         RecordingStore store = new RecordingStore();
-        ItemsApplicationService service = service(
-                new FakeCatalog(true),
+        ItemsImportService service = importService(
                 List.of(equipment("club", List.of("Light"))),
                 store,
                 lane);
@@ -83,14 +82,20 @@ class ItemsApplicationServiceTest {
         assertEquals(List.of(), store.events);
     }
 
-    private static ItemsApplicationService service(
+    private static ItemsApplicationService catalogService(
             ItemCatalogPort catalog,
+            ExecutionLane lane
+    ) {
+        return new ItemsApplicationService(catalog, lane, NoopDiagnostics.INSTANCE);
+    }
+
+    private static ItemsImportService importService(
             List<ImportedItem> items,
             ItemImportStore store,
             ExecutionLane lane
     ) {
         PublicItemSource source = () -> items;
-        return new ItemsApplicationService(catalog, source, store, lane, NoopDiagnostics.INSTANCE);
+        return new ItemsImportService(source, store, lane, NoopDiagnostics.INSTANCE);
     }
 
     private static ItemQuery invertedCostQuery() {

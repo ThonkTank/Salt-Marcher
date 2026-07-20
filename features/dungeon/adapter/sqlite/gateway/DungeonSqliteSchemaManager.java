@@ -11,7 +11,7 @@ import platform.persistence.SqliteSchemaColumnSupport;
 
 final class DungeonSqliteSchemaManager {
 
-    static final int CANONICAL_SCHEMA_VERSION = 6;
+    static final int CANONICAL_SCHEMA_VERSION = 7;
 
     private static final List<String> REPLACED_DUNGEON_TABLES = List.of(
             DungeonPersistenceSchema.IDENTITY_SEQUENCES_TABLE,
@@ -90,6 +90,33 @@ final class DungeonSqliteSchemaManager {
 
     void addCorridorRouteDependencyIndex(Connection connection) throws SQLException {
         replaceWithCanonicalSchema(connection);
+    }
+
+    void repairVersionSixSchema(Connection connection) throws SQLException {
+        boolean currentShape = SqliteSchemaColumnSupport.hasTable(
+                connection, DungeonPersistenceSchema.AUTHORED_LEVEL_BOUNDS_TABLE)
+                && SqliteSchemaColumnSupport.hasColumn(
+                        connection, DungeonPersistenceSchema.ENTITY_CHUNKS_TABLE, "minimum_q")
+                && SqliteSchemaColumnSupport.hasColumn(
+                        connection, DungeonPersistenceSchema.ENTITY_CHUNKS_TABLE, "entity_chunk_count");
+        if (currentShape) {
+            return;
+        }
+        if (hasRows(connection, DungeonPersistenceSchema.MAPS_TABLE)
+                || hasRows(connection, DungeonPersistenceSchema.ENTITY_CHUNKS_TABLE)) {
+            throw new SQLException("Unsupported populated Dungeon v6 schema.");
+        }
+        replaceWithCanonicalSchema(connection);
+    }
+
+    private static boolean hasRows(Connection connection, String table) throws SQLException {
+        if (!SqliteSchemaColumnSupport.hasTable(connection, table)) {
+            return false;
+        }
+        try (Statement statement = connection.createStatement();
+             var result = statement.executeQuery("SELECT 1 FROM " + table + " LIMIT 1")) {
+            return result.next();
+        }
     }
 
     private static void discardDungeonRows(Connection connection) throws SQLException {

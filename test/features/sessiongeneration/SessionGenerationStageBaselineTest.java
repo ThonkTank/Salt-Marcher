@@ -10,13 +10,15 @@ import features.sessiongeneration.domain.generation.GeneratedRunDraft;
 import features.sessiongeneration.domain.generation.GenerationInput;
 import features.sessiongeneration.domain.generation.GenerationRewardReference;
 import features.sessiongeneration.domain.generation.SessionGenerationEngine;
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.OptionalInt;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import platform.diagnostics.NoopDiagnostics;
 import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.OptionalInt;
 
 final class SessionGenerationStageBaselineTest {
 
@@ -45,7 +47,9 @@ final class SessionGenerationStageBaselineTest {
         GeneratedRunDraft draft = GeneratedRunDraft.from(generate());
         try (SqliteDatabase database = new SqliteDatabase(
                 temporaryDirectory.resolve("commit-load.sqlite"), NoopDiagnostics.INSTANCE)) {
-            SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(database);
+            SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(
+                            TestFeatureStores.store(
+                                    database, SqliteGenerationRunRepository.storeDefinition()));
 
             repository.commit(draft);
 
@@ -58,7 +62,9 @@ final class SessionGenerationStageBaselineTest {
         GeneratedRunDraft draft = GeneratedRunDraft.from(generate());
         try (SqliteDatabase database = new SqliteDatabase(
                 temporaryDirectory.resolve("reward-read.sqlite"), NoopDiagnostics.INSTANCE)) {
-            SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(database);
+            SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(
+                            TestFeatureStores.store(
+                                    database, SqliteGenerationRunRepository.storeDefinition()));
             repository.commit(draft);
 
             var batch = repository.loadRewards(List.of(

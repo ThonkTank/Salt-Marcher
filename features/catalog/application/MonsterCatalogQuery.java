@@ -4,11 +4,11 @@ import features.creatures.api.CreatureFilterOptions;
 import java.util.List;
 import java.util.Objects;
 
-/** Typed Monster draft plus provider-supplied choices and sort. */
+/** Typed Monster draft plus lazily resolved provider-supplied choices. */
 public record MonsterCatalogQuery(
         MonsterCatalogFilterDraft filters,
         CreatureFilterOptions options,
-        MonsterCatalogSort sort,
+        boolean filterOptionsResolved,
         List<CatalogReferenceOption> encounterTables,
         List<CatalogReferenceOption> factions,
         List<CatalogReferenceOption> locations
@@ -16,7 +16,6 @@ public record MonsterCatalogQuery(
     public MonsterCatalogQuery {
         filters = Objects.requireNonNull(filters, "filters");
         options = Objects.requireNonNull(options, "options");
-        sort = Objects.requireNonNull(sort, "sort");
         encounterTables = List.copyOf(Objects.requireNonNull(encounterTables, "encounterTables"));
         factions = List.copyOf(Objects.requireNonNull(factions, "factions"));
         locations = List.copyOf(Objects.requireNonNull(locations, "locations"));
@@ -24,20 +23,16 @@ public record MonsterCatalogQuery(
 
     public static MonsterCatalogQuery initial() {
         return new MonsterCatalogQuery(
-                MonsterCatalogFilterDraft.empty(), CreatureFilterOptions.empty(), MonsterCatalogSort.NAME_ASC,
+                MonsterCatalogFilterDraft.empty(), CreatureFilterOptions.empty(), false,
                 List.of(), List.of(), List.of());
     }
 
     public MonsterCatalogQuery withFilters(MonsterCatalogFilterDraft next) {
-        return new MonsterCatalogQuery(next, options, sort, encounterTables, factions, locations);
+        return new MonsterCatalogQuery(next, options, filterOptionsResolved, encounterTables, factions, locations);
     }
 
     public MonsterCatalogQuery withOptions(CreatureFilterOptions next) {
-        return new MonsterCatalogQuery(filters, next, sort, encounterTables, factions, locations);
-    }
-
-    public MonsterCatalogQuery withSort(MonsterCatalogSort next) {
-        return new MonsterCatalogQuery(filters, options, next, encounterTables, factions, locations);
+        return new MonsterCatalogQuery(filters, next, true, encounterTables, factions, locations);
     }
 
     public MonsterCatalogQuery withReferenceOptions(
@@ -45,6 +40,7 @@ public record MonsterCatalogQuery(
             List<CatalogReferenceOption> factionOptions,
             List<CatalogReferenceOption> locationOptions
     ) {
-        return new MonsterCatalogQuery(filters, options, sort, tables, factionOptions, locationOptions);
+        return new MonsterCatalogQuery(
+                filters, options, filterOptionsResolved, tables, factionOptions, locationOptions);
     }
 }

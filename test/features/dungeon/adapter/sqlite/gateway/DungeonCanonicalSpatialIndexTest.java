@@ -5,19 +5,19 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
 import features.dungeon.application.authored.DungeonCachedWindowStore;
+import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.application.authored.command.CorridorChange;
 import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.command.DungeonPatchEntityRef;
+import features.dungeon.application.authored.command.DungeonPatchResultFacts;
 import features.dungeon.application.authored.command.FeatureMarkerChange;
 import features.dungeon.application.authored.command.RoomClusterChange;
 import features.dungeon.application.authored.command.RoomRegionChange;
 import features.dungeon.application.authored.command.StairChange;
 import features.dungeon.application.authored.command.TransitionChange;
-import features.dungeon.application.authored.command.DungeonPatchResultFacts;
 import features.dungeon.application.authored.port.DungeonWindow;
 import features.dungeon.application.authored.port.DungeonWindowEntityFragment;
 import features.dungeon.application.authored.port.DungeonWindowRequest;
-import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.domain.core.component.CorridorDoorBinding;
 import features.dungeon.domain.core.component.CorridorWaypoint;
 import features.dungeon.domain.core.component.StairExit;
@@ -39,6 +39,12 @@ import features.dungeon.domain.core.structure.stair.StairShape;
 import features.dungeon.domain.core.structure.transition.Transition;
 import features.dungeon.domain.core.structure.transition.TransitionAnchor;
 import features.dungeon.domain.core.structure.transition.TransitionDestination;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -49,10 +55,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteDatabase;
 
 final class DungeonCanonicalSpatialIndexTest {
 
@@ -62,10 +64,11 @@ final class DungeonCanonicalSpatialIndexTest {
         Path databasePath = tempDir.resolve("spatial-index.db");
 
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            seedAuthoredMap(database);
+            var fixture = DungeonSqliteFixtureSeeder.prepare(database);
+            seedAuthoredMap(fixture);
 
             DungeonCachedWindowStore windows = new DungeonCachedWindowStore(
-                    new SqliteDungeonWindowStore(database));
+                    new SqliteDungeonWindowStore(fixture.store()));
             DungeonWindow window = windows.loadWindow(new DungeonWindowRequest(
                     new DungeonMapIdentity(41L),
                     1L,
@@ -135,9 +138,9 @@ final class DungeonCanonicalSpatialIndexTest {
                     "STAIR|401|1|-1|1",
                     "STAIR|401|2|2|-3",
                     "TRANSITION|501|-1|-1|-1"), rows(connection,
-                    "SELECT entity_kind, entity_id, level_z, chunk_q, chunk_r"
-                            + " FROM dungeon_entity_chunks"
-                            + " ORDER BY entity_kind, entity_id, level_z, chunk_r, chunk_q"));
+                            "SELECT entity_kind, entity_id, level_z, chunk_q, chunk_r FROM"
+                                + " dungeon_entity_chunks ORDER BY entity_kind, entity_id, level_z,"
+                                + " chunk_r, chunk_q"));
             assertEquals(List.of("13"), rows(connection,
                     "SELECT COUNT(*) FROM dungeon_chunks"));
             assertEquals(List.of("17"), rows(connection,
@@ -154,9 +157,9 @@ final class DungeonCanonicalSpatialIndexTest {
                     "SELECT level_z,minimum_q,minimum_r,maximum_q,maximum_r"
                             + " FROM dungeon_authored_level_bounds ORDER BY level_z"));
             assertEquals(List.of("261|261"), rows(connection,
-                    "SELECT COUNT(*), COUNT(DISTINCT level_z || '|' || cell_x || '|' || cell_y)"
-                            + " FROM dungeon_corridor_route_cells"
-                            + " WHERE dungeon_map_id=41 AND corridor_id=301"));
+                            "SELECT COUNT(*), COUNT(DISTINCT level_z || '|' || cell_x || '|' ||"
+                                + " cell_y) FROM dungeon_corridor_route_cells WHERE"
+                                + " dungeon_map_id=41 AND corridor_id=301"));
             assertEquals(List.of("0"), rows(connection,
                     "SELECT COUNT(*) FROM dungeon_corridor_route_cells route"
                             + " LEFT JOIN dungeon_entity_chunks membership"
@@ -170,7 +173,7 @@ final class DungeonCanonicalSpatialIndexTest {
         }
     }
 
-    private static void seedAuthoredMap(SqliteDatabase database) {
+    private static void seedAuthoredMap(DungeonSqliteFixtureSeeder.Fixture fixture) {
         long mapId = 41L;
         long roomId = 101L;
         long clusterId = 201L;
@@ -220,9 +223,9 @@ final class DungeonCanonicalSpatialIndexTest {
                 new DungeonChunkKey(mapId, 2, 2, -3),
                 new DungeonChunkKey(mapId, 5, -1, -2),
                 new DungeonChunkKey(mapId, 5, -1, -1));
-        DungeonSqliteFixtureSeeder.insertHeader(database, mapId, "Canonical spatial index", 6L);
+        fixture.insertHeader(mapId, "Canonical spatial index", 6L);
         DungeonPatch base = DungeonPatch.of(new DungeonMapIdentity(mapId), 6L, changes);
-        DungeonSqliteFixtureSeeder.commit(database, new DungeonPatch(
+        fixture.commit(new DungeonPatch(
                 base.mapId(), base.expectedRevision(), base.changes(), chunks,
                 new DungeonPatchResultFacts(base.resultFacts().affectedEntities()), base.encodedBytes()));
     }

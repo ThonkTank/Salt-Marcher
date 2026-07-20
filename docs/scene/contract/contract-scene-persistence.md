@@ -27,6 +27,8 @@ Encounter workflow state MUST NOT be stored in Scene tables.
 
 ## Validation And Errors
 
+Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
+
 Scene IDs and all present foreign references MUST be positive. The database
 enforces one row per scene assignment plus global uniqueness of both PC and NPC
 assignment. Location IDs are not unique because multiple scenes may reference

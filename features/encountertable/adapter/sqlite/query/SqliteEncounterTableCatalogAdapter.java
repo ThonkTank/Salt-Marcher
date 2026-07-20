@@ -1,25 +1,28 @@
 package features.encountertable.adapter.sqlite.query;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.ArrayList;
-import platform.persistence.SqliteDatabase;
 import features.encountertable.adapter.sqlite.gateway.local.SqliteEncounterTableLocalGateway;
 import features.encountertable.adapter.sqlite.mapper.EncounterTableMapper;
 import features.encountertable.domain.catalog.EncounterTableCandidateData;
 import features.encountertable.domain.catalog.EncounterTableSummaryData;
 import features.encountertable.domain.catalog.port.EncounterTableCatalogPort;
 
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 public final class SqliteEncounterTableCatalogAdapter implements EncounterTableCatalogPort {
 
     private final SqliteEncounterTableLocalGateway gateway;
 
-    public SqliteEncounterTableCatalogAdapter() {
-        this(new SqliteEncounterTableLocalGateway());
+    public static FeatureStoreDefinition storeDefinition() {
+        return SqliteEncounterTableLocalGateway.storeDefinition();
     }
 
-    public SqliteEncounterTableCatalogAdapter(SqliteDatabase database) {
-        this(new SqliteEncounterTableLocalGateway(database));
+    public SqliteEncounterTableCatalogAdapter(FeatureStoreHandle store) {
+        this(new SqliteEncounterTableLocalGateway(store));
     }
 
     SqliteEncounterTableCatalogAdapter(SqliteEncounterTableLocalGateway gateway) {

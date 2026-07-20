@@ -13,6 +13,16 @@ import features.sessiongeneration.domain.generation.GenerationRewardReference;
 import features.sessiongeneration.domain.generation.GenerationRunCommitResult;
 import features.sessiongeneration.domain.generation.GenerationRunIdentityConflictException;
 import features.sessiongeneration.domain.generation.SessionGenerationEngine;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.SqliteMigration;
+import platform.persistence.TestFeatureStores;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.sql.DriverManager;
 import java.util.ArrayList;
@@ -21,13 +31,6 @@ import java.util.OptionalInt;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Proxy;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteDatabase;
-import platform.persistence.SqliteMigration;
 
 final class SqliteGenerationRunRepositoryTest {
 
@@ -39,7 +42,9 @@ final class SqliteGenerationRunRepositoryTest {
         java.nio.file.Path databasePath = temporaryDirectory.resolve("roundtrip.sqlite");
         GeneratedRunDraft draft = GeneratedRunDraft.from(generate(179974L));
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(database);
+            SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(
+                            TestFeatureStores.store(
+                                    database, SqliteGenerationRunRepository.storeDefinition()));
 
             assertEquals(GenerationRunCommitResult.Outcome.INSERTED, repository.commit(draft).outcome());
             assertEquals(GenerationRunCommitResult.Outcome.ALREADY_PRESENT, repository.commit(draft).outcome());
@@ -49,7 +54,8 @@ final class SqliteGenerationRunRepositoryTest {
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
                 var statement = connection.createStatement();
                 var rows = statement.executeQuery(
-                        "SELECT owner, schema_version, content_fingerprint FROM session_generation_runs")) {
+                                "SELECT owner, schema_version, content_fingerprint FROM"
+                                    + " session_generation_runs")) {
             assertTrue(rows.next());
             assertEquals("session-generation", rows.getString(1));
             assertEquals(1, rows.getInt(2));
@@ -63,7 +69,9 @@ final class SqliteGenerationRunRepositoryTest {
         GeneratedRun original = generate(179974L);
         GeneratedRun changed = withSeed(original, original.seed() + 1L);
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(database);
+            SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(
+                            TestFeatureStores.store(
+                                    database, SqliteGenerationRunRepository.storeDefinition()));
             repository.commit(GeneratedRunDraft.from(original));
 
             assertThrows(GenerationRunIdentityConflictException.class,
@@ -78,7 +86,9 @@ final class SqliteGenerationRunRepositoryTest {
         GeneratedRunDraft draft = GeneratedRunDraft.from(generate(179974L));
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE);
                 var workers = Executors.newFixedThreadPool(2)) {
-            SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(database);
+            SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(
+                            TestFeatureStores.store(
+                                    database, SqliteGenerationRunRepository.storeDefinition()));
             CountDownLatch ready = new CountDownLatch(2);
             CountDownLatch start = new CountDownLatch(1);
             List<java.util.concurrent.Future<GenerationRunCommitResult.Outcome>> outcomes = new ArrayList<>();
@@ -106,12 +116,16 @@ final class SqliteGenerationRunRepositoryTest {
         GeneratedRunDraft first = GeneratedRunDraft.from(generate(179974L));
         GeneratedRunDraft blocked = GeneratedRunDraft.from(generate(179975L));
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(database);
+            SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(
+                            TestFeatureStores.store(
+                                    database, SqliteGenerationRunRepository.storeDefinition()));
             repository.commit(first);
             try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
                     var statement = connection.createStatement()) {
-                statement.execute("CREATE TRIGGER fail_generation_loot BEFORE INSERT ON session_generation_loot_items "
-                        + "BEGIN SELECT RAISE(ABORT, 'forced rollback'); END");
+                statement.execute(
+                        "CREATE TRIGGER fail_generation_loot BEFORE INSERT ON"
+                            + " session_generation_loot_items BEGIN SELECT RAISE(ABORT, 'forced"
+                            + " rollback'); END");
             }
 
             assertThrows(IllegalStateException.class, () -> repository.commit(blocked));
@@ -126,7 +140,9 @@ final class SqliteGenerationRunRepositoryTest {
         GeneratedRun legacy = generate(179974L);
         SessionGenerationSchema schema = new SessionGenerationSchema();
         try (SqliteDatabase v1 = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE);
-                var connection = v1.connections(
+                var connection =
+                        TestFeatureStores.store(
+                                        v1,
                         SqliteGenerationRunRepository.OWNER,
                         new SqliteMigration(1, schema::migrateV1)).openConnection()) {
             new GenerationRunSqliteWriter().insertLegacyV1(connection, legacy);
@@ -134,14 +150,19 @@ final class SqliteGenerationRunRepositoryTest {
 
         GeneratedRunDraft loaded;
         try (SqliteDatabase migrated = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            loaded = new SqliteGenerationRunRepository(migrated).load(legacy.runId()).orElseThrow();
+            loaded = new SqliteGenerationRunRepository(
+                                    TestFeatureStores.store(
+                                            migrated,
+                                            SqliteGenerationRunRepository.storeDefinition())).load(legacy.runId()).orElseThrow();
         }
         assertEquals(legacy, loaded.run());
 
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
                 var statement = connection.createStatement();
                 var rows = statement.executeQuery(
-                        "SELECT content_fingerprint FROM session_generation_runs WHERE run_id = '" + legacy.runId() + "'")) {
+                                "SELECT content_fingerprint FROM session_generation_runs WHERE"
+                                    + " run_id = '"
+                                        + legacy.runId() + "'")) {
             assertTrue(rows.next());
             assertNull(rows.getString(1));
         }
@@ -152,7 +173,9 @@ final class SqliteGenerationRunRepositoryTest {
         java.nio.file.Path databasePath = temporaryDirectory.resolve("rewards.sqlite");
         GeneratedRunDraft draft = GeneratedRunDraft.from(generate(179974L));
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(database);
+            SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(
+                            TestFeatureStores.store(
+                                    database, SqliteGenerationRunRepository.storeDefinition()));
             repository.commit(draft);
             GenerationRewardReference present = new GenerationRewardReference(draft.run().runId(), 1);
             GenerationRewardReference missing = new GenerationRewardReference(draft.run().runId(), 999);
@@ -194,7 +217,9 @@ final class SqliteGenerationRunRepositoryTest {
         java.nio.file.Path databasePath = temporaryDirectory.resolve("reward-dedup.sqlite");
         GeneratedRunDraft draft = GeneratedRunDraft.from(generate(179974L));
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            new SqliteGenerationRunRepository(database).commit(draft);
+            new SqliteGenerationRunRepository(
+                            TestFeatureStores.store(
+                                    database, SqliteGenerationRunRepository.storeDefinition())).commit(draft);
             GenerationRewardReference repeated = new GenerationRewardReference(draft.run().runId(), 1);
             List<GenerationRewardReference> requested = java.util.Collections.nCopies(
                     GenerationRewardSqliteReader.MAX_KEYS_PER_QUERY + 1, repeated);
@@ -214,11 +239,15 @@ final class SqliteGenerationRunRepositoryTest {
         java.nio.file.Path databasePath = temporaryDirectory.resolve("corrupt.sqlite");
         GeneratedRunDraft generated = GeneratedRunDraft.from(generate(179974L));
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(database);
+            SqliteGenerationRunRepository repository = new SqliteGenerationRunRepository(
+                            TestFeatureStores.store(
+                                    database, SqliteGenerationRunRepository.storeDefinition()));
             repository.commit(generated);
             try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
                     var statement = connection.createStatement()) {
-                statement.executeUpdate("UPDATE session_generation_runs SET normal_actual_cp = normal_actual_cp + 1");
+                statement.executeUpdate(
+                        "UPDATE session_generation_runs SET normal_actual_cp = normal_actual_cp +"
+                            + " 1");
             }
 
             assertThrows(IllegalStateException.class, () -> repository.load(generated.run().runId()));
@@ -230,7 +259,9 @@ final class SqliteGenerationRunRepositoryTest {
         java.nio.file.Path databasePath = temporaryDirectory.resolve("load-query-bound.sqlite");
         GeneratedRunDraft draft = GeneratedRunDraft.from(generate(179974L));
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            SqliteGenerationRunRepository writer = new SqliteGenerationRunRepository(database);
+            SqliteGenerationRunRepository writer = new SqliteGenerationRunRepository(
+                    TestFeatureStores.store(
+                            database, SqliteGenerationRunRepository.storeDefinition()));
             writer.commit(draft);
             for (long seed = 200_000L; seed < 200_032L; seed++) {
                 writer.commit(GeneratedRunDraft.from(generate(seed)));

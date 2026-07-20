@@ -4,16 +4,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSeeder;
+import features.dungeon.adapter.sqlite.gateway.DungeonSqliteWindowGateway;
+import features.dungeon.api.DungeonChunkKey;
+import features.dungeon.application.authored.command.DungeonPatch;
+import features.dungeon.application.authored.command.FeatureMarkerChange;
+import features.dungeon.application.authored.command.TransitionChange;
+
 import features.dungeon.application.authored.port.DungeonIdentityClosureResult;
 import features.dungeon.application.authored.port.DungeonTravelChunkKeysRequest;
 import features.dungeon.application.authored.port.DungeonTravelChunkKeysResult;
 import features.dungeon.application.authored.port.DungeonTravelStartRequest;
 import features.dungeon.application.authored.port.DungeonTravelStartResult;
-import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSeeder;
-import features.dungeon.adapter.sqlite.gateway.DungeonSqliteWindowGateway;
-import features.dungeon.application.authored.command.DungeonPatch;
-import features.dungeon.application.authored.command.FeatureMarkerChange;
-import features.dungeon.application.authored.command.TransitionChange;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.feature.FeatureMarker;
@@ -21,13 +23,12 @@ import features.dungeon.domain.core.structure.feature.FeatureMarkerKind;
 import features.dungeon.domain.core.structure.transition.Transition;
 import features.dungeon.domain.core.structure.transition.TransitionAnchor;
 import features.dungeon.domain.core.structure.transition.TransitionDestination;
-import features.dungeon.api.DungeonChunkKey;
-import java.nio.file.Path;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import platform.diagnostics.NoopDiagnostics;
 import platform.persistence.SqliteDatabase;
+import java.nio.file.Path;
+import java.util.List;
 
 final class SqliteDungeonTravelStartLocatorTest {
 
@@ -35,8 +36,9 @@ final class SqliteDungeonTravelStartLocatorTest {
     void prefersSmallestPlacedTransitionThroughSparseIdentityIndex(@TempDir Path directory) throws Exception {
         Path path = directory.resolve("travel-start.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            SqliteDungeonWindowStore store = initializedStore(database);
-            seedTransitions(database, 17L);
+            var fixture = DungeonSqliteFixtureSeeder.prepare(database);
+            SqliteDungeonWindowStore store = initializedStore(fixture);
+            seedTransitions(fixture, 17L);
 
             DungeonTravelStartResult.Located located = assertInstanceOf(
                     DungeonTravelStartResult.Located.class,
@@ -52,8 +54,9 @@ final class SqliteDungeonTravelStartLocatorTest {
     void returnsFirstSparseChunkAndTypedStaleWithoutHydratingEntities(@TempDir Path directory) throws Exception {
         Path path = directory.resolve("travel-chunk-start.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            SqliteDungeonWindowStore store = initializedStore(database);
-            seedSparseChunks(database, 23L);
+            var fixture = DungeonSqliteFixtureSeeder.prepare(database);
+            SqliteDungeonWindowStore store = initializedStore(fixture);
+            seedSparseChunks(fixture, 23L);
 
             DungeonTravelStartResult.Located located = assertInstanceOf(
                     DungeonTravelStartResult.Located.class,
@@ -74,10 +77,11 @@ final class SqliteDungeonTravelStartLocatorTest {
     void discoversOnlyTheFixedHorizontalRingAcrossEveryAuthoredLevel(@TempDir Path directory) throws Exception {
         Path path = directory.resolve("travel-level-window.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(database);
+            var fixture = DungeonSqliteFixtureSeeder.prepare(database);
+            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(fixture.store());
             gateway.discoverTravelChunkKeys(new DungeonTravelChunkKeysRequest(
                     new DungeonMapIdentity(999L), 1L, 0, 0));
-            seedTravelLevels(database, 29L);
+            seedTravelLevels(fixture, 29L);
 
             DungeonTravelChunkKeysResult.Complete complete = assertInstanceOf(
                     DungeonTravelChunkKeysResult.Complete.class,
@@ -101,16 +105,17 @@ final class SqliteDungeonTravelStartLocatorTest {
         }
     }
 
-    private static SqliteDungeonWindowStore initializedStore(SqliteDatabase database) {
-        SqliteDungeonWindowStore store = new SqliteDungeonWindowStore(database);
+    private static SqliteDungeonWindowStore initializedStore(
+            DungeonSqliteFixtureSeeder.Fixture fixture) {
+        SqliteDungeonWindowStore store = new SqliteDungeonWindowStore(fixture.store());
         store.locateTravelStart(new DungeonTravelStartRequest(new DungeonMapIdentity(999L), 1L));
         return store;
     }
 
-    private static void seedTransitions(SqliteDatabase database, long mapId) {
+    private static void seedTransitions(DungeonSqliteFixtureSeeder.Fixture fixture, long mapId) {
         DungeonMapIdentity map = new DungeonMapIdentity(mapId);
-        DungeonSqliteFixtureSeeder.insertHeader(database, mapId, "Travel " + mapId, 4L);
-        DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(map, 4L, List.of(
+        fixture.insertHeader(mapId, "Travel " + mapId, 4L);
+        fixture.commit(DungeonPatch.of(map, 4L, List.of(
                 new TransitionChange(null, transition(mapId, 301L, new Cell(130, -65, 2))),
                 new TransitionChange(null, transition(mapId, 300L, new Cell(-1, 64, 1))))));
     }
@@ -125,18 +130,18 @@ final class SqliteDungeonTravelStartLocatorTest {
                 null);
     }
 
-    private static void seedSparseChunks(SqliteDatabase database, long mapId) {
+    private static void seedSparseChunks(DungeonSqliteFixtureSeeder.Fixture fixture, long mapId) {
         DungeonMapIdentity map = new DungeonMapIdentity(mapId);
-        DungeonSqliteFixtureSeeder.insertHeader(database, mapId, "Travel " + mapId, 8L);
-        DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(map, 8L, List.of(
+        fixture.insertHeader(mapId, "Travel " + mapId, 8L);
+        fixture.commit(DungeonPatch.of(map, 8L, List.of(
                 new FeatureMarkerChange(null, marker(map, 401L, new Cell(4 * 64, -3 * 64, 2))),
                 new FeatureMarkerChange(null, marker(map, 402L, new Cell(-2 * 64, 7 * 64, 1))))));
     }
 
-    private static void seedTravelLevels(SqliteDatabase database, long mapId) {
+    private static void seedTravelLevels(DungeonSqliteFixtureSeeder.Fixture fixture, long mapId) {
         DungeonMapIdentity map = new DungeonMapIdentity(mapId);
-        DungeonSqliteFixtureSeeder.insertHeader(database, mapId, "Travel " + mapId, 2L);
-        DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(map, 2L, List.of(
+        fixture.insertHeader(mapId, "Travel " + mapId, 2L);
+        fixture.commit(DungeonPatch.of(map, 2L, List.of(
                 new FeatureMarkerChange(null, marker(map, 501L, new Cell(-64, -64, -3))),
                 new FeatureMarkerChange(null, marker(map, 502L, new Cell(1, 1, 0))),
                 new FeatureMarkerChange(null, marker(map, 503L, new Cell(64, 0, 2))),

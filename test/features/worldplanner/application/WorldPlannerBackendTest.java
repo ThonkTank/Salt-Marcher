@@ -1,7 +1,55 @@
 package features.worldplanner.application;
 
+import features.creatures.CreaturesServiceAssembly;
+import features.creatures.domain.catalog.CreatureCatalogData;
+import features.creatures.domain.catalog.port.CreatureCatalogPort;
+import features.encountertable.EncounterTableServiceAssembly;
+import features.encountertable.domain.catalog.EncounterTableCandidateData;
+import features.encountertable.domain.catalog.EncounterTableSummaryData;
+import features.encountertable.domain.catalog.port.EncounterTableCatalogPort;
 import features.worldplanner.WorldPlannerReferenceAssembly;
 import features.worldplanner.WorldPlannerServiceAssembly;
+import features.worldplanner.adapter.sqlite.mapper.WorldPlannerMapper;
+import features.worldplanner.adapter.sqlite.model.WorldNpcRecord;
+import features.worldplanner.adapter.sqlite.model.WorldPlannerPersistenceSchema;
+import features.worldplanner.adapter.sqlite.model.WorldPlannerSnapshotRecord;
+import features.worldplanner.adapter.sqlite.repository.SqliteWorldPlannerRepository;
+import features.worldplanner.api.AddWorldFactionNpcCommand;
+import features.worldplanner.api.AddWorldLocationEncounterTableCommand;
+import features.worldplanner.api.AddWorldLocationFactionCommand;
+import features.worldplanner.api.CreateWorldFactionCommand;
+import features.worldplanner.api.CreateWorldLocationCommand;
+import features.worldplanner.api.CreateWorldNpcCommand;
+import features.worldplanner.api.DeleteWorldFactionCommand;
+import features.worldplanner.api.DeleteWorldLocationCommand;
+import features.worldplanner.api.DeleteWorldNpcCommand;
+import features.worldplanner.api.RefreshWorldPlannerCommand;
+import features.worldplanner.api.RemoveWorldFactionNpcCommand;
+import features.worldplanner.api.RemoveWorldLocationEncounterTableCommand;
+import features.worldplanner.api.RemoveWorldLocationFactionCommand;
+import features.worldplanner.api.SetWorldFactionDispositionCommand;
+import features.worldplanner.api.SetWorldFactionInventoryLimitCommand;
+import features.worldplanner.api.SetWorldNpcDispositionModifierCommand;
+import features.worldplanner.api.SetWorldNpcLifecycleStatusCommand;
+import features.worldplanner.api.UpdateWorldFactionCommand;
+import features.worldplanner.api.UpdateWorldLocationCommand;
+import features.worldplanner.api.UpdateWorldNpcCommand;
+import features.worldplanner.api.WorldDispositionKind;
+import features.worldplanner.api.WorldNpcLifecycleStatus;
+import features.worldplanner.api.WorldPlannerReadStatus;
+import features.worldplanner.api.WorldPlannerSnapshot;
+import features.worldplanner.api.WorldPlannerSnapshotModel;
+import features.worldplanner.domain.world.WorldFactionInventoryLimit;
+import features.worldplanner.domain.world.WorldNpc;
+import features.worldplanner.domain.world.WorldNpcLifecycleState;
+import features.worldplanner.domain.world.WorldPlannerState;
+import features.worldplanner.domain.world.port.WorldPlannerReferencePort;
+import features.worldplanner.domain.world.repository.WorldPlannerRepository;
+
+import org.junit.jupiter.api.Test;
+
+import platform.persistence.TestFeatureStores;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -9,51 +57,6 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-import org.junit.jupiter.api.Test;
-import features.creatures.CreaturesServiceAssembly;
-import features.creatures.domain.catalog.CreatureCatalogData;
-import features.creatures.domain.catalog.port.CreatureCatalogPort;
-import features.encountertable.domain.catalog.EncounterTableCandidateData;
-import features.encountertable.domain.catalog.EncounterTableSummaryData;
-import features.encountertable.domain.catalog.port.EncounterTableCatalogPort;
-import features.encountertable.EncounterTableServiceAssembly;
-import features.worldplanner.adapter.sqlite.repository.SqliteWorldPlannerRepository;
-import features.worldplanner.adapter.sqlite.mapper.WorldPlannerMapper;
-import features.worldplanner.adapter.sqlite.model.WorldNpcRecord;
-import features.worldplanner.adapter.sqlite.model.WorldPlannerPersistenceSchema;
-import features.worldplanner.adapter.sqlite.model.WorldPlannerSnapshotRecord;
-import features.worldplanner.domain.world.WorldFactionInventoryLimit;
-import features.worldplanner.domain.world.WorldNpc;
-import features.worldplanner.domain.world.WorldNpcLifecycleState;
-import features.worldplanner.domain.world.WorldPlannerState;
-import features.worldplanner.domain.world.port.WorldPlannerReferencePort;
-import features.worldplanner.domain.world.repository.WorldPlannerRepository;
-import features.worldplanner.api.AddWorldFactionNpcCommand;
-import features.worldplanner.api.AddWorldLocationEncounterTableCommand;
-import features.worldplanner.api.AddWorldLocationFactionCommand;
-import features.worldplanner.api.CreateWorldFactionCommand;
-import features.worldplanner.api.CreateWorldLocationCommand;
-import features.worldplanner.api.CreateWorldNpcCommand;
-import features.worldplanner.api.RefreshWorldPlannerCommand;
-import features.worldplanner.api.SetWorldFactionInventoryLimitCommand;
-import features.worldplanner.api.SetWorldFactionDispositionCommand;
-import features.worldplanner.api.SetWorldNpcLifecycleStatusCommand;
-import features.worldplanner.api.SetWorldNpcDispositionModifierCommand;
-import features.worldplanner.api.WorldDispositionKind;
-import features.worldplanner.api.UpdateWorldNpcNotesCommand;
-import features.worldplanner.api.UpdateWorldNpcCommand;
-import features.worldplanner.api.DeleteWorldNpcCommand;
-import features.worldplanner.api.UpdateWorldFactionCommand;
-import features.worldplanner.api.RemoveWorldFactionNpcCommand;
-import features.worldplanner.api.DeleteWorldFactionCommand;
-import features.worldplanner.api.UpdateWorldLocationCommand;
-import features.worldplanner.api.RemoveWorldLocationFactionCommand;
-import features.worldplanner.api.RemoveWorldLocationEncounterTableCommand;
-import features.worldplanner.api.DeleteWorldLocationCommand;
-import features.worldplanner.api.WorldNpcLifecycleStatus;
-import features.worldplanner.api.WorldPlannerReadStatus;
-import features.worldplanner.api.WorldPlannerSnapshot;
-import features.worldplanner.api.WorldPlannerSnapshotModel;
 
 public final class WorldPlannerBackendTest {
 
@@ -174,7 +177,9 @@ public final class WorldPlannerBackendTest {
     }
 
     private static WorldPlannerRuntime productionRuntime() {
-        return runtime(new SqliteWorldPlannerRepository(), new PositiveReferencePort());
+        return runtime(new SqliteWorldPlannerRepository(
+                        TestFeatureStores.current().store(
+                                SqliteWorldPlannerRepository.storeDefinition())), new PositiveReferencePort());
     }
 
     private static WorldPlannerRuntime runtime(

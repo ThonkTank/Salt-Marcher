@@ -3,14 +3,18 @@ package features.sessionplanner.domain.session;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
+
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteDatabase;
-import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
 
 final class SessionGeneratedContentTest {
 
@@ -46,7 +50,9 @@ final class SessionGeneratedContentTest {
         SqliteDatabase database = new SqliteDatabase(
                 temporaryDirectory.resolve("session-generation-roundtrip.db"),
                 NoopDiagnostics.INSTANCE);
-        SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(database);
+        SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(
+                        TestFeatureStores.store(
+                                database, SqliteSessionPlanRepository.storeDefinition()));
         SessionPlan plan = SessionPlan.seeded(8L, List.of(21L), EncounterDays.one())
                 .replaceGeneratedContent(
                         List.of(new SessionEncounter(

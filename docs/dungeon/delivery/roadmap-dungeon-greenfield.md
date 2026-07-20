@@ -268,8 +268,10 @@ that merge.
 - Extend the fresh destructive schema-v6 `dungeon_entity_chunks` index with the
   exact cell extent contributed by one stable entity inside one chunk and its
   total entity chunk count. Add level-keyed `dungeon_authored_level_bounds` as
-  the sole public authored-bounds source. There is no v5 translation, backfill,
-  preservation path, or schema v7.
+  the sole public authored-bounds source. M5.3 itself has no v5 translation or
+  preservation path. The later Catalog cutover adds schema v7 solely because an
+  already recorded older v6 signature exists: empty stores are repaired to this
+  target, while populated old-v6 stores fail closed without row or ledger changes.
 - Maintain entity extents, level bounds, chunk revisions, and map revision in
   the same patch/UoW transaction. Normal and compound rollback must restore all
   of them. Bounds are recomputed only for old/new affected levels through
@@ -298,8 +300,9 @@ that merge.
 
 #### Implementation And Proof
 
-1. Change only the fresh v6 schema/create-drop ownership and constraints; add
+1. Change the fresh v6 schema/create-drop ownership and constraints; add
    extent/extrema indexes and level-bounds storage with cascade deletion.
+   The later v7 compatibility repair does not redefine v6 or infer authored rows.
 2. Derive old/new per-chunk extents from the complete patch-bound entity closure
    in `DungeonSqlitePatchSpatialWriter`; update extent rows and affected level
    bounds atomically before committing chunk/map revisions.
@@ -461,9 +464,11 @@ that merge.
 - M4.6 preserves accepted Editor and Travel behavior. M5 owns cache/runtime and
   performance qualification; M6 owns stable travel action identity, direct
   movement, Party completion ordering, and the global `Reise` context.
-- There are no Dungeon Bestandsdaten. Schema v6 remains a destructive
+- There are no supported Dungeon Bestandsdaten before the canonical cut. Schema v6 remains a destructive
   Dungeon-only replacement: no v5 row translation, backfill, compatibility
-  loader, or preservation path is permitted.
+  loader, or preservation path is permitted. Schema v7 is an additive signature
+  repair: it upgrades only empty older-v6 stores and rejects populated ones
+  without mutation so owner-controlled recovery remains possible.
 
 #### Port And Workset Decisions
 

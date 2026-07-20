@@ -67,6 +67,11 @@ summary values are not persisted as historical truth.
 
 ## Validation And Error Behavior
 
+Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
+The current owner target is v5. V5 idempotently repairs any missing v1-v4 target
+tables, indexes, and generated-batch columns before signature validation; it does
+not reinterpret or discard persisted Encounter rows.
+
 - encounter-plan writes MUST reject empty or malformed roster rows instead of
   silently persisting partial encounter truth
 - generated alternatives, initiative state, combat HP, result state, and loot

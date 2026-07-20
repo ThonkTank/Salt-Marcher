@@ -4,12 +4,7 @@ import platform.diagnostics.NoopDiagnostics;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
 import platform.diagnostics.Measurement;
-import platform.persistence.FeatureStoreDefinition;
-import platform.persistence.FeatureStoreHandle;
-import platform.persistence.SqliteDatabase;
-import platform.persistence.SqliteMigration;
 import platform.persistence.SqliteQueryCounter;
-import org.jspecify.annotations.Nullable;
 import features.creatures.adapter.sqlite.model.CreatureCatalogPageRecord;
 import features.creatures.adapter.sqlite.model.CreatureCatalogSearchCriteriaRecord;
 import features.creatures.adapter.sqlite.model.CreatureDetailRecord;
@@ -17,14 +12,19 @@ import features.creatures.adapter.sqlite.model.CreatureFilterValuesRecord;
 import features.creatures.adapter.sqlite.model.EncounterCandidateCriteriaRecord;
 import features.creatures.adapter.sqlite.model.EncounterCandidateRecord;
 
+import org.jspecify.annotations.Nullable;
+
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+import platform.persistence.SqliteMigration;
+import platform.persistence.SqliteSchemaValidator;
+import features.creatures.adapter.sqlite.model.CreaturesPersistenceSchema;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * SQLite-backed local gateway for read-only creature catalog access.
- */
+/** SQLite-backed local gateway for read-only creature catalog access. */
 public final class SqliteCreatureCatalogLocalGateway {
 
     private static final DiagnosticId FACTS_READ = new DiagnosticId("creatures.sqlite.facts-read");
@@ -37,22 +37,34 @@ public final class SqliteCreatureCatalogLocalGateway {
     private final CreatureFactsSqliteStore creatureFactsStore = new CreatureFactsSqliteStore();
     private final Diagnostics diagnostics;
 
-    public SqliteCreatureCatalogLocalGateway() {
-        this(SqliteDatabase.defaultDatabase(
-                SqliteDatabase.DEFAULT_DATABASE_FILE_NAME,
-                NoopDiagnostics.INSTANCE));
-    }
-
-    public SqliteCreatureCatalogLocalGateway(SqliteDatabase database) {
-        this(database, NoopDiagnostics.INSTANCE);
-    }
-
-    public SqliteCreatureCatalogLocalGateway(SqliteDatabase database, Diagnostics diagnostics) {
+    public static FeatureStoreDefinition storeDefinition() {
         CreaturesSchemaMigrator schemaMigrator = new CreaturesSchemaMigrator();
-        this.connections = Objects.requireNonNull(database, "database").featureStore(
-                FeatureStoreDefinition.of(
-                        "creatures",
-                        new SqliteMigration(1, schemaMigrator::ensureSchema)));
+        SqliteSchemaValidator targetSchema = SqliteSchemaValidator.builder()
+                .tableContaining(CreaturesPersistenceSchema.CREATURES)
+                .primaryKey("creatures", "id")
+                .tableContaining(CreaturesPersistenceSchema.CREATURE_BIOMES)
+                .tableContaining(CreaturesPersistenceSchema.CREATURE_SUBTYPES)
+                .tableContaining(CreaturesPersistenceSchema.CREATURE_ACTIONS)
+                .index("idx_creatures_type", "creatures", false, "creature_type")
+                .index("idx_creatures_alignment", "creatures", false, "alignment")
+                .index("idx_creatures_xp", "creatures", false, "xp")
+                .index("idx_creatures_name", "creatures", false, "name")
+                .index("idx_creature_biomes_biome", "creature_biomes", false, "biome")
+                .index("idx_creature_biomes_creature", "creature_biomes", false, "creature_id")
+                .index("idx_creature_subtypes_subtype", "creature_subtypes", false, "subtype")
+                .index("idx_creature_subtypes_creature", "creature_subtypes", false, "creature_id")
+                .index("idx_creature_actions_creature", "creature_actions", false, "creature_id")
+                .build();
+        return FeatureStoreDefinition.validated(
+                "creatures", targetSchema, new SqliteMigration(1, schemaMigrator::ensureSchema));
+    }
+
+    public SqliteCreatureCatalogLocalGateway(FeatureStoreHandle store) {
+        this(store, NoopDiagnostics.INSTANCE);
+    }
+
+    public SqliteCreatureCatalogLocalGateway(FeatureStoreHandle store, Diagnostics diagnostics) {
+        this.connections = FeatureStoreHandle.requireOwner(store, "creatures");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
 

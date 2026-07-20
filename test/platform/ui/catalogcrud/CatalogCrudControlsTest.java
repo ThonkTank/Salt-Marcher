@@ -1,11 +1,11 @@
 package platform.ui.catalogcrud;
 
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import features.hex.HexServiceAssembly;
+import features.hex.adapter.javafx.hexmap.HexMapContribution;
+import features.hex.adapter.sqlite.repository.SqliteHexMapRepository;
+import features.party.PartyServiceAssembly;
+import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
+
 import javafx.application.Platform;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
@@ -22,19 +22,23 @@ import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.stage.WindowEvent;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import platform.persistence.TestFeatureStores;
+
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
 import shell.api.ShellBinding;
 import shell.api.ShellSlot;
-import features.hex.adapter.sqlite.repository.SqliteHexMapRepository;
-import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
-import features.hex.HexServiceAssembly;
-import features.hex.api.HexEditorModel;
-import features.party.PartyServiceAssembly;
-import features.hex.adapter.javafx.hexmap.HexMapContribution;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @org.junit.jupiter.api.Tag("ui")
 public final class CatalogCrudControlsTest {
@@ -166,7 +170,8 @@ public final class CatalogCrudControlsTest {
                         new CatalogCrudControlsContentModel.Item("b", "Beta", "", 0L, true)),
                 new CatalogCrudControlsContentModel.Actions(true, true, true, true),
                 false,
-                "Dungeon-Map gelöscht und Alpha als nächster verfügbarer Eintrag ausgewählt."));
+                        "Dungeon-Map gelöscht und Alpha als nächster verfügbarer Eintrag"
+                            + " ausgewählt."));
         view.applyCss();
         view.layout();
         assertVisibleLabelCount(
@@ -174,19 +179,26 @@ public final class CatalogCrudControlsTest {
                 "Dungeon-Map gelöscht und Alpha als nächster verfügbarer Eintrag ausgewählt.",
                 1L,
                 "non-empty catalog shows status text below selector row");
-        assertEquals("Beta", closedSelectorText(stringSelector), "status text does not clear closed selected label");
-        assertCatalogRowGeometry(view, actionMenuButton, "status text does not expand or clip selector action row");
+        assertEquals(
+                "Beta",
+                closedSelectorText(stringSelector),
+                "status text does not clear closed selected label");
+        assertCatalogRowGeometry(
+                view, actionMenuButton, "status text does not expand or clip selector action row");
         assertStableStatusLayout(
                 view,
                 selectorRowBoundsBeforeStatus,
                 viewHeightBeforeStatus,
                 "status text does not move the selector row or resize the shared control surface");
 
-        model.showCatalog(state(
+        model.showCatalog(
+                state(
                 "b",
                 List.of(
-                        new CatalogCrudControlsContentModel.Item("a", "Alpha", "", 0L, true),
-                        new CatalogCrudControlsContentModel.Item("b", "Beta", "", 0L, true)),
+                                new CatalogCrudControlsContentModel.Item(
+                                        "a", "Alpha", "", 0L, true),
+                                new CatalogCrudControlsContentModel.Item(
+                                        "b", "Beta", "", 0L, true)),
                 new CatalogCrudControlsContentModel.Actions(true, true, true, true),
                 false));
         view.applyCss();
@@ -195,7 +207,8 @@ public final class CatalogCrudControlsTest {
                 view,
                 selectorRowBoundsBeforeStatus,
                 viewHeightBeforeStatus,
-                "clearing status text does not move the selector row or resize the shared control surface");
+                "clearing status text does not move the selector row or resize the shared control"
+                    + " surface");
 
         events.clear();
         button(view, "Öffnen").fire();
@@ -408,7 +421,9 @@ public final class CatalogCrudControlsTest {
         layoutOpenWindows();
 
         String selectedName = services.editorModel().current().selectedMap()
-                .orElseThrow(() -> new AssertionError("Hex production route did not select the created map."))
+                .orElseThrow(() -> new AssertionError(
+                                                "Hex production route did not select the created"
+                                                    + " map."))
                 .displayName();
         assertEquals("Route Map", selectedName,
                 "shared Catalog CRUD controls create through HexMapContribution production route");
@@ -417,9 +432,12 @@ public final class CatalogCrudControlsTest {
 
     private static HexServiceAssembly hexMapServices() {
         PartyServiceAssembly.Component party =
-                PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+                PartyServiceAssembly.create(new SqlitePartyRosterRepository(
+                                TestFeatureStores.current().store(
+                                        SqlitePartyRosterRepository.storeDefinition())));
         return new HexServiceAssembly(
-                new SqliteHexMapRepository(), party.travelPositions(), party.application());
+                new SqliteHexMapRepository(
+                        TestFeatureStores.current().store(SqliteHexMapRepository.storeDefinition())), party.travelPositions(), party.application());
     }
 
     private static CatalogCrudControlsContentModel.CatalogState state(
@@ -595,7 +613,8 @@ public final class CatalogCrudControlsTest {
         }
         assertEquals(List.of(openButton, createButton, actionMenuButton),
                 List.of(row.getChildren().get(1), row.getChildren().get(2), row.getChildren().get(3)),
-                "shared control row keeps open, create, and secondary actions after the selector surface");
+                "shared control row keeps open, create, and secondary actions after the selector"
+                    + " surface");
         assertEquals(List.of(filterField, selector), List.copyOf(selectorSurface.getChildren()),
                 "selector surface keeps filter input and dropdown on one line");
     }

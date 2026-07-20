@@ -1,8 +1,5 @@
 package features.catalog.application;
 
-import features.catalog.application.WorldReferenceCatalogState.FactionRow;
-import features.catalog.application.WorldReferenceCatalogState.LocationRow;
-import features.catalog.application.WorldReferenceCatalogState.NpcRow;
 import features.creatures.api.CreatureReferenceIndexResult;
 import features.creatures.api.CreatureReferenceIndexStatus;
 import features.encountertable.api.EncounterTableCatalogResult;
@@ -24,7 +21,7 @@ final class WorldCatalogProjection {
     private WorldCatalogProjection() {
     }
 
-    static CatalogResultState<NpcRow> npcs(
+    static CatalogResultState<NpcCatalogRow> npcs(
             WorldPlannerSnapshot world,
             CreatureReferenceIndexResult creatures,
             String query
@@ -37,7 +34,7 @@ final class WorldCatalogProjection {
                         row -> row.id(), row -> row.name(), (first, ignored) -> first))
                 : Map.of();
         Map<Long, String> factionNames = factionNames(world);
-        List<NpcRow> rows = world.npcs().stream().map(npc -> new NpcRow(
+        List<NpcCatalogRow> rows = world.npcs().stream().map(npc -> new NpcCatalogRow(
                 npc.npcId(), npc.displayName(), npc.creatureStatblockId(),
                 reference(creatureNames, npc.creatureStatblockId(), "Statblock") + " · "
                         + reference(factionNames, npc.factionId(), "Keine Fraktion") + " · "
@@ -45,7 +42,7 @@ final class WorldCatalogProjection {
         return filtered(rows, query, row -> row.displayName() + " " + row.details());
     }
 
-    static CatalogResultState<FactionRow> factions(
+    static CatalogResultState<FactionCatalogRow> factions(
             WorldPlannerSnapshot world,
             EncounterTableCatalogResult tables,
             String query
@@ -54,7 +51,7 @@ final class WorldCatalogProjection {
             return failed(world);
         }
         Map<Long, String> tableNames = tableNames(tables);
-        List<FactionRow> rows = world.factions().stream().map(faction -> new FactionRow(
+        List<FactionCatalogRow> rows = world.factions().stream().map(faction -> new FactionCatalogRow(
                 faction.factionId(), faction.displayName(),
                 reference(tableNames, faction.primaryEncounterTableId(), "Tabelle")
                         + " · Haltung " + faction.disposition() + " · "
@@ -62,7 +59,7 @@ final class WorldCatalogProjection {
         return filtered(rows, query, row -> row.displayName() + " " + row.details());
     }
 
-    static CatalogResultState<LocationRow> locations(
+    static CatalogResultState<LocationCatalogRow> locations(
             WorldPlannerSnapshot world,
             EncounterTableCatalogResult tables,
             String query
@@ -72,7 +69,7 @@ final class WorldCatalogProjection {
         }
         Map<Long, String> factions = factionNames(world);
         Map<Long, String> tableNames = tableNames(tables);
-        List<LocationRow> rows = world.locations().stream().map(location -> new LocationRow(
+        List<LocationCatalogRow> rows = world.locations().stream().map(location -> new LocationCatalogRow(
                 location.locationId(), location.displayName(),
                 joinedReferences(factions, location.factionIds(), "Fraktionen") + " · "
                         + joinedReferences(tableNames, location.encounterTableIds(), "Tabellen"))).toList();

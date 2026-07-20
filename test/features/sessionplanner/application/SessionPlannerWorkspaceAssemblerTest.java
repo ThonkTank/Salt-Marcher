@@ -80,6 +80,23 @@ import platform.ui.DirectUiDispatcher;
 final class SessionPlannerWorkspaceAssemblerTest {
 
     @Test
+    void workspaceWithoutSessionLoadsActivePartyForNewSessionDefaults() {
+        CountingParty party = new CountingParty();
+        SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
+                new CountingSource(new SessionPlannerReadCapture(0L, List.of(), 0)),
+                party, new CountingEncounter(false), emptySavedPlans(), unavailableGeneration(), null,
+                directLane(), NoopDiagnostics.INSTANCE);
+
+        SessionPlannerWorkspaceSnapshot workspace = assembler.assemble(SessionPreparationSnapshot.idle())
+                .toCompletableFuture().join().workspace();
+
+        assertEquals(1, party.reads);
+        assertEquals(List.of(1L), workspace.participants().activePartyMembers().stream()
+                .map(member -> member.characterId()).toList());
+        assertTrue(workspace.participants().participants().isEmpty());
+    }
+
+    @Test
     void oneCaptureAndOneOwnerBatchHydrateManyScenesAndAllPreparedSessions() {
         SessionPlan current = SessionPlan.seeded(7L, List.of(1L), EncounterDays.one())
                 .attachEncounter(11L)

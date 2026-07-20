@@ -57,12 +57,14 @@ public final class SavedEncounterCatalogDefinition
         return new CatalogPresentationSpec<>(
                 "Gespeicherte Encounter", "Encounter", SavedEncounterPlanSummary::name, List.of(),
                 List.of(
-                        new CatalogColumnSpec<>("Name", SavedEncounterPlanSummary::name),
-                        new CatalogColumnSpec<>("Zusammenfassung", SavedEncounterPlanSummary::summaryText)),
+                        new CatalogColumnSpec<>("name", "Name", SavedEncounterPlanSummary::name, true),
+                        new CatalogColumnSpec<>(
+                                "summary", "Zusammenfassung", SavedEncounterPlanSummary::summaryText, false)),
                 Optional.of(new CatalogActionSpec(
                         CatalogActionId.OPEN, "Im Encounter öffnen", "Gespeicherten Encounter öffnen", "Öffnen",
                         CatalogActionSpec.Emphasis.PRIMARY)),
-                List.of(), List.of(), false);
+                List.of(), List.of(CatalogActionSpec.create()), false,
+                new CatalogSortOrder("name", CatalogSortOrder.Direction.ASCENDING), CatalogSortMode.LOCAL);
     }
 
     @Override

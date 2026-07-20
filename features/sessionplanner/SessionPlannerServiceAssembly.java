@@ -17,15 +17,17 @@ import features.sessionplanner.application.SessionPreparationCoordinator;
 import features.sessionplanner.application.SessionPreparedSessionStore;
 import features.sessionplanner.domain.session.repository.SessionPlanRepository;
 import features.worldplanner.api.WorldPlannerSnapshotModel;
-import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import platform.diagnostics.Diagnostics;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Measurement;
 import platform.execution.ExecutionLane;
-import platform.persistence.SqliteDatabase;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
 import platform.ui.UiDispatcher;
 import shell.api.ShellContribution;
+
+import java.util.Objects;
 
 public final class SessionPlannerServiceAssembly {
 
@@ -35,8 +37,12 @@ public final class SessionPlannerServiceAssembly {
     private final Runtime runtime;
     private final Diagnostics diagnostics;
 
+    public static FeatureStoreDefinition storeDefinition() {
+        return SqliteSessionPlanRepository.storeDefinition();
+    }
+
     public static SessionPlannerServiceAssembly create(
-            SqliteDatabase database,
+            FeatureStoreHandle store,
             PartyApi party,
             EncounterApi encounters,
             SavedEncounterPlanListModel savedPlans,
@@ -48,8 +54,7 @@ public final class SessionPlannerServiceAssembly {
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
-        SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(
-                Objects.requireNonNull(database, "database"));
+        SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(store);
         return new SessionPlannerServiceAssembly(
                 repository, repository, repository, party, encounters, savedPlans, worldPlanner,
                 generation, authoredExecutionLane, preparationCpuLane, preparationIoLane,

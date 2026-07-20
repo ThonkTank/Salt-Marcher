@@ -1,43 +1,28 @@
 package features.dungeon.adapter.javafx.editor;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.WeakHashMap;
+import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
+import features.dungeon.adapter.javafx.map.DungeonMapContentModel.PointerTarget;
+import features.dungeon.adapter.javafx.map.DungeonMapView;
 import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
-import features.dungeon.domain.core.geometry.Cell;
-import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.api.DungeonEdgeRef;
-import features.dungeon.api.DungeonEditorControlsModel;
 import features.dungeon.api.DungeonEditorControlsSnapshot;
-import features.dungeon.api.DungeonEditorMapSurfaceModel;
 import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
-import features.dungeon.api.DungeonEditorStateModel;
 import features.dungeon.api.DungeonEditorStateSnapshot;
-import features.dungeon.api.DungeonTopologyElementRef;
-import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonMapSummary;
 import features.dungeon.api.DungeonOverlaySettings;
+import features.dungeon.api.DungeonTopologyElementRef;
+import features.dungeon.api.editor.DungeonEditorPointerInput;
 import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
 import features.dungeon.application.editor.PointerInteractionTargets;
-import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
-import features.dungeon.adapter.javafx.map.DungeonMapContentModel.PointerTarget;
-import features.dungeon.api.editor.DungeonEditorPointerInput;
-import features.dungeon.adapter.javafx.map.DungeonMapView;
-import platform.ui.catalogcrud.CatalogCrudControlsView;
-import platform.ui.mapcanvas.MapCanvasPane;
+import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.Direction;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -60,10 +45,23 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.TestFeatureStores;
+import platform.ui.catalogcrud.CatalogCrudControlsView;
+import platform.ui.mapcanvas.MapCanvasPane;
+
 import shell.api.ShellBinding;
 import shell.api.ShellLeftBarTabSpec;
 import shell.api.ShellSlot;
 import shell.host.AppShell;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
 
@@ -919,7 +917,8 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
                                 && handle.cell().q() == 3
                                 && handle.cell().r() == 2
                                 && handle.cell().level() == 0),
-                message + " published handle readback moves the first stair path handle to (3,2,0)");
+                message + " published handle readback moves the first stair path handle to"
+                        + " (3,2,0)");
         assertTrue(renderSurfaceCellOriginsWithZ(mapContentModel).contains("3,2,0"),
                 message + " render scene contains moved stair path cell");
         assertTrue(renderHasGlyphAt(mapContentModel, editorTopologyRef(ref), 3.5, 2.5, false),
@@ -953,7 +952,8 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
                                 .map(cell -> cell.q() + "," + cell.r() + "," + cell.level())
                                 .collect(java.util.stream.Collectors.toSet())
                                 .equals(expectedFeatureCells)),
-                message + " published stair feature exposes exactly the active-level generated path/exit: "
+                message + " published stair feature exposes exactly the active-level generated"
+                        + " path/exit: "
                         + snapshot.surface().map().features());
         var activeStairHandles = snapshot.surface().map().editorHandles().stream()
                 .filter(handle -> handle.ref().topologyRef().equals(ref))
@@ -1339,12 +1339,15 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
         try (platform.persistence.SqliteDatabase database = platform.persistence.SqliteDatabase.defaultDatabase(
                 DungeonPersistenceSchema.DATABASE_FILE_NAME,
                 platform.diagnostics.NoopDiagnostics.INSTANCE);
-                var connection = database.connections("dungeon-test-inspection").openConnection();
+                var connection =
+                        TestFeatureStores.store(
+                                database,
+                                FeatureStoreDefinition.of("dungeon-test-inspection")).openConnection();
                 var statement = connection.prepareStatement(
                         "SELECT c.cell_x,c.cell_y,c.level_z FROM " + DungeonPersistenceSchema.ROOM_CELLS_TABLE + " c"
-                                + " JOIN " + DungeonPersistenceSchema.ROOMS_TABLE + " r ON r.room_id=c.room_id"
-                                + " WHERE r.dungeon_map_id=? AND r.cluster_id=? AND c.level_z=?"
-                                + " ORDER BY c.level_z,c.cell_y,c.cell_x")) {
+                                + " JOIN " + DungeonPersistenceSchema.ROOMS_TABLE + " r ON r.room_id=c.room_id WHERE r.dungeon_map_id=? AND"
+                                        + " r.cluster_id=? AND c.level_z=? ORDER BY"
+                                        + " c.level_z,c.cell_y,c.cell_x")) {
             statement.setLong(1, mapId);
             statement.setLong(2, clusterId);
             statement.setInt(3, level);
@@ -1632,7 +1635,9 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
                                 && (cell.q() == doorBoundary.edge().from().q()
                                 || cell.q() == doorBoundary.edge().from().q() - 1)))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("DE-SEL-002 published facts identify the door owning room"));
+                .orElseThrow(() -> new AssertionError(
+                                                "DE-SEL-002 published facts identify the door"
+                                                    + " owning room"));
         assertEquals("R1", owningArea.label(), "DE-SEL-002 published facts identify the door owning room label");
         assertTrue(owningArea.clusterId() > 0L,
                 "DE-SEL-002 published facts identify the door owning room/cluster id");
