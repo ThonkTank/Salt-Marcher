@@ -42,16 +42,14 @@ including corridor junctions and branches.
 
 Spatial authoring has two foundational forms: directly drawn anchored Areas and
 dynamically generated Paths between two or more endpoints or waypoints.
-Corridors and stairs are typical Path authoring forms. Generated Paths
-materialize ordinary bounded Room volume; Area and Path describe construction
-behavior rather than incompatible runtime space types.
+Horizontal corridors and vertical stair segments are generated parts of one unified 3D Path model. One Path may combine both between endpoints at different elevations. Generated Paths materialize ordinary bounded Room volume; Area and Path describe construction behavior rather than incompatible runtime space types.
 
 The Dungeon capability includes:
 
 - Dungeon catalog management
 - square-cell, multi-level authored geometry
-- rooms, larger named room groups or areas, walls, doors, corridors, stairs,
-  transitions, markers, and GM-authored traps
+- rooms, larger named room groups or areas, walls, doors, unified generated
+  3D connection Paths, transitions, markers, and GM-authored traps
 - descriptions, inspection, stable Dungeon-Key numbering, and campaign-object
   references
 - synchronized raster-map, relationship-graph, and Dungeon-Key workflows
