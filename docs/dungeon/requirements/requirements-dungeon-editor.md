@@ -331,6 +331,10 @@ passability or action rules.
   duplicating them
 - the Dungeon placement adds its voxel anchor, local Dungeon notes, detection
   behavior, and any later schedule
+- one concrete Encounter or monster group has at most one current Dungeon
+  placement; repeated equivalent encounters require independent Encounter copies
+- later movement changes that group's existing anchor rather than creating
+  another placement
 - Encounter detection initially uses a radius derived from referenced monster
   statistics; its exact perception behavior remains subject to later validation
 - Loot and Curiosity Features do not activate solely because the party is nearby
