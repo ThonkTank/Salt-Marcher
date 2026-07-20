@@ -129,6 +129,21 @@ to travel time or route extent. Collapsing graph detail aggregates the
 underlying node and edge values to the visible level without losing category
 distinctions.
 
+Heatmap facts come only from explicit authored Dungeon Features, not from
+guessing content out of room prose. Initial feature kinds include Encounter,
+Trap, Loot, and Curiosity.
+
+A Curiosity organizes a puzzle or other interactive feature. Its initial
+content may be free text. Later versions may add optional links or simple
+consequences such as changing lights or unlocking a referenced door.
+Diagnostics count Curiosities but MUST NOT assign them a qualitative score.
+
+The graph may show advisory pacing warnings for probable underfilling,
+overfilling, or local content concentration. Such warnings MUST identify their
+selected reference profile and evidence, remain overridable, and never block
+authoring. Reference guidance such as The Alexandrian's approximate
+content-bearing-room density is a profile input, not a universal quality law.
+
 The GM may rearrange rooms and room groups in the graph. SaltMarcher translates
 those changes into raster geometry as far as possible.
 
