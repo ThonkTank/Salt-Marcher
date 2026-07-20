@@ -155,6 +155,14 @@ Die einzelnen Segmente behalten sichtbare Form und beschreibbare Eigenschaften,
 gehören aber zu demselben parametrischen Pfad und demselben
 Generierungs- und Bearbeitungsmodell.
 
+Dasselbe Pfadmodell umfasst außerdem Rampen, Leitern, Schächte und vergleichbare
+Verbindungsformen. Der Pfad speichert Endpunkte, optionale Wegpunkte, Breite,
+Höhe und bei Bedarf abschnittsweise eine authored Verbindungsform wie Gang,
+Treppe, Rampe, Leiter oder Schacht. SaltMarcher darf dafür passende
+Segmentformen und deren Verlauf vorschlagen; der GM kann bestimmte Formen oder
+Positionen erzwingen. Diese Segmente sind Eigenschaften desselben Pfades, keine
+eigenen grundlegenden Inhaltsmodelle.
+
 Der akzeptierte Pfad bleibt durch Endpunkte, optionale Wegpunkte, Breite und
 weitere Pfadparameter definiert; seine konkrete Voxelgeometrie wird daraus
 abgeleitet. Verschiebt sich ein verbundener Raum oder Endpunkt, zeigt
