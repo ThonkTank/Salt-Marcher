@@ -309,12 +309,14 @@ passability or action rules.
 - only an explicit content-deletion action removes preserved GM-authored content
 - the GM may duplicate whole authored identities or selected content parts and
   assign the resulting content independently to other suitable geometry
-- an ordinary copy receives its own identity and changes independently
-- the GM may save named templates for recurring starting content and
-  deliberately apply a later template update to selected instances
-- editing a template MUST NOT silently mutate existing instances
-- permanently linked instances are deferred and, if added, remain a separate
-  explicit capability
+- an ordinary reassignment or copy receives its own identity and changes
+  independently
+- the GM may explicitly turn supported authored content into a reusable template
+  and assign that template to several instances
+- template assignments remain linked and automatically receive later template
+  changes
+- the GM may deliberately detach one linked instance; the detached instance
+  then preserves its current content and changes independently
 - the reassociation mechanism is replaceable; the required outcome is visible,
   recoverable preservation without silent data loss
 
