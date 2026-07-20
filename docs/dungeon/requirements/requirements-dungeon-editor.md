@@ -307,6 +307,11 @@ passability or action rules.
   remains preserved for reassignment
 - Encounters are initially authored as stationary Features; optional mobile
   Encounter behavior is deferred
+- only Traps and Encounters initially support automatic proximity activation
+- a Trap may own optional trigger fields separate from its Feature anchor
+- Encounter detection initially uses a radius derived from monster statistics;
+  its exact perception behavior remains subject to later validation
+- Loot and Curiosity Features do not activate solely because the party is nearby
 - a Volume is geometric truth; a Room is stable GM-authored content associated
   with a Volume
 - one Room is assigned to at most one Volume and one Volume to at most one Room
