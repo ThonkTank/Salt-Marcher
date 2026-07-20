@@ -51,10 +51,18 @@ uses 5-foot horizontal cells and automatically creates floor, traversable
 volume, and a 10-foot-clear default ceiling. The GM may later change height in
 5-foot steps without constructing every vertical voxel by hand.
 
-It supports:
+Its foundational fixed-Area tools are:
 
-- draw and reshape room and area geometry
-It supports two foundational geometry forms:
+- a brush with selectable shapes and adjustable radius
+- a polygon or surface tool that draws different area forms through
+  click-and-drag
+- an eraser with matching shape and radius capabilities
+- selection that can move, distort, and edit existing geometry
+
+Floor, traversable Volume, and default ceiling remain one coordinated spatial
+result while these tools operate.
+
+The raster model supports two foundational geometry forms:
 
 - directly drawn anchored Areas whose geometry changes only through explicit GM
   edit or removal
