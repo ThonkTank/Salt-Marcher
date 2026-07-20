@@ -162,7 +162,9 @@ automatically.
 
 Reset Duration restores all Charges together. Per Trap, the GM chooses whether
 the countdown begins only at zero Charges or as soon as current Charges fall
-below maximum. The GM may manually correct current Charges and reset state. A
+below maximum. Consuming another Charge does not restart a running countdown;
+completion restores all Charges regardless of intervening use. The GM may
+manually correct current Charges and reset state. A
 future low-priority monster routine may perform an explicit manual reset.
 
 Encounter detection provisionally uses a radius derived from monster statistics. Loot and Curiosity
