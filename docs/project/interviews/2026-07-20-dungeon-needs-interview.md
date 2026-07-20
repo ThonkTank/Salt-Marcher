@@ -307,8 +307,20 @@ bleibt davon getrennt.
 Charaktere erhalten eigene Explorationshandlungen. Wenn ein Charakter oder eine
 abgetrennte Gruppe reist, werden ihre folgenden Runden automatisch mit Reise
 gefüllt, bis das Reiseziel beziehungsweise die anderen Charaktere erreicht
-sind. Rundentakt, Gruppentempo und der Umfang weiterer Explorationshandlungen
-sind noch nicht abschließend entschieden.
+ist. Gruppentempo und das Verhalten beim Einholen beweglicher Ziele sind noch
+nicht abschließend entschieden.
+
+### Welchen Zeittakt verwendet die Explorationsinitiative?
+
+**Bestätigte Antwort:** Vom GM gewählter fester Takt.
+
+Der GM wählt für die Explorationsinitiative 1, 5, 10, 15 oder 30 Minuten pro
+Runde oder gibt eine eigene Dauer ein. Außer Bewegung erhalten Handlungen keine
+programmierten Arten oder Dauern. Sie werden am Spieltisch frei beschrieben und
+aufgelöst, damit SaltMarcher weder die möglichen Handlungen einschränkt noch
+eine umfassende Aktionsökonomie modellieren muss. Nur Bewegung verwendet die
+nach dem bestätigten D&D-5e-2014-Regelprofil berechnete Dauer und belegt bei
+längerer Reise automatisch folgende Runden.
 
 ### Wie läuft Zeit- und Ereignisfortschreibung ab?
 
@@ -419,16 +431,15 @@ Nach jeder Owner-Antwort ist dieses Protokoll zu aktualisieren; erst die
 abschließend bestätigte Interpretation wird in die kanonischen englischen
 Requirements überführt.
 
-Die nächsten drei bereits vorbereiteten Fragen sind:
+Die nächsten bereits vorbereiteten Fragen sind:
 
-1. Verwendet die Explorationsinitiative feste D&D-Runden von sechs Sekunden,
-   einen konfigurierbaren Takt oder variable Aktionsdauern?
-2. Bewegt sich ein zusammengefasstes Gruppentoken mit dem langsamsten Mitglied,
+1. Bewegt sich ein zusammengefasstes Gruppentoken mit dem langsamsten Mitglied,
    mit intern unterschiedlichen Ankunftszeiten oder mit einem vom GM gesetzten
    Gruppentempo?
-3. Unterstützt die Explorationsinitiative außer Bewegung und Warten auch ein
-   kleines Kernset aus Untersuchen, Suchen und einfachen
-   Umgebungsinteraktionen, oder bleibt sie auf Bewegung beschränkt?
+2. Wie verhalten sich eine laufende Autoroute und ein bewegliches Ziel, wenn ein
+   Charakter eine andere Gruppe einholt?
+3. Welche Unterbrechungen außer Ereignis, ungültigem Weg und GM-Abbruch stoppen
+   automatische Reise?
 
 Danach sind mindestens folgende Bedarfsfragen offen:
 
