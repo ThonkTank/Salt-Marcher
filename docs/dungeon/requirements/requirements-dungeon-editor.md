@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-20
+Last Reviewed: 2026-07-21
 Source of Truth: Confirmed solution-neutral Dungeon authoring and inspection
 behavior.
 
@@ -47,9 +47,17 @@ primarily textual content after or alongside structural authoring.
 ## Raster Authoring View
 
 The editor raster view owns direct spatial authoring. Ordinary floor drawing
-uses 5-foot horizontal cells and automatically creates floor, traversable
-volume, and a 10-foot-clear default ceiling. The GM may later change height in
-5-foot steps without constructing every vertical voxel by hand.
+uses 5-foot horizontal cells and 5-foot vertical resolution, and automatically
+creates floor, traversable Volume, and a 10-foot-clear default ceiling. The
+normal editor presents one 10-foot story as a 2D active slice spanning two
+vertical steps. Geometry immediately above and below appears through
+onion-slicing.
+
+The GM may switch slices before or during an editing gesture. A click-and-drag
+surface operation may therefore span several slices and create a 3D Volume.
+Stories may be stacked directly; removing an intermediate floor opens the
+vertical geometry. Floors and walls remain independently editable despite the
+automatically created standard shell.
 
 Its foundational fixed-Area tools are:
 
