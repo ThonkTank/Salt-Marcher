@@ -1,384 +1,167 @@
-Status: Draft
+Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-19
-Source of Truth: Editor-facing dungeon behavior, visible states, and acceptance criteria.
+Last Reviewed: 2026-07-20
+Source of Truth: Confirmed solution-neutral Dungeon authoring and inspection
+behavior.
 
 # Dungeon Editor Requirements
 
 ## Goal
 
-Define the required editor workflow over committed authored dungeon truth so
-the user can manage maps, select stable authored targets, preview changes, and
-commit supported mutations without inventing a second authored state source.
+Let one GM author and maintain complete multi-level Dungeon truth through three
+specialized, synchronized views without requiring duplicate edits or exposing
+internal storage and routing concepts.
 
-## Non-Goals
+## Shared Authoring Outcomes
 
-This document does not own shared canvas contract design, renderer scene
-structure, authored dungeon invariants, or SQLite schema detail.
+The editor MUST let the GM:
 
-## Visible Structure
+- create, rename, load, reload, and delete Dungeon maps
+- author and inspect rooms, named room groups or areas, walls, doors, corridors,
+  stairs, transitions, markers, traps, descriptions, and campaign references
+- work on positive and negative levels and coordinates without a fixed map
+  boundary
+- select a stable authored object and find the same object in every applicable
+  view
+- preview, confirm, cancel, undo, and redo supported changes
+- receive a clear, specific explanation when a change cannot be applied
 
-The editor has three control rows for map management, level/overlay/projection,
-and directly visible tool-family controls. Main content is the shared dungeon
-map surface in editor mode. State content shows active tool, selection, preview
-state, mutation status, and room narration cards or tool-specific editing
-cards.
+Exact pointer buttons, menus, dropdown behavior, pixel widths, and control
+placement are replaceable UX design. Required outcomes are fast selection,
+understandable preview, explicit completion or cancellation, safe rejection,
+and discoverable tools.
 
-## Tool Family Selection
+## Raster Authoring View
 
-- tool selection MUST use one focused button per editor tool family instead of separate top-level buttons for subactions inside the same family, including stair create/delete variants
-- the tool-family button row SHOULD be no wider than the tool panel when the editor is displayed in the normal tool-panel layout in a `960px` wide app window
-- room, wall, door, corridor, stair, and transition families MUST use the same
-  map-surface gesture mapping: LMB or primary input selects or places the
-  family's normal authored target, RMB or secondary input deletes or removes
-  the target, and Shift-modified input performs the family's alternate edit
-  action when that family defines one
-- place and delete intent MUST be separated by the shared map-surface gesture
-  mapping instead of a second menu choice after the family button is selected
-- family-specific parameters such as stair shape, wall interaction mode,
-  transition destination, or corridor endpoint details MAY be edited through
-  the state panel or another focused parameter surface, but they MUST NOT
-  replace the shared place/delete gesture convention
-- secondary tool options that choose a mode, shape, destination kind, link
-  behavior, or other parameter value rather than place/delete/alternate edit
-  intent MUST appear in a dropdown window anchored under the focused family
-  button
-- a family-button dropdown MUST preselect the last used sub-option for that
-  family, or the first available sub-option when no previous selection exists
-- a family-button dropdown MUST close automatically when the pointer leaves the
-  dropdown window area
-- `Esc` MUST reset the current tool family and sub-option selection back to the
-  general `Auswahl` tool
+The editor raster view owns direct spatial authoring:
 
-## Required Behavior
+- draw and reshape room and area geometry
+- place and edit walls, doors, corridors, stairs, transitions, markers, traps,
+  and other spatial objects
+- select authored objects, rooms, and areas for detailed inspection
+- change levels, pan, zoom, jump to coordinates, fit selection, and fit authored
+  content
+- show pending geometry as a non-persisted preview
+- expose enough specific feedback to repair invalid or conflicting geometry
 
-- the editor MUST let the user create, rename, delete, load, and reload maps
-- created maps MUST start empty
-- deleting the currently selected map while at least one other map remains MUST
-  remove that map and its authored dungeon content, clear transient selection
-  and preview state, and then select the first remaining map in the current
-  catalog order
-- `Auswahl` MUST remain directly visible
-- room, wall, door, corridor, stair, and transition families MUST remain
-  directly visible as tool buttons
-- directly visible tool buttons MUST represent tool families, not separate
-  top-level create and delete variants
-- selection MUST resolve stable authored targets rather than presentation-only
-  guesses
-- preview MUST read as if the pending operation were applied, but MUST NOT
-  persist authored truth
-- rejected edits MUST show a specific stable reason that explains the blocked
-  operation; a generic no-change message is not sufficient when the system
-  knows whether geometry, identity, references, routing, or revision caused the
-  rejection
-- handle drag preview MUST be responsive and MUST avoid a full authored
-  map reload during per-mouse-move preview when the typed preview can be
-  rendered from the current editor session
-- after the visible chunk workset is loaded, pointer preview MUST NOT read from
-  or write to the repository
-- only the newest pending pointer-move preview may remain queued; press,
-  release, commit, cancel, and tool-switch inputs MUST invalidate older queued
-  move samples
-- apply MUST commit only on explicit gesture completion
-- corridor editing MUST support visible create and delete flows
-- stair editing MUST support visible create and delete flows plus stair shape, direction, and exit-level configuration
-- transition editing MUST support visible create and delete flows plus destination selection for dungeon, overworld, or an explicit unlinked entrance placeholder
-- object, encounter, and point-of-interest markers MUST support label and
-  description editing after creation
-- cluster and room naming MUST support default and custom names through the
-  state panel; only cluster labels may also use direct label editing
+The runtime travel raster is not an authoring surface. It displays the map
+passively and lets the GM select rooms, objects, actors, and other targets to
+open their descriptions in a detail pane.
 
-## Sparse Map And Camera Behavior
+## Relationship-Graph Design View
 
-- authored coordinates MUST support positive and negative values without a
-  fixed map width or height acting as an editing boundary
-- the editor MUST load chunks intersecting the visible viewport plus one
-  surrounding chunk ring for the active level
-- chunks are `64 x 64` cells and use mathematical floor division for negative
-  coordinates
-- panning or zooming MUST remain passive presentation behavior and MUST NOT
-  mutate authored truth
-- coordinate jump, fit-selection, and fit-authored-content actions MUST remain
-  possible even when authored content is far from the current viewport
-- graph presentation MUST distinguish loaded relations from continuations into
-  unloaded chunks rather than presenting the loaded window as the whole map
+The graph is an abstract, zoomed-out Dungeon-design and debugging surface. It
+MUST help the GM inspect and manage:
 
-## Committed History
+- room and room-group flow
+- the distribution of decision complexity
+- travel times between relevant points
+- placement and density of puzzles, loot, encounters, curiosities, and similar
+  content
+- important relationships and transitions that are difficult to understand at
+  raster scale
 
-- `Ctrl/Cmd+Z` MUST undo the latest committed authored command for the selected
-  map in the running editor session
-- `Ctrl/Cmd+Y` and `Ctrl/Cmd+Shift+Z` MUST redo the latest undone command
-- previews, rejected commands, camera changes, selection, and tool changes MUST
-  NOT create history entries
-- a new committed command after undo MUST discard that map's redo branch
-- history MUST preserve stable authored identities and restore content as a
-  new monotonically increasing map revision
-- one map session retains at most `200` committed commands or `128 MiB` of
-  encoded history weight, whichever limit is reached first; the byte weight
-  MUST upper-bound or directly measure the retained forward and inverse command
-  payloads rather than estimate only top-level object counts
-- one accepted command that changes several maps, including a bidirectional
-  transition link, MUST create one compound history entry and undo or redo every
-  involved map atomically
-- closing the editor session or restarting the application clears history;
-  history MUST NOT be stored as dungeon-authored truth
+The GM may rearrange rooms and room groups in the graph. SaltMarcher translates
+those changes into raster geometry as far as possible.
 
-## Responsiveness Qualification
+### Protected Graph-Edit Preview
 
-- camera-only and hover-only work MUST complete within a `16 ms` p95 budget in
-  the qualification scenario
-- preview over an already loaded workset MUST complete within a `50 ms` p95
+- graph rearrangement begins a protected, transient edit mode
+- the raster result appears only when the GM returns to the raster editor
+- the GM may repair translated geometry with ordinary raster-editor tools
+- no graph-edit result becomes permanent until the GM accepts the combined
+  result
+- before acceptance, one action restores the complete Dungeon state from
+  immediately before graph editing began
+- this protected restoration remains available independently of the ordinary
+  undo/redo depth or memory cap
+- failed or ambiguous translation MUST NOT silently discard authored content
+
+## Room List And Dungeon Key
+
+The room-list view presents a focused, human-readable Dungeon Key. It MUST let
+the GM efficiently edit primarily textual and semantic content through spacious
+room-editing dialogs.
+
+Each room entry includes at least:
+
+- stable editable display number
+- name
+- read-aloud description
+- GM description or notes
+- exits and relationships
+- linked actors, objects, encounters, and events
+
+SaltMarcher initially assigns unique display numbers. The GM may change or
+reorder them without changing internal room identity or breaking references.
+
+## Hybrid Room Descriptions
+
+A rendered room description combines:
+
+- dynamic geometry facts and spatial relationships
+- GM-authored descriptive attributes such as shape, height, materials,
+  atmosphere, temperature, moisture, door appearance, and similar qualities
+
+During travel, relative language such as “in front of you”, “left”, and
+“right” derives from current party heading and approach. Outside current travel,
+the Dungeon Key, editor, and document export use stable map directions such as
+north or southwest.
+
+The editor lets the GM choose an entrance or heading to preview the relative
+read-aloud result. Geometry changes recompute geometric relations without
+overwriting GM-authored attributes.
+
+Descriptions such as blocked, locked, heavy, cold, or damp affect generated
+wording and placement in the dynamic description. They MUST NOT silently create
+passability or action rules.
+
+## Commit, Preview, And History
+
+- each completed, validated authoring action persists immediately
+- previews, canceled gestures, camera changes, selection, and rejected work do
+  not persist authored truth
+- rejection preserves the last valid authored state and identifies the reason
+- undo/redo covers at least the latest 200 ordinary committed changes in the
+  current editor session
+- unusually large operations may be limited by a documented encoded-memory
   budget
-- rendering and hit work MUST be proportional to visible primitives and
-  touched chunks rather than total authored map size
-- stable authored content and the dynamic interaction/actor layer MUST be
-  independently invalidatable so hover changes do not redraw authored content
-- qualification MUST include a sparse map with at least `100,000` authored
-  cells while the active visible-plus-ring workset contains at most `9` chunks;
-  camera, hover, and preview operation counts MUST remain independent from the
-  off-window cell count
+- a new commit after undo discards that session's redo branch
+- undo/redo preserves stable authored identities
+- history is session-scoped and is not exported as Dungeon truth
+- one action spanning several maps, such as a bidirectional transition, commits
+  and reverses atomically
 
-## Supported Interaction States
+## Sparse-Map Responsiveness
 
-- room paint and delete on the active level
-- wall create and delete through boundary paths
-- wall creation defaults to path-based drawing; single-click wall work is an
-  alternate mode, not the default
-- door create and delete through boundary selection, including cluster
-  perimeter doors on outer walls
-- door selection exposes the stable authored door target and deletion status,
-  but there are no door-specific editable state-panel fields in this
-  requirements set beyond room exit narration and the shared delete/reject
-  behavior
-- room narration editing from the state pane
-- handle movement for selectable editor handles
-- straight wall-stretch movement for selected cluster walls
-- selected cluster corner movement through published corner handles and
-  selected wall-line movement through published wall-midpoint handles
-- selecting a room floor area MUST select that room without exposing cluster
-  corner or wall-run handles; selecting the cluster label MUST expose the
-  owning cluster corner and wall-run handles
-- selection hover feedback MUST appear only for stable selectable objects: room/corridor/stair cells, transition/feature markers, visible handles, cluster labels, graph nodes, and door boundaries. Plain wall boundaries, room labels, feature hover labels, and tool-only synthetic geometry MUST stay visually passive in selection mode.
-- door handles MUST be visible canvas handles, hittable through the shared
-  handle route, draggable with live preview, and committed as authored door
-  boundary movement
-- corridor create and delete flows
-- corridor targeting resolves to explicit authored endpoints only: room-side
-  doors and corridor-side anchors
-- generic room hits and generic corridor hits remain allowed input, but the
-  committed corridor MUST bind to a concrete authored door or corridor anchor
-- corridor hover feedback MUST stay narrower than accepted fallback input:
-  wall or door boundary edges and authored corridor cells may highlight, while
-  generic room cells must not present as corridor hover targets
-- stair create and delete flows with visible shape and exit configuration
-- transition create and delete flows with description, destination, and
-  bidirectional-link options
-- transition creation MUST accept both map-cell placement and wall or door edge placement; cell placements behave like compact stair-style entrance glyphs, while edge placements behave like compact door-style boundary glyphs
-- transition creation MUST allow an unlinked entrance placeholder without requiring an overworld tile or dungeon transition target at creation time
-- unlinked entrance placeholders MUST persist, render, reload, select, accept description edits, and delete like other unreferenced authored transitions
-- rendered transition markers MUST be unlabeled and transition-specific; they may resemble stairs or doors by placement, but must remain visually distinguishable from ordinary stair and door affordances
-- edge-anchored transitions MUST render and hit-test through the edge marker,
-  not through a transition cell surface
-- runtime travel MUST NOT execute an unlinked entrance; it MUST leave travel on the current authored surface and surface a clear missing-destination outcome through the travel action failure path
-- committed object, encounter, point-of-interest, and transition markers MUST NOT render persistent feature labels; marker names MAY appear as hover-only overlay text and must not become selectable label targets
-- committed object, encounter, or point-of-interest feature markers must remain selectable by stable marker topology ref and must not create travel actions
-- custom cluster name editing through state-panel fields and direct map-label
-  editing; custom room name editing through state-panel fields
-- grid and graph projection modes
-- level controls that can select empty positive and negative editor levels
-  before authored geometry exists there
-- overlay controls that affect presentation only
+- authored coordinates have no fixed width or height boundary
+- camera, hover, selection, preview, and rendering work scales with visible
+  primitives and touched spatial regions
+- off-screen authored content does not force global work for a local gesture
+- camera and hover work meet a 16 ms p95 budget
+- preview over already available local data meets a 50 ms p95 budget
+- qualification includes at least 100,000 authored cells on a sparse map
 
-## Clarified Geometry Behavior
+## Extensibility Qualification
 
-- room paint merges only when the newly painted rectangle overlaps at least one authored cell of an existing room or cluster
-- a single-cluster overlap merge MUST keep existing room and cluster identity, add the newly painted non-overlapping cells, and recompute the perimeter without duplicated overlap cells
-- adjacent room paint with no overlapping authored cell MUST create a distinct room and cluster even when the new rectangle touches an existing room edge
-- a freshly painted or adjacent new room uses the painted rectangle's minimum
-  cell as its deterministic derived primary cell; this is not separate authored
-  cluster geometry
-- freshly painted or adjacent new rooms MUST read back after commit and reload with the full painted floor-cell set and a closed perimeter wall around that floor set
-- freshly painted or adjacent new room perimeter walls MUST be authored durable wall truth after commit; absent perimeter wall rows are not valid output of fresh room creation
-- intentional wall deletion on a room perimeter MUST be observable as an authored open edge, distinct from an absent un-authored edge whose perimeter wall may still be derived
-- overlap merges MUST NOT leave stale old boundary rows visible as internal walls inside the merged room
-- wall finalization is idempotent: existing wall segments reuse topology, absent boundary segments create or mark that segment as wall, and neither path creates duplicate topology rows
-- path-based wall drawing starts with a primary click, accepts primary-click intermediate points, and commits only when the active wall process is completed by secondary input or by a point that falls on an existing wall
-- wall tool hit detection MUST reuse the visible wall hover snap target: path mode targets the highlighted vertex, and single-click mode targets the highlighted wall edge instead of a separate raw-pointer hitbox
-- secondary input is context-sensitive for wall work: while a wall-create path
-  is active it completes that create path; without an active create path it
-  starts or completes a wall-delete path
-- single-click wall creation or deletion MAY be toggled through Ctrl or through a dropdown anchored under the wall tool button, using the same secondary
-  option pattern as the stair tool dropdown
-- deleting walls removes the whole contiguous straight wall run until the next
-  corner; deleting a corner removes every contiguous straight run meeting at
-  that corner until its next corner
-- cluster exterior walls MUST NOT be deleted; attempts to delete them reject
-  without authored geometry, topology, preview, or selection mutation
-- stretching a straight cluster wall moves that wall and its two connected side walls while preserving selected cluster identity and recomputing enclosed cells and perimeter as one mutation
-- cluster drag handles MUST publish one handle at every authored wall corner and one handle at the midpoint of every authored straight wall run, for both interior and exterior walls
-- moving a selected cluster corner through a published corner handle MUST preserve cluster and room identity, update the true wall-corner vertex rather than a bounding-box corner, and recompute the adjacent boundary spans without orphan or duplicate wall rows
-- dragging a selected wall-midpoint handle MUST move the whole contiguous straight wall run one-to-one with pointer movement while preserving cluster identity and rejecting invalid geometry atomically
-- cluster corner and wall-run drag handles MUST be visible and hittable only while their owning cluster is selected; corner handles render as compact point affordances on true authored corners, and wall-run handles render as compact midpoint affordances on the corresponding wall line
-- deleting an unbound door restores the same boundary segment to a wall and removes the door topology or semantic binding; it does not delete the entire wall segment
-- deleting a corridor-bound door MUST be rejected without mutating the door, corridor, room boundary, or preview state
-- corridor creation MUST use deterministic orthogonal routing between concrete endpoints: horizontal-first, then vertical; vertical-first only when needed; reject if neither candidate is valid
-- corridor endpoints MUST be concrete authored endpoints before commit: room-side doors or corridor-side anchors
-- corridor creation materializes no door, anchor, corridor, route, or topology row until the full start-and-end corridor process completes successfully; all pending endpoint and route facts before completion are preview state only
-- a generic room hit in corridor mode resolves to the boundary edge that faces the other endpoint, reusing an existing door or authoring exactly one new door there before commit
-- a generic corridor hit in corridor mode resolves to the clicked host corridor cell, reusing an existing anchor or authoring exactly one new anchor there before commit
-- corridor routes with turns or crossings expose authored anchors at every turn or crossing point and keep straight spans free of unnecessary intermediate anchors
-- corridor anchor and waypoint refs MUST NOT render or hit-test as generic canvas drag handles; endpoint movement is owned by the focused corridor point edit route, and corridor tool endpoint deletion uses semantic corridor-body or door-boundary targets
-- deleting an intermediate corridor waypoint or connection point reroutes deterministically between the remaining neighboring authored endpoints using the same creation-route policy; invalid replacement routes reject without partial mutation
-- deleting a corridor door endpoint removes the branch segment from that door to the nearest surviving branch junction, authored corridor anchor, or other door endpoint, while preserving unaffected branches, surviving topology refs, and non-stale handles
-- a cluster with no user-authored name defaults to `Cluster <clusterId>` on the map surface, and its label is centered in the cluster's authored floor-cell centroid rather than using the first room name or bounding-box midpoint
-- a room with no user-authored name defaults to `Raum <roomId>`; its passive
-  map label renders as subdued floor text parallel to the longest wall run
-- cluster and room custom names persist as authored editor behavior and remain
-  visible after reload
+The editor design is considered adaptable only when adding a new authored
+object or tool family requires local, explicit changes and does not require
+unrelated feature, travel, persistence, or shell rewrites.
 
-## Stair Geometry Spec
+## Acceptance Outcomes
 
-Stair editing is driven by a `StairGeometrySpec`: shape, anchor cell,
-direction, `dimension1`, `dimension2`, generated path cells, generated exits,
-and optional corridor binding.
-
-Shape options:
-
-| UI option | Stored shape | Meaning |
-| --- | --- | --- |
-| `Gerade` | `STRAIGHT` | Straight run from the anchor in the selected direction. |
-| `Eckspirale` | `SQUARE` | Angular spiral inside a square footprint. |
-| `Rundspirale` | `CIRCULAR` | Round spiral approximated to map cells. |
-
-The stair family dropdown owns only the creation-time shape option and the
-last-used shape option. It MUST NOT mutate an existing stair. The state panel
-owns selected-stair parameter edits: shape, direction, dimensions, exit-level
-span, and explicit authored exit labels.
-
-Parameter meanings:
-
-| Shape | `dimension1` | `dimension2` |
-| --- | --- | --- |
-| `STRAIGHT` | horizontal run length; default `3`, min `1`, max `64` | exit level span; default `1`, min `1`, max `12` |
-| `SQUARE` | outer side length; default `3`, min `2`, max `16` | exit level span; default `1`, min `1`, max `12` |
-| `CIRCULAR` | footprint diameter; default `3`, min `3`, max `31`; even values round up before preview | exit level span; default `1`, min `1`, max `12` |
-
-Anchor and direction behavior:
-
-- the anchor is the lower cell of the generated stair spec; for creation it is
-  derived from the two selected endpoints, while selected stair handles and
-  state-panel coordinate edits preserve the existing lower anchor behavior
-- direction is one cardinal map direction and defines the first horizontal step
-  or tangent leaving the anchor
-- after the stair family dropdown selects a supported shape, a primary map click
-  MUST start a non-authored stair draft at the clicked cell and projection level
-- while a stair draft is active, pointer movement and projection-level changes
-  MUST update the preview from the start cell, current endpoint, selected shape,
-  and derived level span; the draft MUST survive projection-level changes until
-  commit, cancel, tool switch, map switch, or successful commit
-- a second primary map click MUST commit only when the selected shape can derive
-  an exact `StairGeometrySpec` whose generated lower and upper exits match the
-  selected endpoints; invalid endpoints MUST keep the draft active, publish a
-  concrete rejection status, and leave authored state unchanged
-- creating a straight stair from a same-column cross-level endpoint derives
-  `dimension1=1`; creating a straight stair from a cardinal horizontal endpoint
-  derives direction and run length from the lower-to-upper endpoint vector
-- square and circular creation MUST search supported dimensions and directions
-  and accept only exact endpoint matches from generated exits; it MUST NOT
-  silently approximate to a nearby supported footprint
-- a full stair recompute MUST preserve the stair identity and topology ref,
-  recompute path cells and exits from the current spec, and reject the edit
-  instead of committing a partial path when any parameter is invalid
-- direct path-handle movement is not a full geometry recompute; it may move the
-  selected path node while preserving existing exits
-
-Validation and rejection:
-
-- unsupported shape values, non-cardinal directions, missing anchors,
-  zero-level spans, or dimensions outside the limits above MUST be rejected
-- generated path cells MUST be deterministic for the same spec and MUST NOT
-  include duplicate cells at the same level
-- a generated stair MUST have at least two exits on distinct levels
-- a stair path MUST NOT cross authored room interiors except at its generated
-  exit cells or at explicitly selected corridor/stair binding cells
-- invalid edits leave the previous stair, path, exits, selection, and preview
-  state unchanged
-- invalid creation drafts leave authored state and DB rows unchanged while the
-  visible preview/status identifies the rejection reason
-
-Exit and label behavior:
-
-- full recompute generates one exit for the anchor level, one for the target
-  level, and one for each intermediate crossed level
-- generated exit labels default to `Ausgang z=<level> (<q>,<r>)`
-- recompute preserves an existing exit id by its ordered level role when that
-  role still exists; removed roles delete their exit rows and new roles receive
-  new ids
-- user-authored exit labels remain state-panel-owned and must be
-  preserved by exit id during recompute
-
-Delete and corridor binding behavior:
-
-- deleting an unbound stair removes the stair, generated path, generated exits,
-  and stair topology ref
-- deleting a stair bound to a corridor is rejected unless the user is deleting
-  the owning corridor branch through the corridor workflow
-- a cross-level corridor between endpoints on different levels creates or reuses
-  a corridor-bound stair segment whose exits connect the corridor route across
-  the crossed levels
-- state-panel edits to a corridor-bound stair MUST preserve the corridor
-  endpoints and crossed levels or reject the edit without partial mutation
-
-## Transition Link Behavior
-
-- a bidirectional transition link is created from a selected source transition
-  in the state panel by choosing a target dungeon map and target transition id,
-  then explicitly saving the link
-- the save MUST update the selected source transition to target that map and
-  transition, and MUST update the target transition's `linkedTransitionId` back
-  to the source transition when the target transition exists in the loaded
-  authored dungeon data
-- if the selected transition, target map, or target transition cannot be
-  resolved, the save is rejected without changing either transition
-- the bidirectional link save is one editor mutation from the user's
-  perspective: both sides update together or neither side changes
-- linked transition labels, selection, and delete protection MUST read back
-  from persisted authored transition fields rather than state-panel draft data
-
-## Acceptance Criteria
-
-- Preview, cancel, rejection, and invalid edits never persist authored truth; supported commits persist, publish, render, and reload the same authored result.
-- Authored object, encounter, and point-of-interest markers publish with marker category and stable marker identity, render without persistent feature labels, and may show names only as hover-only overlay text; travel affordances still include only stairs and transitions.
-- Map CRUD, selection clearing, room paint/delete/merge/adjacency, room narration, door create/delete/protected-delete, and transition link save preserve the behavior described above without partial mutation.
-- Tool-family controls stay directly visible, fit the tool panel in a `960px`
-  app window, use shared map gestures, remember dropdown sub-options, close
-  dropdowns on pointer leave, and reset to `Auswahl` on `Esc`.
-- Wall paths keep draft state until explicit completion, never finalize merely
-  because a second point is clicked, delete only eligible interior straight
-  runs, and reject exterior-wall deletion without changing authored state.
-- Cluster handles are proven on selected true corners and selected wall-run
-  midpoints for complex shapes; moving a corner or wall run preserves cluster
-  identity and recomputes affected geometry atomically.
-- Cluster and room labels use the required default text, placement, custom-name
-  persistence, and reload stability; only cluster labels are direct map-label
-  edit targets.
-- Corridor creation accepts room-to-room, room-to-corridor, and
-  corridor-to-corridor flows, but commits only after a valid full route between
-  two explicit authored endpoints; preview endpoint materialization has no
-  persisted side effects before commit.
-- Corridor deletion and point deletion preserve unaffected branches and reject
-  protected or invalid mutations without partial authored changes.
-- Stair creation after dropdown shape selection uses a two-point cross-level
-  draft: first click starts, pointer/level changes preview, invalid endpoints
-  report concrete feedback without persistence, and second click commits the
-  exact derived `StairGeometrySpec`; state-panel stair edits preserve identity
-  and recompute deterministically.
-- Undo and redo are observable through the real map-view shortcut route,
-  persist the restored authored result, and keep revision monotonic.
-- Negative-coordinate chunk assignment, one-ring loading, preview workset
-  reuse, and latest-wins pointer scheduling are deterministic and executable.
+- one room, area, object, relationship, and description remains recognizable
+  across raster, graph, and Dungeon-Key views
+- geometry editing stays in the raster authoring view
+- graph edits remain safely reversible until raster cleanup and final acceptance
+- text-centric editing is efficient in the Dungeon-Key view
+- generated geometry text updates without destroying GM-authored semantics
+- document output remains understandable without current runtime party state
+- ordinary local work remains responsive on the sparse qualification map
 
 ## References
 
 - [Dungeon Feature Requirements](./requirements-dungeon.md)
-- [Maps Canvas Requirements](../../maps/requirements/requirements-maps-canvas.md) (line 1), [Dungeon Map Surface Contract](../../maps/contract/contract-maps-dungeon-surface.md) (line 1), and [Dungeon Map Adoption Architecture](../../maps/architecture/architecture-maps-dungeon-adoption.md) (line 1)
+- [Dungeon Travel Requirements](./requirements-dungeon-travel.md)
+- [Maps Canvas Requirements](../../maps/requirements/requirements-maps-canvas.md)
+- [Dungeon Needs Interview](../../project/interviews/2026-07-20-dungeon-needs-interview.md)
