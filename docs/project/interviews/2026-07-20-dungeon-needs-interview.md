@@ -76,7 +76,8 @@ dieser Baseline.
 **Bestätigte Antwort:** Vollständiges Authoring plus Reise.
 
 Kartenverwaltung, Räume, Wände, Türen, Korridore, Treppen, Übergänge, Marker,
-Beschreibungen, Inspektion und Party-Reise bilden den Kern. Weitere
+Beschreibungen, Inspektion und Party-Reise bilden den Kern. Vom GM authored
+Fallen gehören ebenfalls zur langfristigen Dungeon-Wahrheit. Weitere
 Objekttypen sollen auf Quellcode-Ebene leicht ergänzbar sein. Kartenimport und
 prozedurale Dungeon-Erzeugung wurden nicht als Kernumfang gewählt.
 
@@ -384,6 +385,63 @@ Vorab geplante Ereignisse und vom GM konfigurierte, orts-, zeit- oder
 akteursabhängige Ereignispools können fällig werden. SaltMarcher öffnet sie;
 der GM entscheidet den Ausgang.
 
+### Welche Ereignisse unterbrechen eine laufende Autoroute?
+
+**Bestätigte Antwort:** Ausgelöste Gefahren und Begegnungen.
+
+Neben einem ungültig gewordenen Weg und dem ausdrücklichen GM-Abbruch
+unterbrechen insbesondere ausgelöste Fallen und Random Encounters die
+automatische Reise. Auch eine Verfolgungsroute endet oder pausiert, wenn die
+verfolgende Gruppe die Spur verliert. Eine Bestätigung in jeder gewöhnlichen
+Explorationsrunde ist dafür nicht erforderlich.
+
+### Wie werden Fallen behandelt?
+
+**Bestätigte Antwort:** GM-authored Auslöser mit schlanker GM-Auflösung.
+
+Fallen sind vom GM angelegte Dungeon-Features. Wenn eine Falle ausgelöst wird,
+öffnet SaltMarcher einen Dialog mit ihrer Beschreibung. Der GM kann den Hinweis
+schließen beziehungsweise die Falle als aufgelöst behandeln. SaltMarcher
+entscheidet den Ausgang nicht selbst. Mehr Interaktion darf später ergänzt
+werden, eine umfassende Fallensimulation ist aber kein Ziel, weil sie die
+Entscheidungsfreiheit des GM einschränken würde.
+
+### Welche langfristige Laufzeitfähigkeit brauchen Monstergruppen?
+
+**Bestätigte Richtung, niedrige Priorität:** Bewegliche Gruppen mit einfachen
+Tagesabläufen.
+
+Monster können als bewegliche Gruppen auf der Dungeon-Karte eigene einfache
+Tagesabläufe verfolgen. Ob eine Monstergruppe die Party bemerkt oder umgekehrt,
+wird durch automatisierte Wahrnehmungsvergleiche ermittelt. In der Reiseansicht
+kann der GM die passive Wahrnehmung eines Party-Mitglieds durch ein
+eingetragenes Würfelergebnis ersetzen, wenn der Charakter aktiv Ausschau hält.
+Ein ausgelöster Random Encounter unterbricht die Reise und wird dem GM zur
+Auflösung geöffnet.
+
+### Welche langfristige Verfolgungs- und Spurenfähigkeit wird erwartet?
+
+**Bestätigte Richtung, niedrige Priorität:** Persistente Spuren und
+probenbasierte Verfolgung.
+
+Räume können Spuren enthalten. Party, NPCs und Gruppen können nach Spuren
+Ausschau halten. Der GM trägt dafür ein Würfelergebnis ein; SaltMarcher speichert
+es und vergleicht es mit vorhandenen Spuren. Wird eine Spur gefunden, erhält der
+GM eine Benachrichtigung.
+
+Bei einer laufenden Verfolgung bestimmen Überlebens- oder
+Wahrnehmungsproben, ob die verfolgende Gruppe die Spur behält oder verliert.
+Für NPCs können diese Prüfungen im Hintergrund automatisch erfolgen; für die
+Party trägt der GM das Ergebnis ein. NPC-Gruppen dürfen im Rahmen ihrer
+einfachen Routinen auch unbekannte Spuren, einschließlich Spuren der Party,
+automatisch aufnehmen und verfolgen. Der GM wird darüber per Dialog
+benachrichtigt.
+
+Diese Monster-, Wahrnehmungs-, Verfolgungs- und Spurenfähigkeit hat geringe
+Umsetzungspriorität. Sie muss nicht Teil der nächsten Lieferung sein. Die
+langfristige Dungeon-Struktur soll ihre spätere Ergänzung ohne grundlegenden
+Umbau ermöglichen.
+
 ### Welche Reisefakten werden automatisch protokolliert?
 
 **Bestätigte Antwort:** Bestätigte Schritte protokollieren.
@@ -462,13 +520,13 @@ Requirements überführt.
 
 Die nächsten bereits vorbereiteten Fragen sind:
 
-1. Welche Unterbrechungen außer Ereignis, ungültigem Weg und GM-Abbruch stoppen
-   automatische Reise?
-2. Welche D&D-5e-2014-Bewegungsdetails gehören verbindlich zum Regelprofil,
+1. Welche D&D-5e-2014-Bewegungsdetails gehören verbindlich zum Regelprofil,
    insbesondere Diagonalen, schwieriges Terrain, Klettern, Springen und
    unterschiedliche Bewegungsraten?
-3. Welche Zustände von Türen, Durchlässen und Terrain beeinflussen sichtbare oder
+2. Welche Zustände von Türen, Durchlässen und Terrain beeinflussen sichtbare oder
    ausführbare Reiseoptionen?
+3. Welche Bearbeitungen müssen direkt in Rasterkarte, Beziehungsgraph und
+   Raumliste möglich sein, statt dort nur synchron sichtbar zu werden?
 
 Danach sind mindestens folgende Bedarfsfragen offen:
 
