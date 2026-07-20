@@ -107,11 +107,16 @@ Unlike the original analysis-only method, SaltMarcher's graph is also an
 authoring surface. It MUST preserve the distinction between abstract planned
 structure and protected provisional raster translation.
 
-The graph additionally supports debug-style content overlays and route
-comparisons. It can visualize and quantify the concentration and distribution
-of Treasure, Encounters, Curiosities, puzzles, and comparable authored content
-across alternative routes. These diagnostics inform GM judgment and MUST NOT
-enforce one supposedly correct Dungeon structure or content balance.
+The graph additionally supports a debug-style content heatmap. A route in this
+primary diagnostic means one edge between two visible graph nodes, not a full
+multi-node start-to-destination journey. Nodes and edges use colors, icons, or
+comparable encodings to show the type and concentration of Treasure,
+Encounters, Curiosities, puzzles, danger, rewards, and comparable authored
+content across the Dungeon.
+
+A later full-path comparison may build on these facts but has lower priority
+than the immediate node-and-edge heatmap. Diagnostics inform GM judgment and
+MUST NOT enforce one supposedly correct Dungeon structure or content balance.
 
 The GM may rearrange rooms and room groups in the graph. SaltMarcher translates
 those changes into raster geometry as far as possible.
@@ -122,6 +127,19 @@ GM may optionally supply rough size, shape, or level hints without drawing
 cells in the graph. The result remains protected Graph-Edit Preview state until
 the GM returns to the raster editor, refines or restores it, and explicitly
 accepts it.
+
+Every graph detail level remains editable with abstraction-appropriate
+operations:
+
+- detailed views edit individual rooms, doors, and connections
+- middle detail may move, duplicate, connect, or remove complete rooms and room
+  groups as units
+- the strongest reduction may restructure high-level routes and groups
+
+A connection authored between collapsed groups is provisional planning intent.
+SaltMarcher may generate plausible concrete endpoints and raw geometry for the
+protected raster preview, but MUST NOT silently resolve ambiguity to an
+arbitrary door or cell.
 
 ### Protected Graph-Edit Preview
 
