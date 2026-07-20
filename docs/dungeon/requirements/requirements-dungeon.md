@@ -62,7 +62,9 @@ initially support automatic proximity activation. Traps may define zero or more
 arbitrary voxel-set trigger fields separate from their anchors. Trigger voxels
 remain associated with their Volumes, may span several adjacent Volumes, and
 only control notification or travel interruption; they do not alter
-passability or decide outcomes. Encounter detection provisionally
+passability or decide outcomes. A Trap may own Charges for consecutive actual
+activations and a Reset Duration for restoring them. A far-future monster
+routine may explicitly reset a Trap. Encounter detection provisionally
 uses a radius derived from monster statistics. Loot and Curiosities do not
 activate from proximity alone.
 
