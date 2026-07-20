@@ -315,6 +315,11 @@ passability or action rules.
   or deformation; one Trap may span fields in several adjacent Volumes
 - trigger fields only notify and interrupt travel, and do not alter passability
   or decide fictional outcomes
+- a Trap may define Charges for consecutive actual activations and a Reset
+  Duration for restoring Charges
+- exact Charge-consumption and refill behavior remains to be confirmed
+- a future low-priority monster routine may perform an explicit manual Trap
+  reset
 - Encounter detection initially uses a radius derived from monster statistics;
   its exact perception behavior remains subject to later validation
 - Loot and Curiosity Features do not activate solely because the party is nearby
