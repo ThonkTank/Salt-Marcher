@@ -190,6 +190,20 @@ SaltMarcher erweitert diese Form bewusst zu einer gleichwertigen
 Authoring-Ansicht, deren strukturelle Änderungen in einen geschützten
 Raster-Preview übersetzt werden.
 
+### Wie stark ist die Graph-Abstraktion?
+
+**Bestätigte Antwort:** Einstellbarer Detailgrad.
+
+Der Graph besitzt keinen einzigen festen Abstraktionsgrad. Der GM kann zwischen
+einer vollständigen Darstellung einzelner Türen, Räume und Verbindungen und
+einer stark reduzierten Alexandrian-/Melan-Darstellung wechseln.
+
+Mit zunehmender Reduktion werden eindeutige Wegabschnitte, einzelne Räume und
+schließlich ganze Raumgruppen zu grundlegenden Routen und
+Navigationsentscheidungen zusammengefasst. Flow-, Reisezeit- und
+Content-Daten werden auf der jeweils sichtbaren Ebene aggregiert, ohne ihre
+zugrunde liegenden authored Fakten zu verlieren.
+
 ### Welche zusätzliche Debug-Wirkung soll der Graph haben?
 
 **Bestätigte Richtung:** Quantitative Flow- und Content-Verteilungsanalyse.
