@@ -63,6 +63,8 @@ journey or a deliberate position override.
 ## Passability Boundary
 
 A door or passage has one explicit travel fact: passable or not passable.
+Passages are authored Room-boundary objects, distinct from the Paths that own
+route and travel properties.
 
 Descriptions such as locked, blocked, heavy, hidden, cold, or difficult do not
 create additional passability logic. They affect generated description text and
