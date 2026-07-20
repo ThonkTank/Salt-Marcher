@@ -459,6 +459,12 @@ Volumen werden automatisch vereinigt. Wird die Geometrie getrennt, entstehen
 automatisch mehrere Volumen. Nach Abschluss des Werkzeugs ist kein zusätzlicher
 Bestätigungsdialog erforderlich; Undo ist der normale Rückweg.
 
+Nach jedem Merge oder Split versucht SaltMarcher sofort bestmöglich, jedem
+resultierenden Volumen einen Raum zuzuordnen. Die Zuordnung blockiert den
+Geometrie-Workflow nicht und darf vom GM anschließend geändert werden.
+Vorhandene authored Räume, die dabei keinem Volumen zugewiesen werden, bleiben
+gemäß der Verlustschutzregel erhalten.
+
 Das Auswahlwerkzeug bleibt für das Verschieben, Verzerren und detaillierte
 Bearbeiten vorhandener Geometrie zuständig, steuert aber nicht das Ziel der
 Zeichen- und Radierwerkzeuge. Boden, begehbares Volumen und Standarddecke
