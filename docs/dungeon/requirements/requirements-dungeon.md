@@ -54,6 +54,11 @@ Each Path endpoint belongs to one Room navigation area and carries an exact 3D
 anchor on its boundary. SaltMarcher may propose boundary anchors when the GM
 connects semantic areas; the GM may reposition or pin them.
 
+A Path connects through separate authored Passages in Room boundaries.
+Openings, doors, hatches, secret doors, and comparable forms share this Passage
+role. The Passage owns description and explicit binary passability; the Path
+owns route and travel properties.
+
 The Dungeon capability includes:
 
 - Dungeon catalog management
