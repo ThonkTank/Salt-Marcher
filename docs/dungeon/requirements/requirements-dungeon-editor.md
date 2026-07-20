@@ -315,8 +315,14 @@ passability or action rules.
   and assign that template to several instances
 - template assignments remain linked and automatically receive later template
   changes
-- the GM may deliberately detach one linked instance; the detached instance
-  then preserves its current content and changes independently
+- a template initially contains a GM-selected set of authored content blocks;
+  geometry, geometry assignment, and stable object identity remain excluded
+- only included blocks stay linked; other instance content remains independently
+  editable, while editing a linked block requires deliberate detachment
+- the GM may deliberately detach one linked instance or block; detached content
+  preserves its current value and changes independently
+- this template granularity is an initial testable workflow and may be refined
+  after practical usability evaluation
 - the reassociation mechanism is replaceable; the required outcome is visible,
   recoverable preservation without silent data loss
 
