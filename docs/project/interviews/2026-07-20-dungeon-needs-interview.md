@@ -289,6 +289,16 @@ Entscheidungspunkt mit Position und Zeit atomar fest. Ein Ereignis, ein
 inzwischen ungültiger Weg oder ein GM-Abbruch stoppt die Route; bereits
 absolvierte Abschnitte bleiben erhalten.
 
+### Wie verfolgt eine Autoroute ein bewegliches Ziel?
+
+**Bestätigte Antwort:** Dynamische Verfolgung.
+
+Der GM kann einen Charakter oder eine Gruppe zu einem anderen beweglichen
+Akteur beziehungsweise einer anderen Gruppe reisen lassen. Die Autoroute wird
+während der Reise an deren aktuelle Position angepasst. Sobald das Ziel
+eingeholt ist, endet die Reise. SaltMarcher führt die Tokens nicht automatisch
+zusammen; darüber entscheidet der GM.
+
 ### Nach welchen Regeln wird Reisezeit berechnet?
 
 **Korrigierte bestätigte Antwort:** Feste D&D-5e-Regeln von 2014.
@@ -302,13 +312,17 @@ bleibt davon getrennt.
 
 ### Wie handeln getrennte Charaktere oder Gruppen in der Exploration?
 
-**Bestätigte Richtung:** Explorationsinitiative mit Charakteraktionen.
+**Bestätigte Richtung:** Vom GM geführte Explorationsinitiative mit
+Akteurshandlungen.
 
-Charaktere erhalten eigene Explorationshandlungen. Wenn ein Charakter oder eine
-abgetrennte Gruppe reist, werden ihre folgenden Runden automatisch mit Reise
-gefüllt, bis das Reiseziel beziehungsweise die anderen Charaktere erreicht
-ist. Das Verhalten beim Einholen beweglicher Ziele ist noch nicht abschließend
-entschieden.
+Charaktere und getrennte Gruppen besitzen eigene Explorationshandlungen, aber
+ausschließlich der GM bedient SaltMarcher. Spieler steuern ihre Charaktere
+nicht selbst wie in einem VTT. Der GM setzt die am Spieltisch getroffenen
+Spielerentscheidungen im Interface um.
+
+Wenn der GM für einen Charakter oder eine abgetrennte Gruppe eine Reise startet,
+werden deren folgende Runden automatisch mit Reise gefüllt, bis das Reiseziel
+beziehungsweise die anderen Charaktere erreicht sind.
 
 ### Welche Geschwindigkeit gilt für ein zusammengefasstes Gruppentoken?
 
@@ -448,13 +462,13 @@ Requirements überführt.
 
 Die nächsten bereits vorbereiteten Fragen sind:
 
-1. Wie verhalten sich eine laufende Autoroute und ein bewegliches Ziel, wenn ein
-   Charakter eine andere Gruppe einholt?
-2. Welche Unterbrechungen außer Ereignis, ungültigem Weg und GM-Abbruch stoppen
+1. Welche Unterbrechungen außer Ereignis, ungültigem Weg und GM-Abbruch stoppen
    automatische Reise?
-3. Welche D&D-5e-2014-Bewegungsdetails gehören verbindlich zum Regelprofil,
+2. Welche D&D-5e-2014-Bewegungsdetails gehören verbindlich zum Regelprofil,
    insbesondere Diagonalen, schwieriges Terrain, Klettern, Springen und
    unterschiedliche Bewegungsraten?
+3. Welche Zustände von Türen, Durchlässen und Terrain beeinflussen sichtbare oder
+   ausführbare Reiseoptionen?
 
 Danach sind mindestens folgende Bedarfsfragen offen:
 
