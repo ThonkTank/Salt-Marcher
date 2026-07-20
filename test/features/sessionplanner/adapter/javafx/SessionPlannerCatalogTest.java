@@ -1,5 +1,13 @@
 package features.sessionplanner.adapter.javafx;
 
+import java.math.BigDecimal;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import features.encounter.api.EncounterApi;
 import features.encounter.api.SavedEncounterPlanListModel;
 import features.encounter.api.SavedEncounterPlanListResult;
@@ -38,7 +46,6 @@ import features.worldplanner.api.WorldLocationSummary;
 import features.worldplanner.api.WorldPlannerSnapshotModel;
 import features.worldplanner.application.WorldPlannerApplicationService;
 import features.worldplanner.domain.world.port.WorldPlannerReferencePort;
-
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -48,6 +55,7 @@ import javafx.scene.control.ButtonBase;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
@@ -56,9 +64,8 @@ import javafx.stage.Window;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-
+import org.junit.jupiter.api.io.TempDir;
 import platform.persistence.TestFeatureStores;
-
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
 import shell.api.ShellBinding;
@@ -68,13 +75,48 @@ import features.sessionplanner.adapter.sqlite.model.SessionEncounterRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionManualLootNoteRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionPlanRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionPlanSnapshotRecord;
+import features.encounter.application.EncounterApplicationService;
+import features.encounter.application.EncounterApplicationServiceFakes;
+import features.encounter.api.EncounterApi;
+import features.encounter.api.SavedEncounterPlanListModel;
+import features.encounter.api.SavedEncounterPlanListResult;
+import features.encounter.api.SavedEncounterPlanStatus;
+import features.encounter.api.SavedEncounterPlanSummary;
+import features.party.api.PartyApi;
+import features.party.PartyServiceAssembly;
+import features.party.api.CharacterDraft;
+import features.party.api.CreateCharacterCommand;
+import features.party.api.MembershipState;
+import features.sessionplanner.domain.session.EncounterDays;
+import features.sessionplanner.domain.session.SessionPlan;
+import features.sessionplanner.SessionPlannerServiceAssembly;
+import features.sessionplanner.api.SessionPlannerCatalogCommand;
+import features.sessionplanner.api.SessionPlannerCatalogSnapshot;
+import features.sessionplanner.api.SessionPlannerParticipantCommand;
+import features.sessionplanner.api.SessionPlannerRestKind;
+import features.sessionplanner.api.SessionPlannerSceneTimelineProjection;
+import features.sessionplanner.api.SessionPlannerSelectedSceneSnapshot;
+import features.sessionplanner.api.SessionPlannerSessionSnapshot;
 import features.sessionplanner.api.SessionPlannerWorkspaceModel;
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import features.sessionplanner.api.SessionPlannerWorkspaceSnapshot;
+import features.sessionplanner.api.SessionPreparationSnapshot;
+import features.sessionplanner.api.SessionPreparationStatus;
+import features.sessiongeneration.api.GenerationDraft;
+import features.sessiongeneration.api.GenerationDraftResponse;
+import features.sessiongeneration.api.GenerationRequest;
+import features.sessiongeneration.api.GenerationResult;
+import features.sessiongeneration.api.GenerationRunId;
+import features.sessiongeneration.api.GenerationRunResponse;
+import features.sessiongeneration.api.SessionGenerationApi;
+import features.worldplanner.application.WorldPlannerApplicationService;
+import features.worldplanner.WorldPlannerServiceAssembly;
+import features.worldplanner.domain.world.port.WorldPlannerReferencePort;
+import features.worldplanner.api.CreateWorldLocationCommand;
+import features.worldplanner.api.WorldLocationSummary;
+import features.worldplanner.api.WorldPlannerSnapshotModel;
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteDatabase;
+import features.sessionplanner.api.SessionPlannerWorkspaceModel;
 
 @org.junit.jupiter.api.Tag("ui")
 public final class SessionPlannerCatalogTest {
@@ -82,6 +124,10 @@ public final class SessionPlannerCatalogTest {
     private static final int AWAIT_SECONDS = 60;
     private static final long SAVED_ENCOUNTER_PLAN_ID = 501L;
     private static final AtomicBoolean FX_STARTED = new AtomicBoolean();
+    private static final AtomicLong DATABASE_SEQUENCE = new AtomicLong();
+
+    @TempDir
+    static Path temporaryDirectory;
 
     @AfterEach
     void hideWindows() throws Exception {
@@ -136,7 +182,7 @@ public final class SessionPlannerCatalogTest {
         runOnFxThread(() -> {
             PendingPreparationUi ui = pendingUi.get();
             layout(ui.controls());
-            assertTrue(button(ui.controls(), "Session generieren").isDisabled(),
+            assertTrue(button(ui.controls(), "Generieren").isDisabled(),
                     "next JavaFX turn keeps duplicate generation disabled");
             assertTrue(isEffectivelyVisible(button(ui.controls(), "Abbrechen")),
                     "next JavaFX turn exposes cancellation while the provider remains pending");
@@ -149,8 +195,8 @@ public final class SessionPlannerCatalogTest {
     }
 
     @Test
-    void generationActionIsDisabledWhileSavingIsInFlight() throws Exception {
-        runOnFxThread(SessionPlannerCatalogTest::assertSavingActionDisabled);
+    void savingControlsReflectPlannerCommitCancellationBoundary() throws Exception {
+        runOnFxThread(SessionPlannerCatalogTest::assertSavingCancellationBoundary);
     }
 
     @Test
@@ -172,20 +218,73 @@ public final class SessionPlannerCatalogTest {
         });
     }
 
-    private static void assertSavingActionDisabled() {
-        SessionGenerationPanel panel = new SessionGenerationPanel();
-        SessionPreparationSnapshot saving = new SessionPreparationSnapshot(
+    @Test
+    void selectedSceneAutoOpenPreservesDraftsAndResetsAcrossSessions() throws Exception {
+        runOnFxThread(SessionPlannerCatalogTest::assertSelectedSceneReconciliation);
+    }
+
+    @Test
+    void encounterSearchIsDemandDrivenAndBounded() throws Exception {
+        runOnFxThread(SessionPlannerCatalogTest::assertEncounterSearchIsDemandDrivenAndBounded);
+    }
+
+    @Test
+    void masterDetailUsesOneReusableInspectorAndPreservesEditorState() throws Exception {
+        runOnFxThread(SessionPlannerCatalogTest::assertReusableSelectedSceneInspector);
+    }
+
+    @Test
+    void workspaceFeedbackEncounterDayValidationAndRestAccessibilityUsePublishedWorkspace() throws Exception {
+        runOnFxThread(SessionPlannerCatalogTest::assertWorkspaceFeedbackAndEncounterDayValidation);
+    }
+
+    private static void assertSavingCancellationBoundary() {
+        SessionPlannerControlsView controls = new SessionPlannerControlsView();
+        SessionPlannerViewModel viewModel = new SessionPlannerViewModel();
+        controls.bind(viewModel);
+        SessionPreparationSnapshot preCommitSaving = new SessionPreparationSnapshot(
                 SessionPreparationStatus.SAVING,
                 "Session wird gespeichert …",
                 7L,
                 4L,
                 true);
-        panel.show(saving);
+        SessionPlannerSessionSnapshot session = new SessionPlannerSessionSnapshot(
+                new SessionPlannerSessionSnapshot.SessionState(7L, "Session", BigDecimal.ONE, "1", 0L, false),
+                SessionPlannerSessionSnapshot.XpBudgetState.empty(),
+                SessionPlannerSessionSnapshot.RestAdviceState.empty(),
+                "");
+        viewModel.applyWorkspace(new features.sessionplanner.api.SessionPlannerWorkspaceSnapshot(
+                1L, 7L, 1L, SessionPlannerCatalogSnapshot.empty(), session,
+                features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(),
+                SessionPlannerSceneTimelineProjection.empty(),
+                SessionPlannerSelectedSceneSnapshot.empty(), preCommitSaving, List.of()));
 
-        assertTrue(button(panel, "Session generieren").isDisabled(),
-                "generation action is disabled while saving");
-        assertTrue(isEffectivelyVisible(button(panel, "Abbrechen")),
-                "saving state keeps cancellation visible");
+        Parent content = (Parent) controls.getContent();
+        assertTrue(button(content, "Generieren").isDisabled(),
+                "generation action is disabled during pre-commit saving");
+        assertTrue(isEffectivelyVisible(button(content, "Abbrechen")),
+                "pre-commit saving keeps cancellation visible");
+        assertTrue(isEffectivelyVisible(descendant(content, ProgressBar.class)),
+                "pre-commit saving keeps progress visible");
+
+        SessionPreparationSnapshot finalCommitSaving = new SessionPreparationSnapshot(
+                SessionPreparationStatus.SAVING,
+                "Vorbereitete Session wird gespeichert …",
+                7L,
+                4L,
+                false);
+        viewModel.applyWorkspace(new features.sessionplanner.api.SessionPlannerWorkspaceSnapshot(
+                2L, 7L, 1L, SessionPlannerCatalogSnapshot.empty(), session,
+                features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(),
+                SessionPlannerSceneTimelineProjection.empty(),
+                SessionPlannerSelectedSceneSnapshot.empty(), finalCommitSaving, List.of()));
+
+        assertTrue(button(content, "Generieren").isDisabled(),
+                "generation action remains disabled during final Planner commit");
+        assertTrue(!isEffectivelyVisible(button(content, "Abbrechen")),
+                "final Planner commit hides cancellation");
+        assertTrue(isEffectivelyVisible(descendant(content, ProgressBar.class)),
+                "final Planner commit keeps progress visible");
     }
 
     private static PendingPreparationUi openPendingDraft(SessionGenerationApi generation) {
@@ -199,19 +298,213 @@ public final class SessionPlannerCatalogTest {
         stage.setScene(new Scene(controls, 420.0, 720.0));
         stage.show();
         planner.application().createSession(new SessionPlannerCatalogCommand.CreateSessionCommand("Pending"));
+        services.party().application().activeParty().current().memberIds().forEach(characterId ->
+                planner.application().addParticipant(SessionPlannerParticipantCommand.add(
+                        new features.sessionplanner.api.SessionPlannerAuthoredTarget(
+                                planner.workspaceModel().current().sourceSessionId(),
+                                planner.workspaceModel().current().sourceSessionRevision()), characterId)));
         layout(controls);
 
-        button(controls, "Session generieren").fire();
+        button(controls, "Generieren").fire();
         assertEquals(SessionPreparationStatus.GENERATING,
                 planner.workspaceModel().current().preparation().status(),
-                "generation remains pending until provider completion");
-        assertTrue(button(controls, "Session generieren").isDisabled(),
+                "generation remains pending until provider completion; preparation="
+                        + planner.workspaceModel().current().preparation());
+        assertTrue(button(controls, "Generieren").isDisabled(),
                 "pending generation prevents duplicate submission");
 
         return new PendingPreparationUi(controls, planner);
     }
 
     private record PendingPreparationUi(Parent controls, SessionPlannerServiceAssembly planner) {
+    }
+
+    private static void assertWorkspaceFeedbackAndEncounterDayValidation() {
+        SessionPlannerTestServices services = services();
+        SessionPlannerServiceAssembly planner = services.planner();
+        ShellBinding binding = new SessionPlannerContribution(
+                planner.application(), planner.workspaceModel(), ignored -> { }).bind();
+        Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
+        Stage stage = new Stage();
+        stage.setScene(new Scene(controls, 560.0, 480.0));
+        stage.show();
+        layout(controls);
+        createSession(controls, "Validation");
+        TextField days = encounterDaysField(controls);
+        long revisionBeforeInvalidInput = planner.workspaceModel().current().sourceSessionRevision();
+
+        days.setText("abc");
+        button(controls, "Übernehmen").fire();
+        assertEquals(Long.valueOf(revisionBeforeInvalidInput),
+                Long.valueOf(planner.workspaceModel().current().sourceSessionRevision()),
+                "non-decimal encounter days dispatch no write through the bound contribution");
+        assertEncounterDaysError(controls);
+
+        days.setText("0");
+        button(controls, "Übernehmen").fire();
+        assertEquals(Long.valueOf(revisionBeforeInvalidInput),
+                Long.valueOf(planner.workspaceModel().current().sourceSessionRevision()),
+                "zero encounter days dispatch no write through the defensive binder");
+        assertEncounterDaysError(controls);
+
+        days.setText("1.5");
+        button(controls, "Übernehmen").fire();
+        layout(controls);
+        assertTrue(planner.workspaceModel().current().sourceSessionRevision() > revisionBeforeInvalidInput,
+                "valid encounter days dispatch through the binder writes authoritative Session truth");
+        assertTrue(!isEffectivelyVisible(labelByStyle(controls, "session-planner-gap-active")),
+                "the authoritative workspace publication clears the inline encounter-days error");
+
+        SessionPlannerViewModel viewModel = new SessionPlannerViewModel();
+        SessionPlannerControlsView feedbackControls = new SessionPlannerControlsView();
+        SessionPlannerStateView feedbackState = new SessionPlannerStateView();
+        SessionPlannerTimelineMainView feedbackTimeline = new SessionPlannerTimelineMainView();
+        feedbackControls.bind(viewModel);
+        feedbackState.bind(viewModel);
+        feedbackTimeline.bind(viewModel);
+
+        SessionPlannerWorkspaceSnapshot withFeedback = workspaceFixture(
+                20L,
+                new SessionPlannerSessionSnapshot.RestAdviceState(
+                        false, 0, 0, 0, 0, "Rastempfehlung wird noch ermittelt."),
+                List.of(
+                        new SessionPlannerWorkspaceSnapshot.Issue(
+                                SessionPlannerWorkspaceSnapshot.Owner.ENCOUNTER,
+                                SessionPlannerWorkspaceSnapshot.Kind.UNAVAILABLE,
+                                "501", "Encounter-Plan 501 ist nicht verfügbar."),
+                        new SessionPlannerWorkspaceSnapshot.Issue(
+                                SessionPlannerWorkspaceSnapshot.Owner.ENCOUNTER,
+                                SessionPlannerWorkspaceSnapshot.Kind.UNAVAILABLE,
+                                "501", "Encounter-Plan 501 ist nicht verfügbar."),
+                        new SessionPlannerWorkspaceSnapshot.Issue(
+                                SessionPlannerWorkspaceSnapshot.Owner.PARTY,
+                                SessionPlannerWorkspaceSnapshot.Kind.OWNER_FAILURE,
+                                "77", "Gruppendaten konnten nicht geladen werden.")))
+                .withPreparation(new SessionPreparationSnapshot(
+                        SessionPreparationStatus.FAILED, "Vorbereitung fehlgeschlagen.", 91L, 3L, false));
+        viewModel.applyWorkspace(withFeedback);
+        Parent feedbackControlsContent = (Parent) feedbackControls.getContent();
+        Label workspaceStatus = labelByStyle(feedbackControlsContent, "session-planner-workspace-status");
+        assertEquals("Hinweis: Gruppendaten konnten nicht geladen werden. · Encounter-Plan 501 ist nicht verfügbar.",
+                workspaceStatus.getText(), "workspace issues are deduplicated and sorted into one compact status");
+        assertEquals("Workspace-Status: " + workspaceStatus.getText(), workspaceStatus.getAccessibleText(),
+                "workspace issue status is explicitly available to assistive technology");
+        assertTrue(!workspaceStatus.getText().contains("Vorbereitung"),
+                "workspace feedback remains separate from preparation status");
+        assertTrue(hasLabel(feedbackControlsContent, "Vorbereitung fehlgeschlagen."),
+                "preparation status remains its own compact toolbar message");
+        Parent feedbackStateContent = (Parent) feedbackState.getContent();
+        assertTrue(hasLabel(feedbackStateContent, "Rastempfehlung wird noch ermittelt."),
+                "unavailable rest advice shows its summary instead of placeholder zero counts");
+        assertTrue(!hasLabelContaining(feedbackStateContent, "Empfohlen 0 kurz"),
+                "unavailable rest advice renders no numeric rest counts");
+
+        viewModel.applyWorkspace(workspaceFixture(
+                21L,
+                new SessionPlannerSessionSnapshot.RestAdviceState(
+                        true, 1, 2, 1, 0, ""), List.of()));
+        assertTrue(hasLabel(feedbackStateContent, "Empfohlen 1 kurz / 2 lang · platziert 1 kurz / 0 lang"),
+                "available rest advice keeps the compact numeric summary");
+
+        Parent timelineContent = (Parent) feedbackTimeline.getContent();
+        List<javafx.scene.layout.HBox> separators = descendants(timelineContent).stream()
+                .filter(javafx.scene.layout.HBox.class::isInstance)
+                .map(javafx.scene.layout.HBox.class::cast)
+                .filter(node -> node.getStyleClass().contains("session-planner-rest-separator"))
+                .toList();
+        assertEquals(Integer.valueOf(2), Integer.valueOf(separators.size()),
+                "two published rest gaps materialize two separators");
+        assertTrue(!separators.get(0).getAccessibleText().equals(separators.get(1).getAccessibleText()),
+                "each rest gap has distinct accessible context");
+        assertTrue(separators.get(0).getAccessibleText().contains("Alpha")
+                        && separators.get(0).getAccessibleText().contains("Beta"),
+                "rest accessibility includes both ordered scene titles");
+        assertRestButtonsAccessible(separators.get(0), "Alpha", "Beta");
+        assertRestButtonsAccessible(separators.get(1), "Beta", "Gamma");
+
+        viewModel.applyWorkspace(reorderedWorkspaceFixture());
+        assertTrue(separators.get(0).getAccessibleText().contains("Gamma umbenannt")
+                        && separators.get(0).getAccessibleText().contains("Beta umbenannt"),
+                "reorder and rename refresh the existing rest separator accessibility text");
+        assertRestButtonsAccessible(separators.get(0), "Gamma umbenannt", "Beta umbenannt");
+        assertRestButtonsAccessible(separators.get(1), "Beta umbenannt", "Alpha umbenannt");
+    }
+
+    private static void assertRestButtonsAccessible(
+            javafx.scene.layout.HBox separator,
+            String leftSceneTitle,
+            String rightSceneTitle
+    ) {
+        for (String buttonText : List.of("Kurze Rast", "Lange Rast", "Leeren")) {
+            String accessibleText = button(separator, buttonText).getAccessibleText();
+            assertTrue(!accessibleText.isBlank()
+                            && accessibleText.contains(leftSceneTitle)
+                            && accessibleText.contains(rightSceneTitle),
+                    buttonText + " has scene-pair-specific accessibility text");
+        }
+    }
+
+    private static void assertEncounterDaysError(Parent controls) {
+        Label error = labelByStyle(controls, "session-planner-gap-active");
+        assertTrue(isEffectivelyVisible(error), "invalid encounter days show a local inline error");
+        assertEquals("Encounter-Tage muss eine positive Dezimalzahl sein.", error.getText(),
+                "invalid encounter days use one actionable error message");
+        assertEquals(error.getText(), encounterDaysField(controls).getAccessibleHelp(),
+                "invalid encounter days expose the same error as field help");
+    }
+
+    private static SessionPlannerWorkspaceSnapshot workspaceFixture(
+            long publicationRevision,
+            SessionPlannerSessionSnapshot.RestAdviceState restAdvice,
+            List<SessionPlannerWorkspaceSnapshot.Issue> issues
+    ) {
+        return new SessionPlannerWorkspaceSnapshot(
+                publicationRevision, 91L, publicationRevision,
+                SessionPlannerCatalogSnapshot.empty(), new SessionPlannerSessionSnapshot(
+                        new SessionPlannerSessionSnapshot.SessionState(91L, "Feedback", BigDecimal.ONE, "1", 0L, false),
+                        SessionPlannerSessionSnapshot.XpBudgetState.empty(), restAdvice, ""),
+                features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(),
+                new SessionPlannerSceneTimelineProjection(
+                        List.of(
+                                sceneHeader(1L, "Alpha", true),
+                                sceneHeader(2L, "Beta", false),
+                                sceneHeader(3L, "Gamma", false)),
+                        List.of(
+                                new SessionPlannerSceneTimelineProjection.RestGap(
+                                        0, 1L, 2L, SessionPlannerRestKind.NONE),
+                                new SessionPlannerSceneTimelineProjection.RestGap(
+                                        1, 2L, 3L, SessionPlannerRestKind.LONG_REST))),
+                SessionPlannerSelectedSceneSnapshot.empty(), SessionPreparationSnapshot.idle(), issues);
+    }
+
+    private static SessionPlannerWorkspaceSnapshot reorderedWorkspaceFixture() {
+        return new SessionPlannerWorkspaceSnapshot(
+                22L, 91L, 22L, SessionPlannerCatalogSnapshot.empty(), new SessionPlannerSessionSnapshot(
+                        new SessionPlannerSessionSnapshot.SessionState(91L, "Feedback", BigDecimal.ONE, "1", 0L, false),
+                        SessionPlannerSessionSnapshot.XpBudgetState.empty(),
+                        SessionPlannerSessionSnapshot.RestAdviceState.empty(), ""),
+                features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(),
+                new SessionPlannerSceneTimelineProjection(
+                        List.of(
+                                sceneHeader(3L, "Gamma umbenannt", true),
+                                sceneHeader(2L, "Beta umbenannt", false),
+                                sceneHeader(1L, "Alpha umbenannt", false)),
+                        List.of(
+                                new SessionPlannerSceneTimelineProjection.RestGap(
+                                        0, 3L, 2L, SessionPlannerRestKind.SHORT_REST),
+                                new SessionPlannerSceneTimelineProjection.RestGap(
+                                        1, 2L, 1L, SessionPlannerRestKind.NONE))),
+                SessionPlannerSelectedSceneSnapshot.empty(), SessionPreparationSnapshot.idle(), List.of());
+    }
+
+    private static SessionPlannerSceneTimelineProjection.SceneHeader sceneHeader(
+            long token,
+            String title,
+            boolean selected
+    ) {
+        return new SessionPlannerSceneTimelineProjection.SceneHeader(
+                token, title, 0L, false, "", "", 0, 0, "", "", BigDecimal.ZERO, 0,
+                selected, "Keine Location", false, false);
     }
 
     private static void runTest() {
@@ -232,12 +525,17 @@ public final class SessionPlannerCatalogTest {
         layout(root);
 
         assertSetupLivesInControls(controls);
+        Parent stateContent = (Parent) ((javafx.scene.control.ScrollPane) state).getContent();
+        assertTrue(hasLabel(stateContent, "Keine Szene ausgewählt."),
+                "state slot renders a clear no-selection state instead of empty labels; labels="
+                        + descendants(stateContent).stream().filter(Label.class::isInstance)
+                                .map(Label.class::cast).map(Label::getText).toList());
         assertSceneLootTargetsSceneCards();
         assertCatalogSize(workspace.current().catalog(), 0, "initial catalog is empty");
         assertTrue(!hasLabel(main, "Session #0"), "initial main does not show default Session #0");
-        assertTrue(button(controls, "Setzen").isDisabled(), "initial setup disables session mutation");
+        assertTrue(button(controls, "Übernehmen").isDisabled(), "initial setup disables session mutation");
         encounterDaysField(controls).setText("2");
-        button(controls, "Setzen").fire();
+        button(controls, "Übernehmen").fire();
         assertCatalogSize(workspace.current().catalog(), 0, "session-bound action before create does not seed a session");
 
         createSession(controls, "Alpha");
@@ -250,22 +548,22 @@ public final class SessionPlannerCatalogTest {
                 "current session display name after create");
 
         encounterDaysField(controls).setText("2");
-        button(controls, "Setzen").fire();
+        button(controls, "Übernehmen").fire();
         assertEquals("2", workspace.current().currentSession().session().encounterDaysText(),
                 "session content mutation before rename");
 
-        button(main, "Szene hinzufuegen").fire();
+        button(main, "Szene hinzufügen").fire();
         layout(main);
-        assertEquals(Integer.valueOf(1), Integer.valueOf(workspace.current().sceneTimeline().sessionScenes().size()),
+        assertEquals(Integer.valueOf(1), Integer.valueOf(workspace.current().sceneTimeline().sceneHeaders().size()),
                 "add scene creates one session scene");
         assertEquals(Long.valueOf(0L),
-                Long.valueOf(workspace.current().sceneTimeline().sessionScenes().getFirst().linkedEncounterPlanId()),
+                Long.valueOf(workspace.current().sceneTimeline().sceneHeaders().getFirst().linkedEncounterPlanId()),
                 "added scene has no linked encounter plan");
         expandScene(main, 0);
-        assertTrue(hasLabel(main, "Keine Begegnung verknuepft."), "expanded blank scene shows no false encounter data");
+        assertTrue(hasLabel(main, "Keine Begegnung verknüpft."), "expanded blank scene shows no false encounter data");
         button(main, "X").fire();
         layout(main);
-        assertEquals(Integer.valueOf(0), Integer.valueOf(workspace.current().sceneTimeline().sessionScenes().size()),
+        assertEquals(Integer.valueOf(0), Integer.valueOf(workspace.current().sceneTimeline().sceneHeaders().size()),
                 "scene X removes only the session scene representation");
 
         renameSelectedSession(controls, "Alpha Prime");
@@ -354,8 +652,8 @@ public final class SessionPlannerCatalogTest {
                 .filter(ComboBox.class::isInstance)
                 .count();
         assertTrue(selectorCount >= 1L, "controls expose the party selector alongside the catalog selector");
-        assertTrue(button(controls, "Hinzufuegen").isDisabled(), "party add button starts disabled");
-        assertTrue(hasLabel(controls, "Session-Setup"), "controls expose the session setup section");
+        assertTrue(button(controls, "Hinzufügen").isDisabled(), "party add button starts disabled");
+        assertTrue(hasLabel(controls, "Encounter-Tage"), "controls expose the compact preparation toolbar");
     }
 
     private static void expandScene(Parent main, int index) {
@@ -367,7 +665,7 @@ public final class SessionPlannerCatalogTest {
         if (index >= toggles.size()) {
             throw new AssertionError("Scene toggle not found at index " + index);
         }
-        if ("▶".equals(toggles.get(index).getText())) {
+        if (toggles.get(index).getText().startsWith("▶")) {
             toggles.get(index).fire();
         }
         layout(main);
@@ -376,11 +674,13 @@ public final class SessionPlannerCatalogTest {
     private static void assertSceneLootTargetsSceneCards() {
         SessionPlan plan = SessionPlan.seeded(77L, List.of(), EncounterDays.one())
                 .addScene()
-                .attachEncounter(101L)
-                .attachEncounter(202L)
-                .addManualLootNote(1L)
-                .addManualLootNote(2L)
-                .addManualLootNote(1L);
+                .attachEncounter(1L, 101L)
+                .addScene()
+                .selectEncounter(2L)
+                .attachEncounter(2L, 202L)
+                .addManualLootNote(1L, "First")
+                .addManualLootNote(2L, "Second")
+                .addManualLootNote(1L, "Third");
         assertEquals(Integer.valueOf(3), Integer.valueOf(plan.manualLootNotes().size()),
                 "manual notes are stored on the session plan");
         assertEquals(Long.valueOf(1L), Long.valueOf(plan.manualLootNotes().get(0).sceneId()),
@@ -395,51 +695,42 @@ public final class SessionPlannerCatalogTest {
                 "remaining manual note keeps the surviving scene target");
 
         SessionPlannerSceneTimelineProjection projection = new SessionPlannerSceneTimelineProjection(
-                List.of(new SessionPlannerSceneTimelineProjection.SessionScene(
-                        1L,
-                        101L,
-                        true,
-                        "Crypt",
-                        "",
-                        2,
-                        100,
-                        150,
-                        1.5,
-                        "Medium",
-                        BigDecimal.valueOf(50L),
-                        200,
-                        false,
-                        "Gate Watch",
-                        "guards count torches",
-                        7L,
-                        List.of(new SessionPlannerSceneTimelineProjection.ManualLootNote(10L, "Cache")),
-                        List.of())),
+                List.of(new SessionPlannerSceneTimelineProjection.SceneHeader(
+                        1L, "Gate Watch", 101L, true, "Crypt", "", 2, 150,
+                        "Medium", "", BigDecimal.valueOf(50L), 200, true,
+                        "Old Gate", false, false)),
                 List.of());
         SessionPlannerViewModel viewModel = new SessionPlannerViewModel();
         SessionPlannerSessionSnapshot session = new SessionPlannerSessionSnapshot(
                 new SessionPlannerSessionSnapshot.SessionState(7L, "Session", BigDecimal.ONE, "1", 1L, true),
                 SessionPlannerSessionSnapshot.XpBudgetState.empty(),
                 SessionPlannerSessionSnapshot.RestAdviceState.empty(),
-                SessionPlannerSessionSnapshot.GoldBudgetState.manualNotes(1),
-                List.of(),
-                List.of(new SessionPlannerSessionSnapshot.LocationReference(7L, "Old Gate"),
-                        new SessionPlannerSessionSnapshot.LocationReference(10L, "Moonwell")),
                 "");
+        SessionPlannerSelectedSceneSnapshot selected = new SessionPlannerSelectedSceneSnapshot(
+                true, 1L, "Gate Watch", "guards count torches", 7L,
+                List.of(new SessionPlannerSelectedSceneSnapshot.LocationChoice(0L, "Keine Location"),
+                        new SessionPlannerSelectedSceneSnapshot.LocationChoice(7L, "Old Gate"),
+                        new SessionPlannerSelectedSceneSnapshot.LocationChoice(10L, "Moonwell")),
+                BigDecimal.valueOf(50L), 200, 101L, true, "Crypt", "", 2, 100, 150, 1.5,
+                "Medium", "", List.of(new SessionPlannerSelectedSceneSnapshot.EncounterRosterLine(
+                        81L, 2, "Goblin")),
+                List.of(new SessionPlannerSelectedSceneSnapshot.ManualLootNote(10L, "Cache")),
+                List.of(), features.sessionplanner.api.SessionEncounterPlanSearchSnapshot.idle());
         viewModel.applyWorkspace(new features.sessionplanner.api.SessionPlannerWorkspaceSnapshot(
                 1L, 7L, 1L, SessionPlannerCatalogSnapshot.empty(), session,
                 features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(), projection,
-                features.sessionplanner.api.SessionPlannerStatePanelProjection.empty(),
+                selected,
                 SessionPreparationSnapshot.idle(), List.of()));
         assertEquals(Integer.valueOf(1), Integer.valueOf(
-                        viewModel.timelineProjectionProperty().get().scenes().getFirst().lootEntries().size()),
-                "timeline model keeps loot inside the scene card");
+                        viewModel.timelineProjectionProperty().get().selectedScene().manualLootNotes().size()),
+                "timeline model keeps manual notes inside the scene inspector");
         assertEquals("Old Gate", viewModel.timelineProjectionProperty().get().scenes().getFirst().locationLabel(),
                 "timeline model resolves scene location labels from World Planner locations");
         assertEquals(Integer.valueOf(2),
-                Integer.valueOf(viewModel.timelineProjectionProperty().get().locationOptions().size()),
+                Integer.valueOf(viewModel.timelineProjectionProperty().get().selectedScene().locationChoices().size() - 1),
                 "timeline model exposes World Planner locations for scene selection");
         assertEquals("Gate Watch",
-                viewModel.timelineProjectionProperty().get().scenes().getFirst().sceneTitle(),
+                viewModel.timelineProjectionProperty().get().selectedScene().sceneTitle(),
                 "timeline model exposes the persisted scene title directly without a draft layer");
     }
 
@@ -452,73 +743,128 @@ public final class SessionPlannerCatalogTest {
     ) {
         seedActiveParty(services);
         encounterDaysField(controls).setText("1");
-        button(controls, "Setzen").fire();
+        button(controls, "Übernehmen").fire();
         layout(controls);
         comboBoxContaining(controls, "Cora - Level 4");
 
-        comboBoxByPrompt(controls, "Spieler").getSelectionModel().selectFirst();
-        button(controls, "Hinzufuegen").fire();
+        button(controls, "Teilnehmer (0)").fire();
+        comboBoxByPrompt(controls, "Party-Mitglied").getSelectionModel().selectFirst();
+        button(controls, "Hinzufügen").fire();
         layout(controls);
         assertEquals(Integer.valueOf(1), Integer.valueOf(workspace.current().participants().participants().size()),
                 "participant add through setup section publishes one participant");
         assertEquals("Cora", workspace.current().participants().participants().getFirst().name(),
                 "participant add through setup section resolves active party member");
         assertTrue(hasLabel(controls, "Cora"), "participant add renders selected player in controls");
-        button(controls, "X").fire();
+        button(controls, "Entfernen").fire();
         layout(controls);
         assertEquals(Integer.valueOf(0), Integer.valueOf(workspace.current().participants().participants().size()),
                 "participant remove through setup section publishes empty participants");
 
-        button(controls, "An Session anhaengen").fire();
+        button(main, "Szene hinzufügen").fire();
+        button(main, "Szene hinzufügen").fire();
         layout(main);
-        button(controls, "An Session anhaengen").fire();
+        expandScene(main, 0);
+        TextField planSearch = visibleTextField(main, "Encounter suchen");
+        planSearch.setText("unbekannte schwierigkeit");
+        layout(main);
+        assertTrue(hasLabelContaining(main, "Keine gespeicherten Encounter gefunden"),
+                "selected-scene search reports a provider-backed no-match state");
+        planSearch.setText("Medium");
+        layout(main);
+        assertTrue(hasLabel(main, "Ash Gate Ambush"),
+                "selected-scene search matches snapshot plans by name, difficulty and summary");
+        button(main, "Verknüpfen").fire();
+        layout(main);
+        expandScene(main, 1);
+        visibleTextField(main, "Encounter suchen").setText("Medium");
+        button(main, "Verknüpfen").fire();
         layout(main);
         SessionPlannerSceneTimelineProjection afterAttach = workspace.current().sceneTimeline();
-        assertEquals(Integer.valueOf(2), Integer.valueOf(afterAttach.sessionScenes().size()),
-                "saved encounter attach through controls creates two scene cards");
+        assertEquals(Integer.valueOf(2), Integer.valueOf(afterAttach.sceneHeaders().size()),
+                "saved encounter attach in the inspectors keeps two authored scene cards");
         assertEquals(Long.valueOf(SAVED_ENCOUNTER_PLAN_ID),
-                Long.valueOf(afterAttach.sessionScenes().getFirst().linkedEncounterPlanId()),
+                Long.valueOf(afterAttach.sceneHeaders().getFirst().linkedEncounterPlanId()),
                 "saved encounter attach publishes linked plan id");
         expandScene(main, 0);
         assertTrue(hasLabel(main, "Ash Gate Ambush"), "expanded scene card renders linked plan name");
+        assertTrue(hasLabel(main, "2 × Ash guard"),
+                "selected inspector renders the concrete typed Encounter roster");
+        button(main, "Encounter lösen").fire();
+        layout(main);
+        assertEquals(Integer.valueOf(2), Integer.valueOf(workspace.current().sceneTimeline().sceneHeaders().size()),
+                "detach keeps the authored scene in the ordered timeline");
+        assertEquals(Long.valueOf(0L), Long.valueOf(workspace.current().sceneTimeline().sceneHeaders().getFirst()
+                .linkedEncounterPlanId()), "detach removes only the selected scene reference");
+        TextField reattachSearch = visibleTextField(main, "Encounter suchen");
+        reattachSearch.clear();
+        reattachSearch.setText("Medium");
+        button(main, "Verknüpfen").fire();
+        layout(main);
+        assertEquals(Long.valueOf(SAVED_ENCOUNTER_PLAN_ID),
+                Long.valueOf(workspace.current().sceneTimeline().sceneHeaders().getFirst().linkedEncounterPlanId()),
+                "the same selected inspector can attach again after detach");
 
-        long firstScene = afterAttach.sessionScenes().get(0).sceneToken();
-        long secondScene = afterAttach.sessionScenes().get(1).sceneToken();
+        long firstScene = afterAttach.sceneHeaders().get(0).sceneToken();
+        long secondScene = afterAttach.sceneHeaders().get(1).sceneToken();
         textField(main, "Szenentitel").setText("Gate Alarm");
         textArea(main, "Szenennotizen").setText("ring twice");
         selectComboBoxItem(main, "#" + locationId + " | Old Gate");
         button(main, "Szene speichern").fire();
         layout(main);
         SessionPlannerSceneTimelineProjection afterSave = workspace.current().sceneTimeline();
-        assertEquals("Gate Alarm", afterSave.sessionScenes().getFirst().sceneTitle(),
+        assertEquals("Gate Alarm", workspace.current().selectedScene().sceneTitle(),
                 "scene save through card stores title");
-        assertEquals("ring twice", afterSave.sessionScenes().getFirst().sceneNotes(),
+        assertEquals("ring twice", workspace.current().selectedScene().sceneNotes(),
                 "scene save through card stores notes");
-        assertEquals(Long.valueOf(locationId), Long.valueOf(afterSave.sessionScenes().getFirst().locationId()),
+        assertEquals(Long.valueOf(locationId), Long.valueOf(workspace.current().selectedScene().locationId()),
                 "scene save through card stores location id");
         assertTrue(hasLabel(main, "Old Gate"), "scene header renders saved location label");
 
         expandScene(main, 0);
-        buttons(main, "Beutenotiz").getFirst().fire();
+        visibleTextField(main, "Neue Beutenotiz").setText("Hidden cache beneath the altar");
+        buttons(main, "Hinzufügen").getFirst().fire();
         layout(main);
         assertEquals(Integer.valueOf(1),
-                Integer.valueOf(workspace.current().sceneTimeline().sessionScenes().getFirst().manualLootNotes().size()),
+                Integer.valueOf(workspace.current().selectedScene().manualLootNotes().size()),
                 "manual note add through scene card publishes note");
-        assertTrue(hasLabel(main, "Notiz: Beutenotiz 1"), "manual note renders as authored content");
+        assertEquals("Hidden cache beneath the altar",
+                workspace.current().selectedScene().manualLootNotes().getFirst().authoredText(),
+                "manual note renders the exact authored content");
+        TextField manualNote = manualNoteField(main);
+        manualNote.setText("Edited cache beneath the altar");
+        manualNote.requestFocus();
+        manualNote.selectRange(2, 8);
+        services.planner().application().setEncounterDays(
+                new features.sessionplanner.api.SetSessionEncounterDaysCommand(
+                        new features.sessionplanner.api.SessionPlannerAuthoredTarget(
+                                workspace.current().sourceSessionId(), workspace.current().sourceSessionRevision()),
+                        new BigDecimal("1.1")));
+        layout(main);
+        assertEquals("Edited cache beneath the altar", manualNote.getText(),
+                "same-scene publication preserves a keyed dirty manual-note editor");
+        assertTrue(manualNote.isFocused() && manualNote.getAnchor() == 2
+                        && manualNote.getCaretPosition() == 8,
+                "same-scene publication preserves manual-note focus and caret selection");
+        button(main, "Speichern").fire();
+        layout(main);
+        assertEquals("Edited cache beneath the altar",
+                workspace.current().selectedScene().manualLootNotes().getFirst().authoredText(),
+                "existing authored note update flows through the real inspector contribution");
         button(main, "Entfernen").fire();
         layout(main);
         assertEquals(Integer.valueOf(0),
-                Integer.valueOf(workspace.current().sceneTimeline().sessionScenes().getFirst().manualLootNotes().size()),
+                Integer.valueOf(workspace.current().selectedScene().manualLootNotes().size()),
                 "manual note remove through scene card clears note");
 
         buttons(main, "+10%").getFirst().fire();
         layout(main);
-        assertEquals("60", workspace.current().sceneTimeline().sessionScenes().getFirst()
+        assertEquals("60", workspace.current().selectedScene()
                         .budgetPercentage().stripTrailingZeros().toPlainString(),
                 "allocation increase through scene card raises first scene");
         buttons(main, "-10%").getFirst().fire();
         layout(main);
-        assertEquals("50", workspace.current().sceneTimeline().sessionScenes().getFirst()
+        assertEquals("50", workspace.current().selectedScene()
                         .budgetPercentage().stripTrailingZeros().toPlainString(),
                 "allocation decrease through scene card restores first scene");
 
@@ -526,7 +872,7 @@ public final class SessionPlannerCatalogTest {
         assertEquals(Long.valueOf(secondScene),
                 Long.valueOf(workspace.current().currentSession().session().selectedEncounterId()),
                 "expanding a scene card selects it as the current scene");
-        assertTrue(workspace.current().sceneTimeline().sessionScenes().stream()
+        assertTrue(workspace.current().sceneTimeline().sceneHeaders().stream()
                         .anyMatch(scene -> scene.sceneToken() == secondScene && scene.selected()),
                 "expanding a scene card publishes the selected scene");
 
@@ -546,18 +892,18 @@ public final class SessionPlannerCatalogTest {
         enabledButtons(main, "Runter").getFirst().fire();
         layout(main);
         assertEquals(Long.valueOf(secondScene),
-                Long.valueOf(workspace.current().sceneTimeline().sessionScenes().getFirst().sceneToken()),
+                Long.valueOf(workspace.current().sceneTimeline().sceneHeaders().getFirst().sceneToken()),
                 "scene move down through card reorders first scene");
         enabledButtons(main, "Hoch").getFirst().fire();
         layout(main);
         assertEquals(Long.valueOf(firstScene),
-                Long.valueOf(workspace.current().sceneTimeline().sessionScenes().getFirst().sceneToken()),
+                Long.valueOf(workspace.current().sceneTimeline().sceneHeaders().getFirst().sceneToken()),
                 "scene move up through card restores order");
 
         buttons(main, "X").getFirst().fire();
         layout(main);
         assertEquals(Integer.valueOf(1),
-                Integer.valueOf(workspace.current().sceneTimeline().sessionScenes().size()),
+                Integer.valueOf(workspace.current().sceneTimeline().sceneHeaders().size()),
                 "scene remove through linked scene card removes one scene");
     }
 
@@ -566,18 +912,18 @@ public final class SessionPlannerCatalogTest {
             Parent main,
             SessionPlannerWorkspaceModel workspace
     ) {
-        comboBoxByPrompt(controls, "Spieler").getSelectionModel().selectFirst();
-        button(controls, "Hinzufuegen").fire();
+        comboBoxByPrompt(controls, "Party-Mitglied").getSelectionModel().selectFirst();
+        button(controls, "Hinzufügen").fire();
         layout(controls);
         assertEquals(Integer.valueOf(1), Integer.valueOf(workspace.current().participants().participants().size()),
                 "generation route has one resolved session participant");
-        int scenesBeforePreparation = workspace.current().sceneTimeline().sessionScenes().size();
+        int scenesBeforePreparation = workspace.current().sceneTimeline().sceneHeaders().size();
 
-        button(controls, "Session generieren").fire();
+        button(controls, "Generieren").fire();
         layout(controls);
 
         assertEquals(Integer.valueOf(scenesBeforePreparation),
-                Integer.valueOf(workspace.current().sceneTimeline().sessionScenes().size()),
+                Integer.valueOf(workspace.current().sceneTimeline().sceneHeaders().size()),
                 "replacement confirmation performs no Session mutation");
         assertTrue(hasLabelContaining(controls, "Vorhandene Szenen"),
                 "generation reveals the inline replacement warning");
@@ -587,22 +933,344 @@ public final class SessionPlannerCatalogTest {
         button(controls, "Ersetzen und generieren").fire();
         layout(main);
 
-        assertEquals(Integer.valueOf(1), Integer.valueOf(workspace.current().sceneTimeline().sessionScenes().size()),
+        assertEquals(Integer.valueOf(1), Integer.valueOf(workspace.current().sceneTimeline().sceneHeaders().size()),
                 "confirmed generation replaces the timeline");
         assertEquals(Long.valueOf(901L),
-                Long.valueOf(workspace.current().sceneTimeline().sessionScenes().getFirst().linkedEncounterPlanId()),
+                Long.valueOf(workspace.current().sceneTimeline().sceneHeaders().getFirst().linkedEncounterPlanId()),
                 "confirmed generation attaches imported Encounter plan");
-        assertEquals(SessionPlannerSceneTimelineProjection.Availability.AVAILABLE,
-                workspace.current().sceneTimeline().sessionScenes().getFirst()
-                        .generatedRewards().getFirst().availability(),
+        assertEquals(SessionPlannerSelectedSceneSnapshot.Availability.AVAILABLE,
+                workspace.current().selectedScene().generatedRewards().getFirst().availability(),
                 "reopened reward keeps typed generated availability");
-        assertEquals("ENCOUNTER · Vault · 1 Positionen",
-                workspace.current().sceneTimeline().sessionScenes().getFirst()
-                        .generatedRewards().getFirst().displayLabel(),
-                "resolved reward renders from structured owner truth, not persisted fallback");
         expandScene(main, 0);
-        assertTrue(hasLabel(main, "Generierte Belohnung: ENCOUNTER · Vault · 1 Positionen"),
-                "applied generated reward reopens through the normal timeline projection");
+        assertTrue(hasLabel(main, "Verfügbar · ENCOUNTER · NORMAL"),
+                "available reward renders availability, channel and stock class");
+        assertTrue(hasLabel(main, "Thema Vault · Magie none · Ziel 100 cp"),
+                "available reward renders theme, magic type and target value");
+        assertTrue(hasLabel(main, "Slots 1 nichtmagisch / 0 magisch"),
+                "available reward renders both typed slot counts");
+        assertTrue(hasLabel(main,
+                        "2 × Generated cache · 250 cp · USEFUL / cache · RARE · verflucht"
+                                + " · Kapazität 3.5 · Behälter chest, sack"),
+                "item row renders quantity, text, value, role, id, rarity, curse, capacity and allowed containers");
+        assertTrue(hasLabel(main, "2 × chest · iron-chest · gültig"),
+                "packing row renders container type, count, id and validity");
+    }
+
+    private static void assertSelectedSceneReconciliation() {
+        SessionPlannerTestServices services = services();
+        long locationId = seedLocation(services);
+        SessionPlannerServiceAssembly planner = services.planner();
+        ShellBinding binding = new SessionPlannerContribution(
+                planner.application(), planner.workspaceModel(), ignored -> { }).bind();
+        Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
+        Parent main = slot(binding, ShellSlot.COCKPIT_MAIN, Parent.class);
+        Stage stage = new Stage();
+        stage.setScene(new Scene(new HBox(controls, main), 1_000.0, 680.0));
+        stage.show();
+
+        createSession(controls, "First");
+        long firstSessionId = planner.workspaceModel().current().sourceSessionId();
+        button(main, "Szene hinzufügen").fire();
+        layout(main);
+        assertEquals("Szene 1", textField(main, "Szenentitel").getText(),
+                "first selected scene auto-opens with its persisted title loaded exactly once");
+        textField(main, "Szenentitel").setText("First persisted");
+        textArea(main, "Szenennotizen").setText("first notes");
+        selectComboBoxItem(main, "#" + locationId + " | Old Gate");
+        button(main, "Szene speichern").fire();
+
+        createSession(controls, "Second");
+        long secondSessionId = planner.workspaceModel().current().sourceSessionId();
+        button(main, "Szene hinzufügen").fire();
+        layout(main);
+        assertEquals("Szene 1", textField(main, "Szenentitel").getText(),
+                "same scene token in a new session starts from the new session model");
+        textField(main, "Szenentitel").setText("Second persisted");
+        textArea(main, "Szenennotizen").setText("second notes");
+        button(main, "Szene speichern").fire();
+
+        selectSession(controls, firstSessionId);
+        layout(main);
+        assertEquals("First persisted", textField(main, "Szenentitel").getText(),
+                "session switch auto-opens and loads the selected scene title");
+        assertEquals("first notes", textArea(main, "Szenennotizen").getText(),
+                "session switch loads persisted scene notes");
+        assertEquals("#" + locationId + " | Old Gate", String.valueOf(locationCombo(main).getValue()),
+                "session switch loads the persisted location");
+
+        textField(main, "Szenentitel").setText("UNSAVED OLD TITLE");
+        textArea(main, "Szenennotizen").setText("unsaved old notes");
+        visibleTextField(main, "Neue Beutenotiz").setText("Keep draft alive");
+        button(main, "Hinzufügen").fire();
+        layout(main);
+        assertEquals("UNSAVED OLD TITLE", textField(main, "Szenentitel").getText(),
+                "workspace refresh does not overwrite focused unconfirmed title input");
+        assertEquals("unsaved old notes", textArea(main, "Szenennotizen").getText(),
+                "workspace refresh does not overwrite focused unconfirmed notes input");
+
+        selectSession(controls, secondSessionId);
+        layout(main);
+        assertEquals("Second persisted", textField(main, "Szenentitel").getText(),
+                "same-token session switch discards the old view draft without copying it");
+        assertEquals("second notes", textArea(main, "Szenennotizen").getText(),
+                "new session keeps its own persisted notes");
+        assertEquals("Second persisted", planner.workspaceModel().current().selectedScene().sceneTitle(),
+                "old session draft was not written into the new session");
+
+        selectSession(controls, firstSessionId);
+        layout(main);
+        assertEquals("UNSAVED OLD TITLE", planner.workspaceModel().current().selectedScene().sceneTitle(),
+                "catalog switch atomically commits the old dirty scene before returning to it");
+        assertEquals("unsaved old notes", planner.workspaceModel().current().selectedScene().sceneNotes(),
+                "the switched-away scene notes remain durable without copying into the target session");
+    }
+
+    private static void assertEncounterSearchIsDemandDrivenAndBounded() {
+        SessionPlannerTimelineMainView view = new SessionPlannerTimelineMainView();
+        SessionPlannerViewModel viewModel = new SessionPlannerViewModel();
+        view.bind(viewModel);
+        List<String> dispatchedQueries = new java.util.ArrayList<>();
+        view.onSearchPlans((sceneToken, query) -> dispatchedQueries.add(sceneToken + ":" + query));
+        SessionPlannerSceneTimelineProjection timeline = new SessionPlannerSceneTimelineProjection(
+                List.of(
+                        searchScene(1L, 999L, true),
+                        searchScene(2L, 0L, false)),
+                List.of(new SessionPlannerSceneTimelineProjection.RestGap(
+                        0, 1L, 2L, SessionPlannerRestKind.NONE)));
+        SessionPlannerSessionSnapshot session = new SessionPlannerSessionSnapshot(
+                new SessionPlannerSessionSnapshot.SessionState(31L, "Search", BigDecimal.ONE, "1", 1L, true),
+                SessionPlannerSessionSnapshot.XpBudgetState.empty(),
+                SessionPlannerSessionSnapshot.RestAdviceState.empty(),
+                "");
+        viewModel.applyWorkspace(new features.sessionplanner.api.SessionPlannerWorkspaceSnapshot(
+                1L, 31L, 1L, SessionPlannerCatalogSnapshot.empty(), session,
+                features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(), timeline,
+                searchSelected(1L, 999L, features.sessionplanner.api.SessionEncounterPlanSearchSnapshot.idle()),
+                SessionPreparationSnapshot.idle(), List.of()));
+        Parent content = (Parent) view.getContent();
+
+        assertTrue(hasLabelContaining(content, "Ab 2 Zeichen"),
+                "empty selected-scene search renders only the search hint");
+        assertTrue(!hasLabel(content, "Current saved") && !hasLabel(content, "Plan 01")
+                        && buttons(content, "Verknüpfen").isEmpty(),
+                "empty search renders neither plan names nor attach actions");
+        TextField search = textField(content, "Encounter suchen");
+        search.setText("P");
+        assertEquals(List.of("1:P"), dispatchedQueries,
+                "the selected-scene field dispatches one typed demand intent instead of filtering local facts");
+        viewModel.applyWorkspace(new features.sessionplanner.api.SessionPlannerWorkspaceSnapshot(
+                2L, 31L, 1L, SessionPlannerCatalogSnapshot.empty(), session,
+                features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(), timeline,
+                searchSelected(1L, 999L, new features.sessionplanner.api.SessionEncounterPlanSearchSnapshot(
+                        1L, 31L, 1L, 1L, "p",
+                        features.sessionplanner.api.SessionEncounterPlanSearchSnapshot.Status.TOO_SHORT,
+                        List.of(), false, "Mindestens 2 Zeichen eingeben.")),
+                SessionPreparationSnapshot.idle(), List.of()));
+        assertTrue(!hasLabel(content, "Plan 01"),
+                "one-character search still materializes no plan result nodes");
+        search.setText("Medium");
+        List<features.sessionplanner.api.SessionEncounterPlanSearchSnapshot.Result> results =
+                java.util.stream.Stream.concat(
+                        java.util.stream.Stream.of(new features.sessionplanner.api.SessionEncounterPlanSearchSnapshot.Result(
+                                999L, "Current saved", "Current summary", 100, "MEDIUM", "", true)),
+                        java.util.stream.IntStream.rangeClosed(1, 7).mapToObj(index ->
+                                new features.sessionplanner.api.SessionEncounterPlanSearchSnapshot.Result(
+                                        index, "Plan " + String.format(java.util.Locale.ROOT, "%02d", index),
+                                        "Summary " + index, 100 + index, "MEDIUM", "", true)))
+                        .toList();
+        viewModel.applyWorkspace(new features.sessionplanner.api.SessionPlannerWorkspaceSnapshot(
+                3L, 31L, 1L, SessionPlannerCatalogSnapshot.empty(), session,
+                features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(), timeline,
+                searchSelected(1L, 999L, new features.sessionplanner.api.SessionEncounterPlanSearchSnapshot(
+                        2L, 31L, 1L, 1L, "medium",
+                        features.sessionplanner.api.SessionEncounterPlanSearchSnapshot.Status.READY,
+                        results, true, "")),
+                SessionPreparationSnapshot.idle(), List.of()));
+        assertEquals(Integer.valueOf(1), Integer.valueOf(buttons(content, "Verknüpft").size()),
+                "the already linked plan is visible once as a disabled current relation");
+        assertTrue(button(content, "Verknüpft").isDisabled(),
+                "the already linked plan cannot dispatch a meaningless replacement");
+        assertEquals(Integer.valueOf(7), Integer.valueOf(buttons(content, "Ersetzen").size()),
+                "only eight compact results total are materialized for the expanded scene");
+        assertTrue(hasLabel(content, "Plan 07") && !hasLabel(content, "Plan 08"),
+                "results stop at the fixed compact limit");
+        assertTrue(hasLabelContaining(content, "Weitere Treffer vorhanden"),
+                "the bounded result list explains that a narrower search can reveal more");
+    }
+
+    private static void assertReusableSelectedSceneInspector() {
+        SessionPlannerTimelineMainView view = new SessionPlannerTimelineMainView();
+        SessionPlannerViewModel viewModel = new SessionPlannerViewModel();
+        view.bind(viewModel);
+        List<String> events = new java.util.ArrayList<>();
+        view.onSaveScene(draft -> events.add("save:" + draft.sceneToken() + ":" + draft.title()));
+        view.onSelectScene(token -> events.add("select:" + token));
+        Stage stage = new Stage();
+        stage.setScene(new Scene(view, 820.0, 500.0));
+        stage.show();
+
+        List<SessionPlannerSceneTimelineProjection.SceneHeader> headers = java.util.stream.LongStream
+                .rangeClosed(1L, 64L).mapToObj(token -> new SessionPlannerSceneTimelineProjection.SceneHeader(
+                        token, "Scene " + token, token, true, "Plan " + token, "", 1, 100,
+                        "MEDIUM", "", new BigDecimal("10"), 100, false,
+                        "Keine Location", token > 1L, token < 64L)).toList();
+        SessionPlannerSceneTimelineProjection timeline = new SessionPlannerSceneTimelineProjection(
+                headers, java.util.stream.IntStream.range(0, 63).mapToObj(index ->
+                        new SessionPlannerSceneTimelineProjection.RestGap(
+                                index, index + 1L, index + 2L, SessionPlannerRestKind.NONE)).toList());
+        SessionPlannerSessionSnapshot session = new SessionPlannerSessionSnapshot(
+                new SessionPlannerSessionSnapshot.SessionState(41L, "Master detail", BigDecimal.ONE, "1", 0L, false),
+                SessionPlannerSessionSnapshot.XpBudgetState.empty(),
+                SessionPlannerSessionSnapshot.RestAdviceState.empty(),
+                "");
+        viewModel.applyWorkspace(new features.sessionplanner.api.SessionPlannerWorkspaceSnapshot(
+                1L, 41L, 1L, SessionPlannerCatalogSnapshot.empty(), session,
+                features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(), timeline,
+                SessionPlannerSelectedSceneSnapshot.empty(), SessionPreparationSnapshot.idle(), List.of()));
+        layout(view);
+
+        assertEquals(Integer.valueOf(0), Integer.valueOf((int) descendants(view).stream()
+                .filter(node -> node.getStyleClass().contains("session-planner-selected-scene-inspector")).count()),
+                "64 collapsed headers with no published selection materialize no inspector");
+        assertEquals(Integer.valueOf(0), Integer.valueOf((int) descendants(view).stream()
+                .filter(javafx.scene.control.TextArea.class::isInstance).count()),
+                "64 collapsed headers materialize no detail editor subtree");
+        assertEquals(Integer.valueOf(0), Integer.valueOf((int) descendants(view).stream()
+                .filter(TextField.class::isInstance).map(TextField.class::cast)
+                .filter(field -> "Encounter suchen".equals(field.getPromptText())).count()),
+                "64 collapsed headers materialize no saved-plan search subtree");
+        assertEquals(Integer.valueOf(0), Integer.valueOf((int) descendants(view).stream()
+                .filter(node -> node.getStyleClass().contains("session-planner-roster-line")
+                        || node.getStyleClass().contains("session-planner-generated-reward")).count()),
+                "64 collapsed headers materialize no roster or reward subtree");
+
+        List<SessionPlannerSceneTimelineProjection.SceneHeader> selectedHeaders = new java.util.ArrayList<>(headers);
+        var firstHeader = selectedHeaders.getFirst();
+        selectedHeaders.set(0, new SessionPlannerSceneTimelineProjection.SceneHeader(
+                firstHeader.sceneToken(), firstHeader.displayTitle(), firstHeader.linkedEncounterPlanId(),
+                firstHeader.linkedEncounterPlan(), firstHeader.linkedEncounterName(),
+                firstHeader.linkedEncounterGeneratedLabel(), firstHeader.linkedEncounterCreatureCount(),
+                firstHeader.linkedEncounterAdjustedXp(), firstHeader.linkedEncounterDifficultyLabel(),
+                firstHeader.linkedEncounterStatus(), firstHeader.budgetPercentage(), firstHeader.targetXp(),
+                true, firstHeader.locationLabel(), false, true));
+        SessionPlannerSceneTimelineProjection selectedTimeline = new SessionPlannerSceneTimelineProjection(
+                selectedHeaders, timeline.restGaps());
+        session = new SessionPlannerSessionSnapshot(
+                new SessionPlannerSessionSnapshot.SessionState(41L, "Master detail", BigDecimal.ONE, "1", 1L, true),
+                session.xpBudget(), session.restAdvice(), "");
+        SessionPlannerSelectedSceneSnapshot first = selectedFixture(1L, "First title", 2);
+        viewModel.applyWorkspace(new features.sessionplanner.api.SessionPlannerWorkspaceSnapshot(
+                2L, 41L, 1L, SessionPlannerCatalogSnapshot.empty(), session,
+                features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(), selectedTimeline,
+                first, SessionPreparationSnapshot.idle(), List.of()));
+        layout(view);
+
+        List<Node> inspectors = descendants(view).stream()
+                .filter(node -> node.getStyleClass().contains("session-planner-selected-scene-inspector"))
+                .toList();
+        assertEquals(Integer.valueOf(1), Integer.valueOf(inspectors.size()),
+                "64 headers materialize exactly one selected-scene inspector");
+        Node inspector = inspectors.getFirst();
+        assertEquals(Integer.valueOf(64), Integer.valueOf((int) descendants(view).stream()
+                .filter(node -> node.getStyleClass().contains("session-planner-scene-toggle")).count()),
+                "64 scenes allocate header controls only");
+        assertEquals(Integer.valueOf(1), Integer.valueOf((int) descendants(view).stream()
+                .filter(javafx.scene.control.TextArea.class::isInstance).count()),
+                "collapsed headers allocate no notes editors");
+        assertEquals(Integer.valueOf(1), Integer.valueOf((int) descendants(view).stream()
+                .filter(TextField.class::isInstance)
+                .map(TextField.class::cast).filter(field -> "Encounter suchen".equals(field.getPromptText())).count()),
+                "collapsed headers allocate no search fields");
+
+        TextField title = textField(view, "Szenentitel");
+        title.setText("Dirty title");
+        title.requestFocus();
+        title.selectRange(2, 7);
+        SessionPlannerSelectedSceneSnapshot refreshed = selectedFixture(1L, "Server title", 3);
+        viewModel.applyWorkspace(new features.sessionplanner.api.SessionPlannerWorkspaceSnapshot(
+                3L, 41L, 1L, SessionPlannerCatalogSnapshot.empty(), session,
+                features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(), selectedTimeline,
+                refreshed, SessionPreparationSnapshot.idle(), List.of()));
+        assertEquals("Dirty title", title.getText(),
+                "same selected-scene publication preserves dirty editor text");
+        assertTrue(title.isFocused() && title.getAnchor() == 2 && title.getCaretPosition() == 7,
+                "same selected-scene publication preserves focus and selection");
+
+        Button secondHeader = descendants(view).stream().filter(Button.class::isInstance).map(Button.class::cast)
+                .filter(button -> button.getStyleClass().contains("session-planner-scene-toggle"))
+                .filter(button -> button.getText().contains("Scene 2")).findFirst().orElseThrow();
+        secondHeader.fire();
+        assertEquals(List.of("save:1:Dirty title", "select:2"), events,
+                "same-session header click commits dirty inspector before dispatching selection");
+        assertTrue(descendants(view).contains(inspector),
+                "selection intent does not relocate the inspector before coherent publication");
+
+        List<SessionPlannerSceneTimelineProjection.SceneHeader> reordered = new java.util.ArrayList<>(selectedHeaders);
+        var second = reordered.remove(1);
+        reordered.addFirst(new SessionPlannerSceneTimelineProjection.SceneHeader(
+                second.sceneToken(), second.displayTitle(), second.linkedEncounterPlanId(),
+                second.linkedEncounterPlan(), second.linkedEncounterName(), second.linkedEncounterGeneratedLabel(),
+                second.linkedEncounterCreatureCount(), second.linkedEncounterAdjustedXp(),
+                second.linkedEncounterDifficultyLabel(), second.linkedEncounterStatus(), second.budgetPercentage(),
+                second.targetXp(), true, second.locationLabel(), false, true));
+        reordered.set(1, new SessionPlannerSceneTimelineProjection.SceneHeader(
+                1L, "Scene 1", 1L, true, "Plan 1", "", 1, 100, "MEDIUM", "",
+                new BigDecimal("10"), 100, false, "Keine Location", true, true));
+        SessionPlannerSessionSnapshot secondSessionState = new SessionPlannerSessionSnapshot(
+                new SessionPlannerSessionSnapshot.SessionState(41L, "Master detail", BigDecimal.ONE, "1", 2L, true),
+                session.xpBudget(), session.restAdvice(), "");
+        viewModel.applyWorkspace(new features.sessionplanner.api.SessionPlannerWorkspaceSnapshot(
+                4L, 41L, 2L, SessionPlannerCatalogSnapshot.empty(), secondSessionState,
+                features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(),
+                new SessionPlannerSceneTimelineProjection(reordered, timeline.restGaps()),
+                selectedFixture(2L, "Second title", 1), SessionPreparationSnapshot.idle(), List.of()));
+        assertTrue(descendants(view).contains(inspector),
+                "selection and reorder keep the physical inspector identity");
+        assertTrue(!inspector.getAccessibleText().isBlank()
+                        && !textField(view, "Encounter suchen").getAccessibleText().isBlank(),
+                "selected inspector and search expose explicit accessibility text");
+    }
+
+    private static SessionPlannerSelectedSceneSnapshot selectedFixture(
+            long token,
+            String title,
+            int rosterCount
+    ) {
+        return new SessionPlannerSelectedSceneSnapshot(
+                true, token, title, "notes", 0L,
+                List.of(new SessionPlannerSelectedSceneSnapshot.LocationChoice(0L, "Keine Location")),
+                new BigDecimal("10"), 100, token, true, "Plan " + token, "", rosterCount,
+                100, 100, 1.0, "MEDIUM", "",
+                java.util.stream.IntStream.rangeClosed(1, rosterCount).mapToObj(index ->
+                        new SessionPlannerSelectedSceneSnapshot.EncounterRosterLine(index, 1, "Creature " + index))
+                        .toList(),
+                List.of(), List.of(), features.sessionplanner.api.SessionEncounterPlanSearchSnapshot.idle());
+    }
+
+    private static SessionPlannerSceneTimelineProjection.SceneHeader searchScene(
+            long sceneToken,
+            long linkedPlanId,
+            boolean selected
+    ) {
+        return new SessionPlannerSceneTimelineProjection.SceneHeader(
+                sceneToken, "Scene " + sceneToken, linkedPlanId, linkedPlanId > 0L,
+                linkedPlanId > 0L ? "Current encounter" : "", "", linkedPlanId > 0L ? 1 : 0,
+                linkedPlanId > 0L ? 100 : 0, linkedPlanId > 0L ? "MEDIUM" : "", "",
+                new BigDecimal("50"), 100, selected, "Keine Location", sceneToken > 1L, sceneToken < 2L);
+    }
+
+    private static SessionPlannerSelectedSceneSnapshot searchSelected(
+            long sceneToken,
+            long linkedPlanId,
+            features.sessionplanner.api.SessionEncounterPlanSearchSnapshot search
+    ) {
+        return new SessionPlannerSelectedSceneSnapshot(
+                true, sceneToken, "Scene " + sceneToken, "", 0L,
+                List.of(new SessionPlannerSelectedSceneSnapshot.LocationChoice(0L, "Keine Location")),
+                new BigDecimal("50"), 100, linkedPlanId, linkedPlanId > 0L,
+                linkedPlanId > 0L ? "Current encounter" : "", "", linkedPlanId > 0L ? 1 : 0,
+                linkedPlanId > 0L ? 100 : 0, linkedPlanId > 0L ? 100 : 0, 1.0,
+                linkedPlanId > 0L ? "MEDIUM" : "", "", List.of(), List.of(), List.of(), search);
     }
 
     private static void seedActiveParty(SessionPlannerTestServices services) {
@@ -655,6 +1323,35 @@ public final class SessionPlannerCatalogTest {
                 .orElseThrow(() -> new AssertionError("Text field not found: " + promptText));
     }
 
+    private static TextField visibleTextField(Parent parent, String promptText) {
+        return descendants(parent).stream()
+                .filter(TextField.class::isInstance)
+                .map(TextField.class::cast)
+                .filter(field -> promptText.equals(field.getPromptText()))
+                .filter(SessionPlannerCatalogTest::isEffectivelyVisible)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Visible text field not found: " + promptText));
+    }
+
+    private static TextField manualNoteField(Parent parent) {
+        return descendants(parent).stream()
+                .filter(TextField.class::isInstance)
+                .map(TextField.class::cast)
+                .filter(field -> field.getAccessibleText() != null
+                        && field.getAccessibleText().startsWith("Text der manuellen Beutenotiz "))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Manual note editor not found."));
+    }
+
+    private static ComboBox<?> locationCombo(Parent parent) {
+        return descendants(parent).stream()
+                .filter(ComboBox.class::isInstance)
+                .map(ComboBox.class::cast)
+                .filter(comboBox -> "Location".equals(comboBox.getPromptText()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Location ComboBox not found."));
+    }
+
     private static javafx.scene.control.TextArea textArea(Parent parent, String promptText) {
         return descendants(parent).stream()
                 .filter(javafx.scene.control.TextArea.class::isInstance)
@@ -700,14 +1397,22 @@ public final class SessionPlannerCatalogTest {
     }
 
     private static SessionPlannerTestServices services(SessionGenerationApi generation) {
+        SqliteDatabase database = new SqliteDatabase(
+                temporaryDirectory.resolve("session-planner-" + DATABASE_SEQUENCE.incrementAndGet() + ".sqlite"),
+                NoopDiagnostics.INSTANCE);
+        var stores = TestFeatureStores.stores(
+                database,
+                SqlitePartyRosterRepository.storeDefinition(),
+                SqliteWorldPlannerRepository.storeDefinition(),
+                SqliteSessionPlanRepository.storeDefinition());
+        SqliteSessionPlanRepository sessionRepository = new SqliteSessionPlanRepository(
+                stores.get("session-planner"));
         PartyServiceAssembly.Component party =
                 PartyServiceAssembly.create(new SqlitePartyRosterRepository(
-                                TestFeatureStores.current().store(
-                                        SqlitePartyRosterRepository.storeDefinition())));
+                                stores.get("party")));
         WorldPlannerServiceAssembly world = new WorldPlannerServiceAssembly(
                 new SqliteWorldPlannerRepository(
-                                TestFeatureStores.current().store(
-                                        SqliteWorldPlannerRepository.storeDefinition())), new PositiveReferencePort());
+                                stores.get("world-planner")), new PositiveReferencePort());
         WorldPlannerApplicationService worldApplication = world.createApplicationService();
         SavedEncounterPlanListModel savedPlans = new SavedEncounterPlanListModel(
                 SessionPlannerCatalogTest::savedEncounterPlans,
@@ -721,9 +1426,6 @@ public final class SessionPlannerCatalogTest {
                     return () -> {
                     };
                 });
-        SqliteSessionPlanRepository sessionRepository = new SqliteSessionPlanRepository(
-                        TestFeatureStores.current().store(
-                                SqliteSessionPlanRepository.storeDefinition()));
         SessionPlannerServiceAssembly planner = new SessionPlannerServiceAssembly(
                 sessionRepository, sessionRepository, sessionRepository, party.application(),
                 generatedEncounterApi(), savedPlans, world.snapshotModel(), generation,
@@ -834,6 +1536,24 @@ public final class SessionPlannerCatalogTest {
             }
 
             @Override
+            public java.util.concurrent.CompletionStage<features.encounter.api.SearchSavedEncounterPlansResult>
+                    searchSavedPlans(features.encounter.api.SearchSavedEncounterPlansQuery query) {
+                if (!query.normalizedQuery().contains("medium")
+                        && !query.normalizedQuery().contains("ash")
+                        && !query.normalizedQuery().contains("gate")) {
+                    return CompletableFuture.completedFuture(
+                            features.encounter.api.SearchSavedEncounterPlansResult.success(List.of(), false));
+                }
+                return CompletableFuture.completedFuture(
+                        features.encounter.api.SearchSavedEncounterPlansResult.success(
+                                List.of(new features.encounter.api.SavedEncounterPlanSearchHit(
+                                        SAVED_ENCOUNTER_PLAN_ID,
+                                        "Ash Gate Ambush",
+                                        "2 Kreaturen · Medium")),
+                                false));
+            }
+
+            @Override
             public void applyState(features.encounter.api.ApplyEncounterStateCommand command) {
                 delegate.applyState(command);
             }
@@ -884,8 +1604,8 @@ public final class SessionPlannerCatalogTest {
                         1, "Vault", "none", 100L, 1, 0)),
                 List.of(new GenerationResult.LootItem(
                         1, 1, GenerationResult.LootRole.USEFUL, "cache", "Generated cache",
-                        1L, 100L, 100L, BigDecimal.ONE, "chest", "", false)),
-                List.of(new GenerationResult.Packing(1, 1, "none", 0, "none", true)),
+                        2L, 125L, 250L, new BigDecimal("3.5"), "chest, sack", "RARE", true)),
+                List.of(new GenerationResult.Packing(1, 1, "chest", 2, "iron-chest", true)),
                 new GenerationResult.RewardSummary(100L, 0L, 0),
                 "Generated output",
                 List.of(new GenerationResult.Audit(
@@ -1042,6 +1762,15 @@ public final class SessionPlannerCatalogTest {
                 .filter(Label.class::isInstance)
                 .map(Label.class::cast)
                 .anyMatch(label -> label.getText() != null && label.getText().contains(text));
+    }
+
+    private static Label labelByStyle(Parent parent, String styleClass) {
+        return descendants(parent).stream()
+                .filter(Label.class::isInstance)
+                .map(Label.class::cast)
+                .filter(label -> label.getStyleClass().contains(styleClass))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Label not found with style: " + styleClass));
     }
 
     private static <T extends Node> T descendant(Parent parent, Class<T> type) {

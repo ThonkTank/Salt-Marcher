@@ -3,6 +3,8 @@ package architecture.sessionplanner;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import architecture.AnalyzeMainClasses;
 import com.tngtech.archunit.core.domain.Dependency;
@@ -14,6 +16,9 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import java.util.Set;
+import org.junit.jupiter.api.Test;
+import features.sessionplanner.api.SessionPlannerApi;
+import features.sessionplanner.api.SessionPlannerAuthoredTarget;
 
 @AnalyzeMainClasses
 public final class SessionPlannerTargetArchitectureTest {
@@ -32,11 +37,15 @@ public final class SessionPlannerTargetArchitectureTest {
             "features.sessionplanner.application.SessionGenerationPublishedState",
             "features.sessionplanner.application.SessionGenerationRequestFingerprint",
             "features.sessionplanner.application.SessionPreparationPublishedState",
+            "features.sessionplanner.adapter.javafx.SessionGenerationPanel",
+            "features.sessionplanner.adapter.javafx.SessionPlannerSummaryView",
             "features.sessionplanner.api.SessionPlannerCatalogModel",
             "features.sessionplanner.api.SessionPlannerCurrentSessionModel",
             "features.sessionplanner.api.SessionPlannerParticipantsModel",
             "features.sessionplanner.api.SessionPlannerSceneTimelineModel",
             "features.sessionplanner.api.SessionPlannerStatePanelModel",
+            "features.sessionplanner.api.SessionPlannerStatePanelProjection",
+            "features.sessionplanner.api.SessionPlannerSceneTimelineProjection$SessionScene",
             "features.encounter.api.GeneratedEncounterPlanImportApi",
             "features.encounter.api.GeneratedEncounterPlanImportCommand",
             "features.encounter.api.GeneratedEncounterPlanImportResult",
@@ -116,6 +125,25 @@ public final class SessionPlannerTargetArchitectureTest {
     static void oneWorkspaceViewPublicationAndNoRetiredSymbols(JavaClasses classes) {
         Set<String> present = classes.stream().map(JavaClass::getFullName).collect(java.util.stream.Collectors.toSet());
         RETIRED_TYPES.forEach(type -> assertFalse(present.contains(type), () -> type + " is a retired M2-M4 symbol"));
+    }
+
+    @Test
+    void everyAuthoredApiCommandCarriesTheTargetAsItsFirstRecordComponentAndConstructorArgument() {
+        Set<String> targetlessOperations = Set.of(
+                "initialize", "createSession", "selectSession", "searchEncounterPlans",
+                "cancelPreparation");
+        java.util.Arrays.stream(SessionPlannerApi.class.getDeclaredMethods())
+                .filter(method -> !targetlessOperations.contains(method.getName()))
+                .forEach(method -> {
+                    assertEquals(1, method.getParameterCount(), method + " must accept exactly one command");
+                    Class<?> command = method.getParameterTypes()[0];
+                    assertTrue(command.isRecord(), command.getName() + " must be a record command");
+                    assertEquals(SessionPlannerAuthoredTarget.class, command.getRecordComponents()[0].getType(),
+                            command.getName() + " must carry authored target first");
+                    java.util.Arrays.stream(command.getConstructors()).forEach(constructor ->
+                            assertEquals(SessionPlannerAuthoredTarget.class, constructor.getParameterTypes()[0],
+                                    command.getName() + " exposes a targetless constructor"));
+                });
     }
 
     private static ArchCondition<JavaClass> allowPublishedStateOnlyInTheWorkspaceCoordinator() {

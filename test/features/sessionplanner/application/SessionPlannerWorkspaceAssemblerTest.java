@@ -20,6 +20,9 @@ import features.encounter.api.RefreshEncounterPlanBudgetCommand;
 import features.encounter.api.SavedEncounterPlanListModel;
 import features.encounter.api.SavedEncounterPlanListResult;
 import features.encounter.api.SavedEncounterPlanStatus;
+import features.encounter.api.SavedEncounterPlanSearchHit;
+import features.encounter.api.SearchSavedEncounterPlansQuery;
+import features.encounter.api.SearchSavedEncounterPlansResult;
 import features.encounter.api.UpdateEncounterBuilderInputsCommand;
 import features.encounter.api.UpdateEncounterPoolFiltersCommand;
 import features.encounter.api.UpdateEncounterTuningCommand;
@@ -57,8 +60,11 @@ import features.sessiongeneration.api.GenerationRunResponse;
 import features.sessiongeneration.api.GenerationStatus;
 import features.sessiongeneration.api.SessionGenerationApi;
 import features.sessionplanner.api.SessionPlannerSceneTimelineProjection;
+import features.sessionplanner.api.SessionPlannerSelectedSceneSnapshot;
 import features.sessionplanner.api.SessionPlannerWorkspaceSnapshot;
 import features.sessionplanner.api.SessionPreparationSnapshot;
+import features.sessionplanner.api.SearchSessionEncounterPlansCommand;
+import features.sessionplanner.api.SessionEncounterPlanSearchSnapshot;
 import features.sessionplanner.domain.session.EncounterDays;
 import features.sessionplanner.domain.session.SessionEncounter;
 import features.sessionplanner.domain.session.SessionEncounterAllocation;
@@ -84,7 +90,7 @@ final class SessionPlannerWorkspaceAssemblerTest {
         CountingParty party = new CountingParty();
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
                 new CountingSource(new SessionPlannerReadCapture(0L, List.of(), 0)),
-                party, new CountingEncounter(false), emptySavedPlans(), unavailableGeneration(), null,
+                party, new CountingEncounter(false), unavailableGeneration(), null,
                 directLane(), NoopDiagnostics.INSTANCE);
 
         SessionPlannerWorkspaceSnapshot workspace = assembler.assemble(SessionPreparationSnapshot.idle())
@@ -99,20 +105,14 @@ final class SessionPlannerWorkspaceAssemblerTest {
     @Test
     void oneCaptureAndOneOwnerBatchHydrateManyScenesAndAllPreparedSessions() {
         SessionPlan current = SessionPlan.seeded(7L, List.of(1L), EncounterDays.one())
-                .attachEncounter(11L)
-                .attachEncounter(12L);
+                .addScene().attachEncounter(1L, 11L)
+                .addScene().selectEncounter(2L).attachEncounter(2L, 12L);
         SessionPlan other = SessionPlan.seeded(8L, List.of(1L), EncounterDays.one()).addScene();
         CountingSource source = new CountingSource(new SessionPlannerReadCapture(7L, List.of(current, other), 0));
         CountingParty party = new CountingParty();
         CountingEncounter encounters = new CountingEncounter(false);
-        int[] savedPlanReads = {0};
-        SavedEncounterPlanListModel savedPlans = new SavedEncounterPlanListModel(
-                () -> {
-                    savedPlanReads[0]++;
-                    return new SavedEncounterPlanListResult(SavedEncounterPlanStatus.SUCCESS, List.of(), "");
-                }, listener -> () -> { }, listener -> () -> { });
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
-                source, party, encounters, savedPlans, unavailableGeneration(), null, directLane(),
+                source, party, encounters, unavailableGeneration(), null, directLane(),
                 NoopDiagnostics.INSTANCE);
 
         SessionPlannerWorkspaceAssembly result = assembler.assemble(SessionPreparationSnapshot.idle())
@@ -122,10 +122,11 @@ final class SessionPlannerWorkspaceAssemblerTest {
         assertEquals(1, party.reads);
         assertEquals(1, encounters.reads);
         assertEquals(List.of(11L, 12L), encounters.requestedPlanIds);
-        assertEquals(1, savedPlanReads[0]);
-        assertEquals(2, result.workspace().sceneTimeline().sessionScenes().size());
-        assertTrue(result.workspace().sceneTimeline().sessionScenes().stream()
-                .allMatch(SessionPlannerSceneTimelineProjection.SessionScene::linkedEncounterPlan));
+        assertEquals(2, result.workspace().sceneTimeline().sceneHeaders().size());
+        assertTrue(result.workspace().sceneTimeline().sceneHeaders().stream()
+                .allMatch(SessionPlannerSceneTimelineProjection.SceneHeader::linkedEncounterPlan));
+        assertEquals("1 × Creature 12", result.workspace().selectedScene().linkedEncounterRoster().getFirst().quantity()
+                + " × " + result.workspace().selectedScene().linkedEncounterRoster().getFirst().displayName());
         assertEquals(3, result.preparedScenes().scenes().size(),
                 "prepared scenes are derived from the same all-session planner capture");
         assertEquals(current.revision().value(), result.workspace().sourceSessionRevision());
@@ -134,12 +135,12 @@ final class SessionPlannerWorkspaceAssemblerTest {
     @Test
     void outOfOrderEncounterBatchFailsClosedWithoutPartialOwnerFacts() {
         SessionPlan current = SessionPlan.seeded(7L, List.of(1L), EncounterDays.one())
-                .attachEncounter(11L)
-                .attachEncounter(12L);
+                .addScene().attachEncounter(1L, 11L)
+                .addScene().selectEncounter(2L).attachEncounter(2L, 12L);
         CountingEncounter encounters = new CountingEncounter(true);
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
                 new CountingSource(new SessionPlannerReadCapture(7L, List.of(current), 0)),
-                new CountingParty(), encounters, emptySavedPlans(), unavailableGeneration(), null, directLane(),
+                new CountingParty(), encounters, unavailableGeneration(), null, directLane(),
                 NoopDiagnostics.INSTANCE);
 
         SessionPlannerWorkspaceSnapshot workspace = assembler.assemble(SessionPreparationSnapshot.idle())
@@ -149,11 +150,10 @@ final class SessionPlannerWorkspaceAssemblerTest {
         assertTrue(workspace.issues().stream().anyMatch(issue ->
                 issue.owner() == SessionPlannerWorkspaceSnapshot.Owner.ENCOUNTER
                         && issue.kind() == SessionPlannerWorkspaceSnapshot.Kind.MALFORMED_RESPONSE));
-        assertTrue(workspace.sceneTimeline().sessionScenes().stream()
+        assertTrue(workspace.sceneTimeline().sceneHeaders().stream()
                 .allMatch(scene -> scene.linkedEncounterName().isBlank()
                         && scene.linkedEncounterAdjustedXp() == 0));
-        assertFalse(workspace.currentSession().availableEncounterPlans().stream()
-                .anyMatch(features.sessionplanner.api.SessionPlannerSessionSnapshot.AvailableEncounterPlan::importEnabled));
+        assertTrue(workspace.selectedScene().encounterPlanSearch().results().isEmpty());
     }
 
     @Test
@@ -166,15 +166,15 @@ final class SessionPlannerWorkspaceAssemblerTest {
         RewardGeneration generation = new RewardGeneration();
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
                 new CountingSource(new SessionPlannerReadCapture(7L, List.of(current), 0)),
-                new CountingParty(), new CountingEncounter(false), emptySavedPlans(), generation, null,
+                new CountingParty(), new CountingEncounter(false), generation, null,
                 directLane(), NoopDiagnostics.INSTANCE);
 
-        SessionPlannerSceneTimelineProjection.GeneratedReward reward = assembler
+        SessionPlannerSelectedSceneSnapshot.GeneratedReward reward = assembler
                 .assemble(SessionPreparationSnapshot.idle()).toCompletableFuture().join()
-                .workspace().sceneTimeline().sessionScenes().getFirst().generatedRewards().getFirst();
+                .workspace().selectedScene().generatedRewards().getFirst();
 
         assertEquals(1, generation.reads);
-        assertEquals(SessionPlannerSceneTimelineProjection.Availability.AVAILABLE, reward.availability());
+        assertEquals(SessionPlannerSelectedSceneSnapshot.Availability.AVAILABLE, reward.availability());
         assertEquals("", reward.fallbackLabel());
         assertEquals("ENCOUNTER · Sunken vault · 1 Positionen", reward.displayLabel());
         assertEquals("gem-3", reward.itemLines().getFirst().itemId());
@@ -183,18 +183,42 @@ final class SessionPlannerWorkspaceAssemblerTest {
     }
 
     @Test
+    void rewardHydrationReadsOnlyTheSelectedSceneAndSkipsWhenItOwnsNoReferences() {
+        SessionPlan current = SessionPlan.seeded(7L, List.of(1L), EncounterDays.one())
+                .replaceGeneratedContent(
+                        List.of(
+                                new SessionEncounter(1L, 11L, SessionEncounterAllocation.hundred()),
+                                new SessionEncounter(2L, 12L, SessionEncounterAllocation.hundred())),
+                        List.of(new SessionGeneratedRewardReference(1L, "run-7", 3L, "Scene one")))
+                .selectEncounter(2L);
+        RewardGeneration generation = new RewardGeneration();
+        SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
+                new CountingSource(new SessionPlannerReadCapture(7L, List.of(current), 0)),
+                new CountingParty(), new CountingEncounter(false), generation, null,
+                directLane(), NoopDiagnostics.INSTANCE);
+
+        SessionPlannerWorkspaceSnapshot workspace = assembler.assemble(SessionPreparationSnapshot.idle())
+                .toCompletableFuture().join().workspace();
+
+        assertEquals(0, generation.reads, "unselected reward references trigger no Session Generation read");
+        assertTrue(workspace.selectedScene().generatedRewards().isEmpty());
+        assertEquals(2, workspace.sceneTimeline().sceneHeaders().size());
+    }
+
+    @Test
     void staleAssemblyAndRepeatedRefreshesCoalesceIntoOneLatestRevisionPublication() {
-        SessionPlan initial = SessionPlan.seeded(7L, List.of(1L), EncounterDays.one()).attachEncounter(11L);
+        SessionPlan initial = SessionPlan.seeded(7L, List.of(1L), EncounterDays.one())
+                .addScene().attachEncounter(1L, 11L);
         SessionPlan newer = withRevision(initial.setEncounterDays(new EncounterDays(new BigDecimal("2"))),
                 initial.revision().next());
         CountingSource source = new CountingSource(new SessionPlannerReadCapture(7L, List.of(initial), 0));
         CountingEncounter encounters = new CountingEncounter(false, true);
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
-                source, new CountingParty(), encounters, emptySavedPlans(), unavailableGeneration(), null,
+                source, new CountingParty(), encounters, unavailableGeneration(), null,
                 directLane(), NoopDiagnostics.INSTANCE);
         SessionPlannerWorkspacePublicationCoordinator publications =
                 new SessionPlannerWorkspacePublicationCoordinator(
-                        assembler, DirectUiDispatcher.INSTANCE, NoopDiagnostics.INSTANCE);
+                        assembler, encounters, DirectUiDispatcher.INSTANCE, NoopDiagnostics.INSTANCE);
         List<Long> publishedSourceRevisions = new ArrayList<>();
         publications.model().subscribe(snapshot -> publishedSourceRevisions.add(snapshot.sourceSessionRevision()));
 
@@ -225,15 +249,15 @@ final class SessionPlannerWorkspaceAssemblerTest {
                                     1L, "run-7", 3L, "Last known reward")));
             SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
                     new CountingSource(new SessionPlannerReadCapture(7L, List.of(current), 0)),
-                    new CountingParty(), new CountingEncounter(false), emptySavedPlans(),
+                    new CountingParty(), new CountingEncounter(false),
                     new RewardGeneration(mode), null, directLane(), NoopDiagnostics.INSTANCE);
 
             SessionPlannerWorkspaceSnapshot workspace = assembler.assemble(SessionPreparationSnapshot.idle())
                     .toCompletableFuture().join().workspace();
-            SessionPlannerSceneTimelineProjection.GeneratedReward reward =
-                    workspace.sceneTimeline().sessionScenes().getFirst().generatedRewards().getFirst();
+            SessionPlannerSelectedSceneSnapshot.GeneratedReward reward =
+                    workspace.selectedScene().generatedRewards().getFirst();
 
-            assertEquals(SessionPlannerSceneTimelineProjection.Availability.UNAVAILABLE, reward.availability());
+            assertEquals(SessionPlannerSelectedSceneSnapshot.Availability.UNAVAILABLE, reward.availability());
             assertEquals("Last known reward", reward.fallbackLabel());
             SessionPlannerWorkspaceSnapshot.Kind expected = switch (mode) {
                 case MISSING -> SessionPlannerWorkspaceSnapshot.Kind.UNAVAILABLE;
@@ -245,6 +269,77 @@ final class SessionPlannerWorkspaceAssemblerTest {
                     issue.owner() == SessionPlannerWorkspaceSnapshot.Owner.SESSION_GENERATION
                             && issue.kind() == expected));
         }
+    }
+
+    @Test
+    void selectedSceneSearchSkipsShortQueriesAndHydratesOnlyEightHitsPlusLinkedIds() {
+        SessionPlan current = SessionPlan.seeded(7L, List.of(1L), EncounterDays.one())
+                .addScene().attachEncounter(1L, 77L);
+        CountingEncounter encounters = new CountingEncounter(false);
+        SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
+                new CountingSource(new SessionPlannerReadCapture(7L, List.of(current), 0)),
+                new CountingParty(), encounters, unavailableGeneration(), null, directLane(),
+                NoopDiagnostics.INSTANCE);
+        SessionPlannerWorkspacePublicationCoordinator publications =
+                new SessionPlannerWorkspacePublicationCoordinator(
+                        assembler, encounters, DirectUiDispatcher.INSTANCE, NoopDiagnostics.INSTANCE);
+        publications.initialize();
+        int summaryReadsAfterAssembly = encounters.reads;
+
+        publications.searchEncounterPlans(new SearchSessionEncounterPlansCommand(1L, "x"));
+
+        assertEquals(SessionEncounterPlanSearchSnapshot.Status.TOO_SHORT,
+                publications.current().selectedScene().encounterPlanSearch().status());
+        assertEquals(0, encounters.searchReads);
+        assertEquals(summaryReadsAfterAssembly, encounters.reads);
+
+        publications.searchEncounterPlans(new SearchSessionEncounterPlansCommand(1L, " PLAN "));
+
+        assertEquals(SessionEncounterPlanSearchSnapshot.Status.READY,
+                publications.current().selectedScene().encounterPlanSearch().status());
+        assertEquals("plan", publications.current().selectedScene().encounterPlanSearch().normalizedQuery());
+        assertEquals(8, publications.current().selectedScene().encounterPlanSearch().results().size());
+        assertTrue(publications.current().selectedScene().encounterPlanSearch().hasMore());
+        assertEquals(List.of(11L, 12L, 13L, 14L, 15L, 16L, 17L, 18L, 77L),
+                encounters.requestedPlanIds,
+                "search summary hydration contains bounded hit ids plus the distinct linked id");
+    }
+
+    @Test
+    void latestSearchEpochWinsWhenOlderRootSearchCompletesLast() {
+        SessionPlan current = SessionPlan.seeded(7L, List.of(1L), EncounterDays.one()).addScene();
+        CountingEncounter encounters = new CountingEncounter(false);
+        SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
+                new CountingSource(new SessionPlannerReadCapture(7L, List.of(current), 0)),
+                new CountingParty(), encounters, unavailableGeneration(), null, directLane(),
+                NoopDiagnostics.INSTANCE);
+        SessionPlannerWorkspacePublicationCoordinator publications =
+                new SessionPlannerWorkspacePublicationCoordinator(
+                        assembler, encounters, DirectUiDispatcher.INSTANCE, NoopDiagnostics.INSTANCE);
+        publications.initialize();
+        encounters.pendingSearch = new CompletableFuture<>();
+        publications.searchEncounterPlans(new SearchSessionEncounterPlansCommand(1L, "first"));
+        CompletableFuture<SearchSavedEncounterPlansResult> first = encounters.pendingSearch;
+        encounters.pendingSearch = new CompletableFuture<>();
+        publications.searchEncounterPlans(new SearchSessionEncounterPlansCommand(1L, "second"));
+        CompletableFuture<SearchSavedEncounterPlansResult> second = encounters.pendingSearch;
+
+        second.complete(encounters.searchResult());
+        first.complete(encounters.searchResult());
+
+        assertEquals(SessionEncounterPlanSearchSnapshot.Status.READY,
+                publications.current().selectedScene().encounterPlanSearch().status());
+        assertEquals("second", publications.current().selectedScene().encounterPlanSearch().normalizedQuery());
+
+        encounters.pendingSearch = new CompletableFuture<>();
+        publications.searchEncounterPlans(new SearchSessionEncounterPlansCommand(1L, "third"));
+        CompletableFuture<SearchSavedEncounterPlansResult> third = encounters.pendingSearch;
+        publications.authoredIntent();
+        third.complete(encounters.searchResult());
+
+        assertEquals(SessionEncounterPlanSearchSnapshot.Status.IDLE,
+                publications.current().selectedScene().encounterPlanSearch().status(),
+                "an authored intent invalidates the in-flight search before its late completion");
     }
 
     private static SessionPlan withRevision(SessionPlan source, SessionRevision revision) {
@@ -321,7 +416,9 @@ final class SessionPlannerWorkspaceAssemblerTest {
         private final boolean delayed;
         private final List<CompletableFuture<GeneratedEncounterPlanSummaryBatchResult>> pending = new ArrayList<>();
         private int reads;
+        private int searchReads;
         private List<Long> requestedPlanIds = List.of();
+        private CompletableFuture<SearchSavedEncounterPlansResult> pendingSearch;
 
         private CountingEncounter(boolean reverse) {
             this(reverse, false);
@@ -369,6 +466,21 @@ final class SessionPlannerWorkspaceAssemblerTest {
             return new GeneratedEncounterPlanSummary(
                     id, "Plan " + id, List.of(new PreparedEncounterCreature(id, 1, "Creature " + id)),
                     1, 100L, 150L, GeneratedEncounterDifficulty.MEDIUM, "150 XP");
+        }
+
+        @Override
+        public CompletionStage<SearchSavedEncounterPlansResult> searchSavedPlans(
+                SearchSavedEncounterPlansQuery query
+        ) {
+            searchReads++;
+            return pendingSearch == null ? CompletableFuture.completedFuture(searchResult()) : pendingSearch;
+        }
+
+        private SearchSavedEncounterPlansResult searchResult() {
+            return SearchSavedEncounterPlansResult.success(
+                    java.util.stream.LongStream.rangeClosed(11L, 18L)
+                            .mapToObj(id -> new SavedEncounterPlanSearchHit(id, "Plan " + id, "1 Kreatur"))
+                            .toList(), true);
         }
 
         @Override public CompletionStage<PreparedGeneratedEncounterBatchResult> prepareGeneratedBatch(

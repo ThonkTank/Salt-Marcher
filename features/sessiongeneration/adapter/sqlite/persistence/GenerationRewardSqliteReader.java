@@ -8,6 +8,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -16,17 +17,41 @@ import java.util.Map;
 
 final class GenerationRewardSqliteReader {
 
-    static final int MAX_KEYS_PER_QUERY = 400;
+    private static final String REQUESTS = "temp_generation_reward_requests";
 
-    GenerationRewardBatch load(Connection connection, List<GenerationRewardReference> requested) throws SQLException {
+    ReadResult load(Connection connection, List<GenerationRewardReference> requested) throws SQLException {
         List<GenerationRewardReference> callerOrder = List.copyOf(requested);
         if (callerOrder.isEmpty()) {
-            return new GenerationRewardBatch(List.of(), List.of());
+            return new ReadResult(new GenerationRewardBatch(List.of(), List.of()), 0);
         }
         List<GenerationRewardReference> unique = List.copyOf(new LinkedHashSet<>(callerOrder));
         Map<GenerationRewardReference, GenerationRewardBatch.ResolvedReward> byReference = new LinkedHashMap<>();
-        for (int start = 0; start < unique.size(); start += MAX_KEYS_PER_QUERY) {
-            loadChunk(connection, unique.subList(start, Math.min(start + MAX_KEYS_PER_QUERY, unique.size())), byReference);
+        boolean requestTableReady = false;
+        int statementCount = 0;
+        SQLException primaryFailure = null;
+        try {
+            statementCount += ensureTable(connection);
+            requestTableReady = true;
+            clear(connection);
+            statementCount++;
+            statementCount += insertRequests(connection, unique);
+            statementCount += loadRequested(connection, byReference);
+        } catch (SQLException failure) {
+            primaryFailure = failure;
+            throw failure;
+        } finally {
+            if (requestTableReady) {
+                try {
+                    clear(connection);
+                    statementCount++;
+                } catch (SQLException cleanupFailure) {
+                    if (primaryFailure != null) {
+                        primaryFailure.addSuppressed(cleanupFailure);
+                    } else {
+                        throw cleanupFailure;
+                    }
+                }
+            }
         }
         List<GenerationRewardBatch.ResolvedReward> resolved = new ArrayList<>();
         List<GenerationRewardReference> missing = new ArrayList<>();
@@ -38,16 +63,13 @@ final class GenerationRewardSqliteReader {
                 resolved.add(detail);
             }
         }
-        return new GenerationRewardBatch(resolved, missing);
+        return new ReadResult(new GenerationRewardBatch(resolved, missing), statementCount);
     }
 
-    private static void loadChunk(
+    private static int loadRequested(
             Connection connection,
-            List<GenerationRewardReference> references,
             Map<GenerationRewardReference, GenerationRewardBatch.ResolvedReward> target
     ) throws SQLException {
-        String predicates = String.join(" OR ", java.util.Collections.nCopies(
-                references.size(), "(treasure.run_id = ? AND treasure.treasure_id = ?)"));
         String sql = "SELECT treasure.*, loot.line_id, loot.role, loot.item_id, loot.display_text, "
                 + "loot.quantity, loot.unit_cp, loot.actual_cp, loot.total_capacity, loot.allowed_containers, "
                 + "loot.magic_rarity, loot.cursed, loot.sort_order AS loot_order, packing.container_type, "
@@ -56,14 +78,11 @@ final class GenerationRewardSqliteReader {
                 + "LEFT JOIN " + SessionGenerationSchema.LOOT + " loot ON loot.run_id = treasure.run_id "
                 + "AND loot.treasure_id = treasure.treasure_id "
                 + "LEFT JOIN " + SessionGenerationSchema.PACKING + " packing ON packing.run_id = loot.run_id "
-                + "AND packing.line_id = loot.line_id WHERE " + predicates
-                + " ORDER BY treasure.run_id, treasure.treasure_id, loot.sort_order";
+                + "AND packing.line_id = loot.line_id "
+                + "JOIN " + REQUESTS + " request ON request.run_id = treasure.run_id "
+                + "AND request.treasure_id = treasure.treasure_id "
+                + "ORDER BY request.request_order, loot.sort_order";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            int parameter = 1;
-            for (GenerationRewardReference reference : references) {
-                statement.setString(parameter++, reference.runId());
-                statement.setInt(parameter++, reference.treasureId());
-            }
             try (ResultSet rows = statement.executeQuery()) {
                 Map<GenerationRewardReference, RewardAccumulator> loaded = new LinkedHashMap<>();
                 while (rows.next()) {
@@ -102,6 +121,41 @@ final class GenerationRewardSqliteReader {
                 loaded.forEach((reference, reward) -> target.put(reference, reward.toResolved()));
             }
         }
+        return 1;
+    }
+
+    private static int ensureTable(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("CREATE TEMP TABLE IF NOT EXISTS " + REQUESTS
+                    + " (run_id TEXT NOT NULL, treasure_id INTEGER NOT NULL, request_order INTEGER NOT NULL, "
+                    + "PRIMARY KEY (run_id, treasure_id))");
+        }
+        return 1;
+    }
+
+    private static int insertRequests(Connection connection, List<GenerationRewardReference> references)
+            throws SQLException {
+        try (PreparedStatement insert = connection.prepareStatement(
+                "INSERT INTO " + REQUESTS + " (run_id, treasure_id, request_order) VALUES (?, ?, ?)")) {
+            for (int index = 0; index < references.size(); index++) {
+                GenerationRewardReference reference = references.get(index);
+                insert.setString(1, reference.runId());
+                insert.setInt(2, reference.treasureId());
+                insert.setInt(3, index);
+                insert.addBatch();
+            }
+            insert.executeBatch();
+        }
+        return 1;
+    }
+
+    private static void clear(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate("DELETE FROM " + REQUESTS);
+        }
+    }
+
+    record ReadResult(GenerationRewardBatch batch, int statementCount) {
     }
 
     private static final class RewardAccumulator {

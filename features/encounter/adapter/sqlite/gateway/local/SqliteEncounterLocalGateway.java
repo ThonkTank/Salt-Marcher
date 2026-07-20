@@ -19,11 +19,18 @@ import java.util.Optional;
 
 public final class SqliteEncounterLocalGateway {
 
+    public record BatchReadResult(List<EncounterPlanSnapshotRecord> plans, int statementCount) {
+        public BatchReadResult {
+            plans = List.copyOf(plans);
+        }
+    }
+
     private static final String OWNER = "encounter";
     private final FeatureStoreHandle connections;
     private final EncounterPlanSqliteStore store;
     private final GeneratedEncounterBatchSqliteStore generatedBatches;
     private final EncounterPlanBatchReadSqliteStore batchReads;
+    private final EncounterPlanSearchSqliteStore searches;
 
     public static FeatureStoreDefinition storeDefinition() {
         EncounterSchemaMigrator schemaMigrator = new EncounterSchemaMigrator();
@@ -159,6 +166,7 @@ public final class SqliteEncounterLocalGateway {
         this.store = new EncounterPlanSqliteStore();
         this.generatedBatches = new GeneratedEncounterBatchSqliteStore();
         this.batchReads = new EncounterPlanBatchReadSqliteStore();
+        this.searches = new EncounterPlanSearchSqliteStore();
     }
 
     public EncounterPlanSnapshotRecord save(
@@ -233,11 +241,35 @@ public final class SqliteEncounterLocalGateway {
     }
 
     public List<EncounterPlanSnapshotRecord> loadPlansByIds(List<Long> planIds) {
+        return loadPlansByIdsWithCount(planIds).plans();
+    }
+
+    public BatchReadResult loadPlansByIdsWithCount(List<Long> planIds) {
         Objects.requireNonNull(planIds, "planIds");
         try (Connection connection = openReadyConnection()) {
-            return batchReads.load(connection, planIds);
+            EncounterPlanBatchReadSqliteStore.ReadResult read = batchReads.load(connection, planIds);
+            return new BatchReadResult(read.plans(), read.statementCount());
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to load encounter plans by IDs from SQLite.", exception);
+        }
+    }
+
+    public features.encounter.application.SavedEncounterPlanSearchRepository.SearchRead searchSavedPlans(
+            String normalizedQuery,
+            int rootLimit
+    ) {
+        Objects.requireNonNull(normalizedQuery, "normalizedQuery");
+        if (rootLimit <= 0) {
+            throw new IllegalArgumentException("rootLimit must be positive");
+        }
+        try (Connection connection = openReadyConnection()) {
+            List<features.encounter.domain.plan.EncounterPlanSummary> plans = searches.search(
+                    connection, normalizedQuery, rootLimit).stream()
+                    .map(features.encounter.adapter.sqlite.mapper.EncounterPlanMapper::toDomainSummary)
+                    .toList();
+            return new features.encounter.application.SavedEncounterPlanSearchRepository.SearchRead(plans, 1);
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to search saved encounter plans in SQLite.", exception);
         }
     }
 

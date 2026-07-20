@@ -11,6 +11,14 @@ public interface EncounterApi {
     java.util.concurrent.CompletionStage<GeneratedEncounterPlanSummaryBatchResult> loadGeneratedPlanSummaries(
             GeneratedEncounterPlanSummaryBatchQuery query);
 
+    default java.util.concurrent.CompletionStage<SearchSavedEncounterPlansResult> searchSavedPlans(
+            SearchSavedEncounterPlansQuery query
+    ) {
+        return java.util.concurrent.CompletableFuture.completedFuture(SearchSavedEncounterPlansResult.failure(
+                SearchSavedEncounterPlansResult.Status.STORAGE_FAILURE,
+                "Saved encounter search is unavailable."));
+    }
+
     void applyState(ApplyEncounterStateCommand command);
 
     void updatePoolFilters(UpdateEncounterPoolFiltersCommand command);

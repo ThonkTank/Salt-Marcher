@@ -1559,50 +1559,27 @@
 .session-planner-status {
     -fx-padding: 0 0 4 0;
 }
-.session-planner-card {
-    -fx-background-color: rgba(255, 255, 255, 0.04);
-    -fx-background-radius: 8;
-    -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 8;
-    -fx-padding: 10;
-    -fx-spacing: 6;
-}
-.session-generation-panel {
-    -fx-padding: 10;
-    -fx-spacing: 8;
-}
-.session-generation-inputs {
-    -fx-spacing: 6;
-    -fx-alignment: center-left;
-}
-.session-generation-summary {
-    -fx-padding: 6 8 6 8;
-    -fx-background-color: rgba(83, 169, 140, 0.12);
-    -fx-background-radius: 6;
-    -fx-text-fill: -sm-accent-hover;
-    -fx-font-weight: bold;
-}
-.session-generation-result-card {
-    -fx-padding: 6 8 6 8;
-}
-.session-generation-confirmation {
+.session-planner-replacement-confirmation {
     -fx-padding: 8;
     -fx-background-color: rgba(216, 107, 79, 0.12);
     -fx-background-radius: 6;
     -fx-border-color: rgba(216, 107, 79, 0.45);
     -fx-border-radius: 6;
 }
-.session-generation-audit {
-    -fx-padding: 2 4 2 4;
+.session-planner-preparation-toolbar {
+    -fx-padding: 7 8 7 8;
+    -fx-background-color: rgba(255, 255, 255, 0.045);
+    -fx-background-radius: 6;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 6;
 }
-.session-generation-audit-pass {
-    -fx-text-fill: -sm-accent-hover;
+.session-planner-participant-disclosure {
+    -fx-padding: 7 8 7 8;
+    -fx-background-color: rgba(30, 127, 212, 0.08);
+    -fx-background-radius: 6;
 }
-.session-generation-audit-warning {
-    -fx-text-fill: #e5c06f;
-}
-.session-generation-audit-fail {
-    -fx-text-fill: #d86b4f;
+.session-planner-preparation-progress {
+    -fx-pref-height: 4;
 }
 .session-planner-encounter-card {
     -fx-background-color: rgba(255, 255, 255, 0.04);
@@ -1610,6 +1587,14 @@
     -fx-border-color: -sm-border-subtle;
     -fx-border-radius: 8;
     -fx-padding: 8 10 8 10;
+}
+.session-planner-selected-scene-inspector {
+    -fx-padding: 10 12 12 20;
+    -fx-background-color: rgba(30, 127, 212, 0.055);
+    -fx-border-color: derive(-sm-accent, -45%);
+}
+.session-planner-scene-header {
+    -fx-padding: 6 10 6 10;
 }
 .session-planner-encounter-header {
     -fx-cursor: hand;
@@ -1620,38 +1605,34 @@
     -fx-background-color: rgba(255, 255, 255, 0.02);
     -fx-background-radius: 6;
 }
-.session-planner-gap-card {
+.session-planner-manual-note {
     -fx-background-color: rgba(255, 255, 255, 0.04);
     -fx-background-radius: 8;
     -fx-border-color: -sm-border-subtle;
     -fx-border-radius: 8;
-}
-.session-planner-loot-card {
-    -fx-background-color: rgba(255, 255, 255, 0.04);
-    -fx-background-radius: 8;
-    -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 8;
-}
-.session-planner-plan-card {
-    -fx-background-color: rgba(255, 255, 255, 0.04);
-    -fx-background-radius: 8;
-    -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 8;
-}
-.session-planner-setup-strip {
-    -fx-spacing: 6;
-    -fx-padding: 8;
-    -fx-background-color: rgba(255, 255, 255, 0.055);
-    -fx-background-radius: 8;
-    -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 8;
-}
-.session-planner-scene-target {
-    -fx-font-weight: bold;
-    -fx-text-fill: -sm-accent-hover;
 }
 .session-planner-scene-encounter-summary {
     -fx-padding: 2 0 2 0;
+}
+.session-planner-encounter-search-result {
+    -fx-padding: 6 8 6 8;
+    -fx-background-color: rgba(255, 255, 255, 0.035);
+    -fx-background-radius: 5;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 5;
+}
+.session-planner-roster-line {
+    -fx-padding: 1 0 1 10;
+}
+.session-planner-generated-reward {
+    -fx-padding: 8;
+    -fx-background-color: rgba(30, 127, 212, 0.08);
+    -fx-background-radius: 6;
+    -fx-border-color: derive(-sm-accent, -25%);
+    -fx-border-radius: 6;
+}
+.session-planner-state-compact {
+    -fx-padding: 10;
 }
 .world-planner-controls,
 .world-planner-main,

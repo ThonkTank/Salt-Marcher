@@ -618,7 +618,8 @@ public final class WorldPlannerEncounterTest {
     }
 
     private static final class InMemoryPlanRepository implements EncounterPlanRepository,
-            GeneratedEncounterBatchRepository {
+            GeneratedEncounterBatchRepository,
+            features.encounter.application.SavedEncounterPlanSearchRepository {
 
         private final Map<Long, EncounterPlan> plans = new LinkedHashMap<>();
         private long nextId = 1L;
@@ -667,6 +668,16 @@ public final class WorldPlannerEncounterTest {
         @Override
         public List<EncounterPlan> loadPlansByIds(List<Long> planIds) {
             return planIds.stream().map(plans::get).filter(Objects::nonNull).toList();
+        }
+
+        @Override
+        public SearchRead searchSavedPlans(String normalizedQuery, int rootLimit) {
+            List<EncounterPlanSummary> matches = list().stream()
+                    .filter(plan -> (plan.name() + " " + plan.generatedLabel()).toLowerCase(java.util.Locale.ROOT)
+                            .contains(normalizedQuery))
+                    .limit(rootLimit)
+                    .toList();
+            return new SearchRead(matches, 0);
         }
     }
 

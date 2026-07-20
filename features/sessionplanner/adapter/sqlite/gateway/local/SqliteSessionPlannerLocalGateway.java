@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.LongFunction;
 import platform.persistence.SqliteQueryCounter;
 
 public final class SqliteSessionPlannerLocalGateway {
@@ -43,10 +44,6 @@ public final class SqliteSessionPlannerLocalGateway {
                         "session_id", "left_encounter_id", "right_encounter_id", "rest_kind", "sort_order")
                 .primaryKey(SessionPlannerPersistenceSchema.SESSION_RESTS_TABLE,
                         "session_id", "left_encounter_id", "right_encounter_id")
-                .table(SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE,
-                        "session_id", "loot_id", "encounter_id", "label", "sort_order")
-                .primaryKey(SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE,
-                        "session_id", "loot_id")
                 .table(SessionPlannerPersistenceSchema.SESSION_GENERATED_REWARDS_TABLE,
                         "session_id", "scene_id", "generation_id", "treasure_id", "last_known_label", "sort_order")
                 .primaryKey(SessionPlannerPersistenceSchema.SESSION_GENERATED_REWARDS_TABLE,
@@ -64,9 +61,6 @@ public final class SqliteSessionPlannerLocalGateway {
                 .index("idx_session_planner_rests_order",
                         SessionPlannerPersistenceSchema.SESSION_RESTS_TABLE,
                         false, "session_id", "sort_order")
-                .index("idx_session_planner_loot_order",
-                        SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE,
-                        false, "session_id", "sort_order")
                 .index("idx_session_planner_generated_rewards_order",
                         SessionPlannerPersistenceSchema.SESSION_GENERATED_REWARDS_TABLE,
                         false, "session_id", "sort_order")
@@ -79,7 +73,8 @@ public final class SqliteSessionPlannerLocalGateway {
                 new SqliteMigration(1, schemaMigrator::ensureSchema),
                 new SqliteMigration(2, schemaMigrator::addGeneratedRewards),
                 new SqliteMigration(3, schemaMigrator::addRevisionAndManualLootNotes),
-                new SqliteMigration(4, schemaMigrator::repairTargetSchema));
+                new SqliteMigration(4, schemaMigrator::repairTargetSchema),
+                new SqliteMigration(5, schemaMigrator::retireLegacyManualLoot));
     }
 
     public SqliteSessionPlannerLocalGateway(FeatureStoreHandle store) {
@@ -178,11 +173,73 @@ public final class SqliteSessionPlannerLocalGateway {
         }
     }
 
-    public void deleteSession(long sessionId) {
+    public DeleteOutcome deleteSessionGuarded(
+            long sessionId,
+            long expectedRevision,
+            LongFunction<SessionPlanSnapshotRecord> replacementFactory
+    ) {
+        Objects.requireNonNull(replacementFactory, "replacementFactory");
         try (Connection connection = openReadyConnection()) {
-            writes.deleteSession(connection, sessionId);
+            return deleteSessionTransaction(connection, sessionId, expectedRevision, replacementFactory);
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to delete session plan from SQLite.", exception);
+        }
+    }
+
+    private DeleteOutcome deleteSessionTransaction(
+            Connection connection,
+            long sessionId,
+            long expectedRevision,
+            LongFunction<SessionPlanSnapshotRecord> replacementFactory
+    ) throws SQLException {
+        boolean previousAutoCommit = connection.getAutoCommit();
+        connection.setAutoCommit(false);
+        try {
+            Optional<SessionPlanSnapshotRecord> existing = reads.loadSession(connection, sessionId);
+            if (existing.isEmpty()) {
+                connection.rollback();
+                return new DeleteOutcome(DeleteStatus.NOT_FOUND, Optional.empty(), Optional.empty());
+            }
+            long currentRevision = existing.orElseThrow().plan().revision();
+            if (currentRevision != expectedRevision) {
+                connection.rollback();
+                return new DeleteOutcome(DeleteStatus.STALE, Optional.of(currentRevision), Optional.empty());
+            }
+            long currentSessionId = reads.currentSessionId(connection);
+            if (!writes.deleteSession(connection, sessionId, expectedRevision)) {
+                Optional<SessionPlanSnapshotRecord> raced = reads.loadSession(connection, sessionId);
+                connection.rollback();
+                return new DeleteOutcome(
+                        raced.isEmpty() ? DeleteStatus.NOT_FOUND : DeleteStatus.STALE,
+                        raced.map(value -> value.plan().revision()), Optional.empty());
+            }
+            if (currentSessionId == sessionId) {
+                List<SessionPlanRecord> remaining = reads.listSessions(connection);
+                long nextCurrentId;
+                if (remaining.isEmpty()) {
+                    SessionPlanSnapshotRecord replacement = Objects.requireNonNull(
+                            replacementFactory.apply(reads.nextSessionId(connection)), "replacement");
+                    if (!writes.insertPlan(connection, replacement.plan())) {
+                        throw new SQLException("Could not insert replacement session.");
+                    }
+                    replaceChildren(connection, replacement.plan().sessionId(), replacement);
+                    nextCurrentId = replacement.plan().sessionId();
+                } else {
+                    nextCurrentId = remaining.getFirst().sessionId();
+                }
+                writes.setCurrentSessionId(connection, nextCurrentId);
+            }
+            Optional<SessionPlanSnapshotRecord> authoritativeCurrent = reads.loadCurrent(connection);
+            if (authoritativeCurrent.isEmpty()) {
+                throw new SQLException("Current session vanished during guarded delete.");
+            }
+            connection.commit();
+            return new DeleteOutcome(DeleteStatus.SUCCESS, Optional.of(currentRevision), authoritativeCurrent);
+        } catch (SQLException | RuntimeException exception) {
+            connection.rollback();
+            throw exception;
+        } finally {
+            connection.setAutoCommit(previousAutoCommit);
         }
     }
 
@@ -291,6 +348,19 @@ public final class SqliteSessionPlannerLocalGateway {
         STALE,
         NOT_FOUND,
         ALREADY_EXISTS
+    }
+
+    public record DeleteOutcome(
+            DeleteStatus status,
+            Optional<Long> currentTargetRevision,
+            Optional<SessionPlanSnapshotRecord> authoritativeCurrent
+    ) {
+    }
+
+    public enum DeleteStatus {
+        SUCCESS,
+        STALE,
+        NOT_FOUND
     }
 
     public record WorkspaceRead(long currentSessionId, List<SessionPlanSnapshotRecord> sessions, int queryCount) {

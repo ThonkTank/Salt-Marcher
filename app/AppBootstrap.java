@@ -192,7 +192,7 @@ public final class AppBootstrap implements AutoCloseable {
         TravelFeature.Component travel = TravelFeature.create(
                 party.travelPositions(), dungeon.travelContext(), hex.travelModel(), uiDispatcher);
         SessionGenerationApi generation = SessionGenerationServiceAssembly.create(
-                        stores.sessionGeneration(), sessionGenerationCpuLane, sessionGenerationIoLane);
+                stores.sessionGeneration(), sessionGenerationCpuLane, sessionGenerationIoLane, diagnostics);
         SessionPlannerServiceAssembly session = SessionPlannerServiceAssembly.create(
                         stores.sessionPlanner(),
                 party.application(),

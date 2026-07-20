@@ -76,6 +76,7 @@ public final class EncounterApplicationService implements features.encounter.api
     private final ExecutionLane executionLane;
     private final EncounterRuntimeContextApi runtimeContexts;
     private final GeneratedEncounterBatchService generatedBatches;
+    private final SavedEncounterPlanSearchService savedPlanSearch;
     private final AtomicBoolean initializationRequested = new AtomicBoolean();
 
     public EncounterApplicationService(
@@ -84,7 +85,7 @@ public final class EncounterApplicationService implements features.encounter.api
             EncounterPublishedState publishedState,
             ExecutionLane executionLane
     ) {
-        this(runtimeAccess, plans, publishedState, new InMemoryRuntimeContextRepository(), executionLane, null);
+        this(runtimeAccess, plans, publishedState, new InMemoryRuntimeContextRepository(), executionLane, null, null);
     }
 
     public EncounterApplicationService(
@@ -94,7 +95,7 @@ public final class EncounterApplicationService implements features.encounter.api
             EncounterRuntimeContextRepository contextRepository,
             ExecutionLane executionLane
     ) {
-        this(runtimeAccess, plans, publishedState, contextRepository, executionLane, null);
+        this(runtimeAccess, plans, publishedState, contextRepository, executionLane, null, null);
     }
 
     public EncounterApplicationService(
@@ -105,22 +106,43 @@ public final class EncounterApplicationService implements features.encounter.api
             ExecutionLane executionLane,
             GeneratedEncounterBatchService generatedBatches
     ) {
+        this(runtimeAccess, plans, publishedState, contextRepository, executionLane, generatedBatches, null);
+    }
+
+    public EncounterApplicationService(
+            EncounterSessionRuntimeAccess runtimeAccess,
+            EncounterPlanGateway plans,
+            EncounterPublishedState publishedState,
+            EncounterRuntimeContextRepository contextRepository,
+            ExecutionLane executionLane,
+            GeneratedEncounterBatchService generatedBatches,
+            SavedEncounterPlanSearchService savedPlanSearch
+    ) {
         this(RuntimeCommandActions.create(runtimeAccess, plans, publishedState, contextRepository),
-                executionLane, generatedBatches);
+                executionLane, generatedBatches, savedPlanSearch);
     }
 
     EncounterApplicationService(CommandActions commands) {
-        this(commands, DirectExecutionLane.INSTANCE, null);
+        this(commands, DirectExecutionLane.INSTANCE, null, null);
     }
 
     EncounterApplicationService(CommandActions commands, ExecutionLane executionLane) {
-        this(commands, executionLane, null);
+        this(commands, executionLane, null, null);
     }
 
     EncounterApplicationService(
             CommandActions commands,
             ExecutionLane executionLane,
             GeneratedEncounterBatchService generatedBatches
+    ) {
+        this(commands, executionLane, generatedBatches, null);
+    }
+
+    EncounterApplicationService(
+            CommandActions commands,
+            ExecutionLane executionLane,
+            GeneratedEncounterBatchService generatedBatches,
+            SavedEncounterPlanSearchService savedPlanSearch
     ) {
         this.commands = Objects.requireNonNull(commands, "commands");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
@@ -131,6 +153,7 @@ public final class EncounterApplicationService implements features.encounter.api
                         0L,
                         "Encounter runtime contexts are unavailable."));
         this.generatedBatches = generatedBatches;
+        this.savedPlanSearch = savedPlanSearch;
     }
 
     public void initialize() {
@@ -173,6 +196,15 @@ public final class EncounterApplicationService implements features.encounter.api
                             "Generated encounter summaries are unavailable."));
         }
         return generatedBatches.loadSummaries(query);
+    }
+
+    @Override
+    public java.util.concurrent.CompletionStage<features.encounter.api.SearchSavedEncounterPlansResult>
+            searchSavedPlans(features.encounter.api.SearchSavedEncounterPlansQuery query) {
+        if (savedPlanSearch == null) {
+            return features.encounter.api.EncounterApi.super.searchSavedPlans(query);
+        }
+        return savedPlanSearch.search(query);
     }
 
     public EncounterRuntimeContextApi runtimeContexts() {

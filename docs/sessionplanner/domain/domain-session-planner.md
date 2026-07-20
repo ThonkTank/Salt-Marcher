@@ -60,7 +60,7 @@ Mutation language covers:
 - attach or detach one saved Encounter plan
 - change one linked-scene allocation
 - set or clear one rest in a scene gap
-- add or remove one manual loot note
+- add, update, or remove one authored manual loot note within its owning scene
 - select one scene
 - replace prepared content as one complete authored mutation
 
@@ -78,6 +78,15 @@ Core invariants:
 - encounter-channel rewards reference their generated Encounter scene; quest
   and environment rewards reference encounter-free scenes
 - manual loot notes never masquerade as generated reward detail
+- attaching, replacing, or detaching a saved Encounter plan preserves every
+  generated reward reference; deleting a scene alone prunes the manual notes and
+  generated reward references owned by that scene
+- a manual-note identity is session-local and every note mutation identifies
+  both its owning scene and the exact Session revision it was authored from
+- every authored mutation and preparation request, including catalog rename,
+  delete, Generate, and replacement confirmation, carries the exact Session
+  identity and revision visible at intent time; Current is a read and
+  navigation pointer, never an implicit write target
 - incomplete preparation never mutates `SessionPlan`
 - prepared-content replacement applies to the exact session identity and
   revision it read; concurrent authored edits reject the replacement

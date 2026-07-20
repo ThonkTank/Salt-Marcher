@@ -19,6 +19,10 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import platform.diagnostics.DiagnosticId;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.Measurement;
+import platform.diagnostics.NoopDiagnostics;
 
 public final class SqliteGenerationRunRepository implements GenerationRunRepository {
 
@@ -31,6 +35,8 @@ public final class SqliteGenerationRunRepository implements GenerationRunReposit
     private final GenerationRunSqliteWriter writer = new GenerationRunSqliteWriter();
     private final GenerationRewardSqliteReader rewardReader = new GenerationRewardSqliteReader();
     private final GeneratedRunValidator validator = new GeneratedRunValidator();
+    private final Diagnostics diagnostics;
+    private static final DiagnosticId REWARD_READ = new DiagnosticId("sessiongeneration.reward.read");
 
     public static FeatureStoreDefinition storeDefinition() {
         SessionGenerationSchema schema = new SessionGenerationSchema();
@@ -78,11 +84,17 @@ public final class SqliteGenerationRunRepository implements GenerationRunReposit
     }
 
     public SqliteGenerationRunRepository(FeatureStoreHandle store) {
+        this(store, NoopDiagnostics.INSTANCE);
+    }
+
+    public SqliteGenerationRunRepository(FeatureStoreHandle store, Diagnostics diagnostics) {
         this.connections = FeatureStoreHandle.requireOwner(store, OWNER)::openConnection;
+        this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
     SqliteGenerationRunRepository(ConnectionSource connections) {
         this.connections = Objects.requireNonNull(connections, "connections");
+        this.diagnostics = NoopDiagnostics.INSTANCE;
     }
 
     @Override
@@ -114,7 +126,12 @@ public final class SqliteGenerationRunRepository implements GenerationRunReposit
             return new GenerationRewardBatch(List.of(), List.of());
         }
         try (Connection connection = connections.openConnection()) {
-            return rewardReader.load(connection, safeReferences);
+            long startedNanos = System.nanoTime();
+            GenerationRewardSqliteReader.ReadResult read = rewardReader.load(connection, safeReferences);
+            diagnostics.measurement(new Measurement(
+                    REWARD_READ, 0L, Math.max(0L, System.nanoTime() - startedNanos),
+                    safeReferences.size(), read.statementCount()));
+            return read.batch();
         } catch (SQLException | IllegalArgumentException exception) {
             throw new IllegalStateException("Failed to load session-generation rewards.", exception);
         }
