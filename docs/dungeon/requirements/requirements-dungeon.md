@@ -1,109 +1,138 @@
-Status: Draft
+Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-19
-Source of Truth: User-facing behavior, capabilities, and acceptance criteria for
-the dungeon feature.
+Last Reviewed: 2026-07-20
+Source of Truth: Confirmed solution-neutral user capabilities and quality needs
+for the Dungeon feature.
 
 # Dungeon Feature Requirements
 
 ## Goal
 
-Provide one dungeon workflow that lets a GM:
+Provide one local, GM-operated Dungeon capability for authoring, inspecting,
+running, exchanging, and documenting multi-level dungeons. Every surface reads
+and changes one coherent dungeon truth while preserving the GM's authority over
+fiction and outcomes.
 
-- load and inspect dungeon maps
-- travel through the current traversable dungeon space
-- monitor compact dungeon travel state through the global travel-state surface
-  shown in the runtime `Reise` tab
-- edit authored dungeon topology and semantics
-- inspect rooms, connections, and features without duplicating domain truth
+## User And Authority
 
-## Non-Goals
+- one GM is the only operator of the local desktop interface
+- players do not receive direct character control or a multi-user editing
+  surface
+- the GM translates table decisions into Dungeon commands
+- SaltMarcher may calculate objective travel facts, expose triggered content,
+  and maintain state, but it MUST NOT decide fictional outcomes reserved for
+  the GM
+- remote access and collaborative multi-user authoring are not required
 
-- shell-wide navigation policy
-- project-wide persistence rules
-- low-level geometry or routing algorithm design
+## Long-Term Capability Scope
+
+The Dungeon capability includes:
+
+- dungeon-map catalog management
+- square-cell, multi-level authored geometry
+- rooms, larger named room groups or areas, walls, doors, corridors, stairs,
+  transitions, markers, and GM-authored traps
+- descriptions, inspection, stable Dungeon-Key numbering, and campaign-object
+  references
+- synchronized raster-map, relationship-graph, and Dungeon-Key workflows
+- cell-precise runtime positions for the party and selected relevant actors
+- GM-operated dungeon travel with time, routes, events, and factual logging
+- a human-readable document export containing the map, Dungeon Key, and stable
+  references
+- a versioned portable Dungeon package for authored Dungeon truth
+
+New authored object families, tools, rules, and integrations MUST remain
+locally addable in source code. A runtime plugin system is not required.
+
+Map-image import and procedural Dungeon generation are not core requirements.
 
 ## Primary Surfaces
 
-- basic dungeon map surface
-- dungeon travel surface
-- dungeon travel-state surface shown in the runtime `Reise` tab
-- dungeon editor surface
+- raster authoring editor
+- abstract relationship-graph design view
+- room-list and Dungeon-Key authoring view
+- passive runtime raster view for selection, orientation, and detail inspection
+- independent runtime `Reisen` state tab for travel controls and status
+- human-readable map and Dungeon-Key export
 
-## Primary User Flows
+The specialized surfaces MUST select and navigate to the same stable room,
+area, object, or actor and MUST remain consistent with one authored Dungeon
+truth.
 
-### Load And Inspect A Map
+## Campaign Relationships
 
-1. The user searches for a dungeon map.
-2. The user loads one valid result.
-3. The map opens on a default floor.
-4. The user pans, zooms, changes floors, and inspects map content.
+Rooms, areas, and markers may reference suitable campaign-owned places, NPCs,
+factions, encounters, items, scenes, and similar objects. Dungeon stores stable
+references without copying or taking ownership of the referenced object's
+truth.
 
-### Travel Through The Dungeon
+## Durability And Safety
 
-1. The user opens the travel surface on a loaded map.
-2. The current party location is shown on the map.
-3. The user selects a travel action or drags the token to a reachable local
-   tile.
-4. The runtime state updates and the inspector reflects the result.
+- every completed, validated authoring action persists immediately
+- previews and canceled gestures remain transient
+- saved Dungeons survive restarts and application updates
+- migrations, backup, and restore protect authored data
+- import MUST preview identity conflicts and missing external references
+- the GM may create new identities or map references before import
+- import MUST NOT silently overwrite existing authored content
+- a portable Dungeon package contains authored Dungeon truth and stable
+  references, but not party or actor positions, travel logs, or undo history
 
-### Read Compact Dungeon Travel State
+## Deferred Low-Priority Capabilities
 
-1. The user opens the global travel-state surface shown in the runtime
-   `Reise` tab while the party is in a dungeon.
-2. The surface shows compact dungeon context such as map, area, tile, heading,
-   and movement status.
-3. The user can understand current travel context without opening the full
-   interactive travel workspace.
+The target design MUST permit later addition without fundamental restructuring
+of:
 
-### Edit The Dungeon
+- moving monster groups with simple schedules
+- automated perception comparisons and GM-entered active-check results
+- persistent room-associated tracks and pursuit workflows
+- a passive second-monitor player view with Fog of War, hidden secrets,
+  lighting, and comparable visibility rules
 
-1. The user opens the editor surface on a map.
-2. The user selects a tool.
-3. The editor shows a live preview while the gesture is in progress.
-4. The user commits or cancels the change.
+These are long-term product directions, not requirements for the next delivery.
+The player view remains display-only and does not change the GM-only control
+model.
 
-## Visible Capabilities
+## Non-Goals
 
-- map discovery, load, reload, create, rename, and delete
-- map pan, zoom, level switching, and overlay presentation
-- room, connection, feature, and handle inspection
-- room narration editing with saved visual and exit descriptions
-- runtime movement by explicit travel actions and target-state direct token drag
-- dungeon-to-dungeon and dungeon-to-overworld transition outcomes
-- a compact travel-state summary surface shown in the runtime `Reise` tab,
-  distinct from the interactive travel view
-- editor tool families for selection, rooms, walls, doors, corridors, stairs,
-  and transitions
+- a tactical battlemap or combat action economy
+- automated resolution of attacks, spells, traps, encounters, or unrestricted
+  exploration actions
+- direct player control
+- remote or multi-user operation
+- a runtime user-plugin system
+- ownership of external campaign-object truth
+- procedural Dungeon generation as a core workflow
 
-## Acceptance Criteria
+## Quality Needs
 
-- Travel, the runtime `Reise` travel-state surface, and the editor operate on
-  the same canonical dungeon truth plus party-owned runtime position where
-  applicable.
-- Travel and editor keep independent local camera state.
-- Empty authored maps stay empty until the editor paints geometry.
-- Selections and inspections are visible and understandable to the user.
-- In-progress edits provide visible preview feedback.
-- The compact travel-state surface shown in the runtime `Reise` tab never has
-  to own the interactive dungeon workspace to communicate current travel
-  context.
-- Runtime travel state is not treated as authored dungeon truth.
-- Dungeon publishes compact typed travel readback, while the feature-neutral
-  Travel capability owns selection and display in the global `Reise` tab.
+- very large sparse Dungeons remain responsive; a qualification map contains at
+  least 100,000 authored cells
+- camera and hover work complete within a 16 ms p95 budget
+- editor preview completes within a 50 ms p95 budget
+- work scales with the visible or touched region rather than total off-screen
+  map content
+- loading and committing expose distinct visible states
+- new authored object or tool families, a travel/time/event-rule change, and a
+  UI or persistence adapter replacement remain local and do not require changes
+  to unrelated features
 
-## Open Product Questions
+## Acceptance Outcomes
 
-- How aggressively should map creation and deletion be exposed in the editor UI?
-- What room-inspector details are always shown versus expandable on demand?
-- Which advanced editor families must be fully shippable in the first dungeon
-  milestone versus remaining visible target-state obligations?
+- authoring, inspection, travel, document export, and package exchange refer to
+  the same stable authored identities
+- runtime actor state and logs do not become authored Dungeon-package content
+- no surface silently invents a second room, connection, description, or
+  passability truth
+- the GM can understand what changed, cancel transient work, and recover safely
+  from rejected or failed operations
+- system-calculated facts remain distinguishable from GM-authored content and
+  GM-decided outcomes
 
 ## References
 
 - [Dungeon Editor Requirements](./requirements-dungeon-editor.md)
 - [Dungeon Travel State Requirements](./requirements-dungeon-travel-state.md)
 - [Dungeon Travel Requirements](./requirements-dungeon-travel.md)
-- [Maps Canvas Requirements](../../maps/requirements/requirements-maps-canvas.md) (line 1)
-- [Dungeon Domain Model](../domain/domain-dungeon.md) (line 1)
-- [Travel Context Domain](../../travel/domain/domain-travel.md)
+- [Dungeon Domain Model](../domain/domain-dungeon.md)
+- [Dungeon Needs Interview](../../project/interviews/2026-07-20-dungeon-needs-interview.md)
