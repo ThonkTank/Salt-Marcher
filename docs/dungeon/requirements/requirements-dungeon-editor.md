@@ -187,8 +187,12 @@ Trap, Loot, and Curiosity.
 A Curiosity is the common Feature kind for puzzles and other interactive
 peculiarities. Puzzle is a built-in Curiosity classification rather than a
 separate foundational Feature kind; additional GM-defined tags may be added.
-Its initial content may be free text. Later versions may add optional links or simple
-consequences such as changing lights or unlocking a referenced door.
+Its initial content consists of a name, player-readable or read-aloud free text,
+GM-only notes for operation, solution, or possible reactions, plus categories
+and tags. It has no programmed solution steps, success conditions, or automatic
+consequences. Later versions may add optional links or simple consequences such
+as changing lights or unlocking a referenced door without replacing GM-authored
+text or authority.
 Diagnostics may count all Curiosities and the Puzzle-classified subset
 separately, but MUST NOT assign Curiosities a qualitative score.
 
