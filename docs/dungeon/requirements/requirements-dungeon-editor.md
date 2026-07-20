@@ -321,6 +321,8 @@ passability or action rules.
 - Reset Duration restores all Charges together
 - per Trap, the GM chooses whether the reset countdown starts only at zero or as
   soon as current Charges fall below maximum
+- consuming another Charge does not restart a running countdown; its completion
+  restores all Charges regardless of intervening use
 - the GM may manually correct current Charges and reset state
 - a future low-priority monster routine may perform an explicit manual Trap
   reset
