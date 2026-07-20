@@ -252,6 +252,43 @@ Content-Menge und Konzentration relativ zu Reisezeit oder Routenumfang
 wechseln. Beim Reduzieren des Graph-Detailgrads werden die Werte der
 zusammengefassten Räume und Routen passend aggregiert.
 
+### Woher stammen die Content-Fakten der Heatmap?
+
+**Bestätigte Antwort:** Ausschließlich aus authored Dungeon-Features.
+
+Encounter, Fallen, Loot und Curiosities sind eigene Dungeon-Feature-Arten.
+Heatmap und Pacing-Auswertung zählen oder bewerten keine frei aus
+Raumbeschreibungen erratenen Inhalte, sondern verwenden ausschließlich diese
+explizit authored Features.
+
+Curiosities organisieren Rätsel und andere interaktive Dungeon-Features.
+Zunächst bestehen sie im Wesentlichen aus Freitext. Später dürfen optionale
+Verknüpfungen oder einfache Folgen ergänzt werden, beispielsweise »wenn X
+passiert, gehen alle Lichter im Raum aus« oder »Tür Z wird entsperrt«.
+Curiosities werden für die Heatmap nicht qualitativ bewertet, sondern nur
+gezählt.
+
+### Soll SaltMarcher Unter- und Überfüllung anzeigen?
+
+**Bestätigte Richtung:** Beratende Pacing-Hinweise.
+
+Neben der neutralen Heatmap soll die Auswertung Stellen markieren können, an
+denen wahrscheinlich zu wenig oder zu viel Content konzentriert ist. Diese
+Hinweise bleiben beratend und blockieren Authoring nicht.
+
+The Alexandrians »Game Structure: Sector Crawl« nennt für klassischen
+Raum-für-Raum-Dungeoncrawl als groben Richtwert, dass wahrscheinlich mindestens
+etwa die Hälfte der Räume interessanten Inhalt benötigt, damit das Pacing nicht
+in einer Folge leerer Räume zusammenbricht. Seine Dungeon-Typologie
+unterscheidet außerdem featured und scenic rooms. Diese Aussagen sind
+Referenzhypothesen für Profile und Warnungen, keine universellen
+Qualitätsgesetze. Eine allgemeine feste Obergrenze ist daraus nicht bestätigt.
+
+Zusätzliche Designreferenzen:
+
+- https://thealexandrian.net/wordpress/45878/roleplaying-games/game-structure-sector-crawl
+- https://thealexandrian.net/wordpress/49606/roleplaying-games/types-of-dungeons
+
 Designreferenzen:
 
 - https://thealexandrian.net/wordpress/13085/roleplaying-games/xandering-the-dungeon
