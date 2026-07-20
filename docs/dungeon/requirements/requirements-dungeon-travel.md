@@ -51,7 +51,11 @@ The runtime raster map:
 
 Travel options arise from both authored semantics and actual geometry.
 
-Authored doors, unified generated connection Paths, and transitions provide explicit meaning.
+Authored doors and unified generated connection Paths provide internal travel
+meaning. A true Dungeon exit is a special Passage referencing another Dungeon
+or external campaign place, with direction, local description, passability, and
+optional additional travel time. A linked bidirectional transition has one
+independent Passage per side.
 Geometry may additionally expose long-room and corridor travel, junctions,
 complex path forks, open vertical relationships, and potential climb, jump, or
 similar special routes.
