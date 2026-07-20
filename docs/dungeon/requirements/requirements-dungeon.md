@@ -58,8 +58,11 @@ one Volume. Moving or reshaping the Volume carries its Feature anchors with it.
 If destructive geometry makes reliable mapping impossible, the Feature remains
 preserved without an anchor until reassigned. Encounters are initially
 stationary; optional mobility is a later capability. Only Traps and Encounters
-initially support automatic proximity activation. Traps may define optional
-trigger fields separate from their anchors. Encounter detection provisionally
+initially support automatic proximity activation. Traps may define zero or more
+arbitrary voxel-set trigger fields separate from their anchors. Trigger voxels
+remain associated with their Volumes, may span several adjacent Volumes, and
+only control notification or travel interruption; they do not alter
+passability or decide outcomes. Encounter detection provisionally
 uses a radius derived from monster statistics. Loot and Curiosities do not
 activate from proximity alone.
 
