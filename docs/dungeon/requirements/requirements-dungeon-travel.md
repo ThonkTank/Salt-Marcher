@@ -31,10 +31,10 @@ decision points may organize choices and presentation, but do not replace
 cell-precise runtime position.
 Every bounded standable interior Volume uses the same travel semantics,
 including chambers, corridors, and stair spaces. A Room supplies stable authored
-content associated with such a Volume. Navigation areas partition the Volume
-at meaningful choices such as branches, junctions, and landings, but do not
-create incompatible movement semantics or replace cell-precise runtime
-position.
+content associated with such a Volume. SaltMarcher silently derives
+identityless navigation areas at meaningful choices such as branches,
+junctions, and landings. They may be freely recalculated and do not own names,
+descriptions, content, movement semantics, or runtime position.
 
 ## Passive Travel Map
 
