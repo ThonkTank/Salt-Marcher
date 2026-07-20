@@ -197,6 +197,17 @@ SaltMarcher komponiert beides zu einem lesbaren Gesamttext. Eine
 Geometrieänderung aktualisiert die abgeleiteten Beziehungen, ohne die
 GM-authored Eigenschaften zu überschreiben.
 
+### Welche Richtungen verwendet eine Beschreibung ohne aktuelle Party?
+
+**Bestätigte Antwort:** Stabile Kartenrichtungen plus Perspektivvorschau.
+
+Im Dungeon-Key, Editor und Dokumentexport verwendet SaltMarcher ohne aktuelle
+Party stabile Kartenrichtungen wie Norden oder Südwesten. Im Editor kann der GM
+zusätzlich einen Eingang beziehungsweise ein Heading auswählen, um den
+relativen Vorlesetext aus dieser Perspektive als Vorschau zu sehen. Während
+einer laufenden Reise wird stattdessen das tatsächliche Heading der Party
+verwendet.
+
 ### Soll der Dungeon-Key außerhalb der App ausgebbar sein?
 
 **Bestätigte Antwort:** Ansicht plus Dokumentexport.
@@ -620,11 +631,9 @@ Nach jeder Owner-Antwort ist dieses Protokoll zu aktualisieren; erst die
 abschließend bestätigte Interpretation wird in die kanonischen englischen
 Requirements überführt.
 
-Die nächsten bereits vorbereiteten Fragen sind:
+Die nächste bereits vorbereitete Frage ist:
 
-1. Welche Richtungsdarstellung verwendet eine Raumbeschreibung außerhalb einer
-   laufenden Reise, wenn keine Party mit eindeutigem Heading als Bezug existiert?
-2. Wie bleibt die zellgenaue Exploration klar von einer vollständigen
+1. Wie bleibt die zellgenaue Exploration klar von einer vollständigen
    taktischen Battlemap und Encounter-Aktionsökonomie abgegrenzt?
 
 Danach sind mindestens folgende Bedarfsfragen offen:
