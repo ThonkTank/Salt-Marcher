@@ -61,7 +61,20 @@ open their descriptions in a detail pane.
 ## Relationship-Graph Design View
 
 The graph is an abstract, zoomed-out Dungeon-design and debugging surface. It
-MUST help the GM inspect and manage:
+represents the party's meaningful navigation decisions rather than mirroring
+every raster object one-to-one. Rooms, room groups, and relevant decision
+points may appear as nodes; routes and transitions appear as edges. Incidental
+geometry may be collapsed only when real choices, connection types, current
+states, and travel effects remain understandable.
+
+Authored doors, openings, corridors, stairs, and transitions influence graph
+relationships. Mere geometric adjacency without an authored opening does not
+create an edge. A structurally present but currently impassable connection
+remains visible with a distinct state. Geometrically detected climb, jump, or
+similar special-route candidates remain distinguishable from ordinary safe
+connections.
+
+It MUST help the GM inspect and manage:
 
 - room and room-group flow
 - the distribution of decision complexity
