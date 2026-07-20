@@ -331,6 +331,19 @@ frei definierbare Tags dürfen hinzukommen. Die Heatmap kann dadurch sowohl alle
 Curiosities zählen als auch die Rätsel-Teilmenge gesondert darstellen.
 Curiosities werden weiterhin nicht qualitativ bewertet.
 
+### Wie stark ist eine Curiosity zunächst strukturiert?
+
+**Bestätigte Antwort:** Wenige klar getrennte Freitextbereiche.
+
+Eine Curiosity besitzt zunächst einen Namen, eine spielerlesbare beziehungsweise
+vorlesbare Beschreibung, GM-Notizen zur Funktionsweise, Lösung oder möglichen
+Reaktionen sowie Kategorien und Tags. Sie besitzt keine programmierten
+Lösungsschritte, Erfolgsbedingungen oder automatischen Folgen.
+
+Spätere optionale Verknüpfungen wie »Tür entsperren« dürfen auf diesem Inhalt
+aufbauen, ersetzen aber weder den Freitext noch die Entscheidungsfreiheit des
+GM.
+
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
 **Bestätigte Antwort:** Fest gezeichnete Flächen und dynamisch erzeugte Pfade.
