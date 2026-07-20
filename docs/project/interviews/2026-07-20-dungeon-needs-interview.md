@@ -516,6 +516,15 @@ noch fehlen. Ein beidseitiger Übergang besitzt auf jeder Seite einen eigenen
 Durchlass mit eigener Beschreibung und Passierbarkeit; beide Seiten verweisen
 aufeinander.
 
+### Gibt es allgemeine räumliche Marker?
+
+**Bestätigte Antwort:** Nein.
+
+SaltMarcher benötigt keine allgemeine Marker-Objektart. Ein räumlich
+verankerter Inhalt besitzt einen konkreten fachlichen Zweck, beispielsweise als
+Raum, Durchlass, Dungeon-Feature oder externer Übergang. Eine bedeutungslose
+Sammelkategorie für Name, Symbol und Notiz gehört nicht zum Produktbedarf.
+
 ### Für welchen langfristigen Nutzungshorizont gilt die Bedarfsbaseline?
 
 **Nachgeschärfte bestätigte Antwort:** Lokaler GM als einziger Bediener.
@@ -533,7 +542,7 @@ Sichtbarkeitsregeln, ohne das GM-only-Bedienmodell zu verändern.
 
 **Bestätigte Antwort:** Vollständiges Authoring plus Reise.
 
-Kartenverwaltung, Räume, Wände, Türen, Korridore, Treppen, Übergänge, Marker,
+Kartenverwaltung, Räume, Wände, Türen, Korridore, Treppen, Übergänge,
 Beschreibungen, Inspektion und Party-Reise bilden den Kern. Vom GM authored
 Fallen gehören ebenfalls zur langfristigen Dungeon-Wahrheit. Weitere
 Objekttypen sollen auf Quellcode-Ebene leicht ergänzbar sein. Kartenimport und
@@ -946,7 +955,8 @@ p95 unter 50 ms. Laden und Commit erhalten getrennte sichtbare Zustände.
 
 **Bestätigte Antwort:** Kampagnenobjekte verlinken.
 
-Räume, Bereiche oder Marker können auf passende Orte, NPCs, Fraktionen,
+Räume, Bereiche, Durchlässe oder Dungeon-Features können auf passende Orte,
+NPCs, Fraktionen,
 Encounter, Items oder Szenen verweisen, ohne deren Wahrheit zu übernehmen.
 
 ### Wessen Position soll der Dungeon während des Spiels verwalten?
