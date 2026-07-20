@@ -63,7 +63,13 @@ Brush, surface tool, and eraser operate directly on geometry regardless of the
 current selection. Overlapping or newly connected geometry automatically merges
 Volumes; separating geometry automatically splits a Volume. Completion requires
 no additional confirmation dialog, and ordinary undo is the expected recovery
-path. Selection remains relevant to transforms and detailed edits, not to
+path.
+
+After every merge or split, SaltMarcher immediately makes a best-effort complete
+Room assignment for every resulting Volume. The assignment does not block
+geometry editing and the GM may change it afterward. Existing authored Rooms
+not selected for an assignment remain preserved without geometry. Selection
+remains relevant to transforms and detailed edits, not to
 choosing the target of drawing or erasing.
 
 Floor, traversable Volume, and default ceiling remain one coordinated spatial
