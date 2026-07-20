@@ -375,6 +375,13 @@ Dungeon liegen. Seine Geometrie wird dafür weder geteilt noch verändert.
 
 Die Z-Level-Mengen fachlicher Ebenen überlappen sich für die Vererbung nicht.
 
+Die zulässigen fachlichen Elternpfade sind Dungeon zu Raum, Dungeon zu Gruppe
+zu Raum, Dungeon zu Ebene zu Raum sowie Dungeon zu Ebene zu Gruppe zu Raum.
+Eine Gruppe direkt unter dem Dungeon darf Räume über mehrere Z-Level hinweg
+zusammenfassen. Eine Gruppe unter einer Ebene bleibt auf deren fachlichen
+Bereich beschränkt. Weitere verschachtelte Gruppenstufen sind zunächst nicht
+vorgesehen.
+
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
 **Bestätigte Antwort:** Fest gezeichnete Flächen und dynamisch erzeugte Pfade.
