@@ -42,7 +42,13 @@ including corridor junctions and branches.
 
 Spatial authoring has two foundational forms: directly drawn anchored Areas and
 dynamically generated Paths between two or more endpoints or waypoints.
-Horizontal corridors and vertical stair segments are generated parts of one unified 3D Path model. One Path may combine both between endpoints at different elevations. Generated Paths materialize ordinary bounded Room volume; Area and Path describe construction behavior rather than incompatible runtime space types.
+Corridors, stairs, ramps, ladders, shafts, and comparable connection segments
+are generated parts of one unified 3D Path model. One Path may combine several
+forms between endpoints at different elevations. Segment forms and optional
+position constraints are authored properties of the Path, while its exact voxel
+route may be derived. Generated Paths materialize ordinary bounded Room volume;
+Area and Path describe construction behavior rather than incompatible runtime
+space types.
 
 The Dungeon capability includes:
 
