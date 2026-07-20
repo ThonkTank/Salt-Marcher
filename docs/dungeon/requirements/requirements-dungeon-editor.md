@@ -63,6 +63,15 @@ stair spaces remain semantically equivalent for travel even when their
 authoring behavior differs. A resulting Room may be partitioned into navigation
 areas at meaningful internal decisions such as corridor junctions.
 
+A Path remains parametrically defined by endpoints, optional waypoints, width,
+and further path properties. Its voxel geometry derives from those facts.
+Moving a connected endpoint produces a rerouted preview rather than a silent
+commit. Normal path editing changes points or parameters.
+
+The GM may explicitly convert a Path into a fixed Area for fully custom
+geometry. Conversion preserves its current materialized volume and ends
+automatic rerouting.
+
 Additional raster capabilities include:
 
 - draw and reshape room and area geometry
