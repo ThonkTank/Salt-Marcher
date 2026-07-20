@@ -46,7 +46,10 @@ A Room is a stable GM-authored content identity associated with a Volume. It
 owns name, descriptions, Features, references, and comparable semantic work.
 One Room is associated with at most one Volume and one Volume with at most one
 Room at a time; either may temporarily remain unassigned. Moving the Volume
-preserves that Room identity and association. Derived navigation areas
+preserves that Room identity and association. After a Volume merge or split,
+SaltMarcher immediately makes a best-effort Room assignment for every resulting
+Volume; the GM may revise it, and unused authored Rooms remain preserved.
+Derived navigation areas
 structure a Volume, while room groups collect several Rooms or Volumes.
 
 A Room may provide descriptive defaults for its associated Volume. The GM may
