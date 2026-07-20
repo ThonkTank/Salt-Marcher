@@ -204,16 +204,37 @@ Navigationsentscheidungen zusammengefasst. Flow-, Reisezeit- und
 Content-Daten werden auf der jeweils sichtbaren Ebene aggregiert, ohne ihre
 zugrunde liegenden authored Fakten zu verlieren.
 
+### Bleibt der Graph auf allen Detailstufen editierbar?
+
+**Bestätigte Antwort:** Ja, mit abstraktionsgerechten Operationen.
+
+In der Detailansicht bearbeitet der GM einzelne Räume, Türen und Verbindungen.
+Auf mittlerer Stufe kann er ganze Räume oder Raumgruppen als Einheit
+verschieben, duplizieren, verbinden oder entfernen. In der stark reduzierten
+Alexandrian-/Melan-Ansicht darf er grobe Routen und Gruppen umstrukturieren.
+
+Eine neue Verbindung zwischen zusammengefassten Gruppen ist zunächst eine
+Planungsabsicht. SaltMarcher erzeugt plausible konkrete Endpunkte und
+Rohgeometrie, die der GM später im geschützten Raster-Preview prüft und
+bereinigt. Mehrdeutige Edits werden nicht still auf eine willkürlich gewählte
+konkrete Tür oder Zelle heruntergebrochen.
+
 ### Welche zusätzliche Debug-Wirkung soll der Graph haben?
 
-**Bestätigte Richtung:** Quantitative Flow- und Content-Verteilungsanalyse.
+**Korrigierte bestätigte Richtung:** Content-Heatmap auf Knoten und Routen.
 
-Der Graph soll die navigative Komplexität nicht nur zeigen, sondern
-quantitativ vergleichbar machen. Zusätzlich werden Konzentration und Verteilung
-von Content-Typen wie Treasure, Encounter, Curiosities, Rätseln und ähnlichen
-Elementen auf unterschiedlichen möglichen Routen debug-artig dargestellt.
-Dadurch kann der GM alternative Wege gegeneinander balancieren, ohne dass
-SaltMarcher einen einzig richtigen Dungeonaufbau vorschreibt.
+Eine »Route« bezeichnet hier zunächst die Verbindung zwischen zwei
+Graphknoten, nicht eine vollständige Start-Ziel-Reise durch mehrere Knoten.
+Knoten und Routen werden durch Farben, Symbole oder vergleichbare
+Debug-Darstellung nach ihren Content-Typen und deren Konzentration kodiert.
+Der GM erkennt dadurch unmittelbar, wo sich besonders viel Gefahr, Belohnung,
+Treasure, Encounter, Curiosities, Rätsel oder vergleichbarer Content
+konzentriert und wie diese Verteilung über den gesamten Dungeon aussieht.
+
+Ein späterer Vergleich vollständiger alternativer Start-Ziel-Wege darf auf
+dieser Grundlage ergänzt werden, ist aber gegenüber der unmittelbaren
+Content-Heatmap nachrangig. SaltMarcher liefert Diagnose und Vergleichsdaten,
+schreibt jedoch keine einzig richtige Balance vor.
 
 Designreferenzen:
 
