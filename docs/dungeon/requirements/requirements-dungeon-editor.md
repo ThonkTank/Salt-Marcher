@@ -301,6 +301,12 @@ passability or action rules.
   doors
 - raw undescribed voxel faces do not each require a separate content identity
 - Passages remain explicit independent objects because they affect travel
+- every Dungeon Feature initially has one exact 3D voxel anchor within a Volume
+- moving or reshaping that Volume carries the Feature anchor with it
+- when destructive geometry prevents reliable anchor mapping, the Feature
+  remains preserved for reassignment
+- Encounters are initially authored as stationary Features; optional mobile
+  Encounter behavior is deferred
 - a Volume is geometric truth; a Room is stable GM-authored content associated
   with a Volume
 - one Room is assigned to at most one Volume and one Volume to at most one Room
