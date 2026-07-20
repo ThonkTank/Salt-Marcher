@@ -59,6 +59,13 @@ Stories may be stacked directly; removing an intermediate floor opens the
 vertical geometry. Floors and walls remain independently editable despite the
 automatically created standard shell.
 
+Floor mode paints or erases horizontal faces on cells at the active height
+using the configured brush and eraser forms. Wall mode draws walls through
+click-and-drag along cell edges and sets vertical extent in 5-foot steps.
+Selection can then move, extend, shorten, or change their height. Automatically
+created boundaries become ordinary editable floors and walls. Off-grid walls
+remain deferred.
+
 Its foundational fixed-Area tools are:
 
 - a brush with selectable shapes and adjustable radius
