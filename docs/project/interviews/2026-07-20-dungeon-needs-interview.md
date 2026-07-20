@@ -284,6 +284,22 @@ unterscheidet außerdem featured und scenic rooms. Diese Aussagen sind
 Referenzhypothesen für Profile und Warnungen, keine universellen
 Qualitätsgesetze. Eine allgemeine feste Obergrenze ist daraus nicht bestätigt.
 
+### Wie werden Gefahr, Loot und Curiosities konkret ausgewertet?
+
+**Bestätigte Antwort:** Vorhandene DMG-Budgets plus lokale Curiosity-Dichte.
+
+Für Gefahr und Loot verwendet SaltMarcher die bereits im Programm modellierten
+DMG-basierten Richtlinien. Der GM legt fest, für welches Charakterlevel und wie
+viele Spielsitzungen ein Dungeon, eine Ebene oder ein Bereich ausgelegt ist.
+Dagegen werden die aus authored Dungeon-Features ermittelten XP-, Gold- und
+Magic-Item-Budgets ausgewertet.
+
+Curiosities werden nicht nach Qualität oder vermeintlicher Bedeutung gewichtet.
+Ihre Auswertung verwendet ausschließlich Anzahl und lokale Dichte. Allgemeine
+Feature-Dichte und Alexandrian-Hinweise können ergänzend auf unter- oder
+überfüllte Abschnitte hinweisen, ersetzen aber für Gefahr und Loot nicht die
+vorhandenen regelbasierten Budgets.
+
 Zusätzliche Designreferenzen:
 
 - https://thealexandrian.net/wordpress/45878/roleplaying-games/game-structure-sector-crawl
