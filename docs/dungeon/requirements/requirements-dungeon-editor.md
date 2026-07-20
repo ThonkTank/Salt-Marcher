@@ -94,6 +94,13 @@ authored identity owns description and explicit binary passability; the Path
 owns route and travel properties. Path creation may initially create suitable
 open Passages, which the GM can later change into other Passage forms.
 
+An actual exit from the Dungeon is a special Passage at an exact Volume
+boundary. It references another Dungeon or external campaign place and owns
+direction, local description, explicit passability, and optional additional
+travel time. Its opposite endpoint may remain absent while authoring. A linked
+bidirectional transition uses one independent Passage per side; each keeps its
+own description and passability while the two reference each other.
+
 Additional raster capabilities include:
 
 - draw and reshape room and area geometry
