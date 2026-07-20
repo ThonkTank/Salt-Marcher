@@ -404,6 +404,19 @@ Geometrieänderungen aktualisieren ausschließlich die betroffenen abgeleiteten
 Fakten. GM-authored Text bleibt unverändert. SaltMarcher zeigt eine Vorschau für
 eine vom GM gewählte Blick- beziehungsweise Eintrittsrichtung.
 
+### Wie werden Geheimnisse in Beschreibungen behandelt?
+
+**Bestätigte Antwort:** Authored Sichtbarkeit plus getrennte Entdeckung.
+
+Beschreibungsblöcke und relevante Objekte dürfen als normal sichtbar, nur für
+den GM oder bis zur Entdeckung verborgen markiert werden. Eine unentdeckte
+Geheimtür erscheint weder im Vorlesetext noch als sichtbarer Ausgang.
+
+»Geheim« bleibt eine authored Eigenschaft. »Von dieser Party entdeckt« ist
+davon getrennte Laufzeitinformation. Der GM kann eine Beschreibung im
+unentdeckten und im entdeckten Zustand voranzeigen. Das Verbergen verändert
+keine explizite Passierbarkeit.
+
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
 **Bestätigte Antwort:** Fest gezeichnete Flächen und dynamisch erzeugte Pfade.
