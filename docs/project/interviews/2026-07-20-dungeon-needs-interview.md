@@ -225,6 +225,21 @@ Encounter sind zunächst ebenfalls ortsfest authored. Eine optionale spätere
 Fähigkeit macht ausgewählte Encounter beziehungsweise ihre beteiligten Gruppen
 mobil.
 
+### Welche Features aktivieren sich automatisch durch räumliche Annäherung?
+
+**Bestätigte Antwort:** Nur Fallen und Encounter.
+
+Loot und Curiosities öffnen nicht allein aufgrund räumlicher Nähe automatisch
+ein Pop-up. Fallen dürfen zusätzlich zu ihrem eigenen Voxelanker optionale
+separate Triggerfelder besitzen. Betritt die Party ein solches Feld, kann die
+Falle angezeigt und Reise unterbrochen werden. Ohne Triggerfeld bleibt die
+Falle manuell durch den GM behandelbar.
+
+Für Encounter ist als überprüfbare Startannahme ein aus den Monsterwerten
+abgeleiteter Erkennungsradius vorgesehen. Die genaue spätere
+Wahrnehmungsberechnung bleibt noch zu klären und muss mit den bereits
+vorgesehenen automatisierten Perception-Vergleichen zusammenpassen.
+
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
 **Bestätigte Antwort:** Fest gezeichnete Flächen und dynamisch erzeugte Pfade.
