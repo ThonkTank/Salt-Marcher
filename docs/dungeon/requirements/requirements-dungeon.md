@@ -35,6 +35,17 @@ height. The GM may later change height in 5-foot steps, including intentional
 5-foot crawlspaces and taller chambers. Stacked spaces and minor elevation
 shifts remain part of the same Dungeon.
 
+A Room is any bounded, standable interior volume. Chambers, corridors, and
+stair spaces share this semantic role during inspection and travel. One Room
+may contain several navigation areas that expose meaningful internal choices,
+including corridor junctions and branches.
+
+Spatial authoring has two foundational forms: directly drawn anchored Areas and
+dynamically generated Paths between two or more endpoints or waypoints.
+Corridors and stairs are typical Path authoring forms. Generated Paths
+materialize ordinary bounded Room volume; Area and Path describe construction
+behavior rather than incompatible runtime space types.
+
 The Dungeon capability includes:
 
 - Dungeon catalog management
