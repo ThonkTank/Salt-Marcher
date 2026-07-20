@@ -145,6 +145,26 @@ Punkten sowie Inhalte wie Rätsel, Loot, Encounter und Curiosities überblicken
 und planen. Räumliche Verschiebungen im Graphen werden so weit wie möglich in
 die Rastergeometrie übertragen.
 
+### Welche Wahrheit abstrahiert der Graph?
+
+**Bestätigte Richtung:** Navigationsentscheidungen statt Rasterobjektliste.
+
+Der Graph stellt die für die Party relevanten Navigationsentscheidungen durch
+den Dungeon vereinfacht dar. Räume, Raumgruppen und relevante
+Entscheidungspunkte können als Knoten erscheinen; begehbare oder potenzielle
+Routen als Kanten. Bloße Nachbarschaft ohne authored Durchlass erzeugt keine
+Verbindung.
+
+Türen, Durchgänge, Korridore, Treppen und Übergänge beeinflussen die
+Graphbeziehung. Eine aktuell nicht passierbare strukturelle Verbindung bleibt
+sichtbar und wird über Zustand oder Darstellung unterschieden. Automatisch
+erkannte Sprung-, Kletter- oder vergleichbare Sonderwege erscheinen als
+erkennbare Kandidaten statt als gewöhnliche sichere Verbindung.
+
+Der Graph muss Rasterdetails nicht eins zu eins spiegeln. Er darf Geometrie
+zusammenfassen, solange echte Wahlmöglichkeiten, Verbindungsarten, Zustände und
+Reiseauswirkungen verständlich erhalten bleiben.
+
 ### Wie werden Graph-Verschiebungen sicher in Rastergeometrie überführt?
 
 **Bestätigte Antwort:** Geschützter Graph-Edit-Preview.
