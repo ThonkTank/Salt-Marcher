@@ -155,6 +155,16 @@ Die einzelnen Segmente behalten sichtbare Form und beschreibbare Eigenschaften,
 gehören aber zu demselben parametrischen Pfad und demselben
 Generierungs- und Bearbeitungsmodell.
 
+Der akzeptierte Pfad bleibt durch Endpunkte, optionale Wegpunkte, Breite und
+weitere Pfadparameter definiert; seine konkrete Voxelgeometrie wird daraus
+abgeleitet. Verschiebt sich ein verbundener Raum oder Endpunkt, zeigt
+SaltMarcher eine neu berechnete Führung als Preview. Der GM bearbeitet den Pfad
+normalerweise über Punkte und Parameter.
+
+Für vollständig individuelle Geometrie kann der GM einen Pfad bewusst in eine
+feste Fläche umwandeln. Die aktuelle Form wird dadurch direkt authored und
+anschließend nicht mehr automatisch geroutet.
+
 ### Für welchen langfristigen Nutzungshorizont gilt die Bedarfsbaseline?
 
 **Nachgeschärfte bestätigte Antwort:** Lokaler GM als einziger Bediener.
