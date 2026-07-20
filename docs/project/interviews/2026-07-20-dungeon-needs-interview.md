@@ -344,6 +344,23 @@ Spätere optionale Verknüpfungen wie »Tür entsperren« dürfen auf diesem Inh
 aufbauen, ersetzen aber weder den Freitext noch die Entscheidungsfreiheit des
 GM.
 
+### Wie werden beschreibende Attribute erfasst und vererbt?
+
+**Bestätigte Antwort:** Freie Werte in einer hierarchischen Attributstruktur.
+
+Häufige Kategorien wie Material, Zustand, Licht, Temperatur, Feuchtigkeit,
+Geruch, Geräusch und Atmosphäre bieten Ordnung, ohne den GM auf vorgegebene
+Werte zu beschränken. Zusätzlich darf er eigene Attribute benennen und
+besondere Formulierungen als Freitext ergänzen. Attribute erzeugen niemals
+stillschweigend Regeln, Passierbarkeit oder Effekte.
+
+Attribute können als Standards auf Dungeon-, Raumgruppen- und Raumebene
+festgelegt werden. Konkretere Ebenen überschreiben geerbte Werte für ihren
+Geltungsbereich. Aus »alle Wände sind standardmäßig aus Ziegeln« kann so in
+einer Raumgruppe »mit Holz vertäfelt« und in einem einzelnen Raum »rot
+tapeziert« werden. Ausdrücklich beschriebene Wand-, Boden- oder Deckenbereiche
+bilden die konkreteste bereits bestätigte Ebene.
+
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
 **Bestätigte Antwort:** Fest gezeichnete Flächen und dynamisch erzeugte Pfade.
