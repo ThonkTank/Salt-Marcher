@@ -297,6 +297,16 @@ Descriptions such as blocked, locked, heavy, cold, or damp affect generated
 wording and placement in the dynamic description. They MUST NOT silently create
 passability or action rules.
 
+Common categories such as material, condition, light, temperature, moisture,
+smell, sound, and atmosphere accept freely authored values. The GM may add
+custom named attributes and exceptional free-text phrasing.
+
+Descriptive attributes inherit through Dungeon, room-group, Room, and explicitly
+described surface-region scopes. A more specific value overrides the inherited
+value for its scope. The editor exposes both the effective value and where it
+originates, and lets the GM restore inheritance. Attribute inheritance MUST NOT
+create rules, passability, or effects.
+
 ## Geometry And Authored-Content Lifecycles
 
 - a Room may provide default descriptive attributes for its complete associated
