@@ -139,6 +139,22 @@ Fläche und Pfad bezeichnen damit primär unterschiedliche
 Erzeugungs- und Bearbeitungsweisen, nicht zwei inkompatible Arten von Raum, in
 denen andere Reiseregeln gelten.
 
+### Sind Korridore und Treppen unterschiedliche Pfadmodelle?
+
+**Bestätigte Antwort:** Ein einheitlicher dreidimensionaler Verbindungspfad.
+
+Korridore und Treppen werden nicht als getrennte grundlegende Inhaltsmodelle
+behandelt. Der GM verbindet zwei oder mehrere Punkte beziehungsweise Räume im
+gemeinsamen 3D-Dungeon. Der daraus erzeugte Pfad darf horizontalen Gang,
+Höhenwechsel und Treppenabschnitte in einer zusammenhängenden Verbindung
+kombinieren.
+
+Eine Verbindung zwischen Raum A auf einer Höhe und Raum B auf einer anderen
+Höhe kann damit automatisch die erforderlichen Gänge und Treppen enthalten.
+Die einzelnen Segmente behalten sichtbare Form und beschreibbare Eigenschaften,
+gehören aber zu demselben parametrischen Pfad und demselben
+Generierungs- und Bearbeitungsmodell.
+
 ### Für welchen langfristigen Nutzungshorizont gilt die Bedarfsbaseline?
 
 **Nachgeschärfte bestätigte Antwort:** Lokaler GM als einziger Bediener.
