@@ -417,6 +417,13 @@ davon getrennte Laufzeitinformation. Der GM kann eine Beschreibung im
 unentdeckten und im entdeckten Zustand voranzeigen. Das Verbergen verändert
 keine explizite Passierbarkeit.
 
+Verborgenes Material darf optional eine Suchart wie Wahrnehmung oder
+Nachforschungen, einen DC, privaten GM-Text zur Entdeckung sowie den danach
+sichtbaren Text beziehungsweise die sichtbaren Fakten enthalten. SaltMarcher
+darf passive Werte oder ein vom GM eingegebenes aktives Wurfergebnis vergleichen
+und den GM privat benachrichtigen. Enthüllt wird das Geheimnis erst nach
+GM-Bestätigung. Manuelles Enthüllen und erneutes Verbergen bleiben möglich.
+
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
 **Bestätigte Antwort:** Fest gezeichnete Flächen und dynamisch erzeugte Pfade.
