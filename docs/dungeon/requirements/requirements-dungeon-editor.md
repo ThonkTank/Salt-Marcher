@@ -81,12 +81,11 @@ The GM may explicitly convert a Path into a fixed Area for fully custom
 geometry. Conversion preserves its current materialized volume and ends
 automatic rerouting.
 
-Every Path endpoint belongs semantically to one navigation area associated with
-a Room and also has an exact 3D anchor on the attached Volume's boundary. When
-the GM connects Rooms or navigation areas without choosing exact anchors,
-SaltMarcher proposes suitable boundary anchors. The GM can move or pin those
-anchors. Graph relationships retain the semantic attachment while raster
-geometry uses the exact anchor.
+Every Path endpoint has an exact 3D anchor on a Volume boundary. When the GM
+connects Rooms without choosing exact anchors, SaltMarcher proposes suitable
+boundary anchors. The GM can move or pin them. Current navigation areas may be
+derived from geometry for routing and graph presentation but are not stable
+semantic endpoint identities.
 
 A Path meets each Volume through a separate Passage at its boundary. A Passage
 may be an open opening, door, hatch, secret door, or a comparable form. Its
@@ -409,8 +408,11 @@ create rules, passability, or effects.
   with a Volume
 - one Room is assigned to at most one Volume and one Volume to at most one Room
   at a time; either may temporarily be unassigned
-- navigation areas partition a Volume, while room groups collect several Rooms
-  or Volumes
+- navigation areas are silently derived from Volume geometry for routing and
+  decision presentation; they have no stable identity, name, description, or
+  authored content and may be freely recalculated
+- manual navigation-area correction is optional and low priority, while room
+  groups collect several Rooms or Volumes
 - moving a Volume preserves its Room association and Room identity
 - after a Volume is removed, split, or made unrecognizable, SaltMarcher attempts
   a safe reassociation to suitable resulting geometry
