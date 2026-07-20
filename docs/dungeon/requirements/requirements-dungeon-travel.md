@@ -29,8 +29,9 @@ the table.
 Rooms, derived corridor sections, junctions, stair landings, and comparable
 decision points may organize choices and presentation, but do not replace
 cell-precise runtime position.
-Every bounded standable interior volume is a Room for travel, including
-chambers, corridors, and stair spaces. Navigation areas partition this volume
+Every bounded standable interior Volume uses the same travel semantics,
+including chambers, corridors, and stair spaces. A Room supplies stable authored
+content associated with such a Volume. Navigation areas partition the Volume
 at meaningful choices such as branches, junctions, and landings, but do not
 create incompatible movement semantics or replace cell-precise runtime
 position.
@@ -63,8 +64,9 @@ journey or a deliberate position override.
 ## Passability Boundary
 
 A door or passage has one explicit travel fact: passable or not passable.
-Passages are authored Room-boundary objects, distinct from the Paths that own
-route and travel properties.
+Passages occur at Volume boundaries and are distinct from the Paths that own
+route and travel properties. Their authored identities and descriptions may
+remain preserved even while no Passage geometry is assigned.
 
 Descriptions such as locked, blocked, heavy, hidden, cold, or difficult do not
 create additional passability logic. They affect generated description text and
