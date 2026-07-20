@@ -354,12 +354,17 @@ Werte zu beschränken. Zusätzlich darf er eigene Attribute benennen und
 besondere Formulierungen als Freitext ergänzen. Attribute erzeugen niemals
 stillschweigend Regeln, Passierbarkeit oder Effekte.
 
-Attribute können als Standards auf Dungeon-, Raumgruppen- und Raumebene
-festgelegt werden. Konkretere Ebenen überschreiben geerbte Werte für ihren
-Geltungsbereich. Aus »alle Wände sind standardmäßig aus Ziegeln« kann so in
-einer Raumgruppe »mit Holz vertäfelt« und in einem einzelnen Raum »rot
-tapeziert« werden. Ausdrücklich beschriebene Wand-, Boden- oder Deckenbereiche
-bilden die konkreteste bereits bestätigte Ebene.
+Die Vererbungshierarchie lautet Dungeon, optionale Ebene, optionale Gruppe,
+Raum und schließlich ausdrücklich beschriebene Teilfläche. Eine Ebene umfasst
+eine vom GM bestimmte Menge von Z-Leveln im gemeinsamen 3D-Dungeon; sie ist
+keine getrennte Karte. Jede Vererbungszuordnung besitzt einen eindeutigen
+Elternpfad.
+
+Konkretere Ebenen überschreiben geerbte Werte für ihren Geltungsbereich. Aus
+»alle Wände sind standardmäßig aus Ziegeln« kann so in einer Raumgruppe »mit
+Holz vertäfelt« und in einem einzelnen Raum »rot tapeziert« werden.
+Zusätzliche überlappende Sammlungen oder Tags dürfen Filter und Heatmaps
+unterstützen, vererben jedoch keine Attribute.
 
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
