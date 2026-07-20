@@ -78,7 +78,9 @@ Encounter detection provisionally uses a radius derived from the referenced
 monster statistics. Dungeon Loot placement uses existing Loot content and ultimately
 the same shared Loot object as Encounter and Session Generation. The Dungeon
 adds voxel placement and local context rather than duplicating currencies,
-items, or magic-item truth. Loot and Curiosities do not activate from proximity
+items, or magic-item truth. One concrete Loot object has at most one current
+Dungeon anchor; other feature references do not duplicate it spatially, and
+multiple physical occurrences require independent copies. Loot and Curiosities do not activate from proximity
 alone.
 
 The GM may copy a complete Room, door, or comparable authored identity, or
