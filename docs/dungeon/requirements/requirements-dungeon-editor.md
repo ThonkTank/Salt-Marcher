@@ -51,6 +51,21 @@ volume, and a 10-foot-clear default ceiling. The GM may later change height in
 It supports:
 
 - draw and reshape room and area geometry
+It supports two foundational geometry forms:
+
+- directly drawn anchored Areas whose geometry changes only through explicit GM
+  edit or removal
+- generated Paths between two or more endpoints or waypoints, including
+  corridor and stair authoring
+
+Both forms produce bounded, standable Room volume. Chambers, corridors, and
+stair spaces remain semantically equivalent for travel even when their
+authoring behavior differs. A resulting Room may be partitioned into navigation
+areas at meaningful internal decisions such as corridor junctions.
+
+Additional raster capabilities include:
+
+- draw and reshape room and area geometry
 - place and edit walls, doors, corridors, stairs, transitions, markers, traps,
   and other spatial objects
 - select authored objects, rooms, and areas for detailed inspection
