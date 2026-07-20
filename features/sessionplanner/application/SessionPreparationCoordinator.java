@@ -24,6 +24,7 @@ import features.sessiongeneration.api.SessionGenerationApi;
 import features.sessionplanner.api.PrepareSessionCommand;
 import features.sessionplanner.api.SessionPreparationSnapshot;
 import features.sessionplanner.api.SessionPreparationStatus;
+import features.sessionplanner.api.SessionPlannerAuthoredTarget;
 import features.sessionplanner.domain.session.SessionPlan;
 import features.sessionplanner.domain.session.repository.SessionPlanRepository;
 import features.party.api.PartyApi;
@@ -68,6 +69,7 @@ public final class SessionPreparationCoordinator {
     private final EncounterApi encounters;
     private final ExecutionLane cpuLane;
     private final ExecutionLane ioLane;
+    private final ExecutionLane authoredWriterLane;
     private final Diagnostics diagnostics;
     private long attemptSequence;
     private Attempt active;
@@ -81,6 +83,7 @@ public final class SessionPreparationCoordinator {
             EncounterApi encounters,
             ExecutionLane cpuLane,
             ExecutionLane ioLane,
+            ExecutionLane authoredWriterLane,
             Diagnostics diagnostics
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
@@ -91,19 +94,26 @@ public final class SessionPreparationCoordinator {
         this.encounters = Objects.requireNonNull(encounters, "encounters");
         this.cpuLane = Objects.requireNonNull(cpuLane, "cpuLane");
         this.ioLane = Objects.requireNonNull(ioLane, "ioLane");
+        this.authoredWriterLane = Objects.requireNonNull(authoredWriterLane, "authoredWriterLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
     synchronized void prepare(PrepareSessionCommand command) {
         Objects.requireNonNull(command, "command");
+        if (!targetsCurrentWorkspace(command.target())) {
+            return;
+        }
         Attempt attempt = new Attempt(++attemptSequence, command);
         active = attempt;
         publish(SessionPreparationStatus.GENERATING, "Session wird vorbereitet …",
-                workspace.current().sourceSessionId(), attempt.id, true);
+                command.target().sessionId(), attempt.id, true);
         dispatchIo(attempt, () -> loadSession(attempt), "Session konnte nicht geladen werden.");
     }
 
     synchronized void cancel() {
+        if (active == null || active.plannerCommitPointOfNoReturn) {
+            return;
+        }
         invalidateNow(SessionPreparationStatus.CANCELLED, "Vorbereitung abgebrochen.");
     }
 
@@ -111,10 +121,30 @@ public final class SessionPreparationCoordinator {
         invalidateNow(SessionPreparationStatus.IDLE, "");
     }
 
+    synchronized void invalidate(SessionPlannerAuthoredTarget target) {
+        Objects.requireNonNull(target, "target");
+        if (!targetsCurrentWorkspace(target) && !targetsActiveAttempt(target)) {
+            return;
+        }
+        invalidateNow(SessionPreparationStatus.IDLE, "");
+    }
+
+    private boolean targetsCurrentWorkspace(SessionPlannerAuthoredTarget target) {
+        return workspace.current().sourceSessionId() == target.sessionId()
+                && workspace.current().sourceSessionRevision() == target.expectedRevision();
+    }
+
+    private boolean targetsActiveAttempt(SessionPlannerAuthoredTarget target) {
+        if (active == null) {
+            return false;
+        }
+        return active.command.target().equals(target);
+    }
+
     private void loadSession(Attempt attempt) {
         Optional<SessionPlan> loaded;
         try {
-            loaded = repository.loadCurrent();
+            loaded = repository.loadById(attempt.command.target().sessionId());
         } catch (IllegalStateException exception) {
             scheduleCpu(attempt, () -> fail(attempt, "Session konnte nicht geladen werden.", exception),
                     "Session konnte nicht geladen werden.");
@@ -132,6 +162,10 @@ public final class SessionPreparationCoordinator {
             return;
         }
         SessionPlan session = loaded.orElseThrow();
+        if (session.revision().value() != attempt.command.target().expectedRevision()) {
+            invalid(attempt, "Session wurde geändert; die Vorbereitung wurde nicht übernommen.");
+            return;
+        }
         attempt.session = session;
         if (replacesAuthoredContent(session) && !attempt.command.replacementConfirmed()) {
             active = null;
@@ -396,10 +430,13 @@ public final class SessionPreparationCoordinator {
             return;
         }
         attempt.plannerCommitStartedNanos = System.nanoTime();
-        dispatchIo(attempt, () -> commitPlanner(attempt, command), "Session konnte nicht gespeichert werden.");
+        scheduleAuthoredCommit(attempt, () -> commitPlanner(attempt, command));
     }
 
     private void commitPlanner(Attempt attempt, CommitPreparedSessionCommand command) {
+        if (!isActive(attempt)) {
+            return;
+        }
         CommitPreparedSessionResult result;
         try {
             Optional<SessionPlan> current = repository.loadCurrent();
@@ -411,6 +448,9 @@ public final class SessionPreparationCoordinator {
                         "Session konnte nicht auf Änderungen geprüft werden.");
                 return;
             }
+            if (!enterPlannerCommit(attempt)) {
+                return;
+            }
             result = preparedSessions.commitPreparedSession(command);
         } catch (RuntimeException exception) {
             scheduleCpu(attempt, () -> fail(attempt, "Session konnte nicht gespeichert werden.", exception),
@@ -418,6 +458,14 @@ public final class SessionPreparationCoordinator {
             return;
         }
         scheduleCpu(attempt, () -> completePlannerCommit(attempt, result), "Session konnte nicht gespeichert werden.");
+    }
+
+    private void scheduleAuthoredCommit(Attempt attempt, Runnable work) {
+        try {
+            authoredWriterLane.execute(work);
+        } catch (RuntimeException exception) {
+            fail(attempt, "Session konnte nicht gespeichert werden.", exception);
+        }
     }
 
     private synchronized void completePlannerCommit(Attempt attempt, CommitPreparedSessionResult result) {
@@ -611,6 +659,16 @@ public final class SessionPreparationCoordinator {
         return active == attempt && attemptSequence == attempt.id;
     }
 
+    private synchronized boolean enterPlannerCommit(Attempt attempt) {
+        if (!isActive(attempt) || attempt.plannerCommitPointOfNoReturn) {
+            return false;
+        }
+        attempt.plannerCommitPointOfNoReturn = true;
+        publish(SessionPreparationStatus.SAVING, "Vorbereitete Session wird gespeichert …",
+                attempt.fingerprint.sessionId(), attempt.id, false);
+        return true;
+    }
+
     private void scheduleCallback(
             Attempt attempt,
             Runnable callback,
@@ -732,6 +790,7 @@ public final class SessionPreparationCoordinator {
         private Throwable generationCommitFailure;
         private CommittedGeneratedEncounterBatchResult encounterCommit;
         private Throwable encounterCommitFailure;
+        private boolean plannerCommitPointOfNoReturn;
 
         private Attempt(long id, PrepareSessionCommand command) {
             this.id = id;

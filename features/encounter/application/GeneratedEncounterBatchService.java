@@ -49,8 +49,14 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import platform.execution.ExecutionLane;
+import platform.diagnostics.DiagnosticId;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.Measurement;
+import platform.diagnostics.NoopDiagnostics;
 
 public final class GeneratedEncounterBatchService {
+
+    private static final DiagnosticId SUMMARY_READ = new DiagnosticId("encounter.saved-plan-summary.read");
 
     private static final String INVALID_MESSAGE = "Generated encounter batch is invalid.";
     private static final String UNRESOLVABLE_MESSAGE = "Generated encounter batch cannot be resolved.";
@@ -60,6 +66,7 @@ public final class GeneratedEncounterBatchService {
     private final GeneratedEncounterBatchRepository repository;
     private final ExecutionLane cpuLane;
     private final ExecutionLane ioLane;
+    private final Diagnostics diagnostics;
 
     public GeneratedEncounterBatchService(
             CreaturesApi creatures,
@@ -68,11 +75,23 @@ public final class GeneratedEncounterBatchService {
             ExecutionLane cpuLane,
             ExecutionLane ioLane
     ) {
+        this(creatures, activeParty, repository, cpuLane, ioLane, NoopDiagnostics.INSTANCE);
+    }
+
+    public GeneratedEncounterBatchService(
+            CreaturesApi creatures,
+            ActivePartyCompositionModel activeParty,
+            GeneratedEncounterBatchRepository repository,
+            ExecutionLane cpuLane,
+            ExecutionLane ioLane,
+            Diagnostics diagnostics
+    ) {
         this.creatures = java.util.Objects.requireNonNull(creatures, "creatures");
         this.activeParty = java.util.Objects.requireNonNull(activeParty, "activeParty");
         this.repository = java.util.Objects.requireNonNull(repository, "repository");
         this.cpuLane = java.util.Objects.requireNonNull(cpuLane, "cpuLane");
         this.ioLane = java.util.Objects.requireNonNull(ioLane, "ioLane");
+        this.diagnostics = java.util.Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
     public CompletionStage<PreparedGeneratedEncounterBatchResult> prepare(
@@ -166,8 +185,13 @@ public final class GeneratedEncounterBatchService {
             List<Integer> partyLevels
     ) {
         final List<EncounterPlan> plans;
+        long startedNanos = System.nanoTime();
         try {
-            plans = repository.loadPlansByIds(query.planIds());
+            GeneratedEncounterBatchRepository.PlanRead read = repository.loadPlansByIdsWithCount(query.planIds());
+            plans = read.plans();
+            diagnostics.measurement(new Measurement(
+                    SUMMARY_READ, 0L, Math.max(0L, System.nanoTime() - startedNanos),
+                    plans.size(), read.statementCount()));
         } catch (RuntimeException exception) {
             completion.complete(GeneratedEncounterPlanSummaryBatchResult.failure(
                     GeneratedEncounterBatchStatus.STORAGE_FAILURE, STORAGE_MESSAGE));

@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: Session Planner Feature
-Last Reviewed: 2026-07-18
+Last Reviewed: 2026-07-19
 Source of Truth: Session Planner structure, preparation orchestration,
 publication, concurrency, and quality decisions.
 
@@ -55,6 +55,7 @@ revision contains:
 - resolved participant summaries and budget
 - ordered scene summaries and selected-scene detail
 - linked Encounter summaries and structured generated rewards
+- the selected-scene saved-plan search request epoch and typed transient state
 - preparation status and stage progress
 - display-safe missing-reference and failure states
 
@@ -68,6 +69,27 @@ Publication is latest-revision-wins. One authored mutation or foreign-provider
 revision schedules at most one coalesced assembly. Scene, participant, controls,
 and state-panel views do not subscribe to separate planner projections.
 
+The reusable selected-scene inspector carries the published source Session
+revision into scene and manual-note drafts. Dirty scene and keyed note editors
+survive same-scene publications, including focus and caret. A control rebases its
+guard only while authoritative text still equals its loaded baseline; conflicting
+truth preserves the older guard so the next save rejects as stale. Matching
+coherent publication alone clears a submitted draft.
+
+Catalog switching sends at most one typed select command. When a scene draft is
+dirty, that command carries the guarded source edit; the authored lane saves it
+and switches the pointer without publishing an intermediate source workspace.
+
+Saved-plan search follows the same single-writer rule. JavaFX dispatches a
+typed query and only renders the search state inside
+`SessionPlannerWorkspaceSnapshot`; it does not filter cached plans. The
+publication coordinator owns the query epoch, publishes searching and terminal
+states, and accepts a completion only when the captured session identity,
+source revision, and selected scene still match. Underlength input is resolved
+locally with zero provider calls. Valid search hydrates the union of at most
+eight returned hit identities and the already-linked plan identities in one
+Encounter summary batch, then restores exact result order in memory.
+
 ## Publication Semantics
 
 The application publishes one immutable workspace value at a time. Each value
@@ -76,6 +98,14 @@ revision, and the preparation status that applies to that source revision.
 Assembly begins from a captured planner snapshot; foreign results are joined
 only if that capture is still current. Completion from a stale capture is
 discarded and cannot overwrite a newer publication.
+
+Authored intents carry a Session identity and source revision from the JavaFX
+event boundary through the serial authored lane. Generate binds this target
+before asynchronous work begins; preparation loads that exact root, preserves
+it through replacement confirmation, and rechecks it before the final commit.
+Search and preparation are invalidated only when that target matches their active source. A successful
+non-current mutation triggers a catalog reassembly against an authoritative
+Current read and retains the active Session's search and preparation state.
 
 An in-progress or failed preparation updates status around the last stable
 authored workspace. Only a successful final Session Planner commit may publish
@@ -138,11 +168,29 @@ implementation package or repository.
 - resource and SQLite work run on I/O execution; database transactions remain
   short and contain no generation search
 - no global serial lane encloses the whole preparation workflow
+- only the final active-attempt check, current Session identity/revision
+  recheck, synchronized Planner-commit point of no return, and
+  `commitPreparedSession` share the authored FIFO writer lane with ordinary
+  Planner mutations; command assembly and all foreign work remain outside it
 - each request has a cancellation token and captured fingerprint
 - a newer request, session switch, or relevant authored revision cancels or
   invalidates older work
 - late completion may contribute diagnostics but cannot publish or commit
   against a stale fingerprint
+- `saving` remains cancellable while the two immutable, idempotent foreign
+  commits finish; cancellation retains those artifacts and skips the Planner
+  write without compensation
+- after both foreign commits and command assembly, the coordinator submits the
+  final task to the authored writer lane; on that lane it first rechecks the
+  active attempt and current Session identity and revision, then enters one
+  synchronized final Planner-commit point of no return immediately before
+  `commitPreparedSession`
+- entering that boundary atomically verifies the attempt is still latest,
+  marks it non-cancellable, and republishes the same attempt and Session as
+  `saving` with cancellation disabled; failure to enter skips the Planner store
+- cancellation after that boundary is a strict no-op and cannot suppress the
+  Planner store's `ready`, `invalid`, or `failed` outcome; newer-attempt and
+  authored invalidation rules remain authoritative
 
 Stage timings record stable request identity, stage, duration, candidate count,
 and query count only. Diagnostics exclude authored text, creature payloads,
@@ -181,6 +229,14 @@ Measurable architecture targets are:
 - one workspace assembly performs one planner read and at most one batch read
   each from Party, Encounter, Session Generation, and World Planner, independent
   of scene, saved-plan, reward, slot, and roster-member cardinality
+- ordinary workspace assembly never reads the global Encounter saved-plan
+  catalog. Search reads one bounded root statement and publishes at most eight
+  hits; Encounter summary hydration uses a fixed six-statement temp-relation
+  read independent of result and roster cardinality
+- Session Generation reward hydration uses one connection-scoped temporary
+  request relation and five actual statement executions for non-empty batches,
+  independent of 1, 401, or 800 reward references; caller order, duplicates,
+  and missing identities are reconstructed in memory
 - the warmed reference fixture is two level-3 and two level-4 participants,
   `0.6` adventure days, and three encounters over 20 runs; the complete editable
   publication must satisfy the 2-second p95 product target

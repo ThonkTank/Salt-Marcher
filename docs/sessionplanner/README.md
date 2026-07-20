@@ -16,10 +16,6 @@ Source of Truth: Entry point and document map for the Session Planner feature.
 4. Read [Architecture](architecture/architecture-session-planner.md) for the
    preparation workflow, workspace snapshot, concurrency, and performance
    decisions.
-5. Read the temporary
-   [Greenfield Roadmap](delivery/roadmap-session-planner-greenfield.md) only
-   while implementing or reviewing the replacement. It owns sequence and
-   deletion gates, not durable behavior or architecture.
 
 ## Document Set
 
@@ -27,7 +23,6 @@ Source of Truth: Entry point and document map for the Session Planner feature.
 - [Domain](domain/domain-session-planner.md)
 - [Persistence Contract](contract/contract-session-planner-persistence.md)
 - [Architecture](architecture/architecture-session-planner.md)
-- [Temporary Greenfield Roadmap](delivery/roadmap-session-planner-greenfield.md)
 
 ## Neighboring Owners
 

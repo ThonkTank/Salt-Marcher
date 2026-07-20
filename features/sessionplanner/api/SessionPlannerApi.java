@@ -22,6 +22,10 @@ public interface SessionPlannerApi {
 
     void attachEncounter(AttachSessionEncounterCommand command);
 
+    void detachEncounter(DetachSessionEncounterCommand command);
+
+    void searchEncounterPlans(SearchSessionEncounterPlansCommand command);
+
     void removeEncounter(SessionPlannerEncounterCommand command);
 
     void moveEncounterUp(SessionPlannerEncounterCommand command);
@@ -39,6 +43,8 @@ public interface SessionPlannerApi {
     void clearRestGap(ClearSessionRestGapCommand command);
 
     void addManualLootNote(AddSessionManualLootNoteCommand command);
+
+    void updateManualLootNote(UpdateSessionManualLootNoteCommand command);
 
     void removeManualLootNote(RemoveSessionManualLootNoteCommand command);
 

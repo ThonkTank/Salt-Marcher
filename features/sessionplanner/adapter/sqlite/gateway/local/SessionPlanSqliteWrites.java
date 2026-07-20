@@ -30,13 +30,14 @@ final class SessionPlanSqliteWrites {
         }
     }
 
-    void deleteSession(Connection connection, long sessionId) throws SQLException {
+    boolean deleteSession(Connection connection, long sessionId, long expectedRevision) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
                 "DELETE FROM "
                         + SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE
-                        + " WHERE session_id = ?")) {
+                        + " WHERE session_id = ? AND revision = ?")) {
             statement.setLong(1, sessionId);
-            statement.executeUpdate();
+            statement.setLong(2, expectedRevision);
+            return statement.executeUpdate() == 1;
         }
     }
 
