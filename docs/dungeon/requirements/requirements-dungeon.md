@@ -149,6 +149,12 @@ doors, hatches, secret doors, and comparable forms share this Passage role. The
 Passage identity owns description and explicit binary passability; the Path
 owns route and travel properties.
 
+A true Dungeon exit is a special Passage referencing another Dungeon or an
+external campaign place. It owns direction, local description, passability, and
+optional added travel time. An opposite endpoint may initially be absent.
+Bidirectional transitions use two independently described and passable Passages
+that reference each other.
+
 The Dungeon capability includes:
 
 - Dungeon catalog management
