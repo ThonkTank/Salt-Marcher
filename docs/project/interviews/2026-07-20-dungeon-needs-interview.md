@@ -294,6 +294,12 @@ Dungeon-Hinweise, Erkennungsverhalten und später gegebenenfalls einen
 Tagesablauf. Die zugrunde liegende Encounter-Zusammensetzung und Monsterwerte
 bleiben mit dem vorhandenen Encounter-Feature verbunden.
 
+Ein konkreter Encounter beziehungsweise eine konkrete Monstergruppe darf nur
+eine aktuelle Dungeon-Platzierung besitzen. Soll dieselbe Zusammenstellung
+mehrfach vorkommen, kopiert der GM den Encounter und erhält unabhängige Gruppen.
+Spätere Mobilität verändert den Voxelanker derselben Gruppe, statt zusätzliche
+Platzierungen zu erzeugen.
+
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
 **Bestätigte Antwort:** Fest gezeichnete Flächen und dynamisch erzeugte Pfade.
