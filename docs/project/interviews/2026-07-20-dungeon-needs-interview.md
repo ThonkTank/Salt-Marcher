@@ -149,6 +149,30 @@ Diese Aussage beschreibt ein gewünschtes Nutzererlebnis und eine
 Verlustschutz-Garantie. Sie legt keinen technischen Speicheraufbau oder
 Zuordnungsalgorithmus fest.
 
+### Wie viele Räume und Volumen dürfen einander gleichzeitig zugeordnet sein?
+
+**Bestätigte Antwort:** Höchstens eins zu eins, mit unzugeordneten Zwischenständen.
+
+Ein Raum ist gleichzeitig höchstens einem Volumen zugeordnet und ein Volumen
+höchstens einem Raum. Sowohl reine, noch unbeschriebene Volumen als auch
+erhaltene Räume ohne aktuelle Geometriezuordnung sind zulässig.
+Navigationsbereiche unterteilen ein Volumen; Raumgruppen fassen mehrere Räume
+beziehungsweise Volumen zusammen.
+
+### Dürfen authored Inhalte wiederverwendet werden?
+
+**Bestätigte Richtung:** Ganze Inhalte oder ausgewählte Bestandteile kopieren
+und neu zuweisen.
+
+Der GM soll Räume, Raumbeschreibungen, Teile davon, Türen und vergleichbare
+authored Inhalte kopieren und einer anderen passenden Geometrie zuweisen können.
+So können beispielsweise zwei geometrisch getrennte Türen dieselben
+Ausgangsinhalte erhalten. Die Eins-zu-eins-Zuordnung einer Inhaltsidentität zu
+Geometrie verhindert nicht, daraus weitere Inhaltsidentitäten zu erzeugen.
+
+Noch offen ist, ob Kopien danach vollständig unabhängig sind oder optional mit
+einer gemeinsamen Vorlage verbunden bleiben.
+
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
 **Bestätigte Antwort:** Fest gezeichnete Flächen und dynamisch erzeugte Pfade.
