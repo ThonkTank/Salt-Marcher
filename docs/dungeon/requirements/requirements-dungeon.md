@@ -26,9 +26,11 @@ fiction and outcomes.
 
 ## Long-Term Capability Scope
 
+One Dungeon is one continuous spatial whole containing all of its rooms, surfaces, levels, and spatial content. It is not a collection of internal Dungeon maps. The raster map is a view of this whole, not a separate authored container. Only an actual exit may transition to another Dungeon or an external place.
+
 The Dungeon capability includes:
 
-- dungeon-map catalog management
+- Dungeon catalog management
 - square-cell, multi-level authored geometry
 - rooms, larger named room groups or areas, walls, doors, corridors, stairs,
   transitions, markers, and GM-authored traps
@@ -73,7 +75,7 @@ truth.
 - saved Dungeons survive restarts and application updates
 - migrations, backup, and restore protect authored data
 - import MUST preview identity conflicts and missing external references
-- the GM may create new identities or map references before import
+- the GM may create new identities or map missing external references before import
 - import MUST NOT silently overwrite existing authored content
 - a portable Dungeon package contains authored Dungeon truth and stable
   references, but not party or actor positions, travel logs, or undo history
@@ -106,12 +108,12 @@ model.
 
 ## Quality Needs
 
-- very large sparse Dungeons remain responsive; a qualification map contains at
+- very large sparse Dungeons remain responsive; a qualification Dungeon contains at
   least 100,000 authored cells
 - camera and hover work complete within a 16 ms p95 budget
 - editor preview completes within a 50 ms p95 budget
 - work scales with the visible or touched region rather than total off-screen
-  map content
+  Dungeon content
 - loading and committing expose distinct visible states
 - new authored object or tool families, a travel/time/event-rule change, and a
   UI or persistence adapter replacement remain local and do not require changes
