@@ -167,6 +167,20 @@ Große Bearbeitungsdialoge ermöglichen die schnelle Pflege einzelner Räume.
 Raumbeschreibungen werden hybrid aus aktueller Geometrie und dauerhaft
 GM-authored Beschreibungsattributen erzeugt.
 
+### Welche Darstellungen sind gleichwertige Authoring-Einstiege?
+
+**Bestätigte Antwort:** Graph und Raster gleichwertig, Dungeon-Key sekundär.
+
+Ein neuer Dungeon kann gleichermaßen im abstrakten Beziehungsgraphen oder in
+der Rasterkarte begonnen und weiterentwickelt werden. Beide sind echte
+Authoring-Einstiege und beeinflussen dieselbe Dungeon-Struktur synchron in
+beide Richtungen. Keine der beiden Darstellungen ist lediglich eine
+nachgelagerte Analyse- oder Präsentationsansicht.
+
+Der Dungeon-Key ist demgegenüber ein sekundäres Feinschliff-Werkzeug. Er dient
+vor allem dazu, Beschreibungen und anderen textförmigen Inhalt nach der
+strukturellen Arbeit fokussiert auszuarbeiten.
+
 ### Wie funktionieren die Nummern im klassischen Dungeon-Key?
 
 **Bestätigte Antwort:** Stabil und editierbar.
