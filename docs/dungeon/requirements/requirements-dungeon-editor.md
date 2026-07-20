@@ -308,7 +308,13 @@ passability or action rules.
 - Encounters are initially authored as stationary Features; optional mobile
   Encounter behavior is deferred
 - only Traps and Encounters initially support automatic proximity activation
-- a Trap may own optional trigger fields separate from its Feature anchor
+- a Trap may own zero or more trigger fields separate from its Feature anchor
+- each trigger field is an arbitrary GM-marked voxel set rather than a required
+  radius or fixed shape
+- trigger voxels remain associated with their Volumes and follow Volume movement
+  or deformation; one Trap may span fields in several adjacent Volumes
+- trigger fields only notify and interrupt travel, and do not alter passability
+  or decide fictional outcomes
 - Encounter detection initially uses a radius derived from monster statistics;
   its exact perception behavior remains subject to later validation
 - Loot and Curiosity Features do not activate solely because the party is nearby
