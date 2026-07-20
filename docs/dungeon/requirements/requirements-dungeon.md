@@ -57,7 +57,11 @@ Every Dungeon Feature initially has an exact 3D voxel position anchored within
 one Volume. Moving or reshaping the Volume carries its Feature anchors with it.
 If destructive geometry makes reliable mapping impossible, the Feature remains
 preserved without an anchor until reassigned. Encounters are initially
-stationary; optional mobility is a later capability.
+stationary; optional mobility is a later capability. Only Traps and Encounters
+initially support automatic proximity activation. Traps may define optional
+trigger fields separate from their anchors. Encounter detection provisionally
+uses a radius derived from monster statistics. Loot and Curiosities do not
+activate from proximity alone.
 
 The GM may copy a complete Room, door, or comparable authored identity, or
 selected parts of its authored content, and assign the resulting content to
