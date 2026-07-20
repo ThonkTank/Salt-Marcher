@@ -315,6 +315,12 @@ Die Dungeon-Platzierung ergänzt den exakten Voxelanker und lokalen
 Dungeon-Kontext. Die fachlichen Loot-Inhalte bleiben im gemeinsamen
 Loot-Feature.
 
+Ein konkretes Loot-Objekt besitzt höchstens einen aktuellen Dungeon-Anker.
+Encounter und Session Generation dürfen dasselbe Objekt referenzieren, ohne
+weitere räumliche Exemplare zu erzeugen. Soll gleichartiger Loot an mehreren
+Orten existieren, erstellt der GM unabhängige Kopien. Eine spätere Bewegung
+ändert den vorhandenen Anker.
+
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
 **Bestätigte Antwort:** Fest gezeichnete Flächen und dynamisch erzeugte Pfade.
