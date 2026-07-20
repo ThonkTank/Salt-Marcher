@@ -321,6 +321,29 @@ pro Diagonale oder abwechselnd 5 und 10 Fuß werden nicht verwendet. Die
 weiteren Regeln des D&D-5e-2014-Profils, insbesondere Terrain-, Kletter- und
 Bewegungsmodifikatoren, werden auf diese präzise Weglänge angewandt.
 
+### Welche Zustände von Türen, Durchlässen und Terrain steuern Reiseoptionen?
+
+**Bestätigte Antwort:** Explizite Passierbarkeit statt abgeleiteter
+Entscheidungslogik.
+
+SaltMarcher leitet aus Beschreibungen wie blockiert, verschlossen oder schwierig
+keine eigene Entscheidung darüber ab, was die Gruppe tun darf. Eine Tür oder
+ein Durchlass besitzt für die Wegfindung ausschließlich einen expliziten
+binären Zustand: passierbar oder nicht passierbar. Beschreibende Merkmale
+werden dem GM angezeigt und beeinflussen Formatierung und Platzierung in der
+dynamisch erzeugten Raumbeschreibung, erzeugen aber keine zusätzlichen
+Passierbarkeitsbedingungen.
+
+Ein Schloss kann wie eine Falle als schlanker GM-authored Auslöser modelliert
+werden. Beispielsweise öffnet SaltMarcher einen Dialog mit »Schloss,
+Lockpicking DC 16«. Der GM handelt die Situation frei am Spieltisch ab und
+schließt den Dialog anschließend, um die Reise fortzusetzen, oder bricht die
+Reise ab. SaltMarcher simuliert weder den Versuch noch seinen Ausgang.
+
+Schwieriges Terrain, Klettern und vergleichbare Bewegungsfaktoren verändern
+regelkonform die Reisezeit. Diese Berechnung erfolgt während der Reise
+unsichtbar im Hintergrund und verlangt keine zusätzliche Entscheidung des GM.
+
 ### Wie handeln getrennte Charaktere oder Gruppen in der Exploration?
 
 **Bestätigte Richtung:** Vom GM geführte Explorationsinitiative mit
@@ -530,11 +553,9 @@ Requirements überführt.
 
 Die nächsten bereits vorbereiteten Fragen sind:
 
-1. Welche Zustände von Türen, Durchlässen und Terrain beeinflussen sichtbare oder
-   ausführbare Reiseoptionen?
-2. Welche Bearbeitungen müssen direkt in Rasterkarte, Beziehungsgraph und
+1. Welche Bearbeitungen müssen direkt in Rasterkarte, Beziehungsgraph und
    Raumliste möglich sein, statt dort nur synchron sichtbar zu werden?
-3. Wie bleibt die zellgenaue Exploration klar von einer vollständigen
+2. Wie bleibt die zellgenaue Exploration klar von einer vollständigen
    taktischen Battlemap und Encounter-Aktionsökonomie abgegrenzt?
 
 Danach sind mindestens folgende Bedarfsfragen offen:
