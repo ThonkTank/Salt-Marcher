@@ -321,6 +321,22 @@ vergleichbare Entscheidungspunkte dürfen als navigierbare Bereiche dienen. Sie
 strukturieren Reiseoptionen und Darstellung, ersetzen aber nicht die
 zellgenaue Laufzeitposition.
 
+### Wie bleibt Exploration von einer taktischen Battlemap abgegrenzt?
+
+**Bestätigte Antwort:** Räumliche Exploration ohne Kampfaktionsökonomie.
+
+Das Dungeon-Feature verwaltet zellgenaue Positionen, Heading, Gruppen, Wege,
+Reisezeit, einfache Monsterbewegungen, Wahrnehmung, Spuren und ausgelöste
+Ereignisse. Wenn ein Encounter, eine Falle oder eine andere offen aufzulösende
+Situation eintritt, stoppt die Reise. Der GM löst sie am Spieltisch
+beziehungsweise in einem dafür zuständigen anderen Feature.
+
+Das Dungeon-Feature modelliert keine Angriffe, Zauber oder Kampfaktionen, keine
+Trefferpunkte, Schäden oder Conditions als eigene Dungeon-Wahrheit, keine
+taktische Initiative oder Sechs-Sekunden-Aktionsökonomie und keine
+automatisierte Auflösung von Fallen, Encountern oder sonstigen freien
+Handlungen. Spieler steuern ihre Charaktere nicht direkt.
+
 ## Reise, Zeit, Ereignisse und Protokoll
 
 ### Wie weit geht die Dungeon-Reisefähigkeit?
@@ -631,10 +647,10 @@ Nach jeder Owner-Antwort ist dieses Protokoll zu aktualisieren; erst die
 abschließend bestätigte Interpretation wird in die kanonischen englischen
 Requirements überführt.
 
-Die nächste bereits vorbereitete Frage ist:
-
-1. Wie bleibt die zellgenaue Exploration klar von einer vollständigen
-   taktischen Battlemap und Encounter-Aktionsökonomie abgegrenzt?
+Die vorbereiteten Bedarfsfragen sind beantwortet. Vor der Überführung in die
+kanonischen Requirements folgt nur noch der dokumentbasierte Vollständigkeits-
+und Widerspruchscheck; dabei werden keine technischen Entscheidungen an den
+Owner zurückdelegiert.
 
 Danach sind mindestens folgende Bedarfsfragen offen:
 
@@ -652,6 +668,7 @@ Danach sind mindestens folgende Bedarfsfragen offen:
 - Wie bleibt die zellgenaue Exploration klar von einer vollständigen
   taktischen Battlemap und Encounter-Aktionsökonomie abgegrenzt?
 
-Ergebnis 1 ist erst abgeschlossen, wenn diese Entscheidungen sowie daraus
-abgeleitete lösungsneutrale technische und qualitative Bedürfnisse vom Owner
-bestätigt und in den kanonischen Requirements verankert sind.
+Die Owner-Befragung für Ergebnis 1 ist abgeschlossen. Ergebnis 1 ist endgültig
+abgeschlossen, sobald die bestätigten Entscheidungen widerspruchsfrei als
+lösungsneutrale technische und qualitative Bedürfnisse in den kanonischen
+Requirements verankert und dort abschließend geprüft sind.
