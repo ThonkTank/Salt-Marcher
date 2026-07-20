@@ -14,13 +14,16 @@ import features.worldplanner.domain.world.WorldNpcLifecycleState;
 import features.worldplanner.domain.world.WorldPlannerState;
 import features.worldplanner.domain.world.port.WorldPlannerReferencePort;
 import features.worldplanner.domain.world.repository.WorldPlannerRepository;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
+
 import java.nio.file.Path;
 import java.sql.DriverManager;
 import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteDatabase;
 
 final class WorldDispositionTest {
 
@@ -72,7 +75,10 @@ final class WorldDispositionTest {
         createLegacyVersionOneDatabase(databasePath);
 
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            WorldPlannerState migrated = new SqliteWorldPlannerRepository(database).load();
+            WorldPlannerState migrated = new SqliteWorldPlannerRepository(
+                                    TestFeatureStores.store(
+                                            database,
+                                            SqliteWorldPlannerRepository.storeDefinition())).load();
 
             assertEquals(0, migrated.npcs().getFirst().dispositionModifier());
             assertEquals(0, migrated.factions().getFirst().disposition());
@@ -82,7 +88,8 @@ final class WorldDispositionTest {
 
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
                 var statement = connection.prepareStatement(
-                        "SELECT version FROM sm_schema_versions WHERE owner = 'world-planner'")) {
+                                "SELECT version FROM sm_schema_versions WHERE owner ="
+                                    + " 'world-planner'")) {
             try (var result = statement.executeQuery()) {
                 assertEquals(true, result.next());
                 assertEquals(2, result.getInt(1));
@@ -118,26 +125,38 @@ final class WorldDispositionTest {
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + path);
                 var statement = connection.createStatement()) {
             statement.execute("PRAGMA user_version = 1");
-            statement.execute("CREATE TABLE sm_schema_versions (owner TEXT PRIMARY KEY, version INTEGER NOT NULL)");
+            statement.execute(
+                    "CREATE TABLE sm_schema_versions (owner TEXT PRIMARY KEY, version INTEGER NOT"
+                        + " NULL)");
             statement.execute("INSERT INTO sm_schema_versions(owner, version) VALUES ('world-planner', 1)");
-            statement.execute("CREATE TABLE world_planner_npcs (npc_id INTEGER PRIMARY KEY, "
-                    + "display_name TEXT NOT NULL, creature_statblock_id INTEGER NOT NULL, "
-                    + "appearance_notes TEXT NOT NULL, behavior_notes TEXT NOT NULL, history_notes TEXT NOT NULL, "
-                    + "general_notes TEXT NOT NULL, status TEXT NOT NULL)");
-            statement.execute("CREATE TABLE world_planner_factions (faction_id INTEGER PRIMARY KEY, "
-                    + "display_name TEXT NOT NULL, notes TEXT NOT NULL, primary_encounter_table_id INTEGER NOT NULL)");
-            statement.execute("CREATE TABLE world_planner_faction_npcs (faction_id INTEGER NOT NULL, "
-                    + "npc_id INTEGER NOT NULL, sort_order INTEGER NOT NULL, PRIMARY KEY(faction_id, npc_id))");
-            statement.execute("CREATE TABLE world_planner_faction_inventory_limits (faction_id INTEGER NOT NULL, "
-                    + "creature_statblock_id INTEGER NOT NULL, finite INTEGER NOT NULL, quantity INTEGER NOT NULL, "
-                    + "PRIMARY KEY(faction_id, creature_statblock_id))");
+            statement.execute(
+                    "CREATE TABLE world_planner_npcs (npc_id INTEGER PRIMARY KEY, display_name TEXT"
+                        + " NOT NULL, creature_statblock_id INTEGER NOT NULL, appearance_notes TEXT"
+                        + " NOT NULL, behavior_notes TEXT NOT NULL, history_notes TEXT NOT NULL,"
+                        + " general_notes TEXT NOT NULL, status TEXT NOT NULL)");
+            statement.execute(
+                    "CREATE TABLE world_planner_factions (faction_id INTEGER PRIMARY KEY,"
+                        + " display_name TEXT NOT NULL, notes TEXT NOT NULL,"
+                        + " primary_encounter_table_id INTEGER NOT NULL)");
+            statement.execute(
+                    "CREATE TABLE world_planner_faction_npcs (faction_id INTEGER NOT NULL, npc_id"
+                        + " INTEGER NOT NULL, sort_order INTEGER NOT NULL, PRIMARY KEY(faction_id,"
+                        + " npc_id))");
+            statement.execute(
+                    "CREATE TABLE world_planner_faction_inventory_limits (faction_id INTEGER NOT"
+                        + " NULL, creature_statblock_id INTEGER NOT NULL, finite INTEGER NOT NULL,"
+                        + " quantity INTEGER NOT NULL, PRIMARY KEY(faction_id,"
+                        + " creature_statblock_id))");
             statement.execute("CREATE TABLE world_planner_locations (location_id INTEGER PRIMARY KEY, "
                     + "display_name TEXT NOT NULL, notes TEXT NOT NULL)");
-            statement.execute("CREATE TABLE world_planner_location_factions (location_id INTEGER NOT NULL, "
-                    + "faction_id INTEGER NOT NULL, sort_order INTEGER NOT NULL, PRIMARY KEY(location_id, faction_id))");
-            statement.execute("CREATE TABLE world_planner_location_encounter_tables (location_id INTEGER NOT NULL, "
-                    + "encounter_table_id INTEGER NOT NULL, sort_order INTEGER NOT NULL, "
-                    + "PRIMARY KEY(location_id, encounter_table_id))");
+            statement.execute(
+                    "CREATE TABLE world_planner_location_factions (location_id INTEGER NOT NULL,"
+                        + " faction_id INTEGER NOT NULL, sort_order INTEGER NOT NULL, PRIMARY"
+                        + " KEY(location_id, faction_id))");
+            statement.execute(
+                    "CREATE TABLE world_planner_location_encounter_tables (location_id INTEGER NOT"
+                        + " NULL, encounter_table_id INTEGER NOT NULL, sort_order INTEGER NOT NULL,"
+                        + " PRIMARY KEY(location_id, encounter_table_id))");
             statement.execute("INSERT INTO world_planner_npcs VALUES "
                     + "(1, 'Rivalin', 10, '', '', '', '', 'ACTIVE')");
             statement.execute("INSERT INTO world_planner_factions VALUES "

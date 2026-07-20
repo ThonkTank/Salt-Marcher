@@ -10,7 +10,6 @@ architecture, contracts, proof history, or feature status beyond these links.
 
 ## Active Migrations
 
-- [Catalog Greenfield Roadmap](../../catalog/delivery/roadmap-catalog-greenfield.md)
 - [Dungeon Greenfield Roadmap](../../dungeon/delivery/roadmap-dungeon-greenfield.md)
 
 Each roadmap is temporary and is removed after its own finish criteria are

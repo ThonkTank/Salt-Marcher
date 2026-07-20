@@ -99,6 +99,15 @@ final class SessionPlannerSchemaMigrator {
         }
     }
 
+    void repairTargetSchema(Connection connection) throws SQLException {
+        ensureSchema(connection);
+        addGeneratedRewards(connection);
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_MANUAL_LOOT_NOTES_SQL);
+            statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_MANUAL_LOOT_NOTES_ORDER_INDEX_SQL);
+        }
+    }
+
     private static void addSceneTitleColumnIfMissing(Connection connection, Statement statement) throws SQLException {
         if (!SqliteSchemaColumnSupport.hasColumn(
                 connection,

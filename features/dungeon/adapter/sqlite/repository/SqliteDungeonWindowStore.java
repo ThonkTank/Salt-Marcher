@@ -16,21 +16,17 @@ import features.dungeon.application.authored.port.DungeonWindowIndex;
 import features.dungeon.application.authored.port.DungeonWindowRequest;
 import features.dungeon.application.authored.port.DungeonContinuationPage;
 import features.dungeon.application.authored.port.DungeonContinuationPageRequest;
+import platform.persistence.FeatureStoreHandle;
 import java.util.Objects;
 import java.util.Optional;
-import platform.persistence.SqliteDatabase;
 
 /** Dedicated SQLite adapter for sparse windows and exact identity closure. */
 public final class SqliteDungeonWindowStore implements DungeonWindowContentSource {
 
     private final DungeonSqliteWindowGateway gateway;
 
-    public SqliteDungeonWindowStore() {
-        this(new DungeonSqliteWindowGateway());
-    }
-
-    public SqliteDungeonWindowStore(SqliteDatabase database) {
-        this(new DungeonSqliteWindowGateway(database));
+    public SqliteDungeonWindowStore(FeatureStoreHandle store) {
+        this(new DungeonSqliteWindowGateway(store));
     }
 
     SqliteDungeonWindowStore(DungeonSqliteWindowGateway gateway) {

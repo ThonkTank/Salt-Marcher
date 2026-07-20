@@ -1,28 +1,32 @@
 package features.hex;
 
-import java.util.Objects;
-import platform.diagnostics.Diagnostics;
-import platform.diagnostics.NoopDiagnostics;
-import platform.execution.DirectExecutionLane;
-import platform.execution.ExecutionLane;
-import platform.persistence.SqliteDatabase;
-import platform.ui.DirectUiDispatcher;
-import platform.ui.UiDispatcher;
-import shell.api.ShellContribution;
 import features.hex.adapter.javafx.hexmap.HexMapContribution;
 import features.hex.adapter.sqlite.repository.SqliteHexMapRepository;
 import features.hex.api.HexEditorApi;
-import features.hex.application.HexEditorWorkspace;
-import features.hex.domain.map.repository.HexMapRepository;
 import features.hex.api.HexEditorModel;
 import features.hex.api.HexTravelApi;
 import features.hex.api.HexTravelModel;
 import features.hex.application.HexEditorApplicationService;
 import features.hex.application.HexEditorPublishedState;
+import features.hex.application.HexEditorWorkspace;
 import features.hex.application.HexTravelApplicationService;
 import features.hex.application.HexTravelPublishedState;
+import features.hex.domain.map.repository.HexMapRepository;
 import features.party.api.PartyApi;
 import features.party.api.PartyTravelPositionsModel;
+
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.NoopDiagnostics;
+import platform.execution.DirectExecutionLane;
+import platform.execution.ExecutionLane;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+import platform.ui.DirectUiDispatcher;
+import platform.ui.UiDispatcher;
+
+import shell.api.ShellContribution;
+
+import java.util.Objects;
 
 public final class HexServiceAssembly {
 
@@ -30,6 +34,10 @@ public final class HexServiceAssembly {
     private final HexTravelApplicationService travelApplicationService;
     private final HexEditorModel editorModel;
     private final HexTravelModel travelModel;
+
+    public static FeatureStoreDefinition storeDefinition() {
+        return SqliteHexMapRepository.storeDefinition();
+    }
 
     public HexServiceAssembly(
             HexMapRepository repository,
@@ -46,7 +54,7 @@ public final class HexServiceAssembly {
     }
 
     public static Component create(
-            SqliteDatabase database,
+            FeatureStoreHandle store,
             PartyTravelPositionsModel partyTravelPositions,
             PartyApi party,
             ExecutionLane executionLane,
@@ -54,7 +62,7 @@ public final class HexServiceAssembly {
             Diagnostics diagnostics
     ) {
         HexServiceAssembly assembly = new HexServiceAssembly(
-                new SqliteHexMapRepository(Objects.requireNonNull(database, "database")),
+                new SqliteHexMapRepository(store),
                 partyTravelPositions,
                 party,
                 executionLane,

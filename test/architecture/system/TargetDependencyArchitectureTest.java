@@ -2,6 +2,8 @@ package architecture.system;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+
 import architecture.AnalyzeMainClasses;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;
@@ -10,6 +12,9 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
+
+import platform.persistence.FeatureStoreMaintenance;
+import platform.persistence.SqliteDatabase;
 
 @AnalyzeMainClasses
 public final class TargetDependencyArchitectureTest {
@@ -25,6 +30,44 @@ public final class TargetDependencyArchitectureTest {
                     .should(respectTargetDependencyDirection())
                     .allowEmptyShould(true);
 
+    @ArchTest
+    static final ArchRule featuresNeverReceiveTheGlobalDatabaseLifecycle =
+            noClasses()
+                    .that()
+                    .resideInAPackage("features..")
+                    .should()
+                    .dependOnClassesThat()
+                    .areAssignableTo(SqliteDatabase.class);
+
+    @ArchTest
+    static final ArchRule onlyItemsCompositionAndSqliteMayReceiveStoreMaintenance =
+            noClasses()
+                    .that()
+                    .resideInAPackage("features..")
+                    .and()
+                    .resideOutsideOfPackages("features.items", "features.items.adapter.sqlite..")
+                    .should()
+                    .dependOnClassesThat()
+                    .areAssignableTo(FeatureStoreMaintenance.class);
+
+    @ArchTest
+    static final ArchRule desktopBootstrapNeverReceivesStoreMaintenance =
+            noClasses()
+                    .that()
+                    .haveFullyQualifiedName("app.AppBootstrap")
+                    .should()
+                    .dependOnClassesThat()
+                    .areAssignableTo(FeatureStoreMaintenance.class);
+
+    @ArchTest
+    static final ArchRule itemsDesktopAssemblyNeverReceivesStoreMaintenance =
+            noClasses()
+                    .that()
+                    .haveFullyQualifiedName("features.items.ItemsServiceAssembly")
+                    .should()
+                    .dependOnClassesThat()
+                    .areAssignableTo(FeatureStoreMaintenance.class);
+
     private static ArchCondition<JavaClass> respectTargetDependencyDirection() {
         return new ArchCondition<>("respect the permanent app, shell, platform, and feature boundaries") {
             @Override
@@ -33,16 +76,17 @@ public final class TargetDependencyArchitectureTest {
                 if (source.featureArea == FeatureArea.INVALID) {
                     events.add(SimpleConditionEvent.violated(
                             item,
-                            item.getName() + " must reside in a feature api, domain, application, "
-                                    + "adapter/sqlite, adapter/resource, adapter/http, adapter/javafx, "
-                                    + "or exact feature-root package"));
+                            item.getName() + " must reside in a feature api, domain, application,"
+                                            + " adapter/sqlite, adapter/resource, adapter/http,"
+                                            + " adapter/javafx, or exact feature-root package"));
                 }
                 if (source.root == TargetRoot.PLATFORM
                         && !TargetPackage.isValidPlatformPackage(item.getPackageName())) {
                     events.add(SimpleConditionEvent.violated(
                             item,
-                            item.getName() + " must reside in platform.execution, platform.persistence, "
-                                    + "platform.diagnostics, platform.state, or platform.ui"));
+                            item.getName() + " must reside in platform.execution,"
+                                            + " platform.persistence, platform.diagnostics,"
+                                            + " platform.state, or platform.ui"));
                 }
                 for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
                     JavaClass targetClass = dependency.getTargetClass();

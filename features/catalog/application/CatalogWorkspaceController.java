@@ -1,19 +1,19 @@
 package features.catalog.application;
 
-import features.catalog.application.WorldReferenceCatalogState.FactionRow;
-import features.catalog.application.WorldReferenceCatalogState.LocationRow;
-import features.catalog.application.WorldReferenceCatalogState.NpcRow;
-import features.catalog.application.WorldReferenceCatalogState.ReferenceSectionState;
 import features.creatures.api.CreatureCatalogRow;
 import features.encounter.api.OpenSavedEncounterPlanResult;
 import features.encounter.api.SavedEncounterPlanSummary;
 import features.items.api.ItemsCatalogApi;
-import java.util.List;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import platform.ui.UiDispatcher;
 
 /** Owns seven retained BrowseSessions and activates exactly the selected one. */
@@ -31,18 +31,18 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
     private final BrowseSession<MonsterCatalogQuery, CreatureCatalogRow, Long> monsters;
     private final BrowseSession<ItemsCatalogQuery, ItemsCatalogApi.ItemRow, String> items;
     private final BrowseSession<NoCatalogQuery, SavedEncounterPlanSummary, Long> savedEncounters;
-    private final BrowseSession<TextCatalogQuery, NpcRow, Long> npcs;
-    private final BrowseSession<TextCatalogQuery, FactionRow, Long> factions;
-    private final BrowseSession<TextCatalogQuery, LocationRow, Long> locations;
-    private final BrowseSession<TextCatalogQuery, EncounterTableCatalogState.EncounterTableRow, Long>
-            encounterTables;
-    private final List<CatalogLifecycle> sessions;
+    private final BrowseSession<TextCatalogQuery, NpcCatalogRow, Long> npcs;
+    private final BrowseSession<TextCatalogQuery, FactionCatalogRow, Long> factions;
+    private final BrowseSession<TextCatalogQuery, LocationCatalogRow, Long> locations;
+    private final BrowseSession<TextCatalogQuery, EncounterTableCatalogRow, Long> encounterTables;
+    private final Map<CatalogSectionId, SectionRuntime> sections;
     private final CatalogWorkspacePublication publication;
     private CatalogSectionId activeSection = CatalogSectionId.MONSTERS;
-    private SavedEncounterCatalogState.Confirmation savedConfirmation =
-            SavedEncounterCatalogState.Confirmation.none();
+    private CatalogConfirmation<Long> savedConfirmation = CatalogConfirmation.none();
+    private String monsterActionMessage = "";
     private String savedActionMessage = "";
     private String itemsActionMessage = "";
+    private String encounterTableActionMessage = "";
     private long savedActionEpoch;
     private long itemsActionEpoch;
     private long revision;
@@ -71,7 +71,43 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
         factions = session(factionDefinition);
         locations = session(locationDefinition);
         encounterTables = session(encounterTableDefinition);
-        sessions = List.of(monsters, items, savedEncounters, npcs, factions, locations, encounterTables);
+        EnumMap<CatalogSectionId, SectionRuntime> runtimes = new EnumMap<>(CatalogSectionId.class);
+        add(runtimes, runtime(monsterDefinition, monsters,
+                () -> commands(CatalogSectionId.MONSTERS, monsters, this::monsterAction,
+                        action -> unavailableCreate(CatalogSectionId.MONSTERS, action),
+                        ignored -> { }, ignored -> { }, () -> { }),
+                () -> monsterActionMessage, CatalogConfirmation::none));
+        add(runtimes, runtime(itemsDefinition, items,
+                () -> commands(CatalogSectionId.ITEMS, items, this::itemAction,
+                        action -> unavailableCreate(CatalogSectionId.ITEMS, action),
+                        ignored -> { }, ignored -> { }, this::itemSelectionChanged),
+                () -> itemsActionMessage, CatalogConfirmation::none));
+        add(runtimes, runtime(savedEncounterDefinition, savedEncounters,
+                () -> commands(CatalogSectionId.SAVED_ENCOUNTERS, savedEncounters,
+                        this::savedEncounterAction,
+                        action -> unavailableCreate(CatalogSectionId.SAVED_ENCOUNTERS, action),
+                        this::confirmSavedEncounter,
+                        this::cancelSavedEncounter, this::savedEncounterSelectionChanged),
+                () -> savedActionMessage, () -> savedConfirmation));
+        add(runtimes, runtime(npcDefinition, npcs,
+                () -> commands(CatalogSectionId.NPCS, npcs, this::npcAction, this::npcSectionAction,
+                        ignored -> { }, ignored -> { }, () -> { }),
+                () -> "", CatalogConfirmation::none));
+        add(runtimes, runtime(factionDefinition, factions,
+                () -> commands(CatalogSectionId.FACTIONS, factions, this::factionAction,
+                        this::factionSectionAction, ignored -> { }, ignored -> { }, () -> { }),
+                () -> "", CatalogConfirmation::none));
+        add(runtimes, runtime(locationDefinition, locations,
+                () -> commands(CatalogSectionId.LOCATIONS, locations, this::locationAction,
+                        this::locationSectionAction, ignored -> { }, ignored -> { }, () -> { }),
+                () -> "", CatalogConfirmation::none));
+        add(runtimes, runtime(encounterTableDefinition, encounterTables,
+                () -> commands(CatalogSectionId.ENCOUNTER_TABLES, encounterTables,
+                        this::encounterTableAction,
+                        action -> unavailableCreate(CatalogSectionId.ENCOUNTER_TABLES, action),
+                        ignored -> { }, ignored -> { }, () -> { }),
+                () -> encounterTableActionMessage, CatalogConfirmation::none));
+        sections = Map.copyOf(runtimes);
         publication = new CatalogWorkspacePublication(snapshot(), dispatcher);
     }
 
@@ -107,128 +143,6 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
         } finally {
             transitioning = false;
             publish();
-        }
-    }
-
-    public void acceptMonsterIntent(MonsterCatalogIntent intent) {
-        if (intent == null || !isActive(CatalogSectionId.MONSTERS)) {
-            return;
-        }
-        switch (intent) {
-            case MonsterCatalogIntent.ChangeFilters change ->
-                    monsters.editDraft(monsters.state().draft().withFilters(change.filters()));
-            case MonsterCatalogIntent.ChangeSort change ->
-                    monsters.editDraft(monsters.state().draft().withSort(change.sort()));
-            case MonsterCatalogIntent.Submit ignored -> monsters.submit();
-            case MonsterCatalogIntent.ShiftPage shift -> monsters.shiftPage(shift.direction());
-            case MonsterCatalogIntent.SelectCreature select -> monsters.select(select.creatureId());
-            case MonsterCatalogIntent.OpenCreature open -> monsters.find(open.creatureId())
-                    .ifPresent(row -> monsterDefinition.open(row.id()));
-            case MonsterCatalogIntent.AddToEncounter add -> monsters.find(add.creatureId())
-                    .ifPresent(row -> monsterDefinition.addToEncounter(row.id()));
-            case MonsterCatalogIntent.AddToScene add -> monsters.find(add.creatureId())
-                    .ifPresent(row -> monsterDefinition.addToScene(row.id()));
-        }
-    }
-
-    public void acceptItemsIntent(ItemsCatalogIntent intent) {
-        if (intent == null || !isActive(CatalogSectionId.ITEMS)) {
-            return;
-        }
-        switch (intent) {
-            case ItemsCatalogIntent.ChangeDraft change ->
-                    items.editDraft(items.state().draft().withFilters(change.draft()));
-            case ItemsCatalogIntent.Search ignored -> items.submit();
-            case ItemsCatalogIntent.ShiftPage shift -> items.shiftPage(shift.direction());
-            case ItemsCatalogIntent.SelectItem select -> {
-                items.select(select.sourceKey());
-                itemsActionEpoch++;
-                itemsActionMessage = "";
-                publish();
-            }
-            case ItemsCatalogIntent.OpenItem open -> openItem(open.sourceKey());
-        }
-    }
-
-    public void acceptSavedEncounterIntent(SavedEncounterCatalogIntent intent) {
-        if (intent == null || !isActive(CatalogSectionId.SAVED_ENCOUNTERS)) {
-            return;
-        }
-        switch (intent) {
-            case SavedEncounterCatalogIntent.SelectPlan select -> {
-                savedEncounters.select(select.planId());
-                savedActionEpoch++;
-                savedConfirmation = savedConfirmation.clear();
-                savedActionMessage = "";
-                publish();
-            }
-            case SavedEncounterCatalogIntent.OpenPlan open -> openSavedEncounter(open.planId(), false);
-            case SavedEncounterCatalogIntent.ConfirmOpen confirm -> {
-                if (matchesConfirmation(confirm.confirmationRevision(), confirm.planId())) {
-                    openSavedEncounter(confirm.planId(), true);
-                }
-            }
-            case SavedEncounterCatalogIntent.CancelOpen cancel -> {
-                if (matchesConfirmation(cancel.confirmationRevision(), cancel.planId())) {
-                    savedActionEpoch++;
-                    savedConfirmation = savedConfirmation.clear();
-                    savedActionMessage = "Öffnen abgebrochen.";
-                    publish();
-                }
-            }
-        }
-    }
-
-    public void acceptWorldReferenceIntent(WorldReferenceCatalogIntent intent) {
-        if (intent == null || !acceptsWorldIntent(intent)) {
-            return;
-        }
-        switch (intent) {
-            case WorldReferenceCatalogIntent.ChangeNpcQuery change ->
-                    npcs.editDraft(new TextCatalogQuery(change.query()));
-            case WorldReferenceCatalogIntent.SubmitNpcQuery ignored -> npcs.submit();
-            case WorldReferenceCatalogIntent.SelectNpc select -> npcs.select(select.npcId());
-            case WorldReferenceCatalogIntent.OpenNpc open -> npcs.find(open.npcId())
-                    .ifPresent(row -> npcDefinition.open(row.npcId()));
-            case WorldReferenceCatalogIntent.CreateNpc ignored -> npcDefinition.create();
-            case WorldReferenceCatalogIntent.AddNpcToEncounter add -> npcs.find(add.npcId())
-                    .ifPresent(row -> npcDefinition.addToEncounter(row.npcId()));
-            case WorldReferenceCatalogIntent.AddNpcToScene add -> npcs.find(add.npcId())
-                    .ifPresent(row -> npcDefinition.addToScene(row.npcId()));
-            case WorldReferenceCatalogIntent.ChangeFactionQuery change ->
-                    factions.editDraft(new TextCatalogQuery(change.query()));
-            case WorldReferenceCatalogIntent.SubmitFactionQuery ignored -> factions.submit();
-            case WorldReferenceCatalogIntent.SelectFaction select -> factions.select(select.factionId());
-            case WorldReferenceCatalogIntent.OpenFaction open -> factions.find(open.factionId())
-                    .ifPresent(row -> factionDefinition.open(row.factionId()));
-            case WorldReferenceCatalogIntent.CreateFaction ignored -> factionDefinition.create();
-            case WorldReferenceCatalogIntent.UseFactionAsEncounterSource use -> factions.find(use.factionId())
-                    .ifPresent(row -> factionDefinition.useAsEncounterSource(row.factionId()));
-            case WorldReferenceCatalogIntent.ChangeLocationQuery change ->
-                    locations.editDraft(new TextCatalogQuery(change.query()));
-            case WorldReferenceCatalogIntent.SubmitLocationQuery ignored -> locations.submit();
-            case WorldReferenceCatalogIntent.SelectLocation select -> locations.select(select.locationId());
-            case WorldReferenceCatalogIntent.OpenLocation open -> locations.find(open.locationId())
-                    .ifPresent(row -> locationDefinition.open(row.locationId()));
-            case WorldReferenceCatalogIntent.CreateLocation ignored -> locationDefinition.create();
-            case WorldReferenceCatalogIntent.UseLocationAsEncounterSource use -> locations.find(use.locationId())
-                    .ifPresent(row -> locationDefinition.useAsEncounterSource(row.locationId()));
-            case WorldReferenceCatalogIntent.SetFocusedSceneLocation set -> locations.find(set.locationId())
-                    .ifPresent(row -> locationDefinition.setFocusedSceneLocation(row.locationId()));
-        }
-    }
-
-    public void acceptEncounterTableIntent(EncounterTableCatalogIntent intent) {
-        if (intent == null || !isActive(CatalogSectionId.ENCOUNTER_TABLES)) {
-            return;
-        }
-        switch (intent) {
-            case EncounterTableCatalogIntent.ChangeQuery change ->
-                    encounterTables.editDraft(new TextCatalogQuery(change.query()));
-            case EncounterTableCatalogIntent.SubmitQuery ignored -> encounterTables.submit();
-            case EncounterTableCatalogIntent.SelectTable select -> encounterTables.select(select.tableId());
-            case EncounterTableCatalogIntent.UseAsEncounterSource use -> encounterTables.find(use.tableId())
-                    .ifPresent(row -> encounterTableDefinition.useAsEncounterSource(row.tableId()));
         }
     }
 
@@ -275,7 +189,7 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
             } catch (RuntimeException | Error deactivateFailure) {
                 failure = deactivateFailure;
             }
-            for (CatalogLifecycle session : sessions) {
+            for (CatalogLifecycle session : sections.values()) {
                 try {
                     session.close();
                 } catch (RuntimeException | Error closeFailure) {
@@ -299,6 +213,129 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
         if (failure instanceof Error error) {
             throw error;
         }
+    }
+
+    private void monsterAction(CatalogActionId action, Long key) {
+        monsters.find(key).ifPresent(row -> {
+            switch (action) {
+                case OPEN -> monsterDefinition.open(row.id());
+                case ADD_TO_ENCOUNTER -> monsterDefinition.addToEncounter(row.id());
+                case ADD_TO_SCENE -> monsterDefinition.addToScene(row.id());
+                default -> { }
+            }
+        });
+    }
+
+    private void itemAction(CatalogActionId action, String key) {
+        if (action == CatalogActionId.OPEN) {
+            openItem(key);
+        }
+    }
+
+    private void itemSelectionChanged() {
+        itemsActionEpoch++;
+        itemsActionMessage = "";
+        publish();
+    }
+
+    private void savedEncounterAction(CatalogActionId action, Long key) {
+        if (action == CatalogActionId.OPEN) {
+            openSavedEncounter(key, false);
+        }
+    }
+
+    private void savedEncounterSelectionChanged() {
+        savedActionEpoch++;
+        savedConfirmation = savedConfirmation.clear();
+        savedActionMessage = "";
+        publish();
+    }
+
+    private void confirmSavedEncounter(CatalogConfirmation<Long> confirmation) {
+        if (matchesConfirmation(confirmation)) {
+            confirmation.key().ifPresent(key -> openSavedEncounter(key, true));
+        }
+    }
+
+    private void cancelSavedEncounter(CatalogConfirmation<Long> confirmation) {
+        if (matchesConfirmation(confirmation)) {
+            savedActionEpoch++;
+            savedConfirmation = savedConfirmation.clear();
+            savedActionMessage = "Öffnen abgebrochen.";
+            publish();
+        }
+    }
+
+    private void npcAction(CatalogActionId action, Long key) {
+        npcs.find(key).ifPresent(row -> {
+            switch (action) {
+                case OPEN -> npcDefinition.open(row.npcId());
+                case ADD_TO_ENCOUNTER -> npcDefinition.addToEncounter(row.npcId());
+                case ADD_TO_SCENE -> npcDefinition.addToScene(row.npcId());
+                default -> { }
+            }
+        });
+    }
+
+    private void npcSectionAction(CatalogActionId action) {
+        if (action == CatalogActionId.CREATE) {
+            npcDefinition.create();
+        }
+    }
+
+    private void factionAction(CatalogActionId action, Long key) {
+        factions.find(key).ifPresent(row -> {
+            if (action == CatalogActionId.OPEN) {
+                factionDefinition.open(row.factionId());
+            } else if (action == CatalogActionId.USE_AS_ENCOUNTER_SOURCE) {
+                factionDefinition.useAsEncounterSource(row.factionId());
+            }
+        });
+    }
+
+    private void factionSectionAction(CatalogActionId action) {
+        if (action == CatalogActionId.CREATE) {
+            factionDefinition.create();
+        }
+    }
+
+    private void locationAction(CatalogActionId action, Long key) {
+        locations.find(key).ifPresent(row -> {
+            switch (action) {
+                case OPEN -> locationDefinition.open(row.locationId());
+                case USE_AS_ENCOUNTER_SOURCE -> locationDefinition.useAsEncounterSource(row.locationId());
+                case SET_FOCUSED_SCENE_LOCATION -> locationDefinition.setFocusedSceneLocation(row.locationId());
+                default -> { }
+            }
+        });
+    }
+
+    private void locationSectionAction(CatalogActionId action) {
+        if (action == CatalogActionId.CREATE) {
+            locationDefinition.create();
+        }
+    }
+
+    private void encounterTableAction(CatalogActionId action, Long key) {
+        if (action == CatalogActionId.USE_AS_ENCOUNTER_SOURCE) {
+            encounterTables.find(key).ifPresent(row ->
+                    encounterTableDefinition.useAsEncounterSource(row.tableId()));
+        }
+    }
+
+    private void unavailableCreate(CatalogSectionId section, CatalogActionId action) {
+        if (action != CatalogActionId.CREATE) {
+            return;
+        }
+        String message = "Erstellen ist für " + section.label() + " noch nicht verfügbar.";
+        switch (section) {
+            case MONSTERS -> monsterActionMessage = message;
+            case ITEMS -> itemsActionMessage = message;
+            case SAVED_ENCOUNTERS -> savedActionMessage = message;
+            case ENCOUNTER_TABLES -> encounterTableActionMessage = message;
+            default -> throw new IllegalArgumentException("Create route is available for " + section);
+        }
+        publish();
     }
 
     private void openItem(String sourceKey) {
@@ -346,8 +383,8 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
         if (failure != null || result == null || result.planId() > 0L && result.planId() != plan.planId()) {
             savedActionMessage = "Encounter konnte nicht geöffnet werden.";
         } else if (result.status() == OpenSavedEncounterPlanResult.Status.CONFIRMATION_REQUIRED && !confirmed) {
-            savedConfirmation = new SavedEncounterCatalogState.Confirmation(
-                    savedConfirmation.revision() + 1L, plan.planId(), plan.name(), true);
+            savedConfirmation = new CatalogConfirmation<>(
+                    savedConfirmation.revision() + 1L, Optional.of(plan.planId()), plan.name(), true);
             savedActionMessage = result.message();
         } else if (result.status() == OpenSavedEncounterPlanResult.Status.CONFIRMATION_REQUIRED) {
             savedActionMessage = "Encounter konnte nach Bestätigung nicht geöffnet werden.";
@@ -357,53 +394,68 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
         publish();
     }
 
-    private boolean matchesConfirmation(long confirmationRevision, long planId) {
-        return savedConfirmation.required()
-                && savedConfirmation.revision() == confirmationRevision
-                && savedConfirmation.planId() == planId;
+    private boolean matchesConfirmation(CatalogConfirmation<Long> confirmation) {
+        return savedConfirmation.required() && savedConfirmation.equals(confirmation);
     }
 
     private boolean isActive(CatalogSectionId section) {
         return active && !closed && activeSection == section;
     }
 
-    private boolean acceptsWorldIntent(WorldReferenceCatalogIntent intent) {
-        CatalogSectionId section;
-        if (intent instanceof WorldReferenceCatalogIntent.ChangeNpcQuery
-                || intent instanceof WorldReferenceCatalogIntent.SubmitNpcQuery
-                || intent instanceof WorldReferenceCatalogIntent.SelectNpc
-                || intent instanceof WorldReferenceCatalogIntent.OpenNpc
-                || intent instanceof WorldReferenceCatalogIntent.CreateNpc
-                || intent instanceof WorldReferenceCatalogIntent.AddNpcToEncounter
-                || intent instanceof WorldReferenceCatalogIntent.AddNpcToScene) {
-            section = CatalogSectionId.NPCS;
-        } else if (intent instanceof WorldReferenceCatalogIntent.ChangeFactionQuery
-                || intent instanceof WorldReferenceCatalogIntent.SubmitFactionQuery
-                || intent instanceof WorldReferenceCatalogIntent.SelectFaction
-                || intent instanceof WorldReferenceCatalogIntent.OpenFaction
-                || intent instanceof WorldReferenceCatalogIntent.CreateFaction
-                || intent instanceof WorldReferenceCatalogIntent.UseFactionAsEncounterSource) {
-            section = CatalogSectionId.FACTIONS;
-        } else {
-            section = CatalogSectionId.LOCATIONS;
-        }
-        return isActive(section);
-    }
-
     private <Q, R, K> BrowseSession<Q, R, K> session(CatalogSectionDefinition<Q, R, K> definition) {
         return new BrowseSession<>(definition, dispatcher, debounceScheduler, this::sectionChanged);
     }
 
+    private <Q, R, K> CatalogSectionCommands<Q, K> commands(
+            CatalogSectionId id,
+            BrowseSession<Q, R, K> session,
+            BiConsumer<CatalogActionId, K> rowAction,
+            Consumer<CatalogActionId> sectionAction,
+            Consumer<CatalogConfirmation<K>> confirm,
+            Consumer<CatalogConfirmation<K>> cancel,
+            Runnable selectionChanged
+    ) {
+        return new CatalogSectionCommands<>(
+                draft -> runActive(id, () -> session.editDraft(draft)),
+                draft -> runActive(id, () -> session.commitDraft(draft)),
+                () -> runActive(id, session::submit),
+                sortOrder -> runActive(id, () -> session.sort(sortOrder)),
+                direction -> runActive(id, () -> session.shiftPage(direction)),
+                key -> runActive(id, () -> {
+                    session.select(key.orElse(null));
+                    selectionChanged.run();
+                }),
+                (action, key) -> runActive(id, () -> rowAction.accept(action, key)),
+                action -> runActive(id, () -> sectionAction.accept(action)),
+                confirmation -> runActive(id, () -> confirm.accept(confirmation)),
+                confirmation -> runActive(id, () -> cancel.accept(confirmation)));
+    }
+
+    private void runActive(CatalogSectionId section, Runnable command) {
+        if (isActive(section)) {
+            Objects.requireNonNull(command, "command").run();
+        }
+    }
+
+    private <Q, R, K> SectionRuntime runtime(
+            CatalogSectionDefinition<Q, R, K> definition,
+            BrowseSession<Q, R, K> session,
+            Supplier<CatalogSectionCommands<Q, K>> commands,
+            Supplier<String> actionMessage,
+            Supplier<CatalogConfirmation<K>> confirmation
+    ) {
+        return new TypedSectionRuntime<>(definition, session, commands, actionMessage, confirmation);
+    }
+
+    private static void add(Map<CatalogSectionId, SectionRuntime> sections, SectionRuntime runtime) {
+        CatalogSectionId id = runtime.snapshot().id();
+        if (sections.put(id, runtime) != null) {
+            throw new IllegalArgumentException("Duplicate Catalog section runtime: " + id);
+        }
+    }
+
     private CatalogLifecycle session(CatalogSectionId section) {
-        return switch (section) {
-            case MONSTERS -> monsters;
-            case ITEMS -> items;
-            case SAVED_ENCOUNTERS -> savedEncounters;
-            case NPCS -> npcs;
-            case FACTIONS -> factions;
-            case LOCATIONS -> locations;
-            case ENCOUNTER_TABLES -> encounterTables;
-        };
+        return sections.get(Objects.requireNonNull(section, "section"));
     }
 
     private void sectionChanged() {
@@ -417,44 +469,50 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
     }
 
     private CatalogWorkspaceState snapshot() {
-        CatalogSectionState<MonsterCatalogQuery, CreatureCatalogRow, Long> monster = monsters.state();
-        MonsterCatalogQuery monsterDraft = monster.draft();
-        MonsterCatalogState monsterState = new MonsterCatalogState(
-                monster.revision(), monsterDraft.filters(), monsterDraft.options(), monsterDraft.sort(),
-                monster.pageSize(), monster.pageOffset(), monster.totalCount(),
-                monster.selectedKey().orElse(0L), monster.result(),
-                monsterDraft.encounterTables(), monsterDraft.factions(), monsterDraft.locations());
+        return new CatalogWorkspaceState(++revision, sections.get(activeSection).snapshot());
+    }
 
-        CatalogSectionState<ItemsCatalogQuery, ItemsCatalogApi.ItemRow, String> item = items.state();
-        ItemsCatalogState itemState = new ItemsCatalogState(
-                item.revision(), item.draft().filters(), item.draft().options(), item.result(),
-                item.selectedKey().orElse(""), item.pageSize(), item.pageOffset(), item.totalCount(),
-                itemsActionMessage);
+    private interface SectionRuntime extends CatalogLifecycle {
+        CatalogActiveSection snapshot();
+    }
 
-        CatalogSectionState<NoCatalogQuery, SavedEncounterPlanSummary, Long> saved = savedEncounters.state();
-        SavedEncounterCatalogState savedState = new SavedEncounterCatalogState(
-                saved.revision(), saved.result(), saved.selectedKey().orElse(0L),
-                savedConfirmation, savedActionMessage);
+    private static final class TypedSectionRuntime<Q, R, K> implements SectionRuntime {
+        private final CatalogSectionDefinition<Q, R, K> definition;
+        private final BrowseSession<Q, R, K> session;
+        private final Supplier<CatalogSectionCommands<Q, K>> commands;
+        private final Supplier<String> actionMessage;
+        private final Supplier<CatalogConfirmation<K>> confirmation;
 
-        CatalogSectionState<TextCatalogQuery, NpcRow, Long> npc = npcs.state();
-        CatalogSectionState<TextCatalogQuery, FactionRow, Long> faction = factions.state();
-        CatalogSectionState<TextCatalogQuery, LocationRow, Long> location = locations.state();
-        WorldReferenceCatalogState worldState = new WorldReferenceCatalogState(
-                Math.max(npc.revision(), Math.max(faction.revision(), location.revision())),
-                new ReferenceSectionState<>(npc.result(), npc.selectedKey().orElse(0L), npc.draft().text()),
-                new ReferenceSectionState<>(
-                        faction.result(), faction.selectedKey().orElse(0L), faction.draft().text()),
-                new ReferenceSectionState<>(
-                        location.result(), location.selectedKey().orElse(0L), location.draft().text()),
-                monsterDraft.factions(), monsterDraft.locations());
+        private TypedSectionRuntime(
+                CatalogSectionDefinition<Q, R, K> definition,
+                BrowseSession<Q, R, K> session,
+                Supplier<CatalogSectionCommands<Q, K>> commands,
+                Supplier<String> actionMessage,
+                Supplier<CatalogConfirmation<K>> confirmation
+        ) {
+            this.definition = Objects.requireNonNull(definition, "definition");
+            this.session = Objects.requireNonNull(session, "session");
+            this.commands = Objects.requireNonNull(commands, "commands");
+            this.actionMessage = Objects.requireNonNull(actionMessage, "actionMessage");
+            this.confirmation = Objects.requireNonNull(confirmation, "confirmation");
+        }
 
-        CatalogSectionState<TextCatalogQuery, EncounterTableCatalogState.EncounterTableRow, Long> table =
-                encounterTables.state();
-        EncounterTableCatalogState tableState = new EncounterTableCatalogState(
-                table.revision(), table.result(), table.selectedKey().orElse(0L), table.draft().text(),
-                monsterDraft.encounterTables());
-        return new CatalogWorkspaceState(
-                ++revision, activeSection, monsterState, itemState, savedState, worldState, tableState);
+        @Override public CatalogActiveSection snapshot() {
+            return CatalogActiveSection.of(new CatalogSectionBinding<>(
+                    definition, session.state(), commands.get(), actionMessage.get(), confirmation.get()));
+        }
+
+        @Override public void activate() {
+            session.activate();
+        }
+
+        @Override public void deactivate() {
+            session.deactivate();
+        }
+
+        @Override public void close() {
+            session.close();
+        }
     }
 
     private static final class DebounceThreadFactory implements ThreadFactory {

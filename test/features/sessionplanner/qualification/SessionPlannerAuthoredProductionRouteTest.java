@@ -45,6 +45,7 @@ import platform.execution.DirectExecutionLane;
 import platform.execution.ExecutionLane;
 import platform.execution.SerialExecutionLane;
 import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
 import platform.ui.DirectUiDispatcher;
 
 /** Real temporary-SQLite proof for guarded authored commands and atomic catalog operations. */
@@ -300,17 +301,25 @@ final class SessionPlannerAuthoredProductionRouteTest {
         private static ProductionRoute open(Path path) {
             SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE);
             ExecutionLane authored = new SerialExecutionLane(NoopDiagnostics.INSTANCE);
+            var stores = TestFeatureStores.stores(
+                    database,
+                    CreaturesServiceAssembly.storeDefinition(),
+                    EncounterTableServiceAssembly.storeDefinition(),
+                    PartyServiceAssembly.storeDefinition(),
+                    EncounterServiceAssembly.storeDefinition(),
+                    SqliteSessionPlanRepository.storeDefinition(),
+                    SessionGenerationServiceAssembly.storeDefinition());
             var creatures = CreaturesServiceAssembly.create(
-                    database, authored, DirectExecutionLane.INSTANCE,
+                    stores.get("creatures"), authored, DirectExecutionLane.INSTANCE,
                     DirectUiDispatcher.INSTANCE, NoopDiagnostics.INSTANCE);
             var tables = EncounterTableServiceAssembly.create(
-                    database, authored, DirectUiDispatcher.INSTANCE,
+                    stores.get("encounter-table"), authored, DirectUiDispatcher.INSTANCE,
                     NoopDiagnostics.INSTANCE);
             var party = PartyServiceAssembly.create(
-                    database, authored, DirectExecutionLane.INSTANCE,
+                    stores.get("party"), authored, DirectExecutionLane.INSTANCE,
                     DirectUiDispatcher.INSTANCE, NoopDiagnostics.INSTANCE);
             var encounters = EncounterServiceAssembly.create(
-                    database,
+                    stores.get("encounter"),
                     creatures.application(), creatures.detail(), creatures.encounterCandidates(),
                     tables.application(), tables.candidates(), null,
                     party.application(), party.activeParty(), party.activeComposition(),
@@ -318,17 +327,17 @@ final class SessionPlannerAuthoredProductionRouteTest {
                     authored, DirectExecutionLane.INSTANCE,
                     DirectExecutionLane.INSTANCE, DirectUiDispatcher.INSTANCE,
                     NoopDiagnostics.INSTANCE);
-            SqliteSessionPlanRepository sessions = new SqliteSessionPlanRepository(database);
+            SqliteSessionPlanRepository sessions = new SqliteSessionPlanRepository(stores.get("session-planner"));
             SessionPlannerServiceAssembly planner = new SessionPlannerServiceAssembly(
                     sessions, sessions, sessions, party.application(), encounters.application(),
                     encounters.savedPlans(), null,
                     SessionGenerationServiceAssembly.create(
-                            database, DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE,
+                            stores.get("session-generation"), DirectExecutionLane.INSTANCE,
+                            DirectExecutionLane.INSTANCE,
                             NoopDiagnostics.INSTANCE),
                     authored, DirectExecutionLane.INSTANCE,
                     DirectExecutionLane.INSTANCE, DirectUiDispatcher.INSTANCE,
                     NoopDiagnostics.INSTANCE);
-            database.prepareRegisteredStores();
             PartyServiceAssembly.start(party);
             encounters.start();
             ProductionRoute route = new ProductionRoute(database, sessions, planner, authored);

@@ -172,6 +172,11 @@ owner-approved backup boundary.
 
 ## Error Contract
 
+Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
+The current owner target is v4. V4 idempotently repairs the structural indexes
+and tables promised by v1-v3 before signature validation; legacy placeholder
+content remains migrated exactly once by v3.
+
 Validation errors identify the invalid command field or invariant without
 echoing authored content. Failure messages are display-safe and contain no SQL,
 exception text, paths, generated item payloads, or authored notes. A failure

@@ -1,18 +1,21 @@
 package features.encounter.adapter.sqlite.gateway.local;
 
+import features.encounter.adapter.sqlite.model.EncounterPlanCreatureRecord;
+import features.encounter.adapter.sqlite.model.EncounterPlanRecord;
+import features.encounter.adapter.sqlite.model.EncounterPlanSnapshotRecord;
+import features.encounter.adapter.sqlite.model.EncounterPersistenceSchema;
+import features.encounter.application.GeneratedEncounterBatchRepository;
+
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+import platform.persistence.SqliteMigration;
+import platform.persistence.SqliteSchemaValidator;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteConnectionSource;
-import platform.persistence.SqliteDatabase;
-import platform.persistence.SqliteMigration;
-import features.encounter.adapter.sqlite.model.EncounterPlanCreatureRecord;
-import features.encounter.adapter.sqlite.model.EncounterPlanRecord;
-import features.encounter.adapter.sqlite.model.EncounterPlanSnapshotRecord;
-import features.encounter.application.GeneratedEncounterBatchRepository;
 
 public final class SqliteEncounterLocalGateway {
 
@@ -22,26 +25,144 @@ public final class SqliteEncounterLocalGateway {
         }
     }
 
-    private final SqliteConnectionSource connections;
+    private static final String OWNER = "encounter";
+    private final FeatureStoreHandle connections;
     private final EncounterPlanSqliteStore store;
     private final GeneratedEncounterBatchSqliteStore generatedBatches;
     private final EncounterPlanBatchReadSqliteStore batchReads;
     private final EncounterPlanSearchSqliteStore searches;
 
-    public SqliteEncounterLocalGateway() {
-        this(SqliteDatabase.defaultDatabase(
-                SqliteDatabase.DEFAULT_DATABASE_FILE_NAME,
-                NoopDiagnostics.INSTANCE));
-    }
-
-    public SqliteEncounterLocalGateway(SqliteDatabase database) {
+    public static FeatureStoreDefinition storeDefinition() {
         EncounterSchemaMigrator schemaMigrator = new EncounterSchemaMigrator();
-        this.connections = Objects.requireNonNull(database, "database").connections(
-                "encounter",
+        SqliteSchemaValidator targetSchema = SqliteSchemaValidator.builder()
+                .table(EncounterPersistenceSchema.ENCOUNTER_PLANS)
+                .primaryKey(EncounterPersistenceSchema.ENCOUNTER_PLANS.name(), "plan_id")
+                .table(EncounterPersistenceSchema.ENCOUNTER_PLAN_CREATURES)
+                .primaryKey(EncounterPersistenceSchema.ENCOUNTER_PLAN_CREATURES.name(), "plan_id", "creature_id")
+                .table(EncounterPersistenceSchema.GENERATED_ENCOUNTER_PLAN_BATCHES_TABLE_NAME,
+                        "engine_version", "generation_id", "preparation_id", "batch_fingerprint", "encounter_count")
+                .primaryKey(EncounterPersistenceSchema.GENERATED_ENCOUNTER_PLAN_BATCHES_TABLE_NAME,
+                        "engine_version", "generation_id")
+                .table(EncounterPersistenceSchema.GENERATED_ENCOUNTER_PLAN_ORIGINS_TABLE_NAME,
+                        "engine_version", "generation_id", "encounter_number", "batch_order", "spec_fingerprint",
+                        "roster_fingerprint", "plan_id")
+                .primaryKey(EncounterPersistenceSchema.GENERATED_ENCOUNTER_PLAN_ORIGINS_TABLE_NAME,
+                        "engine_version", "generation_id", "encounter_number")
+                .table("encounter_runtime_meta", "singleton_id", "source_revision", "focused_context_id")
+                .primaryKey("encounter_runtime_meta", "singleton_id")
+                .table("encounter_runtime_contexts",
+                        "context_id", "mode", "status", "location_id", "initial_plan_id", "active_saved_plan_id",
+                        "next_undo_token", "current_turn_index", "round_number", "target_difficulty",
+                        "balance_level", "amount_value", "diversity_level", "builder_world_location_id",
+                        "result_defeated_count", "result_eligible_xp", "result_per_player_xp",
+                        "result_gold_summary", "result_loot_detail", "result_award_status", "result_xp_awarded",
+                        "result_can_award_xp", "result_party_size")
+                .primaryKey("encounter_runtime_contexts", "context_id")
+                .table("encounter_runtime_party", "context_id", "sort_order", "party_member_id")
+                .primaryKey("encounter_runtime_party", "context_id", "sort_order")
+                .foreignKey("encounter_runtime_party", "encounter_runtime_contexts", "CASCADE",
+                        SqliteSchemaValidator.reference("context_id", "context_id"))
+                .table("encounter_runtime_npcs",
+                        "context_id", "sort_order", "world_npc_id", "statblock_id", "role")
+                .primaryKey("encounter_runtime_npcs", "context_id", "sort_order")
+                .foreignKey("encounter_runtime_npcs", "encounter_runtime_contexts", "CASCADE",
+                        SqliteSchemaValidator.reference("context_id", "context_id"))
+                .table("encounter_runtime_builder_values",
+                        "context_id", "value_kind", "sort_order", "text_value", "integer_key", "integer_value")
+                .primaryKey("encounter_runtime_builder_values", "context_id", "value_kind", "sort_order")
+                .foreignKey("encounter_runtime_builder_values", "encounter_runtime_contexts", "CASCADE",
+                        SqliteSchemaValidator.reference("context_id", "context_id"))
+                .table("encounter_runtime_builder_state",
+                        "context_id", "selected_alternative_index", "generated_adjusted_xp", "generated_difficulty",
+                        "generated_title", "generation_history_present", "dirty")
+                .primaryKey("encounter_runtime_builder_state", "context_id")
+                .foreignKey("encounter_runtime_builder_state", "encounter_runtime_contexts", "CASCADE",
+                        SqliteSchemaValidator.reference("context_id", "context_id"))
+                .table("encounter_runtime_generation_advisories", "context_id", "sort_order", "advisory")
+                .primaryKey("encounter_runtime_generation_advisories", "context_id", "sort_order")
+                .foreignKey("encounter_runtime_generation_advisories", "encounter_runtime_contexts", "CASCADE",
+                        SqliteSchemaValidator.reference("context_id", "context_id"))
+                .table("encounter_runtime_generated_alternatives",
+                        "context_id", "sort_order", "title", "difficulty_label", "adjusted_xp")
+                .primaryKey("encounter_runtime_generated_alternatives", "context_id", "sort_order")
+                .foreignKey("encounter_runtime_generated_alternatives", "encounter_runtime_contexts", "CASCADE",
+                        SqliteSchemaValidator.reference("context_id", "context_id"))
+                .table("encounter_runtime_generated_alternative_advisories",
+                        "context_id", "alternative_order", "sort_order", "advisory")
+                .primaryKey("encounter_runtime_generated_alternative_advisories",
+                        "context_id", "alternative_order", "sort_order")
+                .foreignKey("encounter_runtime_generated_alternative_advisories",
+                        "encounter_runtime_generated_alternatives", "CASCADE",
+                        SqliteSchemaValidator.reference("context_id", "context_id"),
+                        SqliteSchemaValidator.reference("alternative_order", "sort_order"))
+                .table("encounter_runtime_generated_alternative_roster",
+                        "context_id", "alternative_order", "sort_order", "row_id", "creature_id", "world_npc_id",
+                        "name", "challenge_rating", "xp", "hp", "armor_class", "initiative_bonus", "creature_type",
+                        "encounter_role", "creature_count")
+                .primaryKey("encounter_runtime_generated_alternative_roster",
+                        "context_id", "alternative_order", "sort_order")
+                .foreignKey("encounter_runtime_generated_alternative_roster",
+                        "encounter_runtime_generated_alternatives", "CASCADE",
+                        SqliteSchemaValidator.reference("context_id", "context_id"),
+                        SqliteSchemaValidator.reference("alternative_order", "sort_order"))
+                .table("encounter_runtime_generated_alternative_roster_tags",
+                        "context_id", "alternative_order", "roster_order", "sort_order", "tag")
+                .primaryKey("encounter_runtime_generated_alternative_roster_tags",
+                        "context_id", "alternative_order", "roster_order", "sort_order")
+                .foreignKey("encounter_runtime_generated_alternative_roster_tags",
+                        "encounter_runtime_generated_alternative_roster", "CASCADE",
+                        SqliteSchemaValidator.reference("context_id", "context_id"),
+                        SqliteSchemaValidator.reference("alternative_order", "alternative_order"),
+                        SqliteSchemaValidator.reference("roster_order", "sort_order"))
+                .table("encounter_runtime_roster",
+                        "context_id", "sort_order", "row_id", "creature_id", "world_npc_id", "name",
+                        "challenge_rating", "xp", "hp", "armor_class", "initiative_bonus", "creature_type",
+                        "encounter_role", "creature_count")
+                .primaryKey("encounter_runtime_roster", "context_id", "sort_order")
+                .foreignKey("encounter_runtime_roster", "encounter_runtime_contexts", "CASCADE",
+                        SqliteSchemaValidator.reference("context_id", "context_id"))
+                .table("encounter_runtime_roster_tags", "context_id", "roster_order", "sort_order", "tag")
+                .primaryKey("encounter_runtime_roster_tags", "context_id", "roster_order", "sort_order")
+                .foreignKey("encounter_runtime_roster_tags", "encounter_runtime_roster", "CASCADE",
+                        SqliteSchemaValidator.reference("context_id", "context_id"),
+                        SqliteSchemaValidator.reference("roster_order", "sort_order"))
+                .table("encounter_runtime_initiative",
+                        "context_id", "sort_order", "row_id", "label", "kind", "initiative")
+                .primaryKey("encounter_runtime_initiative", "context_id", "sort_order")
+                .foreignKey("encounter_runtime_initiative", "encounter_runtime_contexts", "CASCADE",
+                        SqliteSchemaValidator.reference("context_id", "context_id"))
+                .table("encounter_runtime_combatants",
+                        "context_id", "sort_order", "combatant_id", "name", "kind", "creature_id", "world_npc_id",
+                        "current_hp", "max_hp", "armor_class", "initiative", "combatant_count", "xp", "detail",
+                        "loot", "turn_order")
+                .primaryKey("encounter_runtime_combatants", "context_id", "sort_order")
+                .foreignKey("encounter_runtime_combatants", "encounter_runtime_contexts", "CASCADE",
+                        SqliteSchemaValidator.reference("context_id", "context_id"))
+                .table("encounter_runtime_result_enemies",
+                        "context_id", "sort_order", "name", "creature_id", "world_npc_id", "status", "hp_loss", "xp",
+                        "defeated_by_default", "loot")
+                .primaryKey("encounter_runtime_result_enemies", "context_id", "sort_order")
+                .foreignKey("encounter_runtime_result_enemies", "encounter_runtime_contexts", "CASCADE",
+                        SqliteSchemaValidator.reference("context_id", "context_id"))
+                .index("idx_saved_encounter_plans_updated",
+                        EncounterPersistenceSchema.ENCOUNTER_PLANS.name(), false, "updated_at", "plan_id")
+                .index("idx_saved_encounter_plan_creatures_plan",
+                        EncounterPersistenceSchema.ENCOUNTER_PLAN_CREATURES.name(), false, "plan_id", "sort_order")
+                .index("idx_generated_encounter_preparation_identity",
+                        EncounterPersistenceSchema.GENERATED_ENCOUNTER_PLAN_BATCHES_TABLE_NAME,
+                        true, "engine_version", "preparation_id")
+                .build();
+        return FeatureStoreDefinition.validated(
+                OWNER, targetSchema,
                 new SqliteMigration(1, schemaMigrator::ensureSchema),
                 new SqliteMigration(2, schemaMigrator::ensureGeneratedPlanOrigins),
                 new SqliteMigration(3, schemaMigrator::ensureRuntimeContexts),
-                new SqliteMigration(4, schemaMigrator::ensureGeneratedBatchV4));
+                new SqliteMigration(4, schemaMigrator::ensureGeneratedBatchV4),
+                new SqliteMigration(5, schemaMigrator::repairTargetSchema));
+    }
+
+    public SqliteEncounterLocalGateway(FeatureStoreHandle store) {
+        this.connections = FeatureStoreHandle.requireOwner(store, OWNER);
         this.store = new EncounterPlanSqliteStore();
         this.generatedBatches = new GeneratedEncounterBatchSqliteStore();
         this.batchReads = new EncounterPlanBatchReadSqliteStore();

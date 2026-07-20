@@ -1,37 +1,28 @@
 package features.dungeon.adapter.javafx.editor;
 
-import java.util.List;
-import java.util.Set;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.stage.Stage;
-import shell.api.ShellBinding;
-import shell.api.ShellSlot;
+import features.dungeon.DungeonTestAssembly;
+import features.dungeon.adapter.javafx.map.DungeonMapView;
+import features.dungeon.adapter.javafx.travel.DungeonTravelContribution;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
 import features.dungeon.application.authored.DungeonCachedWindowStore;
 import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
-import features.dungeon.DungeonTestAssembly;
-import features.dungeon.application.travel.DungeonTravelRuntimeApplicationService;
-import features.dungeon.api.DungeonTravelLocationKind;
 import features.dungeon.api.DungeonCellRef;
-import features.dungeon.api.DungeonMapCatalogModel;
 import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.api.DungeonTravelActionId;
+import features.dungeon.api.travel.DungeonTravelApi;
+import features.dungeon.api.DungeonTravelLocationKind;
+import features.dungeon.api.DungeonMapCatalogModel;
 import features.dungeon.api.TravelDungeonModel;
 import features.dungeon.api.TravelDungeonSnapshot;
-import features.dungeon.api.travel.DungeonTravelApi;
-import features.party.api.PartyApi;
+import features.dungeon.application.travel.DungeonTravelRuntimeApplicationService;
 import features.party.PartyServiceAssembly;
 import features.party.api.CharacterDraft;
 import features.party.api.CreateCharacterCommand;
 import features.party.api.MembershipState;
 import features.party.api.MovePartyCharactersCommand;
+import features.party.api.PartyApi;
 import features.party.api.PartyDungeonTravelLocationKind;
 import features.party.api.PartyDungeonTravelLocationSnapshot;
 import features.party.api.PartyTravelHeading;
@@ -39,15 +30,27 @@ import features.party.api.PartyTravelLocationSnapshot;
 import features.party.api.PartyTravelPositionsModel;
 import features.party.api.PartyTravelPositionsResult;
 import features.party.api.PartyTravelTile;
-import features.dungeon.adapter.javafx.travel.DungeonTravelContribution;
-import features.dungeon.adapter.javafx.map.DungeonMapView;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.stage.Stage;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import platform.diagnostics.NoopDiagnostics;
 import platform.execution.DirectExecutionLane;
 import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
 import platform.ui.DirectUiDispatcher;
+
+import shell.api.ShellBinding;
+import shell.api.ShellSlot;
+
+import java.util.List;
+import java.util.Set;
 
 @org.junit.jupiter.api.Tag("ui")
 public final class DungeonTravelProjectionLevelTest {
@@ -686,15 +689,18 @@ public final class DungeonTravelProjectionLevelTest {
             database.clearDungeonData();
             database.clearPartyData();
             PartyServiceAssembly.Component party =
-                    PartyServiceAssembly.create(new SqlitePartyRosterRepository());
-            SqliteDatabase dungeonDatabase = new SqliteDatabase(
-                    database.databasePath,
-                    NoopDiagnostics.INSTANCE);
-            SqliteDungeonCatalogStore dungeonCatalog = new SqliteDungeonCatalogStore(dungeonDatabase);
+                    PartyServiceAssembly.create(new SqlitePartyRosterRepository(
+                                    TestFeatureStores.current().store(
+                                            SqlitePartyRosterRepository.storeDefinition())));
+            platform.persistence.FeatureStoreHandle dungeonStore =
+                    TestFeatureStores.current().store(
+                            features.dungeon.adapter.sqlite.gateway.DungeonStoreDefinition.create());
+            SqliteDungeonCatalogStore dungeonCatalog = new SqliteDungeonCatalogStore(
+                            dungeonStore);
             DungeonTestAssembly.Component dungeon = DungeonTestAssembly.create(
                     dungeonCatalog,
-                    new DungeonCachedWindowStore(new SqliteDungeonWindowStore(dungeonDatabase)),
-                    new SqliteDungeonUnitOfWork(dungeonDatabase),
+                    new DungeonCachedWindowStore(new SqliteDungeonWindowStore(dungeonStore)),
+                    new SqliteDungeonUnitOfWork(dungeonStore),
                     party.activeParty(),
                     party.travelPositions(),
                     party.application(),

@@ -33,7 +33,8 @@ features/catalog/
 │   ├── CatalogContribution
 │   ├── CatalogWorkspaceView
 │   ├── CatalogSectionRenderer
-│   └── CatalogControlFactory
+│   ├── CatalogControlFactory
+│   └── CatalogPicker
 └── CatalogFeature
 ```
 
@@ -53,8 +54,13 @@ exactly seven sections and has no extension need.
 - typed filter specifications with getters and immutable updaters
 - provider query function and provider-result translation
 - stable row identity and table column specifications
-- optional paging and typed row or section actions
+- optional paging and typed row or section action declarations
 - optional provider revision observation used only while the section is active
+
+`CatalogWorkspaceController` binds each declared action to the explicitly
+composed outward route for that section. The three provider-owned create routes
+and the four non-mutating unavailable outcomes are exhaustively composed there;
+the renderer cannot infer availability or invent a mutation.
 
 Filter specifications are a sealed family for text search, single choice,
 multi-choice, range, and tri-state values. They do not use string-keyed maps,
@@ -72,7 +78,8 @@ One reusable `BrowseSession<Q, R, K>` owns the lifecycle shared by all sections:
 - unfinished draft and last committed query
 - 200 ms debounce and immediate Enter submission
 - request epoch and cancellation or invalidation of superseded work
-- page, total, stable selection, provider revision, and stale marker
+- page, total, stable selection, provider revision, stale marker, and one
+  generic `SortState` consisting of a declared column id and direction
 - immutable result state: uninitialized, loading, refreshing, ready, empty,
   invalid, unavailable, or failed
 
@@ -86,6 +93,11 @@ The workspace owns the active section and the seven retained session states.
 It publishes one revisioned immutable snapshot. JavaFX state is never the
 source of unfinished input or selection.
 
+Sorting is application state rather than a control-specific callback. A
+section maps the generic sort state to its typed provider query and declares
+which columns accept it. Header activation is the sole presentation input for
+changing that state; providers do not leak their own sort widgets into Catalog.
+
 A refresh retains the last successful rows while exposing `refreshing`. A
 failure may retain that read-only result with a retry action, but it cannot be
 reported as current success. A selected identity survives refresh only when it
@@ -94,8 +106,9 @@ is present in the accepted result.
 ## Actions And Cross-Feature State
 
 Selecting or opening a row is read-only with respect to Encounter and Scene.
-Every external change uses a named typed action and returns a typed action
-outcome for visible feedback.
+Every external change uses a named typed action route. Catalog consumes a typed
+outcome where the provider API supplies one; synchronous provider callbacks and
+unavailable create capabilities publish only their explicit local feedback.
 
 Catalog consumes exact routes for:
 
@@ -117,26 +130,47 @@ visible work.
 
 ## JavaFX Presentation
 
-`CatalogSectionRenderer` is the only section result and control renderer. It
-constructs the selected section from the sealed filter specifications, column
-specifications, paging capability, action specifications, and immutable state.
-Changing section rebinds or rebuilds this one renderer; application state, not
-seven retained node trees, preserves work.
+Three section-neutral presentation owners implement the shared Catalog surface:
+`CatalogSectionRenderer`, `CatalogControlFactory`, and `CatalogPicker`.
+`CatalogSectionRenderer` composes the selected section from the sealed filter
+specifications, column specifications, paging capability, action specifications,
+and immutable state. Changing section rebinds or rebuilds this one renderer;
+application state, not seven retained node trees, preserves work.
 
-`CatalogControlFactory` owns the approved Catalog visual roles and creates all
-interactive controls. Section definitions cannot construct controls or assign
+`CatalogWorkspaceView` owns one main JavaFX root for the lifetime of the
+workspace. `CatalogSectionRenderer` replaces or rebinds only content beneath
+that root; a section cannot supply another main root, nested workspace shell,
+or retained node tree.
+
+`CatalogPicker` owns the section-neutral virtualized choice and multi-choice
+picker, including its popup, selection, and option-cell lifecycle.
+`CatalogControlFactory` owns the remaining declared Catalog visual roles and
+creates their controls. Section definitions cannot construct controls or assign
 styles. The renderer owns:
 
 - the persistent section selector and compact wrapping controls area
 - inside-label search, selection, range, and filter controls
-- active-filter chips and clear behavior
-- status, empty and failure presentation, retry, table, paging, keyboard,
+- one chip per active filter value, selective removal, and whole-filter reset
+- status, empty and failure presentation, table, paging, keyboard,
   accessibility, and stable-id selection
+- header-only sort interaction and the unified result footer containing count,
+  status, and optional pagination
+- one consistent create control backed by a typed provider route or a
+  side-effect-free unavailable capability that returns visible feedback;
+  details remain row-driven and have no dedicated button
 - the shared 28 px control and 12 px regular type contract, plus the compact
   chip information style
 
 Section-specific behavior is limited to typed data, columns, filters, and
 actions. A one-off JavaFX escape hatch is not a supported section capability.
+
+Choice and multi-choice filters use virtualized picker content so node count
+tracks visible options rather than provider result size. Their option source is
+loaded only for the active session. Overlapping requests share one in-flight
+load, and its successful result is cached independently of page request epochs.
+A failure is never cached as an empty success: successful page rows remain
+read-only, the footer reports the option failure, and the next active query
+retries the load.
 
 ## Persistence, Execution, And Failure Isolation
 
@@ -144,11 +178,19 @@ Catalog never receives `SqliteDatabase`, JDBC, paths, or migration plans.
 Provider services are created only after their owner-scoped storage readiness
 is known under the [persistence lifecycle](../../project/contract/persistence-lifecycle.md).
 
-Persistence-backed queries run outside the JavaFX thread. Independent provider
-reads may execute concurrently on a bounded I/O executor; ordered writes are
-serialized by their owning feature or store, not by one application-wide queue.
-One provider's newer schema, migration failure, unavailable source, or query
-failure becomes only that section's typed unavailable or failed state.
+Persistence-backed queries run outside the JavaFX thread. Creature and Item
+catalog reads use independent bounded read lanes, so a slow or failed Item read
+cannot queue behind or block Creature lookup, and vice versa. Other independent
+provider reads may likewise execute concurrently; ordered writes are serialized
+by their owning feature or store, not by one application-wide queue. One
+provider's newer schema, migration failure, unavailable source, option-load
+failure, or query failure becomes only that section's typed unavailable or
+failed state.
+
+These read lanes, caches, sort state, and presentation mechanisms do not move
+record or persistence ownership into Catalog. Creature, Item, Encounter, World
+Planner, and Encounter Table APIs remain the authoritative routes; their
+provider and persisted truth is unchanged.
 
 Diagnostics remain payload-free and local. A visible failure carries a stable
 local diagnostic id and retryability, not SQL, paths, or exception messages.
@@ -159,14 +201,21 @@ local diagnostic id and retryability, not SQL, paths, or exception messages.
 constructs the workspace and contribution. `app` explicitly supplies provider
 APIs and outward routes; neither Catalog nor shell locates services.
 
-Permanent architecture proof enforces:
+Permanent structural and production-route proof jointly enforce:
 
 - Catalog application imports provider APIs but no foreign implementation,
   JavaFX, JDBC, or persistence package
 - Catalog has no domain or SQLite role
 - exactly seven definitions are explicitly composed
 - section definitions contain no JavaFX nodes or style decisions
-- only the shared renderer and control factory construct Catalog controls and tables
+- only `CatalogSectionRenderer`, `CatalogControlFactory`, and the section-neutral
+  `CatalogPicker`, including their nested classes, depend on JavaFX controls
+- exactly one Catalog main root exists and sections cannot provide another
+- all sortable sections consume the generic sort state through declared columns
+- option pickers are virtualized, overlapping loads are coalesced, and only
+  successful option results are cached
+- Creature and Item stateless Catalog reads use separate bounded lanes while
+  Creature state-publishing commands retain their serialized execution lane
 - no section-specific lifecycle controller or JavaFX section class returns
 - inactive sections cannot acquire subscriptions or issue provider calls in
   production-route lifecycle tests
@@ -189,7 +238,6 @@ superseded topology.
 ## References
 
 - [Catalog Requirements](../requirements/requirements-catalog.md)
-- [Catalog Greenfield Roadmap](../delivery/roadmap-catalog-greenfield.md)
 - [Persistence Lifecycle](../../project/contract/persistence-lifecycle.md)
 - [Source Architecture](../../project/architecture/source-architecture.md)
 - [Feature Boundaries](../../project/architecture/patterns/feature-boundaries.md)

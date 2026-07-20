@@ -1,26 +1,29 @@
-package features.catalog.adapter.javafx;
+package features.catalog.application;
 
-import features.catalog.application.CatalogActionId;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
-/** Typed callbacks from the one renderer into the active BrowseSession workspace route. */
-record CatalogSectionCommands<Q, K>(
+/** Typed, framework-neutral commands exposed by the active Catalog section. */
+public record CatalogSectionCommands<Q, K>(
         Consumer<Q> editDraft,
+        Consumer<Q> commitDraft,
         Runnable submit,
+        Consumer<CatalogSortOrder> sort,
         IntConsumer shiftPage,
         Consumer<Optional<K>> select,
         BiConsumer<CatalogActionId, K> rowAction,
         Consumer<CatalogActionId> sectionAction,
-        Runnable confirm,
-        Runnable cancel
+        Consumer<CatalogConfirmation<K>> confirm,
+        Consumer<CatalogConfirmation<K>> cancel
 ) {
-    CatalogSectionCommands {
+    public CatalogSectionCommands {
         editDraft = Objects.requireNonNull(editDraft, "editDraft");
+        commitDraft = Objects.requireNonNull(commitDraft, "commitDraft");
         submit = Objects.requireNonNull(submit, "submit");
+        sort = Objects.requireNonNull(sort, "sort");
         shiftPage = Objects.requireNonNull(shiftPage, "shiftPage");
         select = Objects.requireNonNull(select, "select");
         rowAction = Objects.requireNonNull(rowAction, "rowAction");

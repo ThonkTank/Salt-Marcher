@@ -1,6 +1,9 @@
 package features.catalog.application;
 
 import java.time.Duration;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
@@ -46,7 +49,7 @@ public final class BrowseSession<Q, R, K> implements CatalogLifecycle {
         Q initial = Objects.requireNonNull(definition.initialQuery(), "initial query");
         state = new CatalogSectionState<>(
                 0L, CatalogSectionState.Lifecycle.INACTIVE, initial, initial, 0L,
-                definition.pageSize(), 0, 0, Optional.empty(), 0L, false,
+                definition.pageSize(), 0, 0, definition.presentation().defaultSort(), Optional.empty(), 0L, false,
                 CatalogResultState.uninitialized());
     }
 
@@ -77,13 +80,46 @@ public final class BrowseSession<Q, R, K> implements CatalogLifecycle {
         if (!isActive()) {
             return;
         }
+        commitDraft(state.draft());
+    }
+
+    public void commitDraft(Q draft) {
+        if (!isActive()) {
+            return;
+        }
         cancelPendingCommit();
         Q previous = state.committedQuery();
-        Q committed = state.draft();
+        Q committed = Objects.requireNonNull(draft, "draft");
         replace(committed, committed, state.requestEpoch(), 0, state.totalCount(), state.selectedKey(),
                 state.providerRevision(), true, state.result());
         definition.committed(previous, committed);
         beginQuery(0);
+    }
+
+    public void sort(CatalogSortOrder sortOrder) {
+        if (!isActive()) {
+            return;
+        }
+        CatalogSortOrder next = Objects.requireNonNull(sortOrder, "sortOrder");
+        CatalogPresentationSpec<Q, R, K> presentation = definition.presentation();
+        boolean supported = presentation.columns().stream()
+                .anyMatch(column -> column.sortable() && column.id().equals(next.columnId()));
+        if (!supported) {
+            throw new IllegalArgumentException("Catalog sort column is not sortable: " + next.columnId());
+        }
+        if (next.equals(state.sortOrder())) {
+            return;
+        }
+        cancelPendingCommit();
+        CatalogResultState<R> result = presentation.sortMode() == CatalogSortMode.LOCAL
+                ? sorted(state.result(), next) : state.result();
+        state = new CatalogSectionState<>(state.revision() + 1L, state.lifecycle(), state.draft(),
+                state.committedQuery(), state.requestEpoch(), state.pageSize(), 0, state.totalCount(), next,
+                state.selectedKey(), state.providerRevision(), state.stale(), result);
+        changed.run();
+        if (presentation.sortMode() == CatalogSortMode.PROVIDER) {
+            beginQuery(0);
+        }
     }
 
     public void shiftPage(int direction) {
@@ -130,7 +166,8 @@ public final class BrowseSession<Q, R, K> implements CatalogLifecycle {
         Q draft = state.draft().equals(state.committedQuery()) ? reconciled : state.draft();
         state = new CatalogSectionState<>(state.revision() + 1L, CatalogSectionState.Lifecycle.ACTIVE,
                 draft, reconciled, state.requestEpoch(), state.pageSize(), state.pageOffset(),
-                state.totalCount(), state.selectedKey(), state.providerRevision(), true, state.result());
+                state.totalCount(), state.sortOrder(), state.selectedKey(), state.providerRevision(), true,
+                state.result());
         changed.run();
         try {
             long epochBeforeObservation = state.requestEpoch();
@@ -231,7 +268,7 @@ public final class BrowseSession<Q, R, K> implements CatalogLifecycle {
         replace(state.draft(), state.committedQuery(), epoch, pageOffset, state.totalCount(),
                 state.selectedKey(), state.providerRevision(), true, pending);
         CatalogBrowseRequest<Q> request = new CatalogBrowseRequest<>(
-                state.committedQuery(), state.pageSize(), pageOffset, initial);
+                state.committedQuery(), state.sortOrder(), state.pageSize(), pageOffset, initial);
         try {
             definition.query(request).whenComplete((result, failure) -> dispatcher.dispatch(
                     () -> completeQuery(epoch, result, failure)));
@@ -250,7 +287,8 @@ public final class BrowseSession<Q, R, K> implements CatalogLifecycle {
                     CatalogResultState.failed(state.result().rows(), "Katalogdaten konnten nicht geladen werden."));
             return;
         }
-        CatalogResultState<R> accepted = response.result();
+        CatalogResultState<R> accepted = definition.presentation().sortMode() == CatalogSortMode.LOCAL
+                ? sorted(response.result(), state.sortOrder()) : response.result();
         Optional<K> selected = state.selectedKey().filter(key -> accepted.rows().stream()
                 .anyMatch(row -> definition.key(row).equals(key)));
         Q acceptedQuery = response.acceptedQuery();
@@ -271,7 +309,7 @@ public final class BrowseSession<Q, R, K> implements CatalogLifecycle {
     ) {
         return new CatalogSectionState<>(state.revision() + 1L, lifecycle, state.draft(),
                 state.committedQuery(), epoch, state.pageSize(), state.pageOffset(), state.totalCount(),
-                state.selectedKey(), state.providerRevision(), stale, result);
+                state.sortOrder(), state.selectedKey(), state.providerRevision(), stale, result);
     }
 
     private void replace(
@@ -286,7 +324,23 @@ public final class BrowseSession<Q, R, K> implements CatalogLifecycle {
             CatalogResultState<R> result
     ) {
         state = new CatalogSectionState<>(state.revision() + 1L, state.lifecycle(), draft, committed, epoch,
-                state.pageSize(), pageOffset, totalCount, selected, providerRevision, stale, result);
+                state.pageSize(), pageOffset, totalCount, state.sortOrder(), selected, providerRevision, stale,
+                result);
         changed.run();
+    }
+
+    private CatalogResultState<R> sorted(CatalogResultState<R> result, CatalogSortOrder order) {
+        CatalogColumnSpec<R> column = definition.presentation().columns().stream()
+                .filter(candidate -> candidate.id().equals(order.columnId()) && candidate.sortable())
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Catalog sort column is not sortable: " + order.columnId()));
+        Comparator<R> comparator = Comparator.comparing(
+                row -> Objects.requireNonNullElse(column.value().apply(row), "").toLowerCase(Locale.ROOT));
+        if (order.direction() == CatalogSortOrder.Direction.DESCENDING) {
+            comparator = comparator.reversed();
+        }
+        List<R> rows = result.rows().stream().sorted(comparator).toList();
+        return new CatalogResultState<>(result.status(), rows, result.message());
     }
 }

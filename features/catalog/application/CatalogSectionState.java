@@ -13,6 +13,7 @@ public record CatalogSectionState<Q, R, K>(
         int pageSize,
         int pageOffset,
         int totalCount,
+        CatalogSortOrder sortOrder,
         Optional<K> selectedKey,
         long providerRevision,
         boolean stale,
@@ -28,6 +29,7 @@ public record CatalogSectionState<Q, R, K>(
         pageSize = Math.max(1, pageSize);
         pageOffset = Math.max(0, pageOffset);
         totalCount = Math.max(0, totalCount);
+        sortOrder = Objects.requireNonNull(sortOrder, "sortOrder");
         selectedKey = Objects.requireNonNull(selectedKey, "selectedKey");
         providerRevision = Math.max(0L, providerRevision);
         result = Objects.requireNonNull(result, "result");

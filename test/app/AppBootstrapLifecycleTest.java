@@ -17,6 +17,8 @@ final class AppBootstrapLifecycleTest {
     @Test
     void bootstrapClosesAllOwnedGenerationLanesExactlyOnce() {
         RecordingLane shared = new RecordingLane();
+        RecordingLane creatureRead = new RecordingLane();
+        RecordingLane itemRead = new RecordingLane();
         RecordingLane generationCpu = new RecordingLane();
         RecordingLane generationIo = new RecordingLane();
         RecordingLane encounterCpu = new RecordingLane();
@@ -26,6 +28,8 @@ final class AppBootstrapLifecycleTest {
         AppBootstrap bootstrap = new AppBootstrap(
                 NoopDiagnostics.INSTANCE,
                 shared,
+                creatureRead,
+                itemRead,
                 generationCpu,
                 generationIo,
                 encounterCpu,
@@ -44,6 +48,8 @@ final class AppBootstrapLifecycleTest {
         assertEquals(1, encounterIo.closes);
         assertEquals(1, preparationCpu.closes);
         assertEquals(1, preparationIo.closes);
+        assertEquals(1, creatureRead.closes);
+        assertEquals(1, itemRead.closes);
         assertEquals(1, shared.closes);
     }
 

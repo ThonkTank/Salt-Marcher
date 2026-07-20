@@ -57,6 +57,7 @@ import platform.execution.BoundedExecutionLane;
 import platform.execution.ExecutionLane;
 import platform.execution.SerialExecutionLane;
 import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
 import platform.ui.DirectUiDispatcher;
 
 final class SessionPreparationProductionRouteTest {
@@ -374,8 +375,8 @@ final class SessionPreparationProductionRouteTest {
 
     private static SessionPlan reopenCurrentSession(Path path, Diagnostics diagnostics) {
         try (SqliteDatabase reopened = new SqliteDatabase(path, diagnostics)) {
-            SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(reopened);
-            reopened.prepareRegisteredStores();
+            SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(
+                    TestFeatureStores.store(reopened, SqliteSessionPlanRepository.storeDefinition()));
             return repository.loadCurrent().orElseThrow();
         }
     }
@@ -694,26 +695,43 @@ final class SessionPreparationProductionRouteTest {
             BoundedExecutionLane encounterIo = lane(diagnostics, "qualification-encounter-io");
             BoundedExecutionLane preparationCpu = lane(diagnostics, "session-preparation-cpu");
             BoundedExecutionLane preparationIo = lane(diagnostics, "session-preparation-io");
+            var generationDefinition = SessionGenerationServiceAssembly.storeDefinition();
+            var creaturesDefinition = CreaturesServiceAssembly.storeDefinition();
+            var tablesDefinition = EncounterTableServiceAssembly.storeDefinition();
+            var partyDefinition = PartyServiceAssembly.storeDefinition();
+            var encounterDefinition = EncounterServiceAssembly.storeDefinition();
+            var sessionDefinition = SessionPlannerServiceAssembly.storeDefinition();
+            long coldStoreStarted = System.nanoTime();
+            var stores = TestFeatureStores.stores(
+                    database,
+                    generationDefinition,
+                    creaturesDefinition,
+                    tablesDefinition,
+                    partyDefinition,
+                    encounterDefinition,
+                    sessionDefinition);
+            long coldStoreNanos = System.nanoTime() - coldStoreStarted;
             SessionGenerationApi generation = SessionGenerationServiceAssembly.create(
-                    database, generationCpu, generationIo);
+                    stores.get(generationDefinition.owner()), generationCpu, generationIo);
             long coldCatalogStarted = System.nanoTime();
             GenerationResult canonical = canonicalDraft(generation);
             long coldCatalogNanos = System.nanoTime() - coldCatalogStarted;
 
             CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(
-                    database, authored, preparationIo, uiDispatcher, diagnostics);
+                    stores.get(creaturesDefinition.owner()), authored, preparationIo, uiDispatcher, diagnostics);
             EncounterTableServiceAssembly.Component tables = EncounterTableServiceAssembly.create(
-                    database, authored, uiDispatcher, diagnostics);
+                    stores.get(tablesDefinition.owner()), authored, uiDispatcher, diagnostics);
             PartyServiceAssembly.Component party = PartyServiceAssembly.create(
-                    database, authored, preparationIo, uiDispatcher, diagnostics);
+                    stores.get(partyDefinition.owner()), authored, preparationIo, uiDispatcher, diagnostics);
             EncounterServiceAssembly.Component encounters = EncounterServiceAssembly.create(
-                    database,
+                    stores.get(encounterDefinition.owner()),
                     creatures.application(), creatures.detail(), creatures.encounterCandidates(),
                     tables.application(), tables.candidates(), null,
                     party.application(), party.activeParty(), party.activeComposition(),
                     party.adventuringDaySummary(), party.mutation(),
                     authored, encounterCpu, encounterIo, uiDispatcher, diagnostics);
-            SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(database);
+            SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(
+                    stores.get(sessionDefinition.owner()));
             SessionGenerationApi decoratedGeneration = generationDecorator.apply(generation);
             SessionPlannerServiceAssembly planner = new SessionPlannerServiceAssembly(
                     repository, repository, preparedSessionStoreDecorator.apply(repository),
@@ -721,9 +739,6 @@ final class SessionPreparationProductionRouteTest {
                     decoratedGeneration, authored, preparationCpu, preparationIo,
                     uiDispatcher, diagnostics);
 
-            long coldStoreStarted = System.nanoTime();
-            database.prepareRegisteredStores();
-            long coldStoreNanos = System.nanoTime() - coldStoreStarted;
             seedCreatures(path, canonical);
             PartyServiceAssembly.start(party);
             encounters.start();

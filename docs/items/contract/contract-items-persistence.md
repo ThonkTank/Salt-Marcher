@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-16
+Last Reviewed: 2026-07-19
 Source of Truth: Local Items persistence, import compatibility, validation,
 failure, and recovery behavior.
 
@@ -19,14 +19,22 @@ Items owns the unambiguous target tables `items_catalog_entries` and
 `items_catalog_tags`. Stable source keys from the pinned `/api/2014` API are
 persisted as text identifiers. Schema migration is registered under the
 `items` owner and consumed through one prepared `FeatureStoreHandle`; Items
-does not open a parallel connection lifecycle. A source-version change requires
-an explicit migration decision and full re-import.
+does not open a parallel connection lifecycle. Desktop composition constructs only the
+catalog-read adapter and application service. The separately composed operator import
+constructs its own HTTP source, import application service, and write adapter from one
+owner-bound `FeatureStoreMaintenance` capability. That capability supplies both the
+whole-database backup and the later Items write connection; ordinary provider reads cannot
+request either maintenance operation. A
+source-version change requires an explicit migration decision and full re-import.
 
 Target owner version `2` has one structural signature: exact entry and tag
 columns, `source_key` and `(item_source_key, tag)` primary keys, a cascading tag
-foreign key, and a unique nullable `legacy_id`. Owner validation checks this
-signature, item identity, boolean domains, tag ownership, physical integrity,
-and foreign keys before the handle becomes `READY`.
+foreign key, and a unique nullable `legacy_id`. Owner readiness checks the
+declared target table, column, primary-key, required foreign-key, and named-index
+signature before the handle becomes `READY`; platform startup also checks global
+integrity and foreign keys. Semantic rows remain an Items provider read/write
+concern and fail closed through typed Items results rather than a startup corpus
+scan.
 
 ## Supported Upgrade Shapes
 

@@ -7,31 +7,36 @@ import features.scene.domain.SceneMob;
 import features.scene.domain.SceneParticipantKind;
 import features.scene.domain.SceneParticipantState;
 import features.scene.domain.SceneWorkspace;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.FeatureStoreHandle;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
+
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteConnectionSource;
-import platform.persistence.SqliteDatabase;
 
 class SqliteSceneWorkspaceRepositoryTest {
 
     @Test
     void relationalRoundTripKeepsStableForeignIdsWithoutCrossOwnerForeignKeys(@TempDir Path temporary) throws Exception {
         try (SqliteDatabase database = new SqliteDatabase(temporary.resolve("scene.sqlite"), NoopDiagnostics.INSTANCE)) {
-            SqliteSceneWorkspaceRepository repository = new SqliteSceneWorkspaceRepository(database);
+            FeatureStoreHandle store =
+                    TestFeatureStores.store(
+                            database, SqliteSceneWorkspaceRepository.storeDefinition());
+            SqliteSceneWorkspaceRepository repository = new SqliteSceneWorkspaceRepository(store);
             SceneWorkspace expected = workspace();
 
             repository.save(expected);
             SceneWorkspace actual = repository.load().orElseThrow();
 
             assertEquals(expected, actual);
-            SqliteConnectionSource probe = database.connections("scene-test-probe");
-            try (Connection connection = probe.openConnection()) {
+            try (Connection connection = store.openConnection()) {
                 assertEquals(List.of("scene_running_scene"), foreignTargets(connection, "scene_party_member"));
                 assertEquals(List.of("scene_running_scene"), foreignTargets(connection, "scene_npc"));
                 assertEquals(List.of(), foreignTargets(connection, "scene_running_scene"));

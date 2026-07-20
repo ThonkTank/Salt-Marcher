@@ -3,6 +3,7 @@ package features.dungeon.adapter.sqlite.gateway;
 import features.dungeon.adapter.sqlite.mapper.DungeonWindowEntityMapper;
 import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
 import features.dungeon.adapter.sqlite.model.DungeonWindowEntityRecord;
+import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.application.authored.command.DungeonPatchEntityRef;
 import features.dungeon.application.authored.port.DungeonEntitySnapshot;
 import features.dungeon.application.authored.port.DungeonIdentityClosureRequest;
@@ -26,8 +27,8 @@ import features.dungeon.application.authored.port.DungeonContinuationCursor;
 import features.dungeon.application.authored.port.DungeonContinuationPage;
 import features.dungeon.application.authored.port.DungeonContinuationPageRequest;
 import features.dungeon.application.authored.port.DungeonEntityChunkExtent;
-import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
+import platform.persistence.FeatureStoreHandle;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -42,10 +43,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteConnectionSource;
-import platform.persistence.SqliteDatabase;
-import platform.persistence.SqliteMigration;
 
 /** SQLite implementation core for exact sparse reads; it never calls the full-map loader. */
 public final class DungeonSqliteWindowGateway {
@@ -56,27 +53,13 @@ public final class DungeonSqliteWindowGateway {
     private final AtomicReference<List<String>> lastStatementSql = new AtomicReference<>(List.of());
     private final Runnable afterHeaderRead;
 
-    public DungeonSqliteWindowGateway() {
-        this(SqliteDatabase.defaultDatabase(
-                DungeonPersistenceSchema.DATABASE_FILE_NAME,
-                NoopDiagnostics.INSTANCE));
+    public DungeonSqliteWindowGateway(FeatureStoreHandle store) {
+        this(store, () -> { });
     }
 
-    public DungeonSqliteWindowGateway(SqliteDatabase database) {
-        this(database, () -> { });
-    }
-
-    DungeonSqliteWindowGateway(SqliteDatabase database, Runnable afterHeaderRead) {
-        DungeonSqliteSchemaManager schemaManager = new DungeonSqliteSchemaManager();
-        SqliteConnectionSource connections = Objects.requireNonNull(database, "database").connections(
-                "dungeon",
-                new SqliteMigration(1, schemaManager::ensureSchema),
-                new SqliteMigration(2, schemaManager::ensureSchema),
-                new SqliteMigration(3, schemaManager::replaceWithCanonicalSchema),
-                new SqliteMigration(4, schemaManager::addCorridorDoorLevel),
-                new SqliteMigration(5, schemaManager::addCorridorRouteCellIndex),
-                new SqliteMigration(6, schemaManager::addCorridorRouteDependencyIndex));
-        connectionSupport = new DungeonSqliteConnectionSupport(connections);
+    DungeonSqliteWindowGateway(FeatureStoreHandle store, Runnable afterHeaderRead) {
+        connectionSupport = new DungeonSqliteConnectionSupport(
+                        FeatureStoreHandle.requireOwner(store, DungeonStoreDefinition.OWNER));
         this.afterHeaderRead = Objects.requireNonNull(afterHeaderRead, "afterHeaderRead");
     }
 
@@ -337,12 +320,11 @@ public final class DungeonSqliteWindowGateway {
     ) throws SQLException {
         String sql = "SELECT t.transition_id, t.cell_x, t.cell_y, t.level_z"
                 + " FROM " + DungeonPersistenceSchema.ENTITY_CHUNKS_TABLE + " ec"
-                + " JOIN " + DungeonPersistenceSchema.TRANSITIONS_TABLE + " t"
-                + " ON t.dungeon_map_id=ec.dungeon_map_id AND t.transition_id=ec.entity_id"
-                + " WHERE ec.dungeon_map_id=? AND ec.entity_kind='TRANSITION'"
-                + " AND t.cell_x IS NOT NULL AND t.cell_y IS NOT NULL AND t.level_z IS NOT NULL"
-                + " GROUP BY t.transition_id, t.cell_x, t.cell_y, t.level_z"
-                + " ORDER BY t.transition_id LIMIT 1";
+                + " JOIN " + DungeonPersistenceSchema.TRANSITIONS_TABLE + " t ON t.dungeon_map_id=ec.dungeon_map_id AND"
+                        + " t.transition_id=ec.entity_id WHERE ec.dungeon_map_id=? AND"
+                        + " ec.entity_kind='TRANSITION' AND t.cell_x IS NOT NULL AND t.cell_y IS"
+                        + " NOT NULL AND t.level_z IS NOT NULL GROUP BY t.transition_id, t.cell_x,"
+                        + " t.cell_y, t.level_z ORDER BY t.transition_id LIMIT 1";
         try (PreparedStatement statement = queries.prepare(connection, sql)) {
             statement.setLong(1, header.mapId().value());
             try (ResultSet row = statement.executeQuery()) {

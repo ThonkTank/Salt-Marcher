@@ -1,63 +1,32 @@
 package shell.host;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import javafx.application.Platform;
-import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.control.ContentDisplay;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.ToggleButton;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
-import javafx.stage.Window;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import shell.api.InspectorEntrySpec;
-import shell.api.InspectorSink;
-import shell.api.ShellContributionSpec;
-import shell.api.ShellSlot;
-import shell.api.ShellLeftBarTabSpec;
-import shell.api.ShellBinding;
-import shell.api.ShellLeftBarTabMode;
 import features.catalog.CatalogFeature;
 import features.catalog.CatalogProviders;
 import features.catalog.CatalogRoutes;
+import features.creatures.CreaturesServiceAssembly;
+import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
+import features.dungeon.DungeonTestAssembly;
 import features.dungeon.adapter.javafx.editor.DungeonEditorContribution;
 import features.dungeon.adapter.javafx.travel.DungeonTravelContribution;
-import features.hex.adapter.javafx.hexmap.HexMapContribution;
-import features.hex.adapter.javafx.hexmap.HexMapControlsView;
-import features.hex.adapter.javafx.hexmap.HexMapMainView;
-import features.sessionplanner.adapter.javafx.SessionPlannerContribution;
-import features.sessionplanner.adapter.javafx.SessionPlannerControlsView;
-import features.sessionplanner.adapter.javafx.SessionPlannerTimelineMainView;
-import features.sessionplanner.adapter.javafx.SessionPlannerStateView;
-import platform.ui.catalogcrud.CatalogCrudControlsView;
-import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
+import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
 import features.dungeon.application.authored.DungeonCachedWindowStore;
-import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
-import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
-import features.encountertable.adapter.sqlite.query.SqliteEncounterTableCatalogAdapter;
-import features.hex.adapter.sqlite.repository.SqliteHexMapRepository;
-import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
-import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
-import features.creatures.CreaturesServiceAssembly;
-import features.dungeon.DungeonTestAssembly;
+import features.dungeon.application.editor.DungeonEditorApiFacade;
+import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
+import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
 import features.encounter.EncounterServiceAssembly;
+import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
 import features.encountertable.EncounterTableServiceAssembly;
+import features.encountertable.adapter.sqlite.query.SqliteEncounterTableCatalogAdapter;
 import features.hex.HexServiceAssembly;
+import features.hex.adapter.javafx.hexmap.HexMapContribution;
+import features.hex.adapter.javafx.hexmap.HexMapControlsView;
+import features.hex.adapter.javafx.hexmap.HexMapMainView;
+import features.hex.adapter.sqlite.repository.SqliteHexMapRepository;
 import features.party.PartyServiceAssembly;
-import features.sessionplanner.SessionPlannerServiceAssembly;
+import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
 import features.sessiongeneration.api.CommitGenerationRunCommand;
 import features.sessiongeneration.api.GenerationDraftResponse;
 import features.sessiongeneration.api.GenerationRequest;
@@ -66,13 +35,50 @@ import features.sessiongeneration.api.GenerationRewardBatchResponse;
 import features.sessiongeneration.api.GenerationRunId;
 import features.sessiongeneration.api.GenerationRunResponse;
 import features.sessiongeneration.api.SessionGenerationApi;
-import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
-import features.dungeon.application.editor.DungeonEditorApiFacade;
-import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
+import features.sessionplanner.SessionPlannerServiceAssembly;
+import features.sessionplanner.adapter.javafx.SessionPlannerContribution;
+import features.sessionplanner.adapter.javafx.SessionPlannerControlsView;
+import features.sessionplanner.adapter.javafx.SessionPlannerStateView;
+import features.sessionplanner.adapter.javafx.SessionPlannerTimelineMainView;
+import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
+
+import javafx.application.Platform;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.ContentDisplay;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+import javafx.stage.Window;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
 import platform.diagnostics.NoopDiagnostics;
 import platform.execution.DirectExecutionLane;
 import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
 import platform.ui.DirectUiDispatcher;
+import platform.ui.catalogcrud.CatalogCrudControlsView;
+
+import shell.api.InspectorEntrySpec;
+import shell.api.InspectorSink;
+import shell.api.ShellBinding;
+import shell.api.ShellContributionSpec;
+import shell.api.ShellLeftBarTabMode;
+import shell.api.ShellLeftBarTabSpec;
+import shell.api.ShellSlot;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @org.junit.jupiter.api.Tag("ui")
 public final class SessionPlannerShellLayoutTest {
@@ -251,32 +257,45 @@ public final class SessionPlannerShellLayoutTest {
     }
 
     private static LayoutServices services() {
-        PartyServiceAssembly.Component party = PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+        PartyServiceAssembly.Component party = PartyServiceAssembly.create(new SqlitePartyRosterRepository(
+                                TestFeatureStores.current().store(
+                                        SqlitePartyRosterRepository.storeDefinition())));
         CreaturesServiceAssembly.Component creatures =
-                CreaturesServiceAssembly.create(new SqliteCreatureCatalogQueryAdapter());
+                CreaturesServiceAssembly.create(new SqliteCreatureCatalogQueryAdapter(
+                                TestFeatureStores.current().store(
+                                        SqliteCreatureCatalogQueryAdapter.storeDefinition())));
         EncounterTableServiceAssembly.Component tables =
-                EncounterTableServiceAssembly.create(new SqliteEncounterTableCatalogAdapter());
+                EncounterTableServiceAssembly.create(new SqliteEncounterTableCatalogAdapter(
+                                TestFeatureStores.current().store(
+                                        SqliteEncounterTableCatalogAdapter.storeDefinition())));
         EncounterServiceAssembly.Component encounter = EncounterServiceAssembly.create(
                 creatures.application(), creatures.detail(), creatures.encounterCandidates(),
                 tables.application(), tables.candidates(), null,
                 party.application(), party.activeParty(), party.activeComposition(),
-                party.adventuringDaySummary(), party.mutation(), new SqliteEncounterPlanRepository());
-        SqliteSessionPlanRepository sessionRepository = new SqliteSessionPlanRepository();
+                party.adventuringDaySummary(), party.mutation(), new SqliteEncounterPlanRepository(
+                                TestFeatureStores.current().store(
+                                        SqliteEncounterPlanRepository.storeDefinition())));
+        SqliteSessionPlanRepository sessionRepository = new SqliteSessionPlanRepository(
+                        TestFeatureStores.current().store(
+                                SqliteSessionPlanRepository.storeDefinition()));
         SessionPlannerServiceAssembly session = new SessionPlannerServiceAssembly(
                 sessionRepository, sessionRepository, sessionRepository, party.application(),
                 encounter.application(), encounter.savedPlans(), null, unsupportedGeneration(),
                 DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE,
                 DirectUiDispatcher.INSTANCE, NoopDiagnostics.INSTANCE);
         HexServiceAssembly hex = new HexServiceAssembly(
-                new SqliteHexMapRepository(), party.travelPositions(), party.application());
-        SqliteDatabase dungeonDatabase = SqliteDatabase.defaultDatabase(
-                DungeonPersistenceSchema.DATABASE_FILE_NAME,
-                NoopDiagnostics.INSTANCE);
-        SqliteDungeonCatalogStore dungeonCatalog = new SqliteDungeonCatalogStore(dungeonDatabase);
+                new SqliteHexMapRepository(
+                                TestFeatureStores.current().store(
+                                        SqliteHexMapRepository.storeDefinition())), party.travelPositions(), party.application());
+        platform.persistence.FeatureStoreHandle dungeonStore =
+                TestFeatureStores.current().store(
+                        features.dungeon.adapter.sqlite.gateway.DungeonStoreDefinition.create());
+        SqliteDungeonCatalogStore dungeonCatalog = new SqliteDungeonCatalogStore(
+                        dungeonStore);
         DungeonTestAssembly.Component dungeon = DungeonTestAssembly.create(
                 dungeonCatalog,
-                new DungeonCachedWindowStore(new SqliteDungeonWindowStore(dungeonDatabase)),
-                new SqliteDungeonUnitOfWork(dungeonDatabase),
+                new DungeonCachedWindowStore(new SqliteDungeonWindowStore(dungeonStore)),
+                new SqliteDungeonUnitOfWork(dungeonStore),
                 party.activeParty(),
                 party.travelPositions(),
                 party.application(),

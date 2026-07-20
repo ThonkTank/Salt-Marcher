@@ -18,6 +18,11 @@ public record CatalogActionSpec(
         emphasis = Objects.requireNonNull(emphasis, "emphasis");
     }
 
+    public static CatalogActionSpec create() {
+        return new CatalogActionSpec(
+                CatalogActionId.CREATE, "Erstellen", "Erstellen", "Erstellen", Emphasis.PRIMARY);
+    }
+
     public enum Emphasis {
         PRIMARY,
         SECONDARY

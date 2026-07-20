@@ -15,11 +15,11 @@ import features.encounter.api.GeneratedEncounterPlanSummary;
 import features.encounter.api.GeneratedEncounterPlanSummaryBatchQuery;
 import features.encounter.api.GeneratedEncounterPlanSummaryBatchResult;
 import features.encounter.api.GeneratedEncounterSource;
+import features.encounter.api.PrepareGeneratedEncounterBatchCommand;
 import features.encounter.api.PreparedEncounterBatch;
 import features.encounter.api.PreparedEncounterCreature;
 import features.encounter.api.PreparedEncounterRoster;
 import features.encounter.api.PreparedGeneratedEncounterBatchResult;
-import features.encounter.api.PrepareGeneratedEncounterBatchCommand;
 import features.encounter.api.RefreshEncounterPlanBudgetCommand;
 import features.encounter.api.SavedEncounterPlanListModel;
 import features.encounter.api.SavedEncounterPlanListResult;
@@ -54,20 +54,23 @@ import features.sessionplanner.api.SessionPreparationStatus;
 import features.sessionplanner.api.SetSessionEncounterDaysCommand;
 import features.sessionplanner.domain.session.EncounterDays;
 import features.sessionplanner.domain.session.SessionPlan;
-import java.math.BigDecimal;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.OptionalInt;
-import java.util.ArrayDeque;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
 import platform.diagnostics.NoopDiagnostics;
 import platform.execution.DirectExecutionLane;
 import platform.execution.ExecutionLane;
 import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
 import platform.ui.DirectUiDispatcher;
+import java.math.BigDecimal;
+import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.List;
+import java.util.OptionalInt;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 final class SessionPreparationCoordinatorTest {
 
@@ -465,7 +468,9 @@ final class SessionPreparationCoordinatorTest {
     ) {
         SqliteDatabase database = new SqliteDatabase(
                 temporaryDirectory.resolve(databaseName), NoopDiagnostics.INSTANCE);
-        SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(database);
+        SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(
+                        TestFeatureStores.store(
+                                database, SqliteSessionPlanRepository.storeDefinition()));
         repository.insert(SessionPlan.seeded(7L, List.of(1L), EncounterDays.one()));
         repository.setCurrentSessionId(7L);
         CountingPreparedSessionStore preparedSessions = new CountingPreparedSessionStore(repository);

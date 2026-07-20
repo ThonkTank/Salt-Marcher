@@ -38,6 +38,7 @@ import platform.diagnostics.Diagnostics;
 import platform.diagnostics.Measurement;
 import platform.execution.DirectExecutionLane;
 import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
 import platform.ui.DirectUiDispatcher;
 
 /** Production SQLite qualification for every variable-cardinality workspace owner. */
@@ -210,13 +211,7 @@ final class SessionPlannerWorkspaceCardinalityProductionRouteTest {
         return List.copyOf(roster);
     }
 
-    private static SqliteDatabase databaseWithCreatures(
-            Path path,
-            Diagnostics diagnostics,
-            int cardinality
-    ) throws Exception {
-        SqliteDatabase database = new SqliteDatabase(path, diagnostics);
-        new SqliteCreatureCatalogQueryAdapter(database).loadFilterValues();
+    private static void seedCreatures(Path path, int cardinality) throws Exception {
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + path);
                 var statement = connection.prepareStatement(
                         "INSERT INTO creatures (id,name,size,creature_type,alignment,cr,xp,hp,ac) "
@@ -235,7 +230,6 @@ final class SessionPlannerWorkspaceCardinalityProductionRouteTest {
             }
             statement.executeBatch();
         }
-        return database;
     }
 
     private static final class ProductionRoute implements AutoCloseable {
@@ -263,32 +257,43 @@ final class SessionPlannerWorkspaceCardinalityProductionRouteTest {
                 int partyCount
         ) {
             try {
-                SqliteDatabase database = databaseWithCreatures(path, diagnostics, creatureCount);
+                SqliteDatabase database = new SqliteDatabase(path, diagnostics);
+                var stores = TestFeatureStores.stores(
+                        database,
+                        SqliteCreatureCatalogQueryAdapter.storeDefinition(),
+                        EncounterTableServiceAssembly.storeDefinition(),
+                        PartyServiceAssembly.storeDefinition(),
+                        SqliteEncounterPlanRepository.storeDefinition(),
+                        SqliteSessionPlanRepository.storeDefinition(),
+                        SessionGenerationServiceAssembly.storeDefinition());
+                new SqliteCreatureCatalogQueryAdapter(stores.get("creatures")).loadFilterValues();
+                seedCreatures(path, creatureCount);
                 var creatures = CreaturesServiceAssembly.create(
-                        database, DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE,
+                        stores.get("creatures"), DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE,
                         DirectUiDispatcher.INSTANCE, diagnostics);
                 var tables = EncounterTableServiceAssembly.create(
-                        database, DirectExecutionLane.INSTANCE, DirectUiDispatcher.INSTANCE, diagnostics);
+                        stores.get("encounter-table"), DirectExecutionLane.INSTANCE,
+                        DirectUiDispatcher.INSTANCE, diagnostics);
                 var party = PartyServiceAssembly.create(
-                        database, DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE,
+                        stores.get("party"), DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE,
                         DirectUiDispatcher.INSTANCE, diagnostics);
                 var encounters = EncounterServiceAssembly.create(
-                        database,
+                        stores.get("encounter"),
                         creatures.application(), creatures.detail(), creatures.encounterCandidates(),
                         tables.application(), tables.candidates(), null,
                         party.application(), party.activeParty(), party.activeComposition(),
                         party.adventuringDaySummary(), party.mutation(),
                         DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE,
                         DirectUiDispatcher.INSTANCE, diagnostics);
-                SqliteSessionPlanRepository sessions = new SqliteSessionPlanRepository(database);
+                SqliteSessionPlanRepository sessions = new SqliteSessionPlanRepository(stores.get("session-planner"));
                 SessionPlannerServiceAssembly planner = new SessionPlannerServiceAssembly(
                         sessions, sessions, sessions, party.application(), encounters.application(),
                         encounters.savedPlans(), null,
                         SessionGenerationServiceAssembly.create(
-                                database, DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE, diagnostics),
+                                stores.get("session-generation"), DirectExecutionLane.INSTANCE,
+                                DirectExecutionLane.INSTANCE, diagnostics),
                         DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE,
                         DirectUiDispatcher.INSTANCE, diagnostics);
-                database.prepareRegisteredStores();
                 PartyServiceAssembly.start(party);
                 encounters.start();
                 for (int character = 1; character <= partyCount; character++) {
@@ -297,7 +302,7 @@ final class SessionPlannerWorkspaceCardinalityProductionRouteTest {
                             MembershipState.ACTIVE));
                 }
                 return new ProductionRoute(database, sessions,
-                        new SqliteEncounterPlanRepository(database), planner);
+                        new SqliteEncounterPlanRepository(stores.get("encounter")), planner);
             } catch (Exception failure) {
                 throw new IllegalStateException("Failed to open production cardinality route", failure);
             }

@@ -3,37 +3,21 @@ package features.dungeon.adapter.sqlite.gateway;
 import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
 import features.dungeon.application.authored.port.DungeonIdentityKind;
 import features.dungeon.application.authored.port.DungeonIdentityRange;
+import platform.persistence.FeatureStoreHandle;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Objects;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteConnectionSource;
-import platform.persistence.SqliteDatabase;
-import platform.persistence.SqliteMigration;
 
 /** Atomic technical range allocator with no placeholder authored rows. */
 public final class DungeonSqliteIdentityGateway {
     private final DungeonSqliteConnectionSupport connectionSupport;
-    private final DungeonSqliteSchemaManager schema = new DungeonSqliteSchemaManager();
 
-    public DungeonSqliteIdentityGateway() {
-        this(SqliteDatabase.defaultDatabase(
-                DungeonPersistenceSchema.DATABASE_FILE_NAME,
-                NoopDiagnostics.INSTANCE));
-    }
-
-    public DungeonSqliteIdentityGateway(SqliteDatabase database) {
-        SqliteConnectionSource connections = Objects.requireNonNull(database, "database").connections(
-                "dungeon",
-                new SqliteMigration(1, schema::ensureSchema),
-                new SqliteMigration(2, schema::ensureSchema),
-                new SqliteMigration(3, schema::replaceWithCanonicalSchema),
-                new SqliteMigration(4, schema::addCorridorDoorLevel),
-                new SqliteMigration(5, schema::addCorridorRouteCellIndex),
-                new SqliteMigration(6, schema::addCorridorRouteDependencyIndex));
-        connectionSupport = new DungeonSqliteConnectionSupport(connections);
+    public DungeonSqliteIdentityGateway(FeatureStoreHandle store) {
+        connectionSupport = new DungeonSqliteConnectionSupport(
+                        FeatureStoreHandle.requireOwner(store, DungeonStoreDefinition.OWNER));
     }
 
     public DungeonIdentityRange reserve(DungeonIdentityKind kind, int count) {

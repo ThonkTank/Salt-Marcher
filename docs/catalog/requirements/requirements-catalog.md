@@ -40,12 +40,25 @@ workspace serves both game preparation and running-session lookup.
   for search and section actions, wrapping inside-labeled filters, removable
   active-filter chips, and one feedback area when those capabilities exist.
   Empty regions MUST not render placeholders or consume space.
-- Equivalent section, search, filter, sort, paging, and action controls MUST
+- Controls MUST remain content-sized instead of stretching to consume unused
+  row width. The selected section MUST read as one coherent result workspace,
+  without nested section panels or duplicate visual roots.
+- Equivalent section, search, filter, paging, and action controls MUST
   render at 28 pixels high with the same 12-pixel regular-weight type style.
   Removable filter chips use the shared compact information style.
 - Search and filter meaning MUST appear inside the interactive element through
   its prompt or displayed value. Redundant field-side labels, `FILTER`, and
   `AKTIONEN` headings MUST not appear.
+- Choice filters MUST support direct keyboard selection by typing an option's
+  visible text, in addition to pointer and arrow-key navigation. Long option
+  lists MUST remain scrollable and responsive.
+- Each active discrete filter value or entered criterion MUST render as its own
+  removable chip. Removing one chip MUST clear only that value. A single
+  `Filter zurücksetzen` action MUST clear all filters of the selected section
+  without changing its section, sort, or retained selection unnecessarily.
+- Table column headers MUST be the only sort controls. Activating a sortable
+  header MUST select that column and toggle its direction with a visible
+  indicator; a separate sort selector MUST not appear.
 - Switching sections MUST preserve each section's filters, selection, paging,
   and unfinished input for the lifetime of the Catalog workspace.
 - Sections MUST use consistent table, status, paging, keyboard, and selection
@@ -55,6 +68,19 @@ workspace serves both game preparation and running-session lookup.
 - Refreshing an already successful section MUST keep its accepted rows visible
   while communicating that they are being refreshed. A failed refresh MUST not
   present stale rows as current success.
+- Every result table MUST end in one shared footer that shows the visible or
+  total result count, the current loading/refresh/error status when applicable,
+  and pagination controls when more than one page exists. These signals MUST
+  not be split across unrelated regions.
+- Each section MUST show one consistently placed and styled `Erstellen`
+  control. Where the owning provider exposes a real creation workflow, the
+  control MUST open that provider-owned route. Otherwise it MUST remain an
+  activatable, side-effect-free placeholder that reports `Erstellen ist für …
+  noch nicht verfügbar` and MUST NOT invent a Catalog-owned record or report
+  false success.
+- Activating a row through its name, Enter, or double-click MUST expose available
+  provider details in the Inspector without a separate `Details` button. Merely
+  selecting a row remains side-effect free.
 - Monster search and encounter-builder controls MUST preserve their accepted
   behavior, including creature details and explicit add-to-Encounter and
   add-to-focused-Scene actions.
@@ -78,6 +104,11 @@ workspace serves both game preparation and running-session lookup.
   Catalog and Inspector.
 - Activating or refreshing Scene MUST NOT change the visible Monster query,
   rows, sort, page, selection, or loading state.
+- Typing, filter keyboard selection, section switching, header sorting, row
+  selection, and paging feedback MUST remain available while provider reads are
+  pending. Each interaction MUST update its local visible state within 100 ms
+  on the supported desktop target and MUST NOT wait for Creature, Item, or
+  option-provider I/O on the JavaFX thread.
 
 ## Non-Goals
 
@@ -91,7 +122,19 @@ Encounter or Scene workspaces, or expose a second World Planner workspace.
 - At 1150×700 and 900×650, the selected section retains the persistent selector,
   compact controls, and a visible result workspace without horizontal scrolling.
 - Equivalent controls satisfy the shared 28-pixel and 12-pixel visual contract,
-  use inside labels, and do not render redundant group headings.
+  use inside labels, remain content-sized, and do not render redundant group
+  headings or nested section roots.
+- Sortable table headers are the only visible sort controls and expose the
+  active direction.
+- A user can type to select a filter option, remove each active value through
+  its own chip, and clear the selected section's filters with one reset action.
+- Every section presents the same `Erstellen` control position and style; the
+  action reaches a real provider workflow or reports its unavailable placeholder
+  without side effects.
+- No section renders a `Details` button; row interaction exposes available
+  Inspector details without mutating Encounter or Scene.
+- The shared result footer presents count, current status, and pagination when
+  paging is available.
 - Typing several characters inside 200 ms publishes only the final query;
   Enter publishes the current valid query immediately.
 - Inactive sections issue no provider query and retain their last state.
@@ -101,6 +144,9 @@ Encounter or Scene workspaces, or expose a second World Planner workspace.
   stable identity.
 - Each reachable result state renders a distinct visible outcome and leaves the
   JavaFX event thread responsive.
+- Local feedback for typing, filtering, sorting, section switching, selection,
+  and paging appears within 100 ms while Creature, Item, and option reads remain
+  independently non-blocking.
 - Opening details changes only Inspector content.
 - Each explicit Encounter or Scene action changes only its named destination.
 - Opening a saved Encounter with unsaved roster changes requires confirmation

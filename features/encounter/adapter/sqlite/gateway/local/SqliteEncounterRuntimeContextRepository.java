@@ -1,17 +1,5 @@
 package features.encounter.adapter.sqlite.gateway.local;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import platform.persistence.SqliteConnectionSource;
-import platform.persistence.SqliteDatabase;
-import platform.persistence.SqliteMigration;
 import features.encounter.api.EncounterRuntimeContextId;
 import features.encounter.api.EncounterRuntimeContextSpec;
 import features.encounter.api.EncounterRuntimeNpcRole;
@@ -29,19 +17,24 @@ import features.encounter.domain.session.InitiativeEntryData;
 import features.encounter.domain.session.ResultEnemyData;
 import features.encounter.domain.session.ResultStateData;
 
+import platform.persistence.FeatureStoreHandle;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 /** Relational persistence for every Scene-scoped Encounter runtime. */
 public final class SqliteEncounterRuntimeContextRepository implements EncounterRuntimeContextRepository {
 
-    private final SqliteConnectionSource connections;
+    private final FeatureStoreHandle connections;
 
-    public SqliteEncounterRuntimeContextRepository(SqliteDatabase database) {
-        EncounterSchemaMigrator migrations = new EncounterSchemaMigrator();
-        connections = database.connections(
-                "encounter",
-                new SqliteMigration(1, migrations::ensureSchema),
-                new SqliteMigration(2, migrations::ensureGeneratedPlanOrigins),
-                new SqliteMigration(3, migrations::ensureRuntimeContexts),
-                new SqliteMigration(4, migrations::ensureGeneratedBatchV4));
+    public SqliteEncounterRuntimeContextRepository(FeatureStoreHandle store) {
+        connections = FeatureStoreHandle.requireOwner(store, "encounter");
     }
 
     @Override
@@ -81,8 +74,9 @@ public final class SqliteEncounterRuntimeContextRepository implements EncounterR
                 }
                 if (contexts.focusedContextId() != null) {
                     try (PreparedStatement statement = connection.prepareStatement(
-                            "INSERT INTO encounter_runtime_meta(singleton_id, source_revision, focused_context_id) "
-                                    + "VALUES(1, ?, ?)")) {
+                                    "INSERT INTO encounter_runtime_meta(singleton_id,"
+                                        + " source_revision, focused_context_id) VALUES(1, ?,"
+                                        + " ?)")) {
                         statement.setLong(1, contexts.sourceRevision());
                         statement.setString(2, contexts.focusedContextId().value());
                         statement.executeUpdate();
@@ -102,7 +96,8 @@ public final class SqliteEncounterRuntimeContextRepository implements EncounterR
 
     private static Meta loadMeta(Connection connection) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT source_revision, focused_context_id FROM encounter_runtime_meta WHERE singleton_id=1");
+                                "SELECT source_revision, focused_context_id FROM"
+                                    + " encounter_runtime_meta WHERE singleton_id=1");
              ResultSet rows = statement.executeQuery()) {
             return rows.next() ? new Meta(rows.getLong(1), rows.getString(2)) : null;
         }
@@ -159,7 +154,8 @@ public final class SqliteEncounterRuntimeContextRepository implements EncounterR
         EncounterGenerationInputs inputs = session.builderInputs();
         ResultStateData result = session.resultState();
         try (PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO encounter_runtime_contexts VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
+                        "INSERT INTO encounter_runtime_contexts"
+                                + " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
             int index = 1;
             statement.setString(index++, spec.contextId().value());
             statement.setInt(index++, session.mode());
@@ -225,8 +221,9 @@ public final class SqliteEncounterRuntimeContextRepository implements EncounterR
 
     private static GenerationState loadGenerationState(Connection connection, String contextId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT selected_alternative_index, generated_adjusted_xp, generated_difficulty, generated_title, "
-                        + "generation_history_present, dirty FROM encounter_runtime_builder_state WHERE context_id=?")) {
+                        "SELECT selected_alternative_index, generated_adjusted_xp,"
+                            + " generated_difficulty, generated_title, generation_history_present,"
+                            + " dirty FROM encounter_runtime_builder_state WHERE context_id=?")) {
             statement.setString(1, contextId);
             try (ResultSet rows = statement.executeQuery()) {
                 if (!rows.next()) {
@@ -291,8 +288,9 @@ public final class SqliteEncounterRuntimeContextRepository implements EncounterR
     private static Map<String, List<ValueRow>> loadValues(Connection connection, String contextId) throws SQLException {
         Map<String, List<ValueRow>> values = new LinkedHashMap<>();
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT value_kind, text_value, integer_key, integer_value "
-                        + "FROM encounter_runtime_builder_values WHERE context_id=? ORDER BY value_kind, sort_order")) {
+                        "SELECT value_kind, text_value, integer_key, integer_value FROM"
+                            + " encounter_runtime_builder_values WHERE context_id=? ORDER BY"
+                            + " value_kind, sort_order")) {
             statement.setString(1, contextId);
             try (ResultSet rows = statement.executeQuery()) {
                 while (rows.next()) {
@@ -396,8 +394,9 @@ public final class SqliteEncounterRuntimeContextRepository implements EncounterR
     ) throws SQLException {
         List<GeneratedEncounterData> alternatives = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT sort_order, title, difficulty_label, adjusted_xp "
-                        + "FROM encounter_runtime_generated_alternatives WHERE context_id=? ORDER BY sort_order")) {
+                        "SELECT sort_order, title, difficulty_label, adjusted_xp FROM"
+                            + " encounter_runtime_generated_alternatives WHERE context_id=? ORDER"
+                            + " BY sort_order")) {
             statement.setString(1, contextId);
             try (ResultSet rows = statement.executeQuery()) {
                 while (rows.next()) {
@@ -421,8 +420,8 @@ public final class SqliteEncounterRuntimeContextRepository implements EncounterR
     ) throws SQLException {
         List<String> advisories = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT advisory FROM encounter_runtime_generated_alternative_advisories "
-                        + "WHERE context_id=? AND alternative_order=? ORDER BY sort_order")) {
+                        "SELECT advisory FROM encounter_runtime_generated_alternative_advisories"
+                            + " WHERE context_id=? AND alternative_order=? ORDER BY sort_order")) {
             statement.setString(1, contextId);
             statement.setInt(2, alternativeOrder);
             try (ResultSet rows = statement.executeQuery()) {
@@ -441,8 +440,8 @@ public final class SqliteEncounterRuntimeContextRepository implements EncounterR
     ) throws SQLException {
         List<EncounterCreatureData> roster = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT * FROM encounter_runtime_generated_alternative_roster "
-                        + "WHERE context_id=? AND alternative_order=? ORDER BY sort_order")) {
+                        "SELECT * FROM encounter_runtime_generated_alternative_roster WHERE"
+                            + " context_id=? AND alternative_order=? ORDER BY sort_order")) {
             statement.setString(1, contextId);
             statement.setInt(2, alternativeOrder);
             try (ResultSet rows = statement.executeQuery()) {
@@ -476,8 +475,9 @@ public final class SqliteEncounterRuntimeContextRepository implements EncounterR
     ) throws SQLException {
         List<String> tags = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT tag FROM encounter_runtime_generated_alternative_roster_tags "
-                        + "WHERE context_id=? AND alternative_order=? AND roster_order=? ORDER BY sort_order")) {
+                        "SELECT tag FROM encounter_runtime_generated_alternative_roster_tags WHERE"
+                            + " context_id=? AND alternative_order=? AND roster_order=? ORDER BY"
+                            + " sort_order")) {
             statement.setString(1, contextId);
             statement.setInt(2, alternativeOrder);
             statement.setInt(3, rosterOrder);
@@ -496,14 +496,17 @@ public final class SqliteEncounterRuntimeContextRepository implements EncounterR
             List<GeneratedEncounterData> alternatives
     ) throws SQLException {
         try (PreparedStatement alternative = connection.prepareStatement(
-                "INSERT INTO encounter_runtime_generated_alternatives VALUES(?,?,?,?,?)");
+                                "INSERT INTO encounter_runtime_generated_alternatives"
+                                    + " VALUES(?,?,?,?,?)");
              PreparedStatement roster = connection.prepareStatement(
                      "INSERT INTO encounter_runtime_generated_alternative_roster "
                              + "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
              PreparedStatement tag = connection.prepareStatement(
-                     "INSERT INTO encounter_runtime_generated_alternative_roster_tags VALUES(?,?,?,?,?)");
+                                "INSERT INTO encounter_runtime_generated_alternative_roster_tags"
+                                        + " VALUES(?,?,?,?,?)");
              PreparedStatement advisory = connection.prepareStatement(
-                     "INSERT INTO encounter_runtime_generated_alternative_advisories VALUES(?,?,?,?)")) {
+                                "INSERT INTO encounter_runtime_generated_alternative_advisories"
+                                    + " VALUES(?,?,?,?)")) {
             for (int alternativeIndex = 0; alternativeIndex < alternatives.size(); alternativeIndex++) {
                 GeneratedEncounterData value = alternatives.get(alternativeIndex);
                 alternative.setString(1, contextId);
@@ -641,7 +644,8 @@ public final class SqliteEncounterRuntimeContextRepository implements EncounterR
     private static List<EncounterCreatureData> loadRoster(Connection connection, String contextId) throws SQLException {
         List<EncounterCreatureData> values = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT * FROM encounter_runtime_roster WHERE context_id=? ORDER BY sort_order")) {
+                        "SELECT * FROM encounter_runtime_roster WHERE context_id=? ORDER BY"
+                            + " sort_order")) {
             statement.setString(1, contextId);
             try (ResultSet rows = statement.executeQuery()) {
                 while (rows.next()) {
@@ -677,7 +681,8 @@ public final class SqliteEncounterRuntimeContextRepository implements EncounterR
     private static void writeRoster(Connection connection, String contextId, List<EncounterCreatureData> roster)
             throws SQLException {
         try (PreparedStatement row = connection.prepareStatement(
-                "INSERT INTO encounter_runtime_roster VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+                                "INSERT INTO encounter_runtime_roster"
+                                    + " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
              PreparedStatement tag = connection.prepareStatement(
                      "INSERT INTO encounter_runtime_roster_tags VALUES(?,?,?,?)")) {
             for (int index = 0; index < roster.size(); index++) {
@@ -748,7 +753,8 @@ public final class SqliteEncounterRuntimeContextRepository implements EncounterR
     private static List<Combatant> loadCombatants(Connection connection, String contextId) throws SQLException {
         List<Combatant> values = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT * FROM encounter_runtime_combatants WHERE context_id=? ORDER BY sort_order")) {
+                        "SELECT * FROM encounter_runtime_combatants WHERE context_id=? ORDER BY"
+                            + " sort_order")) {
             statement.setString(1, contextId);
             try (ResultSet rows = statement.executeQuery()) {
                 while (rows.next()) {
@@ -768,7 +774,8 @@ public final class SqliteEncounterRuntimeContextRepository implements EncounterR
     private static void writeCombatants(Connection connection, String contextId, List<Combatant> values)
             throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO encounter_runtime_combatants VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
+                        "INSERT INTO encounter_runtime_combatants"
+                            + " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
             for (int index = 0; index < values.size(); index++) {
                 Combatant value = values.get(index);
                 int column = 1;
@@ -797,7 +804,8 @@ public final class SqliteEncounterRuntimeContextRepository implements EncounterR
     private static List<ResultEnemyData> loadResultEnemies(Connection connection, String contextId) throws SQLException {
         List<ResultEnemyData> values = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT * FROM encounter_runtime_result_enemies WHERE context_id=? ORDER BY sort_order")) {
+                        "SELECT * FROM encounter_runtime_result_enemies WHERE context_id=? ORDER BY"
+                                + " sort_order")) {
             statement.setString(1, contextId);
             try (ResultSet rows = statement.executeQuery()) {
                 while (rows.next()) {
@@ -814,7 +822,8 @@ public final class SqliteEncounterRuntimeContextRepository implements EncounterR
     private static void writeResultEnemies(Connection connection, String contextId, List<ResultEnemyData> values)
             throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO encounter_runtime_result_enemies VALUES(?,?,?,?,?,?,?,?,?,?)")) {
+                        "INSERT INTO encounter_runtime_result_enemies"
+                            + " VALUES(?,?,?,?,?,?,?,?,?,?)")) {
             for (int index = 0; index < values.size(); index++) {
                 ResultEnemyData value = values.get(index);
                 statement.setString(1, contextId);

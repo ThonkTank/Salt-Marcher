@@ -124,13 +124,15 @@ public final class SessionPlannerWorkspaceAssembler {
         Optional<SessionPlan> selected = capture.currentSession();
         PreparedSceneCatalogSnapshot prepared = preparedScenes(capture);
         if (selected.isEmpty()) {
-            SessionPlannerWorkspaceSnapshot empty = new SessionPlannerWorkspaceSnapshot(
-                    0L, 0L, 0L, catalog(capture, ""),
-                    SessionPlannerSessionSnapshot.empty("Keine Session verfügbar."),
-                    SessionPlannerParticipantsProjection.empty(), SessionPlannerSceneTimelineProjection.empty(),
-                    SessionPlannerSelectedSceneSnapshot.empty(),
-                    preparation, List.of());
-            return CompletableFuture.completedFuture(new SessionPlannerWorkspaceAssembly(empty, prepared));
+            return partyCapture(List.of(), 0).thenApply(partyCapture -> {
+                SessionPlannerWorkspaceSnapshot empty = new SessionPlannerWorkspaceSnapshot(
+                        0L, 0L, 0L, catalog(capture, ""),
+                        SessionPlannerSessionSnapshot.empty("Keine Session verfügbar."),
+                        participants(List.of(), partyCapture.response()),
+                        SessionPlannerSceneTimelineProjection.empty(),
+                        SessionPlannerSelectedSceneSnapshot.empty(), preparation, partyCapture.issues());
+                return new SessionPlannerWorkspaceAssembly(empty, prepared);
+            });
         }
 
         SessionPlan session = selected.orElseThrow();
@@ -142,17 +144,28 @@ public final class SessionPlannerWorkspaceAssembler {
         CompletionStage<RewardCapture> rewardStage = rewardCapture(rewardRefs);
         return encounterStage.thenCompose(encounterCapture -> {
             int plannedXp = plannedXp(session, encounterCapture.byId());
-            CompletionStage<PartyPlanningFactsResponse> partyStage;
-            try {
-                partyStage = party.loadPlanningFacts(new PartyPlanningFactsQuery(session.participantRefs(), plannedXp));
-            } catch (RuntimeException failure) {
-                partyStage = CompletableFuture.completedFuture(
-                        PartyPlanningFactsResponse.failure("Party-Planungsdaten konnten nicht geladen werden."));
-            }
-            return partyStage.thenCombine(rewardStage, (partyFacts, rewards) -> assemble(
+            return partyCapture(session.participantRefs(), plannedXp).thenCombine(rewardStage, (partyCapture, rewards) -> assemble(
                     capture, session, preparation, world, encounterCapture,
-                    normalizeParty(partyFacts, session.participantRefs()), rewards, prepared));
+                    partyCapture, rewards, prepared));
         });
+    }
+
+    private CompletionStage<PartyCapture> partyCapture(List<Long> participantIds, int plannedXp) {
+        CompletionStage<PartyPlanningFactsResponse> stage;
+        try {
+            stage = party.loadPlanningFacts(new PartyPlanningFactsQuery(participantIds, plannedXp));
+        } catch (RuntimeException failure) {
+            stage = CompletableFuture.completedFuture(
+                    PartyPlanningFactsResponse.failure("Party-Planungsdaten konnten nicht geladen werden."));
+        }
+        if (stage == null) {
+            stage = CompletableFuture.completedFuture(
+                    PartyPlanningFactsResponse.failure("Party-Planungsdaten konnten nicht geladen werden."));
+        }
+        return stage.handle((response, failure) -> normalizeParty(
+                failure == null ? response : PartyPlanningFactsResponse.failure(
+                        "Party-Planungsdaten konnten nicht geladen werden."),
+                participantIds));
     }
 
     private SessionPlannerWorkspaceAssembly assemble(
@@ -170,7 +183,8 @@ public final class SessionPlannerWorkspaceAssembler {
         issues.addAll(encounter.issues());
         issues.addAll(partyCapture.issues());
         issues.addAll(rewards.issues());
-        SessionPlannerParticipantsProjection participants = participants(session, partyCapture.response());
+        SessionPlannerParticipantsProjection participants = participants(
+                session.participantRefs(), partyCapture.response());
         int scaledBudgetXp = scaledBudget(session, partyCapture.response());
         SessionPlannerSceneTimelineProjection timeline = timeline(
                 session, scaledBudgetXp, encounter.byId(), world.locations());
@@ -462,7 +476,7 @@ public final class SessionPlannerWorkspaceAssembler {
     }
 
     private static SessionPlannerParticipantsProjection participants(
-            SessionPlan session,
+            List<Long> participantIds,
             PartyPlanningFactsResponse facts
     ) {
         List<SessionPlannerParticipantsProjection.SessionParticipant> participants = new ArrayList<>();
@@ -477,7 +491,7 @@ public final class SessionPlannerWorkspaceAssembler {
                                 resolved.requestedId(), member.name(), member.level(), true, ""));
             }
         } else {
-            session.participantRefs().forEach(id -> participants.add(
+            participantIds.forEach(id -> participants.add(
                     new SessionPlannerParticipantsProjection.SessionParticipant(
                             id, "Charakter #" + id, 0, false, "Party-Planungsdaten nicht verfügbar.")));
         }
@@ -488,7 +502,7 @@ public final class SessionPlannerWorkspaceAssembler {
                 : (int) Math.round(levels.stream().mapToInt(Integer::intValue).average().orElse(0.0));
         long missing = participants.stream()
                 .filter(participant -> !participant.available()).count();
-        int size = session.participantRefs().size();
+        int size = participantIds.size();
         String detail = size == 0 ? "Session hat noch keine Teilnehmer."
                 : missing > 0 ? levels.size() + " aufgelöst · " + missing + " fehlend"
                 : "Durchschnittsstufe " + average + " · Level " + joinLevels(levels);

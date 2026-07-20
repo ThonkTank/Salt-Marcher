@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import platform.diagnostics.NoopDiagnostics;
 import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
 
 final class SessionPlannerMigrationV4Test {
 
@@ -26,15 +27,15 @@ final class SessionPlannerMigrationV4Test {
     Path temporaryDirectory;
 
     @Test
-    void freshStoreCreatesOnlyCanonicalVersionFourSchema() throws Exception {
+    void freshStoreCreatesOnlyCanonicalVersionFiveSchema() throws Exception {
         Path path = temporaryDirectory.resolve("session-planner-fresh.db");
 
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            new SqliteSessionPlanRepository(database).readWorkspace();
+            repository(database).readWorkspace();
         }
 
         try (Connection connection = rawConnection(path)) {
-            assertEquals(4, featureVersion(connection));
+            assertEquals(5, featureVersion(connection));
             assertTrue(schemaObjectExists(connection, "table", "session_planner_manual_loot_notes"));
             assertFalse(schemaObjectExists(connection, "table", LEGACY_TABLE));
             assertFalse(schemaObjectExists(connection, "index", LEGACY_INDEX));
@@ -48,7 +49,7 @@ final class SessionPlannerMigrationV4Test {
 
         SessionPlan loaded;
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            loaded = new SqliteSessionPlanRepository(database).loadById(9L).orElseThrow();
+            loaded = repository(database).loadById(9L).orElseThrow();
         }
 
         assertEquals(1L, loaded.revision().value());
@@ -67,7 +68,7 @@ final class SessionPlannerMigrationV4Test {
         assertEquals("Legacy cache", loaded.generatedRewards().getFirst().lastKnownLabel());
 
         try (Connection connection = rawConnection(path)) {
-            assertEquals(4, featureVersion(connection));
+            assertEquals(5, featureVersion(connection));
             assertFalse(schemaObjectExists(connection, "table", LEGACY_TABLE));
             assertFalse(schemaObjectExists(connection, "index", LEGACY_INDEX));
             assertEquals(2, rowCount(connection, "session_planner_manual_loot_notes"));
@@ -81,7 +82,7 @@ final class SessionPlannerMigrationV4Test {
 
         SessionPlan loaded;
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            loaded = new SqliteSessionPlanRepository(database).loadById(9L).orElseThrow();
+            loaded = repository(database).loadById(9L).orElseThrow();
         }
 
         assertEquals(9L, loaded.revision().value());
@@ -93,7 +94,7 @@ final class SessionPlannerMigrationV4Test {
         assertEquals("Canonically edited note", loaded.manualLootNotes().getFirst().authoredText());
 
         try (Connection connection = rawConnection(path)) {
-            assertEquals(4, featureVersion(connection));
+            assertEquals(5, featureVersion(connection));
             assertFalse(schemaObjectExists(connection, "table", LEGACY_TABLE));
             assertFalse(schemaObjectExists(connection, "index", LEGACY_INDEX));
             assertEquals(1, rowCount(connection, "session_planner_manual_loot_notes"));
@@ -101,12 +102,12 @@ final class SessionPlannerMigrationV4Test {
     }
 
     @Test
-    void versionFourFailureRollsBackVersionIndexTableAndData() throws Exception {
+    void versionFiveFailureRollsBackVersionIndexTableAndData() throws Exception {
         Path path = temporaryDirectory.resolve("session-planner-v3-rollback.db");
         createVersionThreeFixture(path, true);
 
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(database);
+            SqliteSessionPlanRepository repository = repository(database);
             assertThrows(IllegalStateException.class, () -> repository.loadById(9L));
         }
 
@@ -124,6 +125,11 @@ final class SessionPlannerMigrationV4Test {
                     "SELECT note_text FROM session_planner_manual_loot_notes WHERE note_id = 41"));
             assertEquals(1, rowCount(connection, "test_legacy_loot_reference"));
         }
+    }
+
+    private static SqliteSessionPlanRepository repository(SqliteDatabase database) {
+        return new SqliteSessionPlanRepository(
+                TestFeatureStores.store(database, SqliteSessionPlanRepository.storeDefinition()));
     }
 
     private static void createVersionTwoFixture(Path path) throws Exception {

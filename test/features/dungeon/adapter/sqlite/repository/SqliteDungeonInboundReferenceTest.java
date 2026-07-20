@@ -3,10 +3,10 @@ package features.dungeon.adapter.sqlite.repository;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
-import features.dungeon.application.authored.command.DungeonPatchEntityRef;
 import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSeeder;
 import features.dungeon.application.authored.command.CorridorChange;
 import features.dungeon.application.authored.command.DungeonPatch;
+import features.dungeon.application.authored.command.DungeonPatchEntityRef;
 import features.dungeon.application.authored.command.StairChange;
 import features.dungeon.application.authored.command.TransitionChange;
 import features.dungeon.application.authored.port.DungeonInboundReferenceRequest;
@@ -23,13 +23,15 @@ import features.dungeon.domain.core.structure.stair.StairShape;
 import features.dungeon.domain.core.structure.transition.Transition;
 import features.dungeon.domain.core.structure.transition.TransitionAnchor;
 import features.dungeon.domain.core.structure.transition.TransitionDestination;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import platform.diagnostics.NoopDiagnostics;
 import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
+
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Set;
 
 final class SqliteDungeonInboundReferenceTest {
 
@@ -38,11 +40,12 @@ final class SqliteDungeonInboundReferenceTest {
             throws Exception {
         Path path = directory.resolve("inbound.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            SqliteDungeonCatalogStore catalog = new SqliteDungeonCatalogStore(database);
+            var fixture = DungeonSqliteFixtureSeeder.prepare(database);
+            SqliteDungeonCatalogStore catalog = new SqliteDungeonCatalogStore(fixture.store());
             DungeonMapHeader created = catalog.create("Inbound");
-            insertReferences(database, created);
+            insertReferences(fixture, created);
             DungeonMapHeader header = catalog.find(created.mapId()).orElseThrow();
-            SqliteDungeonWindowStore store = new SqliteDungeonWindowStore(database);
+            SqliteDungeonWindowStore store = new SqliteDungeonWindowStore(fixture.store());
 
             DungeonInboundReferenceResult.Complete corridor = assertInstanceOf(
                     DungeonInboundReferenceResult.Complete.class,
@@ -73,7 +76,8 @@ final class SqliteDungeonInboundReferenceTest {
         }
     }
 
-    private static void insertReferences(SqliteDatabase database, DungeonMapHeader header) {
+    private static void insertReferences(
+            DungeonSqliteFixtureSeeder.Fixture fixture, DungeonMapHeader header) {
         long mapId = header.mapId().value();
         Corridor host = new Corridor(10L, mapId, 0, List.of(), new CorridorBindings(
                 List.of(), List.of(), List.of(new CorridorAnchor(100L, 10L, new Cell(0, 0, 0))), List.of()));
@@ -94,7 +98,7 @@ final class SqliteDungeonInboundReferenceTest {
                 30L, mapId, "Target", TransitionAnchor.none(), TransitionDestination.unlinkedEntrance(), null);
         Transition transitionReferrer = new Transition(
                 31L, mapId, "Referrer", TransitionAnchor.none(), TransitionDestination.unlinkedEntrance(), 30L);
-        DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(
+        fixture.commit(DungeonPatch.of(
                 header.mapId(),
                 header.revision(),
                 List.of(

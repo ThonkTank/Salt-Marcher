@@ -59,8 +59,12 @@ Commit is idempotent:
 
 ## Normalized Persistence
 
-The persistence lifecycle owner key remains `session-generation`. The logical
-schema stores:
+The persistence lifecycle owner key remains `session-generation`.
+Owner startup readiness validates the feature-declared target schema signature;
+semantic row validation remains on typed repository read/write paths and fails
+closed through this feature contract.
+
+The logical schema stores:
 
 - run identity, content fingerprint, engine version, catalog version and
   content hash, seed, exact adventure-day fraction, session summary, reward

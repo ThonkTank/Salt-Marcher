@@ -24,37 +24,50 @@ final class CreaturesRuntimeBoundaryTest {
 
     @Test
     void independentQueriesCompleteWithTheirOwnResultsAndReferenceIndexPublishesThroughUi() {
-        ControllableLane lane = new ControllableLane();
+        ControllableLane stateLane = new ControllableLane();
+        ControllableLane catalogReadLane = new ControllableLane();
         QueuedUiDispatcher ui = new QueuedUiDispatcher();
         RecordingDiagnostics diagnostics = new RecordingDiagnostics();
         RecordingPort port = new RecordingPort();
         CreaturesServiceAssembly.Component component =
-                CreaturesServiceAssembly.create(port, lane, lane, ui, diagnostics);
+                CreaturesServiceAssembly.create(
+                        port, stateLane, catalogReadLane, stateLane, ui, diagnostics);
         CompletionStage<CreatureCatalogPageResult> older = component.catalogQueries().search(command("older"));
         CompletionStage<CreatureCatalogPageResult> newer = component.catalogQueries().search(command("newer"));
 
         assertEquals(0, port.searchCount, "queries do not touch storage on the caller");
-        lane.run(1);
+        assertEquals(0, stateLane.size(), "stateless catalog reads must not enter the published-state lane");
+        catalogReadLane.run(1);
         assertEquals("newer", firstName(newer.toCompletableFuture().join()));
         assertEquals(false, older.toCompletableFuture().isDone(), "older request remains independently pending");
-        lane.run(0);
+        catalogReadLane.run(0);
         assertEquals("older", firstName(older.toCompletableFuture().join()));
         assertEquals(0, ui.size(), "request/response queries do not publish global UI state");
 
         CompletionStage<CreatureCatalogPageResult> failed = component.catalogQueries().search(command("fail"));
-        lane.run(0);
+        catalogReadLane.run(0);
         assertEquals(CreatureQueryStatus.STORAGE_ERROR, failed.toCompletableFuture().join().status());
+
+        var detail = component.detailQueries().load(7L);
+        assertEquals(0, stateLane.size(),
+                "request-local detail reads must not enter the published-state lane");
+        assertEquals(1, catalogReadLane.size(),
+                "request-local detail reads must use the Creature catalog lane");
+        catalogReadLane.run(0);
+        assertEquals(CreatureLookupStatus.NOT_FOUND, detail.toCompletableFuture().join().status());
 
         List<CreatureReferenceIndexStatus> observed = new ArrayList<>();
         component.referenceIndex().subscribe(result -> observed.add(result.status()));
         component.application().refreshReferenceIndex(new RefreshCreatureReferenceIndexCommand());
         component.application().refreshReferenceIndex(new RefreshCreatureReferenceIndexCommand());
+        assertEquals(0, catalogReadLane.size(),
+                "state-publishing Creature commands must not enter the concurrent catalog lane");
         assertEquals(CreatureReferenceIndexStatus.LOADING, component.referenceIndex().current().status());
         assertEquals(2L, component.referenceIndex().current().revision());
-        lane.run(1);
+        stateLane.run(1);
         assertEquals(CreatureReferenceIndexStatus.SUCCESS, component.referenceIndex().current().status());
         assertEquals(2L, component.referenceIndex().current().revision());
-        lane.run(0);
+        stateLane.run(0);
         assertEquals(2L, component.referenceIndex().current().revision(), "stale index completion is ignored");
         assertEquals(List.of(), observed, "reference callbacks wait for UI dispatch");
         ui.runAll();
@@ -154,6 +167,10 @@ final class CreaturesRuntimeBoundaryTest {
 
         void run(int index) {
             work.remove(index).run();
+        }
+
+        int size() {
+            return work.size();
         }
 
         @Override
