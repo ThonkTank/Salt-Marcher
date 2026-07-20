@@ -315,9 +315,13 @@ passability or action rules.
   or deformation; one Trap may span fields in several adjacent Volumes
 - trigger fields only notify and interrupt travel, and do not alter passability
   or decide fictional outcomes
-- a Trap may define Charges for consecutive actual activations and a Reset
-  Duration for restoring Charges
-- exact Charge-consumption and refill behavior remains to be confirmed
+- a Trap defines maximum and current Charges; only a GM-confirmed actual
+  activation consumes one
+- at zero Charges the Trap cannot activate automatically
+- Reset Duration restores all Charges together
+- per Trap, the GM chooses whether the reset countdown starts only at zero or as
+  soon as current Charges fall below maximum
+- the GM may manually correct current Charges and reset state
 - a future low-priority monster routine may perform an explicit manual Trap
   reset
 - Encounter detection initially uses a radius derived from monster statistics;
