@@ -281,6 +281,19 @@ läuft der bestehende Countdown weiter und beginnt nicht erneut. Nach Ablauf
 werden unabhängig vom zwischenzeitlichen Verbrauch alle Charges aufgefüllt.
 Aktuelle Charges und Reset dürfen jederzeit manuell korrigiert werden.
 
+### Woher stammen Monster und Werte eines Dungeon-Encounters?
+
+**Bestätigte Antwort:** Primär aus dem bereits vorhandenen Encounter-Feature.
+
+Beim Platzieren verwendet der GM hauptsächlich einen bereits in SaltMarcher
+angelegten Encounter beziehungsweise dessen Monstergruppe. Der Dungeon baut
+Monsterzusammensetzung und Stat-Werte nicht als zweite Inhaltswahrheit nach.
+
+Die Dungeon-Platzierung ergänzt den exakten Voxelanker sowie lokale
+Dungeon-Hinweise, Erkennungsverhalten und später gegebenenfalls einen
+Tagesablauf. Die zugrunde liegende Encounter-Zusammensetzung und Monsterwerte
+bleiben mit dem vorhandenen Encounter-Feature verbunden.
+
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
 **Bestätigte Antwort:** Fest gezeichnete Flächen und dynamisch erzeugte Pfade.
