@@ -16,10 +16,10 @@ internal storage and routing concepts.
 
 The editor MUST let the GM:
 
-- create, rename, load, reload, and delete Dungeon maps
+- create, rename, load, reload, and delete Dungeons
 - author and inspect rooms, named room groups or areas, walls, doors, corridors,
   stairs, transitions, markers, traps, descriptions, and campaign references
-- work on positive and negative levels and coordinates without a fixed map
+- work on positive and negative levels and coordinates without a fixed Dungeon
   boundary
 - select a stable authored object and find the same object in every applicable
   view
@@ -33,8 +33,8 @@ and discoverable tools.
 
 ## Authoring Entry Points
 
-The raster map and relationship graph are equal primary entry points for a new
-Dungeon. A GM may begin and continue structural authoring in either view.
+The raster view and relationship graph are equal primary entry points for a new
+Dungeon. Both represent one continuous Dungeon whole rather than separate maps. A GM may begin and continue structural authoring in either view.
 Changes in each view synchronously affect the same Dungeon structure; neither
 view is merely a downstream presentation of the other.
 
@@ -54,7 +54,7 @@ The editor raster view owns direct spatial authoring:
 - show pending geometry as a non-persisted preview
 - expose enough specific feedback to repair invalid or conflicting geometry
 
-The runtime travel raster is not an authoring surface. It displays the map
+The runtime travel raster is not an authoring surface. It displays the Dungeon
 passively and lets the GM select rooms, objects, actors, and other targets to
 open their descriptions in a detail pane.
 
@@ -252,10 +252,10 @@ passability or action rules.
 - a new commit after undo discards that session's redo branch
 - undo/redo preserves stable authored identities
 - history is session-scoped and is not exported as Dungeon truth
-- one action spanning several maps, such as a bidirectional transition, commits
+- one action spanning several Dungeons, such as a bidirectional external transition, commits
   and reverses atomically
 
-## Sparse-Map Responsiveness
+## Sparse-Dungeon Responsiveness
 
 - authored coordinates have no fixed width or height boundary
 - camera, hover, selection, preview, and rendering work scales with visible
@@ -263,7 +263,7 @@ passability or action rules.
 - off-screen authored content does not force global work for a local gesture
 - camera and hover work meet a 16 ms p95 budget
 - preview over already available local data meets a 50 ms p95 budget
-- qualification includes at least 100,000 authored cells on a sparse map
+- qualification includes at least 100,000 authored cells in a sparse Dungeon
 
 ## Extensibility Qualification
 
@@ -280,7 +280,7 @@ unrelated feature, travel, persistence, or shell rewrites.
 - text-centric editing is efficient in the Dungeon-Key view
 - generated geometry text updates without destroying GM-authored semantics
 - document output remains understandable without current runtime party state
-- ordinary local work remains responsive on the sparse qualification map
+- ordinary local work remains responsive in the sparse qualification Dungeon
 
 ## References
 
