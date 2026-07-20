@@ -60,8 +60,11 @@ described surface region. A Level is a GM-defined set of z-levels within the
 same continuous 3D Dungeon, not a map. Level z-level sets do not overlap for
 inheritance. Each Room belongs to at most one Level, which the GM may choose or
 skip even when the Volume spans several z-levels. SaltMarcher may propose but
-MUST NOT force the assignment or split geometry. Each inheritance path is
-unambiguous. Overlapping collections or tags may support filters and diagnostics but do not
+MUST NOT force the assignment or split geometry. Allowed parent paths are
+Dungeon/Room, Dungeon/Group/Room, Dungeon/Level/Room, and
+Dungeon/Level/Group/Room. Dungeon-level groups may span z-levels; Level-owned
+groups stay within that Level. Further nested group levels are initially
+excluded. Each inheritance path is unambiguous. Overlapping collections or tags may support filters and diagnostics but do not
 inherit. More specific values override inherited defaults without creating
 rules, passability, or effects.
 
