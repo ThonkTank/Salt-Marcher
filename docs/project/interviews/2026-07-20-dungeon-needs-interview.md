@@ -300,6 +300,21 @@ mehrfach vorkommen, kopiert der GM den Encounter und erhält unabhängige Gruppe
 Spätere Mobilität verändert den Voxelanker derselben Gruppe, statt zusätzliche
 Platzierungen zu erzeugen.
 
+### Woher stammen die Inhalte eines Dungeon-Loot-Features?
+
+**Bestätigte Antwort:** Aus demselben gemeinsamen Loot-Objekt wie in anderen
+Produktbereichen.
+
+Der Dungeon soll Währungen, Gegenstände und Magic Items nicht als eigene zweite
+Loot-Wahrheit nachbauen. Er verwendet vorhandene Loot-Inhalte beziehungsweise
+verweist auf das spätere gemeinsame Loot-Feature. Sobald Encounter und Session
+Generation ebenfalls dieses gemeinsame Modell verwenden, beziehen sich alle
+drei Bereiche auf dasselbe Loot-Objekt.
+
+Die Dungeon-Platzierung ergänzt den exakten Voxelanker und lokalen
+Dungeon-Kontext. Die fachlichen Loot-Inhalte bleiben im gemeinsamen
+Loot-Feature.
+
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
 **Bestätigte Antwort:** Fest gezeichnete Flächen und dynamisch erzeugte Pfade.
