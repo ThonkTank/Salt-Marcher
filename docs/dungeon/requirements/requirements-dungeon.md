@@ -64,9 +64,11 @@ MUST NOT force the assignment or split geometry. Allowed parent paths are
 Dungeon/Room, Dungeon/Group/Room, Dungeon/Level/Room, and
 Dungeon/Level/Group/Room. Dungeon-level groups may span z-levels; Level-owned
 groups stay within that Level. Further nested group levels are initially
-excluded. Each inheritance path is unambiguous. Overlapping collections or tags may support filters and diagnostics but do not
-inherit. More specific values override inherited defaults without creating
-rules, passability, or effects.
+excluded. Each inheritance path is unambiguous. Different attribute keys
+accumulate; a more specific value for the same key replaces only that key. The
+GM may explicitly suppress or clear an inherited key. Overlapping collections
+or tags may support filters and diagnostics but do not inherit. Attribute
+inheritance does not create rules, passability, or effects.
 
 Every Dungeon Feature initially has an exact 3D voxel position anchored within
 one Volume. Moving or reshaping the Volume carries its Feature anchors with it.
