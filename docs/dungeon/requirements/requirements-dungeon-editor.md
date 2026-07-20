@@ -18,7 +18,7 @@ The editor MUST let the GM:
 
 - create, rename, load, reload, and delete Dungeons
 - author and inspect rooms, named room groups or areas, walls, doors, corridors,
-  stairs, transitions, markers, traps, descriptions, and campaign references
+  stairs, transitions, traps, descriptions, and campaign references
 - copy a complete authored Room, door, or comparable content identity, or
   selected reusable parts of its authored content, and assign the copy to
   suitable geometry
@@ -104,8 +104,8 @@ own description and passability while the two reference each other.
 Additional raster capabilities include:
 
 - draw and reshape room and area geometry
-- place and edit walls, doors, unified connection Paths, transitions, markers,
-  traps, and other spatial objects
+- place and edit walls, doors, unified connection Paths, transitions, traps,
+  and other purpose-specific spatial objects
 - select authored objects, rooms, and areas for detailed inspection
 - change levels, pan, zoom, jump to coordinates, fit selection, and fit authored
   content
