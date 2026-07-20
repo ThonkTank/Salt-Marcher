@@ -1,7 +1,6 @@
 .gradle/
 build/
 .codex
-src/.codex
 tools/**/.gradle/
 tools/**/build/
 docs/references/

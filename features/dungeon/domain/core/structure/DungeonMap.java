@@ -1,0 +1,383 @@
+package features.dungeon.domain.core.structure;
+
+import java.util.List;
+import org.jspecify.annotations.Nullable;
+import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.Edge;
+import features.dungeon.domain.core.graph.DungeonTopologyRef;
+import features.dungeon.domain.core.structure.corridor.Corridor;
+import features.dungeon.domain.core.structure.corridor.CorridorNetwork;
+import features.dungeon.domain.core.structure.feature.FeatureMarkerCatalog;
+import features.dungeon.domain.core.structure.room.RoomCatalog;
+import features.dungeon.domain.core.structure.room.RoomCluster;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;
+import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.structure.stair.StairCollection;
+import features.dungeon.domain.core.structure.stair.Stair;
+import features.dungeon.domain.core.structure.stair.StairGeometrySpec;
+import features.dungeon.domain.core.structure.topology.DungeonMapTopology;
+import features.dungeon.domain.core.structure.topology.SpatialTopology;
+import features.dungeon.domain.core.structure.transition.TransitionCatalog;
+import features.dungeon.domain.core.structure.transition.Transition;
+
+/**
+ * Canonical aggregate root state for one authored dungeon map.
+ */
+public record DungeonMap(
+        DungeonMapMetadata metadata,
+        SpatialTopology topology,
+        DungeonMapTopology topologyIndex,
+        RoomCatalog rooms,
+        List<Corridor> corridors,
+        StairCollection stairs,
+        TransitionCatalog transitionCatalog,
+        FeatureMarkerCatalog featureMarkers,
+        long revision
+) {
+    public DungeonMap(
+            DungeonMapMetadata metadata,
+            SpatialTopology topology,
+            RoomCatalog rooms,
+            List<Corridor> corridors,
+            StairCollection stairs,
+            TransitionCatalog transitionCatalog,
+            long revision
+    ) {
+        this(metadata, topology, null, rooms, corridors, stairs, transitionCatalog, FeatureMarkerCatalog.empty(), revision);
+    }
+
+    public DungeonMap(
+            DungeonMapMetadata metadata,
+            SpatialTopology topology,
+            @Nullable DungeonMapTopology topologyIndex,
+            RoomCatalog rooms,
+            List<Corridor> corridors,
+            StairCollection stairs,
+            TransitionCatalog transitionCatalog,
+            long revision
+    ) {
+        this(metadata, topology, topologyIndex, rooms, corridors, stairs, transitionCatalog,
+                FeatureMarkerCatalog.empty(), revision);
+    }
+
+    public DungeonMap(
+            DungeonMapMetadata metadata,
+            SpatialTopology topology,
+            @Nullable DungeonMapTopology topologyIndex,
+            RoomCatalog rooms,
+            List<Corridor> corridors,
+            StairCollection stairs,
+            TransitionCatalog transitionCatalog,
+            FeatureMarkerCatalog featureMarkers,
+            long revision
+    ) {
+        this.metadata = metadata;
+        this.topology = topology == null ? SpatialTopology.empty() : topology;
+        this.rooms = rooms == null ? RoomCatalog.empty() : rooms;
+        this.corridors = corridors == null ? List.of() : List.copyOf(corridors);
+        this.stairs = stairs == null ? new StairCollection(List.of()) : stairs;
+        this.transitionCatalog = transitionCatalog == null ? new TransitionCatalog(List.of()) : transitionCatalog;
+        this.featureMarkers = featureMarkers == null ? FeatureMarkerCatalog.empty() : featureMarkers;
+        this.topologyIndex = DungeonMapTopology.merge(
+                topologyIndex,
+                DungeonMapTopology.from(
+                        this.topology,
+                        this.rooms,
+                        this.corridors,
+                        this.stairs.stairs(),
+                        this.transitionCatalog.transitions(),
+                        this.featureMarkers.topologyBindings()));
+        this.revision = Math.max(0L, revision);
+    }
+
+    private static final DungeonMapRoomAuthoring ROOM_AUTHORING = new DungeonMapRoomAuthoring();
+    private static final DungeonMapConnectionAuthoring CONNECTION_AUTHORING = new DungeonMapConnectionAuthoring();
+    private static final DungeonMapStairAuthoring STAIR_AUTHORING = new DungeonMapStairAuthoring();
+
+    public long clusterIdForTopologyRef(DungeonTopologyRef topologyRef) {
+        return topologyIndex.clusterIdOrZero(topologyRef);
+    }
+
+    public DungeonMap moveCluster(long clusterId, int deltaQ, int deltaR, int deltaLevel) {
+        return ROOM_AUTHORING.moveCluster(this, clusterId, deltaQ, deltaR, deltaLevel);
+    }
+
+    public DungeonMap moveClusterCorner(
+            long clusterId,
+            Cell corner,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
+    ) {
+        return ROOM_AUTHORING.moveClusterCorner(this, clusterId, corner, deltaQ, deltaR, deltaLevel, ids);
+    }
+
+    public DungeonMap moveDoorBinding(
+            long corridorId,
+            int bindingIndex,
+            long roomId,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        return CONNECTION_AUTHORING.moveDoorBinding(
+                this,
+                corridorId,
+                bindingIndex,
+                roomId,
+                deltaQ,
+                deltaR,
+                deltaLevel);
+    }
+
+    public DungeonMap moveDoorBoundary(
+            DungeonTopologyRef topologyRef,
+            long clusterId,
+            long roomId,
+            Edge sourceEdge,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        return CONNECTION_AUTHORING.moveDoorBoundary(
+                this,
+                topologyRef,
+                clusterId,
+                roomId,
+                sourceEdge,
+                deltaQ,
+                deltaR,
+                deltaLevel);
+    }
+
+    public DungeonMap moveCorridorAnchor(
+            long corridorId,
+            int bindingIndex,
+            DungeonTopologyRef topologyRef,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        return CONNECTION_AUTHORING.moveCorridorAnchor(
+                this,
+                corridorId,
+                bindingIndex,
+                topologyRef,
+                deltaQ,
+                deltaR,
+                deltaLevel);
+    }
+
+    public DungeonMap moveCorridorWaypoint(
+            long corridorId,
+            int waypointIndex,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        return CONNECTION_AUTHORING.moveCorridorWaypoint(this, corridorId, waypointIndex, deltaQ, deltaR, deltaLevel);
+    }
+
+    public DungeonMap moveStairAnchor(long stairId, int handleIndex, int deltaQ, int deltaR, int deltaLevel) {
+        return STAIR_AUTHORING.moveStairAnchor(this, stairId, handleIndex, deltaQ, deltaR, deltaLevel);
+    }
+
+    public DungeonMap moveBoundaryStretch(
+            long clusterId,
+            List<Edge> sourceEdges,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
+    ) {
+        return ROOM_AUTHORING.moveBoundaryStretch(
+                this, clusterId, sourceEdges, deltaQ, deltaR, deltaLevel, ids);
+    }
+
+    public boolean canCreateStair(StairGeometrySpec spec) {
+        return STAIR_AUTHORING.canCreateStair(this, spec);
+    }
+
+    public boolean canSaveStairGeometry(
+            long stairId,
+            StairGeometrySpec spec
+    ) {
+        return STAIR_AUTHORING.canSaveStairGeometry(this, stairId, spec);
+    }
+
+    public DungeonMap paintRoomRectangle(
+            Cell start,
+            Cell end,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
+    ) {
+        return ROOM_AUTHORING.paintRoomRectangle(this, start, end, ids);
+    }
+
+    public DungeonMap deleteRoomRectangle(
+            Cell start,
+            Cell end,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
+    ) {
+        return ROOM_AUTHORING.deleteRoomRectangle(this, start, end, ids);
+    }
+
+    public DungeonMap editClusterBoundaries(
+            long clusterId,
+            List<Edge> edges,
+            BoundaryKind kind,
+            boolean deleteBoundary,
+            RoomTopologyWorkCatalog.ReservedIdentities ids
+    ) {
+        return ROOM_AUTHORING.editClusterBoundaries(
+                this, clusterId, edges, kind, deleteBoundary, ids);
+    }
+
+    DungeonMap withStairs(StairCollection nextStairs) {
+        return new DungeonMap(
+                metadata,
+                topology,
+                null,
+                rooms,
+                corridors,
+                nextStairs,
+                transitionCatalog,
+                featureMarkers,
+                revision + 1L);
+    }
+
+    public DungeonMap withFeatureMarkers(FeatureMarkerCatalog nextFeatureMarkers) {
+        FeatureMarkerCatalog resolvedFeatureMarkers = nextFeatureMarkers == null
+                ? FeatureMarkerCatalog.empty()
+                : nextFeatureMarkers;
+        if (resolvedFeatureMarkers.equals(featureMarkers)) {
+            return this;
+        }
+        return new DungeonMap(
+                metadata,
+                topology,
+                null,
+                rooms,
+                corridors,
+                stairs,
+                transitionCatalog,
+                resolvedFeatureMarkers,
+                revision + 1L);
+    }
+
+    public DungeonMap withExactRoomRegionChange(
+            @Nullable RoomRegion before,
+            @Nullable RoomRegion after
+    ) {
+        RoomCatalog nextRooms = rooms.withExactChange(before, after);
+        return new DungeonMap(
+                metadata,
+                topology,
+                topologyIndex,
+                nextRooms,
+                corridors,
+                stairs,
+                transitionCatalog,
+                featureMarkers,
+                revision + 1L);
+    }
+
+    public DungeonMap withExactRoomClusterChange(
+            @Nullable RoomCluster before,
+            @Nullable RoomCluster after
+    ) {
+        SpatialTopology nextTopology = topology.withExactRoomClusterChange(before, after);
+        return new DungeonMap(
+                metadata,
+                nextTopology,
+                topologyIndex,
+                rooms,
+                corridors,
+                stairs,
+                transitionCatalog,
+                featureMarkers,
+                revision + 1L);
+    }
+
+    public DungeonMap withExactStairChange(
+            @Nullable Stair before,
+            @Nullable Stair after
+    ) {
+        StairCollection nextStairs = stairs.withExactChange(before, after);
+        return new DungeonMap(
+                metadata,
+                topology,
+                topologyIndex,
+                rooms,
+                corridors,
+                nextStairs,
+                transitionCatalog,
+                featureMarkers,
+                revision + 1L);
+    }
+
+    public DungeonMap withExactTransitionChange(
+            @Nullable Transition before,
+            @Nullable Transition after
+    ) {
+        return withTransitionCatalog(transitionCatalog.withExactChange(before, after), null);
+    }
+
+    public DungeonMap withExactCorridorChange(
+            @Nullable Corridor before,
+            @Nullable Corridor after
+    ) {
+        List<Corridor> nextCorridors = new CorridorNetwork(corridors)
+                .withExactChange(before, after)
+                .corridors();
+        return new DungeonMap(
+                metadata,
+                topology,
+                topologyIndex,
+                rooms,
+                nextCorridors,
+                stairs,
+                transitionCatalog,
+                featureMarkers,
+                revision + 1L);
+    }
+
+    public DungeonMap withTransitionCatalog(TransitionCatalog nextTransitions) {
+        return withTransitionCatalog(nextTransitions, null);
+    }
+
+    public DungeonMap withTransitionCatalog(
+            TransitionCatalog nextTransitions,
+            @Nullable DungeonMapTopology nextTopologyIndex
+    ) {
+        TransitionCatalog resolvedTransitions = nextTransitions == null
+                ? new TransitionCatalog(List.of())
+                : nextTransitions;
+        if (resolvedTransitions.equals(transitionCatalog)) {
+            return nextTopologyIndex == null || nextTopologyIndex.equals(topologyIndex)
+                    ? this
+                    : new DungeonMap(
+                            metadata,
+                            topology,
+                            nextTopologyIndex,
+                            rooms,
+                            corridors,
+                            stairs,
+                            resolvedTransitions,
+                            featureMarkers,
+                            revision);
+        }
+        return new DungeonMap(
+                metadata,
+                topology,
+                nextTopologyIndex,
+                rooms,
+                corridors,
+                stairs,
+                resolvedTransitions,
+                featureMarkers,
+                revision + 1L);
+    }
+
+}

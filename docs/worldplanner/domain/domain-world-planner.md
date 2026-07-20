@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-26
+Last Reviewed: 2026-07-15
 Source of Truth: World Planner bounded-context ownership, write model,
 invariants, lifecycle state, and foreign-reference boundaries.
 
@@ -12,8 +12,7 @@ Context Role: Roster Truth Context
 Context Name: WorldPlanner
 
 - `worldplanner` owns authored NPC, faction, and location planning truth.
-- Its public backend boundary is
-  `src/domain/worldplanner/WorldPlannerApplicationService.java`.
+- Its public boundary is `WorldPlannerApi`.
 - It reads creature, encounter-table, and Encounter-owned combat/result facts
   through public boundaries, and exposes location choices for later
   Session Planner-owned integration.
@@ -23,8 +22,7 @@ Context Name: WorldPlanner
 
 ## Published Language
 
-`published/` owns command carriers, read-only models, and passive carriers
-for:
+`WorldPlannerApi` owns command carriers and immutable read state for:
 
 - NPC catalog and detail readback
 - faction catalog, membership, inventory, and encounter-source readback
@@ -47,6 +45,7 @@ World Planner has three authored aggregate centers.
 - appearance, behavior, history, and notes
 - lifecycle status: active or defeated
 - optional last known faction/location references
+- a bounded `-50..+50` disposition modifier toward the PCs
 
 `WorldFaction` owns:
 
@@ -55,6 +54,7 @@ World Planner has three authored aggregate centers.
 - one primary encounter-table reference
 - NPC memberships
 - optional finite statblock inventory limits
+- a bounded `-50..+50` base disposition toward the PCs
 
 `WorldLocation` owns:
 
@@ -100,6 +100,10 @@ Commands entering the model include:
 - confirm post-combat losses
 
 Core invariants:
+
+- one NPC belongs to at most one faction
+- effective PC disposition is the clamped faction base plus NPC modifier;
+  `<= -15` is hostile, `>= +15` friendly, and the values between are neutral
 
 - NPC statblock references point to creature-owned statblocks and do not copy
   creature truth.

@@ -1,6 +1,6 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-07
+Last Reviewed: 2026-07-17
 Source of Truth: Public builder-input read/write contract for encounter-facing
 catalog controls.
 
@@ -8,30 +8,35 @@ catalog controls.
 
 ## Purpose
 
-This contract defines the flat builder-input surface shared between the catalog
-controls and the encounter runtime session.
+This contract defines the builder-input surface shared by Catalog-owned pool
+filters and Encounter-owned generation tuning.
 
 ## Read Surface
 
-- `EncounterBuilderInputsModel`
-  is the direct same-context read-side runtime service for builder inputs and
-  exposes `current()` plus passive subscription
-- `EncounterBuilderInputs`
-  carries creature-type, subtype, biome, difficulty, tuning, and
-  encounter-table selections only
+- `EncounterApi` publishes immutable, revisioned builder input state
+- `EncounterBuilderInputs` publishes `EncounterPoolFilters` and
+  `EncounterTuningSettings` as separate immutable values
+- pool filters include name, challenge-rating range, size, type, subtype,
+  biome, alignment, encounter tables, World Planner factions, and location
 
 ## Write Surface
 
-- `UpdateEncounterBuilderInputsCommand`
-  submits a complete replacement snapshot of the builder inputs through the
-  command-only `EncounterApplicationService`
+- Catalog submits `UpdateEncounterPoolFiltersCommand`
+- Encounter state submits `UpdateEncounterTuningCommand`
+- the application merges either partial update with the current focused
+  runtime context before persistence and publication
+- `UpdateEncounterBuilderInputsCommand` remains a compatibility route for
+  complete snapshots
 
 ## Boundary Rules
 
 - the contract is workflow-oriented, not a mirror of the internal encounter
   session carrier
-- readback arrives through the model handle directly; it is not loaded through
-  a root query method
+- late update results must not overwrite a newer published revision
+- a pool-filter update MUST preserve tuning and a tuning update MUST preserve
+  pool filters
+- all visible pool filters constrain candidate loading; selected Encounter
+  tables are intersected with the filtered creature pool
 - it does not expose saved plans, roster cards, initiative rows, combat
   runtime, or result state
 - it does not expose foreign creature, party, or encounter-table internals

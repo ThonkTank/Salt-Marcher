@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-17
 Source of Truth: SaltMarcher's required proof surface and verification principles.
 
 # Quality Platforms
@@ -20,13 +20,17 @@ the single test source set and requires no build registry entry.
 - Behavior tests prove accepted observable outcomes through production routes.
 - JUnit owns scenario discovery, selection, and scenario-level XML results.
 - Monocle owns headless JavaFX execution.
-- ArchUnit owns production dependency and cycle rules across all production
-  roots.
+- ArchUnit owns dependency and cycle rules across the target `app`, `shell`,
+  `platform`, and `features` roots. Migration-specific verification scope lives
+  only in [Active Delivery](../delivery/README.md).
 - Gradle owns task inputs and incremental execution.
 - A static analyzer remains only when it catches a useful defect class not
   already covered by the compiler, tests, ArchUnit, or another retained tool.
 - Verification code does not test its own fixtures, registries, task topology,
   or implementation form as a substitute for product behavior.
+- Responsive interaction claims require deterministic work-bound evidence plus
+  a named production-route qualification scenario; timing assertions alone are
+  not accepted as stable CI proof.
 
 Branch protection requires exactly the `check` context. External analyzer and
 AI-review services are not part of verification.

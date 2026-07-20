@@ -16,5 +16,5 @@ Do not commit secrets to the repository. SaltMarcher stores local SQLite data
 under `$XDG_DATA_HOME/salt-marcher/` or `~/.local/share/salt-marcher/`.
 
 The production source tree currently contains no direct `http` or `URL(`
-network usage under `src/`; the app is treated as local-first unless that
-check changes.
+network usage under `app/`, `shell/`, `platform/`, or `features/`; the app is
+treated as local-first unless that check changes.

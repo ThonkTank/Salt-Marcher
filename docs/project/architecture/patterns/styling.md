@@ -1,6 +1,6 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-09
+Last Reviewed: 2026-07-15
 Source of Truth: Centralized JavaFX styling rules.
 
 # Styling Standard
@@ -14,9 +14,10 @@ own inline presentation system.
 
 - Approved application style rules and shared selector vocabulary live in
   `resources/salt-marcher.css`.
-- Bootstrap applies shared application styling from that stylesheet.
-- Active application code under `bootstrap/`, `shell/`, and `src/` expresses
-  ordinary node styling through explicit centralized style-class selectors.
+- `app` applies shared application styling from that stylesheet.
+- Active application code under `app/`, `shell/`, `platform/`, and `features/`
+  expresses ordinary node styling through explicit centralized style-class
+  selectors.
 - Active application code must not use `setStyle(...)`.
 - Passive views must not author ordinary node layout styling through local
   padding, spacing, gap, or fixed visual-size setters.
@@ -27,7 +28,9 @@ own inline presentation system.
 
 ## Verification
 
-The required proof route is `check`.
+Architecture review rejects styling outside these target boundaries. Any
+automated checker for them must inspect target capabilities directly and must
+not infer architecture from legacy paths or class-name forms.
 
 ## References
 

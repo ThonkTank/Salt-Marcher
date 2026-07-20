@@ -1,119 +1,152 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-15
-Source of Truth: Dungeon-specific domain architecture, model-family ownership,
-and dependency direction below `src/domain/dungeon/**`.
+Last Reviewed: 2026-07-17
+Source of Truth: Dungeon feature ownership, authored-core boundary, runtime
+capabilities, and target dependency direction.
 
-# Dungeon Domain Architecture
+# Dungeon Architecture
 
-## Purpose
+## Entity And Concerns
 
-This document owns the feature-specific architecture of the Dungeon domain.
-It explains how Dungeon domain code is structured inside the project-wide
-[Source Architecture](../../project/architecture/source-architecture.md).
+This specification serves maintainers of Dungeon authored truth, editor and
+travel workflows, persistence, and JavaFX map surfaces. Product behavior,
+stored schema details, and domain invariants remain in their neighboring owner
+documents.
 
-It does not own Dungeon business truth, editor behavior, persistence shape, or
-proof rows. Those live in the neighboring domain, requirements, contract, and
-verification documents.
+Dungeon remains one feature. It owns authored maps and their topology while
+publishing separate capabilities for authored catalog work, editing, and
+travel.
 
-## Current And Target State
+## Target Topology
 
-Current state:
+```text
+features/dungeon/api/
+features/dungeon/domain/core/
+features/dungeon/application/authored/
+features/dungeon/application/editor/
+features/dungeon/application/travel/
+features/dungeon/adapter/sqlite/
+features/dungeon/adapter/javafx/
+features/dungeon/DungeonFeature
+```
 
-- `DungeonMap` is the aggregate root and mutation boundary for one authored map.
-- Authored dungeon truth lives under `dungeon/model/core/**`.
-- Neutral editor session/application seams and travel runtime state live under
-  `dungeon/model/runtime/**`; migrated Dungeon Editor interaction/session
-  workflows live under `src/features/dungeon/runtime/**`.
-- Stable topology refs are map-owned and reused by rooms, corridors, doors,
-  corridor anchors, stairs, transitions, handles, and labels.
-- Search and write-model persistence are separate outbound contracts.
-- Stable editor handle and projection affordance facts for cluster labels, true
-  corners, and wall-run midpoints remain domain-neutral facts derived from
-  `DungeonMap` truth. Migrated pointer interpretation, draft sessions, and
-  transient interaction workflows are feature-runtime-owned. The view may apply
-  selection-dependent visibility and hit indexing, but it must not reinterpret
-  corridor, door, or cluster geometry facts into new authoritative edit handles.
+## Authored Core
 
-Target state:
+The authored core owns `DungeonMap`, stable topology identity, aggregate
+transactions, revision, and map-wide coordination. Its internal ownership
+flows from immutable geometry and components through structures to read-only
+graph queries and projections.
 
-- floor, wall, path, door, room, cluster, corridor, stair, transition, and
-  topology behavior live in self-managed core owners inside the `DungeonMap`
-  aggregate boundary
-- topology repair, split or merge behavior, identity preservation, and derived
-  rebuild rules stay in the dungeon domain and move to the deepest owning core
-  object
-- editor and travel runtime consume core dungeon truth while authored
-  persistence stays framed by `DungeonMap`
-- map-owned topology remains the behavioral owner instead of leaking into
-  view, data, runtime-session, persistence-adapter, or projection layers
+- Rooms, clusters, corridors, walls, paths, doors, stairs, transitions, and
+  topology-affecting behavior remain inside the aggregate boundary.
+- Repair, split or merge behavior, identity preservation, validation, and
+  derived rebuilds belong to the deepest owning core object.
+- Graph and projection code may describe authored structures but MUST NOT
+  persist or mutate them.
+- JavaFX, SQL, party state, editor selection, pointer interpretation, and travel
+  session state MUST NOT enter authored core truth.
 
-## Model Families
+## Application Capabilities
 
-Model family: `core`
+- `DungeonAuthoredApi` owns map catalog and authored-map commands/results.
+- `DungeonEditorApi.current/subscribe/dispatch` owns one atomic editor session
+  state, tool families and options, selection, previews, typed command outcomes,
+  and committed authored mutations over core truth.
+- `DungeonTravelApi` owns stable travel actions, direct reachable-cell movement,
+  and travel-session workflows over dungeon facts and party-owned position facts
+  received through `PartyApi`.
+- Preview or interaction state MUST NOT mutate authored truth before an
+  explicit successful command commits.
+- All published state is immutable and revisioned; persistence-backed calls are
+  non-blocking and publish through the UI dispatcher.
 
-`core` owns authored dungeon truth and mutation behavior. Its packages form a
-one-way ownership ladder:
+One immutable `DungeonEditorState` supplies controls, map, and state-pane facts
+for a publication revision. Application code MUST NOT reconstruct input by
+reading independently published presentation models. Camera, hover, focus,
+caret, popup, and other passive presentation values remain JavaFX-local.
 
-- `model/core/geometry` owns pure immutable geometry, topology values, and
-  spatial rules
-- `model/core/component` owns smallest authored parts with local invariants,
-  local mutation, and binding or deletion rules
-- `model/core/structure` owns composed authored structures and
-  cross-component behavior; structure objects own room, cluster, corridor,
-  stair, transition, door, wall, path, and topology-affecting local mutation
-  policy inside the aggregate boundary
-- `model/core/graph` owns read-only relationship queries and derivations
-  between authored structures
-- `model/core/projection` owns render-neutral derived read facts only
+Authored commands return either a typed rejection or an accepted `DungeonPatch`
+with its inverse, touched chunks, and published result facts. Cross-map
+transition changes use one `DungeonCompoundPatch`. An unchanged aggregate is
+not the only rejection signal, and user-facing feedback does not parse strings
+to recover domain meaning.
 
-`DungeonMap` remains the owner of stable topology identity, aggregate
-transaction policy, revision, and map-wide cross-owner coordination. Lower
-layers must not depend on higher layers for authored meaning. Graph and
-projection code may describe core structures but must not persist or mutate
-them.
+## Sparse Authored Worksets
 
-Model family: `runtime`
+The authored aggregate remains the consistency owner, while editor and travel
+read only the spatial workset needed by their current viewport.
 
-`runtime` owns domain-neutral editor/session seams and travel state over core
-truth:
+- one chunk is `64 x 64` cells identified by
+  `(mapId, level, chunkQ, chunkR)`; negative coordinates use floor division
+- one viewport request loads visible chunks plus one surrounding ring
+- `DungeonViewportSnapshot` carries map revision, request generation, loaded
+  chunk identities, window facts, and optional authored bounds; fixed width and
+  height are not authored limits
+- the in-memory authored workset is the preview source after load; pointer
+  preview has no repository route
+- committed edits publish one immutable change result and advance the map
+  revision once; per-session undo/redo restores content as a new revision
+- viewport caches use bounded weighted eviction while visible and actively
+  edited chunks remain protected
 
-- `model/runtime/editor/session` owns the neutral editor session values and
-  application surface that apply selection, tool, overlay, projection, preview,
-  and published-session effects over authored dungeon facts
-- migrated Dungeon Editor pointer interpretation, transient on-map interaction
-  objects, draft workflows, and runtime composition are owned by
-  `src/features/dungeon/runtime/**`; the domain runtime must not recreate that
-  feature-runtime orchestration under `model/runtime/editor/**`
-- `model/runtime/travel/session` owns travel-session state over core truth and
-  party-owned position facts
-- `model/runtime/travel/projection` owns derived travel read facts
+The application boundary is split by responsibility:
 
-`runtime` must never own authored dungeon truth. Runtime may load and project
-core facts, but it must not persist dungeon structure or own authored rooms,
-corridors, stairs, transitions, topology, or derived rebuild policy.
+- `DungeonCatalogStore` reads and mutates map metadata
+- `DungeonWindowStore` loads explicit chunk facts with stable headers and
+  continuations, then loads full command-specific identity closure on demand
+- `DungeonUnitOfWork` commits one patch or compound patch against expected map
+  revisions
+- `DungeonIdentityAllocator` reserves bounded stable identity ranges for every
+  map-wide authored family created by commands without creating placeholder
+  authored entities
 
-## Boundary Rules
+Chunk membership is source-local indexing, never a second entity owner. One
+entity is returned once even when it intersects several requested chunks.
+Commands that require unseen authored truth request more identity closure and
+do not guess from a partial window.
 
-- Application services remain thin family-scoped boundaries and route work to
-  the owning use case or model family.
-- Use cases may open aggregate transactions, call owning core or runtime
-  objects, save through repositories, and publish typed results.
-- View code owns rendering, hit-test presentation, styling, and passive map
-  content models; it must not become the source of authored dungeon meaning.
-- Data code owns storage mechanics and adapters; it must not own domain
-  topology, recompute, validation, or derived rebuild rules.
-- Feature-runtime preview and interaction state may stage editor intent over
-  domain facts, but preview state never mutates authored truth before an
-  explicit domain mutation commits.
-- Do not introduce new `*Logic`, `*Service`, `*Manager`, generic interface, or
-  base-class names to preserve old placement. Move behavior to the owning core
-  structure, component, runtime state, repository, or use case.
+Late viewport results are rejected by request generation and map revision.
+Replaceable pointer-move work is coalesced on the owning serial lane; discrete
+gesture inputs invalidate older move samples.
 
-## Verification And Review
+## Passive Map Canvas
 
-ArchUnit checks retained package dependency rules. JUnit tests prove model and
-editor behavior. Documentation-only changes use `git diff --check`.
+Generic camera, visible-window calculation, weighted viewport caching, layered
+JavaFX canvas hosting, and replaceable input scheduling live under
+`platform.ui.mapcanvas` and `platform.execution`. They are mechanisms, not a
+Maps business feature. Dungeon JavaFX code owns the translation between Dungeon
+API facts and canvas-native drawing or hit evidence.
+
+## Adapters And Composition
+
+The SQLite adapter persists authored Dungeon truth and satisfies feature-owned
+ports. The JavaFX adapter renders, hit-tests, and translates input through the
+three Dungeon APIs without importing application, domain, or SQLite packages.
+
+`DungeonFeature` receives platform services and `PartyApi`, constructs the
+three APIs and shell contributions, and exposes no internal repository or
+adapter. Its JavaFX adapter consumes the feature-neutral map-canvas mechanism;
+there is no `features.maps` dependency or composition lifecycle.
+
+Dungeon Travel reads authored facts through Catalog and Window capabilities.
+It does not hydrate a complete `DungeonMap` and does not depend on the Authored
+application service as a read facade.
+
+The global `Reise` state contribution is not owned by Dungeon or Hex. A
+feature-neutral Travel capability consumes party position plus feature-owned
+Dungeon and Hex travel readbacks and selects one compact runtime context.
+Dungeon continues to own Dungeon movement semantics and its detailed travel
+workspace.
+
+## Verification
+
+Target dependency direction is mechanically enforced by `architectureTest`,
+including the API-only Dungeon Editor JavaFX boundary.
+Domain-invariant, editor, travel, persistence, and JavaFX production routes own
+behavior proof.
+
+Temporary migration state and the remaining deletion boundary live only in
+[Dungeon Greenfield Roadmap](../delivery/roadmap-dungeon-greenfield.md).
 
 ## References
 
@@ -121,5 +154,5 @@ editor behavior. Documentation-only changes use `git diff --check`.
 - [Dungeon Domain Model](../domain/domain-dungeon.md)
 - [Dungeon Editor Requirements](../requirements/requirements-dungeon-editor.md)
 - [Dungeon Persistence Contract](../contract/contract-dungeon-persistence.md)
-- [Dungeon Core Model Invariants](../verification/verification-dungeon-core-model-invariants.md)
-- [Dungeon Editor-Wide Invariants](../verification/verification-dungeon-editor-wide-invariants.md)
+- [Dungeon Greenfield Roadmap](../delivery/roadmap-dungeon-greenfield.md)
+- [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)

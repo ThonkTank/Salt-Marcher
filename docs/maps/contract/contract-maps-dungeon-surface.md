@@ -1,91 +1,95 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-07
-Source of Truth: Current review-owned Dungeon map surface compatibility
-contract between authored dungeon map boundaries and downstream
-runtime-workspace contexts; target feature-runtime ownership remains in the
-project-wide owner standards.
+Last Reviewed: 2026-07-17
+Source of Truth: Dungeon feature API contract for authored map, editor, catalog,
+and travel capabilities consumed by presentation and other features.
 
 # Dungeon Map Surface Contract
 
-## Purpose
+## Purpose, Owners, And Consumers
 
-This contract records the current dungeon-native request and response families
-for committed map reads, authored edit preview and apply, selection
-inspection, travel action, and catalog behavior as the dungeon adoption of the
-generic maps feature.
+This feature-boundary contract defines the dungeon-native request and response
+families exposed from `features/dungeon/api` for committed map reads, editor
+preview and apply, selection inspection, catalog behavior, and travel sessions.
 
-It is not target feature-runtime conformance for the live Dungeon Editor
-view/shell/UI seam. Target raw-input UI, shell binding, runtime render frame,
-and typed raw-input ownership remains in
-[Source Architecture](../../project/architecture/source-architecture.md).
+- provider: Dungeon feature APIs
+- consumers: Dungeon JavaFX adapter and foreign features that need a documented
+  Dungeon capability
+- composition owner: `app`, which passes typed APIs explicitly
 
-Owners:
-
-- provider: `DungeonEditorFeatureRuntimeRoot`, which owns the dungeon editor
-  feature-runtime authored operations provider, and
-  `DungeonTravelRuntimeApplicationService`
-- consumers: dungeon editor and travel view roots,
-  and any future runtime-workspace context that needs authored dungeon map
-  facts
+Consumers depend only on `features.dungeon.api`; they do not import Dungeon
+domain, application, SQLite adapter, JavaFX adapter, or composition packages.
+The contract owns boundary semantics, not authored invariants or persistence
+schema.
 
 ## Rules
 
-- committed dungeon map read and selection inspection MUST enter through the
-  owning editor or travel runtime boundary for that workspace
-- preview and apply MUST reuse the authored map operation vocabulary owned by
-  the dungeon domain and applied through the authored dungeon mutation use case
-- map catalog work MUST use one catalog request and response family
-- runtime travel surface reads and travel moves MUST use one travel session
-  command and snapshot family
-- `DungeonSnapshot` remains the committed authored map read payload root
-- `DungeonOperationResult` remains the authored preview and apply payload root
-- catalog behavior remains separate from authored read, authored mutation, and
-  travel families
+- Committed map reads and selection inspection use the owning Authored, Editor,
+  or Travel API for that workspace.
+- Preview and apply reuse one authored operation vocabulary. Preview never
+  persists authored truth.
+- Editor controls, map, selection, preview, inspector, and command outcome come
+  from one immutable `DungeonEditorState` revision.
+- Catalog work uses one catalog request and response family.
+- Runtime travel reads and moves use one travel-session command and immutable
+  state family.
+- Authored read, authored mutation, catalog, and travel remain distinct API
+  capabilities even when one Dungeon entry point provides them.
+- Public state is immutable and revisioned; a late result cannot replace newer
+  state.
 
 ## Inbound Request Families
 
-### Editor Authored Read
+### Authored Read And Selection
 
-- feature-runtime map selection input
-- feature-runtime pointer input
+Operations:
+
+- select or read a map
+- inspect a pointer-selected authored target
 
 Required context:
 
 - map id for map selection
-- pointer sample for selection inspection
+- typed pointer or selection sample for inspection
 
 Optional context:
 
-- topology ref, handle ref, and boundary target data carried by the pointer
-  sample
+- topology ref, handle ref, and boundary target carried by the selection sample
 
-### Editor Authored Mutation
+### Authored Mutation
 
-- feature-runtime pointer and handle inputs for pointer-driven editor
-  operations
-- feature-runtime operation methods for map selection, projection, overlay,
-  tool, narration, label, stair, and transition work
+`DungeonEditorIntent` covers map selection, projection, overlay, tool family and
+options, narration, labels, stairs, transitions, markers, and pointer-driven
+authored work. Pointer intents carry `ToolFamily`, `ToolOptions`, and
+`PointerGesture` meaning translated from the displayed canvas revision.
 
-Editor preview and apply share the same authored map operation vocabulary in
-`DungeonEditorAuthoredOperation`. Public published command carriers no longer
-reconstruct a second authored edit body.
+Preview and apply use the same typed command plan. Apply adds commit intent; it
+does not reconstruct a second edit vocabulary.
 
-### Map Catalog
+### Catalog
 
-- feature-runtime catalog search, create, rename, and delete operations
+Operations:
+
+- search and list maps
+- create a map
+- rename a map
+- delete a map
 
 ### Travel
 
-- `ApplyTravelDungeonSessionCommand` with action `REFRESH`
-- `ApplyTravelDungeonSessionCommand` with action `ACTION`
-- `ApplyTravelDungeonSessionCommand` with action `SET_PROJECTION_LEVEL`
-- `ApplyTravelDungeonSessionCommand` with action `SHIFT_PROJECTION_LEVEL`
-- `ApplyTravelDungeonSessionCommand` with action `SET_OVERLAY`
+Actions:
+
+- `REFRESH`
+- `ACTION`
+- `MOVE_TO_CELL`
+- `SET_PROJECTION_LEVEL`
+- `SHIFT_PROJECTION_LEVEL`
+- `SET_OVERLAY`
 
 Required fields:
 
 - chosen action id for `ACTION`
+- target Dungeon cell for `MOVE_TO_CELL`
 - projection level for `SET_PROJECTION_LEVEL`
 - projection-level delta for `SHIFT_PROJECTION_LEVEL`
 - overlay settings for `SET_OVERLAY`
@@ -95,91 +99,93 @@ Optional fields:
 - action id for `REFRESH`
 - projection level and overlay settings for `REFRESH` or `ACTION`
 
-## Outbound Payload Families
+## Outbound State And Result Families
 
-### Authored Read Result
+### Authored Read
 
-- `DungeonAuthoredReadResult.CommittedSnapshot`
-- `DungeonAuthoredReadResult.SelectionInspector`
+- committed `DungeonViewportSnapshot`
+- stable inspector facts carried by `DungeonEditorState` when selected
+- map revision and stable authored identities
 
-Payload roots:
+### Authored Mutation
 
-- `DungeonSnapshot`
-- `DungeonInspectorSnapshot`
+- immutable `DungeonEditorState`
+- accepted result with resulting revision and changed stable identities, or a
+  typed rejection reason with unchanged committed revision
 
-### Authored Mutation Result
-
-- `DungeonAuthoredMutationResult.Operation`
-
-Payload root:
-
-- `DungeonOperationResult`
-
-### Catalog Response
-
-- `DungeonMapCatalogResponse.MapList`
-- `DungeonMapCatalogResponse.MapMutation`
-
-Payload roots:
+### Catalog
 
 - `List<DungeonMapSummary>`
 - mutation kind plus `DungeonMapId`
 
-### Travel Response
+### Travel
 
-- `TravelDungeonSnapshot`
+- immutable `DungeonTravelState`
+- travel-session revision, available actions, projection level, overlays, and
+  party position needed by the workspace
 
-Payload roots:
+These names describe Dungeon API semantics. They require no model suffix or
+presentation projection class.
 
-- `TravelDungeonSnapshot`
+## Maps Integration
+
+The Dungeon JavaFX adapter translates Dungeon API state into
+`platform.ui.mapcanvas` scene values and map-canvas pointer samples into
+Dungeon API requests.
+
+- Dungeon-grid coordinates and topology identity never enter Maps as domain
+  types.
+- Canvas geometry and hit areas never enter Dungeon authored or travel state.
+- Render primitives, labels, overlays, markers, relations, and token anchors are
+  derived presentation state and never persistence input.
+- One scene revision corresponds to one consumed Dungeon state revision.
+- Catalog requests bypass the canvas capability.
 
 ## Validation And Error Behavior
 
-- invalid edit attempts MUST return a non-committing result represented
-  through `DungeonOperationResult` messages and unchanged committed truth
-- invalid travel attempts MUST publish a non-committing
-  `TravelDungeonSnapshot` backed by runtime travel session move facts and
-  unchanged authored dungeon truth
-- preview MUST NOT persist authored truth
-- committed snapshot, inspector, preview result, and travel result reads MUST
-  remain representable without inventing a second editor-colored top-level
-  surface family
-- adapters and Binders MUST treat omitted optional result sections as absence,
-  not as implicit synthetic defaults
-- runtime-workspace contexts MAY translate `DungeonSnapshot`,
-  `DungeonOperationResult`, `DungeonInspectorSnapshot`, and
-  `DungeonTravelSurfaceSnapshot` into their own owner-pure published carriers,
-  but they MUST NOT mutate or replace the authored dungeon meaning carried by
-  those authored results
+- Invalid authored edits publish a rejected `DungeonEditorCommandOutcome` with
+  unchanged committed truth and a stable typed rejection reason.
+- Invalid travel actions return unchanged authored truth and an immutable travel
+  result that reports rejection without inventing a move.
+- Preview must not persist authored truth.
+- Unknown map, topology, handle, selection, or action identities are rejected or
+  represented as absence according to the owning operation; adapters must not
+  synthesize replacements.
+- A travel action is addressed by stable action id, never by presentation-row
+  position. Direct movement and listed actions share one validation and outcome
+  path.
+- Missing optional result sections mean absence, not defaults invented by a
+  consumer.
+- A stale asynchronous result must not overwrite a newer Dungeon API revision.
+- Translation into canvas-native values must preserve Dungeon meaning but must not
+  mutate Dungeon state.
 
-## Compatibility Notes
+## Compatibility, Migration, And Versioning
 
-The former one-off command, query, and result carrier set is superseded by the
-family-based authored-read, authored-mutation, catalog, and travel families.
-Runtime-workspace contexts now compose their own workspace surfaces from the
-authored family results they actually consume.
+Persisted dungeon truth and observable behavior retain their domain,
+persistence, and requirements owners. Internal Java API types may change with
+all consumers in one atomic green migration slice.
 
-The live Dungeon Editor still reaches this surface through the legacy
-`src/view/**` ShellContribution, Binder, and IntentHandler before dispatching
-into feature-runtime operations. That path is current compatibility, not target
-feature-runtime conformance.
+Changing authored operation meaning, stable identities, commit semantics,
+catalog mutation semantics, or travel action meaning requires an explicit
+contract migration. Adding optional read fields is compatible when old consumers
+continue to distinguish absence from defaults.
 
-Removal condition: Dungeon Editor shell registration and raw input UI are owned
-by the feature-runtime shell/UI seam, with runtime render frames and typed
-raw-input APIs consumed directly by that seam.
+## Verification
 
-## Verification Notes
-
-- This contract is currently `Review-Owned`.
-- Review must treat the live Dungeon Editor legacy view/shell/UI route as
-  current compatibility, not target feature-runtime conformance.
-- Review must reject reintroduction of standalone one-off dungeon boundary
-  carriers that bypass the four canonical families.
-- Review must reject a second public authored dungeon edit body beside
-  `DungeonEditorAuthoredOperation`.
+- Production-route JUnit tests cover committed read, selection, preview/apply,
+  invalid non-commit, catalog mutations, travel actions, revision ordering, and
+  Dungeon-to-Maps translation.
+- `architectureTest` checks cross-feature API imports, feature-role dependency
+  direction, and placement of JavaFX, JDBC, and file-I/O mechanisms.
+- Review rejects a second authored edit body or a second Dungeon-to-Maps
+  translation owner.
 
 ## References
 
 - [Maps Canvas Architecture](../architecture/architecture-maps-canvas.md)
 - [Dungeon Map Adoption Architecture](../architecture/architecture-maps-dungeon-adoption.md)
+- [Maps Canvas Contract](contract-maps-canvas.md)
 - [Dungeon Persistence Contract](../../dungeon/contract/contract-dungeon-persistence.md)
+- [Dungeon Domain Model](../../dungeon/domain/domain-dungeon.md)
+- [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)

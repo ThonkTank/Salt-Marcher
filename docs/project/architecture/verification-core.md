@@ -14,11 +14,14 @@ Shell wrappers and package-to-task routers are not part of the architecture.
 ## Ownership
 
 - JUnit discovers scenarios and writes per-scenario XML results.
-- JUnit tags distinguish UI and architecture diagnostics without extra source
-  sets or registries.
+- JUnit package selection and tags distinguish architecture and UI diagnostics
+  without extra source sets or registries.
 - Monocle provides shared headless JavaFX execution.
-- ArchUnit owns dependency direction and cycles across `bootstrap`, `shell`,
-  and `src`.
+- ArchUnit owns permanent dependency direction; root-level cycles; feature
+  cycles; feature-role and adapter-role cycles; and first-level package cycles
+  across `app`, `shell`, and `platform`. Nested packages inside one feature
+  role may collaborate cyclically when they form one cohesive implementation
+  unit.
 - Gradle owns task inputs, execution, and the `check` lifecycle.
 - Retained analyzers must prove a distinct defect class.
 

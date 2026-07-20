@@ -1,4 +1,4 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-26
 Source of Truth: Encounter table feature ownership, read model, and domain
@@ -14,13 +14,13 @@ Context Name: EncounterTable
 - `encountertable` publishes authored encounter-table membership as a
   read-only reference catalog for generator candidate pools.
 - It does not own creature truth or loot truth.
-- It exposes encounter-table summaries and weighted candidate rows through its
-  own application service.
+- It exposes encounter-table summaries and weighted candidate rows through
+  `EncounterTableApi`.
 
 ## Published Language
 
-`published/` owns encounter-table summaries, candidate rows, list results, and
-read status vocabulary.
+`EncounterTableApi` owns encounter-table summaries, candidate rows, list
+results, and read status vocabulary.
 
 Published candidate rows carry creature snapshot fields needed by encounter
 generation plus the selected table weight. They do not expose table-entry
@@ -28,14 +28,14 @@ mutation commands.
 
 ## Application Boundary
 
-`EncounterTableApplicationService` is the only public backend boundary. It
-offers:
+`EncounterTableApi` is the only public feature boundary. It offers typed
+operations equivalent to:
 
 - `loadSummaries(LoadEncounterTableSummariesQuery)`
 - `loadGenerationCandidates(LoadEncounterTableCandidatesQuery)`
 
-The application service converts storage failures into `STORAGE_ERROR` results
-and does not leak adapter exceptions.
+The application layer converts storage failures into `STORAGE_ERROR` results
+and does not leak adapter exceptions through the API.
 
 ## Ubiquitous Language
 
@@ -46,10 +46,10 @@ and does not leak adapter exceptions.
 
 ## Write Model And Derived State
 
-Write Model: External authored table rows in SQLite
+Write Model: Encounter Table-owned authored membership rows in SQLite
 
-The local application currently consumes existing authored rows. It does not
-own runtime mutation flows for those rows.
+`EncounterTableApi` exposes no mutation workflow unless observable product
+requirements add one; storage ownership does not imply a public write API.
 
 Derived state:
 
@@ -67,9 +67,11 @@ Derived state:
 
 ## Foreign Boundaries
 
-The data adapter may join `creatures` for read-only candidate snapshots and may
-read optional `encounter_table_loot_links` values. Domain code must not reach
-into creature or loot persistence directly.
+Target Encounter Table persistence owns membership IDs, weights, summaries, and
+optional loot-link IDs only. The application layer resolves creature facts
+through `CreaturesApi` and combines them with table-owned weights. No Encounter
+Table target code may read or join Creatures-owned persistence, and no domain
+code reaches into creature or loot persistence directly.
 
 ## References
 

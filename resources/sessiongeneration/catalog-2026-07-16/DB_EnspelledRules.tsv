@@ -1,0 +1,46 @@
+Rule_ID	Chassis	Spell_Level	Rarity	Save_DC	Attack_Bonus	Max_Charges	Recharge	Charge_Cost	Requires_Attunement	Base_Item_Regex	Active	Source	Max_Base_Capacity
+enspelled:armor:spell-0	armor	0.0	Uncommon	13.0	5.0	6.0	1d6	1.0	true	Armor	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:armor:spell-1	armor	1.0	Uncommon	13.0	5.0	6.0	1d6	1.0	true	Armor	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:armor:spell-2	armor	2.0	Rare	13.0	5.0	6.0	1d6	1.0	true	Armor	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:armor:spell-3	armor	3.0	Rare	15.0	7.0	6.0	1d6	1.0	true	Armor	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:armor:spell-4	armor	4.0	Very Rare	15.0	7.0	6.0	1d6	1.0	true	Armor	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:armor:spell-5	armor	5.0	Very Rare	17.0	9.0	6.0	1d6	1.0	true	Armor	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:armor:spell-6	armor	6.0	Legendary	17.0	9.0	6.0	1d6	1.0	true	Armor	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:armor:spell-7	armor	7.0	Legendary	18.0	10.0	6.0	1d6	1.0	true	Armor	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:armor:spell-8	armor	8.0	Legendary	18.0	10.0	6.0	1d6	1.0	true	Armor	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:weapon:spell-0	weapon	0.0	Uncommon	13.0	5.0	6.0	1d6	1.0	true	Weapon|Firearm	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:weapon:spell-1	weapon	1.0	Uncommon	13.0	5.0	6.0	1d6	1.0	true	Weapon|Firearm	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:weapon:spell-2	weapon	2.0	Rare	13.0	5.0	6.0	1d6	1.0	true	Weapon|Firearm	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:weapon:spell-3	weapon	3.0	Rare	15.0	7.0	6.0	1d6	1.0	true	Weapon|Firearm	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:weapon:spell-4	weapon	4.0	Very Rare	15.0	7.0	6.0	1d6	1.0	true	Weapon|Firearm	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:weapon:spell-5	weapon	5.0	Very Rare	17.0	9.0	6.0	1d6	1.0	true	Weapon|Firearm	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:weapon:spell-6	weapon	6.0	Legendary	17.0	9.0	6.0	1d6	1.0	true	Weapon|Firearm	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:weapon:spell-7	weapon	7.0	Legendary	18.0	10.0	6.0	1d6	1.0	true	Weapon|Firearm	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:weapon:spell-8	weapon	8.0	Legendary	18.0	10.0	6.0	1d6	1.0	true	Weapon|Firearm	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:staff:spell-0	staff	0.0	Uncommon	13.0	5.0	6.0	1d6	1.0	true	(?i)staff	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:staff:spell-1	staff	1.0	Uncommon	13.0	5.0	6.0	1d6	1.0	true	(?i)staff	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:staff:spell-2	staff	2.0	Rare	13.0	5.0	6.0	1d6	1.0	true	(?i)staff	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:staff:spell-3	staff	3.0	Rare	15.0	7.0	6.0	1d6	1.0	true	(?i)staff	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:staff:spell-4	staff	4.0	Very Rare	15.0	7.0	6.0	1d6	1.0	true	(?i)staff	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:staff:spell-5	staff	5.0	Very Rare	17.0	9.0	6.0	1d6	1.0	true	(?i)staff	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:staff:spell-6	staff	6.0	Legendary	17.0	9.0	6.0	1d6	1.0	true	(?i)staff	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:staff:spell-7	staff	7.0	Legendary	18.0	10.0	6.0	1d6	1.0	true	(?i)staff	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:staff:spell-8	staff	8.0	Legendary	18.0	10.0	6.0	1d6	1.0	true	(?i)staff	true	https://www.dndbeyond.com/posts/1835-10-new-magic-items-from-the-2024-dungeon-masters
+enspelled:tool:spell-0	tool	0.0	Uncommon	13.0	5.0	6.0	1d6	1.0	true	Tool$	true	Custom extension; balance follows Enspelled Items	0.0
+enspelled:tool:spell-1	tool	1.0	Uncommon	13.0	5.0	6.0	1d6	1.0	true	Tool$	true	Custom extension; balance follows Enspelled Items	0.0
+enspelled:tool:spell-2	tool	2.0	Rare	13.0	5.0	6.0	1d6	1.0	true	Tool$	true	Custom extension; balance follows Enspelled Items	0.0
+enspelled:tool:spell-3	tool	3.0	Rare	15.0	7.0	6.0	1d6	1.0	true	Tool$	true	Custom extension; balance follows Enspelled Items	0.0
+enspelled:tool:spell-4	tool	4.0	Very Rare	15.0	7.0	6.0	1d6	1.0	true	Tool$	true	Custom extension; balance follows Enspelled Items	0.0
+enspelled:tool:spell-5	tool	5.0	Very Rare	17.0	9.0	6.0	1d6	1.0	true	Tool$	true	Custom extension; balance follows Enspelled Items	0.0
+enspelled:tool:spell-6	tool	6.0	Legendary	17.0	9.0	6.0	1d6	1.0	true	Tool$	true	Custom extension; balance follows Enspelled Items	0.0
+enspelled:tool:spell-7	tool	7.0	Legendary	18.0	10.0	6.0	1d6	1.0	true	Tool$	true	Custom extension; balance follows Enspelled Items	0.0
+enspelled:tool:spell-8	tool	8.0	Legendary	18.0	10.0	6.0	1d6	1.0	true	Tool$	true	Custom extension; balance follows Enspelled Items	0.0
+enspelled:trinket:spell-0	trinket	0.0	Uncommon	13.0	5.0	6.0	1d6	1.0	true	(Art_Object|Holy_Symbol|Arcane_Focus|Druidic_Focus|Utility_Gear)$	true	Custom extension; balance follows Enspelled Items	1.0
+enspelled:trinket:spell-1	trinket	1.0	Uncommon	13.0	5.0	6.0	1d6	1.0	true	(Art_Object|Holy_Symbol|Arcane_Focus|Druidic_Focus|Utility_Gear)$	true	Custom extension; balance follows Enspelled Items	1.0
+enspelled:trinket:spell-2	trinket	2.0	Rare	13.0	5.0	6.0	1d6	1.0	true	(Art_Object|Holy_Symbol|Arcane_Focus|Druidic_Focus|Utility_Gear)$	true	Custom extension; balance follows Enspelled Items	1.0
+enspelled:trinket:spell-3	trinket	3.0	Rare	15.0	7.0	6.0	1d6	1.0	true	(Art_Object|Holy_Symbol|Arcane_Focus|Druidic_Focus|Utility_Gear)$	true	Custom extension; balance follows Enspelled Items	1.0
+enspelled:trinket:spell-4	trinket	4.0	Very Rare	15.0	7.0	6.0	1d6	1.0	true	(Art_Object|Holy_Symbol|Arcane_Focus|Druidic_Focus|Utility_Gear)$	true	Custom extension; balance follows Enspelled Items	1.0
+enspelled:trinket:spell-5	trinket	5.0	Very Rare	17.0	9.0	6.0	1d6	1.0	true	(Art_Object|Holy_Symbol|Arcane_Focus|Druidic_Focus|Utility_Gear)$	true	Custom extension; balance follows Enspelled Items	1.0
+enspelled:trinket:spell-6	trinket	6.0	Legendary	17.0	9.0	6.0	1d6	1.0	true	(Art_Object|Holy_Symbol|Arcane_Focus|Druidic_Focus|Utility_Gear)$	true	Custom extension; balance follows Enspelled Items	1.0
+enspelled:trinket:spell-7	trinket	7.0	Legendary	18.0	10.0	6.0	1d6	1.0	true	(Art_Object|Holy_Symbol|Arcane_Focus|Druidic_Focus|Utility_Gear)$	true	Custom extension; balance follows Enspelled Items	1.0
+enspelled:trinket:spell-8	trinket	8.0	Legendary	18.0	10.0	6.0	1d6	1.0	true	(Art_Object|Holy_Symbol|Arcane_Focus|Druidic_Focus|Utility_Gear)$	true	Custom extension; balance follows Enspelled Items	1.0

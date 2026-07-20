@@ -14,6 +14,13 @@ Run verification from the repository root.
 
 ## Delivery Rules
 
+Standing owner approval: for work in this repository, push only the owned
+feature branch to the configured `origin`, open or update its pull request, and
+merge it only after required CI is green. Do not request additional permission
+for those standard publication steps. This approval does not cover other
+remotes, unrelated branches, red or skipped required checks, real user data,
+secrets, paid services, or external data transmission.
+
 1. Work on a feature branch and merge through a pull request with green CI.
 2. Implement a clear request directly. Add planning or coordination only when
    it resolves concrete uncertainty or the user explicitly requests it.
@@ -38,8 +45,8 @@ Run verification from the repository root.
 
 | Surface | Owner document | Required skill |
 | --- | --- | --- |
-| Source architecture (`bootstrap/**`, `shell/**`, `src/**`, `src/data/**`) | `docs/project/architecture/source-architecture.md` | - |
-| `src/domain/dungeon/**`, `docs/dungeon/**` | `docs/dungeon/README.md` | - |
+| Source architecture (`app/**`, `shell/**`, `platform/**`, `features/**`) | `docs/project/architecture/source-architecture.md` | - |
+| `features/dungeon/**`, `docs/dungeon/**` | `docs/dungeon/README.md` | - |
 | Documentation placement | `docs/project/documentation.md` | - |
 | Verification policy | `docs/project/verification/quality-platforms.md` | `verification` |
 | Agent instructions | `docs/project/architecture/agent-instructions.md` | `agent-instruction-engineering` |

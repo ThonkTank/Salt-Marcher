@@ -5,10 +5,11 @@ import org.jspecify.annotations.Nullable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.NoopDiagnostics;
 import shell.api.ContributionKey;
-import shell.api.ServiceRegistry;
+import shell.api.InspectorSink;
 import shell.api.ShellBinding;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellStateTabSpec;
 import shell.api.ShellLeftBarTabSpec;
 import shell.api.ShellTopBarSpec;
@@ -23,24 +24,22 @@ public final class AppShell extends BorderPane {
     private final Map<ContributionKey, ShellStateTabSpec> stateTabItems = new LinkedHashMap<>();
     private final ShellNavigationSidebar navigationSidebar = new ShellNavigationSidebar();
     private final ShellToolbarStrip toolbar = new ShellToolbarStrip();
-    private final ShellWorkspacePane workspace = new ShellWorkspacePane();
-    private final ShellRuntimeContext runtimeContext;
-
+    private final ShellWorkspacePane workspace;
     private @Nullable ContributionKey activeTabKey;
 
     public AppShell() {
-        this(ServiceRegistry.empty());
+        this(NoopDiagnostics.INSTANCE);
     }
 
-    public AppShell(ServiceRegistry serviceRegistry) {
-        this.runtimeContext = new ShellRuntimeContext(workspace.inspectorPane(), serviceRegistry);
+    public AppShell(Diagnostics diagnostics) {
+        workspace = new ShellWorkspacePane(Objects.requireNonNull(diagnostics, "diagnostics"));
         setTop(toolbar);
         setLeft(navigationSidebar);
         setCenter(workspace);
     }
 
-    public ShellRuntimeContext runtimeContext() {
-        return runtimeContext;
+    public InspectorSink inspector() {
+        return workspace.inspectorPane();
     }
 
     public void registerLeftBarTab(ShellLeftBarTabSpec registrationSpec, ShellBinding binding) {

@@ -1,0 +1,108 @@
+package features.dungeon.domain.core.structure.room;
+
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
+import org.jspecify.annotations.Nullable;
+import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.Direction;
+import features.dungeon.domain.core.geometry.Edge;
+
+public final class RoomClusterBoundaryMaterialization {
+    private RoomClusterBoundaryMaterialization() {
+    }
+
+    public static @Nullable BoundaryRow forEdge(
+            Iterable<Cell> clusterCells,
+            @Nullable Cell center,
+            long clusterId,
+            @Nullable Edge edge,
+            @Nullable BoundaryKind kind
+    ) {
+        return RoomClusterWallMaterialization.materializeRow(clusterCells, center, clusterId, edge, kind);
+    }
+
+    public static @Nullable BoundaryRow openForEdge(
+            Iterable<Cell> clusterCells,
+            @Nullable Cell center,
+            long clusterId,
+            @Nullable Edge edge
+    ) {
+        return forEdge(clusterCells, center, clusterId, edge, BoundaryKind.OPEN);
+    }
+
+    static @Nullable BoundaryRow forCells(
+            Set<Cell> clusterCells,
+            @Nullable Cell center,
+            long clusterId,
+            @Nullable Edge edge,
+            @Nullable BoundaryKind kind
+    ) {
+        return RoomClusterWallMaterialization.materializeRowFromCells(clusterCells, center, clusterId, edge, kind);
+    }
+
+    public enum BoundaryKind {
+        WALL("wall"),
+        DOOR("door"),
+        OPEN("open");
+
+        private final String boundaryKind;
+
+        BoundaryKind(String boundaryKind) {
+            this.boundaryKind = boundaryKind;
+        }
+
+        public static BoundaryKind parse(String value) {
+            if (value == null || value.isBlank()) {
+                return WALL;
+            }
+            String normalized = value.trim().toUpperCase(Locale.ROOT);
+            if (DOOR.name().equals(normalized)) {
+                return DOOR;
+            }
+            if (OPEN.name().equals(normalized)) {
+                return OPEN;
+            }
+            return WALL;
+        }
+
+        public static BoundaryKind fromExternalKind(String value) {
+            return parse(value);
+        }
+
+        public static BoundaryKind defaultKind() {
+            return WALL;
+        }
+
+        public String boundaryKind() {
+            return boundaryKind;
+        }
+
+        public String externalKind() {
+            return boundaryKind;
+        }
+
+        public boolean isDoor() {
+            return this == DOOR;
+        }
+
+        public boolean renderable() {
+            return this != OPEN;
+        }
+    }
+
+    public record BoundaryRow(
+            long clusterId,
+            int level,
+            Cell relativeCell,
+            Direction direction,
+            BoundaryKind kind
+    ) {
+        public BoundaryRow {
+            Objects.requireNonNull(relativeCell);
+            Objects.requireNonNull(direction);
+            Objects.requireNonNull(kind);
+        }
+    }
+
+}

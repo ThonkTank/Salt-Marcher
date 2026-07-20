@@ -39,8 +39,8 @@ encounter generation.
 
 ## Acceptance Criteria
 
-- encounter-table data is exposed only through
-  `EncounterTableApplicationService`
+- encounter-table data is exposed only through the Encounter Table feature
+  boundary
 - encounter-table generation lookup remains read-only
 - table selection does not create or persist encounter state
 - missing or broken encounter-table storage produces a storage-error result

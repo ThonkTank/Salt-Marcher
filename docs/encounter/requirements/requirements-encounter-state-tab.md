@@ -1,10 +1,14 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
+Last Reviewed: 2026-07-17
 Source of Truth: Encounter runtime state-pane dialog composition,
 interactions, and visible states.
 
 # Encounter Runtime State UI
+
+The Builder mode exposes difficulty, balance, amount, and diversity in an
+`Encounter abstimmen` section. The section is collapsed by default and writes
+only `EncounterTuningSettings`; Catalog pool filters remain unchanged.
 
 ## Component Purpose
 
@@ -45,8 +49,8 @@ Current state:
 The state pane uses centralized encounter selector roles for difficulty labels,
 the difficulty meter, roster cards, role badges, initiative rows, combat card
 states, HP bars, AC/init badges, edit popups, and result highlights. It reads
-active-party thresholds from the encounter application service and resolves
-creature details through the creature application service.
+active-party thresholds through the Encounter feature boundary and resolves
+creature details through the Creatures feature boundary.
 Encounter pages use the shared dialog-surface primitive so page actions stay in
 the fixed footer while oversized page bodies scroll.
 

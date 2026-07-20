@@ -1,6 +1,6 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-23
+Last Reviewed: 2026-07-15
 Source of Truth: Party feature ownership, write model, and domain invariants.
 
 # Party Domain Model
@@ -11,32 +11,28 @@ Context Role: Party Character State Context
 Context Name: Party
 
 - `party` is the party character state context.
-- Its public backend boundary is
-  `src/domain/party/PartyApplicationService.java`.
+- Its public boundary is `PartyApi`.
 - The feature owns party composition, party membership, XP progression,
   rest-driven mutation rules, and character-specific runtime travel position.
 
 ## Published Language
 
-`published/` owns public party commands, results, snapshots, status enums,
-membership states, rest carriers, adventuring-day calculation carriers, and
-published read models. `PartyApplicationService` is the command boundary;
-party readback is consumed through the exported published models. Character
+`PartyApi` owns public party commands, results, snapshots, status enums,
+membership states, rest carriers, and adventuring-day calculation carriers.
+Character
 detail snapshots publish current XP, current-level XP floor, next-level XP
 threshold, and rest cadence facts so downstream views can render progression
 without depending on roster internals.
 
-The `model/roster/**` domain family must not depend on any
-`src.domain.*.published.*` carriers. The application boundary translates
-public carriers into roster values before delegating to the model.
+The party domain MUST NOT depend on API carriers. The application boundary
+translates public carriers into roster values before delegating to the model.
 
 ## Application Boundary
 
-`application/` contains party use cases. Use cases load one `PartyRoster`,
-delegate mutation or query decisions to the roster model, and save through the
-domain-owned roster persistence repository. `PartyApplicationService`
-coordinates those use cases with the separate party published-state repository
-that refreshes exported read models and mutation feedback.
+The application boundary contains party use cases. Use cases load one
+`PartyRoster`, delegate mutation or query decisions to the roster model, and
+save through a feature-owned persistence port. The application layer publishes
+immutable, revisioned API state and mutation feedback through `PartyApi`.
 
 ## Write Model
 
@@ -53,16 +49,14 @@ The authored write model is the persisted party roster and character state:
 
 Aggregate Root: PartyRoster
 
-`model/roster/PartyRoster` is the transaction boundary for one party
-roster. It owns the character collection, next character identity, membership
-assignment, XP awards and corrections, and rest-driven progression
-transitions.
+`PartyRoster` is the transaction boundary for one party roster. It owns the
+character collection, next character identity, membership assignment, XP
+awards and corrections, and rest-driven progression transitions.
 
-`model/roster/PartyCharacter` is an identity-bearing child model.
-`model/roster/**` owns identity, progress, combat profile, membership,
-rest type, travel position, and mutation status vocabulary. Pure roster work
-steps live under `model/roster/helper/`, and outbound collaborators live under
-`model/roster/repository/`.
+`PartyCharacter` is an identity-bearing child model. The Party domain owns
+identity, progress, combat profile, membership, rest type, travel position,
+and mutation status vocabulary; package and helper decomposition are internal
+implementation choices.
 
 ## Commands And Invariants
 
@@ -87,18 +81,18 @@ Core invariants:
   rest-cadence XP counters by the applied correction amount without going below
   zero
 - character-specific travel location is stored with the character, not in a
-  campaign-level model, shell session, dungeon map, or view model
+  campaign-level model, shell session, dungeon map, or presentation model
 - the party token is derived from attached character travel state instead of
   being a separate write model
 - adventuring-day budget and progress calculations use party-owned level and
-  rest-budget policies and are exposed through published read carriers
+  rest-budget policies and are exposed through Party API read carriers
 - external mutation enters through the owning roster aggregate
 
 ## Consistency Model
 
 One roster mutation changes one `PartyRoster` aggregate instance and is saved
 by the party roster persistence repository. Other contexts consume party state
-through the party command boundary and exported party read models instead of
+through `PartyApi` instead of
 sharing roster internals.
 
 ## Ubiquitous Language
@@ -113,25 +107,15 @@ sharing roster internals.
   space.
 - `PartyRestType`: short-rest or long-rest roster transition.
 
-## Architecture Status
+## Architecture Constraints
 
-Current state:
-
-- party roster production code now lives under `model/roster/`,
-  `model/roster/helper/`, and `model/roster/repository/`.
-- `application/` coordinates roster persistence and party published-state
-  refresh through separate repository roles.
-- Dungeon travel now persists active character positions through the party
-  application boundary instead of storing them in shell runtime session state
-  or a campaign-level model.
-
-Target state:
-
-- keep party mutation rules on the roster model and related pure helper work
-- keep root and internal application services thin
-- keep `model/roster/**` free of all `src.domain.*.published.*` dependencies
-- keep character-specific state, including dungeon and overworld travel
-  position, with the character-owned roster state
+- party mutation rules stay on the roster model and related pure domain work
+- application orchestration remains thin and publishes state through `PartyApi`
+- the roster domain remains free of API-carrier dependencies
+- character-specific state, including dungeon and overworld travel position,
+  stays with the character-owned roster state
+- Dungeon travel changes party position through `PartyApi`; shell session state
+  and campaign-level models are not alternate owners
 
 ## References
 

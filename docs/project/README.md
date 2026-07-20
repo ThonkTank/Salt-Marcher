@@ -25,19 +25,24 @@ lives under `docs/<feature>/`; see [docs/README.md](../README.md).
 
 ## Architecture
 
-- [Source Architecture](architecture/source-architecture.md) -- the current
-  source shape and its principles. Start here.
-- Patterns: [layering](architecture/patterns/layering-architecture.md),
-  [bootstrap](architecture/patterns/bootstrap.md),
-  [shell layer](architecture/patterns/shell-layer.md),
-  [data layer](architecture/patterns/data-layer.md),
+- [Source Architecture](architecture/source-architecture.md) -- target source
+  shape, boundaries, quality concerns, and migration relationship. Start here.
+- Patterns: [feature boundaries](architecture/patterns/feature-boundaries.md),
+  [application composition](architecture/patterns/application-composition.md),
+  [shell layer](architecture/patterns/shell-layer.md), and
   [styling](architecture/patterns/styling.md).
 - [Verification Core](architecture/verification-core.md) -- public verification
   surfaces and outcome-check wiring.
 
+## Contracts
+
+- [Persistence Lifecycle](contract/persistence-lifecycle.md) -- shared SQLite
+  location, connection, version, backup, and recovery semantics.
+
 ## Delivery
 
-- [Active delivery index](delivery/README.md)
+- [Active Project Delivery](delivery/README.md) routes temporary migrations.
+  Feature roadmaps remain owned and retired by their feature.
 
 ## Verification
 

@@ -244,13 +244,118 @@
     -fx-spacing: 8;
     -fx-padding: 4 8 4 8;
 }
-.catalog-main-topbar {
-    -fx-spacing: 8;
-    -fx-padding: 4 0 8 0;
+.catalog-workspace {
+    -fx-padding: 8 10 8 10;
+    -fx-background-color: -sm-bg-darkest;
+}
+.catalog-workspace-top,
+.catalog-section-surface {
+    -fx-spacing: 7;
+}
+.catalog-toolbar {
+    -fx-spacing: 6;
+    -fx-alignment: center-left;
+}
+.catalog-toolbar .text-field.catalog-filter-control {
+    -fx-min-width: 160;
+    -fx-pref-width: 280;
+    -fx-max-width: 360;
+}
+.catalog-filter-row,
+.catalog-chip-row {
+    -fx-hgap: 5;
+    -fx-vgap: 5;
+}
+.catalog-range-control,
+.catalog-confirmation-actions,
+.catalog-row-actions {
+    -fx-spacing: 5;
+}
+.catalog-section-surface {
+    -fx-padding: 0 0 8 0;
+}
+.catalog-section-rail {
+    -fx-hgap: 5;
+    -fx-vgap: 5;
+    -fx-padding: 0 0 8 0;
+    -fx-border-color: transparent transparent derive(-sm-accent, -28%) transparent;
+    -fx-border-width: 0 0 1 0;
+}
+.catalog-section-button {
+    -fx-background-color: transparent;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-padding: 3 7 3 7;
+}
+.catalog-section-button:selected {
+    -fx-background-color: derive(-sm-accent, -72%);
+    -fx-border-color: -sm-accent;
+    -fx-text-fill: -sm-text-primary;
+}
+.catalog-active-controls,
+.catalog-workspace,
+.catalog-renderer-content,
+.catalog-results-table {
+    -fx-background-color: transparent;
+}
+.catalog-filter-control,
+.text-input.catalog-filter-control,
+.labeled.catalog-filter-control,
+.combo-box-base.catalog-filter-control {
+    -fx-min-height: 28;
+    -fx-pref-height: 28;
+    -fx-max-height: 28;
+    -fx-font-size: 12px;
+    -fx-font-weight: normal;
+}
+.catalog-picker {
+    -fx-min-width: 92;
+    -fx-pref-width: 118;
+    -fx-max-width: 180;
+}
+.catalog-picker-list {
+    -fx-pref-width: 250;
+    -fx-pref-height: 240;
+}
+.catalog-picker-popup {
+    -fx-padding: 0;
+}
+.catalog-filter-chip {
+    -fx-font-size: 11px;
+    -fx-font-weight: normal;
+    -fx-padding: 2 6 2 6;
+    -fx-background-color: derive(-sm-bg-elevated, 8%);
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+}
+.catalog-results-footer {
+    -fx-spacing: 10;
+    -fx-padding: 8 0 0 0;
+    -fx-alignment: center-left;
+    -fx-border-color: -sm-border-subtle transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+.catalog-footer-status,
+.catalog-footer-feedback {
+    -fx-text-fill: -sm-text-secondary;
 }
 .catalog-main-pagination {
-    -fx-spacing: 8;
-    -fx-padding: 8 0 0 0;
+    -fx-spacing: 6;
+    -fx-alignment: center-right;
+}
+.catalog-main-pagination .button {
+    -fx-min-width: 28;
+    -fx-pref-width: 28;
+    -fx-padding: 3 7 3 7;
+}
+.catalog-item-details {
+    -fx-spacing: 6;
+    -fx-padding: 8;
+}
+.encounter-tuning-pane {
+    -fx-background-color: -sm-bg-panel;
+    -fx-border-color: transparent transparent -sm-border-subtle transparent;
 }
 .party-header {
     -fx-background-color: -sm-bg-elevated;
@@ -1043,6 +1148,23 @@
     -fx-background-radius: 3;
     -fx-padding: 8 12 8 12;
 }
+.scene-board-location {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-background-radius: 6;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 6;
+}
+.scene-board-card {
+    -fx-spacing: 4;
+}
+.scene-board-card-title {
+    -fx-font-weight: bold;
+    -fx-text-fill: -sm-text-primary;
+}
+.scene-board-card-defeated {
+    -fx-opacity: 0.55;
+    -fx-border-color: -sm-hp-critical;
+}
 .panel-title {
     -fx-font-size: 13px;
     -fx-font-weight: bold;
@@ -1437,50 +1559,80 @@
 .session-planner-status {
     -fx-padding: 0 0 4 0;
 }
-.session-planner-card {
-    -fx-background-color: rgba(255, 255, 255, 0.04);
-    -fx-background-radius: 8;
+.session-planner-replacement-confirmation {
+    -fx-padding: 8;
+    -fx-background-color: rgba(216, 107, 79, 0.12);
+    -fx-background-radius: 6;
+    -fx-border-color: rgba(216, 107, 79, 0.45);
+    -fx-border-radius: 6;
+}
+.session-planner-preparation-toolbar {
+    -fx-padding: 7 8 7 8;
+    -fx-background-color: rgba(255, 255, 255, 0.045);
+    -fx-background-radius: 6;
     -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 8;
+    -fx-border-radius: 6;
+}
+.session-planner-participant-disclosure {
+    -fx-padding: 7 8 7 8;
+    -fx-background-color: rgba(30, 127, 212, 0.08);
+    -fx-background-radius: 6;
+}
+.session-planner-preparation-progress {
+    -fx-pref-height: 4;
 }
 .session-planner-encounter-card {
     -fx-background-color: rgba(255, 255, 255, 0.04);
     -fx-background-radius: 8;
     -fx-border-color: -sm-border-subtle;
     -fx-border-radius: 8;
+    -fx-padding: 8 10 8 10;
 }
-.session-planner-gap-card {
+.session-planner-selected-scene-inspector {
+    -fx-padding: 10 12 12 20;
+    -fx-background-color: rgba(30, 127, 212, 0.055);
+    -fx-border-color: derive(-sm-accent, -45%);
+}
+.session-planner-scene-header {
+    -fx-padding: 6 10 6 10;
+}
+.session-planner-encounter-header {
+    -fx-cursor: hand;
+    -fx-padding: 2 0 2 0;
+}
+.session-planner-rest-separator {
+    -fx-padding: 3 10 3 10;
+    -fx-background-color: rgba(255, 255, 255, 0.02);
+    -fx-background-radius: 6;
+}
+.session-planner-manual-note {
     -fx-background-color: rgba(255, 255, 255, 0.04);
     -fx-background-radius: 8;
     -fx-border-color: -sm-border-subtle;
     -fx-border-radius: 8;
-}
-.session-planner-loot-card {
-    -fx-background-color: rgba(255, 255, 255, 0.04);
-    -fx-background-radius: 8;
-    -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 8;
-}
-.session-planner-plan-card {
-    -fx-background-color: rgba(255, 255, 255, 0.04);
-    -fx-background-radius: 8;
-    -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 8;
-}
-.session-planner-setup-strip {
-    -fx-spacing: 6;
-    -fx-padding: 8;
-    -fx-background-color: rgba(255, 255, 255, 0.055);
-    -fx-background-radius: 8;
-    -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 8;
-}
-.session-planner-scene-target {
-    -fx-font-weight: bold;
-    -fx-text-fill: -sm-accent-hover;
 }
 .session-planner-scene-encounter-summary {
     -fx-padding: 2 0 2 0;
+}
+.session-planner-encounter-search-result {
+    -fx-padding: 6 8 6 8;
+    -fx-background-color: rgba(255, 255, 255, 0.035);
+    -fx-background-radius: 5;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 5;
+}
+.session-planner-roster-line {
+    -fx-padding: 1 0 1 10;
+}
+.session-planner-generated-reward {
+    -fx-padding: 8;
+    -fx-background-color: rgba(30, 127, 212, 0.08);
+    -fx-background-radius: 6;
+    -fx-border-color: derive(-sm-accent, -25%);
+    -fx-border-radius: 6;
+}
+.session-planner-state-compact {
+    -fx-padding: 10;
 }
 .world-planner-controls,
 .world-planner-main,

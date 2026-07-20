@@ -1,0 +1,6 @@
+Decision_Type_ID	Decision_Type	Meaning	Info_1	Info_2	Active	Source
+magic-decision:none	none	keine Zusatzentscheidung			true	DB_Items: Decision Types
+magic-decision:spell-level	spell_level	Zauber aus Levelbereich wählen	min spell level	max spell level	true	DB_Items: Decision Types
+magic-decision:variant-group	variant_group	Aus Variantengruppe wählen	group key	raw option text	true	DB_Items: Decision Types
+magic-decision:fixed-variant	fixed_variant	feste Variante, keine Auswahl nötig	variant text		true	DB_Items: Decision Types
+magic-decision:enspelled-item	enspelled_item	Konkretes Loot Item mit Spell als Enspelled Item auflösen	armor | weapon | staff | tool | trinket		true	D&D 5.5e Enspelled Items

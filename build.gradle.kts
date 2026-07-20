@@ -1,26 +1,28 @@
 import org.gradle.api.plugins.JavaApplication
-import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.tasks.PathSensitivity
+import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.application.tasks.CreateStartScripts
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import saltmarcher.buildlogic.tasks.MainClassesSystemPropertyProvider
+import saltmarcher.buildlogic.tasks.RequiredCommandLineArgumentsProvider
 
 plugins {
     java
     application
-    pmd
     id("saltmarcher.quality-conventions")
     id("org.openjfx.javafxplugin") version "0.1.0"
 }
 
 val launcherName = providers.gradleProperty("saltMarcherLauncherName").orElse("saltmarcher")
-val mainClassName = providers.gradleProperty("saltMarcherMainClass").orElse("bootstrap.SaltMarcherApp")
+val mainClassName = providers.gradleProperty("saltMarcherMainClass").orElse("app.SaltMarcherApp")
 val preloaderClassName = providers.gradleProperty("saltMarcherPreloaderClass")
-    .orElse("bootstrap.SaltMarcherPreloader")
-val codeSmellsRulesetFile = layout.projectDirectory.file("tools/quality/config/pmd/code-smells.xml")
+    .orElse("app.SaltMarcherPreloader")
 val javafxVersion = "21.0.2"
 val verificationMaxParallelForks = 1
+val catalogRehearsalDatabase = providers.gradleProperty("catalogRehearsalDatabase")
+val catalogSnapshotSource = providers.gradleProperty("catalogSnapshotSource")
+val catalogSnapshotTarget = providers.gradleProperty("catalogSnapshotTarget")
 
 val preloaderJvmArg = preloaderClassName.map { "-Djavafx.preloader=$it" }
 
@@ -42,7 +44,7 @@ javafx {
 sourceSets {
     main {
         java {
-            setSrcDirs(listOf("bootstrap", "shell", "src"))
+            setSrcDirs(listOf("app", "shell", "platform", "features"))
         }
         resources {
             setSrcDirs(listOf("resources"))
@@ -63,31 +65,11 @@ dependencies {
 
     implementation("org.jspecify:jspecify:1.0.0")
     implementation("org.xerial:sqlite-jdbc:3.53.2.0")
-    pmd("net.sourceforge.pmd:pmd-ant:7.23.0")
-    pmd("net.sourceforge.pmd:pmd-java:7.23.0")
-    pmd("saltmarcher.quality:quality-rules:1.0-SNAPSHOT")
-    testImplementation("org.junit.jupiter:junit-jupiter:6.1.1")
+    testImplementation("org.junit.jupiter:junit-jupiter:6.1.2")
     testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")
     testRuntimeOnly(monocleDependency)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.1")
-}
-
-pmd {
-    toolVersion = "7.23.0"
-    isConsoleOutput = true
-    isIgnoreFailures = false
-    ruleSets = listOf()
-    ruleSetFiles = files(codeSmellsRulesetFile)
-}
-
-tasks.named<Pmd>("pmdTest") {
-    enabled = false
-    group = null
-}
-
-tasks.named<Pmd>("pmdMain") {
-    group = null
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.2")
 }
 
 extensions.configure<JavaApplication> {
@@ -99,8 +81,45 @@ tasks.withType<CreateStartScripts>().configureEach {
     applicationName = launcherName.get()
 }
 
+tasks.register<JavaExec>("importSrdItems") {
+    group = "application"
+    description = "Explicitly replace the local Items catalog from the public D&D 5e 2014 SRD API."
+    dependsOn(tasks.named("classes"))
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("app.ItemsImportCommand")
+}
+
+tasks.register<JavaExec>("rehearseCatalogData") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Migrate and semantically read back an explicitly isolated Catalog data copy."
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("app.CatalogInstalledDataRehearsal")
+    argumentProviders.add(objects.newInstance<RequiredCommandLineArgumentsProvider>().apply {
+        arguments.add(catalogRehearsalDatabase.orElse(""))
+        propertyNames.add("catalogRehearsalDatabase")
+    })
+}
+
+tasks.register<JavaExec>("snapshotCatalogData") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Create a coherent, restore-tested copy for Catalog migration rehearsal."
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("app.CatalogInstalledDataSnapshot")
+    argumentProviders.add(objects.newInstance<RequiredCommandLineArgumentsProvider>().apply {
+        arguments.add(catalogSnapshotSource.orElse(""))
+        arguments.add(catalogSnapshotTarget.orElse(""))
+        propertyNames.add("catalogSnapshotSource")
+        propertyNames.add("catalogSnapshotTarget")
+    })
+}
+
 tasks.test {
     useJUnitPlatform()
+    inputs.files(sourceSets["main"].allJava)
+        .withPropertyName("mainJavaSources")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
     environment("XDG_DATA_HOME", temporaryDir.resolve("xdg-data").absolutePath)
 }
 
@@ -122,11 +141,16 @@ tasks.register<Test>("architectureTest") {
     inputs.dir(mainJavaClassesDir)
         .withPropertyName("mainClassesDirectory")
         .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(sourceSets["main"].allJava)
+        .withPropertyName("mainJavaSources")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath
-    useJUnitPlatform {
-        includeTags("architecture")
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching("architecture.*")
     }
+    environment("XDG_DATA_HOME", temporaryDir.resolve("xdg-data").absolutePath)
     jvmArgumentProviders += objects.newInstance(MainClassesSystemPropertyProvider::class.java).apply {
         mainClassesDirectory.set(mainJavaClassesDir)
     }

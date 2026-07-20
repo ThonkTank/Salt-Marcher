@@ -1,132 +1,111 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-07
-Source of Truth: Current Dungeon map adoption compatibility record for the
-legacy view/shell/UI seam; target feature-runtime and view ownership remains in
-the project-wide owner standards.
+Last Reviewed: 2026-07-17
+Source of Truth: Target Dungeon adoption of platform map-canvas mechanisms through feature APIs
+and explicit application composition.
 
 # Dungeon Map Adoption Architecture
 
-## Purpose
+## Purpose And Scope
 
-This specification records the current compatibility binding of map-canvas
-constraints onto the dungeon feature.
+This specification defines how the Dungeon feature adopts the passive Maps
+canvas for editor and travel workspaces. It serves Dungeon, Maps, shell, and
+application-composition maintainers.
 
-It does not define target feature-runtime conformance. Target ownership for
-feature runtime and view roles remains in [Source Architecture](../../project/architecture/source-architecture.md).
+It owns the structural translation between Dungeon API state and canvas-native scene
+and pointer types. Dungeon requirements own observable editor and travel
+behavior; Dungeon domain and persistence documents own authored truth and stored
+truth.
 
-It owns:
+## Target Ownership
 
-- dungeon-side current compatibility role adoption
-- dungeon-side current capability paths
-- the rule that dungeon converts `canvas <-> dungeon grid` through one adapter
+```text
+features/dungeon/
+  api/             Authored, Editor, and Travel capabilities and state
+  domain/          authored dungeon truth and invariants
+  application/     authored/catalog, editor-session, and travel orchestration
+  adapter/sqlite/  authored dungeon persistence
+  adapter/javafx/  shell contribution and Dungeon-to-Maps translation
+  <feature root>   Dungeon composition entry point used by app
+```
 
-It does not own dungeon behavior requirements, payload field detail, or domain
-invariants.
+The Dungeon JavaFX adapter may depend on `features.dungeon.api`,
+`shell.api`, and `platform.ui.mapcanvas`. It must not
+reach into Dungeon domain, application, or SQLite packages. The platform map
+canvas must not depend on any Dungeon package.
 
-## Dungeon Owners
+## Composition And Dependencies
 
-- `DungeonEditorMainView` and `DungeonTravelMainView` are thin root-local
-  wrappers around the dungeon-local map slotcontent surface
-- `DungeonMapView` is the dungeon-local map slotcontent View that renders only
-  the render scene exposed by the dungeon map slotcontent `ContentModel`
-- the dungeon map slotcontent `DungeonMapContentModel` is the only allowed
-  dungeon-side owner of map render state and the only allowed
-  canvas-facing render-state owner; raw map normalization and preview
-  projection publication stay upstream in the owning editor feature-runtime
-  and travel runtime boundaries
-- `DungeonEditorBinder` and `DungeonTravelBinder` currently load dungeon
-  `published/*Model` handles for editor and travel model families; both
-  subscribe to emitted snapshots and deliver those snapshots into the dungeon
-  map slotcontent `ContentModel`
-- `DungeonEditorBinder` currently wires `DungeonMapViewInputEvent` into the
-  same-root `DungeonEditorIntentHandler`, which owns pointer-event
-  interpretation and feature-runtime input translation as a compatibility seam,
-  not as target feature-runtime UI ownership
-- the active-root dungeon `ContributionModel` owns aggregate controls,
-  inspector, status, and other non-canvas projection state, but must not
-  mirror dungeon map render projection as a second render path
-- the optional active-root dungeon `IntentHandler` owns input interpretation
-- the dungeon editor feature-runtime authored operations provider is the
-  callable editor backend boundary and owns editor read, catalog change,
-  projection, narration, preview, and apply orchestration over authored dungeon
-  truth
-- `DungeonTravelRuntimeApplicationService` is the only callable runtime dungeon-travel
-  backend boundary for travel-session publication over authored dungeon truth
-- dungeon `published/**` owns the authored map, editor-session, and
-  travel-session readback carriers consumed by the dungeon workspaces
-- `PartyApplicationService` owns persisted party travel position outside
-  authored dungeon persistence and is consumed through dungeon travel runtime
+`app` constructs platform persistence and the Dungeon entry point explicitly.
+Dungeon's JavaFX adapter instantiates the passive canvas mechanism and receives
+foreign feature APIs required by travel composition. Dungeon exposes its
+constructed shell contribution and public APIs back to `app`; internal
+repositories and adapters remain feature-private.
 
-## Compatibility Boundary
+No shell discovery, service locator, or implementation-name convention is part
+of the target route.
 
-The live Dungeon Editor path still uses the legacy `src/view/**`
-ShellContribution, Binder, and IntentHandler to register the UI, bind the map
-surface, and translate raw map input into feature-runtime operation ports. This
-is current compatibility, not target conformance.
+## Translation Boundary
 
-Removal condition: Dungeon Editor shell registration and raw input UI are owned
-by the feature-runtime shell/UI seam, with runtime render frames and typed
-raw-input APIs consumed directly by that seam.
+The Dungeon JavaFX adapter is the single owner of both directions:
+
+- Dungeon API state to one canvas-native scene revision
+- platform pointer and hit samples to typed Dungeon API inputs
+
+Dungeon-grid coordinates, topology identity, preview meaning, editing tools,
+selection, and travel actions remain Dungeon-owned. Canvas coordinates, camera,
+viewport, draw order, and technical hit capture remain Maps-owned.
+
+The adapter may derive render primitives, labels, overlays, markers, graph
+relations, and token anchors from immutable Dungeon API state. Those derived
+values are presentation state, never authored dungeon truth or persistence
+input.
 
 ## Capability Paths
 
-### Surface Read
+### Authored And Editor Read
 
-`Dungeon*Binder -> dungeon published/*Model -> Dungeon*Snapshot or TravelDungeonSnapshot -> DungeonMapContentModel -> DungeonMapContentModel.RenderScene -> DungeonMapView -> Dungeon*MainView`
-
-For the editor workspace, the feature-runtime authored operations provider
-composes that runtime snapshot from dungeon editor model use cases over
-authored dungeon truth. Catalog changes enter through that provider.
+`Dungeon API state -> Dungeon JavaFX translation -> platform map canvas`
 
 ### Preview And Apply
 
-`Dungeon*MainView -> DungeonMapViewInputEvent -> DungeonEditorBinder wiring -> same-root Dungeon*IntentHandler -> feature-runtime pointer input -> DungeonEditorRuntimeOperations -> editor runtime publication -> DungeonMapContentModel -> DungeonMapContentModel.RenderScene -> DungeonMapView -> Dungeon*MainView`
+`platform pointer sample -> Dungeon JavaFX translation -> DungeonEditorIntent -> DungeonEditorApi -> immutable DungeonEditorState -> translated canvas scene`
 
-Preview and apply reuse the same authored dungeon edit body and differ only in
-the boundary wrapper and commit semantics.
+Preview and apply reuse the same authored operation vocabulary. Preview does not
+persist; apply commits only after Dungeon validation succeeds.
 
-### Travel Action
+### Travel
 
-`Dungeon*MainView or travel controls -> DungeonTravelBinder wiring -> same-root DungeonTravelIntentHandler -> DungeonTravelStatePublishedEvent -> DungeonTravelBinder -> DungeonTravelRuntimeApplicationService -> TravelDungeonSnapshot -> DungeonMapContentModel -> DungeonMapContentModel.RenderScene -> DungeonMapView -> Dungeon*MainView`
+`map-canvas pointer sample or travel control -> Dungeon JavaFX translation -> DungeonTravelApi -> immutable DungeonTravelState -> translated map-canvas scene`
 
-Direct token drag is adapter-side travel action resolution, not a second
-backend movement path.
+Party position remains owned by the Party feature and reaches Dungeon only
+through the Party API supplied during explicit composition.
 
-These canvas-specific seams are current compatibility seams, not new canonical
-reusable role families or target feature-runtime precedent. The canonical
-reusable-slotcontent target lives only in [Source Architecture](../../project/architecture/source-architecture.md).
+### Authored Catalog
 
-### Map Catalog
-
-`editor controls -> DungeonEditorBinder -> DungeonEditorRuntimeOperations -> catalog result`
-
-Catalog behavior remains separate from the shared canvas scene path while
-sharing the editor backend boundary.
+Map search, create, rename, delete, and selection use the catalog capability of
+`DungeonAuthoredApi`. Catalog behavior does not pass through the Maps canvas
+API.
 
 ## Decisions And Rationale
 
-- Dungeon keeps one adapter seam into the generic canvas.
-- Dungeon-grid coordinates stay inside the dungeon adopter boundary.
-- The dungeon map slotcontent surface follows the same canonical Binder plus
-  `ContentModel` split as the rest of the view layer, but it is also the only
-  legal render-state owner toward canvas.
-- Shared dungeon-map geometry, preview diffs, labels, markers, graph nodes,
-  graph links, and party token anchors are assembled for rendering by
-  `DungeonMapContentModel` from dungeon read-side facts before the canvas seam.
-- The editor workspace and interactive travel workspace are dungeon model
-  families, not separate domain contexts.
-- Travel must not publish a render-ready map projection carrier; its published
-  snapshot exposes travel surface facts and overlay settings.
+- Dungeon remains one feature with separate Authored, Editor, and Travel APIs;
+  authored catalog work belongs to `DungeonAuthoredApi`.
+- One JavaFX translation owner keeps dungeon-grid conversion and hit identity
+  consistent across editor and travel surfaces.
+- The platform canvas receives canvas-native presentation facts only; it never receives
+  Dungeon commands, aggregates, repositories, or persistence rows.
+- Render-ready state is derived in the JavaFX adapter from revisioned Dungeon API
+  state and must not become a second Dungeon publication or persistence model.
+- Cross-feature calls target APIs only and are injected by `app`.
 
-## Verification Notes
+## Verification
 
-- This architecture is currently `Review-Owned`.
-- Review must treat the Dungeon Editor legacy view/shell/UI path as current
-  compatibility, not target feature-runtime conformance.
-- Review must treat `CanvasPointerEvent`, `MapRenderScene`, and `MapCanvasView`
-  as removed legacy seams, not as target reusable-slotcontent truth.
-- Review must reject any second dungeon-to-canvas adapter for the same seam.
+- `architectureTest` checks target package direction and cross-feature API-only
+  dependencies.
+- Production-route JUnit tests prove editor preview/apply, travel action, catalog,
+  scene translation, draw/hit identity, and empty-state behavior.
+- Review rejects a second Dungeon-to-Maps translator or render-state owner.
 
 ## References
 
@@ -134,3 +113,5 @@ sharing the editor backend boundary.
 - [Maps Canvas Contract](../contract/contract-maps-canvas.md)
 - [Dungeon Map Surface Contract](../contract/contract-maps-dungeon-surface.md)
 - [Dungeon Feature Overview](../../dungeon/README.md)
+- [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)
+- [Application Composition Standard](../../project/architecture/patterns/application-composition.md)

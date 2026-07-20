@@ -1,0 +1,130 @@
+package features.dungeon.application.editor.session;
+
+import features.dungeon.api.DungeonEditorViewMode;
+import features.dungeon.api.DungeonOverlaySettings;
+import org.jspecify.annotations.Nullable;
+import features.dungeon.api.editor.DungeonEditorCommandOutcome;
+import features.dungeon.api.editor.DungeonEditorToolFamily;
+import features.dungeon.api.editor.DungeonEditorToolSelection;
+
+public final class DungeonEditorSessionWorkflow {
+    public static final String MAP_CREATED = "CREATED";
+    public static final String MAP_RENAMED = "RENAMED";
+    public static final String MAP_DELETED = "DELETED";
+
+    private final DungeonEditorSessionWorkflowState session = new DungeonEditorSessionWorkflowState();
+
+    public DungeonEditorSession session() {
+        return session.current();
+    }
+
+    public void selectMap(long mapId) {
+        session.replace(session.current()
+                .withSelectedMap(mapId > 0L ? new DungeonEditorWorkspaceValues.MapId(mapId) : null)
+                .clearSelection()
+                .clearTransientState(""));
+    }
+
+    public void applyMapLifecycle(
+            String event,
+            DungeonEditorWorkspaceValues.@Nullable MapId mapId
+    ) {
+        session.replace(switch (event) {
+            case MAP_CREATED -> session.current().withSelectedMap(mapId)
+                    .clearSelection()
+                    .clearTransientState("Dungeon-Map erstellt.");
+            case MAP_RENAMED -> session.current().withSelectedMap(mapId).withStatusText("Dungeon-Map umbenannt.");
+            case MAP_DELETED -> session.current().withSelectedMap(mapId)
+                    .clearSelection()
+                    .clearTransientState("Dungeon-Map gelöscht.");
+            default -> session.current();
+        });
+    }
+
+    public void setViewMode(DungeonEditorViewMode viewMode) {
+        DungeonEditorViewMode safeViewMode = viewMode == null
+                ? DungeonEditorViewMode.GRID
+                : viewMode;
+        session.replace(session.current().withViewMode(safeViewMode)
+                .clearTransientState(""));
+    }
+
+    public void setTool(DungeonEditorToolSelection selection) {
+        DungeonEditorToolSelection nextSelection = selection == null
+                ? DungeonEditorToolSelection.select()
+                : selection;
+        DungeonEditorSession nextSession = session.current()
+                .withToolSelection(nextSelection)
+                .clearTransientState("");
+        if (nextSelection.family() != DungeonEditorToolFamily.SELECT) {
+            nextSession = nextSession.clearSelection();
+        }
+        session.replace(nextSession);
+    }
+
+    public void shiftProjectionLevel(int projectionLevelDelta) {
+        session.replace(session.current().shiftProjectionLevel(projectionLevelDelta).clearPreview().withStatusText(""));
+    }
+
+    public void setOverlay(DungeonOverlaySettings overlaySettings) {
+        DungeonOverlaySettings safeOverlaySettings = overlaySettings == null
+                ? DungeonOverlaySettings.defaults()
+                : overlaySettings;
+        session.replace(session.current().withOverlaySettings(safeOverlaySettings).withStatusText(""));
+    }
+
+    public DungeonEditorSessionValues.@Nullable Preview applyEffect(DungeonEditorSessionEffect effect) {
+        if (effect == null) {
+            return null;
+        }
+        if (effect.getProjectionLevelDelta() != 0) {
+            session.replace(session.current().shiftProjectionLevel(effect.getProjectionLevelDelta()).clearPreview());
+        }
+        if (effect.getStatusText() != null) {
+            session.replace(session.current().withStatusText(effect.getStatusText()));
+        }
+        if (effect.getRejection() != null) {
+            session.replace(session.current().withCommandOutcome(effect.getRejection()));
+        }
+        if (effect.isClearSelection()) {
+            session.replace(session.current().clearSelection().clearPreview());
+        } else if (effect.getSelection() != null) {
+            session.replace(session.current().withSelection(effect.getSelection()).clearPreview());
+        }
+        if (effect.isClearPreview()) {
+            session.replace(session.current().clearPreview());
+        } else if (effect.getPreview() != null) {
+            String previewStatus = PreviewStatus.from(effect.getPreview(), effect.getStatusText());
+            session.replace(session.current().withPreview(effect.getPreview()).withStatusText(previewStatus));
+        }
+        return effect.getApplyPreview();
+    }
+
+    public void clearPreviewWithStatus(String statusText) {
+        session.replace(session.current().clearPreview().withStatusText(statusText));
+    }
+
+    public void clearPreviewWithCommandOutcome(DungeonEditorCommandOutcome outcome) {
+        session.replace(session.current().clearPreviewWithCommandOutcome(outcome));
+    }
+
+    public DungeonEditorSessionSnapshot.SnapshotData reconcileSnapshot(
+            DungeonEditorSessionSnapshot.SnapshotData snapshot
+    ) {
+        session.replace(session.current().withSelectedMap(snapshot.selectedMapId())
+                .withProjectionLevel(snapshot.projectionLevel()));
+        return snapshot;
+    }
+
+    private static final class PreviewStatus {
+        private static String from(
+                DungeonEditorSessionValues.Preview preview,
+                @Nullable String effectStatus
+        ) {
+            if (effectStatus != null) {
+                return effectStatus;
+            }
+            return preview instanceof DungeonEditorSessionValues.StairCreatePreview stair ? stair.statusText() : "";
+        }
+    }
+}

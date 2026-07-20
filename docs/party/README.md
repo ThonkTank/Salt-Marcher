@@ -1,4 +1,4 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-20
 Source of Truth: Entry point and document map for the party feature.
@@ -8,9 +8,7 @@ Source of Truth: Entry point and document map for the party feature.
 ## Purpose
 
 The party feature owns party composition, party persistence behavior, and the
-public backend boundary formed by
-`src/domain/party/PartyApplicationService.java` plus
-`src/domain/party/published/**`.
+public backend boundary `PartyApi`.
 
 ## Documentation Set
 

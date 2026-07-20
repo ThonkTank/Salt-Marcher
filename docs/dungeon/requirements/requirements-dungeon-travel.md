@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-24
+Last Reviewed: 2026-07-19
 Source of Truth: Travel-facing dungeon behavior, visible states, and acceptance
 criteria.
 
@@ -18,20 +18,6 @@ truth plus party-owned runtime state.
 - editor lifecycle behavior
 - authored dungeon invariants
 - SQLite schema detail
-
-## Current State
-
-- SaltMarcher already exposes a dungeon travel surface with map identity,
-  refresh, reset-view, zoom, level, and overlay controls plus a state area for
-  location and action text.
-- The current SaltMarcher travel view resolves listed travel actions through
-  the dungeon application boundary and shows resulting status text.
-- Direct token drag to reachable dungeon tiles is part of the documented
-  target state but is not yet fully wired in the current SaltMarcher travel
-  binder.
-- The sibling `salt-marcher` repo shows the fuller visible runtime target:
-  token drag, centered runtime details, and action buttons for doors, stairs,
-  and transitions.
 
 ## Visible Structure
 
@@ -59,7 +45,11 @@ truth plus party-owned runtime state.
   available movement choices
 - the surface MUST expose explicit travel actions for visible doors, stairs,
   and transitions when such actions are available
+- each published travel action MUST have a stable action id; executing an action
+  MUST address that id rather than its current presentation-row index
 - travel MUST support direct token movement to reachable local dungeon tiles
+- listed actions and direct movement MUST use the same typed movement command,
+  validation, Party-position update, and outcome publication path
 - refresh MUST reload the current travel surface from committed authored truth
   plus party runtime state
 - level and overlay controls MUST affect presentation only
@@ -67,6 +57,9 @@ truth plus party-owned runtime state.
   truth
 - blocked or invalid movement MUST keep authored truth unchanged and surface a
   meaningful outcome
+- a movement result MUST be published only after the Party-position mutation is
+  accepted or rejected; Dungeon travel MUST NOT infer completion from stale
+  mutable status
 
 ## Supported Movement Outcomes
 
@@ -81,6 +74,8 @@ truth plus party-owned runtime state.
 - The travel surface reloads after every resolved movement.
 - Valid listed travel actions update the party runtime position.
 - Valid token drag to a reachable tile updates the party runtime position.
+- Reordering visible actions does not change which action a stored action id
+  executes.
 - Valid dungeon or overworld transitions show the resulting destination state.
 - Invalid movement does not partially commit authored or runtime truth.
 - `Ansicht zurücksetzen` restores camera state without changing dungeon or

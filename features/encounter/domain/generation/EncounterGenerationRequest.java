@@ -1,0 +1,89 @@
+package features.encounter.domain.generation;
+
+import java.util.List;
+import java.util.Map;
+import features.encounter.domain.plan.EncounterPlanCreature;
+
+public record EncounterGenerationRequest(
+        EncounterGenerationInputs inputs,
+        int alternativeCount,
+        long generationSeed,
+        List<Long> excludedCreatureIds,
+        List<EncounterPlanCreature> lockedCreatures
+) {
+
+    private static final int DEFAULT_ALTERNATIVE_COUNT = 5;
+
+    public EncounterGenerationRequest {
+        inputs = inputs == null ? EncounterGenerationInputs.empty() : inputs;
+        alternativeCount = Math.max(1, Math.min(10,
+                alternativeCount <= 0 ? DEFAULT_ALTERNATIVE_COUNT : alternativeCount));
+        generationSeed = Math.max(0L, generationSeed);
+        excludedCreatureIds = excludedCreatureIds == null ? List.of() : List.copyOf(excludedCreatureIds);
+        lockedCreatures = lockedCreatures == null ? List.of() : List.copyOf(lockedCreatures);
+    }
+
+    public List<String> creatureTypes() {
+        return inputs.creatureTypes();
+    }
+
+    public List<String> creatureSubtypes() {
+        return inputs.creatureSubtypes();
+    }
+
+    public List<String> biomes() {
+        return inputs.biomes();
+    }
+
+    public String nameQuery() {
+        return inputs.nameQuery();
+    }
+
+    public String challengeRatingMin() {
+        return inputs.challengeRatingMin();
+    }
+
+    public String challengeRatingMax() {
+        return inputs.challengeRatingMax();
+    }
+
+    public List<String> sizes() {
+        return inputs.sizes();
+    }
+
+    public List<String> alignments() {
+        return inputs.alignments();
+    }
+
+    public EncounterRequestedDifficulty requestedDifficulty() {
+        return inputs.targetDifficulty();
+    }
+
+    public EncounterDifficultyIntent targetDifficulty() {
+        return requestedDifficulty().resolvedIntent();
+    }
+
+    public boolean targetDifficultyAuto() {
+        return requestedDifficulty().isAuto();
+    }
+
+    public EncounterTuningIntent tuning() {
+        return inputs.tuning();
+    }
+
+    public List<Long> encounterTableIds() {
+        return inputs.encounterTableIds();
+    }
+
+    public List<Long> worldFactionIds() {
+        return inputs.worldFactionIds();
+    }
+
+    public long worldLocationId() {
+        return inputs.worldLocationId();
+    }
+
+    public Map<Long, Integer> finiteCreatureStockCaps() {
+        return inputs.finiteCreatureStockCaps();
+    }
+}

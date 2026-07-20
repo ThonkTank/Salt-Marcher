@@ -14,11 +14,11 @@ as a top-bar control panel.
 
 Current state:
 
-- The trigger reads the active party's rest-budget summary from the party
-  application service.
+- The trigger reads the active party's rest-budget summary through the Party
+  feature boundary.
 - The dropdown renders the calculator surface with active-party and custom
   party input modes.
-- Calculation decisions are requested through the party application service;
+- Calculation decisions are requested through the Party feature boundary;
   the JavaFX view owns controls and rendering only.
 
 ## Visible Surfaces
@@ -62,7 +62,7 @@ Current state:
 - editing rows moves the calculator into custom mode without persisting party
   changes
 - budget and progress modes stay available inside the same dropdown surface and
-  reuse the shared calculator slotcontent
+  reuse the shared calculator behavior
 
 ## References
 

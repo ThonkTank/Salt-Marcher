@@ -1,6 +1,6 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-07
+Last Reviewed: 2026-07-17
 Source of Truth: Routing entrypoint for the dungeon gameplay and domain
 documentation bundle.
 
@@ -11,21 +11,24 @@ documentation bundle.
 The dungeon feature owns authored dungeon truth, dungeon travel runtime
 behavior, dungeon editor behavior, and dungeon persistence truth.
 
-Generic map-canvas behavior and dungeon map-surface adoption now live in
-`docs/maps/`.
+Generic passive map-canvas mechanisms live in `platform.ui.mapcanvas`; the
+Dungeon architecture owns how its API facts adopt those mechanisms.
 
 ## Document Set
 
 ### Agent Reading Order
 
 1. Start here to find the owning document family.
-2. Read [Dungeon Domain Architecture](./architecture/architecture-dungeon-domain.md)
-   for `src/domain/dungeon/**` structure, model families, and dependency
-   direction.
+2. Read [Dungeon Architecture](./architecture/architecture-dungeon-domain.md)
+   for feature ownership, authored-core boundaries, runtime capabilities, and
+   target dependency direction.
 3. Read [Dungeon Domain Model](./domain/domain-dungeon.md) for domain truth,
-   write-model ownership, published language, and invariants.
+   write-model ownership, API language, and invariants.
 4. Read the relevant requirements document for user-visible behavior. Executable
    evidence lives in the matching JUnit tests.
+5. Read the temporary [Dungeon Greenfield Roadmap](./delivery/roadmap-dungeon-greenfield.md)
+   only when implementing or reviewing migration work. It owns sequencing and
+   deletion gates, not durable behavior or architecture.
 
 ### Architecture
 
@@ -46,13 +49,13 @@ Generic map-canvas behavior and dungeon map-surface adoption now live in
 
 - [Dungeon Domain Model](./domain/domain-dungeon.md)
 
-### Delivery
+### Temporary Delivery
 
-- [Dungeon Delivery Notes](./delivery/delivery-dungeon.md)
+- [Dungeon Greenfield Roadmap](./delivery/roadmap-dungeon-greenfield.md)
 
-### Related Maps Docs
+### Related Map Canvas Docs
 
-- [Maps Feature Overview](../maps/README.md) (line 1)
+- [Map Canvas Overview](../maps/README.md) (line 1)
 - [Dungeon Map Adoption Architecture](../maps/architecture/architecture-maps-dungeon-adoption.md) (line 1)
 - [Dungeon Map Surface Contract](../maps/contract/contract-maps-dungeon-surface.md) (line 1)
 - [Maps Canvas Requirements](../maps/requirements/requirements-maps-canvas.md) (line 1)

@@ -1,0 +1,553 @@
+Magic_Item_ID	Type	Rarity	Roll_Min	Roll_Max	Item	Decision_Type	Info_1	Info_2	Active
+magic:arcana:common:bead-of-nourishment	Arcana	Common	1.0	2.0	Bead of Nourishment	none			true
+magic:arcana:common:bead-of-refreshment	Arcana	Common	3.0	4.0	Bead of Refreshment	none			true
+magic:arcana:common:candle-of-the-deep	Arcana	Common	5.0	7.0	Candle of the Deep	none			true
+magic:arcana:common:cloak-of-billowing	Arcana	Common	8.0	10.0	Cloak of Billowing	none			true
+magic:arcana:common:cloak-of-many-fashions	Arcana	Common	11.0	13.0	Cloak of Many Fashions	none			true
+magic:arcana:common:clothes-of-mending	Arcana	Common	14.0	15.0	Clothes of Mending	none			true
+magic:arcana:common:dark-shard-amulet	Arcana	Common	16.0	17.0	Dark Shard Amulet	none			true
+magic:arcana:common:enduring-spellbook	Arcana	Common	18.0	19.0	Enduring Spellbook	none			true
+magic:arcana:common:ersatz-eye	Arcana	Common	20.0	21.0	Ersatz Eye	none			true
+magic:arcana:common:hat-of-vermin	Arcana	Common	22.0	24.0	Hat of Vermin	none			true
+magic:arcana:common:hat-of-wizardry	Arcana	Common	25.0	27.0	Hat of Wizardry	none			true
+magic:arcana:common:heward-s-handy-spice-pouch	Arcana	Common	28.0	29.0	Heward’s Handy Spice Pouch	none			true
+magic:arcana:common:horn-of-silent-alarm	Arcana	Common	30.0	31.0	Horn of Silent Alarm	none			true
+magic:arcana:common:instrument-of-illusions	Arcana	Common	32.0	33.0	Instrument of Illusions	none			true
+magic:arcana:common:instrument-of-scribing	Arcana	Common	34.0	35.0	Instrument of Scribing	none			true
+magic:arcana:common:lock-of-trickery	Arcana	Common	36.0	37.0	Lock of Trickery	none			true
+magic:arcana:common:mystery-key	Arcana	Common	38.0	40.0	Mystery Key	none			true
+magic:arcana:common:orb-of-direction	Arcana	Common	41.0	42.0	Orb of Direction	none			true
+magic:arcana:common:orb-of-time	Arcana	Common	43.0	44.0	Orb of Time	none			true
+magic:arcana:common:perfume-of-bewitching	Arcana	Common	45.0	46.0	Perfume of Bewitching	none			true
+magic:arcana:common:pipe-of-smoke-monsters	Arcana	Common	47.0	49.0	Pipe of Smoke Monsters	none			true
+magic:arcana:common:potion-of-climbing	Arcana	Common	50.0	52.0	Potion of Climbing	none			true
+magic:arcana:common:potion-of-comprehension	Arcana	Common	53.0	55.0	Potion of Comprehension	none			true
+magic:arcana:common:pot-of-awakening	Arcana	Common	56.0	58.0	Pot of Awakening	none			true
+magic:arcana:common:prosthetic-limb	Arcana	Common	59.0	60.0	Prosthetic Limb	none			true
+magic:arcana:common:rival-coin	Arcana	Common	61.0	64.0	Rival Coin	none			true
+magic:arcana:common:rope-of-mending	Arcana	Common	65.0	66.0	Rope of Mending	none			true
+magic:arcana:common:ruby-of-the-war-mage	Arcana	Common	67.0	68.0	Ruby of the War Mage	none			true
+magic:arcana:common:spell-scroll	Arcana	Common	69.0	82.0	Spell Scroll	spell_level		1.0	true
+magic:arcana:common:staff-of-adornment	Arcana	Common	83.0	84.0	Staff of Adornment	none			true
+magic:arcana:common:staff-of-birdcalls	Arcana	Common	85.0	86.0	Staff of Birdcalls	none			true
+magic:arcana:common:staff-of-flowers	Arcana	Common	87.0	89.0	Staff of Flowers	none			true
+magic:arcana:common:talking-doll	Arcana	Common	90.0	92.0	Talking Doll	none			true
+magic:arcana:common:tankard-of-sobriety	Arcana	Common	93.0	94.0	Tankard of Sobriety	none			true
+magic:arcana:common:wand-of-conducting	Arcana	Common	95.0	97.0	Wand of Conducting	none			true
+magic:arcana:common:wand-of-pyrotechnics	Arcana	Common	98.0	100.0	Wand of Pyrotechnics	none			true
+magic:arcana:uncommon:amulet-of-proof-against-detection-and-location	Arcana	Uncommon	1.0	1.0	Amulet of Proof against Detection and Location	none			true
+magic:arcana:uncommon:baba-yaga-s-dancing-broom	Arcana	Uncommon	2.0	2.0	Baba Yaga’s Dancing Broom	none			true
+magic:arcana:uncommon:bag-of-holding	Arcana	Uncommon	3.0	5.0	Bag of Holding	none			true
+magic:arcana:uncommon:bag-of-tricks	Arcana	Uncommon	6.0	7.0	Bag of Tricks	none			true
+magic:arcana:uncommon:brooch-of-shielding	Arcana	Uncommon	8.0	8.0	Brooch of Shielding	none			true
+magic:arcana:uncommon:broom-of-flying	Arcana	Uncommon	9.0	9.0	Broom of Flying	none			true
+magic:arcana:uncommon:cap-of-water-breathing	Arcana	Uncommon	10.0	10.0	Cap of Water Breathing	none			true
+magic:arcana:uncommon:circlet-of-blasting	Arcana	Uncommon	11.0	11.0	Circlet of Blasting	none			true
+magic:arcana:uncommon:cloak-of-protection	Arcana	Uncommon	12.0	13.0	Cloak of Protection	none			true
+magic:arcana:uncommon:cloak-of-the-manta-ray	Arcana	Uncommon	14.0	14.0	Cloak of the Manta Ray	none			true
+magic:arcana:uncommon:decanter-of-endless-water	Arcana	Uncommon	15.0	15.0	Decanter of Endless Water	none			true
+magic:arcana:uncommon:deck-of-illusions	Arcana	Uncommon	16.0	16.0	Deck of Illusions	none			true
+magic:arcana:uncommon:driftglobe	Arcana	Uncommon	17.0	18.0	Driftglobe	none			true
+magic:arcana:uncommon:dust-of-disappearance	Arcana	Uncommon	19.0	20.0	Dust of Disappearance	none			true
+magic:arcana:uncommon:dust-of-dryness	Arcana	Uncommon	21.0	21.0	Dust of Dryness	none			true
+magic:arcana:uncommon:dust-of-sneezing-and-choking	Arcana	Uncommon	22.0	22.0	Dust of Sneezing and Choking	none			true
+magic:arcana:uncommon:elemental-gem	Arcana	Uncommon	23.0	24.0	Elemental Gem	none			true
+magic:arcana:uncommon:enspelled-staff	Arcana	Uncommon	25.0	25.0	Enspelled Staff	enspelled_item	staff		true
+magic:arcana:uncommon:eversmoking-bottle	Arcana	Uncommon	26.0	26.0	Eversmoking Bottle	none			true
+magic:arcana:uncommon:eyes-of-charming	Arcana	Uncommon	27.0	27.0	Eyes of Charming	none			true
+magic:arcana:uncommon:eyes-of-minute-seeing	Arcana	Uncommon	28.0	28.0	Eyes of Minute Seeing	none			true
+magic:arcana:uncommon:figurine-of-wondrous-power	Arcana	Uncommon	29.0	30.0	Figurine of Wondrous Power	fixed_variant	silver raven		true
+magic:arcana:uncommon:gem-of-brightness	Arcana	Uncommon	31.0	31.0	Gem of Brightness	none			true
+magic:arcana:uncommon:hag-eye	Arcana	Uncommon	32.0	32.0	Hag Eye	none			true
+magic:arcana:uncommon:hat-of-disguise	Arcana	Uncommon	33.0	33.0	Hat of Disguise	none			true
+magic:arcana:uncommon:headband-of-intellect	Arcana	Uncommon	34.0	34.0	Headband of Intellect	none			true
+magic:arcana:uncommon:helm-of-comprehending-languages	Arcana	Uncommon	35.0	35.0	Helm of Comprehending Languages	none			true
+magic:arcana:uncommon:helm-of-telepathy	Arcana	Uncommon	36.0	36.0	Helm of Telepathy	none			true
+magic:arcana:uncommon:immovable-rod	Arcana	Uncommon	37.0	37.0	Immovable Rod	none			true
+magic:arcana:uncommon:lantern-of-revealing	Arcana	Uncommon	38.0	38.0	Lantern of Revealing	none			true
+magic:arcana:uncommon:medallion-of-thoughts	Arcana	Uncommon	39.0	39.0	Medallion of Thoughts	none			true
+magic:arcana:uncommon:mithral-armor	Arcana	Uncommon	40.0	40.0	Mithral Armor	none			true
+magic:arcana:uncommon:necklace-of-adaptation	Arcana	Uncommon	41.0	42.0	Necklace of Adaptation	none			true
+magic:arcana:uncommon:oil-of-slipperiness	Arcana	Uncommon	43.0	43.0	Oil of Slipperiness	none			true
+magic:arcana:uncommon:pearl-of-power	Arcana	Uncommon	44.0	44.0	Pearl of Power	none			true
+magic:arcana:uncommon:periapt-of-health	Arcana	Uncommon	45.0	45.0	Periapt of Health	none			true
+magic:arcana:uncommon:philter-of-love	Arcana	Uncommon	46.0	47.0	Philter of Love	none			true
+magic:arcana:uncommon:potion-of-animal-friendship	Arcana	Uncommon	48.0	49.0	Potion of Animal Friendship	none			true
+magic:arcana:uncommon:potion-of-fire-breath	Arcana	Uncommon	50.0	51.0	Potion of Fire Breath	none			true
+magic:arcana:uncommon:potion-of-giant-strength	Arcana	Uncommon	52.0	53.0	Potion of Giant Strength	fixed_variant	hill		true
+magic:arcana:uncommon:potion-of-growth	Arcana	Uncommon	54.0	55.0	Potion of Growth	none			true
+magic:arcana:uncommon:potion-of-poison	Arcana	Uncommon	56.0	57.0	Potion of Poison	none			true
+magic:arcana:uncommon:potion-of-resistance	Arcana	Uncommon	58.0	59.0	Potion of Resistance	none			true
+magic:arcana:uncommon:potion-of-water-breathing	Arcana	Uncommon	60.0	61.0	Potion of Water Breathing	none			true
+magic:arcana:uncommon:quaal-s-feather-token	Arcana	Uncommon	62.0	62.0	Quaal’s Feather Token	variant_group	feather_basic		true
+magic:arcana:uncommon:ring-of-mind-shielding	Arcana	Uncommon	63.0	63.0	Ring of Mind Shielding	none			true
+magic:arcana:uncommon:robe-of-useful-items	Arcana	Uncommon	64.0	65.0	Robe of Useful Items	none			true
+magic:arcana:uncommon:rod-of-the-pact-keeper	Arcana	Uncommon	66.0	67.0	Rod of the Pact Keeper	none			true
+magic:arcana:uncommon:rope-of-climbing	Arcana	Uncommon	68.0	69.0	Rope of Climbing	none			true
+magic:arcana:uncommon:saddle-of-the-cavalier	Arcana	Uncommon	70.0	70.0	Saddle of the Cavalier	none			true
+magic:arcana:uncommon:sending-stones	Arcana	Uncommon	71.0	72.0	Sending Stones	none			true
+magic:arcana:uncommon:slippers-of-spider-climbing	Arcana	Uncommon	73.0	74.0	Slippers of Spider Climbing	none			true
+magic:arcana:uncommon:spell-scroll	Arcana	Uncommon	75.0	82.0	Spell Scroll	spell_level	2.0	3.0	true
+magic:arcana:uncommon:staff-of-the-adder	Arcana	Uncommon	83.0	83.0	Staff of the Adder	none			true
+magic:arcana:uncommon:staff-of-the-python	Arcana	Uncommon	84.0	84.0	Staff of the Python	none			true
+magic:arcana:uncommon:wand-of-magic-detection	Arcana	Uncommon	85.0	88.0	Wand of Magic Detection	none			true
+magic:arcana:uncommon:wand-of-magic-missiles	Arcana	Uncommon	89.0	91.0	Wand of Magic Missiles	none			true
+magic:arcana:uncommon:wand-of-secrets	Arcana	Uncommon	92.0	93.0	Wand of Secrets	none			true
+magic:arcana:uncommon:wand-of-the-war-mage-1	Arcana	Uncommon	94.0	95.0	Wand of the War Mage, +1	none			true
+magic:arcana:uncommon:wand-of-web	Arcana	Uncommon	96.0	97.0	Wand of Web	none			true
+magic:arcana:uncommon:wind-fan	Arcana	Uncommon	98.0	99.0	Wind Fan	none			true
+magic:arcana:uncommon:winged-boots	Arcana	Uncommon	100.0	100.0	Winged Boots	none			true
+magic:arcana:rare:bag-of-beans	Arcana	Rare	1.0	1.0	Bag of Beans	none			true
+magic:arcana:rare:bead-of-force	Arcana	Rare	2.0	3.0	Bead of Force	none			true
+magic:arcana:rare:bowl-of-commanding-water-elementals	Arcana	Rare	4.0	4.0	Bowl of Commanding Water Elementals	none			true
+magic:arcana:rare:bracers-of-defense	Arcana	Rare	5.0	6.0	Bracers of Defense	none			true
+magic:arcana:rare:brazier-of-commanding-fire-elementals	Arcana	Rare	7.0	7.0	Brazier of Commanding Fire Elementals	none			true
+magic:arcana:rare:cape-of-the-mountebank	Arcana	Rare	8.0	9.0	Cape of the Mountebank	none			true
+magic:arcana:rare:censer-of-controlling-air-elementals	Arcana	Rare	10.0	10.0	Censer of Controlling Air Elementals	none			true
+magic:arcana:rare:chime-of-opening	Arcana	Rare	11.0	12.0	Chime of Opening	none			true
+magic:arcana:rare:cloak-of-displacement	Arcana	Rare	13.0	14.0	Cloak of Displacement	none			true
+magic:arcana:rare:cloak-of-the-bat	Arcana	Rare	15.0	16.0	Cloak of the Bat	none			true
+magic:arcana:rare:cube-of-force	Arcana	Rare	17.0	17.0	Cube of Force	none			true
+magic:arcana:rare:cube-of-summoning	Arcana	Rare	18.0	18.0	Cube of Summoning	none			true
+magic:arcana:rare:daern-s-instant-fortress	Arcana	Rare	19.0	19.0	Daern’s Instant Fortress	none			true
+magic:arcana:rare:enspelled-staff	Arcana	Rare	20.0	21.0	Enspelled Staff	enspelled_item	staff		true
+magic:arcana:rare:figurine-of-wondrous-power	Arcana	Rare	22.0	23.0	Figurine of Wondrous Power	variant_group	figurine_rare		true
+magic:arcana:rare:folding-boat	Arcana	Rare	24.0	25.0	Folding Boat	none			true
+magic:arcana:rare:gem-of-seeing	Arcana	Rare	26.0	27.0	Gem of Seeing	none			true
+magic:arcana:rare:helm-of-teleportation	Arcana	Rare	28.0	28.0	Helm of Teleportation	none			true
+magic:arcana:rare:heward-s-handy-haversack	Arcana	Rare	29.0	30.0	Heward’s Handy Haversack	none			true
+magic:arcana:rare:horseshoes-of-speed	Arcana	Rare	31.0	32.0	Horseshoes of Speed	none			true
+magic:arcana:rare:ioun-stone	Arcana	Rare	33.0	34.0	Ioun Stone	fixed_variant	reserve		true
+magic:arcana:rare:iron-bands-of-bilarro	Arcana	Rare	35.0	35.0	Iron Bands of Bilarro	none			true
+magic:arcana:rare:mantle-of-spell-resistance	Arcana	Rare	36.0	36.0	Mantle of Spell Resistance	none			true
+magic:arcana:rare:necklace-of-fireballs	Arcana	Rare	37.0	38.0	Necklace of Fireballs	none			true
+magic:arcana:rare:oil-of-etherealness	Arcana	Rare	39.0	39.0	Oil of Etherealness	none			true
+magic:arcana:rare:portable-hole	Arcana	Rare	40.0	40.0	Portable Hole	none			true
+magic:arcana:rare:potion-of-clairvoyance	Arcana	Rare	41.0	42.0	Potion of Clairvoyance	none			true
+magic:arcana:rare:potion-of-diminution	Arcana	Rare	43.0	44.0	Potion of Diminution	none			true
+magic:arcana:rare:potion-of-gaseous-form	Arcana	Rare	45.0	46.0	Potion of Gaseous Form	none			true
+magic:arcana:rare:potion-of-giant-strength	Arcana	Rare	47.0	47.0	Potion of Giant Strength	fixed_variant	fire		true
+magic:arcana:rare:potion-of-giant-strength:2	Arcana	Rare	48.0	49.0	Potion of Giant Strength	variant_group	giant_potion_frost_stone		true
+magic:arcana:rare:potion-of-heroism	Arcana	Rare	50.0	51.0	Potion of Heroism	none			true
+magic:arcana:rare:potion-of-invisibility	Arcana	Rare	52.0	53.0	Potion of Invisibility	none			true
+magic:arcana:rare:potion-of-invulnerability	Arcana	Rare	54.0	55.0	Potion of Invulnerability	none			true
+magic:arcana:rare:potion-of-mind-reading	Arcana	Rare	56.0	57.0	Potion of Mind Reading	none			true
+magic:arcana:rare:quaal-s-feather-token	Arcana	Rare	58.0	59.0	Quaal’s Feather Token	variant_group	feather_rare		true
+magic:arcana:rare:ring-of-feather-falling	Arcana	Rare	60.0	61.0	Ring of Feather Falling	none			true
+magic:arcana:rare:ring-of-spell-storing	Arcana	Rare	62.0	62.0	Ring of Spell Storing	none			true
+magic:arcana:rare:ring-of-x-ray-vision	Arcana	Rare	63.0	63.0	Ring of X-ray Vision	none			true
+magic:arcana:rare:robe-of-eyes	Arcana	Rare	64.0	65.0	Robe of Eyes	none			true
+magic:arcana:rare:rod-of-rulership	Arcana	Rare	66.0	66.0	Rod of Rulership	none			true
+magic:arcana:rare:rod-of-the-pact-keeper-2	Arcana	Rare	67.0	68.0	Rod of the Pact Keeper, +2	none			true
+magic:arcana:rare:scroll-of-protection	Arcana	Rare	69.0	70.0	Scroll of Protection	none			true
+magic:arcana:rare:spell-scroll	Arcana	Rare	71.0	75.0	Spell Scroll	spell_level	4.0	5.0	true
+magic:arcana:rare:staff-of-charming	Arcana	Rare	76.0	77.0	Staff of Charming	none			true
+magic:arcana:rare:staff-of-swarming-insects	Arcana	Rare	78.0	79.0	Staff of Swarming Insects	none			true
+magic:arcana:rare:staff-of-withering	Arcana	Rare	80.0	81.0	Staff of Withering	none			true
+magic:arcana:rare:stone-of-controlling-earth-elementals	Arcana	Rare	82.0	82.0	Stone of Controlling Earth Elementals	none			true
+magic:arcana:rare:wand-of-binding	Arcana	Rare	83.0	84.0	Wand of Binding	none			true
+magic:arcana:rare:wand-of-fear	Arcana	Rare	85.0	86.0	Wand of Fear	none			true
+magic:arcana:rare:wand-of-fireballs	Arcana	Rare	87.0	90.0	Wand of Fireballs	none			true
+magic:arcana:rare:wand-of-lightning-bolts	Arcana	Rare	91.0	94.0	Wand of Lightning Bolts	none			true
+magic:arcana:rare:wand-of-the-war-mage-2	Arcana	Rare	95.0	96.0	Wand of the War Mage, +2	none			true
+magic:arcana:rare:wand-of-wonder	Arcana	Rare	97.0	98.0	Wand of Wonder	none			true
+magic:arcana:rare:wings-of-flying	Arcana	Rare	99.0	100.0	Wings of Flying	none			true
+magic:arcana:very-rare:amulet-of-the-planes	Arcana	Very Rare	1.0	2.0	Amulet of the Planes	none			true
+magic:arcana:very-rare:bag-of-devouring	Arcana	Very Rare	3.0	4.0	Bag of Devouring	none			true
+magic:arcana:very-rare:carpet-of-flying	Arcana	Very Rare	5.0	6.0	Carpet of Flying	none			true
+magic:arcana:very-rare:cauldron-of-rebirth	Arcana	Very Rare	7.0	8.0	Cauldron of Rebirth	none			true
+magic:arcana:very-rare:cloak-of-arachnida	Arcana	Very Rare	9.0	10.0	Cloak of Arachnida	none			true
+magic:arcana:very-rare:crystal-ball	Arcana	Very Rare	11.0	12.0	Crystal Ball	none			true
+magic:arcana:very-rare:dancing-sword	Arcana	Very Rare	13.0	13.0	Dancing Sword	none			true
+magic:arcana:very-rare:efreeti-bottle	Arcana	Very Rare	14.0	14.0	Efreeti Bottle	none			true
+magic:arcana:very-rare:enspelled-staff	Arcana	Very Rare	15.0	16.0	Enspelled Staff	enspelled_item	staff		true
+magic:arcana:very-rare:figurine-of-wondrous-power	Arcana	Very Rare	17.0	18.0	Figurine of Wondrous Power	fixed_variant	obsidian steed		true
+magic:arcana:very-rare:hat-of-many-spells	Arcana	Very Rare	19.0	20.0	Hat of Many Spells	none			true
+magic:arcana:very-rare:helm-of-brilliance	Arcana	Very Rare	21.0	22.0	Helm of Brilliance	none			true
+magic:arcana:very-rare:horseshoes-of-a-zephyr	Arcana	Very Rare	23.0	24.0	Horseshoes of a Zephyr	none			true
+magic:arcana:very-rare:ioun-stone	Arcana	Very Rare	25.0	26.0	Ioun Stone	variant_group	ioun_very_rare		true
+magic:arcana:very-rare:manual-of-golems	Arcana	Very Rare	27.0	28.0	Manual of Golems	variant_group	golem_manual		true
+magic:arcana:very-rare:mirror-of-life-trapping	Arcana	Very Rare	29.0	29.0	Mirror of Life Trapping	none			true
+magic:arcana:very-rare:nolzur-s-marvelous-pigments	Arcana	Very Rare	30.0	31.0	Nolzur’s Marvelous Pigments	none			true
+magic:arcana:very-rare:oil-of-sharpness	Arcana	Very Rare	32.0	34.0	Oil of Sharpness	none			true
+magic:arcana:very-rare:potion-of-flying	Arcana	Very Rare	35.0	38.0	Potion of Flying	none			true
+magic:arcana:very-rare:potion-of-giant-strength	Arcana	Very Rare	39.0	42.0	Potion of Giant Strength	fixed_variant	cloud		true
+magic:arcana:very-rare:potion-of-greater-invisibility	Arcana	Very Rare	43.0	46.0	Potion of Greater Invisibility	none			true
+magic:arcana:very-rare:potion-of-longevity	Arcana	Very Rare	47.0	49.0	Potion of Longevity	none			true
+magic:arcana:very-rare:potion-of-speed	Arcana	Very Rare	50.0	53.0	Potion of Speed	none			true
+magic:arcana:very-rare:potion-of-vitality	Arcana	Very Rare	54.0	57.0	Potion of Vitality	none			true
+magic:arcana:very-rare:ring-of-regeneration	Arcana	Very Rare	58.0	59.0	Ring of Regeneration	none			true
+magic:arcana:very-rare:ring-of-shooting-stars	Arcana	Very Rare	60.0	61.0	Ring of Shooting Stars	none			true
+magic:arcana:very-rare:ring-of-telekinesis	Arcana	Very Rare	62.0	63.0	Ring of Telekinesis	none			true
+magic:arcana:very-rare:robe-of-scintillating-colors	Arcana	Very Rare	64.0	65.0	Robe of Scintillating Colors	none			true
+magic:arcana:very-rare:robe-of-stars	Arcana	Very Rare	66.0	67.0	Robe of Stars	none			true
+magic:arcana:very-rare:rod-of-absorption	Arcana	Very Rare	68.0	69.0	Rod of Absorption	none			true
+magic:arcana:very-rare:rod-of-security	Arcana	Very Rare	70.0	71.0	Rod of Security	none			true
+magic:arcana:very-rare:rod-of-the-pact-keeper-3	Arcana	Very Rare	72.0	73.0	Rod of the Pact Keeper, +3	none			true
+magic:arcana:very-rare:spell-scroll	Arcana	Very Rare	74.0	85.0	Spell Scroll	spell_level	6.0	8.0	true
+magic:arcana:very-rare:staff-of-fire	Arcana	Very Rare	86.0	87.0	Staff of Fire	none			true
+magic:arcana:very-rare:staff-of-frost	Arcana	Very Rare	88.0	89.0	Staff of Frost	none			true
+magic:arcana:very-rare:staff-of-power	Arcana	Very Rare	90.0	90.0	Staff of Power	none			true
+magic:arcana:very-rare:staff-of-thunder-and-lightning	Arcana	Very Rare	91.0	92.0	Staff of Thunder and Lightning	none			true
+magic:arcana:very-rare:tome-of-clear-thought	Arcana	Very Rare	93.0	94.0	Tome of Clear Thought	none			true
+magic:arcana:very-rare:wand-of-polymorph	Arcana	Very Rare	95.0	97.0	Wand of Polymorph	none			true
+magic:arcana:very-rare:wand-of-the-war-mage-3	Arcana	Very Rare	98.0	100.0	Wand of the War Mage, +3	none			true
+magic:arcana:legendary:apparatus-of-kwalish	Arcana	Legendary	1.0	4.0	Apparatus of Kwalish	none			true
+magic:arcana:legendary:cloak-of-invisibility	Arcana	Legendary	5.0	8.0	Cloak of Invisibility	none			true
+magic:arcana:legendary:crystal-ball-of-mind-reading	Arcana	Legendary	9.0	12.0	Crystal Ball of Mind Reading	none			true
+magic:arcana:legendary:crystal-ball-of-telepathy	Arcana	Legendary	13.0	16.0	Crystal Ball of Telepathy	none			true
+magic:arcana:legendary:crystal-ball-of-true-seeing	Arcana	Legendary	17.0	20.0	Crystal Ball of True Seeing	none			true
+magic:arcana:legendary:cubic-gate	Arcana	Legendary	21.0	22.0	Cubic Gate	none			true
+magic:arcana:legendary:deck-of-many-things	Arcana	Legendary	23.0	23.0	Deck of Many Things	none			true
+magic:arcana:legendary:enspelled-staff	Arcana	Legendary	24.0	27.0	Enspelled Staff	enspelled_item	staff		true
+magic:arcana:legendary:ioun-stone	Arcana	Legendary	28.0	31.0	Ioun Stone	variant_group	ioun_legendary		true
+magic:arcana:legendary:iron-flask	Arcana	Legendary	32.0	33.0	Iron Flask	none			true
+magic:arcana:legendary:potion-of-storm-giant-strength	Arcana	Legendary	34.0	41.0	Potion of Storm Giant Strength	fixed_variant	storm		true
+magic:arcana:legendary:ring-of-djinni-summoning	Arcana	Legendary	42.0	45.0	Ring of Djinni Summoning	none			true
+magic:arcana:legendary:ring-of-elemental-command	Arcana	Legendary	46.0	49.0	Ring of Elemental Command	variant_group	elemental_command		true
+magic:arcana:legendary:ring-of-invisibility	Arcana	Legendary	50.0	53.0	Ring of Invisibility	none			true
+magic:arcana:legendary:ring-of-spell-turning	Arcana	Legendary	54.0	57.0	Ring of Spell Turning	none			true
+magic:arcana:legendary:ring-of-three-wishes	Arcana	Legendary	58.0	58.0	Ring of Three Wishes	none			true
+magic:arcana:legendary:robe-of-the-archmagi	Arcana	Legendary	59.0	59.0	Robe of the Archmagi	none			true
+magic:arcana:legendary:scroll-of-titan-summoning	Arcana	Legendary	60.0	61.0	Scroll of Titan Summoning	none			true
+magic:arcana:legendary:sovereign-glue	Arcana	Legendary	62.0	65.0	Sovereign Glue	none			true
+magic:arcana:legendary:spell-scroll	Arcana	Legendary	66.0	83.0	Spell Scroll	spell_level	9.0	9.0	true
+magic:arcana:legendary:sphere-of-annihilation	Arcana	Legendary	84.0	84.0	Sphere of Annihilation	none			true
+magic:arcana:legendary:staff-of-the-magi	Arcana	Legendary	85.0	85.0	Staff of the Magi	none			true
+magic:arcana:legendary:talisman-of-the-sphere	Arcana	Legendary	86.0	88.0	Talisman of the Sphere	none			true
+magic:arcana:legendary:tome-of-the-stilled-tongue	Arcana	Legendary	89.0	92.0	Tome of the Stilled Tongue	none			true
+magic:arcana:legendary:universal-solvent	Arcana	Legendary	93.0	96.0	Universal Solvent	none			true
+magic:arcana:legendary:well-of-many-worlds	Arcana	Legendary	97.0	100.0	Well of Many Worlds	none			true
+magic:armaments:common:armor-of-gleaming	Armaments	Common	1.0	10.0	Armor of Gleaming	none			true
+magic:armaments:common:cast-off-armor	Armaments	Common	11.0	20.0	Cast-Off Armor	none			true
+magic:armaments:common:dread-helm	Armaments	Common	21.0	30.0	Dread Helm	none			true
+magic:armaments:common:moon-touched-sword	Armaments	Common	31.0	40.0	Moon-Touched Sword	none			true
+magic:armaments:common:shield-of-expression	Armaments	Common	41.0	50.0	Shield of Expression	none			true
+magic:armaments:common:silvered-weapon	Armaments	Common	51.0	60.0	Silvered Weapon	none			true
+magic:armaments:common:smoldering-armor	Armaments	Common	61.0	70.0	Smoldering Armor	none			true
+magic:armaments:common:sylvan-talon	Armaments	Common	71.0	80.0	Sylvan Talon	none			true
+magic:armaments:common:veteran-s-cane	Armaments	Common	81.0	90.0	Veteran’s Cane	none			true
+magic:armaments:common:walloping-ammunition	Armaments	Common	91.0	100.0	Walloping Ammunition	none			true
+magic:armaments:uncommon:adamantine-armor	Armaments	Uncommon	1.0	4.0	Adamantine Armor	none			true
+magic:armaments:uncommon:adamantine-weapon	Armaments	Uncommon	5.0	8.0	Adamantine Weapon	none			true
+magic:armaments:uncommon:ammunition-1	Armaments	Uncommon	9.0	13.0	Ammunition, +1	none			true
+magic:armaments:uncommon:bracers-of-archery	Armaments	Uncommon	14.0	18.0	Bracers of Archery	none			true
+magic:armaments:uncommon:enspelled-armor	Armaments	Uncommon	19.0	23.0	Enspelled Armor	enspelled_item	armor		true
+magic:armaments:uncommon:enspelled-weapon	Armaments	Uncommon	24.0	28.0	Enspelled Weapon	enspelled_item	weapon		true
+magic:armaments:uncommon:gauntlets-of-ogre-power	Armaments	Uncommon	29.0	33.0	Gauntlets of Ogre Power	none			true
+magic:armaments:uncommon:javelin-of-lightning	Armaments	Uncommon	34.0	38.0	Javelin of Lightning	none			true
+magic:armaments:uncommon:mariner-s-armor	Armaments	Uncommon	39.0	43.0	Mariner’s Armor	none			true
+magic:armaments:uncommon:mithral-armor	Armaments	Uncommon	44.0	48.0	Mithral Armor	none			true
+magic:armaments:uncommon:potion-of-giant-strength	Armaments	Uncommon	49.0	53.0	Potion of Giant Strength	fixed_variant	hill		true
+magic:armaments:uncommon:potion-of-pugilism	Armaments	Uncommon	54.0	58.0	Potion of Pugilism	none			true
+magic:armaments:uncommon:quiver-of-ehlonna	Armaments	Uncommon	59.0	62.0	Quiver of Ehlonna	none			true
+magic:armaments:uncommon:saddle-of-the-cavalier	Armaments	Uncommon	63.0	66.0	Saddle of the Cavalier	none			true
+magic:armaments:uncommon:sentinel-shield	Armaments	Uncommon	67.0	71.0	Sentinel Shield	none			true
+magic:armaments:uncommon:shield-1	Armaments	Uncommon	72.0	76.0	Shield, +1	none			true
+magic:armaments:uncommon:sword-of-vengeance	Armaments	Uncommon	77.0	81.0	Sword of Vengeance	none			true
+magic:armaments:uncommon:trident-of-fish-command	Armaments	Uncommon	82.0	85.0	Trident of Fish Command	none			true
+magic:armaments:uncommon:weapon-1	Armaments	Uncommon	86.0	90.0	Weapon, +1	none			true
+magic:armaments:uncommon:weapon-of-warning	Armaments	Uncommon	91.0	95.0	Weapon of Warning	none			true
+magic:armaments:uncommon:wraps-of-unarmed-power-1	Armaments	Uncommon	96.0	100.0	Wraps of Unarmed Power, +1	none			true
+magic:armaments:rare:ammunition-2	Armaments	Rare	1.0	3.0	Ammunition, +2	none			true
+magic:armaments:rare:armor-1	Armaments	Rare	4.0	7.0	Armor, +1	none			true
+magic:armaments:rare:armor-of-resistance	Armaments	Rare	8.0	10.0	Armor of Resistance	none			true
+magic:armaments:rare:armor-of-vulnerability	Armaments	Rare	11.0	13.0	Armor of Vulnerability	none			true
+magic:armaments:rare:arrow-catching-shield	Armaments	Rare	14.0	15.0	Arrow-Catching Shield	none			true
+magic:armaments:rare:belt-of-giant-strength	Armaments	Rare	16.0	18.0	Belt of Giant Strength	fixed_variant	hill		true
+magic:armaments:rare:berserker-axe	Armaments	Rare	19.0	20.0	Berserker Axe	none			true
+magic:armaments:rare:daern-s-instant-fortress	Armaments	Rare	21.0	22.0	Daern’s Instant Fortress	none			true
+magic:armaments:rare:dagger-of-venom	Armaments	Rare	23.0	25.0	Dagger of Venom	none			true
+magic:armaments:rare:dragon-slayer	Armaments	Rare	26.0	28.0	Dragon Slayer	none			true
+magic:armaments:rare:elven-chain	Armaments	Rare	29.0	31.0	Elven Chain	none			true
+magic:armaments:rare:enspelled-armor	Armaments	Rare	32.0	34.0	Enspelled Armor	enspelled_item	armor		true
+magic:armaments:rare:enspelled-weapon	Armaments	Rare	35.0	37.0	Enspelled Weapon	enspelled_item	weapon		true
+magic:armaments:rare:flame-tongue	Armaments	Rare	38.0	40.0	Flame Tongue	none			true
+magic:armaments:rare:giant-slayer	Armaments	Rare	41.0	43.0	Giant Slayer	none			true
+magic:armaments:rare:horn-of-blasting	Armaments	Rare	44.0	46.0	Horn of Blasting	none			true
+magic:armaments:rare:horn-of-valhalla	Armaments	Rare	47.0	48.0	Horn of Valhalla	variant_group	horn_brass_silver		true
+magic:armaments:rare:ioun-stone	Armaments	Rare	49.0	51.0	Ioun Stone	fixed_variant	protection		true
+magic:armaments:rare:mace-of-disruption	Armaments	Rare	52.0	54.0	Mace of Disruption	none			true
+magic:armaments:rare:mace-of-smiting	Armaments	Rare	55.0	57.0	Mace of Smiting	none			true
+magic:armaments:rare:mace-of-terror	Armaments	Rare	58.0	60.0	Mace of Terror	none			true
+magic:armaments:rare:potion-of-giant-strength	Armaments	Rare	61.0	63.0	Potion of Giant Strength	fixed_variant	fire		true
+magic:armaments:rare:potion-of-giant-strength:2	Armaments	Rare	64.0	66.0	Potion of Giant Strength	variant_group	giant_potion_frost_stone		true
+magic:armaments:rare:potion-of-heroism	Armaments	Rare	67.0	69.0	Potion of Heroism	none			true
+magic:armaments:rare:potion-of-invulnerability	Armaments	Rare	70.0	72.0	Potion of Invulnerability	none			true
+magic:armaments:rare:ring-of-protection	Armaments	Rare	73.0	75.0	Ring of Protection	none			true
+magic:armaments:rare:ring-of-the-ram	Armaments	Rare	76.0	78.0	Ring of the Ram	none			true
+magic:armaments:rare:shield-2	Armaments	Rare	79.0	81.0	Shield, +2	none			true
+magic:armaments:rare:shield-of-missile-attraction	Armaments	Rare	82.0	84.0	Shield of Missile Attraction	none			true
+magic:armaments:rare:sun-blade	Armaments	Rare	85.0	86.0	Sun Blade	none			true
+magic:armaments:rare:sword-of-life-stealing	Armaments	Rare	87.0	88.0	Sword of Life Stealing	none			true
+magic:armaments:rare:sword-of-wounding	Armaments	Rare	89.0	90.0	Sword of Wounding	none			true
+magic:armaments:rare:tentacle-rod	Armaments	Rare	91.0	92.0	Tentacle Rod	none			true
+magic:armaments:rare:vicious-weapon	Armaments	Rare	93.0	94.0	Vicious Weapon	none			true
+magic:armaments:rare:weapon-2	Armaments	Rare	95.0	97.0	Weapon, +2	none			true
+magic:armaments:rare:wraps-of-unarmed-power-2	Armaments	Rare	98.0	100.0	Wraps of Unarmed Power, +2	none			true
+magic:armaments:very-rare:ammunition-3	Armaments	Very Rare	1.0	3.0	Ammunition, +3	none			true
+magic:armaments:very-rare:ammunition-of-slaying	Armaments	Very Rare	4.0	6.0	Ammunition of Slaying	none			true
+magic:armaments:very-rare:animated-shield	Armaments	Very Rare	7.0	9.0	Animated Shield	none			true
+magic:armaments:very-rare:armor-2	Armaments	Very Rare	10.0	12.0	Armor, +2	none			true
+magic:armaments:very-rare:belt-of-giant-strength	Armaments	Very Rare	13.0	14.0	Belt of Giant Strength	fixed_variant	fire		true
+magic:armaments:very-rare:belt-of-giant-strength:2	Armaments	Very Rare	15.0	17.0	Belt of Giant Strength	variant_group	giant_belt_frost_stone		true
+magic:armaments:very-rare:dancing-sword	Armaments	Very Rare	18.0	19.0	Dancing Sword	none			true
+magic:armaments:very-rare:demon-armor	Armaments	Very Rare	20.0	22.0	Demon Armor	none			true
+magic:armaments:very-rare:dragon-scale-mail	Armaments	Very Rare	23.0	25.0	Dragon Scale Mail	none			true
+magic:armaments:very-rare:dwarven-plate	Armaments	Very Rare	26.0	28.0	Dwarven Plate	none			true
+magic:armaments:very-rare:dwarven-thrower	Armaments	Very Rare	29.0	31.0	Dwarven Thrower	none			true
+magic:armaments:very-rare:energy-bow	Armaments	Very Rare	32.0	34.0	Energy Bow	none			true
+magic:armaments:very-rare:enspelled-armor	Armaments	Very Rare	35.0	37.0	Enspelled Armor	enspelled_item	armor		true
+magic:armaments:very-rare:enspelled-weapon	Armaments	Very Rare	38.0	40.0	Enspelled Weapon	enspelled_item	weapon		true
+magic:armaments:very-rare:executioner-s-axe	Armaments	Very Rare	41.0	43.0	Executioner’s Axe	none			true
+magic:armaments:very-rare:frost-brand	Armaments	Very Rare	44.0	46.0	Frost Brand	none			true
+magic:armaments:very-rare:horn-of-valhalla	Armaments	Very Rare	47.0	49.0	Horn of Valhalla	fixed_variant	bronze		true
+magic:armaments:very-rare:ioun-stone	Armaments	Very Rare	50.0	52.0	Ioun Stone	fixed_variant	strength		true
+magic:armaments:very-rare:lute-of-thunderous-thumping	Armaments	Very Rare	53.0	55.0	Lute of Thunderous Thumping	none			true
+magic:armaments:very-rare:manual-of-gainful-exercise	Armaments	Very Rare	56.0	58.0	Manual of Gainful Exercise	none			true
+magic:armaments:very-rare:nine-lives-stealer	Armaments	Very Rare	59.0	61.0	Nine Lives Stealer	none			true
+magic:armaments:very-rare:oathbow	Armaments	Very Rare	62.0	64.0	Oathbow	none			true
+magic:armaments:very-rare:oil-of-sharpness	Armaments	Very Rare	65.0	68.0	Oil of Sharpness	none			true
+magic:armaments:very-rare:potion-of-giant-strength	Armaments	Very Rare	69.0	72.0	Potion of Giant Strength	fixed_variant	cloud		true
+magic:armaments:very-rare:quarterstaff-of-the-acrobat	Armaments	Very Rare	73.0	75.0	Quarterstaff of the Acrobat	none			true
+magic:armaments:very-rare:scimitar-of-speed	Armaments	Very Rare	76.0	78.0	Scimitar of Speed	none			true
+magic:armaments:very-rare:shield-3	Armaments	Very Rare	79.0	82.0	Shield, +3	none			true
+magic:armaments:very-rare:shield-of-the-cavalier	Armaments	Very Rare	83.0	85.0	Shield of the Cavalier	none			true
+magic:armaments:very-rare:spellguard-shield	Armaments	Very Rare	86.0	88.0	Spellguard Shield	none			true
+magic:armaments:very-rare:sword-of-sharpness	Armaments	Very Rare	89.0	91.0	Sword of Sharpness	none			true
+magic:armaments:very-rare:thunderous-greatclub	Armaments	Very Rare	92.0	94.0	Thunderous Greatclub	none			true
+magic:armaments:very-rare:weapon-3	Armaments	Very Rare	95.0	97.0	Weapon, +3	none			true
+magic:armaments:very-rare:wraps-of-unarmed-power-3	Armaments	Very Rare	98.0	100.0	Wraps of Unarmed Power, +3	none			true
+magic:armaments:legendary:armor-3	Armaments	Legendary	1.0	6.0	Armor, +3	none			true
+magic:armaments:legendary:armor-of-invulnerability	Armaments	Legendary	7.0	12.0	Armor of Invulnerability	none			true
+magic:armaments:legendary:belt-of-giant-strength	Armaments	Legendary	13.0	18.0	Belt of Giant Strength	fixed_variant	cloud		true
+magic:armaments:legendary:belt-of-giant-strength:2	Armaments	Legendary	19.0	21.0	Belt of Giant Strength	fixed_variant	storm		true
+magic:armaments:legendary:defender	Armaments	Legendary	22.0	27.0	Defender	none			true
+magic:armaments:legendary:efreeti-chain	Armaments	Legendary	28.0	33.0	Efreeti Chain	none			true
+magic:armaments:legendary:enspelled-armor	Armaments	Legendary	34.0	39.0	Enspelled Armor	enspelled_item	armor		true
+magic:armaments:legendary:enspelled-weapon	Armaments	Legendary	40.0	45.0	Enspelled Weapon	enspelled_item	weapon		true
+magic:armaments:legendary:hammer-of-thunderbolts	Armaments	Legendary	46.0	51.0	Hammer of Thunderbolts	none			true
+magic:armaments:legendary:holy-avenger	Armaments	Legendary	52.0	56.0	Holy Avenger	none			true
+magic:armaments:legendary:horn-of-valhalla	Armaments	Legendary	57.0	62.0	Horn of Valhalla	fixed_variant	iron		true
+magic:armaments:legendary:luck-blade	Armaments	Legendary	63.0	68.0	Luck Blade	none			true
+magic:armaments:legendary:moonblade	Armaments	Legendary	69.0	72.0	Moonblade	none			true
+magic:armaments:legendary:plate-armor-of-etherealness	Armaments	Legendary	73.0	78.0	Plate Armor of Etherealness	none			true
+magic:armaments:legendary:potion-of-giant-strength	Armaments	Legendary	79.0	87.0	Potion of Giant Strength	fixed_variant	storm		true
+magic:armaments:legendary:rod-of-lordly-might	Armaments	Legendary	88.0	90.0	Rod of Lordly Might	none			true
+magic:armaments:legendary:sword-of-answering	Armaments	Legendary	91.0	95.0	Sword of Answering	none			true
+magic:armaments:legendary:vorpal-sword	Armaments	Legendary	96.0	100.0	Vorpal Sword	none			true
+magic:implements:common:bead-of-nourishment	Implements	Common	1.0	2.0	Bead of Nourishment	none			true
+magic:implements:common:bead-of-refreshment	Implements	Common	3.0	4.0	Bead of Refreshment	none			true
+magic:implements:common:boots-of-false-tracks	Implements	Common	5.0	6.0	Boots of False Tracks	none			true
+magic:implements:common:candle-of-the-deep	Implements	Common	7.0	8.0	Candle of the Deep	none			true
+magic:implements:common:charlatan-s-die	Implements	Common	9.0	10.0	Charlatan’s Die	none			true
+magic:implements:common:cloak-of-many-fashions	Implements	Common	11.0	13.0	Cloak of Many Fashions	none			true
+magic:implements:common:clockwork-amulet	Implements	Common	14.0	15.0	Clockwork Amulet	none			true
+magic:implements:common:ear-horn-of-hearing	Implements	Common	16.0	17.0	Ear Horn of Hearing	none			true
+magic:implements:common:ersatz-eye	Implements	Common	18.0	19.0	Ersatz Eye	none			true
+magic:implements:common:heward-s-handy-spice-pouch	Implements	Common	20.0	21.0	Heward’s Handy Spice Pouch	none			true
+magic:implements:common:horn-of-silent-alarm	Implements	Common	22.0	23.0	Horn of Silent Alarm	none			true
+magic:implements:common:instrument-of-illusions	Implements	Common	24.0	25.0	Instrument of Illusions	none			true
+magic:implements:common:instrument-of-scribing	Implements	Common	26.0	27.0	Instrument of Scribing	none			true
+magic:implements:common:lock-of-trickery	Implements	Common	28.0	29.0	Lock of Trickery	none			true
+magic:implements:common:moon-touched-sword	Implements	Common	30.0	32.0	Moon-Touched Sword	none			true
+magic:implements:common:mystery-key	Implements	Common	33.0	34.0	Mystery Key	none			true
+magic:implements:common:orb-of-direction	Implements	Common	35.0	36.0	Orb of Direction	none			true
+magic:implements:common:orb-of-time	Implements	Common	37.0	38.0	Orb of Time	none			true
+magic:implements:common:perfume-of-bewitching	Implements	Common	39.0	40.0	Perfume of Bewitching	none			true
+magic:implements:common:pipe-of-smoke-monsters	Implements	Common	41.0	42.0	Pipe of Smoke Monsters	none			true
+magic:implements:common:pole-of-angling	Implements	Common	43.0	44.0	Pole of Angling	none			true
+magic:implements:common:pole-of-collapsing	Implements	Common	45.0	46.0	Pole of Collapsing	none			true
+magic:implements:common:potion-of-climbing	Implements	Common	47.0	52.0	Potion of Climbing	none			true
+magic:implements:common:potion-of-comprehension	Implements	Common	53.0	58.0	Potion of Comprehension	none			true
+magic:implements:common:potion-of-healing	Implements	Common	59.0	74.0	Potion of Healing	none			true
+magic:implements:common:prosthetic-limb	Implements	Common	75.0	76.0	Prosthetic Limb	none			true
+magic:implements:common:rope-of-mending	Implements	Common	77.0	78.0	Rope of Mending	none			true
+magic:implements:common:staff-of-birdcalls	Implements	Common	79.0	80.0	Staff of Birdcalls	none			true
+magic:implements:common:sylvan-talon	Implements	Common	81.0	82.0	Sylvan Talon	none			true
+magic:implements:common:talking-doll	Implements	Common	83.0	84.0	Talking Doll	none			true
+magic:implements:common:tankard-of-sobriety	Implements	Common	85.0	86.0	Tankard of Sobriety	none			true
+magic:implements:common:veteran-s-cane	Implements	Common	87.0	90.0	Veteran’s Cane	none			true
+magic:implements:common:walloping-ammunition	Implements	Common	91.0	93.0	Walloping Ammunition	none			true
+magic:implements:uncommon:wand-of-conducting	Implements	Uncommon	94.0	96.0	Wand of Conducting	none			true
+magic:implements:uncommon:wand-of-pyrotechnics	Implements	Uncommon	97.0	100.0	Wand of Pyrotechnics	none			true
+magic:implements:uncommon:alchemy-jug	Implements	Uncommon	1.0	2.0	Alchemy Jug	none			true
+magic:implements:uncommon:ammunition-1	Implements	Uncommon	3.0	6.0	Ammunition, +1	none			true
+magic:implements:uncommon:bag-of-holding	Implements	Uncommon	7.0	10.0	Bag of Holding	none			true
+magic:implements:uncommon:boots-of-elvenkind	Implements	Uncommon	11.0	12.0	Boots of Elvenkind	none			true
+magic:implements:uncommon:boots-of-striding-and-springing	Implements	Uncommon	13.0	14.0	Boots of Striding and Springing	none			true
+magic:implements:uncommon:boots-of-the-winterlands	Implements	Uncommon	15.0	16.0	Boots of the Winterlands	none			true
+magic:implements:uncommon:broom-of-flying	Implements	Uncommon	17.0	18.0	Broom of Flying	none			true
+magic:implements:uncommon:cap-of-water-breathing	Implements	Uncommon	19.0	20.0	Cap of Water Breathing	none			true
+magic:implements:uncommon:cloak-of-elvenkind	Implements	Uncommon	21.0	22.0	Cloak of Elvenkind	none			true
+magic:implements:uncommon:cloak-of-protection	Implements	Uncommon	23.0	24.0	Cloak of Protection	none			true
+magic:implements:uncommon:cloak-of-the-manta-ray	Implements	Uncommon	25.0	26.0	Cloak of the Manta Ray	none			true
+magic:implements:uncommon:decanter-of-endless-water	Implements	Uncommon	27.0	27.0	Decanter of Endless Water	none			true
+magic:implements:uncommon:driftglobe	Implements	Uncommon	28.0	30.0	Driftglobe	none			true
+magic:implements:uncommon:dust-of-disappearance	Implements	Uncommon	31.0	32.0	Dust of Disappearance	none			true
+magic:implements:uncommon:dust-of-dryness	Implements	Uncommon	33.0	34.0	Dust of Dryness	none			true
+magic:implements:uncommon:dust-of-sneezing-and-choking	Implements	Uncommon	35.0	36.0	Dust of Sneezing and Choking	none			true
+magic:implements:uncommon:enspelled-weapon	Implements	Uncommon	37.0	38.0	Enspelled Weapon	enspelled_item	weapon		true
+magic:implements:uncommon:eyes-of-minute-seeing	Implements	Uncommon	39.0	40.0	Eyes of Minute Seeing	none			true
+magic:implements:uncommon:eyes-of-the-eagle	Implements	Uncommon	41.0	42.0	Eyes of the Eagle	none			true
+magic:implements:uncommon:gloves-of-missile-snaring	Implements	Uncommon	43.0	44.0	Gloves of Missile Snaring	none			true
+magic:implements:uncommon:gloves-of-swimming-and-climbing	Implements	Uncommon	45.0	46.0	Gloves of Swimming and Climbing	none			true
+magic:implements:uncommon:gloves-of-thievery	Implements	Uncommon	47.0	48.0	Gloves of Thievery	none			true
+magic:implements:uncommon:goggles-of-night	Implements	Uncommon	49.0	50.0	Goggles of Night	none			true
+magic:implements:uncommon:hag-eye	Implements	Uncommon	51.0	51.0	Hag Eye	none			true
+magic:implements:uncommon:helm-of-comprehending-languages	Implements	Uncommon	52.0	54.0	Helm of Comprehending Languages	none			true
+magic:implements:uncommon:immovable-rod	Implements	Uncommon	55.0	55.0	Immovable Rod	none			true
+magic:implements:uncommon:instrument-of-the-bards	Implements	Uncommon	56.0	57.0	Instrument of the Bards	variant_group	bard_instrument_uncommon		true
+magic:implements:uncommon:lantern-of-revealing	Implements	Uncommon	58.0	59.0	Lantern of Revealing	none			true
+magic:implements:uncommon:nature-s-mantle	Implements	Uncommon	60.0	61.0	Nature’s Mantle	none			true
+magic:implements:uncommon:oil-of-slipperiness	Implements	Uncommon	62.0	63.0	Oil of Slipperiness	none			true
+magic:implements:uncommon:pipes-of-haunting	Implements	Uncommon	64.0	65.0	Pipes of Haunting	none			true
+magic:implements:uncommon:pipes-of-the-sewers	Implements	Uncommon	66.0	67.0	Pipes of the Sewers	none			true
+magic:implements:uncommon:potion-of-growth	Implements	Uncommon	68.0	71.0	Potion of Growth	none			true
+magic:implements:uncommon:potion-of-healing	Implements	Uncommon	72.0	80.0	Potion of Healing	fixed_variant	greater		true
+magic:implements:uncommon:potion-of-water-breathing	Implements	Uncommon	81.0	84.0	Potion of Water Breathing	none			true
+magic:implements:uncommon:quaal-s-feather-token	Implements	Uncommon	85.0	86.0	Quaal’s Feather Token	variant_group	feather_basic		true
+magic:implements:uncommon:ring-of-jumping	Implements	Uncommon	87.0	88.0	Ring of Jumping	none			true
+magic:implements:uncommon:ring-of-swimming	Implements	Uncommon	89.0	90.0	Ring of Swimming	none			true
+magic:implements:uncommon:ring-of-warmth	Implements	Uncommon	91.0	92.0	Ring of Warmth	none			true
+magic:implements:uncommon:robe-of-useful-items	Implements	Uncommon	93.0	94.0	Robe of Useful Items	none			true
+magic:implements:uncommon:rope-of-climbing	Implements	Uncommon	95.0	96.0	Rope of Climbing	none			true
+magic:implements:uncommon:stone-of-good-luck	Implements	Uncommon	97.0	98.0	Stone of Good Luck	none			true
+magic:implements:uncommon:wand-of-secrets	Implements	Uncommon	99.0	100.0	Wand of Secrets	none			true
+magic:implements:rare:ammunition-2	Implements	Rare	1.0	4.0	Ammunition, +2	none			true
+magic:implements:rare:bag-of-beans	Implements	Rare	5.0	8.0	Bag of Beans	none			true
+magic:implements:rare:belt-of-dwarvenkind	Implements	Rare	9.0	12.0	Belt of Dwarvenkind	none			true
+magic:implements:rare:boots-of-levitation	Implements	Rare	13.0	16.0	Boots of Levitation	none			true
+magic:implements:rare:boots-of-speed	Implements	Rare	17.0	20.0	Boots of Speed	none			true
+magic:implements:rare:chime-of-opening	Implements	Rare	21.0	24.0	Chime of Opening	none			true
+magic:implements:rare:dimensional-shackles	Implements	Rare	25.0	28.0	Dimensional Shackles	none			true
+magic:implements:rare:enspelled-weapon	Implements	Rare	29.0	32.0	Enspelled Weapon	enspelled_item	weapon		true
+magic:implements:rare:folding-boat	Implements	Rare	33.0	36.0	Folding Boat	none			true
+magic:implements:rare:glamoured-studded-leather	Implements	Rare	37.0	40.0	Glamoured Studded Leather	none			true
+magic:implements:rare:heward-s-handy-haversack	Implements	Rare	41.0	44.0	Heward’s Handy Haversack	none			true
+magic:implements:rare:horseshoes-of-speed	Implements	Rare	45.0	48.0	Horseshoes of Speed	none			true
+magic:implements:rare:instrument-of-the-bards	Implements	Rare	49.0	52.0	Instrument of the Bards	variant_group	bard_instrument_rare		true
+magic:implements:rare:ioun-stone	Implements	Rare	53.0	56.0	Ioun Stone	fixed_variant	awareness		true
+magic:implements:rare:portable-hole	Implements	Rare	57.0	60.0	Portable Hole	none			true
+magic:implements:rare:potion-of-diminution	Implements	Rare	61.0	64.0	Potion of Diminution	none			true
+magic:implements:rare:potion-of-gaseous-form	Implements	Rare	65.0	68.0	Potion of Gaseous Form	none			true
+magic:implements:rare:potion-of-healing	Implements	Rare	69.0	76.0	Potion of Healing	fixed_variant	superior		true
+magic:implements:rare:quaal-s-feather-token	Implements	Rare	77.0	80.0	Quaal’s Feather Token	variant_group	feather_rare		true
+magic:implements:rare:ring-of-evasion	Implements	Rare	81.0	84.0	Ring of Evasion	none			true
+magic:implements:rare:ring-of-free-action	Implements	Rare	85.0	88.0	Ring of Free Action	none			true
+magic:implements:rare:rope-of-entanglement	Implements	Rare	89.0	92.0	Rope of Entanglement	none			true
+magic:implements:rare:staff-of-healing	Implements	Rare	93.0	96.0	Staff of Healing	none			true
+magic:implements:rare:wand-of-enemy-detection	Implements	Rare	97.0	100.0	Wand of Enemy Detection	none			true
+magic:implements:very-rare:ammunition-3	Implements	Very Rare	1.0	7.0	Ammunition, +3	none			true
+magic:implements:very-rare:bag-of-devouring	Implements	Very Rare	8.0	14.0	Bag of Devouring	none			true
+magic:implements:very-rare:carpet-of-flying	Implements	Very Rare	15.0	21.0	Carpet of Flying	none			true
+magic:implements:very-rare:enspelled-weapon	Implements	Very Rare	22.0	28.0	Enspelled Weapon	enspelled_item	weapon		true
+magic:implements:very-rare:horseshoes-of-a-zephyr	Implements	Very Rare	29.0	35.0	Horseshoes of a Zephyr	none			true
+magic:implements:very-rare:instrument-of-the-bards	Implements	Very Rare	36.0	42.0	Instrument of the Bards	fixed_variant	Anstruth harp		true
+magic:implements:very-rare:ioun-stone	Implements	Very Rare	43.0	49.0	Ioun Stone	fixed_variant	agility		true
+magic:implements:very-rare:lute-of-thunderous-thumping	Implements	Very Rare	50.0	56.0	Lute of Thunderous Thumping	none			true
+magic:implements:very-rare:manual-of-quickness-of-action	Implements	Very Rare	57.0	63.0	Manual of Quickness of Action	none			true
+magic:implements:very-rare:nolzur-s-marvelous-pigments	Implements	Very Rare	64.0	70.0	Nolzur’s Marvelous Pigments	none			true
+magic:implements:very-rare:potion-of-flying	Implements	Very Rare	71.0	77.0	Potion of Flying	none			true
+magic:implements:very-rare:potion-of-healing	Implements	Very Rare	78.0	86.0	Potion of Healing	fixed_variant	supreme		true
+magic:implements:very-rare:potion-of-speed	Implements	Very Rare	87.0	93.0	Potion of Speed	none			true
+magic:implements:very-rare:tome-of-leadership-and-influence	Implements	Very Rare	94.0	100.0	Tome of Leadership and Influence	none			true
+magic:implements:legendary:enspelled-weapon	Implements	Legendary	1.0	17.0	Enspelled Weapon	enspelled_item	weapon		true
+magic:implements:legendary:instrument-of-the-bards	Implements	Legendary	18.0	34.0	Instrument of the Bards	fixed_variant	Ollamh harp		true
+magic:implements:legendary:sovereign-glue	Implements	Legendary	35.0	54.0	Sovereign Glue	none			true
+magic:implements:legendary:sphere-of-annihilation	Implements	Legendary	55.0	70.0	Sphere of Annihilation	none			true
+magic:implements:legendary:talisman-of-the-sphere	Implements	Legendary	71.0	83.0	Talisman of the Sphere	none			true
+magic:implements:legendary:universal-solvent	Implements	Legendary	84.0	100.0	Universal Solvent	none			true
+magic:relics:common:ear-horn-of-hearing	Relics	Common	1.0	8.0	Ear Horn of Hearing	none			true
+magic:relics:common:potion-of-healing	Relics	Common	9.0	28.0	Potion of Healing	none			true
+magic:relics:common:pot-of-awakening	Relics	Common	29.0	36.0	Pot of Awakening	none			true
+magic:relics:common:ruby-of-the-war-mage	Relics	Common	37.0	44.0	Ruby of the War Mage	none			true
+magic:relics:common:shield-of-expression	Relics	Common	45.0	52.0	Shield of Expression	none			true
+magic:relics:common:smoldering-armor	Relics	Common	53.0	60.0	Smoldering Armor	none			true
+magic:relics:common:spell-scroll	Relics	Common	61.0	80.0	Spell Scroll	spell_level		1.0	true
+magic:relics:common:staff-of-adornment	Relics	Common	81.0	90.0	Staff of Adornment	none			true
+magic:relics:common:staff-of-flowers	Relics	Common	91.0	100.0	Staff of Flowers	none			true
+magic:relics:uncommon:enspelled-staff	Relics	Uncommon	1.0	5.0	Enspelled Staff	enspelled_item	staff		true
+magic:relics:uncommon:keoghtom-s-ointment	Relics	Uncommon	6.0	10.0	Keoghtom’s Ointment	none			true
+magic:relics:uncommon:mariner-s-armor	Relics	Uncommon	11.0	15.0	Mariner’s Armor	none			true
+magic:relics:uncommon:nature-s-mantle	Relics	Uncommon	16.0	20.0	Nature’s Mantle	none			true
+magic:relics:uncommon:pearl-of-power	Relics	Uncommon	21.0	25.0	Pearl of Power	none			true
+magic:relics:uncommon:periapt-of-health	Relics	Uncommon	26.0	30.0	Periapt of Health	none			true
+magic:relics:uncommon:periapt-of-wound-closure	Relics	Uncommon	31.0	35.0	Periapt of Wound Closure	none			true
+magic:relics:uncommon:potion-of-animal-friendship	Relics	Uncommon	36.0	40.0	Potion of Animal Friendship	none			true
+magic:relics:uncommon:potion-of-healing	Relics	Uncommon	41.0	55.0	Potion of Healing	fixed_variant	greater		true
+magic:relics:uncommon:potion-of-resistance	Relics	Uncommon	56.0	60.0	Potion of Resistance	none			true
+magic:relics:uncommon:ring-of-water-walking	Relics	Uncommon	61.0	65.0	Ring of Water Walking	none			true
+magic:relics:uncommon:sending-stones	Relics	Uncommon	66.0	70.0	Sending Stones	none			true
+magic:relics:uncommon:spell-scroll	Relics	Uncommon	71.0	80.0	Spell Scroll	spell_level	2.0	3.0	true
+magic:relics:uncommon:staff-of-the-adder	Relics	Uncommon	81.0	85.0	Staff of the Adder	none			true
+magic:relics:uncommon:staff-of-the-python	Relics	Uncommon	86.0	90.0	Staff of the Python	none			true
+magic:relics:uncommon:wand-of-magic-detection	Relics	Uncommon	91.0	95.0	Wand of Magic Detection	none			true
+magic:relics:uncommon:wand-of-the-war-mage-1	Relics	Uncommon	96.0	100.0	Wand of the War Mage, +1	none			true
+magic:relics:rare:amulet-of-health	Relics	Rare	1.0	3.0	Amulet of Health	none			true
+magic:relics:rare:armor-1	Relics	Rare	4.0	7.0	Armor, +1	none			true
+magic:relics:rare:bowl-of-commanding-water-elementals	Relics	Rare	8.0	9.0	Bowl of Commanding Water Elementals	none			true
+magic:relics:rare:brazier-of-commanding-fire-elementals	Relics	Rare	10.0	11.0	Brazier of Commanding Fire Elementals	none			true
+magic:relics:rare:censer-of-controlling-air-elementals	Relics	Rare	12.0	13.0	Censer of Controlling Air Elementals	none			true
+magic:relics:rare:elixir-of-health	Relics	Rare	14.0	16.0	Elixir of Health	none			true
+magic:relics:rare:enspelled-staff	Relics	Rare	17.0	19.0	Enspelled Staff	enspelled_item	staff		true
+magic:relics:rare:horn-of-blasting	Relics	Rare	20.0	22.0	Horn of Blasting	none			true
+magic:relics:rare:horn-of-valhalla	Relics	Rare	23.0	25.0	Horn of Valhalla	variant_group	horn_brass_silver		true
+magic:relics:rare:ioun-stone	Relics	Rare	26.0	28.0	Ioun Stone	variant_group	ioun_relic_rare		true
+magic:relics:rare:mace-of-disruption	Relics	Rare	29.0	31.0	Mace of Disruption	none			true
+magic:relics:rare:mace-of-smiting	Relics	Rare	32.0	34.0	Mace of Smiting	none			true
+magic:relics:rare:mace-of-terror	Relics	Rare	35.0	37.0	Mace of Terror	none			true
+magic:relics:rare:necklace-of-prayer-beads	Relics	Rare	38.0	40.0	Necklace of Prayer Beads	none			true
+magic:relics:rare:periapt-of-proof-against-poison	Relics	Rare	41.0	43.0	Periapt of Proof against Poison	none			true
+magic:relics:rare:potion-of-healing	Relics	Rare	44.0	51.0	Potion of Healing	fixed_variant	superior		true
+magic:relics:rare:ring-of-animal-influence	Relics	Rare	52.0	54.0	Ring of Animal Influence	none			true
+magic:relics:rare:ring-of-resistance	Relics	Rare	55.0	58.0	Ring of Resistance	none			true
+magic:relics:rare:ring-of-spell-storing	Relics	Rare	59.0	61.0	Ring of Spell Storing	none			true
+magic:relics:rare:scroll-of-protection	Relics	Rare	62.0	65.0	Scroll of Protection	none			true
+magic:relics:rare:spell-scroll	Relics	Rare	66.0	73.0	Spell Scroll	spell_level	4.0	5.0	true
+magic:relics:rare:staff-of-charming	Relics	Rare	74.0	76.0	Staff of Charming	none			true
+magic:relics:rare:staff-of-healing	Relics	Rare	77.0	79.0	Staff of Healing	none			true
+magic:relics:rare:staff-of-swarming-insects	Relics	Rare	80.0	82.0	Staff of Swarming Insects	none			true
+magic:relics:rare:staff-of-the-woodlands	Relics	Rare	83.0	85.0	Staff of the Woodlands	none			true
+magic:relics:rare:staff-of-withering	Relics	Rare	86.0	88.0	Staff of Withering	none			true
+magic:relics:rare:stone-of-controlling-earth-elementals	Relics	Rare	89.0	90.0	Stone of Controlling Earth Elementals	none			true
+magic:relics:rare:tentacle-rod	Relics	Rare	91.0	93.0	Tentacle Rod	none			true
+magic:relics:rare:wand-of-paralysis	Relics	Rare	94.0	96.0	Wand of Paralysis	none			true
+magic:relics:rare:wand-of-the-war-mage-2	Relics	Rare	97.0	100.0	Wand of the War Mage, +2	none			true
+magic:relics:very-rare:armor-2	Relics	Very Rare	1.0	5.0	Armor, +2	none			true
+magic:relics:very-rare:candle-of-invocation	Relics	Very Rare	6.0	10.0	Candle of Invocation	none			true
+magic:relics:very-rare:cauldron-of-rebirth	Relics	Very Rare	11.0	15.0	Cauldron of Rebirth	none			true
+magic:relics:very-rare:enspelled-staff	Relics	Very Rare	16.0	20.0	Enspelled Staff	enspelled_item	staff		true
+magic:relics:very-rare:horn-of-valhalla	Relics	Very Rare	21.0	25.0	Horn of Valhalla	fixed_variant	bronze		true
+magic:relics:very-rare:ioun-stone	Relics	Very Rare	26.0	30.0	Ioun Stone	fixed_variant	insight		true
+magic:relics:very-rare:manual-of-bodily-health	Relics	Very Rare	31.0	35.0	Manual of Bodily Health	none			true
+magic:relics:very-rare:potion-of-healing	Relics	Very Rare	36.0	43.0	Potion of Healing	fixed_variant	supreme		true
+magic:relics:very-rare:potion-of-vitality	Relics	Very Rare	44.0	50.0	Potion of Vitality	none			true
+magic:relics:very-rare:rod-of-alertness	Relics	Very Rare	51.0	55.0	Rod of Alertness	none			true
+magic:relics:very-rare:spell-scroll	Relics	Very Rare	56.0	65.0	Spell Scroll	spell_level	6.0	8.0	true
+magic:relics:very-rare:spirit-board	Relics	Very Rare	66.0	70.0	Spirit Board	none			true
+magic:relics:very-rare:staff-of-fire	Relics	Very Rare	71.0	75.0	Staff of Fire	none			true
+magic:relics:very-rare:staff-of-frost	Relics	Very Rare	76.0	80.0	Staff of Frost	none			true
+magic:relics:very-rare:staff-of-striking	Relics	Very Rare	81.0	85.0	Staff of Striking	none			true
+magic:relics:very-rare:staff-of-thunder-and-lightning	Relics	Very Rare	86.0	90.0	Staff of Thunder and Lightning	none			true
+magic:relics:very-rare:tome-of-understanding	Relics	Very Rare	91.0	95.0	Tome of Understanding	none			true
+magic:relics:very-rare:wand-of-the-war-mage-3	Relics	Very Rare	96.0	100.0	Wand of the War Mage, +3	none			true
+magic:relics:legendary:armor-of-invulnerability	Relics	Legendary	1.0	8.0	Armor of Invulnerability	none			true
+magic:relics:legendary:armor-3	Relics	Legendary	9.0	18.0	Armor, +3	none			true
+magic:relics:legendary:enspelled-staff	Relics	Legendary	19.0	27.0	Enspelled Staff	enspelled_item	staff		true
+magic:relics:legendary:holy-avenger	Relics	Legendary	28.0	36.0	Holy Avenger	none			true
+magic:relics:legendary:horn-of-valhalla	Relics	Legendary	37.0	45.0	Horn of Valhalla	fixed_variant	iron		true
+magic:relics:legendary:rod-of-resurrection	Relics	Legendary	46.0	54.0	Rod of Resurrection	none			true
+magic:relics:legendary:scarab-of-protection	Relics	Legendary	55.0	63.0	Scarab of Protection	none			true
+magic:relics:legendary:scroll-of-titan-summoning	Relics	Legendary	64.0	72.0	Scroll of Titan Summoning	none			true
+magic:relics:legendary:spell-scroll	Relics	Legendary	73.0	80.0	Spell Scroll	spell_level	9.0	9.0	true
+magic:relics:legendary:talisman-of-pure-good	Relics	Legendary	81.0	90.0	Talisman of Pure Good	none			true
+magic:relics:legendary:talisman-of-ultimate-evil	Relics	Legendary	91.0	100.0	Talisman of Ultimate Evil	none			true
+magic:implements:uncommon:enspelled-tool	Implements	Uncommon			Enspelled Tool	enspelled_item	tool		true
+magic:relics:uncommon:enspelled-trinket	Relics	Uncommon			Enspelled Trinket	enspelled_item	trinket		true
+magic:implements:rare:enspelled-tool	Implements	Rare			Enspelled Tool	enspelled_item	tool		true
+magic:relics:rare:enspelled-trinket	Relics	Rare			Enspelled Trinket	enspelled_item	trinket		true
+magic:implements:very-rare:enspelled-tool	Implements	Very Rare			Enspelled Tool	enspelled_item	tool		true
+magic:relics:very-rare:enspelled-trinket	Relics	Very Rare			Enspelled Trinket	enspelled_item	trinket		true
+magic:implements:legendary:enspelled-tool	Implements	Legendary			Enspelled Tool	enspelled_item	tool		true
+magic:relics:legendary:enspelled-trinket	Relics	Legendary			Enspelled Trinket	enspelled_item	trinket		true

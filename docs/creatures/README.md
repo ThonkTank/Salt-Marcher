@@ -1,6 +1,6 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
+Last Reviewed: 2026-07-19
 Source of Truth: Entry point and document map for the creatures feature.
 
 # Creatures Feature README
@@ -10,14 +10,11 @@ Source of Truth: Entry point and document map for the creatures feature.
 The creatures feature owns read-only creature catalog access for reference and
 encounter-generation workflows.
 
-Its public backend surface is split into:
-
-- `src/domain/creatures/CreaturesApplicationService.java` as the creatures
-  application-service root
-- `src/domain/creatures/published/` for public query, result, status, and payload
-  types consumed by view and domain callers
-- `src/domain/creatures/application/` plus the owning domain modules for
-  use-case orchestration and outbound ports used by data adapters
+Its public backend surfaces are `CreaturesApi`, `CreatureCatalogQueryApi`, the
+revisioned `CreatureReferenceIndexModel`, and the synchronous single-detail
+`CreatureReferenceApi`. `CreaturesApi` also owns the direct one-shot facts
+query used by cross-feature batch policy; implementation packages remain
+feature-private.
 
 ## Documentation Set
 
@@ -34,6 +31,7 @@ In scope:
 - creature detail lookup
 - encounter-ready candidate lookup for downstream runtime features
 - shared creature filter controls consumed by encounter-facing tabs
+- one full immutable reference index for foreign selectors and projections
 
 Out of scope:
 

@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-24
+Last Reviewed: 2026-07-19
 Source of Truth: Compact dungeon-facing travel-state surface behavior for the
 runtime `Reise` tab, visible states, and acceptance criteria.
 
@@ -18,16 +18,6 @@ replacing the full interactive dungeon travel workspace.
 - dungeon editor behavior
 - shell-wide state-tab policy
 - shared canvas contract design
-
-## Current State
-
-- SaltMarcher currently shows a generic placeholder in the global state-tab
-  strip under the runtime tab labeled `Reise`.
-- That placeholder already establishes the compact visual pattern: icon,
-  location row, status badge, three detail rows, and an interaction hint.
-- It does not yet specialize its content for dungeon travel or mirror the
-  richer dungeon runtime context that already exists in the dedicated dungeon
-  travel surface.
 
 ## Visible Structure
 
@@ -50,6 +40,9 @@ replacing the full interactive dungeon travel workspace.
   MUST fall back to an explicit empty or non-applicable state
 - blocked or unresolved dungeon movement MUST surface a concise status outcome
   instead of stale success text
+- Dungeon MUST publish its compact context as typed readback for the
+  feature-neutral Travel capability; Dungeon MUST NOT register a competing
+  global `travel` shell contribution
 
 ## Visible States
 
@@ -72,3 +65,4 @@ replacing the full interactive dungeon travel workspace.
 
 - [Dungeon Feature Requirements](./requirements-dungeon.md)
 - [Dungeon Travel Requirements](./requirements-dungeon-travel.md)
+- [Travel Context Domain](../../travel/domain/domain-travel.md)

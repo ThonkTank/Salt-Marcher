@@ -1,19 +1,18 @@
-Status: Draft
+Status: Active Target
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-24
-Source of Truth: Routing entrypoint for the generic maps feature bundle.
+Source of Truth: Routing entrypoint for the generic passive map-canvas bundle.
 
-# Maps Feature Docs
+# Map Canvas Docs
 
 ## Purpose
 
-The `maps` feature owns the generic map canvas that multiple adopting features
-can use. It defines the passive canvas surface, the shared canvas contract, and
-the adopter architecture for translating between canvas coordinates and each
-adopter's internal coordinate system.
+`platform.ui.mapcanvas` owns feature-neutral camera, viewport, layered-canvas,
+cache, and technical pointer mechanisms that multiple map surfaces can use.
+This bundle defines those passive mechanisms and adopter translation.
 
-It does not own adopter domain truth, adopter persistence truth, or adopter
-gameplay semantics.
+It is not a product feature, has no application lifecycle or feature API, and
+does not own adopter domain, persistence, or gameplay semantics.
 
 ## Document Set
 

@@ -1,0 +1,16 @@
+package features.party.api;
+
+import org.jspecify.annotations.Nullable;
+
+public record RestCadenceStatus(
+        @Nullable Long characterId,
+        RestMilestone nextMilestone,
+        int xpDelta,
+        RestCadenceUrgency urgency
+) {
+
+    public RestCadenceStatus {
+        nextMilestone = nextMilestone == null ? RestMilestone.valueOf("LONG_REST") : nextMilestone;
+        urgency = urgency == null ? RestCadenceUrgency.valueOf("NORMAL") : urgency;
+    }
+}

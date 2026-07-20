@@ -1,0 +1,87 @@
+package features.dungeon.domain.core.projection;
+
+import java.util.ArrayList;
+import java.util.List;
+import features.dungeon.domain.core.component.StairExit;
+import features.dungeon.domain.core.geometry.CellOrdering;
+import features.dungeon.domain.core.graph.DungeonRelationGraph;
+import features.dungeon.domain.core.graph.DungeonTopologyElementKind;
+import features.dungeon.domain.core.graph.DungeonTopologyRef;
+import features.dungeon.domain.core.structure.stair.Stair;
+import features.dungeon.domain.core.structure.stair.StairCollection;
+
+final class DungeonStairFeatureProjection {
+
+    private DungeonStairFeatureProjection() {
+    }
+
+    static void append(
+            List<DungeonFeatureFacts> features,
+            List<DungeonRelationGraph.FeatureRelation> relations,
+            StairCollection stairs
+    ) {
+        for (Stair stair : stairs == null ? List.<Stair>of() : stairs.stairs()) {
+            if (stair == null || !stair.isReadable()) {
+                continue;
+            }
+            appendFeature(features, relations, stair);
+        }
+    }
+
+    private static void appendFeature(
+            List<DungeonFeatureFacts> features,
+            List<DungeonRelationGraph.FeatureRelation> relations,
+            Stair stair
+    ) {
+        List<StairExit> exits = stair.exits();
+        features.add(new DungeonFeatureFacts(
+                DungeonFeatureType.STAIR,
+                stair.stairId(),
+                stair.name(),
+                CellOrdering.sortedCells(stair.occupiedCells()),
+                stairDescription(stair, exits),
+                stairDestinationLabel(exits),
+                DungeonFeatureFacts.StatePanelFacts.stair(
+                        stair.stairId(),
+                        stair.shape(),
+                        stair.direction(),
+                        stair.dimension1(),
+                        stair.dimension2()),
+                new DungeonTopologyRef(DungeonTopologyElementKind.STAIR, stair.stairId()),
+                null));
+        if (stair.corridorId() != null) {
+            relations.add(new DungeonRelationGraph.FeatureRelation(
+                    stair.stairId(),
+                    "stair",
+                    stair.corridorId(),
+                    "corridor",
+                    "attached"));
+        }
+    }
+
+    private static String stairDescription(Stair stair, List<StairExit> exits) {
+        if (stair == null) {
+            return "";
+        }
+        if (exits.isEmpty()) {
+            return stair.name();
+        }
+        return stair.name() + " verbindet " + exits.size() + " Ausgaenge.";
+    }
+
+    private static String stairDestinationLabel(List<StairExit> exits) {
+        if (exits.isEmpty()) {
+            return "";
+        }
+        List<String> labels = new ArrayList<>();
+        for (StairExit exit : exits) {
+            String label = exit == null ? "" : exit.label();
+            if (!label.isBlank() && !labels.contains(label)) {
+                labels.add(label);
+            }
+        }
+        labels.sort(String.CASE_INSENSITIVE_ORDER);
+        return String.join(", ", labels);
+    }
+
+}

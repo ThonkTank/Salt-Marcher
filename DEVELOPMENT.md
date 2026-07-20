@@ -24,12 +24,11 @@ JavaFX tests use headless Monocle and do not require Xvfb.
 
 ## Project Shape
 
-- `bootstrap/`: application startup and contribution discovery
+- `app/`: explicit application startup, composition, and lifecycle
 - `shell/`: generic shell API and host runtime
-- `src/features/**`: feature runtime
-- `src/view/**`: JavaFX views
-- `src/domain/**`: domain behavior, state, and ports
-- `src/data/**`: local persistence and SQLite adapters
+- `platform/`: feature-neutral execution, persistence, diagnostics, state, and UI mechanisms
+- `features/**`: vertical feature APIs, domains, applications, adapters, and composition roots
+- `resources/`: static resources and centralized application styling
 - `tools/gradle/**`: build and verification wiring
 
 Local data resolves to `$XDG_DATA_HOME/salt-marcher/` or

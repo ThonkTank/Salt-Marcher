@@ -1,0 +1,133 @@
+package features.party;
+
+import features.party.adapter.javafx.adventuringday.AdventuringDayTopBarContribution;
+import features.party.adapter.javafx.party.PartyTopBarContribution;
+import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
+import features.party.api.ActivePartyCompositionModel;
+import features.party.api.ActivePartyModel;
+import features.party.api.AdventuringDayCalculationModel;
+import features.party.api.AdventuringDaySummaryModel;
+import features.party.api.PartyApi;
+import features.party.api.PartyMutationModel;
+import features.party.api.PartySnapshotModel;
+import features.party.api.PartyTravelPositionsModel;
+import features.party.application.PartyApplicationService;
+import features.party.application.PartyPublishedState;
+import features.party.domain.roster.repository.PartyRosterRepository;
+
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.NoopDiagnostics;
+import platform.execution.DirectExecutionLane;
+import platform.execution.ExecutionLane;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+import platform.ui.DirectUiDispatcher;
+import platform.ui.UiDispatcher;
+
+import shell.api.ShellContribution;
+
+import java.util.Objects;
+
+public final class PartyServiceAssembly {
+
+    private PartyServiceAssembly() {
+    }
+
+    public static FeatureStoreDefinition storeDefinition() {
+        return SqlitePartyRosterRepository.storeDefinition();
+    }
+
+    public static Component create(PartyRosterRepository repository) {
+        Component component = assemble(
+                repository,
+                DirectExecutionLane.INSTANCE,
+                DirectExecutionLane.INSTANCE,
+                DirectUiDispatcher.INSTANCE,
+                NoopDiagnostics.INSTANCE);
+        start(component);
+        return component;
+    }
+
+    public static Component create(
+            FeatureStoreHandle store,
+            ExecutionLane executionLane,
+            ExecutionLane planningFactsLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics
+    ) {
+        return assemble(
+                new SqlitePartyRosterRepository(
+                        Objects.requireNonNull(store, "store"),
+                        Objects.requireNonNull(diagnostics, "diagnostics")),
+                executionLane,
+                planningFactsLane,
+                uiDispatcher,
+                diagnostics);
+    }
+
+    public static Component create(
+            PartyRosterRepository repository,
+            ExecutionLane executionLane,
+            ExecutionLane planningFactsLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics
+    ) {
+        Component component = assemble(repository, executionLane, planningFactsLane, uiDispatcher, diagnostics);
+        start(component);
+        return component;
+    }
+
+    private static Component assemble(
+            PartyRosterRepository repository,
+            ExecutionLane executionLane,
+            ExecutionLane planningFactsLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics
+    ) {
+        PartyPublishedState publishedState = new PartyPublishedState(
+                Objects.requireNonNull(uiDispatcher, "uiDispatcher"));
+        PartySnapshotModel snapshot = publishedState.snapshotModel();
+        ActivePartyModel activeParty = publishedState.activePartyModel();
+        ActivePartyCompositionModel activeComposition = publishedState.activeCompositionModel();
+        AdventuringDaySummaryModel daySummary = publishedState.adventuringDaySummaryModel();
+        PartyTravelPositionsModel travelPositions = publishedState.travelPositionsModel();
+        PartyMutationModel mutation = publishedState.mutationModel();
+        AdventuringDayCalculationModel dayCalculation = publishedState.adventuringDayCalculationModel();
+        PartyApplicationService application = new PartyApplicationService(
+                Objects.requireNonNull(repository, "repository"),
+                publishedState,
+                Objects.requireNonNull(executionLane, "executionLane"),
+                Objects.requireNonNull(planningFactsLane, "planningFactsLane"),
+                Objects.requireNonNull(diagnostics, "diagnostics"));
+        return new Component(
+                application,
+                snapshot,
+                activeParty,
+                activeComposition,
+                daySummary,
+                travelPositions,
+                mutation,
+                dayCalculation,
+                new PartyTopBarContribution(application, snapshot, daySummary, mutation),
+                new AdventuringDayTopBarContribution(daySummary, dayCalculation, application));
+    }
+
+    public static void start(Component component) {
+        PartyApi application = Objects.requireNonNull(component, "component").application();
+        ((PartyApplicationService) application).refreshPublishedState();
+    }
+
+    public record Component(
+            PartyApi application,
+            PartySnapshotModel snapshot,
+            ActivePartyModel activeParty,
+            ActivePartyCompositionModel activeComposition,
+            AdventuringDaySummaryModel adventuringDaySummary,
+            PartyTravelPositionsModel travelPositions,
+            PartyMutationModel mutation,
+            AdventuringDayCalculationModel adventuringDayCalculation,
+            ShellContribution partyTopBarContribution,
+            ShellContribution adventuringDayTopBarContribution
+    ) {
+    }
+}

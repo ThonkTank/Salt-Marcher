@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
+Last Reviewed: 2026-07-15
 Source of Truth: User-facing behavior and visible states of the generic map
 canvas.
 
@@ -8,8 +8,9 @@ canvas.
 
 ## Goal
 
-Provide one generic passive map canvas that dungeon and future hex surfaces can
-reuse for rendering, hit-testing, and passive pointer capture.
+Provide feature-neutral passive map-canvas mechanisms that Dungeon and Hex
+JavaFX surfaces reuse for rendering, hit-testing, camera behavior, viewport
+caching, and passive pointer capture.
 
 ## Non-Goals
 
@@ -23,12 +24,10 @@ reuse for rendering, hit-testing, and passive pointer capture.
 - SaltMarcher already ships a reusable dungeon map workspace with passive pan,
   zoom, resize redraw, level-scroll capture, overlay presentation, and empty
   states.
-- The sibling `salt-marcher` repo shows the same reuse pressure from the other
-  side: one shared dungeon canvas family and one shared hex renderer family
-  serving both read-mostly runtime views and editing views.
-- SaltMarcher does not yet ship a first-class hex adopter. This requirement
-  therefore defines the shared target-state surface that both dungeon and hex
-  can reuse.
+- SaltMarcher also ships Hex editor and travel surfaces with tile rendering,
+  passive camera behavior, hit-testing, and adopter-owned map actions.
+- The two shipped feature surfaces motivate one shared passive canvas while
+  Dungeon and Hex retain their own coordinates, state, and gameplay meaning.
 
 ## Visible Structure
 
@@ -61,7 +60,8 @@ reuse for rendering, hit-testing, and passive pointer capture.
 - middle-pointer drag pans the camera
 - zoom and resize redraw against the current camera state
 - reset view restores the default camera state without changing adopter truth
-- pointer events remain passive and flow into the adopter-owned Binder path
+- pointer events remain passive and are delivered to the adopting feature
+  without acquiring adopter-specific meaning inside the canvas
 - pointer press, drag, release, move, and level-scroll capture remain
   adopter-triggered outcomes rather than canvas-owned game actions
 - shell layout changes do not implicitly recenter the canvas
