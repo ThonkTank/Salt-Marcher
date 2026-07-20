@@ -28,6 +28,13 @@ fiction and outcomes.
 
 One Dungeon is one continuous spatial whole containing all of its rooms, surfaces, levels, and spatial content. It is not a collection of internal Dungeon maps. The raster map is a view of this whole, not a separate authored container. Only an actual exit may transition to another Dungeon or an external place.
 
+Its spatial foundation behaves as one voxel-like 3D grid with 5-foot horizontal
+cells and 5-foot vertical resolution. Creating ordinary walkable space produces
+floor, traversable volume, and a default ceiling together with 10 feet of clear
+height. The GM may later change height in 5-foot steps, including intentional
+5-foot crawlspaces and taller chambers. Stacked spaces and minor elevation
+shifts remain part of the same Dungeon.
+
 The Dungeon capability includes:
 
 - Dungeon catalog management
