@@ -57,8 +57,11 @@ Descriptive attributes use common freely valued categories plus GM-defined
 attributes and exceptional free text. Values inherit from Dungeon through an
 optional Level, an optional room group, Room, and finally an explicitly
 described surface region. A Level is a GM-defined set of z-levels within the
-same continuous 3D Dungeon, not a map. Each inheritance path is unambiguous.
-Overlapping collections or tags may support filters and diagnostics but do not
+same continuous 3D Dungeon, not a map. Level z-level sets do not overlap for
+inheritance. Each Room belongs to at most one Level, which the GM may choose or
+skip even when the Volume spans several z-levels. SaltMarcher may propose but
+MUST NOT force the assignment or split geometry. Each inheritance path is
+unambiguous. Overlapping collections or tags may support filters and diagnostics but do not
 inherit. More specific values override inherited defaults without creating
 rules, passability, or effects.
 
