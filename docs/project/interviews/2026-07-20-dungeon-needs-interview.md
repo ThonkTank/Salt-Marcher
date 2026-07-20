@@ -1,6 +1,6 @@
 Status: In Progress
 Owner: Aaron
-Last Reviewed: 2026-07-20
+Last Reviewed: 2026-07-21
 Source of Truth: Confirmed German owner answers from the Dungeon refactor needs-analysis conversation on 2026-07-20.
 
 # Dungeon Needs Interview 2026-07-20
@@ -100,6 +100,13 @@ Abschnitt kann bewusst einen niedrigen Tunnel, Kriechgang oder engen
 Zwischenraum bilden; 15, 20 oder mehr Fuß hohe Räume bleiben ebenso möglich.
 Übereinanderliegende Räume und kleine Höhenversätze existieren im selben
 Dungeon-Raster.
+
+Der Rastereditor zeigt dabei einen zweidimensionalen Ausschnitt der aktuellen
+Standardetage mit 10 Fuß Höhe, also zwei vertikale 5-Fuß-Schritte. Ober- und
+unterhalb liegende Geometrie erscheint per Onion-Slicing. Der GM kann zwischen
+diesen Schnitten wechseln, auch während eines laufenden
+Click-and-drag-Werkzeugs. Das Flächenwerkzeug kann dadurch ein
+dreidimensionales Volumen über mehrere Schnitte aufziehen.
 
 Ebenen sind Ansichten oder Schnitte durch dieses gemeinsame 3D-Raster, keine
 getrennten Inhaltscontainer. Wände, die für eine spätere realistischere
@@ -476,6 +483,11 @@ Das Auswahlwerkzeug bleibt für das Verschieben, Verzerren und detaillierte
 Bearbeiten vorhandener Geometrie zuständig, steuert aber nicht das Ziel der
 Zeichen- und Radierwerkzeuge. Boden, begehbares Volumen und Standarddecke
 bleiben dabei die gemeinsam betrachtete räumliche Form.
+
+Etagen können einfach übereinandergestapelt werden. Entfernt der GM einen
+Zwischenboden, entsteht eine offene vertikale Verbindung der betroffenen
+Geometrie. Böden und Wände bleiben auch unabhängig von der automatisch
+erzeugten Standardhülle editierbar.
 
 ### Sind Korridore und Treppen unterschiedliche Pfadmodelle?
 
