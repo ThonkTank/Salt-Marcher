@@ -304,8 +304,12 @@ custom named attributes and exceptional free-text phrasing.
 Descriptive attributes inherit through Dungeon, optional Level, optional room
 group, Room, and explicitly described surface-region scopes. A Level is a
 GM-defined set of z-levels in the same continuous 3D Dungeon, not another map.
-Every inheriting object has one unambiguous parent path. A more specific value
-overrides the inherited value for its scope. Additional overlapping collections
+Every inheriting object has one unambiguous parent path. A Room belongs to at
+most one Level; SaltMarcher may propose one from geometry, but the GM may assign
+the conceptual Level or skip the Level scope entirely. A multi-z-level Room is
+never geometrically split to satisfy inheritance. Level z-level sets do not
+overlap for inheritance. A more specific value overrides the inherited value
+for its scope. Additional overlapping collections
 or tags may support filtering and heatmaps but do not inherit attributes. The editor exposes both the effective value and where it
 originates, and lets the GM restore inheritance. Attribute inheritance MUST NOT
 create rules, passability, or effects.
