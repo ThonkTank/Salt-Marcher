@@ -465,6 +465,13 @@ Geometrie-Workflow nicht und darf vom GM anschließend geändert werden.
 Vorhandene authored Räume, die dabei keinem Volumen zugewiesen werden, bleiben
 gemäß der Verlustschutzregel erhalten.
 
+Beim Split folgt der bisherige Raum dem am besten passenden Teilvolumen.
+Weitere Teilvolumen erhalten automatisch neue, zunächst leere Räume. Geerbte
+Dungeon-, Ebenen- und Gruppenattribute gelten dort weiterhin.
+Voxelverankerte Features und beschriebene Flächenbereiche folgen ihrer
+jeweiligen Geometrie. Vollständiger Raumtext wird nicht automatisch
+dupliziert; der GM kann ihn anschließend kopieren oder neu zuweisen.
+
 Das Auswahlwerkzeug bleibt für das Verschieben, Verzerren und detaillierte
 Bearbeiten vorhandener Geometrie zuständig, steuert aber nicht das Ziel der
 Zeichen- und Radierwerkzeuge. Boden, begehbares Volumen und Standarddecke
