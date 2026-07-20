@@ -29,6 +29,11 @@ the table.
 Rooms, derived corridor sections, junctions, stair landings, and comparable
 decision points may organize choices and presentation, but do not replace
 cell-precise runtime position.
+Every bounded standable interior volume is a Room for travel, including
+chambers, corridors, and stair spaces. Navigation areas partition this volume
+at meaningful choices such as branches, junctions, and landings, but do not
+create incompatible movement semantics or replace cell-precise runtime
+position.
 
 ## Passive Travel Map
 
