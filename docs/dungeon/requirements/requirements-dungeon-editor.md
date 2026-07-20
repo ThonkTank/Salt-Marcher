@@ -184,10 +184,13 @@ Heatmap facts come only from explicit authored Dungeon Features, not from
 guessing content out of room prose. Initial feature kinds include Encounter,
 Trap, Loot, and Curiosity.
 
-A Curiosity organizes a puzzle or other interactive feature. Its initial
-content may be free text. Later versions may add optional links or simple
+A Curiosity is the common Feature kind for puzzles and other interactive
+peculiarities. Puzzle is a built-in Curiosity classification rather than a
+separate foundational Feature kind; additional GM-defined tags may be added.
+Its initial content may be free text. Later versions may add optional links or simple
 consequences such as changing lights or unlocking a referenced door.
-Diagnostics count Curiosities but MUST NOT assign them a qualitative score.
+Diagnostics may count all Curiosities and the Puzzle-classified subset
+separately, but MUST NOT assign Curiosities a qualitative score.
 
 The graph may show advisory pacing warnings for probable underfilling,
 overfilling, or local content concentration. Warnings remain explainable,
