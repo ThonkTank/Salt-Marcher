@@ -1,4 +1,4 @@
-Status: Active
+Status: Draft
 Owner: SaltMarcher Team
 Last Reviewed: 2026-07-20
 Source of Truth: Confirmed solution-neutral Dungeon authoring and inspection
