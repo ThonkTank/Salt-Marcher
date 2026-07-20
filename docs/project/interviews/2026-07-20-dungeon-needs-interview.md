@@ -170,8 +170,12 @@ So können beispielsweise zwei geometrisch getrennte Türen dieselben
 Ausgangsinhalte erhalten. Die Eins-zu-eins-Zuordnung einer Inhaltsidentität zu
 Geometrie verhindert nicht, daraus weitere Inhaltsidentitäten zu erzeugen.
 
-Noch offen ist, ob Kopien danach vollständig unabhängig sind oder optional mit
-einer gemeinsamen Vorlage verbunden bleiben.
+Normale Kopien erhalten eine eigene Identität und sind danach unabhängig.
+Wiederkehrende Ausgangsinhalte können zusätzlich als benannte Vorlagen
+gespeichert werden, beispielsweise »schwere Eisentür«. Das Ändern einer Vorlage
+verändert bestehende Instanzen nicht automatisch; der GM wendet eine
+Aktualisierung bewusst auf ausgewählte Instanzen an. Dauerhaft gekoppelte
+Instanzen bleiben eine mögliche spätere, ausdrücklich getrennte Funktion.
 
 ### Welche grundlegenden Formen räumlichen Authorings gibt es?
 
