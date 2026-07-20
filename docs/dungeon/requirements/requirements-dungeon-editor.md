@@ -43,7 +43,12 @@ primarily textual content after or alongside structural authoring.
 
 ## Raster Authoring View
 
-The editor raster view owns direct spatial authoring:
+The editor raster view owns direct spatial authoring. Ordinary floor drawing
+uses 5-foot horizontal cells and automatically creates floor, traversable
+volume, and a 10-foot-clear default ceiling. The GM may later change height in
+5-foot steps without constructing every vertical voxel by hand.
+
+It supports:
 
 - draw and reshape room and area geometry
 - place and edit walls, doors, corridors, stairs, transitions, markers, traps,
