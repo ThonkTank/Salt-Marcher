@@ -17,6 +17,7 @@ marked interpretation.
 ## Interviews
 
 - [Goal Interview 2026-07-10](2026-07-10-goal-interview.md)
+- [Dungeon Needs Interview 2026-07-20](2026-07-20-dungeon-needs-interview.md)
 
 Interview transcripts are evidence only and do not schedule delivery. No owner
 answer is interpreted or copied into repo-facing documents before explicit
