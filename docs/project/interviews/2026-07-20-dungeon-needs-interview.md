@@ -32,10 +32,12 @@ Der Review trennt vier logisch aufeinander aufbauende Ergebnisse:
 4. Erst danach wird geplant, welche weiteren Schritte zum Zielzustand sinnvoll
    sind.
 
-**Aktueller Arbeitsstand:** Ergebnis 1 ist abgeschlossen. Die bestätigte
-Bedarfsbaseline ist in die kanonischen englischen Dungeon-Requirements
-überführt. Das Interview enthält weiterhin kein Urteil über den Ist-Zustand und
-keinen Architekturentwurf; diese gehören in die folgenden Review-Phasen.
+**Aktueller Arbeitsstand:** Die erste Discovery-Scheibe zu Reise,
+Darstellungen und Qualitätsgrenzen ist bestätigt und in vorläufige englische
+Requirements überführt. Ergebnis 1 bleibt jedoch in Arbeit: Editor-Werkzeuge,
+authored Dungeon-Inhalte, End-to-End-Workflows und ihre Wirkung am Spieltisch
+sind noch nicht vollständig geklärt. Das Interview enthält weiterhin kein
+Urteil über den Ist-Zustand und keinen Architekturentwurf.
 
 ## Vorgehen und Phasengrenze
 
@@ -639,22 +641,95 @@ still überschrieben.
 Die Auswirkungen sollen lokal, explizit und ohne Änderungen an fachlich
 unbeteiligten Features bleiben.
 
-## Abschluss und Übergabe
+## Wiedereröffneter Discovery-Scope
 
-Alle vorbereiteten und während des Interviews entstandenen Bedarfsfragen sind
-beantwortet. Die bestätigte Interpretation ist widerspruchsfrei in folgenden
-kanonischen englischen Requirements verankert:
+Die bisherige Fragenliste war nicht vollständig. Sie klärte vor allem Reise,
+Darstellungen, Persistenz und Qualitätsgrenzen, aber noch nicht ausreichend,
+wie ein GM tatsächlich einen spielbaren Dungeon erstellt, überarbeitet und am
+Tisch benutzt. Ergebnis 1 bleibt deshalb offen.
 
-- `docs/dungeon/requirements/requirements-dungeon.md`
-- `docs/dungeon/requirements/requirements-dungeon-editor.md`
-- `docs/dungeon/requirements/requirements-dungeon-travel-state.md`
-- `docs/dungeon/requirements/requirements-dungeon-travel.md`
+Die aktuellen Editor-Familien `Auswahl`, `Raum`, `Wand`, `Tür`,
+`Korridor`, `Feature`, `Treppe` und `Übergang` sind nur Hypothesen aus
+Code und Alt-Requirements. Auch bestehende Gesten, automatische
+Geometrieentscheidungen, feste Formen und konkrete Routingregeln sind nicht
+allein deshalb Produktbedarf.
 
-Die alten offenen Fragen zu konkreter UI-Ausgestaltung und Lieferreihenfolge
-wurden nicht an den Owner zurückdelegiert, weil sie technische beziehungsweise
-Delivery-Entscheidungen des Systems sind.
+### Noch produktseitig zu klärende Bereiche
 
-Ergebnis 1 ist abgeschlossen. Die folgende Phase darf nun die Bedarfsbaseline
-gegen Vor-Refactor-Stand, aktuellen Stand und einen Greenfield-Zielentwurf
-bewerten, ohne dieses Interview selbst zur zweiten Requirements-Wahrheit zu
-machen.
+1. **Authoring Journey**
+   - Wie entsteht aus einer leeren Karte schrittweise ein spielbarer Dungeon?
+   - Beginnt der GM typischerweise im Raster, im Graphen, mit einer Raumliste
+     oder wechselt er bewusst zwischen diesen Arbeitsweisen?
+   - Welche Arbeit muss bei Vorbereitung, Umbau und Improvisation schnell sein?
+
+2. **Raster-Werkzeugkasten**
+   - Welche Werkzeugfamilien braucht der GM wirklich?
+   - Welche Formen erstellen, verändern, teilen, verbinden, gruppieren,
+     duplizieren oder entfernen Räume und andere Geometrie?
+   - Welche Automatik spart Arbeit, und welche würde dem GM unerwünscht
+     Entscheidungen abnehmen?
+
+3. **Auswahl und breite Bearbeitung**
+   - Welche Einzel-, Mehrfach-, Bereichs-, Verschiebe-, Kopier- und
+     Wiederholungsabläufe werden benötigt?
+   - Wie werden überlagerte oder schwer treffbare Ziele verständlich ausgewählt?
+   - Welche Batch-Änderungen sind für große Dungeons wesentlich?
+
+4. **Räume, Bereiche und räumliche Semantik**
+   - Welche Beziehung besteht zwischen Zellen, Räumen, Raumgruppen, Zonen und
+     Ebenen?
+   - Wie funktionieren unregelmäßige Formen, Löcher, offene Bereiche,
+     Höhenunterschiede und ineinanderliegende Räume?
+   - Welche Fakten werden authored und welche nur aus Geometrie abgeleitet?
+
+5. **Wände, Öffnungen und Verbindungen**
+   - Welche Arten von Wand, Tür, Tor, Bogen, Fenster, Durchlass, Korridor,
+     Treppe, Leiter, Schacht, Rampe, Portal und Übergang sind relevant?
+   - Wie werden Breite, Ausrichtung, Endpunkte, Verzweigungen, Einbahnigkeit und
+     vertikale Beziehungen bearbeitet?
+   - Wie reagiert der Editor auf Kollisionen und mehrdeutige Verbindungen?
+
+6. **Dungeon-Inhalt**
+   - Welche authored Fakten besitzen Räume, Türen, Fallen, Rätsel, Loot,
+     Curiosities, Encounter, Objekte, Geheimnisse und Atmosphäre?
+   - Was liegt an einer Zelle, was gehört zum Raum, was zu einer Raumgruppe und
+     was verlinkt nur auf andere Campaign-Truth?
+   - Welche Inhalte benötigen strukturierte Attribute, Freitext, Tabellen,
+     Trigger oder einfache Zustände?
+
+7. **Graph-Design-Erlebnis**
+   - Welche Graph-Operationen verändern nur abstraktes Layout und welche sollen
+     reale Rastergeometrie umordnen?
+   - Wie werden Flow, Schleifen, Sackgassen, Entscheidungskomplexität,
+     Reisezeiten und Content-Verteilung verständlich dargestellt?
+   - Welche Hinweise helfen beim Design, ohne den Dungeon automatisch zu
+     bewerten oder zu normieren?
+
+8. **Dungeon-Key und Detailbearbeitung**
+   - Welche Inhalte werden in großen Raumdialogen gemeinsam bearbeitet?
+   - Wie werden generierte Beschreibung, authored Attribute, Vorlesetext,
+     Geheimnisse und GM-Notizen getrennt oder kombiniert?
+   - Welche schnellen Abläufe braucht der GM für viele ähnliche Räume?
+
+9. **Spielvorbereitung und Live-Nutzung**
+   - Welche Information muss während des Spiels auf einen Blick sichtbar sein?
+   - Wie springt der GM zwischen Karte, Raumtext, Akteuren, Encounter, Loot und
+     Ereignissen, ohne den Spielfluss zu verlieren?
+   - Welche Editor-Arbeit muss auch während einer Sitzung sicher möglich sein?
+
+10. **Priorität und Erlebniswirkung**
+    - Welche Werkzeuge sind für einen brauchbaren ersten vollständigen
+      Authoring-Flow unverzichtbar?
+    - Welche Fähigkeiten sind Komfort, fortgeschrittenes Dungeon-Design oder
+      bewusst spätere Erweiterung?
+    - Welche Arbeitsweisen sollen gefördert werden, und welche Formen von
+      Kleinarbeit, Überraschungsverlust oder Über-Simulation soll SaltMarcher
+      vermeiden?
+
+### Fortsetzungsreihenfolge
+
+Die Befragung beginnt beim konkreten End-to-End-Authoring-Erlebnis und arbeitet
+sich danach werkzeugweise durch Raster, Inhalt, Graph, Dungeon-Key und
+Live-Nutzung. Erst wenn diese Produktfragen beantwortet sind, werden die
+kanonischen Requirements wieder auf `Active` gesetzt und Ergebnis 1
+abgeschlossen.
