@@ -59,6 +59,13 @@ Its foundational fixed-Area tools are:
 - an eraser with matching shape and radius capabilities
 - selection that can move, distort, and edit existing geometry
 
+Brush, surface tool, and eraser operate directly on geometry regardless of the
+current selection. Overlapping or newly connected geometry automatically merges
+Volumes; separating geometry automatically splits a Volume. Completion requires
+no additional confirmation dialog, and ordinary undo is the expected recovery
+path. Selection remains relevant to transforms and detailed edits, not to
+choosing the target of drawing or erasing.
+
 Floor, traversable Volume, and default ceiling remain one coordinated spatial
 result while these tools operate.
 
