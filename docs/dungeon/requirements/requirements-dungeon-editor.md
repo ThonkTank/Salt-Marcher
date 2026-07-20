@@ -56,7 +56,7 @@ It supports two foundational geometry forms:
 - directly drawn anchored Areas whose geometry changes only through explicit GM
   edit or removal
 - unified generated 3D Paths between two or more endpoints or waypoints; one
-  Path may combine horizontal corridor and vertical stair segments
+  Path may combine corridor, stair, ramp, ladder, shaft, and comparable segments
 
 Both forms produce bounded, standable Room volume. Chambers, corridors, and
 stair spaces remain semantically equivalent for travel even when their
