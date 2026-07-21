@@ -31,11 +31,11 @@ import features.dungeon.domain.core.geometry.DungeonTopology;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.geometry.EdgeKey;
 import features.dungeon.domain.core.component.boundary.BoundaryMap;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 import features.dungeon.domain.core.component.boundary.BoundarySegment;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.projection.DungeonAreaType;
 import features.dungeon.domain.core.projection.DungeonFeatureType;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -58,7 +58,7 @@ final class DungeonWindowProjection {
                 window.requestGeneration(),
                 window.mapHeader().revision(),
                 window.mapHeader().mapName(),
-                DungeonPublishedMapProjectionServiceAssembly.revision(window.mapHeader().revision()),
+                publishedRevision(window.mapHeader().revision()),
                 projection.workspace());
     }
 
@@ -92,7 +92,8 @@ final class DungeonWindowProjection {
                 .stream()
                 .map(DungeonWindowEntityFragment::entityRef)
                 .collect(java.util.stream.Collectors.toUnmodifiableSet());
-        Set<features.dungeon.application.authored.command.DungeonPatchEntityRef> continuedRefs = window.continuations()
+        Set<features.dungeon.application.authored.command.DungeonPatchEntityRef> continuedRefs = window.continuationPage()
+                .entries()
                 .stream()
                 .map(DungeonWindowContinuation::entityRef)
                 .collect(java.util.stream.Collectors.toUnmodifiableSet());
@@ -116,7 +117,7 @@ final class DungeonWindowProjection {
         areas = mergeClusterMemberCells(areas, window.fragments());
         boundaries = deduplicateBoundaries(boundaries);
         handles = deduplicateDoorHandles(handles);
-        WorkspaceBounds dimensions = workspaceBounds(areas, boundaries, features, handles, level);
+        AuthoredDimensions dimensions = authoredDimensions(window, level);
         DungeonEditorWorkspaceValues.MapSnapshot workspace = new DungeonEditorWorkspaceValues.MapSnapshot(
                 DungeonTopology.SQUARE,
                 dimensions.width(),
@@ -269,12 +270,10 @@ final class DungeonWindowProjection {
                 null,
                 List.of()));
 
-        Map<EdgeKey, DungeonWindowEntityFragment.ClusterBoundaryFact> factsByEdge = new LinkedHashMap<>();
         List<BoundarySegment> segments = new ArrayList<>();
         for (DungeonWindowEntityFragment.ClusterBoundaryFact boundary : cluster.boundaries()) {
             Edge edge = boundary.direction().edgeOf(boundary.cell());
             EdgeKey key = EdgeKey.from(edge);
-            factsByEdge.put(key, boundary);
             segments.add(new BoundarySegment(key, switch (boundary.kind()) {
                 case WALL -> features.dungeon.domain.core.component.boundary.BoundaryKind.WALL;
                 case DOOR -> features.dungeon.domain.core.component.boundary.BoundaryKind.DOOR;
@@ -282,6 +281,7 @@ final class DungeonWindowProjection {
             }));
         }
         BoundaryMap boundaryMap = new BoundaryMap(segments);
+        Set<Cell> memberCellSet = Set.copyOf(memberCells);
         List<Integer> levels = cluster.memberCells().stream()
                 .map(member -> member.cell().level())
                 .distinct()
@@ -315,8 +315,7 @@ final class DungeonWindowProjection {
                         .map(key -> new Edge(key.lower(), key.upper()))
                         .toList();
                 Edge sourceEdge = sourceEdges.get(sourceEdges.size() / 2);
-                DungeonWindowEntityFragment.ClusterBoundaryFact sourceFact = factsByEdge.get(EdgeKey.from(sourceEdge));
-                Direction direction = sourceFact == null ? boundaryDirection(sourceEdge) : sourceFact.direction();
+                Direction direction = boundaryDirection(sourceEdge, memberCellSet);
                 result.add(handle(
                         DungeonEditorHandleKind.CLUSTER_WALL_RUN,
                         roomRef(roomId),
@@ -587,7 +586,18 @@ final class DungeonWindowProjection {
                 (int) Math.round((double) r / cells.size()), first.level());
     }
 
-    private static Direction boundaryDirection(Edge edge) {
+    private static Direction boundaryDirection(Edge edge, Set<Cell> memberCells) {
+        EdgeKey edgeKey = EdgeKey.from(edge);
+        for (Cell cell : edge.touchingCells()) {
+            if (!memberCells.contains(cell)) {
+                continue;
+            }
+            for (Direction direction : Direction.values()) {
+                if (EdgeKey.from(direction.edgeOf(cell)).equals(edgeKey)) {
+                    return direction;
+                }
+            }
+        }
         int deltaQ = edge.to().q() - edge.from().q();
         int deltaR = edge.to().r() - edge.from().r();
         if (Math.abs(deltaQ) >= Math.abs(deltaR)) {
@@ -596,28 +606,12 @@ final class DungeonWindowProjection {
         return deltaQ >= 0 ? Direction.EAST : Direction.WEST;
     }
 
-    private static WorkspaceBounds workspaceBounds(
-            List<DungeonEditorWorkspaceValues.Area> areas,
-            List<DungeonEditorWorkspaceValues.Boundary> boundaries,
-            List<DungeonEditorWorkspaceValues.Feature> features,
-            List<DungeonEditorWorkspaceValues.Handle> handles,
-            int level
-    ) {
-        BoundsAccumulator bounds = new BoundsAccumulator();
-        areas.forEach(area -> area.cells().forEach(cell -> bounds.include(cell, level)));
-        boundaries.forEach(boundary -> {
-            bounds.include(boundary.edge().from(), level);
-            bounds.include(boundary.edge().to(), level);
-        });
-        features.forEach(feature -> {
-            feature.cells().forEach(cell -> bounds.include(cell, level));
-            if (feature.anchorEdge() != null) {
-                bounds.include(feature.anchorEdge().from(), level);
-                bounds.include(feature.anchorEdge().to(), level);
-            }
-        });
-        handles.forEach(handle -> bounds.include(handle.cell(), level));
-        return bounds.snapshot();
+    private static AuthoredDimensions authoredDimensions(DungeonWindow window, int level) {
+        DungeonViewportSnapshot.AuthoredBounds bounds = indexedBounds(window, level);
+        return bounds.present()
+                ? new AuthoredDimensions(bounds.maximumQ() - bounds.minimumQ() + 1,
+                        bounds.maximumR() - bounds.minimumR() + 1)
+                : AuthoredDimensions.empty();
     }
 
     private static List<DungeonAreaSnapshot> publicAreas(List<DungeonEditorWorkspaceValues.Area> areas) {
@@ -634,7 +628,11 @@ final class DungeonWindowProjection {
             List<DungeonEditorWorkspaceValues.Boundary> boundaries
     ) {
         return boundaries.stream().map(boundary -> new DungeonBoundarySnapshot(
-                boundary.kind().externalKind(),
+                switch (boundary.kind()) {
+                    case WALL -> "wall";
+                    case DOOR -> "door";
+                    case OPEN -> "open";
+                },
                 boundary.id(),
                 boundary.label(),
                 edgeRef(boundary.edge()),
@@ -687,7 +685,7 @@ final class DungeonWindowProjection {
 
     private static List<DungeonViewportContinuation> continuations(DungeonWindow window) {
         List<DungeonViewportContinuation> result = new ArrayList<>();
-        for (DungeonWindowContinuation continuation : window.continuations()) {
+        for (DungeonWindowContinuation continuation : window.continuationPage().entries()) {
             DungeonTopologyElementRef topology = topologyRef(continuation.entityRef().kind(), continuation.entityRef().id());
             for (DungeonChunkKey chunk : continuation.offWindowChunks()) {
                 result.add(new DungeonViewportContinuation(
@@ -744,6 +742,10 @@ final class DungeonWindowProjection {
         return new DungeonCellRef(cell.q(), cell.r(), cell.level());
     }
 
+    private static int publishedRevision(long revision) {
+        return revision > Integer.MAX_VALUE ? Integer.MAX_VALUE : Math.max(0, (int) revision);
+    }
+
     private static DungeonEdgeRef edgeRef(Edge edge) {
         return new DungeonEdgeRef(cellRef(edge.from()), cellRef(edge.to()));
     }
@@ -781,52 +783,14 @@ final class DungeonWindowProjection {
     ) {
     }
 
-    private record WorkspaceBounds(
-            boolean present,
-            int minimumQ,
-            int minimumR,
-            int maximumQ,
-            int maximumR
-    ) {
-        int width() {
-            return present ? maximumQ - minimumQ + 1 : 1;
+    private record AuthoredDimensions(int width, int height) {
+        private AuthoredDimensions {
+            width = Math.max(1, width);
+            height = Math.max(1, height);
         }
 
-        int height() {
-            return present ? maximumR - minimumR + 1 : 1;
-        }
-
-        DungeonViewportSnapshot.AuthoredBounds publicBounds() {
-            return new DungeonViewportSnapshot.AuthoredBounds(
-                    present, minimumQ, minimumR, maximumQ, maximumR);
-        }
-    }
-
-    private static final class BoundsAccumulator {
-        private boolean present;
-        private int minimumQ;
-        private int minimumR;
-        private int maximumQ;
-        private int maximumR;
-
-        private void include(Cell cell, int level) {
-            if (cell == null || cell.level() != level) {
-                return;
-            }
-            if (!present) {
-                present = true;
-                minimumQ = maximumQ = cell.q();
-                minimumR = maximumR = cell.r();
-                return;
-            }
-            minimumQ = Math.min(minimumQ, cell.q());
-            minimumR = Math.min(minimumR, cell.r());
-            maximumQ = Math.max(maximumQ, cell.q());
-            maximumR = Math.max(maximumR, cell.r());
-        }
-
-        private WorkspaceBounds snapshot() {
-            return new WorkspaceBounds(present, minimumQ, minimumR, maximumQ, maximumR);
+        private static AuthoredDimensions empty() {
+            return new AuthoredDimensions(1, 1);
         }
     }
 }

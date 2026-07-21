@@ -2,7 +2,6 @@ package features.dungeon.application.editor;
 
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.graph.DungeonTopologyElementKind;
-import features.dungeon.domain.core.graph.DungeonTopologyRef;
 
 final class DungeonEditorPointRuntimeTarget {
     private static final long NO_TARGET_ID = 0L;
@@ -16,7 +15,7 @@ final class DungeonEditorPointRuntimeTarget {
             TransitionDestination transitionDestination,
             int projectionLevel
     ) {
-        DungeonEditorMainViewInput input = DungeonEditorRuntimeInputTranslator.mainViewInput(
+        DungeonEditorMainViewInput input = DungeonEditorMainViewInput.fromPointer(
                 sample,
                 wallSingleClickMode,
                 transitionDestination);
@@ -32,10 +31,12 @@ final class DungeonEditorPointRuntimeTarget {
             TransitionDestination transitionDestination,
             DungeonTopologyElementKind expectedKind
     ) {
-        DungeonTopologyRef target = DungeonEditorRuntimeInputTranslator.mainViewInput(
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target target = DungeonEditorMainViewInput.fromPointer(
                 sample,
                 wallSingleClickMode,
-                transitionDestination).target().topologyRef();
-        return target.kind() == expectedKind ? target.id() : NO_TARGET_ID;
+                transitionDestination).target();
+        return target.topologyKind() == DungeonEditorMainViewInteractionValues.topologyKind(expectedKind)
+                ? target.topologyId()
+                : NO_TARGET_ID;
     }
 }

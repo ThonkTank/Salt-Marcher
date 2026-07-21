@@ -1,45 +1,52 @@
 package features.dungeon.domain.core.structure.room;
 
+import features.dungeon.domain.core.component.boundary.BoundaryMap;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
+import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
+import features.dungeon.domain.core.geometry.Edge;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import features.dungeon.domain.core.geometry.Cell;
-import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
-import features.dungeon.domain.core.geometry.Edge;
 
-/** Canonical authored cluster owner: identity, name, boundaries, and their legacy-relative origin. */
+/** Canonical authored cluster owner: stable identity, name, and absolute boundaries. */
 public final class RoomCluster {
     private final long clusterId;
     private final long mapId;
     private final String name;
-    private final Cell center;
-    private final Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel;
+    private final BoundaryMap boundaries;
 
     private RoomCluster(
             long clusterId,
             long mapId,
             String name,
-            Cell center,
-            Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
+            BoundaryMap boundaries
     ) {
         this.clusterId = Math.max(0L, clusterId);
         this.mapId = Math.max(0L, mapId);
         this.name = defaultName(clusterId, name);
-        this.center = center == null ? new Cell(0, 0, 0) : center;
-        this.boundariesByLevel = copyNestedLists(boundariesByLevel);
+        this.boundaries = boundaries == null ? new BoundaryMap(List.of()) : boundaries;
     }
 
     public static RoomCluster authored(
             long clusterId,
             long mapId,
             String name,
-            Cell center,
-            Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
+            Iterable<BoundarySegment> boundaries
     ) {
-        return new RoomCluster(clusterId, mapId, name, center, boundariesByLevel);
+        return new RoomCluster(clusterId, mapId, name, new BoundaryMap(boundaries));
+    }
+
+    public static RoomCluster authored(
+            long clusterId,
+            long mapId,
+            String name,
+            BoundaryMap boundaries
+    ) {
+        return new RoomCluster(clusterId, mapId, name, boundaries);
     }
 
     public long clusterId() {
@@ -54,28 +61,24 @@ public final class RoomCluster {
         return name;
     }
 
-    public Cell center() {
-        return center;
+    public BoundaryMap authoredBoundaries() {
+        return boundaries;
     }
 
-    public Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaryMap() {
-        return boundarySnapshot().boundaryMap();
-    }
-
-    public List<DungeonClusterBoundary> orderedAuthoredBoundaries() {
-        return boundarySnapshot().orderedBoundaries();
-    }
-
-    public DungeonClusterBoundary boundaryAt(Edge edge) {
-        if (edge == null) {
-            return null;
+    public Map<DungeonBoundaryKey, BoundarySegment> boundaryMap() {
+        Map<DungeonBoundaryKey, BoundarySegment> result = new LinkedHashMap<>();
+        for (BoundarySegment boundary : boundaries.segments()) {
+            result.putIfAbsent(DungeonBoundaryKey.from(boundary.edge()), boundary);
         }
-        for (DungeonClusterBoundary boundary : boundarySnapshot().orderedBoundaries()) {
-            if (boundary.matchesAbsoluteEdge(center, edge)) {
-                return boundary;
-            }
-        }
-        return null;
+        return Map.copyOf(result);
+    }
+
+    public List<BoundarySegment> orderedAuthoredBoundaries() {
+        return boundaries.segments();
+    }
+
+    public BoundarySegment boundaryAt(Edge edge) {
+        return boundaries.segmentAt(edge).orElse(null);
     }
 
     public Set<Integer> boundaryLevels() {
@@ -90,7 +93,7 @@ public final class RoomCluster {
         return new RoomClusterGeometry(
                 clusterId,
                 mapId,
-                center,
+                RoomClusterCells.primaryAnchor(cellsByLevel),
                 new RoomClusterFloorMap(cellsByLevel));
     }
 
@@ -98,52 +101,49 @@ public final class RoomCluster {
         return boundarySnapshot().authoredBoundaryVertices(level);
     }
 
-    public List<RoomClusterWallRun> authoredWallRuns(int level) {
-        return boundarySnapshot().authoredWallRuns(level);
+    public List<RoomClusterWallRun> authoredWallRuns(int level, Iterable<Cell> memberCells) {
+        return boundarySnapshot().authoredWallRuns(level, memberCells);
     }
 
-    public List<DungeonClusterBoundary> orderedBoundariesForWriteback() {
-        return boundarySnapshot().orderedBoundaries();
+    public List<BoundarySegment> orderedBoundariesForWriteback() {
+        return boundaries.segments();
     }
 
-    Map<Integer, List<DungeonClusterBoundary>> preservedBoundariesForTopologyWork(
+    Map<Integer, List<BoundarySegment>> preservedBoundariesForTopologyWork(
             Map<Integer, List<Cell>> oldCellsByLevel,
             Map<Integer, List<Cell>> nextCellsByLevel
     ) {
-        Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
-        Map<Integer, List<Cell>> copiedOldCellsByLevel = copyNestedLists(oldCellsByLevel);
-        Map<Integer, List<Cell>> copiedNextCellsByLevel = copyNestedLists(nextCellsByLevel);
-        for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : boundariesByLevel.entrySet()) {
-            Set<Cell> oldCells = Set.copyOf(copiedOldCellsByLevel.getOrDefault(entry.getKey(), List.of()));
-            Set<Cell> nextCells = Set.copyOf(copiedNextCellsByLevel.getOrDefault(entry.getKey(), List.of()));
-            List<DungeonClusterBoundary> preserved = new ArrayList<>();
-            for (DungeonClusterBoundary boundary : entry.getValue()) {
-                if (boundary != null && keepBoundaryForTopologyWork(boundary, oldCells, nextCells)) {
-                    preserved.add(boundary);
-                }
-            }
-            if (!preserved.isEmpty()) {
-                result.put(entry.getKey(), List.copyOf(preserved));
+        Map<Integer, List<BoundarySegment>> result = new LinkedHashMap<>();
+        for (BoundarySegment boundary : boundaries.segments()) {
+            int level = boundary.level();
+            Set<Cell> oldCells = Set.copyOf(oldCellsByLevel.getOrDefault(level, List.of()));
+            Set<Cell> nextCells = Set.copyOf(nextCellsByLevel.getOrDefault(level, List.of()));
+            if (keepBoundaryForTopologyWork(boundary, oldCells, nextCells)) {
+                result.computeIfAbsent(level, ignored -> new ArrayList<>()).add(boundary);
             }
         }
-        return Map.copyOf(result);
+        Map<Integer, List<BoundarySegment>> immutable = new LinkedHashMap<>();
+        result.forEach((level, levelBoundaries) -> immutable.put(level, List.copyOf(levelBoundaries)));
+        return Map.copyOf(immutable);
     }
 
     RoomCluster rebuiltForTopologyWork(
             Map<Integer, List<Cell>> ignoredCellsByLevel,
-            Map<Integer, List<DungeonClusterBoundary>> nextBoundariesByLevel
+            Map<Integer, List<BoundarySegment>> nextBoundariesByLevel
     ) {
-        return new RoomCluster(clusterId, mapId, name, center, nextBoundariesByLevel);
+        return withAuthoredBoundaries(flatten(nextBoundariesByLevel));
     }
 
-    RoomCluster withAuthoredBoundaries(
-            Map<Integer, List<DungeonClusterBoundary>> nextBoundariesByLevel
-    ) {
-        return new RoomCluster(clusterId, mapId, name, center, nextBoundariesByLevel);
+    RoomCluster withAuthoredBoundaries(Map<Integer, List<BoundarySegment>> nextBoundariesByLevel) {
+        return withAuthoredBoundaries(flatten(nextBoundariesByLevel));
+    }
+
+    RoomCluster withAuthoredBoundaries(Iterable<BoundarySegment> nextBoundaries) {
+        return new RoomCluster(clusterId, mapId, name, new BoundaryMap(nextBoundaries));
     }
 
     public RoomCluster withName(String nextName) {
-        return new RoomCluster(clusterId, mapId, nextName, center, boundariesByLevel);
+        return new RoomCluster(clusterId, mapId, nextName, boundaries);
     }
 
     public RoomCluster withMovedDoorBoundary(RoomClusterDoorBoundaryMove move) {
@@ -152,31 +152,18 @@ public final class RoomCluster {
 
     /** Materializes stable topology refs for newly authored non-open boundaries. */
     public RoomCluster withResolvedBoundaryTopologyRefs() {
-        Map<Integer, List<DungeonClusterBoundary>> resolved = new LinkedHashMap<>();
-        for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : boundariesByLevel.entrySet()) {
-            List<DungeonClusterBoundary> boundaries = new ArrayList<>();
-            for (DungeonClusterBoundary boundary : entry.getValue()) {
-                boundaries.add(new DungeonClusterBoundary(
-                        boundary.clusterId(),
-                        boundary.level(),
-                        boundary.relativeCell(),
-                        boundary.direction(),
+        List<BoundarySegment> resolved = boundaries.segments().stream()
+                .map(boundary -> new BoundarySegment(
+                        boundary.edgeKey(),
                         boundary.kind(),
-                        boundary.resolvedTopologyRef(center)));
-            }
-            resolved.put(entry.getKey(), List.copyOf(boundaries));
-        }
-        RoomCluster result = new RoomCluster(clusterId, mapId, name, center, resolved);
+                        boundary.resolvedTopologyRef()))
+                .toList();
+        RoomCluster result = withAuthoredBoundaries(resolved);
         return result.equals(this) ? this : result;
     }
 
     RoomCluster movedBy(int deltaQ, int deltaR, int deltaLevel) {
-        return new RoomCluster(
-                clusterId,
-                mapId,
-                name,
-                new Cell(center.q() + deltaQ, center.r() + deltaR, center.level() + deltaLevel),
-                movedBoundariesByLevel(deltaLevel));
+        return new RoomCluster(clusterId, mapId, name, boundaries.movedBy(deltaQ, deltaR, deltaLevel));
     }
 
     @Override
@@ -185,72 +172,41 @@ public final class RoomCluster {
                 && clusterId == that.clusterId
                 && mapId == that.mapId
                 && Objects.equals(name, that.name)
-                && Objects.equals(center, that.center)
-                && Objects.equals(boundariesByLevel, that.boundariesByLevel);
+                && Objects.equals(boundaries, that.boundaries);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(clusterId, mapId, name, center, boundariesByLevel);
+        return Objects.hash(clusterId, mapId, name, boundaries);
     }
 
-    private boolean keepBoundaryForTopologyWork(
-            DungeonClusterBoundary boundary,
+    private static boolean keepBoundaryForTopologyWork(
+            BoundarySegment boundary,
             Set<Cell> oldCells,
             Set<Cell> nextCells
     ) {
-        Cell cell = boundary.absoluteCell(center);
-        if (!nextCells.contains(cell)) {
+        List<Cell> touching = boundary.edge().touchingCells();
+        boolean touchesNext = touching.stream().anyMatch(nextCells::contains);
+        if (!touchesNext) {
             return false;
         }
-        Cell neighbor = boundary.direction().neighborOf(cell);
-        if (!nextCells.contains(neighbor)) {
-            return true;
-        }
-        return boundary.isDoor() || oldCells.contains(cell) && oldCells.contains(neighbor);
+        boolean insideNext = touching.stream().allMatch(nextCells::contains);
+        return !insideNext || boundary.isDoor() || touching.stream().allMatch(oldCells::contains);
     }
 
-    private static <T> Map<Integer, List<T>> copyNestedLists(Map<Integer, List<T>> source) {
-        if (source == null || source.isEmpty()) {
-            return Map.of();
-        }
-        Map<Integer, List<T>> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, List<T>> entry : source.entrySet()) {
-            if (entry.getKey() != null && entry.getValue() != null) {
-                result.put(entry.getKey(), List.copyOf(entry.getValue()));
-            }
-        }
-        return Map.copyOf(result);
+    private RoomClusterBoundarySnapshot boundarySnapshot() {
+        return new RoomClusterBoundarySnapshot(boundaries);
     }
 
-    private Map<Integer, List<DungeonClusterBoundary>> movedBoundariesByLevel(int deltaLevel) {
-        if (deltaLevel == 0 || boundariesByLevel.isEmpty()) {
-            return boundariesByLevel;
+    private static List<BoundarySegment> flatten(Map<Integer, List<BoundarySegment>> boundariesByLevel) {
+        if (boundariesByLevel == null || boundariesByLevel.isEmpty()) {
+            return List.of();
         }
-        Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : boundariesByLevel.entrySet()) {
-            List<DungeonClusterBoundary> movedBoundaries = new ArrayList<>();
-            for (DungeonClusterBoundary boundary : entry.getValue()) {
-                if (boundary != null) {
-                    movedBoundaries.add(new DungeonClusterBoundary(
-                            boundary.clusterId(),
-                            boundary.level() + deltaLevel,
-                            new Cell(
-                                    boundary.relativeCell().q(),
-                                    boundary.relativeCell().r(),
-                                    boundary.relativeCell().level() + deltaLevel),
-                            boundary.direction(),
-                            boundary.kind(),
-                            boundary.topologyRef()));
-                }
-            }
-            result.put(entry.getKey() + deltaLevel, List.copyOf(movedBoundaries));
-        }
-        return Map.copyOf(result);
-    }
-
-    RoomClusterBoundarySnapshot boundarySnapshot() {
-        return new RoomClusterBoundarySnapshot(center, boundariesByLevel);
+        return boundariesByLevel.values().stream()
+                .filter(Objects::nonNull)
+                .flatMap(List::stream)
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     private static String defaultName(long clusterId, String name) {

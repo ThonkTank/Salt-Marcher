@@ -89,17 +89,13 @@ public final class DungeonCorridorDeletionOwnerProbe {
 
     private static Corridor replacementRouteFixture(RoomCluster blocker) {
         Cell waypoint = new Cell(0, 1, 0);
-        Cell relativeWaypoint = new Cell(
-                waypoint.q() - blocker.center().q(),
-                waypoint.r() - blocker.center().r(),
-                waypoint.level());
         return new Corridor(
                 CORRIDOR_ID,
                 80L,
                 0,
                 new CorridorRoomSet(List.of()),
                 new CorridorBindings(
-                        List.of(new CorridorWaypoint(blocker.clusterId(), relativeWaypoint, 0)),
+                        List.of(new CorridorWaypoint(blocker.clusterId(), waypoint)),
                         List.of(),
                         List.of(
                                 new CorridorAnchor(

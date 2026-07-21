@@ -12,7 +12,7 @@ import features.dungeon.domain.core.structure.room.RoomCatalog;
 import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 import features.dungeon.domain.core.structure.stair.StairCollection;
 import features.dungeon.domain.core.structure.stair.Stair;
 import features.dungeon.domain.core.structure.stair.StairGeometrySpec;

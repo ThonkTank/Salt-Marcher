@@ -2,15 +2,22 @@ package features.dungeon.application.editor;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import features.dungeon.api.editor.DungeonEditorViewportInput;
+import features.dungeon.api.editor.DungeonEditorApi;
+import features.dungeon.api.editor.DungeonEditorIntent;
+import features.dungeon.api.editor.DungeonEditorPointerInput;
+import features.dungeon.api.editor.DungeonEditorState;
+import platform.ui.UiDispatcher;
 
 public final class DungeonEditorFeatureRuntimeRoot
-        implements DungeonEditorMapCatalogOperations,
+        implements DungeonEditorApi,
+                DungeonEditorMapCatalogOperations,
                 DungeonEditorControlOperations,
                 DungeonEditorPointerInteractionOperations,
                 DungeonEditorStatePanelDraftOperations,
@@ -20,6 +27,7 @@ public final class DungeonEditorFeatureRuntimeRoot
     private final DungeonEditorRuntimeCommands commands;
     private final DungeonEditorPointerWorkflow pointerWorkflow;
     private final DungeonEditorRuntimeContext context;
+    private final UiDispatcher uiDispatcher;
     private final AtomicBoolean initializationRequested = new AtomicBoolean();
 
     public static DungeonEditorFeatureRuntimeRoot create(DungeonEditorRuntimeDependencies dependencies) {
@@ -35,41 +43,34 @@ public final class DungeonEditorFeatureRuntimeRoot
         DungeonEditorRuntimeContext context =
                 DungeonEditorRuntimeContext.create(safeDependencies, interactionState);
         return new DungeonEditorFeatureRuntimeRoot(
-                safeDependencies.controlsModel(),
-                safeDependencies.mapSurfaceModel(),
-                safeDependencies.stateModel(),
+                safeDependencies.editorRuntimeApplicationService().projectionState(),
                 interactionState,
                 context,
                 safeDependencies.requestGeneration(),
-                safeDependencies.executionLane());
+                safeDependencies.executionLane(),
+                safeDependencies.uiDispatcher());
     }
 
     private DungeonEditorFeatureRuntimeRoot(
-            features.dungeon.api.DungeonEditorControlsModel controlsModel,
-            features.dungeon.api.DungeonEditorMapSurfaceModel mapSurfaceModel,
-            features.dungeon.api.DungeonEditorStateModel stateModel,
+            DungeonEditorProjectionState projectionState,
             DungeonEditorMainViewInteractionState interactionState,
             DungeonEditorRuntimeContext context,
             java.util.function.LongSupplier requestGeneration,
-            platform.execution.ExecutionLane executionLane
+            platform.execution.ExecutionLane executionLane,
+            UiDispatcher uiDispatcher
     ) {
-        features.dungeon.api.DungeonEditorControlsModel safeControlsModel =
-                Objects.requireNonNull(controlsModel, "controlsModel");
-        features.dungeon.api.DungeonEditorMapSurfaceModel safeMapSurfaceModel =
-                Objects.requireNonNull(mapSurfaceModel, "mapSurfaceModel");
-        features.dungeon.api.DungeonEditorStateModel safeStateModel =
-                Objects.requireNonNull(stateModel, "stateModel");
+        DungeonEditorProjectionState safeProjectionState =
+                Objects.requireNonNull(projectionState, "projectionState");
         DungeonEditorMainViewInteractionState safeInteractionState =
                 Objects.requireNonNull(interactionState, "interactionState");
         DungeonEditorRuntimeContext safeContext = Objects.requireNonNull(context, "context");
         this.context = safeContext;
+        this.uiDispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
         platform.execution.ExecutionLane safeExecutionLane =
                 Objects.requireNonNull(executionLane, "executionLane");
         DungeonEditorRuntimeDraftSession draftSession = new DungeonEditorRuntimeDraftSession();
         statePublisher = new DungeonEditorStatePublisher(
-                safeControlsModel,
-                safeMapSurfaceModel,
-                safeStateModel,
+                safeProjectionState,
                 draftSession,
                 requestGeneration,
                 safeExecutionLane);
@@ -79,9 +80,7 @@ public final class DungeonEditorFeatureRuntimeRoot
                 new DungeonEditorSelectedHandleRuntimeOperation(safeContext);
         commands = new DungeonEditorRuntimeCommands(
                 safeContext,
-                safeControlsModel,
-                safeMapSurfaceModel,
-                safeStateModel,
+                safeProjectionState,
                 safeInteractionState,
                 draftSession,
                 statePublisher,
@@ -114,12 +113,116 @@ public final class DungeonEditorFeatureRuntimeRoot
         commands.setViewport(viewport);
     }
 
-    public features.dungeon.api.editor.DungeonEditorState currentState() {
+    @Override
+    public DungeonEditorState current() {
         return statePublisher.currentState();
     }
 
+    @Override
     public Runnable subscribe(Consumer<features.dungeon.api.editor.DungeonEditorState> subscriber) {
-        return statePublisher.subscribe(subscriber);
+        StateDelivery delivery = new StateDelivery(
+                Objects.requireNonNull(subscriber, "subscriber"),
+                uiDispatcher);
+        Runnable unsubscribeRuntime = statePublisher.subscribe(delivery::deliver);
+        return () -> {
+            delivery.close();
+            unsubscribeRuntime.run();
+        };
+    }
+
+    @Override
+    public void dispatch(DungeonEditorIntent intent) {
+        DungeonEditorIntent safeIntent = Objects.requireNonNull(intent, "intent");
+        if (safeIntent instanceof DungeonEditorIntent.SetViewport value) {
+            setViewport(value.viewport());
+        } else if (safeIntent instanceof DungeonEditorIntent.SelectMap value) {
+            selectMap(value.mapId().value());
+        } else if (safeIntent instanceof DungeonEditorIntent.ReloadMap value) {
+            reloadMap(value.mapId().value());
+        } else if (safeIntent instanceof DungeonEditorIntent.CreateMap value) {
+            createMap(value.mapName());
+        } else if (safeIntent instanceof DungeonEditorIntent.RenameMap value) {
+            renameMap(value.mapId().value(), value.mapName());
+        } else if (safeIntent instanceof DungeonEditorIntent.DeleteMap value) {
+            deleteMap(value.mapId().value());
+        } else if (safeIntent instanceof DungeonEditorIntent.SetViewMode value) {
+            setViewMode(value.viewMode());
+        } else if (safeIntent instanceof DungeonEditorIntent.SetTool value) {
+            setTool(value.selection());
+        } else if (safeIntent instanceof DungeonEditorIntent.ShiftProjectionLevel value) {
+            shiftProjectionLevel(value.levelShift());
+        } else if (safeIntent instanceof DungeonEditorIntent.SetOverlay value) {
+            setOverlay(value.overlaySettings());
+        } else if (safeIntent instanceof DungeonEditorIntent.ScrollSelection value) {
+            scrollSelection(value.levelDelta());
+        } else if (safeIntent == DungeonEditorIntent.CancelPreview.INSTANCE) {
+            cancelActivePreviewSession();
+        } else if (safeIntent == DungeonEditorIntent.Undo.INSTANCE) {
+            undo();
+        } else if (safeIntent == DungeonEditorIntent.Redo.INSTANCE) {
+            redo();
+        } else if (safeIntent instanceof DungeonEditorIntent.UpdateRoomNarration value) {
+            updateStatePanelRoomNarrationDraft(roomNarrationDraftFrom(value.narration()));
+        } else if (safeIntent instanceof DungeonEditorIntent.CommitRoomNarration value) {
+            saveRoomNarration(roomNarrationFrom(value.narration()));
+        } else if (safeIntent instanceof DungeonEditorIntent.UpdateLabelName value) {
+            updateStatePanelLabelNameDraft(labelTargetFrom(value.target()), value.name());
+        } else if (safeIntent instanceof DungeonEditorIntent.CommitLabelName value) {
+            saveLabelName(labelTargetFrom(value.target()), value.name());
+        } else if (safeIntent instanceof DungeonEditorIntent.UpdateCorridorPoint value) {
+            updateStatePanelCorridorPointDraft(value.q(), value.r());
+        } else if (safeIntent instanceof DungeonEditorIntent.CommitCorridorPoint value) {
+            moveStatePanelCorridorPoint(value.q(), value.r());
+        } else if (safeIntent instanceof DungeonEditorIntent.UpdateTransitionDescription value) {
+            updateStatePanelTransitionDescriptionDraft(value.transitionId(), value.description());
+        } else if (safeIntent instanceof DungeonEditorIntent.CommitTransitionDescription value) {
+            saveTransitionDescription(value.transitionId(), value.description());
+        } else if (safeIntent instanceof DungeonEditorIntent.CommitFeatureMarkerSemantics value) {
+            saveFeatureMarkerSemantics(value.markerId(), value.label(), value.description());
+        } else if (safeIntent instanceof DungeonEditorIntent.UpdateTransitionDestination value) {
+            updateStatePanelTransitionDestinationDraft(destinationFrom(value.destination()));
+        } else if (safeIntent instanceof DungeonEditorIntent.CommitTransitionDestination value) {
+            saveTransitionLink(value.sourceTransitionId(), destinationFrom(value.destination()));
+        } else if (safeIntent instanceof DungeonEditorIntent.UpdateStairGeometry value) {
+            updateStatePanelStairGeometryDraft(stairFrom(value.geometry()));
+        } else if (safeIntent instanceof DungeonEditorIntent.CommitStairGeometry value) {
+            saveStairGeometry(stairFrom(value.geometry()));
+        } else if (safeIntent instanceof DungeonEditorIntent.Pointer value) {
+            dispatchPointer(value.input());
+        } else if (safeIntent == DungeonEditorIntent.ClearPointerSession.INSTANCE) {
+            clearPointerSession();
+        } else {
+            throw new IllegalArgumentException("Unsupported Dungeon Editor intent: " + safeIntent.getClass());
+        }
+    }
+
+    private void dispatchPointer(DungeonEditorPointerInput input) {
+        if (input.sourceRevision() != current().publicationRevision()) {
+            rejectCommand(DungeonEditorCommandOutcome.RejectionReason.STALE_REVISION);
+            return;
+        }
+        applyPointerInteraction(new PointerInteractionRequest(
+                pointerActionFrom(input.action()),
+                input.toolSelection(),
+                input.gesture(),
+                PointerInteractionTargets.fromTargets(
+                        input.sceneX(),
+                        input.sceneY(),
+                        input.gesture().primary(),
+                        input.gesture().secondary(),
+                        input.targets(),
+                        input.projectionLevel()),
+                input.projectionLevel(),
+                TransitionDestination.fromDraftInput(destinationFrom(input.transitionDestination()))));
+    }
+
+    private static PointerAction pointerActionFrom(DungeonEditorPointerInput.Action action) {
+        return switch (action == null ? DungeonEditorPointerInput.Action.MOVED : action) {
+            case PRESSED -> PointerAction.PRESSED;
+            case DRAGGED -> PointerAction.DRAGGED;
+            case RELEASED -> PointerAction.RELEASED;
+            case MOVED -> PointerAction.MOVED;
+        };
     }
 
     @Override
@@ -283,5 +386,86 @@ public final class DungeonEditorFeatureRuntimeRoot
     @Override
     public void saveStairGeometry(StairGeometryDraftInput input) {
         commands.saveStairGeometry(input);
+    }
+
+    private static RoomNarrationDraftInput roomNarrationDraftFrom(
+            DungeonEditorIntent.RoomNarrationInput input
+    ) {
+        return new RoomNarrationDraftInput(
+                input.roomId(),
+                input.visualDescription(),
+                input.exits().stream()
+                        .map(exit -> new ExitNarrationDraftInput(
+                                exit.label(), exit.q(), exit.r(), exit.level(),
+                                exit.direction(), exit.description()))
+                        .toList());
+    }
+
+    private static RoomNarration roomNarrationFrom(DungeonEditorIntent.RoomNarrationInput input) {
+        return new RoomNarration(
+                input.roomId(),
+                input.visualDescription(),
+                input.exits().stream()
+                        .map(exit -> new ExitNarration(
+                                exit.label(), exit.q(), exit.r(), exit.level(),
+                                exit.direction(), exit.description()))
+                        .toList());
+    }
+
+    private static DungeonEditorRuntimeLabelTarget labelTargetFrom(DungeonEditorIntent.LabelTarget target) {
+        return switch (target.kind()) {
+            case ROOM -> DungeonEditorRuntimeLabelTarget.room(target.id());
+            case CLUSTER -> DungeonEditorRuntimeLabelTarget.cluster(target.id());
+            case EMPTY -> DungeonEditorRuntimeLabelTarget.empty();
+        };
+    }
+
+    private static TransitionDestinationDraftInput destinationFrom(
+            DungeonEditorIntent.TransitionDestinationInput input
+    ) {
+        return TransitionDestinationDraftInput.fromExternalName(
+                new TransitionDestinationDraftInput.ExternalFields(
+                        input.destinationTypeKey(),
+                        input.mapId(),
+                        input.tileId(),
+                        input.transitionId(),
+                        input.bidirectional()));
+    }
+
+    private static StairGeometryDraftInput stairFrom(DungeonEditorIntent.StairGeometryInput input) {
+        return new StairGeometryDraftInput(
+                input.stairId(),
+                input.shapeName(),
+                input.directionName(),
+                input.dimension1(),
+                input.dimension2());
+    }
+
+    static final class StateDelivery {
+        private final Consumer<DungeonEditorState> subscriber;
+        private final UiDispatcher uiDispatcher;
+        private final AtomicBoolean open = new AtomicBoolean(true);
+        private final AtomicLong deliveryRevision = new AtomicLong();
+
+        StateDelivery(Consumer<DungeonEditorState> subscriber, UiDispatcher uiDispatcher) {
+            this.subscriber = subscriber;
+            this.uiDispatcher = uiDispatcher;
+        }
+
+        void deliver(DungeonEditorState state) {
+            long revision = deliveryRevision.incrementAndGet();
+            uiDispatcher.dispatch(() -> applyIfCurrent(revision, state));
+        }
+
+        private void applyIfCurrent(long revision, DungeonEditorState state) {
+            if (open.get() && revision == deliveryRevision.get()) {
+                subscriber.accept(state);
+            }
+        }
+
+        void close() {
+            open.set(false);
+            deliveryRevision.incrementAndGet();
+        }
     }
 }

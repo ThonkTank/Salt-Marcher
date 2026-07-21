@@ -13,7 +13,6 @@ import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
 import features.dungeon.application.authored.DungeonCachedWindowStore;
-import features.dungeon.application.editor.DungeonEditorApiFacade;
 import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
 import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
 import features.encounter.EncounterServiceAssembly;
@@ -392,11 +391,9 @@ public final class SessionPlannerShellLayoutTest {
 
     private static DungeonEditorContribution dungeonEditor(LayoutServices services) {
         DungeonEditorRuntimeDependencies dependencies = new DungeonEditorRuntimeDependencies(
-                services.dungeon().editorControls(), services.dungeon().editorMapSurface(),
-                services.dungeon().editorState(),
                 services.dungeon().editor());
         DungeonEditorFeatureRuntimeRoot root = DungeonEditorFeatureRuntimeRoot.create(dependencies);
-        return new DungeonEditorContribution(new DungeonEditorApiFacade(root, dependencies.uiDispatcher()));
+        return new DungeonEditorContribution(root);
     }
 
     private static shell.api.ShellContribution catalog(LayoutServices services) {

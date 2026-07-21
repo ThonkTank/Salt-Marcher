@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-19
 Source of Truth: User-facing behavior and visible states of the generic map
 canvas.
 
@@ -18,16 +18,6 @@ caching, and passive pointer capture.
 - adopter persistence rules
 - adopter-native payload vocabulary
 - adopter-specific gameplay behavior
-
-## Current State
-
-- SaltMarcher already ships a reusable dungeon map workspace with passive pan,
-  zoom, resize redraw, level-scroll capture, overlay presentation, and empty
-  states.
-- SaltMarcher also ships Hex editor and travel surfaces with tile rendering,
-  passive camera behavior, hit-testing, and adopter-owned map actions.
-- The two shipped feature surfaces motivate one shared passive canvas while
-  Dungeon and Hex retain their own coordinates, state, and gameplay meaning.
 
 ## Visible Structure
 

@@ -1,7 +1,7 @@
-Status: Active Target
+Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-17
-Source of Truth: Target Dungeon adoption of platform map-canvas mechanisms through feature APIs
+Last Reviewed: 2026-07-19
+Source of Truth: Dungeon adoption of platform map-canvas mechanisms through feature APIs
 and explicit application composition.
 
 # Dungeon Map Adoption Architecture
@@ -17,7 +17,7 @@ and pointer types. Dungeon requirements own observable editor and travel
 behavior; Dungeon domain and persistence documents own authored truth and stored
 truth.
 
-## Target Ownership
+## Ownership
 
 ```text
 features/dungeon/
@@ -43,7 +43,7 @@ constructed shell contribution and public APIs back to `app`; internal
 repositories and adapters remain feature-private.
 
 No shell discovery, service locator, or implementation-name convention is part
-of the target route.
+of this route.
 
 ## Translation Boundary
 
@@ -101,10 +101,10 @@ API.
 
 ## Verification
 
-- `architectureTest` checks target package direction and cross-feature API-only
+- `architectureTest` checks package direction and cross-feature API-only
   dependencies.
-- Production-route JUnit tests prove editor preview/apply, travel action, catalog,
-  scene translation, draw/hit identity, and empty-state behavior.
+- Behavior proof belongs to executable evidence rather than this architecture
+  document.
 - Review rejects a second Dungeon-to-Maps translator or render-state owner.
 
 ## References

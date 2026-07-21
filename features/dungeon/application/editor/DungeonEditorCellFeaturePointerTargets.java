@@ -3,16 +3,15 @@ package features.dungeon.application.editor;
 import java.util.Map;
 import features.dungeon.api.DungeonCellRef;
 import features.dungeon.api.DungeonEditorMapSnapshot;
-import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 
 final class DungeonEditorCellFeaturePointerTargets {
     private DungeonEditorCellFeaturePointerTargets() {
     }
 
     static void addTargets(
-            Map<String, DungeonEditorRuntimePointerTarget> targets,
+            Map<String, features.dungeon.api.editor.DungeonEditorPointerInput.Target> targets,
             DungeonEditorMapSnapshot map,
-            DungeonEditorMapSurfaceSnapshot snapshot
+            DungeonEditorSurfaceProjection snapshot
     ) {
         addAreaCellTargets(targets, map, snapshot);
         addFeatureCellTargets(targets, map, snapshot);
@@ -20,13 +19,13 @@ final class DungeonEditorCellFeaturePointerTargets {
     }
 
     private static void addAreaCellTargets(
-            Map<String, DungeonEditorRuntimePointerTarget> targets,
+            Map<String, features.dungeon.api.editor.DungeonEditorPointerInput.Target> targets,
             DungeonEditorMapSnapshot map,
-            DungeonEditorMapSurfaceSnapshot snapshot
+            DungeonEditorSurfaceProjection snapshot
     ) {
         for (DungeonEditorMapSnapshot.Area area : map.areas()) {
             String elementKind = areaElementKind(area);
-            DungeonEditorRuntimePointerTarget.ElementKind runtimeElementKind = areaRuntimeElementKind(area);
+            features.dungeon.api.editor.DungeonEditorPointerInput.ElementKind runtimeElementKind = areaRuntimeElementKind(area);
             for (DungeonCellRef cell : area.cells()) {
                 if (DungeonEditorProjectionLevelInclusion.includes(snapshot, cell.level())) {
                     targets.put(DungeonEditorCellHitRefs.exactCell(
@@ -36,7 +35,7 @@ final class DungeonEditorCellFeaturePointerTargets {
                                     area.topologyRef(),
                                     cell)
                                     .value(),
-                            DungeonEditorRuntimePointerTarget.cell(
+                            features.dungeon.api.editor.DungeonEditorPointerInput.Target.cell(
                                     runtimeElementKind,
                                     area.id(),
                                     area.clusterId(),
@@ -51,13 +50,13 @@ final class DungeonEditorCellFeaturePointerTargets {
     }
 
     private static void addFeatureCellTargets(
-            Map<String, DungeonEditorRuntimePointerTarget> targets,
+            Map<String, features.dungeon.api.editor.DungeonEditorPointerInput.Target> targets,
             DungeonEditorMapSnapshot map,
-            DungeonEditorMapSurfaceSnapshot snapshot
+            DungeonEditorSurfaceProjection snapshot
     ) {
         for (DungeonEditorMapSnapshot.Feature feature : map.features()) {
             String hitElementKind = featureCellKind(feature.kind());
-            DungeonEditorRuntimePointerTarget.ElementKind targetElementKind =
+            features.dungeon.api.editor.DungeonEditorPointerInput.ElementKind targetElementKind =
                     DungeonEditorFeaturePointerTargetFacts.pointerElementKind(hitElementKind);
             for (DungeonCellRef cell : feature.cells()) {
                 if (DungeonEditorProjectionLevelInclusion.includes(snapshot, cell.level())) {
@@ -68,7 +67,7 @@ final class DungeonEditorCellFeaturePointerTargets {
                                     feature.topologyRef(),
                                     cell)
                                     .value(),
-                            DungeonEditorRuntimePointerTarget.cell(
+                            features.dungeon.api.editor.DungeonEditorPointerInput.Target.cell(
                                     targetElementKind,
                                     feature.id(),
                                     0L,
@@ -83,9 +82,9 @@ final class DungeonEditorCellFeaturePointerTargets {
     }
 
     private static void addFeatureMarkerTargets(
-            Map<String, DungeonEditorRuntimePointerTarget> targets,
+            Map<String, features.dungeon.api.editor.DungeonEditorPointerInput.Target> targets,
             DungeonEditorMapSnapshot map,
-            DungeonEditorMapSurfaceSnapshot snapshot
+            DungeonEditorSurfaceProjection snapshot
     ) {
         for (DungeonEditorMapSnapshot.Feature feature : map.features()) {
             if (!markerTargetFeature(feature)) {
@@ -98,12 +97,12 @@ final class DungeonEditorCellFeaturePointerTargets {
             int q = DungeonEditorFeaturePointerTargetFacts.markerQ(feature);
             int r = DungeonEditorFeaturePointerTargetFacts.markerR(feature);
             String hitElementKind = featureCellKind(feature.kind());
-            DungeonEditorRuntimePointerTarget.ElementKind targetElementKind =
+            features.dungeon.api.editor.DungeonEditorPointerInput.ElementKind targetElementKind =
                     DungeonEditorFeaturePointerTargetFacts.pointerElementKind(hitElementKind);
             targets.put(
                     DungeonEditorMarkerHitRefs.featureMarker(feature.topologyRef(), feature.id(), q, r, level)
                             .value(),
-                    DungeonEditorRuntimePointerTarget.marker(
+                    features.dungeon.api.editor.DungeonEditorPointerInput.Target.marker(
                             targetElementKind,
                             feature.id(),
                             0L,
@@ -120,22 +119,22 @@ final class DungeonEditorCellFeaturePointerTargets {
         return "CORRIDOR".equalsIgnoreCase(area.kind()) ? "CORRIDOR" : "ROOM";
     }
 
-    private static DungeonEditorRuntimePointerTarget.ElementKind areaRuntimeElementKind(
+    private static features.dungeon.api.editor.DungeonEditorPointerInput.ElementKind areaRuntimeElementKind(
             DungeonEditorMapSnapshot.Area area
     ) {
         return "CORRIDOR".equalsIgnoreCase(areaElementKind(area))
-                ? DungeonEditorRuntimePointerTarget.ElementKind.CORRIDOR
-                : DungeonEditorRuntimePointerTarget.ElementKind.ROOM;
+                ? features.dungeon.api.editor.DungeonEditorPointerInput.ElementKind.CORRIDOR
+                : features.dungeon.api.editor.DungeonEditorPointerInput.ElementKind.ROOM;
     }
 
     private static String featureCellKind(String kind) {
         return DungeonEditorFeaturePointerTargetFacts.cellKind(kind);
     }
 
-    private static DungeonEditorRuntimePointerTarget.TopologyKind topologyKind(
+    private static features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind topologyKind(
             features.dungeon.api.DungeonTopologyElementRef topologyRef
     ) {
-        return DungeonEditorRuntimePointerTarget.TopologyKind.fromPublished(
+        return features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.fromPublished(
                 topologyRef == null ? null : topologyRef.kind());
     }
 }

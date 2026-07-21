@@ -25,7 +25,7 @@ final class DungeonEditorWallBoundaryDraftRuntimeOperation {
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
     ) {
-        DungeonEditorMainViewInput input = DungeonEditorRuntimeInputTranslator.mainViewInput(
+        DungeonEditorMainViewInput input = DungeonEditorMainViewInput.fromPointer(
                 sample,
                 wallSingleClickMode,
                 transitionDestination);

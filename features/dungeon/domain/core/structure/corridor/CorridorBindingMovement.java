@@ -86,7 +86,12 @@ public final class CorridorBindingMovement {
                     deltaLevel) || changed;
         }
         return changed
-                ? moveCorridorNetwork(dungeonMap, movedCorridors, Set.of(corridorId), dungeonMap.stairs())
+                ? moveCorridorNetwork(
+                        dungeonMap,
+                        movedCorridors,
+                        Set.of(corridorId),
+                        dungeonMap.stairs(),
+                        false)
                 : dungeonMap;
     }
 
@@ -118,7 +123,12 @@ public final class CorridorBindingMovement {
                     deltaLevel) || changed;
         }
         return changed
-                ? moveCorridorNetwork(dungeonMap, movedCorridors, Set.of(corridorId), dungeonMap.stairs())
+                ? moveCorridorNetwork(
+                        dungeonMap,
+                        movedCorridors,
+                        Set.of(corridorId),
+                        dungeonMap.stairs(),
+                        true)
                 : dungeonMap;
     }
 
@@ -187,14 +197,16 @@ public final class CorridorBindingMovement {
             DungeonMap dungeonMap,
             List<Corridor> movedCorridors,
             Set<Long> movedCorridorIds,
-            StairCollection nextStairs
+            StairCollection nextStairs,
+            boolean snapAnchorsToCurrentHosts
     ) {
         return NETWORK_MOVEMENT.moveCorridors(
                 dungeonMap,
                 movedCorridors,
                 movedCorridorIds,
                 nextStairs,
-                dungeonMap.transitionCatalog());
+                dungeonMap.transitionCatalog(),
+                snapAnchorsToCurrentHosts);
     }
 
     private static boolean stationary(int deltaQ, int deltaR, int deltaLevel) {

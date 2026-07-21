@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import features.dungeon.api.DungeonCellRef;
 import features.dungeon.api.DungeonEdgeRef;
-import features.dungeon.api.DungeonEditorStateSnapshot;
+import features.dungeon.api.editor.DungeonEditorSelection;
 import features.dungeon.api.DungeonFeatureKind;
 
 final class DungeonMapPreviewFeatureDiffProjector {
@@ -14,7 +14,7 @@ final class DungeonMapPreviewFeatureDiffProjector {
             List<DungeonMapRenderState.Label> labels,
             List<DungeonMapRenderState.Marker> markers,
             List<PreviewFeatureDiffFrame> features,
-            DungeonEditorStateSnapshot.Selection selection
+            DungeonEditorSelection selection
     ) {
         for (PreviewFeatureDiffFrame feature : features) {
             addPreviewFeature(cells, labels, markers, feature, selection);
@@ -26,7 +26,7 @@ final class DungeonMapPreviewFeatureDiffProjector {
             List<DungeonMapRenderState.Label> labels,
             List<DungeonMapRenderState.Marker> markers,
             PreviewFeatureDiffFrame feature,
-            DungeonEditorStateSnapshot.Selection selection
+            DungeonEditorSelection selection
     ) {
         boolean selected = selectedFeature(feature, selection);
         List<DungeonMapRenderState.Cell> featureCells = new ArrayList<>();
@@ -77,7 +77,7 @@ final class DungeonMapPreviewFeatureDiffProjector {
 
     private static boolean selectedFeature(
             PreviewFeatureDiffFrame feature,
-            DungeonEditorStateSnapshot.Selection selection
+            DungeonEditorSelection selection
     ) {
         return selection != null
                 && DungeonMapRenderElementFactory.topologyRef(feature.topologyRef())

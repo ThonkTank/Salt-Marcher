@@ -110,7 +110,8 @@ public final class CorridorMapAuthoring {
                 endResolved.map(),
                 List.copyOf(nextCorridors),
                 nextStairs,
-                endResolved.map().transitionCatalog());
+                endResolved.map().transitionCatalog(),
+                false);
     }
 
     public record IdentityReservation(

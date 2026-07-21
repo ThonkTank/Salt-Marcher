@@ -94,8 +94,6 @@ final class DungeonTransitionInvariantScenarios {
         assertTrue(dungeonDestination.isValid(), "transition destination validates dungeon map id");
         assertEquals("Dungeon 12 / Übergang 20", dungeonDestination.label(),
                 "transition destination label includes linked target transition");
-        assertEquals(TransitionDestinationTarget.absent(), TransitionDestinationTarget.fromPositiveId(0L),
-                "transition target owner translates legacy zero storage ids to named absence");
         assertEquals(TransitionDestinationTarget.present(20L), dungeonDestination.transitionTarget(),
                 "transition destination preserves present target transition as a named value");
         assertTrue(overworldDestination.isValid(), "transition destination validates overworld tile");
@@ -406,7 +404,8 @@ final class DungeonTransitionInvariantScenarios {
                     .map(key -> new DungeonWindowChunkHeader(key, map.revision()))
                     .toList();
             return Optional.of(new DungeonWindow(
-                    header(map), request.requestGeneration(), chunkHeaders, List.of(), List.of()));
+                    header(map), request.requestGeneration(), chunkHeaders, List.of(), List.of(), List.of(),
+                    features.dungeon.application.authored.port.DungeonContinuationPage.empty()));
         }
 
         @Override

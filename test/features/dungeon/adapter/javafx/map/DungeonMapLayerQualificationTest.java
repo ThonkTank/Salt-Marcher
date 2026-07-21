@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import features.dungeon.api.DungeonCellRef;
 import features.dungeon.api.DungeonEditorMapSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
-import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonEditorSurface;
 import features.dungeon.api.DungeonMapId;
 import features.dungeon.api.DungeonMapSnapshot;
@@ -118,7 +117,7 @@ final class DungeonMapLayerQualificationTest {
         DungeonTopologyElementRef roomRef = new DungeonTopologyElementRef(
                 DungeonTopologyElementKind.ROOM, 1L);
         DungeonEditorMapSnapshot map = new DungeonEditorMapSnapshot(
-                "SQUARE", 1, 1,
+                "SQUARE",
                 List.of(new DungeonEditorMapSnapshot.Area(
                         "ROOM", 1L, 1L, "Room", List.of(new DungeonCellRef(0, 0, 0)), roomRef)),
                 List.of(), List.of(), List.of());
@@ -127,7 +126,7 @@ final class DungeonMapLayerQualificationTest {
                 mapId, new DungeonEditorSurface("Qualification", (int) revision, map, null, null),
                 DungeonEditorViewMode.GRID, DungeonEditorToolSelection.select(),
                 DungeonOverlaySettings.defaults(), 0, List.of(0),
-                DungeonEditorStateSnapshot.Selection.empty(), DungeonEditorDraftState.empty(),
+                features.dungeon.api.editor.DungeonEditorSelection.empty(), DungeonEditorDraftState.empty(),
                 preview, null, DungeonEditorState.CommandStatus.idle());
     }
 
@@ -169,7 +168,7 @@ final class DungeonMapLayerQualificationTest {
             String scenario,
             DungeonRuntimeQualificationProtocol.Histogram histogram
     ) {
-        System.out.println("M5.4 layer " + scenario
+        System.out.println("dungeon-layer-runtime " + scenario
                 + " samples=" + histogram.samples()
                 + " min=" + histogram.minimum()
                 + " p50=" + histogram.p50()

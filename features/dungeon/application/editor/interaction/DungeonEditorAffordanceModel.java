@@ -48,7 +48,7 @@ public final class DungeonEditorAffordanceModel {
             return;
         }
         Map<Integer, List<Cell>> cellsByLevel = new RoomCellCoverage().cellsByLevel(cluster, clusterRooms);
-        Cell labelCell = primaryLabelCell(cluster, cellsByLevel);
+        Cell labelCell = primaryLabelCell(cellsByLevel);
         result.add(new DungeonEditorHandleProjection(
                 DungeonEditorHandleKind.CLUSTER_LABEL,
                 new DungeonTopologyRef(DungeonTopologyElementKind.ROOM, room.roomId()),
@@ -66,7 +66,7 @@ public final class DungeonEditorAffordanceModel {
                 List.of()));
         for (Map.Entry<Integer, List<Cell>> entry : cellsByLevel.entrySet()) {
             appendCornerAffordances(result, cluster, room, entry.getKey());
-            appendWallRunAffordances(result, cluster, room, entry.getKey());
+            appendWallRunAffordances(result, cluster, room, entry.getKey(), entry.getValue());
         }
     }
 
@@ -110,17 +110,22 @@ public final class DungeonEditorAffordanceModel {
         }
     }
 
-    private static Cell primaryLabelCell(RoomCluster cluster, Map<Integer, List<Cell>> cellsByLevel) {
-        return new RoomClusterFloorMap(cellsByLevel).preferredCentroidOr(cluster.center().level(), cluster.center());
+    private static Cell primaryLabelCell(Map<Integer, List<Cell>> cellsByLevel) {
+        RoomClusterFloorMap floorMap = new RoomClusterFloorMap(cellsByLevel);
+        List<Cell> cells = floorMap.allCells();
+        Cell fallback = cells.isEmpty() ? Cell.empty() : cells.getFirst();
+        int preferredLevel = cells.isEmpty() ? 0 : fallback.level();
+        return floorMap.preferredCentroidOr(preferredLevel, fallback);
     }
 
     private static void appendWallRunAffordances(
             List<DungeonEditorHandleProjection> result,
             RoomCluster cluster,
             RoomRegion room,
-            int level
+            int level,
+            List<Cell> memberCells
     ) {
-        List<RoomClusterWallRun> wallRuns = cluster.authoredWallRuns(level);
+        List<RoomClusterWallRun> wallRuns = cluster.authoredWallRuns(level, memberCells);
         for (int index = 0; index < wallRuns.size(); index++) {
             RoomClusterWallRun wallRun = wallRuns.get(index);
             RoomClusterWallRunSource source = wallRun.source();

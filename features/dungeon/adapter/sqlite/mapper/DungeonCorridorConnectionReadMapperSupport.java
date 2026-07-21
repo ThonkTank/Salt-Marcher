@@ -71,8 +71,7 @@ final class DungeonCorridorConnectionReadMapperSupport {
                 : records == null ? List.<DungeonCorridorWaypointRecord>of() : records) {
             result.add(new CorridorWaypoint(
                     record.clusterId(),
-                    new Cell(record.relativeX(), record.relativeY(), record.relativeZ()),
-                    record.relativeZ()));
+                    new Cell(record.relativeX(), record.relativeY(), record.relativeZ())));
         }
         return List.copyOf(result);
     }

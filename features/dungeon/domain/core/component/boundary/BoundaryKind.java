@@ -5,15 +5,11 @@ public enum BoundaryKind {
     DOOR,
     OPEN;
 
-    public static BoundaryKind wall() {
-        return WALL;
+    public boolean isDoor() {
+        return this == DOOR;
     }
 
-    public static BoundaryKind door() {
-        return DOOR;
-    }
-
-    public static BoundaryKind open() {
-        return OPEN;
+    public boolean renderable() {
+        return this != OPEN;
     }
 }

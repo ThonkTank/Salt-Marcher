@@ -1,5 +1,7 @@
 package features.dungeon.domain.core.structure.room;
 
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,11 +31,11 @@ final class RoomBoundaryStretchValues {
     static final class StretchMutationResult {
 
         private final Map<Integer, List<Cell>> stretchCellsByLevel;
-        private final Map<Integer, List<DungeonClusterBoundary>> stretchBoundariesByLevel;
+        private final Map<Integer, List<BoundarySegment>> stretchBoundariesByLevel;
 
         StretchMutationResult(
                 Map<Integer, List<Cell>> cellsByLevel,
-                Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
+                Map<Integer, List<BoundarySegment>> boundariesByLevel
         ) {
             this.stretchCellsByLevel = copyListsByLevel(cellsByLevel);
             this.stretchBoundariesByLevel = copyListsByLevel(boundariesByLevel);
@@ -43,7 +45,7 @@ final class RoomBoundaryStretchValues {
             return stretchCellsByLevel;
         }
 
-        Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel() {
+        Map<Integer, List<BoundarySegment>> boundariesByLevel() {
             return stretchBoundariesByLevel;
         }
 

@@ -8,7 +8,7 @@ import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.geometry.EdgeKey;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;

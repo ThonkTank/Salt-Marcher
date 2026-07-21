@@ -1,6 +1,6 @@
-Status: Active Target
+Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-17
+Last Reviewed: 2026-07-19
 Source of Truth: Dungeon persistence boundary, stored truth, adapter mapping
 rules, and schema ownership.
 
@@ -64,8 +64,8 @@ Persisted authored truth includes:
 - the feature-owned Dungeon persistence schema declaration is the in-code
   schema owner
 - `dungeon_topology_elements` is authoritative for persisted topology identity
-- compatibility detail tables remain source-local storage and correlation
-  detail, not alternate semantic owners
+- detail tables remain source-local storage and correlation detail, not
+  alternate semantic owners
 
 The current owner target is schema v7. Canonical v6 remains the destructive
 replacement boundary. V7 repairs the previously recorded empty v6 signature to
@@ -83,8 +83,8 @@ identity kind. Reserving an identity or bounded contiguous range advances only
 its sequence in one short transaction; it MUST NOT create a dummy map,
 topology element, authored entity, or child row. Every map-wide stable identity
 family that a command can create uses this allocation boundary rather than a
-partial-workset maximum. The destructive replacement schema initializes the
-table directly and does not derive or backfill it from discarded Dungeon rows.
+partial-workset maximum. The schema initializes the table directly and does not
+derive it from authored Dungeon rows.
 
 `dungeon_chunks` is a source-local spatial inventory keyed by
 `(dungeon_map_id, level_z, chunk_q, chunk_r)`. One chunk covers `64 x 64`
@@ -160,21 +160,20 @@ identity. Room id plus cell coordinate is unique. Room anchors and cluster floor
 are derived and have no authored storage table.
 
 `dungeon_room_cluster_edges` stores cluster boundary facts. For freshly
-authored room creation, the target stored perimeter is explicit
+authored room creation, the stored perimeter is explicit
 `edge_type='WALL'` rows around the union of committed member-room cells. Adapter
 reads use room-owned cells plus cluster boundary rows as the only room-cluster
 geometry source.
 
 The `level_z`, `cell_x`, and `cell_y` columns identify the absolute authored
 boundary cell. They MUST NOT depend on a persisted cluster anchor, center, or
-centroid. SQLite adapters derive the domain cluster center from the ordered
-union of member-room cells and translate boundary values only at the adapter
-boundary where the current domain value still uses center-relative storage.
+centroid. Any presentation anchor or centroid derives from the ordered union of
+member-room cells; adapters translate absolute boundary values only at the
+adapter boundary.
 
 `dungeon_room_floors`, `dungeon_room_cluster_floor_cells`, and
-`dungeon_room_cluster_vertices` are not part of the target schema. The automatic
-Dungeon schema replacement removes them rather than translating their duplicate
-geometry into the canonical model.
+`dungeon_room_cluster_vertices` are not part of the schema. Duplicate room or
+cluster geometry is not accepted as an alternate persistence representation.
 
 ## Room Boundary Edge Semantics
 
@@ -218,9 +217,8 @@ write. Malformed stair rows, unsupported scalar combinations, missing generated
 path or exit rows for a readable stair, or dangling corridor bindings are
 boundary errors for the domain/repository result, not view-layer behavior.
 
-Only requirements-owned editor stair shapes are valid in the replacement
-schema. Unsupported historical shape rows are discarded with disposable Dungeon
-development data rather than kept as a second compatibility language.
+Only requirements-owned editor stair shapes are valid in the schema.
+Unsupported shape rows are malformed persistence input.
 
 ## Transition Destination Storage Semantics
 
@@ -295,28 +293,18 @@ Owner startup readiness validates the feature-declared target schema signature; 
   kind, anchor, label, or description payloads instead of storing preview or
   render-derived substitutes
 
-## Migration And Stability Rules
+## Schema Stability Rules
 
 - new fields belong in source-local records first, then map into domain-owned
   values
-- one automatic destructive Dungeon-only schema migration installs the
-  canonical room-cell, boundary, entity-membership, chunk-revision, and patch
-  target schema
-- the replacement does not backfill or retain historical Dungeon geometry,
-  whole-record, fixed-bounds, or enum-compatibility representations
+- the canonical schema uses the room-cell, boundary, entity-membership,
+  chunk-revision, and patch representations defined by this contract; alternate
+  whole-record, fixed-bounds, or enum-compatibility representations are not
+  accepted
 - direct runtime token movement does not justify new authored-position tables;
   runtime party position remains owned outside dungeon persistence
-- existing Dungeon rows are disposable development data and have no
-  compatibility or backup obligation; the migration MUST NOT modify Party, Hex,
-  or other feature rows
+- Dungeon schema changes MUST NOT modify Party, Hex, or other feature rows
 
-## Verification Notes
-
-- This contract is currently `Review-Owned`.
-- Review must reject persisted fields for preview state, render state, or other
-  derived runtime state.
-- Review must reject adapter code that becomes the owner of topology repair or
-  semantic behavior.
 
 ## References
 

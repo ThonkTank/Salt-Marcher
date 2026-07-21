@@ -107,6 +107,9 @@ final class DungeonWindowProjectionTest {
                 1L,
                 List.of(new DungeonWindowChunkHeader(chunk, 7L)),
                 fragments,
-                continuations);
+                List.of(),
+                List.of(),
+                new features.dungeon.application.authored.port.DungeonContinuationPage(
+                        continuations, java.util.Optional.empty()));
     }
 }

@@ -12,10 +12,10 @@ import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.graph.DungeonRelationGraph;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
-import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.RoomCluster;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 
 /**
  * Projection state for room boundary read facts supplied by core structure
@@ -33,7 +33,7 @@ final class DungeonRoomBoundaryProjectionState {
     private long nextBoundaryId = 1_000L;
 
     void addAuthoredBoundaries(RoomCluster cluster, Map<Long, List<Cell>> roomCells) {
-        for (DungeonClusterBoundary boundary : cluster.orderedAuthoredBoundaries()) {
+        for (BoundarySegment boundary : cluster.orderedAuthoredBoundaries()) {
             addBoundary(cluster, boundary, roomCells);
         }
     }
@@ -73,28 +73,22 @@ final class DungeonRoomBoundaryProjectionState {
         }
     }
 
-    private static DungeonClusterBoundary perimeterBoundary(
+    private static BoundarySegment perimeterBoundary(
             RoomCluster cluster,
             Cell cell,
             Direction direction
     ) {
-        return new DungeonClusterBoundary(
-                cluster.clusterId(),
-                cell.level(),
-                new Cell(
-                        cell.q() - cluster.center().q(),
-                        cell.r() - cluster.center().r(),
-                        cell.level()),
-                direction,
+        return new BoundarySegment(
+                features.dungeon.domain.core.geometry.EdgeKey.from(direction.edgeOf(cell)),
                 BoundaryKind.WALL);
     }
 
     private void addBoundary(
             RoomCluster cluster,
-            DungeonClusterBoundary boundary,
+            BoundarySegment boundary,
             Map<Long, List<Cell>> roomCells
     ) {
-        Edge edge = boundary.absoluteEdge(cluster.center());
+        Edge edge = boundary.edge();
         DungeonBoundaryKey key = DungeonBoundaryKey.from(edge);
         if (!seenBoundaries.add(key)) {
             return;
@@ -104,9 +98,9 @@ final class DungeonRoomBoundaryProjectionState {
         }
         long boundaryId = key.stableId();
         nextBoundaryId = Math.max(nextBoundaryId, boundaryId + 1L);
-        String kind = boundary.kind().boundaryKind();
+        String kind = boundary.kind().name().toLowerCase(java.util.Locale.ROOT);
         String label = boundary.kind() == BoundaryKind.DOOR ? "Door" : "Wall";
-        DungeonTopologyRef topologyRef = boundary.resolvedTopologyRef(cluster.center());
+        DungeonTopologyRef topologyRef = boundary.resolvedTopologyRef();
         boundaries.add(new DungeonBoundaryFacts(kind, boundaryId, label, edge, topologyRef));
         boundaryIdsByKey.put(key, boundaryId);
 

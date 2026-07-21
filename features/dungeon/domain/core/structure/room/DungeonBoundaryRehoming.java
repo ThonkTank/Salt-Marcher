@@ -1,31 +1,31 @@
 package features.dungeon.domain.core.structure.room;
 
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.Cell;
-import features.dungeon.domain.core.geometry.Edge;
 
 final class DungeonBoundaryRehoming {
 
     private DungeonBoundaryRehoming() {
     }
 
-    static Map<Integer, List<DungeonClusterBoundary>> byLevel(
+    static Map<Integer, List<BoundarySegment>> byLevel(
             RoomCluster sourceCluster,
-            Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel,
+            Map<Integer, List<BoundarySegment>> boundariesByLevel,
             RoomClusterGeometry targetCluster,
             Map<Integer, List<Cell>> targetCellsByLevel
     ) {
         if (sourceCluster == null || targetCluster == null) {
             return Map.of();
         }
-        Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
+        Map<Integer, List<BoundarySegment>> result = new LinkedHashMap<>();
         List<Cell> targetCells = flattenedCells(targetCellsByLevel);
-        for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : safeBoundaryMap(boundariesByLevel).entrySet()) {
-            List<DungeonClusterBoundary> rehomed = rehomedBoundaries(
+        for (Map.Entry<Integer, List<BoundarySegment>> entry : safeBoundaryMap(boundariesByLevel).entrySet()) {
+            List<BoundarySegment> rehomed = rehomedBoundaries(
                     sourceCluster,
                     entry.getValue(),
                     targetCluster,
@@ -37,25 +37,25 @@ final class DungeonBoundaryRehoming {
         return Map.copyOf(result);
     }
 
-    static List<DungeonClusterBoundary> flatten(Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel) {
-        List<DungeonClusterBoundary> result = new ArrayList<>();
-        for (List<DungeonClusterBoundary> boundaries : safeBoundaryMap(boundariesByLevel).values()) {
-            for (DungeonClusterBoundary boundary : safeBoundaries(boundaries)) {
+    static List<BoundarySegment> flatten(Map<Integer, List<BoundarySegment>> boundariesByLevel) {
+        List<BoundarySegment> result = new ArrayList<>();
+        for (List<BoundarySegment> boundaries : safeBoundaryMap(boundariesByLevel).values()) {
+            for (BoundarySegment boundary : safeBoundaries(boundaries)) {
                 result.add(boundary);
             }
         }
         return List.copyOf(result);
     }
 
-    private static List<DungeonClusterBoundary> rehomedBoundaries(
+    private static List<BoundarySegment> rehomedBoundaries(
             RoomCluster sourceCluster,
-            List<DungeonClusterBoundary> boundaries,
+            List<BoundarySegment> boundaries,
             RoomClusterGeometry targetCluster,
             List<Cell> targetCells
     ) {
-        List<DungeonClusterBoundary> result = new ArrayList<>();
-        for (DungeonClusterBoundary boundary : safeBoundaries(boundaries)) {
-            DungeonClusterBoundary translated = rehomedBoundary(sourceCluster, boundary, targetCluster, targetCells);
+        List<BoundarySegment> result = new ArrayList<>();
+        for (BoundarySegment boundary : safeBoundaries(boundaries)) {
+            BoundarySegment translated = rehomedBoundary(sourceCluster, boundary, targetCluster, targetCells);
             if (translated != null) {
                 result.add(translated);
             }
@@ -75,40 +75,31 @@ final class DungeonBoundaryRehoming {
         return List.copyOf(result);
     }
 
-    private static @Nullable DungeonClusterBoundary rehomedBoundary(
+    private static BoundarySegment rehomedBoundary(
             RoomCluster sourceCluster,
-            DungeonClusterBoundary boundary,
+            BoundarySegment boundary,
             RoomClusterGeometry targetCluster,
             List<Cell> targetCells
     ) {
-        Edge absoluteEdge = boundary.absoluteEdge(sourceCluster.center());
-        RoomClusterBoundaryMaterialization.BoundaryRow row = RoomClusterBoundaryMaterialization.forEdge(
-                targetCells,
-                targetCluster.center(),
-                targetCluster.clusterId(),
-                absoluteEdge,
-                boundary.kind());
-        if (row == null) {
+        boolean touchesTarget = boundary.edge().touchingCells().stream().anyMatch(targetCells::contains);
+        if (!touchesTarget) {
             return null;
         }
-        return new DungeonClusterBoundary(
-                targetCluster.clusterId(),
-                row.level(),
-                row.relativeCell(),
-                row.direction(),
-                row.kind(),
+        return new BoundarySegment(
+                boundary.edgeKey(),
+                boundary.kind(),
                 boundary.topologyRef());
     }
 
-    private static Map<Integer, List<DungeonClusterBoundary>> safeBoundaryMap(
-            Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
+    private static Map<Integer, List<BoundarySegment>> safeBoundaryMap(
+            Map<Integer, List<BoundarySegment>> boundariesByLevel
     ) {
         return boundariesByLevel == null ? Map.of() : boundariesByLevel;
     }
 
-    private static List<DungeonClusterBoundary> safeBoundaries(List<DungeonClusterBoundary> boundaries) {
-        List<DungeonClusterBoundary> result = new ArrayList<>();
-        for (DungeonClusterBoundary boundary : boundaries == null ? List.<DungeonClusterBoundary>of() : boundaries) {
+    private static List<BoundarySegment> safeBoundaries(List<BoundarySegment> boundaries) {
+        List<BoundarySegment> result = new ArrayList<>();
+        for (BoundarySegment boundary : boundaries == null ? List.<BoundarySegment>of() : boundaries) {
             if (boundary != null) {
                 result.add(boundary);
             }

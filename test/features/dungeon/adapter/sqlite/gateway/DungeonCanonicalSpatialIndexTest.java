@@ -29,10 +29,10 @@ import features.dungeon.domain.core.structure.corridor.Corridor;
 import features.dungeon.domain.core.structure.corridor.CorridorBindings;
 import features.dungeon.domain.core.structure.feature.FeatureMarker;
 import features.dungeon.domain.core.structure.feature.FeatureMarkerKind;
-import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
 import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
 import features.dungeon.domain.core.structure.room.RoomCluster;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.stair.Stair;
 import features.dungeon.domain.core.structure.stair.StairShape;
@@ -53,7 +53,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 final class DungeonCanonicalSpatialIndexTest {
@@ -72,7 +71,9 @@ final class DungeonCanonicalSpatialIndexTest {
             DungeonWindow window = windows.loadWindow(new DungeonWindowRequest(
                     new DungeonMapIdentity(41L),
                     1L,
-                    List.of(new DungeonChunkKey(41L, 5, -1, -2))))
+                    List.of(
+                            new DungeonChunkKey(41L, 0, -1, -1),
+                            new DungeonChunkKey(41L, 5, -1, -2))))
                     .orElseThrow();
             DungeonWindowEntityFragment.Corridor corridor = assertInstanceOf(
                     DungeonWindowEntityFragment.Corridor.class,
@@ -81,8 +82,12 @@ final class DungeonCanonicalSpatialIndexTest {
                             .findFirst()
                             .orElseThrow());
             DungeonWindowEntityFragment.CorridorDoorFact door = corridor.doorBindings().getFirst();
-            assertEquals(new Cell(1, 0, 5), door.relativeCell());
             assertEquals(new Cell(-64, -65, 5), door.absoluteCell());
+            assertEquals(List.of(
+                    new Cell(-64, -64, 0),
+                    new Cell(-63, -63, 0)), corridor.waypoints().stream()
+                    .map(DungeonWindowEntityFragment.CorridorWaypointFact::absoluteCell)
+                    .toList());
 
             DungeonWindow interiorWindow = windows.loadWindow(
                     new DungeonWindowRequest(
@@ -150,7 +155,7 @@ final class DungeonCanonicalSpatialIndexTest {
                             + " WHERE entity_kind='CORRIDOR' AND entity_id=301"));
             assertEquals(List.of(
                     "-1|-1|-1|-1|-1",
-                    "0|-65|-65|129|63",
+                    "0|-65|-66|129|63",
                     "1|-1|64|-1|64",
                     "2|128|-129|128|-129",
                     "5|-64|-65|-63|-64"), rows(connection,
@@ -180,20 +185,22 @@ final class DungeonCanonicalSpatialIndexTest {
         RoomRegion room = new RoomRegion(roomId, mapId, clusterId, "Sparse room", Set.of(
                 new Cell(-65, -65, 0), new Cell(64, 0, 0), new Cell(-64, -65, 5)),
                 DungeonRoomNarration.empty());
-        Cell center = new Cell(-65, -65, 0);
-        RoomCluster cluster = RoomCluster.authored(clusterId, mapId, "Sparse cluster", center, Map.of(
-                0, List.of(
-                        new DungeonClusterBoundary(clusterId, 0, new Cell(0, 0, 0),
-                                Direction.NORTH, BoundaryKind.OPEN),
-                        new DungeonClusterBoundary(clusterId, 0, new Cell(129, 65, 0),
-                                Direction.SOUTH, BoundaryKind.OPEN))));
+        RoomCluster cluster = RoomCluster.authored(clusterId, mapId, "Sparse cluster", List.of(
+                BoundarySegment.fromEdge(
+                        Direction.NORTH.edgeOf(new Cell(-65, -65, 0)),
+                        BoundaryKind.OPEN,
+                        DungeonTopologyRef.empty()),
+                BoundarySegment.fromEdge(
+                        Direction.SOUTH.edgeOf(new Cell(64, 0, 0)),
+                        BoundaryKind.OPEN,
+                        DungeonTopologyRef.empty())));
         Corridor corridor = new Corridor(301L, mapId, 0, List.of(roomId), new CorridorBindings(
                 List.of(
-                        new CorridorWaypoint(clusterId, new Cell(1, 1, 0), 0),
-                        new CorridorWaypoint(clusterId, new Cell(2, 2, 0), 0),
-                        new CorridorWaypoint(clusterId, new Cell(194, 65, 0), 0)),
+                        new CorridorWaypoint(clusterId, new Cell(-64, -64, 0)),
+                        new CorridorWaypoint(clusterId, new Cell(-63, -63, 0)),
+                        new CorridorWaypoint(clusterId, new Cell(129, 0, 0))),
                 List.of(new CorridorDoorBinding(
-                        roomId, clusterId, new Cell(1, 0, 5), Direction.EAST, DungeonTopologyRef.door(7002L))),
+                        roomId, clusterId, new Cell(-64, -65, 5), Direction.EAST, DungeonTopologyRef.door(7002L))),
                 List.of(), List.of()));
         Stair stair = new Stair(401L, mapId, "Sparse stair", StairShape.LADDER, Direction.NORTH, 1, 1,
                 List.of(new Cell(-1, 64, 1)),

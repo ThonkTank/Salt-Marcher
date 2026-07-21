@@ -1,4 +1,5 @@
 package features.dungeon.adapter.javafx.editor;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 
 import java.util.List;
 import java.util.Map;
@@ -10,6 +11,7 @@ import features.dungeon.domain.core.component.CorridorAnchorRef;
 import features.dungeon.domain.core.component.CorridorDoorBinding;
 import features.dungeon.domain.core.component.CorridorWaypoint;
 import features.dungeon.domain.core.component.StairExit;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
@@ -29,17 +31,12 @@ import features.dungeon.domain.core.structure.corridor.CorridorRoutePlan;
 import features.dungeon.domain.core.structure.door.DoorBoundaryMaterialization;
 import features.dungeon.domain.core.structure.room.BoundaryStretchOrientation;
 import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
 import features.dungeon.domain.core.structure.room.RoomClusterGeometry;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryOrdering;
 import features.dungeon.domain.core.structure.room.RoomClusterBoundaryStretchPlan;
 import features.dungeon.domain.core.structure.room.RoomClusterDoorBoundaryMaterialization;
 import features.dungeon.domain.core.structure.room.RoomClusterFloorMap;
 import features.dungeon.domain.core.structure.room.RoomClusterRoomPartition;
-import features.dungeon.domain.core.structure.room.RoomClusterWallMap;
-import features.dungeon.domain.core.structure.room.RoomClusterWallRun;
-import features.dungeon.domain.core.structure.room.RoomClusterWallRunSource;
 import features.dungeon.domain.core.structure.room.RoomClusterWork;
 import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;
 import features.dungeon.domain.core.structure.stair.Stair;
@@ -77,15 +74,9 @@ final class DungeonStructureInvariantScenarios {
 
         assertRoomStructureInvariants();
 
-        assertRoomBoundaryMaterializationInvariants();
-
         assertRoomPartitionInvariants();
 
-        assertRoomBoundaryOrderingInvariants();
-
         assertRoomBoundaryStretchPlanInvariants();
-
-        assertRoomWallRunInvariants();
 
     }
 
@@ -101,7 +92,7 @@ final class DungeonStructureInvariantScenarios {
         assertEquals(List.of(4L, 8L), rooms.without(2L).roomIds(), "room set removes room");
         assertEquals(rooms, rooms.without(0L), "room set ignores missing room removal");
 
-        CorridorWaypoint waypoint = new CorridorWaypoint(7L, new Cell(1, 2, 0), 0);
+        CorridorWaypoint waypoint = new CorridorWaypoint(7L, new Cell(1, 2, 0));
         CorridorDoorBinding firstDoor = new CorridorDoorBinding(4L, 10L, new Cell(0, 1, 0), Direction.NORTH);
         CorridorDoorBinding secondDoor = new CorridorDoorBinding(6L, 11L, new Cell(2, 3, 0), Direction.EAST);
         CorridorAnchor firstAnchor = new CorridorAnchor(3L, 12L, new Cell(4, 5, 0));
@@ -255,8 +246,8 @@ final class DungeonStructureInvariantScenarios {
                 "invalid endpoint indexes keep no pruned waypoints");
         assertEquals(List.of(), withAnchors.waypointsBetweenEndpointIndexes(0, 1),
                 "adjacent endpoint indexes keep no pruned waypoints");
-        CorridorWaypoint secondWaypoint = new CorridorWaypoint(8L, new Cell(3, 4, 0), 1);
-        CorridorWaypoint thirdWaypoint = new CorridorWaypoint(9L, new Cell(4, 5, 0), 2);
+        CorridorWaypoint secondWaypoint = new CorridorWaypoint(8L, new Cell(3, 4, 1));
+        CorridorWaypoint thirdWaypoint = new CorridorWaypoint(9L, new Cell(4, 5, 2));
         CorridorBindings twoWaypointBindings = withAnchors.withWaypoints(List.of(waypoint, secondWaypoint));
         assertEquals(List.of(), twoWaypointBindings.waypointsBetweenEndpointIndexes(0, 2),
                 "one-past non-adjacent endpoint index keeps no pruned waypoints");
@@ -265,14 +256,12 @@ final class DungeonStructureInvariantScenarios {
         assertEquals(List.of(secondWaypoint), threeWaypointBindings.waypointsBetweenEndpointIndexes(0, 2),
                 "non-adjacent endpoint indexes prune interior waypoints");
 
-        assertRetainedCorridorRoomSetAdapterCompatibility();
     }
 
     private static void assertCorridorRoutePlanInvariants() {
         CorridorRoutePlan plan = new CorridorRoutePlan(
                 List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),
-                10L,
-                new Cell(0, 0, 0));
+                10L);
         CorridorAnchor higherHostAnchor = new CorridorAnchor(9L, 30L, new Cell(1, 0, 0));
         CorridorAnchor selectedAnchor = new CorridorAnchor(5L, 20L, new Cell(1, 0, 0));
         CorridorBindings planned = plan.bindInteriorAnchors(
@@ -280,20 +269,18 @@ final class DungeonStructureInvariantScenarios {
                 List.of(higherHostAnchor, selectedAnchor));
         assertEquals(List.of(new CorridorAnchorRef(20L, 5L)), planned.anchorRefs(),
                 "route plan selects lowest host/anchor at interior cell");
-        assertEquals(List.of(new CorridorWaypoint(10L, new Cell(1, 0, 0), 0)), planned.waypoints(),
-                "route plan creates relative interior waypoint");
+        assertEquals(List.of(new CorridorWaypoint(10L, new Cell(1, 0, 0))), planned.waypoints(),
+                "route plan creates absolute interior waypoint");
         assertEquals(CorridorBindings.empty(),
                 new CorridorRoutePlan(
                         List.of(new Cell(0, 0, 0), new Cell(1, 0, 0)),
-                        10L,
-                        new Cell(0, 0, 0))
+                        10L)
                         .bindInteriorAnchors(CorridorBindings.empty(), List.of(selectedAnchor)),
                 "short route plan leaves bindings unchanged");
         assertEquals(CorridorBindings.empty(),
                 new CorridorRoutePlan(
                         List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),
-                        0L,
-                        new Cell(0, 0, 0))
+                        0L)
                         .bindInteriorAnchors(CorridorBindings.empty(), List.of(selectedAnchor)),
                 "missing waypoint cluster leaves bindings unchanged");
     }
@@ -318,8 +305,7 @@ final class DungeonStructureInvariantScenarios {
         CorridorBindings splitBindings = CorridorBindings.empty().withInteriorRouteAnchors(
                 new CorridorRoutePlan(
                         List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),
-                        10L,
-                        new Cell(0, 0, 0)),
+                        10L),
                 List.of(splitAnchor));
         assertEquals(List.of(new CorridorAnchorRef(40L, splitAnchor.anchorId())),
                 splitBindings.anchorRefs(),
@@ -332,41 +318,17 @@ final class DungeonStructureInvariantScenarios {
         CorridorBindings deduplicatedSplitBindings = existingCustomRef.withInteriorRouteAnchors(
                 new CorridorRoutePlan(
                         List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),
-                        10L,
-                        new Cell(0, 0, 0)),
+                        10L),
                 List.of(splitAnchor));
         assertEquals(List.of(new CorridorAnchorRef(40L, splitAnchor.anchorId())),
                 deduplicatedSplitBindings.anchorRefs(),
                 "core route split deduplicates existing local anchor ref");
     }
 
-    private static void assertRetainedCorridorRoomSetAdapterCompatibility() {
-        CorridorDoorBinding secondDoor = new CorridorDoorBinding(6L, 11L, new Cell(2, 3, 0), Direction.EAST);
-        CorridorBindings bindings = new CorridorBindings(
-                List.of(),
-                List.of(new CorridorDoorBinding(
-                        4L, 10L, new Cell(0, 1, 0), Direction.NORTH, null)),
-                List.of(),
-                List.of());
-
-        List<Long> adapterRoomIds = new java.util.ArrayList<>(List.of(4L, 4L, -1L));
-        adapterRoomIds.add(1, null);
-        Corridor corridor = new Corridor(3L, 5L, 0, new CorridorRoomSet(adapterRoomIds), bindings);
-        assertEquals(List.of(4L), corridor.roomIds(), "adapter corridor delegates room set normalization");
-        Corridor coreCorridor = new Corridor(
-                corridor.corridorId(),
-                corridor.mapId(),
-                corridor.level(),
-                corridor.roomIds(),
-                CorridorBindings.empty());
-        assertEquals(List.of(4L, 6L), coreCorridor.withDoorBinding(secondDoor).roomIds(),
-                "core corridor adds door room through core room set");
-    }
-
     private static void assertCorridorTargetDeleteInvariants() {
-        CorridorWaypoint firstWaypoint = new CorridorWaypoint(7L, new Cell(1, 2, 0), 0);
-        CorridorWaypoint secondWaypoint = new CorridorWaypoint(7L, new Cell(2, 2, 0), 0);
-        CorridorWaypoint thirdWaypoint = new CorridorWaypoint(7L, new Cell(3, 2, 0), 0);
+        CorridorWaypoint firstWaypoint = new CorridorWaypoint(7L, new Cell(1, 2, 0));
+        CorridorWaypoint secondWaypoint = new CorridorWaypoint(7L, new Cell(2, 2, 0));
+        CorridorWaypoint thirdWaypoint = new CorridorWaypoint(7L, new Cell(3, 2, 0));
         CorridorDoorBinding firstDoor = new CorridorDoorBinding(4L, 10L, new Cell(0, 1, 0), Direction.NORTH);
         CorridorDoorBinding secondDoor = new CorridorDoorBinding(6L, 11L, new Cell(2, 3, 0), Direction.EAST);
         CorridorAnchorRef anchorRef = new CorridorAnchorRef(12L, 5L);
@@ -486,77 +448,19 @@ final class DungeonStructureInvariantScenarios {
                 .materializesDoor(), "core room door materialization rejects untouched room edge");
     }
 
-    private static void assertRoomBoundaryMaterializationInvariants() {
-        Set<Cell> clusterCells = Set.of(new Cell(2, 3, 0), new Cell(3, 3, 0));
-        Cell center = new Cell(2, 3, 0);
-        Edge northEdge = Edge.sideOf(new Cell(2, 3, 0), Direction.NORTH);
-        Edge sharedEdge = Edge.sideOf(new Cell(2, 3, 0), Direction.EAST);
-
-        BoundaryRow northBoundary = RoomClusterBoundaryMaterialization.forEdge(
-                clusterCells,
-                center,
-                42L,
-                northEdge,
-                RoomClusterBoundaryMaterialization.BoundaryKind.WALL);
-        assertTrue(northBoundary != null, "core room boundary materializes perimeter wall row");
-        assertEquals(42L, northBoundary.clusterId(), "core room boundary keeps cluster id");
-        assertEquals(0, northBoundary.level(), "core room boundary uses base-cell level");
-        assertEquals(new Cell(0, 0, 0), northBoundary.relativeCell(), "core room boundary stores center-relative cell");
-        assertEquals(Direction.NORTH, northBoundary.direction(), "core room boundary derives direction from edge");
-        assertEquals(RoomClusterBoundaryMaterialization.BoundaryKind.WALL, northBoundary.kind(),
-                "core room boundary preserves requested kind");
-
-        BoundaryRow doorBoundary = RoomClusterBoundaryMaterialization.forEdge(
-                clusterCells,
-                center,
-                42L,
-                northEdge,
-                RoomClusterBoundaryMaterialization.BoundaryKind.DOOR);
-        assertTrue(doorBoundary != null, "core room boundary materializes perimeter door row");
-        assertEquals(RoomClusterBoundaryMaterialization.BoundaryKind.DOOR, doorBoundary.kind(),
-                "core room boundary preserves requested door kind");
-
-        BoundaryRow openBoundary = RoomClusterBoundaryMaterialization.openForEdge(
-                clusterCells,
-                center,
-                42L,
-                northEdge);
-        assertTrue(openBoundary != null, "core room boundary materializes perimeter open row");
-        assertEquals(null, RoomClusterBoundaryMaterialization.openForEdge(
-                        clusterCells,
-                        center,
-                        42L,
-                        sharedEdge),
-                "core room open boundary rejects split-room interior edge");
-        assertEquals(RoomClusterBoundaryMaterialization.BoundaryKind.OPEN, openBoundary.kind(),
-                "core room open boundary accepts perimeter edge");
-        assertEquals(null, RoomClusterBoundaryMaterialization.forEdge(
-                        clusterCells,
-                        center,
-                        42L,
-                        new Edge(new Cell(1, 1, 0), new Cell(2, 1, 1)),
-                        RoomClusterBoundaryMaterialization.BoundaryKind.WALL),
-                "core room boundary rejects cross-level edge");
-        assertEquals(null, RoomClusterBoundaryMaterialization.forEdge(
-                        clusterCells,
-                        center,
-                        42L,
-                        Edge.sideOf(new Cell(8, 8, 0), Direction.NORTH),
-                        RoomClusterBoundaryMaterialization.BoundaryKind.WALL),
-                "core room boundary rejects untouched edge");
-    }
-
     private static void assertRoomPartitionInvariants() {
         Cell left = new Cell(0, 0, 0);
         Cell middle = new Cell(1, 0, 0);
         Cell right = new Cell(2, 0, 0);
         Edge split = Edge.sideOf(left, Direction.EAST);
-        RoomClusterGeometry cluster = new RoomClusterGeometry(
-                9L,
+        RoomClusterGeometry cluster = RoomClusterGeometry.fromCells(9L, 2L, Set.of(left, middle, right));
+        RoomRegion existingRoom = new RoomRegion(
+                7L,
                 2L,
-                left,
-                new RoomClusterFloorMap(Map.of(0, List.of(left, middle, right))));
-        RoomRegion existingRoom = new RoomRegion(7L, 2L, 9L, "Bestand", Map.of(0, left));
+                9L,
+                "Bestand",
+                Set.of(left),
+                DungeonRoomNarration.empty());
         RoomClusterWork work = new RoomClusterWork(cluster, List.of(existingRoom));
 
         List<RoomRegion> rooms = RoomClusterRoomPartition.roomsForBoundaryEdit(
@@ -564,10 +468,10 @@ final class DungeonStructureInvariantScenarios {
                 Map.of(0, List.of(split)),
                 new RoomTopologyWorkCatalog.ReservedIdentities(100L, 1, 20L, 2));
         assertEquals(List.of(7L, 20L), roomIds(rooms), "core room partition reuses anchor room and reserves split room");
-        assertEquals(Map.of(0, left), rooms.getFirst().floorAnchors(),
-                "core room partition preserves existing room anchor");
-        assertEquals(Map.of(0, middle), rooms.get(1).floorAnchors(),
-                "core room partition anchors new component at sorted first cell");
+        assertEquals(Set.of(left), rooms.getFirst().floorCells(),
+                "core room partition preserves the existing exact room component");
+        assertEquals(Set.of(middle, right), rooms.get(1).floorCells(),
+                "core room partition owns the exact new component");
         assertEquals(Map.of(
                         7L, List.of(left),
                         20L, List.of(middle, right)),
@@ -575,133 +479,22 @@ final class DungeonStructureInvariantScenarios {
                 "core room partition assigns cells behind closed boundaries");
     }
 
-    private static void assertRoomBoundaryOrderingInvariants() {
-        Cell center = new Cell(5, 7, 0);
-        BoundaryRow south = new BoundaryRow(
-                42L,
-                0,
-                new Cell(0, 1, 0),
-                Direction.SOUTH,
-                RoomClusterBoundaryMaterialization.BoundaryKind.WALL);
-        BoundaryRow north = new BoundaryRow(
-                42L,
-                0,
-                new Cell(0, 0, 0),
-                Direction.NORTH,
-                RoomClusterBoundaryMaterialization.BoundaryKind.DOOR);
-        BoundaryRow east = new BoundaryRow(
-                42L,
-                0,
-                new Cell(0, 0, 0),
-                Direction.EAST,
-                RoomClusterBoundaryMaterialization.BoundaryKind.OPEN);
-        BoundaryRow upper = new BoundaryRow(
-                42L,
-                1,
-                new Cell(-1, 0, 1),
-                Direction.WEST,
-                RoomClusterBoundaryMaterialization.BoundaryKind.WALL);
-
-        assertEquals(
-                List.of(east, north, south, upper),
-                RoomClusterBoundaryOrdering.sortedRows(List.of(south, upper, north, east)),
-                "core room boundary ordering sorts by level, row, column, direction name");
-        Map<Integer, List<BoundaryRow>> rowsByLevel =
-                RoomClusterBoundaryOrdering.boundariesByLevel(List.of(south, upper, north, east));
-        assertEquals(List.of(east, north, south), rowsByLevel.get(0),
-                "core room boundary ordering groups sorted rows by level");
-        assertEquals(List.of(upper), rowsByLevel.get(1),
-                "core room boundary ordering preserves upper level rows");
-
-        assertEquals(
-                EdgeKey.from(Edge.sideOf(new Cell(5, 7, 0), Direction.NORTH)),
-                RoomClusterBoundaryOrdering.boundaryKey(center, north),
-                "core room boundary ordering keys rows by center-relative absolute edge");
-        EdgeKey northKey = EdgeKey.from(Edge.sideOf(new Cell(5, 7, 0), Direction.NORTH));
-        assertTrue(northKey.stableId() > 0L,
-                "core room boundary ordering produces positive stable edge ids");
-        assertEquals(
-                northKey,
-                new EdgeKey(northKey.upper(), northKey.lower()),
-                "core geometry edge key canonicalizes reversed endpoints");
-        assertEquals(
-                northKey.stableId(),
-                new EdgeKey(northKey.upper(), northKey.lower()).stableId(),
-                "core geometry edge key keeps stable ids endpoint-order independent");
-        assertEquals(
-                northKey.stableId(),
-                DungeonBoundaryKey.from(
-                        features.dungeon.domain.core.geometry.Edge.sideOf(
-                                new Cell(5, 7, 0),
-                                Direction.NORTH))
-                        .stableId(),
-                "boundary key stable ids match core geometry");
-    }
-
-    private static void assertRoomWallRunInvariants() {
-        RoomClusterWallMap wallMap = new RoomClusterWallMap(
-                new Cell(0, 0, 0),
-                List.of(
-                        wallRow(0, 0, Direction.NORTH),
-                        wallRow(1, 0, Direction.NORTH),
-                        wallRow(2, -1, Direction.SOUTH),
-                        wallRow(3, -1, Direction.SOUTH)));
-
-        assertEquals(
-                List.of(
-                        new RoomClusterWallRun(
-                                new Cell(1, 0, 0),
-                                1.0,
-                                0.0,
-                                Direction.NORTH,
-                                new RoomClusterWallRunSource(
-                                        new Edge(new Cell(1, 0, 0), new Cell(2, 0, 0)),
-                                        List.of(
-                                                new Edge(new Cell(0, 0, 0), new Cell(1, 0, 0)),
-                                                new Edge(new Cell(1, 0, 0), new Cell(2, 0, 0))))),
-                        new RoomClusterWallRun(
-                                new Cell(3, 0, 0),
-                                3.0,
-                                0.0,
-                                Direction.SOUTH,
-                                new RoomClusterWallRunSource(
-                                        new Edge(new Cell(3, 0, 0), new Cell(4, 0, 0)),
-                                        List.of(
-                                                new Edge(new Cell(2, 0, 0), new Cell(3, 0, 0)),
-                                                new Edge(new Cell(3, 0, 0), new Cell(4, 0, 0)))))),
-                wallMap.authoredWallRuns(0),
-                "core room wall runs publish geometric midpoints, source edges, and do not merge different directions");
-    }
-
-    private static BoundaryRow wallRow(int relativeQ, int relativeR, Direction direction) {
-        return new BoundaryRow(
-                42L,
-                0,
-                new Cell(relativeQ, relativeR, 0),
-                direction,
-                RoomClusterBoundaryMaterialization.BoundaryKind.WALL);
-    }
-
     private static void assertRoomBoundaryStretchPlanInvariants() {
         Cell left = new Cell(0, 0, 0);
         Cell right = new Cell(1, 0, 0);
         Edge northLeft = Edge.sideOf(left, Direction.NORTH);
         Edge northRight = Edge.sideOf(right, Direction.NORTH);
-        Map<EdgeKey, BoundaryRow> boundaries = Map.of(
+        Map<EdgeKey, BoundarySegment> boundaries = Map.of(
                 EdgeKey.from(northLeft),
-                new BoundaryRow(
-                        42L,
-                        0,
-                        new Cell(0, 0, 0),
-                        Direction.NORTH,
-                        RoomClusterBoundaryMaterialization.BoundaryKind.WALL),
+                BoundarySegment.fromEdge(
+                        northLeft,
+                        BoundaryKind.WALL,
+                        features.dungeon.domain.core.graph.DungeonTopologyRef.empty()),
                 EdgeKey.from(northRight),
-                new BoundaryRow(
-                        42L,
-                        0,
-                        new Cell(1, 0, 0),
-                        Direction.NORTH,
-                        RoomClusterBoundaryMaterialization.BoundaryKind.WALL));
+                BoundarySegment.fromEdge(
+                        northRight,
+                        BoundaryKind.WALL,
+                        features.dungeon.domain.core.graph.DungeonTopologyRef.empty()));
 
         RoomClusterBoundaryStretchPlan.Selection outward =
                 RoomClusterBoundaryStretchPlan.resolve(

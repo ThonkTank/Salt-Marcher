@@ -1,10 +1,5 @@
 package features.dungeon;
 
-import features.dungeon.api.DungeonAuthoredMutationModel;
-import features.dungeon.api.DungeonAuthoredReadModel;
-import features.dungeon.api.DungeonEditorControlsModel;
-import features.dungeon.api.DungeonEditorMapSurfaceModel;
-import features.dungeon.api.DungeonEditorStateModel;
 import features.dungeon.api.DungeonMapCatalogModel;
 import features.dungeon.api.TravelDungeonModel;
 import features.dungeon.application.authored.DungeonAuthoredApplicationService;
@@ -140,13 +135,8 @@ public final class DungeonTestAssembly {
                 runtime.authored(),
                 runtime.editor(),
                 runtime.travel(),
-                runtime.authoredRead(),
-                runtime.authoredMutation(),
                 runtime.mapCatalog(),
-                runtime.travelModel(),
-                runtime.editorControls(),
-                runtime.editorMapSurface(),
-                runtime.editorState());
+                runtime.travelModel());
     }
 
     private static DungeonIdentityAllocator testIdentityAllocator() {
@@ -208,13 +198,8 @@ public final class DungeonTestAssembly {
             DungeonAuthoredApplicationService authored,
             DungeonEditorRuntimeApplicationService editor,
             DungeonTravelRuntimeApplicationService travel,
-            DungeonAuthoredReadModel authoredRead,
-            DungeonAuthoredMutationModel authoredMutation,
             DungeonMapCatalogModel mapCatalog,
-            TravelDungeonModel travelModel,
-            DungeonEditorControlsModel editorControls,
-            DungeonEditorMapSurfaceModel editorMapSurface,
-            DungeonEditorStateModel editorState
+            TravelDungeonModel travelModel
     ) {
     }
 }

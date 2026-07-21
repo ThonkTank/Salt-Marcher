@@ -73,7 +73,8 @@ final class RoomClusterRoomComponents {
         if (template == null) {
             return component.anchor();
         }
-        Cell anchor = template.floorAnchors().get(component.level());
+        List<Cell> levelCells = template.cellsAt(component.level());
+        Cell anchor = levelCells.isEmpty() ? null : levelCells.getFirst();
         return component.cells().contains(anchor) ? anchor : component.anchor();
     }
 

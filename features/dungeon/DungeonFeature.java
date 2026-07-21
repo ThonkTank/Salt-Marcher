@@ -7,12 +7,7 @@ import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonIdentityAllocator;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
-import features.dungeon.api.DungeonAuthoredMutationModel;
-import features.dungeon.api.DungeonAuthoredReadModel;
-import features.dungeon.api.DungeonEditorControlsModel;
 import features.dungeon.api.DungeonTravelContextModel;
-import features.dungeon.api.DungeonEditorMapSurfaceModel;
-import features.dungeon.api.DungeonEditorStateModel;
 import features.dungeon.api.DungeonMapCatalogModel;
 import features.dungeon.api.TravelDungeonModel;
 import features.dungeon.api.authored.DungeonAuthoredApi;
@@ -25,9 +20,7 @@ import features.dungeon.application.authored.port.DungeonCatalogStore;
 import features.dungeon.application.authored.port.DungeonIdentityAllocator;
 import features.dungeon.application.authored.port.DungeonUnitOfWork;
 import features.dungeon.application.authored.port.DungeonWindowStore;
-import features.dungeon.application.editor.DungeonEditorApiFacade;
 import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
-import features.dungeon.application.editor.DungeonEditorPublishedState;
 import features.dungeon.application.editor.DungeonEditorRuntimeApplicationService;
 import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
 import features.dungeon.application.travel.DungeonTravelAuthoredReader;
@@ -88,7 +81,6 @@ public final class DungeonFeature {
                 dispatcher,
                 Objects.requireNonNull(diagnostics, "diagnostics"));
         DungeonEditorRuntimeDependencies editorDependencies = new DungeonEditorRuntimeDependencies(
-                runtime.editorControls(), runtime.editorMapSurface(), runtime.editorState(),
                 runtime.editor(),
                 runtime.corridorRoutingPolicy(),
                 runtime.authored()::currentWindowRequestGeneration,
@@ -96,7 +88,7 @@ public final class DungeonFeature {
                 dispatcher);
         DungeonEditorFeatureRuntimeRoot editorRuntimeRoot =
                 DungeonEditorFeatureRuntimeRoot.createUnstarted(editorDependencies);
-        DungeonEditorApi editorApi = new DungeonEditorApiFacade(editorRuntimeRoot, dispatcher);
+        DungeonEditorApi editorApi = editorRuntimeRoot;
         return new Component(
                 new DungeonEditorContribution(editorApi),
                 new DungeonTravelContribution(runtime.travel(), runtime.mapCatalog(), runtime.travelModel()),
@@ -121,7 +113,6 @@ public final class DungeonFeature {
         ExecutionLane lane = Objects.requireNonNull(executionLane, "executionLane");
         UiDispatcher dispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
         Objects.requireNonNull(diagnostics, "diagnostics");
-        DungeonEditorPublishedState editorPublishedState = new DungeonEditorPublishedState(dispatcher);
         DungeonAuthoredPublishedState authoredPublishedState = new DungeonAuthoredPublishedState(dispatcher);
         CorridorRoutingPolicy corridorRoutingPolicy = new OrthogonalCorridorRoutingPolicy();
         DungeonAuthoredApplicationService authoredMaps = new DungeonAuthoredApplicationService(
@@ -133,7 +124,7 @@ public final class DungeonFeature {
                 authoredPublishedState,
                 corridorRoutingPolicy);
         DungeonEditorRuntimeApplicationService editor =
-                new DungeonEditorRuntimeApplicationService(authoredMaps, editorPublishedState);
+                new DungeonEditorRuntimeApplicationService(authoredMaps);
         DungeonTravelPartyGateway partyGateway = new DungeonTravelPartyGateway(
                 activeParty, partyTravelPositions, party);
         DungeonTravelAuthoredReader travelReader = new DungeonTravelAuthoredReader(catalogStore, windowStore);
@@ -145,14 +136,9 @@ public final class DungeonFeature {
                 authoredMaps,
                 editor,
                 new DungeonTravelRuntimeApplicationService(surfaceLoader, navigator, publishedState, lane),
-                authoredPublishedState.authoredReadModel(),
-                authoredPublishedState.authoredMutationModel(),
                 authoredPublishedState.mapCatalogModel(),
                 publishedState.travelModel(),
-                publishedState.travelContextModel(),
-                editorPublishedState.controlsModel(),
-                editorPublishedState.mapSurfaceModel(),
-                editorPublishedState.stateModel());
+                publishedState.travelContextModel());
     }
 
     public record Component(
@@ -173,7 +159,7 @@ public final class DungeonFeature {
         }
 
         public void start() {
-            ((DungeonEditorApiFacade) editorApi).initialize();
+            ((DungeonEditorFeatureRuntimeRoot) editorApi).initialize();
         }
     }
 
@@ -182,14 +168,9 @@ public final class DungeonFeature {
             DungeonAuthoredApplicationService authored,
             DungeonEditorRuntimeApplicationService editor,
             DungeonTravelRuntimeApplicationService travel,
-            DungeonAuthoredReadModel authoredRead,
-            DungeonAuthoredMutationModel authoredMutation,
             DungeonMapCatalogModel mapCatalog,
             TravelDungeonModel travelModel,
-            DungeonTravelContextModel travelContextModel,
-            DungeonEditorControlsModel editorControls,
-            DungeonEditorMapSurfaceModel editorMapSurface,
-            DungeonEditorStateModel editorState
+            DungeonTravelContextModel travelContextModel
     ) {
     }
 }

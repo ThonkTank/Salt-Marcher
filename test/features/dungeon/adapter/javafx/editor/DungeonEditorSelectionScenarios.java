@@ -1,4 +1,5 @@
 package features.dungeon.adapter.javafx.editor;
+import features.dungeon.api.editor.DungeonEditorSelection;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -8,17 +9,15 @@ import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.api.DungeonCellRef;
 import features.dungeon.api.DungeonEdgeRef;
-import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
+import features.dungeon.api.editor.DungeonEditorState;
 import features.dungeon.api.DungeonEditorPreview;
-import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonEditorSurface;
 import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonEditorMapSnapshot;
 import features.dungeon.api.DungeonOverlaySettings;
-import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
+import features.dungeon.api.editor.DungeonEditorPointerInput.Target;
 import features.dungeon.api.editor.DungeonEditorDraftState;
-import features.dungeon.api.editor.DungeonEditorState;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.api.editor.DungeonEditorToolFamily;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
@@ -77,8 +76,8 @@ final class DungeonEditorSelectionScenarios {
         selectMap(controls, "Selection Map");
         List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
         click(button(controls, "Auswahl"));
-        DungeonEditorMapSurfaceSnapshot loadedSurface = runtime.mapSurfaceModel().current();
-        var roomArea = loadedSurface.surface().map().areas().stream()
+        DungeonEditorState loadedSurface = runtime.editorApi().current();
+        var roomArea = loadedSurface.selectedWindow().map().areas().stream()
                 .filter(area -> "R1".equals(area.label()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("F1_SINGLE_ROOM R1 area not loaded."));
@@ -143,8 +142,8 @@ final class DungeonEditorSelectionScenarios {
                 viewport.sceneToScreenY(roomFloorR),
                 false);
 
-        DungeonEditorStateSnapshot selectedState = runtime.stateModel().current();
-        DungeonEditorMapSurfaceSnapshot selectedSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState selectedState = runtime.editorApi().current();
+        DungeonEditorState selectedSurface = runtime.editorApi().current();
         assertSelectionMatches(roomRef, roomClusterId, selectedState.selection(), "DE-SEL-001 state model");
         assertSelectionMatches(roomRef, roomClusterId, selectedSurface.selection(), "DE-SEL-001 map surface");
         assertTrue(!selectedState.selection().clusterSelection(),
@@ -177,8 +176,8 @@ final class DungeonEditorSelectionScenarios {
                 viewport.sceneToScreenY(8.5),
                 false);
 
-        DungeonEditorStateSnapshot clearedState = runtime.stateModel().current();
-        DungeonEditorMapSurfaceSnapshot clearedSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState clearedState = runtime.editorApi().current();
+        DungeonEditorState clearedSurface = runtime.editorApi().current();
         assertEmptySelection(clearedState.selection(), "DE-SEL-005 state model");
         assertEmptySelection(clearedSurface.selection(), "DE-SEL-005 map surface");
         assertTrue(clearedState.inspector() == null, "DE-SEL-005 inspector clears after empty-grid click");
@@ -209,20 +208,20 @@ final class DungeonEditorSelectionScenarios {
         click(button(controls, "Auswahl"));
         assertEquals(1L, runtime.database().countDoorBoundariesAt(mapId, 1, 0, "EAST"),
                 "DE-SEL-002 fixture contains one east door boundary");
-        var doorBoundary = runtime.mapSurfaceModel().current().surface().map().boundaries().stream()
+        var doorBoundary = runtime.editorApi().current().selectedWindow().map().boundaries().stream()
                 .filter(boundary -> "door".equalsIgnoreCase(boundary.kind()))
                 .filter(boundary -> boundary.edge().from().q() == 4 && boundary.edge().from().r() == 2)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("DE-SEL-002 door boundary not loaded."));
         Point2D doorMidpoint = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
         var doorMidpointTarget = runtimePointerTarget(binding.mapContentModel(), doorMidpoint.getX(), doorMidpoint.getY());
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE,
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE,
                 doorMidpointTarget.targetKind(),
                 "DE-SEL-002 render hit index resolves the centered door drag affordance at the door midpoint: "
                         + doorMidpointTarget);
         Point2D doorSelectionPoint = new Point2D(doorMidpoint.getX(), doorMidpoint.getY() - 0.42);
         var doorPointerTarget = runtimePointerTarget(binding.mapContentModel(), doorSelectionPoint.getX(), doorSelectionPoint.getY());
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.BOUNDARY,
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.BOUNDARY,
                 doorPointerTarget.targetKind(),
                 "DE-SEL-002 render hit index resolves the free door segment as a boundary: "
                         + doorPointerTarget);
@@ -242,8 +241,8 @@ final class DungeonEditorSelectionScenarios {
                 viewport.sceneToScreenY(doorMidpoint.getY()),
                 false);
 
-        DungeonEditorStateSnapshot selectedState = runtime.stateModel().current();
-        DungeonEditorMapSurfaceSnapshot selectedSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState selectedState = runtime.editorApi().current();
+        DungeonEditorState selectedSurface = runtime.editorApi().current();
         assertEquals(doorBoundary.topologyRef(), selectedState.selection().topologyRef(),
                 "DE-SEL-002 state model selected door topology ref");
         assertEquals(doorBoundary.topologyRef(), selectedSurface.selection().topologyRef(),
@@ -281,24 +280,24 @@ final class DungeonEditorSelectionScenarios {
         List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
         click(button(controls, "Auswahl"));
 
-        var stairFeature = runtime.mapSurfaceModel().current().surface().map().features().stream()
+        var stairFeature = runtime.editorApi().current().selectedWindow().map().features().stream()
                 .filter(feature -> "STAIR".equals(feature.kind()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("F7_STAIR_ANCHOR stair feature not loaded."));
-        var stairHandle = runtime.mapSurfaceModel().current().surface().map().editorHandles().stream()
+        var stairHandle = runtime.editorApi().current().selectedWindow().map().editorHandles().stream()
                 .filter(handle -> "STAIR_ANCHOR".equals(handle.ref().kind().name()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("F7_STAIR_ANCHOR stair handle not loaded."));
         DungeonTopologyElementRef stairRef = stairFeature.topologyRef();
         assertEquals(stairRef, editorTopologyRef(stairHandle.ref().topologyRef()),
                 "DE-SEL-003 stair feature and handle share topology ref");
-        assertTrue(runtime.mapSurfaceModel().current().surface().map().features().stream()
+        assertTrue(runtime.editorApi().current().selectedWindow().map().features().stream()
                         .anyMatch(feature -> feature.cells().stream()
                                 .anyMatch(cell -> cell.q() == 2 && cell.r() == 2 && cell.level() == 0)),
                 "DE-SEL-003 published stair feature includes anchor coordinate");
         assertTrue(stairFeature.cells().stream().noneMatch(cell -> cell.level() != 0),
                 "DE-SEL-003 active-level authored window excludes off-level stair exit geometry");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(),
                                 glyphCenterForRef(binding.mapContentModel(), stairRef).getX(),
                                 glyphCenterForRef(binding.mapContentModel(), stairRef).getY())
                         .targetKind(),
@@ -321,8 +320,8 @@ final class DungeonEditorSelectionScenarios {
                 viewport.sceneToScreenY(stairCenter.getY()),
                 false);
 
-        DungeonEditorStateSnapshot selectedState = runtime.stateModel().current();
-        DungeonEditorMapSurfaceSnapshot selectedSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState selectedState = runtime.editorApi().current();
+        DungeonEditorState selectedSurface = runtime.editorApi().current();
         assertEquals(stairRef, selectedState.selection().topologyRef(),
                 "DE-SEL-003 state model selected stair topology ref");
         assertEquals(stairRef, selectedSurface.selection().topologyRef(),
@@ -365,22 +364,26 @@ final class DungeonEditorSelectionScenarios {
         selectMap(controls, "Corridor Selection Map");
         List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
         click(button(controls, "Auswahl"));
-        var corridorAnchor = runtime.mapSurfaceModel().current().surface().map().editorHandles().stream()
-                .filter(handle -> "CORRIDOR_ANCHOR".equals(handle.ref().kind().name()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("F5_CORRIDOR_WITH_ANCHOR anchor handle not loaded."));
-        DungeonTopologyElementRef corridorRef = runtime.mapSurfaceModel().current().surface().map().areas().stream()
+        DungeonEditorMapSnapshot.Area corridorArea = runtime.editorApi().current().selectedWindow().map().areas().stream()
                 .filter(area -> "CORRIDOR".equals(area.kind()))
-                .map(DungeonEditorMapSnapshot.Area::topologyRef)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("F5_CORRIDOR_WITH_ANCHOR corridor area not loaded."));
+        DungeonTopologyElementRef corridorRef = corridorArea.topologyRef();
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
-        Point2D corridorBody = new Point2D(corridorAnchor.markerQ() + 0.05, corridorAnchor.markerR() + 0.05);
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.CELL,
+        var publishedCorridorPoint = runtime.editorApi().current().selectedWindow().map().editorHandles().stream()
+                .filter(handle -> handle.ref().kind().isCorridorGeometryHandle())
+                .filter(handle -> handle.ref().corridorId() == corridorRef.id())
+                .filter(handle -> corridorArea.cells().contains(handle.cell()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        "DE-SEL-004 corridor area has no published editable point."));
+        DungeonCellRef corridorBodyCell = publishedCorridorPoint.cell();
+        Point2D corridorBody = new Point2D(corridorBodyCell.q() + 0.5, corridorBodyCell.r() + 0.5);
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.CELL,
                 runtimePointerTarget(binding.mapContentModel(), corridorBody.getX(), corridorBody.getY())
                         .targetKind(),
                 "DE-SEL-004 corridor body resolves as a body cell instead of an anchor handle");
-        assertEquals(DungeonEditorRuntimePointerTarget.ElementKind.CORRIDOR,
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.ElementKind.CORRIDOR,
                 runtimePointerTarget(binding.mapContentModel(), corridorBody.getX(), corridorBody.getY())
                         .elementKind(),
                 "DE-SEL-004 corridor body keeps corridor element identity");
@@ -400,21 +403,23 @@ final class DungeonEditorSelectionScenarios {
                 viewport.sceneToScreenY(corridorBody.getY()),
                 false);
 
-        DungeonEditorStateSnapshot selectedState = runtime.stateModel().current();
-        DungeonEditorMapSurfaceSnapshot selectedSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState selectedState = runtime.editorApi().current();
+        DungeonEditorState selectedSurface = runtime.editorApi().current();
         assertEquals(corridorRef, selectedState.selection().topologyRef(),
                 "DE-SEL-004 state model selected corridor topology ref");
         assertEquals(corridorRef, selectedSurface.selection().topologyRef(),
                 "DE-SEL-004 map surface selected corridor topology ref");
-        assertEquals(corridorAnchor.ref(), selectedState.selection().handleRef(),
-                "DE-SEL-004 corridor body selection publishes only the focused state-edit anchor ref");
+        assertHandleSelectionMatches(publishedCorridorPoint.ref(), selectedState.selection().handleRef(),
+                "DE-SEL-004 corridor body selection publishes its focused state-edit point ref");
         assertTrue(selectedState.inspector() != null, "DE-SEL-004 inspector is published for selected corridor");
         assertTrue(renderHasSelectedSurfacePrimitive(binding.mapContentModel(), corridorRef),
                 "DE-SEL-004 render scene highlights the selected corridor route");
         DungeonMapContentModel.MapCanvasPolygonPrimitive selectedCorridorSurface =
-                surfacePrimitiveAt(binding.mapContentModel(), selectionRef(corridorRef), 6.5, 3.5);
-        assertCanvasPaintedWithPrimitiveStrokeNearScene(mapView, selectedCorridorSurface, 6.5, 3.5, 18,
-                "DE-SEL-004 rendered canvas paints the selected anchor corridor route");
+                surfacePrimitiveAt(binding.mapContentModel(), selectionRef(corridorRef),
+                        corridorBody.getX(), corridorBody.getY());
+        assertCanvasPaintedWithPrimitiveStrokeNearScene(mapView, selectedCorridorSurface,
+                corridorBody.getX(), corridorBody.getY(), 18,
+                "DE-SEL-004 rendered canvas paints the selected corridor body");
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
                 "DE-SEL-004 leaves authored DB row count unchanged");
         assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
@@ -447,7 +452,7 @@ final class DungeonEditorSelectionScenarios {
         DungeonMapStateProbe.Snapshot emptyHoverSnapshot =
                 DungeonMapStateProbe.snapshot(binding.mapContentModel());
         AtomicInteger statePublications = new AtomicInteger();
-        Runnable unsubscribeStateCounter = runtime.stateModel().subscribe(ignored -> statePublications.incrementAndGet());
+        Runnable unsubscribeStateCounter = runtime.editorApi().subscribe(ignored -> statePublications.incrementAndGet());
         fireMapMouse(
                 mapView,
                 MouseEvent.MOUSE_MOVED,
@@ -471,21 +476,22 @@ final class DungeonEditorSelectionScenarios {
 
         DungeonMapStateProbe.Snapshot beforeToolSwitchMeasurement =
                 DungeonMapStateProbe.snapshot(binding.mapContentModel());
-        AtomicInteger toolSwitchStatePublications = new AtomicInteger();
-        AtomicInteger toolSwitchSurfacePublications = new AtomicInteger();
-        Runnable unsubscribeToolSwitchState =
-                runtime.stateModel().subscribe(ignored -> toolSwitchStatePublications.incrementAndGet());
-        Runnable unsubscribeToolSwitchSurface =
-                runtime.mapSurfaceModel().subscribe(ignored -> toolSwitchSurfacePublications.incrementAndGet());
+        DungeonEditorState stateBeforeToolSwitch = runtime.editorApi().current();
+        AtomicInteger toolSwitchPublications = new AtomicInteger();
+        Runnable unsubscribeToolSwitch =
+                runtime.editorApi().subscribe(ignored -> toolSwitchPublications.incrementAndGet());
         click(button(controls, "Wand"));
-        unsubscribeToolSwitchState.run();
-        unsubscribeToolSwitchSurface.run();
+        unsubscribeToolSwitch.run();
+        DungeonEditorState stateAfterToolSwitch = runtime.editorApi().current();
         assertEquals("Wand setzen", DungeonMapStateProbe.renderStatusLabel(binding.mapContentModel()),
                 "DE-TOOL-007 tool-only switch updates the canvas status label");
-        assertEquals(0L, toolSwitchStatePublications.get(),
-                "DE-TOOL-007 tool-only switch does not publish state");
-        assertEquals(0L, toolSwitchSurfacePublications.get(),
-                "DE-TOOL-007 tool-only switch does not publish map surface");
+        assertEquals(stateBeforeToolSwitch.selectedWindow(), stateAfterToolSwitch.selectedWindow(),
+                "DE-TOOL-007 tool-only switch leaves the authored window unchanged");
+        assertEquals(stateBeforeToolSwitch.publicationRevision() + 1L,
+                stateAfterToolSwitch.publicationRevision(),
+                "DE-TOOL-007 tool-only switch advances the atomic publication once");
+        assertEquals(1L, toolSwitchPublications.get(),
+                "DE-TOOL-007 tool-only switch publishes one atomic editor state");
         assertRenderAndHitSignaturesUnchanged(
                 beforeToolSwitchMeasurement,
                 DungeonMapStateProbe.snapshot(binding.mapContentModel()),
@@ -543,16 +549,12 @@ final class DungeonEditorSelectionScenarios {
         assertNoSyntheticHoverOverlay(binding.mapContentModel(),
                 "DE-HOVER-001 corridor hover ignores generic room cells");
 
-        var corridorAnchor = runtime.mapSurfaceModel().current().surface().map().editorHandles().stream()
-                .filter(handle -> "CORRIDOR_ANCHOR".equals(handle.ref().kind().name()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("F5_CORRIDOR_WITH_ANCHOR anchor not loaded."));
-        DungeonTopologyElementRef corridorRef = runtime.mapSurfaceModel().current().surface().map().areas().stream()
+        DungeonEditorMapSnapshot.Area corridorArea = runtime.editorApi().current().selectedWindow().map().areas().stream()
                 .filter(area -> "CORRIDOR".equals(area.kind()))
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("F5_CORRIDOR_WITH_ANCHOR corridor area not loaded."))
-                .topologyRef();
-        Point2D corridorBody = new Point2D(corridorAnchor.markerQ() + 0.05, corridorAnchor.markerR() + 0.05);
+                .orElseThrow(() -> new IllegalStateException("F5_CORRIDOR_WITH_ANCHOR corridor area not loaded."));
+        DungeonTopologyElementRef corridorRef = corridorArea.topologyRef();
+        Point2D corridorBody = corridorBodyCenter(corridorArea, "DE-HOVER-001");
         assertHoverStylesOnlySurfaceAt(
                 binding.mapContentModel(),
                 mapView,
@@ -599,9 +601,9 @@ final class DungeonEditorSelectionScenarios {
                 viewport.sceneToScreenY(transitionCenter.getY()),
                 false);
 
-        assertEquals(transitionRef, runtime.stateModel().current().selection().topologyRef(),
+        assertEquals(transitionRef, runtime.editorApi().current().selection().topologyRef(),
                 "DE-SEL-014 precondition selects transition in state model");
-        assertEquals(transitionRef, runtime.mapSurfaceModel().current().selection().topologyRef(),
+        assertEquals(transitionRef, runtime.editorApi().current().selection().topologyRef(),
                 "DE-SEL-014 precondition selects transition on map surface");
         assertTrue(renderHasSelectedGlyphPrimitive(binding.mapContentModel(), transitionRef),
                 "DE-SEL-014 precondition renders selected transition highlight");
@@ -612,10 +614,10 @@ final class DungeonEditorSelectionScenarios {
 
         click(button(controls, "Tür"));
 
-        DungeonEditorStateSnapshot clearedState = runtime.stateModel().current();
-        DungeonEditorMapSurfaceSnapshot clearedSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState clearedState = runtime.editorApi().current();
+        DungeonEditorState clearedSurface = runtime.editorApi().current();
         assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.DOOR),
-                runtime.controlsModel().current().toolSelection(),
+                runtime.editorApi().current().toolSelection(),
                 "DE-SEL-014 tool switch applies the requested non-selection tool");
         assertEmptySelection(clearedState.selection(), "DE-SEL-014 state model after non-selection tool switch");
         assertEmptySelection(clearedSurface.selection(), "DE-SEL-014 map surface after non-selection tool switch");
@@ -628,7 +630,7 @@ final class DungeonEditorSelectionScenarios {
                 "DE-SEL-014 selected-transition destination card hides after non-selection tool switch");
 
         click(button(controls, "Auswahl"));
-        assertEmptySelection(runtime.stateModel().current().selection(),
+        assertEmptySelection(runtime.editorApi().current().selection(),
                 "DE-SEL-014 switching back to selection does not invent a selection");
 
 
@@ -729,7 +731,7 @@ final class DungeonEditorSelectionScenarios {
             String message
     ) {
         var target = runtimePointerTarget(mapContentModel, sceneX, sceneY, true);
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.BOUNDARY, target.targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.BOUNDARY, target.targetKind(),
                 message + " resolves a boundary target");
         String selectionRef = target.topologyRefText() + ":" + target.topologyId();
         double normalStroke = boundaryStrokeWidth(mapContentModel, selectionRef);
@@ -800,7 +802,7 @@ final class DungeonEditorSelectionScenarios {
                 viewport.sceneToScreenY(8.5),
                 false);
         var target = runtimePointerTarget(mapContentModel, sceneX, sceneY);
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.CELL, target.targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.CELL, target.targetKind(),
                 message + " resolves a cell target");
         String selectionRef = selectionRef(ref);
         DungeonMapContentModel.MapCanvasPolygonPrimitive hoveredBefore =
@@ -846,9 +848,9 @@ final class DungeonEditorSelectionScenarios {
         Point2D midpoint = boundaryMidpoint(plainWall);
         var rawTarget =
                 runtimePointerTarget(mapContentModel, midpoint.getX(), midpoint.getY(), true);
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.BOUNDARY, rawTarget.targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.BOUNDARY, rawTarget.targetKind(),
                 message + " raw hit index still exposes boundary");
-        assertEquals(DungeonEditorRuntimePointerTarget.BoundaryKind.WALL, rawTarget.boundaryRef().boundaryKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.BoundaryKind.WALL, rawTarget.boundaryRef().boundaryKind(),
                 message + " raw boundary is a wall");
 
         double normalStroke = plainWall.style().strokeWidth();
@@ -895,7 +897,7 @@ final class DungeonEditorSelectionScenarios {
         Point2D labelCenter = labelCenterForRef(mapContentModel, roomRef);
         DungeonMapContentModel.TextPrimitive labelBefore = textPrimitiveForRef(mapContentModel, roomRef);
         assertTrue(runtimePointerTarget(mapContentModel, labelCenter.getX(), labelCenter.getY())
-                        .targetKind() != DungeonEditorRuntimePointerTarget.TargetKind.LABEL,
+                        .targetKind() != features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.LABEL,
                 message + " room label is not a runtime label target");
 
         fireMapMouse(
@@ -933,12 +935,12 @@ final class DungeonEditorSelectionScenarios {
                 "Wall",
                 secondEdge,
                 wallRef);
-        DungeonEditorMapSurfaceSnapshot snapshot = syntheticBoundarySnapshot(firstBoundary, secondBoundary);
+        DungeonEditorState snapshot = syntheticBoundarySnapshot(firstBoundary, secondBoundary);
         mapContentModel.applyEditorState(syntheticBoundaryState(snapshot));
         double sceneX = 0.5;
         double sceneY = 0.0;
         var target = runtimePointerTarget(mapContentModel, sceneX, sceneY, true);
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.BOUNDARY, target.targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.BOUNDARY, target.targetKind(),
                 message + " resolves a boundary target");
         String selectionRef = target.topologyRefText() + ":" + target.topologyId();
         DungeonMapContentModel.BoundaryPrimitive hoveredBefore =
@@ -961,17 +963,17 @@ final class DungeonEditorSelectionScenarios {
     }
 
     private static DungeonEditorState syntheticBoundaryState(
-            DungeonEditorMapSurfaceSnapshot snapshot
+            DungeonEditorState snapshot
     ) {
-        DungeonEditorMapSurfaceSnapshot safeSnapshot = snapshot == null
-                ? DungeonEditorMapSurfaceSnapshot.empty()
+        DungeonEditorState safeSnapshot = snapshot == null
+                ? DungeonEditorState.empty()
                 : snapshot;
         return new DungeonEditorState(
                 1L,
                 0L,
                 List.of(),
                 null,
-                safeSnapshot.surface(),
+                safeSnapshot.selectedWindow(),
                 safeSnapshot.viewMode(),
                 DungeonEditorToolSelection.select(),
                 safeSnapshot.overlaySettings(),
@@ -980,39 +982,52 @@ final class DungeonEditorSelectionScenarios {
                 safeSnapshot.selection(),
                 DungeonEditorDraftState.empty(),
                 safeSnapshot.preview(),
-                safeSnapshot.surface() == null ? null : safeSnapshot.surface().inspector(),
+                safeSnapshot.selectedWindow() == null ? null : safeSnapshot.selectedWindow().inspector(),
                 DungeonEditorState.CommandStatus.idle());
     }
 
-    private static DungeonEditorMapSurfaceSnapshot syntheticBoundarySnapshot(
+    private static DungeonEditorState syntheticBoundarySnapshot(
             DungeonEditorMapSnapshot.Boundary firstBoundary,
             DungeonEditorMapSnapshot.Boundary secondBoundary
     ) {
         DungeonEditorMapSnapshot map = new DungeonEditorMapSnapshot(
                 "SQUARE",
-                3,
-                3,
                 List.of(),
                 List.of(firstBoundary, secondBoundary),
                 List.of(),
                 List.of());
-        return new DungeonEditorMapSurfaceSnapshot(
+        return new DungeonEditorState(
+                1L,
+                0L,
+                List.of(),
+                null,
                 new DungeonEditorSurface(
                         "Boundary Exactness",
                         1,
                         map,
                         null,
                         null),
-                DungeonEditorStateSnapshot.Selection.empty(),
-                DungeonEditorPreview.none(),
                 DungeonEditorViewMode.GRID,
+                DungeonEditorToolSelection.select(),
                 DungeonOverlaySettings.defaults(),
                 0,
-                DungeonEditorToolSelection.select());
+                List.of(0),
+                DungeonEditorSelection.empty(),
+                DungeonEditorDraftState.empty(),
+                DungeonEditorPreview.none(),
+                null,
+                DungeonEditorState.CommandStatus.idle());
     }
 
     private static String selectionRef(DungeonTopologyElementRef ref) {
         return ref.kind() + ":" + ref.id();
+    }
+
+    private static Point2D corridorBodyCenter(DungeonEditorMapSnapshot.Area corridorArea, String scenario) {
+        DungeonCellRef cell = corridorArea.cells().stream()
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(scenario + " corridor area has no authored cells."));
+        return new Point2D(cell.q() + 0.5, cell.r() + 0.5);
     }
 
     private static DungeonMapContentModel.TextPrimitive textPrimitiveForRef(

@@ -181,16 +181,19 @@ final class DungeonSqliteWindowFragmentLoader {
                 "SELECT cluster_id, level_z, cell_x, cell_y, edge_direction, edge_type, topology_element_id"
                         + " FROM " + DungeonPersistenceSchema.ROOM_CLUSTER_EDGES_TABLE
                         + " WHERE dungeon_map_id=? AND cluster_id IN (" + placeholders(ids.size()) + ")"
-                        + " AND (" + coordinatePredicate("level_z", "cell_x", "cell_y", chunks.size()) + ")"
+                        + " AND (" + expandedCoordinatePredicate("level_z", "cell_x", "cell_y", chunks.size()) + ")"
                         + " ORDER BY cluster_id, level_z, cell_y, cell_x, edge_direction")) {
             int next = bindMapAndIds(statement, mapId, ids);
-            bindCoordinateRanges(statement, next, chunks);
+            bindExpandedCoordinateRanges(statement, next, chunks);
             try (ResultSet rows = statement.executeQuery()) {
                 while (rows.next()) {
                     ClusterBuilder builder = result.get(rows.getLong("cluster_id"));
                     if (builder != null) {
                         Cell cell = cell(rows);
                         Direction direction = direction(rows.getString("edge_direction"));
+                        if (!boundaryTouchesRequestedChunks(cell, direction, chunks)) {
+                            continue;
+                        }
                         DungeonWindowEntityFragment.BoundaryKind kind = DungeonWindowEntityFragment.BoundaryKind
                                 .valueOf(rows.getString("edge_type").toUpperCase(Locale.ROOT));
                         builder.boundaries.add(new DungeonWindowEntityFragment.ClusterBoundaryFact(
@@ -241,21 +244,16 @@ final class DungeonSqliteWindowFragmentLoader {
                 }
             }
         }
-        String waypointCenters = scopedClusterCenters(
-                DungeonPersistenceSchema.CORRIDOR_WAYPOINTS_TABLE, ids.size());
         try (PreparedStatement statement = queries.prepare(connection,
                 "SELECT facts.* FROM (SELECT w.corridor_id, w.sort_order, w.cluster_id,"
                         + " w.relative_x, w.relative_y, w.relative_z,"
-                        + " center.cell_x+w.relative_x AS cell_x, center.cell_y+w.relative_y AS cell_y,"
+                        + " w.relative_x AS cell_x, w.relative_y AS cell_y,"
                         + " w.relative_z AS level_z FROM " + DungeonPersistenceSchema.CORRIDOR_WAYPOINTS_TABLE + " w"
                         + " JOIN " + DungeonPersistenceSchema.CORRIDORS_TABLE + " c ON c.corridor_id=w.corridor_id"
-                        + " JOIN (" + waypointCenters + ") center"
-                        + " ON center.cluster_id=w.cluster_id AND center.center_order=1"
                         + " WHERE c.dungeon_map_id=? AND w.corridor_id IN (" + placeholders(ids.size()) + ")) facts"
                         + " WHERE (" + coordinatePredicate("level_z", "cell_x", "cell_y", chunks.size()) + ")"
                         + " ORDER BY corridor_id, sort_order")) {
-            int next = bindIds(statement, 1, ids);
-            next = bindMapAndIds(statement, next, mapId, ids);
+            int next = bindMapAndIds(statement, mapId, ids);
             bindCoordinateRanges(statement, next, chunks);
             try (ResultSet rows = statement.executeQuery()) {
                 while (rows.next()) {
@@ -271,23 +269,18 @@ final class DungeonSqliteWindowFragmentLoader {
                 }
             }
         }
-        String doorCenters = scopedClusterCenters(
-                DungeonPersistenceSchema.CORRIDOR_DOOR_OVERRIDES_TABLE, ids.size());
         try (PreparedStatement statement = queries.prepare(connection,
                 "SELECT facts.* FROM (SELECT d.corridor_id, d.sort_order, d.room_id, d.cluster_id,"
                         + " d.relative_cell_x, d.relative_cell_y, d.relative_cell_z,"
                         + " d.edge_direction, d.topology_element_id,"
-                        + " center.cell_x+d.relative_cell_x AS cell_x,"
-                        + " center.cell_y+d.relative_cell_y AS cell_y, d.relative_cell_z AS level_z"
+                        + " d.relative_cell_x AS cell_x,"
+                        + " d.relative_cell_y AS cell_y, d.relative_cell_z AS level_z"
                         + " FROM " + DungeonPersistenceSchema.CORRIDOR_DOOR_OVERRIDES_TABLE + " d"
                         + " JOIN " + DungeonPersistenceSchema.CORRIDORS_TABLE + " c ON c.corridor_id=d.corridor_id"
-                        + " JOIN (" + doorCenters + ") center"
-                        + " ON center.cluster_id=d.cluster_id AND center.center_order=1"
                         + " WHERE c.dungeon_map_id=? AND d.corridor_id IN (" + placeholders(ids.size()) + ")) facts"
                         + " WHERE (" + coordinatePredicate("level_z", "cell_x", "cell_y", chunks.size()) + ")"
                         + " ORDER BY corridor_id, sort_order")) {
-            int next = bindIds(statement, 1, ids);
-            next = bindMapAndIds(statement, next, mapId, ids);
+            int next = bindMapAndIds(statement, mapId, ids);
             bindCoordinateRanges(statement, next, chunks);
             try (ResultSet rows = statement.executeQuery()) {
                 while (rows.next()) {
@@ -591,16 +584,6 @@ final class DungeonSqliteWindowFragmentLoader {
         return result;
     }
 
-    private static String scopedClusterCenters(String controlTable, int corridorCount) {
-        return "SELECT r.cluster_id, c.level_z, c.cell_x, c.cell_y,"
-                + " ROW_NUMBER() OVER (PARTITION BY r.cluster_id"
-                + " ORDER BY c.level_z, c.cell_y, c.cell_x) AS center_order"
-                + " FROM " + DungeonPersistenceSchema.ROOMS_TABLE + " r"
-                + " JOIN " + DungeonPersistenceSchema.ROOM_CELLS_TABLE + " c ON c.room_id=r.room_id"
-                + " WHERE r.cluster_id IN (SELECT DISTINCT scoped.cluster_id FROM " + controlTable + " scoped"
-                + " WHERE scoped.corridor_id IN (" + placeholders(corridorCount) + "))";
-    }
-
     private static DungeonTopologyRef boundaryTopology(
             DungeonWindowEntityFragment.BoundaryKind kind,
             Cell cell,
@@ -714,6 +697,34 @@ final class DungeonSqliteWindowFragmentLoader {
             statement.setLong(parameter++, minimumY);
             statement.setLong(parameter++, minimumY + DungeonChunkKey.CHUNK_SIZE - 1L);
         }
+    }
+
+    private static String expandedCoordinatePredicate(String level, String x, String y, int count) {
+        return coordinatePredicate(level, x, y, count);
+    }
+
+    private static void bindExpandedCoordinateRanges(
+            PreparedStatement statement, int firstParameter, List<DungeonChunkKey> chunks
+    ) throws SQLException {
+        int parameter = firstParameter;
+        for (DungeonChunkKey chunk : chunks) {
+            long minimumX = (long) chunk.chunkQ() * DungeonChunkKey.CHUNK_SIZE;
+            long minimumY = (long) chunk.chunkR() * DungeonChunkKey.CHUNK_SIZE;
+            statement.setInt(parameter++, chunk.level());
+            statement.setLong(parameter++, minimumX - 1L);
+            statement.setLong(parameter++, minimumX + DungeonChunkKey.CHUNK_SIZE);
+            statement.setLong(parameter++, minimumY - 1L);
+            statement.setLong(parameter++, minimumY + DungeonChunkKey.CHUNK_SIZE);
+        }
+    }
+
+    private static boolean boundaryTouchesRequestedChunks(
+            Cell cell, Direction direction, List<DungeonChunkKey> chunks
+    ) {
+        return direction.edgeOf(cell).touchingCells().stream()
+                .anyMatch(touched -> chunks.stream().anyMatch(chunk -> chunk.level() == touched.level()
+                        && chunk.chunkQ() == Math.floorDiv(touched.q(), DungeonChunkKey.CHUNK_SIZE)
+                        && chunk.chunkR() == Math.floorDiv(touched.r(), DungeonChunkKey.CHUNK_SIZE)));
     }
 
 

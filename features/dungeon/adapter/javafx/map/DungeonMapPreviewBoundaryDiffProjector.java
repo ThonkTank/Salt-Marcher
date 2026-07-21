@@ -2,14 +2,14 @@ package features.dungeon.adapter.javafx.map;
 
 import java.util.List;
 import features.dungeon.api.DungeonEdgeRef;
-import features.dungeon.api.DungeonEditorStateSnapshot;
+import features.dungeon.api.editor.DungeonEditorSelection;
 
 final class DungeonMapPreviewBoundaryDiffProjector {
 
     void addPreviewBoundaryDiff(
             List<DungeonMapRenderState.Edge> edges,
             List<PreviewBoundaryDiffFrame> boundaries,
-            DungeonEditorStateSnapshot.Selection selection
+            DungeonEditorSelection selection
     ) {
         for (PreviewBoundaryDiffFrame boundary : boundaries) {
             DungeonEdgeRef edge = boundary.edge();
@@ -30,7 +30,7 @@ final class DungeonMapPreviewBoundaryDiffProjector {
 
     private static boolean selectedBoundary(
             PreviewBoundaryDiffFrame boundary,
-            DungeonEditorStateSnapshot.Selection selection
+            DungeonEditorSelection selection
     ) {
         return selection != null
                 && DungeonMapRenderElementFactory.topologyRef(boundary.topologyRef())

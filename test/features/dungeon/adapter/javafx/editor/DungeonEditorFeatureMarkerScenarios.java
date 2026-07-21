@@ -8,16 +8,15 @@ import javafx.scene.control.ButtonBase;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseButton;
-import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
+import features.dungeon.api.editor.DungeonEditorState;
 import features.dungeon.api.DungeonEditorMapSnapshot;
-import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.editor.DungeonEditorToolOptions;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.api.editor.DungeonEditorIntent;
 import features.dungeon.api.editor.DungeonEditorCommandOutcome;
-import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
+import features.dungeon.api.editor.DungeonEditorPointerInput.Target;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
 import features.dungeon.adapter.javafx.map.DungeonMapView;
 import static features.dungeon.adapter.javafx.editor.DungeonEditorTestSupport.*;
@@ -65,7 +64,7 @@ final class DungeonEditorFeatureMarkerScenarios {
         assertPopupAnchoredBelow(featureFamily, dropdown, "DE-FEATURE-001");
         assertPopupOptionSelected("POI", "DE-FEATURE-001 first option is preselected by default");
         assertEquals(DungeonEditorToolSelection.feature(DungeonEditorToolOptions.Feature.Kind.POINT_OF_INTEREST),
-                runtime.controlsModel().current().toolSelection(),
+                runtime.editorApi().current().toolSelection(),
                 "DE-FEATURE-001 feature family activates the default POI create tool");
         assertTrue(featureFamily.getAccessibleText().contains("POI"),
                 "DE-FEATURE-001 family button announces the selected feature option");
@@ -75,7 +74,7 @@ final class DungeonEditorFeatureMarkerScenarios {
 
         click(popupButton(dropdown, "Objekt"));
         assertEquals(DungeonEditorToolSelection.feature(DungeonEditorToolOptions.Feature.Kind.OBJECT),
-                runtime.controlsModel().current().toolSelection(),
+                runtime.editorApi().current().toolSelection(),
                 "DE-FEATURE-002 selecting Objekt routes to object creation");
         assertTrue(featureFamily.getAccessibleText().contains("Objekt"),
                 "DE-FEATURE-002 family button announces the remembered Objekt option");
@@ -86,7 +85,7 @@ final class DungeonEditorFeatureMarkerScenarios {
         assertPopupOptionSelected("Objekt", "DE-FEATURE-002 reopening remembers the Objekt option");
         click(popupButton(dropdown, "Encounter"));
         assertEquals(DungeonEditorToolSelection.feature(DungeonEditorToolOptions.Feature.Kind.ENCOUNTER),
-                runtime.controlsModel().current().toolSelection(),
+                runtime.editorApi().current().toolSelection(),
                 "DE-FEATURE-002 selecting Encounter routes to encounter creation");
         assertTrue(featureFamily.getAccessibleText().contains("Encounter"),
                 "DE-FEATURE-002 family button announces the remembered Encounter option");
@@ -113,7 +112,7 @@ final class DungeonEditorFeatureMarkerScenarios {
 
         click(button(controls, "Feature"));
         assertEquals(DungeonEditorToolSelection.feature(DungeonEditorToolOptions.Feature.Kind.POINT_OF_INTEREST),
-                runtime.controlsModel().current().toolSelection(),
+                runtime.editorApi().current().toolSelection(),
                 "DE-FEATURE-003 feature family defaults to the POI create route");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         fireMapMousePressed(
@@ -139,7 +138,7 @@ final class DungeonEditorFeatureMarkerScenarios {
                 "DE-FEATURE-003 persists POI kind and cell coordinates: " + stableRowsAfterCreate);
 
         DungeonTopologyElementRef markerRef = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.FEATURE_MARKER, markerId);
-        DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState committedSurface = runtime.editorApi().current();
         assertFeatureMarkerCreatedInSnapshot(
                 committedSurface,
                 binding.mapContentModel(),
@@ -150,24 +149,24 @@ final class DungeonEditorFeatureMarkerScenarios {
                 0,
                 "DE-FEATURE-003 committed create");
         var pointerTarget = runtimePointerTarget(binding.mapContentModel(), 5.5, 2.5);
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.MARKER, pointerTarget.targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.MARKER, pointerTarget.targetKind(),
                 "DE-FEATURE-004 authored feature marker resolves as a marker target");
-        assertEquals(DungeonEditorRuntimePointerTarget.ElementKind.FEATURE_MARKER, pointerTarget.elementKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.ElementKind.FEATURE_MARKER, pointerTarget.elementKind(),
                 "DE-FEATURE-004 authored feature marker publishes FEATURE_MARKER element kind");
-        assertEquals(DungeonEditorRuntimePointerTarget.TopologyKind.FEATURE_MARKER, pointerTarget.topologyKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.FEATURE_MARKER, pointerTarget.topologyKind(),
                 "DE-FEATURE-004 authored feature marker carries the FEATURE_MARKER topology ref");
         updateHoverTarget(binding.mapContentModel(), pointerTarget);
         assertTrue(renderHasHoverText(binding.mapContentModel(), "POI " + markerId),
                 "DE-FEATURE-004 authored feature marker label appears only in hover overlay");
         assertCanvasPaintedNearScene(mapView, 5.5, 2.5, 18,
                 "DE-FEATURE-003 rendered canvas paints the created POI marker");
-        DungeonEditorStateSnapshot selectedState = runtime.stateModel().current();
+        DungeonEditorState selectedState = runtime.editorApi().current();
         assertEquals(markerRef, selectedState.selection().topologyRef(),
                 "DE-FEATURE-004 create selects the authored feature-marker topology ref");
         assertTrue(!selectedState.selection().clusterSelection(),
                 "DE-FEATURE-004 create selection is a simple marker target");
         assertEquals(markerRef,
-                runtime.mapSurfaceModel().current().selection().topologyRef(),
+                runtime.editorApi().current().selection().topologyRef(),
                 "DE-FEATURE-004 map-surface readback selects the authored feature marker");
         assertTrue(selectedState.inspector() != null,
                 "DE-FEATURE-004 create publishes a feature-marker inspector");
@@ -178,15 +177,15 @@ final class DungeonEditorFeatureMarkerScenarios {
 
         String authoredLabel = "Verborgener Altar";
         String authoredDescription = "Verborgener Altar am alten Pilgerweg.";
-        long revisionBeforeSemanticEdit = runtime.mapSurfaceModel().current().surface().revision();
+        long revisionBeforeSemanticEdit = runtime.editorApi().current().selectedWindow().revision();
         TextField labelField = textField(binding.stateView(), "Feature-Marker Name");
         TextArea descriptionArea = textArea(binding.stateView(), "Feature-Marker Beschreibung");
         labelField.setText(authoredLabel);
         descriptionArea.setText(authoredDescription);
         click(buttonWithAccessibleText(binding.stateView(), "Feature-Marker speichern"));
-        DungeonEditorStateSnapshot editedState = runtime.stateModel().current();
+        DungeonEditorState editedState = runtime.editorApi().current();
         assertEquals(revisionBeforeSemanticEdit + 1L,
-                runtime.mapSurfaceModel().current().surface().revision(),
+                runtime.editorApi().current().selectedWindow().revision(),
                 "DE-FEATURE-006 one typed marker semantic command advances revision exactly once");
         assertEquals(markerRef, editedState.selection().topologyRef(),
                 "DE-FEATURE-006 marker semantic edit preserves selection identity");
@@ -198,10 +197,10 @@ final class DungeonEditorFeatureMarkerScenarios {
         assertTrue(stableRowsAfterSemanticEdit.stream().anyMatch(row -> row.contains("|label=" + authoredLabel)
                         && row.contains("|description=" + authoredDescription)),
                 "DE-FEATURE-006 typed marker semantic edit persists label and description");
-        long revisionBeforeRejectedEdit = runtime.mapSurfaceModel().current().surface().revision();
+        long revisionBeforeRejectedEdit = runtime.editorApi().current().selectedWindow().revision();
         runtime.editorApi().dispatch(new DungeonEditorIntent.CommitFeatureMarkerSemantics(
                 markerId + 10_000L, "Fehlt", "Ungültiges Ziel"));
-        assertEquals(revisionBeforeRejectedEdit, runtime.mapSurfaceModel().current().surface().revision(),
+        assertEquals(revisionBeforeRejectedEdit, runtime.editorApi().current().selectedWindow().revision(),
                 "DE-FEATURE-006 rejected marker semantic edit preserves authored revision");
         assertEquals(new DungeonEditorCommandOutcome.Rejected(
                         DungeonEditorCommandOutcome.RejectionReason.INVALID_TARGET),
@@ -215,7 +214,7 @@ final class DungeonEditorFeatureMarkerScenarios {
         assertEquals(stableRowsAfterSemanticEdit, runtime.database().featureMarkerStableState(mapId),
                 "DE-FEATURE-006 reload keeps the POI feature-marker rows stable");
         assertFeatureMarkerCreatedInSnapshot(
-                runtime.mapSurfaceModel().current(),
+                runtime.editorApi().current(),
                 binding.mapContentModel(),
                 "POI",
                 markerId,
@@ -231,7 +230,7 @@ final class DungeonEditorFeatureMarkerScenarios {
                 viewport.sceneToScreenX(markerCenter.getX()),
                 viewport.sceneToScreenY(markerCenter.getY()),
                 false);
-        DungeonEditorStateSnapshot reloadedSelection = runtime.stateModel().current();
+        DungeonEditorState reloadedSelection = runtime.editorApi().current();
         assertEquals(markerRef, reloadedSelection.selection().topologyRef(),
                 "DE-FEATURE-006 production selection publishes the typed marker topology ref");
         assertTrue(reloadedSelection.inspector() != null,
@@ -264,7 +263,7 @@ final class DungeonEditorFeatureMarkerScenarios {
         Parent objectDropdown = popupContainerWithSelected("POI");
         click(popupButton(objectDropdown, "Objekt"));
         assertEquals(DungeonEditorToolSelection.feature(DungeonEditorToolOptions.Feature.Kind.OBJECT),
-                runtime.controlsModel().current().toolSelection(),
+                runtime.editorApi().current().toolSelection(),
                 "DE-FEATURE-005 selecting Objekt activates the object create tool before map press");
         fireMapMousePressed(
                 mapView,
@@ -277,7 +276,7 @@ final class DungeonEditorFeatureMarkerScenarios {
         Parent encounterDropdown = popupContainerWithSelected("Objekt");
         click(popupButton(encounterDropdown, "Encounter"));
         assertEquals(DungeonEditorToolSelection.feature(DungeonEditorToolOptions.Feature.Kind.ENCOUNTER),
-                runtime.controlsModel().current().toolSelection(),
+                runtime.editorApi().current().toolSelection(),
                 "DE-FEATURE-005 selecting Encounter activates the encounter create tool before map press");
         fireMapMousePressed(
                 mapView,
@@ -286,7 +285,7 @@ final class DungeonEditorFeatureMarkerScenarios {
                 viewport.sceneToScreenY(2.5),
                 false);
 
-        DungeonEditorMapSurfaceSnapshot snapshot = runtime.mapSurfaceModel().current();
+        DungeonEditorState snapshot = runtime.editorApi().current();
         Optional<DungeonEditorMapSnapshot.Feature> objectFeature = featureAt(snapshot, 5, 2, 0);
         Optional<DungeonEditorMapSnapshot.Feature> encounterFeature = featureAt(snapshot, 7, 2, 0);
         assertTrue(objectFeature.isPresent(), "DE-FEATURE-005 object marker exists at 5,2,0");
@@ -358,9 +357,9 @@ final class DungeonEditorFeatureMarkerScenarios {
         assertEquals(1L, runtime.database().countFeatureMarkerById(mapId, rightPoiId),
                 "DE-FEATURE-007 setup keeps the right POI marker row");
         var deletePointerTarget = runtimePointerTarget(binding.mapContentModel(), 9.5, 2.5);
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.MARKER, deletePointerTarget.targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.MARKER, deletePointerTarget.targetKind(),
                 "DE-FEATURE-007 authored delete target resolves as a feature-marker marker");
-        assertEquals(DungeonEditorRuntimePointerTarget.ElementKind.FEATURE_MARKER, deletePointerTarget.elementKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.ElementKind.FEATURE_MARKER, deletePointerTarget.elementKind(),
                 "DE-FEATURE-007 authored delete target keeps FEATURE_MARKER element identity");
         fireMapMousePressed(
                 mapView,
@@ -380,12 +379,12 @@ final class DungeonEditorFeatureMarkerScenarios {
                 new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.FEATURE_MARKER, deletedPoiId);
         Point2D deletedCenter = new Point2D(9.5, 2.5);
         assertFeatureMarkerAbsentFromSnapshotAndRender(
-                runtime.mapSurfaceModel().current(),
+                runtime.editorApi().current(),
                 binding.mapContentModel(),
                 deletedRef,
                 deletedCenter,
                 "DE-FEATURE-007 committed delete");
-        assertEmptySelection(runtime.stateModel().current().selection(),
+        assertEmptySelection(runtime.editorApi().current().selection(),
                 "DE-FEATURE-007 clears selected marker after delete");
 
         selectMap(controls, "Feature Delete Reload Hop");
@@ -393,7 +392,7 @@ final class DungeonEditorFeatureMarkerScenarios {
         assertEquals(0L, runtime.database().countFeatureMarkerById(mapId, deletedPoiId),
                 "DE-FEATURE-007 reload keeps the deleted marker row absent");
         assertFeatureMarkerAbsentFromSnapshotAndRender(
-                runtime.mapSurfaceModel().current(),
+                runtime.editorApi().current(),
                 binding.mapContentModel(),
                 deletedRef,
                 deletedCenter,
@@ -402,12 +401,12 @@ final class DungeonEditorFeatureMarkerScenarios {
     }
 
     private static Optional<DungeonEditorMapSnapshot.Feature> featureAt(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             int q,
             int r,
             int level
     ) {
-        return snapshot.surface().map().features().stream()
+        return snapshot.selectedWindow().map().features().stream()
                 .filter(feature -> feature.cells().stream()
                         .anyMatch(cell -> cell.q() == q && cell.r() == r && cell.level() == level))
                 .findFirst();

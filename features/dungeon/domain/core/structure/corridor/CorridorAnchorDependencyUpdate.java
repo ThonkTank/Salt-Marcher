@@ -103,25 +103,11 @@ final class CorridorAnchorDependencyUpdate {
             CorridorWaypoint waypoint,
             Map<CorridorNetwork.AnchorKey, AnchorMovement> referencedAnchorMoves
     ) {
-        Cell sourceCenter = CorridorMapLookup.clusterCenterOrOrigin(
-                sourceMap,
-                waypoint.clusterId(),
-                waypoint.level());
-        Cell currentCenter = CorridorMapLookup.clusterCenterOrOrigin(
-                currentMap,
-                waypoint.clusterId(),
-                waypoint.level());
-        Cell absoluteCell = waypoint.absoluteCell(sourceCenter);
+        Cell absoluteCell = waypoint.cell();
         for (AnchorMovement movement : referencedAnchorMoves.values()) {
             if (movement.previousCell().equals(absoluteCell) && !movement.nextCell().equals(absoluteCell)) {
                 Cell nextCell = movement.nextCell();
-                return new CorridorWaypoint(
-                        waypoint.clusterId(),
-                        new Cell(
-                                nextCell.q() - currentCenter.q(),
-                                nextCell.r() - currentCenter.r(),
-                                nextCell.level()),
-                        nextCell.level());
+                return new CorridorWaypoint(waypoint.clusterId(), nextCell);
             }
         }
         return waypoint;

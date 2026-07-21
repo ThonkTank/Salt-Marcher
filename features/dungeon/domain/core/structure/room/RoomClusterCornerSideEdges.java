@@ -19,7 +19,7 @@ final class RoomClusterCornerSideEdges {
             return List.of();
         }
         List<Edge> result = new ArrayList<>();
-        for (EdgeKey key : cluster.boundarySnapshot().adjacentWallRunEdgeKeys(corner, vertical)) {
+        for (EdgeKey key : cluster.authoredBoundaries().adjacentWallRunEdgeKeys(corner, vertical)) {
             result.add(new Edge(key.lower(), key.upper()));
         }
         return List.copyOf(result);

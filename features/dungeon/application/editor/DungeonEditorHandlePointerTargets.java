@@ -6,20 +6,18 @@ import java.util.Objects;
 import features.dungeon.api.DungeonEditorHandleRef;
 import features.dungeon.api.DungeonEditorHandleSnapshot;
 import features.dungeon.api.DungeonEditorMapSnapshot;
-import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
-import features.dungeon.api.DungeonEditorStateSnapshot;
 
 final class DungeonEditorHandlePointerTargets {
     private DungeonEditorHandlePointerTargets() {
     }
 
     static void addTargets(
-            Map<String, DungeonEditorRuntimePointerTarget> targets,
+            Map<String, features.dungeon.api.editor.DungeonEditorPointerInput.Target> targets,
             DungeonEditorMapSnapshot map,
-            DungeonEditorStateSnapshot.Selection selection,
+            features.dungeon.api.editor.DungeonEditorSelection selection,
             DungeonEditorPreview preview,
-            DungeonEditorMapSurfaceSnapshot snapshot
+            DungeonEditorSurfaceProjection snapshot
     ) {
         for (DungeonEditorHandleSnapshot handle : map.editorHandles()) {
             DungeonEditorHandleRef ref = handle.ref();
@@ -30,14 +28,14 @@ final class DungeonEditorHandlePointerTargets {
             }
             String hitRef = DungeonEditorMarkerHitRefs.marker(ref, handle.cell()).value();
             if (!hitRef.isBlank()) {
-                targets.put(hitRef, DungeonEditorRuntimePointerTarget.handle(ref));
+                targets.put(hitRef, features.dungeon.api.editor.DungeonEditorPointerInput.Target.handle(ref));
             }
         }
     }
 
     private static boolean visibleCanvasHandle(
             DungeonEditorHandleRef ref,
-            DungeonEditorStateSnapshot.Selection selection
+            features.dungeon.api.editor.DungeonEditorSelection selection
     ) {
         if (ref.kind().isClusterLabel() || ref.kind().isCorridorGeometryHandle()) {
             return false;

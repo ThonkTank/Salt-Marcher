@@ -1,18 +1,18 @@
 package features.dungeon.adapter.sqlite.mapper;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import features.dungeon.adapter.sqlite.model.DungeonClusterBoundaryRecord;
 import features.dungeon.adapter.sqlite.model.DungeonRoomClusterRecord;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.CellOrdering;
 import features.dungeon.domain.core.geometry.Direction;
-import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.geometry.Edge;
+import features.dungeon.domain.core.geometry.EdgeKey;
 import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomRegion;
+import java.util.ArrayList;
+import java.util.List;
 
 final class DungeonClusterRecordMapperSupport {
 
@@ -25,13 +25,11 @@ final class DungeonClusterRecordMapperSupport {
     ) {
         List<RoomCluster> result = new ArrayList<>();
         for (DungeonRoomClusterRecord record : records == null ? List.<DungeonRoomClusterRecord>of() : records) {
-            Cell center = derivedCenter(record.clusterId(), rooms);
             result.add(RoomCluster.authored(
                     record.clusterId(),
                     record.mapId(),
                     record.name(),
-                    center,
-                    boundariesByLevel(record.boundaries(), center)));
+                    boundaries(record.boundaries())));
         }
         return List.copyOf(result);
     }
@@ -42,43 +40,36 @@ final class DungeonClusterRecordMapperSupport {
     ) {
         List<DungeonRoomClusterRecord> result = new ArrayList<>();
         for (RoomCluster cluster : clusters == null ? List.<RoomCluster>of() : clusters) {
+            Cell derivedAnchor = derivedAnchor(cluster.clusterId(), rooms);
             result.add(new DungeonRoomClusterRecord(
                     cluster.clusterId(),
                     cluster.mapId(),
                     cluster.name(),
-                    cluster.center().q(),
-                    cluster.center().r(),
-                    cluster.center().level(),
+                    derivedAnchor.q(),
+                    derivedAnchor.r(),
+                    derivedAnchor.level(),
                     toBoundaryRecords(cluster)));
         }
         return List.copyOf(result);
     }
 
-    private static Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel(
-            List<DungeonClusterBoundaryRecord> records,
-            Cell center
-    ) {
-        Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
+    private static List<BoundarySegment> boundaries(List<DungeonClusterBoundaryRecord> records) {
+        List<BoundarySegment> result = new ArrayList<>();
         for (DungeonClusterBoundaryRecord record
                 : records == null ? List.<DungeonClusterBoundaryRecord>of() : records) {
-            result.computeIfAbsent(record.levelZ(), ignored -> new ArrayList<>())
-                    .add(new DungeonClusterBoundary(
-                            record.clusterId(),
-                            record.levelZ(),
-                            new Cell(
-                                    record.cellX() - center.q(),
-                                    record.cellY() - center.r(),
-                                    record.levelZ()),
-                            Direction.parse(record.edgeDirection()),
-                            BoundaryKind.parse(record.edgeType()),
-                            DungeonTopologyElementRecordMapperSupport.topologyRef(
-                                    record.edgeType(),
-                                    record.topologyElementId())));
+            Cell cell = new Cell(record.cellX(), record.cellY(), record.levelZ());
+            Edge edge = Direction.parse(record.edgeDirection()).edgeOf(cell);
+            result.add(BoundarySegment.fromEdge(
+                    edge,
+                    boundaryKind(record.edgeType()),
+                    DungeonTopologyElementRecordMapperSupport.topologyRef(
+                            record.edgeType(),
+                            record.topologyElementId())));
         }
-        return DungeonNestedListMaps.immutableCopy(result);
+        return List.copyOf(result);
     }
 
-    private static Cell derivedCenter(long clusterId, List<RoomRegion> rooms) {
+    private static Cell derivedAnchor(long clusterId, List<RoomRegion> rooms) {
         List<Cell> cells = new ArrayList<>();
         for (RoomRegion room : rooms == null ? List.<RoomRegion>of() : rooms) {
             if (room.clusterId() == clusterId) {
@@ -91,18 +82,44 @@ final class DungeonClusterRecordMapperSupport {
 
     private static List<DungeonClusterBoundaryRecord> toBoundaryRecords(RoomCluster cluster) {
         List<DungeonClusterBoundaryRecord> result = new ArrayList<>();
-        for (DungeonClusterBoundary boundary : cluster.orderedBoundariesForWriteback()) {
-            Cell absoluteCell = boundary.absoluteCell(cluster.center());
+        for (BoundarySegment boundary : cluster.orderedBoundariesForWriteback()) {
+            OrientedEdge oriented = oriented(boundary.edge());
             result.add(new DungeonClusterBoundaryRecord(
                     cluster.clusterId(),
                     boundary.level(),
-                    absoluteCell.q(),
-                    absoluteCell.r(),
-                    boundary.direction().name(),
+                    oriented.cell().q(),
+                    oriented.cell().r(),
+                    oriented.direction().name(),
                     boundary.kind().name(),
-                    boundary.kind().renderable() ? boundary.resolvedTopologyRef(cluster.center()).id() : null));
+                    boundary.kind().renderable() ? boundary.resolvedTopologyRef().id() : null));
         }
         return List.copyOf(result);
     }
 
+    private static OrientedEdge oriented(Edge edge) {
+        List<Cell> touchingCells = edge.touchingCells().stream().sorted(CellOrdering::compareCells).toList();
+        EdgeKey key = EdgeKey.from(edge);
+        for (Cell cell : touchingCells) {
+            for (Direction direction : Direction.values()) {
+                if (EdgeKey.from(direction.edgeOf(cell)).equals(key)) {
+                    return new OrientedEdge(cell, direction);
+                }
+            }
+        }
+        throw new IllegalArgumentException("boundary edge must border an authored cell");
+    }
+
+    private static BoundaryKind boundaryKind(String value) {
+        if (value == null) {
+            return BoundaryKind.WALL;
+        }
+        return switch (value.trim().toUpperCase(java.util.Locale.ROOT)) {
+            case "DOOR" -> BoundaryKind.DOOR;
+            case "OPEN" -> BoundaryKind.OPEN;
+            default -> BoundaryKind.WALL;
+        };
+    }
+
+    private record OrientedEdge(Cell cell, Direction direction) {
+    }
 }

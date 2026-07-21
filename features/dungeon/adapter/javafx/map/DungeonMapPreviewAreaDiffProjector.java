@@ -3,7 +3,7 @@ package features.dungeon.adapter.javafx.map;
 import java.util.ArrayList;
 import java.util.List;
 import features.dungeon.api.DungeonCellRef;
-import features.dungeon.api.DungeonEditorStateSnapshot;
+import features.dungeon.api.editor.DungeonEditorSelection;
 import features.dungeon.adapter.javafx.map.DungeonMapRenderState.CellKind;
 
 final class DungeonMapPreviewAreaDiffProjector {
@@ -12,7 +12,7 @@ final class DungeonMapPreviewAreaDiffProjector {
             List<DungeonMapRenderState.Cell> cells,
             List<DungeonMapRenderState.Label> labels,
             List<PreviewAreaDiffFrame> areas,
-            DungeonEditorStateSnapshot.Selection selection,
+            DungeonEditorSelection selection,
             DungeonMapRoomLabelPlanner roomLabelPlanner
     ) {
         for (PreviewAreaDiffFrame area : areas) {
@@ -24,7 +24,7 @@ final class DungeonMapPreviewAreaDiffProjector {
             List<DungeonMapRenderState.Cell> cells,
             List<DungeonMapRenderState.Label> labels,
             PreviewAreaDiffFrame area,
-            DungeonEditorStateSnapshot.Selection selection,
+            DungeonEditorSelection selection,
             DungeonMapRoomLabelPlanner roomLabelPlanner
     ) {
         boolean selected = selectedArea(area, selection);
@@ -68,7 +68,7 @@ final class DungeonMapPreviewAreaDiffProjector {
 
     private static boolean selectedArea(
             PreviewAreaDiffFrame area,
-            DungeonEditorStateSnapshot.Selection selection
+            DungeonEditorSelection selection
     ) {
         if (selection == null) {
             return false;
@@ -82,7 +82,7 @@ final class DungeonMapPreviewAreaDiffProjector {
 
     private static boolean selectedAreaSurface(
             PreviewAreaDiffFrame area,
-            DungeonEditorStateSnapshot.Selection selection
+            DungeonEditorSelection selection
     ) {
         return selection != null
                 && !selection.clusterSelection()

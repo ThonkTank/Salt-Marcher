@@ -5,7 +5,7 @@ import features.dungeon.api.DungeonMapId;
 import features.dungeon.api.DungeonOverlaySettings;
 import java.util.List;
 
-/** Typed editor inputs introduced ahead of the JavaFX consumer migration. */
+/** Typed editor inputs consumed by the JavaFX adapter. */
 public sealed interface DungeonEditorIntent {
 
     record SetViewport(DungeonEditorViewportInput viewport) implements DungeonEditorIntent {

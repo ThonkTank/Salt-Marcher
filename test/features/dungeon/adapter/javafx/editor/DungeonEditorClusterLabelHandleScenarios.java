@@ -1,4 +1,5 @@
 package features.dungeon.adapter.javafx.editor;
+import features.dungeon.api.editor.DungeonEditorSelection;
 
 import java.util.List;
 import java.util.Locale;
@@ -13,13 +14,12 @@ import features.dungeon.api.DungeonEdgeRef;
 import features.dungeon.api.DungeonEditorHandleKind;
 import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorHandleSnapshot;
-import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
+import features.dungeon.api.editor.DungeonEditorState;
 import features.dungeon.api.DungeonEditorMapSnapshot;
 import features.dungeon.api.DungeonTopologyElementRef;
-import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.editor.DungeonEditorToolFamily;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
-import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
+import features.dungeon.api.editor.DungeonEditorPointerInput.Target;
 import features.dungeon.application.editor.DungeonEditorRuntimeLabelTarget;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
 import features.dungeon.adapter.javafx.map.DungeonMapView;
@@ -82,13 +82,13 @@ final class DungeonEditorClusterLabelHandleScenarios {
         createMapThroughControls(controls, runtime, "Default Cluster Label Reload Hop");
         selectMap(controls, "Default Cluster Label Map");
 
-        DungeonEditorMapSurfaceSnapshot snapshot = runtime.mapSurfaceModel().current();
+        DungeonEditorState snapshot = runtime.editorApi().current();
         DungeonEditorHandleSnapshot label = singleClusterLabel(snapshot, "DE-LABEL-001");
         assertEquals("Cluster " + label.ref().clusterId(), label.label(),
                 "DE-LABEL-001 default cluster label text");
         assertTrue(!"R1".equals(label.label()),
                 "DE-LABEL-001 cluster label does not reuse the first room name");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.LABEL, runtimePointerTarget(binding.mapContentModel(), label.cell().q() + 0.5, label.cell().r() + 0.5).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.LABEL, runtimePointerTarget(binding.mapContentModel(), label.cell().q() + 0.5, label.cell().r() + 0.5).targetKind(),
                 "DE-LABEL-001 cluster label hit remains a label target");
         assertHoverHighlightsClusterLabel(
                 binding.mapContentModel(),
@@ -137,7 +137,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 "DE-LABEL-004 default room label moves off the cluster centroid toward a wall-adjacent floor span");
         assertTrue(roomLabelCenter.r() > 2.5,
                 "DE-LABEL-004 equal-length room label placement prefers the south wall before other walls");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.CELL, runtimePointerTarget(binding.mapContentModel(), roomLabelCenter.q(), roomLabelCenter.r()).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.CELL, runtimePointerTarget(binding.mapContentModel(), roomLabelCenter.q(), roomLabelCenter.r()).targetKind(),
                 "DE-HANDLE-005 room label point passes through to floor selection");
     }
 
@@ -152,7 +152,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
         selectMap(controls, "Cluster Label Rename Map");
         click(button(controls, "Auswahl"));
 
-        DungeonEditorMapSurfaceSnapshot initial = runtime.mapSurfaceModel().current();
+        DungeonEditorState initial = runtime.editorApi().current();
         DungeonEditorHandleSnapshot clusterLabel = singleClusterLabel(initial, "DE-LABEL-005");
         long clusterId = clusterLabel.ref().clusterId();
         String initialClusterName = runtime.database().clusterName(clusterId);
@@ -160,7 +160,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
         List<String> boundaryRowsBefore = runtime.database().roomBoundaryEdgeState(mapId);
         double labelQ = clusterLabel.cell().q() + 0.5;
         double labelR = clusterLabel.cell().r() + 0.5;
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.LABEL, runtimePointerTarget(binding.mapContentModel(), labelQ, labelR).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.LABEL, runtimePointerTarget(binding.mapContentModel(), labelQ, labelR).targetKind(),
                 "DE-LABEL-007 rendered cluster label stays separate from generic handles");
 
         clickMap(binding.mapView(), binding.mapContentModel(), labelQ, labelR);
@@ -181,7 +181,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 "DE-LABEL-005 cluster rename leaves authored geometry row count unchanged");
         assertEquals(boundaryRowsBefore, runtime.database().roomBoundaryEdgeState(mapId),
                 "DE-LABEL-005 cluster rename leaves boundary geometry unchanged");
-        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
+        assertEquals(DungeonEditorPreview.none(), runtime.editorApi().current().preview(),
                 "DE-LABEL-005 cluster rename keeps preview empty");
         assertTrue(renderHasLabelAt(binding.mapContentModel(), "West Wing", labelQ, labelR),
                 "DE-LABEL-005 render scene updates custom cluster label");
@@ -220,7 +220,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                         && roomLabelText.typography().fontSizePixels() > 13.0,
                 "DE-LABEL-004 room label uses blockier bold typography scaled from available wall space");
         assertTrue(roomLabelText.width() > 56.0 / 32.0,
-                "DE-LABEL-004 room label consumes more than the legacy minimum label width when wall space allows");
+                "DE-LABEL-004 room label consumes more than the minimum label width when wall space allows");
         assertRoomLabelHoverRemainsPassive(
                 binding,
                 displayRoomLabel("R1"),
@@ -335,13 +335,13 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 binding.mapContentModel(),
                 displayRoomLabel("R1"),
                 "DE-LABEL-009 room label");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.LABEL, runtimePointerTarget(binding.mapContentModel(), clusterLabelCenter.q(), clusterLabelCenter.r()).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.LABEL, runtimePointerTarget(binding.mapContentModel(), clusterLabelCenter.q(), clusterLabelCenter.r()).targetKind(),
                 "DE-LABEL-008 cluster label point resolves as a label target");
         assertTrue(Math.abs(clusterLabelCenter.q() - roomLabelCenter.q()) > 0.3
                         || Math.abs(clusterLabelCenter.r() - roomLabelCenter.r()) > 0.3,
                 "DE-LABEL-004 room floor label stays separated from the centered cluster label");
         assertTrue(runtimePointerTarget(binding.mapContentModel(), roomLabelCenter.q(), roomLabelCenter.r())
-                        .targetKind() != DungeonEditorRuntimePointerTarget.TargetKind.LABEL,
+                        .targetKind() != features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.LABEL,
                 "DE-LABEL-007 rendered room label is not a direct label target");
 
         doubleClickRenderedLabel(binding, clusterLabelCenter, false);
@@ -399,7 +399,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
         assertTrue(!inlineEditor.isVisible(), "DE-LABEL-008 Enter commit hides inline cluster label editor");
         assertEquals("Inline Cluster", runtime.database().clusterName(ids.clusterId()),
                 "DE-LABEL-008 inline cluster label edit trims and persists authored cluster name outcome="
-                        + runtime.stateModel().current().statusText());
+                        + runtime.editorApi().current().commandStatus().message());
         assertEquals("R1", runtime.database().roomName(ids.roomId()),
                 "DE-LABEL-008 inline cluster label edit does not mutate room name");
         assertTrue(renderHasLabelAt(binding.mapContentModel(), "Inline Cluster", clusterLabelCenter.q(), clusterLabelCenter.r()),
@@ -483,13 +483,13 @@ final class DungeonEditorClusterLabelHandleScenarios {
         createMapThroughControls(controls, runtime, "Complex Cluster Handles Reload Hop");
         selectMap(controls, "Complex Cluster Handles Map");
 
-        DungeonEditorMapSurfaceSnapshot snapshot = runtime.mapSurfaceModel().current();
+        DungeonEditorState snapshot = runtime.editorApi().current();
         DungeonEditorHandleSnapshot label = singleClusterLabel(snapshot, "DE-LABEL-002");
         assertEquals(11, label.cell().q(), "DE-LABEL-002 label centroid q");
         assertEquals(11, label.cell().r(), "DE-LABEL-002 label centroid r");
         assertEquals(0, label.cell().level(), "DE-LABEL-002 label centroid level");
         assertTrue(!hasClusterLabelAt(snapshot, 10, 10, 0),
-                "DE-LABEL-002 label does not use the authored cluster center");
+                "DE-LABEL-002 label does not use the derived minimum-cell anchor");
         assertTrue(renderHasLabelAt(binding.mapContentModel(), label.label(), 11.5, 11.5),
                 "DE-LABEL-002 render scene places the cluster label at the published centroid cell");
 
@@ -505,7 +505,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
         createMapThroughControls(controls, runtime, "Complex Cluster Handles Reload Hop");
         selectMap(controls, "Complex Cluster Handles Map");
 
-        DungeonEditorMapSurfaceSnapshot snapshot = runtime.mapSurfaceModel().current();
+        DungeonEditorState snapshot = runtime.editorApi().current();
         assertClusterCorners(snapshot, Set.of(
                 "10,10,0",
                 "13,10,0",
@@ -528,7 +528,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 "DE-HANDLE-002 plain room floor selection still does not expose cluster wall-run handles");
         selectClusterLabel(runtime, binding, "DE-HANDLE-002");
         DungeonEditorMapSnapshot.Area selectedRoom = roomAreaByLabel(
-                runtime.mapSurfaceModel().current(),
+                runtime.editorApi().current(),
                 "R1",
                 "DE-LABEL-004 selected cluster");
         LabelText selectedRoomLabel = labelText(
@@ -550,9 +550,9 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 "DE-LABEL-004 selected room label text brightens to stay readable on selected clusters");
         assertTrue(renderHasWallRunMarkerAt(binding.mapContentModel(), 11.0, 10.0),
                 "DE-CLUSTER-001 cluster-label-selected render scene places a smaller horizontal wall-run handle on the wall line");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), 11.0, 10.0).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), 11.0, 10.0).targetKind(),
                 "DE-HANDLE-002 cluster-label-selected wall-run handle resolves as a handle target");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.BOUNDARY, runtimePointerTarget(binding.mapContentModel(), 11.0, 10.0, true).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.BOUNDARY, runtimePointerTarget(binding.mapContentModel(), 11.0, 10.0, true).targetKind(),
                 "DE-HANDLE-002 boundary-preferred resolver chooses the wall under an overlapping handle");
         assertWallRunSourceEdgesPresent(snapshot, "DE-HANDLE-002");
 
@@ -574,15 +574,15 @@ final class DungeonEditorClusterLabelHandleScenarios {
         createMapThroughControls(controls, runtime, mapName + " Reload Hop");
         selectMap(controls, mapName);
 
-        DungeonEditorMapSurfaceSnapshot snapshot = runtime.mapSurfaceModel().current();
+        DungeonEditorState snapshot = runtime.editorApi().current();
         assertTrue(mapHasBoundaryKindAt(
-                        snapshot.surface().map(),
+                        snapshot.selectedWindow().map(),
                         "WALL",
                         new Cell(3, 1, 0),
                         new Cell(3, 2, 0)),
                 "DE-CLUSTER-001 T fixture publishes the vertical authored interior wall");
         assertTrue(mapHasBoundaryKindAt(
-                        snapshot.surface().map(),
+                        snapshot.selectedWindow().map(),
                         "WALL",
                         new Cell(3, 3, 0),
                         new Cell(4, 3, 0)),
@@ -604,18 +604,18 @@ final class DungeonEditorClusterLabelHandleScenarios {
         assertNotHandleTarget(binding.mapContentModel(), 3.0, 2.0,
                 "DE-HANDLE-002 T-split wall-run handle remains hidden after room-floor selection");
         selectClusterLabel(runtime, binding, "DE-HANDLE-002 T fixture");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), 3.0, 2.0).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), 3.0, 2.0).targetKind(),
                 "DE-HANDLE-002 selected cluster exposes the upper split vertical run handle");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), 3.0, 4.0).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), 3.0, 4.0).targetKind(),
                 "DE-HANDLE-002 selected cluster exposes the lower split vertical run handle");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), 4.0, 3.0).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), 4.0, 3.0).targetKind(),
                 "DE-HANDLE-002 selected cluster exposes the horizontal branch run handle");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), 3.0, 3.0).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), 3.0, 3.0).targetKind(),
                 "DE-HANDLE-002 selected cluster exposes the authored T-junction corner handle");
         selectMap(controls, mapName + " Reload Hop");
         selectMap(controls, mapName);
 
-        DungeonEditorMapSurfaceSnapshot reloadedSnapshot = runtime.mapSurfaceModel().current();
+        DungeonEditorState reloadedSnapshot = runtime.editorApi().current();
         assertWallRunHandle(reloadedSnapshot, 3, 2, 0, 3.0, 2.0, new Cell(3, 2, 0), new Cell(3, 3, 0),
                 "DE-CLUSTER-001 reload upper split vertical");
         assertWallRunHandle(reloadedSnapshot, 3, 4, 0, 3.0, 4.0, new Cell(3, 4, 0), new Cell(3, 5, 0),
@@ -631,11 +631,11 @@ final class DungeonEditorClusterLabelHandleScenarios {
         assertNotHandleTarget(binding.mapContentModel(), 3.0, 2.0,
                 "DE-HANDLE-002 reload keeps T-split wall-run handle hidden after room-floor selection");
         selectClusterLabel(runtime, binding, "DE-HANDLE-002 T fixture reload");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), 3.0, 2.0).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), 3.0, 2.0).targetKind(),
                 "DE-HANDLE-002 reload selected cluster exposes the upper split vertical run handle");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), 3.0, 4.0).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), 3.0, 4.0).targetKind(),
                 "DE-HANDLE-002 reload selected cluster exposes the lower split vertical run handle");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), 4.0, 3.0).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), 4.0, 3.0).targetKind(),
                 "DE-HANDLE-002 reload selected cluster exposes the horizontal branch run handle");
 
         dragUpperTWallRunAndAssertConnectorPreserved(runtime, binding, controls, mapView, mapId, mapName);
@@ -669,7 +669,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 viewport.sceneToScreenY(2.0),
                 false);
 
-        DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState previewSurface = runtime.editorApi().current();
         assertTrue(previewSurface.preview() instanceof DungeonEditorPreview.MoveBoundaryStretchPreview,
                 "DE-CLUSTER-002 T-split drag publishes boundary-stretch preview");
         DungeonEditorPreview.MoveBoundaryStretchPreview preview =
@@ -683,13 +683,13 @@ final class DungeonEditorClusterLabelHandleScenarios {
         assertEquals(-1L, preview.deltaQ(), "DE-CLUSTER-002 T-split preview delta q");
         assertEquals(0L, preview.deltaR(), "DE-CLUSTER-002 T-split preview delta r");
         assertTrue(mapHasBoundaryKindAt(
-                        previewSurface.surface().previewMap(),
+                        previewSurface.selectedWindow().previewMap(),
                         "WALL",
                         new Cell(2, 3, 0),
                         new Cell(3, 3, 0)),
                 "DE-CLUSTER-002 T-split preview shows the connector touching the moved wall run before release");
         assertTrue(mapHasBoundaryKindAt(
-                        previewSurface.surface().previewMap(),
+                        previewSurface.selectedWindow().previewMap(),
                         "WALL",
                         new Cell(3, 3, 0),
                         new Cell(3, 4, 0)),
@@ -717,19 +717,19 @@ final class DungeonEditorClusterLabelHandleScenarios {
             long mapId,
             String message
     ) {
-        DungeonEditorMapSurfaceSnapshot snapshot = runtime.mapSurfaceModel().current();
+        DungeonEditorState snapshot = runtime.editorApi().current();
         assertEquals(DungeonEditorPreview.none(), snapshot.preview(), message + " clears preview");
-        assertTrue(mapHasBoundaryKindAt(snapshot.surface().map(), "WALL", new Cell(2, 1, 0), new Cell(2, 2, 0)),
+        assertTrue(mapHasBoundaryKindAt(snapshot.selectedWindow().map(), "WALL", new Cell(2, 1, 0), new Cell(2, 2, 0)),
                 message + " moved upper split segment 1");
-        assertTrue(mapHasBoundaryKindAt(snapshot.surface().map(), "WALL", new Cell(2, 2, 0), new Cell(2, 3, 0)),
+        assertTrue(mapHasBoundaryKindAt(snapshot.selectedWindow().map(), "WALL", new Cell(2, 2, 0), new Cell(2, 3, 0)),
                 message + " moved upper split segment 2");
-        assertTrue(mapHasBoundaryKindAt(snapshot.surface().map(), "WALL", new Cell(2, 3, 0), new Cell(3, 3, 0)),
+        assertTrue(mapHasBoundaryKindAt(snapshot.selectedWindow().map(), "WALL", new Cell(2, 3, 0), new Cell(3, 3, 0)),
                 message + " horizontal connector touches moved run");
-        assertTrue(mapHasBoundaryKindAt(snapshot.surface().map(), "WALL", new Cell(3, 3, 0), new Cell(3, 4, 0)),
+        assertTrue(mapHasBoundaryKindAt(snapshot.selectedWindow().map(), "WALL", new Cell(3, 3, 0), new Cell(3, 4, 0)),
                 message + " lower split run remains at the old line");
-        assertTrue(mapHasBoundaryKindAt(snapshot.surface().map(), "WALL", new Cell(3, 3, 0), new Cell(4, 3, 0)),
+        assertTrue(mapHasBoundaryKindAt(snapshot.selectedWindow().map(), "WALL", new Cell(3, 3, 0), new Cell(4, 3, 0)),
                 message + " original horizontal branch remains connected at the junction");
-        assertTrue(!mapHasBoundaryKindAt(snapshot.surface().map(), "WALL", new Cell(2, 3, 0), new Cell(2, 4, 0)),
+        assertTrue(!mapHasBoundaryKindAt(snapshot.selectedWindow().map(), "WALL", new Cell(2, 3, 0), new Cell(2, 4, 0)),
                 message + " does not move the lower split run with the selected upper run");
         assertEquals(runtime.database().countWallBoundaryRows(mapId),
                 runtime.database().countDistinctWallBoundaryTopologyRefs(mapId),
@@ -748,7 +748,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
         createMapThroughControls(controls, runtime, "Standalone Door Handle Reload Hop");
         selectMap(controls, "Standalone Door Handle Map");
 
-        DungeonEditorMapSurfaceSnapshot standaloneSnapshot = runtime.mapSurfaceModel().current();
+        DungeonEditorState standaloneSnapshot = runtime.editorApi().current();
         assertEquals(1L, countHandles(standaloneSnapshot, DungeonEditorHandleKind.DOOR),
                 "DE-HANDLE-001 standalone authored door publishes exactly one shared handle");
         DungeonEditorHandleSnapshot standaloneDoor =
@@ -758,7 +758,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 "DE-HANDLE-001 standalone authored door handle remains unbound from corridor routing");
         assertTrue(standaloneDoor.ref().roomId() > 0L,
                 "DE-HANDLE-001 standalone authored door handle preserves room identity");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), doorHandleCenterQ(standaloneDoor), doorHandleCenterR(standaloneDoor)).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), doorHandleCenterQ(standaloneDoor), doorHandleCenterR(standaloneDoor)).targetKind(),
                 "DE-HANDLE-001 standalone door handle is visible and hittable through the shared handle route");
         assertDoorHandleVisibleOnlyOnHover(
                 binding,
@@ -774,7 +774,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
         createMapThroughControls(controls, runtime, "Handle Variety Reload Hop");
         selectMap(controls, "Handle Variety Map");
 
-        DungeonEditorMapSurfaceSnapshot snapshot = runtime.mapSurfaceModel().current();
+        DungeonEditorState snapshot = runtime.editorApi().current();
         assertEquals(2L, countHandles(snapshot, DungeonEditorHandleKind.DOOR),
                 "DE-HANDLE-001 corridor-bound authored doors still publish exactly one handle per bound door");
         assertEquals(2L, distinctTopologyIds(snapshot, DungeonEditorHandleKind.DOOR),
@@ -792,7 +792,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 firstHandle(snapshot, DungeonEditorHandleKind.CORRIDOR_ANCHOR, "DE-HANDLE-001 corridor anchor");
         DungeonEditorHandleSnapshot corridorWaypoint =
                 firstHandle(snapshot, DungeonEditorHandleKind.CORRIDOR_WAYPOINT, "DE-HANDLE-001 corridor waypoint");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), doorHandleCenterQ(doorHandle), doorHandleCenterR(doorHandle)).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), doorHandleCenterQ(doorHandle), doorHandleCenterR(doorHandle)).targetKind(),
                 "DE-HANDLE-001 door handle ref is a canvas drag handle");
         assertDoorHandleVisibleOnlyOnHover(
                 binding,
@@ -819,10 +819,10 @@ final class DungeonEditorClusterLabelHandleScenarios {
         createMapThroughControls(standaloneControls, standaloneRuntime, "Standalone Door Drag Reload Hop");
         selectMap(standaloneControls, "Standalone Door Drag Map");
 
-        DungeonEditorMapSurfaceSnapshot standaloneSnapshot = standaloneRuntime.mapSurfaceModel().current();
+        DungeonEditorState standaloneSnapshot = standaloneRuntime.editorApi().current();
         DungeonEditorHandleSnapshot standaloneDoor =
                 firstDoorHandleAt(standaloneSnapshot, 4, 2, 0, "DE-DOOR-004 standalone door");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(standaloneBinding.mapContentModel(), doorHandleCenterQ(standaloneDoor), doorHandleCenterR(standaloneDoor)).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, runtimePointerTarget(standaloneBinding.mapContentModel(), doorHandleCenterQ(standaloneDoor), doorHandleCenterR(standaloneDoor)).targetKind(),
                 "DE-DOOR-004 standalone door handle resolves as canvas drag handle");
         assertStandaloneDoorHandleDrag(
                 standaloneRuntime,
@@ -844,10 +844,10 @@ final class DungeonEditorClusterLabelHandleScenarios {
         createMapThroughControls(controls, runtime, "Door Handle Drag Reload Hop");
         selectMap(controls, "Door Handle Drag Map");
 
-        DungeonEditorMapSurfaceSnapshot snapshot = runtime.mapSurfaceModel().current();
+        DungeonEditorState snapshot = runtime.editorApi().current();
         DungeonEditorHandleSnapshot doorHandle =
                 firstDoorHandleForDirection(snapshot, "EAST", "DE-DOOR-004 door");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), doorHandleCenterQ(doorHandle), doorHandleCenterR(doorHandle)).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), doorHandleCenterQ(doorHandle), doorHandleCenterR(doorHandle)).targetKind(),
                 "DE-DOOR-004 door handle resolves as canvas drag handle");
         assertDoorHandleVisibleOnlyOnHover(
                 binding,
@@ -875,7 +875,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
         createMapThroughControls(standaloneControls, standaloneRuntime, "Standalone Door Invalid Reload Hop");
         selectMap(standaloneControls, "Standalone Door Invalid Move Map");
         DungeonEditorHandleSnapshot standaloneDoor =
-                firstDoorHandleAt(standaloneRuntime.mapSurfaceModel().current(), 4, 2, 0, "DE-DOOR-005 standalone");
+                firstDoorHandleAt(standaloneRuntime.editorApi().current(), 4, 2, 0, "DE-DOOR-005 standalone");
         assertInvalidStandaloneDoorHandleMoveRejected(
                 standaloneRuntime,
                 standaloneBinding,
@@ -894,11 +894,11 @@ final class DungeonEditorClusterLabelHandleScenarios {
         createMapThroughControls(controls, runtime, "Door Handle Invalid Move Reload Hop");
         selectMap(controls, "Door Handle Invalid Move Map");
         DungeonEditorHandleSnapshot doorHandle =
-                firstDoorHandleAt(runtime.mapSurfaceModel().current(), 4, 2, 0, "DE-DOOR-005 invalid");
+                firstDoorHandleAt(runtime.editorApi().current(), 4, 2, 0, "DE-DOOR-005 invalid");
         List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
         List<String> doorRowsBefore = runtime.database().doorBoundaryState(mapId);
         List<String> corridorRowsBefore = runtime.database().corridorStableConnectionState(mapId);
-        DungeonEditorMapSurfaceSnapshot surfaceBefore = runtime.mapSurfaceModel().current();
+        DungeonEditorState surfaceBefore = runtime.editorApi().current();
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
         fireMapMouse(
@@ -915,7 +915,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 viewport.sceneToScreenX(doorHandleCenterQ(doorHandle)),
                 viewport.sceneToScreenY(doorHandleCenterR(doorHandle) + 4.0),
                 false);
-        assertTrue(runtime.mapSurfaceModel().current().preview() instanceof DungeonEditorPreview.MoveHandlePreview,
+        assertTrue(runtime.editorApi().current().preview() instanceof DungeonEditorPreview.MoveHandlePreview,
                 "DE-DOOR-005 invalid still publishes transient drag preview before rejected release");
 
         fireMapMouse(
@@ -932,12 +932,12 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 "DE-DOOR-005 invalid release leaves door boundary rows unchanged");
         assertEquals(corridorRowsBefore, runtime.database().corridorStableConnectionState(mapId),
                 "DE-DOOR-005 invalid release leaves corridor bindings unchanged");
-        DungeonEditorMapSurfaceSnapshot rejectedSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState rejectedSurface = runtime.editorApi().current();
         assertEquals(DungeonEditorPreview.none(), rejectedSurface.preview(),
                 "DE-DOOR-005 invalid release clears preview");
-        assertTrue(!runtime.controlsModel().current().statusText().isBlank(),
+        assertTrue(!runtime.editorApi().current().commandStatus().message().isBlank(),
                 "DE-DOOR-005 invalid release publishes user-visible rejection feedback");
-        assertEquals(surfaceBefore.surface().map(), rejectedSurface.surface().map(),
+        assertEquals(surfaceBefore.selectedWindow().map(), rejectedSurface.selectedWindow().map(),
                 "DE-DOOR-005 invalid release keeps published map unchanged");
         assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "DOOR", 4.0, 2.5),
                 "DE-DOOR-005 invalid render keeps source door boundary");
@@ -965,12 +965,12 @@ final class DungeonEditorClusterLabelHandleScenarios {
         createMapThroughControls(controls, runtime, "Wall Run Handle Style Reload Hop");
         selectMap(controls, "Wall Run Handle Style Map");
 
-        DungeonEditorMapSurfaceSnapshot snapshot = runtime.mapSurfaceModel().current();
+        DungeonEditorState snapshot = runtime.editorApi().current();
         firstHandle(snapshot, DungeonEditorHandleKind.CLUSTER_WALL_RUN, "DE-HANDLE-004 wall-run");
         click(button(controls, "Auswahl"));
         selectClusterLabel(runtime, binding, "DE-HANDLE-004");
         DungeonEditorMapSnapshot.Area selectedRoom = roomAreaByLabel(
-                runtime.mapSurfaceModel().current(),
+                runtime.editorApi().current(),
                 "R1",
                 "DE-HANDLE-004 selected floor");
         DungeonMapContentModel.PaintStyle selectedRoomSurfaceStyle = surfaceStyleForSelectionRef(
@@ -984,7 +984,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 10.0,
                 "DE-HANDLE-004 wall-run");
         DungeonEditorHandleSnapshot doorHandle =
-                firstDoorHandleForDirection(runtime.mapSurfaceModel().current(), "EAST", "DE-HANDLE-004 door");
+                firstDoorHandleForDirection(runtime.editorApi().current(), "EAST", "DE-HANDLE-004 door");
         assertDoorHandleVisibleOnlyOnHover(
                 binding,
                 doorHandleCenterQ(doorHandle),
@@ -1019,7 +1019,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
         click(button(controls, "Auswahl"));
         selectClusterLabel(runtime, binding, "DE-CLUSTER-003");
 
-        DungeonEditorMapSurfaceSnapshot initialSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState initialSurface = runtime.editorApi().current();
         DungeonEditorHandleSnapshot cornerHandle =
                 firstClusterCornerHandleAt(initialSurface, 13, 11, 0, "DE-CLUSTER-003");
         long clusterId = cornerHandle.ref().clusterId();
@@ -1030,7 +1030,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
         assertEquals(Set.of("10,10,0", "13,10,0", "13,11,0", "11,11,0", "11,13,0", "10,13,0"),
                 runtime.database().authoredClusterBoundaryCorners(clusterId),
                 "DE-CLUSTER-003 starts from F15 true authored boundary corners");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), 13.0, 11.0).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), 13.0, 11.0).targetKind(),
                 "DE-CLUSTER-003 resolves the true inner corner as a handle");
 
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
@@ -1072,7 +1072,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                         viewport.sceneToScreenY(12.0),
                         false));
 
-        DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState previewSurface = runtime.editorApi().current();
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
                 "DE-CLUSTER-003 drag preview leaves authored DB row count unchanged");
         assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
@@ -1088,9 +1088,9 @@ final class DungeonEditorClusterLabelHandleScenarios {
         assertEquals(1L, preview.deltaQ(), "DE-CLUSTER-003 preview delta q");
         assertEquals(1L, preview.deltaR(), "DE-CLUSTER-003 preview delta r");
         assertEquals(0L, preview.deltaLevel(), "DE-CLUSTER-003 preview delta level");
-        assertTrue(previewSurface.surface().previewMap() != null,
+        assertTrue(previewSurface.selectedWindow().previewMap() != null,
                 "DE-CLUSTER-003 publishes a preview map during true-corner drag");
-        assertTrue(!mapSnapshotCellSet(previewSurface.surface().previewMap()).equals(cellsBefore),
+        assertTrue(!mapSnapshotCellSet(previewSurface.selectedWindow().previewMap()).equals(cellsBefore),
                 "DE-CLUSTER-003 preview map changes affected cluster cells before release");
         PreviewDiff previewRenderDiff = PreviewDiff.from(previewSurface);
         assertTrue(previewRenderDiff.changedHandles().stream().anyMatch(handle ->
@@ -1114,7 +1114,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 viewport.sceneToScreenY(12.0),
                 false);
 
-        DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState committedSurface = runtime.editorApi().current();
         assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
                 "DE-CLUSTER-003 clears true-corner move preview after release");
         Set<String> committedCorners = runtime.database().authoredClusterBoundaryCorners(clusterId);
@@ -1141,7 +1141,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
         selectMap(controls, "Complex Cluster Corner Move Map");
         assertTrue(runtime.database().authoredClusterBoundaryCorners(clusterId).contains("14,12,0"),
                 "DE-CLUSTER-003 reload keeps the dragged true corner");
-        assertClusterCornerHandleAt(runtime.mapSurfaceModel().current(), 14, 12, 0, "DE-CLUSTER-003 reload");
+        assertClusterCornerHandleAt(runtime.editorApi().current(), 14, 12, 0, "DE-CLUSTER-003 reload");
         assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 14.0, 11.5),
                 "DE-CLUSTER-003 reload render keeps the moved vertical wall span");
         assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 13.5, 12.0),
@@ -1163,7 +1163,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
         click(button(controls, "Auswahl"));
         selectClusterLabel(runtime, binding, "DE-CLUSTER-002");
 
-        DungeonEditorMapSurfaceSnapshot initialSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState initialSurface = runtime.editorApi().current();
         assertWallRunHandleTargets(binding.mapContentModel(), "DE-CLUSTER-002");
         DungeonEditorHandleSnapshot wallRunHandle =
                 firstClusterWallRunHandleAt(initialSurface, 11, 10, 0, "NORTH", "DE-CLUSTER-002");
@@ -1172,7 +1172,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
         List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
         List<String> boundaryRowsBefore = runtime.database().roomBoundaryEdgeState(mapId);
         RoomClusterIds roomIdsBefore = runtime.database().roomByName(mapId, "R1");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), 11.0, 10.0).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), 11.0, 10.0).targetKind(),
                 "DE-CLUSTER-002 wall-run midpoint resolves as handle before drag");
 
         assertInvalidWallRunDragRejected(runtime, binding, mapId);
@@ -1209,7 +1209,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                         viewport.sceneToScreenY(9.0),
                         false));
 
-        DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState previewSurface = runtime.editorApi().current();
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
                 "DE-HANDLE-003 wall-run drag preview leaves authored DB row count unchanged");
         assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
@@ -1232,10 +1232,10 @@ final class DungeonEditorClusterLabelHandleScenarios {
         assertEquals(0L, preview.deltaQ(), "DE-CLUSTER-002 preview delta q");
         assertEquals(-1L, preview.deltaR(), "DE-CLUSTER-002 preview delta r");
         assertEquals(0L, preview.deltaLevel(), "DE-CLUSTER-002 preview delta level");
-        assertTrue(previewSurface.surface().previewMap() != null,
+        assertTrue(previewSurface.selectedWindow().previewMap() != null,
                 "DE-HANDLE-003 publishes a preview map during wall-run drag");
-        assertTrue(!mapSnapshotCellSet(previewSurface.surface().previewMap())
-                        .equals(mapSnapshotCellSet(previewSurface.surface().map())),
+        assertTrue(!mapSnapshotCellSet(previewSurface.selectedWindow().previewMap())
+                        .equals(mapSnapshotCellSet(previewSurface.selectedWindow().map())),
                 "DE-HANDLE-003 preview map differs from the committed cluster cells");
         PreviewDiff previewRenderDiff = PreviewDiff.from(previewSurface);
         assertTrue(previewRenderDiff.changedBoundaries().stream()
@@ -1258,14 +1258,14 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 viewport.sceneToScreenY(8.0),
                 false);
 
-        DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState committedSurface = runtime.editorApi().current();
         assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
                 "DE-CLUSTER-002 clears wall-run preview after release");
         assertEquals(roomIdsBefore, runtime.database().roomByName(mapId, "R1"),
                 "DE-CLUSTER-002 wall-run drag keeps room and cluster identity");
         assertEquals(1L, runtime.database().countRoomsForMap(mapId),
                 "DE-CLUSTER-002 wall-run drag coalesces the open closed-boundary component to one room row");
-        assertEquals(1L, committedSurface.surface().map().areas().stream()
+        assertEquals(1L, committedSurface.selectedWindow().map().areas().stream()
                         .filter(area -> "ROOM".equalsIgnoreCase(area.kind()))
                         .count(),
                 "DE-CLUSTER-002 wall-run drag publishes one room area for one closed-boundary component");
@@ -1285,7 +1285,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 "DE-CLUSTER-002 reload keeps room and cluster identity");
         assertEquals(1L, runtime.database().countRoomsForMap(mapId),
                 "DE-CLUSTER-002 reload keeps one room row for one closed-boundary component");
-        assertEquals(1L, runtime.mapSurfaceModel().current().surface().map().areas().stream()
+        assertEquals(1L, runtime.editorApi().current().selectedWindow().map().areas().stream()
                         .filter(area -> "ROOM".equalsIgnoreCase(area.kind()))
                         .count(),
                 "DE-CLUSTER-002 reload publishes one room area for one closed-boundary component");
@@ -1304,7 +1304,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
             TestBinding binding,
             long mapId
     ) {
-        DungeonEditorMapSurfaceSnapshot before = runtime.mapSurfaceModel().current();
+        DungeonEditorState before = runtime.editorApi().current();
         DungeonEditorHandleSnapshot invalidHandle =
                 firstClusterWallRunHandleAt(before, 11, 10, 0, "NORTH", "DE-CLUSTER-002 invalid");
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
@@ -1319,7 +1319,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 viewport.sceneToScreenX(invalidHandle.markerQ()),
                 viewport.sceneToScreenY(invalidHandle.markerR()),
                 false);
-        DungeonEditorMapSurfaceSnapshot afterPress = runtime.mapSurfaceModel().current();
+        DungeonEditorState afterPress = runtime.editorApi().current();
         fireMapMouse(
                 binding.mapView(),
                 MouseEvent.MOUSE_DRAGGED,
@@ -1335,14 +1335,14 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 viewport.sceneToScreenY(invalidHandle.markerR() + 6.0),
                 false);
 
-        DungeonEditorMapSurfaceSnapshot after = runtime.mapSurfaceModel().current();
+        DungeonEditorState after = runtime.editorApi().current();
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
                 "DE-CLUSTER-002 invalid wall-run drag leaves authored DB row count unchanged");
         assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
                 "DE-CLUSTER-002 invalid wall-run drag leaves all authored geometry stores unchanged");
         assertEquals(boundaryRowsBefore, runtime.database().roomBoundaryEdgeState(mapId),
                 "DE-CLUSTER-002 invalid wall-run drag leaves persisted boundary rows unchanged");
-        assertEquals(before.surface().map(), after.surface().map(),
+        assertEquals(before.selectedWindow().map(), after.selectedWindow().map(),
                 "DE-CLUSTER-002 invalid wall-run drag keeps published map unchanged");
         assertEquals(afterPress.selection(), after.selection(),
                 "DE-CLUSTER-002 invalid wall-run drag keeps post-press selection unchanged");
@@ -1355,16 +1355,16 @@ final class DungeonEditorClusterLabelHandleScenarios {
             long clusterId,
             String message
     ) {
-        DungeonEditorStateSnapshot.Selection stateSelection = runtime.stateModel().current().selection();
-        DungeonEditorStateSnapshot.Selection surfaceSelection = runtime.mapSurfaceModel().current().selection();
+        DungeonEditorSelection stateSelection = runtime.editorApi().current().selection();
+        DungeonEditorSelection surfaceSelection = runtime.editorApi().current().selection();
         assertClusterLabelSelection(stateSelection, clusterId, message + " state model");
         assertClusterLabelSelection(surfaceSelection, clusterId, message + " map surface");
-        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
+        assertEquals(DungeonEditorPreview.none(), runtime.editorApi().current().preview(),
                 message + " keeps preview empty");
     }
 
     private static void assertClusterLabelSelection(
-            DungeonEditorStateSnapshot.Selection selection,
+            DungeonEditorSelection selection,
             long clusterId,
             String message
     ) {
@@ -1380,8 +1380,8 @@ final class DungeonEditorClusterLabelHandleScenarios {
             TestBinding binding,
             String message
     ) {
-        DungeonEditorMapSurfaceSnapshot snapshot = runtime.mapSurfaceModel().current();
-        DungeonEditorHandleSnapshot label = snapshot.surface().map().editorHandles().stream()
+        DungeonEditorState snapshot = runtime.editorApi().current();
+        DungeonEditorHandleSnapshot label = snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(handle -> handle.ref().kind() == DungeonEditorHandleKind.CLUSTER_LABEL)
                 .findFirst()
                 .orElseThrow(() -> new AssertionError(message + " cluster label not published"));
@@ -1394,8 +1394,8 @@ final class DungeonEditorClusterLabelHandleScenarios {
             long clusterId,
             String message
     ) {
-        DungeonEditorMapSurfaceSnapshot snapshot = runtime.mapSurfaceModel().current();
-        DungeonEditorHandleSnapshot label = snapshot.surface().map().editorHandles().stream()
+        DungeonEditorState snapshot = runtime.editorApi().current();
+        DungeonEditorHandleSnapshot label = snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(handle -> handle.ref().kind() == DungeonEditorHandleKind.CLUSTER_LABEL)
                 .filter(handle -> handle.ref().clusterId() == clusterId)
                 .findFirst()
@@ -1426,8 +1426,8 @@ final class DungeonEditorClusterLabelHandleScenarios {
             String message
     ) {
         clickMap(binding.mapView(), binding.mapContentModel(), q, r);
-        DungeonEditorStateSnapshot.Selection stateSelection = runtime.stateModel().current().selection();
-        DungeonEditorStateSnapshot.Selection surfaceSelection = runtime.mapSurfaceModel().current().selection();
+        DungeonEditorSelection stateSelection = runtime.editorApi().current().selection();
+        DungeonEditorSelection surfaceSelection = runtime.editorApi().current().selection();
         assertEquals(features.dungeon.api.DungeonTopologyElementKind.ROOM, stateSelection.topologyRef().kind(),
                 message + " state model room floor selection topology kind");
         assertTrue(stateSelection.clusterId() > 0L, message + " state model room floor selection keeps cluster id");
@@ -1442,7 +1442,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 message + " map surface room floor selection stays out of cluster mode");
         assertEquals(null, surfaceSelection.handleRef(),
                 message + " map surface room floor selection does not fake a cluster-label handle");
-        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
+        assertEquals(DungeonEditorPreview.none(), runtime.editorApi().current().preview(),
                 message + " room floor selection keeps preview empty");
     }
 
@@ -1453,7 +1453,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
             String message
     ) {
         assertTrue(runtimePointerTarget(mapContentModel, q, r).targetKind()
-                != DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, message);
+                != features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, message);
     }
 
     private static void assertDoorHandleDrag(
@@ -1500,7 +1500,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                         viewport.sceneToScreenY(doorHandleCenterR(doorHandle) + 1.0),
                         false));
 
-        DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState previewSurface = runtime.editorApi().current();
         assertTrue(previewSurface.preview() instanceof DungeonEditorPreview.MoveHandlePreview,
                 "DE-HANDLE-006 door drag publishes a move-handle preview");
         DungeonEditorPreview.MoveHandlePreview preview =
@@ -1516,10 +1516,10 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 countDoorMarkersAt(binding.mapContentModel(), doorHandleCenterQ(doorHandle), doorHandleCenterR(doorHandle)),
                 "DE-HANDLE-006 render scene hides stale source door marker during drag preview: "
                         + renderedDoorMarkers(binding.mapContentModel()));
-        assertTrue(previewSurface.surface().previewMap() != null,
+        assertTrue(previewSurface.selectedWindow().previewMap() != null,
                 "DE-HANDLE-006 door drag publishes an authoritative preview map");
         assertTrue(mapHasBoundaryKindAt(
-                        previewSurface.surface().previewMap(),
+                        previewSurface.selectedWindow().previewMap(),
                         "door",
                         new Cell(4, 3, 0),
                         new Cell(4, 4, 0)),
@@ -1557,19 +1557,19 @@ final class DungeonEditorClusterLabelHandleScenarios {
         List<String> stableRowsAfter = runtime.database().corridorStableConnectionState(mapId);
         assertTrue(stableRowsAfter.stream().anyMatch(row ->
                         row.startsWith("dungeon_corridor_door_overrides|")
-                                && row.contains("|relative_cell_x=2|")
-                                && row.contains("|relative_cell_y=2|")
+                                && row.contains("|relative_cell_x=3|")
+                                && row.contains("|relative_cell_y=3|")
                                 && row.contains("|edge_direction=EAST|")
                                 && row.contains("|topology_element_id=" + doorHandle.ref().topologyRef().id())),
                 "DE-DOOR-004 release moves the bound corridor endpoint with the door: " + stableRowsAfter);
         assertTrue(stableRowsAfter.stream().noneMatch(row ->
                         row.startsWith("dungeon_corridor_door_overrides|")
-                                && row.contains("|relative_cell_x=2|")
-                                && row.contains("|relative_cell_y=1|")
+                                && row.contains("|relative_cell_x=3|")
+                                && row.contains("|relative_cell_y=2|")
                                 && row.contains("|edge_direction=EAST|")
                                 && row.contains("|topology_element_id=" + doorHandle.ref().topologyRef().id())),
                 "DE-DOOR-004 release leaves no stale source corridor binding: " + stableRowsAfter);
-        DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState committedSurface = runtime.editorApi().current();
         assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
                 "DE-DOOR-004 release clears door preview");
         assertTrue(surfaceHasBoundaryKindAt(
@@ -1631,7 +1631,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                         viewport.sceneToScreenY(doorHandleCenterR(doorHandle) + 1.0),
                         false));
 
-        DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState previewSurface = runtime.editorApi().current();
         assertTrue(previewSurface.preview() instanceof DungeonEditorPreview.MoveHandlePreview,
                 "DE-HANDLE-006 standalone door drag publishes a move-handle preview");
         DungeonEditorPreview.MoveHandlePreview preview =
@@ -1649,10 +1649,10 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 countDoorMarkersAt(binding.mapContentModel(), doorHandleCenterQ(doorHandle), doorHandleCenterR(doorHandle)),
                 "DE-HANDLE-006 standalone render scene hides the stale source door marker during drag preview: "
                         + renderedDoorMarkers(binding.mapContentModel()));
-        assertTrue(previewSurface.surface().previewMap() != null,
+        assertTrue(previewSurface.selectedWindow().previewMap() != null,
                 "DE-HANDLE-006 standalone door drag publishes an authoritative preview map");
         assertTrue(mapHasBoundaryKindAt(
-                        previewSurface.surface().previewMap(),
+                        previewSurface.selectedWindow().previewMap(),
                         "door",
                         new Cell(4, 3, 0),
                         new Cell(4, 4, 0)),
@@ -1702,7 +1702,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 "DE-DOOR-004 standalone release leaves no stale source door row: " + doorRowsAfter);
         assertEquals(corridorRowsBefore, runtime.database().corridorStableConnectionState(mapId),
                 "DE-DOOR-004 standalone release keeps corridor rows unchanged");
-        DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState committedSurface = runtime.editorApi().current();
         assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
                 "DE-DOOR-004 standalone release clears door preview");
         assertTrue(surfaceHasBoundaryKindAt(
@@ -1739,7 +1739,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
         List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
         List<String> doorRowsBefore = runtime.database().doorBoundaryState(mapId);
         List<String> corridorRowsBefore = runtime.database().corridorStableConnectionState(mapId);
-        DungeonEditorMapSurfaceSnapshot surfaceBefore = runtime.mapSurfaceModel().current();
+        DungeonEditorState surfaceBefore = runtime.editorApi().current();
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
         fireMapMouse(
@@ -1756,7 +1756,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 viewport.sceneToScreenX(doorHandleCenterQ(doorHandle)),
                 viewport.sceneToScreenY(doorHandleCenterR(doorHandle) + 4.0),
                 false);
-        assertTrue(runtime.mapSurfaceModel().current().preview() instanceof DungeonEditorPreview.MoveHandlePreview,
+        assertTrue(runtime.editorApi().current().preview() instanceof DungeonEditorPreview.MoveHandlePreview,
                 "DE-DOOR-005 standalone invalid still publishes transient drag preview before rejected release");
 
         fireMapMouse(
@@ -1773,14 +1773,14 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 "DE-DOOR-005 standalone invalid release leaves door boundary rows unchanged");
         assertEquals(corridorRowsBefore, runtime.database().corridorStableConnectionState(mapId),
                 "DE-DOOR-005 standalone invalid release leaves corridor rows unchanged");
-        DungeonEditorMapSurfaceSnapshot rejectedSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState rejectedSurface = runtime.editorApi().current();
         assertEquals(DungeonEditorPreview.none(), rejectedSurface.preview(),
                 "DE-DOOR-005 standalone invalid release clears preview");
-        assertTrue(!runtime.controlsModel().current().statusText().isBlank(),
+        assertTrue(!runtime.editorApi().current().commandStatus().message().isBlank(),
                 "DE-DOOR-005 standalone invalid release publishes user-visible rejection feedback");
-        assertEquals(surfaceBefore.surface().map(), rejectedSurface.surface().map(),
+        assertEquals(surfaceBefore.selectedWindow().map(), rejectedSurface.selectedWindow().map(),
                 "DE-DOOR-005 standalone invalid release keeps published map unchanged outcome="
-                        + runtime.controlsModel().current().commandOutcome());
+                        + runtime.editorApi().current().commandStatus().outcome());
         assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "DOOR", 4.0, 2.5),
                 "DE-DOOR-005 standalone invalid render keeps the source door boundary");
         assertTrue(!renderHasBoundaryNear(binding.mapContentModel(), "DOOR", 4.0, 6.5),
@@ -1812,8 +1812,8 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 viewport.sceneToScreenY(labelCenter.r()),
                 false);
 
-        DungeonEditorStateSnapshot.Selection selectedRoom = runtime.stateModel().current().selection();
-        DungeonEditorStateSnapshot.Selection selectedSurfaceRoom = runtime.mapSurfaceModel().current().selection();
+        DungeonEditorSelection selectedRoom = runtime.editorApi().current().selection();
+        DungeonEditorSelection selectedSurfaceRoom = runtime.editorApi().current().selection();
         assertEquals(features.dungeon.api.DungeonTopologyElementKind.ROOM, selectedRoom.topologyRef().kind(),
                 "DE-LABEL-007 state model room label point passes through to room floor topology");
         assertEquals(roomIds.roomId(), selectedRoom.topologyRef().id(),
@@ -1842,7 +1842,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 viewport.sceneToScreenX(labelCenter.q() + 1.0),
                 viewport.sceneToScreenY(labelCenter.r()),
                 false);
-        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
+        assertEquals(DungeonEditorPreview.none(), runtime.editorApi().current().preview(),
                 "DE-LABEL-007 room label point drag does not publish a cluster move preview");
 
         fireMapMouse(
@@ -1852,7 +1852,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 viewport.sceneToScreenX(labelCenter.q() + 1.0),
                 viewport.sceneToScreenY(labelCenter.r()),
                 false);
-        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
+        assertEquals(DungeonEditorPreview.none(), runtime.editorApi().current().preview(),
                 "DE-LABEL-007 room label point drag release keeps preview clear");
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
                 "DE-LABEL-007 room label point drag leaves authored geometry row count unchanged");
@@ -1863,10 +1863,10 @@ final class DungeonEditorClusterLabelHandleScenarios {
     }
 
     private static DungeonEditorHandleSnapshot singleClusterLabel(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             String message
     ) {
-        List<DungeonEditorHandleSnapshot> labels = snapshot.surface().map().editorHandles().stream()
+        List<DungeonEditorHandleSnapshot> labels = snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(handle -> "CLUSTER_LABEL".equals(handle.ref().kind().name()))
                 .toList();
         assertEquals(1, labels.size(), message + " publishes one cluster label");
@@ -1874,7 +1874,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
     }
 
     private static boolean hasClusterLabelAt(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             int q,
             int r,
             int level
@@ -1883,13 +1883,13 @@ final class DungeonEditorClusterLabelHandleScenarios {
     }
 
     private static boolean hasHandleAt(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             String kind,
             int q,
             int r,
             int level
     ) {
-        return snapshot.surface().map().editorHandles().stream()
+        return snapshot.selectedWindow().map().editorHandles().stream()
                 .anyMatch(handle -> kind.equals(handle.ref().kind().name())
                         && handle.cell().q() == q
                         && handle.cell().r() == r
@@ -1897,14 +1897,14 @@ final class DungeonEditorClusterLabelHandleScenarios {
     }
 
     private static boolean hasWallRunHandle(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             int cellQ,
             int cellR,
             int level,
             double markerQ,
             double markerR
     ) {
-        return snapshot.surface().map().editorHandles().stream()
+        return snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(handle -> CLUSTER_WALL_RUN_KIND.equals(handle.ref().kind().name()))
                 .anyMatch(handle -> handle.cell().q() == cellQ
                         && handle.cell().r() == cellR
@@ -1914,17 +1914,17 @@ final class DungeonEditorClusterLabelHandleScenarios {
     }
 
     private static boolean hasWallRunMarkerAt(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             double markerQ,
             double markerR
     ) {
-        return snapshot.surface().map().editorHandles().stream()
+        return snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(handle -> CLUSTER_WALL_RUN_KIND.equals(handle.ref().kind().name()))
                 .anyMatch(handle -> handle.markerQ() == markerQ && handle.markerR() == markerR);
     }
 
     private static void assertWallRunHandle(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             int cellQ,
             int cellR,
             int level,
@@ -1934,7 +1934,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
             Cell sourceTo,
             String message
     ) {
-        DungeonEditorHandleSnapshot handle = snapshot.surface().map().editorHandles().stream()
+        DungeonEditorHandleSnapshot handle = snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(candidate -> CLUSTER_WALL_RUN_KIND.equals(candidate.ref().kind().name()))
                 .filter(candidate -> candidate.cell().q() == cellQ)
                 .filter(candidate -> candidate.cell().r() == cellR)
@@ -1951,8 +1951,8 @@ final class DungeonEditorClusterLabelHandleScenarios {
         assertEquals(sourceTo.level(), handle.ref().sourceEdge().to().level(), message + " source edge to level");
     }
 
-    private static String wallRunHandleSummary(DungeonEditorMapSurfaceSnapshot snapshot) {
-        return snapshot.surface().map().editorHandles().stream()
+    private static String wallRunHandleSummary(DungeonEditorState snapshot) {
+        return snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(handle -> CLUSTER_WALL_RUN_KIND.equals(handle.ref().kind().name()))
                 .map(handle -> handleCellKey(handle)
                         + "," + handle.ref().direction()
@@ -1996,10 +1996,10 @@ final class DungeonEditorClusterLabelHandleScenarios {
     }
 
     private static void assertClusterCorners(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             Set<String> expected
     ) {
-        Set<String> actual = snapshot.surface().map().editorHandles().stream()
+        Set<String> actual = snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(handle -> CLUSTER_CORNER_KIND.equals(handle.ref().kind().name()))
                 .map(DungeonEditorClusterLabelHandleScenarios::handleCellKey)
                 .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
@@ -2007,10 +2007,10 @@ final class DungeonEditorClusterLabelHandleScenarios {
     }
 
     private static void assertWallRunHandles(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             Set<String> expected
     ) {
-        Set<String> actual = snapshot.surface().map().editorHandles().stream()
+        Set<String> actual = snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(handle -> CLUSTER_WALL_RUN_KIND.equals(handle.ref().kind().name()))
                 .map(handle -> handleCellKey(handle)
                         + "," + handle.ref().direction()
@@ -2021,10 +2021,10 @@ final class DungeonEditorClusterLabelHandleScenarios {
     }
 
     private static void assertWallRunSourceEdgesPresent(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             String message
     ) {
-        List<DungeonEditorHandleSnapshot> wallRuns = snapshot.surface().map().editorHandles().stream()
+        List<DungeonEditorHandleSnapshot> wallRuns = snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(handle -> CLUSTER_WALL_RUN_KIND.equals(handle.ref().kind().name()))
                 .toList();
         assertTrue(!wallRuns.isEmpty(), message + " wall-run handles published");
@@ -2039,18 +2039,18 @@ final class DungeonEditorClusterLabelHandleScenarios {
             DungeonMapContentModel mapContentModel,
             String message
     ) {
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(mapContentModel, 11.0, 10.0).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, runtimePointerTarget(mapContentModel, 11.0, 10.0).targetKind(),
                 message + " north wall-run is hittable");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(mapContentModel, 12.0, 11.0).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, runtimePointerTarget(mapContentModel, 12.0, 11.0).targetKind(),
                 message + " south wall-run is hittable");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(mapContentModel, 11.0, 12.0).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, runtimePointerTarget(mapContentModel, 11.0, 12.0).targetKind(),
                 message + " east wall-run is hittable");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(mapContentModel, 10.0, 11.0).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, runtimePointerTarget(mapContentModel, 10.0, 11.0).targetKind(),
                 message + " west wall-run is hittable");
     }
 
     private static void assertHandleIdentityShape(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             DungeonEditorHandleKind kind,
             String message
     ) {
@@ -2070,30 +2070,30 @@ final class DungeonEditorClusterLabelHandleScenarios {
     }
 
     private static DungeonEditorHandleSnapshot firstHandle(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             DungeonEditorHandleKind kind,
             String message
     ) {
-        return snapshot.surface().map().editorHandles().stream()
+        return snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(handle -> kind == handle.ref().kind())
                 .findFirst()
                 .orElseThrow(() -> new AssertionError(message + " handle not published"));
     }
 
     private static long countHandles(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             DungeonEditorHandleKind kind
     ) {
-        return snapshot.surface().map().editorHandles().stream()
+        return snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(handle -> kind == handle.ref().kind())
                 .count();
     }
 
     private static long distinctTopologyIds(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             DungeonEditorHandleKind kind
     ) {
-        return snapshot.surface().map().editorHandles().stream()
+        return snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(handle -> kind == handle.ref().kind())
                 .map(handle -> handle.ref().topologyRef().id())
                 .distinct()
@@ -2113,7 +2113,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
     ) {
         click(button(controls, "Raum"));
         assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.ROOM),
-                runtime.controlsModel().current().toolSelection(),
+                runtime.editorApi().current().toolSelection(),
                 message + " selects room paint");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         fireMapMouse(
@@ -2188,11 +2188,11 @@ final class DungeonEditorClusterLabelHandleScenarios {
     }
 
     private static DungeonEditorHandleSnapshot firstDoorHandleForDirection(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             String direction,
             String message
     ) {
-        return snapshot.surface().map().editorHandles().stream()
+        return snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(handle -> DungeonEditorHandleKind.DOOR == handle.ref().kind())
                 .filter(handle -> handle.ref().sourceEdge() != null)
                 .filter(handle -> direction.equals(handle.ref().direction()))
@@ -2377,11 +2377,11 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 .orElseThrow(() -> new AssertionError(message + " door glyph primitive not retained for hit routing"));
         assertTrue(hiddenGlyph.style().alpha() == 0.0,
                 message + " door glyph is visually hidden before hover proximity");
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), q, r).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), q, r).targetKind(),
                 message + " hidden door glyph center remains a shared handle hit target");
         double hitQ = horizontal ? q : q + 0.14;
         double hitR = horizontal ? r + 0.14 : r;
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), hitQ, hitR).targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), hitQ, hitR).targetKind(),
                 message + " door-specific enlarged proximity hit resolves without global hit tolerance");
 
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
@@ -2409,7 +2409,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
     ) {
         DungeonMapContentModel.GlyphPrimitive glyph = doorGlyphAt(mapContentModel, q, r)
                 .orElseThrow(() -> new AssertionError(message + " door glyph not rendered at " + q + "," + r));
-        assertTrue(glyph.label().isBlank(), message + " door glyph omits the legacy D marker");
+        assertTrue(glyph.label().isBlank(), message + " door glyph omits the obsolete D marker");
         assertTrue(doorGlyphMatchesOrientation(glyph, horizontal),
                 message + " door glyph follows the authored door edge orientation");
         assertTrue(glyphMajorAxis(glyph) > glyphMinorAxis(glyph),
@@ -2514,14 +2514,14 @@ final class DungeonEditorClusterLabelHandleScenarios {
     }
 
     private static DungeonEditorHandleSnapshot firstClusterWallRunHandleAt(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonEditorState snapshot,
             int cellQ,
             int cellR,
             int level,
             String direction,
             String message
     ) {
-        return snapshot.surface().map().editorHandles().stream()
+        return snapshot.selectedWindow().map().editorHandles().stream()
                 .filter(handle -> CLUSTER_WALL_RUN_KIND.equals(handle.ref().kind().name()))
                 .filter(handle -> handle.cell().q() == cellQ)
                 .filter(handle -> handle.cell().r() == cellR)

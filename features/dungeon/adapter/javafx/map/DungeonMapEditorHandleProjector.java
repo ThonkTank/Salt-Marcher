@@ -4,7 +4,7 @@ import java.util.List;
 import features.dungeon.api.DungeonEditorHandleSnapshot;
 import features.dungeon.api.DungeonEditorMapSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
-import features.dungeon.api.DungeonEditorStateSnapshot;
+import features.dungeon.api.editor.DungeonEditorSelection;
 
 final class DungeonMapEditorHandleProjector {
 
@@ -14,7 +14,7 @@ final class DungeonMapEditorHandleProjector {
     static void addHandles(
             List<DungeonMapRenderState.Marker> markers,
             DungeonEditorMapSnapshot map,
-            DungeonEditorStateSnapshot.Selection selection,
+            DungeonEditorSelection selection,
             DungeonEditorPreview preview
     ) {
         for (DungeonEditorHandleSnapshot handle : map.editorHandles()) {
@@ -48,7 +48,7 @@ final class DungeonMapEditorHandleProjector {
 
     private static boolean visibleHandle(
             DungeonEditorHandleSnapshot handle,
-            DungeonEditorStateSnapshot.Selection selection
+            DungeonEditorSelection selection
     ) {
         var ref = handle.ref();
         if (ref.kind().isClusterLabel() || ref.kind().isCorridorGeometryHandle()) {

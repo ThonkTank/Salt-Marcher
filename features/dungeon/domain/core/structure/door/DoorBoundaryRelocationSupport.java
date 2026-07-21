@@ -6,7 +6,7 @@ import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.structure.DungeonMap;
-import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.RoomCluster;
 
@@ -54,11 +54,11 @@ final class DoorBoundaryRelocationSupport {
             Edge sourceEdge,
             MovementDelta delta
     ) {
-        DungeonClusterBoundary oldDoorBoundary = DoorBoundaryRelocationGeometry.boundaryAt(targetCluster, sourceEdge);
+        BoundarySegment oldDoorBoundary = DoorBoundaryRelocationGeometry.boundaryAt(targetCluster, sourceEdge);
         if (oldDoorBoundary == null || !oldDoorBoundary.isDoor()) {
             return null;
         }
-        DungeonTopologyRef expectedTopologyRef = oldDoorBoundary.resolvedTopologyRef(targetCluster.center());
+        DungeonTopologyRef expectedTopologyRef = oldDoorBoundary.resolvedTopologyRef();
         Edge nextDoorEdge = movedEdge(sourceEdge, delta);
         if (!expectedTopologyRef.equals(topologyRef) || sameBoundaryKey(sourceEdge, nextDoorEdge)) {
             return null;
@@ -103,7 +103,7 @@ final class DoorBoundaryRelocationSupport {
 
     record StandaloneMoveContext(
             RoomCluster targetCluster,
-            DungeonClusterBoundary oldDoorBoundary,
+            BoundarySegment oldDoorBoundary,
             DungeonTopologyRef expectedTopologyRef,
             Edge nextDoorEdge
     ) {

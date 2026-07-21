@@ -9,22 +9,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import platform.ui.DirectUiDispatcher;
 import platform.ui.UiDispatcher;
-import features.dungeon.api.DungeonAuthoredMutationModel;
-import features.dungeon.api.DungeonAuthoredMutationResult;
-import features.dungeon.api.DungeonAuthoredReadModel;
-import features.dungeon.api.DungeonAuthoredReadResult;
 import features.dungeon.api.DungeonMapCatalogModel;
 import features.dungeon.api.DungeonMapCatalogResponse;
 import platform.state.PublishedState;
 
 public final class DungeonAuthoredPublishedState {
 
-    private final PublishedState<DungeonAuthoredReadResult> authoredRead;
-    private final PublishedState<DungeonAuthoredMutationResult> authoredMutation;
     private final PublishedState<DungeonMapCatalogResponse> mapCatalog;
     private final PublishedEvents<DungeonMapCatalogResponse.MapMutation> mapCatalogMutations;
-    private final DungeonAuthoredReadModel authoredReadModel;
-    private final DungeonAuthoredMutationModel authoredMutationModel;
     private final DungeonMapCatalogModel mapCatalogModel;
 
     DungeonAuthoredPublishedState() {
@@ -32,46 +24,13 @@ public final class DungeonAuthoredPublishedState {
     }
 
     public DungeonAuthoredPublishedState(UiDispatcher dispatcher) {
-        authoredRead = new PublishedState<>(DungeonAuthoredReadProjectionServiceAssembly.defaultRead(), dispatcher);
-        authoredMutation = new PublishedState<>(
-                DungeonAuthoredMutationProjectionServiceAssembly.defaultMutation(), dispatcher);
         mapCatalog = new PublishedState<>(new DungeonMapCatalogResponse.MapList(List.of()), dispatcher);
         mapCatalogMutations = new PublishedEvents<>(dispatcher);
-        authoredReadModel = new DungeonAuthoredReadModel(authoredRead::current, authoredRead::subscribe);
-        authoredMutationModel = new DungeonAuthoredMutationModel(authoredMutation::current, authoredMutation::subscribe);
         mapCatalogModel = new DungeonMapCatalogModel(mapCatalog::current, this::subscribeMapCatalog);
-    }
-
-    public DungeonAuthoredReadModel authoredReadModel() {
-        return authoredReadModel;
-    }
-
-    public DungeonAuthoredMutationModel authoredMutationModel() {
-        return authoredMutationModel;
     }
 
     public DungeonMapCatalogModel mapCatalogModel() {
         return mapCatalogModel;
-    }
-
-    void publishSnapshot(DungeonAuthoredPublication.Snapshot snapshot) {
-        if (snapshot != null) {
-            authoredRead.publish(new DungeonAuthoredReadResult.CommittedSnapshot(
-                    DungeonAuthoredReadProjectionServiceAssembly.snapshot(snapshot)));
-        }
-    }
-
-    void publishInspector(DungeonAuthoredPublication.Inspector inspector) {
-        if (inspector != null) {
-            authoredRead.publish(new DungeonAuthoredReadResult.SelectionInspector(
-                    DungeonAuthoredReadProjectionServiceAssembly.inspector(inspector)));
-        }
-    }
-
-    void publishMutation(DungeonAuthoredPublication.Mutation result) {
-        if (result != null) {
-            authoredMutation.publish(DungeonAuthoredMutationProjectionServiceAssembly.mutation(result));
-        }
     }
 
     void publishSearch(DungeonAuthoredPublication.Catalog result) {

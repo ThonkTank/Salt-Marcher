@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** Fixed M5 runtime protocol. It has no retry, trimming, skipping, or adaptive budget path. */
+/** Fixed production-runtime latency protocol with no retry, trimming, skipping, or adaptive budget path. */
 public final class DungeonRuntimeQualificationProtocol {
     public static final int WARMUP_SAMPLES = 20;
     public static final int MEASURED_SAMPLES = 100;

@@ -13,6 +13,7 @@ import features.dungeon.domain.core.projection.DungeonDerivedState;
 import features.dungeon.domain.core.projection.DungeonDerivedStateProjection;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
 import features.dungeon.domain.core.structure.room.RoomClusterGeometry;
 import features.dungeon.domain.core.structure.room.RoomClusterFloorMap;
 import features.dungeon.domain.core.structure.room.RoomClusterRoomPartition;
@@ -34,7 +35,7 @@ final class DungeonFloorInvariantScenarios {
 
         assertRoomAssignmentUsesFloorMap();
 
-        assertFloorAnchorDerivationAndReuse();
+        assertPartitionIdentityAndExactCells();
 
         assertFloorReplacementByConstruction();
 
@@ -51,8 +52,6 @@ final class DungeonFloorInvariantScenarios {
         assertEquals(List.of(new Cell(1, 1, 0), new Cell(2, 1, 0)),
                 cluster.floorMap().cellsAt(0),
                 "cluster exposes level-zero cells through floor owner");
-        assertEquals(cluster.floorMap().cellsByLevel(), cluster.cellsByLevel(),
-                "cluster compatibility access delegates to floor owner");
         assertEquals(cluster.floorMap(),
                 new RoomClusterFloorMap(FloorCellMap.fromCells(cluster.floorMap().allCells())),
                 "cluster floor facade delegates to the reusable component floor owner");
@@ -88,8 +87,8 @@ final class DungeonFloorInvariantScenarios {
         Cell right = new Cell(2, 0, 0);
         RoomClusterGeometry cluster = RoomClusterGeometry.fromCells(9L, 2L, Set.of(right, left, middle));
         List<RoomRegion> rooms = List.of(
-                new RoomRegion(7L, 2L, 9L, "Bestand", Map.of(0, left)),
-                new RoomRegion(20L, 2L, 9L, "Split", Map.of(0, middle)));
+                new RoomRegion(7L, 2L, 9L, "Bestand", Set.of(left), DungeonRoomNarration.empty()),
+                new RoomRegion(20L, 2L, 9L, "Split", Set.of(middle), DungeonRoomNarration.empty()));
 
         assertEquals(Map.of(
                         7L, List.of(left),
@@ -101,7 +100,7 @@ final class DungeonFloorInvariantScenarios {
                 "room assignment partitions every floor-owned cell exactly once");
     }
 
-    private static void assertFloorAnchorDerivationAndReuse() {
+    private static void assertPartitionIdentityAndExactCells() {
         Cell upperFirst = new Cell(1, 0, 1);
         Cell upperLater = new Cell(2, 0, 1);
         Cell lowerFirst = new Cell(0, 0, 0);
@@ -112,11 +111,8 @@ final class DungeonFloorInvariantScenarios {
                 2L,
                 9L,
                 "Bestand",
-                Map.of(0, lowerFirst, 1, upperFirst))));
-
-        assertEquals(Map.of(0, lowerFirst, 1, upperFirst),
-                RoomRegion.anchorsByLevel(cluster.floorMap().cellsByLevel()),
-                "floor owner derives one sorted anchor per owned floor level");
+                Set.of(lowerFirst, upperFirst),
+                DungeonRoomNarration.empty())));
 
         Edge split = Edge.sideOf(lowerFirst, Direction.EAST);
         List<RoomRegion> splitRooms = RoomClusterRoomPartition.roomsForBoundaryEdit(
@@ -124,15 +120,15 @@ final class DungeonFloorInvariantScenarios {
                 Map.of(0, List.of(split)),
                 new RoomTopologyWorkCatalog.ReservedIdentities(100L, 1, 21L, 4));
         assertEquals(7L, splitRooms.getFirst().roomId(),
-                "floor owner reuses surviving room id when its anchor remains in a component");
-        assertEquals(Map.of(0, lowerFirst), splitRooms.getFirst().floorAnchors(),
-                "floor owner preserves surviving room anchor after partition");
+                "floor owner reuses the surviving room id for its exact component");
+        assertEquals(Set.of(lowerFirst), splitRooms.getFirst().floorCells(),
+                "floor owner preserves the surviving exact room component");
         assertEquals(21L, splitRooms.get(1).roomId(),
                 "floor owner allocates a deterministic room id for a new split component");
-        assertEquals(Map.of(0, lowerLater), splitRooms.get(1).floorAnchors(),
-                "floor owner anchors new split component at sorted first cell");
-        assertEquals(Map.of(1, upperFirst), splitRooms.get(2).floorAnchors(),
-                "floor owner derives an anchor for the remaining upper-level component");
+        assertEquals(Set.of(lowerLater), splitRooms.get(1).floorCells(),
+                "floor owner assigns the exact new lower split component");
+        assertEquals(Set.of(upperFirst, upperLater), splitRooms.get(2).floorCells(),
+                "floor owner assigns the exact remaining upper-level component");
     }
 
     private static void assertFloorReplacementByConstruction() {

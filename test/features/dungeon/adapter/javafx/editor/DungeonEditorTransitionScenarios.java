@@ -6,12 +6,8 @@ import java.util.Set;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.api.DungeonEdgeRef;
-import features.dungeon.api.DungeonEditorControlsModel;
-import features.dungeon.api.DungeonEditorControlsSnapshot;
-import features.dungeon.api.DungeonEditorMapSurfaceModel;
-import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
+import features.dungeon.api.editor.DungeonEditorState;
 import features.dungeon.api.DungeonEditorPreview;
-import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.editor.DungeonEditorToolFamily;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
@@ -19,8 +15,7 @@ import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonMapSummary;
 import features.dungeon.api.DungeonOverlaySettings;
-import features.dungeon.api.DungeonTopologyElementRef;
-import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
+import features.dungeon.api.editor.DungeonEditorPointerInput.Target;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
 import features.dungeon.adapter.javafx.map.DungeonMapView;
 import javafx.event.ActionEvent;
@@ -90,7 +85,7 @@ final class DungeonEditorTransitionScenarios {
                 viewport.sceneToScreenY(transitionCenter.getY()),
                 false);
 
-        DungeonEditorStateSnapshot selectedState = runtime.stateModel().current();
+        DungeonEditorState selectedState = runtime.editorApi().current();
         assertEquals(transitionRef, selectedState.selection().topologyRef(),
                 "DE-TRN-004 state model selects transition topology ref");
         assertTrue(selectedState.inspector() != null, "DE-TRN-004 inspector is published for selected transition");
@@ -121,15 +116,15 @@ final class DungeonEditorTransitionScenarios {
                 "DE-TRN-004 persists dungeon_transitions.description");
         assertEquals(transitionStableStateBefore, runtime.database().transitionStableState(mapId),
                 "DE-TRN-004 leaves transition destination/link/cell state unchanged");
-        DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState committedSurface = runtime.editorApi().current();
         assertEquals(transitionRef, committedSurface.selection().topologyRef(),
                 "DE-TRN-004 map surface keeps transition selected after save");
-        assertTrue(committedSurface.surface().map().features().stream().anyMatch(feature ->
+        assertTrue(committedSurface.selectedWindow().map().features().stream().anyMatch(feature ->
                         feature.id() == transitionId
                                 && "TRANSITION".equals(feature.kind())
                                 && "Hidden stairwell to the cistern.".equals(feature.description())),
                 "DE-TRN-004 published feature exposes saved transition description");
-        assertEquals("Hidden stairwell to the cistern.", runtime.stateModel().current().inspector().summary(),
+        assertEquals("Hidden stairwell to the cistern.", runtime.editorApi().current().inspector().summary(),
                 "DE-TRN-004 inspector readback exposes saved transition description");
         assertEquals("Hidden stairwell to the cistern.",
                 textArea(stateView, "Übergang Beschreibung").getText(),
@@ -150,7 +145,7 @@ final class DungeonEditorTransitionScenarios {
                 reloadedViewport.sceneToScreenX(reloadedTransitionCenter.getX()),
                 reloadedViewport.sceneToScreenY(reloadedTransitionCenter.getY()),
                 false);
-        assertEquals("Hidden stairwell to the cistern.", runtime.stateModel().current().inspector().summary(),
+        assertEquals("Hidden stairwell to the cistern.", runtime.editorApi().current().inspector().summary(),
                 "DE-TRN-004 reload inspector keeps saved transition description");
         assertEquals("Hidden stairwell to the cistern.",
                 textArea(stateView, "Übergang Beschreibung").getText(),
@@ -188,7 +183,7 @@ final class DungeonEditorTransitionScenarios {
                 viewport.sceneToScreenX(sourceCenter.getX()),
                 viewport.sceneToScreenY(sourceCenter.getY()),
                 false);
-        assertEquals(sourceRef, runtime.mapSurfaceModel().current().selection().topologyRef(),
+        assertEquals(sourceRef, runtime.editorApi().current().selection().topologyRef(),
                 "DE-TRN-003 entrance-link route selects source transition before linking");
         assertTransitionEntranceLinkCard(stateView);
 
@@ -199,12 +194,12 @@ final class DungeonEditorTransitionScenarios {
                 "DE-TRN-003 invalid entrance-link target map leaves source transitions unchanged");
         assertEquals(targetRowsBefore, runtime.database().transitionStableState(targetMapId),
                 "DE-TRN-003 invalid entrance-link target map leaves target transitions unchanged");
-        assertEquals(sourceRef, runtime.mapSurfaceModel().current().selection().topologyRef(),
+        assertEquals(sourceRef, runtime.editorApi().current().selection().topologyRef(),
                 "DE-TRN-003 invalid entrance-link target map keeps source selected");
         assertEquals(
                 features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.MISSING_TRANSITION_DESTINATION,
                 ((features.dungeon.api.editor.DungeonEditorCommandOutcome.Rejected)
-                        runtime.controlsModel().current().commandOutcome()).reason(),
+                        runtime.editorApi().current().commandStatus().outcome()).reason(),
                 "DE-TRN-003 invalid target map publishes typed missing-destination rejection");
         assertTransitionEntranceLinkDraft(
                 stateView,
@@ -247,7 +242,7 @@ final class DungeonEditorTransitionScenarios {
                 "DE-TRN-003 invalid entrance-link target transition leaves source transitions unchanged");
         assertEquals(targetRowsBefore, runtime.database().transitionStableState(targetMapId),
                 "DE-TRN-003 invalid entrance-link target transition leaves target transitions unchanged");
-        assertEquals(sourceRef, runtime.mapSurfaceModel().current().selection().topologyRef(),
+        assertEquals(sourceRef, runtime.editorApi().current().selection().topologyRef(),
                 "DE-TRN-003 invalid entrance-link target transition keeps source selected");
         assertTransitionEntranceLinkDraft(
                 stateView,
@@ -278,7 +273,7 @@ final class DungeonEditorTransitionScenarios {
                 "DE-TRN-003 target transition topology ref remains stable");
 
         String destinationLabel = "Dungeon " + targetMapId + " / Übergang " + targetTransitionId;
-        DungeonEditorMapSurfaceSnapshot sourceSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState sourceSurface = runtime.editorApi().current();
         assertEquals(sourceRef, sourceSurface.selection().topologyRef(),
                 "DE-TRN-003 entrance-link source selection remains after save");
         assertEquals(DungeonEditorPreview.none(), sourceSurface.preview(),
@@ -298,7 +293,7 @@ final class DungeonEditorTransitionScenarios {
         selectMap(controls, "Transition Link Reload Hop");
         selectMap(controls, "Transition Link Source Map");
         assertTransitionCreatedInSnapshot(
-                runtime.mapSurfaceModel().current(),
+                runtime.editorApi().current(),
                 binding.mapContentModel(),
                 sourceTransitionId,
                 5,
@@ -313,7 +308,7 @@ final class DungeonEditorTransitionScenarios {
         DungeonTopologyElementRef targetRef =
                 new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.TRANSITION, targetTransitionId);
         assertTransitionCreatedInSnapshot(
-                runtime.mapSurfaceModel().current(),
+                runtime.editorApi().current(),
                 binding.mapContentModel(),
                 targetTransitionId,
                 6,
@@ -332,7 +327,7 @@ final class DungeonEditorTransitionScenarios {
                 targetViewport.sceneToScreenX(targetCenter.getX()),
                 targetViewport.sceneToScreenY(targetCenter.getY()),
                 false);
-        assertEquals(targetRef, runtime.mapSurfaceModel().current().selection().topologyRef(),
+        assertEquals(targetRef, runtime.editorApi().current().selection().topologyRef(),
                 "DE-TRN-003 target entrance remains selectable");
         assertSelectedTransitionKeepsOverworldDestinationSurface(stateView);
 
@@ -466,7 +461,7 @@ final class DungeonEditorTransitionScenarios {
 
         click(button(controls, "Übergang"));
         assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.TRANSITION),
-                runtime.controlsModel().current().toolSelection(),
+                runtime.editorApi().current().toolSelection(),
                 "DE-TRN-001 transition family selects transition creation");
         ComboBox<?> destinationType = comboBox(stateView, "Übergang Zieltyp");
         assertTrue(comboBoxContainsDisplayText(destinationType, "Weltkarte"),
@@ -509,7 +504,7 @@ final class DungeonEditorTransitionScenarios {
         DungeonTopologyElementRef unlinkedTransitionRef =
                 new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.TRANSITION, unlinkedTransitionId);
         assertTransitionCreatedInSnapshot(
-                runtime.mapSurfaceModel().current(),
+                runtime.editorApi().current(),
                 binding.mapContentModel(),
                 unlinkedTransitionId,
                 4,
@@ -522,7 +517,7 @@ final class DungeonEditorTransitionScenarios {
         assertTrue(!renderHasTextForRef(binding.mapContentModel(), unlinkedTransitionRef),
                 "DE-TRN-001 cell transition does not render a committed feature label");
         var unlinkedMarkerTarget = runtimePointerTarget(binding.mapContentModel(), 4.5, 2.5, false);
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.MARKER, unlinkedMarkerTarget.targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.MARKER, unlinkedMarkerTarget.targetKind(),
                 "DE-TRN-001 cell transition marker hit resolves through marker target kind");
         updateHoverTarget(binding.mapContentModel(), unlinkedMarkerTarget);
         assertTrue(renderHasHoverText(binding.mapContentModel(), "Übergang " + unlinkedTransitionId),
@@ -537,7 +532,7 @@ final class DungeonEditorTransitionScenarios {
                 viewport.sceneToScreenX(unlinkedCenter.getX()),
                 viewport.sceneToScreenY(unlinkedCenter.getY()),
                 false);
-        assertEquals(unlinkedTransitionRef, runtime.stateModel().current().selection().topologyRef(),
+        assertEquals(unlinkedTransitionRef, runtime.editorApi().current().selection().topologyRef(),
                 "DE-TRN-001 unlinked entrance remains selectable");
         assertEquals("Kein Ziel", String.valueOf(comboBox(stateView, "Eingangslink Zieltyp").getValue()),
                 "DE-TRN-001 selected unlinked entrance reads back placeholder destination type");
@@ -553,7 +548,7 @@ final class DungeonEditorTransitionScenarios {
         selectMap(controls, "Transition Create Reload Hop");
         selectMap(controls, "Transition Create Map");
         assertTransitionCreatedInSnapshot(
-                runtime.mapSurfaceModel().current(),
+                runtime.editorApi().current(),
                 binding.mapContentModel(),
                 unlinkedTransitionId,
                 4,
@@ -636,7 +631,7 @@ final class DungeonEditorTransitionScenarios {
                 "DE-TRN-001 persists stable transition topology ref");
         DungeonTopologyElementRef transitionRef = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.TRANSITION, transitionId);
         assertTransitionCreatedInSnapshot(
-                runtime.mapSurfaceModel().current(),
+                runtime.editorApi().current(),
                 binding.mapContentModel(),
                 transitionId,
                 5,
@@ -654,7 +649,7 @@ final class DungeonEditorTransitionScenarios {
         assertEquals(1L, runtime.database().countTransitionTopologyElementById(mapId, transitionId),
                 "DE-TRN-001 reload keeps transition topology ref");
         assertTransitionCreatedInSnapshot(
-                runtime.mapSurfaceModel().current(),
+                runtime.editorApi().current(),
                 binding.mapContentModel(),
                 transitionId,
                 5,
@@ -686,7 +681,7 @@ final class DungeonEditorTransitionScenarios {
         click(button(controls, "Übergang"));
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         Point2D wallMidpoint = boundaryMidpointNear(binding.mapContentModel(), "WALL", 2.0, 1.5);
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.BOUNDARY,
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.BOUNDARY,
                 runtimePointerTarget(binding.mapContentModel(), wallMidpoint.getX(), wallMidpoint.getY(), true)
                         .targetKind(),
                 "DE-TRN-005 transition create samples a wall boundary target");
@@ -717,8 +712,8 @@ final class DungeonEditorTransitionScenarios {
                 "DE-TRN-005 wall-boundary click does not fall back to a CELL transition row");
 
         DungeonTopologyElementRef transitionRef = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.TRANSITION, transitionId);
-        DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
-        assertTrue(committedSurface.surface().map().features().stream()
+        DungeonEditorState committedSurface = runtime.editorApi().current();
+        assertTrue(committedSurface.selectedWindow().map().features().stream()
                         .filter(feature -> "TRANSITION".equals(feature.kind()))
                         .filter(feature -> feature.id() == transitionId)
                         .anyMatch(feature -> feature.anchorEdge() != null
@@ -735,9 +730,9 @@ final class DungeonEditorTransitionScenarios {
         assertTrue(!renderHasTextForRef(binding.mapContentModel(), transitionRef),
                 "DE-TRN-005 edge transition does not render a committed feature label");
         var transitionMarkerTarget = runtimePointerTarget(binding.mapContentModel(), wallMidpoint.getX(), wallMidpoint.getY(), false);
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.MARKER, transitionMarkerTarget.targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.MARKER, transitionMarkerTarget.targetKind(),
                 "DE-TRN-005 edge transition marker hit resolves through marker target kind");
-        assertEquals(DungeonEditorRuntimePointerTarget.TopologyKind.TRANSITION, transitionMarkerTarget.topologyKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.TRANSITION, transitionMarkerTarget.topologyKind(),
                 "DE-TRN-005 edge transition marker hit carries transition topology kind");
         updateHoverTarget(binding.mapContentModel(), transitionMarkerTarget);
         assertTrue(renderHasHoverText(binding.mapContentModel(), "Übergang " + transitionId),
@@ -866,12 +861,12 @@ final class DungeonEditorTransitionScenarios {
                         "anchor_type=EDGE",
                         "anchor_edge_direction=EAST"),
                 "DE-TRN-001 reload and re-save preserves EDGE anchor row");
-        assertTrue(runtime.mapSurfaceModel().current().surface().map().features().stream().noneMatch(feature ->
+        assertTrue(runtime.editorApi().current().selectedWindow().map().features().stream().noneMatch(feature ->
                         feature.id() == noneTransitionId && "TRANSITION".equals(feature.kind())),
                 "DE-TRN-001 NONE anchor does not publish a placed transition marker");
         DungeonTopologyElementRef edgeRef = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.TRANSITION, edgeTransitionId);
-        DungeonEditorMapSurfaceSnapshot resavedSurface = runtime.mapSurfaceModel().current();
-        assertTrue(resavedSurface.surface().map().features().stream()
+        DungeonEditorState resavedSurface = runtime.editorApi().current();
+        assertTrue(resavedSurface.selectedWindow().map().features().stream()
                         .filter(feature -> "TRANSITION".equals(feature.kind()))
                         .filter(feature -> feature.id() == edgeTransitionId)
                         .anyMatch(feature -> feature.anchorEdge() != null
@@ -888,7 +883,7 @@ final class DungeonEditorTransitionScenarios {
         assertTrue(!renderHasTextForRef(binding.mapContentModel(), edgeRef),
                 "DE-TRN-001 roundtrip EDGE anchor does not render a committed feature label");
         var edgeMarkerTarget = runtimePointerTarget(binding.mapContentModel(), 7.0, 2.5, false);
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.MARKER, edgeMarkerTarget.targetKind(),
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.MARKER, edgeMarkerTarget.targetKind(),
                 "DE-TRN-001 roundtrip EDGE anchor marker hit resolves through marker target kind");
         updateHoverTarget(binding.mapContentModel(), edgeMarkerTarget);
         assertTrue(renderHasHoverText(binding.mapContentModel(), "Übergang " + edgeTransitionId),
@@ -956,13 +951,22 @@ final class DungeonEditorTransitionScenarios {
         seeder.seed(runtime.database(), mapId);
 
         RuntimeException exception = expectRuntimeFailure(
-                () -> selectMap(controls, mapName),
+                () -> {
+                    selectMap(controls, mapName);
+                    layoutBoundMap(binding.mapView());
+                },
                 message);
         assertTrue(exceptionChainContains(exception, "Malformed dungeon transition record")
                         || exceptionChainContains(exception, "SQLite foreign key check failed"),
                 message + " reports the malformed source row");
-        assertTrue(runtime.mapSurfaceModel().current() != null,
+        assertTrue(runtime.editorApi().current() != null,
                 message + " leaves the shell alive");
+    }
+
+    private static void layoutBoundMap(DungeonMapView mapView) {
+        Parent root = mapView.getScene().getRoot();
+        root.applyCss();
+        root.layout();
     }
 
     @FunctionalInterface
@@ -1012,22 +1016,22 @@ final class DungeonEditorTransitionScenarios {
 
         DungeonTopologyElementRef transitionRef = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.TRANSITION, transitionId);
         Point2D transitionCenter = glyphCenterForRef(binding.mapContentModel(), transitionRef);
-        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.MARKER,
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TargetKind.MARKER,
                 runtimePointerTarget(binding.mapContentModel(), transitionCenter.getX(), transitionCenter.getY())
                         .targetKind(),
                 "DE-TRN-002 transition marker resolves as a real map pointer target");
-        assertEquals(DungeonEditorRuntimePointerTarget.ElementKind.TRANSITION,
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.ElementKind.TRANSITION,
                 runtimePointerTarget(binding.mapContentModel(), transitionCenter.getX(), transitionCenter.getY())
                         .elementKind(),
                 "DE-TRN-002 transition marker resolves through transition marker semantics");
-        assertEquals(DungeonEditorRuntimePointerTarget.TopologyKind.TRANSITION,
+        assertEquals(features.dungeon.api.editor.DungeonEditorPointerInput.TopologyKind.TRANSITION,
                 runtimePointerTarget(binding.mapContentModel(), transitionCenter.getX(), transitionCenter.getY())
                         .topologyKind(),
                 "DE-TRN-002 transition marker carries a transition topology ref");
         assertCompactTransitionGlyph(binding.mapContentModel(), transitionRef, "DE-TRN-002");
         click(button(controls, "Übergang"));
         assertEquals(DungeonEditorToolSelection.family(DungeonEditorToolFamily.TRANSITION),
-                runtime.controlsModel().current().toolSelection(),
+                runtime.editorApi().current().toolSelection(),
                 "DE-TRN-002 transition family selects the transition family tool");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
@@ -1042,10 +1046,10 @@ final class DungeonEditorTransitionScenarios {
                 "DE-TRN-002 deletes the selected dungeon_transitions row");
         assertEquals(0L, runtime.database().countTransitionTopologyElementById(mapId, transitionId),
                 "DE-TRN-002 deletes the selected transition topology ref");
-        DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorState committedSurface = runtime.editorApi().current();
         assertEmptySelection(committedSurface.selection(), "DE-TRN-002 map surface after transition delete");
-        assertEmptySelection(runtime.stateModel().current().selection(), "DE-TRN-002 state after transition delete");
-        assertTrue(committedSurface.surface().map().features().stream().noneMatch(feature ->
+        assertEmptySelection(runtime.editorApi().current().selection(), "DE-TRN-002 state after transition delete");
+        assertTrue(committedSurface.selectedWindow().map().features().stream().noneMatch(feature ->
                         feature.id() == transitionId && "TRANSITION".equals(feature.kind())),
                 "DE-TRN-002 published feature list omits the deleted transition");
         assertTrue(!renderHasGlyphAt(binding.mapContentModel(), transitionRef, transitionCenter.getX(), transitionCenter.getY(), false),
@@ -1057,7 +1061,7 @@ final class DungeonEditorTransitionScenarios {
                 "DE-TRN-002 reload readback keeps the transition deleted");
         assertEquals(0L, runtime.database().countTransitionTopologyElementById(mapId, transitionId),
                 "DE-TRN-002 reload readback keeps the transition topology ref deleted");
-        assertTrue(runtime.mapSurfaceModel().current().surface().map().features().stream().noneMatch(feature ->
+        assertTrue(runtime.editorApi().current().selectedWindow().map().features().stream().noneMatch(feature ->
                         feature.id() == transitionId && "TRANSITION".equals(feature.kind())),
                 "DE-TRN-002 reload snapshot keeps the transition absent");
 
@@ -1120,7 +1124,7 @@ final class DungeonEditorTransitionScenarios {
         DungeonTopologyElementRef transitionRef = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.TRANSITION, transitionId);
         Point2D transitionCenter = glyphCenterForRef(binding.mapContentModel(), transitionRef);
         List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
-        DungeonEditorMapSurfaceSnapshot surfaceBefore = runtime.mapSurfaceModel().current();
+        DungeonEditorState surfaceBefore = runtime.editorApi().current();
         assertEquals(1L, runtime.database().countTransitionById(mapId, transitionId),
                 scenario + " fixture starts with selected transition row");
         assertEquals(1L, runtime.database().countTransitionTopologyElementById(mapId, transitionId),
@@ -1141,18 +1145,18 @@ final class DungeonEditorTransitionScenarios {
                 scenario + " keeps selected transition row");
         assertEquals(1L, runtime.database().countTransitionTopologyElementById(mapId, transitionId),
                 scenario + " keeps selected topology ref");
-        assertEquals(surfaceBefore.surface().map(), runtime.mapSurfaceModel().current().surface().map(),
+        assertEquals(surfaceBefore.selectedWindow().map(), runtime.editorApi().current().selectedWindow().map(),
                 scenario + " keeps published map stable");
-        assertEquals(surfaceBefore.selection(), runtime.mapSurfaceModel().current().selection(),
+        assertEquals(surfaceBefore.selection(), runtime.editorApi().current().selection(),
                 scenario + " keeps selection stable");
-        assertEquals(surfaceBefore.projectionLevel(), runtime.mapSurfaceModel().current().projectionLevel(),
+        assertEquals(surfaceBefore.projectionLevel(), runtime.editorApi().current().projectionLevel(),
                 scenario + " keeps projection level stable");
-        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
+        assertEquals(DungeonEditorPreview.none(), runtime.editorApi().current().preview(),
                 scenario + " keeps preview empty");
         assertEquals(
                 features.dungeon.api.editor.DungeonEditorCommandOutcome.RejectionReason.REFERENCED_CONNECTION,
                 ((features.dungeon.api.editor.DungeonEditorCommandOutcome.Rejected)
-                        runtime.controlsModel().current().commandOutcome()).reason(),
+                        runtime.editorApi().current().commandStatus().outcome()).reason(),
                 scenario + " publishes typed referenced-connection rejection");
         assertTrue(renderHasGlyphAt(binding.mapContentModel(), transitionRef, transitionCenter.getX(), transitionCenter.getY(), false),
                 scenario + " keeps rendered transition marker");

@@ -40,10 +40,10 @@ import features.dungeon.domain.core.structure.corridor.Corridor;
 import features.dungeon.domain.core.structure.corridor.CorridorBindings;
 import features.dungeon.domain.core.structure.feature.FeatureMarker;
 import features.dungeon.domain.core.structure.feature.FeatureMarkerKind;
-import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
 import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
 import features.dungeon.domain.core.structure.room.RoomCluster;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.stair.Stair;
 import features.dungeon.domain.core.structure.stair.StairShape;
@@ -92,8 +92,7 @@ final class SqliteDungeonWindowStoreTest {
             assertEquals(42L, warm.requestGeneration());
             assertTypedAuthoredSemantics(warm);
             assertTrue(warm.fragments().stream()
-                    .flatMap(fragment -> fragmentCells(fragment).stream())
-                    .allMatch(cell -> requestedFact(cell, warm)));
+                    .allMatch(fragment -> requestedFacts(fragment, warm)));
         }
     }
 
@@ -136,13 +135,12 @@ final class SqliteDungeonWindowStoreTest {
             assertEquals(7, window.fragments().stream().map(fragment -> fragment.entityRef()).distinct().count());
             assertTypedAuthoredSemantics(window);
             assertTrue(window.fragments().stream()
-                    .flatMap(fragment -> fragmentCells(fragment).stream())
-                    .allMatch(cell -> requestedFact(cell, window)));
+                    .allMatch(fragment -> requestedFacts(fragment, window)));
             assertEquals(List.of(
                     key(0, 0, -1),
                     key(0, 1, -1),
                     key(0, 2, -1),
-                    key(0, 2, 0)), window.continuations().stream()
+                    key(0, 2, 0)), window.continuationPage().entries().stream()
                     .filter(continuation -> continuation.entityRef().equals(DungeonPatchEntityRef.corridor(302L)))
                     .findFirst()
                     .orElseThrow()
@@ -791,7 +789,8 @@ final class SqliteDungeonWindowStoreTest {
         DungeonWindowIndex index = indexed.get();
         if (index.chunkHeaders().isEmpty()) {
             return java.util.Optional.of(new DungeonWindow(
-                    index.mapHeader(), index.requestGeneration(), List.of(), List.of(), List.of()));
+                    index.mapHeader(), index.requestGeneration(), List.of(), List.of(), List.of(), List.of(),
+                    features.dungeon.application.authored.port.DungeonContinuationPage.empty()));
         }
         return gateway.loadContent(new DungeonWindowContentRequest(
                 index.mapHeader().mapId(), index.mapHeader().revision(),
@@ -816,14 +815,10 @@ final class SqliteDungeonWindowStoreTest {
                 Set.of(new Cell(-64, -64, 0), new Cell(10, 10, 0), new Cell(64, 0, 0)),
                 DungeonRoomNarration.empty());
         RoomCluster cluster = RoomCluster.authored(
-                201L, MAP_ID, "Window cluster", new Cell(-64, -64, 0), Map.of(
-                        0, List.of(new DungeonClusterBoundary(
-                                201L,
-                                0,
-                                new Cell(0, 0, 0),
-                                Direction.NORTH,
-                                BoundaryKind.WALL,
-                                DungeonTopologyRef.wall(7001L)))));
+                201L, MAP_ID, "Window cluster", List.of(BoundarySegment.fromEdge(
+                        Direction.NORTH.edgeOf(new Cell(-64, -64, 0)),
+                        BoundaryKind.WALL,
+                        DungeonTopologyRef.wall(7001L))));
         Corridor host = new Corridor(301L, MAP_ID, 0, List.of(), new CorridorBindings(
                 List.of(), List.of(),
                 List.of(
@@ -835,7 +830,7 @@ final class SqliteDungeonWindowStoreTest {
         for (int index = 0; index < corridorCount; index++) {
             long corridorId = 302L + index;
             corridors.add(new Corridor(corridorId, MAP_ID, 0, List.of(), new CorridorBindings(
-                    List.of(new CorridorWaypoint(201L, new Cell(128, 63, 0), 0)),
+                    List.of(new CorridorWaypoint(201L, new Cell(64, -1, 0))),
                     List.of(), List.of(),
                     List.of(new CorridorAnchorRef(301L, 9001L), new CorridorAnchorRef(301L, 9002L)))));
         }
@@ -861,6 +856,7 @@ final class SqliteDungeonWindowStoreTest {
         changes.add(new TransitionChange(null, transition));
         markers.forEach(marker -> changes.add(new FeatureMarkerChange(null, marker)));
         Set<DungeonChunkKey> touchedChunks = Set.of(
+                key(0, -1, -2),
                 key(0, -1, -1),
                 key(0, 0, -1),
                 key(0, 1, -1),
@@ -972,7 +968,7 @@ final class SqliteDungeonWindowStoreTest {
         assertEquals("Window cluster", cluster.name());
         assertTrue(cluster.memberCells().stream().anyMatch(member -> member.roomId() == 101L));
         assertTrue(cluster.boundaries().stream().anyMatch(boundary ->
-                boundary.direction() == Direction.NORTH
+                boundary.direction() == Direction.SOUTH
                         && boundary.kind() == DungeonWindowEntityFragment.BoundaryKind.WALL
                         && boundary.topologyRef().id() == 7001L));
 
@@ -1015,6 +1011,15 @@ final class SqliteDungeonWindowStoreTest {
                 Math.floorDiv(cell.q(), DungeonChunkKey.CHUNK_SIZE),
                 Math.floorDiv(cell.r(), DungeonChunkKey.CHUNK_SIZE));
         return window.chunkHeaders().stream().anyMatch(header -> header.key().equals(key));
+    }
+
+    private static boolean requestedFacts(DungeonWindowEntityFragment fragment, DungeonWindow window) {
+        if (fragment instanceof DungeonWindowEntityFragment.RoomCluster cluster) {
+            return cluster.memberCells().stream().allMatch(member -> requestedFact(member.cell(), window))
+                    && cluster.boundaries().stream().allMatch(boundary -> boundary.direction().edgeOf(boundary.cell())
+                            .touchingCells().stream().anyMatch(cell -> requestedFact(cell, window)));
+        }
+        return fragmentCells(fragment).stream().allMatch(cell -> requestedFact(cell, window));
     }
 
     private static List<Cell> fragmentCells(DungeonWindowEntityFragment fragment) {
@@ -1117,7 +1122,7 @@ final class SqliteDungeonWindowStoreTest {
                     Math.floorDiv(cell.r(), DungeonChunkKey.CHUNK_SIZE)));
         }
         RoomCluster cluster = RoomCluster.authored(
-                999L, MAP_ID, "Off-window cluster", new Cell(10_000, 10_000, 0), Map.of());
+                999L, MAP_ID, "Off-window cluster", List.of());
         RoomRegion room = new RoomRegion(
                 999L, MAP_ID, 999L, "Off-window room", cells, DungeonRoomNarration.empty());
         fixture.commit(DungeonPatch.of(

@@ -51,8 +51,8 @@ final class DungeonCorridorConnectionWriteMapperSupport {
             result.add(new DungeonCorridorWaypointRecord(
                     corridorId,
                     waypoint.clusterId(),
-                    waypoint.relativeCell().q(),
-                    waypoint.relativeCell().r(),
+                    waypoint.cell().q(),
+                    waypoint.cell().r(),
                     waypoint.level()));
         }
         return List.copyOf(result);
@@ -69,9 +69,9 @@ final class DungeonCorridorConnectionWriteMapperSupport {
                     corridorId,
                     binding.roomId(),
                     binding.clusterId(),
-                    binding.relativeCell().q(),
-                    binding.relativeCell().r(),
-                    binding.relativeCell().level(),
+                    binding.roomCell().q(),
+                    binding.roomCell().r(),
+                    binding.roomCell().level(),
                     binding.direction().name(),
                     binding.topologyRef().present() ? binding.topologyRef().id() : null));
         }

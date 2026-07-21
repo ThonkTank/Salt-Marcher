@@ -279,7 +279,9 @@ final class DungeonAuthoredPreviewWorksetTest {
                     request.requestGeneration(),
                     request.chunkKeys().stream().map(key -> new DungeonWindowChunkHeader(key, 1L)).toList(),
                     List.of(room, cluster),
-                    List.of()));
+                    List.of(),
+                    List.of(),
+                    features.dungeon.application.authored.port.DungeonContinuationPage.empty()));
         }
 
         @Override

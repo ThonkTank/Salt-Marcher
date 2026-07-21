@@ -26,12 +26,19 @@ final class DungeonMapTravelRenderProjector {
             return DungeonMapRenderState.empty(placeholderTitle, false);
         }
         DungeonMapSnapshot map = surface.map();
+        List<DungeonMapRenderState.Cell> cells = travelCells(map);
+        List<DungeonMapRenderState.Edge> edges = travelEdges(map.boundaries());
+        List<DungeonMapRenderState.Label> labels = travelLabels(map.areas());
+        List<DungeonMapRenderState.Marker> markers = markerProjector.travelMarkers(map.features());
+        DungeonMapRenderState.PartyToken partyToken = travelPartyToken(surface);
+        DungeonMapPresentationExtent extent = DungeonMapPresentationExtent.from(
+                cells, edges, labels, markers, partyToken);
         List<DungeonMapRenderState.GraphNode> graphNodes = travelGraphNodes(map.areas());
         return new DungeonMapRenderState(
                 surface.mapName(),
                 true,
-                map.width(),
-                map.height(),
+                extent.width(),
+                extent.height(),
                 DungeonMapRenderState.Topology.fromPublished(map.topology()),
                 DungeonMapRenderState.ViewMode.grid(),
                 DungeonMapRenderState.LevelOverlaySettings.off(),
@@ -39,13 +46,13 @@ final class DungeonMapTravelRenderProjector {
                 false,
                 DungeonMapRenderState.selectToolLabel(),
                 "No dungeon map geometry available.",
-                travelCells(map),
-                travelEdges(map.boundaries()),
-                travelLabels(map.areas()),
-                markerProjector.travelMarkers(map.features()),
+                cells,
+                edges,
+                labels,
+                markers,
                 graphNodes,
                 travelFallbackGraphLinks(graphNodes),
-                travelPartyToken(surface));
+                partyToken);
     }
 
     private List<DungeonMapRenderState.Cell> travelCells(DungeonMapSnapshot map) {

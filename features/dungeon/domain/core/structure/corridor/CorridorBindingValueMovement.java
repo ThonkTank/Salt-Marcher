@@ -31,7 +31,7 @@ final class CorridorBindingValueMovement {
                 updated.add(new CorridorDoorBinding(
                         binding.roomId(),
                         binding.clusterId(),
-                        movedCell(binding.relativeCell(), deltaQ, deltaR, deltaLevel),
+                        movedCell(binding.roomCell(), deltaQ, deltaR, deltaLevel),
                         binding.direction(),
                         binding.topologyRef()));
                 changed = true;
@@ -85,8 +85,7 @@ final class CorridorBindingValueMovement {
             if (index == waypointIndex) {
                 updated.add(new CorridorWaypoint(
                         waypoint.clusterId(),
-                        movedCell(waypoint.relativeCell(), deltaQ, deltaR, deltaLevel),
-                        waypoint.level() + deltaLevel));
+                        movedCell(waypoint.cell(), deltaQ, deltaR, deltaLevel)));
                 changed = true;
             } else {
                 updated.add(waypoint);

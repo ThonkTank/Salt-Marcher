@@ -1,410 +1,624 @@
-Status: Draft
+Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-17
-Source of Truth: Editor-facing dungeon behavior, visible states, and acceptance criteria.
+Last Reviewed: 2026-07-21
+Source of Truth: Confirmed solution-neutral Dungeon authoring and inspection
+behavior.
 
 # Dungeon Editor Requirements
 
 ## Goal
 
-Define the required editor workflow over committed authored dungeon truth so
-the user can manage maps, select stable authored targets, preview changes, and
-commit supported mutations without inventing a second authored state source.
+Let one GM author and maintain complete multi-level Dungeon truth through three
+specialized, synchronized views without requiring duplicate edits or exposing
+internal storage and routing concepts.
 
-## Non-Goals
+## Shared Authoring Outcomes
 
-This document does not own shared canvas contract design, renderer scene
-structure, authored dungeon invariants, or SQLite schema detail.
+The editor MUST let the GM:
 
-## Current State
+- create, rename, load, reload, and delete Dungeons
+- author and inspect rooms, named room groups or areas, walls, doors, corridors,
+  stairs, transitions, traps, descriptions, and campaign references
+- copy a complete authored Room, door, or comparable content identity, or
+  selected reusable parts of its authored content, and assign the copy to
+  suitable geometry
+- work on positive and negative levels and coordinates without a fixed Dungeon
+  boundary
+- select a stable authored object and find the same object in every applicable
+  view
+- preview, confirm, cancel, undo, and redo supported changes
+- receive a clear, specific explanation when a change cannot be applied
 
-- SaltMarcher already ships map CRUD, grid or graph view switching, level and
-  overlay controls, stable selection, live preview, room paint and delete,
-  wall and door editing, handle or cluster movement, and room narration cards.
-- SaltMarcher already keeps corridor, stair, and transition tool families
-  directly visible in the editor controls, but their end-to-end authored
-  behavior is still only partially present compared with the richer sibling
-  repo surface.
-- Current live editor controls still expose some create/delete variants as
-  separate top-level buttons; that is drift from the target family-button model,
-  not a target interaction pattern.
-- Current manual testing found drift in corridor, cluster, wall, label, and
-  stair workflows; the target behavior below supersedes older verification rows
-  that contradict this document.
-- The sibling `salt-marcher` repo shows the fuller visible target-state editor
-  experience for corridor creation or merge, stair parameter editing, and
-  transition destination selection.
-- The editor owns per-session committed history and exposes undo/redo through
-  the standard platform shortcuts. History is not persisted across restarts.
+Exact pointer buttons, menus, dropdown behavior, pixel widths, and control
+placement are replaceable UX design. Required outcomes are fast selection,
+understandable preview, explicit completion or cancellation, safe rejection,
+and discoverable tools.
 
-## Visible Structure
+## Authoring Entry Points
 
-The editor has three control rows for map management, level/overlay/projection,
-and directly visible tool-family controls. Main content is the shared dungeon
-map surface in editor mode. State content shows active tool, selection, preview
-state, mutation status, and room narration cards or tool-specific editing
-cards.
+The raster view and relationship graph are equal primary entry points for a new
+Dungeon. Both represent one continuous Dungeon whole rather than separate maps. A GM may begin and continue structural authoring in either view.
+Changes in each view synchronously affect the same Dungeon structure; neither
+view is merely a downstream presentation of the other.
 
-## Tool Family Selection
+The Dungeon Key is a secondary refinement surface for descriptions and other
+primarily textual content after or alongside structural authoring.
 
-- tool selection MUST use one focused button per editor tool family instead of separate top-level buttons for subactions inside the same family, including stair create/delete variants
-- the tool-family button row SHOULD be no wider than the tool panel when the editor is displayed in the normal tool-panel layout in a `960px` wide app window
-- room, wall, door, corridor, stair, and transition families MUST use the same
-  map-surface gesture mapping: LMB or primary input selects or places the
-  family's normal authored target, RMB or secondary input deletes or removes
-  the target, and Shift-modified input performs the family's alternate edit
-  action when that family defines one
-- place and delete intent MUST be separated by the shared map-surface gesture
-  mapping instead of a second menu choice after the family button is selected
-- family-specific parameters such as stair shape, wall interaction mode,
-  transition destination, or corridor endpoint details MAY be edited through
-  the state panel or another focused parameter surface, but they MUST NOT
-  replace the shared place/delete gesture convention
-- secondary tool options that choose a mode, shape, destination kind, link
-  behavior, or other parameter value rather than place/delete/alternate edit
-  intent MUST appear in a dropdown window anchored under the focused family
-  button
-- a family-button dropdown MUST preselect the last used sub-option for that
-  family, or the first available sub-option when no previous selection exists
-- a family-button dropdown MUST close automatically when the pointer leaves the
-  dropdown window area
-- `Esc` MUST reset the current tool family and sub-option selection back to the
-  general `Auswahl` tool
+## Raster Authoring View
 
-## Required Behavior
+The editor raster view owns direct spatial authoring. Ordinary floor drawing
+uses 5-foot horizontal cells and 5-foot vertical resolution, and automatically
+creates floor, traversable Volume, and a 10-foot-clear default ceiling. The
+normal editor presents one 10-foot story as a 2D active slice spanning two
+vertical steps. Geometry immediately above and below appears through
+onion-slicing.
 
-- the editor MUST let the user create, rename, delete, load, and reload maps
-- created maps MUST start empty
-- deleting the currently selected map while at least one other map remains MUST
-  remove that map and its authored dungeon content, clear transient selection
-  and preview state, and then select the first remaining map in the current
-  catalog order
-- `Auswahl` MUST remain directly visible
-- room, wall, door, corridor, stair, and transition families MUST remain
-  directly visible as tool buttons
-- directly visible tool buttons MUST represent tool families, not separate
-  top-level create and delete variants
-- selection MUST resolve stable authored targets rather than presentation-only
-  guesses
-- preview MUST read as if the pending operation were applied, but MUST NOT
-  persist authored truth
-- rejected edits MUST show a specific stable reason that explains the blocked
-  operation; a generic no-change message is not sufficient when the system
-  knows whether geometry, identity, references, routing, or revision caused the
-  rejection
-- handle drag preview MUST be responsive and MUST avoid a full authored
-  map reload during per-mouse-move preview when the typed preview can be
-  rendered from the current editor session
-- after the visible chunk workset is loaded, pointer preview MUST NOT read from
-  or write to the repository
-- only the newest pending pointer-move preview may remain queued; press,
-  release, commit, cancel, and tool-switch inputs MUST invalidate older queued
-  move samples
-- apply MUST commit only on explicit gesture completion
-- corridor editing MUST support visible create and delete flows
-- stair editing MUST support visible create and delete flows plus stair shape, direction, and exit-level configuration
-- transition editing MUST support visible create and delete flows plus destination selection for dungeon, overworld, or an explicit unlinked entrance placeholder
-- object, encounter, and point-of-interest markers MUST support label and
-  description editing after creation
-- cluster and room naming MUST support default and custom names through the
-  state panel; only cluster labels may also use direct label editing
+The GM may switch slices before or during an editing gesture. A click-and-drag
+surface operation may therefore span several slices and create a 3D Volume.
+Stories may be stacked directly; removing an intermediate floor opens the
+vertical geometry. Floors and walls remain independently editable despite the
+automatically created standard shell.
 
-## Sparse Map And Camera Behavior
+Floor mode paints or erases horizontal faces on cells at the active height
+using the configured brush and eraser forms. Wall mode draws walls through
+click-and-drag along cell edges and sets vertical extent in 5-foot steps.
+Selection can then move, extend, shorten, or change their height. Automatically
+created boundaries become ordinary editable floors and walls. Off-grid walls
+remain deferred.
 
-- authored coordinates MUST support positive and negative values without a
-  fixed map width or height acting as an editing boundary
-- the editor MUST load chunks intersecting the visible viewport plus one
-  surrounding chunk ring for the active level
-- chunks are `64 x 64` cells and use mathematical floor division for negative
-  coordinates
-- panning or zooming MUST remain passive presentation behavior and MUST NOT
-  mutate authored truth
-- coordinate jump, fit-selection, and fit-authored-content actions MUST remain
-  possible even when authored content is far from the current viewport
-- graph presentation MUST distinguish loaded relations from continuations into
-  unloaded chunks rather than presenting the loaded window as the whole map
+Its foundational fixed-Area tools are:
 
-## Committed History
+- a brush with selectable shapes and adjustable radius
+- a polygon or surface tool that draws different area forms through
+  click-and-drag
+- an eraser with matching shape and radius capabilities
+- selection that can move, distort, and edit existing geometry
 
-- `Ctrl/Cmd+Z` MUST undo the latest committed authored command for the selected
-  map in the running editor session
-- `Ctrl/Cmd+Y` and `Ctrl/Cmd+Shift+Z` MUST redo the latest undone command
-- previews, rejected commands, camera changes, selection, and tool changes MUST
-  NOT create history entries
-- a new committed command after undo MUST discard that map's redo branch
-- history MUST preserve stable authored identities and restore content as a
-  new monotonically increasing map revision
-- one map session retains at most `200` committed commands or `128 MiB` of
-  encoded history weight, whichever limit is reached first; the byte weight
-  MUST upper-bound or directly measure the retained forward and inverse command
-  payloads rather than estimate only top-level object counts
-- one accepted command that changes several maps, including a bidirectional
-  transition link, MUST create one compound history entry and undo or redo every
-  involved map atomically
-- closing the editor session or restarting the application clears history;
-  history MUST NOT be stored as dungeon-authored truth
+Selection supports one target, additive selection, rectangle, lasso, a 3D
+range, and type or property filters. If several objects occupy the hit point,
+the editor shows a candidate list that can be cycled; it never relies on a
+silent fixed hit priority. A spatial range touching only part of a Volume
+selects the whole Volume for transforms and does not cut it.
 
-## Responsiveness Qualification
+Selected Volumes may be moved and copied on the grid, rotated in 90-degree
+steps, mirrored horizontally or vertically, and deformed through corner or edge
+handles. Ground-plan handles change the complete prism by default. Arbitrary
+angles and off-grid scaling are not required. Multiple selected Volumes
+transform as one arrangement while preserving their relative spacing and
+internal links; external Paths reroute in preview.
 
-- camera-only and hover-only work MUST complete within a `16 ms` p95 budget in
-  the qualification scenario
-- preview over an already loaded workset MUST complete within a `50 ms` p95
+Brush, surface tool, and eraser operate directly on geometry regardless of the
+current selection. Overlapping or newly connected geometry automatically merges
+Volumes; separating geometry automatically splits a Volume. Completion requires
+no additional confirmation dialog, and ordinary undo is the expected recovery
+path.
+
+After every merge or split, SaltMarcher immediately makes a best-effort complete
+Room assignment for every resulting Volume. The assignment does not block
+geometry editing and the GM may change it afterward. Existing authored Rooms
+not selected for an assignment remain preserved without geometry.
+
+After a split, the existing Room follows the best-matching resulting Volume.
+Every other resulting Volume receives a new initially empty Room. Inherited
+Dungeon, Level, and group attributes continue to apply. Voxel-anchored Features
+and described surface regions follow their geometry, while complete Room prose
+is not duplicated automatically. The GM may copy or reassign it afterward.
+Selection remains relevant to transforms and detailed edits, not to
+choosing the target of drawing or erasing.
+
+Floor, traversable Volume, and default ceiling remain one coordinated spatial
+result while these tools operate.
+
+The raster model supports two foundational geometry forms:
+
+- directly drawn anchored Areas whose geometry changes only through explicit GM
+  edit or removal
+- unified non-branching generated 3D Paths between two endpoints and optional
+  waypoints; one Path may combine corridor, stair, ramp, ladder, shaft, and
+  comparable segments
+
+Both forms produce bounded, standable geometric Volumes. Chambers, corridors,
+stair spaces, and comparable forms use equivalent movement semantics even when
+their authoring behavior differs. A Volume may be partitioned into navigation
+areas at meaningful internal decisions such as corridor junctions.
+
+A Path remains parametrically defined by two endpoints, optional waypoints,
+cross-section, and further path properties. One Path never branches;
+T-junctions and networks arise from separate Paths meeting at a common anchor
+or Volume. It may carry an authored connection form for individual segments,
+including corridor, stair, ramp, ladder, or shaft. SaltMarcher proposes route,
+Passages, and segment forms in a protected preview. The GM can override a form
+or refine the route with waypoints and pins. Segment forms remain properties of
+the same Path rather than separate foundational content objects.
+
+The Path's exact voxel geometry derives from those facts. Moving a connected
+endpoint produces a rerouted preview rather than a silent commit. Normal path
+editing changes points or parameters. Routing avoids existing geometry and
+rejects an impossible route instead of silently breaking through it. The
+default cross-section is 5 feet wide and 10 feet high; the complete Path or an
+individual segment may override width and height in 5-foot steps.
+
+The GM may explicitly convert a Path into a fixed Area for fully custom
+geometry. Conversion preserves its current materialized volume and ends
+automatic rerouting.
+
+Every Path endpoint has an exact 3D anchor on a Volume boundary. When the GM
+connects Rooms without choosing exact anchors, SaltMarcher proposes suitable
+boundary anchors. The GM can move or pin them. Current navigation areas may be
+derived from geometry for routing and graph presentation but are not stable
+semantic endpoint identities. An unpinned endpoint may move to a suitable new
+boundary after geometry changes. A pinned endpoint follows its local position
+on the Volume and produces a repairable preview conflict if no valid route can
+preserve it.
+
+A Path meets each Volume through a separate Passage at its boundary. Passage is
+one functional concept; door, opening, gate, hatch, window, secret door, and
+comparable forms are visual assets or decorations. A Passage may be placed only
+on an existing wall or Volume boundary, but one Volume side is sufficient for a
+dangling authored approach into unbuilt space.
+
+Passage geometry uses complete 5-foot boundary faces, with 10-foot default
+height. Width and height remain resizable in 5-foot steps under the same
+identity. A wide Passage is authored as one wide object; adjacent independently
+created Passages remain independent. Overlap with another Passage is rejected
+atomically with a specific reason.
+
+Removing Passage geometry restores the wall but preserves Passage identity,
+description, and authored facts unassigned until reassigned or explicitly
+deleted. If later geometry has one unambiguous fit, it rebinds automatically;
+ambiguous fits require a preview and GM choice.
+
+Any Passage may link to another Passage in the same or another Dungeon or to an
+external campaign place. There is no special exit kind. Direction and return
+link are authored independently per side, and each side keeps its own
+description, passability, sensory facts, and optional added travel duration. A
+missing target leaves a visible broken and unavailable link until relinked or
+removed.
+
+## Feature Placement And Environment Authoring
+
+Encounter, Trap, Loot, and Curiosity use one shared placement mode: select the
+kind or owning source, place its exact voxel anchor, then edit kind-specific
+details. An existing Feature anchor may be dragged or reassigned across Volumes
+without changing identity. Several Features may share a voxel and use the same
+candidate-list selection behavior as other ambiguous hits.
+
+Trap trigger editing is a raster overlay with brush, range, and eraser tools.
+All trigger voxels for one Trap form one semantic set, even when they span
+Volumes. Feature layers are independently toggleable, show a type symbol, and
+show the name on hover or selection. Secret visibility follows the selected GM
+or player perspective.
+
+The editor lets the GM author light sources attached to geometry, Features,
+items, or actors, plus optional ambient light inherited from Dungeon through
+Level to Room. It independently edits passability and boundary transmission
+for sight, light, sound, and later sensory channels. Persistent sound sources
+and authored state actions may also be spatially anchored.
+
+A Feature may offer named, GM-confirmed state actions that atomically set or
+toggle several Passage, light, sound, or mechanism states. Only explicit
+authored triggers such as time, entering an area, elapsed duration, or a
+confirmed action may invoke such an action automatically. The resulting state
+persists until another action, trigger, or GM edit changes it.
+
+Additional raster capabilities include:
+
+- draw and reshape room and area geometry
+- place and edit walls, Passages, unified connection Paths, links, traps,
+  and other purpose-specific spatial objects
+- select authored objects, rooms, and areas for detailed inspection
+- change levels, pan, zoom, jump to coordinates, fit selection, and fit authored
+  content
+- show pending geometry as a non-persisted preview
+- expose enough specific feedback to repair invalid or conflicting geometry
+
+The runtime travel raster is not an authoring surface. It displays the Dungeon
+passively and lets the GM select rooms, objects, actors, and other targets to
+open their descriptions in a detail pane.
+
+## Relationship-Graph Design View
+
+The graph is an abstract, zoomed-out Dungeon-design and debugging surface. It
+represents the party's meaningful navigation decisions rather than mirroring
+every raster object one-to-one. Rooms, room groups, and relevant decision
+points may appear as nodes; routes and transitions appear as edges. Incidental
+geometry may be collapsed only when real choices, connection types, current
+states, and travel effects remain understandable.
+
+Authored Passages, Paths, and links influence graph
+relationships. Mere geometric adjacency without an authored opening does not
+create an edge. A structurally present but currently impassable connection
+remains visible with a distinct state. Geometrically detected climb, jump, or
+similar special-route candidates remain distinguishable from ordinary safe
+connections.
+
+It MUST help the GM inspect and manage:
+
+- room and room-group flow
+- the distribution of decision complexity
+- travel times between relevant points
+- placement and density of puzzles, loot, encounters, curiosities, and similar
+  content
+- important relationships and transitions that are difficult to understand at
+  raster scale
+
+Graph detail is adjustable. At maximum detail the graph may show every
+individual door, room, and connection. At progressively reduced levels it
+collapses unbranched routes, individual rooms, and then room groups into
+higher-level routes and navigation decisions. Flow, travel-time, and content
+facts aggregate to the visible level without replacing or discarding their
+underlying authored facts.
+
+The strongest reduction follows Melan-diagram principles documented by The
+Alexandrian:
+
+- straighten non-branching routes and remove irrelevant turns
+- collapse doors, intermediate spaces, and short dead ends that do not create a
+  meaningful macro-level navigation choice
+- preserve true forks, loops, secret or unusual paths, and level connections
+- avoid counting fake loops whose branches immediately rejoin without creating
+  meaningful route diversity
+- let edge length communicate approximate travel effort without reproducing
+  raster geometry
+
+Unlike the original analysis-only method, SaltMarcher's graph is also an
+authoring surface. It MUST preserve the distinction between abstract planned
+structure and protected provisional raster translation.
+
+The graph additionally supports a debug-style content heatmap. A route in this
+primary diagnostic means one edge between two visible graph nodes, not a full
+multi-node start-to-destination journey. Nodes and edges use colors, icons, or
+comparable encodings to show the type and concentration of Treasure,
+Encounters, Curiosities, puzzles, danger, rewards, and comparable authored
+content across the Dungeon.
+
+A later full-path comparison may build on these facts but has lower priority
+than the immediate node-and-edge heatmap. Diagnostics inform GM judgment and
+MUST NOT enforce one supposedly correct Dungeon structure or content balance.
+
+The GM can toggle individual heatmap layers for danger, Encounters, Treasure,
+other rewards, Curiosities, puzzles, secrets, and additional content types.
+One active layer uses a clear intensity scale across nodes and edges. A combined
+overview uses distinguishable icons, bars, or a comparable multi-category
+encoding rather than one ambiguous mixed color.
+
+The graph can switch between absolute content amount and concentration relative
+to travel time or route extent. Collapsing graph detail aggregates the
+underlying node and edge values to the visible level without losing category
+distinctions.
+
+Heatmap facts come only from explicit authored Dungeon Features, not from
+guessing content out of room prose. Initial feature kinds include Encounter,
+Trap, Loot, and Curiosity.
+
+A Curiosity is the common Feature kind for puzzles, individually authored
+flavor, table-facing interactions, and concrete furnishings such as a table,
+statue, or fountain. There is no separate generic Prop kind. Incidental
+furnishing may remain Room or surface description, while Loot or other
+purpose-specific Features may reference the Curiosity. Puzzle is a built-in Curiosity classification rather than a
+separate foundational Feature kind; additional GM-defined tags may be added.
+Its initial content consists of a name, player-readable or read-aloud free text,
+GM-only notes for operation, solution, or possible reactions, plus categories
+and tags. It has no programmed solution steps, success conditions, or automatic
+consequences. Later versions may add optional links or simple consequences such
+as changing lights or unlocking a referenced door without replacing GM-authored
+text or authority.
+Diagnostics may count all Curiosities and the Puzzle-classified subset
+separately, but MUST NOT assign Curiosities a qualitative score.
+
+The graph may show advisory pacing warnings for probable underfilling,
+overfilling, or local content concentration. Warnings remain explainable,
+overridable, and non-blocking.
+
+Danger and Loot diagnostics use the existing DMG-guided budget models already
+owned by SaltMarcher. The GM can define intended character level and planned
+session count for a complete Dungeon, one level, or one area. Authored Encounter,
+Trap, and Loot Features are compared with the resulting XP, gold, and magic-item
+budgets.
+
+Curiosity diagnostics use count and local density only. They MUST NOT infer
+quality or importance from Curiosity prose. General content-density references
+such as The Alexandrian's approximate content-bearing-room guidance may add
+separate pacing hints, but MUST NOT replace the rule-based danger and Loot
+budgets.
+
+Target level inherits from the complete Dungeon into levels and areas unless the
+GM overrides it at a narrower scope. Planned sessions do not duplicate into
+every child scope. The GM explicitly allocates Dungeon session shares to levels
+or areas, and unallocated shares remain visible.
+
+Child budget and actual-content summaries roll up without double counting. A
+scope without allocated sessions still receives neutral heatmaps, Curiosity
+density, and general distribution hints, but no misleading XP, gold, or
+magic-item budget warning.
+
+The GM may rearrange rooms and room groups in the graph. SaltMarcher translates
+those changes into raster geometry as far as possible.
+
+Creating a room in the graph immediately creates provisional raster geometry.
+Graph position and relationships provide the initial room and connections. The
+GM may optionally supply rough size, shape, or level hints without drawing
+cells in the graph. The result remains protected Graph-Edit Preview state until
+the GM returns to the raster editor, refines or restores it, and explicitly
+accepts it.
+
+Every graph detail level remains editable with abstraction-appropriate
+operations:
+
+- detailed views edit individual rooms, doors, and connections
+- middle detail may move, duplicate, connect, or remove complete rooms and room
+  groups as units
+- the strongest reduction may restructure high-level routes and groups
+
+A connection authored between collapsed groups is provisional planning intent.
+SaltMarcher may generate plausible concrete endpoints and raw geometry for the
+protected raster preview, but MUST NOT silently resolve ambiguity to an
+arbitrary door or cell.
+
+### Protected Graph-Edit Preview
+
+- graph rearrangement begins a protected, transient edit mode
+- the raster result appears only when the GM returns to the raster editor
+- the GM may repair translated geometry with ordinary raster-editor tools
+- no graph-edit result becomes permanent until the GM accepts the combined
+  result
+- before acceptance, one action restores the complete Dungeon state from
+  immediately before graph editing began
+- this protected restoration remains available independently of the ordinary
+  undo/redo depth or memory cap
+- failed or ambiguous translation MUST NOT silently discard authored content
+
+## Room List And Dungeon Key
+
+The room-list view presents a focused, human-readable Dungeon Key. It MUST let
+the GM efficiently edit primarily textual and semantic content through spacious
+room-editing dialogs.
+
+Each room entry includes at least:
+
+- stable editable display number
+- name
+- read-aloud description
+- GM description or notes
+- exits and relationships
+- linked actors, objects, encounters, and events
+
+SaltMarcher initially assigns display numbers unique within one conceptual
+Level. The GM may change or reorder them without changing internal Room
+identity or breaking references. Moving a Room into a Level with a conflict
+assigns the next free number. Cross-Level and Dungeon-wide references and
+exports show `Level + number`.
+
+Full-text search, filters for number, Level, group, Feature, secret, and status,
+and sorting support large Dungeon Keys. Selecting a result navigates to the same
+object in graph and raster.
+
+Batch editing may change every supported field, including names, read-aloud
+text, and GM notes. Text batches support complete replacement, prepend, append,
+and search/replace. A batch applies immediately and atomically as one undoable
+editor action; it does not require a separate preview.
+
+## Hybrid Room Descriptions
+
+A rendered room description combines:
+
+- dynamic geometry facts and spatial relationships
+- GM-authored descriptive attributes such as shape, height, materials,
+  atmosphere, temperature, moisture, door appearance, and similar qualities
+
+During travel, relative language such as “in front of you”, “left”, and
+“right” derives from current party heading and approach. Outside current travel,
+the Dungeon Key, editor, and document export use stable map directions such as
+north or southwest.
+
+The rendered description is an ordered sequence of blocks. Blocks may contain
+GM-authored read-aloud prose, derived geometry facts, inherited or local
+attributes, exits and visible Passages, and additional authored transitions or
+prose. The GM may reorder blocks, suppress individual derived facts, and insert
+authored text between them.
+
+The editor lets the GM choose an entrance or heading to preview the relative
+read-aloud result. Geometry changes recompute only affected derived facts
+without overwriting or reordering GM-authored text and attributes.
+
+Description blocks and relevant authored objects may be normally visible,
+GM-only, or hidden until discovered. An undiscovered secret Passage is omitted
+from player-readable text and visible exits. Secret status remains authored
+truth; discovery by the current party is separate runtime state. The editor can
+preview both undiscovered and discovered renderings. Visibility does not alter
+explicit passability.
+
+Hidden content may optionally define a search method, DC, private discovery
+notes, and the text or facts revealed afterward. SaltMarcher may compare passive
+values or a GM-entered active-check result and privately notify the GM. It MUST
+NOT reveal content without GM confirmation. The GM may manually reveal or hide
+it again.
+
+Descriptions such as blocked, locked, heavy, cold, or damp affect generated
+wording and placement in the dynamic description. They MUST NOT silently create
+passability or action rules.
+
+Common categories such as material, condition, light, temperature, moisture,
+smell, sound, and atmosphere accept freely authored values. The GM may add
+custom named attributes and exceptional free-text phrasing.
+
+Descriptive attributes inherit through Dungeon, optional Level, optional room
+group, Room, and explicitly described surface-region scopes. A Level is a
+GM-defined set of z-levels in the same continuous 3D Dungeon, not another map.
+Every inheriting object has one unambiguous parent path. A Room belongs to at
+most one Level; SaltMarcher may propose one from geometry, but the GM may assign
+the conceptual Level or skip the Level scope entirely. A multi-z-level Room is
+never geometrically split to satisfy inheritance. Level z-level sets do not
+overlap for inheritance. Allowed parent paths are Dungeon to Room, Dungeon to
+room group to Room, Dungeon to Level to Room, and Dungeon to Level to room group
+to Room. A Dungeon-level group may span z-levels; a Level-owned group remains
+within that conceptual Level. Further nested room-group levels are initially
+excluded. Different attribute keys accumulate through inheritance. A more
+specific value for the same key replaces only that key, while other inherited
+values remain. The GM may explicitly suppress or clear an inherited key.
+Additional overlapping collections or tags may support filtering and heatmaps
+but do not inherit attributes. The editor exposes every effective value and its
+origin and lets the GM restore inheritance. Attribute inheritance MUST NOT
+create rules, passability, or effects.
+
+## Geometry And Authored-Content Lifecycles
+
+- a Room may provide default descriptive attributes for its complete associated
+  Volume
+- the GM may select a contiguous wall, floor, or ceiling region and assign
+  overriding descriptions, attributes, or templates to that surface region
+- an explicitly described surface region receives a stable authored content
+  identity and the same preservation and reassignment guarantees as Rooms and
+  doors
+- raw undescribed voxel faces do not each require a separate content identity
+- Passages remain explicit independent objects because they affect travel
+- every Dungeon Feature initially has one exact 3D voxel anchor within a Volume
+- moving or reshaping that Volume carries the Feature anchor with it
+- when destructive geometry prevents reliable anchor mapping, the Feature
+  remains preserved for reassignment
+- Encounter context may follow referenced mobile actors or groups without
+  duplicating their identity
+- only Traps and Encounters initially support automatic proximity activation
+- a Trap may own zero or more trigger fields separate from its Feature anchor
+- each trigger field is an arbitrary GM-marked voxel set rather than a required
+  radius or fixed shape
+- trigger voxels remain associated with their Volumes and follow Volume movement
+  or deformation; one Trap may span fields in several adjacent Volumes
+- trigger fields only notify and interrupt travel, and do not alter passability
+  or decide fictional outcomes
+- a Trap defines maximum and current Charges; only a GM-confirmed actual
+  activation consumes one
+- at zero Charges the Trap cannot activate automatically
+- Reset Duration restores all Charges together
+- per Trap, the GM chooses whether the reset countdown starts only at zero or as
+  soon as current Charges fall below maximum
+- consuming another Charge does not restart a running countdown; its completion
+  restores all Charges regardless of intervening use
+- the GM may manually correct current Charges and reset state
+- an explicit Actor Autonomy job may perform a Trap reset
+- a placed Dungeon Encounter primarily references the existing SaltMarcher
+  Encounter capability for monster composition and statistics rather than
+  duplicating them
+- the Dungeon placement adds its voxel anchor, local Dungeon notes, detection
+  behavior, and autonomy integration
+- one concrete Encounter or monster group has at most one current Dungeon
+  placement; repeated equivalent encounters require independent Encounter copies
+- later movement changes that group's existing anchor rather than creating
+  another placement
+- Encounter detection uses the shared perception behavior
+- Dungeon Loot placement uses existing Loot content and ultimately the same
+  shared Loot object used by Encounter and Session Generation, rather than
+  duplicating currencies, items, or magic-item truth
+- the Dungeon placement adds the voxel anchor and local Dungeon context
+- one concrete Loot object has at most one current Dungeon anchor; Encounter
+  and Session Generation references do not create additional spatial copies
+- repeated physical Loot requires independent copies, while movement changes
+  the existing anchor
+- Loot and Curiosity Features do not activate solely because the party is nearby
+- a Volume is geometric truth; a Room is stable GM-authored content associated
+  with a Volume
+- one Room is assigned to at most one Volume and one Volume to at most one Room
+  at a time; either may temporarily be unassigned
+- navigation areas are silently derived from Volume geometry for routing and
+  decision presentation; they have no stable identity, name, description, or
+  authored content and may be freely recalculated
+- manual navigation-area correction is optional and low priority, while room
+  groups collect several Rooms or Volumes
+- moving a Volume preserves its Room association and Room identity
+- after a Volume is removed, split, or made unrecognizable, SaltMarcher attempts
+  a safe reassociation to suitable resulting geometry
+- when reliable reassociation is not possible, the Room and all of its authored
+  content remain available without a geometry assignment
+- the same protection applies to other described authored identities, including
+  doors: deleting their geometry does not delete their description or semantic
+  content
+- only an explicit content-deletion action removes preserved GM-authored content
+- the GM may duplicate whole authored identities or selected content parts and
+  assign the resulting content independently to other suitable geometry
+- an ordinary reassignment or copy receives its own identity and changes
+  independently
+- the GM may explicitly turn supported authored content into a reusable template
+  and assign that template to several instances
+- template assignments remain linked and automatically receive later template
+  changes
+- a template initially contains a GM-selected set of authored content blocks;
+  geometry, geometry assignment, and stable object identity remain excluded
+- only included blocks stay linked; other instance content remains independently
+  editable, while editing a linked block requires deliberate detachment
+- the GM may deliberately detach one linked instance or block; detached content
+  preserves its current value and changes independently
+- this template granularity is an initial testable workflow and may be refined
+  after practical usability evaluation
+- the reassociation mechanism is replaceable; the required outcome is visible,
+  recoverable preservation without silent data loss
+
+## Commit, Preview, And History
+
+- each completed, validated authoring action persists immediately
+- previews, canceled gestures, camera changes, selection, and rejected work do
+  not persist authored truth
+- rejection preserves the last valid authored state and identifies the reason
+- undo/redo covers at least the latest 200 ordinary committed changes in the
+  current editor session
+- unusually large operations may be limited by a documented encoded-memory
   budget
-- rendering and hit work MUST be proportional to visible primitives and
-  touched chunks rather than total authored map size
-- stable authored content and the dynamic interaction/actor layer MUST be
-  independently invalidatable so hover changes do not redraw authored content
-- qualification MUST include a sparse map with at least `100,000` authored
-  cells while the active visible-plus-ring workset contains at most `9` chunks;
-  camera, hover, and preview operation counts MUST remain independent from the
-  off-window cell count
+- a new commit after undo discards that session's redo branch
+- undo/redo preserves stable authored identities
+- history is session-scoped and is not exported as Dungeon truth
+- one action spanning several Dungeons, such as paired Passage links, commits
+  and reverses atomically
+- all geometry and content tools remain available during active exploration;
+  a committed change becomes travel truth immediately
+- a geometry or passability commit revalidates active autoroutes; an invalid
+  route stops at its last completed segment with a specific reason
+- if edited geometry removes an actor cell, the preview first relocates that
+  actor to the nearest valid cell in the same Volume, then a directly connected
+  Volume; without such a cell the edit is rejected
+- geometry and administrative actor relocations commit and undo atomically;
+  relocation consumes no travel time or events and is logged with the edit
+- committed geometry is always structurally travel-valid; empty Dungeons,
+  disconnected locally valid Volumes, and dangling Passages remain valid
 
-## Supported Interaction States
+## Sparse-Dungeon Responsiveness
 
-- room paint and delete on the active level
-- wall create and delete through boundary paths
-- wall creation defaults to path-based drawing; single-click wall work is an
-  alternate mode, not the default
-- door create and delete through boundary selection, including cluster
-  perimeter doors on outer walls
-- door selection exposes the stable authored door target and deletion status,
-  but there are no door-specific editable state-panel fields in this
-  requirements set beyond room exit narration and the shared delete/reject
-  behavior
-- room narration editing from the state pane
-- handle movement for selectable editor handles
-- straight wall-stretch movement for selected cluster walls
-- selected cluster corner movement through published corner handles and
-  selected wall-line movement through published wall-midpoint handles
-- selecting a room floor area MUST select that room without exposing cluster
-  corner or wall-run handles; selecting the cluster label MUST expose the
-  owning cluster corner and wall-run handles
-- selection hover feedback MUST appear only for stable selectable objects: room/corridor/stair cells, transition/feature markers, visible handles, cluster labels, graph nodes, and door boundaries. Plain wall boundaries, room labels, feature hover labels, and tool-only synthetic geometry MUST stay visually passive in selection mode.
-- door handles MUST be visible canvas handles, hittable through the shared
-  handle route, draggable with live preview, and committed as authored door
-  boundary movement
-- corridor create and delete flows
-- corridor targeting resolves to explicit authored endpoints only: room-side
-  doors and corridor-side anchors
-- generic room hits and generic corridor hits remain allowed input, but the
-  committed corridor MUST bind to a concrete authored door or corridor anchor
-- corridor hover feedback MUST stay narrower than accepted fallback input:
-  wall or door boundary edges and authored corridor cells may highlight, while
-  generic room cells must not present as corridor hover targets
-- stair create and delete flows with visible shape and exit configuration
-- transition create and delete flows with description, destination, and
-  bidirectional-link options
-- transition creation MUST accept both map-cell placement and wall or door edge placement; cell placements behave like compact stair-style entrance glyphs, while edge placements behave like compact door-style boundary glyphs
-- transition creation MUST allow an unlinked entrance placeholder without requiring an overworld tile or dungeon transition target at creation time
-- unlinked entrance placeholders MUST persist, render, reload, select, accept description edits, and delete like other unreferenced authored transitions
-- rendered transition markers MUST be unlabeled and transition-specific; they may resemble stairs or doors by placement, but must remain visually distinguishable from ordinary stair and door affordances
-- edge-anchored transitions MUST render and hit-test through the edge marker,
-  not through a transition cell surface
-- runtime travel MUST NOT execute an unlinked entrance; it MUST leave travel on the current authored surface and surface a clear missing-destination outcome through the travel action failure path
-- committed object, encounter, point-of-interest, and transition markers MUST NOT render persistent feature labels; marker names MAY appear as hover-only overlay text and must not become selectable label targets
-- committed object, encounter, or point-of-interest feature markers must remain selectable by stable marker topology ref and must not create travel actions
-- custom cluster name editing through state-panel fields and direct map-label
-  editing; custom room name editing through state-panel fields
-- grid and graph projection modes
-- level controls that can select empty positive and negative editor levels
-  before authored geometry exists there
-- overlay controls that affect presentation only
+- authored coordinates have no fixed width or height boundary
+- camera, hover, selection, preview, and rendering work scales with visible
+  primitives and touched spatial regions
+- off-screen authored content does not force global work for a local gesture
+- camera and hover work meet a 16 ms p95 budget
+- preview over already available local data meets a 50 ms p95 budget
+- qualification includes at least 100,000 authored cells in a sparse Dungeon
 
-Corridor, stair, and transition editing are still partial in current
-SaltMarcher builds, but they remain visible target-state surface obligations in
-this requirements document because the user-facing feature shape is already
-evidenced in the sibling repo.
+## Extensibility Qualification
 
-## Clarified Geometry Behavior
+The editor design is considered adaptable only when adding a new authored
+object or tool family requires local, explicit changes and does not require
+unrelated feature, travel, persistence, or shell rewrites.
 
-- room paint merges only when the newly painted rectangle overlaps at least one authored cell of an existing room or cluster
-- a single-cluster overlap merge MUST keep existing room and cluster identity, add the newly painted non-overlapping cells, and recompute the perimeter without duplicated overlap cells
-- adjacent room paint with no overlapping authored cell MUST create a distinct room and cluster even when the new rectangle touches an existing room edge
-- a freshly painted or adjacent new room uses the painted rectangle's minimum cell as its room component and cluster center until a later explicit move or stretch changes it
-- freshly painted or adjacent new rooms MUST read back after commit and reload with the full painted floor-cell set and a closed perimeter wall around that floor set
-- freshly painted or adjacent new room perimeter walls MUST be authored durable wall truth after commit; absent perimeter wall rows are old-map compatibility input only, not the target output of fresh room creation
-- intentional wall deletion on a room perimeter MUST be observable as an authored open edge, distinct from an absent un-authored edge whose perimeter wall may still be derived
-- overlap merges MUST NOT leave stale old boundary rows visible as internal walls inside the merged room
-- wall finalization is idempotent: existing wall segments reuse topology, absent boundary segments create or mark that segment as wall, and neither path creates duplicate topology rows
-- path-based wall drawing starts with a primary click, accepts primary-click intermediate points, and commits only when the active wall process is completed by secondary input or by a point that falls on an existing wall
-- wall tool hit detection MUST reuse the visible wall hover snap target: path mode targets the highlighted vertex, and single-click mode targets the highlighted wall edge instead of a separate raw-pointer hitbox
-- secondary input is context-sensitive for wall work: while a wall-create path
-  is active it completes that create path; without an active create path it
-  starts or completes a wall-delete path
-- single-click wall creation or deletion MAY be toggled through Ctrl or through a dropdown anchored under the wall tool button, using the same secondary
-  option pattern as the stair tool dropdown
-- deleting walls removes the whole contiguous straight wall run until the next
-  corner; deleting a corner removes every contiguous straight run meeting at
-  that corner until its next corner
-- cluster exterior walls MUST NOT be deleted; attempts to delete them reject
-  without authored geometry, topology, preview, or selection mutation
-- stretching a straight cluster wall moves that wall and its two connected side walls while preserving selected cluster identity and recomputing enclosed cells and perimeter as one mutation
-- cluster drag handles MUST publish one handle at every authored wall corner and one handle at the midpoint of every authored straight wall run, for both interior and exterior walls
-- moving a selected cluster corner through a published corner handle MUST preserve cluster and room identity, update the true wall-corner vertex rather than a bounding-box corner, and recompute the adjacent boundary spans without orphan or duplicate wall rows
-- dragging a selected wall-midpoint handle MUST move the whole contiguous straight wall run one-to-one with pointer movement while preserving cluster identity and rejecting invalid geometry atomically
-- cluster corner and wall-run drag handles MUST be visible and hittable only while their owning cluster is selected; corner handles render as compact point affordances on true authored corners, and wall-run handles render as compact midpoint affordances on the corresponding wall line
-- deleting an unbound door restores the same boundary segment to a wall and removes the door topology or semantic binding; it does not delete the entire wall segment
-- deleting a corridor-bound door MUST be rejected without mutating the door, corridor, room boundary, or preview state
-- corridor creation MUST use deterministic orthogonal routing between concrete endpoints: horizontal-first, then vertical; vertical-first only when needed; reject if neither candidate is valid
-- corridor endpoints MUST be concrete authored endpoints before commit: room-side doors or corridor-side anchors
-- corridor creation materializes no door, anchor, corridor, route, or topology row until the full start-and-end corridor process completes successfully; all pending endpoint and route facts before completion are preview state only
-- a generic room hit in corridor mode resolves to the boundary edge that faces the other endpoint, reusing an existing door or authoring exactly one new door there before commit
-- a generic corridor hit in corridor mode resolves to the clicked host corridor cell, reusing an existing anchor or authoring exactly one new anchor there before commit
-- corridor routes with turns or crossings expose authored anchors at every turn or crossing point and keep straight spans free of unnecessary intermediate anchors
-- corridor anchor and waypoint refs MUST NOT render or hit-test as generic canvas drag handles; endpoint movement is owned by the focused corridor point edit route, and corridor tool endpoint deletion uses semantic corridor-body or door-boundary targets
-- deleting an intermediate corridor waypoint or connection point reroutes deterministically between the remaining neighboring authored endpoints using the same creation-route policy; invalid replacement routes reject without partial mutation
-- deleting a corridor door endpoint removes the branch segment from that door to the nearest surviving branch junction, authored corridor anchor, or other door endpoint, while preserving unaffected branches, surviving topology refs, and non-stale handles
-- a cluster with no user-authored name defaults to `Cluster <clusterId>` on the map surface, and its label is centered in the cluster's authored floor-cell centroid rather than using the first room name or bounding-box midpoint
-- a room with no user-authored name defaults to `Raum <roomId>`; its passive
-  map label renders as subdued floor text parallel to the longest wall run
-- cluster and room custom names persist as authored editor behavior and remain
-  visible after reload
+## Acceptance Outcomes
 
-## Stair Geometry Spec
-
-Stair editing is driven by a `StairGeometrySpec`: shape, anchor cell,
-direction, `dimension1`, `dimension2`, generated path cells, generated exits,
-and optional corridor binding.
-
-Shape options:
-
-| UI option | Stored shape | Meaning |
-| --- | --- | --- |
-| `Gerade` | `STRAIGHT` | Straight run from the anchor in the selected direction. |
-| `Eckspirale` | `SQUARE` | Angular spiral inside a square footprint. |
-| `Rundspirale` | `CIRCULAR` | Round spiral approximated to map cells. |
-
-The stair family dropdown owns only the creation-time shape option and the
-last-used shape option. It MUST NOT mutate an existing stair. The state panel
-owns selected-stair parameter edits: shape, direction, dimensions, exit-level
-span, and any future explicit exit labels.
-
-Parameter meanings:
-
-| Shape | `dimension1` | `dimension2` |
-| --- | --- | --- |
-| `STRAIGHT` | horizontal run length; default `3`, min `1`, max `64` | exit level span; default `1`, min `1`, max `12` |
-| `SQUARE` | outer side length; default `3`, min `2`, max `16` | exit level span; default `1`, min `1`, max `12` |
-| `CIRCULAR` | footprint diameter; default `3`, min `3`, max `31`; even values round up before preview | exit level span; default `1`, min `1`, max `12` |
-
-Anchor and direction behavior:
-
-- the anchor is the lower cell of the generated stair spec; for creation it is
-  derived from the two selected endpoints, while selected stair handles and
-  state-panel coordinate edits preserve the existing lower anchor behavior
-- direction is one cardinal map direction and defines the first horizontal step
-  or tangent leaving the anchor
-- after the stair family dropdown selects a supported shape, a primary map click
-  MUST start a non-authored stair draft at the clicked cell and projection level
-- while a stair draft is active, pointer movement and projection-level changes
-  MUST update the preview from the start cell, current endpoint, selected shape,
-  and derived level span; the draft MUST survive projection-level changes until
-  commit, cancel, tool switch, map switch, or successful commit
-- a second primary map click MUST commit only when the selected shape can derive
-  an exact `StairGeometrySpec` whose generated lower and upper exits match the
-  selected endpoints; invalid endpoints MUST keep the draft active, publish a
-  concrete rejection status, and leave authored state unchanged
-- creating a straight stair from a same-column cross-level endpoint derives
-  `dimension1=1`; creating a straight stair from a cardinal horizontal endpoint
-  derives direction and run length from the lower-to-upper endpoint vector
-- square and circular creation MUST search supported dimensions and directions
-  and accept only exact endpoint matches from generated exits; it MUST NOT
-  silently approximate to a nearby supported footprint
-- a full stair recompute MUST preserve the stair identity and topology ref,
-  recompute path cells and exits from the current spec, and reject the edit
-  instead of committing a partial path when any parameter is invalid
-- direct path-handle movement is not a full geometry recompute; it may move the
-  selected path node while preserving existing exits
-
-Validation and rejection:
-
-- unsupported shape values, non-cardinal directions, missing anchors,
-  zero-level spans, or dimensions outside the limits above MUST be rejected
-- generated path cells MUST be deterministic for the same spec and MUST NOT
-  include duplicate cells at the same level
-- a generated stair MUST have at least two exits on distinct levels
-- a stair path MUST NOT cross authored room interiors except at its generated
-  exit cells or at explicitly selected corridor/stair binding cells
-- invalid edits leave the previous stair, path, exits, selection, and preview
-  state unchanged
-- invalid creation drafts leave authored state and DB rows unchanged while the
-  visible preview/status identifies the rejection reason
-
-Exit and label behavior:
-
-- full recompute generates one exit for the anchor level, one for the target
-  level, and one for each intermediate crossed level
-- generated exit labels default to `Ausgang z=<level> (<q>,<r>)`
-- recompute preserves an existing exit id by its ordered level role when that
-  role still exists; removed roles delete their exit rows and new roles receive
-  new ids
-- future user-authored exit labels remain state-panel-owned and must be
-  preserved by exit id during recompute
-
-Delete and corridor binding behavior:
-
-- deleting an unbound stair removes the stair, generated path, generated exits,
-  and stair topology ref
-- deleting a stair bound to a corridor is rejected unless the user is deleting
-  the owning corridor branch through the corridor workflow
-- a cross-level corridor between endpoints on different levels creates or reuses
-  a corridor-bound stair segment whose exits connect the corridor route across
-  the crossed levels
-- state-panel edits to a corridor-bound stair MUST preserve the corridor
-  endpoints and crossed levels or reject the edit without partial mutation
-
-## Transition Link Behavior
-
-- a bidirectional transition link is created from a selected source transition
-  in the state panel by choosing a target dungeon map and target transition id,
-  then explicitly saving the link
-- the save MUST update the selected source transition to target that map and
-  transition, and MUST update the target transition's `linkedTransitionId` back
-  to the source transition when the target transition exists in the loaded
-  authored dungeon data
-- if the selected transition, target map, or target transition cannot be
-  resolved, the save is rejected without changing either transition
-- the bidirectional link save is one editor mutation from the user's
-  perspective: both sides update together or neither side changes
-- linked transition labels, selection, and delete protection MUST read back
-  from persisted authored transition fields rather than state-panel draft data
-
-## Acceptance Criteria
-
-- Preview, cancel, rejection, and invalid edits never persist authored truth; supported commits persist, publish, render, and reload the same authored result.
-- Authored object, encounter, and point-of-interest markers publish with marker category and stable marker identity, render without persistent feature labels, and may show names only as hover-only overlay text; travel affordances still include only stairs and transitions.
-- Map CRUD, selection clearing, room paint/delete/merge/adjacency, room narration, door create/delete/protected-delete, and transition link save preserve the behavior described above without partial mutation.
-- Tool-family controls stay directly visible, fit the `960px` tool-panel
-  target, use shared map gestures, remember dropdown sub-options, close
-  dropdowns on pointer leave, and reset to `Auswahl` on `Esc`.
-- Wall paths keep draft state until explicit completion, never finalize merely
-  because a second point is clicked, delete only eligible interior straight
-  runs, and reject exterior-wall deletion without changing authored state.
-- Cluster handles are proven on selected true corners and selected wall-run
-  midpoints for complex shapes; moving a corner or wall run preserves cluster
-  identity and recomputes affected geometry atomically.
-- Cluster and room labels use the required default text, placement, custom-name
-  persistence, and reload stability; only cluster labels are direct map-label
-  edit targets.
-- Corridor creation accepts room-to-room, room-to-corridor, and
-  corridor-to-corridor flows, but commits only after a valid full route between
-  two explicit authored endpoints; preview endpoint materialization has no
-  persisted side effects before commit.
-- Corridor deletion and point deletion preserve unaffected branches and reject
-  protected or invalid mutations without partial authored changes.
-- Stair creation after dropdown shape selection uses a two-point cross-level
-  draft: first click starts, pointer/level changes preview, invalid endpoints
-  report concrete feedback without persistence, and second click commits the
-  exact derived `StairGeometrySpec`; state-panel stair edits preserve identity
-  and recompute deterministically.
-- Advanced tool families stay directly visible even when specific authored
-  mutations are still delivered incrementally.
-- Undo and redo are observable through the real map-view shortcut route,
-  persist the restored authored result, and keep revision monotonic.
-- Negative-coordinate chunk assignment, one-ring loading, preview workset
-  reuse, and latest-wins pointer scheduling are deterministic and executable.
+- one room, area, object, relationship, and description remains recognizable
+  across raster, graph, and Dungeon-Key views
+- geometry editing stays in the raster authoring view
+- graph edits remain safely reversible until raster cleanup and final acceptance
+- text-centric editing is efficient in the Dungeon-Key view
+- selection, transforms, Path routing, Passage lifecycle, Feature placement,
+  and live actor relocation preserve stable authored identities
+- generated geometry text updates without destroying GM-authored semantics
+- document output remains understandable without current runtime party state
+- ordinary local work remains responsive in the sparse qualification Dungeon
 
 ## References
 
 - [Dungeon Feature Requirements](./requirements-dungeon.md)
-- [Maps Canvas Requirements](../../maps/requirements/requirements-maps-canvas.md) (line 1), [Dungeon Map Surface Contract](../../maps/contract/contract-maps-dungeon-surface.md) (line 1), and [Dungeon Map Adoption Architecture](../../maps/architecture/architecture-maps-dungeon-adoption.md) (line 1)
+- [Dungeon Travel Requirements](./requirements-dungeon-travel.md)
+- [Maps Canvas Requirements](../../maps/requirements/requirements-maps-canvas.md)
+- [Dungeon Needs Interview](../../project/interviews/2026-07-20-dungeon-needs-interview.md)
+- Alexandrian evidence:
+  `/home/aaron/Schreibtisch/projects/references/literature/alexandrian-xandering-the-dungeon.md`
+- Melan-diagram evidence:
+  `/home/aaron/Schreibtisch/projects/references/literature/alexandrian-melan-diagram.md`
+- Sector-crawl evidence:
+  `/home/aaron/Schreibtisch/projects/references/literature/alexandrian-sector-crawl.md`
+- Dungeon-type evidence:
+  `/home/aaron/Schreibtisch/projects/references/literature/alexandrian-types-of-dungeons.md`

@@ -29,7 +29,7 @@ final class DungeonEditorRoomPaintRuntimeOperation {
         if (action == null || tool == null || PointerAction.isMoved(action)) {
             return DungeonEditorRuntimeContext.Result.none();
         }
-        DungeonEditorMainViewInput input = DungeonEditorRuntimeInputTranslator.mainViewInput(
+        DungeonEditorMainViewInput input = DungeonEditorMainViewInput.fromPointer(
                 sample,
                 wallSingleClickMode,
                 transitionDestination);

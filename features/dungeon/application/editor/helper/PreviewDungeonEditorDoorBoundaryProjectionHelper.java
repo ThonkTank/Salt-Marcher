@@ -6,7 +6,7 @@ import features.dungeon.domain.core.structure.door.DoorBoundaryPreviewRelocation
 import features.dungeon.domain.core.structure.door.DoorBoundaryPreviewRelocation.PreviewBoundary;
 import features.dungeon.domain.core.structure.door.DoorBoundaryPreviewRelocation.PreviewBoundaryKind;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues.Boundary;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Edge;
 

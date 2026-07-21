@@ -1,6 +1,6 @@
-Status: Active Target
+Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-24
+Last Reviewed: 2026-07-19
 Source of Truth: Routing entrypoint for the generic passive map-canvas bundle.
 
 # Map Canvas Docs
@@ -31,12 +31,12 @@ does not own adopter domain, persistence, or gameplay semantics.
 - [Maps Canvas Contract](./contract/contract-maps-canvas.md)
 - [Dungeon Map Surface Contract](./contract/contract-maps-dungeon-surface.md)
 
-## Current And Planned Adopters
+## Adopters
 
-- dungeon: current SaltMarcher adopter with active requirement, contract, and
-  domain documentation under `docs/dungeon/`
-- hex: target SaltMarcher adopter with feature-level requirements under
-  `docs/hex/`
+- Dungeon adopts the passive canvas through its feature-owned translation and
+  documents its behavior, contracts, and domain under `docs/dungeon/`.
+- Hex adopts the passive canvas through its feature-owned translation and
+  documents its behavior and domain under `docs/hex/`.
 
 ## References
 

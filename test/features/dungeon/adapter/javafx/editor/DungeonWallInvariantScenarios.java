@@ -1,31 +1,18 @@
 package features.dungeon.adapter.javafx.editor;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.domain.core.geometry.Edge;
-import features.dungeon.domain.core.geometry.EdgeKey;
 import features.dungeon.domain.core.projection.DungeonBoundaryFacts;
 import features.dungeon.domain.core.projection.DungeonDerivedState;
 import features.dungeon.domain.core.projection.DungeonDerivedStateProjection;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
-import features.dungeon.domain.core.structure.door.Door;
-import features.dungeon.domain.core.structure.door.DoorBoundaryMaterialization;
-import features.dungeon.domain.core.structure.door.DoorIndex;
-import features.dungeon.domain.core.structure.room.BoundaryStretchOrientation;
-import features.dungeon.domain.core.structure.room.RoomClusterGeometry;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryOrdering;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryStretchPlan;
-import features.dungeon.domain.core.structure.room.RoomClusterFloorMap;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 import features.dungeon.domain.core.structure.room.RoomClusterWallDeleteResolver;
 import features.dungeon.domain.core.structure.room.RoomClusterWallDeleteTarget;
-import features.dungeon.domain.core.structure.room.RoomClusterWallMap;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.RoomTopologyWorkCatalog;
 import features.dungeon.domain.core.structure.DungeonMap;
@@ -38,16 +25,7 @@ final class DungeonWallInvariantScenarios {
     }
 
     static void run() {
-        assertStructureLocalWallMap();
-
-        assertWallRowNormalization();
-
-        assertWallMaterialization();
-
-        assertWallStretchSelection();
         assertInvalidShrinkRejected();
-
-        assertWallDoorBoundarySurface();
 
         assertDungeonLevelWallProjection();
 
@@ -57,209 +35,6 @@ final class DungeonWallInvariantScenarios {
 
         assertExteriorWallDeleteProtection();
 
-    }
-
-    private static void assertStructureLocalWallMap() {
-        Cell center = new Cell(5, 7, 0);
-        RoomClusterWallMap wallMap = new RoomClusterWallMap(center, List.of(
-                new BoundaryRow(42L, 0, new Cell(0, 0, 0), Direction.NORTH,
-                        RoomClusterBoundaryMaterialization.BoundaryKind.WALL),
-                new BoundaryRow(42L, 0, new Cell(0, 0, 0), Direction.EAST,
-                        RoomClusterBoundaryMaterialization.BoundaryKind.OPEN),
-                new BoundaryRow(42L, 1, new Cell(0, 0, 1), Direction.SOUTH,
-                        RoomClusterBoundaryMaterialization.BoundaryKind.DOOR)));
-        RoomClusterGeometry cluster = new RoomClusterGeometry(
-                42L,
-                7L,
-                center,
-                RoomClusterFloorMap.fromCells(List.of(center)),
-                wallMap);
-
-        assertEquals(wallMap, cluster.wallMap(), "cluster composes the wall owner");
-        assertEquals(wallMap, new RoomClusterWallMap(center, List.of(
-                        new BoundaryRow(42L, 0, new Cell(0, 0, 0), Direction.EAST,
-                                RoomClusterBoundaryMaterialization.BoundaryKind.OPEN),
-                        new BoundaryRow(42L, 1, new Cell(0, 0, 1), Direction.SOUTH,
-                                RoomClusterBoundaryMaterialization.BoundaryKind.DOOR),
-                        new BoundaryRow(42L, 0, new Cell(0, 0, 0), Direction.NORTH,
-                                RoomClusterBoundaryMaterialization.BoundaryKind.WALL))),
-                "wall owner keeps mixed boundary kinds in one map");
-    }
-
-    private static void assertWallRowNormalization() {
-        Cell center = new Cell(5, 7, 0);
-        BoundaryRow north = new BoundaryRow(42L, 0, new Cell(0, 0, 0), Direction.NORTH,
-                RoomClusterBoundaryMaterialization.BoundaryKind.WALL);
-        BoundaryRow duplicateNorth = new BoundaryRow(42L, 0, new Cell(0, 0, 0), Direction.NORTH,
-                RoomClusterBoundaryMaterialization.BoundaryKind.OPEN);
-        BoundaryRow doorNorth = new BoundaryRow(42L, 0, new Cell(0, 0, 0), Direction.NORTH,
-                RoomClusterBoundaryMaterialization.BoundaryKind.DOOR);
-        BoundaryRow upper = new BoundaryRow(42L, 1, new Cell(-1, 0, 1), Direction.WEST,
-                RoomClusterBoundaryMaterialization.BoundaryKind.DOOR);
-        List<BoundaryRow> rows = new ArrayList<>(List.of(upper, north, duplicateNorth, doorNorth));
-        rows.add(null);
-        RoomClusterWallMap wallMap = new RoomClusterWallMap(center, rows);
-        Edge northEdge = Edge.sideOf(center, Direction.NORTH);
-        Edge reversedNorth = new Edge(northEdge.to(), northEdge.from());
-
-        assertEquals(new RoomClusterWallMap(center, List.of(doorNorth, upper)), wallMap,
-                "wall owner deduplicates boundary rows by explicit boundary-kind precedence");
-        assertEquals(EdgeKey.from(reversedNorth), RoomClusterBoundaryOrdering.boundaryKey(center, north),
-                "wall owner uses normalized reversed edge identity");
-        assertEquals(List.of(doorNorth, duplicateNorth, north, upper), RoomClusterBoundaryOrdering.sortedRows(rows),
-                "wall owner compatibility ordering sorts rows deterministically without deduplicating");
-        assertEquals(List.of(doorNorth, duplicateNorth, north),
-                RoomClusterBoundaryOrdering.boundariesByLevel(rows).get(0),
-                "wall owner compatibility grouping preserves same-edge rows before owner deduplication");
-        assertEquals(RoomClusterBoundaryOrdering.boundaryKey(center, duplicateNorth),
-                RoomClusterBoundaryOrdering.boundaryKey(center, north),
-                "wall owner maps duplicate rows to one edge key");
-    }
-
-    private static void assertWallMaterialization() {
-        RoomClusterFloorMap floorMap = RoomClusterFloorMap.fromCells(List.of(new Cell(2, 3, 0), new Cell(3, 3, 0)));
-        Cell center = new Cell(2, 3, 0);
-        Edge northEdge = Edge.sideOf(center, Direction.NORTH);
-        Edge southEdge = Edge.sideOf(center, Direction.SOUTH);
-        Edge sharedEdge = Edge.sideOf(center, Direction.EAST);
-
-        BoundaryRow wallRow = RoomClusterBoundaryMaterialization.forEdge(
-                floorMap.allCells(),
-                center,
-                42L,
-                northEdge,
-                RoomClusterBoundaryMaterialization.BoundaryKind.WALL);
-        assertTrue(wallRow != null, "wall owner reports wall row creation");
-        RoomClusterWallMap wallMap = new RoomClusterWallMap(center, List.of(wallRow));
-        assertEquals(new RoomClusterWallMap(center, List.of(wallRow)), wallMap,
-                "wall owner preserves materialized wall kind");
-        assertEquals(wallMap, new RoomClusterWallMap(center, List.of(wallRow, wallRow)),
-                "wall owner reports duplicate materialization as no-op state");
-        assertEquals(wallRow, RoomClusterBoundaryMaterialization.forEdge(
-                        floorMap.allCells(),
-                        center,
-                        42L,
-                        northEdge,
-                        RoomClusterBoundaryMaterialization.BoundaryKind.WALL),
-                "wall owner compatibility route keeps valid wall rows materializable");
-        BoundaryRow openRow = RoomClusterBoundaryMaterialization.openForEdge(
-                floorMap.allCells(),
-                center,
-                42L,
-                southEdge);
-        assertTrue(openRow != null, "wall owner reports open row creation");
-        assertEquals(new RoomClusterWallMap(center, List.of(openRow)),
-                new RoomClusterWallMap(center, List.of(openRow, openRow)),
-                "wall owner preserves materialized open kind as boundary state");
-        assertEquals(null, RoomClusterBoundaryMaterialization.openForEdge(
-                        floorMap.allCells(),
-                        center,
-                        42L,
-                        sharedEdge),
-                "wall owner rejects split-room open row");
-        assertEquals(null, RoomClusterBoundaryMaterialization.forEdge(
-                        floorMap.allCells(),
-                        center,
-                        42L,
-                        Edge.sideOf(new Cell(8, 8, 0), Direction.NORTH),
-                        RoomClusterBoundaryMaterialization.BoundaryKind.WALL),
-                "wall owner rejects untouched edge");
-    }
-
-    private static void assertWallStretchSelection() {
-        Cell left = new Cell(0, 0, 0);
-        Cell right = new Cell(1, 0, 0);
-        RoomClusterFloorMap floorMap = RoomClusterFloorMap.fromCells(List.of(left, right));
-        Edge northLeft = Edge.sideOf(left, Direction.NORTH);
-        Edge northRight = Edge.sideOf(right, Direction.NORTH);
-        Cell center = new Cell(0, 0, 0);
-        BoundaryRow leftRow = new BoundaryRow(42L, 0, new Cell(0, 0, 0), Direction.NORTH,
-                RoomClusterBoundaryMaterialization.BoundaryKind.WALL);
-        BoundaryRow rightRow = new BoundaryRow(42L, 0, new Cell(1, 0, 0), Direction.NORTH,
-                RoomClusterBoundaryMaterialization.BoundaryKind.WALL);
-        RoomClusterWallMap wallMap = new RoomClusterWallMap(center, List.of(leftRow, rightRow));
-        RoomClusterWallMap keyedWallMap = RoomClusterWallMap.fromKeyedRows(Map.of(
-                RoomClusterBoundaryOrdering.boundaryKey(center, leftRow),
-                leftRow,
-                RoomClusterBoundaryOrdering.boundaryKey(center, rightRow),
-                rightRow));
-
-        RoomClusterBoundaryStretchPlan.Selection selection =
-                keyedWallMap.stretchSelection(
-                        floorMap,
-                        List.of(northRight, northLeft),
-                        0,
-                        -1,
-                        0)
-                        .orElseThrow(() -> new IllegalStateException("expected wall-owned stretch selection"));
-        assertEquals(wallMap, new RoomClusterWallMap(center, List.of(rightRow, leftRow)),
-                "wall owner provides deterministic stretch row state");
-        assertEquals(List.of(EdgeKey.from(northLeft), EdgeKey.from(northRight)),
-                new ArrayList<>(selection.sourceKeys()),
-                "wall owner delegates stretch source key normalization to the wall map state");
-        assertEquals(BoundaryStretchOrientation.HORIZONTAL, selection.orientation(),
-                "wall owner resolves stretch orientation");
-        assertEquals(0, selection.startVariable(), "wall owner resolves contiguous stretch start");
-        assertEquals(2, selection.endVariable(), "wall owner resolves contiguous stretch end");
-        assertTrue(selection.movesOutward(), "wall owner resolves outward stretch direction");
-        assertEquals(Set.of(new Cell(0, -1, 0), new Cell(1, -1, 0)), selection.stripCells(),
-                "wall owner resolves moved strip cells");
-        assertEquals(List.of(new Edge(new Cell(0, 0, 0), new Cell(0, -1, 0))),
-                selection.connectorPath(selection.vertices().getFirst()),
-                "wall owner returns core connector path derivation");
-
-        RoomClusterBoundaryStretchPlan.Selection inwardSelection =
-                keyedWallMap.stretchSelection(
-                        floorMap,
-                        List.of(northLeft, northRight),
-                        0,
-                        1,
-                        0)
-                        .orElseThrow(() -> new IllegalStateException("expected inward wall-owned stretch selection"));
-        assertFalse(inwardSelection.movesOutward(), "wall owner resolves inward stretch direction");
-        assertEquals(Set.of(new Cell(0, 0, 0), new Cell(1, 0, 0)), inwardSelection.stripCells(),
-                "wall owner resolves inward source strip cells");
-    }
-
-    private static void assertWallDoorBoundarySurface() {
-        Cell center = new Cell(0, 0, 0);
-        Door door = new Door(7L, 1L, 42L, center, Direction.EAST);
-        BoundaryRow wallRow = new BoundaryRow(42L, 0, center, Direction.EAST,
-                RoomClusterBoundaryMaterialization.BoundaryKind.WALL);
-        BoundaryRow doorRow = boundaryRow(door.doorBoundaryState());
-
-        assertTrue(DoorBoundaryMaterialization.forEdge(
-                        Edge.sideOf(center, Direction.EAST),
-                        Map.of(1L, List.of(center), 2L, List.of(new Cell(1, 0, 0))),
-                        DoorBoundaryMaterialization.ExistingBoundaryKind.NON_DOOR)
-                .materializesDoor(), "door owner allows conversion of existing non-door wall boundary");
-        assertFalse(DoorBoundaryMaterialization.forEdge(
-                        Edge.sideOf(center, Direction.EAST),
-                        Map.of(1L, List.of(center), 2L, List.of(new Cell(1, 0, 0))),
-                        DoorBoundaryMaterialization.ExistingBoundaryKind.DOOR)
-                .materializesDoor(), "door owner rejects duplicate door boundary materialization");
-        assertEquals(new RoomClusterWallMap(center, List.of(doorRow)),
-                new RoomClusterWallMap(center, List.of(wallRow, doorRow)),
-                "wall owner normalizes one boundary surface where door replaces wall");
-
-        DoorIndex index = new DoorIndex(List.of(door));
-        assertEquals(new DoorIndex(List.of()), index.withoutDoor(door, false),
-                "door owner removes unbound door from the bounded boundary surface");
-        assertEquals(new RoomClusterWallMap(center, List.of(wallRow)),
-                new RoomClusterWallMap(center, List.of(boundaryRow(door.restoredWallState()))),
-                "door owner exposes restored wall state for the wall boundary surface");
-    }
-
-    private static BoundaryRow boundaryRow(Door.BoundaryState state) {
-        return new BoundaryRow(
-                state.clusterId(),
-                state.level(),
-                state.relativeCell(),
-                state.direction(),
-                switch (state.kind()) {
-                    case DOOR -> RoomClusterBoundaryMaterialization.BoundaryKind.DOOR;
-                    case WALL -> RoomClusterBoundaryMaterialization.BoundaryKind.WALL;
-                });
     }
 
     private static void assertDungeonLevelWallProjection() {
@@ -348,7 +123,7 @@ final class DungeonWallInvariantScenarios {
         DungeonMap withShape = map.editClusterBoundaries(
                 clusterId, wallShape, BoundaryKind.WALL, false, roomIds(900L, 900L));
         RoomClusterWallDeleteResolver wallDeleteResolver =
-                RoomClusterWallMap.authoredWallDeleteResolver(wallShape);
+                RoomClusterWallDeleteResolver.authored(wallShape);
         RoomClusterWallDeleteTarget segmentTarget =
                 wallDeleteResolver.deleteTarget(
                         roomMapCells(),
@@ -438,7 +213,7 @@ final class DungeonWallInvariantScenarios {
                 false,
                 roomIds(1_400L, 1_400L));
         RoomClusterWallDeleteResolver wallDeleteResolver =
-                RoomClusterWallMap.authoredWallDeleteResolver(List.of(exteriorNorth, interiorTarget));
+                RoomClusterWallDeleteResolver.authored(List.of(exteriorNorth, interiorTarget));
         RoomClusterWallDeleteTarget protectedTarget =
                 wallDeleteResolver.deleteTarget(
                         roomMapCells(),

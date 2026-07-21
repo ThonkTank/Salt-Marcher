@@ -165,9 +165,8 @@ public final class CorridorTargetDeletion {
             absoluteCell = absoluteCell == null ? new Cell(0, 0, 0) : absoluteCell;
         }
 
-        public static WaypointTarget from(CorridorWaypoint waypoint, Cell clusterCenter) {
-            Cell center = clusterCenter == null ? new Cell(0, 0, 0) : clusterCenter;
-            return new WaypointTarget(waypoint.absoluteCell(center));
+        public static WaypointTarget from(CorridorWaypoint waypoint) {
+            return new WaypointTarget(waypoint.cell());
         }
     }
 }

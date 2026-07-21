@@ -27,11 +27,29 @@ final class CorridorNetworkMovement {
     ) {
         return moveCorridors(
                 sourceMap,
+                candidateCorridors,
+                movedCorridorIds,
+                nextStairs,
+                nextTransitions,
+                true);
+    }
+
+    DungeonMap moveCorridors(
+            DungeonMap sourceMap,
+            List<Corridor> candidateCorridors,
+            Set<Long> movedCorridorIds,
+            StairCollection nextStairs,
+            TransitionCatalog nextTransitions,
+            boolean snapAnchorsToCurrentHosts
+    ) {
+        return moveCorridors(
+                sourceMap,
                 sourceMap,
                 candidateCorridors,
                 movedCorridorIds,
                 nextStairs,
-                nextTransitions);
+                nextTransitions,
+                snapAnchorsToCurrentHosts);
     }
 
     DungeonMap moveCorridors(
@@ -42,26 +60,93 @@ final class CorridorNetworkMovement {
             StairCollection nextStairs,
             TransitionCatalog nextTransitions
     ) {
+        return moveCorridors(
+                sourceMap,
+                currentMap,
+                candidateCorridors,
+                movedCorridorIds,
+                nextStairs,
+                nextTransitions,
+                true,
+                true);
+    }
+
+    /**
+     * Re-resolves corridor hosts after a room-cluster relocation while preserving
+     * separately referenced anchors that now share the same resolved host cell.
+     */
+    DungeonMap moveCorridorsForClusterRelocation(
+            DungeonMap sourceMap,
+            DungeonMap currentMap,
+            List<Corridor> candidateCorridors,
+            Set<Long> movedCorridorIds,
+            StairCollection nextStairs,
+            TransitionCatalog nextTransitions
+    ) {
+        return moveCorridors(
+                sourceMap,
+                currentMap,
+                candidateCorridors,
+                movedCorridorIds,
+                nextStairs,
+                nextTransitions,
+                true,
+                false);
+    }
+
+    DungeonMap moveCorridors(
+            DungeonMap sourceMap,
+            DungeonMap currentMap,
+            List<Corridor> candidateCorridors,
+            Set<Long> movedCorridorIds,
+            StairCollection nextStairs,
+            TransitionCatalog nextTransitions,
+            boolean snapAnchorsToCurrentHosts
+    ) {
+        return moveCorridors(
+                sourceMap,
+                currentMap,
+                candidateCorridors,
+                movedCorridorIds,
+                nextStairs,
+                nextTransitions,
+                snapAnchorsToCurrentHosts,
+                true);
+    }
+
+    private DungeonMap moveCorridors(
+            DungeonMap sourceMap,
+            DungeonMap currentMap,
+            List<Corridor> candidateCorridors,
+            Set<Long> movedCorridorIds,
+            StairCollection nextStairs,
+            TransitionCatalog nextTransitions,
+            boolean snapAnchorsToCurrentHosts,
+            boolean rejectDuplicateMovedAnchorCells
+    ) {
         List<Corridor> normalizedCandidates = nonNullCorridors(candidateCorridors);
         Set<Long> normalizedMovedIds = normalizedCorridorIds(movedCorridorIds);
         if (normalizedCandidates.isEmpty() || normalizedMovedIds.isEmpty()) {
             return currentMap;
         }
-        CorridorHostCells hostCells = new CorridorHostCells(HOST_CELL_QUERY.cellsByCorridor(currentMap, normalizedCandidates));
-        List<Corridor> snappedCorridors = CONNECTION_NORMALIZATION.snapOwnedAnchors(normalizedCandidates, hostCells);
-        if (MOVEMENT_ANCHORS.hasDuplicateMovedAnchorCells(snappedCorridors, normalizedMovedIds)) {
+        List<Corridor> resolvedCorridors = resolvedCorridors(
+                currentMap,
+                normalizedCandidates,
+                snapAnchorsToCurrentHosts);
+        if (rejectDuplicateMovedAnchorCells
+                && MOVEMENT_ANCHORS.hasDuplicateMovedAnchorCells(resolvedCorridors, normalizedMovedIds)) {
             return sourceMap;
         }
         Map<CorridorNetwork.AnchorKey, CorridorAnchorDependencyUpdate.AnchorMovement> movedAnchors =
                 MOVEMENT_ANCHORS.movedAnchors(
                         sourceMap.corridors(),
-                        snappedCorridors,
+                        resolvedCorridors,
                         normalizedMovedIds);
         CorridorAnchorDependencyUpdate.DependencyUpdateResult dependencyUpdate =
                 ANCHOR_DEPENDENCY_UPDATE.rerouteDependents(
                         currentMap,
                         sourceMap,
-                        snappedCorridors,
+                        resolvedCorridors,
                         movedAnchors,
                         normalizedMovedIds);
         if (!dependencyUpdate.accepted()) {
@@ -74,7 +159,22 @@ final class CorridorNetworkMovement {
                 currentMap,
                 dependencyUpdate.corridors(),
                 nextStairs,
-                nextTransitions);
+                nextTransitions,
+                snapAnchorsToCurrentHosts);
+    }
+
+    private static List<Corridor> resolvedCorridors(
+            DungeonMap currentMap,
+            List<Corridor> candidateCorridors,
+            boolean snapAnchorsToCurrentHosts
+    ) {
+        if (!snapAnchorsToCurrentHosts) {
+            return candidateCorridors;
+        }
+        CorridorHostCells hostCells = new CorridorHostCells(HOST_CELL_QUERY.cellsByCorridor(
+                currentMap,
+                candidateCorridors));
+        return CONNECTION_NORMALIZATION.snapOwnedAnchors(candidateCorridors, hostCells);
     }
 
     private static Set<Long> normalizedCorridorIds(Set<Long> source) {

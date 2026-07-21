@@ -88,10 +88,10 @@ public final class DungeonStoragePortArchitectureTest {
                     .should(directlyImplementOnly(IDENTITY_ALLOCATOR)).allowEmptyShould(false);
 
     @ArchTest
-    static final ArchRule productionSQLiteContainsNoWholeMapCompatibilityTypes =
+    static final ArchRule productionSQLiteContainsOnlyTargetStorageTypes =
             classes()
                     .that().resideInAPackage("features.dungeon.adapter.sqlite..")
-                    .should(notHaveSimpleNames(Set.of(
+                    .should(notHaveRetiredWholeMapNames(Set.of(
                             "SqliteDungeonMapRepository",
                             "DungeonSqliteMapRecordLoader",
                             "DungeonSqliteMapRecordWriter",
@@ -147,12 +147,12 @@ public final class DungeonStoragePortArchitectureTest {
         };
     }
 
-    private static ArchCondition<JavaClass> notHaveSimpleNames(Set<String> forbiddenNames) {
-        return new ArchCondition<>("not have removed whole-map simple names " + forbiddenNames) {
+    private static ArchCondition<JavaClass> notHaveRetiredWholeMapNames(Set<String> forbiddenNames) {
+        return new ArchCondition<>("not have retired whole-map simple names " + forbiddenNames) {
             @Override
             public void check(JavaClass item, ConditionEvents events) {
                 if (forbiddenNames.contains(item.getSimpleName())) {
-                    events.add(SimpleConditionEvent.violated(item, item.getName() + " is removed compatibility code"));
+                    events.add(SimpleConditionEvent.violated(item, item.getName() + " is a retired whole-map type"));
                 }
             }
         };

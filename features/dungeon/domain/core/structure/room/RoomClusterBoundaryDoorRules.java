@@ -1,44 +1,36 @@
 package features.dungeon.domain.core.structure.room;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import org.jspecify.annotations.Nullable;
+import features.dungeon.domain.core.component.CorridorDoorBinding;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.graph.DungeonTopologyRef;
-import features.dungeon.domain.core.structure.door.Door;
-import features.dungeon.domain.core.structure.door.DoorBoundaryMaterialization;
-import features.dungeon.domain.core.structure.door.DoorIndex;
 import features.dungeon.domain.core.structure.corridor.Corridor;
-import features.dungeon.domain.core.component.CorridorDoorBinding;
 import features.dungeon.domain.core.structure.corridor.CorridorDoorBindingGeometry;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.structure.door.DoorBoundaryMaterialization;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 final class RoomClusterBoundaryDoorRules {
 
     boolean removeBoundaryIfAllowed(
             List<Corridor> corridors,
             DungeonRoomTopologyClusterWork target,
-            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
+            Map<DungeonBoundaryKey, BoundarySegment> boundaries,
             BoundaryKind resolvedKind,
             DungeonBoundaryKey key,
-            @Nullable DungeonClusterBoundary existing
+            @Nullable BoundarySegment existing
     ) {
         if (existing == null || existing.kind() != resolvedKind) {
             return false;
         }
-        boolean corridorBound = resolvedKind == BoundaryKind.DOOR
-                && new CorridorDoorBoundaryProtection(corridors, target, key, existing).corridorBound();
-        if (resolvedKind == BoundaryKind.DOOR) {
-            DoorIndex currentDoors = DoorIndex.from(doors(boundaries.values()));
-            DoorIndex expectedAfterDelete = DoorIndex.from(doorsExcept(existing, boundaries.values()));
-            DoorIndex actualAfterDelete = currentDoors.withoutDoor(door(existing), corridorBound);
-            if (!actualAfterDelete.doors().equals(expectedAfterDelete.doors())) {
-                return false;
-            }
+        if (resolvedKind == BoundaryKind.DOOR
+                && new CorridorDoorBoundaryProtection(corridors, target, key, existing).corridorBound()) {
+            return false;
         }
         boundaries.remove(key);
         return true;
@@ -46,23 +38,22 @@ final class RoomClusterBoundaryDoorRules {
 
     boolean upsertBoundaryIfAllowed(
             Map<Long, List<Cell>> roomCells,
-            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
+            Map<DungeonBoundaryKey, BoundarySegment> boundaries,
             BoundaryKind resolvedKind,
             Edge edge,
             DungeonBoundaryKey key,
-            @Nullable DungeonClusterBoundary existing,
-            DungeonClusterBoundary candidate
+            @Nullable BoundarySegment existing,
+            BoundarySegment candidate
     ) {
-        DungeonClusterBoundary resolvedCandidate = candidate;
+        BoundarySegment resolvedCandidate = candidate;
         if (resolvedKind == BoundaryKind.DOOR) {
-            resolvedCandidate = doorBoundary(candidate);
-            if (!doorInsertionAllowed(roomCells, boundaries, edge, existing, resolvedCandidate)) {
+            if (!RoomClusterDoorBoundaryMaterialization.forEdge(edge, roomCells, boundaryKind(existing))
+                    .materializesDoor()) {
                 return false;
             }
+            resolvedCandidate = new BoundarySegment(candidate.edgeKey(), BoundaryKind.DOOR, candidate.topologyRef());
         }
-        if (resolvedKind == BoundaryKind.WALL
-                && existing != null
-                && existing.kind() == BoundaryKind.DOOR) {
+        if (resolvedKind == BoundaryKind.WALL && existing != null && existing.isDoor()) {
             return false;
         }
         if (existing != null && existing.kind() == resolvedKind) {
@@ -72,87 +63,29 @@ final class RoomClusterBoundaryDoorRules {
         return true;
     }
 
-    private boolean doorInsertionAllowed(
-            Map<Long, List<Cell>> roomCells,
-            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
-            Edge edge,
-            @Nullable DungeonClusterBoundary existing,
-            DungeonClusterBoundary candidate
-    ) {
-        if (!RoomClusterDoorBoundaryMaterialization.forEdge(edge, roomCells, boundaryKind(existing))
-                .materializesDoor()) {
-            return false;
-        }
-        DoorIndex currentDoors = DoorIndex.from(doors(boundaries.values()));
-        return !currentDoors.withDoor(door(candidate)).equals(currentDoors);
+    BoundarySegment restoredWallBoundary(BoundarySegment doorBoundary) {
+        return new BoundarySegment(
+                doorBoundary.edgeKey(),
+                BoundaryKind.WALL,
+                DungeonTopologyRef.empty());
     }
 
     private static DoorBoundaryMaterialization.ExistingBoundaryKind boundaryKind(
-            @Nullable DungeonClusterBoundary boundary
+            @Nullable BoundarySegment boundary
     ) {
         if (boundary == null) {
             return DoorBoundaryMaterialization.ExistingBoundaryKind.NONE;
         }
-        if (boundary.kind() == BoundaryKind.DOOR) {
-            return DoorBoundaryMaterialization.ExistingBoundaryKind.DOOR;
-        }
-        return DoorBoundaryMaterialization.ExistingBoundaryKind.NON_DOOR;
-    }
-
-    private static List<Door> doors(Iterable<DungeonClusterBoundary> boundaries) {
-        return doorsExcept(null, boundaries);
-    }
-
-    private static List<Door> doorsExcept(DungeonClusterBoundary removed, Iterable<DungeonClusterBoundary> boundaries) {
-        List<Door> result = new ArrayList<>();
-        for (DungeonClusterBoundary boundary : boundaries == null ? List.<DungeonClusterBoundary>of() : boundaries) {
-            if (boundary != null && boundary != removed && boundary.kind() == BoundaryKind.DOOR) {
-                result.add(door(boundary));
-            }
-        }
-        return List.copyOf(result);
-    }
-
-    private static Door door(DungeonClusterBoundary boundary) {
-        return new Door(
-                boundary.resolvedTopologyRef(null).id(),
-                0L,
-                boundary.clusterId(),
-                boundary.relativeCell(),
-                boundary.direction());
-    }
-
-    private static Door doorBoundaryProjection(DungeonClusterBoundary boundary) {
-        return door(boundary);
-    }
-
-    private static DungeonClusterBoundary doorBoundary(DungeonClusterBoundary candidate) {
-        Door.BoundaryState state = doorBoundaryProjection(candidate).doorBoundaryState();
-        return new DungeonClusterBoundary(
-                state.clusterId(),
-                state.level(),
-                state.relativeCell(),
-                state.direction(),
-                BoundaryKind.DOOR,
-                candidate.topologyRef());
-    }
-
-    DungeonClusterBoundary restoredWallBoundary(DungeonClusterBoundary doorBoundary) {
-        Door.BoundaryState state = doorBoundaryProjection(doorBoundary).restoredWallState();
-        return new DungeonClusterBoundary(
-                state.clusterId(),
-                state.level(),
-                state.relativeCell(),
-                state.direction(),
-                BoundaryKind.WALL,
-                DungeonTopologyRef.empty());
+        return boundary.isDoor()
+                ? DoorBoundaryMaterialization.ExistingBoundaryKind.DOOR
+                : DoorBoundaryMaterialization.ExistingBoundaryKind.NON_DOOR;
     }
 
     private record CorridorDoorBoundaryProtection(
             List<Corridor> corridors,
             DungeonRoomTopologyClusterWork target,
             DungeonBoundaryKey key,
-            DungeonClusterBoundary existing
+            BoundarySegment existing
     ) {
         boolean corridorBound() {
             return boundByGeometry() || boundByCurrentBoundaryKey() || boundByTopologyRef();
@@ -161,14 +94,13 @@ final class RoomClusterBoundaryDoorRules {
         private boolean boundByGeometry() {
             return CorridorDoorBindingGeometry.touchesDoorBindingKeys(
                     corridors,
-                    target.cluster().center(),
                     target.cluster().clusterId(),
                     existing.level(),
                     Set.of(key));
         }
 
         private boolean boundByTopologyRef() {
-            DungeonTopologyRef ref = existing.resolvedTopologyRef(target.cluster().center());
+            DungeonTopologyRef ref = existing.resolvedTopologyRef();
             if (!ref.present()) {
                 return false;
             }
@@ -185,13 +117,9 @@ final class RoomClusterBoundaryDoorRules {
         private boolean boundByCurrentBoundaryKey() {
             for (Corridor corridor : corridors) {
                 for (CorridorDoorBinding binding : corridor.bindings().doorBindings()) {
-                    if (binding.clusterId() != target.cluster().clusterId()
-                            || binding.relativeCell().level() != existing.level()) {
-                        continue;
-                    }
-                    if (key.equals(DungeonBoundaryKey.from(CorridorDoorBindingGeometry.absoluteDoorEdge(
-                            binding,
-                            target.cluster().center())))) {
+                    if (binding.clusterId() == target.cluster().clusterId()
+                            && binding.roomCell().level() == existing.level()
+                            && key.equals(DungeonBoundaryKey.from(CorridorDoorBindingGeometry.doorEdge(binding)))) {
                         return true;
                     }
                 }

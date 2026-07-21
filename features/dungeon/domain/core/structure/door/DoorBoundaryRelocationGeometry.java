@@ -6,7 +6,7 @@ import org.jspecify.annotations.Nullable;
 import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
 import features.dungeon.domain.core.geometry.Edge;
 import features.dungeon.domain.core.structure.DungeonMap;
-import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomCellCoverage;
@@ -20,7 +20,7 @@ final class DoorBoundaryRelocationGeometry {
             DungeonMap sourceMap,
             RoomCluster targetCluster,
             Edge nextDoorEdge,
-            @Nullable DungeonClusterBoundary nextBoundary
+            @Nullable BoundarySegment nextBoundary
     ) {
         return DoorBoundaryMaterialization.forEdge(
                 nextDoorEdge,
@@ -28,10 +28,10 @@ final class DoorBoundaryRelocationGeometry {
                 boundaryKind(nextBoundary)).materializesDoor();
     }
 
-    static @Nullable DungeonClusterBoundary boundaryAt(RoomCluster cluster, Edge edge) {
+    static @Nullable BoundarySegment boundaryAt(RoomCluster cluster, Edge edge) {
         DungeonBoundaryKey key = DungeonBoundaryKey.from(edge);
-        for (DungeonClusterBoundary boundary : cluster.orderedAuthoredBoundaries()) {
-            if (boundary != null && key.equals(DungeonBoundaryKey.from(boundary.absoluteEdge(cluster.center())))) {
+        for (BoundarySegment boundary : cluster.orderedAuthoredBoundaries()) {
+            if (boundary != null && key.equals(DungeonBoundaryKey.from(boundary.edge()))) {
                 return boundary;
             }
         }
@@ -49,7 +49,7 @@ final class DoorBoundaryRelocationGeometry {
     }
 
     private static DoorBoundaryMaterialization.ExistingBoundaryKind boundaryKind(
-            @Nullable DungeonClusterBoundary boundary
+            @Nullable BoundarySegment boundary
     ) {
         if (boundary == null) {
             return DoorBoundaryMaterialization.noExistingBoundary();

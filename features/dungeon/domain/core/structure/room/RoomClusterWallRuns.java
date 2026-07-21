@@ -1,14 +1,15 @@
 package features.dungeon.domain.core.structure.room;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import features.dungeon.domain.core.component.boundary.BoundaryMap;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
 import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.CellOrdering;
 import features.dungeon.domain.core.geometry.Direction;
 import features.dungeon.domain.core.geometry.EdgeKey;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 final class RoomClusterWallRuns {
     private static final int MINIMUM_WALL_RUN_LENGTH = 2;
@@ -18,98 +19,105 @@ final class RoomClusterWallRuns {
 
     static List<RoomClusterWallRun> authoredWallRuns(
             BoundaryMap boundaryMap,
-            Map<EdgeKey, BoundaryRow> rowsByKey,
+            Iterable<Cell> memberCells,
             int level
     ) {
+        if (boundaryMap == null) {
+            return List.of();
+        }
+        Set<Cell> cells = copyCells(memberCells);
         List<RoomClusterWallRun> result = new ArrayList<>();
-        for (features.dungeon.domain.core.component.boundary.WallRun wallRun
-                : componentWallRuns(boundaryMap, level)) {
-            appendDirectionalRuns(result, wallRun.edgeKeys(), rowsByKey);
+        for (features.dungeon.domain.core.component.boundary.WallRun wallRun : boundaryMap.wallRunsAt(level)) {
+            appendDirectionalRuns(result, wallRun.edgeKeys(), boundaryMap, cells);
         }
         return List.copyOf(result);
-    }
-
-    private static List<features.dungeon.domain.core.component.boundary.WallRun> componentWallRuns(
-            BoundaryMap boundaryMap,
-            int level
-    ) {
-        return boundaryMap == null
-                ? List.of()
-                : boundaryMap.wallRunsAt(level);
     }
 
     private static void appendDirectionalRuns(
             List<RoomClusterWallRun> result,
             List<EdgeKey> edgeKeys,
-            Map<EdgeKey, BoundaryRow> rowsByKey
+            BoundaryMap boundaryMap,
+            Set<Cell> memberCells
     ) {
         List<EdgeKey> currentKeys = new ArrayList<>();
         Direction currentDirection = null;
-        List<EdgeKey> safeEdgeKeys = edgeKeys == null ? List.of() : edgeKeys;
-        for (int index = 0; index < safeEdgeKeys.size(); index++) {
-            EdgeKey edgeKey = safeEdgeKeys.get(index);
-            Direction direction = directionForEdge(safeEdgeKeys, index, rowsByKey);
+        for (int index = 0; index < edgeKeys.size(); index++) {
+            EdgeKey edgeKey = edgeKeys.get(index);
+            Direction direction = directionForEdge(edgeKeys, index, boundaryMap, memberCells);
+            if (direction == null) {
+                continue;
+            }
             if (currentDirection != null && direction != currentDirection) {
-                addDirectionalRun(result, currentKeys, currentDirection, rowsByKey);
+                addRun(result, currentKeys, currentDirection, boundaryMap);
                 currentKeys = new ArrayList<>();
             }
             currentKeys.add(edgeKey);
             currentDirection = direction;
         }
-        addDirectionalRun(result, currentKeys, currentDirection, rowsByKey);
+        addRun(result, currentKeys, currentDirection, boundaryMap);
     }
 
-    private static Direction directionForEdge(List<EdgeKey> edgeKeys, int index, Map<EdgeKey, BoundaryRow> rowsByKey) {
-        EdgeKey edgeKey = edgeKeys.get(index);
-        BoundaryRow row = rowsByKey.get(edgeKey);
-        if (row != null && row.kind() != BoundaryKind.DOOR && row.direction() != null) {
-            return row.direction();
+    private static Direction directionForEdge(
+            List<EdgeKey> edgeKeys,
+            int index,
+            BoundaryMap boundaryMap,
+            Set<Cell> memberCells
+    ) {
+        Direction own = wallDirection(edgeKeys.get(index), boundaryMap, memberCells);
+        if (own != null) {
+            return own;
         }
         for (int offset = 1; offset < edgeKeys.size(); offset++) {
             int before = index - offset;
             if (before >= 0) {
-                Direction direction = wallDirection(edgeKeys.get(before), rowsByKey);
+                Direction direction = wallDirection(edgeKeys.get(before), boundaryMap, memberCells);
                 if (direction != null) {
                     return direction;
                 }
             }
             int after = index + offset;
             if (after < edgeKeys.size()) {
-                Direction direction = wallDirection(edgeKeys.get(after), rowsByKey);
+                Direction direction = wallDirection(edgeKeys.get(after), boundaryMap, memberCells);
                 if (direction != null) {
                     return direction;
                 }
             }
         }
-        return Direction.NORTH;
+        return null;
     }
 
-    private static Direction wallDirection(EdgeKey edgeKey, Map<EdgeKey, BoundaryRow> rowsByKey) {
-        BoundaryRow row = rowsByKey.get(edgeKey);
-        if (row != null && row.kind() != BoundaryKind.DOOR && row.direction() != null) {
-            return row.direction();
+    private static Direction wallDirection(
+            EdgeKey edgeKey,
+            BoundaryMap boundaryMap,
+            Set<Cell> memberCells
+    ) {
+        BoundarySegment segment = boundaryMap.segmentsByKey().get(edgeKey);
+        if (segment == null || segment.isDoor()) {
+            return null;
+        }
+        List<Cell> inside = segment.edge().touchingCells().stream()
+                .filter(memberCells::contains)
+                .sorted(CellOrdering::compareCells)
+                .toList();
+        for (Cell cell : inside) {
+            for (Direction direction : Direction.values()) {
+                if (EdgeKey.from(direction.edgeOf(cell)).equals(edgeKey)) {
+                    return direction;
+                }
+            }
         }
         return null;
     }
 
-    private static void addDirectionalRun(
-            List<RoomClusterWallRun> result,
-            List<EdgeKey> edgeKeys,
-            Direction direction,
-            Map<EdgeKey, BoundaryRow> rowsByKey
-    ) {
-        if (edgeKeys == null || edgeKeys.size() < MINIMUM_WALL_RUN_LENGTH) {
-            return;
-        }
-        addRun(result, direction, edgeKeys, rowsByKey);
-    }
-
     private static void addRun(
             List<RoomClusterWallRun> result,
-            Direction direction,
             List<EdgeKey> edgeKeys,
-            Map<EdgeKey, BoundaryRow> rowsByKey
+            Direction direction,
+            BoundaryMap boundaryMap
     ) {
+        if (direction == null || edgeKeys.size() < MINIMUM_WALL_RUN_LENGTH) {
+            return;
+        }
         EdgeKey first = edgeKeys.getFirst();
         EdgeKey last = edgeKeys.getLast();
         boolean horizontal = first.lower().r() == first.upper().r();
@@ -125,16 +133,26 @@ final class RoomClusterWallRuns {
         }
         double variableMidpoint = (start + end) / 2.0;
         int anchorCoordinate = (int) Math.floor(variableMidpoint);
-        RoomClusterWallRunSource source = RoomClusterWallRunSource.fromDirectionalRun(edgeKeys, rowsByKey);
-        Cell sourceFrom = source.sourceEdge().from();
         Cell anchorCell = horizontal
-                ? new Cell(anchorCoordinate, fixed, sourceFrom.level())
-                : new Cell(fixed, anchorCoordinate, sourceFrom.level());
+                ? new Cell(anchorCoordinate, fixed, first.lower().level())
+                : new Cell(fixed, anchorCoordinate, first.lower().level());
         result.add(new RoomClusterWallRun(
                 anchorCell,
                 horizontal ? variableMidpoint : fixed,
                 horizontal ? fixed : variableMidpoint,
                 direction,
-                source));
+                RoomClusterWallRunSource.fromDirectionalRun(edgeKeys, boundaryMap)));
+    }
+
+    private static Set<Cell> copyCells(Iterable<Cell> cells) {
+        Set<Cell> result = new LinkedHashSet<>();
+        if (cells != null) {
+            cells.forEach(cell -> {
+                if (cell != null) {
+                    result.add(cell);
+                }
+            });
+        }
+        return Set.copyOf(result);
     }
 }

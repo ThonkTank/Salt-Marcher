@@ -31,9 +31,7 @@ linked to GitHub issues.
 - Manage a music library and scene-based ambience layers
   ([#437](https://github.com/ThonkTank/Salt-Marcher/issues/437)).
 - Support dungeon and hex maps with travel tracking
-  ([#432](https://github.com/ThonkTank/Salt-Marcher/issues/432)); the ordered
-  technical migration and deletion gates live in the temporary
-  [Dungeon Greenfield Roadmap](../dungeon/delivery/roadmap-dungeon-greenfield.md).
+  ([#432](https://github.com/ThonkTank/Salt-Marcher/issues/432)).
 - Explore a future player app or shared player view
   ([#440](https://github.com/ThonkTank/Salt-Marcher/issues/440)).
 

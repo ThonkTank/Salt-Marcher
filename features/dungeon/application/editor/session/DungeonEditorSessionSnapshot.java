@@ -86,9 +86,9 @@ public final class DungeonEditorSessionSnapshot {
                 safeSession.commandOutcome());
     }
 
-    public static SessionFrameData sessionFrameData(@Nullable DungeonEditorSession session) {
+    public static ViewData viewData(@Nullable DungeonEditorSession session) {
         DungeonEditorSession safeSession = session == null ? DungeonEditorSession.empty() : session;
-        return new SessionFrameData(
+        return new ViewData(
                 controlsData(safeSession),
                 safeSession.selection(),
                 safeSession.preview());
@@ -113,12 +113,12 @@ public final class DungeonEditorSessionSnapshot {
 
     }
 
-    public record SessionFrameData(
+    public record ViewData(
             ControlsData controlsData,
             DungeonEditorSessionValues.Selection selection,
             DungeonEditorSessionValues.Preview preview
     ) {
-        public SessionFrameData {
+        public ViewData {
             controlsData = controlsData == null ? DungeonEditorSessionSnapshot.controlsData(null) : controlsData;
             selection = selection == null ? DungeonEditorSessionValues.Selection.empty() : selection;
             preview = preview == null ? DungeonEditorSessionValues.Preview.none() : preview;

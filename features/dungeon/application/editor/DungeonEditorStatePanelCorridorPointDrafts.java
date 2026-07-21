@@ -2,7 +2,6 @@ package features.dungeon.application.editor;
 
 import java.util.Locale;
 import features.dungeon.application.editor.session.DungeonEditorWorkspaceValues;
-import features.dungeon.api.DungeonEditorStateSnapshot;
 
 public final class DungeonEditorStatePanelCorridorPointDrafts {
     private static final String CORRIDOR_KIND = "CORRIDOR";
@@ -13,7 +12,7 @@ public final class DungeonEditorStatePanelCorridorPointDrafts {
     private String draftQ = "";
     private String draftR = "";
 
-    void update(long selectedMapIdValue, DungeonEditorStateSnapshot.Selection selection, String q, String r) {
+    void update(long selectedMapIdValue, features.dungeon.api.editor.DungeonEditorSelection selection, String q, String r) {
         DungeonEditorWorkspaceValues.HandleRef target = DungeonEditorStatePanelCorridorPointTarget.from(selection);
         Key key = Key.from(selectedMapIdValue, target);
         if (!key.valid()) {
@@ -26,7 +25,7 @@ public final class DungeonEditorStatePanelCorridorPointDrafts {
 
     DungeonEditorRuntimeContext.Result move(
             long selectedMapIdValue,
-            DungeonEditorStateSnapshot.Selection selection,
+            features.dungeon.api.editor.DungeonEditorSelection selection,
             int q,
             int r,
             DungeonEditorSelectedHandleRuntimeOperation selectedHandleOperation
@@ -42,7 +41,7 @@ public final class DungeonEditorStatePanelCorridorPointDrafts {
         return selectedHandleOperation.moveCorridorPoint(target, q, r);
     }
 
-    Draft current(long selectedMapIdValue, DungeonEditorStateSnapshot.Selection selection) {
+    Draft current(long selectedMapIdValue, features.dungeon.api.editor.DungeonEditorSelection selection) {
         DungeonEditorWorkspaceValues.HandleRef target = DungeonEditorStatePanelCorridorPointTarget.from(selection);
         Key key = Key.from(selectedMapIdValue, target);
         if (!key.valid()) {
@@ -60,7 +59,7 @@ public final class DungeonEditorStatePanelCorridorPointDrafts {
                 Integer.toString(target.cell().level()));
     }
 
-    void retainOnlyVisibleDraftForMap(long selectedMapIdValue, DungeonEditorStateSnapshot.Selection selection) {
+    void retainOnlyVisibleDraftForMap(long selectedMapIdValue, features.dungeon.api.editor.DungeonEditorSelection selection) {
         Key visible = Key.from(selectedMapIdValue, DungeonEditorStatePanelCorridorPointTarget.from(selection));
         if (draftKey.selectedMapIdValue() == Math.max(0L, selectedMapIdValue)
                 && (!visible.valid() || !draftKey.equals(visible))) {

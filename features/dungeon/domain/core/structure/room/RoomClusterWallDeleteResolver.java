@@ -14,6 +14,10 @@ public final class RoomClusterWallDeleteResolver {
         this.wallsByKey = new LinkedHashMap<>(wallsByKey == null ? Map.of() : wallsByKey);
     }
 
+    public static RoomClusterWallDeleteResolver authored(Iterable<Edge> authoredWallEdges) {
+        return new RoomClusterWallDeleteResolver(RoomClusterWallRunEdges.keyed(authoredWallEdges));
+    }
+
     public List<Edge> deleteEdges(Iterable<Edge> targetEdges) {
         return RoomClusterWallRunDelete.authoredWallDeleteEdges(wallsByKey, targetEdges);
     }

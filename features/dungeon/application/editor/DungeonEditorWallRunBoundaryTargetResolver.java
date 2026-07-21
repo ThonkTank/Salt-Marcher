@@ -54,7 +54,7 @@ final class DungeonEditorWallRunBoundaryTargetResolver {
     ) {
         return new BoundaryTarget(
                 true,
-                DungeonEditorRuntimePointerTarget.BoundaryKind.WALL,
+                features.dungeon.api.editor.DungeonEditorPointerInput.BoundaryKind.WALL,
                 "",
                 handle.ownerId(),
                 handle.clusterId(),

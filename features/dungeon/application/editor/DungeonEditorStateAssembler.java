@@ -1,8 +1,5 @@
 package features.dungeon.application.editor;
 
-import features.dungeon.api.DungeonEditorControlsSnapshot;
-import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
-import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.editor.DungeonEditorDraftState;
 import features.dungeon.api.editor.DungeonEditorState;
 
@@ -12,22 +9,22 @@ final class DungeonEditorStateAssembler {
     DungeonEditorState assemble(
             long publicationRevision,
             long requestGeneration,
-            DungeonEditorControlsSnapshot controls,
-            DungeonEditorMapSurfaceSnapshot mapSurface,
-            DungeonEditorStateSnapshot state,
-            DungeonEditorRuntimeDraftFrame drafts
+            DungeonEditorControlProjection controls,
+            DungeonEditorSurfaceProjection mapSurface,
+            DungeonEditorInspectorProjection state,
+            DungeonEditorDraftProjection drafts
     ) {
-        DungeonEditorControlsSnapshot safeControls = controls == null
-                ? DungeonEditorControlsSnapshot.empty("")
+        DungeonEditorControlProjection safeControls = controls == null
+                ? DungeonEditorControlProjection.empty("")
                 : controls;
-        DungeonEditorMapSurfaceSnapshot safeMapSurface = mapSurface == null
-                ? DungeonEditorMapSurfaceSnapshot.empty()
+        DungeonEditorSurfaceProjection safeMapSurface = mapSurface == null
+                ? DungeonEditorSurfaceProjection.empty()
                 : mapSurface;
-        DungeonEditorStateSnapshot safeState = state == null
-                ? DungeonEditorStateSnapshot.empty("")
+        DungeonEditorInspectorProjection safeState = state == null
+                ? DungeonEditorInspectorProjection.empty("")
                 : state;
-        DungeonEditorRuntimeDraftFrame safeDrafts = drafts == null
-                ? new DungeonEditorRuntimeDraftFrame(null, null, null, null, null, null, null)
+        DungeonEditorDraftProjection safeDrafts = drafts == null
+                ? new DungeonEditorDraftProjection(null, null, null, null, null, null, null)
                 : drafts;
         return new DungeonEditorState(
                 publicationRevision,
@@ -50,7 +47,7 @@ final class DungeonEditorStateAssembler {
                         statusText(safeControls)));
     }
 
-    private static String statusText(DungeonEditorControlsSnapshot controls) {
+    private static String statusText(DungeonEditorControlProjection controls) {
         if (controls.surfaceLoaded()) {
             return controls.statusText();
         }
@@ -63,7 +60,7 @@ final class DungeonEditorStateAssembler {
         return controls.statusText();
     }
 
-    private static DungeonEditorDraftState draftFrom(DungeonEditorRuntimeDraftFrame drafts) {
+    private static DungeonEditorDraftState draftFrom(DungeonEditorDraftProjection drafts) {
         var label = drafts.labelNameDraft();
         var labelTarget = label.target();
         var corridor = drafts.corridorPointDraft();

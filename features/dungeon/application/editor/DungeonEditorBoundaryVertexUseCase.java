@@ -8,6 +8,7 @@ import features.dungeon.application.editor.DungeonEditorInteractionValues.CellKe
 import features.dungeon.application.editor.DungeonEditorInteractionValues.VertexKey;
 import features.dungeon.application.editor.DungeonEditorInteractionValues.VertexTarget;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.EdgeKey;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 
 final class DungeonEditorBoundaryVertexUseCase {
     private final DungeonEditorBoundaryClusterCellsHelper clusterCells = new DungeonEditorBoundaryClusterCellsHelper();
@@ -25,7 +26,7 @@ final class DungeonEditorBoundaryVertexUseCase {
                         snapshot,
                         cells,
                         vertex.level(),
-                        features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.WALL)
+                        BoundaryKind.WALL)
                 : boundaryEdges.internal(cells);
         return DungeonEditorBoundaryEdgesHelper.touchesAny(edges, DungeonEditorInteractionValues.vertexKey(vertex));
     }
@@ -40,7 +41,7 @@ final class DungeonEditorBoundaryVertexUseCase {
                 snapshot,
                 cells,
                 vertex.level(),
-                features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.WALL));
+                BoundaryKind.WALL));
         edges.addAll(boundaryEdges.outer(cells));
         return DungeonEditorBoundaryEdgesHelper.touchesAny(edges, vertex);
     }

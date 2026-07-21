@@ -46,10 +46,10 @@ import features.dungeon.domain.core.structure.DungeonMap;
 import features.dungeon.domain.core.structure.DungeonMapAuthoring;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.feature.FeatureMarkerKind;
-import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
 import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
 import features.dungeon.domain.core.structure.room.RoomCluster;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 import features.dungeon.domain.core.structure.room.RoomRegion;
 import features.dungeon.domain.core.structure.stair.StairShape;
 import features.dungeon.domain.core.structure.transition.TransitionAnchor;
@@ -152,9 +152,8 @@ final class DungeonEditorWindowLoadIntegrationTest {
                 new TestDungeonIdentityAllocator(),
                 DirectExecutionLane.INSTANCE,
                 new DungeonAuthoredPublishedState(DirectUiDispatcher.INSTANCE));
-        DungeonEditorRuntimeApplicationService application = new DungeonEditorRuntimeApplicationService(
-                service,
-                new DungeonEditorPublishedState(DirectUiDispatcher.INSTANCE));
+        DungeonEditorRuntimeApplicationService application =
+                new DungeonEditorRuntimeApplicationService(service);
         DungeonEditorDungeonState state = new DungeonEditorDungeonState();
         DungeonEditorViewportInput viewport = new DungeonEditorViewportInput(0, 0, 0, 63, 63);
         application.openSession(state, runtime -> {
@@ -324,9 +323,9 @@ final class DungeonEditorWindowLoadIntegrationTest {
         assertEquals(7L, snapshot.mapRevision());
         assertEquals(9, snapshot.loadedChunks().size());
         assertEquals(9, snapshot.chunkRevisions().size());
-        assertEquals(1, snapshot.continuations().size());
-        assertEquals("CORRIDOR", snapshot.continuations().getFirst().ownerKind());
-        assertEquals(21L, snapshot.continuations().getFirst().ownerId());
+        assertEquals(1, snapshot.continuationPage().entries().size());
+        assertEquals("CORRIDOR", snapshot.continuationPage().entries().getFirst().ownerKind());
+        assertEquals(21L, snapshot.continuationPage().entries().getFirst().ownerId());
     }
 
     @Test
@@ -391,9 +390,14 @@ final class DungeonEditorWindowLoadIntegrationTest {
     ) {
         var ref = handle.ref();
         DungeonEditorPointerInput.Target target = new DungeonEditorPointerInput.Target(
-                "HANDLE", "EMPTY", "DOOR", ref.ownerId(), ref.clusterId(),
-                "DOOR", ref.topologyRef().id(), ref,
-                DungeonEditorPointerInput.BoundaryTarget.empty(), "NONE",
+                DungeonEditorPointerInput.TargetKind.HANDLE,
+                DungeonEditorPointerInput.LabelKind.EMPTY,
+                DungeonEditorPointerInput.ElementKind.DOOR,
+                ref.ownerId(), ref.clusterId(),
+                DungeonEditorPointerInput.TopologyKind.DOOR,
+                ref.topologyRef().id(), ref,
+                DungeonEditorPointerInput.BoundaryTarget.empty(),
+                DungeonEditorPointerInput.SyntheticHoverKind.NONE,
                 DungeonEditorPointerInput.CellTarget.empty(),
                 DungeonEditorPointerInput.VertexTarget.empty());
         editor.dispatch(new DungeonEditorIntent.Pointer(new DungeonEditorPointerInput(
@@ -418,10 +422,15 @@ final class DungeonEditorWindowLoadIntegrationTest {
             int r
     ) {
         DungeonEditorPointerInput.Target target = new DungeonEditorPointerInput.Target(
-                "CELL", "EMPTY", "EMPTY", 0L, 0L, "EMPTY", 0L,
+                DungeonEditorPointerInput.TargetKind.CELL,
+                DungeonEditorPointerInput.LabelKind.EMPTY,
+                DungeonEditorPointerInput.ElementKind.EMPTY,
+                0L, 0L,
+                DungeonEditorPointerInput.TopologyKind.EMPTY,
+                0L,
                 features.dungeon.api.DungeonEditorHandleRef.empty(),
                 DungeonEditorPointerInput.BoundaryTarget.empty(),
-                "CELL",
+                DungeonEditorPointerInput.SyntheticHoverKind.CELL,
                 new DungeonEditorPointerInput.CellTarget(true, q, r, 0),
                 DungeonEditorPointerInput.VertexTarget.empty());
         editor.dispatch(new DungeonEditorIntent.Pointer(new DungeonEditorPointerInput(
@@ -455,17 +464,12 @@ final class DungeonEditorWindowLoadIntegrationTest {
 
     private static DungeonEditorApi editor(DungeonTestAssembly.Component component) {
         DungeonEditorRuntimeDependencies dependencies = new DungeonEditorRuntimeDependencies(
-                component.editorControls(),
-                component.editorMapSurface(),
-                component.editorState(),
                 component.editor(),
                 new features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy(),
                 component.authored()::currentWindowRequestGeneration,
                 DirectExecutionLane.INSTANCE,
                 DirectUiDispatcher.INSTANCE);
-        DungeonEditorApi editor = new DungeonEditorApiFacade(
-                DungeonEditorFeatureRuntimeRoot.create(dependencies),
-                DirectUiDispatcher.INSTANCE);
+        DungeonEditorApi editor = DungeonEditorFeatureRuntimeRoot.create(dependencies);
         editor.dispatch(new DungeonEditorIntent.SetViewport(
                 new DungeonEditorViewportInput(0, 0, 0, 63, 63)));
         return editor;
@@ -566,11 +570,15 @@ final class DungeonEditorWindowLoadIntegrationTest {
                     resultGeneration,
                     request.chunkKeys().stream().map(key -> new DungeonWindowChunkHeader(key, revision)).toList(),
                     fragments,
-                    repeatedAcceptedGeneration
-                            ? List.of()
-                            : List.of(new DungeonWindowContinuation(
-                                    DungeonPatchEntityRef.corridor(21L),
-                                    List.of(new DungeonChunkKey(request.mapId().value(), 0, 2, 0))))));
+                    List.of(),
+                    List.of(),
+                    new features.dungeon.application.authored.port.DungeonContinuationPage(
+                            repeatedAcceptedGeneration
+                                    ? List.of()
+                                    : List.of(new DungeonWindowContinuation(
+                                            DungeonPatchEntityRef.corridor(21L),
+                                            List.of(new DungeonChunkKey(request.mapId().value(), 0, 2, 0)))),
+                            java.util.Optional.empty())));
         }
 
         @Override
@@ -587,19 +595,15 @@ final class DungeonEditorWindowLoadIntegrationTest {
                             Set.of(new Cell(1, 1, 0), new Cell(2, 1, 0)),
                             DungeonRoomNarration.empty())));
                 } else if (ref.equals(DungeonPatchEntityRef.roomCluster(12L))) {
-                    DungeonClusterBoundary door = new DungeonClusterBoundary(
-                            12L,
-                            0,
-                            new Cell(1, 0, 0),
-                            Direction.EAST,
+                    BoundarySegment door = BoundarySegment.fromEdge(
+                            Direction.EAST.edgeOf(new Cell(2, 1, 0)),
                             BoundaryKind.DOOR,
                             DungeonTopologyRef.door(31L));
                     snapshots.add(new DungeonEntitySnapshot.RoomClusterSnapshot(RoomCluster.authored(
                             12L,
                             request.mapId().value(),
                             "Cluster Alpha",
-                            new Cell(1, 1, 0),
-                            DungeonClusterBoundary.orderedByLevel(List.of(door)))));
+                            List.of(door))));
                 } else {
                     return new DungeonIdentityClosureResult.Rejected(
                             DungeonIdentityClosureResult.Reason.ENTITY_MISSING,

@@ -34,8 +34,6 @@ final class DungeonEditorMapProjectionServiceAssembly {
                 : map;
         return new DungeonEditorMapSnapshot(
                 safeMap.topology().name(),
-                safeMap.width(),
-                safeMap.height(),
                 areas(safeMap.areas()),
                 boundaries(safeMap.boundaries()),
                 features(safeMap.features()),
@@ -97,11 +95,21 @@ final class DungeonEditorMapProjectionServiceAssembly {
                     features.dungeon.api.DungeonTopologyElementRef.empty());
         }
         return new DungeonEditorMapSnapshot.Boundary(
-                boundary.kind().externalKind(),
+                externalBoundaryKind(boundary.kind()),
                 boundary.id(),
                 boundary.label(),
                 DungeonEditorValueProjectionServiceAssembly.edge(boundary.edge()),
                 DungeonEditorValueProjectionServiceAssembly.topologyRef(boundary.topologyRef()));
+    }
+
+    private static String externalBoundaryKind(
+            features.dungeon.domain.core.component.boundary.BoundaryKind kind
+    ) {
+        return switch (kind == null ? features.dungeon.domain.core.component.boundary.BoundaryKind.WALL : kind) {
+            case WALL -> "wall";
+            case DOOR -> "door";
+            case OPEN -> "open";
+        };
     }
 
     private static List<DungeonEditorMapSnapshot.Feature> features(

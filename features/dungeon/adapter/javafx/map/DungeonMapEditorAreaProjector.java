@@ -5,7 +5,7 @@ import java.util.List;
 import features.dungeon.api.DungeonCellRef;
 import features.dungeon.api.DungeonEditorHandleSnapshot;
 import features.dungeon.api.DungeonEditorMapSnapshot;
-import features.dungeon.api.DungeonEditorStateSnapshot;
+import features.dungeon.api.editor.DungeonEditorSelection;
 import features.dungeon.adapter.javafx.map.DungeonMapRenderState.CellKind;
 
 final class DungeonMapEditorAreaProjector {
@@ -18,7 +18,7 @@ final class DungeonMapEditorAreaProjector {
             List<DungeonMapRenderState.Label> labels,
             List<DungeonMapRenderState.GraphNode> graphNodes,
             DungeonEditorMapSnapshot map,
-            DungeonEditorStateSnapshot.Selection selection,
+            DungeonEditorSelection selection,
             DungeonMapRoomLabelPlanner roomLabelPlanner
     ) {
         for (DungeonEditorMapSnapshot.Area area : map.areas()) {
@@ -36,7 +36,7 @@ final class DungeonMapEditorAreaProjector {
     static void addClusterLabels(
             List<DungeonMapRenderState.Label> labels,
             DungeonEditorMapSnapshot map,
-            DungeonEditorStateSnapshot.Selection selection
+            DungeonEditorSelection selection
     ) {
         List<Long> renderedClusterIds = new ArrayList<>();
         for (DungeonEditorHandleSnapshot handle : map.editorHandles()) {

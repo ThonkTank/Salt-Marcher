@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-19
 Source of Truth: Routing entrypoint for the hex gameplay and presentation
 documentation bundle.
 
@@ -9,8 +9,9 @@ documentation bundle.
 ## Purpose
 
 The `hex` feature owns hex-map-specific user-facing behavior such as overworld
-travel, the compact travel-state surface shown in the runtime `Reise` tab,
-tile inspection, and hex editor behavior.
+travel, compact Hex travel readback, tile inspection, and hex editor behavior.
+The feature-neutral Travel capability selects that readback for the runtime
+`Reise` tab when the party occupies a Hex location.
 
 Generic shared map-canvas behavior remains canonical in `docs/maps/`.
 
@@ -36,17 +37,6 @@ Generic shared map-canvas behavior remains canonical in `docs/maps/`.
 - [Map Canvas Overview](../maps/README.md) (line 1)
 - [Maps Canvas Requirements](../maps/requirements/requirements-maps-canvas.md) (line 1)
 - [Hex Map Adoption Architecture](../maps/architecture/architecture-maps-hex-adoption.md) (line 1)
-
-## Current State
-
-- SaltMarcher ships a first-class navigable Hex Map root. The `Hex-Karte`
-  surface can create maps,
-  edit map metadata, inspect tiles, paint terrain, place simple tile-owned
-  markers, show the party token on the Hex map, and move the existing party
-  token through a Hex-owned `Reisegruppe` tool.
-- The runtime `Reise` state tab consumes compact Hex travel readback when the
-  party token points at a valid Hex tile. Weather and time-of-day values remain
-  unavailable until a later travel-context source publishes them.
 
 ## References
 

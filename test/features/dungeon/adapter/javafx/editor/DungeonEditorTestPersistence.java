@@ -1,61 +1,5 @@
 package features.dungeon.adapter.javafx.editor;
 
-import features.dungeon.DungeonTestAssembly;
-import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSeeder;
-import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
-import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
-import features.dungeon.adapter.sqlite.repository.SqliteDungeonIdentityAllocator;
-import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
-import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
-import features.dungeon.api.DungeonChunkKey;
-import features.dungeon.api.DungeonEditorControlsModel;
-import features.dungeon.api.DungeonEditorMapSurfaceModel;
-import features.dungeon.api.DungeonEditorStateModel;
-import features.dungeon.api.editor.DungeonEditorApi;
-import features.dungeon.application.authored.command.CorridorChange;
-import features.dungeon.application.authored.command.DungeonCompoundPatch;
-import features.dungeon.application.authored.command.DungeonPatch;
-import features.dungeon.application.authored.command.DungeonPatchChange;
-import features.dungeon.application.authored.command.RoomClusterChange;
-import features.dungeon.application.authored.command.RoomRegionChange;
-import features.dungeon.application.authored.command.StairChange;
-import features.dungeon.application.authored.command.TransitionChange;
-import features.dungeon.application.authored.port.DungeonCatalogStore;
-import features.dungeon.application.authored.port.DungeonIdentityAllocator;
-import features.dungeon.application.authored.port.DungeonIdentityKind;
-import features.dungeon.application.authored.port.DungeonUnitOfWork;
-import features.dungeon.application.authored.port.DungeonWindowStore;
-import features.dungeon.application.editor.DungeonEditorApiFacade;
-import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
-import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
-import features.dungeon.domain.core.component.CorridorAnchor;
-import features.dungeon.domain.core.component.CorridorAnchorRef;
-import features.dungeon.domain.core.component.CorridorDoorBinding;
-import features.dungeon.domain.core.component.CorridorWaypoint;
-import features.dungeon.domain.core.component.StairExit;
-import features.dungeon.domain.core.geometry.Cell;
-import features.dungeon.domain.core.geometry.Direction;
-import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
-import features.dungeon.domain.core.geometry.Edge;
-import features.dungeon.domain.core.graph.DungeonTopologyRef;
-import features.dungeon.domain.core.structure.DungeonMapIdentity;
-import features.dungeon.domain.core.structure.corridor.Corridor;
-import features.dungeon.domain.core.structure.corridor.CorridorBindings;
-import features.dungeon.domain.core.structure.room.DungeonClusterBoundary;
-import features.dungeon.domain.core.structure.room.RoomCluster;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
-import features.dungeon.domain.core.structure.room.RoomRegion;
-import features.dungeon.domain.core.structure.stair.Stair;
-import features.dungeon.domain.core.structure.stair.StairShape;
-import features.dungeon.domain.core.structure.transition.Transition;
-import features.dungeon.domain.core.structure.transition.TransitionAnchor;
-import features.dungeon.domain.core.structure.transition.TransitionDestination;
-import features.party.PartyServiceAssembly;
-import features.party.adapter.sqlite.model.PartyPersistenceSchema;
-import features.party.domain.roster.PartyRoster;
-import features.party.domain.roster.repository.PartyRosterRepository;
-import platform.persistence.SqliteDatabase;
-import platform.persistence.TestFeatureStores;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -71,7 +15,61 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import features.dungeon.DungeonTestAssembly;
+import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSeeder;
+import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonIdentityAllocator;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
 import features.dungeon.application.authored.DungeonCachedWindowStore;
+import features.dungeon.application.authored.command.CorridorChange;
+import features.dungeon.application.authored.command.DungeonCompoundPatch;
+import features.dungeon.application.authored.command.DungeonPatch;
+import features.dungeon.application.authored.command.DungeonPatchChange;
+import features.dungeon.application.authored.command.RoomClusterChange;
+import features.dungeon.application.authored.command.RoomRegionChange;
+import features.dungeon.application.authored.command.StairChange;
+import features.dungeon.application.authored.command.TransitionChange;
+import features.dungeon.application.authored.port.DungeonCatalogStore;
+import features.dungeon.application.authored.port.DungeonIdentityAllocator;
+import features.dungeon.application.authored.port.DungeonIdentityKind;
+import features.dungeon.application.authored.port.DungeonUnitOfWork;
+import features.dungeon.application.authored.port.DungeonWindowStore;
+import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
+import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
+import features.dungeon.api.DungeonChunkKey;
+import features.dungeon.api.editor.DungeonEditorApi;
+import features.dungeon.api.editor.DungeonEditorState;
+import features.dungeon.domain.core.component.CorridorAnchor;
+import features.dungeon.domain.core.component.CorridorAnchorRef;
+import features.dungeon.domain.core.component.CorridorDoorBinding;
+import features.dungeon.domain.core.component.CorridorWaypoint;
+import features.dungeon.domain.core.component.StairExit;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
+import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.Direction;
+import features.dungeon.domain.core.geometry.DungeonBoundaryKey;
+import features.dungeon.domain.core.geometry.Edge;
+import features.dungeon.domain.core.graph.DungeonTopologyRef;
+import features.dungeon.domain.core.structure.DungeonMapIdentity;
+import features.dungeon.domain.core.structure.corridor.Corridor;
+import features.dungeon.domain.core.structure.corridor.CorridorBindings;
+import features.dungeon.domain.core.structure.room.RoomCluster;
+import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
+import features.dungeon.domain.core.structure.room.RoomRegion;
+import features.dungeon.domain.core.structure.stair.Stair;
+import features.dungeon.domain.core.structure.stair.StairShape;
+import features.dungeon.domain.core.structure.transition.Transition;
+import features.dungeon.domain.core.structure.transition.TransitionAnchor;
+import features.dungeon.domain.core.structure.transition.TransitionDestination;
+import features.party.PartyServiceAssembly;
+import features.party.adapter.sqlite.model.PartyPersistenceSchema;
+import features.party.domain.roster.PartyRoster;
+import features.party.domain.roster.repository.PartyRosterRepository;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
 
 class DungeonEditorTestPersistence {
 
@@ -92,9 +90,6 @@ class DungeonEditorTestPersistence {
 
     record TestRuntime(
             DungeonEditorRuntimeDependencies editorDependencies,
-            DungeonEditorControlsModel controlsModel,
-            DungeonEditorMapSurfaceModel mapSurfaceModel,
-            DungeonEditorStateModel stateModel,
             DatabaseAssertions database,
             DungeonEditorApi editorApi
     ) {
@@ -115,14 +110,9 @@ class DungeonEditorTestPersistence {
                     new SqliteDungeonIdentityAllocator(dungeonStore));
             DungeonEditorRuntimeDependencies dependencies =
                     DungeonEditorTestPersistence.editorDependencies(dungeon);
-            DungeonEditorApi api = new DungeonEditorApiFacade(
-                    DungeonEditorFeatureRuntimeRoot.create(dependencies),
-                    dependencies.uiDispatcher());
+            DungeonEditorApi api = DungeonEditorFeatureRuntimeRoot.create(dependencies);
             return new TestRuntime(
                     dependencies,
-                    dungeon.editorControls(),
-                    dungeon.editorMapSurface(),
-                    dungeon.editorState(),
                     database,
                     api);
         }
@@ -170,15 +160,13 @@ class DungeonEditorTestPersistence {
 
     static DungeonEditorRuntimeDependencies editorDependencies(DungeonTestAssembly.Component dungeon) {
         return new DungeonEditorRuntimeDependencies(
-                dungeon.editorControls(),
-                dungeon.editorMapSurface(),
-                dungeon.editorState(),
                 dungeon.editor(),
                 new features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy(),
                 dungeon.authored()::currentWindowRequestGeneration,
                 platform.execution.DirectExecutionLane.INSTANCE,
                 platform.ui.DirectUiDispatcher.INSTANCE);
     }
+
 
     private static final class EmptyPartyRosterRepository implements PartyRosterRepository {
         private PartyRoster roster = new PartyRoster(1L, List.of());
@@ -291,22 +279,6 @@ class DungeonEditorTestPersistence {
 
         long countRoomClustersForMap(long mapId) {
             return count("SELECT COUNT(*) FROM dungeon_room_clusters WHERE dungeon_map_id=?", mapId);
-        }
-
-        long countRetiredLegacyClusterVertexRowsIfPresent(long mapId) {
-            if (!tableExists("dungeon_room_cluster_vertices")) {
-                return 0L;
-            }
-            return count(
-                    "SELECT COUNT(*) FROM dungeon_room_cluster_vertices WHERE cluster_id IN (SELECT"
-                        + " cluster_id FROM dungeon_room_clusters WHERE dungeon_map_id=?)",
-                    mapId);
-        }
-
-        private boolean tableExists(String tableName) {
-            return count(
-                    "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?",
-                    tableName) > 0L;
         }
 
         long countClusterFloorCellRows(long mapId) {
@@ -516,10 +488,6 @@ class DungeonEditorTestPersistence {
             throw new IllegalArgumentException("Unsupported wall direction: " + direction);
         }
 
-        Set<String> roomFloorAnchors(long roomId) {
-            return tableExists("dungeon_room_floors") ? Set.of("legacy-room-floor-table") : Set.of();
-        }
-
         Set<String> clusterFloorCells(long clusterId) {
             try (Connection connection = open();
                  PreparedStatement statement = connection.prepareStatement(
@@ -543,35 +511,31 @@ class DungeonEditorTestPersistence {
             }
         }
 
-        long clusterIdByCenter(long mapId, int centerX, int centerY, int level) {
+        long clusterIdByPrimaryCell(long mapId, int primaryX, int primaryY, int level) {
             try (Connection connection = open();
                  PreparedStatement statement = connection.prepareStatement(
-                                    "SELECT cluster_row.cluster_id FROM dungeon_room_clusters"
-                                        + " cluster_row WHERE cluster_row.dungeon_map_id=? AND"
-                                        + " (SELECT cell_x FROM dungeon_room_cells cell_row JOIN"
-                                        + " dungeon_rooms room_row ON"
-                                        + " room_row.room_id=cell_row.room_id WHERE"
-                                        + " room_row.cluster_id=cluster_row.cluster_id ORDER BY"
-                                        + " cell_row.level_z, cell_row.cell_y, cell_row.cell_x"
-                                        + " LIMIT 1)=? AND (SELECT cell_y FROM dungeon_room_cells"
-                                        + " cell_row JOIN dungeon_rooms room_row ON"
-                                        + " room_row.room_id=cell_row.room_id WHERE"
-                                        + " room_row.cluster_id=cluster_row.cluster_id ORDER BY"
-                                        + " cell_row.level_z, cell_row.cell_y, cell_row.cell_x"
-                                        + " LIMIT 1)=? AND (SELECT level_z FROM dungeon_room_cells"
-                                        + " cell_row JOIN dungeon_rooms room_row ON"
-                                        + " room_row.room_id=cell_row.room_id WHERE"
-                                        + " room_row.cluster_id=cluster_row.cluster_id ORDER BY"
-                                        + " cell_row.level_z, cell_row.cell_y, cell_row.cell_x"
-                                        + " LIMIT 1)=?")) {
-                bind(statement, mapId, centerX, centerY, level);
+                         "SELECT cluster_row.cluster_id FROM dungeon_room_clusters cluster_row"
+                                 + " WHERE cluster_row.dungeon_map_id=?"
+                                 + " AND (SELECT cell_x FROM dungeon_room_cells cell_row"
+                                 + " JOIN dungeon_rooms room_row ON room_row.room_id=cell_row.room_id"
+                                 + " WHERE room_row.cluster_id=cluster_row.cluster_id"
+                                 + " ORDER BY cell_row.level_z, cell_row.cell_y, cell_row.cell_x LIMIT 1)=?"
+                                 + " AND (SELECT cell_y FROM dungeon_room_cells cell_row"
+                                 + " JOIN dungeon_rooms room_row ON room_row.room_id=cell_row.room_id"
+                                 + " WHERE room_row.cluster_id=cluster_row.cluster_id"
+                                 + " ORDER BY cell_row.level_z, cell_row.cell_y, cell_row.cell_x LIMIT 1)=?"
+                                 + " AND (SELECT level_z FROM dungeon_room_cells cell_row"
+                                 + " JOIN dungeon_rooms room_row ON room_row.room_id=cell_row.room_id"
+                                 + " WHERE room_row.cluster_id=cluster_row.cluster_id"
+                                 + " ORDER BY cell_row.level_z, cell_row.cell_y, cell_row.cell_x LIMIT 1)=?")) {
+                bind(statement, mapId, primaryX, primaryY, level);
                 return scalar(statement);
             } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to find room cluster by center.", exception);
+                throw new IllegalStateException("Failed to find room cluster by primary cell.", exception);
             }
         }
 
-        long countClustersAtCenter(long mapId, int centerX, int centerY, int level) {
+        long countClustersAtPrimaryCell(long mapId, int primaryX, int primaryY, int level) {
             return count(
                     "SELECT COUNT(*) FROM dungeon_room_clusters cluster_row WHERE"
                         + " cluster_row.dungeon_map_id=? AND (SELECT cell_x FROM dungeon_room_cells"
@@ -588,8 +552,8 @@ class DungeonEditorTestPersistence {
                         + " room_row.cluster_id=cluster_row.cluster_id ORDER BY cell_row.level_z,"
                         + " cell_row.cell_y, cell_row.cell_x LIMIT 1)=?",
                     mapId,
-                    centerX,
-                    centerY,
+                    primaryX,
+                    primaryY,
                     level);
         }
 
@@ -1113,22 +1077,15 @@ class DungeonEditorTestPersistence {
                         connection,
                         state,
                         "dungeon_corridor_waypoints",
-                        "SELECT waypoint_row.corridor_id, waypoint_row.sort_order, (SELECT cell_x"
-                            + " FROM dungeon_room_cells cell_row JOIN dungeon_rooms room_row ON"
-                            + " room_row.room_id=cell_row.room_id WHERE"
-                            + " room_row.cluster_id=waypoint_row.cluster_id ORDER BY"
-                            + " cell_row.level_z, cell_row.cell_y, cell_row.cell_x LIMIT 1) +"
-                            + " waypoint_row.relative_x AS cell_x, (SELECT cell_y FROM"
-                            + " dungeon_room_cells cell_row JOIN dungeon_rooms room_row ON"
-                            + " room_row.room_id=cell_row.room_id WHERE"
-                            + " room_row.cluster_id=waypoint_row.cluster_id ORDER BY"
-                            + " cell_row.level_z, cell_row.cell_y, cell_row.cell_x LIMIT 1) +"
-                            + " waypoint_row.relative_y AS cell_y, waypoint_row.relative_z AS"
-                            + " cell_z FROM dungeon_corridor_waypoints waypoint_row JOIN"
-                            + " dungeon_corridors corridor_row ON"
-                            + " corridor_row.corridor_id=waypoint_row.corridor_id WHERE"
-                            + " corridor_row.dungeon_map_id=? ORDER BY waypoint_row.corridor_id,"
-                            + " waypoint_row.sort_order",
+                        "SELECT waypoint_row.corridor_id, waypoint_row.sort_order,"
+                                + " waypoint_row.relative_x AS cell_x,"
+                                + " waypoint_row.relative_y AS cell_y,"
+                                + " waypoint_row.relative_z AS cell_z"
+                                + " FROM dungeon_corridor_waypoints waypoint_row"
+                                + " JOIN dungeon_corridors corridor_row"
+                                + " ON corridor_row.corridor_id=waypoint_row.corridor_id"
+                                + " WHERE corridor_row.dungeon_map_id=?"
+                                + " ORDER BY waypoint_row.corridor_id, waypoint_row.sort_order",
                         mapId);
                 return state;
             } catch (SQLException exception) {
@@ -1718,7 +1675,6 @@ class DungeonEditorTestPersistence {
             SqliteDungeonIdentityAllocator identities = identityAllocator();
             long clusterId = identities.reserve(DungeonIdentityKind.ROOM_CLUSTER, 1).firstId();
             var roomIds = identities.reserve(DungeonIdentityKind.ROOM, 2);
-            Cell center = new Cell(10, 10, 0);
             Set<Cell> roomOneCells = Set.of(
                     new Cell(10, 10, 0),
                     new Cell(10, 11, 0),
@@ -1730,14 +1686,13 @@ class DungeonEditorTestPersistence {
                     clusterId,
                     mapId,
                     "Cluster " + clusterId,
-                    center,
-                    DungeonClusterBoundary.orderedByLevel(complexClusterBoundaries(clusterId)));
+                    complexClusterBoundaries());
             commitChanges(mapId, List.of(
                     new RoomClusterChange(null, cluster, Set.of()),
                     new RoomRegionChange(null, new RoomRegion(
-                            roomIds.idAt(0), mapId, clusterId, "R1", roomOneCells, null)),
+                            roomIds.idAt(0), mapId, clusterId, "R1", roomOneCells, DungeonRoomNarration.empty())),
                     new RoomRegionChange(null, new RoomRegion(
-                            roomIds.idAt(1), mapId, clusterId, "R2", roomTwoCells, null))));
+                            roomIds.idAt(1), mapId, clusterId, "R2", roomTwoCells, DungeonRoomNarration.empty()))));
         }
 
         void seedNarrationRoomWithEastExitLink(long mapId) {
@@ -1779,7 +1734,9 @@ class DungeonEditorTestPersistence {
                     0,
                     List.of(),
                     new CorridorBindings(
-                            List.of(new CorridorWaypoint(room.clusterId(), new Cell(1, 3, 0), 0)),
+                            List.of(new CorridorWaypoint(
+                                    room.clusterId(),
+                                    absoluteFixtureCell(room, 1, 3, 0))),
                             List.of(),
                             List.of(),
                             List.of()));
@@ -1867,16 +1824,14 @@ class DungeonEditorTestPersistence {
                         clusterId,
                         mapId,
                         "Cluster " + clusterId,
-                        center,
-                        DungeonClusterBoundary.orderedByLevel(
-                                rectangleBoundaries(clusterId, center, cells, doorsForRoom(doors, index))));
+                        rectangleBoundaries(cells, doorsForRoom(doors, index)));
                 RoomRegion room = new RoomRegion(
                         roomId,
                         mapId,
                         clusterId,
                         seed.name() == null || seed.name().isBlank() ? "Raum " + roomId : seed.name(),
                         cells,
-                        null);
+                        DungeonRoomNarration.empty());
                 changes.add(new RoomClusterChange(null, cluster, Set.of()));
                 changes.add(new RoomRegionChange(null, room));
                 seededRooms.add(new SeededRoom(roomId, clusterId, seed, center));
@@ -1911,18 +1866,18 @@ class DungeonEditorTestPersistence {
                     List.of(first.roomId(), second.roomId()),
                     new CorridorBindings(
                             List.of(
-                                    new CorridorWaypoint(first.clusterId(), new Cell(1, 3, 0), 0),
-                                    new CorridorWaypoint(first.clusterId(), new Cell(3, 1, 0), 0),
-                                    new CorridorWaypoint(first.clusterId(), new Cell(5, 1, 0), 0),
-                                    new CorridorWaypoint(first.clusterId(), new Cell(5, 4, 0), 0),
-                                    new CorridorWaypoint(first.clusterId(), new Cell(6, 4, 0), 0),
-                                    new CorridorWaypoint(first.clusterId(), new Cell(6, 1, 0), 0)),
+                                    new CorridorWaypoint(first.clusterId(), absoluteFixtureCell(first, 1, 3, 0)),
+                                    new CorridorWaypoint(first.clusterId(), absoluteFixtureCell(first, 3, 1, 0)),
+                                    new CorridorWaypoint(first.clusterId(), absoluteFixtureCell(first, 5, 1, 0)),
+                                    new CorridorWaypoint(first.clusterId(), absoluteFixtureCell(first, 5, 4, 0)),
+                                    new CorridorWaypoint(first.clusterId(), absoluteFixtureCell(first, 6, 4, 0)),
+                                    new CorridorWaypoint(first.clusterId(), absoluteFixtureCell(first, 6, 1, 0))),
                             List.of(
                                     new CorridorDoorBinding(
-                                            first.roomId(), first.clusterId(), new Cell(2, 1, 0),
+                                            first.roomId(), first.clusterId(), new Cell(3, 2, 0),
                                             Direction.EAST, firstDoor),
                                     new CorridorDoorBinding(
-                                            second.roomId(), second.clusterId(), new Cell(0, 1, 0),
+                                            second.roomId(), second.clusterId(), new Cell(8, 2, 0),
                                             Direction.WEST, secondDoor)),
                             List.of(new CorridorAnchor(anchorId, corridorId, new Cell(6, 5, 0))),
                             List.of(new CorridorAnchorRef(corridorId, anchorId))));
@@ -2039,23 +1994,18 @@ class DungeonEditorTestPersistence {
             return Set.copyOf(result);
         }
 
-        private static List<DungeonClusterBoundary> rectangleBoundaries(
-                long clusterId,
-                Cell center,
+        private static List<BoundarySegment> rectangleBoundaries(
                 Set<Cell> cells,
                 List<DoorSeed> doors
         ) {
-            List<DungeonClusterBoundary> result = new ArrayList<>();
+            List<BoundarySegment> result = new ArrayList<>();
             for (Cell cell : cells) {
                 for (Direction direction : Direction.values()) {
                     if (!cells.contains(direction.neighborOf(cell))) {
                         boolean door = doors.stream().anyMatch(seed ->
                                 seed.cell().equals(cell) && seed.direction() == direction);
-                        result.add(new DungeonClusterBoundary(
-                                clusterId,
-                                cell.level(),
-                                new Cell(cell.q() - center.q(), cell.r() - center.r(), cell.level()),
-                                direction,
+                        result.add(BoundarySegment.fromEdge(
+                                direction.edgeOf(cell),
                                 door ? BoundaryKind.DOOR : BoundaryKind.WALL,
                                 door ? doorTopologyRef(cell, direction) : DungeonTopologyRef.empty()));
                     }
@@ -2072,35 +2022,33 @@ class DungeonEditorTestPersistence {
             return DungeonTopologyRef.door(DungeonBoundaryKey.from(Edge.sideOf(cell, direction)).stableId());
         }
 
-        private static List<DungeonClusterBoundary> complexClusterBoundaries(long clusterId) {
-            List<DungeonClusterBoundary> boundaries = new ArrayList<>();
+        private static List<BoundarySegment> complexClusterBoundaries() {
+            List<BoundarySegment> boundaries = new ArrayList<>();
             for (int relativeQ = 0; relativeQ <= 2; relativeQ++) {
-                boundaries.add(boundary(clusterId, relativeQ, 0, Direction.NORTH));
+                boundaries.add(boundary(relativeQ, 0, Direction.NORTH));
             }
-            boundaries.add(boundary(clusterId, 2, 0, Direction.EAST));
-            boundaries.add(boundary(clusterId, 1, 0, Direction.SOUTH));
-            boundaries.add(boundary(clusterId, 2, 0, Direction.SOUTH));
-            boundaries.add(boundary(clusterId, 0, 1, Direction.EAST));
-            boundaries.add(boundary(clusterId, 0, 2, Direction.EAST));
-            boundaries.add(boundary(clusterId, 0, 2, Direction.SOUTH));
+            boundaries.add(boundary(2, 0, Direction.EAST));
+            boundaries.add(boundary(1, 0, Direction.SOUTH));
+            boundaries.add(boundary(2, 0, Direction.SOUTH));
+            boundaries.add(boundary(0, 1, Direction.EAST));
+            boundaries.add(boundary(0, 2, Direction.EAST));
+            boundaries.add(boundary(0, 2, Direction.SOUTH));
             for (int relativeR = 0; relativeR <= 2; relativeR++) {
-                boundaries.add(boundary(clusterId, 0, relativeR, Direction.WEST));
+                boundaries.add(boundary(0, relativeR, Direction.WEST));
             }
             return List.copyOf(boundaries);
         }
 
-        private static DungeonClusterBoundary boundary(
-                long clusterId,
+        private static BoundarySegment boundary(
                 int relativeQ,
                 int relativeR,
                 Direction direction
         ) {
-            return new DungeonClusterBoundary(
-                    clusterId,
-                    0,
-                    new Cell(relativeQ, relativeR, 0),
-                    direction,
-                    BoundaryKind.WALL);
+            Cell absoluteCell = new Cell(10 + relativeQ, 10 + relativeR, 0);
+            return BoundarySegment.fromEdge(
+                    direction.edgeOf(absoluteCell),
+                    BoundaryKind.WALL,
+                    DungeonTopologyRef.empty());
         }
 
         private record RoomSeed(String name, int level, int anchorQ, int anchorR, int width, int height) {
@@ -2110,6 +2058,18 @@ class DungeonEditorTestPersistence {
         }
 
         private record SeededRoom(long roomId, long clusterId, RoomSeed seed, Cell center) {
+        }
+
+        private static Cell absoluteFixtureCell(
+                SeededRoom room,
+                int relativeQ,
+                int relativeR,
+                int level
+        ) {
+            return new Cell(
+                    room.center().q() + relativeQ,
+                    room.center().r() + relativeR,
+                    level);
         }
 
         void seedLargeCurrentGeometryRoom(long mapId, int width, int height) {

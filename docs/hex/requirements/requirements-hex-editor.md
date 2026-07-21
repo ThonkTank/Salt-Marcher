@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-19
 Source of Truth: Editor-facing hex-map behavior, visible states, and acceptance
 criteria.
 
@@ -19,17 +19,6 @@ markers without inventing a second map source of truth.
 - shared map-canvas contract design
 - persistence schema detail
 - hidden simulation or campaign rules that are not visible in the editor
-
-## Current State
-
-- SaltMarcher ships a dedicated Hex Map editor surface.
-- The local SaltMarcher Hex editor owns the shipped editor target state: map
-  selector, create and edit map flows, radius-change warning for authored data
-  loss, selection tool, terrain brush, terrain palette, tile detail inspection,
-  and simple tile-owned marker placement.
-- V1 marker editing is target behavior for the Hex editor only. It does not
-  imply runtime travel markers, encounter simulation, or Dungeon feature-marker
-  semantics.
 
 ## Visible Structure
 

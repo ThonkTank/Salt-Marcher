@@ -123,11 +123,7 @@ final class DungeonCorridorCellProjection {
     ) {
         List<Cell> result = new ArrayList<>();
         for (CorridorWaypoint waypoint : waypoints) {
-            RoomCluster cluster = clustersById.get(waypoint.clusterId());
-            Cell center = cluster == null
-                    ? new Cell(0, 0, waypoint.level())
-                    : cluster.center();
-            result.add(waypoint.absoluteCell(center));
+            result.add(waypoint.cell());
         }
         return List.copyOf(result);
     }

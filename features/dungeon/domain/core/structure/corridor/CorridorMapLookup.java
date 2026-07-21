@@ -42,11 +42,6 @@ final class CorridorMapLookup {
         return null;
     }
 
-    static Cell clusterCenterOrOrigin(DungeonMap dungeonMap, long clusterId, int level) {
-        RoomCluster target = cluster(dungeonMap, clusterId);
-        return target == null ? new Cell(0, 0, level) : target.center();
-    }
-
     private CorridorMapLookup() {
     }
 }

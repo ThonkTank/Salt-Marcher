@@ -1,8 +1,6 @@
 package features.dungeon.application.editor;
 
 import features.dungeon.domain.core.structure.transition.TransitionDestinationType;
-import features.dungeon.api.DungeonEditorControlsSnapshot;
-import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.editor.DungeonEditorToolFamily;
 import features.dungeon.api.DungeonTopologyElementRef;
 
@@ -59,7 +57,7 @@ public final class DungeonEditorStatePanelTransitionDestinationDrafts {
         }
     }
 
-    static Target target(DungeonEditorControlsSnapshot controls, DungeonEditorStateSnapshot state) {
+    static Target target(DungeonEditorControlProjection controls, DungeonEditorInspectorProjection state) {
         boolean transitionCreate = controls != null
                 && controls.toolSelection().family() == DungeonEditorToolFamily.TRANSITION;
         long selectedTransitionId = selectedTransitionId(state == null ? null : state.selection());
@@ -165,7 +163,7 @@ public final class DungeonEditorStatePanelTransitionDestinationDrafts {
         return value == null ? "" : value.strip();
     }
 
-    private static long selectedTransitionId(DungeonEditorStateSnapshot.Selection selection) {
+    private static long selectedTransitionId(features.dungeon.api.editor.DungeonEditorSelection selection) {
         DungeonTopologyElementRef topologyRef = selection == null
                 ? DungeonTopologyElementRef.empty()
                 : selection.topologyRef();

@@ -1,110 +1,66 @@
 package features.dungeon.domain.core.structure.room;
 
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
+import features.dungeon.domain.core.geometry.Cell;
+import features.dungeon.domain.core.geometry.DungeonBoundaryTouch;
+import features.dungeon.domain.core.geometry.Edge;
+import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
-import features.dungeon.domain.core.geometry.Cell;
-import features.dungeon.domain.core.geometry.DungeonBoundaryTouch;
-import features.dungeon.domain.core.geometry.Edge;
-import features.dungeon.domain.core.graph.DungeonTopologyRef;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 
 final class RoomClusterBoundaryGeometry {
 
-    Map<Integer, List<DungeonClusterBoundary>> filterBoundaries(
-            Iterable<DungeonClusterBoundary> boundaries,
-            Map<Integer, List<Cell>> cellsByLevel,
-            Cell center
+    Map<Integer, List<BoundarySegment>> filterBoundaries(
+            Iterable<BoundarySegment> boundaries,
+            Map<Integer, List<Cell>> cellsByLevel
     ) {
-        List<DungeonClusterBoundary> filtered = new ArrayList<>();
-        for (DungeonClusterBoundary boundary : boundaries == null ? List.<DungeonClusterBoundary>of() : boundaries) {
-            DungeonBoundaryTouch touch = touch(
-                    boundary.absoluteEdge(center),
-                    new LinkedHashSet<>(cellsByLevel.getOrDefault(boundary.level(), List.of())));
-            if (touch.touchesCluster()) {
-                filtered.add(boundary);
+        Map<Integer, List<BoundarySegment>> result = new LinkedHashMap<>();
+        for (BoundarySegment boundary : boundaries == null ? List.<BoundarySegment>of() : boundaries) {
+            Set<Cell> levelCells = new LinkedHashSet<>(cellsByLevel.getOrDefault(boundary.level(), List.of()));
+            if (touch(boundary.edge(), levelCells).touchesCluster()) {
+                result.computeIfAbsent(boundary.level(), ignored -> new ArrayList<>()).add(boundary);
             }
         }
-        return DungeonClusterBoundary.orderedByLevel(filtered);
+        Map<Integer, List<BoundarySegment>> immutable = new LinkedHashMap<>();
+        result.forEach((level, levelBoundaries) -> immutable.put(level, List.copyOf(levelBoundaries)));
+        return Map.copyOf(immutable);
     }
 
-    @Nullable DungeonClusterBoundary boundaryForEdge(
+    @Nullable BoundarySegment boundaryForEdge(
             Set<Cell> clusterCells,
-            Cell center,
-            long clusterId,
             Edge edge,
             BoundaryKind kind,
             @Nullable DungeonTopologyRef topologyRef
     ) {
-        BoundaryRow materialized = RoomClusterBoundaryMaterialization.forEdge(
-                touchingClusterCells(clusterCells, edge),
-                center,
-                clusterId,
-                edge,
-                normalizedKind(kind));
-        return boundary(materialized, topologyRef);
+        return touchingClusterCells(clusterCells, edge).isEmpty()
+                ? null
+                : BoundarySegment.fromEdge(edge, kind, topologyRef);
     }
 
-    @Nullable DungeonClusterBoundary openBoundaryForEdge(
-            Set<Cell> clusterCells,
-            Cell center,
-            long clusterId,
-            Edge edge
-    ) {
-        BoundaryRow materialized = RoomClusterBoundaryMaterialization.openForEdge(
-                touchingClusterCells(clusterCells, edge),
-                center,
-                clusterId,
-                edge);
-        return boundary(materialized, DungeonTopologyRef.empty());
+    @Nullable BoundarySegment openBoundaryForEdge(Set<Cell> clusterCells, Edge edge) {
+        Set<Cell> touchingCells = touchingClusterCells(clusterCells, edge);
+        return touchingCells.size() == 1
+                ? BoundarySegment.fromEdge(edge, BoundaryKind.OPEN, DungeonTopologyRef.empty())
+                : null;
     }
 
-    private DungeonBoundaryTouch touch(Edge edge, Set<Cell> clusterCells) {
-        List<Cell> insideCells = insideCells(edge.touchingCells(), clusterCells);
-        return new DungeonBoundaryTouch(insideCells);
-    }
-
-    private static List<Cell> insideCells(List<Cell> touchingCells, Set<Cell> clusterCells) {
-        List<Cell> result = new ArrayList<>();
-        for (Cell cell : touchingCells == null ? List.<Cell>of() : touchingCells) {
-            if (clusterCells.contains(cell)) {
-                result.add(cell);
-            }
-        }
-        return List.copyOf(result);
+    private static DungeonBoundaryTouch touch(Edge edge, Set<Cell> clusterCells) {
+        return new DungeonBoundaryTouch(edge.touchingCells().stream().filter(clusterCells::contains).toList());
     }
 
     private static Set<Cell> touchingClusterCells(Set<Cell> clusterCells, @Nullable Edge edge) {
         Set<Cell> result = new LinkedHashSet<>();
         for (Cell cell : edge == null ? Set.<Cell>of() : edge.touchingCells()) {
-            if (cell != null && clusterCells != null && clusterCells.contains(cell)) {
+            if (clusterCells != null && clusterCells.contains(cell)) {
                 result.add(cell);
             }
         }
         return Set.copyOf(result);
-    }
-
-    private static BoundaryKind normalizedKind(@Nullable BoundaryKind kind) {
-        return kind == null ? BoundaryKind.WALL : kind;
-    }
-
-    private static @Nullable DungeonClusterBoundary boundary(
-            @Nullable BoundaryRow materialized,
-            @Nullable DungeonTopologyRef topologyRef
-    ) {
-        if (materialized == null) {
-            return null;
-        }
-        return new DungeonClusterBoundary(
-                materialized.clusterId(),
-                materialized.level(),
-                materialized.relativeCell(),
-                materialized.direction(),
-                materialized.kind(),
-                topologyRef == null ? DungeonTopologyRef.empty() : topologyRef);
     }
 }

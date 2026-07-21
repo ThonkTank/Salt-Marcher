@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import features.dungeon.api.DungeonCellRef;
 import features.dungeon.api.DungeonEditorMapSnapshot;
-import features.dungeon.api.DungeonEditorStateSnapshot;
+import features.dungeon.api.editor.DungeonEditorSelection;
 
 final class DungeonMapEditorFeatureProjector {
 
@@ -15,7 +15,7 @@ final class DungeonMapEditorFeatureProjector {
             List<DungeonMapRenderState.Cell> cells,
             List<DungeonMapRenderState.Marker> markers,
             DungeonEditorMapSnapshot map,
-            DungeonEditorStateSnapshot.Selection selection
+            DungeonEditorSelection selection
     ) {
         for (DungeonEditorMapSnapshot.Feature feature : map.features()) {
             addFeature(cells, markers, feature, DungeonMapRenderSelection.selectedFeature(feature, selection));

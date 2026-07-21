@@ -225,7 +225,10 @@ final class DungeonTravelAuthoredReaderTest {
                             transition.linkedTransitionId(),
                             List.of(request.chunkKeys().getFirst()),
                             List.of())),
-                    List.of()));
+                    List.of(),
+                    List.of(),
+                    new features.dungeon.application.authored.port.DungeonContinuationPage(
+                            List.of(), java.util.Optional.empty())));
         }
 
         @Override

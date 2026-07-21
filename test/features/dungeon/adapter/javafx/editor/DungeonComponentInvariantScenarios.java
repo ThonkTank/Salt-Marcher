@@ -84,12 +84,12 @@ final class DungeonComponentInvariantScenarios {
         CorridorDoorBinding retainedDoor = new CorridorDoorBinding(7L, 11L, new Cell(1, 2, 0), Direction.SOUTH);
         assertEquals(7L, retainedDoor.roomId(), "door binding room id preservation");
         assertEquals(11L, retainedDoor.clusterId(), "door binding cluster id preservation");
-        assertEquals(new Cell(1, 2, 0), retainedDoor.relativeCell(), "door binding relative cell");
+        assertEquals(new Cell(1, 2, 0), retainedDoor.roomCell(), "door binding absolute room cell");
         assertEquals(Direction.SOUTH, retainedDoor.direction(), "door binding direction");
 
-        CorridorWaypoint waypoint = new CorridorWaypoint(-3L, new Cell(2, 3, 4), 4);
+        CorridorWaypoint waypoint = new CorridorWaypoint(-3L, new Cell(2, 3, 4));
         assertEquals(0L, waypoint.clusterId(), "waypoint cluster lower bound");
-        assertEquals(new Cell(7, 9, 4), waypoint.absoluteCell(new Cell(5, 6, 4)), "waypoint absolute cell");
+        assertEquals(new Cell(2, 3, 4), waypoint.cell(), "waypoint absolute cell");
 
         CorridorAnchorRef missingRef = new CorridorAnchorRef(-4L, -5L);
         assertEquals(0L, missingRef.hostCorridorId(), "anchor ref host lower bound");
@@ -113,8 +113,8 @@ final class DungeonComponentInvariantScenarios {
                 () -> new CorridorDoorBinding(1L, 2L, new Cell(0, 0, 0), null),
                 "corridor door binding null direction");
         assertThrowsNull(
-                () -> new CorridorWaypoint(1L, null, 0),
-                "corridor waypoint null relative cell");
+                () -> new CorridorWaypoint(1L, null),
+                "corridor waypoint null absolute cell");
     }
 
     private static void assertCorridorBindingTopologyIdentity() {
@@ -126,26 +126,23 @@ final class DungeonComponentInvariantScenarios {
                 DungeonTopologyRef.door(21L));
         assertEquals(12L, retainedDoor.roomId(), "door binding room id preservation");
         assertEquals(14L, retainedDoor.clusterId(), "door binding cluster id preservation");
-        assertEquals(new Cell(2, 3, 1), retainedDoor.relativeCell(), "door binding relative cell");
+        assertEquals(new Cell(2, 3, 1), retainedDoor.roomCell(), "door binding absolute room cell");
         assertEquals(Direction.WEST, retainedDoor.direction(), "door binding direction");
         assertTrue(retainedDoor.topologyRef().present(), "door binding topology ref present");
 
         CorridorWaypoint defaultedWaypoint = corridorWaypoint(-9L, null, 2);
         assertEquals(0L, defaultedWaypoint.clusterId(), "waypoint cluster lower bound");
-        assertEquals(new Cell(0, 0, 2), defaultedWaypoint.relativeCell(), "waypoint null default");
-        assertEquals(new Cell(4, 5, 2), defaultedWaypoint.absoluteCell(new Cell(4, 5, 2)),
-                "waypoint absolute default");
+        assertEquals(new Cell(0, 0, 2), defaultedWaypoint.cell(), "waypoint helper default absolute cell");
         CorridorWaypoint retainedWaypoint = corridorWaypoint(17L, new Cell(1, -2, 3), 3);
         assertEquals(17L, retainedWaypoint.clusterId(), "waypoint cluster preservation");
-        assertEquals(new Cell(8, 5, 3), retainedWaypoint.absoluteCell(new Cell(7, 7, 3)),
-                "waypoint absolute retained");
+        assertEquals(new Cell(1, -2, 3), retainedWaypoint.cell(), "waypoint absolute cell retained");
     }
 
     private static CorridorWaypoint corridorWaypoint(long clusterId, Cell relativeCell, int level) {
         Cell cell = relativeCell == null
                 ? new Cell(0, 0, level)
                 : relativeCell;
-        return new CorridorWaypoint(clusterId, cell, level);
+        return new CorridorWaypoint(clusterId, cell);
     }
 
     private static void assertTrue(boolean condition, String label) {

@@ -1,7 +1,6 @@
 package features.dungeon.api.editor;
 
 import features.dungeon.api.DungeonEditorPreview;
-import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonEditorSurface;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonInspectorSnapshot;
@@ -23,7 +22,7 @@ public record DungeonEditorState(
         DungeonOverlaySettings overlaySettings,
         int projectionLevel,
         List<Integer> reachableLevels,
-        DungeonEditorStateSnapshot.Selection selection,
+        DungeonEditorSelection selection,
         DungeonEditorDraftState draft,
         DungeonEditorPreview preview,
         @Nullable DungeonInspectorSnapshot inspector,
@@ -37,7 +36,7 @@ public record DungeonEditorState(
         toolSelection = toolSelection == null ? DungeonEditorToolSelection.select() : toolSelection;
         overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
         reachableLevels = reachableLevels == null ? List.of(0) : List.copyOf(reachableLevels);
-        selection = selection == null ? DungeonEditorStateSnapshot.Selection.empty() : selection;
+        selection = selection == null ? DungeonEditorSelection.empty() : selection;
         draft = draft == null ? DungeonEditorDraftState.empty() : draft;
         preview = preview == null ? DungeonEditorPreview.none() : preview;
         commandStatus = commandStatus == null ? CommandStatus.idle() : commandStatus;
@@ -55,7 +54,7 @@ public record DungeonEditorState(
                 DungeonOverlaySettings.defaults(),
                 0,
                 List.of(0),
-                DungeonEditorStateSnapshot.Selection.empty(),
+                DungeonEditorSelection.empty(),
                 DungeonEditorDraftState.empty(),
                 DungeonEditorPreview.none(),
                 null,

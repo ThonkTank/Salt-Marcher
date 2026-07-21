@@ -20,17 +20,6 @@ public record DungeonWindow(
             .comparing(DungeonPatchEntityRef::kind)
             .thenComparingLong(DungeonPatchEntityRef::id);
 
-    public DungeonWindow(
-            DungeonMapHeader mapHeader,
-            long requestGeneration,
-            List<DungeonWindowChunkHeader> chunkHeaders,
-            List<DungeonWindowEntityFragment> fragments,
-            List<DungeonWindowContinuation> continuations
-    ) {
-        this(mapHeader, requestGeneration, chunkHeaders, fragments, List.of(), List.of(),
-                new DungeonContinuationPage(continuations, java.util.Optional.empty()));
-    }
-
     public DungeonWindow {
         mapHeader = Objects.requireNonNull(mapHeader, "mapHeader");
         if (requestGeneration < 0L) {
@@ -57,10 +46,5 @@ public record DungeonWindow(
         orderedBounds.sort(Comparator.comparingInt(DungeonAuthoredLevelBounds::level));
         authoredBounds = List.copyOf(orderedBounds);
         continuationPage = continuationPage == null ? DungeonContinuationPage.empty() : continuationPage;
-    }
-
-    /** Compatibility projection for consumers that only need the current typed page entries. */
-    public List<DungeonWindowContinuation> continuations() {
-        return continuationPage.entries();
     }
 }

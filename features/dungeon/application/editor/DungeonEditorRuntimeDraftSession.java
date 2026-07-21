@@ -1,7 +1,5 @@
 package features.dungeon.application.editor;
 
-import features.dungeon.api.DungeonEditorControlsSnapshot;
-import features.dungeon.api.DungeonEditorStateSnapshot;
 
 final class DungeonEditorRuntimeDraftSession {
     private final DungeonEditorStatePanelLabelNameDrafts statePanelLabelNameDrafts =
@@ -38,7 +36,7 @@ final class DungeonEditorRuntimeDraftSession {
 
     void updateCorridorPointDraft(
             long selectedMapIdValue,
-            DungeonEditorStateSnapshot.Selection selection,
+            features.dungeon.api.editor.DungeonEditorSelection selection,
             String q,
             String r
     ) {
@@ -47,7 +45,7 @@ final class DungeonEditorRuntimeDraftSession {
 
     DungeonEditorRuntimeContext.Result moveCorridorPoint(
             long selectedMapIdValue,
-            DungeonEditorStateSnapshot.Selection selection,
+            features.dungeon.api.editor.DungeonEditorSelection selection,
             int q,
             int r,
             DungeonEditorSelectedHandleRuntimeOperation selectedHandleOperation
@@ -65,8 +63,8 @@ final class DungeonEditorRuntimeDraftSession {
 
     void updateTransitionDestinationDraft(
             long selectedMapIdValue,
-            DungeonEditorControlsSnapshot controls,
-            DungeonEditorStateSnapshot state,
+            DungeonEditorControlProjection controls,
+            DungeonEditorInspectorProjection state,
             TransitionDestinationDraftInput input
     ) {
         TransitionDestinationDraftInput safeInput = input == null
@@ -117,11 +115,11 @@ final class DungeonEditorRuntimeDraftSession {
         return editSession;
     }
 
-    DungeonEditorRuntimeDraftFrame draftFrame(
-            DungeonEditorControlsSnapshot controls,
-            DungeonEditorStateSnapshot state
+    DungeonEditorDraftProjection draftProjection(
+            DungeonEditorControlProjection controls,
+            DungeonEditorInspectorProjection state
     ) {
-        return new DungeonEditorRuntimeDraftFrame(
+        return new DungeonEditorDraftProjection(
                 roomNarrationDrafts(controls, state),
                 labelNameDraft(controls, state),
                 corridorPointDraft(controls, state),
@@ -132,8 +130,8 @@ final class DungeonEditorRuntimeDraftSession {
     }
 
     private DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts roomNarrationDrafts(
-            DungeonEditorControlsSnapshot controls,
-            DungeonEditorStateSnapshot state
+            DungeonEditorControlProjection controls,
+            DungeonEditorInspectorProjection state
     ) {
         long selectedMapIdValue = selectedMapIdValue(controls);
         statePanelRoomNarrationDrafts.retainOnlyVisibleDraftsForMap(
@@ -145,8 +143,8 @@ final class DungeonEditorRuntimeDraftSession {
     }
 
     private DungeonEditorStatePanelLabelNameDrafts.Draft labelNameDraft(
-            DungeonEditorControlsSnapshot controls,
-            DungeonEditorStateSnapshot state
+            DungeonEditorControlProjection controls,
+            DungeonEditorInspectorProjection state
     ) {
         DungeonEditorRuntimeLabelTarget target = labelNameTarget(state == null ? null : state.selection());
         long selectedMapIdValue = selectedMapIdValue(controls);
@@ -155,20 +153,20 @@ final class DungeonEditorRuntimeDraftSession {
     }
 
     private DungeonEditorStatePanelCorridorPointDrafts.Draft corridorPointDraft(
-            DungeonEditorControlsSnapshot controls,
-            DungeonEditorStateSnapshot state
+            DungeonEditorControlProjection controls,
+            DungeonEditorInspectorProjection state
     ) {
         long selectedMapIdValue = selectedMapIdValue(controls);
-        DungeonEditorStateSnapshot.Selection selection = state == null
-                ? DungeonEditorStateSnapshot.Selection.empty()
+        features.dungeon.api.editor.DungeonEditorSelection selection = state == null
+                ? features.dungeon.api.editor.DungeonEditorSelection.empty()
                 : state.selection();
         statePanelCorridorPointDrafts.retainOnlyVisibleDraftForMap(selectedMapIdValue, selection);
         return statePanelCorridorPointDrafts.current(selectedMapIdValue, selection);
     }
 
     private DungeonEditorStatePanelTransitionDescriptionDrafts.Draft transitionDescriptionDraft(
-            DungeonEditorControlsSnapshot controls,
-            DungeonEditorStateSnapshot state
+            DungeonEditorControlProjection controls,
+            DungeonEditorInspectorProjection state
     ) {
         long selectedMapIdValue = selectedMapIdValue(controls);
         long transitionId = selectedTransitionId(state == null ? null : state.selection());
@@ -177,8 +175,8 @@ final class DungeonEditorRuntimeDraftSession {
     }
 
     private DungeonEditorStatePanelTransitionDestinationDrafts.Draft transitionDestinationDraft(
-            DungeonEditorControlsSnapshot controls,
-            DungeonEditorStateSnapshot state
+            DungeonEditorControlProjection controls,
+            DungeonEditorInspectorProjection state
     ) {
         long selectedMapIdValue = selectedMapIdValue(controls);
         DungeonEditorStatePanelTransitionDestinationDrafts.Target target =
@@ -194,8 +192,8 @@ final class DungeonEditorRuntimeDraftSession {
     }
 
     private DungeonEditorStatePanelStairGeometryDrafts.Draft stairGeometryDraft(
-            DungeonEditorControlsSnapshot controls,
-            DungeonEditorStateSnapshot state
+            DungeonEditorControlProjection controls,
+            DungeonEditorInspectorProjection state
     ) {
         long selectedMapIdValue = selectedMapIdValue(controls);
         long stairId = selectedStairId(state == null ? null : state.selection());
@@ -203,34 +201,34 @@ final class DungeonEditorRuntimeDraftSession {
         return statePanelStairGeometryDrafts.current(selectedMapIdValue, stairId);
     }
 
-    static long selectedMapIdValue(DungeonEditorControlsSnapshot controls) {
+    static long selectedMapIdValue(DungeonEditorControlProjection controls) {
         if (controls == null || controls.selectedMapId() == null) {
             return 0L;
         }
         return controls.selectedMapId().value();
     }
 
-    static long selectedTransitionId(DungeonEditorStateSnapshot.Selection selection) {
+    static long selectedTransitionId(features.dungeon.api.editor.DungeonEditorSelection selection) {
         var topologyRef = selection == null
-                ? DungeonEditorStateSnapshot.Selection.empty().topologyRef()
+                ? features.dungeon.api.editor.DungeonEditorSelection.empty().topologyRef()
                 : selection.topologyRef();
         return topologyRef.kind() == features.dungeon.api.DungeonTopologyElementKind.TRANSITION
                 ? topologyRef.id()
                 : 0L;
     }
 
-    private static long selectedStairId(DungeonEditorStateSnapshot.Selection selection) {
+    private static long selectedStairId(features.dungeon.api.editor.DungeonEditorSelection selection) {
         var topologyRef = selection == null
-                ? DungeonEditorStateSnapshot.Selection.empty().topologyRef()
+                ? features.dungeon.api.editor.DungeonEditorSelection.empty().topologyRef()
                 : selection.topologyRef();
         return topologyRef.kind() == features.dungeon.api.DungeonTopologyElementKind.STAIR
                 ? topologyRef.id()
                 : 0L;
     }
 
-    private static DungeonEditorRuntimeLabelTarget labelNameTarget(DungeonEditorStateSnapshot.Selection selection) {
-        DungeonEditorStateSnapshot.Selection safeSelection = selection == null
-                ? DungeonEditorStateSnapshot.Selection.empty()
+    private static DungeonEditorRuntimeLabelTarget labelNameTarget(features.dungeon.api.editor.DungeonEditorSelection selection) {
+        features.dungeon.api.editor.DungeonEditorSelection safeSelection = selection == null
+                ? features.dungeon.api.editor.DungeonEditorSelection.empty()
                 : selection;
         if (clusterNameTarget(safeSelection)) {
             return DungeonEditorRuntimeLabelTarget.cluster(safeSelection.clusterId());
@@ -241,15 +239,15 @@ final class DungeonEditorRuntimeDraftSession {
                 : DungeonEditorRuntimeLabelTarget.empty();
     }
 
-    private static boolean clusterNameTarget(DungeonEditorStateSnapshot.Selection selection) {
+    private static boolean clusterNameTarget(features.dungeon.api.editor.DungeonEditorSelection selection) {
         return clusterLabelSelection(selection) || clusterOnlySelection(selection);
     }
 
-    private static boolean clusterLabelSelection(DungeonEditorStateSnapshot.Selection selection) {
+    private static boolean clusterLabelSelection(features.dungeon.api.editor.DungeonEditorSelection selection) {
         return selection.handleRef() != null && "CLUSTER_LABEL".equals(selection.handleRef().kind().name());
     }
 
-    private static boolean clusterOnlySelection(DungeonEditorStateSnapshot.Selection selection) {
+    private static boolean clusterOnlySelection(features.dungeon.api.editor.DungeonEditorSelection selection) {
         return selection.clusterSelection()
                 && selection.topologyRef().kind() != features.dungeon.api.DungeonTopologyElementKind.ROOM;
     }

@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-19
+Last Reviewed: 2026-07-19
 Source of Truth: Hex authored-map domain vocabulary, write model ownership,
 and invariants.
 
@@ -15,7 +15,7 @@ semantics, and verification owns proof traceability.
 ## Bounded Context
 
 The Hex context owns authored overworld-style hex maps used by Hex editor and
-future Hex runtime surfaces. A Hex map is an authored map root with metadata,
+Hex runtime surfaces. A Hex map is an authored map root with metadata,
 hex tiles, terrain overrides, and simple tile-owned markers.
 
 The Hex context does not own Dungeon topology, party roster truth, encounter
@@ -93,17 +93,6 @@ The V1 marker types are:
   runtime travel state.
 - Hex runtime readback MAY interpret party-owned overworld travel positions as
   Hex coordinates only through the Hex stable tile-id convention.
-
-## Current State And Target State
-
-Current state: SaltMarcher has a navigable Hex Map editor backed by the Hex
-domain write model. It also projects party-owned overworld travel readback into
-a Hex-specific runtime snapshot when the party token points at a valid Hex
-tile id on an existing Hex map.
-
-Target state: Hex editor implementation creates and mutates the Hex domain
-write model described here, and adapters translate it to persistence without
-making SQLite the source of domain meaning.
 
 ## References
 

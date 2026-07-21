@@ -5,11 +5,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import features.dungeon.api.editor.DungeonEditorCommandOutcome;
 import platform.execution.ExecutionLane;
-import features.dungeon.api.DungeonEditorControlsModel;
-import features.dungeon.api.DungeonEditorMapSurfaceModel;
 import features.dungeon.api.DungeonEditorPreview;
-import features.dungeon.api.DungeonEditorStateModel;
-import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonOverlaySettings;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
@@ -22,9 +18,7 @@ final class DungeonEditorRuntimeCommands
                 DungeonEditorInlineLabelOperations,
                 DungeonEditorTransitionStairOperations {
     private final DungeonEditorRuntimeContext context;
-    private final DungeonEditorControlsModel controlsModel;
-    private final DungeonEditorMapSurfaceModel mapSurfaceModel;
-    private final DungeonEditorStateModel stateModel;
+    private final DungeonEditorProjectionState projectionState;
     private final DungeonEditorMainViewInteractionState interactionState;
     private final DungeonEditorRuntimeDraftSession draftSession;
     private final DungeonEditorStatePublisher statePublisher;
@@ -35,9 +29,7 @@ final class DungeonEditorRuntimeCommands
 
     DungeonEditorRuntimeCommands(
             DungeonEditorRuntimeContext context,
-            DungeonEditorControlsModel controlsModel,
-            DungeonEditorMapSurfaceModel mapSurfaceModel,
-            DungeonEditorStateModel stateModel,
+            DungeonEditorProjectionState projectionState,
             DungeonEditorMainViewInteractionState interactionState,
             DungeonEditorRuntimeDraftSession draftSession,
             DungeonEditorStatePublisher statePublisher,
@@ -46,9 +38,7 @@ final class DungeonEditorRuntimeCommands
             ExecutionLane executionLane
     ) {
         this.context = Objects.requireNonNull(context, "context");
-        this.controlsModel = Objects.requireNonNull(controlsModel, "controlsModel");
-        this.mapSurfaceModel = Objects.requireNonNull(mapSurfaceModel, "mapSurfaceModel");
-        this.stateModel = Objects.requireNonNull(stateModel, "stateModel");
+        this.projectionState = Objects.requireNonNull(projectionState, "projectionState");
         this.interactionState = Objects.requireNonNull(interactionState, "interactionState");
         this.draftSession = Objects.requireNonNull(draftSession, "draftSession");
         this.statePublisher = Objects.requireNonNull(statePublisher, "statePublisher");
@@ -230,8 +220,8 @@ final class DungeonEditorRuntimeCommands
         execute(() -> {
             draftSession.updateTransitionDestinationDraft(
                     currentSelectedMapIdValue(),
-                    controlsModel.current(),
-                    stateModel.current(),
+                    projectionState.current().controls(),
+                    projectionState.current().state(),
                     input);
             statePublisher.publishDraftSessionChanged();
         });
@@ -389,16 +379,12 @@ final class DungeonEditorRuntimeCommands
             Supplier<DungeonEditorRuntimeContext.Result> action,
             Consumer<DungeonEditorRuntimeContext.Result> beforePublish
     ) {
-        var controlsBefore = controlsModel.current();
-        var mapSurfaceBefore = mapSurfaceModel.current();
-        var stateBefore = stateModel.current();
+        DungeonEditorProjectionState.Projection projectionBefore = projectionState.current();
         DungeonEditorRuntimeContext.Result result = action.get();
         DungeonEditorRuntimeContext.Result operationResult = result == null
                 ? DungeonEditorRuntimeContext.Result.none()
                 : result;
-        boolean ownerReadbackChanged = !Objects.equals(controlsBefore, controlsModel.current())
-                || !Objects.equals(mapSurfaceBefore, mapSurfaceModel.current())
-                || !Objects.equals(stateBefore, stateModel.current());
+        boolean ownerReadbackChanged = !Objects.equals(projectionBefore, projectionState.current());
         if (operationResult.shouldPublish(ownerReadbackChanged)) {
             beforePublish.accept(operationResult);
             statePublisher.publishCurrentToSubscribers();
@@ -415,15 +401,16 @@ final class DungeonEditorRuntimeCommands
     }
 
     private boolean activePublishedMapInteraction() {
-        return !DungeonEditorPreview.none().equals(mapSurfaceModel.current().preview())
-                || !DungeonEditorStateSnapshot.Selection.empty().equals(mapSurfaceModel.current().selection());
+        return !DungeonEditorPreview.none().equals(projectionState.current().mapSurface().preview())
+                || !features.dungeon.api.editor.DungeonEditorSelection.empty().equals(
+                        projectionState.current().mapSurface().selection());
     }
 
     private boolean transitionLinkCommitted(
             long sourceTransitionId,
             DungeonEditorRuntimeContext.Result result
     ) {
-        DungeonEditorStateSnapshot state = stateModel.current();
+        DungeonEditorInspectorProjection state = projectionState.current().state();
         return DungeonEditorRuntimeDraftSession.selectedTransitionId(state == null ? null : state.selection())
                 == sourceTransitionId
                 && result != null
@@ -441,12 +428,12 @@ final class DungeonEditorRuntimeCommands
         }
     }
 
-    private DungeonEditorStateSnapshot.Selection currentStateSelection() {
-        DungeonEditorStateSnapshot state = stateModel.current();
-        return state == null ? DungeonEditorStateSnapshot.Selection.empty() : state.selection();
+    private features.dungeon.api.editor.DungeonEditorSelection currentStateSelection() {
+        DungeonEditorInspectorProjection state = projectionState.current().state();
+        return state == null ? features.dungeon.api.editor.DungeonEditorSelection.empty() : state.selection();
     }
 
     private long currentSelectedMapIdValue() {
-        return DungeonEditorRuntimeDraftSession.selectedMapIdValue(controlsModel.current());
+        return DungeonEditorRuntimeDraftSession.selectedMapIdValue(projectionState.current().controls());
     }
 }

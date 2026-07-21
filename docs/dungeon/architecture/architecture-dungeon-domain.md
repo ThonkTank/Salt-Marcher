@@ -1,8 +1,8 @@
-Status: Active Target
+Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-17
+Last Reviewed: 2026-07-19
 Source of Truth: Dungeon feature ownership, authored-core boundary, runtime
-capabilities, and target dependency direction.
+capabilities, and dependency direction.
 
 # Dungeon Architecture
 
@@ -17,7 +17,7 @@ Dungeon remains one feature. It owns authored maps and their topology while
 publishing separate capabilities for authored catalog work, editing, and
 travel.
 
-## Target Topology
+## Feature Topology
 
 ```text
 features/dungeon/api/
@@ -140,13 +140,10 @@ workspace.
 
 ## Verification
 
-Target dependency direction is mechanically enforced by `architectureTest`,
+Dependency direction is mechanically enforced by `architectureTest`,
 including the API-only Dungeon Editor JavaFX boundary.
-Domain-invariant, editor, travel, persistence, and JavaFX production routes own
-behavior proof.
-
-Temporary migration state and the remaining deletion boundary live only in
-[Dungeon Greenfield Roadmap](../delivery/roadmap-dungeon-greenfield.md).
+Behavior proof belongs to executable evidence rather than this architecture
+document.
 
 ## References
 
@@ -154,5 +151,4 @@ Temporary migration state and the remaining deletion boundary live only in
 - [Dungeon Domain Model](../domain/domain-dungeon.md)
 - [Dungeon Editor Requirements](../requirements/requirements-dungeon-editor.md)
 - [Dungeon Persistence Contract](../contract/contract-dungeon-persistence.md)
-- [Dungeon Greenfield Roadmap](../delivery/roadmap-dungeon-greenfield.md)
 - [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)

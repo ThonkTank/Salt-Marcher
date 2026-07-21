@@ -19,7 +19,6 @@ import features.dungeon.api.editor.DungeonEditorToolFamily;
 import features.dungeon.api.editor.DungeonEditorToolSelection;
 import features.dungeon.api.travel.DungeonTravelApi;
 import features.dungeon.application.authored.DungeonCachedWindowStore;
-import features.dungeon.application.editor.DungeonEditorApiFacade;
 import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
 import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
 import features.dungeon.qualification.DungeonQualificationDataset;
@@ -57,7 +56,7 @@ import platform.ui.mapcanvas.MapCanvasPaintSample;
 import shell.api.ShellBinding;
 import shell.api.ShellSlot;
 
-/** M5.4 production-route qualification over equal visible work and growing off-window truth. */
+/** Production-route qualification over equal visible work and growing off-window truth. */
 final class DungeonRuntimeProductionQualificationTest {
     private static final int MAX_VISIBLE_PLUS_RING_CHUNKS = 9;
     private static final long MAX_COLD_INDEX_CALLS = 8L;
@@ -121,14 +120,12 @@ final class DungeonRuntimeProductionQualificationTest {
                 DirectUiDispatcher.INSTANCE,
                 NoopDiagnostics.INSTANCE);
         DungeonEditorRuntimeDependencies dependencies = new DungeonEditorRuntimeDependencies(
-                dungeon.editorControls(), dungeon.editorMapSurface(), dungeon.editorState(), dungeon.editor(),
+                dungeon.editor(),
                 new features.dungeon.domain.core.structure.corridor.OrthogonalCorridorRoutingPolicy(),
                 dungeon.authored()::currentWindowRequestGeneration,
                 DirectExecutionLane.INSTANCE,
                 DirectUiDispatcher.INSTANCE);
-        DungeonEditorApi editorApi = new DungeonEditorApiFacade(
-                DungeonEditorFeatureRuntimeRoot.create(dependencies),
-                DirectUiDispatcher.INSTANCE);
+        DungeonEditorApi editorApi = DungeonEditorFeatureRuntimeRoot.create(dependencies);
         ShellBinding editorBinding = new DungeonEditorContribution(editorApi).bind();
         DungeonMapView editorView = DungeonEditorTestSupport.slot(
                 editorBinding, ShellSlot.COCKPIT_MAIN, DungeonMapView.class);
@@ -140,7 +137,7 @@ final class DungeonRuntimeProductionQualificationTest {
         editorApi.dispatch(new DungeonEditorIntent.SelectMap(
                 new DungeonMapId(DungeonQualificationDataset.MAP_ID)));
         long coldNanos = System.nanoTime() - coldStarted;
-        System.out.println("M5.4 " + dataset + " cold samples=[" + coldNanos + "]"
+        System.out.println("dungeon-runtime " + dataset + " cold samples=[" + coldNanos + "]"
                 + " min=" + coldNanos + " p50=" + coldNanos
                 + " p95=" + coldNanos + " max=" + coldNanos);
         Snapshot cold = probe.snapshot().subtract(beforeCold);
@@ -163,8 +160,8 @@ final class DungeonRuntimeProductionQualificationTest {
         });
         record(dataset, "camera", camera);
         PaintWork cameraPaint = PaintWork.from(editorPaint);
-        System.out.println("M5.4 " + dataset + " camera paint=" + cameraPaint);
-        System.out.println("M5.4 " + dataset + " camera work=" + WorkMaximum.from(cameraWork));
+        System.out.println("dungeon-runtime " + dataset + " camera paint=" + cameraPaint);
+        System.out.println("dungeon-runtime " + dataset + " camera work=" + WorkMaximum.from(cameraWork));
         assertTrue(camera.p95() <= DungeonRuntimeQualificationProtocol.CAMERA_P95_NANOS,
                 dataset + " camera p95=" + camera.p95());
 
@@ -379,7 +376,7 @@ final class DungeonRuntimeProductionQualificationTest {
             String scenario,
             Histogram histogram
     ) {
-        System.out.println("M5.4 " + dataset + " " + scenario
+        System.out.println("dungeon-runtime " + dataset + " " + scenario
                 + " samples=" + histogram.samples()
                 + " min=" + histogram.minimum()
                 + " p50=" + histogram.p50()
@@ -401,7 +398,7 @@ final class DungeonRuntimeProductionQualificationTest {
                 latch.countDown();
             }
         });
-        assertTrue(latch.await(10, TimeUnit.MINUTES), "M5.4 qualification timed out");
+        assertTrue(latch.await(10, TimeUnit.MINUTES), "Dungeon runtime qualification timed out");
         if (failure[0] != null) {
             throw new AssertionError(failure[0]);
         }

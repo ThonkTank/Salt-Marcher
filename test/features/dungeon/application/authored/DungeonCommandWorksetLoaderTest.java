@@ -91,7 +91,9 @@ final class DungeonCommandWorksetLoaderTest {
                     request.requestGeneration(),
                     List.of(new DungeonWindowChunkHeader(CHUNK, 4L)),
                     List.of(),
-                    List.of()));
+                    List.of(),
+                    List.of(),
+                    features.dungeon.application.authored.port.DungeonContinuationPage.empty()));
         }
 
         @Override

@@ -1,7 +1,7 @@
 package features.dungeon.adapter.javafx.map;
 
 import java.util.List;
-import features.dungeon.api.DungeonEditorStateSnapshot;
+import features.dungeon.api.editor.DungeonEditorSelection;
 
 final class DungeonMapPreviewDiffProjector {
     private final DungeonMapPreviewAreaDiffProjector areaProjector = new DungeonMapPreviewAreaDiffProjector();
@@ -15,7 +15,7 @@ final class DungeonMapPreviewDiffProjector {
             List<DungeonMapRenderState.Label> labels,
             List<DungeonMapRenderState.Marker> markers,
             PreviewRenderDiffFrame previewRenderDiff,
-            DungeonEditorStateSnapshot.Selection selection,
+            DungeonEditorSelection selection,
             DungeonMapRoomLabelPlanner roomLabelPlanner
     ) {
         PreviewRenderDiffFrame safePreviewRenderDiff = previewRenderDiff == null

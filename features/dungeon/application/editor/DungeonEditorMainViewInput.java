@@ -7,19 +7,19 @@ record DungeonEditorMainViewInput(
         boolean secondaryButtonDown,
         boolean wallSingleClickMode,
         boolean doorDeleteSelected,
-        DungeonEditorRuntimePointerTarget boundaryInputTarget,
+        features.dungeon.api.editor.DungeonEditorPointerInput.Target boundaryInputTarget,
         TransitionDestination transitionDestination
 ) {
     DungeonEditorMainViewInput {
         boundaryInputTarget = boundaryInputTarget == null
-                ? DungeonEditorRuntimePointerTarget.empty()
+                ? features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty()
                 : boundaryInputTarget;
         transitionDestination = transitionDestination == null
                 ? TransitionDestination.empty()
                 : transitionDestination;
     }
 
-    DungeonEditorRuntimePointerTarget target() {
+    features.dungeon.api.editor.DungeonEditorPointerInput.Target target() {
         if (!doorDeleteSelected) {
             return boundaryInputTarget;
         }
@@ -34,7 +34,40 @@ record DungeonEditorMainViewInput(
                 false,
                 false,
                 false,
-                DungeonEditorRuntimePointerTarget.empty(),
+                features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty(),
                 TransitionDestination.empty());
+    }
+
+    static DungeonEditorMainViewInput fromPointer(
+            PointerSample sample,
+            boolean wallSingleClickMode,
+            TransitionDestination transitionDestination
+    ) {
+        return fromPointer(sample, wallSingleClickMode, false, transitionDestination);
+    }
+
+    static DungeonEditorMainViewInput fromPointer(
+            PointerSample sample,
+            boolean wallSingleClickMode,
+            boolean doorDeleteSelected,
+            TransitionDestination transitionDestination
+    ) {
+        PointerSample safeSample = sample == null
+                ? new PointerSample(
+                        0.0,
+                        0.0,
+                        false,
+                        false,
+                        features.dungeon.api.editor.DungeonEditorPointerInput.Target.empty())
+                : sample;
+        return new DungeonEditorMainViewInput(
+                safeSample.sceneX(),
+                safeSample.sceneY(),
+                safeSample.primaryButtonDown(),
+                safeSample.secondaryButtonDown(),
+                wallSingleClickMode,
+                doorDeleteSelected,
+                safeSample.target(),
+                transitionDestination);
     }
 }

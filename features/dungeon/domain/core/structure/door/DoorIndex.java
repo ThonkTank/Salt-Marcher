@@ -47,7 +47,7 @@ public final class DoorIndex {
     }
 
     public boolean canDelete(Door door, boolean corridorBound) {
-        if (door == null || doorAt(door.clusterId(), door.relativeCell(), door.direction())
+        if (door == null || doorAt(door.clusterId(), door.roomCell(), door.direction())
                 .filter(door::equals)
                 .isEmpty()) {
             return false;
@@ -68,7 +68,7 @@ public final class DoorIndex {
         if (currentDoor == null || movedDoor == null) {
             return false;
         }
-        Optional<Door> existing = doorAt(currentDoor.clusterId(), currentDoor.relativeCell(), currentDoor.direction());
+        Optional<Door> existing = doorAt(currentDoor.clusterId(), currentDoor.roomCell(), currentDoor.direction());
         if (existing.filter(currentDoor::equals).isEmpty()) {
             return false;
         }
@@ -85,9 +85,9 @@ public final class DoorIndex {
             }
         }
         result.sort(java.util.Comparator.comparingLong(Door::clusterId)
-                .thenComparingInt(door -> door.relativeCell().level())
-                .thenComparingInt(door -> door.relativeCell().r())
-                .thenComparingInt(door -> door.relativeCell().q())
+                .thenComparingInt(door -> door.roomCell().level())
+                .thenComparingInt(door -> door.roomCell().r())
+                .thenComparingInt(door -> door.roomCell().q())
                 .thenComparing(door -> door.direction().name())
                 .thenComparingLong(Door::doorId));
         return List.copyOf(result);
@@ -111,7 +111,7 @@ public final class DoorIndex {
         }
 
         static DoorKey from(Door door) {
-            return new DoorKey(door.clusterId(), door.relativeCell(), door.direction());
+            return new DoorKey(door.clusterId(), door.roomCell(), door.direction());
         }
     }
 

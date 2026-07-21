@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-19
 Source of Truth: User-facing behavior, capabilities, and acceptance criteria for
 the hex feature.
 
@@ -12,8 +12,8 @@ Provide one hex-map workflow that lets a GM:
 
 - load and inspect an overworld-style hex map
 - track and move party travel on that map
-- monitor compact hex travel state through the global travel-state surface
-  shown in the runtime `Reise` tab
+- read compact Hex travel state through the feature-neutral global travel-state
+  surface shown in the runtime `Reise` tab
 - edit map metadata and hex terrain without duplicating map truth
 
 ## Non-Goals
@@ -24,26 +24,10 @@ Provide one hex-map workflow that lets a GM:
   user-facing feature
 - persistence schema detail
 
-## Current State
-
-- SaltMarcher ships a first-class navigable Hex Map editor surface. The current
-  `Hex-Karte` tab can create maps,
-  edit map metadata, inspect tiles, paint terrain, and place simple tile-owned
-  markers through Hex domain and SQLite persistence routes.
-- SaltMarcher now ships party-token Hex readback and movement through the
-  `Hex-Karte` tab. The existing party-owned overworld travel position is
-  interpreted as a Hex coordinate through the Hex stable tile-id convention.
-- SaltMarcher now ships compact Hex travel readback in the runtime `Reise`
-  state tab when the party token points at a valid Hex tile.
-- The project-wide `Reise` state tab owns the shared global state-tab shell and
-  placeholder behavior. Hex owns only the feature-specific live travel readback
-  that replaces that placeholder when the party token points at a valid Hex
-  tile.
-
 ## Primary Surfaces
 
 - hex map travel surface
-- hex travel-state surface shown in the runtime `Reise` tab
+- compact Hex travel state shown in the runtime `Reise` tab
 - hex editor surface
 
 ## Primary User Flows

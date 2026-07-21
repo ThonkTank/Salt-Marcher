@@ -10,6 +10,7 @@ import features.dungeon.application.editor.DungeonEditorMainViewInteractionValue
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.EdgeKey;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.InteractionState;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.PointerState;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 
 final class DungeonEditorBoundaryDraftUseCase {
     private final DungeonEditorWallBoundaryDraftUseCase wallDraft = new DungeonEditorWallBoundaryDraftUseCase();
@@ -57,7 +58,7 @@ final class DungeonEditorBoundaryDraftUseCase {
         return DungeonEditorSessionEffect.preview(new DungeonEditorSessionValues.ClusterBoundariesPreview(
                 clusterId,
                 List.of(boundary.edgeRef()),
-                features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.DOOR,
+                BoundaryKind.DOOR,
                 deleteMode));
     }
 
@@ -100,7 +101,7 @@ final class DungeonEditorBoundaryDraftUseCase {
                 new DungeonEditorSessionValues.ClusterBoundariesPreview(
                         clusterId,
                         List.of(edge.toEdgeRef()),
-                        features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.DOOR,
+                        BoundaryKind.DOOR,
                         deleteMode);
         return new DungeonEditorDoorBoundaryDraftInterpretation(
                 nextState,
@@ -140,7 +141,7 @@ final class DungeonEditorBoundaryDraftUseCase {
                 new DungeonEditorSessionValues.ClusterBoundariesPreview(
                         clusterId,
                         List.of(boundary.edgeRef()),
-                        features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind.DOOR,
+                        BoundaryKind.DOOR,
                 deleteMode)));
     }
 

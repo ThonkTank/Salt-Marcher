@@ -16,9 +16,19 @@ public final class CorridorConnectionNormalization {
     private static final CorridorHostCellQuery HOST_CELL_QUERY = new CorridorHostCellQuery();
 
     public List<Corridor> normalizeCorridors(DungeonMap dungeonMap, List<Corridor> source) {
+        return normalizeCorridors(dungeonMap, source, true);
+    }
+
+    List<Corridor> normalizeCorridors(
+            DungeonMap dungeonMap,
+            List<Corridor> source,
+            boolean snapAnchorsToCurrentHosts
+    ) {
         Objects.requireNonNull(dungeonMap, "dungeonMap");
-        List<Corridor> snappedCorridors = snapOwnedAnchors(dungeonMap, source);
-        return pruneDetachedAnchors(snappedCorridors);
+        List<Corridor> resolvedCorridors = snapAnchorsToCurrentHosts
+                ? snapOwnedAnchors(dungeonMap, source)
+                : source;
+        return pruneDetachedAnchors(resolvedCorridors);
     }
 
     public List<Corridor> pruneDetachedAnchors(List<Corridor> corridors) {
@@ -33,7 +43,20 @@ public final class CorridorConnectionNormalization {
             StairCollection nextStairs,
             TransitionCatalog nextTransitions
     ) {
-        List<Corridor> normalizedCorridors = normalizeCorridors(dungeonMap, nextCorridors);
+        return copyWithConnections(dungeonMap, nextCorridors, nextStairs, nextTransitions, true);
+    }
+
+    DungeonMap copyWithConnections(
+            DungeonMap dungeonMap,
+            List<Corridor> nextCorridors,
+            StairCollection nextStairs,
+            TransitionCatalog nextTransitions,
+            boolean snapAnchorsToCurrentHosts
+    ) {
+        List<Corridor> normalizedCorridors = normalizeCorridors(
+                dungeonMap,
+                nextCorridors,
+                snapAnchorsToCurrentHosts);
         return new DungeonMap(
                 dungeonMap.metadata(),
                 dungeonMap.topology(),

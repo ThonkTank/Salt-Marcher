@@ -12,7 +12,7 @@ import features.dungeon.domain.core.graph.DungeonTopologyRef;
 import features.dungeon.domain.core.projection.DungeonAreaType;
 import features.dungeon.domain.core.projection.DungeonFeatureType;
 import features.dungeon.api.DungeonEditorHandleKind;
-import features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 
 public final class DungeonEditorWorkspaceValues {
 
@@ -190,7 +190,7 @@ public final class DungeonEditorWorkspaceValues {
         public Boundary {
             kind = kind == null ? BoundaryKind.WALL : kind;
             id = Math.max(1L, id);
-            label = label == null || label.isBlank() ? kind.externalKind() : label;
+            label = label == null || label.isBlank() ? externalBoundaryKind(kind) : label;
             edge = edge == null ? new Edge(Cell.empty(), Cell.empty()) : edge;
             topologyRef = topologyRef == null ? defaultTopologyRef(kind, id) : topologyRef;
         }
@@ -199,6 +199,14 @@ public final class DungeonEditorWorkspaceValues {
             return new DungeonTopologyRef(
                     kind.isDoor() ? DungeonTopologyElementKind.DOOR : DungeonTopologyElementKind.WALL,
                     id);
+        }
+
+        private static String externalBoundaryKind(BoundaryKind kind) {
+            return switch (kind) {
+                case WALL -> "wall";
+                case DOOR -> "door";
+                case OPEN -> "open";
+            };
         }
     }
 

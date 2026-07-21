@@ -8,25 +8,25 @@ final class DungeonEditorControlsProjectionServiceAssembly {
     private DungeonEditorControlsProjectionServiceAssembly() {
     }
 
-    static features.dungeon.api.DungeonEditorControlsSnapshot snapshot(
+    static DungeonEditorControlProjection snapshot(
             features.dungeon.application.editor.session.DungeonEditorSessionSnapshot.SnapshotData snapshot,
             DungeonEditorSurfaceContextServiceAssembly.SurfaceContext surfaceContext
     ) {
         return snapshot(snapshot, surfaceContext.reachableLevels(), surfaceContext.surfacePresent());
     }
 
-    static features.dungeon.api.DungeonEditorControlsSnapshot snapshot(
+    static DungeonEditorControlProjection snapshot(
             features.dungeon.application.editor.session.DungeonEditorSessionSnapshot.ControlsData controls,
-            features.dungeon.api.DungeonEditorControlsSnapshot current
+            DungeonEditorControlProjection current
     ) {
-        features.dungeon.api.DungeonEditorControlsSnapshot safeCurrent = current == null
-                ? features.dungeon.api.DungeonEditorControlsSnapshot.empty("")
+        DungeonEditorControlProjection safeCurrent = current == null
+                ? DungeonEditorControlProjection.empty("")
                 : current;
         features.dungeon.application.editor.session.DungeonEditorSessionSnapshot.ControlsData safeControls =
                 controls == null
                         ? features.dungeon.application.editor.session.DungeonEditorSessionSnapshot.controlsData(null)
                         : controls;
-        return new features.dungeon.api.DungeonEditorControlsSnapshot(
+        return new DungeonEditorControlProjection(
                 safeCurrent.maps(),
                 toPublishedMapId(safeControls.selectedMapId()),
                 DungeonEditorValueProjectionServiceAssembly.viewMode(safeControls.viewMode()),
@@ -39,12 +39,12 @@ final class DungeonEditorControlsProjectionServiceAssembly {
                 safeControls.commandOutcome());
     }
 
-    private static features.dungeon.api.DungeonEditorControlsSnapshot snapshot(
+    private static DungeonEditorControlProjection snapshot(
             features.dungeon.application.editor.session.DungeonEditorSessionSnapshot.SnapshotData snapshot,
             List<Integer> reachableLevels,
             boolean surfacePresent
     ) {
-        return new features.dungeon.api.DungeonEditorControlsSnapshot(
+        return new DungeonEditorControlProjection(
                 publishedMapSummaries(snapshot.maps()),
                 toPublishedMapId(snapshot.selectedMapId()),
                 DungeonEditorValueProjectionServiceAssembly.viewMode(snapshot.viewMode()),

@@ -60,6 +60,10 @@ public record CorridorBindings(
         return new CorridorBindings(waypoints, updated, anchorBindings, anchorRefs);
     }
 
+    public CorridorBindings withDoorBindings(List<CorridorDoorBinding> nextDoorBindings) {
+        return new CorridorBindings(waypoints, nextDoorBindings, anchorBindings, anchorRefs);
+    }
+
     public CorridorBindings withoutDoorBindingForRoom(long roomId) {
         if (roomId <= MISSING_ROOM_ID) {
             return this;

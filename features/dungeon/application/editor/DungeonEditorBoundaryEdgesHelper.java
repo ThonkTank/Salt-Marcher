@@ -7,6 +7,7 @@ import features.dungeon.application.editor.DungeonEditorInteractionValues.CellKe
 import features.dungeon.application.editor.DungeonEditorInteractionValues.TravelHeading;
 import features.dungeon.application.editor.DungeonEditorInteractionValues.VertexKey;
 import features.dungeon.application.editor.DungeonEditorMainViewInteractionValues.EdgeKey;
+import features.dungeon.domain.core.component.boundary.BoundaryKind;
 
 final class DungeonEditorBoundaryEdgesHelper {
     Set<EdgeKey> internal(Set<CellKey> cells) {
@@ -21,7 +22,7 @@ final class DungeonEditorBoundaryEdgesHelper {
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             Set<EdgeKey> internalEdges,
             int level,
-            features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind kind
+            BoundaryKind kind
     ) {
         Set<EdgeKey> result = new LinkedHashSet<>();
         if (snapshot == null) {
@@ -37,7 +38,7 @@ final class DungeonEditorBoundaryEdgesHelper {
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             Set<CellKey> cells,
             int level,
-            features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind kind
+            BoundaryKind kind
     ) {
         return existingInternal(snapshot, internal(cells), level, kind);
     }
@@ -46,7 +47,7 @@ final class DungeonEditorBoundaryEdgesHelper {
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             Set<CellKey> cells,
             int level,
-            features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind kind
+            BoundaryKind kind
     ) {
         Set<EdgeKey> clusterEdges = new LinkedHashSet<>(internal(cells));
         clusterEdges.addAll(outer(cells));
@@ -91,7 +92,7 @@ final class DungeonEditorBoundaryEdgesHelper {
             Set<EdgeKey> internalEdges,
             DungeonEditorWorkspaceValues.Boundary boundary,
             int level,
-            features.dungeon.domain.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind kind
+            BoundaryKind kind
     ) {
         if (boundary.edge() == null
                 || boundary.edge().from() == null

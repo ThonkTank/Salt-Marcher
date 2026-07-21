@@ -1,5 +1,7 @@
 package features.dungeon.domain.core.structure.room;
 
+import features.dungeon.domain.core.component.boundary.BoundarySegment;
+
 import java.util.Map;
 import java.util.Set;
 import features.dungeon.domain.core.geometry.Cell;
@@ -11,7 +13,7 @@ import features.dungeon.domain.core.structure.room.RoomClusterBoundaryStretchPla
 final class RoomBoundaryStretchBoundaryLookup {
 
     boolean hasPerpendicularBoundary(
-            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
+            Map<DungeonBoundaryKey, BoundarySegment> boundaries,
             Set<DungeonBoundaryKey> sourceKeys,
             BoundaryVertex vertex,
             BoundaryStretchOrientation sourceOrientation
@@ -20,7 +22,7 @@ final class RoomBoundaryStretchBoundaryLookup {
     }
 
     boolean hasPerpendicularBoundaryOutsidePath(
-            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
+            Map<DungeonBoundaryKey, BoundarySegment> boundaries,
             Set<DungeonBoundaryKey> sourceKeys,
             Set<DungeonBoundaryKey> pathKeys,
             BoundaryVertex vertex,
@@ -30,14 +32,14 @@ final class RoomBoundaryStretchBoundaryLookup {
     }
 
     private boolean hasPerpendicularBoundaryIgnoring(
-            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
+            Map<DungeonBoundaryKey, BoundarySegment> boundaries,
             Set<DungeonBoundaryKey> sourceKeys,
             Set<DungeonBoundaryKey> ignoredKeys,
             BoundaryVertex vertex,
             BoundaryStretchOrientation sourceOrientation
     ) {
         Set<DungeonBoundaryKey> safeIgnoredKeys = ignoredKeys == null ? Set.of() : ignoredKeys;
-        for (Map.Entry<DungeonBoundaryKey, DungeonClusterBoundary> entry : boundaries.entrySet()) {
+        for (Map.Entry<DungeonBoundaryKey, BoundarySegment> entry : boundaries.entrySet()) {
             if (sourceKeys.contains(entry.getKey()) || safeIgnoredKeys.contains(entry.getKey())) {
                 continue;
             }

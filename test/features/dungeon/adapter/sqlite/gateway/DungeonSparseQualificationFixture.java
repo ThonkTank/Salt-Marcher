@@ -15,7 +15,7 @@ import java.util.Map;
 import platform.persistence.FeatureStoreHandle;
 import platform.persistence.SqliteDatabase;
 
-/** Shared fresh-schema sparse setup for the M5 read and runtime qualification routes. */
+/** Shared fresh-schema sparse setup for read-scaling and runtime qualification routes. */
 public final class DungeonSparseQualificationFixture {
 
     private DungeonSparseQualificationFixture() {

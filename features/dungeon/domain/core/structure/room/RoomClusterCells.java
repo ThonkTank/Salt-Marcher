@@ -43,6 +43,19 @@ final class RoomClusterCells {
         return CellOrdering.sortedCells(filtered);
     }
 
+    static Cell primaryAnchor(java.util.Map<Integer, ? extends Iterable<Cell>> cellsByLevel) {
+        List<Cell> cells = new ArrayList<>();
+        if (cellsByLevel != null) {
+            cellsByLevel.values().forEach(levelCells -> {
+                if (levelCells != null) {
+                    levelCells.forEach(cells::add);
+                }
+            });
+        }
+        List<Cell> ordered = sortedCells(cells);
+        return ordered.isEmpty() ? new Cell(0, 0, 0) : ordered.getFirst();
+    }
+
     static List<Set<Cell>> connectedComponents(Set<Cell> cells) {
         Set<Cell> remaining = new LinkedHashSet<>(cells == null ? Set.<Cell>of() : cells);
         List<Set<Cell>> components = new ArrayList<>();

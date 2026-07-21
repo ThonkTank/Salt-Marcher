@@ -4,8 +4,6 @@ import java.util.List;
 
 public record DungeonMapSnapshot(
         DungeonTopologyKind topology,
-        int width,
-        int height,
         List<DungeonAreaSnapshot> areas,
         List<DungeonBoundarySnapshot> boundaries,
         List<DungeonFeatureSnapshot> features,
@@ -14,27 +12,14 @@ public record DungeonMapSnapshot(
 
     public DungeonMapSnapshot {
         topology = defaultTopology(topology);
-        width = positiveDimension(width);
-        height = positiveDimension(height);
         areas = immutableAreas(areas);
         boundaries = immutableBoundaries(boundaries);
         features = immutableFeatures(features);
         editorHandles = immutableEditorHandles(editorHandles);
     }
 
-    public DungeonMapSnapshot(
-            DungeonTopologyKind topology,
-            int width,
-            int height,
-            List<DungeonAreaSnapshot> areas,
-            List<DungeonBoundarySnapshot> boundaries,
-            List<DungeonFeatureSnapshot> features
-    ) {
-        this(topology, width, height, areas, boundaries, features, List.of());
-    }
-
     public static DungeonMapSnapshot empty() {
-        return new DungeonMapSnapshot(DungeonTopologyKind.SQUARE, 1, 1, List.of(), List.of(), List.of(), List.of());
+        return new DungeonMapSnapshot(DungeonTopologyKind.SQUARE, List.of(), List.of(), List.of(), List.of());
     }
 
     @Override
@@ -59,10 +44,6 @@ public record DungeonMapSnapshot(
 
     private static DungeonTopologyKind defaultTopology(DungeonTopologyKind topology) {
         return topology == null ? DungeonTopologyKind.SQUARE : topology;
-    }
-
-    private static int positiveDimension(int dimension) {
-        return Math.max(1, dimension);
     }
 
     private static List<DungeonAreaSnapshot> immutableAreas(List<DungeonAreaSnapshot> areas) {

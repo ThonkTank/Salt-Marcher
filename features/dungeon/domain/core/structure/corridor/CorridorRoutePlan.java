@@ -12,8 +12,7 @@ import features.dungeon.domain.core.geometry.Cell;
 
 public record CorridorRoutePlan(
         List<Cell> cells,
-        long waypointClusterId,
-        Cell waypointClusterCenter
+        long waypointClusterId
 ) {
     private static final int MINIMUM_INTERIOR_SPLIT_ROUTE_CELLS = 3;
     private static final long MISSING_CLUSTER_ID = 0L;
@@ -21,7 +20,6 @@ public record CorridorRoutePlan(
     public CorridorRoutePlan {
         cells = cells == null ? List.of() : List.copyOf(cells);
         waypointClusterId = Math.max(MISSING_CLUSTER_ID, waypointClusterId);
-        Objects.requireNonNull(waypointClusterCenter);
     }
 
     public CorridorBindings bindInteriorAnchors(CorridorBindings bindings, List<CorridorAnchor> routeAnchors) {
@@ -47,13 +45,7 @@ public record CorridorRoutePlan(
     }
 
     private CorridorWaypoint waypointFor(Cell absoluteCell) {
-        return new CorridorWaypoint(
-                waypointClusterId,
-                new Cell(
-                        absoluteCell.q() - waypointClusterCenter.q(),
-                        absoluteCell.r() - waypointClusterCenter.r(),
-                        absoluteCell.level()),
-                absoluteCell.level());
+        return new CorridorWaypoint(waypointClusterId, absoluteCell);
     }
 
     private static CorridorAnchor routeAnchorAt(Cell cell, List<CorridorAnchor> routeAnchors) {
