@@ -103,32 +103,31 @@ operation prepared and validated by that owner.
 
 ### Figure 1: Logical capability context
 
-Arrows mean “uses the published capability of”. Boxes are business owners;
-presentation and storage adapters are outside the ownership boxes.
+Arrows mean “uses the published capability of”. Named capability boxes are
+business owners; the transaction mechanism owns no business state.
+Presentation and storage adapters are outside the ownership boxes.
 
 ```text
-Raster / Graph / Key / Travel / Player Display adapters
-                         |
-                         v
-            +---------------------------+
-            | Dungeon Query & Authoring |
-            +---------------------------+
-               |         |          |
-               v         v          v
-        Authored World  Runtime   Exchange & Recovery
-               |         |
-               +----+----+
-                    v
-          Dungeon Spatial Context
-           /      |       |         \
-          v       v       v          v
-       Travel  Placement  Perception  Actor Autonomy
-          \       |       |          /
-           +------+------+---------+
-                     v
-             Campaign Step Coordinator
-                     |
-        Actor / Calendar / Encounter / Loot owners
+Adapters --commands/queries--> [Catalog]
+Adapters --commands/queries--> [Authoring Workspace]
+Adapters --queries-----------> [Query Projections]
+Adapters --commands----------> [Exchange]
+Adapters --commands----------> [Recovery]
+
+[Authoring Workspace] --commands--> [Authored World]
+[Query Projections] --reads-------> [Authored World]
+[Query Projections] --reads-------> [Dungeon Runtime]
+[Query Projections] --reads-------> [Perception And Knowledge]
+[Exchange] --prepares-------------> [Catalog] + [Authored World]
+[Recovery] --runs-----------------> owner-defined migrations
+
+[Authored World] + [Dungeon Runtime] --publish--> [Spatial Context]
+[Travel] + [Perception] + [Actor Autonomy] --query--> [Spatial Context]
+[Travel] + [Authoring] + [Actor Autonomy] --prepare--> [Campaign Placement]
+[Travel] + [Actor Autonomy] --prepare--> [Decision Inbox]
+
+Initiating capability --enlists--> [Campaign Transaction]
+[Campaign Transaction] --applies--> owner-defined durable changes + outbox
 ```
 
 This diagram is logical. It does not prescribe source folders, processes, or
@@ -142,6 +141,15 @@ Owns Dungeon identity, name, archive/trash lifecycle, duplication request, and
 the association between a catalog entry and its authored and runtime roots. It
 does not own geometry, runtime positions, or external campaign objects.
 
+`DungeonCatalog` is the only public command entry for archive, unarchive,
+restore-from-trash, trash, final destruction, and duplication. Archive changes
+Catalog lifecycle state and pauses active Dungeon Runtime atomically while
+preserving links and runtime state. Duplication asks the Authored World to
+prepare new authored identities and rewritten internal references, preserves
+external references, omits runtime and history, then commits the new Catalog and
+authored roots together. Exchange and Recovery do not own Catalog lifecycle
+commands; Recovery exposes a distinct restore-from-backup operation.
+
 ### Dungeon Authored World
 
 Owns the complete portable Dungeon definition:
@@ -153,8 +161,9 @@ Owns the complete portable Dungeon definition:
 - Areas, parametric Paths, Passages, links, Dungeon-owned Trap and Curiosity
   definitions, trigger fields, environmental source definitions, and initial
   mechanism state
-- placements and stable references for externally owned Encounters, Loot,
-  actors, places, and other campaign truth without copying that foreign truth
+- stable placement identities, portable start or design anchors, and references
+  for externally owned Encounters, Loot, actors, places, and other campaign
+  truth without copying that foreign truth
 - authored revision and invariants for one or several Dungeons changed by one
   command
 
@@ -185,15 +194,20 @@ revision. Its raster translation may be repaired without changing committed
 truth. Acceptance performs one normal authored commit; discard removes the
 entire draft independently of ordinary undo depth.
 
+Every successful undoable authored commit returns an opaque commit receipt with
+the affected owner revisions and semantic inverse intents. The workspace stores
+receipts rather than owner snapshots. Undo and redo submit new coordinated
+commands through the same owner boundaries as the original change; a stale or
+conflicting inverse is rejected with repair choices and never partially applied.
+
 ### Dungeon Runtime Context
 
 Owns durable Dungeon-local exploration facts that must not enter a portable
 authored package:
 
 - current Passage, light, sound, mechanism, Trap charge, and reset state
-- physical tracks and transient or persistent environmental events
-- active exploration context, open Dungeon prompts, runtime logs, and runtime
-  archive/pause state
+- physical tracks and transient or persistent Dungeon environmental events
+- active exploration context, runtime logs, and runtime archive/pause state
 - the authored revision against which current routes and visibility were
   validated
 
@@ -202,18 +216,29 @@ records the current campaign instance. Editing authored geometry during
 exploration may propose runtime relocations or invalidations, but only an atomic
 campaign commit may publish both results.
 
-### Actor Placement
+### Campaign Placement
 
-Actor Placement is a project capability. It owns each actor's current spatial
-context, provider-specific position, heading, and committed movement-group
-membership. Party, NPC, monster, and inventory capabilities retain their own
-identity and mechanical truth.
+Campaign Placement is a project capability. It owns each spatially movable
+actor, group, or campaign object's current spatial context, provider-specific
+position, and heading, plus committed movement-group membership where
+applicable. Party, NPC, monster, item, inventory, and other capabilities retain
+their own identity and mechanical truth.
 
 Dungeon defines and validates Dungeon coordinates through Dungeon Spatial
-Context; it does not own the foreign actor placed at those coordinates. Travel,
-authoring relocation, and Actor Autonomy prepare placement changes through this
-capability. Moving across a Dungeon, Hex, or external-place boundary therefore
-changes one placement truth instead of synchronizing feature-specific copies.
+Context; it does not own the foreign actor, group, or object placed at those
+coordinates. Travel, authoring relocation, and Actor Autonomy prepare placement
+changes through this capability. Moving across a Dungeon, Hex, or external-place
+boundary therefore changes one placement truth instead of synchronizing
+feature-specific copies.
+
+An authored actor, Encounter, or movable-object placement supplies a stable
+placement identity and portable start anchor. Once that actor, group, or object
+is active, Campaign Placement is the only current-position owner and the
+authored anchor is not another live location. Activation and deactivation are
+atomic owner operations. A resolved spatial-binding query returns exactly one
+authoritative current anchor and treats simultaneous authored and runtime
+currency as an invariant violation. Static Loot and Curiosities remain authored
+placements and move only through authoring.
 
 ### Dungeon Spatial Context
 
@@ -234,29 +259,58 @@ content.
 
 Produces revisioned, immutable projections for raster, graph, Dungeon Key,
 detail, diagnostics, document output, and player visibility. All projections
-carry the source revisions from which they were built. Late results cannot
-replace projections from newer authored or runtime revisions.
+carry the complete authored, runtime, Perception, and other owner revisions from
+which they were built. A source-specific projection omits only owners it does
+not read. A late result cannot replace a projection built from any newer source
+revision.
 
 A specialized view may aggregate or omit facts, but it cannot invent a second
 Room, connection, passability, description, knowledge, or selection identity.
 Every view addresses the same stable references.
 
-### Dungeon Exchange And Recovery
+Player display and visibility-filtered export consume only an audience-specific
+projection contract. `DungeonAudienceQuery` combines authored, runtime,
+Perception, and an explicit audience profile with deny-by-default filtering. Its
+closed player-audience result type cannot contain GM-only prose, private
+discovery notes, hidden references, diagnostics, or unrestricted authored
+objects; a GM-document profile uses a distinct result type rather than optional
+player fields. Temporary reveal is an explicit revisioned projection input and
+does not change knowledge truth.
+
+### Dungeon Exchange
 
 Owns versioned authored-package import/export, human-readable document export,
-backup orchestration, migration safety, restore, and duplication mapping.
+and the import-plan lifecycle. It owns no Catalog lifecycle or duplication
+command.
 
 - portable packages contain authored truth and external references only
-- human-readable export consumes projections and a visibility profile
+- human-readable export consumes audience projections and a visibility profile
 - import first creates a conflict-resolution plan, then commits all accepted
   identity and reference mappings atomically
-- duplication allocates new authored identities, rewrites internal references,
-  preserves external references, and omits runtime and history
-- migrations operate on backups and never make a partially migrated Dungeon
-  writable
+
+Imported bytes remain untrusted until an exchange-owned gate has staged them,
+validated their allowed format and structure, bounded their resource demand,
+and represented external references as import-scoped tokens. Package-provided
+paths or identifiers never become local filesystem paths or foreign owner
+identities directly. Only a fully validated, GM-resolved import plan may prepare
+Catalog and Authored World changes. Exact codec, archive, validation-error, and
+resource-limit shapes belong to the package contract.
 
 Storage adapters implement this capability's durable ports; they do not decide
 identity, conflict, compatibility, or recovery policy.
+
+### Dungeon Recovery
+
+Owns backup retention policy, manual and pre-migration backup operations,
+restore testing, migration orchestration, retry, restore from backup, and the
+read-only failure mode. Each business owner still owns its logical schema and
+migration. Recovery invokes those migrations against privately staged data and
+never becomes an owner of Dungeon meaning.
+
+Recovery artifacts are addressed by internally generated identities beneath an
+application-private root. Imported names and paths never select a backup,
+backup-restore, trash, or destruction target. Detailed filesystem permissions,
+no-follow behavior, and codec rules belong to the recovery contract.
 
 ### Project Travel
 
@@ -265,9 +319,10 @@ and external place boundaries. It owns journeys, routes, pursuit, exploration
 round configuration, movement overrides, interruption state, and the factual
 travel log. A Dungeon provider supplies Dungeon-specific route and cost facts.
 
-The full Dungeon travel-control workspace uses this capability. The global
-compact `Reise` contribution may select and display a current provider context,
-but it remains a separate readback and does not become another command owner.
+The full navigable Dungeon travel-control workspace is `Reisen` and uses this
+capability. The global compact `Reise` contribution may select and display a
+current provider context, but it remains a command-free readback and does not
+become another command owner.
 
 ### Perception And Knowledge
 
@@ -281,6 +336,17 @@ The same committed perception result feeds GM notification, route interruption,
 autonomy, Fog of War, and player output. No presentation adapter recomputes a
 private visibility truth.
 
+### Campaign Decision Inbox
+
+The project-wide Decision Inbox owns durable pending GM decisions, delivery
+status, acknowledgement, and the continuation or abort reference for the
+initiating operation. Event definitions and candidate production remain with
+their source owners; the Inbox does not decide fictional outcomes.
+
+Travel interruption and its pending decision commit together. Presentation
+reads a durable outbox and may retry delivery idempotently, so a crash or UI
+failure after the business commit cannot lose or duplicate the decision.
+
 ### Actor Autonomy
 
 Actor Autonomy owns enabled state, needs, job evaluation, reservations, current
@@ -289,10 +355,17 @@ explanations, and its factual log. Dungeon offers reachable local jobs and
 spatial operations. Foreign effects remain commands prepared by their owning
 capability.
 
-### Campaign Step Coordinator
+Its public capability separates GM controls and queries from step execution:
+enable, pause, disable, direct job assignment or cancellation, priorities,
+protection bounds, catch-up summaries, Decision Inbox references, explanations,
+and prepared autonomy steps all remain owned here. The Inbox alone owns and
+mutates the referenced pending decisions.
 
-The coordinator owns no business state. It coordinates atomic changes whose
-invariants span capability owners:
+### Use-Case Coordination And Campaign Transactions
+
+The capability that accepts an initiating command owns its stateless use-case
+coordination. It names the required participants and coordinates atomic changes
+whose invariants span capability owners:
 
 - live authoring plus required actor relocation and route invalidation
 - one completed travel segment plus position and campaign time
@@ -300,31 +373,51 @@ invariants span capability owners:
   random conflict results, and events
 - paired cross-Dungeon Passage links
 
-Each owner validates an intent against its own revision and returns an opaque
-prepared change. The coordinator commits all prepared changes in one local
-durable transaction or commits none. Business owners then publish facts from
-the committed result. Events are notifications after commit; they are not used
-to repair partial business state.
+Authoring coordinates live-edit and undo, Travel coordinates segments, Actor
+Autonomy coordinates autonomy steps, Catalog coordinates lifecycle changes, and
+Authored World coordinates paired links. There is no central coordinator that
+must change for every new operation family.
+
+Each owner first creates a side-effect-free prepared change against immutable
+revisioned input. `CampaignTransaction` then enlists the participants, rechecks
+their base revisions and invariants inside one short local durable transaction,
+applies only owner-defined changes, and commits all or none. Long-running
+calculation, routing, perception, and projection work never occurs while the
+write transaction is held.
+
+The durable commit includes a receipt containing the resulting owner revisions
+and an outbox of facts and pending deliveries. No owner publishes before commit;
+publication retries by operation identity and cannot duplicate a business
+effect. Cancellation is guaranteed until the operation crosses into the short
+commit section. A stale revision, owner rejection, or cancellation before that
+frontier applies no change.
 
 ## State Ownership And Consistency
 
 | State | Owner | Mutation path | Consistency boundary | Derived consumers |
 | --- | --- | --- | --- | --- |
+| Dungeon identity and lifecycle | Dungeon Catalog | Catalog lifecycle intent | Catalog plus required Runtime or Authored prepared changes | Catalog, links, runtime entry |
 | Dungeon geometry and semantic content | Dungeon Authored World | Validated authored command | One command may cover one or several linked Dungeons | Raster, graph, key, route, export |
+| Portable external placement identity and start anchor | Dungeon Authored World | Validated placement authoring | Authored commit or activation with Campaign Placement | Export, duplication, resolved binding |
 | Authoring preview and graph draft | Dungeon Authoring Workspace | Tool or graph intent | One transient workspace at a base revision | Authoring adapters only |
-| Editor undo/redo | Dungeon Authoring Workspace | Successful authored commits and inverse intent | Current editor session | Authoring controls |
-| Environment and Dungeon-local exploration | Dungeon Runtime Context | Runtime command or prepared campaign change | One Dungeon runtime transaction or Campaign Step | Travel, perception, player output |
-| Actor position, heading, and movement group | Actor Placement | Owner command or prepared campaign change | Campaign Step | Dungeon context, travel, perception, autonomy |
+| Editor undo/redo | Dungeon Authoring Workspace | Commit receipt submitted as coordinated inverse intent | Current editor session plus every affected owner | Authoring controls |
+| Environment and Dungeon-local exploration | Dungeon Runtime Context | Runtime command or prepared campaign change | One Dungeon transaction or initiating campaign operation | Travel, perception, player output |
+| Movable actor, group, or object position and heading | Campaign Placement | Owner command, activation, or prepared campaign change | Initiating campaign operation | Dungeon context, travel, perception, autonomy |
 | Journey, route, pursuit, movement overrides | Project Travel | Travel intent | One completed route segment | Travel workspace and compact context |
-| Campaign time | Calendar owner | Prepared time advance | Campaign Step | Travel, events, autonomy |
+| Campaign time | Calendar owner | Prepared time advance | Initiating campaign operation | Travel, events, autonomy |
 | Directional knowledge and discovery | Perception And Knowledge | Perception evaluation or GM override | One perception/campaign step | GM context, autonomy, Fog |
-| Needs, jobs, reservations, catch-up | Actor Autonomy | Confirmed campaign-time step or GM command | Campaign Step | Autonomy controls and summaries |
-| Encounter, Loot, actor, item, place truth | Owning external capability | Owner command only | Owner-defined or Campaign Step | Stable references from Dungeon |
-| Viewports, graph, key, descriptions, diagnostics | Dungeon Query Projections | Rebuild from committed revisions | Immutable projection revision | UI and exports |
+| Pending GM decision and delivery | Campaign Decision Inbox | Prepared decision or acknowledgement | Initiating operation plus durable outbox | Travel, autonomy, GM controls |
+| Needs, jobs, reservations, catch-up | Actor Autonomy | Confirmed campaign-time step or GM command | Initiating autonomy operation | Autonomy controls and summaries |
+| Encounter, Loot, actor, item, place truth | Owning external capability | Owner command only | Owner-defined or initiating operation | Stable references from Dungeon |
+| Import plan and untrusted staging | Dungeon Exchange | Package gate and GM mapping intent | One validated import operation | Import UI and prepared Catalog/Authored changes |
+| Backup, migration, and backup-restore operation | Dungeon Recovery | Recovery command against owner migrations | One recovery operation before writable publication | Recovery UI and diagnostics |
+| Viewports, graph, key, descriptions, diagnostics | Dungeon Query Projections | Rebuild from committed revisions | Immutable projection revision | GM UI and unrestricted exports |
+| Audience-filtered player and export output | Dungeon Query Projections | Rebuild through `DungeonAudienceQuery` | Immutable authored/runtime/perception revision tuple | Player display and filtered export |
 
 No API allows a consumer to update another capability's storage directly.
-Cross-owner invariants use prepared changes and the Campaign Step Coordinator,
-not compensating writes or shared mutable models.
+Cross-owner invariants use owner-defined prepared changes, initiator-owned
+coordination, and `CampaignTransaction`, not compensating writes, a central
+business coordinator, or shared mutable models.
 
 ## Public Capability Interfaces
 
@@ -334,17 +427,23 @@ contract specifications after this target is accepted.
 
 | Interface | Consumers | Required behavior |
 | --- | --- | --- |
+| `DungeonCatalog` | Catalog and lifecycle UI | Read identity and lifecycle; coordinate archive, unarchive, restore-from-trash, trash, destroy, and duplication through owner-prepared changes. |
 | `DungeonAuthoring` | Raster, graph, key, batch, import | Preview and commit typed intents against expected revisions; return accepted facts or typed rejection. |
-| `DungeonWorkspace` | Authoring adapters | Maintain selection, drafts, protected graph work, undo, redo, and conflict repair without owning authored truth. |
-| `DungeonQuery` | All Dungeon views, export | Serve bounded immutable projections with stable identities and source revisions. |
+| `DungeonWorkspace` | Authoring adapters | Maintain selection, drafts, protected graph work, commit receipts, undo, redo, and conflict repair without owning authored truth. |
+| `DungeonQuery` | GM Dungeon views and GM-authorized full document export | Serve bounded immutable projections with stable identities and source revisions. |
+| `DungeonAudienceQuery` | Player display and visibility-filtered export | Produce deny-by-default audience DTOs from explicit authored, runtime, perception, reveal, and audience revisions. |
 | `DungeonSpatialContext` | Travel, perception, autonomy | Provide route, cost, arrival, visibility, environment, track, and local job-offer facts without foreign business decisions. |
-| `DungeonRuntime` | Travel, perception, GM controls, Campaign Step | Read runtime context and prepare explicit runtime mutations or overrides. |
-| `ActorPlacement` | Travel, spatial providers, perception, autonomy | Read and prepare changes to one cross-context position, heading, and movement-group truth. |
-| `DungeonExchange` | Catalog and import/export UI | Plan and commit import, export authored packages, render documents, duplicate, backup, migrate, restore, archive, and destroy. |
+| `DungeonRuntime` | Travel, perception, GM controls, initiating coordinators | Read runtime context and prepare explicit runtime mutations or overrides. |
+| `CampaignPlacement` | Authoring, Travel, spatial providers, perception, autonomy | Read and prepare changes to one cross-context position, heading, and applicable movement-group truth. |
+| `DungeonExchange` | Import/export UI | Gate and plan untrusted import, commit validated mappings, export authored packages, and render audience-filtered documents. |
+| `DungeonRecovery` | Recovery UI | Create and restore-test backups, invoke owner migrations, retry or restore a backup, and keep failed state read-only. |
 | `Travel` | Dungeon/Hex workspaces and global compact context | Plan and commit journeys, segments, pursuit, overrides, interruption, and factual log entries. |
-| `Perception` | Travel, autonomy, GM and player views | Evaluate and publish one directional knowledge result with explicit GM override semantics. |
-| `ActorAutonomy` | GM controls and Campaign Step | Evaluate deterministic jobs, prepare bounded actions, expose explanations, and persist committed outcomes. |
-| `PreparedCampaignChange` | Campaign Step Coordinator | Carry owner, base revision, validation result, durable change, and published facts without exposing owner storage. |
+| `Perception` | Travel, autonomy, `DungeonAudienceQuery`, and GM views | Evaluate and publish one directional knowledge result with explicit GM override semantics. |
+| `CampaignDecisions` | Travel, autonomy, event sources, GM controls | Prepare, deliver, acknowledge, continue, or abort one durable pending GM decision without owning its fictional outcome. |
+| `ActorAutonomy` | GM controls and initiating coordinator | Control enabled state and jobs; prepare bounded steps and catch-up; expose explanations, Decision Inbox references, and committed outcomes. |
+| `DungeonAuthoredFamilyModule` | Dungeon compile-time composition | Contribute one family's commands, invariants, workspace tools, projections, durable/package codecs, and optional spatial facet. |
+| `PreparedCampaignChange` | Initiating coordinators and `CampaignTransaction` | Carry owner, base revision, side-effect-free owner change, and post-commit facts without exposing owner storage. |
+| `CampaignTransaction` | Initiating coordinators | Revalidate, atomically apply or roll back owner changes, record result revisions and outbox entries, and enforce the commit frontier. |
 
 Interfaces use stable typed identities, explicit absence, typed rejection
 reasons, revisions, and cancellation tokens where work may be long. UI strings,
@@ -355,47 +454,92 @@ boundary protocols.
 
 ### Authoring Commit
 
-1. An adapter translates input into a tool or graph intent.
-2. The Authoring Workspace requests the bounded spatial and semantic closure
-   required for that intent at revision `R`.
-3. Preview computes only on that immutable closure. Missing data is loaded
-   explicitly; it is never guessed.
-4. Commit sends the authored command and expected revision `R`.
-5. The Authored World validates invariants, identity preservation,
-   reassociation, and affected external references.
-6. During active exploration, Actor Placement, Dungeon Runtime, and Travel
-   prepare actor relocation and route invalidation changes.
-7. One local transaction commits every required prepared change and advances
-   each affected owner revision once.
-8. Touched-region facts invalidate derived projections and caches. Independent
-   queries remain available while new projections load.
+The workspace distinguishes direct gestures, immediate atomic edits, and
+protected graph drafts. A direct gesture previews transiently and commits on a
+valid completion; an immediate edit validates and commits without a separate
+preview decision; a graph draft remains an isolated branch until explicit
+accept or discard.
+
+1. An adapter translates input into a typed operation and the workspace enters
+   `loading-closure` at authored revision `R`.
+2. The workspace requests the exact touched and identity closure. Missing data
+   is loaded explicitly; it is never guessed.
+3. Direct preview enters `preview-ready`; protected graph work enters
+   `draft-ready` and preserves its intent journal and raster repair projection.
+4. Cancellation before commit returns to the previous committed truth while
+   preserving passive selection. Rejection or stale revision preserves the
+   intent or graph draft and exposes typed repair, reload, or discard actions.
+5. Commit sends the command and expected revision `R`. The Authored World and
+   each actually affected owner, such as Campaign Placement, Dungeon Runtime, or
+   Travel during live exploration, create side-effect-free changes for identity
+   preservation, reassociation, actor relocation, and route invalidation.
+6. The operation enters the non-cancellable commit section only after every
+   participant is prepared. `CampaignTransaction` revalidates and commits all
+   changes, one receipt, and the edit log atomically.
+7. Accepted work records the receipt for undo. Touched facts invalidate derived
+   generations. In-flight queries complete against their named revision; new
+   owner queries can address the committed revision immediately, while derived
+   views expose loading until their replacement projection is usable.
+8. Undo or redo submits the receipt's semantic inverse through the same steps;
+   stale inverse work is rejected without changing any owner.
 
 ### Travel Segment
 
-1. Travel asks the current Dungeon Spatial Context for a route segment and
-   versioned cost facts.
-2. Perception and event candidates are evaluated from the same authored and
-   runtime revisions.
-3. Travel, Actor Placement, Dungeon Runtime, Calendar, and any effect owners
-   prepare changes.
-4. The Campaign Step Coordinator commits position, heading, elapsed time,
-   tracks, applicable environment state, and factual log atomically.
-5. A prompt that requires GM resolution opens after commit. Failure to present
-   it is retryable and cannot roll back the completed segment.
-6. Autoroute continuation always starts from the newly committed revisions.
+1. Travel moves from `planning` to cancellable `preparing-segment` and asks the
+   current Dungeon Spatial Context for route and cost facts from an explicit
+   authored/runtime revision tuple.
+2. Perception and source-owned event candidates are evaluated from the same
+   tuple. A required GM decision is prepared for the Decision Inbox rather than
+   represented only as a UI action.
+3. Travel, Campaign Placement, Dungeon Runtime, Perception, Calendar, Decision
+   Inbox, and any effect owners prepare changes.
+4. The operation crosses the commit frontier only after preparation.
+   `CampaignTransaction` commits position, heading, elapsed time, tracks,
+   knowledge, interruption, pending decision, environment state, and factual
+   log atomically.
+5. The resulting durable journey state is `ready-to-continue`,
+   `prompt-pending`, `paused`, `blocked`, `failed`, `completed`, or `aborted`,
+   with its specific reason and permitted next actions.
+6. Prompt delivery retries idempotently from the outbox. A delivery failure does
+   not roll back the segment or lose the pending decision. Continue and abort
+   address that decision explicitly.
+7. Autoroute continuation always starts from the newly committed revisions.
 
 ### Actor Autonomy Step
 
 1. The GM confirms a campaign-time boundary.
-2. Autonomy queries needs, local job offers, reachability, danger, and
-   reservations from revisioned owner snapshots.
-3. Candidate choice is deterministic; random input is created only for bounded
-   non-party conflict after cancellation is no longer possible.
-4. Every affected owner prepares its state change.
-5. Party danger or another GM-owned decision rejects preparation and leaves the
-   step paused before mutation.
-6. The coordinator commits all actor, movement, time, reservation, effect,
-   random-result, and log facts atomically.
+2. Autonomy enters cancellable `evaluating` and reads one shared revision tuple.
+   It obtains local offers and spatial facts in bulk, bounds candidate and route
+   work, and resolves reservations in a deterministic planning phase.
+3. Candidate choice remains deterministic. Party danger or another GM-owned
+   decision takes a separate pause branch: Autonomy prepares only its pause or
+   catch-up boundary, and the Decision Inbox prepares its own entry. Their
+   atomic commit leaves movement, campaign time, needs, jobs, effects, and
+   random results unchanged, then ends as `paused-for-decision`.
+4. When no decision blocks the action, work that cannot stay inside the
+   qualified bound returns a typed
+   progress-capable result rather than starting unbounded hidden work.
+5. Otherwise every affected owner prepares its state change. Random input for bounded
+   non-party conflict is created only at the commit frontier and is recorded in
+   the same atomic result.
+6. `CampaignTransaction` commits all need, job, group, reservation, movement,
+   time, applicable foreign-effect, random-result, event, applicable decision,
+   and log facts atomically.
+7. The final state is `committed`, `paused-for-decision`, `rejected`, or
+   `cancelled`. Owner rejection identifies the owner and repairable cause while
+   preserving the previous confirmed campaign-time boundary.
+
+### Catalog, Import, And Recovery Operations
+
+- Catalog lifecycle commands expose the prepared participants, destructive
+  boundary, progress, typed rejection, and final lifecycle state. Archive and
+  Runtime pause are one transaction; cancellation before commit changes neither.
+- Import proceeds through `staging`, `validating`, `mapping-required`,
+  `ready-to-commit`, and a short atomic commit. Failure or cancellation destroys
+  staging only and leaves existing Dungeons unchanged.
+- Recovery exposes backup creation, restore-test, migration validation,
+  publication, retry, and restore-from-backup as distinct states. No failed or
+  partially validated migration becomes writable.
 
 ## Sparse Spatial And Projection Architecture
 
@@ -403,7 +547,7 @@ The complete Dungeon is one logical whole, but it is never a mandatory in-memory
 or query workset.
 
 - spatial truth is partitioned by stable coordinate regions and indexed by
-  identity, bounds, relationship, and revision
+  identity, bounds, relationship, reverse dependency, and revision
 - a viewport loads the visible region plus bounded prefetch; a command loads
   the touched region plus the exact identity closure required by its invariant
 - an identity appears once in a result even when it crosses several spatial
@@ -412,14 +556,25 @@ or query workset.
 - graph, key, routing, description, heatmap, and visibility indexes are derived
   and independently rebuildable from authoritative facts
 - caches are bounded, revision-keyed, and invalidated by committed touched-fact
-  sets; cache presence never changes correctness
+  and dependency keys; invalidation advances affected generations rather than
+  scanning every cached result, and cache presence never changes correctness
 - progressive loading distinguishes loading, usable partial projection, and
   complete requested projection
 - replacement work such as hover, pointer preview, graph analysis, visibility,
-  and route search is cancellable and may be superseded by a newer request
+  and route search carries one operation scope, deadline, and generation; it is
+  cancellable, supersedable, and cannot leave an unbounded task queue
 
 This keeps ordinary work proportional to visible or touched facts rather than
 all off-screen Dungeon content.
+
+An exact closure is a correctness boundary, not permission to hydrate the whole
+Dungeon. Interactive work records its region, fact, byte, and traversal counts
+against the existing latency budgets. Work estimated to exceed that class
+becomes a progressive heavy operation before expensive traversal begins; it
+streams bounded work units, exposes progress, remains cancellable until commit,
+and never weakens invariant validation. Contracts define the qualification
+budgets and typed escalation result without imposing a fixed coordinate limit on
+valid authored Dungeons.
 
 ## Extensibility Model
 
@@ -427,27 +582,32 @@ Extensibility is compile-time capability composition, not runtime plugins.
 
 ### New Authored Object Or Tool Family
 
-A new family owns its authored facts, invariants, commands, projection
-contributions, storage mapping, package mapping, and optional spatial behavior
-as one vertical slice. It registers those contributions through typed extension
-interfaces. A tool produces commands for one or more authored families but does
-not modify query, storage, or render internals directly.
+A new family encapsulates its authored fact and invariant contributions,
+commands, projections, storage mapping, package mapping, and optional spatial
+behavior as one vertical slice under Dungeon Authored World ownership. One
+`DungeonAuthoredFamilyModule` contributes those parts through a typed
+compile-time contract. A Dungeon-owned composition list is the only shared
+registration point. A tool produces commands for one or more authored families
+but does not modify query, storage, or render internals directly.
 
 Every spatial family is purpose-specific. A generic Marker or Prop extension
 cannot bypass ownership: authored furnishings and table-facing interactions are
 Curiosities, while Encounter and Loot placements reference their external
 owners.
 
-Adding the family may change the Dungeon Authored World and its own adapters. It
-must not require changes to Travel, shell composition, unrelated features, or
-generic persistence mechanisms unless it deliberately publishes a new spatial
-capability.
+Adding the family changes its module, its owner-defined mappings, and the one
+Dungeon composition list. Stable Workspace, Query, Exchange, and durable ports
+consume contributions without family-specific switches. It must not require
+changes to Travel, shell composition, unrelated features, or generic persistence
+mechanisms unless it deliberately publishes a new spatial capability.
 
 ### Travel, Time, Or Event Rule Change
 
-Movement and event calculations use explicitly versioned rule profiles behind
-Travel policies. A rule change replaces or adds one profile and its proof data.
-Dungeon continues to publish neutral geometry, terrain, Passage, and event
+Movement calculations use explicitly versioned rule profiles behind Travel
+policies. Calendar owns time advancement; each event source owns its candidate
+rule; the Decision Inbox owns only a resulting pending GM decision. A rule
+change replaces or adds a profile at the owner of its result plus its proof
+data. Dungeon continues to publish neutral geometry, terrain, Passage, and event
 facts. Presentation and persistence consume the same versioned result rather
 than duplicating rules.
 
@@ -459,29 +619,53 @@ adapter contains business validation, identity allocation policy, reassociation
 rules, travel decisions, or projection ownership. Replacing an adapter therefore
 does not change capability behavior or unrelated features.
 
+Replacing one owner adapter changes only that adapter and its focused proof.
+Replacing the persistence technology for all Dungeon capabilities changes the
+owner-adapter suite and the common transaction adapter, but no business
+capability, shell contract, or unrelated feature.
+
 ## Quality Architecture
 
 | Scenario | Architectural response | Measure from requirements |
 | --- | --- | --- |
 | Open a 100,000-cell sparse Dungeon | Indexed bounded viewport, progressive projection, no whole-Dungeon hydration | First usable viewport and context under 2 seconds p95 |
 | Pan or hover | Adapter-local input, bounded visible projection, replaceable work | 16 ms p95 |
-| Preview local edit | Immutable local closure, no persistence round trip after closure load | 50 ms p95 |
-| Commit ordinary edit | Exact touched closure, optimistic revision, one atomic owner transaction | 500 ms p95 |
+| Preview local edit | Measured immutable local closure, typed escalation before heavy traversal, no persistence round trip after closure load | 50 ms p95 |
+| Commit ordinary edit | Exact touched closure, optimistic revision, prepared change and short atomic apply | 500 ms p95 |
 | Run heavy route, graph, or batch preview | Background work with progress, cancellation, and independent query lanes | Progress within 100 ms; cancellable above 2 seconds |
-| Update passive player view | Shared revisioned perception projection and touched-region invalidation | 100 ms p95 |
-| Advance 200 autonomous actors | Local candidate indexes, bounded routes, prepared atomic step | 2 seconds p95; progress within 100 ms |
+| Update passive player view | Deny-by-default audience projection, shared perception revision, generation invalidation | 100 ms p95 |
+| Advance 200 autonomous actors | Shared snapshot, bulk local candidates, bounded routes, deterministic reservations, prepared atomic step | 2 seconds p95; progress within 100 ms |
 | Crash or failed migration | Atomic durable transaction, pre-mutation restore-tested backup, read-only failure mode | Wholly old or wholly new state; original and backup preserved |
+| Import malformed or oversized package | Untrusted staging, structural and resource gate, cancellable validation before domain materialization | Typed rejection; no Catalog, authored, runtime, or recovery mutation |
 
 Long-running work never owns the UI thread. Commands and query results expose
 loading, success, typed rejection, cancellation, and failure distinctly.
 Diagnostics record operation identity, duration, revision, affected counts, and
 failure category without copying authored content or secrets.
 
+Preparation and projection run against immutable committed snapshots outside the
+write transaction. Reads remain available on the previous committed revisions
+while a prepared change is applied. Qualification records total duration,
+write-transaction duration, stale retry rate, closure and invalidation counts,
+queue depth, and concurrent read latency; the transaction design is acceptable
+only while the existing viewport and player-output budgets remain green under
+concurrent commits.
+
+Workspace snapshots, protected graph drafts, and at least 200 ordinary undo
+receipts use encoded patches or copy-on-write state rather than full-Dungeon
+copies. Their shared retained-memory budget and large-operation classification
+belong to the editor contract and are verified together with frame latency.
+
 ## Persistence, Versioning, And Recovery
 
 Each capability owns its durable logical schema and migrations. One local
 transaction mechanism supports atomic prepared changes across owners without
 letting one owner read or write another owner's records directly.
+
+The mechanism revalidates owner revisions and invariants inside the transaction,
+applies only owner-defined changes, and stores result revisions plus outbox
+entries in the same commit. It does not perform routing, perception, projection,
+package parsing, or other unbounded work while the write transaction is held.
 
 Authored and runtime roots have independent versions. An authored package has a
 portable format version independent of internal storage version. Rule profiles,
@@ -491,8 +675,8 @@ result.
 Before migration, the recovery capability creates and restore-tests a backup.
 Migration builds and validates the new state before making it writable. Failure
 keeps the old state and backup intact and exposes diagnostics, retry, and
-restore. Rolling and manual backup retention is policy-driven rather than
-embedded in feature adapters.
+restore from backup. Rolling and manual backup retention is policy-driven rather
+than embedded in feature adapters.
 
 The durable factual log is append-only from the user's perspective. Corrections
 append explicit overrides or correction facts; they do not rewrite historical
@@ -504,12 +688,18 @@ not part of that log or portable packages.
 - business capabilities may depend only on other capabilities' published
   contracts, never their domain objects, adapters, or storage
 - presentation and storage depend inward on capability ports
-- Dungeon Spatial Context may read Dungeon owners but never Travel, Actor
+- Dungeon Spatial Context may read Dungeon owners but never Travel, Campaign
   Placement, Perception, or Autonomy internals
 - Travel, Perception, and Autonomy may consume Dungeon Spatial Context without
   taking ownership of Dungeon facts
-- the Campaign Step Coordinator depends on prepared-change contracts, not
-  feature-specific storage or business types
+- an initiating capability's coordinator may depend on participating published
+  contracts and `CampaignTransaction`, but never feature-specific storage
+- `CampaignTransaction` depends only on prepared-change and durable transaction
+  contracts, never feature business types
+- player display and visibility-filtered export depend on
+  `DungeonAudienceQuery`, never unrestricted `DungeonQuery`
+- Exchange may produce owner-prepared import changes only after its untrusted
+  package gate succeeds; package data never selects Recovery artifacts
 - derived projections depend on committed owner facts; owners never depend on
   projections
 - adapters may share feature-neutral execution, transaction, rendering,
@@ -538,6 +728,12 @@ forbid partially committed owner state. Eventual compensation was rejected as
 observable corruption for position/time, geometry/relocation, or conflict
 effects.
 
+Preparation is side-effect-free and may be long-running. Owner revalidation,
+apply, result revisions, and outbox insertion share one short durable
+transaction. A single central business coordinator was rejected because each
+new operation family would otherwise change that coordinator; the initiating
+capability owns orchestration instead.
+
 ### Authoritative state plus audit journal rather than full event sourcing
 
 Chosen because the product needs current durable truth, explicit logs, editor
@@ -565,6 +761,22 @@ Allowing each view to persist its own Room, connection, or passability model was
 rejected because synchronization would become a business workflow and produce
 multiple truths.
 
+### Explicit audience declassification rather than adapter filtering
+
+Chosen because the player display and visibility-filtered exports must be
+incapable of receiving GM-only truth. Filtering inside a renderer or generic
+query consumer was rejected because omission would remain optional and one
+adapter mistake could reveal authored secrets.
+
+### Separate Catalog, Exchange, Recovery, And Decision Ownership
+
+Catalog owns Dungeon lifecycle, Exchange owns package and document transfer,
+Recovery owns backup and migration operations, and the Decision Inbox owns
+durable pending GM decisions. One combined convenience capability was rejected
+because archive, import, restore-from-trash, restore-from-backup, prompt
+delivery, and destruction have distinct state, trust, and consistency
+boundaries.
+
 ## Verification And Acceptance
 
 While this document is `Draft`, its rules are review-owned and must not be
@@ -575,11 +787,18 @@ this target requires:
   identified as presentation-only
 - every stateful area has one owner, explicit mutation path, consistency
   boundary, and derived consumers
-- the authoring, travel-segment, and autonomy-step runtime views cover their
-  required failure and cancellation boundaries
+- authoring, travel, autonomy, Catalog, import, and recovery runtime views cover
+  loading, progress, cancellation, commit frontier, rejection, failure, repair,
+  and preserved-state boundaries relevant to that operation
+- every cross-owner operation names its initiating coordinator, prepared
+  participants, in-transaction revalidation, durable result, and outbox behavior
+- live authoring and undo use the same atomic owner set, and one resolved spatial
+  binding can never expose both authored and runtime current positions
 - each measurable quality need maps to an architectural response and a future
   production-route proof
 - the three extensibility scenarios remain local by the dependency rules above
+- player output and filtered export cannot consume unrestricted Dungeon facts;
+  malformed or oversized packages cannot reach domain or recovery mutation
 - no target decision relies only on a current class, package, adapter, storage
   schema, or migration artifact
 
