@@ -30,6 +30,8 @@ by the [Documentation Standard](project/documentation.md).
 
 ## Feature Documentation
 
+- [Actor Autonomy](autonomy/README.md): GM-authorized NPC and monster needs,
+  jobs, catch-up, and bounded non-party conflict resolution.
 - [Creatures](creatures/README.md): creature catalog, detail, and
   encounter-candidate reference behavior.
 - [Dungeon](dungeon/README.md): dungeon authoring, editing, travel, and domain

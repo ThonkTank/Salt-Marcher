@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-20
+Last Reviewed: 2026-07-21
 Source of Truth: Confirmed solution-neutral Dungeon exploration and travel
 behavior.
 
@@ -51,11 +51,12 @@ The runtime raster map:
 
 Travel options arise from both authored semantics and actual geometry.
 
-Authored doors and unified generated connection Paths provide internal travel
-meaning. A true Dungeon exit is a special Passage referencing another Dungeon
-or external campaign place, with direction, local description, passability, and
-optional additional travel time. A linked bidirectional transition has one
-independent Passage per side.
+Authored Passages and unified generated connection Paths provide internal travel
+meaning. Any Passage may link to another Passage in the same or another Dungeon
+or to an external campaign place. Link and return direction are independent,
+and each side has its own description, passability, sensory facts, and optional
+additional travel time. A missing target makes the link visibly broken and
+unavailable without deleting its local Passage.
 Geometry may additionally expose long-room and corridor travel, junctions,
 complex path forks, open vertical relationships, and potential climb, jump, or
 similar special routes.
@@ -67,10 +68,21 @@ journey or a deliberate position override.
 
 ## Passability Boundary
 
-A door or passage has one explicit travel fact: passable or not passable.
+A Passage has one explicit travel fact: passable or not passable.
 Passages occur at Volume boundaries and are distinct from the Paths that own
 route and travel properties. Their authored identities and descriptions may
 remain preserved even while no Passage geometry is assigned.
+
+Passability, geometric resolution, sight, light, and sound transmission are
+independent. A passable dangling Passage is not travelable until geometry or a
+valid linked target resolves it. Door, window, gate, or opening appearance does
+not infer any of those facts.
+
+Travel through a Passage link arrives on the valid cell immediately inside the
+target Passage with heading derived from that target. It uses ordinary
+through-time plus any GM-authored additional duration. Every Passage whose
+target is external to the current Dungeon is an available Dungeon entrance;
+the GM may alternatively begin exploration by deliberate position placement.
 
 Descriptions such as locked, blocked, heavy, hidden, cold, or difficult do not
 create additional passability logic. Authored secret status controls whether
@@ -146,7 +158,7 @@ Event sources include:
 - GM-configured location-, time-, or actor-dependent event pools
 - GM-authored traps
 - random encounters
-- deferred track and pursuit notifications
+- track, pursuit, and perception notifications
 
 A triggered event opens the relevant GM context and interrupts travel when
 resolution is required. SaltMarcher may open, repeat, or dismiss a prompt, but
@@ -154,10 +166,11 @@ does not decide or log its fictional outcome.
 
 A trap is an authored Dungeon Feature at an exact voxel anchor within a Volume;
 its trigger opens a description. The GM resolves it at the table and dismisses
-the prompt to continue or aborts travel. Other Dungeon Features, including
-initial Encounters, likewise begin with exact stationary voxel anchors.
+the prompt to continue or aborts travel. Other Dungeon Features likewise begin
+with exact voxel anchors; Encounter context may follow referenced mobile actors
+or groups.
 
-Only Traps and Encounters initially activate automatically through spatial
+Only Traps and Encounters activate automatically through spatial
 proximity. A Trap may define zero or more arbitrary voxel-set trigger fields
 distinct from its own anchor; fields may lie in several adjacent Volumes and
 follow their Volume geometry. Entering a field may notify and interrupt travel,
@@ -173,16 +186,16 @@ Reset Duration restores all Charges together. Per Trap, the GM chooses whether
 the countdown begins only at zero Charges or as soon as current Charges fall
 below maximum. Consuming another Charge does not restart a running countdown;
 completion restores all Charges regardless of intervening use. The GM may
-manually correct current Charges and reset state. A
-future low-priority monster routine may perform an explicit manual reset.
+manually correct current Charges and reset state. An explicit Actor Autonomy
+job may perform a reset.
 
 A Dungeon Encounter placement primarily uses the existing SaltMarcher Encounter
 capability for monster composition and statistics. The Dungeon adds its voxel
-anchor, local notes, detection context, and any later schedule. One concrete
+anchor, local notes, detection context, and autonomy integration. One concrete
 Encounter or monster group has at most one current Dungeon placement; repeated
 equivalent groups require copied Encounters. Movement changes the same group's
-anchor. Encounter detection provisionally uses a radius derived from the referenced monster
-statistics. Loot and Curiosity Features do not open automatically from
+anchor. Encounter detection uses the shared perception behavior. Loot and
+Curiosity Features do not open automatically from
 proximity alone.
 
 More interaction may be added later, but comprehensive trap simulation is not a
@@ -191,6 +204,11 @@ requirement.
 Position and time commit together or not at all for one travel segment. Opening
 the following event may fail and be retried without corrupting the committed
 travel state.
+
+Named state actions may atomically change several authored Passage, light,
+sound, or mechanism states. They run only after GM confirmation or an explicit
+authored trigger based on time, entering an area, elapsed duration, or a
+confirmed action. Their result persists and is logged.
 
 ## Factual Travel Log
 
@@ -203,35 +221,86 @@ SaltMarcher records confirmed:
 
 The log records what the system confirmed, not GM-decided event outcomes.
 
-## Deferred Monster, Perception, And Track Behavior
+## Perception And Knowledge
 
-The long-term design permits later addition of:
+Perception follows the versioned D&D 5e 2014 profile plus committed 3D Dungeon
+facts. Passive Perception or a GM-entered active result is compared with
+Stealth, while line of sight, lighting, distance, cover, and the actor's
+relevant senses gate detection. An entered active result remains in force until
+the GM clears it.
 
-- monster groups moving through simple daily schedules
-- automated perception contests between relevant groups
-- a GM-entered rolled result replacing party passive perception when a
-  character actively keeps watch
-- room-associated tracks
-- party or NPC groups searching for tracks with stored GM-entered results
-- automated NPC pursuit of unknown tracks as part of a simple routine
-- background NPC survival or perception checks and GM-entered party checks
-- GM notifications when a track is found, lost, or automatically followed
+Detection is directional: each actor or group keeps independent knowledge of
+the other. A new relevant sighting updates knowledge and notifies the GM. If the
+Party is involved, its active route and the involved autonomous behavior pause
+before further danger resolution. An Encounter begins only after GM
+confirmation.
 
-This capability has low delivery priority and is not required for the next
-implementation milestone.
+The GM may force known or unknown state with an optional logged reason. The
+override remains until an explicit reevaluation; ordinary perception updates do
+not silently replace it.
+
+Environmental perception starts with sight, light, and sound and remains
+extensible to senses such as blindsight or tremorsense. Movement, jobs,
+conflicts, and interactions create transient sound events; Features or places
+may own persistent sound sources.
+
+## Tracks And Pursuit
+
+Confirmed movement automatically creates tracks according to actor, movement,
+and surface. The GM may suppress generation, correct a track, or add one
+manually. A track records a known or unknown source, voxel path and direction,
+creation time, strength, search DC, and relevant movement facts.
+
+Track strength decays according to a versioned time, surface, environment, and
+movement profile that the GM may override. Track knowledge is separate per
+actor or group; the GM can inspect every track.
+
+Searching uses D&D Perception or Survival, or a GM-entered active result,
+against the track DC. GM confirmation records discovery. Following proceeds in
+segments along the stored path. Weak, broken, or crossing segments require a
+new check; loss or ambiguity pauses the route.
+
+## Passive Player Display
+
+The second-monitor player view is display-only and accepts no player input. Its
+camera automatically follows the active Party actor or group in the exploration
+initiative; autonomous NPC or monster jobs never switch it.
+
+Fog distinguishes currently visible space, dim remembered geometry without
+live details, and unknown space. Current visibility derives from D&D senses,
+light and darkness, darkvision, 3D line of sight, height, and cover. The
+knowledge filter is the union of the complete Party's knowledge.
+
+Party members and other actors appear only when allowed by party knowledge and
+current perception. The GM may temporarily reveal or hide presentation without
+changing discovery truth. The view updates within 100 ms p95 after movement or
+a visibility change.
+
+## Actor Autonomy Integration
+
+Dungeon travel supplies local position, routing, perception, tracks, and job
+offers to the project-wide Actor Autonomy capability. A confirmed campaign-time
+step may move enabled NPCs or monsters, update their jobs, and invoke explicit
+simple Feature interactions. The owning autonomy requirements define needs,
+selection, catch-up, conflict resolution, authority, atomicity, and logs.
+
+Party involvement is a hard boundary: an emerging danger pauses and notifies
+before autonomous resolution. Non-party conflicts may be resolved by the
+bounded abstract simulation owned by Actor Autonomy.
 
 ## Non-Goals
 
 Dungeon travel does not own or automate:
 
-- attacks, spells, combat actions, hit points, damage, or conditions
+- tactical attacks, spells, combat actions, or full combat rounds
 - tactical initiative or six-second combat rounds
 - encounter, trap, lock, or unrestricted exploration-action outcomes
 - direct player controls
 - full tactical Battlemap behavior
 
-An encounter or another open situation interrupts travel and is resolved at the
-table or by another owning feature.
+An encounter or another open situation involving the Party interrupts travel
+and is resolved at the table or by another owning feature. Actor Autonomy may
+resolve bounded non-party conflicts without making Dungeon travel their owner.
 
 ## Acceptance Outcomes
 
@@ -248,6 +317,9 @@ table or by another owning feature.
 - a position override never silently behaves like rule-based travel
 - triggered content pauses for GM resolution without SaltMarcher deciding the
   outcome
+- Party-involved danger pauses before autonomous conflict resolution
+- perception, tracks, Fog of War, and player display use the same committed
+  geometry, environment, and knowledge facts as travel
 - runtime travel state does not become authored Dungeon-package truth
 
 ## References
@@ -256,3 +328,7 @@ table or by another owning feature.
 - [Dungeon Travel State Requirements](./requirements-dungeon-travel-state.md)
 - [Dungeon Editor Requirements](./requirements-dungeon-editor.md)
 - [Dungeon Needs Interview](../../project/interviews/2026-07-20-dungeon-needs-interview.md)
+- [Actor Autonomy Requirements](../../autonomy/requirements/requirements-actor-autonomy.md)
+- D&D evidence:
+  `/home/aaron/Schreibtisch/projects/references/literature/dnd-basic-rules-2014-adventuring.md`
+  ([public source](https://www.dndbeyond.com/sources/dnd/basic-rules-2014/adventuring))

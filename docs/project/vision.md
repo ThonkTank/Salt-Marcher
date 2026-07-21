@@ -1,6 +1,6 @@
 Status: Active
 Owner: Aaron (Product Owner)
-Last Reviewed: 2026-07-10
+Last Reviewed: 2026-07-21
 Source of Truth: Owner-confirmed SaltMarcher users, jobs, non-goals, and
 quality bar.
 
@@ -34,10 +34,16 @@ participants, or a shared player-facing audience.
 - SaltMarcher is not a dice chat.
 - SaltMarcher does not replace physical table tools such as battle maps,
   miniatures, or dice.
-- SaltMarcher is not currently a player app or shared player view.
+- SaltMarcher is not a player-operated app or shared control surface. A passive
+  second-monitor output may present GM-selected, party-known information without
+  accepting player input.
 - SaltMarcher is not a remote-play platform.
-- SaltMarcher does not decide rules or make campaign decisions. The GM always
-  has the last word.
+- SaltMarcher does not ordinarily decide rules or make campaign decisions. The
+  GM always has the last word.
+- GM-enabled NPC and monster autonomy is the explicit exception: during
+  confirmed campaign time it may choose and execute bounded jobs and resolve
+  non-party conflicts within configured consequence limits. Party involvement
+  and decisions outside those limits return control to the GM.
 - SaltMarcher does not autonomously generate NPCs, places, or campaign content
   without the GM's knowledge and decision.
 

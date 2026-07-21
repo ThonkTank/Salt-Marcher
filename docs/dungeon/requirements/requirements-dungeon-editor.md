@@ -74,6 +74,19 @@ Its foundational fixed-Area tools are:
 - an eraser with matching shape and radius capabilities
 - selection that can move, distort, and edit existing geometry
 
+Selection supports one target, additive selection, rectangle, lasso, a 3D
+range, and type or property filters. If several objects occupy the hit point,
+the editor shows a candidate list that can be cycled; it never relies on a
+silent fixed hit priority. A spatial range touching only part of a Volume
+selects the whole Volume for transforms and does not cut it.
+
+Selected Volumes may be moved and copied on the grid, rotated in 90-degree
+steps, mirrored horizontally or vertically, and deformed through corner or edge
+handles. Ground-plan handles change the complete prism by default. Arbitrary
+angles and off-grid scaling are not required. Multiple selected Volumes
+transform as one arrangement while preserving their relative spacing and
+internal links; external Paths reroute in preview.
+
 Brush, surface tool, and eraser operate directly on geometry regardless of the
 current selection. Overlapping or newly connected geometry automatically merges
 Volumes; separating geometry automatically splits a Volume. Completion requires
@@ -100,24 +113,30 @@ The raster model supports two foundational geometry forms:
 
 - directly drawn anchored Areas whose geometry changes only through explicit GM
   edit or removal
-- unified generated 3D Paths between two or more endpoints or waypoints; one
-  Path may combine corridor, stair, ramp, ladder, shaft, and comparable segments
+- unified non-branching generated 3D Paths between two endpoints and optional
+  waypoints; one Path may combine corridor, stair, ramp, ladder, shaft, and
+  comparable segments
 
 Both forms produce bounded, standable geometric Volumes. Chambers, corridors,
 stair spaces, and comparable forms use equivalent movement semantics even when
 their authoring behavior differs. A Volume may be partitioned into navigation
 areas at meaningful internal decisions such as corridor junctions.
 
-A Path remains parametrically defined by endpoints, optional waypoints,
-cross-section, and further path properties. It may carry an authored connection
-form for individual segments, including corridor, stair, ramp, ladder, or
-shaft. SaltMarcher may propose the segment forms and route, while the GM can
-force a form or pin its position. Segment forms remain properties of the same
-Path rather than separate foundational content objects.
+A Path remains parametrically defined by two endpoints, optional waypoints,
+cross-section, and further path properties. One Path never branches;
+T-junctions and networks arise from separate Paths meeting at a common anchor
+or Volume. It may carry an authored connection form for individual segments,
+including corridor, stair, ramp, ladder, or shaft. SaltMarcher proposes route,
+Passages, and segment forms in a protected preview. The GM can override a form
+or refine the route with waypoints and pins. Segment forms remain properties of
+the same Path rather than separate foundational content objects.
 
 The Path's exact voxel geometry derives from those facts. Moving a connected
 endpoint produces a rerouted preview rather than a silent commit. Normal path
-editing changes points or parameters.
+editing changes points or parameters. Routing avoids existing geometry and
+rejects an impossible route instead of silently breaking through it. The
+default cross-section is 5 feet wide and 10 feet high; the complete Path or an
+individual segment may override width and height in 5-foot steps.
 
 The GM may explicitly convert a Path into a fixed Area for fully custom
 geometry. Conversion preserves its current materialized volume and ends
@@ -127,25 +146,65 @@ Every Path endpoint has an exact 3D anchor on a Volume boundary. When the GM
 connects Rooms without choosing exact anchors, SaltMarcher proposes suitable
 boundary anchors. The GM can move or pin them. Current navigation areas may be
 derived from geometry for routing and graph presentation but are not stable
-semantic endpoint identities.
+semantic endpoint identities. An unpinned endpoint may move to a suitable new
+boundary after geometry changes. A pinned endpoint follows its local position
+on the Volume and produces a repairable preview conflict if no valid route can
+preserve it.
 
-A Path meets each Volume through a separate Passage at its boundary. A Passage
-may be an open opening, door, hatch, secret door, or a comparable form. Its
-authored identity owns description and explicit binary passability; the Path
-owns route and travel properties. Path creation may initially create suitable
-open Passages, which the GM can later change into other Passage forms.
+A Path meets each Volume through a separate Passage at its boundary. Passage is
+one functional concept; door, opening, gate, hatch, window, secret door, and
+comparable forms are visual assets or decorations. A Passage may be placed only
+on an existing wall or Volume boundary, but one Volume side is sufficient for a
+dangling authored approach into unbuilt space.
 
-An actual exit from the Dungeon is a special Passage at an exact Volume
-boundary. It references another Dungeon or external campaign place and owns
-direction, local description, explicit passability, and optional additional
-travel time. Its opposite endpoint may remain absent while authoring. A linked
-bidirectional transition uses one independent Passage per side; each keeps its
-own description and passability while the two reference each other.
+Passage geometry uses complete 5-foot boundary faces, with 10-foot default
+height. Width and height remain resizable in 5-foot steps under the same
+identity. A wide Passage is authored as one wide object; adjacent independently
+created Passages remain independent. Overlap with another Passage is rejected
+atomically with a specific reason.
+
+Removing Passage geometry restores the wall but preserves Passage identity,
+description, and authored facts unassigned until reassigned or explicitly
+deleted. If later geometry has one unambiguous fit, it rebinds automatically;
+ambiguous fits require a preview and GM choice.
+
+Any Passage may link to another Passage in the same or another Dungeon or to an
+external campaign place. There is no special exit kind. Direction and return
+link are authored independently per side, and each side keeps its own
+description, passability, sensory facts, and optional added travel duration. A
+missing target leaves a visible broken and unavailable link until relinked or
+removed.
+
+## Feature Placement And Environment Authoring
+
+Encounter, Trap, Loot, and Curiosity use one shared placement mode: select the
+kind or owning source, place its exact voxel anchor, then edit kind-specific
+details. An existing Feature anchor may be dragged or reassigned across Volumes
+without changing identity. Several Features may share a voxel and use the same
+candidate-list selection behavior as other ambiguous hits.
+
+Trap trigger editing is a raster overlay with brush, range, and eraser tools.
+All trigger voxels for one Trap form one semantic set, even when they span
+Volumes. Feature layers are independently toggleable, show a type symbol, and
+show the name on hover or selection. Secret visibility follows the selected GM
+or player perspective.
+
+The editor lets the GM author light sources attached to geometry, Features,
+items, or actors, plus optional ambient light inherited from Dungeon through
+Level to Room. It independently edits passability and boundary transmission
+for sight, light, sound, and later sensory channels. Persistent sound sources
+and authored state actions may also be spatially anchored.
+
+A Feature may offer named, GM-confirmed state actions that atomically set or
+toggle several Passage, light, sound, or mechanism states. Only explicit
+authored triggers such as time, entering an area, elapsed duration, or a
+confirmed action may invoke such an action automatically. The resulting state
+persists until another action, trigger, or GM edit changes it.
 
 Additional raster capabilities include:
 
 - draw and reshape room and area geometry
-- place and edit walls, doors, unified connection Paths, transitions, traps,
+- place and edit walls, Passages, unified connection Paths, links, traps,
   and other purpose-specific spatial objects
 - select authored objects, rooms, and areas for detailed inspection
 - change levels, pan, zoom, jump to coordinates, fit selection, and fit authored
@@ -166,7 +225,7 @@ points may appear as nodes; routes and transitions appear as edges. Incidental
 geometry may be collapsed only when real choices, connection types, current
 states, and travel effects remain understandable.
 
-Authored doors, openings, corridors, stairs, and transitions influence graph
+Authored Passages, Paths, and links influence graph
 relationships. Mere geometric adjacency without an authored opening does not
 create an edge. A structurally present but currently impassable connection
 remains visible with a distinct state. Geometrically detected climb, jump, or
@@ -324,8 +383,20 @@ Each room entry includes at least:
 - exits and relationships
 - linked actors, objects, encounters, and events
 
-SaltMarcher initially assigns unique display numbers. The GM may change or
-reorder them without changing internal room identity or breaking references.
+SaltMarcher initially assigns display numbers unique within one conceptual
+Level. The GM may change or reorder them without changing internal Room
+identity or breaking references. Moving a Room into a Level with a conflict
+assigns the next free number. Cross-Level and Dungeon-wide references and
+exports show `Level + number`.
+
+Full-text search, filters for number, Level, group, Feature, secret, and status,
+and sorting support large Dungeon Keys. Selecting a result navigates to the same
+object in graph and raster.
+
+Batch editing may change every supported field, including names, read-aloud
+text, and GM notes. Text batches support complete replacement, prepend, append,
+and search/replace. A batch applies immediately and atomically as one undoable
+editor action; it does not require a separate preview.
 
 ## Hybrid Room Descriptions
 
@@ -405,8 +476,8 @@ create rules, passability, or effects.
 - moving or reshaping that Volume carries the Feature anchor with it
 - when destructive geometry prevents reliable anchor mapping, the Feature
   remains preserved for reassignment
-- Encounters are initially authored as stationary Features; optional mobile
-  Encounter behavior is deferred
+- Encounter context may follow referenced mobile actors or groups without
+  duplicating their identity
 - only Traps and Encounters initially support automatic proximity activation
 - a Trap may own zero or more trigger fields separate from its Feature anchor
 - each trigger field is an arbitrary GM-marked voxel set rather than a required
@@ -424,19 +495,17 @@ create rules, passability, or effects.
 - consuming another Charge does not restart a running countdown; its completion
   restores all Charges regardless of intervening use
 - the GM may manually correct current Charges and reset state
-- a future low-priority monster routine may perform an explicit manual Trap
-  reset
+- an explicit Actor Autonomy job may perform a Trap reset
 - a placed Dungeon Encounter primarily references the existing SaltMarcher
   Encounter capability for monster composition and statistics rather than
   duplicating them
 - the Dungeon placement adds its voxel anchor, local Dungeon notes, detection
-  behavior, and any later schedule
+  behavior, and autonomy integration
 - one concrete Encounter or monster group has at most one current Dungeon
   placement; repeated equivalent encounters require independent Encounter copies
 - later movement changes that group's existing anchor rather than creating
   another placement
-- Encounter detection initially uses a radius derived from referenced monster
-  statistics; its exact perception behavior remains subject to later validation
+- Encounter detection uses the shared perception behavior
 - Dungeon Loot placement uses existing Loot content and ultimately the same
   shared Loot object used by Encounter and Session Generation, rather than
   duplicating currencies, items, or magic-item truth
@@ -496,8 +565,19 @@ create rules, passability, or effects.
 - a new commit after undo discards that session's redo branch
 - undo/redo preserves stable authored identities
 - history is session-scoped and is not exported as Dungeon truth
-- one action spanning several Dungeons, such as a bidirectional external transition, commits
+- one action spanning several Dungeons, such as paired Passage links, commits
   and reverses atomically
+- all geometry and content tools remain available during active exploration;
+  a committed change becomes travel truth immediately
+- a geometry or passability commit revalidates active autoroutes; an invalid
+  route stops at its last completed segment with a specific reason
+- if edited geometry removes an actor cell, the preview first relocates that
+  actor to the nearest valid cell in the same Volume, then a directly connected
+  Volume; without such a cell the edit is rejected
+- geometry and administrative actor relocations commit and undo atomically;
+  relocation consumes no travel time or events and is logged with the edit
+- committed geometry is always structurally travel-valid; empty Dungeons,
+  disconnected locally valid Volumes, and dangling Passages remain valid
 
 ## Sparse-Dungeon Responsiveness
 
@@ -522,6 +602,8 @@ unrelated feature, travel, persistence, or shell rewrites.
 - geometry editing stays in the raster authoring view
 - graph edits remain safely reversible until raster cleanup and final acceptance
 - text-centric editing is efficient in the Dungeon-Key view
+- selection, transforms, Path routing, Passage lifecycle, Feature placement,
+  and live actor relocation preserve stable authored identities
 - generated geometry text updates without destroying GM-authored semantics
 - document output remains understandable without current runtime party state
 - ordinary local work remains responsive in the sparse qualification Dungeon
@@ -532,3 +614,11 @@ unrelated feature, travel, persistence, or shell rewrites.
 - [Dungeon Travel Requirements](./requirements-dungeon-travel.md)
 - [Maps Canvas Requirements](../../maps/requirements/requirements-maps-canvas.md)
 - [Dungeon Needs Interview](../../project/interviews/2026-07-20-dungeon-needs-interview.md)
+- Alexandrian evidence:
+  `/home/aaron/Schreibtisch/projects/references/literature/alexandrian-xandering-the-dungeon.md`
+- Melan-diagram evidence:
+  `/home/aaron/Schreibtisch/projects/references/literature/alexandrian-melan-diagram.md`
+- Sector-crawl evidence:
+  `/home/aaron/Schreibtisch/projects/references/literature/alexandrian-sector-crawl.md`
+- Dungeon-type evidence:
+  `/home/aaron/Schreibtisch/projects/references/literature/alexandrian-types-of-dungeons.md`

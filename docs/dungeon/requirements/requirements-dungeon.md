@@ -22,11 +22,17 @@ fiction and outcomes.
 - SaltMarcher may calculate objective travel facts, expose triggered content,
   and maintain state, but it MUST NOT decide fictional outcomes reserved for
   the GM
+- project-wide actor autonomy is the explicit exception: for enabled NPCs and
+  monsters it may choose and execute bounded jobs and resolve non-party
+  conflicts as defined by the Actor Autonomy Requirements
 - remote access and collaborative multi-user authoring are not required
 
 ## Long-Term Capability Scope
 
-One Dungeon is one continuous spatial whole containing all of its rooms, surfaces, levels, and spatial content. It is not a collection of internal Dungeon maps. The raster map is a view of this whole, not a separate authored container. Only an actual exit may transition to another Dungeon or an external place.
+One Dungeon is one continuous spatial whole containing all of its rooms,
+surfaces, levels, and spatial content. It is not a collection of internal
+Dungeon maps. The raster map is a view of this whole, not a separate authored
+container. A Passage link may transition to another Dungeon or external place.
 
 Its spatial foundation behaves as one voxel-like 3D grid with 5-foot horizontal
 cells and 5-foot vertical resolution. Creating ordinary walkable space produces
@@ -102,9 +108,9 @@ content; manual reveal and re-hide remain available.
 Every Dungeon Feature initially has an exact 3D voxel position anchored within
 one Volume. Moving or reshaping the Volume carries its Feature anchors with it.
 If destructive geometry makes reliable mapping impossible, the Feature remains
-preserved without an anchor until reassigned. Encounters are initially
-stationary; optional mobility is a later capability. Only Traps and Encounters
-initially support automatic proximity activation. Traps may define zero or more
+preserved without an anchor until reassigned. Encounter context may follow
+referenced mobile actors or groups without duplicating their identity. Only
+Traps and Encounters support automatic proximity activation. Traps may define zero or more
 arbitrary voxel-set trigger fields separate from their anchors. Trigger voxels
 remain associated with their Volumes, may span several adjacent Volumes, and
 only control notification or travel interruption; they do not alter
@@ -112,16 +118,16 @@ passability or decide outcomes. A Trap may own maximum and current Charges for c
 activations and a Reset Duration that restores all Charges together. The GM
 chooses whether recharge begins at zero Charges or immediately below maximum.
 Further activation does not restart a running countdown; completion restores all
-Charges. The GM may manually correct the state. A far-future monster
-routine may explicitly reset a Trap. A placed Dungeon Encounter primarily uses
+Charges. The GM may manually correct the state. An explicit Actor Autonomy job
+may reset a Trap. A placed Dungeon Encounter primarily uses
 the existing Encounter capability as the source of monster composition and
 statistics. Its Dungeon placement adds the voxel anchor, local notes, detection
-context, and any later schedule rather than duplicating Encounter truth. One
+context, and autonomy integration rather than duplicating Encounter truth. One
 concrete Encounter or monster group has at most one current Dungeon placement;
-equivalent repetitions require independent Encounter copies. Later movement
-changes the same group's anchor rather than creating another placement.
-Encounter detection provisionally uses a radius derived from the referenced
-monster statistics. Dungeon Loot placement uses existing Loot content and ultimately
+equivalent repetitions require independent Encounter copies. Movement changes
+the same group's anchor rather than creating another placement. Encounter
+detection uses the shared perception behavior rather than a private proximity
+radius. Dungeon Loot placement uses existing Loot content and ultimately
 the same shared Loot object as Encounter and Session Generation. The Dungeon
 adds voxel placement and local context rather than duplicating currencies,
 items, or magic-item truth. One concrete Loot object has at most one current
@@ -145,7 +151,8 @@ assignment, or stable object identity. This granularity remains subject to
 practical usability validation.
 
 Spatial authoring has two foundational forms: directly drawn anchored Areas and
-dynamically generated Paths between two or more endpoints or waypoints.
+non-branching dynamically generated Paths between two endpoints with optional
+waypoints.
 Corridors, stairs, ramps, ladders, shafts, and comparable connection segments
 are generated parts of one unified 3D Path model. One Path may combine several
 forms between endpoints at different elevations. Segment forms and optional
@@ -158,16 +165,19 @@ SaltMarcher may propose boundary anchors when the GM connects Rooms; the GM may
 reposition or pin them. A current navigation area may be derived for routing
 but is not part of endpoint identity.
 
-A Path connects through separate Passages in Volume boundaries. Openings,
-doors, hatches, secret doors, and comparable forms share this Passage role. The
-Passage identity owns description and explicit binary passability; the Path
-owns route and travel properties.
+A Path connects through separate Passages in Volume boundaries. Door, opening,
+gate, hatch, window, secret door, and comparable depictions are visual assets or
+decorations of one functional Passage concept. A Passage owns its stable
+authored identity, description, whole-face geometry, explicit passability, and
+independent sight, light, and sound transmission facts. A Path owns route and
+travel properties.
 
-A true Dungeon exit is a special Passage referencing another Dungeon or an
-external campaign place. It owns direction, local description, passability, and
-optional added travel time. An opposite endpoint may initially be absent.
-Bidirectional transitions use two independently described and passable Passages
-that reference each other.
+Any Passage may connect geometrically or link to another Passage in the same or
+another Dungeon, or to an external campaign place. There is no separate Dungeon
+exit type. Link direction and return link are independent per side. Each side
+keeps its own description, passability, sensory facts, and optional added
+travel time. A missing target leaves a visible, unavailable broken link without
+deleting the local Passage or its content.
 
 The Dungeon capability includes:
 
@@ -183,6 +193,8 @@ The Dungeon capability includes:
 - a human-readable document export containing the map, Dungeon Key, and stable
   references
 - a versioned portable Dungeon package for authored Dungeon truth
+- a passive display-only second-monitor view using party knowledge, current
+  perception, and Fog of War
 
 There is no generic spatial Marker or Prop kind; placed content has a
 purpose-specific Dungeon role. An individually authored furnishing, flavor
@@ -227,27 +239,52 @@ truth.
   cannot be reliably reassociated remains available without geometry until the
   GM reassigns or explicitly deletes it
 - saved Dungeons survive restarts and application updates
-- migrations, backup, and restore protect authored data
+- complete exploration runtime state survives restarts, including actors,
+  groups, headings, routes, knowledge, timed states, and open prompts
+- every migration creates and restore-tests a backup before mutation
+- rolling backups use configurable time, count, and storage retention with safe
+  defaults, and the GM may request a manual backup
+- after a crash, a committed operation is observably either wholly old or
+  wholly new, never partial
+- a failed migration leaves original and backup unchanged, prevents writable
+  opening, and offers diagnostics, retry, and restore
 - import MUST preview identity conflicts and missing external references
 - the GM may create new identities or map missing external references before import
 - import MUST NOT silently overwrite existing authored content
 - a portable Dungeon package contains authored Dungeon truth and stable
   references, but not party or actor positions, travel logs, or undo history
+- the human-readable export is configurable across raster slices, reduced or
+  detailed graph, Dungeon Key, and optional Feature or GM appendices; a
+  visibility profile controls secrets and GM-only material
+- normal catalog deletion archives a Dungeon, pauses active exploration, and
+  preserves links and runtime state
+- final deletion moves the Dungeon into a restorable local trash for 30 days;
+  explicit immediate destruction remains available
+- duplication creates new authored identities and remaps internal references,
+  preserves external references, and excludes runtime, knowledge, logs, and
+  undo history
 
-## Deferred Low-Priority Capabilities
+## Environment And Runtime Integration
 
-The target design MUST permit later addition without fundamental restructuring
-of:
+The long-term requirement includes:
 
-- moving monster groups with simple schedules
-- automated perception comparisons and GM-entered active-check results
-- persistent room-associated tracks and pursuit workflows
-- a passive second-monitor player view with Fog of War, hidden secrets,
-  lighting, and comparable visibility rules
+- light sources attached to geometry, Features, items, or actors, with optional
+  ambient light inherited from Dungeon through Level to Room
+- event and persistent sound sources, plus extensible sensory channels
+- independent boundary facts for passability, sight, light, and sound
+- persistent, logged state actions that may atomically change several authored
+  environment states after GM confirmation or an explicit authored trigger
+- D&D 5e 2014 perception over 3D line of sight, lighting, distance, cover, and
+  relevant senses
+- persistent movement tracks, per-actor or per-group track knowledge, search,
+  decay, and segment-based pursuit
+- integration with project-wide actor autonomy for local spatial jobs,
+  movement, perception, tracks, and conflict context
+- a passive second-monitor player view with current visibility, remembered
+  geometry, unknown space, secrets, and the union of party knowledge
 
-These are long-term product directions, not requirements for the next delivery.
-The player view remains display-only and does not change the GM-only control
-model.
+These are binding target capabilities even when delivery is deferred. The
+player view remains display-only and does not change the GM-only control model.
 
 ## Non-Goals
 
@@ -259,6 +296,7 @@ model.
 - a runtime user-plugin system
 - ownership of external campaign-object truth
 - procedural Dungeon generation as a core workflow
+- player interaction with the passive second-monitor output
 
 ## Quality Needs
 
@@ -268,6 +306,14 @@ model.
 - editor preview completes within a 50 ms p95 budget
 - work scales with the visible or touched region rather than total off-screen
   Dungeon content
+- a 100,000-authored-cell Dungeon presents its first usable viewport and
+  context within 2 seconds p95; remaining data may load progressively
+- heavy route, graph, and batch previews show progress within 100 ms, become
+  cancellable above 2 seconds, and do not block camera, selection, or
+  independent reads
+- an ordinary editor commit completes within 500 ms p95
+- passive player-view updates complete within 100 ms p95 after movement or a
+  visibility change
 - loading and committing expose distinct visible states
 - new authored object or tool families, a travel/time/event-rule change, and a
   UI or persistence adapter replacement remain local and do not require changes
@@ -280,6 +326,8 @@ model.
 - runtime actor state and logs do not become authored Dungeon-package content
 - no surface silently invents a second room, connection, description, or
   passability truth
+- disconnected but locally valid Volumes and dangling Passages remain valid;
+  invalid structural geometry cannot be committed
 - the GM can understand what changed, cancel transient work, and recover safely
   from rejected or failed operations
 - system-calculated facts remain distinguishable from GM-authored content and
@@ -292,3 +340,7 @@ model.
 - [Dungeon Travel Requirements](./requirements-dungeon-travel.md)
 - [Dungeon Domain Model](../domain/domain-dungeon.md)
 - [Dungeon Needs Interview](../../project/interviews/2026-07-20-dungeon-needs-interview.md)
+- [Actor Autonomy Requirements](../../autonomy/requirements/requirements-actor-autonomy.md)
+- D&D evidence:
+  `/home/aaron/Schreibtisch/projects/references/literature/dnd-basic-rules-2014-adventuring.md`
+  ([public source](https://www.dndbeyond.com/sources/dnd/basic-rules-2014/adventuring))

@@ -1,4 +1,4 @@
-Status: In Progress
+Status: Ready for Owner Review
 Owner: Aaron
 Last Reviewed: 2026-07-21
 Source of Truth: Confirmed German owner answers from the Dungeon refactor needs-analysis conversation on 2026-07-20.
@@ -32,12 +32,10 @@ Der Review trennt vier logisch aufeinander aufbauende Ergebnisse:
 4. Erst danach wird geplant, welche weiteren Schritte zum Zielzustand sinnvoll
    sind.
 
-**Aktueller Arbeitsstand:** Die erste Discovery-Scheibe zu Reise,
-Darstellungen und Qualitätsgrenzen ist bestätigt und in vorläufige englische
-Requirements überführt. Ergebnis 1 bleibt jedoch in Arbeit: Editor-Werkzeuge,
-authored Dungeon-Inhalte, End-to-End-Workflows und ihre Wirkung am Spieltisch
-sind noch nicht vollständig geklärt. Das Interview enthält weiterhin kein
-Urteil über den Ist-Zustand und keinen Architekturentwurf.
+**Aktueller Arbeitsstand:** Die lösungsneutrale Bedürfniserhebung ist inhaltlich
+vollständig und zur Owner-Abnahme konsolidiert. Ergebnis 1 bleibt bis zu dieser
+ausdrücklichen Abnahme offen. Das Interview enthält weiterhin weder ein Urteil
+über den Ist-Zustand noch einen Architekturentwurf.
 
 ## Vorgehen und Phasengrenze
 
@@ -272,10 +270,9 @@ hintereinander tatsächlich ausgelöst werden kann. Zusätzlich darf sie eine
 Reset Duration besitzen, die angibt, wie lange die Wiederherstellung ihrer
 Charges dauert.
 
-In einer deutlich späteren Erweiterung darf auch ein manueller Reset der Falle
-als Handlung innerhalb eines einfachen Monster-Tagesablaufs vorkommen. Diese
-Automatisierung hat sehr geringe Priorität und ändert nichts daran, dass
-SaltMarcher die konkrete Wirkung der Falle nicht adjudiziert.
+Ein explizites Jobangebot darf einen autonomen Akteur die Falle zurücksetzen
+lassen. Diese Automatisierung ändert nichts daran, dass SaltMarcher die konkrete
+Wirkung der Falle nicht als Dungeon-Verhalten adjudiziert.
 
 Eine Charge wird erst verbraucht, wenn der GM eine tatsächliche Auslösung
 bestätigt, nicht bereits beim Betreten eines Triggerfelds. Die Falle besitzt
@@ -299,8 +296,8 @@ angelegten Encounter beziehungsweise dessen Monstergruppe. Der Dungeon baut
 Monsterzusammensetzung und Stat-Werte nicht als zweite Inhaltswahrheit nach.
 
 Die Dungeon-Platzierung ergänzt den exakten Voxelanker sowie lokale
-Dungeon-Hinweise, Erkennungsverhalten und später gegebenenfalls einen
-Tagesablauf. Die zugrunde liegende Encounter-Zusammensetzung und Monsterwerte
+Dungeon-Hinweise, Erkennungsverhalten und gegebenenfalls Autonomiekontext. Die
+zugrunde liegende Encounter-Zusammensetzung und Monsterwerte
 bleiben mit dem vorhandenen Encounter-Feature verbunden.
 
 Ein konkreter Encounter beziehungsweise eine konkrete Monstergruppe darf nur
@@ -551,27 +548,24 @@ anschließend verschieben oder fixieren.
 
 Ein Pfad endet an einem eigenen Durchlassobjekt in der jeweiligen
 Volumengrenze.
-Der Durchlass kann ein offener Durchgang, eine Tür, Luke, Geheimtür oder eine
-vergleichbare Form sein. Er besitzt seine Beschreibung und den expliziten
-binären Passierbarkeitszustand.
+Offener Durchgang, Tür, Tor, Luke, Fenster oder Geheimtür sind nur
+Darstellungen desselben funktionalen Passage-Konzepts. Das Passage besitzt
+Beschreibung, explizite Passierbarkeit und unabhängige sensorische Fakten.
 
 Der Pfad selbst besitzt dagegen Verlauf und Reiseeigenschaften. Beim Erzeugen
-eines Pfades darf SaltMarcher zunächst passende offene Durchlässe anlegen. Der
-GM kann sie anschließend in Türen oder andere Durchlassformen ändern.
+eines Pfades darf SaltMarcher zunächst passende Passages anlegen. Der GM kann
+ihnen anschließend eine andere Darstellung oder Decoration zuweisen.
 
-### Welche Form besitzt ein echter Ausgang aus dem Dungeon?
+### Wie verbindet ein Passage den Dungeon mit einem externen Ziel?
 
-**Bestätigte Antwort:** Ein besonderer Durchlass mit externem Ziel.
+**Korrigierte bestätigte Antwort:** Über denselben optionalen Link wie jede
+andere Passage-Verbindung.
 
-Ein Übergang liegt als besonderer Durchlass an einer exakten Volumengrenze. Er
-verweist auf einen anderen Dungeon oder einen externen Kampagnenort und besitzt
-Richtung, Beschreibung, explizite Passierbarkeit sowie optional zusätzliche
-Reisezeit.
-
-Eine Gegenseite darf sofort verknüpft werden, kann beim ersten Authoring aber
-noch fehlen. Ein beidseitiger Übergang besitzt auf jeder Seite einen eigenen
-Durchlass mit eigener Beschreibung und Passierbarkeit; beide Seiten verweisen
-aufeinander.
+Jedes Passage kann an seiner exakten Volumengrenze auf ein anderes Passage im
+selben oder einem anderen Dungeon oder auf einen externen Kampagnenort
+verweisen. Es gibt keinen besonderen Ausgangstyp. Linkrichtung und Rücklink sind
+unabhängig. Jede Seite besitzt eigene Beschreibung, Passierbarkeit,
+sensorische Fakten und optional zusätzliche Reisezeit.
 
 ### Gibt es allgemeine räumliche Marker?
 
@@ -1274,21 +1268,20 @@ Entscheidungsfreiheit des GM einschränken würde.
 
 ### Welche langfristige Laufzeitfähigkeit brauchen Monstergruppen?
 
-**Bestätigte Richtung, niedrige Priorität:** Bewegliche Gruppen mit einfachen
-Tagesabläufen.
+**Korrigierte bestätigte Richtung:** Projektweite bedürfnis- und jobbasierte
+Akteursautonomie.
 
-Monster können als bewegliche Gruppen auf der Dungeon-Karte eigene einfache
-Tagesabläufe verfolgen. Ob eine Monstergruppe die Party bemerkt oder umgekehrt,
-wird durch automatisierte Wahrnehmungsvergleiche ermittelt. In der Reiseansicht
-kann der GM die passive Wahrnehmung eines Party-Mitglieds durch ein
-eingetragenes Würfelergebnis ersetzen, wenn der Charakter aktiv Ausschau hält.
-Ein ausgelöster Random Encounter unterbricht die Reise und wird dem GM zur
-Auflösung geöffnet.
+Die frühere Annahme einfacher Tagesabläufe ist verworfen. Einzelne NPCs und
+Monster sowie Gruppen handeln innerhalb GM-konfigurierter Grenzen anhand von
+Bedürfnissen, erreichbaren Jobangeboten, Gefahr, Rolle, Zeit und Ort. Der
+vollständige bestätigte Umfang steht im Abschnitt »Fortsetzung und
+Abschlusskonsolidierung« und wird projektweit von eigenen Autonomie-Requirements
+besessen.
 
 ### Welche langfristige Verfolgungs- und Spurenfähigkeit wird erwartet?
 
-**Bestätigte Richtung, niedrige Priorität:** Persistente Spuren und
-probenbasierte Verfolgung.
+**Korrigierte bestätigte Richtung:** Persistente, räumlich genaue Spuren und
+probenbasierte Verfolgung als bindende langfristige Fähigkeit.
 
 Räume können Spuren enthalten. Party, NPCs und Gruppen können nach Spuren
 Ausschau halten. Der GM trägt dafür ein Würfelergebnis ein; SaltMarcher speichert
@@ -1303,10 +1296,9 @@ einfachen Routinen auch unbekannte Spuren, einschließlich Spuren der Party,
 automatisch aufnehmen und verfolgen. Der GM wird darüber per Dialog
 benachrichtigt.
 
-Diese Monster-, Wahrnehmungs-, Verfolgungs- und Spurenfähigkeit hat geringe
-Umsetzungspriorität. Sie muss nicht Teil der nächsten Lieferung sein. Die
-langfristige Dungeon-Struktur soll ihre spätere Ergänzung ohne grundlegenden
-Umbau ermöglichen.
+Die Fähigkeit darf später geliefert werden, ist aber bindender Bestandteil des
+langfristigen Zielbedarfs. Wahrnehmung, Spuren und passive Spieleranzeige werden
+im Abschlussabschnitt präzisiert.
 
 ### Welche Reisefakten werden automatisch protokolliert?
 
@@ -1480,5 +1472,260 @@ Interne Tabellen-, Klassen- oder Speicherentscheidungen bleiben technische
 Systemverantwortung; das Interview klärt die fachlich dauerhaften authored und
 abgeleiteten Fakten.
 
-Erst wenn diese Produktfragen beantwortet sind, werden die kanonischen
-Requirements wieder auf `Active` gesetzt und Ergebnis 1 abgeschlossen.
+Nach beantworteten Produktfragen und ausdrücklicher Owner-Abnahme werden die
+kanonischen Requirements auf `Active` gesetzt und Ergebnis 1 abgeschlossen.
+
+## Fortsetzung und Abschlusskonsolidierung 2026-07-21
+
+Die folgenden Antworten wurden im fortgesetzten Remote-Interview und der
+anschließenden lokalen Fortsetzung bestätigt. Sie korrigieren widersprechende
+frühere Annahmen dieses Protokolls. Die kanonische, englische Produktwahrheit
+steht in den verlinkten Requirements.
+
+### Passages und Verlinkungen
+
+- Ein Passage wird im Raster nur an einer vorhandenen Wand oder Volume-Grenze
+  platziert. Eine einseitig vorhandene Grenze genügt; das Passage darf als
+  authored Ansatz in noch nicht gebauten Raum bestehen.
+- Tür, Öffnung, Tor, Luke, Fenster und Geheimtür sind keine funktionalen Typen,
+  sondern spätere Darstellungen desselben Passage-Konzepts.
+- Passage-Geometrie belegt ganze 5-Fuß-Grenzflächen. Standardhöhe sind 10 Fuß;
+  Breite und Höhe bleiben in 5-Fuß-Schritten veränderbar.
+- Ein breites Passage wird als ein Objekt erstellt. Benachbarte, getrennt
+  erstellte Passages werden nie automatisch zusammengefasst.
+- Überlappung mit einem Passage wird atomar und mit verständlichem Grund
+  abgelehnt.
+- Entfernte Geometrie stellt die Wand wieder her, erhält aber Identität und
+  Inhalt des Passage unzugeordnet, bis der GM neu zuweist oder ausdrücklich
+  löscht.
+- Passierbarkeit und geometrische Auflösung sind getrennt. Ein als passierbar
+  authored Passage ist ohne geometrisches oder verlinktes Ziel nicht bereisbar.
+- Jedes Passage kann geometrisch anschließen oder optional auf ein anderes
+  Passage desselben oder eines anderen Dungeons beziehungsweise auf einen
+  externen Kampagnenort verweisen. Es gibt keinen besonderen Ausgangstyp.
+- Die Richtung wird je Seite unabhängig authored; ein Rücklink ist optional.
+  Jede Seite besitzt eigene Beschreibung, Passierbarkeit und sensorische
+  Durchlässigkeit.
+- Reise durch einen Link kommt in der Zelle unmittelbar hinter dem Ziel-Passage
+  an. Die Blickrichtung folgt dem Ziel; normale Durchgangszeit und optionaler
+  GM-Zeitaufschlag gelten.
+- Ein gelöschtes Linkziel lässt das lokale Passage erhalten, zeigt den
+  gebrochenen Link und sperrt ihn bis zur Reparatur oder Linkentfernung.
+- Entsteht später passende Geometrie, bindet ein eindeutiger Treffer
+  automatisch. Mehrdeutigkeit verlangt Auswahl und Vorschau.
+
+### Paths, Auswahl und Transformation
+
+- Der GM wählt Path-Endpunkte als Rooms oder exakte Grenzanker. SaltMarcher
+  schlägt Route und Passages in einer Vorschau vor; optionale Wegpunkte und Pins
+  verfeinern sie.
+- Ein Path verzweigt nicht. T-Kreuzungen und Netze entstehen aus mehreren Paths
+  an einem gemeinsamen Anker oder Volume.
+- Routing umgeht vorhandene Geometrie oder lehnt die Vorschau ab; es bricht nie
+  still durch sie hindurch.
+- Standardquerschnitt sind 5 Fuß Breite und 10 Fuß Höhe. Gesamt- und
+  Segmentwerte lassen sich in 5-Fuß-Schritten überschreiben.
+- Korridor, Treppe, Rampe, Leiter und Schacht werden aus der 3D-Route
+  vorgeschlagen und können vom GM in der Vorschau geändert werden.
+- Ein freier Endpunkt darf an eine passende neue Grenze wandern. Ein gepinnter
+  Endpunkt folgt seiner lokalen Volume-Position und erzeugt bei Unmöglichkeit
+  einen reparierbaren Vorschaukonflikt.
+- Auswahl unterstützt Einzel-, additive, Rechteck-, Lasso- und 3D-Bereiche
+  sowie Filter. Mehrdeutige Treffer zeigen eine durchschaltbare Kandidatenliste.
+- Ein räumlich teilweise getroffenes Volume wird vollständig ausgewählt. Die
+  Transformation schneidet es nicht.
+- Volumes können rastergebunden verschoben, kopiert, um 90 Grad gedreht,
+  horizontal oder vertikal gespiegelt und über Kanten oder Ecken verformt
+  werden. Beliebige Winkel und Off-grid-Skalierung bleiben ausgeschlossen.
+- Mehrfachauswahl transformiert als gemeinsame Anordnung. Interne Beziehungen
+  und Abstände bleiben erhalten; externe Paths werden in einer Vorschau neu
+  geroutet.
+
+### Features, Dungeon Key und Live-Authoring
+
+- Encounter, Trap, Loot und Curiosity teilen einen Platzierungsmodus. Typ oder
+  Quelle wird gewählt, ein exaktes Voxel gesetzt und danach werden
+  artspezifische Details bearbeitet.
+- Ein Feature-Anker kann unter Erhalt der Identität direkt verschoben oder einem
+  anderen Volume zugewiesen werden. Mehrere Features dürfen dasselbe Voxel
+  belegen; Auswahl erfolgt über die Kandidatenliste.
+- Alle Trigger-Voxel einer Trap bilden eine semantische Menge. Overlay, Pinsel,
+  Bereich und Radierer bearbeiten sie auch über mehrere Volumes hinweg.
+- Features erscheinen als Typsymbole in einblendbaren Layern; Namen erscheinen
+  bei Hover oder Auswahl. Geheimnisse folgen GM- und Spielerperspektive.
+- Dungeon-Key-Suche und Filter decken Text, Nummer, Level, Gruppe, Feature,
+  Geheimnis und Status ab. Ein Treffer springt synchron in Raster und Graph.
+- Batch-Bearbeitung darf alle Felder ändern. Für Text gibt es Ersetzen,
+  Voranstellen, Anhängen und Suchen/Ersetzen. Ein Batch gilt sofort, atomar und
+  als ein Undo, ohne zusätzliche Vorschau.
+- Anzeigenummern sind pro konzeptionellem Level eindeutig. Ein Konflikt nach
+  Levelwechsel erhält automatisch die nächste freie Nummer. Dungeonglobale
+  Referenzen und Exporte zeigen `Level + Nummer`.
+- Der Live-Kontext zeigt Room, Vorlesetext, GM-Notizen, sichtbare Ausgänge, nahe
+  Features, Akteure, Reise-/Ereignisstatus und erreichbare Nachbarn.
+- Vollständiges Geometrie- und Inhaltsauthoring bleibt während Exploration
+  verfügbar. Ein Commit wird sofort zur Reisewahrheit und validiert laufende
+  Autorouten neu.
+- Entfernt eine Änderung die Akteurszelle, zeigt die Vorschau eine automatische
+  Verlagerung zur nächsten gültigen Zelle desselben Volumes, danach eines direkt
+  verbundenen Volumes. Ohne Ziel wird die Änderung abgelehnt.
+- Geometrie und Verlagerungen committen und reversieren atomar. Administrative
+  Verlagerung verbraucht keine Reisezeit, löst keine Ereignisse aus und steht im
+  Editor-Commit-Protokoll.
+- Jeder Commit muss strukturell reisefähige lokale Geometrie hinterlassen.
+  Leere Dungeons, voneinander getrennte gültige Volumes und dangling Passages
+  bleiben zulässig. Ungültige Geometrie existiert nur in Vorschauen.
+
+### Katalog, Persistenz und Ausgabe
+
+- Exploration startet an einem Passage mit externem Linkziel oder durch freie
+  GM-Platzierung. Jedes solche Passage zählt automatisch als Eingang.
+- Der vollständige Exploration-Runtimezustand überlebt Neustarts, einschließlich
+  Positionen, Gruppen, Blickrichtungen, Rundendauer, Routen, Wissen, Trap-Zustand
+  und offene Prompts.
+- Normales Löschen archiviert den Dungeon, pausiert Exploration und erhält alle
+  Links. Endgültiges Löschen verschiebt ihn für 30 Tage in einen lokalen
+  Papierkorb; Wiederherstellung oder sofortige Vernichtung bleiben möglich.
+- Dungeon-Duplikation kopiert nur authored Wahrheit mit neuen Identitäten.
+  Interne Referenzen werden umgebogen, externe Kampagnen- und Dungeonziele
+  bleiben erhalten. Runtime, Wissen, Log und Undo werden nicht kopiert.
+- Vor jeder Migration, rollierend und auf GM-Befehl entstehen Backups. Die
+  rollierende Aufbewahrung ist nach Zeit, Anzahl und Speichergrenze
+  konfigurierbar und besitzt sichere Standardwerte.
+- Ein Commit ist nach Crash vollständig alt oder vollständig neu. Eine
+  fehlgeschlagene Migration verändert Original und Backup nicht, öffnet den
+  Dungeon nicht schreibbar und bietet Diagnose, Wiederholung und Restore.
+- Der menschenlesbare Export ist ein konfigurierbares Paket aus Raster-Slices,
+  reduziertem oder detailliertem Graphen, Dungeon Key und optionalen Feature-
+  oder GM-Anhängen. Ein Sichtbarkeitsprofil steuert Geheimnisse und GM-Inhalte.
+
+### Messbare Qualität
+
+- Ein Dungeon mit 100.000 authored Zellen zeigt den ersten nutzbaren Viewport
+  und Kontext mit p95 unter 2 Sekunden; weitere Daten dürfen nachladen.
+- Kamera und Hover bleiben bei p95 16 ms, lokale Vorschau bei p95 50 ms.
+- Schwere Route-, Graph- und Batch-Vorschauen zeigen innerhalb 100 ms
+  Fortschritt, sind oberhalb 2 Sekunden abbrechbar und blockieren Kamera,
+  Auswahl oder unabhängige Reads nicht.
+- Ein gewöhnlicher Editor-Commit erreicht p95 unter 500 ms.
+
+### Akteursautonomie und Konflikte
+
+- Akteursautonomie ist bindender langfristiger Projektbedarf, darf aber später
+  geliefert werden. Dungeon liefert 3D-Raum, Routing, Wahrnehmung, Spuren und
+  lokale Jobangebote; die projektweite Capability besitzt Bedürfnisse und
+  Jobauswahl.
+- Einzelne NPCs und Monster sind die Simulationsbasis. Gruppen teilen meist Job
+  und Reise, dürfen sich aber abhängig von Bedarf und GM-Regeln teilen und
+  zusammenfinden. Die Party bleibt GM-gesteuert.
+- Eingebaute Bedürfnisse sind Hunger, Durst, Ruhe, Sicherheit und soziale Nähe.
+  Der GM darf sie deaktivieren, parametrisieren und ergänzen. Bedürfnisse führen
+  eigenen Zustand und beeinflussen Jobprioritäten; mechanische Regelfolgen
+  gehören einer ausdrücklich zuständigen Capability oder der GM-Bestätigung.
+- Rollen, Rooms, Orte, Curiosities, Loot, Traps und andere Referenzen bieten
+  Jobs an. Der Akteur wählt den höchstpriorisierten gültigen, erreichbaren Job
+  anhand von Bedarf, Gefahr, Rolle, Zeit und Ort.
+- Der GM kann Autonomie pausieren, Jobs zuweisen oder abbrechen sowie Rollen-
+  und Jobprioritäten verändern. Höhere Priorität, Gefahr oder GM-Eingriff darf
+  unterbrechen; ein weiter gültiger Job wird fortgesetzt. Kurze kritische
+  Teilschritte dürfen ausdrücklich nicht unterbrechbar sein.
+- Exklusive Ziele werden reserviert. Jobauswahl und Gleichstände sind
+  deterministisch und erklärbar. Sichtbar sind Bedürfnisse, geprüfte Jobs,
+  Prioritäten, Gewinner und Abbruch- oder Fehlergrund.
+- Autonomie läuft nur mit bestätigt fortgeschrittener Kampagnenzeit, niemals
+  anhand von Wall-Clock oder Offline-Zeit. Der aktive Kontext wird detailliert
+  simuliert; andere aktivierte Kontexte holen beim Öffnen deterministisch nach.
+- Catch-up stoppt unmittelbar vor einer Wirkung, die eine GM-Entscheidung
+  verlangt, und zeigt sie beim Öffnen. Reine NPC-/Monster-Konflikte bilden eine
+  bestätigte Ausnahme.
+- Ohne Partybeteiligung darf eine vereinfachte abstrakte D&D-Auflösung Konflikte
+  vollständig simulieren. Sie verwendet echten Zufall und protokolliert Würfe,
+  Modifikatoren und Ergebnis. Mögliche Fakten sind Position, Flucht,
+  Gefangenschaft, Verwundung oder Tod, relevante verbrauchte Ressourcen und
+  Besitzwechsel; Identität und authored Inhalte werden nie gelöscht.
+- Der GM kann je Akteur oder Gruppe schwere Folgen wie Tod oder dauerhaften
+  Besitzverlust begrenzen. Der Konflikt endet mit dem stärksten erlaubten
+  Ergebnis. Das Detail-Log bleibt erhalten; beim nächsten Öffnen erscheint eine
+  Zusammenfassung, ohne den Catch-up zu unterbrechen.
+- Bei Partybeteiligung pausieren und benachrichtigen Wahrnehmung, Route und
+  Autonomie vor weiterer Gefahrenauflösung. Ein Encounter beginnt erst nach
+  GM-Bestätigung.
+- Ein bestätigter Zeitschritt commitet Bedürfnisse, Jobs, Bewegung, Gruppen,
+  Wirkungen und Ereignisse aller betroffenen Akteure atomar oder gar nicht.
+  Abgeschlossene Schritte besitzen kein Runtime-Undo; Korrekturen erfolgen über
+  normale GM-Overrides.
+- Qualifikation umfasst mindestens 200 autonome Individuen. Ein Zeitschritt
+  erreicht p95 unter 2 Sekunden, zeigt innerhalb 100 ms Fortschritt und ist vor
+  Commit abbrechbar. Aufwand skaliert mit aktiven Akteuren, lokalen Kandidaten
+  und berührten Wegen, nicht allen Zellen oder ruhenden Inhalten.
+
+### Wahrnehmung, Spuren und passive Spieleranzeige
+
+- Wahrnehmung verwendet D&D 5e 2014 sowie 3D-Geometrie: passive Perception oder
+  ein dauerhaft gültiges GM-eingegebenes aktives Ergebnis wird gegen Stealth
+  geprüft; Sichtlinie, Licht, Entfernung, Deckung und relevante Sinne begrenzen
+  Erkennung.
+- Gegenseitige Erkennung und Wissen sind richtungsabhängig. Neue relevante
+  Sichtung aktualisiert Wissen, benachrichtigt den GM und pausiert eine
+  beteiligte Partyroute. Der GM darf Wissen mit optional protokolliertem Grund
+  übersteuern; der Override hält bis zur ausdrücklichen Neubewertung.
+- Bestätigte Bewegung erzeugt abhängig von Akteur, Bewegung und Oberfläche
+  Spuren. Eine Spur besitzt Quelle oder unbekannte Quelle, Voxelpfad, Richtung,
+  Zeit, Stärke, Such-DC und relevante Bewegungsfakten. Der GM darf unterdrücken,
+  korrigieren oder manuell ergänzen.
+- Spuren zerfallen nach versioniertem Zeit-, Oberflächen-, Umwelt- und
+  Bewegungsprofil. Wissen ist pro Akteur oder Gruppe getrennt; der GM sieht
+  alles. Suche verwendet D&D-Perception/Survival oder ein GM-Ergebnis gegen DC
+  und erfordert GM-Bestätigung der Entdeckung.
+- Folgen verläuft segmentweise entlang des gespeicherten Pfads. Schwache,
+  unterbrochene oder gekreuzte Abschnitte verlangen eine neue Probe; Verlust
+  oder Mehrdeutigkeit pausiert die Route.
+- Die passive Zweitanzeige ist reine Ausgabe ohne Player-Interaktion. Ihre
+  Kamera folgt automatisch dem aktuell aktiven Partyakteur oder der aktiven
+  Partygruppe der Explorationsinitiative; NPC-Jobs wechseln sie nicht.
+- Fog unterscheidet aktuell sichtbar, schwach erinnerte Geometrie ohne
+  Live-Details und unbekannt. Aktuelle Sicht folgt Licht, D&D-Sinnen, Dunkelheit,
+  Darkvision und 3D-Sichtlinie, Höhe und Deckung. Wissen ist die Vereinigung der
+  gesamten Party.
+- Andere Akteure erscheinen nur, wenn sie bekannt beziehungsweise wahrgenommen
+  und aktuell sichtbar sind. Der GM darf Präsentation vorübergehend ein- oder
+  ausblenden, ohne Entdeckungswahrheit zu ändern. Updates erreichen p95 unter
+  100 ms nach Bewegung oder Sichtänderung.
+
+### Licht, Schall, Sinne und Mechanismen
+
+- Licht entsteht primär aus räumlichen Quellen. Optionales Umgebungslicht
+  vererbt von Dungeon über Level bis Room; lokale Abweichungen entstehen durch
+  Quellen.
+- Quellen können an Geometrie, Features, Gegenstände oder Akteure gebunden sein
+  und folgen Position sowie An-/Aus- oder Offen-/Geschlossen-Zustand.
+- Passierbarkeit, Sicht-, Licht- und Schalldurchlässigkeit sind unabhängige
+  authored Fakten. Darstellung als Tür, Fenster oder Öffnung entscheidet keinen
+  dieser Werte.
+- Bewegung, Jobs, Konflikte und Interaktionen erzeugen kurzlebige Geräusche;
+  Features und Orte dürfen Dauerquellen besitzen.
+- Sicht, Licht und Schall sind Startkanäle eines erweiterbaren Sinnesmodells.
+  Weitere Sinne wie Blindsight oder Tremorsense dürfen eigene Reichweite und
+  Grenzdurchlässigkeit erhalten.
+- Features dürfen GM-bestätigte benannte Zustandsaktionen anbieten, die mehrere
+  konfigurierte Zustände atomar setzen oder umschalten. Nur ausdrücklich
+  authored Auslöser wie Zeit, Betreten, Dauer oder bestätigte Aktion dürfen sie
+  automatisch ausführen.
+- Zustandsänderungen werden protokolliert und bleiben über Sitzung und Neustart
+  bestehen, bis GM, Aktion oder Trigger sie wieder ändern.
+
+## Abschlussbedingung für Ergebnis 1
+
+Die oben bestätigten Fähigkeiten sind langfristige Zielbedürfnisse, keine
+Lieferreihenfolge. Ergebnis 1 ist abgeschlossen, sobald der Owner die
+konsolidierten Requirements ausdrücklich akzeptiert. Erst danach beginnen
+Greenfield-Zielarchitektur und Refactor-Vergleich.
+
+## Erhaltene externe Referenzen
+
+- `/home/aaron/Schreibtisch/projects/references/literature/dnd-basic-rules-2014-adventuring.md`
+- `/home/aaron/Schreibtisch/projects/references/literature/rimworld-ai-tutorial-introduction.md`
+- `/home/aaron/Schreibtisch/projects/references/literature/alexandrian-xandering-the-dungeon.md`
+- `/home/aaron/Schreibtisch/projects/references/literature/alexandrian-melan-diagram.md`
+- `/home/aaron/Schreibtisch/projects/references/literature/alexandrian-sector-crawl.md`
+- `/home/aaron/Schreibtisch/projects/references/literature/alexandrian-types-of-dungeons.md`

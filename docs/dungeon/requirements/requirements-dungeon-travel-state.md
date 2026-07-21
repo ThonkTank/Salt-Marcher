@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-20
+Last Reviewed: 2026-07-21
 Source of Truth: Confirmed GM-facing Dungeon travel-control and state behavior
 for the runtime `Reisen` tab.
 
@@ -28,11 +28,15 @@ The state tab communicates at least:
 
 - active Dungeon and current area
 - active party or selected actor/group
+- current Room, read-aloud text, GM notes, visible exits, nearby Features and
+  actors, and reachable neighboring decisions
 - cell-precise position and heading
 - current movement, route, pursuit, loading, interruption, or failure status
 - selected destination, transition, or tracked target when applicable
 - current exploration-round duration
 - effective movement speed and relevant overrides
+- current perception result or override, visible track and pursuit state, and
+  any paused autonomy or catch-up boundary relevant to this Dungeon
 - the next GM decision or available continuation
 
 ## Exploration Timing Controls
@@ -76,12 +80,24 @@ The state tab lets the GM:
   event activation
 - split characters from a party token, form separate groups, and merge groups
 
-## Checks And Deferred Controls
+Exploration may start at any Passage whose target is external to the Dungeon,
+or by deliberate GM placement. No separate entrance flag exists.
 
-The long-term surface may accept GM-entered active perception, survival, or
-tracking results. It may show automated NPC results and notifications for found
-or lost tracks. These controls are low priority and are not required for the
-next delivery.
+## Perception, Tracks, And Autonomy Controls
+
+The long-term surface lets the GM:
+
+- enter and clear active Perception, Survival, or tracking results
+- inspect directional detection and party-knowledge state
+- confirm discovery, force known or unknown state, and request reevaluation
+- inspect, correct, suppress, or add tracks and start segment-based pursuit
+- pause or resume autonomy for a selected NPC or monster and directly assign or
+  cancel a job
+- inspect why a job was selected, interrupted, failed, or blocked
+- inspect an inactive-context catch-up summary and the first pending GM
+  decision boundary
+
+These are binding target capabilities even when delivered after core travel.
 
 ## Visible States
 
@@ -92,6 +108,8 @@ next delivery.
 - pursuing a movable target
 - waiting for a GM decision after an event, trap, lock, encounter, or similar
   prompt
+- paused before a Party-involved danger or an autonomy catch-up decision
+- reviewing a found, lost, weak, or ambiguous track
 - blocked or failed travel with a clear reason
 - completed or GM-aborted travel
 
@@ -117,6 +135,9 @@ next delivery.
 - position override remains visibly distinct from rule-based travel
 - travel-session controls do not mutate authored Dungeon descriptions or
   geometry
+- active-check overrides persist until the GM clears or explicitly reevaluates
+  them
+- Party-involved danger is visible as paused before autonomous resolution
 
 ## References
 
@@ -124,3 +145,4 @@ next delivery.
 - [Dungeon Travel Requirements](./requirements-dungeon-travel.md)
 - [Dungeon Editor Requirements](./requirements-dungeon-editor.md)
 - [Dungeon Needs Interview](../../project/interviews/2026-07-20-dungeon-needs-interview.md)
+- [Actor Autonomy Requirements](../../autonomy/requirements/requirements-actor-autonomy.md)
