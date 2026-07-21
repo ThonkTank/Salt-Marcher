@@ -1,4 +1,4 @@
-Status: Draft
+Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-07-21
 Source of Truth: Confirmed GM-facing Dungeon travel-control and state behavior

@@ -1,4 +1,4 @@
-Status: Ready for Owner Review
+Status: Accepted
 Owner: Aaron
 Last Reviewed: 2026-07-21
 Source of Truth: Confirmed German owner answers from the Dungeon refactor needs-analysis conversation on 2026-07-20.
