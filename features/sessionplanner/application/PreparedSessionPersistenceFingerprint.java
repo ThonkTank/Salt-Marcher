@@ -1,6 +1,7 @@
 package features.sessionplanner.application;
 
 import features.sessionplanner.domain.session.SessionRevision;
+import features.sessionplanner.domain.session.SessionTreasure;
 import java.util.List;
 import java.util.Objects;
 
@@ -17,7 +18,7 @@ public final class PreparedSessionPersistenceFingerprint {
             List<Rest> rests,
             long selectedSceneId,
             List<ManualLootNote> notes,
-            List<GeneratedRewardReference> rewards,
+            List<SessionTreasure> treasures,
             String generationRunIdentity,
             List<EncounterPlanMapping> orderedMappings
     ) {
@@ -44,12 +45,26 @@ public final class PreparedSessionPersistenceFingerprint {
         for (ManualLootNote note : notes) {
             output.writeLong(note.noteId()).writeLong(note.sceneId()).writeText(note.authoredText());
         }
-        output.writeInt(rewards.size());
-        for (GeneratedRewardReference reward : rewards) {
-            output.writeLong(reward.sceneId())
-                    .writeText(reward.generationRunIdentity())
-                    .writeLong(reward.treasureId())
-                    .writeText(reward.lastKnownLabel());
+        output.writeInt(treasures.size());
+        for (SessionTreasure treasure : treasures) {
+            output.writeLong(treasure.sceneId()).writeLong(treasure.treasureId())
+                    .writeText(treasure.title()).writeText(treasure.note())
+                    .writeText(treasure.stockClass()).writeText(treasure.channel())
+                    .writeText(treasure.theme()).writeText(treasure.magicType())
+                    .writeLong(treasure.targetCp()).writeInt(treasure.nonMagicSlots())
+                    .writeInt(treasure.magicSlots()).writeInt(treasure.items().size());
+            for (SessionTreasure.Item item : treasure.items()) {
+                output.writeLong(item.lineId()).writeText(item.role()).writeText(item.itemId())
+                        .writeText(item.text()).writeLong(item.quantity()).writeLong(item.unitCp())
+                        .writeLong(item.actualCp()).writeText(item.totalCapacity().toPlainString())
+                        .writeText(item.allowedContainers()).writeText(item.magicRarity())
+                        .writeBoolean(item.cursed());
+            }
+            output.writeInt(treasure.packing().size());
+            for (SessionTreasure.Packing row : treasure.packing()) {
+                output.writeLong(row.lineId()).writeText(row.containerType()).writeInt(row.containerCount())
+                        .writeText(row.containerId()).writeBoolean(row.valid());
+            }
         }
         output.writeText(required(generationRunIdentity)).writeInt(orderedMappings.size());
         for (EncounterPlanMapping mapping : orderedMappings) {
@@ -88,18 +103,6 @@ public final class PreparedSessionPersistenceFingerprint {
 
     public record ManualLootNote(long noteId, long sceneId, String authoredText) {
         public ManualLootNote { authoredText = required(authoredText); }
-    }
-
-    public record GeneratedRewardReference(
-            long sceneId,
-            String generationRunIdentity,
-            long treasureId,
-            String lastKnownLabel
-    ) {
-        public GeneratedRewardReference {
-            generationRunIdentity = required(generationRunIdentity);
-            lastKnownLabel = Objects.requireNonNullElse(lastKnownLabel, "").trim();
-        }
     }
 
     public record EncounterPlanMapping(int encounterNumber, long planId) {

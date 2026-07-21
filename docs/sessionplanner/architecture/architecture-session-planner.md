@@ -54,7 +54,7 @@ revision contains:
 - session catalog and current session
 - resolved participant summaries and budget
 - ordered scene summaries and selected-scene detail
-- linked Encounter summaries and structured generated rewards
+- linked Encounter summaries and Planner-owned structured treasures
 - the selected-scene saved-plan search request epoch and typed transient state
 - preparation status and stage progress
 - display-safe missing-reference and failure states
@@ -66,10 +66,11 @@ it performs no provider calls, persistence, orchestration, or independent
 projection refresh.
 
 Publication is latest-revision-wins. One authored mutation or foreign-provider
-revision schedules at most one coalesced assembly. Scene, participant, controls,
-and state-panel views do not subscribe to separate planner projections.
+revision schedules at most one coalesced assembly. Scene, participant, and
+controls views do not subscribe to separate planner projections. Session
+Planner contributes no private state-panel view.
 
-The reusable selected-scene inspector carries the published source Session
+The persistent right-hand selected-scene detail pane carries the published source Session
 revision into scene and manual-note drafts. Dirty scene and keyed note editors
 survive same-scene publications, including focus and caret. A control rebases its
 guard only while authoritative text still equals its loaded baseline; conflicting
@@ -89,6 +90,17 @@ source revision, and selected scene still match. Underlength input is resolved
 locally with zero provider calls. Valid search hydrates the union of at most
 eight returned hit identities and the already-linked plan identities in one
 Encounter summary batch, then restores exact result order in memory.
+
+The timeline and detail pane are sibling columns with independent scrolling.
+Scene detail never joins the timeline node list. Entity actions are composed at
+the application root: Encounter editing opens the cloned plan in the global
+Encounter state tab, while creatures, items, and locations open in the global
+inspector. Compact provider-backed pickers remain inside scene detail.
+
+Session Generation is read only during preparation. The preparation boundary
+converts reward output into full `SessionTreasure` values and discards run and
+source-treasure provenance before the Planner commit. Ordinary workspace
+assembly reads treasures solely from the Session Planner store.
 
 ## Publication Semantics
 
@@ -202,8 +214,8 @@ The accepted master-detail timeline remains. The controls adapter renders one
 horizontal preparation toolbar with progressive disclosure for participant
 detail. Saved-plan search belongs to the selected-scene inspector. The Generate
 button and progress share the toolbar; there is no separate preparation card or
-Apply control. Generated rewards use structured cards, while manual loot notes
-use a separate presentation type.
+Apply control. Planner-owned treasures use structured editable cards with an
+item-catalog picker, while manual loot notes use a separate presentation type.
 
 ## Performance Model
 
@@ -227,16 +239,14 @@ Measurable architecture targets are:
   preparation work allowed on the JavaFX thread; in-progress publication is
   eligible for the next pulse.
 - one workspace assembly performs one planner read and at most one batch read
-  each from Party, Encounter, Session Generation, and World Planner, independent
-  of scene, saved-plan, reward, slot, and roster-member cardinality
+  each from Party, Encounter, and World Planner, independent of scene,
+  saved-plan, treasure, slot, and roster-member cardinality
 - ordinary workspace assembly never reads the global Encounter saved-plan
   catalog. Search reads one bounded root statement and publishes at most eight
   hits; Encounter summary hydration uses a fixed six-statement temp-relation
   read independent of result and roster cardinality
-- Session Generation reward hydration uses one connection-scoped temporary
-  request relation and five actual statement executions for non-empty batches,
-  independent of 1, 401, or 800 reward references; caller order, duplicates,
-  and missing identities are reconstructed in memory
+- Session Planner treasure, item, and packing child tables add three fixed read
+  families; ordinary assembly performs no Session Generation reward hydration
 - the warmed reference fixture is two level-3 and two level-4 participants,
   `0.6` adventure days, and three encounters over 20 runs; the complete editable
   publication must satisfy the 2-second p95 product target
@@ -253,8 +263,9 @@ Chosen decisions:
 - The master-detail workspace renders one revisioned workspace snapshot.
 - Encounter preparation produces concrete rosters from one batch candidate
   boundary; abstract slots are not a planner result.
-- Generated reward truth remains in Session Generation and is batch-projected
-  into Session Planner through stable references.
+- Generated reward output is copied once into complete Session Planner-owned
+  treasure snapshots. Ordinary workspace assembly never reads Session
+  Generation and carries no generation-run or source-treasure provenance.
 - Revision guards, idempotent foreign commits, and one final optimistic planner
   commit provide retry safety without shared storage ownership.
 
@@ -262,7 +273,7 @@ Rejected alternatives:
 
 - backend preview/apply and save/reload workflow transport
 - multiple independently refreshed planner projections
-- copied foreign reward, creature, Party, or World Planner truth
+- copied foreign creature, Party, or World Planner truth
 - a shared cross-feature transaction, workflow database, saga store, or event
   bus
 - a remote generator service, dynamic rules plugin system, or second generation

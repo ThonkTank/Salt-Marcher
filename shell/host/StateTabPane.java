@@ -21,7 +21,7 @@ import shell.api.ContributionKey;
 /**
  * Shared lower-right state panel with autonomous state-tab navigation.
  */
-final class StateTabPane extends VBox {
+final class StateTabPane extends VBox implements shell.api.StateTabSink {
 
     private final HBox tabBar = new HBox(2);
     private final StackPane contentArea = new StackPane();
@@ -78,6 +78,11 @@ final class StateTabPane extends VBox {
         }
         tab.select();
         contentArea.getChildren().setAll(tab.contentOr(placeholderHost));
+    }
+
+    @Override
+    public void activate(ContributionKey key) {
+        activateTab(key);
     }
 
     boolean hasTabs() {

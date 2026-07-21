@@ -405,7 +405,7 @@ final class SessionPlannerViewModel {
                 String linkedEncounterDifficultyLabel, String linkedEncounterStatus,
                 List<SessionPlannerSelectedSceneSnapshot.EncounterRosterLine> linkedEncounterRoster,
                 List<SessionPlannerSelectedSceneSnapshot.ManualLootNote> manualLootNotes,
-                List<SessionPlannerSelectedSceneSnapshot.GeneratedReward> generatedRewards,
+                List<SessionPlannerSelectedSceneSnapshot.GeneratedReward> treasures,
                 PlanSearchModel planSearch
         ) {
             SelectedSceneModel {
@@ -419,7 +419,7 @@ final class SessionPlannerViewModel {
                 linkedEncounterStatus = SessionPlannerVocabulary.text(linkedEncounterStatus);
                 linkedEncounterRoster = safeCopy(linkedEncounterRoster);
                 manualLootNotes = safeCopy(manualLootNotes);
-                generatedRewards = safeCopy(generatedRewards);
+                treasures = safeCopy(treasures);
                 planSearch = planSearch == null ? PlanSearchModel.idle() : planSearch;
             }
 
@@ -439,7 +439,7 @@ final class SessionPlannerViewModel {
                         safe.linkedEncounterTotalBaseXp(), safe.linkedEncounterAdjustedXp(),
                         safe.linkedEncounterXpMultiplier(), safe.linkedEncounterDifficultyLabel(),
                         safe.linkedEncounterStatus(), safe.linkedEncounterRoster(), safe.manualLootNotes(),
-                        safe.generatedRewards(), PlanSearchModel.from(safe.encounterPlanSearch()));
+                        safe.treasures(), PlanSearchModel.from(safe.encounterPlanSearch()));
             }
         }
 

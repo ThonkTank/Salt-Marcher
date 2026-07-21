@@ -108,6 +108,32 @@ final class SessionPlannerSchemaMigrator {
         }
     }
 
+    void resetForEditableTreasures(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("DROP TABLE IF EXISTS " + SessionPlannerPersistenceSchema.SESSION_TREASURE_PACKING_TABLE);
+            statement.execute("DROP TABLE IF EXISTS " + SessionPlannerPersistenceSchema.SESSION_TREASURE_ITEMS_TABLE);
+            statement.execute("DROP TABLE IF EXISTS " + SessionPlannerPersistenceSchema.SESSION_TREASURES_TABLE);
+            statement.execute("DROP TABLE IF EXISTS " + SessionPlannerPersistenceSchema.SESSION_GENERATED_REWARDS_TABLE);
+            statement.execute("DROP TABLE IF EXISTS " + SessionPlannerPersistenceSchema.SESSION_MANUAL_LOOT_NOTES_TABLE);
+            statement.execute("DROP TABLE IF EXISTS " + SessionPlannerPersistenceSchema.SESSION_RESTS_TABLE);
+            statement.execute("DROP TABLE IF EXISTS " + SessionPlannerPersistenceSchema.SESSION_ENCOUNTERS_TABLE);
+            statement.execute("DROP TABLE IF EXISTS " + SessionPlannerPersistenceSchema.SESSION_PARTICIPANTS_TABLE);
+            statement.execute("DROP TABLE IF EXISTS " + SessionPlannerPersistenceSchema.CURRENT_SESSION_TABLE);
+            statement.execute("DROP TABLE IF EXISTS " + SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE);
+        }
+        ensureSchema(connection);
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_MANUAL_LOOT_NOTES_SQL);
+            statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_MANUAL_LOOT_NOTES_ORDER_INDEX_SQL);
+            statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_TREASURES_SQL);
+            statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_TREASURE_ITEMS_SQL);
+            statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_TREASURE_PACKING_SQL);
+            statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_TREASURES_ORDER_INDEX_SQL);
+            statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_TREASURE_ITEMS_ORDER_INDEX_SQL);
+            statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_TREASURE_PACKING_ORDER_INDEX_SQL);
+        }
+    }
+
     private static void addSceneTitleColumnIfMissing(Connection connection, Statement statement) throws SQLException {
         if (!SqliteSchemaColumnSupport.hasColumn(
                 connection,

@@ -66,7 +66,8 @@ final class SessionPreparationFingerprintTest {
     ) {
         return new SessionPlan(
                 sessionId, revision, "Fingerprint fixture", participants,
-                new EncounterDays(new BigDecimal(fraction)), List.of(), List.of(), List.of(), List.of(),
+                new EncounterDays(new BigDecimal(fraction)), List.of(), List.of(), List.of(),
+                List.<features.sessionplanner.domain.session.SessionTreasure>of(),
                 0L, "", 1L, 1L);
     }
 

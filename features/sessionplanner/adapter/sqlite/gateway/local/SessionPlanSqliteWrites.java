@@ -6,7 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import features.sessionplanner.adapter.sqlite.model.SessionEncounterRecord;
-import features.sessionplanner.adapter.sqlite.model.SessionGeneratedRewardRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionTreasureRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionTreasureItemRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionTreasurePackingRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionManualLootNoteRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionParticipantRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionPlanRecord;
@@ -72,12 +74,14 @@ final class SessionPlanSqliteWrites {
         childTableWrites.replaceManualLootNotes(connection, sessionId, manualLootNotes);
     }
 
-    void replaceGeneratedRewards(
+    void replaceTreasures(
             Connection connection,
             long sessionId,
-            List<SessionGeneratedRewardRecord> generatedRewards
+            List<SessionTreasureRecord> treasures,
+            List<SessionTreasureItemRecord> items,
+            List<SessionTreasurePackingRecord> packing
     ) throws SQLException {
-        childTableWrites.replaceGeneratedRewards(connection, sessionId, generatedRewards);
+        childTableWrites.replaceTreasures(connection, sessionId, treasures, items, packing);
     }
 
     private static int insertPlanRow(Connection connection, SessionPlanRecord plan) throws SQLException {

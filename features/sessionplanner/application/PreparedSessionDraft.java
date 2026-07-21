@@ -6,6 +6,7 @@ import features.encounter.api.PreparedEncounterRoster;
 import features.sessiongeneration.api.GenerationDraft;
 import features.sessiongeneration.api.GenerationResult;
 import features.sessionplanner.domain.session.SessionEncounterAllocation;
+import features.sessionplanner.domain.session.SessionTreasure;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ public record PreparedSessionDraft(
         List<PreparedRest> rests,
         List<PreparedManualLootNote> manualLootNotes,
         long selectedSceneId,
-        List<PreparedRewardReference> rewards,
+        List<SessionTreasure> preparedTreasures,
         String preparedContentFingerprint
 ) {
 
@@ -38,14 +39,14 @@ public record PreparedSessionDraft(
         scenes = List.copyOf(Objects.requireNonNull(scenes, "scenes"));
         rests = List.copyOf(Objects.requireNonNull(rests, "rests"));
         manualLootNotes = List.copyOf(Objects.requireNonNull(manualLootNotes, "manualLootNotes"));
-        rewards = List.copyOf(Objects.requireNonNull(rewards, "rewards"));
+        preparedTreasures = List.copyOf(Objects.requireNonNull(preparedTreasures, "preparedTreasures"));
         if (preparedContentFingerprint == null
                 || !preparedContentFingerprint.matches("v1:[0-9a-f]{64}")) {
             throw new IllegalArgumentException("prepared content fingerprint must use canonical v1 SHA-256");
         }
-        validate(source, generationDraft, encounterBatch, scenes, rests, manualLootNotes, selectedSceneId, rewards);
+        validate(source, generationDraft, encounterBatch, scenes, rests, manualLootNotes, selectedSceneId, preparedTreasures);
         String expected = fingerprint(source, generationDraft, encounterBatch, scenes, rests,
-                manualLootNotes, selectedSceneId, rewards);
+                manualLootNotes, selectedSceneId, preparedTreasures);
         if (!expected.equals(preparedContentFingerprint)) {
             throw new IllegalArgumentException("prepared content fingerprint does not match the draft");
         }
@@ -88,7 +89,7 @@ public record PreparedSessionDraft(
                     0L));
             encounterScenes.put(encounter.encounterNumber(), nextSceneId++);
         }
-        List<PreparedRewardReference> rewards = new ArrayList<>();
+        List<SessionTreasure> preparedTreasures = new ArrayList<>();
         for (GenerationResult.Treasure treasure : result.treasures()) {
             long sceneId;
             if (treasure.channel() == GenerationResult.RewardChannel.ENCOUNTER) {
@@ -109,11 +110,22 @@ public record PreparedSessionDraft(
                         treasure.theme(),
                         0L));
             }
-            rewards.add(new PreparedRewardReference(
-                    sceneId,
-                    result.runId().value(),
-                    treasure.treasureId(),
-                    rewardLabel(treasure, result.lootItems())));
+            List<SessionTreasure.Item> items = result.lootItems().stream()
+                    .filter(item -> item.treasureId() == treasure.treasureId())
+                    .map(item -> new SessionTreasure.Item(
+                            item.lineId(), item.role().name(), item.itemId(), item.text(), item.quantity(),
+                            item.unitCp(), item.actualCp(), item.totalCapacity(), item.allowedContainers(),
+                            item.magicRarity(), item.cursed()))
+                    .toList();
+            List<SessionTreasure.Packing> packing = result.packing().stream()
+                    .filter(row -> row.treasureId() == treasure.treasureId())
+                    .map(row -> new SessionTreasure.Packing(
+                            row.lineId(), row.containerType(), row.containerCount(), row.containerId(), row.valid()))
+                    .toList();
+            preparedTreasures.add(new SessionTreasure(
+                    treasure.treasureId(), sceneId, rewardLabel(treasure, result.lootItems()), "",
+                    treasure.stockClass().name(), treasure.channel().name(), treasure.theme(), treasure.magicType(),
+                    treasure.targetCp(), treasure.nonMagicSlots(), treasure.magicSlots(), items, packing));
         }
         long selection = scenes.isEmpty() ? 0L : scenes.getFirst().sceneId();
         List<PreparedRest> rests = List.of();
@@ -126,8 +138,8 @@ public record PreparedSessionDraft(
                 rests,
                 notes,
                 selection,
-                rewards,
-                fingerprint(source, generationDraft, encounterBatch, scenes, rests, notes, selection, rewards));
+                preparedTreasures,
+                fingerprint(source, generationDraft, encounterBatch, scenes, rests, notes, selection, preparedTreasures));
     }
 
     private static void validate(
@@ -138,7 +150,7 @@ public record PreparedSessionDraft(
             List<PreparedRest> rests,
             List<PreparedManualLootNote> notes,
             long selectedSceneId,
-            List<PreparedRewardReference> rewards
+            List<SessionTreasure> preparedTreasures
     ) {
         validateForeignDrafts(source, generationDraft, batch);
         Set<Long> sceneIds = new HashSet<>();
@@ -184,20 +196,18 @@ public record PreparedSessionDraft(
             }
         }
         List<GenerationResult.Treasure> treasures = generationDraft.result().treasures();
-        if (rewards.size() != treasures.size()) {
-            throw new IllegalArgumentException("prepared rewards must match every generated treasure");
+        if (preparedTreasures.size() != treasures.size()) {
+            throw new IllegalArgumentException("prepared preparedTreasures must match every generated treasure");
         }
-        Set<String> rewardKeys = new HashSet<>();
-        for (int index = 0; index < rewards.size(); index++) {
-            PreparedRewardReference reward = rewards.get(index);
+        Set<Long> rewardKeys = new HashSet<>();
+        for (int index = 0; index < preparedTreasures.size(); index++) {
+            SessionTreasure reward = preparedTreasures.get(index);
             GenerationResult.Treasure treasure = treasures.get(index);
-            if (!sceneIds.contains(reward.sceneId())
-                    || !rewardKeys.add(reward.generationRunId() + ":" + reward.treasureId())) {
-                throw new IllegalArgumentException("prepared reward references are invalid");
+            if (!sceneIds.contains(reward.sceneId()) || !rewardKeys.add(reward.treasureId())) {
+                throw new IllegalArgumentException("prepared treasures are invalid");
             }
-            if (!reward.generationRunId().equals(generationDraft.result().runId().value())
-                    || reward.treasureId() != treasure.treasureId()) {
-                throw new IllegalArgumentException("prepared rewards must retain generated order and identity");
+            if (reward.treasureId() != treasure.treasureId()) {
+                throw new IllegalArgumentException("prepared treasures must retain generated order");
             }
             PreparedScene rewardScene = scenesById.get(reward.sceneId());
             if (treasure.channel() == GenerationResult.RewardChannel.ENCOUNTER) {
@@ -350,7 +360,7 @@ public record PreparedSessionDraft(
             List<PreparedRest> rests,
             List<PreparedManualLootNote> notes,
             long selectedSceneId,
-            List<PreparedRewardReference> rewards
+            List<SessionTreasure> preparedTreasures
     ) {
         CanonicalSha256DigestWriter output = new CanonicalSha256DigestWriter()
                 .writeText("prepared-session-content-v1")
@@ -382,12 +392,32 @@ public record PreparedSessionDraft(
         for (PreparedManualLootNote note : notes) {
             output.writeLong(note.noteId()).writeLong(note.sceneId()).writeText(note.authoredText());
         }
-        output.writeLong(selectedSceneId).writeInt(rewards.size());
-        for (PreparedRewardReference reward : rewards) {
+        output.writeLong(selectedSceneId).writeInt(preparedTreasures.size());
+        for (SessionTreasure reward : preparedTreasures) {
             output.writeLong(reward.sceneId())
-                    .writeText(reward.generationRunId())
                     .writeLong(reward.treasureId())
-                    .writeText(reward.lastKnownLabel());
+                    .writeText(reward.title())
+                    .writeText(reward.note())
+                    .writeText(reward.stockClass())
+                    .writeText(reward.channel())
+                    .writeText(reward.theme())
+                    .writeText(reward.magicType())
+                    .writeLong(reward.targetCp())
+                    .writeInt(reward.nonMagicSlots())
+                    .writeInt(reward.magicSlots())
+                    .writeInt(reward.items().size());
+            for (SessionTreasure.Item item : reward.items()) {
+                output.writeLong(item.lineId()).writeText(item.role()).writeText(item.itemId())
+                        .writeText(item.text()).writeLong(item.quantity()).writeLong(item.unitCp())
+                        .writeLong(item.actualCp()).writeText(item.totalCapacity().toPlainString())
+                        .writeText(item.allowedContainers()).writeText(item.magicRarity())
+                        .writeBoolean(item.cursed());
+            }
+            output.writeInt(reward.packing().size());
+            for (SessionTreasure.Packing row : reward.packing()) {
+                output.writeLong(row.lineId()).writeText(row.containerType()).writeInt(row.containerCount())
+                        .writeText(row.containerId()).writeBoolean(row.valid());
+            }
         }
         return output.finishV1();
     }
@@ -445,22 +475,6 @@ public record PreparedSessionDraft(
                 throw new IllegalArgumentException("prepared manual note identities must be positive");
             }
             authoredText = required(authoredText, "authoredText");
-        }
-    }
-
-    public record PreparedRewardReference(
-            long sceneId,
-            String generationRunId,
-            long treasureId,
-            String lastKnownLabel
-    ) {
-
-        public PreparedRewardReference {
-            if (sceneId <= 0L || treasureId <= 0L) {
-                throw new IllegalArgumentException("prepared reward identities must be positive");
-            }
-            generationRunId = required(generationRunId, "generationRunId");
-            lastKnownLabel = Objects.requireNonNullElse(lastKnownLabel, "").trim();
         }
     }
 

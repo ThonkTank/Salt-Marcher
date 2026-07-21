@@ -48,8 +48,12 @@ final class SessionPlanSqliteReads {
                 detailReads.loadAllRests(connection);
         Map<Long, List<features.sessionplanner.adapter.sqlite.model.SessionManualLootNoteRecord>> notes =
                 detailReads.loadAllManualLootNotes(connection);
-        Map<Long, List<features.sessionplanner.adapter.sqlite.model.SessionGeneratedRewardRecord>> rewards =
-                detailReads.loadAllGeneratedRewards(connection);
+        Map<Long, List<features.sessionplanner.adapter.sqlite.model.SessionTreasureRecord>> treasures =
+                detailReads.loadAllTreasures(connection);
+        Map<Long, List<features.sessionplanner.adapter.sqlite.model.SessionTreasureItemRecord>> treasureItems =
+                detailReads.loadAllTreasureItems(connection);
+        Map<Long, List<features.sessionplanner.adapter.sqlite.model.SessionTreasurePackingRecord>> treasurePacking =
+                detailReads.loadAllTreasurePacking(connection);
         List<SessionPlanSnapshotRecord> sessions = plans.stream()
                 .map(plan -> new SessionPlanSnapshotRecord(
                         plan,
@@ -57,7 +61,9 @@ final class SessionPlanSqliteReads {
                         encounters.getOrDefault(plan.sessionId(), List.of()),
                         rests.getOrDefault(plan.sessionId(), List.of()),
                         notes.getOrDefault(plan.sessionId(), List.of()),
-                        rewards.getOrDefault(plan.sessionId(), List.of())))
+                        treasures.getOrDefault(plan.sessionId(), List.of()),
+                        treasureItems.getOrDefault(plan.sessionId(), List.of()),
+                        treasurePacking.getOrDefault(plan.sessionId(), List.of())))
                 .toList();
         long selectedId = currentSessionId;
         if (selectedId > 0L && plans.stream().noneMatch(plan -> plan.sessionId() == selectedId)) {
@@ -77,7 +83,9 @@ final class SessionPlanSqliteReads {
                 detailReads.loadEncounters(connection, sessionId),
                 detailReads.loadRests(connection, sessionId),
                 detailReads.loadManualLootNotes(connection, sessionId),
-                detailReads.loadGeneratedRewards(connection, sessionId)));
+                detailReads.loadTreasures(connection, sessionId),
+                detailReads.loadTreasureItems(connection, sessionId),
+                detailReads.loadTreasurePacking(connection, sessionId)));
     }
 
     List<SessionPlanRecord> listSessions(Connection connection) throws SQLException {

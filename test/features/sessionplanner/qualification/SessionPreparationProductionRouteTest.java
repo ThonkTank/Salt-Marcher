@@ -253,7 +253,7 @@ final class SessionPreparationProductionRouteTest {
             committed = fixture.repository.loadCurrent().orElseThrow();
             assertTrue(committed.revision().value() > original.revision().value());
             assertFalse(committed.encounters().isEmpty());
-            assertFalse(committed.generatedRewards().isEmpty());
+            assertFalse(committed.treasures().isEmpty());
         }
 
         assertEquals(committed, reopenCurrentSession(path, diagnostics),
@@ -326,7 +326,7 @@ final class SessionPreparationProductionRouteTest {
             assertEquals(original.revision().next(), persisted.revision(),
                     "only the earlier authored mutation may advance the Planner revision");
             assertTrue(persisted.encounters().isEmpty(), "prepared Planner scenes must not be committed");
-            assertTrue(persisted.generatedRewards().isEmpty(), "prepared Planner rewards must not be committed");
+            assertTrue(persisted.treasures().isEmpty(), "prepared Planner rewards must not be committed");
             assertFalse(statusesAfterForeignRelease.contains(SessionPreparationStatus.READY),
                     "the stale preparation must never publish a late READY");
             assertEquals(1L, rowCount(path, "session_generation_runs"),
@@ -509,12 +509,8 @@ final class SessionPreparationProductionRouteTest {
                 scene.linkedEncounterPlanId() > 0L
                         && scene.linkedEncounterCreatureCount() > 0
                         && scene.linkedEncounterAdjustedXp() > 0));
-        var rewards = ready.selectedScene().generatedRewards();
-        assertTrue(rewards.stream().allMatch(reward ->
-                reward.availability()
-                        == features.sessionplanner.api.SessionPlannerSelectedSceneSnapshot.Availability.AVAILABLE
-                        && !reward.generationRunId().isBlank()
-                        && !reward.itemLines().isEmpty()));
+        var rewards = ready.selectedScene().treasures();
+        assertTrue(rewards.stream().allMatch(reward -> !reward.itemLines().isEmpty()));
     }
 
     private static boolean terminal(SessionPreparationStatus status) {
@@ -563,10 +559,10 @@ final class SessionPreparationProductionRouteTest {
     ) {
         assertTrue(smallCardinality.stream().anyMatch(measurement ->
                 measurement.id().value().equals("sessionplanner.workspace.assembly")
-                        && measurement.queryCount() == 7));
+                        && measurement.queryCount() == 9));
         assertTrue(highCardinality.stream().filter(measurement ->
                         measurement.id().value().equals("sessionplanner.workspace.assembly"))
-                .allMatch(measurement -> measurement.queryCount() == 7));
+                .allMatch(measurement -> measurement.queryCount() == 9));
         assertTrue(highCardinality.stream().filter(measurement ->
                         measurement.id().value().equals("party.planning-facts.read"))
                 .allMatch(measurement -> measurement.queryCount() == 0));

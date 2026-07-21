@@ -1,6 +1,7 @@
 package features.sessionplanner.adapter.javafx;
 
 import features.sessionplanner.api.SessionPlannerSelectedSceneSnapshot;
+import features.sessionplanner.api.SessionPlannerRoutes;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -11,6 +12,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.LongConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.concurrent.CompletionStage;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -26,8 +30,8 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
-/** Header-only scene master with one reusable selected-scene inspector. */
-public final class SessionPlannerTimelineMainView extends ScrollPane {
+/** Persistent scene timeline and selected-scene detail workspace. */
+public final class SessionPlannerTimelineMainView extends HBox {
 
     private static final String SECONDARY = "text-secondary";
     private static final String COMPACT = "compact";
@@ -41,6 +45,10 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     private final Map<Long, SceneCard> sceneCards = new LinkedHashMap<>();
     private final Map<Integer, RestSeparator> restSeparators = new LinkedHashMap<>();
     private final SelectedSceneInspector selectedInspector = new SelectedSceneInspector();
+    private final Label detailPlaceholder = label(
+            "Wähle links eine Szene aus, um Encounter, Location und Schätze zu bearbeiten.",
+            SECONDARY, "session-planner-detail-placeholder");
+    private final VBox detailColumn = new VBox(8);
     private long currentSessionId;
     private int materializedUnitCount = 1;
 
@@ -59,16 +67,36 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     private AttachPlanHandler attachPlanHandler = (sceneToken, planId) -> { };
     private LongConsumer detachPlanHandler = ignored -> { };
     private PlanSearchHandler planSearchHandler = (sceneToken, query) -> { };
+    private LongConsumer editEncounterHandler = ignored -> { };
+    private LongConsumer inspectCreatureHandler = ignored -> { };
+    private Consumer<String> inspectItemHandler = ignored -> { };
+    private LongConsumer inspectLocationHandler = ignored -> { };
+    private TreasureEditHandler updateTreasureHandler = (scene, treasure) -> { };
+    private TreasureRemoveHandler removeTreasureHandler = (scene, treasure) -> { };
+    private LongConsumer addTreasureHandler = ignored -> { };
+    private Function<String, CompletionStage<List<SessionPlannerRoutes.ItemChoice>>> itemSearchHandler =
+            ignored -> java.util.concurrent.CompletableFuture.completedFuture(List.of());
 
     public SessionPlannerTimelineMainView() {
-        VBox content = new VBox(12, rows);
-        content.getStyleClass().add("session-planner-main");
+        super(12);
+        VBox timelineColumn = new VBox(10,
+                label("ABLAUF", "session-planner-column-kicker"), rows);
+        timelineColumn.getStyleClass().addAll("session-planner-main", "session-planner-timeline-column");
+        detailColumn.getChildren().setAll(
+                label("SZENENDETAIL", "session-planner-column-kicker"), detailPlaceholder, selectedInspector);
+        detailColumn.getStyleClass().addAll("session-planner-main", "session-planner-detail-column");
+        ScrollPane timelineScroll = columnScroll(timelineColumn);
+        ScrollPane detailScroll = columnScroll(detailColumn);
+        timelineScroll.getStyleClass().add("session-planner-timeline-scroll");
+        detailScroll.getStyleClass().add("session-planner-detail-scroll");
+        timelineScroll.setPrefViewportWidth(390);
+        detailScroll.setPrefViewportWidth(620);
+        HBox.setHgrow(timelineScroll, Priority.ALWAYS);
+        HBox.setHgrow(detailScroll, Priority.ALWAYS);
+        getChildren().setAll(timelineScroll, detailScroll);
+        getStyleClass().add("session-planner-workspace");
         addSceneButton.setAccessibleText("Neue Session-Szene hinzufügen");
         addSceneButton.setOnAction(event -> addSceneHandler.run());
-        setContent(content);
-        getStyleClass().add("session-planner-main-scroll");
-        setFitToWidth(true);
-        setHbarPolicy(ScrollBarPolicy.NEVER);
     }
 
     public void onAddScene(Runnable handler) { addSceneHandler = handler == null ? () -> { } : handler; }
@@ -86,6 +114,17 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     public void onAttachPlan(AttachPlanHandler handler) { attachPlanHandler = handler == null ? (s, p) -> { } : handler; }
     public void onDetachPlan(LongConsumer handler) { detachPlanHandler = handler == null ? ignored -> { } : handler; }
     public void onSearchPlans(PlanSearchHandler handler) { planSearchHandler = handler == null ? (s, q) -> { } : handler; }
+    public void onEditEncounter(LongConsumer handler) { editEncounterHandler = handler == null ? ignored -> { } : handler; }
+    public void onInspectCreature(LongConsumer handler) { inspectCreatureHandler = handler == null ? ignored -> { } : handler; }
+    public void onInspectItem(Consumer<String> handler) { inspectItemHandler = handler == null ? ignored -> { } : handler; }
+    public void onInspectLocation(LongConsumer handler) { inspectLocationHandler = handler == null ? ignored -> { } : handler; }
+    public void onUpdateTreasure(TreasureEditHandler handler) { updateTreasureHandler = handler == null ? (s, t) -> { } : handler; }
+    public void onRemoveTreasure(TreasureRemoveHandler handler) { removeTreasureHandler = handler == null ? (s, t) -> { } : handler; }
+    public void onAddTreasure(LongConsumer handler) { addTreasureHandler = handler == null ? ignored -> { } : handler; }
+    public void onSearchItems(Function<String, CompletionStage<List<SessionPlannerRoutes.ItemChoice>>> handler) {
+        itemSearchHandler = handler == null
+                ? ignored -> java.util.concurrent.CompletableFuture.completedFuture(List.of()) : handler;
+    }
 
     void bind(SessionPlannerViewModel viewModel) {
         if (viewModel == null) {
@@ -130,7 +169,6 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                         && projection.selectedScene().sceneToken() == scene.sceneToken()) {
                     selectedInspector.update(projection.sessionId(), projection.sourceSessionRevision(), projection.selectedScene(),
                             projection.sessionActionsDisabled());
-                    desired.add(selectedInspector);
                 }
                 if (index < projection.restGaps().size()) {
                     var gap = projection.restGaps().get(index);
@@ -152,7 +190,12 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         materializedUnitCount = (int) rows.getChildren().stream().filter(SceneCard.class::isInstance).count()
                 + (int) rows.getChildren().stream().filter(RestSeparator.class::isInstance).count()
                 + (rows.getChildren().contains(addSceneButton) ? 1 : 0);
-        if (rows.getChildren().contains(selectedInspector)) {
+        boolean hasSelectedDetail = projection.selectedScene().available();
+        selectedInspector.setManaged(hasSelectedDetail);
+        selectedInspector.setVisible(hasSelectedDetail);
+        detailPlaceholder.setManaged(!hasSelectedDetail);
+        detailPlaceholder.setVisible(!hasSelectedDetail);
+        if (hasSelectedDetail) {
             materializedUnitCount += 1
                     + countStyle(selectedInspector, "session-planner-roster-line")
                     + countStyle(selectedInspector, "session-planner-manual-note")
@@ -197,7 +240,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 boolean disabled
         ) {
             model = scene;
-            select.setText((scene.selected() ? "▼ " : "▶ ") + "Szene " + position + ": " + scene.displayTitle());
+            select.setText(String.format(Locale.ROOT, "%02d  %s", position, scene.displayTitle()));
             select.setAccessibleText((scene.selected() ? "Ausgewählte " : "") + "Szene " + position
                     + " öffnen: " + scene.displayTitle());
             select.setDisable(disabled || scene.selected());
@@ -224,6 +267,8 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         private final TextField planSearch = new TextField();
         private final VBox planResults = new VBox(5);
         private final Button detachPlan = button("Encounter lösen", FLAT);
+        private final Button editPlan = button("Encounter bearbeiten", ACCENT);
+        private final Button inspectLocation = button("Ansehen", FLAT);
         private final TextField titleField = new TextField();
         private final LocationComboBox locationBox = new LocationComboBox();
         private final TextArea notesField = new TextArea();
@@ -236,6 +281,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         private final VBox generatedRewardRows = new VBox(7);
         private final TextField newLootDraft = new TextField();
         private final Button addLoot = button("Hinzufügen", ACCENT);
+        private final Button addTreasureButton = button("Schatz hinzufügen", ACCENT);
         private final Map<Long, ManualNoteEditor> manualNoteEditors = new LinkedHashMap<>();
         private String pendingNewNoteText = "";
         private Set<Long> noteIdsBeforeAdd = Set.of();
@@ -279,25 +325,29 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
             moveDown.setOnAction(event -> moveHandler.handle(sceneToken, false));
             addLoot.setAccessibleText("Manuelle Beutenotiz hinzufügen");
             addLoot.setOnAction(event -> addManualNote());
+            addTreasureButton.setAccessibleText("Neuen Schatz zur ausgewählten Szene hinzufügen");
+            addTreasureButton.setOnAction(event -> addTreasureHandler.accept(sceneToken));
             detachPlan.setOnAction(event -> detachPlanHandler.accept(sceneToken));
+            editPlan.setOnAction(event -> editEncounterHandler.accept(model.linkedEncounterPlanId()));
+            inspectLocation.setOnAction(event -> inspectLocationHandler.accept(locationBox.selectedLocationId()));
             planSearch.textProperty().addListener((ignored, before, after) -> {
                 if (!loadingSearch && sceneToken > 0L) {
                     planSearchHandler.handle(sceneToken, after == null ? "" : after);
                 }
             });
             getChildren().setAll(
-                    new VBox(4, encounterName, encounterDetail, encounterBudget, encounterComparison,
-                            encounterBase, encounterStatus, rosterRows),
+                    new VBox(4, actionRow(encounterName, spacer(), editPlan), encounterDetail, encounterBudget,
+                            encounterComparison, encounterBase, encounterStatus, rosterRows),
                     new VBox(5, label("Encounter verknüpfen", "session-planner-gap-title"),
                             actionRow(planSearch, detachPlan), planResults),
-                    titleField, actionRow(locationBox, save), notesField,
+                    titleField, actionRow(locationBox, inspectLocation, save), notesField,
                     actionRow(allocationLabel, decreaseAllocation, increaseAllocation),
                     actionRow(moveUp, moveDown),
                     new VBox(6, label("Manuelle Notizen", "session-planner-gap-title"),
                             actionRow(newLootDraft, addLoot),
                             manualLootRows),
-                    new VBox(6, label("Generierte Belohnungen", "session-planner-gap-title"),
-                            generatedRewardRows));
+                    new VBox(6, actionRow(label("Schätze", "session-planner-gap-title"), spacer(),
+                                    addTreasureButton), generatedRewardRows));
         }
 
         private void resetForSession() {
@@ -375,7 +425,11 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
             moveUp.setDisable(disabled || !header(sceneToken).canMoveUp());
             moveDown.setDisable(disabled || !header(sceneToken).canMoveDown());
             addLoot.setDisable(disabled);
+            addTreasureButton.setDisable(disabled);
             detachPlan.setDisable(disabled || !linked);
+            editPlan.setDisable(!linked);
+            show(editPlan, linked);
+            inspectLocation.setDisable(next.locationId() <= 0L);
             planSearch.setDisable(disabled);
         }
 
@@ -462,8 +516,13 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
 
         private void renderRoster(SessionPlannerViewModel.TimelineProjection.SelectedSceneModel selected) {
             List<Node> materialized = selected.linkedEncounterRoster().stream()
-                    .map(line -> (Node) label(line.quantity() + " × " + line.displayName(),
-                            "session-planner-roster-line")).toList();
+                    .map(line -> {
+                        Button open = button(line.quantity() + " × " + line.displayName(), FLAT);
+                        open.getStyleClass().add("session-planner-roster-line");
+                        open.setOnAction(event -> inspectCreatureHandler.accept(line.creatureId()));
+                        open.setDisable(line.creatureId() <= 0L);
+                        return (Node) open;
+                    }).toList();
             rosterRows.getChildren().setAll(materialized);
             show(rosterRows, selected.linkedEncounterPlan());
         }
@@ -605,36 +664,38 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
 
         private void renderRewards(SessionPlannerViewModel.TimelineProjection.SelectedSceneModel selected) {
             List<Node> materialized = new ArrayList<>();
-            if (selected.generatedRewards().isEmpty()) {
-                materialized.add(label("Keine generierten Belohnungen.", SECONDARY));
+            if (selected.treasures().isEmpty()) {
+                materialized.add(label("Noch keine Schätze in dieser Szene.", SECONDARY));
             }
-            selected.generatedRewards().forEach(reward -> materialized.add(rewardCard(reward)));
+            selected.treasures().forEach(reward -> materialized.add(rewardCard(reward)));
             generatedRewardRows.getChildren().setAll(materialized);
         }
 
         private Node rewardCard(SessionPlannerSelectedSceneSnapshot.GeneratedReward reward) {
             VBox card = new VBox(4);
             card.getStyleClass().add("session-planner-generated-reward");
-            card.setAccessibleText("Generierte Belohnung " + reward.displayLabel());
-            if (reward.availability() == SessionPlannerSelectedSceneSnapshot.Availability.UNAVAILABLE) {
-                card.getChildren().setAll(label("Nicht verfügbar", "session-planner-gap-active"),
-                        label(reward.statusText().isBlank() ? reward.fallbackLabel() : reward.statusText(), SECONDARY));
-                return card;
-            }
+            card.setAccessibleText("Schatz " + reward.displayLabel());
             card.getChildren().addAll(
-                    label("Verfügbar · " + reward.channel() + " · " + reward.stockClass(), "session-planner-plan-name"),
+                    actionRow(label(reward.displayLabel(), "session-planner-plan-name"), spacer(),
+                            treasureEditButton(reward), treasureRemoveButton(reward)),
+                    label(reward.channel() + " · " + reward.stockClass(), SECONDARY),
                     label("Thema " + value(reward.theme()) + " · Magie " + value(reward.magicType())
                             + " · Ziel " + reward.targetCp() + " cp", SECONDARY),
                     label("Slots " + reward.nonMagicSlots() + " nichtmagisch / "
                             + reward.magicSlots() + " magisch", SECONDARY));
             VBox items = new VBox(3);
-            reward.itemLines().forEach(item -> items.getChildren().add(label(
-                    item.quantity() + " × " + item.text() + " · " + item.actualCp() + " cp · "
+            reward.itemLines().forEach(item -> {
+                Button itemCard = button(
+                    item.quantity() + " × " + item.text() + "   " + item.actualCp() + " cp\n"
                             + value(item.role()) + " / " + value(item.itemId())
                             + (item.magicRarity().isBlank() ? "" : " · " + item.magicRarity())
                             + (item.cursed() ? " · verflucht" : "") + " · Kapazität "
-                            + item.totalCapacity() + " · Behälter " + value(item.allowedContainers()),
-                    SECONDARY, "session-planner-reward-item-row")));
+                            + item.totalCapacity() + " · Behälter " + value(item.allowedContainers()), FLAT);
+                itemCard.getStyleClass().add("session-planner-reward-item-row");
+                itemCard.setOnAction(event -> inspectItemHandler.accept(item.itemId()));
+                itemCard.setDisable(item.itemId().isBlank());
+                items.getChildren().add(itemCard);
+            });
             VBox packing = new VBox(3);
             reward.packing().forEach(row -> packing.getChildren().add(label(
                     row.containerCount() + " × " + value(row.containerType()) + " · "
@@ -642,6 +703,19 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                     SECONDARY, "session-planner-reward-packing-row")));
             card.getChildren().addAll(items, packing);
             return card;
+        }
+
+        private Button treasureEditButton(SessionPlannerSelectedSceneSnapshot.GeneratedReward reward) {
+            Button edit = button("Bearbeiten", ACCENT);
+            edit.setOnAction(event -> new SessionTreasureEditDialog(reward, itemSearchHandler).showAndWait()
+                    .ifPresent(updated -> updateTreasureHandler.handle(sceneToken, updated)));
+            return edit;
+        }
+
+        private Button treasureRemoveButton(SessionPlannerSelectedSceneSnapshot.GeneratedReward reward) {
+            Button remove = button("Entfernen", FLAT);
+            remove.setOnAction(event -> removeTreasureHandler.handle(sceneToken, reward.treasureId()));
+            return remove;
         }
 
         private void captureFocus() {
@@ -760,6 +834,12 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     }
 
     private static double clamp(double value) { return Math.max(0.0, Math.min(1.0, value)); }
+    private static ScrollPane columnScroll(Node content) {
+        ScrollPane scroll = new ScrollPane(content);
+        scroll.setFitToWidth(true);
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        return scroll;
+    }
     private static String value(String text) { return text == null || text.isBlank() ? "–" : text; }
     private static void show(Node node, boolean visible) { node.setVisible(visible); node.setManaged(visible); }
     private static HBox actionRow(Node... nodes) { HBox row = new HBox(6, nodes); row.setAlignment(Pos.CENTER_LEFT); return row; }
@@ -791,4 +871,8 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     @FunctionalInterface public interface RestHandler { void handle(long leftSceneToken, long rightSceneToken); }
     @FunctionalInterface public interface AttachPlanHandler { void handle(long sceneToken, long planId); }
     @FunctionalInterface public interface PlanSearchHandler { void handle(long sceneToken, String query); }
+    @FunctionalInterface public interface TreasureEditHandler {
+        void handle(long sceneToken, SessionPlannerSelectedSceneSnapshot.GeneratedReward treasure);
+    }
+    @FunctionalInterface public interface TreasureRemoveHandler { void handle(long sceneToken, long treasureId); }
 }

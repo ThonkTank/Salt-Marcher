@@ -34,6 +34,13 @@ import features.sessionplanner.api.UpdateSessionManualLootNoteCommand;
 import features.sessionplanner.api.SessionPlannerAuthoredTarget;
 import features.sessionplanner.api.PrepareSessionCommand;
 import features.sessionplanner.api.SearchSessionEncounterPlansCommand;
+import features.sessionplanner.api.UpdateSessionTreasureCommand;
+import features.sessionplanner.api.RemoveSessionTreasureCommand;
+import features.sessionplanner.api.AddSessionTreasureCommand;
+import features.sessionplanner.domain.session.SessionTreasure;
+import features.encounter.api.DuplicateSavedEncounterPlanCommand;
+import features.encounter.api.DuplicateSavedEncounterPlanResult;
+import features.encounter.api.EncounterApi;
 
 public final class SessionPlannerApplicationService implements features.sessionplanner.api.SessionPlannerApi {
 
@@ -47,6 +54,7 @@ public final class SessionPlannerApplicationService implements features.sessionp
     private final SessionPlannerWorkspacePublicationCoordinator workspace;
     private final ExecutionLane executionLane;
     private final Diagnostics diagnostics;
+    private final EncounterApi encounters;
     private final SessionPreparationCoordinator preparation;
     private final AtomicBoolean initializationRequested = new AtomicBoolean();
     private final AtomicBoolean initialized = new AtomicBoolean();
@@ -55,12 +63,14 @@ public final class SessionPlannerApplicationService implements features.sessionp
             SessionPlanRepository repository,
             SessionPlannerWorkspacePublicationCoordinator workspace,
             SessionPreparationCoordinator preparation,
+            EncounterApi encounters,
             ExecutionLane executionLane,
             Diagnostics diagnostics
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.workspace = Objects.requireNonNull(workspace, "workspace");
         this.preparation = Objects.requireNonNull(preparation, "preparation");
+        this.encounters = Objects.requireNonNull(encounters, "encounters");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
@@ -132,10 +142,29 @@ public final class SessionPlannerApplicationService implements features.sessionp
 
     public void attachEncounter(AttachSessionEncounterCommand command) {
         Objects.requireNonNull(command, COMMAND_PARAMETER);
-        executeAuthoredCommand(command.target(), () -> guardedMutation(
+        executeAuthoredCommand(command.target(), () -> duplicateEncounterForScene(command));
+    }
+
+    private void duplicateEncounterForScene(AttachSessionEncounterCommand command) {
+        GuardedSave precondition = saveGuarded(
                 command.target(), session -> containsScene(session, command.sceneToken()),
-                "Szene wurde entfernt. Encounter wurde nicht verknüpft.",
-                session -> session.attachEncounter(command.sceneToken(), command.encounterPlanId())));
+                "Szene wurde entfernt. Encounter wurde nicht verknüpft.", UnaryOperator.identity());
+        if (!precondition.success()) {
+            publishFailure(precondition.message(), precondition.sessionId());
+            return;
+        }
+        encounters.duplicateSavedPlan(new DuplicateSavedEncounterPlanCommand(command.encounterPlanId()))
+                .whenComplete((result, failure) -> executeAuthoredCommand(command.target(), () -> {
+                    if (failure != null || result == null
+                            || result.status() != DuplicateSavedEncounterPlanResult.Status.DUPLICATED) {
+                        publishFailure("Encounter konnte nicht für die Szene dupliziert werden.",
+                                command.target().sessionId());
+                        return;
+                    }
+                    guardedMutation(command.target(), session -> containsScene(session, command.sceneToken()),
+                            "Szene wurde entfernt. Encounter wurde nicht verknüpft.",
+                            session -> session.attachEncounter(command.sceneToken(), result.planId()));
+                }));
     }
 
     public void detachEncounter(DetachSessionEncounterCommand command) {
@@ -228,6 +257,46 @@ public final class SessionPlannerApplicationService implements features.sessionp
                 session -> containsNote(session, command.sceneId(), command.noteId()),
                 "Beutenotiz wurde bereits entfernt.",
                 session -> session.removeManualLootNote(command.sceneId(), command.noteId())));
+    }
+
+    @Override
+    public void addTreasure(AddSessionTreasureCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeAuthoredCommand(command.target(), () -> guardedMutation(
+                command.target(), session -> containsScene(session, command.sceneId()),
+                "Szene wurde entfernt. Schatz wurde nicht hinzugefügt.",
+                session -> session.addTreasure(command.sceneId())));
+    }
+
+    @Override
+    public void updateTreasure(UpdateSessionTreasureCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeAuthoredCommand(command.target(), () -> guardedMutation(
+                command.target(), session -> containsScene(session, command.sceneId()),
+                "Szene wurde entfernt. Schatz wurde nicht gespeichert.",
+                session -> session.updateTreasure(command.sceneId(), toDomain(command.treasure()))));
+    }
+
+    @Override
+    public void removeTreasure(RemoveSessionTreasureCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeAuthoredCommand(command.target(), () -> guardedMutation(
+                command.target(), session -> containsScene(session, command.sceneId()),
+                "Szene wurde entfernt. Schatz wurde nicht entfernt.",
+                session -> session.removeTreasure(command.sceneId(), command.treasureId())));
+    }
+
+    private static SessionTreasure toDomain(UpdateSessionTreasureCommand.Treasure treasure) {
+        return new SessionTreasure(
+                treasure.treasureId(), treasure.sceneId(), treasure.title(), treasure.note(), treasure.stockClass(),
+                treasure.channel(), treasure.theme(), treasure.magicType(), treasure.targetCp(),
+                treasure.nonMagicSlots(), treasure.magicSlots(), treasure.items().stream().map(item ->
+                        new SessionTreasure.Item(item.lineId(), item.role(), item.itemId(), item.text(),
+                                item.quantity(), item.unitCp(), item.actualCp(), item.totalCapacity(),
+                                item.allowedContainers(), item.magicRarity(), item.cursed())).toList(),
+                treasure.packing().stream().map(row -> new SessionTreasure.Packing(
+                        row.lineId(), row.containerType(), row.containerCount(), row.containerId(), row.valid()))
+                        .toList());
     }
 
     @Override

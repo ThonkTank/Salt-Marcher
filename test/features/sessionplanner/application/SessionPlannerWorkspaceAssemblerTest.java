@@ -49,16 +49,6 @@ import features.party.api.SetPartyMembershipCommand;
 import features.party.api.UpdateCharacterCommand;
 import features.party.api.MovePartyCharactersCommand;
 import features.party.api.MutationResult;
-import features.sessiongeneration.api.CommitGenerationRunCommand;
-import features.sessiongeneration.api.GenerationDraftResponse;
-import features.sessiongeneration.api.GenerationRequest;
-import features.sessiongeneration.api.GenerationResult;
-import features.sessiongeneration.api.GenerationRewardBatchQuery;
-import features.sessiongeneration.api.GenerationRewardBatchResponse;
-import features.sessiongeneration.api.GenerationRunId;
-import features.sessiongeneration.api.GenerationRunResponse;
-import features.sessiongeneration.api.GenerationStatus;
-import features.sessiongeneration.api.SessionGenerationApi;
 import features.sessionplanner.api.SessionPlannerSceneTimelineProjection;
 import features.sessionplanner.api.SessionPlannerSelectedSceneSnapshot;
 import features.sessionplanner.api.SessionPlannerWorkspaceSnapshot;
@@ -68,7 +58,7 @@ import features.sessionplanner.api.SessionEncounterPlanSearchSnapshot;
 import features.sessionplanner.domain.session.EncounterDays;
 import features.sessionplanner.domain.session.SessionEncounter;
 import features.sessionplanner.domain.session.SessionEncounterAllocation;
-import features.sessionplanner.domain.session.SessionGeneratedRewardReference;
+import features.sessionplanner.domain.session.SessionTreasure;
 import features.sessionplanner.domain.session.SessionPlan;
 import features.sessionplanner.domain.session.SessionRevision;
 import java.math.BigDecimal;
@@ -90,7 +80,7 @@ final class SessionPlannerWorkspaceAssemblerTest {
         CountingParty party = new CountingParty();
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
                 new CountingSource(new SessionPlannerReadCapture(0L, List.of(), 0)),
-                party, new CountingEncounter(false), unavailableGeneration(), null,
+                party, new CountingEncounter(false), null,
                 directLane(), NoopDiagnostics.INSTANCE);
 
         SessionPlannerWorkspaceSnapshot workspace = assembler.assemble(SessionPreparationSnapshot.idle())
@@ -112,7 +102,7 @@ final class SessionPlannerWorkspaceAssemblerTest {
         CountingParty party = new CountingParty();
         CountingEncounter encounters = new CountingEncounter(false);
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
-                source, party, encounters, unavailableGeneration(), null, directLane(),
+                source, party, encounters, null, directLane(),
                 NoopDiagnostics.INSTANCE);
 
         SessionPlannerWorkspaceAssembly result = assembler.assemble(SessionPreparationSnapshot.idle())
@@ -140,7 +130,7 @@ final class SessionPlannerWorkspaceAssemblerTest {
         CountingEncounter encounters = new CountingEncounter(true);
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
                 new CountingSource(new SessionPlannerReadCapture(7L, List.of(current), 0)),
-                new CountingParty(), encounters, unavailableGeneration(), null, directLane(),
+                new CountingParty(), encounters, null, directLane(),
                 NoopDiagnostics.INSTANCE);
 
         SessionPlannerWorkspaceSnapshot workspace = assembler.assemble(SessionPreparationSnapshot.idle())
@@ -161,21 +151,16 @@ final class SessionPlannerWorkspaceAssemblerTest {
         SessionPlan current = SessionPlan.seeded(7L, List.of(1L), EncounterDays.one())
                 .replaceGeneratedContent(
                         List.of(new SessionEncounter(1L, 11L, SessionEncounterAllocation.hundred())),
-                        List.of(new SessionGeneratedRewardReference(
-                                1L, "run-7", 3L, "STALE FALLBACK LABEL")));
-        RewardGeneration generation = new RewardGeneration();
+                        List.of(materializedTreasure(1L, 3L, "")));
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
                 new CountingSource(new SessionPlannerReadCapture(7L, List.of(current), 0)),
-                new CountingParty(), new CountingEncounter(false), generation, null,
+                new CountingParty(), new CountingEncounter(false), null,
                 directLane(), NoopDiagnostics.INSTANCE);
 
         SessionPlannerSelectedSceneSnapshot.GeneratedReward reward = assembler
                 .assemble(SessionPreparationSnapshot.idle()).toCompletableFuture().join()
-                .workspace().selectedScene().generatedRewards().getFirst();
+                .workspace().selectedScene().treasures().getFirst();
 
-        assertEquals(1, generation.reads);
-        assertEquals(SessionPlannerSelectedSceneSnapshot.Availability.AVAILABLE, reward.availability());
-        assertEquals("", reward.fallbackLabel());
         assertEquals("ENCOUNTER · Sunken vault · 1 Positionen", reward.displayLabel());
         assertEquals("gem-3", reward.itemLines().getFirst().itemId());
         assertEquals(new BigDecimal("2.5"), reward.itemLines().getFirst().totalCapacity());
@@ -189,19 +174,17 @@ final class SessionPlannerWorkspaceAssemblerTest {
                         List.of(
                                 new SessionEncounter(1L, 11L, SessionEncounterAllocation.hundred()),
                                 new SessionEncounter(2L, 12L, SessionEncounterAllocation.hundred())),
-                        List.of(new SessionGeneratedRewardReference(1L, "run-7", 3L, "Scene one")))
+                        List.of(materializedTreasure(1L, 3L, "Scene one")))
                 .selectEncounter(2L);
-        RewardGeneration generation = new RewardGeneration();
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
                 new CountingSource(new SessionPlannerReadCapture(7L, List.of(current), 0)),
-                new CountingParty(), new CountingEncounter(false), generation, null,
+                new CountingParty(), new CountingEncounter(false), null,
                 directLane(), NoopDiagnostics.INSTANCE);
 
         SessionPlannerWorkspaceSnapshot workspace = assembler.assemble(SessionPreparationSnapshot.idle())
                 .toCompletableFuture().join().workspace();
 
-        assertEquals(0, generation.reads, "unselected reward references trigger no Session Generation read");
-        assertTrue(workspace.selectedScene().generatedRewards().isEmpty());
+        assertTrue(workspace.selectedScene().treasures().isEmpty());
         assertEquals(2, workspace.sceneTimeline().sceneHeaders().size());
     }
 
@@ -214,7 +197,7 @@ final class SessionPlannerWorkspaceAssemblerTest {
         CountingSource source = new CountingSource(new SessionPlannerReadCapture(7L, List.of(initial), 0));
         CountingEncounter encounters = new CountingEncounter(false, true);
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
-                source, new CountingParty(), encounters, unavailableGeneration(), null,
+                source, new CountingParty(), encounters, null,
                 directLane(), NoopDiagnostics.INSTANCE);
         SessionPlannerWorkspacePublicationCoordinator publications =
                 new SessionPlannerWorkspacePublicationCoordinator(
@@ -240,35 +223,29 @@ final class SessionPlannerWorkspaceAssemblerTest {
     }
 
     @Test
-    void missingFailedAndMalformedRewardsEachFailClosedWithTypedIssues() {
-        for (RewardMode mode : List.of(RewardMode.MISSING, RewardMode.FAILURE, RewardMode.MALFORMED)) {
-            SessionPlan current = SessionPlan.seeded(7L, List.of(1L), EncounterDays.one())
-                    .replaceGeneratedContent(
-                            List.of(new SessionEncounter(1L, 11L, SessionEncounterAllocation.hundred())),
-                            List.of(new SessionGeneratedRewardReference(
-                                    1L, "run-7", 3L, "Last known reward")));
-            SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
-                    new CountingSource(new SessionPlannerReadCapture(7L, List.of(current), 0)),
-                    new CountingParty(), new CountingEncounter(false),
-                    new RewardGeneration(mode), null, directLane(), NoopDiagnostics.INSTANCE);
+    void materializedRewardsRemainAvailableWithoutSessionGenerationReads() {
+        SessionPlan current = SessionPlan.seeded(7L, List.of(1L), EncounterDays.one())
+                .replaceGeneratedContent(
+                        List.of(new SessionEncounter(1L, 11L, SessionEncounterAllocation.hundred())),
+                        List.of(materializedTreasure(1L, 3L, "Planner-owned reward")));
+        SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
+                new CountingSource(new SessionPlannerReadCapture(7L, List.of(current), 0)),
+                new CountingParty(), new CountingEncounter(false), null,
+                directLane(), NoopDiagnostics.INSTANCE);
 
-            SessionPlannerWorkspaceSnapshot workspace = assembler.assemble(SessionPreparationSnapshot.idle())
-                    .toCompletableFuture().join().workspace();
-            SessionPlannerSelectedSceneSnapshot.GeneratedReward reward =
-                    workspace.selectedScene().generatedRewards().getFirst();
+        SessionPlannerWorkspaceSnapshot workspace = assembler.assemble(SessionPreparationSnapshot.idle())
+                .toCompletableFuture().join().workspace();
 
-            assertEquals(SessionPlannerSelectedSceneSnapshot.Availability.UNAVAILABLE, reward.availability());
-            assertEquals("Last known reward", reward.fallbackLabel());
-            SessionPlannerWorkspaceSnapshot.Kind expected = switch (mode) {
-                case MISSING -> SessionPlannerWorkspaceSnapshot.Kind.UNAVAILABLE;
-                case FAILURE -> SessionPlannerWorkspaceSnapshot.Kind.OWNER_FAILURE;
-                case MALFORMED -> SessionPlannerWorkspaceSnapshot.Kind.MALFORMED_RESPONSE;
-                case SUCCESS -> throw new AssertionError("unexpected success mode");
-            };
-            assertTrue(workspace.issues().stream().anyMatch(issue ->
-                    issue.owner() == SessionPlannerWorkspaceSnapshot.Owner.SESSION_GENERATION
-                            && issue.kind() == expected));
-        }
+        assertEquals("Planner-owned reward", workspace.selectedScene().treasures().getFirst().title());
+    }
+
+    private static SessionTreasure materializedTreasure(long sceneId, long treasureId, String title) {
+        return new SessionTreasure(
+                treasureId, sceneId, title, "", "NORMAL", "ENCOUNTER", "Sunken vault", "none", 300L, 1, 0,
+                List.of(new SessionTreasure.Item(
+                        1L, "USEFUL", "gem-3", "Gem", 1L, 300L, 300L, new BigDecimal("2.5"),
+                        "chest", "RARE", false)),
+                List.of(new SessionTreasure.Packing(1L, "chest", 1, "chest-1", true)));
     }
 
     @Test
@@ -278,7 +255,7 @@ final class SessionPlannerWorkspaceAssemblerTest {
         CountingEncounter encounters = new CountingEncounter(false);
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
                 new CountingSource(new SessionPlannerReadCapture(7L, List.of(current), 0)),
-                new CountingParty(), encounters, unavailableGeneration(), null, directLane(),
+                new CountingParty(), encounters, null, directLane(),
                 NoopDiagnostics.INSTANCE);
         SessionPlannerWorkspacePublicationCoordinator publications =
                 new SessionPlannerWorkspacePublicationCoordinator(
@@ -311,7 +288,7 @@ final class SessionPlannerWorkspaceAssemblerTest {
         CountingEncounter encounters = new CountingEncounter(false);
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
                 new CountingSource(new SessionPlannerReadCapture(7L, List.of(current), 0)),
-                new CountingParty(), encounters, unavailableGeneration(), null, directLane(),
+                new CountingParty(), encounters, null, directLane(),
                 NoopDiagnostics.INSTANCE);
         SessionPlannerWorkspacePublicationCoordinator publications =
                 new SessionPlannerWorkspacePublicationCoordinator(
@@ -345,7 +322,7 @@ final class SessionPlannerWorkspaceAssemblerTest {
     private static SessionPlan withRevision(SessionPlan source, SessionRevision revision) {
         return new SessionPlan(
                 source.sessionId(), revision, source.displayName(), source.participantRefs(), source.encounterDays(),
-                source.encounters(), source.restPlacements(), source.manualLootNotes(), source.generatedRewards(),
+                source.encounters(), source.restPlacements(), source.manualLootNotes(), source.treasures(),
                 source.selectedEncounterId(), source.statusText(), source.nextEncounterId(), source.nextLootId());
     }
 
@@ -364,34 +341,6 @@ final class SessionPlannerWorkspaceAssemblerTest {
 
             @Override
             public void close() {
-            }
-        };
-    }
-
-    private static SessionGenerationApi unavailableGeneration() {
-        return new SessionGenerationApi() {
-            @Override
-            public CompletionStage<GenerationDraftResponse> draft(GenerationRequest request) {
-                return CompletableFuture.completedFuture(GenerationDraftResponse.failure(
-                        GenerationStatus.GENERATION_FAILURE, "unused"));
-            }
-
-            @Override
-            public CompletionStage<GenerationRunResponse> commit(CommitGenerationRunCommand command) {
-                return CompletableFuture.completedFuture(GenerationRunResponse.failure(
-                        GenerationStatus.STORAGE_FAILURE, "unused"));
-            }
-
-            @Override
-            public CompletionStage<GenerationRunResponse> load(GenerationRunId runId) {
-                return CompletableFuture.completedFuture(GenerationRunResponse.failure(
-                        GenerationStatus.NOT_FOUND, "unused"));
-            }
-
-            @Override
-            public CompletionStage<GenerationRewardBatchResponse> loadRewards(GenerationRewardBatchQuery query) {
-                return CompletableFuture.completedFuture(GenerationRewardBatchResponse.failure(
-                        GenerationStatus.NOT_FOUND, "unused"));
             }
         };
     }
@@ -526,57 +475,4 @@ final class SessionPlannerWorkspaceAssemblerTest {
         @Override public void calculateAdventuringDay(CalculateAdventuringDayCommand command) { throw new UnsupportedOperationException(); }
     }
 
-    private static final class RewardGeneration implements SessionGenerationApi {
-        private final RewardMode mode;
-        private int reads;
-
-        private RewardGeneration() {
-            this(RewardMode.SUCCESS);
-        }
-
-        private RewardGeneration(RewardMode mode) {
-            this.mode = mode;
-        }
-
-        @Override
-        public CompletionStage<GenerationRewardBatchResponse> loadRewards(GenerationRewardBatchQuery query) {
-            reads++;
-            var reference = query.references().getFirst();
-            if (mode == RewardMode.MISSING) {
-                return CompletableFuture.completedFuture(
-                        GenerationRewardBatchResponse.success(List.of(), List.of(reference)));
-            }
-            if (mode == RewardMode.FAILURE) {
-                return CompletableFuture.completedFuture(
-                        GenerationRewardBatchResponse.failure(GenerationStatus.STORAGE_FAILURE, "failed"));
-            }
-            var responseReference = mode == RewardMode.MALFORMED
-                    ? new features.sessiongeneration.api.GenerationRewardReference(
-                            new GenerationRunId("foreign-run"), reference.treasureId())
-                    : reference;
-            var treasure = new GenerationResult.Treasure(
-                    responseReference.treasureId(), GenerationResult.StockClass.NORMAL,
-                    GenerationResult.RewardChannel.ENCOUNTER, 1, "Sunken vault", "NONE", 900L, 1, 0);
-            var line = new GenerationResult.LootItem(
-                    1, responseReference.treasureId(), GenerationResult.LootRole.USEFUL, "gem-3", "Azure gem",
-                    2L, 300L, 600L, new BigDecimal("2.5"), "chest", "", false);
-            var packing = new GenerationResult.Packing(
-                    1, responseReference.treasureId(), "chest", 1, "chest-small", true);
-            return CompletableFuture.completedFuture(GenerationRewardBatchResponse.success(
-                    List.of(new GenerationRewardBatchResponse.ResolvedReward(
-                            responseReference, treasure, List.of(line), List.of(packing))), List.of()));
-        }
-
-        @Override public CompletionStage<GenerationDraftResponse> draft(GenerationRequest request) {
-            throw new UnsupportedOperationException();
-        }
-        @Override public CompletionStage<GenerationRunResponse> commit(CommitGenerationRunCommand command) {
-            throw new UnsupportedOperationException();
-        }
-        @Override public CompletionStage<GenerationRunResponse> load(GenerationRunId runId) {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    private enum RewardMode { SUCCESS, MISSING, FAILURE, MALFORMED }
 }

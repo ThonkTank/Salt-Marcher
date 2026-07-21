@@ -3,6 +3,7 @@ package features.sessionplanner.adapter.javafx;
 import features.sessionplanner.api.SessionPlannerApi;
 import features.sessionplanner.api.SessionPlannerWorkspaceModel;
 import java.util.Objects;
+import features.sessionplanner.api.SessionPlannerRoutes;
 import shell.api.ContributionKey;
 import shell.api.NavigationGraphicResource;
 import shell.api.NavigationGroupSpec;
@@ -17,15 +18,26 @@ public final class SessionPlannerContribution implements ShellContribution {
     private final SessionPlannerApi planner;
     private final SessionPlannerWorkspaceModel workspace;
     private final java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> workspaceApplied;
+    private final SessionPlannerRoutes routes;
 
     public SessionPlannerContribution(
             SessionPlannerApi planner,
             SessionPlannerWorkspaceModel workspace,
             java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> workspaceApplied
     ) {
+        this(planner, workspace, workspaceApplied, SessionPlannerRoutes.none());
+    }
+
+    public SessionPlannerContribution(
+            SessionPlannerApi planner,
+            SessionPlannerWorkspaceModel workspace,
+            java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> workspaceApplied,
+            SessionPlannerRoutes routes
+    ) {
         this.planner = Objects.requireNonNull(planner, "planner");
         this.workspace = Objects.requireNonNull(workspace, "workspace");
         this.workspaceApplied = Objects.requireNonNull(workspaceApplied, "workspaceApplied");
+        this.routes = Objects.requireNonNull(routes, "routes");
     }
 
     @Override
@@ -41,6 +53,6 @@ public final class SessionPlannerContribution implements ShellContribution {
 
     @Override
     public ShellBinding bind() {
-        return new SessionPlannerBinder(planner, workspace, workspaceApplied).bind();
+        return new SessionPlannerBinder(planner, workspace, workspaceApplied, routes).bind();
     }
 }

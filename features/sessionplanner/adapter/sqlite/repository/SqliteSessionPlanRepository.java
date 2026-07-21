@@ -7,7 +7,6 @@ import features.sessionplanner.application.CommitPreparedSessionResult;
 import features.sessionplanner.application.PreparedSessionPersistenceFingerprint;
 import features.sessionplanner.application.SessionPreparedSessionStore;
 import features.sessionplanner.domain.session.SessionEncounter;
-import features.sessionplanner.domain.session.SessionGeneratedRewardReference;
 import features.sessionplanner.domain.session.SessionManualLootNote;
 import features.sessionplanner.domain.session.SessionPlan;
 import features.sessionplanner.domain.session.SessionPlanSummary;
@@ -199,11 +198,6 @@ public final class SqliteSessionPlanRepository
                 .map(note -> new SessionManualLootNote(
                         note.noteId(), note.sceneId(), note.authoredText()))
                 .toList();
-        List<SessionGeneratedRewardReference> rewards = command.generatedRewardReferences().stream()
-                .map(reward -> new SessionGeneratedRewardReference(
-                        reward.sceneId(), reward.generationRunIdentity(),
-                        reward.treasureId(), reward.lastKnownLabel()))
-                .toList();
         long nextSceneId = scenes.stream().mapToLong(SessionEncounter::encounterId).max().orElse(0L) + 1L;
         long nextNoteId = notes.stream().mapToLong(SessionManualLootNote::noteId).max().orElse(0L) + 1L;
         return new SessionPlan(
@@ -215,7 +209,7 @@ public final class SqliteSessionPlanRepository
                 scenes,
                 rests,
                 notes,
-                rewards,
+                command.treasures(),
                 command.selectedSceneId(),
                 "Generierte Session vorbereitet.",
                 Math.max(1L, nextSceneId),
@@ -235,10 +229,7 @@ public final class SqliteSessionPlanRepository
                 command.selectedSceneId(),
                 command.manualLootNotes().stream().map(note -> new PreparedSessionPersistenceFingerprint.ManualLootNote(
                         note.noteId(), note.sceneId(), note.authoredText())).toList(),
-                command.generatedRewardReferences().stream()
-                        .map(reward -> new PreparedSessionPersistenceFingerprint.GeneratedRewardReference(
-                                reward.sceneId(), reward.generationRunIdentity(), reward.treasureId(),
-                                reward.lastKnownLabel())).toList(),
+                command.treasures(),
                 command.committedGenerationRunIdentity(),
                 command.encounterPlanMappings().stream()
                         .map(mapping -> new PreparedSessionPersistenceFingerprint.EncounterPlanMapping(
@@ -295,12 +286,10 @@ public final class SqliteSessionPlanRepository
                 break;
             }
         }
-        Set<String> rewardKeys = new HashSet<>();
-        for (CommitPreparedSessionCommand.GeneratedRewardReference reward : command.generatedRewardReferences()) {
-            if (!sceneIds.contains(reward.sceneId())
-                    || !reward.generationRunIdentity().equals(command.committedGenerationRunIdentity())
-                    || !rewardKeys.add(reward.generationRunIdentity() + ":" + reward.treasureId())) {
-                errors.add("Generierte Belohnungsreferenzen sind ungültig.");
+        Set<Long> treasureIds = new HashSet<>();
+        for (var treasure : command.treasures()) {
+            if (!sceneIds.contains(treasure.sceneId()) || !treasureIds.add(treasure.treasureId())) {
+                errors.add("Schätze sind ungültig.");
                 break;
             }
         }

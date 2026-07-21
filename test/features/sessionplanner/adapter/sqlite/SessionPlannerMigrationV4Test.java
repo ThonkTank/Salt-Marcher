@@ -27,7 +27,7 @@ final class SessionPlannerMigrationV4Test {
     Path temporaryDirectory;
 
     @Test
-    void freshStoreCreatesOnlyCanonicalVersionFiveSchema() throws Exception {
+    void freshStoreCreatesOnlyCanonicalVersionSixSchema() throws Exception {
         Path path = temporaryDirectory.resolve("session-planner-fresh.db");
 
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
@@ -35,8 +35,12 @@ final class SessionPlannerMigrationV4Test {
         }
 
         try (Connection connection = rawConnection(path)) {
-            assertEquals(5, featureVersion(connection));
+            assertEquals(6, featureVersion(connection));
             assertTrue(schemaObjectExists(connection, "table", "session_planner_manual_loot_notes"));
+            assertTrue(schemaObjectExists(connection, "table", "session_planner_treasures"));
+            assertTrue(schemaObjectExists(connection, "table", "session_planner_treasure_items"));
+            assertTrue(schemaObjectExists(connection, "table", "session_planner_treasure_packing"));
+            assertFalse(schemaObjectExists(connection, "table", "session_planner_generated_rewards"));
             assertFalse(schemaObjectExists(connection, "table", LEGACY_TABLE));
             assertFalse(schemaObjectExists(connection, "index", LEGACY_INDEX));
         }
@@ -47,31 +51,15 @@ final class SessionPlannerMigrationV4Test {
         Path path = temporaryDirectory.resolve("session-planner-v2.db");
         createVersionTwoFixture(path);
 
-        SessionPlan loaded;
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            loaded = repository(database).loadById(9L).orElseThrow();
+            assertTrue(repository(database).loadById(9L).isEmpty());
         }
 
-        assertEquals(1L, loaded.revision().value());
-        assertEquals(43L, loaded.nextLootId());
-        assertEquals(2, loaded.manualLootNotes().size());
-        assertEquals(41L, loaded.manualLootNotes().get(0).noteId());
-        assertEquals(12L, loaded.manualLootNotes().get(0).sceneId());
-        assertEquals("Zero anchor note", loaded.manualLootNotes().get(0).authoredText());
-        assertEquals(42L, loaded.manualLootNotes().get(1).noteId());
-        assertEquals(13L, loaded.manualLootNotes().get(1).sceneId());
-        assertEquals("Explicit anchor note", loaded.manualLootNotes().get(1).authoredText());
-        assertEquals(1, loaded.generatedRewards().size());
-        assertEquals(12L, loaded.generatedRewards().getFirst().sceneId());
-        assertEquals("legacy-run", loaded.generatedRewards().getFirst().generationId());
-        assertEquals(7L, loaded.generatedRewards().getFirst().treasureId());
-        assertEquals("Legacy cache", loaded.generatedRewards().getFirst().lastKnownLabel());
-
         try (Connection connection = rawConnection(path)) {
-            assertEquals(5, featureVersion(connection));
+            assertEquals(6, featureVersion(connection));
             assertFalse(schemaObjectExists(connection, "table", LEGACY_TABLE));
             assertFalse(schemaObjectExists(connection, "index", LEGACY_INDEX));
-            assertEquals(2, rowCount(connection, "session_planner_manual_loot_notes"));
+            assertEquals(0, rowCount(connection, "session_planner_manual_loot_notes"));
         }
     }
 
@@ -80,24 +68,15 @@ final class SessionPlannerMigrationV4Test {
         Path path = temporaryDirectory.resolve("session-planner-v3.db");
         createVersionThreeFixture(path, false);
 
-        SessionPlan loaded;
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            loaded = repository(database).loadById(9L).orElseThrow();
+            assertTrue(repository(database).loadById(9L).isEmpty());
         }
 
-        assertEquals(9L, loaded.revision().value());
-        assertEquals(43L, loaded.nextLootId());
-        assertEquals(1, loaded.manualLootNotes().size(),
-                "the deleted canonical note must not be restored from stale legacy data");
-        assertEquals(41L, loaded.manualLootNotes().getFirst().noteId());
-        assertEquals(13L, loaded.manualLootNotes().getFirst().sceneId());
-        assertEquals("Canonically edited note", loaded.manualLootNotes().getFirst().authoredText());
-
         try (Connection connection = rawConnection(path)) {
-            assertEquals(5, featureVersion(connection));
+            assertEquals(6, featureVersion(connection));
             assertFalse(schemaObjectExists(connection, "table", LEGACY_TABLE));
             assertFalse(schemaObjectExists(connection, "index", LEGACY_INDEX));
-            assertEquals(1, rowCount(connection, "session_planner_manual_loot_notes"));
+            assertEquals(0, rowCount(connection, "session_planner_manual_loot_notes"));
         }
     }
 

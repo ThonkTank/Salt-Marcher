@@ -2,6 +2,7 @@ package features.sessionplanner.application;
 
 import features.sessionplanner.domain.session.SessionEncounterAllocation;
 import features.sessionplanner.domain.session.SessionRevision;
+import features.sessionplanner.domain.session.SessionTreasure;
 import java.util.List;
 import java.util.Objects;
 
@@ -14,7 +15,7 @@ public record CommitPreparedSessionCommand(
         List<Rest> rests,
         long selectedSceneId,
         List<ManualLootNote> manualLootNotes,
-        List<GeneratedRewardReference> generatedRewardReferences,
+        List<SessionTreasure> treasures,
         String committedGenerationRunIdentity,
         List<EncounterPlanMapping> encounterPlanMappings
 ) {
@@ -29,8 +30,7 @@ public record CommitPreparedSessionCommand(
         scenes = List.copyOf(Objects.requireNonNull(scenes, "scenes"));
         rests = List.copyOf(Objects.requireNonNull(rests, "rests"));
         manualLootNotes = List.copyOf(Objects.requireNonNull(manualLootNotes, "manualLootNotes"));
-        generatedRewardReferences = List.copyOf(
-                Objects.requireNonNull(generatedRewardReferences, "generatedRewardReferences"));
+        treasures = List.copyOf(Objects.requireNonNull(treasures, "treasures"));
         committedGenerationRunIdentity = required(committedGenerationRunIdentity, "committed generation run identity");
         encounterPlanMappings = List.copyOf(Objects.requireNonNull(encounterPlanMappings, "encounterPlanMappings"));
     }
@@ -72,22 +72,6 @@ public record CommitPreparedSessionCommand(
                 throw new IllegalArgumentException("manual note ids must be positive");
             }
             authoredText = required(authoredText, "manual note text");
-        }
-    }
-
-    public record GeneratedRewardReference(
-            long sceneId,
-            String generationRunIdentity,
-            long treasureId,
-            String lastKnownLabel
-    ) {
-
-        public GeneratedRewardReference {
-            if (sceneId <= 0L || treasureId <= 0L) {
-                throw new IllegalArgumentException("generated reward ids must be positive");
-            }
-            generationRunIdentity = required(generationRunIdentity, "generation run identity");
-            lastKnownLabel = Objects.requireNonNullElse(lastKnownLabel, "").trim();
         }
     }
 

@@ -92,11 +92,10 @@ final class SessionPreparationCoordinatorTest {
             assertEquals(1, fixture.preparedSessions.commitCalls);
             assertEquals(2L, committed.revision().value());
             assertEquals(901L, committed.encounters().getFirst().encounterPlanId());
-            assertEquals(1, committed.generatedRewards().size());
-            assertEquals(1L, committed.generatedRewards().getFirst().sceneId());
-            assertEquals("run", committed.generatedRewards().getFirst().generationId());
-            assertEquals(1L, committed.generatedRewards().getFirst().treasureId());
-            assertTrue(!committed.generatedRewards().getFirst().lastKnownLabel().isBlank());
+            assertEquals(1, committed.treasures().size());
+            assertEquals(1L, committed.treasures().getFirst().sceneId());
+            assertEquals(1L, committed.treasures().getFirst().treasureId());
+            assertTrue(!committed.treasures().getFirst().title().isBlank());
             assertEquals(SessionPreparationStatus.READY, fixture.planner.workspaceModel().current().preparation().status());
             assertInstanceOf(CommitPreparedSessionResult.Success.class, fixture.preparedSessions.lastResult);
         }

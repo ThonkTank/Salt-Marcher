@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: Session Planner Feature
-Last Reviewed: 2026-07-19
+Last Reviewed: 2026-07-21
 Source of Truth: Observable Session Planner behavior and acceptance criteria.
 
 # Session Planner Requirements
@@ -21,8 +21,8 @@ The user can:
 - set the adventure-day fraction used for planning
 - add, edit, remove, and reorder session-owned scenes
 - give a scene a title, notes, and optional World Planner location
-- attach or detach one saved Encounter plan through an action on the selected
-  scene
+- attach a saved Encounter template as a new scene-owned Encounter plan, detach
+  it, and open that independent plan in the global Encounter state tab
 - allocate encounter budget per encounter-linked scene
 - see session XP budget, planned XP, remaining or exceeded XP, and recommended
   rests
@@ -30,10 +30,13 @@ The user can:
 - create, edit, and remove authored manual loot notes without presenting them
   as generated loot
 - select a scene and edit all planner-owned fields after generation
+- edit structured treasures, including title, note, channel, stock, theme,
+  magic type, value, slots, item facts, packing, and ordering
 
-Scenes exist independently of encounters. Encounter rosters, creature details,
-party members, locations, and generated reward contents remain owned by their
-source features.
+Scenes exist independently of encounters. Creature details, party members, and
+locations remain owned by their source features. Attached Encounters are cloned
+before linking. Generated rewards become Session Planner-owned treasure
+snapshots immediately and retain no generation-run provenance.
 
 Every authored action, including Generate and destructive-replacement
 confirmation, is bound to the Session identity and revision displayed when the
@@ -46,7 +49,8 @@ publishing over the active Session's search and preparation state.
 
 The Session Planner is one master-detail workspace:
 
-- the main area shows the ordered scene list and the selected scene inspector
+- the main area is a true side-by-side workspace: an independently scrolling
+  ordered timeline and one persistent selected-scene detail pane
 - the controls slot uses one compact preparation toolbar rather than nested
   cards
 - session selection and session actions, participant summary, adventure-day
@@ -62,12 +66,14 @@ The Session Planner is one master-detail workspace:
 - at most eight saved-plan results are visible. Only those result identities
   and already-linked plan identities may be hydrated with concrete Encounter
   summaries; the global catalog is never joined into the workspace
-- the state slot shows a compact budget and selection summary
-- generated rewards appear as structured reward cards in their owning scene;
+- Session Planner contributes no private state slot; Encounter editing uses the
+  existing global Encounter state tab
+- encounter creatures, treasure items, and locations open in the global
+  inspector; compact Encounter, item, and location pickers stay in scene detail
+- treasures appear as editable structured entity cards in their owning scene;
   manual loot notes remain visually and semantically distinct
-- attaching, replacing, or detaching a saved Encounter changes only that scene's
-  Encounter reference; generated reward references remain until their owning
-  scene is deleted
+- attaching or replacing a saved Encounter creates an independent plan for that
+  scene; detaching changes only the scene link
 - opening another catalog Session atomically saves a dirty selected-scene draft
   against its displayed Session revision before switching. A stale, removed, or
   invalid source keeps the old Session and draft visible with an actionable
@@ -85,7 +91,7 @@ engine version, catalog version, or an intermediate Apply button.
 1. The user selects a session and requests generation. The request retains that
    exact Session identity and revision through loading, confirmation, and the
    final replacement check.
-2. If replacing existing scenes, rests, generated reward references, or manual
+2. If replacing existing scenes, rests, treasures, or manual
    loot notes would be destructive, the planner asks for explicit confirmation
    before work starts. An empty session needs no confirmation.
 3. Preparation runs asynchronously. The existing workspace remains usable and
@@ -115,17 +121,16 @@ plan whose concrete roster contains stable creature identities and quantities.
 The scene shows at least the plan label, difficulty, adjusted XP, creature
 count, and concrete roster summary.
 
-Every generated reward MUST be visible as structured Session Generation truth,
-including its channel and generated item lines with quantities. Value, magic,
-curse, and packing facts are shown when present. Encounter-channel rewards
-attach to their generated encounter scene. Quest and environment rewards use
-encounter-free scenes. A generated reward MUST NOT be projected as a manual
-loot placeholder or reduced to a last-known label while its source is
-available.
+Every generated reward MUST be materialized as an independent, editable Session
+Planner treasure, including channel, item quantities, value, magic, curse,
+packing, title, note, and order. Encounter-channel rewards attach to their
+generated encounter scene. Quest and environment rewards use encounter-free
+scenes. A generated reward MUST NOT be projected as a manual loot placeholder,
+reduced to a label, or require its generation run for later display.
 
 Generated scenes and planner-owned metadata are editable after preparation.
 Editing or removing a scene does not mutate or delete the immutable generation
-run or Encounter-owned saved plan.
+run, the source Encounter template, or another scene's cloned plan.
 
 ## Visible Preparation States
 
@@ -142,7 +147,8 @@ The last stable workspace remains visible in every non-ready state.
 
 ## Non-Goals
 
-- editing Encounter rosters or creature statblocks inside Session Planner
+- embedding a second Encounter or creature-statblock editor in Session Planner;
+  those edits use the global Encounter state and inspector
 - mutating Party membership
 - copying foreign domain internals into Session Planner persistence
 - exposing generation rulesets or catalog versions as user controls
@@ -168,11 +174,13 @@ The last stable workspace remains visible in every non-ready state.
 
 - the Session Planner is a dedicated left-bar tab with the compact
   master-detail structure above
+- the Planner contributes no dead state panel, and linked entities open in the
+  global Encounter state tab or inspector without leaving the workspace
 - manual planning survives close and reopen
 - linked Encounter plans contribute real adjusted XP; blank scenes contribute
   none
-- one Generate action produces concrete saved Encounter rosters and structured
-  generated rewards without a second Apply action
+- one Generate action produces distinct saved Encounter plans and editable
+  treasure snapshots without a second Apply action or retained run provenance
 - destructive replacement requires confirmation; failed or stale preparation
   changes no authored session content
 - retry does not expose duplicate or partial generated content

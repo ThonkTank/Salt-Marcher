@@ -48,6 +48,12 @@ public interface SessionPlannerApi {
 
     void removeManualLootNote(RemoveSessionManualLootNoteCommand command);
 
+    void addTreasure(AddSessionTreasureCommand command);
+
+    void updateTreasure(UpdateSessionTreasureCommand command);
+
+    void removeTreasure(RemoveSessionTreasureCommand command);
+
     void prepareSession(PrepareSessionCommand command);
 
     void cancelPreparation();

@@ -569,10 +569,7 @@ public final class SessionPreparationCoordinator {
         List<CommitPreparedSessionCommand.ManualLootNote> notes = prepared.manualLootNotes().stream()
                 .map(note -> new CommitPreparedSessionCommand.ManualLootNote(
                         note.noteId(), note.sceneId(), note.authoredText())).toList();
-        List<CommitPreparedSessionCommand.GeneratedRewardReference> rewards = prepared.rewards().stream()
-                .map(reward -> new CommitPreparedSessionCommand.GeneratedRewardReference(
-                        reward.sceneId(), reward.generationRunId(), reward.treasureId(),
-                        reward.lastKnownLabel())).toList();
+        var treasures = prepared.preparedTreasures();
         String runId = prepared.generationDraft().result().runId().value();
         String persistenceFingerprint = PreparedSessionPersistenceFingerprint.compute(
                 prepared.source().sessionId(),
@@ -587,9 +584,7 @@ public final class SessionPreparationCoordinator {
                 prepared.selectedSceneId(),
                 notes.stream().map(note -> new PreparedSessionPersistenceFingerprint.ManualLootNote(
                         note.noteId(), note.sceneId(), note.authoredText())).toList(),
-                rewards.stream().map(reward -> new PreparedSessionPersistenceFingerprint.GeneratedRewardReference(
-                        reward.sceneId(), reward.generationRunIdentity(), reward.treasureId(),
-                        reward.lastKnownLabel())).toList(),
+                treasures,
                 runId,
                 mappings.stream().map(mapping -> new PreparedSessionPersistenceFingerprint.EncounterPlanMapping(
                         mapping.encounterNumber(), mapping.planId())).toList());
@@ -602,7 +597,7 @@ public final class SessionPreparationCoordinator {
                 rests,
                 prepared.selectedSceneId(),
                 notes,
-                rewards,
+                treasures,
                 runId,
                 mappings);
     }
@@ -765,7 +760,7 @@ public final class SessionPreparationCoordinator {
         return !session.encounters().isEmpty()
                 || !session.restPlacements().isEmpty()
                 || !session.manualLootNotes().isEmpty()
-                || !session.generatedRewards().isEmpty();
+                || !session.treasures().isEmpty();
     }
 
     @FunctionalInterface

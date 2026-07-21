@@ -16,6 +16,9 @@ import features.sessionplanner.api.ClearSessionRestGapCommand;
 import features.sessionplanner.api.DetachSessionEncounterCommand;
 import features.sessionplanner.api.RemoveSessionManualLootNoteCommand;
 import features.sessionplanner.api.UpdateSessionManualLootNoteCommand;
+import features.sessionplanner.api.UpdateSessionTreasureCommand;
+import features.sessionplanner.api.RemoveSessionTreasureCommand;
+import features.sessionplanner.api.AddSessionTreasureCommand;
 import features.sessionplanner.api.SessionPlannerAuthoredTarget;
 import features.sessionplanner.api.SearchSessionEncounterPlansCommand;
 import features.sessionplanner.api.SessionPlannerCatalogCommand;
@@ -25,6 +28,7 @@ import features.sessionplanner.api.SessionPlannerParticipantCommand;
 import features.sessionplanner.api.SessionPlannerRestKind;
 import features.sessionplanner.api.SessionPlannerWorkspaceModel;
 import features.sessionplanner.api.SessionPlannerWorkspaceSnapshot;
+import features.sessionplanner.api.SessionPlannerRoutes;
 import features.sessionplanner.api.SetSessionEncounterDaysCommand;
 import features.sessionplanner.api.SetSessionRestGapCommand;
 import features.sessionplanner.api.UpdateSessionEncounterSceneCommand;
@@ -43,15 +47,26 @@ final class SessionPlannerBinder {
     private final SessionPlannerWorkspaceModel workspace;
     private final java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> workspaceApplied;
     private SessionPlannerAuthoredTarget replacementConfirmationTarget;
+    private final SessionPlannerRoutes routes;
 
     SessionPlannerBinder(
             SessionPlannerApi planner,
             SessionPlannerWorkspaceModel workspace,
             java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> workspaceApplied
     ) {
+        this(planner, workspace, workspaceApplied, SessionPlannerRoutes.none());
+    }
+
+    SessionPlannerBinder(
+            SessionPlannerApi planner,
+            SessionPlannerWorkspaceModel workspace,
+            java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> workspaceApplied,
+            SessionPlannerRoutes routes
+    ) {
         this.planner = Objects.requireNonNull(planner, "planner");
         this.workspace = Objects.requireNonNull(workspace, "workspace");
         this.workspaceApplied = Objects.requireNonNull(workspaceApplied, "workspaceApplied");
+        this.routes = Objects.requireNonNull(routes, "routes");
     }
 
     ShellBinding bind() {
@@ -60,12 +75,10 @@ final class SessionPlannerBinder {
         SessionPlannerControlsView controlsView = new SessionPlannerControlsView();
         CatalogCrudControlsView catalogView = new CatalogCrudControlsView();
         SessionPlannerTimelineMainView timelineView = new SessionPlannerTimelineMainView();
-        SessionPlannerStateView stateView = new SessionPlannerStateView();
 
         catalogView.bind(catalogContentModel);
         controlsView.bind(viewModel);
         timelineView.bind(viewModel);
-        stateView.bind(viewModel);
 
         catalogView.onViewInputEvent(event -> consumeCatalog(planner, viewModel, timelineView, event));
 
@@ -179,6 +192,28 @@ final class SessionPlannerBinder {
                 planner.searchEncounterPlans(new SearchSessionEncounterPlansCommand(sceneToken, query));
             }
         }));
+        timelineView.onEditEncounter(routes::editEncounter);
+        timelineView.onInspectCreature(routes::inspectCreature);
+        timelineView.onInspectItem(routes::inspectItem);
+        timelineView.onInspectLocation(routes::inspectLocation);
+        timelineView.onSearchItems(routes::searchItems);
+        timelineView.onAddTreasure(sceneToken -> ifTarget(viewModel, target ->
+                planner.addTreasure(new AddSessionTreasureCommand(target, sceneToken))));
+        timelineView.onUpdateTreasure((sceneToken, treasure) -> ifTarget(viewModel, target ->
+                planner.updateTreasure(new UpdateSessionTreasureCommand(
+                        target, sceneToken, new UpdateSessionTreasureCommand.Treasure(
+                                treasure.treasureId(), sceneToken, treasure.title(), treasure.note(),
+                                treasure.stockClass(), treasure.channel(), treasure.theme(), treasure.magicType(),
+                                treasure.targetCp(), treasure.nonMagicSlots(), treasure.magicSlots(),
+                                treasure.itemLines().stream().map(item -> new UpdateSessionTreasureCommand.Item(
+                                        item.lineId(), item.role(), item.itemId(), item.text(), item.quantity(),
+                                        item.unitCp(), item.actualCp(), item.totalCapacity(), item.allowedContainers(),
+                                        item.magicRarity(), item.cursed())).toList(),
+                                treasure.packing().stream().map(row -> new UpdateSessionTreasureCommand.Packing(
+                                        row.lineId(), row.containerType(), row.containerCount(), row.containerId(),
+                                        row.valid())).toList())))));
+        timelineView.onRemoveTreasure((sceneToken, treasureId) -> ifTarget(viewModel, target ->
+                planner.removeTreasure(new RemoveSessionTreasureCommand(target, sceneToken, treasureId))));
 
         workspace.subscribe(snapshot -> {
             long startedNanos = System.nanoTime();
@@ -194,7 +229,7 @@ final class SessionPlannerBinder {
                 initial, Math.max(0L, System.nanoTime() - initialApplyStartedNanos),
                 timelineView.materializedUnitCount()));
         planner.initialize();
-        return new Binding(ShellControls.stack(catalogView, controlsView), timelineView, stateView);
+        return new Binding(ShellControls.stack(catalogView, controlsView), timelineView);
     }
 
     private static void ifSession(SessionPlannerViewModel viewModel, Runnable action) {
@@ -313,8 +348,7 @@ final class SessionPlannerBinder {
 
     private record Binding(
             Node controls,
-            Node main,
-            Node state
+            Node main
     ) implements ShellBinding {
 
         @Override
@@ -326,8 +360,7 @@ final class SessionPlannerBinder {
         public Map<ShellSlot, Node> slotContent() {
             return Map.of(
                     ShellSlot.COCKPIT_CONTROLS, controls,
-                    ShellSlot.COCKPIT_MAIN, main,
-                    ShellSlot.COCKPIT_STATE, state);
+                    ShellSlot.COCKPIT_MAIN, main);
         }
     }
 }

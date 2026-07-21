@@ -9,7 +9,9 @@ import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import features.sessionplanner.adapter.sqlite.model.SessionEncounterRecord;
-import features.sessionplanner.adapter.sqlite.model.SessionGeneratedRewardRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionTreasureRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionTreasureItemRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionTreasurePackingRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionManualLootNoteRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionParticipantRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionRestPlacementRecord;
@@ -85,18 +87,40 @@ final class SessionPlanSqliteDetailReads {
         }
     }
 
-    Map<Long, List<SessionGeneratedRewardRecord>> loadAllGeneratedRewards(Connection connection) throws SQLException {
+    Map<Long, List<SessionTreasureRecord>> loadAllTreasures(Connection connection) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT session_id, scene_id, generation_id, treasure_id, last_known_label, sort_order FROM "
-                        + SessionPlannerPersistenceSchema.SESSION_GENERATED_REWARDS_TABLE
-                        + " ORDER BY session_id, sort_order, generation_id, treasure_id");
+                "SELECT session_id, treasure_id, scene_id, title, note, stock_class, channel, theme, magic_type, "
+                        + "target_cp, non_magic_slots, magic_slots, sort_order FROM "
+                        + SessionPlannerPersistenceSchema.SESSION_TREASURES_TABLE
+                        + " ORDER BY session_id, sort_order, treasure_id");
                 ResultSet resultSet = statement.executeQuery()) {
-            Map<Long, List<SessionGeneratedRewardRecord>> values = new LinkedHashMap<>();
+            Map<Long, List<SessionTreasureRecord>> values = new LinkedHashMap<>();
             while (resultSet.next()) {
-                add(values, resultSet.getLong("session_id"), new SessionGeneratedRewardRecord(
-                        resultSet.getLong("scene_id"), resultSet.getString("generation_id"),
-                        resultSet.getLong("treasure_id"), resultSet.getString("last_known_label"),
-                        resultSet.getInt(SORT_ORDER)));
+                add(values, resultSet.getLong("session_id"), treasureRecord(resultSet));
+            }
+            return immutable(values);
+        }
+    }
+
+    Map<Long, List<SessionTreasureItemRecord>> loadAllTreasureItems(Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                treasureItemSelect() + " ORDER BY session_id, treasure_id, sort_order, line_id");
+                ResultSet resultSet = statement.executeQuery()) {
+            Map<Long, List<SessionTreasureItemRecord>> values = new LinkedHashMap<>();
+            while (resultSet.next()) {
+                add(values, resultSet.getLong("session_id"), treasureItemRecord(resultSet));
+            }
+            return immutable(values);
+        }
+    }
+
+    Map<Long, List<SessionTreasurePackingRecord>> loadAllTreasurePacking(Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                treasurePackingSelect() + " ORDER BY session_id, treasure_id, sort_order, line_id");
+                ResultSet resultSet = statement.executeQuery()) {
+            Map<Long, List<SessionTreasurePackingRecord>> values = new LinkedHashMap<>();
+            while (resultSet.next()) {
+                add(values, resultSet.getLong("session_id"), treasurePackingRecord(resultSet));
             }
             return immutable(values);
         }
@@ -195,25 +219,85 @@ final class SessionPlanSqliteDetailReads {
         }
     }
 
-    List<SessionGeneratedRewardRecord> loadGeneratedRewards(Connection connection, long sessionId)
-            throws SQLException {
+    List<SessionTreasureRecord> loadTreasures(Connection connection, long sessionId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT scene_id, generation_id, treasure_id, last_known_label, sort_order FROM "
-                        + SessionPlannerPersistenceSchema.SESSION_GENERATED_REWARDS_TABLE
-                        + " WHERE session_id = ? ORDER BY sort_order, generation_id, treasure_id")) {
+                "SELECT treasure_id, scene_id, title, note, stock_class, channel, theme, magic_type, target_cp, "
+                        + "non_magic_slots, magic_slots, sort_order FROM "
+                        + SessionPlannerPersistenceSchema.SESSION_TREASURES_TABLE
+                        + " WHERE session_id = ? ORDER BY sort_order, treasure_id")) {
             statement.setLong(1, sessionId);
             try (ResultSet resultSet = statement.executeQuery()) {
-                List<SessionGeneratedRewardRecord> rewards = new ArrayList<>();
+                List<SessionTreasureRecord> values = new ArrayList<>();
                 while (resultSet.next()) {
-                    rewards.add(new SessionGeneratedRewardRecord(
-                            resultSet.getLong("scene_id"),
-                            resultSet.getString("generation_id"),
-                            resultSet.getLong("treasure_id"),
-                            resultSet.getString("last_known_label"),
-                            resultSet.getInt(SORT_ORDER)));
+                    values.add(treasureRecord(resultSet));
                 }
-                return List.copyOf(rewards);
+                return List.copyOf(values);
             }
         }
+    }
+
+    List<SessionTreasureItemRecord> loadTreasureItems(Connection connection, long sessionId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                treasureItemSelect() + " WHERE session_id = ? ORDER BY treasure_id, sort_order, line_id")) {
+            statement.setLong(1, sessionId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<SessionTreasureItemRecord> values = new ArrayList<>();
+                while (resultSet.next()) {
+                    values.add(treasureItemRecord(resultSet));
+                }
+                return List.copyOf(values);
+            }
+        }
+    }
+
+    List<SessionTreasurePackingRecord> loadTreasurePacking(Connection connection, long sessionId)
+            throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                treasurePackingSelect() + " WHERE session_id = ? ORDER BY treasure_id, sort_order, line_id")) {
+            statement.setLong(1, sessionId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<SessionTreasurePackingRecord> values = new ArrayList<>();
+                while (resultSet.next()) {
+                    values.add(treasurePackingRecord(resultSet));
+                }
+                return List.copyOf(values);
+            }
+        }
+    }
+
+    private static SessionTreasureRecord treasureRecord(ResultSet resultSet) throws SQLException {
+        return new SessionTreasureRecord(
+                resultSet.getLong("treasure_id"), resultSet.getLong("scene_id"), resultSet.getString("title"),
+                resultSet.getString("note"), resultSet.getString("stock_class"), resultSet.getString("channel"),
+                resultSet.getString("theme"), resultSet.getString("magic_type"), resultSet.getLong("target_cp"),
+                resultSet.getInt("non_magic_slots"), resultSet.getInt("magic_slots"), resultSet.getInt(SORT_ORDER));
+    }
+
+    private static String treasureItemSelect() {
+        return "SELECT session_id, treasure_id, line_id, role, item_id, item_text, quantity, unit_cp, actual_cp, "
+                + "total_capacity, allowed_containers, magic_rarity, cursed, sort_order FROM "
+                + SessionPlannerPersistenceSchema.SESSION_TREASURE_ITEMS_TABLE;
+    }
+
+    private static SessionTreasureItemRecord treasureItemRecord(ResultSet resultSet) throws SQLException {
+        return new SessionTreasureItemRecord(
+                resultSet.getLong("treasure_id"), resultSet.getLong("line_id"), resultSet.getString("role"),
+                resultSet.getString("item_id"), resultSet.getString("item_text"), resultSet.getLong("quantity"),
+                resultSet.getLong("unit_cp"), resultSet.getLong("actual_cp"),
+                resultSet.getString("total_capacity"), resultSet.getString("allowed_containers"),
+                resultSet.getString("magic_rarity"), resultSet.getInt("cursed") != 0, resultSet.getInt(SORT_ORDER));
+    }
+
+    private static String treasurePackingSelect() {
+        return "SELECT session_id, treasure_id, line_id, container_type, container_count, container_id, valid, "
+                + "sort_order FROM " + SessionPlannerPersistenceSchema.SESSION_TREASURE_PACKING_TABLE;
+    }
+
+    private static SessionTreasurePackingRecord treasurePackingRecord(ResultSet resultSet) throws SQLException {
+        return new SessionTreasurePackingRecord(
+                resultSet.getLong("treasure_id"), resultSet.getLong("line_id"),
+                resultSet.getString("container_type"), resultSet.getInt("container_count"),
+                resultSet.getString("container_id"), resultSet.getInt("valid") != 0,
+                resultSet.getInt(SORT_ORDER));
     }
 }

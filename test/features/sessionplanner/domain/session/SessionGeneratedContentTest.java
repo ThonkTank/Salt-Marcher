@@ -30,9 +30,9 @@ final class SessionGeneratedContentTest {
         List<SessionEncounter> scenes = List.of(
                 new SessionEncounter(1L, 101L, new SessionEncounterAllocation(new BigDecimal("40"))),
                 new SessionEncounter(2L, 102L, new SessionEncounterAllocation(new BigDecimal("60"))));
-        List<SessionGeneratedRewardReference> rewards = List.of(
-                new SessionGeneratedRewardReference(1L, "run-91", 1L, "Encounter treasure"),
-                new SessionGeneratedRewardReference(2L, "run-91", 2L, "Quest reward"));
+        List<SessionTreasure> rewards = List.of(
+                treasure(1L, 1L, "Encounter treasure"),
+                treasure(2L, 2L, "Quest reward"));
 
         SessionPlan replaced = original.replaceGeneratedContent(scenes, rewards);
 
@@ -41,12 +41,13 @@ final class SessionGeneratedContentTest {
         assertEquals(List.of(11L, 12L), replaced.participantRefs());
         assertEquals(new BigDecimal("0.6"), replaced.encounterDays().value());
         assertTrue(replaced.manualLootNotes().isEmpty());
-        assertEquals(rewards, replaced.generatedRewards());
+        assertEquals(List.of("Encounter treasure", "Quest reward"), replaced.treasures().stream()
+                .map(SessionTreasure::title).toList());
         assertTrue(replaced.restPlacements().isEmpty());
     }
 
     @Test
-    void generatedRewardsRoundTripThroughVersionTwoSchema() {
+    void editableTreasureSnapshotRoundTripsWithoutGenerationProvenance() {
         SqliteDatabase database = new SqliteDatabase(
                 temporaryDirectory.resolve("session-generation-roundtrip.db"),
                 NoopDiagnostics.INSTANCE);
@@ -59,16 +60,18 @@ final class SessionGeneratedContentTest {
                                 1L,
                                 401L,
                                 SessionEncounterAllocation.hundred())),
-                        List.of(new SessionGeneratedRewardReference(
-                                1L,
-                                "run-77",
-                                3L,
-                                "Vault reward")));
+                        List.of(new SessionTreasure(
+                                3L, 1L, "Vault reward", "Behind the altar", "OVERSTOCK", "ENCOUNTER",
+                                "Sunken vault", "WONDROUS", 1234L, 2, 1,
+                                List.of(new SessionTreasure.Item(
+                                        7L, "MAGIC", "item:ring", "Ring", 2L, 500L, 1000L,
+                                        new BigDecimal("3.5"), "chest,sack", "RARE", true)),
+                                List.of(new SessionTreasure.Packing(8L, "chest", 1, "iron-chest", true)))));
 
         repository.insert(plan);
         SessionPlan loaded = repository.loadById(8L).orElseThrow();
 
-        assertEquals(plan.generatedRewards(), loaded.generatedRewards());
+        assertEquals(plan.treasures(), loaded.treasures());
         assertTrue(loaded.manualLootNotes().isEmpty());
         database.close();
     }
@@ -81,8 +84,8 @@ final class SessionGeneratedContentTest {
                                 new SessionEncounter(1L, 101L, new SessionEncounterAllocation(new BigDecimal("40"))),
                                 new SessionEncounter(2L, 202L, new SessionEncounterAllocation(new BigDecimal("60")))),
                         List.of(
-                                new SessionGeneratedRewardReference(1L, "run-9", 1L, "first reward"),
-                                new SessionGeneratedRewardReference(2L, "run-9", 2L, "second reward")))
+                                treasure(1L, 1L, "first reward"),
+                                treasure(2L, 2L, "second reward")))
                 .addManualLootNote(1L, "First cache")
                 .setRestPlacement(SessionRestPlacement.shortRestBetween(1L, 2L));
 
@@ -95,8 +98,8 @@ final class SessionGeneratedContentTest {
                 .map(scene -> scene.allocation().budgetPercentage().stripTrailingZeros().toPlainString()).toList());
         assertEquals(plan.manualLootNotes(), replaced.manualLootNotes());
         assertEquals(plan.restPlacements(), replaced.restPlacements());
-        assertEquals(List.of(1L, 2L), replaced.generatedRewards().stream()
-                .map(SessionGeneratedRewardReference::sceneId).toList(),
+        assertEquals(List.of(1L, 2L), replaced.treasures().stream()
+                .map(SessionTreasure::sceneId).toList(),
                 "replacing an encounter link preserves generated reward references");
 
         SessionPlan detached = replaced.detachEncounter(1L);
@@ -106,11 +109,31 @@ final class SessionGeneratedContentTest {
         assertEquals(202L, detached.encounters().getLast().encounterPlanId());
         assertEquals(replaced.manualLootNotes(), detached.manualLootNotes());
         assertEquals(replaced.restPlacements(), detached.restPlacements());
-        assertEquals(replaced.generatedRewards(), detached.generatedRewards());
+        assertEquals(replaced.treasures(), detached.treasures());
 
         SessionPlan deleted = detached.removeEncounter(1L);
-        assertEquals(List.of(2L), deleted.generatedRewards().stream()
-                .map(SessionGeneratedRewardReference::sceneId).toList(),
+        assertEquals(List.of(2L), deleted.treasures().stream()
+                .map(SessionTreasure::sceneId).toList(),
                 "only deleting the owning scene prunes its generated reward references");
+    }
+
+    @Test
+    void addsAnIndependentTreasureAfterMaterializedGenerationContent() {
+        SessionPlan plan = SessionPlan.seeded(12L, List.of(31L), EncounterDays.one())
+                .replaceGeneratedContent(
+                        List.of(new SessionEncounter(1L, 101L, SessionEncounterAllocation.hundred())),
+                        List.of(treasure(1L, 4L, "Generated cache")));
+
+        SessionPlan updated = plan.addTreasure(1L);
+
+        assertEquals(List.of(4L, 5L), updated.treasures().stream()
+                .map(SessionTreasure::treasureId).toList());
+        assertEquals("Neuer Schatz", updated.treasures().getLast().title());
+        assertEquals(6L, updated.nextLootId());
+    }
+
+    private static SessionTreasure treasure(long sceneId, long treasureId, String title) {
+        return new SessionTreasure(treasureId, sceneId, title, "", "", "", "", "",
+                0L, 0, 0, List.of(), List.of());
     }
 }

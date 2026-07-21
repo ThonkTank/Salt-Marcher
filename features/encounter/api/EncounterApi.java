@@ -11,6 +11,14 @@ public interface EncounterApi {
     java.util.concurrent.CompletionStage<GeneratedEncounterPlanSummaryBatchResult> loadGeneratedPlanSummaries(
             GeneratedEncounterPlanSummaryBatchQuery query);
 
+    default java.util.concurrent.CompletionStage<DuplicateSavedEncounterPlanResult> duplicateSavedPlan(
+            DuplicateSavedEncounterPlanCommand command
+    ) {
+        return java.util.concurrent.CompletableFuture.completedFuture(new DuplicateSavedEncounterPlanResult(
+                DuplicateSavedEncounterPlanResult.Status.STORAGE_FAILURE, 0L,
+                "Encounter duplication is unavailable."));
+    }
+
     default java.util.concurrent.CompletionStage<SearchSavedEncounterPlansResult> searchSavedPlans(
             SearchSavedEncounterPlansQuery query
     ) {
