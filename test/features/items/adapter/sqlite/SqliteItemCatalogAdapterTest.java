@@ -6,23 +6,24 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import features.items.domain.catalog.ItemCatalogData;
+import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
+import features.items.api.ItemsCatalogApi;
+import features.items.application.ItemsApplicationService;
 import features.items.domain.catalog.ItemCatalogAccessException;
+import features.items.domain.catalog.ItemCatalogData;
 import features.items.domain.importing.ImportedItem;
 import features.items.domain.importing.ItemImportBatch;
-import features.items.application.ItemsApplicationService;
-import features.items.api.ItemsCatalogApi;
-import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
-import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import platform.diagnostics.NoopDiagnostics;
 import platform.execution.DirectExecutionLane;
 import platform.persistence.FeatureStoreReadiness;
 import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
+import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.util.List;
 
 class SqliteItemCatalogAdapterTest {
 
@@ -33,12 +34,15 @@ class SqliteItemCatalogAdapterTest {
     void usesSharedLifecycleForQueriesBackupAndAtomicTableReplacement() {
         Path databasePath = temporaryDirectory.resolve("game.db");
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            SqliteItemCatalogAdapter adapter = new SqliteItemCatalogAdapter(database);
+            var store = TestFeatureStores.store(database, SqliteItemCatalogAdapter.storeDefinition());
+            SqliteItemCatalogAdapter adapter = new SqliteItemCatalogAdapter(store);
+            SqliteItemImportStore importer =
+                    new SqliteItemImportStore(database.maintenanceFor(store));
             assertFalse(adapter.isAvailable());
 
-            adapter.initialize();
-            assertNotNull(adapter.createVerifiedBackup().createdAt());
-            adapter.replaceAll(validBatch(List.of("Light")));
+            importer.initialize();
+            assertNotNull(importer.createVerifiedBackup().createdAt());
+            importer.replaceAll(validBatch(List.of("Light")));
 
             assertTrue(adapter.isAvailable());
             ItemCatalogData.CatalogPage page = adapter.search(new ItemCatalogData.SearchSpec(
@@ -51,7 +55,7 @@ class SqliteItemCatalogAdapterTest {
                     adapter.loadFilterValues().categories());
 
             assertThrows(IllegalStateException.class,
-                    () -> adapter.replaceAll(validBatch(List.of("Duplicate", "Duplicate"))));
+                    () -> importer.replaceAll(validBatch(List.of("Duplicate", "Duplicate"))));
             assertEquals("Club", adapter.loadDetail("equipment:club").row().name());
             assertEquals(2, adapter.search(new ItemCatalogData.SearchSpec(
                     null, null, null, null, null, null, null, null,
@@ -65,7 +69,7 @@ class SqliteItemCatalogAdapterTest {
         seedLegacy(databasePath);
 
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            SqliteItemCatalogAdapter adapter = new SqliteItemCatalogAdapter(database);
+            SqliteItemCatalogAdapter adapter = preparedAdapter(database);
             assertEquals(FeatureStoreReadiness.READY, database.prepareRegisteredStores().get("items"));
 
             ItemCatalogData.Detail detail = adapter.loadDetail("legacy:moon-blade");
@@ -100,7 +104,7 @@ class SqliteItemCatalogAdapterTest {
         }
 
         try (SqliteDatabase reopened = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            SqliteItemCatalogAdapter adapter = new SqliteItemCatalogAdapter(reopened);
+            SqliteItemCatalogAdapter adapter = preparedAdapter(reopened);
             assertEquals("Moon Blade", adapter.loadDetail("legacy:moon-blade").row().name());
         }
         try (Connection connection = open(databasePath)) {
@@ -116,7 +120,7 @@ class SqliteItemCatalogAdapterTest {
         seedIntermediate(databasePath);
 
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            SqliteItemCatalogAdapter adapter = new SqliteItemCatalogAdapter(database);
+            SqliteItemCatalogAdapter adapter = preparedAdapter(database);
             ItemCatalogData.Detail detail = adapter.loadDetail("equipment:shield");
             assertNotNull(detail);
             assertEquals("Shield", detail.row().name());
@@ -126,7 +130,7 @@ class SqliteItemCatalogAdapterTest {
         }
 
         try (SqliteDatabase reopened = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            SqliteItemCatalogAdapter adapter = new SqliteItemCatalogAdapter(reopened);
+            SqliteItemCatalogAdapter adapter = preparedAdapter(reopened);
             assertEquals(1, adapter.search(new ItemCatalogData.SearchSpec(
                     null, null, null, null, null, null, null, null,
                     ItemCatalogData.SortField.NAME, true, 50, 0)).totalCount());
@@ -148,8 +152,11 @@ class SqliteItemCatalogAdapterTest {
         }
 
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            SqliteItemCatalogAdapter items = new SqliteItemCatalogAdapter(database);
-            SqliteCreatureCatalogQueryAdapter creatures = new SqliteCreatureCatalogQueryAdapter(database);
+            var itemsStore = database.featureStore(SqliteItemCatalogAdapter.storeDefinition());
+            var creaturesStore =
+                    database.featureStore(SqliteCreatureCatalogQueryAdapter.storeDefinition());
+            SqliteItemCatalogAdapter items = new SqliteItemCatalogAdapter(itemsStore);
+            SqliteCreatureCatalogQueryAdapter creatures = new SqliteCreatureCatalogQueryAdapter(creaturesStore);
 
             var readiness = database.prepareRegisteredStores();
 
@@ -162,8 +169,6 @@ class SqliteItemCatalogAdapterTest {
             assertEquals(ItemCatalogAccessException.Reason.INCOMPATIBLE, failure.reason());
 
             ItemsApplicationService application = new ItemsApplicationService(
-                    items,
-                    List::of,
                     items,
                     DirectExecutionLane.INSTANCE,
                     NoopDiagnostics.INSTANCE);
@@ -197,6 +202,11 @@ class SqliteItemCatalogAdapterTest {
                         "Rare", true, null, "", null, "", "", List.of(),
                         "Requires attunement.", "2014 SRD",
                         "https://www.dnd5eapi.co/api/2014/magic-items/ring")));
+    }
+
+    private static SqliteItemCatalogAdapter preparedAdapter(SqliteDatabase database) {
+        var store = TestFeatureStores.store(database, SqliteItemCatalogAdapter.storeDefinition());
+        return new SqliteItemCatalogAdapter(store);
     }
 
     private static void seedLegacy(Path databasePath) throws Exception {
@@ -270,7 +280,9 @@ class SqliteItemCatalogAdapterTest {
 
     private static void createLedger(java.sql.Statement statement) throws Exception {
         statement.execute("PRAGMA user_version=1");
-        statement.execute("CREATE TABLE sm_schema_versions(owner TEXT PRIMARY KEY, version INTEGER NOT NULL)");
+        statement.execute(
+                "CREATE TABLE sm_schema_versions(owner TEXT PRIMARY KEY, version INTEGER NOT"
+                    + " NULL)");
         statement.execute("INSERT INTO sm_schema_versions VALUES('items', 1)");
     }
 

@@ -1,18 +1,21 @@
 package features.hex.adapter.sqlite.repository;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import platform.persistence.SqliteDatabase;
 import features.hex.adapter.sqlite.gateway.local.SqliteHexMapLocalGateway;
 import features.hex.adapter.sqlite.mapper.HexMapMapper;
+import features.hex.domain.map.HexCoordinate;
 import features.hex.domain.map.HexMap;
 import features.hex.domain.map.HexMapIdentity;
 import features.hex.domain.map.HexMapSummary;
 import features.hex.domain.map.HexMarker;
-import features.hex.domain.map.HexCoordinate;
 import features.hex.domain.map.HexTerrain;
 import features.hex.domain.map.repository.HexMapRepository;
+
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 public final class SqliteHexMapRepository implements HexMapRepository {
 
@@ -20,12 +23,12 @@ public final class SqliteHexMapRepository implements HexMapRepository {
 
     private final SqliteHexMapLocalGateway gateway;
 
-    public SqliteHexMapRepository() {
-        this(new SqliteHexMapLocalGateway());
+    public static FeatureStoreDefinition storeDefinition() {
+        return SqliteHexMapLocalGateway.storeDefinition();
     }
 
-    public SqliteHexMapRepository(SqliteDatabase database) {
-        this(new SqliteHexMapLocalGateway(database));
+    public SqliteHexMapRepository(FeatureStoreHandle store) {
+        this(new SqliteHexMapLocalGateway(store));
     }
 
     SqliteHexMapRepository(SqliteHexMapLocalGateway gateway) {

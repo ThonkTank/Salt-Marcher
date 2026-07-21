@@ -10,8 +10,7 @@ architecture, contracts, proof history, or feature status beyond these links.
 
 ## Active Migrations
 
-- [Catalog Greenfield Roadmap](../../catalog/delivery/roadmap-catalog-greenfield.md)
-- [Session Planner Greenfield Roadmap](../../sessionplanner/delivery/roadmap-session-planner-greenfield.md)
+There are no active migration roadmaps.
 
 Each roadmap is temporary and is removed after its own finish criteria are
 met. Durable decisions remain in the linked owner documents.

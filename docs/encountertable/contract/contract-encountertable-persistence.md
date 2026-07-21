@@ -35,6 +35,8 @@ This document is normative for the `encountertable` feature's persistence path.
 
 ## Validation And Error Behavior
 
+Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
+
 - schema readiness MUST be verified before encounter-table lookups return
   successful results
 - malformed table rows, entry rows, or loot-link rows MUST become

@@ -3,14 +3,18 @@ package features.sessionplanner.domain.session;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
+
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteDatabase;
-import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
 
 final class SessionGeneratedContentTest {
 
@@ -22,7 +26,7 @@ final class SessionGeneratedContentTest {
         SessionPlan original = SessionPlan.seeded(7L, List.of(11L, 12L), new EncounterDays(new BigDecimal("0.6")))
                 .rename("Moon Vault")
                 .addScene()
-                .addManualLootNote(1L);
+                .addManualLootNote(1L, "Moon key");
         List<SessionEncounter> scenes = List.of(
                 new SessionEncounter(1L, 101L, new SessionEncounterAllocation(new BigDecimal("40"))),
                 new SessionEncounter(2L, 102L, new SessionEncounterAllocation(new BigDecimal("60"))));
@@ -46,7 +50,9 @@ final class SessionGeneratedContentTest {
         SqliteDatabase database = new SqliteDatabase(
                 temporaryDirectory.resolve("session-generation-roundtrip.db"),
                 NoopDiagnostics.INSTANCE);
-        SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(database);
+        SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(
+                        TestFeatureStores.store(
+                                database, SqliteSessionPlanRepository.storeDefinition()));
         SessionPlan plan = SessionPlan.seeded(8L, List.of(21L), EncounterDays.one())
                 .replaceGeneratedContent(
                         List.of(new SessionEncounter(
@@ -65,5 +71,46 @@ final class SessionGeneratedContentTest {
         assertEquals(plan.generatedRewards(), loaded.generatedRewards());
         assertTrue(loaded.manualLootNotes().isEmpty());
         database.close();
+    }
+
+    @Test
+    void attachReplaceAndDetachMutateOnlyTheSelectedSceneReference() {
+        SessionPlan plan = SessionPlan.seeded(9L, List.of(31L), EncounterDays.one())
+                .replaceGeneratedContent(
+                        List.of(
+                                new SessionEncounter(1L, 101L, new SessionEncounterAllocation(new BigDecimal("40"))),
+                                new SessionEncounter(2L, 202L, new SessionEncounterAllocation(new BigDecimal("60")))),
+                        List.of(
+                                new SessionGeneratedRewardReference(1L, "run-9", 1L, "first reward"),
+                                new SessionGeneratedRewardReference(2L, "run-9", 2L, "second reward")))
+                .addManualLootNote(1L, "First cache")
+                .setRestPlacement(SessionRestPlacement.shortRestBetween(1L, 2L));
+
+        SessionPlan replaced = plan.attachEncounter(1L, 303L);
+
+        assertEquals(2, replaced.encounters().size());
+        assertEquals(303L, replaced.encounters().getFirst().encounterPlanId());
+        assertEquals(202L, replaced.encounters().getLast().encounterPlanId());
+        assertEquals(List.of("40", "60"), replaced.encounters().stream()
+                .map(scene -> scene.allocation().budgetPercentage().stripTrailingZeros().toPlainString()).toList());
+        assertEquals(plan.manualLootNotes(), replaced.manualLootNotes());
+        assertEquals(plan.restPlacements(), replaced.restPlacements());
+        assertEquals(List.of(1L, 2L), replaced.generatedRewards().stream()
+                .map(SessionGeneratedRewardReference::sceneId).toList(),
+                "replacing an encounter link preserves generated reward references");
+
+        SessionPlan detached = replaced.detachEncounter(1L);
+
+        assertEquals(2, detached.encounters().size());
+        assertEquals(0L, detached.encounters().getFirst().encounterPlanId());
+        assertEquals(202L, detached.encounters().getLast().encounterPlanId());
+        assertEquals(replaced.manualLootNotes(), detached.manualLootNotes());
+        assertEquals(replaced.restPlacements(), detached.restPlacements());
+        assertEquals(replaced.generatedRewards(), detached.generatedRewards());
+
+        SessionPlan deleted = detached.removeEncounter(1L);
+        assertEquals(List.of(2L), deleted.generatedRewards().stream()
+                .map(SessionGeneratedRewardReference::sceneId).toList(),
+                "only deleting the owning scene prunes its generated reward references");
     }
 }

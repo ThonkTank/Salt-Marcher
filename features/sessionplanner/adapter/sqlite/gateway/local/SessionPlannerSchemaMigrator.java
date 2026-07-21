@@ -10,6 +10,9 @@ final class SessionPlannerSchemaMigrator {
 
     private static final String ALTER_TABLE = "ALTER TABLE ";
     private static final String ADD_COLUMN = " ADD COLUMN ";
+    private static final String LEGACY_LOOT_TABLE = "session_planner_loot_placeholders";
+    private static final String LEGACY_LOOT_ORDER_INDEX = "idx_session_planner_loot_order";
+    private static final String LEGACY_LOOT_ENCOUNTER_COLUMN = "encounter_id";
 
     void ensureSchema(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement()) {
@@ -18,15 +21,15 @@ final class SessionPlannerSchemaMigrator {
             statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_PARTICIPANTS_SQL);
             statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_ENCOUNTERS_SQL);
             statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_RESTS_SQL);
-            statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_LOOT_PLACEHOLDERS_SQL);
-            if (!SqliteSchemaColumnSupport.hasColumn(
+            if (SqliteSchemaColumnSupport.hasTable(connection, LEGACY_LOOT_TABLE)
+                    && !SqliteSchemaColumnSupport.hasColumn(
                     connection,
-                    SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE,
-                    SessionPlannerPersistenceSchema.SESSION_LOOT_ENCOUNTER_ID_COLUMN)) {
+                    LEGACY_LOOT_TABLE,
+                    LEGACY_LOOT_ENCOUNTER_COLUMN)) {
                 statement.execute(ALTER_TABLE
-                        + SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE
+                        + LEGACY_LOOT_TABLE
                         + ADD_COLUMN
-                        + SessionPlannerPersistenceSchema.SESSION_LOOT_ENCOUNTER_ID_COLUMN
+                        + LEGACY_LOOT_ENCOUNTER_COLUMN
                         + " INTEGER NOT NULL DEFAULT 0");
             }
             if (!SqliteSchemaColumnSupport.hasColumn(
@@ -47,7 +50,6 @@ final class SessionPlannerSchemaMigrator {
             statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_PARTICIPANTS_ORDER_INDEX_SQL);
             statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_ENCOUNTERS_ORDER_INDEX_SQL);
             statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_RESTS_ORDER_INDEX_SQL);
-            statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_LOOT_PLACEHOLDERS_ORDER_INDEX_SQL);
         }
     }
 
@@ -72,18 +74,36 @@ final class SessionPlannerSchemaMigrator {
             statement.execute("UPDATE " + SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE
                     + " SET revision = 1 WHERE revision < 1");
             statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_MANUAL_LOOT_NOTES_SQL);
-            statement.execute("INSERT INTO "
-                    + SessionPlannerPersistenceSchema.SESSION_MANUAL_LOOT_NOTES_TABLE
-                    + " (session_id, note_id, scene_id, note_text, sort_order) "
-                    + "SELECT legacy.session_id, legacy.loot_id, "
-                    + "CASE WHEN legacy.encounter_id > 0 THEN legacy.encounter_id ELSE ("
-                    + "SELECT scene.encounter_id FROM "
-                    + SessionPlannerPersistenceSchema.SESSION_ENCOUNTERS_TABLE
-                    + " scene WHERE scene.session_id = legacy.session_id "
-                    + "ORDER BY scene.sort_order, scene.encounter_id LIMIT 1) END, "
-                    + "legacy.label, legacy.sort_order FROM "
-                    + SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE
-                    + " legacy ORDER BY legacy.session_id, legacy.sort_order, legacy.loot_id");
+            if (SqliteSchemaColumnSupport.hasTable(connection, LEGACY_LOOT_TABLE)) {
+                statement.execute("INSERT INTO "
+                        + SessionPlannerPersistenceSchema.SESSION_MANUAL_LOOT_NOTES_TABLE
+                        + " (session_id, note_id, scene_id, note_text, sort_order) "
+                        + "SELECT legacy.session_id, legacy.loot_id, "
+                        + "CASE WHEN legacy.encounter_id > 0 THEN legacy.encounter_id ELSE ("
+                        + "SELECT scene.encounter_id FROM "
+                        + SessionPlannerPersistenceSchema.SESSION_ENCOUNTERS_TABLE
+                        + " scene WHERE scene.session_id = legacy.session_id "
+                        + "ORDER BY scene.sort_order, scene.encounter_id LIMIT 1) END, "
+                        + "legacy.label, legacy.sort_order FROM "
+                        + LEGACY_LOOT_TABLE
+                        + " legacy ORDER BY legacy.session_id, legacy.sort_order, legacy.loot_id");
+            }
+            statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_MANUAL_LOOT_NOTES_ORDER_INDEX_SQL);
+        }
+    }
+
+    void retireLegacyManualLoot(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("DROP INDEX IF EXISTS " + LEGACY_LOOT_ORDER_INDEX);
+            statement.execute("DROP TABLE IF EXISTS " + LEGACY_LOOT_TABLE);
+        }
+    }
+
+    void repairTargetSchema(Connection connection) throws SQLException {
+        ensureSchema(connection);
+        addGeneratedRewards(connection);
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_MANUAL_LOOT_NOTES_SQL);
             statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_MANUAL_LOOT_NOTES_ORDER_INDEX_SQL);
         }
     }

@@ -1,15 +1,10 @@
 package features.items.application;
 
 import features.items.api.ItemsCatalogApi;
-import features.items.api.ItemsImportApi;
 import features.items.domain.catalog.ItemCatalogData;
 import features.items.domain.catalog.ItemCatalogData.Detail;
 import features.items.domain.catalog.ItemCatalogAccessException;
 import features.items.domain.catalog.ItemCatalogPort;
-import features.items.domain.importing.ImportedItem;
-import features.items.domain.importing.ItemImportBatch;
-import features.items.domain.importing.ItemImportStore;
-import features.items.domain.importing.PublicItemSource;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -20,33 +15,23 @@ import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
 import platform.execution.ExecutionLane;
 
-public final class ItemsApplicationService implements ItemsCatalogApi, ItemsImportApi {
+public final class ItemsApplicationService implements ItemsCatalogApi {
 
     private static final int DEFAULT_PAGE_SIZE = 50;
     private static final int MAX_PAGE_SIZE = 100;
     private static final DiagnosticId READ_FAILURE = new DiagnosticId("items.catalog.storage-failure");
-    private static final DiagnosticId SOURCE_FAILURE = new DiagnosticId("items.import.source-failure");
-    private static final DiagnosticId VALIDATION_FAILURE = new DiagnosticId("items.import.validation-failure");
-    private static final DiagnosticId BACKUP_FAILURE = new DiagnosticId("items.import.backup-failure");
-    private static final DiagnosticId IMPORT_STORAGE_FAILURE = new DiagnosticId("items.import.storage-failure");
     private static final DiagnosticId EXECUTION_FAILURE = new DiagnosticId("items.execution.failure");
 
     private final ItemCatalogPort catalog;
-    private final PublicItemSource publicSource;
-    private final ItemImportStore importStore;
     private final ExecutionLane executionLane;
     private final Diagnostics diagnostics;
 
     public ItemsApplicationService(
             ItemCatalogPort catalog,
-            PublicItemSource publicSource,
-            ItemImportStore importStore,
             ExecutionLane executionLane,
             Diagnostics diagnostics
     ) {
         this.catalog = Objects.requireNonNull(catalog, "catalog");
-        this.publicSource = Objects.requireNonNull(publicSource, "publicSource");
-        this.importStore = Objects.requireNonNull(importStore, "importStore");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
@@ -66,11 +51,6 @@ public final class ItemsApplicationService implements ItemsCatalogApi, ItemsImpo
     public CompletionStage<DetailResult> loadDetail(@Nullable String sourceKey) {
         return execute(() -> loadDetailNow(sourceKey),
                 () -> new DetailResult(CatalogStatus.EXECUTION_ERROR, null));
-    }
-
-    @Override
-    public CompletionStage<ImportResult> importPublicSrd() {
-        return execute(this::importNow, () -> ImportResult.failure(ImportStatus.EXECUTION_ERROR));
     }
 
     private FilterOptionsResult loadFilterOptionsNow() {
@@ -135,41 +115,6 @@ public final class ItemsApplicationService implements ItemsCatalogApi, ItemsImpo
         } catch (IllegalStateException exception) {
             diagnostics.failure(READ_FAILURE, exception.getClass());
             return new DetailResult(CatalogStatus.STORAGE_ERROR, null);
-        }
-    }
-
-    private ImportResult importNow() {
-        List<ImportedItem> fetched;
-        try {
-            fetched = publicSource.fetchAll();
-        } catch (IllegalStateException exception) {
-            diagnostics.failure(SOURCE_FAILURE, exception.getClass());
-            return ImportResult.failure(ImportStatus.SOURCE_ERROR);
-        }
-
-        ItemImportBatch batch;
-        try {
-            batch = new ItemImportBatch(fetched);
-        } catch (IllegalArgumentException exception) {
-            diagnostics.failure(VALIDATION_FAILURE, exception.getClass());
-            return ImportResult.failure(ImportStatus.VALIDATION_ERROR);
-        }
-
-        ItemImportStore.BackupReceipt backup;
-        try {
-            importStore.initialize();
-            backup = importStore.createVerifiedBackup();
-        } catch (IllegalStateException exception) {
-            diagnostics.failure(BACKUP_FAILURE, exception.getClass());
-            return ImportResult.failure(ImportStatus.BACKUP_ERROR);
-        }
-
-        try {
-            importStore.replaceAll(batch);
-            return new ImportResult(ImportStatus.SUCCESS, batch.items().size(), backup.createdAt());
-        } catch (IllegalStateException exception) {
-            diagnostics.failure(IMPORT_STORAGE_FAILURE, exception.getClass());
-            return ImportResult.failure(ImportStatus.STORAGE_ERROR);
         }
     }
 

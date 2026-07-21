@@ -1,6 +1,7 @@
 package features.sessionplanner.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -14,11 +15,11 @@ import features.encounter.api.GeneratedEncounterPlanSummary;
 import features.encounter.api.GeneratedEncounterPlanSummaryBatchQuery;
 import features.encounter.api.GeneratedEncounterPlanSummaryBatchResult;
 import features.encounter.api.GeneratedEncounterSource;
+import features.encounter.api.PrepareGeneratedEncounterBatchCommand;
 import features.encounter.api.PreparedEncounterBatch;
 import features.encounter.api.PreparedEncounterCreature;
 import features.encounter.api.PreparedEncounterRoster;
 import features.encounter.api.PreparedGeneratedEncounterBatchResult;
-import features.encounter.api.PrepareGeneratedEncounterBatchCommand;
 import features.encounter.api.RefreshEncounterPlanBudgetCommand;
 import features.encounter.api.SavedEncounterPlanListModel;
 import features.encounter.api.SavedEncounterPlanListResult;
@@ -45,24 +46,31 @@ import features.sessiongeneration.api.GenerationRunResponse;
 import features.sessiongeneration.api.SessionGenerationApi;
 import features.sessionplanner.SessionPlannerServiceAssembly;
 import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
+import features.sessionplanner.api.AddSessionSceneCommand;
 import features.sessionplanner.api.PrepareSessionCommand;
+import features.sessionplanner.api.SessionPlannerAuthoredTarget;
+import features.sessionplanner.api.SessionPlannerCatalogCommand;
 import features.sessionplanner.api.SessionPreparationStatus;
+import features.sessionplanner.api.SetSessionEncounterDaysCommand;
 import features.sessionplanner.domain.session.EncounterDays;
 import features.sessionplanner.domain.session.SessionPlan;
-import java.math.BigDecimal;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.OptionalInt;
-import java.util.ArrayDeque;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
 import platform.diagnostics.NoopDiagnostics;
 import platform.execution.DirectExecutionLane;
 import platform.execution.ExecutionLane;
 import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
 import platform.ui.DirectUiDispatcher;
+import java.math.BigDecimal;
+import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.List;
+import java.util.OptionalInt;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 final class SessionPreparationCoordinatorTest {
 
@@ -191,8 +199,7 @@ final class SessionPreparationCoordinatorTest {
     @Test
     void destructivePreparationRequiresConfirmationBeforeDrafting() {
         try (Fixture fixture = fixture("confirmation.db")) {
-            SessionPlan authored = fixture.repository.loadCurrent().orElseThrow().addScene();
-            fixture.repository.save(authored);
+            fixture.planner.application().addScene(new AddSessionSceneCommand(fixture.target()));
 
             fixture.prepare();
 
@@ -223,6 +230,87 @@ final class SessionPreparationCoordinatorTest {
                     fixture.planner.workspaceModel().current().preparation().status());
             assertEquals(0, fixture.encounters.prepareCalls);
             assertEquals(0, fixture.preparedSessions.commitCalls);
+            assertEquals(1L, fixture.repository.loadCurrent().orElseThrow().revision().value());
+        }
+    }
+
+    @Test
+    void delayedNonCurrentAuthoredWriteDoesNotCancelTheActiveCurrentPreparation() {
+        try (Fixture fixture = fixture("non-current-write-keeps-current-preparation.db")) {
+            fixture.repository.insert(SessionPlan.seeded(8L, List.of(1L), EncounterDays.one()));
+            fixture.planner.application().selectSession(new SessionPlannerCatalogCommand.SelectSessionCommand(8L, java.util.Optional.empty()));
+
+            CompletableFuture<GenerationDraftResponse> pending = new CompletableFuture<>();
+            fixture.generation.draftStages.add(pending);
+            fixture.prepare();
+            assertEquals(SessionPreparationStatus.GENERATING,
+                    fixture.planner.workspaceModel().current().preparation().status());
+
+            fixture.planner.application().setEncounterDays(new SetSessionEncounterDaysCommand(
+                    new SessionPlannerAuthoredTarget(7L, 1L), new BigDecimal("1.5")));
+
+            assertEquals(8L, fixture.planner.workspaceModel().current().sourceSessionId());
+            assertEquals(SessionPreparationStatus.GENERATING,
+                    fixture.planner.workspaceModel().current().preparation().status(),
+                    "an old-session write must not invalidate the active current preparation");
+
+            pending.complete(fixture.generation.successfulDraft());
+
+            assertEquals(SessionPreparationStatus.READY,
+                    fixture.planner.workspaceModel().current().preparation().status());
+            assertEquals(8L, fixture.repository.loadCurrent().orElseThrow().sessionId());
+            assertEquals(new BigDecimal("1.5"), fixture.repository.loadById(7L).orElseThrow().encounterDays().value());
+        }
+    }
+
+    @Test
+    void cancelBeforePlannerCommitPointOfNoReturnSkipsPlannerStore() {
+        try (Fixture fixture = fixture("cancel-before-planner-commit.db")) {
+            CompletableFuture<CommittedGeneratedEncounterBatchResult> pendingEncounterCommit =
+                    new CompletableFuture<>();
+            fixture.encounters.commitOverride = pendingEncounterCommit;
+
+            fixture.prepare();
+            assertEquals(SessionPreparationStatus.SAVING,
+                    fixture.planner.workspaceModel().current().preparation().status());
+            assertTrue(fixture.planner.workspaceModel().current().preparation().cancelEnabled());
+
+            fixture.planner.application().cancelPreparation();
+            pendingEncounterCommit.complete(committedBatch(fixture.encounters.lastPreparedBatch));
+
+            assertEquals(SessionPreparationStatus.CANCELLED,
+                    fixture.planner.workspaceModel().current().preparation().status());
+            assertEquals(0, fixture.preparedSessions.commitCalls);
+            assertEquals(1L, fixture.repository.loadCurrent().orElseThrow().revision().value());
+        }
+    }
+
+    @Test
+    void plannerCommitPointOfNoReturnMakesConcurrentCancelNoOpAndReachesReady() {
+        try (Fixture fixture = fixture("cancel-after-planner-commit.db")) {
+            fixture.preparedSessions.beforeCommit = fixture.planner.application()::cancelPreparation;
+
+            fixture.prepare();
+
+            assertEquals(SessionPreparationStatus.READY,
+                    fixture.planner.workspaceModel().current().preparation().status());
+            assertFalse(fixture.planner.workspaceModel().current().preparation().cancelEnabled());
+            assertEquals(1L, fixture.planner.workspaceModel().current().preparation().attemptId());
+            assertEquals(1, fixture.preparedSessions.commitCalls);
+            assertEquals(2L, fixture.repository.loadCurrent().orElseThrow().revision().value());
+        }
+    }
+
+    @Test
+    void stalePlannerCasResultRemainsInvalid() {
+        try (Fixture fixture = fixture("stale-planner-cas.db")) {
+            fixture.preparedSessions.staleNext = true;
+
+            fixture.prepare();
+
+            assertEquals(SessionPreparationStatus.INVALID,
+                    fixture.planner.workspaceModel().current().preparation().status());
+            assertEquals(1, fixture.preparedSessions.commitCalls);
             assertEquals(1L, fixture.repository.loadCurrent().orElseThrow().revision().value());
         }
     }
@@ -339,6 +427,26 @@ final class SessionPreparationCoordinatorTest {
         }
     }
 
+    @Test
+    void authoredWriterLaneRejectionBeforePointOfNoReturnFailsWithoutPlannerWrite() {
+        try (Fixture fixture = fixture(
+                "authored-writer-rejection.db",
+                generationResult(),
+                new RejectAllExecutionLane(),
+                DirectExecutionLane.INSTANCE,
+                DirectExecutionLane.INSTANCE)) {
+            fixture.prepare();
+
+            assertEquals(SessionPreparationStatus.FAILED,
+                    fixture.planner.workspaceModel().current().preparation().status());
+            assertFalse(fixture.planner.workspaceModel().current().preparation().cancelEnabled());
+            assertEquals(1, fixture.generation.commitCalls);
+            assertEquals(1, fixture.encounters.commitCalls);
+            assertEquals(0, fixture.preparedSessions.commitCalls);
+            assertEquals(1L, fixture.repository.loadCurrent().orElseThrow().revision().value());
+        }
+    }
+
     private Fixture fixture(String databaseName) {
         return fixture(databaseName, generationResult(), DirectExecutionLane.INSTANCE);
     }
@@ -348,9 +456,21 @@ final class SessionPreparationCoordinatorTest {
             GenerationResult result,
             ExecutionLane lane
     ) {
+        return fixture(databaseName, result, lane, lane, lane);
+    }
+
+    private Fixture fixture(
+            String databaseName,
+            GenerationResult result,
+            ExecutionLane authoredLane,
+            ExecutionLane cpuLane,
+            ExecutionLane ioLane
+    ) {
         SqliteDatabase database = new SqliteDatabase(
                 temporaryDirectory.resolve(databaseName), NoopDiagnostics.INSTANCE);
-        SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(database);
+        SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(
+                        TestFeatureStores.store(
+                                database, SqliteSessionPlanRepository.storeDefinition()));
         repository.insert(SessionPlan.seeded(7L, List.of(1L), EncounterDays.one()));
         repository.setCurrentSessionId(7L);
         CountingPreparedSessionStore preparedSessions = new CountingPreparedSessionStore(repository);
@@ -368,9 +488,9 @@ final class SessionPreparationCoordinatorTest {
                 emptySavedPlans(),
                 null,
                 generation,
-                lane,
-                lane,
-                lane,
+                authoredLane,
+                cpuLane,
+                ioLane,
                 DirectUiDispatcher.INSTANCE,
                 NoopDiagnostics.INSTANCE);
         planner.application().initialize();
@@ -447,6 +567,8 @@ final class SessionPreparationCoordinatorTest {
         private int commitCalls;
         private CommitPreparedSessionResult lastResult;
         private boolean failNext;
+        private boolean staleNext;
+        private Runnable beforeCommit = () -> { };
 
         private CountingPreparedSessionStore(SessionPreparedSessionStore delegate) {
             this.delegate = delegate;
@@ -455,6 +577,13 @@ final class SessionPreparationCoordinatorTest {
         @Override
         public CommitPreparedSessionResult commitPreparedSession(CommitPreparedSessionCommand command) {
             commitCalls++;
+            beforeCommit.run();
+            if (staleNext) {
+                staleNext = false;
+                lastResult = new CommitPreparedSessionResult.Stale(
+                        command.expectedRevision(), command.expectedRevision().next());
+                return lastResult;
+            }
             if (failNext) {
                 failNext = false;
                 lastResult = new CommitPreparedSessionResult.StorageFailure("simulated planner failure");
@@ -635,6 +764,18 @@ final class SessionPreparationCoordinatorTest {
         }
     }
 
+    private static final class RejectAllExecutionLane implements ExecutionLane {
+
+        @Override
+        public void execute(Runnable work) {
+            throw new IllegalStateException("simulated authored writer scheduling rejection");
+        }
+
+        @Override
+        public void close() {
+        }
+    }
+
     private record Fixture(
             SqliteDatabase database,
             SqliteSessionPlanRepository repository,
@@ -646,11 +787,17 @@ final class SessionPreparationCoordinatorTest {
     ) implements AutoCloseable {
 
         private void prepare() {
-            planner.application().prepareSession(new PrepareSessionCommand(OptionalInt.of(1), 41L, false));
+            planner.application().prepareSession(new PrepareSessionCommand(target(), OptionalInt.of(1), 41L, false));
         }
 
         private void prepareConfirmed() {
-            planner.application().prepareSession(new PrepareSessionCommand(OptionalInt.of(1), 41L, true));
+            planner.application().prepareSession(new PrepareSessionCommand(target(), OptionalInt.of(1), 41L, true));
+        }
+
+        private SessionPlannerAuthoredTarget target() {
+            var workspace = planner.workspaceModel().current();
+            return new SessionPlannerAuthoredTarget(
+                    workspace.sourceSessionId(), workspace.sourceSessionRevision());
         }
 
         @Override

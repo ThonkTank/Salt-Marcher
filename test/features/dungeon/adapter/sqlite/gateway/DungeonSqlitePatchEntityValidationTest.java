@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import features.dungeon.api.DungeonChunkKey;
+
 import features.dungeon.application.authored.command.CorridorChange;
 import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.command.DungeonPatchChange;
@@ -13,14 +15,13 @@ import features.dungeon.application.authored.command.RoomRegionChange;
 import features.dungeon.application.authored.command.StairChange;
 import features.dungeon.application.authored.command.TransitionChange;
 import features.dungeon.application.authored.port.DungeonUnitOfWorkResult;
-import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.domain.core.component.CorridorWaypoint;
 import features.dungeon.domain.core.component.StairExit;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.geometry.Direction;
+import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.corridor.Corridor;
 import features.dungeon.domain.core.structure.corridor.CorridorBindings;
-import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.feature.FeatureMarker;
 import features.dungeon.domain.core.structure.feature.FeatureMarkerKind;
 import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
@@ -31,16 +32,17 @@ import features.dungeon.domain.core.structure.stair.StairShape;
 import features.dungeon.domain.core.structure.transition.Transition;
 import features.dungeon.domain.core.structure.transition.TransitionAnchor;
 import features.dungeon.domain.core.structure.transition.TransitionDestination;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteDatabase;
 import java.nio.file.Path;
 import java.sql.DriverManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteDatabase;
 
 final class DungeonSqlitePatchEntityValidationTest {
 
@@ -53,9 +55,9 @@ final class DungeonSqlitePatchEntityValidationTest {
             throws Exception {
         Path path = directory.resolve("cross-map-collision.sqlite");
         try (SqliteDatabase database = database(path)) {
-            seedMaps(database);
+            var fixture = seedMaps(database);
             DungeonMapIdentity otherMap = new DungeonMapIdentity(OTHER_MAP_ID);
-            DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(
+            fixture.commit(DungeonPatch.of(
                     otherMap,
                     1L,
                     List.of(new FeatureMarkerChange(null, new FeatureMarker(
@@ -68,7 +70,8 @@ final class DungeonSqlitePatchEntityValidationTest {
             List<String> before = dungeonRows(path);
 
             FeatureMarker marker = marker("local", "candidate");
-            assertThrows(IllegalStateException.class, () -> new DungeonSqlitePatchGateway(database).commit(
+            assertThrows(IllegalStateException.class, () -> new DungeonSqlitePatchGateway(
+                                            fixture.store()).commit(
                     DungeonPatch.of(MAP, 1L, List.of(new FeatureMarkerChange(null, marker)))));
 
             assertEquals(before, dungeonRows(path));
@@ -79,7 +82,7 @@ final class DungeonSqlitePatchEntityValidationTest {
     void rollsBackExactRowSnapshotOnRealUniqueConstraintFailure(@TempDir Path directory) throws Exception {
         Path path = directory.resolve("unique-constraint.sqlite");
         try (SqliteDatabase database = database(path)) {
-            seedMaps(database);
+            var fixture = seedMaps(database);
             Stair foreign = new Stair(
                     900L,
                     OTHER_MAP_ID,
@@ -91,7 +94,7 @@ final class DungeonSqlitePatchEntityValidationTest {
                     List.of(new Cell(10, 10, 0)),
                     List.of(new StairExit(777L, new Cell(10, 10, 0), "occupied id")),
                     null);
-            DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(
+            fixture.commit(DungeonPatch.of(
                     new DungeonMapIdentity(OTHER_MAP_ID),
                     1L,
                     List.of(new StairChange(null, foreign))));
@@ -100,7 +103,8 @@ final class DungeonSqlitePatchEntityValidationTest {
                     List.of(new Cell(2, 2, 0), new Cell(3, 2, 0)),
                     List.of(new StairExit(777L, new Cell(2, 2, 0), "collision")), null);
 
-            assertThrows(IllegalStateException.class, () -> new DungeonSqlitePatchGateway(database).commit(
+            assertThrows(IllegalStateException.class, () -> new DungeonSqlitePatchGateway(
+                                            fixture.store()).commit(
                     DungeonPatch.of(MAP, 1L, List.of(new StairChange(null, stair)))));
 
             assertEquals(before, dungeonRows(path));
@@ -111,8 +115,8 @@ final class DungeonSqlitePatchEntityValidationTest {
     void rejectsPatchWhoseBeforeGraphDoesNotMatchStoredRowsBeforeCas(@TempDir Path directory) throws Exception {
         Path path = directory.resolve("before-graph-mismatch.sqlite");
         try (SqliteDatabase database = database(path)) {
-            seedMaps(database);
-            DungeonSqlitePatchGateway gateway = new DungeonSqlitePatchGateway(database);
+            var fixture = seedMaps(database);
+            DungeonSqlitePatchGateway gateway = new DungeonSqlitePatchGateway(fixture.store());
             FeatureMarker stored = marker("stored", "truth");
             gateway.commit(DungeonPatch.of(MAP, 1L, List.of(new FeatureMarkerChange(null, stored))));
             List<String> before = dungeonRows(path);
@@ -147,10 +151,11 @@ final class DungeonSqlitePatchEntityValidationTest {
         for (BeforeGraphScenario scenario : scenarios) {
             Path path = directory.resolve(scenario.name() + ".sqlite");
             try (SqliteDatabase database = database(path)) {
-                seedCanonical(database, stored);
+                var fixture = seedCanonical(database, stored);
                 List<String> before = dungeonRows(path);
 
-                assertThrows(IllegalStateException.class, () -> new DungeonSqlitePatchGateway(database).commit(
+                assertThrows(IllegalStateException.class, () -> new DungeonSqlitePatchGateway(
+                                                fixture.store()).commit(
                         DungeonPatch.of(MAP, 2L, List.of(scenario.change()))), scenario.name());
 
                 assertEquals(before, dungeonRows(path), scenario.name());
@@ -163,12 +168,13 @@ final class DungeonSqlitePatchEntityValidationTest {
         Path path = directory.resolve("stale-complete-snapshot.sqlite");
         Facts stored = facts("stored", false);
         try (SqliteDatabase database = database(path)) {
-            seedCanonical(database, stored);
+            var fixture = seedCanonical(database, stored);
             List<String> before = dungeonRows(path);
 
             DungeonSqlitePatchGateway.CommitOutcome.Rejected rejected = assertInstanceOf(
                     DungeonSqlitePatchGateway.CommitOutcome.Rejected.class,
-                    new DungeonSqlitePatchGateway(database).commit(DungeonPatch.of(
+                    new DungeonSqlitePatchGateway(
+                                            fixture.store()).commit(DungeonPatch.of(
                             MAP,
                             3L,
                             List.of(new FeatureMarkerChange(stored.marker(), facts("candidate", false).marker())))));
@@ -183,9 +189,10 @@ final class DungeonSqlitePatchEntityValidationTest {
         Path path = directory.resolve("late-failure-complete-snapshot.sqlite");
         Facts stored = facts("stored", false);
         try (SqliteDatabase database = database(path)) {
-            seedCanonical(database, stored);
+            var fixture = seedCanonical(database, stored);
             List<String> before = dungeonRows(path);
-            DungeonSqlitePatchGateway gateway = new DungeonSqlitePatchGateway(database, phase -> {
+            DungeonSqlitePatchGateway gateway = new DungeonSqlitePatchGateway(
+                            fixture.store(), phase -> {
                 if (phase == DungeonSqlitePatchGateway.Phase.BEFORE_COMMIT) {
                     throw new java.sql.SQLException("injected late failure");
                 }
@@ -204,27 +211,32 @@ final class DungeonSqlitePatchEntityValidationTest {
     void unchangedTopologyBindingIsNotDeletedInsertedOrUpdated(@TempDir Path directory) throws Exception {
         Path path = directory.resolve("unchanged-topology.sqlite");
         try (SqliteDatabase database = database(path)) {
-            seedMaps(database);
-            DungeonSqlitePatchGateway gateway = new DungeonSqlitePatchGateway(database);
+            var fixture = seedMaps(database);
+            DungeonSqlitePatchGateway gateway = new DungeonSqlitePatchGateway(fixture.store());
             FeatureMarker before = marker("stable label", "before");
             gateway.commit(DungeonPatch.of(MAP, 1L, List.of(new FeatureMarkerChange(null, before))));
             List<String> topologyBefore = query(path,
-                    "SELECT dungeon_map_id,element_kind,element_id,cluster_id,corridor_id,label,sort_order "
-                            + "FROM dungeon_topology_elements ORDER BY sort_order");
+                            "SELECT"
+                                + " dungeon_map_id,element_kind,element_id,cluster_id,corridor_id,label,sort_order"
+                                + " FROM dungeon_topology_elements ORDER BY sort_order");
             execute(path, "CREATE TABLE topology_audit(operation TEXT NOT NULL)");
-            execute(path, "CREATE TRIGGER topology_insert_audit AFTER INSERT ON dungeon_topology_elements "
-                    + "BEGIN INSERT INTO topology_audit VALUES('INSERT'); END");
-            execute(path, "CREATE TRIGGER topology_update_audit AFTER UPDATE ON dungeon_topology_elements "
-                    + "BEGIN INSERT INTO topology_audit VALUES('UPDATE'); END");
-            execute(path, "CREATE TRIGGER topology_delete_audit AFTER DELETE ON dungeon_topology_elements "
-                    + "BEGIN INSERT INTO topology_audit VALUES('DELETE'); END");
+            execute(path,
+                    "CREATE TRIGGER topology_insert_audit AFTER INSERT ON dungeon_topology_elements"
+                        + " BEGIN INSERT INTO topology_audit VALUES('INSERT'); END");
+            execute(path,
+                    "CREATE TRIGGER topology_update_audit AFTER UPDATE ON dungeon_topology_elements"
+                        + " BEGIN INSERT INTO topology_audit VALUES('UPDATE'); END");
+            execute(path,
+                    "CREATE TRIGGER topology_delete_audit AFTER DELETE ON dungeon_topology_elements"
+                        + " BEGIN INSERT INTO topology_audit VALUES('DELETE'); END");
 
             FeatureMarker after = marker("stable label", "after");
             gateway.commit(DungeonPatch.of(MAP, 2L, List.of(new FeatureMarkerChange(before, after))));
 
             assertEquals(topologyBefore, query(path,
-                    "SELECT dungeon_map_id,element_kind,element_id,cluster_id,corridor_id,label,sort_order "
-                            + "FROM dungeon_topology_elements ORDER BY sort_order"));
+                            "SELECT"
+                                + " dungeon_map_id,element_kind,element_id,cluster_id,corridor_id,label,sort_order"
+                                + " FROM dungeon_topology_elements ORDER BY sort_order"));
             assertEquals(List.of(), query(path, "SELECT operation FROM topology_audit"));
         }
     }
@@ -233,16 +245,19 @@ final class DungeonSqlitePatchEntityValidationTest {
         return new FeatureMarker(700L, MAP, FeatureMarkerKind.POI, new Cell(3, 4, 0), label, description);
     }
 
-    private static void seedCanonical(SqliteDatabase database, Facts facts) {
+    private static DungeonSqliteFixtureSeeder.Fixture seedCanonical(
+            SqliteDatabase database, Facts facts) {
+        var fixture = DungeonSqliteFixtureSeeder.prepare(database);
         DungeonChunkKey chunk = new DungeonChunkKey(MAP_ID, 0, 0, 0);
-        DungeonSqliteFixtureSeeder.insertHeader(database, MAP_ID, "canonical", 1L);
-        DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(MAP, 1L, List.of(
+        fixture.insertHeader(MAP_ID, "canonical", 1L);
+        fixture.commit(DungeonPatch.of(MAP, 1L, List.of(
                 new RoomClusterChange(null, facts.cluster(), Set.of(chunk)),
                 new RoomRegionChange(null, facts.room()),
                 new CorridorChange(null, facts.corridor(), Set.of(chunk)),
                 new StairChange(null, facts.stair()),
                 new TransitionChange(null, facts.transition()),
                 new FeatureMarkerChange(null, facts.marker()))));
+        return fixture;
     }
 
     private static Facts facts(String prefix, boolean expanded) {
@@ -279,9 +294,11 @@ final class DungeonSqlitePatchEntityValidationTest {
         return new SqliteDatabase(path, NoopDiagnostics.INSTANCE);
     }
 
-    private static void seedMaps(SqliteDatabase database) {
-        DungeonSqliteFixtureSeeder.insertHeader(database, MAP_ID, "local", 1L);
-        DungeonSqliteFixtureSeeder.insertHeader(database, OTHER_MAP_ID, "other", 1L);
+    private static DungeonSqliteFixtureSeeder.Fixture seedMaps(SqliteDatabase database) {
+        var fixture = DungeonSqliteFixtureSeeder.prepare(database);
+        fixture.insertHeader(MAP_ID, "local", 1L);
+        fixture.insertHeader(OTHER_MAP_ID, "other", 1L);
+        return fixture;
     }
 
     private static void execute(Path path, String sql) throws Exception {

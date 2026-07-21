@@ -1,62 +1,31 @@
 package shell.host;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import javafx.application.Platform;
-import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.control.ContentDisplay;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.ToggleButton;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
-import javafx.stage.Window;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import shell.api.InspectorEntrySpec;
-import shell.api.InspectorSink;
-import shell.api.ShellContributionSpec;
-import shell.api.ShellSlot;
-import shell.api.ShellLeftBarTabSpec;
-import shell.api.ShellBinding;
-import shell.api.ShellLeftBarTabMode;
 import features.catalog.CatalogFeature;
 import features.catalog.CatalogProviders;
 import features.catalog.CatalogRoutes;
+import features.creatures.CreaturesServiceAssembly;
+import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
+import features.dungeon.DungeonTestAssembly;
 import features.dungeon.adapter.javafx.editor.DungeonEditorContribution;
 import features.dungeon.adapter.javafx.travel.DungeonTravelContribution;
-import features.hex.adapter.javafx.hexmap.HexMapContribution;
-import features.hex.adapter.javafx.hexmap.HexMapControlsView;
-import features.hex.adapter.javafx.hexmap.HexMapMainView;
-import features.sessionplanner.adapter.javafx.SessionPlannerContribution;
-import features.sessionplanner.adapter.javafx.SessionPlannerControlsView;
-import features.sessionplanner.adapter.javafx.SessionPlannerTimelineMainView;
-import platform.ui.catalogcrud.CatalogCrudControlsView;
-import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
+import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonWindowStore;
 import features.dungeon.application.authored.DungeonCachedWindowStore;
-import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
-import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
-import features.encountertable.adapter.sqlite.query.SqliteEncounterTableCatalogAdapter;
-import features.hex.adapter.sqlite.repository.SqliteHexMapRepository;
-import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
-import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
-import features.creatures.CreaturesServiceAssembly;
-import features.dungeon.DungeonTestAssembly;
+import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
+import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
 import features.encounter.EncounterServiceAssembly;
+import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
 import features.encountertable.EncounterTableServiceAssembly;
+import features.encountertable.adapter.sqlite.query.SqliteEncounterTableCatalogAdapter;
 import features.hex.HexServiceAssembly;
+import features.hex.adapter.javafx.hexmap.HexMapContribution;
+import features.hex.adapter.javafx.hexmap.HexMapControlsView;
+import features.hex.adapter.javafx.hexmap.HexMapMainView;
+import features.hex.adapter.sqlite.repository.SqliteHexMapRepository;
 import features.party.PartyServiceAssembly;
-import features.sessionplanner.SessionPlannerServiceAssembly;
+import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
 import features.sessiongeneration.api.CommitGenerationRunCommand;
 import features.sessiongeneration.api.GenerationDraftResponse;
 import features.sessiongeneration.api.GenerationRequest;
@@ -65,12 +34,50 @@ import features.sessiongeneration.api.GenerationRewardBatchResponse;
 import features.sessiongeneration.api.GenerationRunId;
 import features.sessiongeneration.api.GenerationRunResponse;
 import features.sessiongeneration.api.SessionGenerationApi;
-import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
-import features.dungeon.application.editor.DungeonEditorFeatureRuntimeRoot;
+import features.sessionplanner.SessionPlannerServiceAssembly;
+import features.sessionplanner.adapter.javafx.SessionPlannerContribution;
+import features.sessionplanner.adapter.javafx.SessionPlannerControlsView;
+import features.sessionplanner.adapter.javafx.SessionPlannerStateView;
+import features.sessionplanner.adapter.javafx.SessionPlannerTimelineMainView;
+import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
+
+import javafx.application.Platform;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.ContentDisplay;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+import javafx.stage.Window;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
 import platform.diagnostics.NoopDiagnostics;
 import platform.execution.DirectExecutionLane;
 import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
 import platform.ui.DirectUiDispatcher;
+import platform.ui.catalogcrud.CatalogCrudControlsView;
+
+import shell.api.InspectorEntrySpec;
+import shell.api.InspectorSink;
+import shell.api.ShellBinding;
+import shell.api.ShellContributionSpec;
+import shell.api.ShellLeftBarTabMode;
+import shell.api.ShellLeftBarTabSpec;
+import shell.api.ShellSlot;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @org.junit.jupiter.api.Tag("ui")
 public final class SessionPlannerShellLayoutTest {
@@ -102,6 +109,12 @@ public final class SessionPlannerShellLayoutTest {
         Stage stage = new Stage();
         stage.setScene(new Scene(workspace, 1_120.0, 620.0));
         stage.show();
+        services.session().application().createSession(
+                new features.sessionplanner.api.SessionPlannerCatalogCommand.CreateSessionCommand("Layout"));
+        services.session().application().addScene(new features.sessionplanner.api.AddSessionSceneCommand(
+                new features.sessionplanner.api.SessionPlannerAuthoredTarget(
+                        services.session().workspaceModel().current().sourceSessionId(),
+                        services.session().workspaceModel().current().sourceSessionRevision())));
         layout(workspace);
 
         VBox controlsPanel = descendants(workspace).stream()
@@ -121,6 +134,7 @@ public final class SessionPlannerShellLayoutTest {
                 descendant(controlsPanel, SessionPlannerControlsView.class);
         SessionPlannerTimelineMainView plannerMain =
                 descendant(workspace, SessionPlannerTimelineMainView.class);
+        SessionPlannerStateView plannerState = descendant(workspace, SessionPlannerStateView.class);
 
         assertTrue(VBox.getVgrow(controlsPanel) == javafx.scene.layout.Priority.ALWAYS,
                 "shell controls panel grows vertically");
@@ -140,13 +154,21 @@ public final class SessionPlannerShellLayoutTest {
         assertTrue(descendants(plannerMain).stream()
                         .filter(javafx.scene.control.Button.class::isInstance)
                         .map(javafx.scene.control.Button.class::cast)
-                        .anyMatch(button -> "Szene hinzufuegen".equals(button.getText())),
+                        .anyMatch(button -> "Szene hinzufügen".equals(button.getText())),
                 "planner main renders the scene board in the main slot");
+        Node selectedInspector = descendants(plannerMain).stream()
+                .filter(node -> node.getStyleClass().contains("session-planner-selected-scene-inspector"))
+                .findFirst().orElseThrow(() -> new AssertionError("Selected scene inspector not found."));
         assertTrue(descendants(plannerControls).stream()
                         .filter(Label.class::isInstance)
                         .map(Label.class::cast)
-                        .anyMatch(label -> "Session-Setup".equals(label.getText())),
-                "planner controls host the session setup section");
+                        .anyMatch(label -> "Encounter-Tage".equals(label.getText())),
+                "planner controls host the compact preparation toolbar");
+        assertTrue(descendants(plannerState).stream()
+                        .filter(Label.class::isInstance)
+                        .map(Label.class::cast)
+                        .anyMatch(label -> "Ausgewählte Szene".equals(label.getText())),
+                "planner state slot keeps selected-scene context without a participant duplicate");
 
         ScrollPane stateScroll = descendants(workspace).stream()
                 .filter(ScrollPane.class::isInstance)
@@ -157,6 +179,22 @@ public final class SessionPlannerShellLayoutTest {
         assertTrue(stateScroll.getVbarPolicy() == ScrollPane.ScrollBarPolicy.AS_NEEDED,
                 "shell state panel keeps vertical scrolling globally available");
         assertTrue(stateScroll.isFitToWidth(), "shell state panel scroll content fits available width");
+
+        stage.setWidth(820.0);
+        stage.setHeight(500.0);
+        layout(workspace);
+        assertTrue(plannerControls.getHbarPolicy() == ScrollPane.ScrollBarPolicy.NEVER,
+                "compact toolbar wraps without horizontal scrolling at narrow width");
+        assertTrue(plannerMain.getHbarPolicy() == ScrollPane.ScrollBarPolicy.NEVER,
+                "timeline and selected inspector do not expose horizontal scrolling at narrow width");
+        assertTrue(plannerControls.getContent().getLayoutBounds().getWidth()
+                        <= plannerControls.getViewportBounds().getWidth() + 1.0,
+                "compact controls content fits the narrow viewport");
+        assertTrue(plannerMain.getContent().getLayoutBounds().getWidth()
+                        <= plannerMain.getViewportBounds().getWidth() + 1.0,
+                "timeline content fits the narrow viewport");
+        assertTrue(selectedInspector.getBoundsInParent().getWidth() <= plannerMain.getViewportBounds().getWidth() + 1.0,
+                "real selected-scene inspector fits the 820x500 shell without horizontal clipping");
 
         ShellNavigationSidebar sidebar = new ShellNavigationSidebar();
         registerSidebarTab(
@@ -218,32 +256,45 @@ public final class SessionPlannerShellLayoutTest {
     }
 
     private static LayoutServices services() {
-        PartyServiceAssembly.Component party = PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+        PartyServiceAssembly.Component party = PartyServiceAssembly.create(new SqlitePartyRosterRepository(
+                                TestFeatureStores.current().store(
+                                        SqlitePartyRosterRepository.storeDefinition())));
         CreaturesServiceAssembly.Component creatures =
-                CreaturesServiceAssembly.create(new SqliteCreatureCatalogQueryAdapter());
+                CreaturesServiceAssembly.create(new SqliteCreatureCatalogQueryAdapter(
+                                TestFeatureStores.current().store(
+                                        SqliteCreatureCatalogQueryAdapter.storeDefinition())));
         EncounterTableServiceAssembly.Component tables =
-                EncounterTableServiceAssembly.create(new SqliteEncounterTableCatalogAdapter());
+                EncounterTableServiceAssembly.create(new SqliteEncounterTableCatalogAdapter(
+                                TestFeatureStores.current().store(
+                                        SqliteEncounterTableCatalogAdapter.storeDefinition())));
         EncounterServiceAssembly.Component encounter = EncounterServiceAssembly.create(
                 creatures.application(), creatures.detail(), creatures.encounterCandidates(),
                 tables.application(), tables.candidates(), null,
                 party.application(), party.activeParty(), party.activeComposition(),
-                party.adventuringDaySummary(), party.mutation(), new SqliteEncounterPlanRepository());
-        SqliteSessionPlanRepository sessionRepository = new SqliteSessionPlanRepository();
+                party.adventuringDaySummary(), party.mutation(), new SqliteEncounterPlanRepository(
+                                TestFeatureStores.current().store(
+                                        SqliteEncounterPlanRepository.storeDefinition())));
+        SqliteSessionPlanRepository sessionRepository = new SqliteSessionPlanRepository(
+                        TestFeatureStores.current().store(
+                                SqliteSessionPlanRepository.storeDefinition()));
         SessionPlannerServiceAssembly session = new SessionPlannerServiceAssembly(
                 sessionRepository, sessionRepository, sessionRepository, party.application(),
                 encounter.application(), encounter.savedPlans(), null, unsupportedGeneration(),
                 DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE,
                 DirectUiDispatcher.INSTANCE, NoopDiagnostics.INSTANCE);
         HexServiceAssembly hex = new HexServiceAssembly(
-                new SqliteHexMapRepository(), party.travelPositions(), party.application());
-        SqliteDatabase dungeonDatabase = SqliteDatabase.defaultDatabase(
-                DungeonPersistenceSchema.DATABASE_FILE_NAME,
-                NoopDiagnostics.INSTANCE);
-        SqliteDungeonCatalogStore dungeonCatalog = new SqliteDungeonCatalogStore(dungeonDatabase);
+                new SqliteHexMapRepository(
+                                TestFeatureStores.current().store(
+                                        SqliteHexMapRepository.storeDefinition())), party.travelPositions(), party.application());
+        platform.persistence.FeatureStoreHandle dungeonStore =
+                TestFeatureStores.current().store(
+                        features.dungeon.adapter.sqlite.gateway.DungeonStoreDefinition.create());
+        SqliteDungeonCatalogStore dungeonCatalog = new SqliteDungeonCatalogStore(
+                        dungeonStore);
         DungeonTestAssembly.Component dungeon = DungeonTestAssembly.create(
                 dungeonCatalog,
-                new DungeonCachedWindowStore(new SqliteDungeonWindowStore(dungeonDatabase)),
-                new SqliteDungeonUnitOfWork(dungeonDatabase),
+                new DungeonCachedWindowStore(new SqliteDungeonWindowStore(dungeonStore)),
+                new SqliteDungeonUnitOfWork(dungeonStore),
                 party.activeParty(),
                 party.travelPositions(),
                 party.application(),

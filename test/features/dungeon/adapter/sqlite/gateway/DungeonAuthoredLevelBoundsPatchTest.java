@@ -31,31 +31,32 @@ final class DungeonAuthoredLevelBoundsPatchTest {
 
         try (SqliteDatabase database = new SqliteDatabase(
                 tempDir.resolve("level-bounds.db"), NoopDiagnostics.INSTANCE)) {
-            DungeonSqliteFixtureSeeder.insertHeader(database, mapId.value(), "Bounds", 1L);
-            DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(mapId, 1L, List.of(
+            var fixture = DungeonSqliteFixtureSeeder.prepare(database);
+            fixture.insertHeader(mapId.value(), "Bounds", 1L);
+            fixture.commit(DungeonPatch.of(mapId, 1L, List.of(
                     new FeatureMarkerChange(null, minimum),
                     new FeatureMarkerChange(null, maximum),
                     new FeatureMarkerChange(null, otherLevel))));
-            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(database);
+            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(fixture.store());
 
             assertEquals(new DungeonAuthoredLevelBounds(0, true, -130, -70, 140, 90),
                     bounds(gateway, mapId, 2L, 0));
             assertEquals(new DungeonAuthoredLevelBounds(1, true, -999, 999, -999, 999),
                     bounds(gateway, mapId, 2L, 1));
 
-            DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(mapId, 2L,
+            fixture.commit(DungeonPatch.of(mapId, 2L,
                     List.of(new FeatureMarkerChange(minimum, movedMinimum))));
             assertEquals(new DungeonAuthoredLevelBounds(0, true, -20, -10, 140, 90),
                     bounds(gateway, mapId, 3L, 0));
             assertEquals(new DungeonAuthoredLevelBounds(1, true, -999, 999, -999, 999),
                     bounds(gateway, mapId, 3L, 1));
 
-            DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(mapId, 3L,
+            fixture.commit(DungeonPatch.of(mapId, 3L,
                     List.of(new FeatureMarkerChange(maximum, null))));
             assertEquals(new DungeonAuthoredLevelBounds(0, true, -20, -10, -20, -10),
                     bounds(gateway, mapId, 4L, 0));
 
-            DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(mapId, 4L,
+            fixture.commit(DungeonPatch.of(mapId, 4L,
                     List.of(new FeatureMarkerChange(movedMinimum, null))));
             DungeonAuthoredLevelBounds empty = bounds(gateway, mapId, 5L, 0);
             assertFalse(empty.present());

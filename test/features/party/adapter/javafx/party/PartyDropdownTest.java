@@ -1,13 +1,13 @@
 package features.party.adapter.javafx.party;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import features.party.PartyServiceAssembly;
+import features.party.adapter.sqlite.model.PartyPersistenceSchema;
+import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
+import features.party.api.ActivePartyCompositionModel;
+import features.party.api.ActivePartyModel;
+import features.party.api.PartyMemberDetails;
+import features.party.api.PartySnapshotModel;
+import features.party.api.ReadStatus;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -17,22 +17,25 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
-import shell.api.InspectorEntrySpec;
-import shell.api.InspectorSink;
-import shell.api.ShellBinding;
-import shell.api.ShellSlot;
-import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
-import features.party.PartyServiceAssembly;
-import features.party.adapter.sqlite.model.PartyPersistenceSchema;
-import features.party.api.ActivePartyCompositionModel;
-import features.party.api.ActivePartyModel;
-import features.party.api.PartyMemberDetails;
-import features.party.api.PartySnapshotModel;
-import features.party.api.ReadStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import platform.persistence.TestFeatureStores;
+
+import shell.api.InspectorEntrySpec;
+import shell.api.InspectorSink;
+import shell.api.ShellBinding;
+import shell.api.ShellSlot;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @org.junit.jupiter.api.Tag("ui")
 public final class PartyDropdownTest {
@@ -191,7 +194,9 @@ public final class PartyDropdownTest {
     }
 
     private static PartyServiceAssembly.Component services() {
-        return PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+        return PartyServiceAssembly.create(new SqlitePartyRosterRepository(
+                        TestFeatureStores.current().store(
+                                SqlitePartyRosterRepository.storeDefinition())));
     }
 
     private static PartyMemberDetails onlyActiveMember(PartySnapshotModel snapshots) {

@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import platform.persistence.FeatureStoreHandle;
 import platform.persistence.SqliteDatabase;
 
 /** Shared fresh-schema sparse setup for read-scaling and runtime qualification routes. */
@@ -20,23 +21,26 @@ public final class DungeonSparseQualificationFixture {
     private DungeonSparseQualificationFixture() {
     }
 
-    public static void seed(SqliteDatabase database, Path path, DungeonQualificationDataset dataset)
+    public static FeatureStoreHandle seed(
+            SqliteDatabase database, Path path, DungeonQualificationDataset dataset)
             throws Exception {
-        seed(database, path, dataset, true);
+        return seed(database, path, dataset, true);
     }
 
-    public static void seedRuntime(SqliteDatabase database, Path path, DungeonQualificationDataset dataset)
+    public static FeatureStoreHandle seedRuntime(
+            SqliteDatabase database, Path path, DungeonQualificationDataset dataset)
             throws Exception {
-        seed(database, path, dataset, false);
+        return seed(database, path, dataset, false);
     }
 
-    private static void seed(
+    private static FeatureStoreHandle seed(
             SqliteDatabase database,
             Path path,
             DungeonQualificationDataset dataset,
             boolean spanVisibleChunk
     ) throws Exception {
-        DungeonSqliteFixtureSeeder.insertHeader(database, DungeonQualificationDataset.MAP_ID, "Sparse", 2L);
+        DungeonSqliteFixtureSeeder.Fixture fixture = DungeonSqliteFixtureSeeder.prepare(database);
+        fixture.insertHeader(DungeonQualificationDataset.MAP_ID, "Sparse", 2L);
         List<DungeonCellRef> cells = dataset.authoredCells().toList();
         List<DungeonCellRef> visibleCells = List.of(
                 new DungeonCellRef(2, 2, DungeonQualificationDataset.LEVEL));
@@ -75,6 +79,7 @@ public final class DungeonSparseQualificationFixture {
             }
             connection.commit();
         }
+        return fixture.store();
     }
 
     private static Map<DungeonChunkKey, Extent> extents(List<DungeonCellRef> cells) {

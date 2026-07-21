@@ -12,20 +12,22 @@ import features.encounter.api.PreparedEncounterBatch;
 import features.encounter.api.PreparedEncounterCreature;
 import features.encounter.api.PreparedEncounterRoster;
 import features.encounter.application.GeneratedEncounterBatchRepository;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.RepetitionInfo;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.FeatureStoreHandle;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.sql.DriverManager;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.HexFormat;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.RepetitionInfo;
-import org.junit.jupiter.api.io.TempDir;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteDatabase;
 
 final class GeneratedEncounterBatchSqliteTest {
 
@@ -35,8 +37,8 @@ final class GeneratedEncounterBatchSqliteTest {
     @Test
     void commitsReadsBackAndReturnsCompleteEqualRetry() throws Exception {
         Path path = directory.resolve("commit.sqlite");
-        try (SqliteDatabase database = databaseWithCreatures(path, 11L, 12L)) {
-            SqliteEncounterPlanRepository repository = new SqliteEncounterPlanRepository(database);
+        try (DatabaseFixture fixture = databaseWithCreatures(path, 11L, 12L)) {
+            SqliteEncounterPlanRepository repository = fixture.repository();
             PreparedEncounterBatch batch = batch("prep", "run", List.of(
                     roster(1, 11L, "Guard"), roster(2, 12L, "Scout")));
 
@@ -61,10 +63,38 @@ final class GeneratedEncounterBatchSqliteTest {
     }
 
     @Test
+    void savedPlanSearchUsesLiteralSafePersistedChooserTextAndDeterministicBoundedRoots() throws Exception {
+        Path path = directory.resolve("search.sqlite");
+        try (DatabaseFixture fixture = databaseWithCreatures(path, 11L)) {
+            SqliteEncounterPlanRepository repository = fixture.repository();
+            for (int index = 1; index <= 10; index++) {
+                repository.save(new features.encounter.domain.plan.EncounterPlan(
+                        0L,
+                        index == 1 ? "Literal %_ Plan" : "Search Plan " + index,
+                        "Generated Label " + index,
+                        List.of(new features.encounter.domain.plan.EncounterPlanCreature(11L, 1, "Guard"))));
+            }
+
+            var bounded = repository.searchSavedPlans("plan", 9);
+            var literal = repository.searchSavedPlans("%_", 9);
+            var generated = repository.searchSavedPlans("generated label 7", 9);
+
+            assertEquals(9, bounded.plans().size());
+            assertEquals(List.of(10L, 9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L),
+                    bounded.plans().stream().map(features.encounter.domain.plan.EncounterPlanSummary::id).toList());
+            assertEquals(List.of("Literal %_ Plan"), literal.plans().stream()
+                    .map(features.encounter.domain.plan.EncounterPlanSummary::name).toList());
+            assertEquals(List.of(7L), generated.plans().stream()
+                    .map(features.encounter.domain.plan.EncounterPlanSummary::id).toList());
+            assertEquals(1, bounded.statementCount());
+        }
+    }
+
+    @Test
     void rejectsEveryIdentityContentAndCardinalityConflictWithoutWrites() throws Exception {
         Path path = directory.resolve("conflicts.sqlite");
-        try (SqliteDatabase database = databaseWithCreatures(path, 11L, 12L, 13L)) {
-            SqliteEncounterPlanRepository repository = new SqliteEncounterPlanRepository(database);
+        try (DatabaseFixture fixture = databaseWithCreatures(path, 11L, 12L, 13L)) {
+            SqliteEncounterPlanRepository repository = fixture.repository();
             PreparedEncounterBatch original = batch("prep", "run", List.of(
                     roster(1, 11L, "Guard"), roster(2, 12L, "Scout")));
             repository.commit(original);
@@ -98,8 +128,8 @@ final class GeneratedEncounterBatchSqliteTest {
     @Test
     void rejectsEqualRetryWhenStoredRosterQuantityOrOrderNoLongerMatchesOrigin() throws Exception {
         Path path = directory.resolve("stored-roster-conflict.sqlite");
-        try (SqliteDatabase database = databaseWithCreatures(path, 11L, 12L)) {
-            SqliteEncounterPlanRepository repository = new SqliteEncounterPlanRepository(database);
+        try (DatabaseFixture fixture = databaseWithCreatures(path, 11L, 12L)) {
+            SqliteEncounterPlanRepository repository = fixture.repository();
             PreparedEncounterBatch batch = batch("stored-roster", "run", List.of(multiRoster()));
             long planId = repository.commit(batch).mappings().getFirst().planId();
 
@@ -120,8 +150,8 @@ final class GeneratedEncounterBatchSqliteTest {
     @Test
     void rejectsEqualRetryWhenStoredGeneratedLabelNoLongerMatchesPreparedLabel() throws Exception {
         Path path = directory.resolve("stored-label-conflict.sqlite");
-        try (SqliteDatabase database = databaseWithCreatures(path, 11L)) {
-            SqliteEncounterPlanRepository repository = new SqliteEncounterPlanRepository(database);
+        try (DatabaseFixture fixture = databaseWithCreatures(path, 11L)) {
+            SqliteEncounterPlanRepository repository = fixture.repository();
             PreparedEncounterBatch batch = batch("stored-label", "run", List.of(roster(1, 11L, "Guard")));
             long planId = repository.commit(batch).mappings().getFirst().planId();
 
@@ -137,8 +167,8 @@ final class GeneratedEncounterBatchSqliteTest {
     @Test
     void canonicalRetryRequiresStoredOriginRosterFingerprintAsWellAsDerivedRoster() throws Exception {
         Path path = directory.resolve("canonical-origin-conflict.sqlite");
-        try (SqliteDatabase database = databaseWithCreatures(path, 11L)) {
-            SqliteEncounterPlanRepository repository = new SqliteEncounterPlanRepository(database);
+        try (DatabaseFixture fixture = databaseWithCreatures(path, 11L)) {
+            SqliteEncounterPlanRepository repository = fixture.repository();
             PreparedEncounterBatch batch = batch("canonical-origin", "run", List.of(roster(1, 11L, "Guard")));
             repository.commit(batch);
 
@@ -156,9 +186,9 @@ final class GeneratedEncounterBatchSqliteTest {
             RepetitionInfo repetition
     ) throws Exception {
         Path path = directory.resolve("race-" + repetition.getCurrentRepetition() + ".sqlite");
-        try (SqliteDatabase database = databaseWithCreatures(path, 11L, 12L)) {
-            SqliteEncounterPlanRepository first = new SqliteEncounterPlanRepository(database);
-            SqliteEncounterPlanRepository second = new SqliteEncounterPlanRepository(database);
+        try (DatabaseFixture fixture = databaseWithCreatures(path, 11L, 12L)) {
+            SqliteEncounterPlanRepository first = fixture.repository();
+            SqliteEncounterPlanRepository second = fixture.repository();
             PreparedEncounterBatch batch = batch("race-prep", "race-run", List.of(
                     roster(1, 11L, "Guard"), roster(2, 12L, "Scout")));
             CountDownLatch ready = new CountDownLatch(2);
@@ -184,8 +214,8 @@ final class GeneratedEncounterBatchSqliteTest {
     @Test
     void rollsBackEveryRootChildBatchAndOriginWhenAnyCreatureIsMissing() throws Exception {
         Path path = directory.resolve("rollback.sqlite");
-        try (SqliteDatabase database = databaseWithCreatures(path, 11L)) {
-            SqliteEncounterPlanRepository repository = new SqliteEncounterPlanRepository(database);
+        try (DatabaseFixture fixture = databaseWithCreatures(path, 11L)) {
+            SqliteEncounterPlanRepository repository = fixture.repository();
             PreparedEncounterBatch batch = batch("rollback-prep", "rollback-run", List.of(
                     roster(1, 11L, "Guard"), roster(2, 999L, "Missing")));
 
@@ -202,7 +232,9 @@ final class GeneratedEncounterBatchSqliteTest {
         Path path = directory.resolve("v3-to-v4.sqlite");
         seedV3(path);
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            SqliteEncounterPlanRepository repository = new SqliteEncounterPlanRepository(database);
+            SqliteEncounterPlanRepository repository = new SqliteEncounterPlanRepository(
+                            TestFeatureStores.store(
+                                    database, SqliteEncounterPlanRepository.storeDefinition()));
             PreparedEncounterCreature creature = new PreparedEncounterCreature(11L, 1, "Current Guard");
             PreparedEncounterRoster roster = new PreparedEncounterRoster(
                     1, "Legacy", "i1", sha256("|11:1"), List.of(creature),
@@ -225,21 +257,28 @@ final class GeneratedEncounterBatchSqliteTest {
             assertTrue(hasColumn(connection, "generated_encounter_plan_batches", "preparation_id"));
             assertTrue(hasColumn(connection, "generated_encounter_plan_origins", "roster_fingerprint"));
             try (var rows = connection.createStatement().executeQuery(
-                    "SELECT version FROM sm_schema_versions WHERE owner='encounter'")) {
+                                    "SELECT version FROM sm_schema_versions WHERE"
+                                        + " owner='encounter'")) {
                 assertTrue(rows.next());
-                assertEquals(4, rows.getInt(1));
+                assertEquals(5, rows.getInt(1));
             }
         }
     }
 
-    private static SqliteDatabase databaseWithCreatures(Path path, Long... ids) throws Exception {
+    private static DatabaseFixture databaseWithCreatures(Path path, Long... ids) throws Exception {
         SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE);
-        new SqliteCreatureCatalogQueryAdapter(database).loadFilterValues();
+        var stores =
+                TestFeatureStores.stores(
+                        database,
+                        SqliteCreatureCatalogQueryAdapter.storeDefinition(),
+                        SqliteEncounterPlanRepository.storeDefinition());
+        new SqliteCreatureCatalogQueryAdapter(stores.get("creatures")).loadFilterValues();
         for (Long id : ids) {
             try (var connection = DriverManager.getConnection("jdbc:sqlite:" + path);
                     var statement = connection.prepareStatement(
-                            "INSERT INTO creatures (id,name,size,creature_type,alignment,cr,xp,hp,ac) "
-                                    + "VALUES (?,?,?,?,?,?,?,?,?)")) {
+                                    "INSERT INTO creatures"
+                                        + " (id,name,size,creature_type,alignment,cr,xp,hp,ac)"
+                                        + " VALUES (?,?,?,?,?,?,?,?,?)")) {
                 statement.setLong(1, id.longValue());
                 statement.setString(2, "Creature " + id);
                 statement.setString(3, "Medium");
@@ -252,7 +291,20 @@ final class GeneratedEncounterBatchSqliteTest {
                 statement.executeUpdate();
             }
         }
-        return database;
+        return new DatabaseFixture(database, stores.get("encounter"));
+    }
+
+    private record DatabaseFixture(
+            SqliteDatabase database, FeatureStoreHandle encounterStore) implements AutoCloseable {
+
+        private SqliteEncounterPlanRepository repository() {
+            return new SqliteEncounterPlanRepository(encounterStore);
+        }
+
+        @Override
+        public void close() {
+            database.close();
+        }
     }
 
     private static PreparedEncounterBatch batch(
@@ -340,29 +392,46 @@ final class GeneratedEncounterBatchSqliteTest {
                 var statement = connection.createStatement()) {
             statement.execute("PRAGMA user_version=1");
             statement.execute("PRAGMA foreign_keys=ON");
-            statement.execute("CREATE TABLE sm_schema_versions (owner TEXT PRIMARY KEY, version INTEGER NOT NULL)");
+            statement.execute(
+                    "CREATE TABLE sm_schema_versions (owner TEXT PRIMARY KEY, version INTEGER NOT"
+                        + " NULL)");
             statement.execute("INSERT INTO sm_schema_versions(owner,version) VALUES ('encounter',3)");
-            statement.execute("CREATE TABLE creatures(id INTEGER PRIMARY KEY, name TEXT NOT NULL, xp INTEGER NOT NULL)");
+            statement.execute(
+                    "CREATE TABLE creatures(id INTEGER PRIMARY KEY, name TEXT NOT NULL, xp INTEGER"
+                        + " NOT NULL)");
             statement.execute("INSERT INTO creatures(id,name,xp) VALUES (11,'Current Guard',100)");
-            statement.execute("CREATE TABLE saved_encounter_plans(plan_id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                    + "name TEXT NOT NULL, generated_label TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT "
-                    + "CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)");
-            statement.execute("CREATE TABLE saved_encounter_plan_creatures(plan_id INTEGER NOT NULL REFERENCES "
-                    + "saved_encounter_plans(plan_id) ON DELETE CASCADE, creature_id INTEGER NOT NULL REFERENCES "
-                    + "creatures(id), quantity INTEGER NOT NULL CHECK(quantity>0), sort_order INTEGER NOT NULL, "
-                    + "PRIMARY KEY(plan_id,creature_id))");
-            statement.execute("CREATE TABLE generated_encounter_plan_batches(engine_version TEXT NOT NULL, "
-                    + "generation_id TEXT NOT NULL, batch_fingerprint TEXT NOT NULL, encounter_count INTEGER NOT NULL, "
-                    + "PRIMARY KEY(engine_version,generation_id))");
-            statement.execute("CREATE TABLE generated_encounter_plan_origins(engine_version TEXT NOT NULL, "
-                    + "generation_id TEXT NOT NULL, encounter_number INTEGER NOT NULL, batch_order INTEGER NOT NULL, "
-                    + "spec_fingerprint TEXT NOT NULL, plan_id INTEGER NOT NULL UNIQUE REFERENCES "
-                    + "saved_encounter_plans(plan_id), PRIMARY KEY(engine_version,generation_id,encounter_number), "
-                    + "UNIQUE(engine_version,generation_id,batch_order), FOREIGN KEY(engine_version,generation_id) "
-                    + "REFERENCES generated_encounter_plan_batches(engine_version,generation_id))");
-            statement.execute("INSERT INTO saved_encounter_plans(plan_id,name,generated_label) VALUES (1,'Legacy','Legacy')");
-            statement.execute("INSERT INTO saved_encounter_plan_creatures(plan_id,creature_id,quantity,sort_order) "
-                    + "VALUES (1,11,1,0)");
+            statement.execute(
+                    "CREATE TABLE saved_encounter_plans(plan_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                        + " name TEXT NOT NULL, generated_label TEXT NOT NULL DEFAULT '',"
+                        + " created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT"
+                        + " NULL DEFAULT CURRENT_TIMESTAMP)");
+            statement.execute(
+                    "CREATE TABLE saved_encounter_plan_creatures(plan_id INTEGER NOT NULL"
+                        + " REFERENCES saved_encounter_plans(plan_id) ON DELETE CASCADE,"
+                        + " creature_id INTEGER NOT NULL REFERENCES creatures(id), quantity INTEGER"
+                        + " NOT NULL CHECK(quantity>0), sort_order INTEGER NOT NULL, PRIMARY"
+                        + " KEY(plan_id,creature_id))");
+            statement.execute(
+                    "CREATE TABLE generated_encounter_plan_batches(engine_version TEXT NOT NULL,"
+                        + " generation_id TEXT NOT NULL, batch_fingerprint TEXT NOT NULL,"
+                        + " encounter_count INTEGER NOT NULL, PRIMARY"
+                        + " KEY(engine_version,generation_id))");
+            statement.execute(
+                    "CREATE TABLE generated_encounter_plan_origins(engine_version TEXT NOT NULL,"
+                        + " generation_id TEXT NOT NULL, encounter_number INTEGER NOT NULL,"
+                        + " batch_order INTEGER NOT NULL, spec_fingerprint TEXT NOT NULL, plan_id"
+                        + " INTEGER NOT NULL UNIQUE REFERENCES saved_encounter_plans(plan_id),"
+                        + " PRIMARY KEY(engine_version,generation_id,encounter_number),"
+                        + " UNIQUE(engine_version,generation_id,batch_order), FOREIGN"
+                        + " KEY(engine_version,generation_id) REFERENCES"
+                        + " generated_encounter_plan_batches(engine_version,generation_id))");
+            statement.execute(
+                    "INSERT INTO saved_encounter_plans(plan_id,name,generated_label) VALUES"
+                            + " (1,'Legacy','Legacy')");
+            statement.execute(
+                    "INSERT INTO"
+                        + " saved_encounter_plan_creatures(plan_id,creature_id,quantity,sort_order)"
+                        + " VALUES (1,11,1,0)");
             statement.execute("INSERT INTO generated_encounter_plan_batches VALUES "
                     + "('engine','legacy-run','legacy-batch',1)");
             statement.execute("INSERT INTO generated_encounter_plan_origins VALUES "

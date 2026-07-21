@@ -30,6 +30,10 @@ public record SessionEncounter(
         return new SessionEncounter(encounterId, encounterPlanId, allocation, title, notes, locationId);
     }
 
+    public SessionEncounter withEncounterPlan(long planId) {
+        return new SessionEncounter(encounterId, planId, allocation, sceneTitle, sceneNotes, locationId);
+    }
+
     private static String normalizedSceneTitle(String title, long encounterId) {
         String normalized = title == null ? "" : title.trim();
         return normalized.isBlank() ? "Szene " + Math.max(1L, encounterId) : normalized;

@@ -1,31 +1,33 @@
 package features.sessionplanner.adapter.sqlite.repository;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import platform.persistence.SqliteDatabase;
 import features.sessionplanner.adapter.sqlite.gateway.local.SqliteSessionPlannerLocalGateway;
 import features.sessionplanner.adapter.sqlite.mapper.SessionPlanMapper;
-import features.sessionplanner.domain.session.SessionPlan;
-import features.sessionplanner.domain.session.SessionPlanSummary;
-import features.sessionplanner.domain.session.repository.SessionPlanRepository;
-import features.sessionplanner.domain.session.repository.SessionPlanSaveResult;
-import features.sessionplanner.domain.session.SessionRevision;
+import features.sessionplanner.application.CommitPreparedSessionCommand;
+import features.sessionplanner.application.CommitPreparedSessionResult;
+import features.sessionplanner.application.PreparedSessionPersistenceFingerprint;
+import features.sessionplanner.application.SessionPreparedSessionStore;
 import features.sessionplanner.domain.session.SessionEncounter;
 import features.sessionplanner.domain.session.SessionGeneratedRewardReference;
 import features.sessionplanner.domain.session.SessionManualLootNote;
+import features.sessionplanner.domain.session.SessionPlan;
+import features.sessionplanner.domain.session.SessionPlanSummary;
 import features.sessionplanner.domain.session.SessionRestPlacement;
-import features.sessionplanner.application.CommitPreparedSessionCommand;
-import features.sessionplanner.application.CommitPreparedSessionResult;
-import features.sessionplanner.application.SessionPreparedSessionStore;
-import features.sessionplanner.application.PreparedSessionPersistenceFingerprint;
 import features.sessionplanner.application.SessionPlannerReadCapture;
 import features.sessionplanner.application.SessionPlannerWorkspaceSource;
+import features.sessionplanner.domain.session.SessionRevision;
+import features.sessionplanner.domain.session.repository.SessionPlanDeleteResult;
+import features.sessionplanner.domain.session.repository.SessionPlanRepository;
+import features.sessionplanner.domain.session.repository.SessionPlanSaveResult;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 public final class SqliteSessionPlanRepository
@@ -33,12 +35,12 @@ public final class SqliteSessionPlanRepository
 
     private final SqliteSessionPlannerLocalGateway gateway;
 
-    public SqliteSessionPlanRepository() {
-        this(new SqliteSessionPlannerLocalGateway());
+    public static FeatureStoreDefinition storeDefinition() {
+        return SqliteSessionPlannerLocalGateway.storeDefinition();
     }
 
-    public SqliteSessionPlanRepository(SqliteDatabase database) {
-        this(new SqliteSessionPlannerLocalGateway(database));
+    public SqliteSessionPlanRepository(FeatureStoreHandle store) {
+        this(new SqliteSessionPlannerLocalGateway(store));
     }
 
     SqliteSessionPlanRepository(SqliteSessionPlannerLocalGateway gateway) {
@@ -84,8 +86,38 @@ public final class SqliteSessionPlanRepository
     }
 
     @Override
-    public void delete(long sessionId) {
-        gateway.deleteSession(sessionId);
+    public SessionPlanDeleteResult deleteGuarded(
+            long sessionId,
+            SessionRevision expectedRevision,
+            List<Long> replacementParticipantRefs
+    ) {
+        Objects.requireNonNull(expectedRevision, "expectedRevision");
+        List<Long> participantRefs = replacementParticipantRefs == null
+                ? List.of() : List.copyOf(replacementParticipantRefs);
+        try {
+            SqliteSessionPlannerLocalGateway.DeleteOutcome outcome = gateway.deleteSessionGuarded(
+                    sessionId,
+                    expectedRevision.value(),
+                    replacementId -> SessionPlanMapper.toSnapshot(SessionPlan.seeded(
+                            replacementId, participantRefs, features.sessionplanner.domain.session.EncounterDays.one())));
+            return new SessionPlanDeleteResult(
+                    switch (outcome.status()) {
+                        case SUCCESS -> SessionPlanDeleteResult.Status.SUCCESS;
+                        case STALE -> SessionPlanDeleteResult.Status.STALE;
+                        case NOT_FOUND -> SessionPlanDeleteResult.Status.NOT_FOUND;
+                    },
+                    sessionId,
+                    expectedRevision,
+                    outcome.currentTargetRevision().map(SessionRevision::new),
+                    outcome.authoritativeCurrent().map(SessionPlanMapper::toDomain));
+        } catch (IllegalStateException exception) {
+            return new SessionPlanDeleteResult(
+                    SessionPlanDeleteResult.Status.STORAGE_FAILURE,
+                    sessionId,
+                    expectedRevision,
+                    Optional.empty(),
+                    Optional.empty());
+        }
     }
 
     @Override

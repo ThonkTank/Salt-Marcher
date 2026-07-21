@@ -18,7 +18,10 @@ final class EncounterPlanBatchReadSqliteStore {
 
     private static final String REQUESTS = "temp_encounter_plan_requests";
 
-    List<EncounterPlanSnapshotRecord> load(Connection connection, List<Long> planIds) throws SQLException {
+    record ReadResult(List<EncounterPlanSnapshotRecord> plans, int statementCount) {
+    }
+
+    ReadResult load(Connection connection, List<Long> planIds) throws SQLException {
         prepare(connection, planIds);
         try {
             Map<Long, EncounterPlanRecord> roots = roots(connection);
@@ -31,7 +34,7 @@ final class EncounterPlanBatchReadSqliteStore {
                             root, creatures.getOrDefault(planId, List.of())));
                 }
             }
-            return List.copyOf(result);
+            return new ReadResult(List.copyOf(result), 6);
         } finally {
             clear(connection);
         }

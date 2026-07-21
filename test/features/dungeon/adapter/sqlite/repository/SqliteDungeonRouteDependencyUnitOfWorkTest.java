@@ -5,13 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSeeder;
+import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.application.authored.command.CorridorChange;
 import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.command.DungeonPatchEntityRef;
 import features.dungeon.application.authored.command.RoomClusterChange;
 import features.dungeon.application.authored.command.RoomRegionChange;
 import features.dungeon.application.authored.port.DungeonUnitOfWorkResult;
-import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.domain.core.component.CorridorWaypoint;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
@@ -20,15 +20,15 @@ import features.dungeon.domain.core.structure.corridor.CorridorBindings;
 import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
 import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomRegion;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteDatabase;
 import java.nio.file.Path;
 import java.sql.DriverManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteDatabase;
 
 final class SqliteDungeonRouteDependencyUnitOfWorkTest {
 
@@ -44,8 +44,8 @@ final class SqliteDungeonRouteDependencyUnitOfWorkTest {
             throws Exception {
         Path path = directory.resolve("route-dependency.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            seedAuthoredMap(database);
-            SqliteDungeonUnitOfWork unitOfWork = new SqliteDungeonUnitOfWork(database);
+            var fixture = seedAuthoredMap(database);
+            SqliteDungeonUnitOfWork unitOfWork = new SqliteDungeonUnitOfWork(fixture.store());
             assertEquals(verticalRoute(), routeCells(path));
             assertEquals(candidateCells(), dependencyCells(path));
             List<String> unrelatedBefore = unrelatedRows(path);
@@ -63,7 +63,8 @@ final class SqliteDungeonRouteDependencyUnitOfWorkTest {
             assertThrows(IllegalStateException.class, () -> unitOfWork.commit(
                     missingCorridorDeclarationPatch()));
             assertEquals(beforeRejected, allDungeonRows(path),
-                    "missing derived impact must roll back authored, route, dependency, chunk, and revision rows");
+                    "missing derived impact must roll back authored, route, dependency, chunk, and"
+                        + " revision rows");
         }
     }
 
@@ -79,7 +80,8 @@ final class SqliteDungeonRouteDependencyUnitOfWorkTest {
                 .withImpact(Set.of(CHUNK), List.of(DungeonPatchEntityRef.roomCluster(BLOCKER_CLUSTER_ID)));
     }
 
-    private static void seedAuthoredMap(SqliteDatabase database) {
+    private static DungeonSqliteFixtureSeeder.Fixture seedAuthoredMap(SqliteDatabase database) {
+        var fixture = DungeonSqliteFixtureSeeder.prepare(database);
         RoomCluster blockerCluster = RoomCluster.authored(
                 BLOCKER_CLUSTER_ID, MAP_ID, "Blocker cluster", List.of());
         RoomRegion blocker = blockerAtOneZero();
@@ -95,13 +97,14 @@ final class SqliteDungeonRouteDependencyUnitOfWorkTest {
                         new CorridorWaypoint(anchorClusterId, new Cell(0, 0, 0)),
                         new CorridorWaypoint(anchorClusterId, new Cell(2, 2, 0))),
                 List.of(), List.of(), List.of()));
-        DungeonSqliteFixtureSeeder.insertHeader(database, MAP_ID, "Route dependency", 1L);
-        DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(MAP, 1L, List.of(
+        fixture.insertHeader(MAP_ID, "Route dependency", 1L);
+        fixture.commit(DungeonPatch.of(MAP, 1L, List.of(
                 new RoomClusterChange(null, blockerCluster, Set.of(CHUNK)),
                 new RoomRegionChange(null, blocker),
                 new RoomClusterChange(null, anchorCluster, Set.of(CHUNK)),
                 new RoomRegionChange(null, anchorRoom),
                 new CorridorChange(null, corridor, Set.of(CHUNK)))));
+        return fixture;
     }
 
     private static RoomRegion blockerAtOneZero() {
@@ -137,12 +140,13 @@ final class SqliteDungeonRouteDependencyUnitOfWorkTest {
     }
 
     private static List<String> unrelatedRows(Path path) throws Exception {
-        return rows(path, "SELECT 'cluster',cluster_id,name FROM dungeon_room_clusters WHERE cluster_id=21 "
-                + "UNION ALL SELECT 'room',room_id,name FROM dungeon_rooms WHERE room_id=12 "
-                + "UNION ALL SELECT 'cell',room_id,level_z||':'||cell_x||':'||cell_y "
-                + "FROM dungeon_room_cells WHERE room_id=12 "
-                + "UNION ALL SELECT 'topology',element_id,label FROM dungeon_topology_elements "
-                + "WHERE element_id=12 ORDER BY 1,2,3");
+        return rows(path,
+                "SELECT 'cluster',cluster_id,name FROM dungeon_room_clusters WHERE cluster_id=21"
+                    + " UNION ALL SELECT 'room',room_id,name FROM dungeon_rooms WHERE room_id=12"
+                    + " UNION ALL SELECT 'cell',room_id,level_z||':'||cell_x||':'||cell_y FROM"
+                    + " dungeon_room_cells WHERE room_id=12 UNION ALL SELECT"
+                    + " 'topology',element_id,label FROM dungeon_topology_elements WHERE"
+                    + " element_id=12 ORDER BY 1,2,3");
     }
 
     private static List<String> allDungeonRows(Path path) throws Exception {

@@ -1,34 +1,33 @@
 package features.hex.adapter.sqlite.gateway.local;
 
+import features.hex.adapter.sqlite.model.HexMapRecord;
+import features.hex.adapter.sqlite.model.HexMapSnapshotRecord;
+import features.hex.adapter.sqlite.model.HexMarkerRecord;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+import platform.persistence.SqliteMigration;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteConnectionSource;
-import platform.persistence.SqliteDatabase;
-import platform.persistence.SqliteMigration;
-import features.hex.adapter.sqlite.model.HexMapRecord;
-import features.hex.adapter.sqlite.model.HexMapSnapshotRecord;
-import features.hex.adapter.sqlite.model.HexMarkerRecord;
-import features.hex.adapter.sqlite.model.HexPersistenceSchema;
 
 public final class SqliteHexMapLocalGateway {
 
-    private final SqliteConnectionSource connections;
+    private final FeatureStoreHandle connections;
 
-    public SqliteHexMapLocalGateway() {
-        this(SqliteDatabase.defaultDatabase(
-                HexPersistenceSchema.DATABASE_FILE_NAME,
-                NoopDiagnostics.INSTANCE));
+    public static FeatureStoreDefinition storeDefinition() {
+        HexSqliteSchemaMigrator schemaMigrator = new HexSqliteSchemaMigrator();
+        return FeatureStoreDefinition.validated(
+                "hex",
+                HexSqliteTargetSchema.validator(),
+                new SqliteMigration(1, schemaMigrator::ensureSchema),
+                new SqliteMigration(2, new HexVersionTwoSchemaMigration()::repair));
     }
 
-    public SqliteHexMapLocalGateway(SqliteDatabase database) {
-        HexSqliteSchemaMigrator schemaMigrator = new HexSqliteSchemaMigrator();
-        this.connections = Objects.requireNonNull(database, "database").connections(
-                "hex",
-                new SqliteMigration(1, schemaMigrator::ensureSchema));
+    public SqliteHexMapLocalGateway(FeatureStoreHandle store) {
+        this.connections = FeatureStoreHandle.requireOwner(store, "hex");
     }
 
     public Optional<HexMapSnapshotRecord> loadSelected() {

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSeeder;
 import features.dungeon.application.authored.DungeonCachedWindowStore;
+import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.application.authored.command.CorridorChange;
 import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.command.DungeonPatchChange;
@@ -14,14 +15,13 @@ import features.dungeon.application.authored.command.RoomClusterChange;
 import features.dungeon.application.authored.command.RoomRegionChange;
 import features.dungeon.application.authored.command.StairChange;
 import features.dungeon.application.authored.command.TransitionChange;
-import features.dungeon.application.authored.port.DungeonUnitOfWorkResult;
 import features.dungeon.application.authored.port.DungeonEntitySnapshot;
 import features.dungeon.application.authored.port.DungeonIdentityClosureRequest;
 import features.dungeon.application.authored.port.DungeonIdentityClosureResult;
+import features.dungeon.application.authored.port.DungeonUnitOfWorkResult;
 import features.dungeon.application.authored.port.DungeonWindow;
 import features.dungeon.application.authored.port.DungeonWindowRequest;
 import features.dungeon.application.authored.port.DungeonWindowStore;
-import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.domain.core.component.CorridorWaypoint;
 import features.dungeon.domain.core.component.StairExit;
 import features.dungeon.domain.core.geometry.Cell;
@@ -39,15 +39,16 @@ import features.dungeon.domain.core.structure.stair.StairShape;
 import features.dungeon.domain.core.structure.transition.Transition;
 import features.dungeon.domain.core.structure.transition.TransitionAnchor;
 import features.dungeon.domain.core.structure.transition.TransitionDestination;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
 import java.nio.file.Path;
 import java.sql.DriverManager;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteDatabase;
 
 final class SqliteDungeonUnitOfWorkTest {
 
@@ -60,10 +61,11 @@ final class SqliteDungeonUnitOfWorkTest {
     void insertsUpdatesAndRemovesEveryPatchFamilyWithoutFullMapReadback(@TempDir Path directory) throws Exception {
         Path path = directory.resolve("single-map-uow.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            DungeonSqliteFixtureSeeder.insertHeader(database, MAP_ID, "Patch map", 1L);
-            SqliteDungeonUnitOfWork unitOfWork = new SqliteDungeonUnitOfWork(database);
+            var fixture = DungeonSqliteFixtureSeeder.prepare(database);
+            fixture.insertHeader(MAP_ID, "Patch map", 1L);
+            SqliteDungeonUnitOfWork unitOfWork = new SqliteDungeonUnitOfWork(fixture.store());
             DungeonWindowStore readStore = new DungeonCachedWindowStore(
-                    new SqliteDungeonWindowStore(database));
+                    new SqliteDungeonWindowStore(fixture.store()));
 
             Facts first = facts("first", false);
             DungeonUnitOfWorkResult.Committed inserted = committed(unitOfWork.commit(
@@ -83,7 +85,8 @@ final class SqliteDungeonUnitOfWorkTest {
             assertEquals("second room", text(path, "SELECT name FROM dungeon_rooms WHERE room_id=20"));
             assertEquals(2L, scalar(path, "SELECT COUNT(*) FROM dungeon_room_cells WHERE room_id=20"));
             assertEquals("second marker", text(path,
-                    "SELECT label FROM dungeon_feature_markers WHERE feature_marker_id=60"));
+                            "SELECT label FROM dungeon_feature_markers WHERE"
+                                + " feature_marker_id=60"));
             assertExactProductionRead(readStore, 3L, second);
 
             DungeonUnitOfWorkResult.Committed removed = committed(unitOfWork.commit(

@@ -37,6 +37,8 @@ public final class MonsterCatalogDefinition
     private final EncounterHandoff encounter;
     private final SceneHandoff scene;
     private final AtomicLong providerRevision = new AtomicLong();
+    private final CatalogSuccessfulAsyncCache<CreatureFilterOptions> filterOptions =
+            new CatalogSuccessfulAsyncCache<>();
 
     public MonsterCatalogDefinition(
             CreatureCatalogQueryApi queries,
@@ -78,12 +80,13 @@ public final class MonsterCatalogDefinition
                 query.filters().challengeRatingMax(), query.filters().sizes(),
                 query.filters().creatureTypes(), query.filters().creatureSubtypes(),
                 query.filters().biomes(), query.filters().alignments(),
-                query.sort().providerField(), query.sort().providerDirection(),
+                providerSortField(request.sortOrder()), request.sortOrder().direction().name(),
                 request.pageSize(), request.pageOffset());
-        CompletionStage<CreatureFilterOptions> options = queries.loadFilterOptions()
-                .handle((result, failure) -> failure == null && result != null
-                        && result.status() == CreatureReadStatus.SUCCESS
-                        ? result.options() : CreatureFilterOptions.empty());
+        CompletionStage<Optional<CreatureFilterOptions>> options = query.filterOptionsResolved()
+                ? CompletableFuture.completedFuture(Optional.of(query.options()))
+                : filterOptions.resolve(() -> queries.loadFilterOptions().thenApply(result ->
+                        result != null && result.status() == CreatureReadStatus.SUCCESS
+                                ? Optional.of(result.options()) : Optional.empty()));
         CompletionStage<CreatureCatalogPageResult> page = queries.search(providerQuery);
         return options.thenCombine(page, (acceptedOptions, providerResult) -> {
             CreatureCatalogPage acceptedPage = providerResult == null || providerResult.page() == null
@@ -98,7 +101,14 @@ public final class MonsterCatalogDefinition
             } else {
                 result = CatalogResultState.ready(acceptedPage.rows());
             }
-            MonsterCatalogQuery acceptedQuery = query.withOptions(acceptedOptions).withReferenceOptions(
+            if (acceptedOptions.isEmpty()
+                    && (result.status() == CatalogResultState.Status.READY
+                            || result.status() == CatalogResultState.Status.EMPTY)) {
+                result = CatalogResultState.failed(
+                        result.rows(), "Monster-Filter konnten nicht geladen werden.");
+            }
+            MonsterCatalogQuery acceptedQuery = acceptedOptions.map(query::withOptions).orElse(query)
+                    .withReferenceOptions(
                     encounterTables.current().status() == EncounterTableReadStatus.SUCCESS
                             ? encounterTables.current().tables().stream()
                                     .map(table -> new CatalogReferenceOption(table.tableId(), table.name())).toList()
@@ -120,8 +130,10 @@ public final class MonsterCatalogDefinition
                 new CatalogFilterSpec.Text<>(
                         "Monster suchen …", "Monster suchen", query -> query.filters().nameQuery(),
                         (query, value) -> query.withFilters(query.filters().withNameQuery(value)),
-                        query -> query.filters().nameQuery().isBlank()
-                                ? "" : "Suche: " + query.filters().nameQuery(),
+                        query -> CatalogFilterTokens.single(
+                                query.filters().nameQuery().isBlank()
+                                        ? "" : "Suche: " + query.filters().nameQuery(),
+                                current -> current.withFilters(current.filters().withNameQuery(""))),
                         query -> query.withFilters(query.filters().withNameQuery(""))),
                 new CatalogFilterSpec.ChoiceRange<>(
                         "CR", "Challenge Rating",
@@ -130,10 +142,13 @@ public final class MonsterCatalogDefinition
                         query -> query.filters().challengeRatingMax(),
                         (query, minimum, maximum) -> query.withFilters(
                                 query.filters().withChallengeRating(minimum, maximum)),
-                        query -> query.filters().challengeRatingMin().isBlank()
-                                && query.filters().challengeRatingMax().isBlank() ? ""
-                                : "CR: " + query.filters().challengeRatingMin() + "–"
-                                        + query.filters().challengeRatingMax(),
+                        query -> CatalogFilterTokens.single(
+                                query.filters().challengeRatingMin().isBlank()
+                                        && query.filters().challengeRatingMax().isBlank() ? ""
+                                        : "CR: " + query.filters().challengeRatingMin() + "–"
+                                                + query.filters().challengeRatingMax(),
+                                current -> current.withFilters(
+                                        current.filters().withChallengeRating("", ""))),
                         query -> query.withFilters(query.filters().withChallengeRating("", ""))),
                 multiString("Größe", "Monster-Größe", query -> query.options().sizes(),
                         query -> query.filters().sizes(),
@@ -156,8 +171,11 @@ public final class MonsterCatalogDefinition
                                 .filter(choice -> choice.value() > 0L).toList(),
                         query -> query.filters().encounterTableIds(),
                         (query, values) -> query.withFilters(query.filters().withEncounterTables(values)),
-                        query -> CatalogPresentationChoices.count(
-                                "Tabellen", query.filters().encounterTableIds().size()),
+                        query -> CatalogFilterTokens.each(
+                                query, current -> current.filters().encounterTableIds(),
+                                value -> referenceLabel(query.encounterTables(), value),
+                                (current, values) -> current.withFilters(
+                                        current.filters().withEncounterTables(values))),
                         query -> query.withFilters(query.filters().withEncounterTables(List.of()))),
                 new CatalogFilterSpec.MultiChoice<>(
                         "Fraktionen", "World-Fraktionen",
@@ -165,31 +183,30 @@ public final class MonsterCatalogDefinition
                                 .filter(choice -> choice.value() > 0L).toList(),
                         query -> query.filters().worldFactionIds(),
                         (query, values) -> query.withFilters(query.filters().withFactions(values)),
-                        query -> CatalogPresentationChoices.count(
-                                "Fraktionen", query.filters().worldFactionIds().size()),
+                        query -> CatalogFilterTokens.each(
+                                query, current -> current.filters().worldFactionIds(),
+                                value -> referenceLabel(query.factions(), value),
+                                (current, values) -> current.withFilters(current.filters().withFactions(values))),
                         query -> query.withFilters(query.filters().withFactions(List.of()))),
                 new CatalogFilterSpec.Choice<>(
                         "Ort", "World-Ort", query -> CatalogPresentationChoices.references(query.locations()),
                         query -> query.filters().worldLocationId(),
                         (query, value) -> query.withFilters(query.filters().withLocation(value)),
-                        query -> query.filters().worldLocationId() <= 0L
-                                ? "" : "Ort: #" + query.filters().worldLocationId(),
-                        query -> query.withFilters(query.filters().withLocation(0L))),
-                new CatalogFilterSpec.Choice<>(
-                        "Sortierung", "Monster sortieren",
-                        ignored -> java.util.Arrays.stream(MonsterCatalogSort.values())
-                                .map(value -> new CatalogChoice<>(value, value.label())).toList(),
-                        MonsterCatalogQuery::sort, MonsterCatalogQuery::withSort,
-                        ignored -> "", java.util.function.UnaryOperator.identity()));
+                        query -> CatalogFilterTokens.single(
+                                query.filters().worldLocationId() <= 0L ? ""
+                                        : referenceLabel(query.locations(), query.filters().worldLocationId()),
+                                current -> current.withFilters(current.filters().withLocation(0L))),
+                        query -> query.withFilters(query.filters().withLocation(0L))));
         return new CatalogPresentationSpec<>(
                 "Monster-Ergebnisse", "Monster", CreatureCatalogRow::name, filters,
                 List.of(
-                        new CatalogColumnSpec<>("Name", CreatureCatalogRow::name),
-                        new CatalogColumnSpec<>("CR", CreatureCatalogRow::challengeRating),
-                        new CatalogColumnSpec<>("Typ", CreatureCatalogRow::creatureType),
-                        new CatalogColumnSpec<>("Größe", CreatureCatalogRow::size),
-                        new CatalogColumnSpec<>("XP", row ->
-                                NumberFormat.getIntegerInstance(Locale.US).format(row.xp()))),
+                        new CatalogColumnSpec<>("name", "Name", CreatureCatalogRow::name, true),
+                        new CatalogColumnSpec<>(
+                                "challenge-rating", "CR", CreatureCatalogRow::challengeRating, true),
+                        new CatalogColumnSpec<>("type", "Typ", CreatureCatalogRow::creatureType, false),
+                        new CatalogColumnSpec<>("size", "Größe", CreatureCatalogRow::size, false),
+                        new CatalogColumnSpec<>("xp", "XP", row ->
+                                NumberFormat.getIntegerInstance(Locale.US).format(row.xp()), true)),
                 Optional.of(new CatalogActionSpec(
                         CatalogActionId.OPEN, "Details öffnen", "Monster im Inspector öffnen", "Öffnen",
                         CatalogActionSpec.Emphasis.SECONDARY)),
@@ -200,7 +217,9 @@ public final class MonsterCatalogDefinition
                         new CatalogActionSpec(
                                 CatalogActionId.ADD_TO_SCENE, "+ Scene", "Zur fokussierten Scene hinzufügen",
                                 "+ Scene", CatalogActionSpec.Emphasis.SECONDARY)),
-                List.of(), true);
+                List.of(CatalogActionSpec.create()), true,
+                new CatalogSortOrder("name", CatalogSortOrder.Direction.ASCENDING),
+                CatalogSortMode.PROVIDER);
     }
 
     @Override public void committed(MonsterCatalogQuery previous, MonsterCatalogQuery committed) {
@@ -247,8 +266,23 @@ public final class MonsterCatalogDefinition
                 prompt, accessible,
                 query -> CatalogPresentationChoices.requiredStrings(options.apply(query)),
                 selected, update,
-                query -> CatalogPresentationChoices.count(prompt, selected.apply(query).size()),
+                query -> CatalogFilterTokens.each(query, selected, value -> value, update),
                 query -> update.apply(query, List.of()));
+    }
+
+    private static String referenceLabel(List<CatalogReferenceOption> options, long id) {
+        return options.stream().filter(option -> option.id() == id).map(CatalogReferenceOption::label)
+                .findFirst().orElse("#" + id);
+    }
+
+    private static String providerSortField(CatalogSortOrder sortOrder) {
+        return switch (sortOrder.columnId()) {
+            case "name" -> "NAME";
+            case "challenge-rating" -> "CHALLENGE_RATING";
+            case "xp" -> "XP";
+            default -> throw new IllegalArgumentException(
+                    "Unsupported Monster provider sort: " + sortOrder.columnId());
+        };
     }
 
 }

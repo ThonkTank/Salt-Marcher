@@ -4,12 +4,14 @@ import java.util.Objects;
 import java.util.OptionalInt;
 
 public record PrepareSessionCommand(
+        SessionPlannerAuthoredTarget target,
         OptionalInt encounterCount,
         long seed,
         boolean replacementConfirmed
 ) {
 
     public PrepareSessionCommand {
+        target = Objects.requireNonNull(target, "target");
         encounterCount = Objects.requireNonNull(encounterCount, "encounterCount");
         if (encounterCount.isPresent()
                 && (encounterCount.getAsInt() < 1 || encounterCount.getAsInt() > 10)) {

@@ -1,70 +1,42 @@
 package features.items;
 
-import features.items.adapter.http.Dnd5e2014HttpItemSource;
 import features.items.adapter.sqlite.SqliteItemCatalogAdapter;
 import features.items.api.ItemsCatalogApi;
-import features.items.api.ItemsImportApi;
 import features.items.application.ItemsApplicationService;
 import features.items.domain.catalog.ItemCatalogPort;
-import features.items.domain.importing.ItemImportStore;
-import features.items.domain.importing.PublicItemSource;
-import java.net.http.HttpClient;
-import java.time.Duration;
-import java.util.Objects;
 import platform.diagnostics.Diagnostics;
 import platform.execution.ExecutionLane;
-import platform.persistence.SqliteDatabase;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
 
 public final class ItemsServiceAssembly {
 
     private ItemsServiceAssembly() {
     }
 
-    public static Component create(
-            SqliteDatabase database,
+    public static FeatureStoreDefinition storeDefinition() {
+        return SqliteItemCatalogAdapter.storeDefinition();
+    }
+
+    public static CatalogComponent createCatalog(
+            FeatureStoreHandle store,
             ExecutionLane executionLane,
             Diagnostics diagnostics
     ) {
-        HttpClient client = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(20))
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .build();
-        return create(database, executionLane, diagnostics, client);
+        return createCatalog(new SqliteItemCatalogAdapter(store), executionLane, diagnostics);
     }
 
-    public static Component create(
-            SqliteDatabase database,
-            ExecutionLane executionLane,
-            Diagnostics diagnostics,
-            HttpClient httpClient
-    ) {
-        SqliteItemCatalogAdapter sqlite = new SqliteItemCatalogAdapter(
-                Objects.requireNonNull(database, "database"));
-        return create(
-                sqlite,
-                new Dnd5e2014HttpItemSource(Objects.requireNonNull(httpClient, "httpClient")),
-                sqlite,
-                executionLane,
-                diagnostics);
-    }
-
-    public static Component create(
+    public static CatalogComponent createCatalog(
             ItemCatalogPort catalog,
-            PublicItemSource publicSource,
-            ItemImportStore importStore,
             ExecutionLane executionLane,
             Diagnostics diagnostics
     ) {
-        ItemsApplicationService service = new ItemsApplicationService(
-                catalog,
-                publicSource,
-                importStore,
-                executionLane,
-                diagnostics);
-        return new Component(service, service);
+        ItemsApplicationService service =
+                new ItemsApplicationService(catalog, executionLane, diagnostics);
+        return new CatalogComponent(service);
     }
 
-    public record Component(ItemsCatalogApi catalog, ItemsImportApi importer) {
+    public record CatalogComponent(ItemsCatalogApi catalog) {
         public void openInspector(shell.api.InspectorSink inspector, ItemsCatalogApi.ItemDetail detail) {
             features.items.adapter.javafx.ItemDetailsView.openInspector(inspector, detail);
         }

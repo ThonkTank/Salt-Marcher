@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import features.dungeon.api.DungeonChunkKey;
+
 import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.command.DungeonPatchEntityRef;
 import features.dungeon.application.authored.command.FeatureMarkerChange;
@@ -16,11 +18,15 @@ import features.dungeon.application.authored.port.DungeonWindowContentRequest;
 import features.dungeon.application.authored.port.DungeonWindowEntityFragment;
 import features.dungeon.application.authored.port.DungeonWindowIndex;
 import features.dungeon.application.authored.port.DungeonWindowRequest;
-import features.dungeon.api.DungeonChunkKey;
+import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
 import features.dungeon.domain.core.structure.feature.FeatureMarker;
 import features.dungeon.domain.core.structure.feature.FeatureMarkerKind;
-import features.dungeon.domain.core.geometry.Cell;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteDatabase;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -31,10 +37,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteDatabase;
 
 final class DungeonSqliteReadSnapshotTest {
 
@@ -45,10 +47,12 @@ final class DungeonSqliteReadSnapshotTest {
     @Test
     void twoPhaseWindowRejectsConcurrentRevisionInsteadOfCombiningFacts(@TempDir Path tempDir) throws Exception {
         Path path = tempDir.resolve("window-snapshot.db");
-        try (SqliteDatabase database = savedDatabase(path)) {
+        try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
+            var fixture = savedDatabase(database);
             enableWal(path);
             ConcurrentUpdate update = new ConcurrentUpdate(path);
-            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(database, update::afterHeaderRead);
+            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(
+                            fixture.store(), update::afterHeaderRead);
             update.start();
 
             DungeonWindowRequest request = new DungeonWindowRequest(
@@ -69,10 +73,12 @@ final class DungeonSqliteReadSnapshotTest {
     @Test
     void closureCannotCombineOldRevisionWithConcurrentNewEntityFacts(@TempDir Path tempDir) throws Exception {
         Path path = tempDir.resolve("closure-snapshot.db");
-        try (SqliteDatabase database = savedDatabase(path)) {
+        try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
+            var fixture = savedDatabase(database);
             enableWal(path);
             ConcurrentUpdate update = new ConcurrentUpdate(path);
-            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(database, update::afterHeaderRead);
+            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(
+                            fixture.store(), update::afterHeaderRead);
             update.start();
 
             DungeonIdentityClosureResult.Complete closure = assertInstanceOf(
@@ -92,11 +98,11 @@ final class DungeonSqliteReadSnapshotTest {
         }
     }
 
-    private static SqliteDatabase savedDatabase(Path path) {
-        SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE);
+    private static DungeonSqliteFixtureSeeder.Fixture savedDatabase(SqliteDatabase database) {
+        var fixture = DungeonSqliteFixtureSeeder.prepare(database);
         DungeonMapIdentity map = new DungeonMapIdentity(MAP_ID);
-        DungeonSqliteFixtureSeeder.insertHeader(database, MAP_ID, "Snapshot map", OLD_REVISION - 1L);
-        DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(
+        fixture.insertHeader(MAP_ID, "Snapshot map", OLD_REVISION - 1L);
+        fixture.commit(DungeonPatch.of(
                 map,
                 OLD_REVISION - 1L,
                 List.of(new FeatureMarkerChange(null, new FeatureMarker(
@@ -106,7 +112,7 @@ final class DungeonSqliteReadSnapshotTest {
                         new Cell(64, 0, 0),
                         "old marker",
                         "old description")))));
-        return database;
+        return fixture;
     }
 
     private static void enableWal(Path path) throws SQLException {
@@ -160,10 +166,13 @@ final class DungeonSqliteReadSnapshotTest {
                         connection.setAutoCommit(false);
                         try (Statement statement = connection.createStatement()) {
                             statement.executeUpdate(
-                                    "UPDATE dungeon_maps SET revision=10 WHERE dungeon_map_id=" + MAP_ID);
+                                                    "UPDATE dungeon_maps SET revision=10 WHERE"
+                                                        + " dungeon_map_id="
+                                                            + MAP_ID);
                             statement.executeUpdate(
-                                    "UPDATE dungeon_feature_markers SET label='new marker'"
-                                            + " WHERE feature_marker_id=" + MARKER_ID);
+                                                    "UPDATE dungeon_feature_markers SET label='new"
+                                                        + " marker' WHERE feature_marker_id="
+                                                            + MARKER_ID);
                         }
                         connection.commit();
                     }

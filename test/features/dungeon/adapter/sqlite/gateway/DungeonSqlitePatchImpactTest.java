@@ -3,12 +3,13 @@ package features.dungeon.adapter.sqlite.gateway;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import features.dungeon.api.DungeonChunkKey;
+
 import features.dungeon.application.authored.command.CorridorChange;
 import features.dungeon.application.authored.command.DungeonPatch;
 import features.dungeon.application.authored.command.DungeonPatchEntityRef;
 import features.dungeon.application.authored.command.RoomClusterChange;
 import features.dungeon.application.authored.command.RoomRegionChange;
-import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.domain.core.component.CorridorWaypoint;
 import features.dungeon.domain.core.geometry.Cell;
 import features.dungeon.domain.core.structure.DungeonMapIdentity;
@@ -17,6 +18,11 @@ import features.dungeon.domain.core.structure.corridor.CorridorBindings;
 import features.dungeon.domain.core.structure.room.DungeonRoomNarration;
 import features.dungeon.domain.core.structure.room.RoomCluster;
 import features.dungeon.domain.core.structure.room.RoomRegion;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteDatabase;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -26,10 +32,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteDatabase;
 
 final class DungeonSqlitePatchImpactTest {
 
@@ -47,8 +49,8 @@ final class DungeonSqlitePatchImpactTest {
     ) throws Exception {
         Path path = directory.resolve("patch-impact.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            seedAuthoredMap(database);
-            DungeonSqlitePatchGateway gateway = new DungeonSqlitePatchGateway(database);
+            var fixture = seedAuthoredMap(database);
+            DungeonSqlitePatchGateway gateway = new DungeonSqlitePatchGateway(fixture.store());
             List<String> unrelatedBefore = unrelatedRows(path);
             installMutationAudit(path);
 
@@ -64,14 +66,16 @@ final class DungeonSqlitePatchImpactTest {
                     "SELECT cell_x,cell_y,chunk_q FROM dungeon_corridor_route_cells "
                             + "WHERE corridor_id=31 ORDER BY segment_order,cell_order"));
             assertEquals(List.of("0|3", "1|3"), rows(path,
-                    "SELECT chunk_q,content_revision FROM dungeon_chunks "
-                            + "WHERE dungeon_map_id=87 AND level_z=0 AND chunk_q IN (0,1) ORDER BY chunk_q"));
+                            "SELECT chunk_q,content_revision FROM dungeon_chunks WHERE"
+                                + " dungeon_map_id=87 AND level_z=0 AND chunk_q IN (0,1) ORDER BY"
+                                + " chunk_q"));
             assertEquals(unrelatedBefore, unrelatedRows(path));
             assertEquals(List.of("DELETE|1", "INSERT|1"), rows(path,
-                    "SELECT operation,COUNT(*) FROM patch_mutation_audit "
-                            + "WHERE table_name='room_cell' GROUP BY operation ORDER BY operation"));
+                            "SELECT operation,COUNT(*) FROM patch_mutation_audit WHERE"
+                                + " table_name='room_cell' GROUP BY operation ORDER BY operation"));
             assertEquals(List.of(), rows(path,
-                    "SELECT operation FROM patch_mutation_audit WHERE table_name='topology'"),
+                            "SELECT operation FROM patch_mutation_audit WHERE"
+                                + " table_name='topology'"),
                     "unchanged topology bindings must not be rewritten");
             assertEquals(List.of("DELETE|2", "INSERT|2"), rows(path,
                     "SELECT operation,COUNT(*) FROM patch_mutation_audit "
@@ -80,12 +84,14 @@ final class DungeonSqlitePatchImpactTest {
                     "SELECT operation,COUNT(*) FROM patch_mutation_audit "
                             + "WHERE table_name='route' GROUP BY operation ORDER BY operation"));
             assertEquals(List.of("INSERT|1", "UPDATE|1"), rows(path,
-                    "SELECT operation,COUNT(*) FROM patch_mutation_audit "
-                            + "WHERE table_name='chunk' GROUP BY operation ORDER BY operation"));
+                            "SELECT operation,COUNT(*) FROM patch_mutation_audit WHERE"
+                                + " table_name='chunk' GROUP BY operation ORDER BY operation"));
             assertEquals(List.of(), rows(path,
-                    "SELECT table_name,operation,entity_id,chunk_q FROM patch_mutation_audit "
-                            + "WHERE entity_id IN (12,22,32) OR chunk_q=4"),
-                    "unrelated identities and the off-chunk inventory must receive no SQL mutation");
+                            "SELECT table_name,operation,entity_id,chunk_q FROM"
+                                + " patch_mutation_audit WHERE entity_id IN (12,22,32) OR"
+                                + " chunk_q=4"),
+                    "unrelated identities and the off-chunk inventory must receive no SQL"
+                        + " mutation");
 
             List<String> affectedBeforeRejectedCommit = affectedRows(path);
             IllegalStateException failure = assertThrows(IllegalStateException.class,
@@ -117,7 +123,8 @@ final class DungeonSqlitePatchImpactTest {
                         List.of(DungeonPatchEntityRef.roomCluster(CLUSTER_ID)));
     }
 
-    private static void seedAuthoredMap(SqliteDatabase database) {
+    private static DungeonSqliteFixtureSeeder.Fixture seedAuthoredMap(SqliteDatabase database) {
+        var fixture = DungeonSqliteFixtureSeeder.prepare(database);
         RoomRegion changedRoom = room(ROOM_ID, CLUSTER_ID, 1);
         RoomCluster changedCluster = cluster(CLUSTER_ID, 1);
         Corridor changedCorridor = corridor(CORRIDOR_ID, ROOM_ID, CLUSTER_ID, 1);
@@ -127,14 +134,15 @@ final class DungeonSqlitePatchImpactTest {
         RoomCluster unrelatedCluster = cluster(unrelatedClusterId, 257);
         Corridor unrelatedCorridor = corridor(32L, unrelatedRoomId, unrelatedClusterId, 257);
         DungeonChunkKey unrelatedChunk = new DungeonChunkKey(MAP_ID, 0, 4, 0);
-        DungeonSqliteFixtureSeeder.insertHeader(database, MAP_ID, "Impact map", 1L);
-        DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(MAP, 1L, List.of(
+        fixture.insertHeader(MAP_ID, "Impact map", 1L);
+        fixture.commit(DungeonPatch.of(MAP, 1L, List.of(
                 new RoomClusterChange(null, changedCluster, Set.of(OLD_CHUNK)),
                 new RoomRegionChange(null, changedRoom),
                 new CorridorChange(null, changedCorridor, Set.of(OLD_CHUNK)),
                 new RoomClusterChange(null, unrelatedCluster, Set.of(unrelatedChunk)),
                 new RoomRegionChange(null, unrelatedRoom),
                 new CorridorChange(null, unrelatedCorridor, Set.of(unrelatedChunk)))));
+        return fixture;
     }
 
     private static RoomRegion room(long roomId, long clusterId, int x) {
@@ -171,64 +179,92 @@ final class DungeonSqlitePatchImpactTest {
 
     private static List<String> unrelatedRows(Path path) throws SQLException {
         return rows(path,
-                "SELECT 'cluster',cluster_id,name FROM dungeon_room_clusters WHERE cluster_id=22 "
-                        + "UNION ALL SELECT 'room',room_id,name FROM dungeon_rooms WHERE room_id=12 "
-                        + "UNION ALL SELECT 'cell',room_id,level_z||':'||cell_x||':'||cell_y "
-                        + "FROM dungeon_room_cells WHERE room_id=12 "
-                        + "UNION ALL SELECT 'membership',entity_id,level_z||':'||chunk_q||':'||chunk_r "
-                        + "FROM dungeon_entity_chunks WHERE entity_id IN (12,22,32) "
-                        + "UNION ALL SELECT 'route',corridor_id,level_z||':'||cell_x||':'||cell_y||':'||chunk_q||':'||chunk_r "
-                        + "FROM dungeon_corridor_route_cells WHERE corridor_id=32 "
-                        + "UNION ALL SELECT 'chunk',chunk_q,chunk_r||':'||content_revision "
-                        + "FROM dungeon_chunks WHERE dungeon_map_id=87 AND chunk_q=4 ORDER BY 1,2,3");
+                "SELECT 'cluster',cluster_id,name FROM dungeon_room_clusters WHERE cluster_id=22"
+                    + " UNION ALL SELECT 'room',room_id,name FROM dungeon_rooms WHERE room_id=12"
+                    + " UNION ALL SELECT 'cell',room_id,level_z||':'||cell_x||':'||cell_y FROM"
+                    + " dungeon_room_cells WHERE room_id=12 UNION ALL SELECT"
+                    + " 'membership',entity_id,level_z||':'||chunk_q||':'||chunk_r FROM"
+                    + " dungeon_entity_chunks WHERE entity_id IN (12,22,32) UNION ALL SELECT"
+                    + " 'route',corridor_id,level_z||':'||cell_x||':'||cell_y||':'||chunk_q||':'||chunk_r"
+                    + " FROM dungeon_corridor_route_cells WHERE corridor_id=32 UNION ALL SELECT"
+                    + " 'chunk',chunk_q,chunk_r||':'||content_revision FROM dungeon_chunks WHERE"
+                    + " dungeon_map_id=87 AND chunk_q=4 ORDER BY 1,2,3");
     }
 
     private static List<String> affectedRows(Path path) throws SQLException {
         return rows(path,
-                "SELECT 'map',dungeon_map_id,revision FROM dungeon_maps WHERE dungeon_map_id=87 "
-                        + "UNION ALL SELECT 'cell',room_id,level_z||':'||cell_x||':'||cell_y "
-                        + "FROM dungeon_room_cells WHERE room_id=11 "
-                        + "UNION ALL SELECT 'membership',entity_id,level_z||':'||chunk_q||':'||chunk_r "
-                        + "FROM dungeon_entity_chunks WHERE entity_id IN (11,21,31) "
-                        + "UNION ALL SELECT 'route',corridor_id,level_z||':'||cell_x||':'||cell_y||':'||chunk_q||':'||chunk_r "
-                        + "FROM dungeon_corridor_route_cells WHERE corridor_id=31 "
-                        + "UNION ALL SELECT 'chunk',chunk_q,chunk_r||':'||content_revision "
-                        + "FROM dungeon_chunks WHERE dungeon_map_id=87 AND chunk_q IN (0,1) ORDER BY 1,2,3");
+                "SELECT 'map',dungeon_map_id,revision FROM dungeon_maps WHERE dungeon_map_id=87"
+                    + " UNION ALL SELECT 'cell',room_id,level_z||':'||cell_x||':'||cell_y FROM"
+                    + " dungeon_room_cells WHERE room_id=11 UNION ALL SELECT"
+                    + " 'membership',entity_id,level_z||':'||chunk_q||':'||chunk_r FROM"
+                    + " dungeon_entity_chunks WHERE entity_id IN (11,21,31) UNION ALL SELECT"
+                    + " 'route',corridor_id,level_z||':'||cell_x||':'||cell_y||':'||chunk_q||':'||chunk_r"
+                    + " FROM dungeon_corridor_route_cells WHERE corridor_id=31 UNION ALL SELECT"
+                    + " 'chunk',chunk_q,chunk_r||':'||content_revision FROM dungeon_chunks WHERE"
+                    + " dungeon_map_id=87 AND chunk_q IN (0,1) ORDER BY 1,2,3");
     }
 
     private static void installMutationAudit(Path path) throws SQLException {
-        execute(path, "CREATE TABLE patch_mutation_audit("
-                + "table_name TEXT NOT NULL,operation TEXT NOT NULL,entity_id INTEGER,chunk_q INTEGER)");
-        execute(path, "CREATE TRIGGER audit_room_cell_insert AFTER INSERT ON dungeon_room_cells "
-                + "BEGIN INSERT INTO patch_mutation_audit VALUES('room_cell','INSERT',NEW.room_id,NULL); END");
-        execute(path, "CREATE TRIGGER audit_room_cell_update AFTER UPDATE ON dungeon_room_cells "
-                + "BEGIN INSERT INTO patch_mutation_audit VALUES('room_cell','UPDATE',NEW.room_id,NULL); END");
-        execute(path, "CREATE TRIGGER audit_room_cell_delete AFTER DELETE ON dungeon_room_cells "
-                + "BEGIN INSERT INTO patch_mutation_audit VALUES('room_cell','DELETE',OLD.room_id,NULL); END");
-        execute(path, "CREATE TRIGGER audit_topology_insert AFTER INSERT ON dungeon_topology_elements "
-                + "BEGIN INSERT INTO patch_mutation_audit VALUES('topology','INSERT',NEW.element_id,NULL); END");
-        execute(path, "CREATE TRIGGER audit_topology_update AFTER UPDATE ON dungeon_topology_elements "
-                + "BEGIN INSERT INTO patch_mutation_audit VALUES('topology','UPDATE',NEW.element_id,NULL); END");
-        execute(path, "CREATE TRIGGER audit_topology_delete AFTER DELETE ON dungeon_topology_elements "
-                + "BEGIN INSERT INTO patch_mutation_audit VALUES('topology','DELETE',OLD.element_id,NULL); END");
-        execute(path, "CREATE TRIGGER audit_membership_insert AFTER INSERT ON dungeon_entity_chunks "
-                + "BEGIN INSERT INTO patch_mutation_audit VALUES('membership','INSERT',NEW.entity_id,NEW.chunk_q); END");
-        execute(path, "CREATE TRIGGER audit_membership_update AFTER UPDATE ON dungeon_entity_chunks "
-                + "BEGIN INSERT INTO patch_mutation_audit VALUES('membership','UPDATE',NEW.entity_id,NEW.chunk_q); END");
-        execute(path, "CREATE TRIGGER audit_membership_delete AFTER DELETE ON dungeon_entity_chunks "
-                + "BEGIN INSERT INTO patch_mutation_audit VALUES('membership','DELETE',OLD.entity_id,OLD.chunk_q); END");
-        execute(path, "CREATE TRIGGER audit_route_insert AFTER INSERT ON dungeon_corridor_route_cells "
-                + "BEGIN INSERT INTO patch_mutation_audit VALUES('route','INSERT',NEW.corridor_id,NEW.chunk_q); END");
-        execute(path, "CREATE TRIGGER audit_route_update AFTER UPDATE ON dungeon_corridor_route_cells "
-                + "BEGIN INSERT INTO patch_mutation_audit VALUES('route','UPDATE',NEW.corridor_id,NEW.chunk_q); END");
-        execute(path, "CREATE TRIGGER audit_route_delete AFTER DELETE ON dungeon_corridor_route_cells "
-                + "BEGIN INSERT INTO patch_mutation_audit VALUES('route','DELETE',OLD.corridor_id,OLD.chunk_q); END");
-        execute(path, "CREATE TRIGGER audit_chunk_insert AFTER INSERT ON dungeon_chunks "
-                + "BEGIN INSERT INTO patch_mutation_audit VALUES('chunk','INSERT',NULL,NEW.chunk_q); END");
-        execute(path, "CREATE TRIGGER audit_chunk_update AFTER UPDATE ON dungeon_chunks "
-                + "BEGIN INSERT INTO patch_mutation_audit VALUES('chunk','UPDATE',NULL,NEW.chunk_q); END");
-        execute(path, "CREATE TRIGGER audit_chunk_delete AFTER DELETE ON dungeon_chunks "
-                + "BEGIN INSERT INTO patch_mutation_audit VALUES('chunk','DELETE',NULL,OLD.chunk_q); END");
+        execute(path,
+                "CREATE TABLE patch_mutation_audit(table_name TEXT NOT NULL,operation TEXT NOT"
+                        + " NULL,entity_id INTEGER,chunk_q INTEGER)");
+        execute(path,
+                "CREATE TRIGGER audit_room_cell_insert AFTER INSERT ON dungeon_room_cells BEGIN"
+                    + " INSERT INTO patch_mutation_audit"
+                    + " VALUES('room_cell','INSERT',NEW.room_id,NULL); END");
+        execute(path,
+                "CREATE TRIGGER audit_room_cell_update AFTER UPDATE ON dungeon_room_cells BEGIN"
+                    + " INSERT INTO patch_mutation_audit"
+                    + " VALUES('room_cell','UPDATE',NEW.room_id,NULL); END");
+        execute(path,
+                "CREATE TRIGGER audit_room_cell_delete AFTER DELETE ON dungeon_room_cells BEGIN"
+                    + " INSERT INTO patch_mutation_audit"
+                    + " VALUES('room_cell','DELETE',OLD.room_id,NULL); END");
+        execute(path,
+                "CREATE TRIGGER audit_topology_insert AFTER INSERT ON dungeon_topology_elements"
+                    + " BEGIN INSERT INTO patch_mutation_audit"
+                    + " VALUES('topology','INSERT',NEW.element_id,NULL); END");
+        execute(path,
+                "CREATE TRIGGER audit_topology_update AFTER UPDATE ON dungeon_topology_elements"
+                    + " BEGIN INSERT INTO patch_mutation_audit"
+                    + " VALUES('topology','UPDATE',NEW.element_id,NULL); END");
+        execute(path,
+                "CREATE TRIGGER audit_topology_delete AFTER DELETE ON dungeon_topology_elements"
+                    + " BEGIN INSERT INTO patch_mutation_audit"
+                    + " VALUES('topology','DELETE',OLD.element_id,NULL); END");
+        execute(path,
+                "CREATE TRIGGER audit_membership_insert AFTER INSERT ON dungeon_entity_chunks BEGIN"
+                    + " INSERT INTO patch_mutation_audit"
+                    + " VALUES('membership','INSERT',NEW.entity_id,NEW.chunk_q); END");
+        execute(path,
+                "CREATE TRIGGER audit_membership_update AFTER UPDATE ON dungeon_entity_chunks BEGIN"
+                    + " INSERT INTO patch_mutation_audit"
+                    + " VALUES('membership','UPDATE',NEW.entity_id,NEW.chunk_q); END");
+        execute(path,
+                "CREATE TRIGGER audit_membership_delete AFTER DELETE ON dungeon_entity_chunks BEGIN"
+                    + " INSERT INTO patch_mutation_audit"
+                    + " VALUES('membership','DELETE',OLD.entity_id,OLD.chunk_q); END");
+        execute(path,
+                "CREATE TRIGGER audit_route_insert AFTER INSERT ON dungeon_corridor_route_cells"
+                    + " BEGIN INSERT INTO patch_mutation_audit"
+                    + " VALUES('route','INSERT',NEW.corridor_id,NEW.chunk_q); END");
+        execute(path,
+                "CREATE TRIGGER audit_route_update AFTER UPDATE ON dungeon_corridor_route_cells"
+                    + " BEGIN INSERT INTO patch_mutation_audit"
+                    + " VALUES('route','UPDATE',NEW.corridor_id,NEW.chunk_q); END");
+        execute(path,
+                "CREATE TRIGGER audit_route_delete AFTER DELETE ON dungeon_corridor_route_cells"
+                    + " BEGIN INSERT INTO patch_mutation_audit"
+                    + " VALUES('route','DELETE',OLD.corridor_id,OLD.chunk_q); END");
+        execute(path,
+                "CREATE TRIGGER audit_chunk_insert AFTER INSERT ON dungeon_chunks BEGIN INSERT INTO"
+                        + " patch_mutation_audit VALUES('chunk','INSERT',NULL,NEW.chunk_q); END");
+        execute(path,
+                "CREATE TRIGGER audit_chunk_update AFTER UPDATE ON dungeon_chunks BEGIN INSERT INTO"
+                        + " patch_mutation_audit VALUES('chunk','UPDATE',NULL,NEW.chunk_q); END");
+        execute(path,
+                "CREATE TRIGGER audit_chunk_delete AFTER DELETE ON dungeon_chunks BEGIN INSERT INTO"
+                        + " patch_mutation_audit VALUES('chunk','DELETE',NULL,OLD.chunk_q); END");
     }
 
     private static void execute(Path path, String sql) throws SQLException {

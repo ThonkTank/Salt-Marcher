@@ -9,9 +9,7 @@ linked to GitHub issues.
 ## Now
 
 - Build encounter planning and management for preparation and table play
-  ([#433](https://github.com/ThonkTank/Salt-Marcher/issues/433)); the ordered
-  Session preparation replacement lives in the temporary
-  [Session Planner Greenfield Roadmap](../sessionplanner/delivery/roadmap-session-planner-greenfield.md).
+  ([#433](https://github.com/ThonkTank/Salt-Marcher/issues/433)).
 - Manage scenes as the current in-game state with relevant NPCs, places, and
   context in one place
   ([#434](https://github.com/ThonkTank/Salt-Marcher/issues/434)).

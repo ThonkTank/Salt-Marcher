@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: Session Planner Feature
-Last Reviewed: 2026-07-18
+Last Reviewed: 2026-07-19
 Source of Truth: Session Planner stored truth, reference semantics, writes, and
 error behavior.
 
@@ -68,6 +68,11 @@ creature facts, copied World Planner detail, generated item lines, reward
 values, packing rows, audits, catalog rows, generation drafts, preparation
 fingerprints, or progress state.
 
+Saved-plan query text, request epochs, result identities, overflow state, and
+search failures are runtime publication state and are not persisted. The
+Session Planner store contains only the attached Encounter-plan reference; it
+does not cache or mirror the Encounter saved-plan catalog.
+
 `lastKnownLabel` is a display fallback for an unavailable foreign reward. It is
 not reward truth and MUST NOT replace a successful typed reward projection.
 
@@ -81,6 +86,8 @@ not reward truth and MUST NOT replace a successful typed reward projection.
 - a missing foreign object remains visibly unavailable; Session Planner does
   not recreate it from copied data
 - deleting or editing a scene removes or changes only planner-owned references
+- attaching, replacing, and detaching an Encounter reference preserve generated
+  reward references; only deletion of their owning scene prunes them
 - Session Planner never cascades deletion into Party, Encounter, World Planner,
   or Session Generation storage
 
@@ -90,6 +97,28 @@ Every authored command uses optimistic revision validation. A successful write
 replaces the root and affected child collections in one Session Planner
 transaction, advances the revision once, and returns the committed snapshot.
 A stale revision or invalid payload writes nothing.
+
+Every authored command carries one authored target consisting of Session
+identity and expected revision. This includes `PrepareSessionCommand`: it loads
+and validates that exact root before any foreign preparation, preserves the
+target through replacement confirmation, and applies the final compare-and-swap
+only to that target. Reference-bearing commands additionally carry and validate
+their scene, note, participant, rest-gap, or foreign-plan identity. The adapter
+never substitutes the current-session pointer as a read or write target.
+
+Delete is one guarded Session Planner transaction. It deletes only with
+`session_id` plus expected revision, updates the current pointer only when that
+exact current root was deleted, and creates and selects a seeded replacement in
+the same transaction when no Session remains. Stale and missing outcomes write
+nothing. After success the application reads Current authoritatively before it
+publishes.
+
+A catalog switch with a dirty scene draft is one authored-lane operation. It
+prevalidates the target Session, compare-and-swap saves the source draft, then
+switches the pointer and publishes only the target workspace. Any source
+validation or save failure leaves the pointer unchanged. If pointer switching
+fails after the source save, the source edit remains durable and the source
+workspace remains visible with a display-safe failure.
 
 `commitPreparedSession` is one replacement write. It preserves session
 identity, display name, participants, and adventure-day fraction while
@@ -127,10 +156,26 @@ Legacy manual loot-placeholder rows migrate losslessly to manual loot notes.
 Existing generated reward references retain their run and treasure identities.
 No migration copies foreign reward or roster detail into Session Planner.
 
+A fresh store reaches schema version 4 without creating the retired loot-
+placeholder table or index. Opening version 2 copies every legacy row into the
+canonical manual-note table in the same transaction that retires the legacy
+table; a zero encounter anchor resolves to the first scene by stored scene
+order. Opening version 3 does not copy or reconcile legacy rows again because
+canonical manual notes may have been edited or deleted since version 3; it only
+retires the stale legacy table. These migrations preserve the Session revision,
+the next manual-note identity, generated reward references, and ordering. A
+failed retirement rolls back the schema version, table, index, and data changes
+together.
+
 Real user data is never deleted or rewritten destructively without the
 owner-approved backup boundary.
 
 ## Error Contract
+
+Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
+The current owner target is v4. V4 idempotently repairs the structural indexes
+and tables promised by v1-v3 before signature validation; legacy placeholder
+content remains migrated exactly once by v3.
 
 Validation errors identify the invalid command field or invariant without
 echoing authored content. Failure messages are display-safe and contain no SQL,

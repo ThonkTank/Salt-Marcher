@@ -1,39 +1,17 @@
 package features.catalog.adapter.javafx;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.Statement;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import javafx.application.Platform;
-import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.CheckMenuItem;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.MenuButton;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.HBox;
-import javafx.stage.Stage;
-import javafx.stage.Window;
-import shell.api.InspectorEntrySpec;
-import shell.api.InspectorSink;
-import shell.api.ShellBinding;
-import shell.api.ShellSlot;
+import features.catalog.CatalogRoutes;
+import features.catalog.application.CatalogSectionId;
 import features.creatures.adapter.sqlite.model.CreaturesPersistenceSchema;
+import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
+import features.creatures.api.CreatureCatalogRow;
 import features.encounter.api.EncounterBuilderInputsModel;
+import features.encounter.api.EncounterPoolFilters;
+import features.encounter.api.OpenSavedEncounterPlanResult;
+import features.encountertable.adapter.sqlite.query.SqliteEncounterTableCatalogAdapter;
+import features.encountertable.domain.catalog.EncounterTableCandidateData;
+import features.encountertable.domain.catalog.EncounterTableSummaryData;
+import features.encountertable.domain.catalog.port.EncounterTableCatalogPort;
 import features.worldplanner.api.WorldFactionSummary;
 import features.worldplanner.api.WorldLocationSummary;
 import features.worldplanner.api.WorldNpcLifecycleStatus;
@@ -41,19 +19,42 @@ import features.worldplanner.api.WorldNpcSummary;
 import features.worldplanner.api.WorldPlannerReadStatus;
 import features.worldplanner.api.WorldPlannerSnapshot;
 import features.worldplanner.api.WorldPlannerSnapshotModel;
-import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
-import features.creatures.api.CreatureCatalogRow;
-import features.catalog.application.CatalogSectionId;
-import features.catalog.CatalogRoutes;
-import features.encounter.api.EncounterPoolFilters;
-import features.encounter.api.OpenSavedEncounterPlanResult;
-import features.encountertable.adapter.sqlite.query.SqliteEncounterTableCatalogAdapter;
-import features.encountertable.domain.catalog.EncounterTableCandidateData;
-import features.encountertable.domain.catalog.EncounterTableSummaryData;
-import features.encountertable.domain.catalog.port.EncounterTableCatalogPort;
+import javafx.application.Platform;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.HBox;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import platform.persistence.TestFeatureStores;
+
+import shell.api.InspectorEntrySpec;
+import shell.api.InspectorSink;
+import shell.api.ShellBinding;
+import shell.api.ShellSlot;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 @org.junit.jupiter.api.Tag("ui")
 public final class CatalogInitialLoadTest {
@@ -135,25 +136,27 @@ public final class CatalogInitialLoadTest {
                     listener -> () -> { },
                     listener -> { listener.accept(worldPlannerSnapshotWithNpc()); return () -> { }; });
             CatalogTestRuntime runtime = CatalogTestRuntime.create(
-                    new SqliteCreatureCatalogQueryAdapter(),
-                    new SqliteEncounterTableCatalogAdapter(),
+                    new SqliteCreatureCatalogQueryAdapter(creatureStore()),
+                    new SqliteEncounterTableCatalogAdapter(
+                                            TestFeatureStores.current().store(
+                                                    SqliteEncounterTableCatalogAdapter
+                                                            .storeDefinition())),
                     world);
             ShellBinding binding = runtime.contribution(
                     EmptyInspectorSink.INSTANCE,
                     openedNpc::set,
                     () -> createRequested.set(true)).bind();
             binding.onActivate();
-            Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
             Parent content = slot(binding, ShellSlot.COCKPIT_MAIN, Parent.class);
+            Parent controls = content;
             Stage stage = new Stage();
-            HBox root = new HBox(controls, content);
-            stage.setScene(new Scene(root, 900.0, 650.0));
+            stage.setScene(new Scene(content, 900.0, 650.0));
             stage.show();
-            root.applyCss();
-            root.layout();
+            content.applyCss();
+            content.layout();
 
             selectSection(controls, CatalogSectionId.NPCS);
-            Button create = button(controls, "NPC anlegen");
+            Button create = button(controls, "Erstellen");
             create.fire();
 
             TableView<?> npcs = descendant(content, TableView.class);
@@ -173,7 +176,7 @@ public final class CatalogInitialLoadTest {
         runOnFxThread(() -> {
             RecordingCatalogRoutes routes = new RecordingCatalogRoutes();
             CatalogTestRuntime runtime = CatalogTestRuntime.create(
-                    new SqliteCreatureCatalogQueryAdapter(),
+                    new SqliteCreatureCatalogQueryAdapter(creatureStore()),
                     new EncounterTableCatalogPort() {
                         @Override public List<EncounterTableSummaryData> loadSummaries() {
                             return List.of(new EncounterTableSummaryData(301L, "Forest Ambush", null));
@@ -189,11 +192,10 @@ public final class CatalogInitialLoadTest {
                             listener -> { listener.accept(m4WorldSnapshot()); return () -> { }; }));
             ShellBinding binding = runtime.contribution(routes.routes()).bind();
             binding.onActivate();
-            Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
             Parent content = slot(binding, ShellSlot.COCKPIT_MAIN, Parent.class);
+            Parent controls = content;
             Stage stage = new Stage();
-            HBox root = new HBox(controls, content);
-            stage.setScene(new Scene(root, 1_150.0, 700.0));
+            stage.setScene(new Scene(content, 1_150.0, 700.0));
             stage.show();
 
             org.junit.jupiter.api.Assertions.assertEquals(
@@ -201,8 +203,8 @@ public final class CatalogInitialLoadTest {
                     sectionTitles(controls));
             for (CatalogSectionId id : List.of(CatalogSectionId.values())) {
                 selectSection(controls, id);
-                root.applyCss();
-                root.layout();
+                content.applyCss();
+                content.layout();
                 assertTrue(descendants(content).stream().filter(TableView.class::isInstance).count() == 1L,
                         id + " does not use the one shared table renderer");
                 boolean paged = id == CatalogSectionId.MONSTERS || id == CatalogSectionId.ITEMS;
@@ -215,9 +217,29 @@ public final class CatalogInitialLoadTest {
                         id + " has the wrong paging capability");
             }
 
+            for (CatalogSectionId id : List.of(
+                    CatalogSectionId.MONSTERS,
+                    CatalogSectionId.ITEMS,
+                    CatalogSectionId.SAVED_ENCOUNTERS,
+                    CatalogSectionId.ENCOUNTER_TABLES)) {
+                selectSection(controls, id);
+                button(content, "Erstellen").fire();
+                String expected = "Erstellen ist für " + id.label() + " noch nicht verfügbar.";
+                assertTrue(descendants(content).stream().filter(Label.class::isInstance).map(Label.class::cast)
+                                .anyMatch(label -> expected.equals(label.getText()) && label.isManaged()),
+                        id + " did not expose its side-effect-free create placeholder");
+            }
+            for (CatalogSectionId id : List.of(
+                    CatalogSectionId.NPCS, CatalogSectionId.FACTIONS, CatalogSectionId.LOCATIONS)) {
+                selectSection(controls, id);
+                button(content, "Erstellen").fire();
+            }
+            org.junit.jupiter.api.Assertions.assertEquals(
+                    List.of("npc", "faction", "location"), routes.creations);
+
             selectSection(controls, CatalogSectionId.NPCS);
-            root.applyCss();
-            root.layout();
+            content.applyCss();
+            content.layout();
             TableView<?> npcTable = descendant(content, TableView.class);
             npcTable.getSelectionModel().selectFirst();
             npcTable.fireEvent(enter());
@@ -227,21 +249,21 @@ public final class CatalogInitialLoadTest {
             button(content, "Zur Scene").fire();
 
             selectSection(controls, CatalogSectionId.FACTIONS);
-            root.applyCss();
-            root.layout();
+            content.applyCss();
+            content.layout();
             descendant(content, TableView.class).getSelectionModel().selectFirst();
             button(content, "Als Quelle").fire();
 
             selectSection(controls, CatalogSectionId.LOCATIONS);
-            root.applyCss();
-            root.layout();
+            content.applyCss();
+            content.layout();
             descendant(content, TableView.class).getSelectionModel().selectFirst();
             button(content, "Als Quelle").fire();
             button(content, "Als Ort").fire();
 
             selectSection(controls, CatalogSectionId.ENCOUNTER_TABLES);
-            root.applyCss();
-            root.layout();
+            content.applyCss();
+            content.layout();
             TableView<?> table = descendant(content, TableView.class);
             table.getSelectionModel().selectFirst();
             table.fireEvent(enter());
@@ -289,7 +311,8 @@ public final class CatalogInitialLoadTest {
                     .findFirst()
                     .orElseThrow();
             assertTrue(restoredSearch != itemSearch && "rapier".equals(restoredSearch.getText()),
-                    "Items application state did not restore the draft into the rebuilt shared renderer.");
+                            "Items application state did not restore the draft into the rebuilt"
+                                + " shared renderer.");
         });
     }
 
@@ -320,15 +343,14 @@ public final class CatalogInitialLoadTest {
         CatalogTestRuntime runtime = services();
         ShellBinding binding = runtime.contribution(EmptyInspectorSink.INSTANCE).bind();
         binding.onActivate();
-        Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
         Parent workspace = slot(binding, ShellSlot.COCKPIT_MAIN, Parent.class);
+        Parent controls = workspace;
 
         Stage stage = new Stage();
-        HBox root = new HBox(controls, workspace);
-        stage.setScene(new Scene(root, 1_150.0, 700.0));
+        stage.setScene(new Scene(workspace, 1_150.0, 700.0));
         stage.show();
-        root.applyCss();
-        root.layout();
+        workspace.applyCss();
+        workspace.layout();
         return new CatalogFixture(runtime, controls, workspace, workspace);
     }
 
@@ -348,29 +370,18 @@ public final class CatalogInitialLoadTest {
 
     private static CatalogTestRuntime services() {
         return CatalogTestRuntime.create(
-                new SqliteCreatureCatalogQueryAdapter(),
-                new SqliteEncounterTableCatalogAdapter(),
+                new SqliteCreatureCatalogQueryAdapter(creatureStore()),
+                new SqliteEncounterTableCatalogAdapter(
+                        TestFeatureStores.current().store(
+                                SqliteEncounterTableCatalogAdapter.storeDefinition())),
                 new WorldPlannerSnapshotModel(
                         CatalogInitialLoadTest::worldPlannerSnapshot, listener -> () -> { },
                         listener -> { listener.accept(worldPlannerSnapshot()); return () -> { }; }));
     }
 
     private static void assertWorldPlannerSourceControls(CatalogTestRuntime runtime, Parent controls, String label) {
-        MenuButton factionButton = descendants(controls).stream()
-                .filter(MenuButton.class::isInstance)
-                .map(MenuButton.class::cast)
-                .filter(button -> "World-Fraktionen".equals(button.getAccessibleText()))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("World faction filter not found."));
-        CheckMenuItem faction = factionButton.getItems().stream()
-                .filter(CheckMenuItem.class::isInstance)
-                .map(CheckMenuItem.class::cast)
-                .filter(item -> "Scarlet Knives".equals(item.getText()))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("World faction option not found."));
-        faction.setSelected(true);
-        faction.getOnAction().handle(new javafx.event.ActionEvent(faction, null));
-        selectComboItem(comboBox(controls), "Old Gate");
+        selectPicker(picker(controls, "World-Fraktionen"), "Scarlet Knives");
+        selectPicker(picker(controls, "World-Ort"), "Old Gate");
         TextField search = descendants(controls).stream()
                 .filter(TextField.class::isInstance).map(TextField.class::cast).findFirst().orElseThrow();
         search.fireEvent(new javafx.event.ActionEvent());
@@ -418,6 +429,11 @@ public final class CatalogInitialLoadTest {
                 false, false, false, false);
     }
 
+    private static platform.persistence.FeatureStoreHandle creatureStore() {
+        return TestFeatureStores.current().store(
+                SqliteCreatureCatalogQueryAdapter.storeDefinition());
+    }
+
     private static void seedCreatureCatalog() throws Exception {
         String xdgDataHome = System.getenv("XDG_DATA_HOME");
         if (xdgDataHome == null || xdgDataHome.isBlank()) {
@@ -434,11 +450,13 @@ public final class CatalogInitialLoadTest {
             statement.execute(CreaturesPersistenceSchema.CREATE_CREATURE_SUBTYPES_TABLE_SQL);
             statement.execute(CreaturesPersistenceSchema.CREATE_CREATURE_ACTIONS_TABLE_SQL);
             statement.execute(
-                    "INSERT INTO creatures (id, name, size, creature_type, alignment, cr, xp, hp, ac) "
-                            + "VALUES (1, 'Aboleth', 'Large', 'Aberration', 'Lawful Evil', '10', 5900, 135, 17)");
+                    "INSERT INTO creatures (id, name, size, creature_type, alignment, cr, xp, hp,"
+                        + " ac) VALUES (1, 'Aboleth', 'Large', 'Aberration', 'Lawful Evil', '10',"
+                        + " 5900, 135, 17)");
             statement.execute(
-                    "INSERT INTO creatures (id, name, size, creature_type, alignment, cr, xp, hp, ac) "
-                            + "VALUES (2, 'Acolyte', 'Medium', 'Humanoid', 'Any Alignment', '1/4', 50, 9, 10)");
+                    "INSERT INTO creatures (id, name, size, creature_type, alignment, cr, xp, hp,"
+                        + " ac) VALUES (2, 'Acolyte', 'Medium', 'Humanoid', 'Any Alignment', '1/4',"
+                        + " 50, 9, 10)");
         }
     }
 
@@ -485,34 +503,27 @@ public final class CatalogInitialLoadTest {
                 .toList();
     }
 
-    private static ComboBox<?> comboBox(Parent parent) {
+    private static CatalogPicker<?> picker(Parent parent, String accessibleText) {
         return descendants(parent).stream()
-                .filter(ComboBox.class::isInstance)
-                .map(ComboBox.class::cast)
-                .filter(comboBox -> comboBox.getItems().stream().anyMatch(
-                        item -> "Old Gate".equals(itemText(comboBox, item))))
+                .filter(CatalogPicker.class::isInstance)
+                .map(CatalogPicker.class::cast)
+                .filter(picker -> accessibleText.equals(picker.getAccessibleText()))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("World Planner location ComboBox not found."));
+                .orElseThrow(() -> new AssertionError("Catalog picker not found: " + accessibleText));
     }
 
-    private static void selectComboItem(ComboBox<?> comboBox, String itemText) {
-        for (Object item : comboBox.getItems()) {
-            if (itemText.equals(itemText(comboBox, item))) {
-                selectComboItemRaw(comboBox, item);
+    private static void selectPicker(CatalogPicker<?> picker, String label) {
+        picker.show();
+        for (int index = 0; index < picker.optionList().getItems().size(); index++) {
+            if (label.equals(picker.optionList().getItems().get(index).label())) {
+                picker.optionList().getSelectionModel().select(index);
+                picker.optionList().fireEvent(new KeyEvent(
+                        KeyEvent.KEY_PRESSED, "", "", KeyCode.ENTER,
+                        false, false, false, false));
                 return;
             }
         }
-        throw new AssertionError("World Planner location item not found: " + itemText);
-    }
-
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    private static void selectComboItemRaw(ComboBox comboBox, Object item) {
-        comboBox.getSelectionModel().select(item);
-    }
-
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    private static String itemText(ComboBox comboBox, Object item) {
-        return comboBox.getConverter() == null ? String.valueOf(item) : comboBox.getConverter().toString(item);
+        throw new AssertionError("Catalog picker option not found: " + label);
     }
 
     private static List<Node> descendants(Node node) {
@@ -613,6 +624,7 @@ public final class CatalogInitialLoadTest {
             implements CatalogRoutes.WorldInspectorRoutes, CatalogRoutes.EncounterHandoff, CatalogRoutes.SceneHandoff {
         private final AtomicLong openedNpc = new AtomicLong();
         private final List<String> handoffs = new java.util.ArrayList<>();
+        private final List<String> creations = new java.util.ArrayList<>();
 
         private CatalogRoutes routes() {
             return new CatalogRoutes(ignored -> { }, ignored -> { }, this, this, this);
@@ -621,9 +633,9 @@ public final class CatalogInitialLoadTest {
         @Override public void openNpc(long npcId) { openedNpc.set(npcId); }
         @Override public void openFaction(long factionId) { }
         @Override public void openLocation(long locationId) { }
-        @Override public void createNpc() { }
-        @Override public void createFaction() { }
-        @Override public void createLocation() { }
+        @Override public void createNpc() { creations.add("npc"); }
+        @Override public void createFaction() { creations.add("faction"); }
+        @Override public void createLocation() { creations.add("location"); }
         @Override public void updatePoolFilters(EncounterPoolFilters filters) { }
         @Override public void addCreature(long creatureId) { }
         @Override public void addWorldNpc(long creatureId, long npcId) {

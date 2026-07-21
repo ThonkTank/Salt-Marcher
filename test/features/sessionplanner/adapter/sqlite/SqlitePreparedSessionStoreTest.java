@@ -15,15 +15,18 @@ import features.sessionplanner.domain.session.SessionGeneratedRewardReference;
 import features.sessionplanner.domain.session.SessionManualLootNote;
 import features.sessionplanner.domain.session.SessionPlan;
 import features.sessionplanner.domain.session.SessionRevision;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
+
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteDatabase;
 
 final class SqlitePreparedSessionStoreTest {
 
@@ -126,7 +129,9 @@ final class SqlitePreparedSessionStoreTest {
 
     private static StoreFixture fixture(Path path, SessionPlan initial) {
         SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE);
-        SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(database);
+        SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(
+                        TestFeatureStores.store(
+                                database, SqliteSessionPlanRepository.storeDefinition()));
         repository.insert(initial);
         repository.setCurrentSessionId(initial.sessionId());
         return new StoreFixture(database, repository);

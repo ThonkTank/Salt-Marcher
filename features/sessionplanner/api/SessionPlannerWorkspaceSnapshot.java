@@ -12,7 +12,7 @@ public record SessionPlannerWorkspaceSnapshot(
         SessionPlannerSessionSnapshot currentSession,
         SessionPlannerParticipantsProjection participants,
         SessionPlannerSceneTimelineProjection sceneTimeline,
-        SessionPlannerStatePanelProjection statePanel,
+        SessionPlannerSelectedSceneSnapshot selectedScene,
         SessionPreparationSnapshot preparation,
         List<Issue> issues
 ) {
@@ -26,7 +26,7 @@ public record SessionPlannerWorkspaceSnapshot(
                 ? SessionPlannerSessionSnapshot.empty("Session ist noch nicht geladen.") : currentSession;
         participants = participants == null ? SessionPlannerParticipantsProjection.empty() : participants;
         sceneTimeline = sceneTimeline == null ? SessionPlannerSceneTimelineProjection.empty() : sceneTimeline;
-        statePanel = statePanel == null ? SessionPlannerStatePanelProjection.empty() : statePanel;
+        selectedScene = selectedScene == null ? SessionPlannerSelectedSceneSnapshot.empty() : selectedScene;
         preparation = preparation == null ? SessionPreparationSnapshot.idle() : preparation;
         issues = issues == null ? List.of() : List.copyOf(issues);
     }
@@ -36,19 +36,26 @@ public record SessionPlannerWorkspaceSnapshot(
                 0L, 0L, 0L, SessionPlannerCatalogSnapshot.empty(),
                 SessionPlannerSessionSnapshot.empty("Session ist noch nicht geladen."),
                 SessionPlannerParticipantsProjection.empty(), SessionPlannerSceneTimelineProjection.empty(),
-                SessionPlannerStatePanelProjection.empty(), SessionPreparationSnapshot.idle(), List.of());
+                SessionPlannerSelectedSceneSnapshot.empty(),
+                SessionPreparationSnapshot.idle(), List.of());
     }
 
     public SessionPlannerWorkspaceSnapshot withPublicationRevision(long revision) {
         return new SessionPlannerWorkspaceSnapshot(
                 revision, sourceSessionId, sourceSessionRevision, catalog, currentSession,
-                participants, sceneTimeline, statePanel, preparation, issues);
+                participants, sceneTimeline, selectedScene, preparation, issues);
     }
 
     public SessionPlannerWorkspaceSnapshot withPreparation(SessionPreparationSnapshot next) {
         return new SessionPlannerWorkspaceSnapshot(
                 publicationRevision, sourceSessionId, sourceSessionRevision, catalog, currentSession,
-                participants, sceneTimeline, statePanel, next, issues);
+                participants, sceneTimeline, selectedScene, next, issues);
+    }
+
+    public SessionPlannerWorkspaceSnapshot withSelectedSceneSearch(SessionEncounterPlanSearchSnapshot next) {
+        return new SessionPlannerWorkspaceSnapshot(
+                publicationRevision, sourceSessionId, sourceSessionRevision, catalog, currentSession,
+                participants, sceneTimeline, selectedScene.withEncounterPlanSearch(next), preparation, issues);
     }
 
     public SessionPlannerWorkspaceSnapshot withIssue(Issue issue) {
@@ -56,7 +63,7 @@ public record SessionPlannerWorkspaceSnapshot(
         next.add(Objects.requireNonNull(issue, "issue"));
         return new SessionPlannerWorkspaceSnapshot(
                 publicationRevision, sourceSessionId, sourceSessionRevision, catalog, currentSession,
-                participants, sceneTimeline, statePanel, preparation, next);
+                participants, sceneTimeline, selectedScene, preparation, next);
     }
 
     public record Issue(Owner owner, Kind kind, String reference, String message) {

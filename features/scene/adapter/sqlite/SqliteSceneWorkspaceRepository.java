@@ -6,6 +6,10 @@ import features.scene.domain.SceneMob;
 import features.scene.domain.SceneParticipantKind;
 import features.scene.domain.SceneParticipantState;
 import features.scene.domain.SceneWorkspace;
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+import platform.persistence.SqliteMigration;
+import platform.persistence.SqliteSchemaValidator;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -17,9 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import platform.persistence.SqliteConnectionSource;
-import platform.persistence.SqliteDatabase;
-import platform.persistence.SqliteMigration;
 
 public final class SqliteSceneWorkspaceRepository implements SceneWorkspaceRepository {
 
@@ -31,15 +32,35 @@ public final class SqliteSceneWorkspaceRepository implements SceneWorkspaceRepos
     private static final String MOB_TABLE = "scene_mob";
     private static final String STATE_TABLE = "scene_participant_state";
 
-    private final SqliteConnectionSource connections;
+    private final FeatureStoreHandle connections;
 
-    public SqliteSceneWorkspaceRepository(SqliteDatabase database) {
-        connections = Objects.requireNonNull(database, "database")
-                .connections(
-                        OWNER,
-                        new SqliteMigration(1, SqliteSceneWorkspaceRepository::createSchema),
-                        new SqliteMigration(2, SqliteSceneWorkspaceRepository::createMobSchema),
-                        new SqliteMigration(3, SqliteSceneWorkspaceRepository::createParticipantStateSchema));
+    public static FeatureStoreDefinition storeDefinition() {
+        SqliteSchemaValidator targetSchema = SqliteSchemaValidator.builder()
+                .table(WORKSPACE_TABLE, "workspace_id", "revision", "next_scene_id", "default_scene_id",
+                        "focused_scene_id", "encounter_synchronized", "status_text")
+                .primaryKey(WORKSPACE_TABLE, "workspace_id")
+                .table(SCENE_TABLE, "scene_id", "title", "notes", "source_session_id", "source_scene_id",
+                        "source_session_name", "initial_encounter_plan_id", "location_external_id", "sort_order")
+                .primaryKey(SCENE_TABLE, "scene_id")
+                .table(PC_TABLE, "scene_id", "party_member_external_id", "sort_order")
+                .primaryKey(PC_TABLE, "scene_id", "party_member_external_id")
+                .table(NPC_TABLE, "scene_id", "npc_external_id", "sort_order")
+                .primaryKey(NPC_TABLE, "scene_id", "npc_external_id")
+                .table(MOB_TABLE, "scene_id", "creature_external_id", "count", "sort_order")
+                .primaryKey(MOB_TABLE, "scene_id", "creature_external_id")
+                .table(STATE_TABLE, "scene_id", "participant_kind", "participant_ref_id",
+                        "defeated", "notes", "sort_order")
+                .primaryKey(STATE_TABLE, "scene_id", "participant_kind", "participant_ref_id")
+                .build();
+        return FeatureStoreDefinition.validated(
+                OWNER, targetSchema,
+                new SqliteMigration(1, SqliteSceneWorkspaceRepository::createSchema),
+                new SqliteMigration(2, SqliteSceneWorkspaceRepository::createMobSchema),
+                new SqliteMigration(3, SqliteSceneWorkspaceRepository::createParticipantStateSchema));
+    }
+
+    public SqliteSceneWorkspaceRepository(FeatureStoreHandle store) {
+        connections = FeatureStoreHandle.requireOwner(store, OWNER);
     }
 
     @Override
@@ -84,23 +105,21 @@ public final class SqliteSceneWorkspaceRepository implements SceneWorkspaceRepos
 
     private static void createSchema(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement()) {
-            statement.execute("CREATE TABLE IF NOT EXISTS " + WORKSPACE_TABLE + " ("
-                    + "workspace_id INTEGER PRIMARY KEY CHECK(workspace_id=1), "
-                    + "revision INTEGER NOT NULL CHECK(revision>0), "
-                    + "next_scene_id INTEGER NOT NULL CHECK(next_scene_id>1), "
-                    + "default_scene_id INTEGER NOT NULL CHECK(default_scene_id>0), "
-                    + "focused_scene_id INTEGER NOT NULL CHECK(focused_scene_id>0), "
-                    + "encounter_synchronized INTEGER NOT NULL CHECK(encounter_synchronized IN (0,1)), "
-                    + "status_text TEXT NOT NULL)");
-            statement.execute("CREATE TABLE IF NOT EXISTS " + SCENE_TABLE + " ("
-                    + "scene_id INTEGER PRIMARY KEY CHECK(scene_id>0), "
-                    + "title TEXT NOT NULL, notes TEXT NOT NULL, "
-                    + "source_session_id INTEGER NOT NULL CHECK(source_session_id>=0), "
-                    + "source_scene_id INTEGER NOT NULL CHECK(source_scene_id>=0), "
-                    + "source_session_name TEXT NOT NULL, "
-                    + "initial_encounter_plan_id INTEGER NOT NULL CHECK(initial_encounter_plan_id>=0), "
-                    + "location_external_id INTEGER NOT NULL CHECK(location_external_id>=0), "
-                    + "sort_order INTEGER NOT NULL CHECK(sort_order>=0))");
+            statement.execute("CREATE TABLE IF NOT EXISTS " + WORKSPACE_TABLE + " (workspace_id INTEGER PRIMARY KEY CHECK(workspace_id=1), revision"
+                            + " INTEGER NOT NULL CHECK(revision>0), next_scene_id INTEGER NOT NULL"
+                            + " CHECK(next_scene_id>1), default_scene_id INTEGER NOT NULL"
+                            + " CHECK(default_scene_id>0), focused_scene_id INTEGER NOT NULL"
+                            + " CHECK(focused_scene_id>0), encounter_synchronized INTEGER NOT NULL"
+                            + " CHECK(encounter_synchronized IN (0,1)), status_text TEXT NOT"
+                            + " NULL)");
+            statement.execute("CREATE TABLE IF NOT EXISTS " + SCENE_TABLE + " (scene_id INTEGER PRIMARY KEY CHECK(scene_id>0), title TEXT NOT"
+                            + " NULL, notes TEXT NOT NULL, source_session_id INTEGER NOT NULL"
+                            + " CHECK(source_session_id>=0), source_scene_id INTEGER NOT NULL"
+                            + " CHECK(source_scene_id>=0), source_session_name TEXT NOT NULL,"
+                            + " initial_encounter_plan_id INTEGER NOT NULL"
+                            + " CHECK(initial_encounter_plan_id>=0), location_external_id INTEGER"
+                            + " NOT NULL CHECK(location_external_id>=0), sort_order INTEGER NOT"
+                            + " NULL CHECK(sort_order>=0))");
             statement.execute(assignmentTableSql(PC_TABLE, "party_member_external_id"));
             statement.execute(assignmentTableSql(NPC_TABLE, "npc_external_id"));
         }
@@ -108,27 +127,25 @@ public final class SqliteSceneWorkspaceRepository implements SceneWorkspaceRepos
 
     private static void createMobSchema(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement()) {
-            statement.execute("CREATE TABLE IF NOT EXISTS " + MOB_TABLE + " ("
-                    + "scene_id INTEGER NOT NULL, "
-                    + "creature_external_id INTEGER NOT NULL CHECK(creature_external_id>0), "
-                    + "count INTEGER NOT NULL CHECK(count>0), "
-                    + "sort_order INTEGER NOT NULL CHECK(sort_order>=0), "
-                    + "PRIMARY KEY(scene_id,creature_external_id), "
-                    + "FOREIGN KEY(scene_id) REFERENCES " + SCENE_TABLE + "(scene_id) ON DELETE CASCADE)");
+            statement.execute("CREATE TABLE IF NOT EXISTS " + MOB_TABLE + " (scene_id INTEGER NOT NULL, creature_external_id INTEGER NOT NULL"
+                            + " CHECK(creature_external_id>0), count INTEGER NOT NULL"
+                            + " CHECK(count>0), sort_order INTEGER NOT NULL CHECK(sort_order>=0),"
+                            + " PRIMARY KEY(scene_id,creature_external_id), FOREIGN KEY(scene_id)"
+                            + " REFERENCES "
+                            + SCENE_TABLE + "(scene_id) ON DELETE CASCADE)");
         }
     }
 
     private static void createParticipantStateSchema(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement()) {
-            statement.execute("CREATE TABLE IF NOT EXISTS " + STATE_TABLE + " ("
-                    + "scene_id INTEGER NOT NULL, "
-                    + "participant_kind TEXT NOT NULL CHECK(participant_kind IN ('PC','NPC','MOB')), "
-                    + "participant_ref_id INTEGER NOT NULL CHECK(participant_ref_id>0), "
-                    + "defeated INTEGER NOT NULL CHECK(defeated IN (0,1)), "
-                    + "notes TEXT NOT NULL, "
-                    + "sort_order INTEGER NOT NULL CHECK(sort_order>=0), "
-                    + "PRIMARY KEY(scene_id,participant_kind,participant_ref_id), "
-                    + "FOREIGN KEY(scene_id) REFERENCES " + SCENE_TABLE + "(scene_id) ON DELETE CASCADE)");
+            statement.execute("CREATE TABLE IF NOT EXISTS " + STATE_TABLE + " (scene_id INTEGER NOT NULL, participant_kind TEXT NOT NULL"
+                            + " CHECK(participant_kind IN ('PC','NPC','MOB')), participant_ref_id"
+                            + " INTEGER NOT NULL CHECK(participant_ref_id>0), defeated INTEGER NOT"
+                            + " NULL CHECK(defeated IN (0,1)), notes TEXT NOT NULL, sort_order"
+                            + " INTEGER NOT NULL CHECK(sort_order>=0), PRIMARY"
+                            + " KEY(scene_id,participant_kind,participant_ref_id), FOREIGN"
+                            + " KEY(scene_id) REFERENCES "
+                            + SCENE_TABLE + "(scene_id) ON DELETE CASCADE)");
         }
     }
 
@@ -236,9 +253,9 @@ public final class SqliteSceneWorkspaceRepository implements SceneWorkspaceRepos
 
     private static void writeWorkspace(Connection connection, SceneWorkspace workspace) throws SQLException {
         String sql = "INSERT INTO " + WORKSPACE_TABLE
-                + "(workspace_id,revision,next_scene_id,default_scene_id,focused_scene_id,"
-                + "encounter_synchronized,status_text) VALUES(1,?,?,?,?,?,?) "
-                + "ON CONFLICT(workspace_id) DO UPDATE SET revision=excluded.revision,"
+                + "(workspace_id,revision,next_scene_id,default_scene_id,focused_scene_id,encounter_synchronized,status_text)"
+                        + " VALUES(1,?,?,?,?,?,?) ON CONFLICT(workspace_id) DO UPDATE SET"
+                        + " revision=excluded.revision,"
                 + "next_scene_id=excluded.next_scene_id,default_scene_id=excluded.default_scene_id,"
                 + "focused_scene_id=excluded.focused_scene_id,"
                 + "encounter_synchronized=excluded.encounter_synchronized,status_text=excluded.status_text";
@@ -277,8 +294,8 @@ public final class SqliteSceneWorkspaceRepository implements SceneWorkspaceRepos
 
     private static void insertScene(Connection connection, RunningScene scene, int order) throws SQLException {
         String sql = "INSERT INTO " + SCENE_TABLE
-                + "(scene_id,title,notes,source_session_id,source_scene_id,source_session_name,"
-                + "initial_encounter_plan_id,location_external_id,sort_order) VALUES(?,?,?,?,?,?,?,?,?)";
+                + "(scene_id,title,notes,source_session_id,source_scene_id,source_session_name,initial_encounter_plan_id,location_external_id,sort_order)"
+                        + " VALUES(?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, scene.sceneId());
             statement.setString(2, scene.title());
@@ -330,7 +347,8 @@ public final class SqliteSceneWorkspaceRepository implements SceneWorkspaceRepos
     private static void insertParticipantStates(
             Connection connection, long sceneId, List<SceneParticipantState> states) throws SQLException {
         String sql = "INSERT INTO " + STATE_TABLE
-                + "(scene_id,participant_kind,participant_ref_id,defeated,notes,sort_order) VALUES(?,?,?,?,?,?)";
+                + "(scene_id,participant_kind,participant_ref_id,defeated,notes,sort_order)"
+                        + " VALUES(?,?,?,?,?,?)";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             for (int index = 0; index < states.size(); index++) {
                 SceneParticipantState state = states.get(index);

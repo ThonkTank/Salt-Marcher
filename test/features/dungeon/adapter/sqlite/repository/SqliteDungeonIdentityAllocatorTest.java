@@ -4,12 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import features.dungeon.application.authored.port.DungeonIdentityKind;
 import features.dungeon.application.authored.port.DungeonIdentityRange;
-import java.nio.file.Path;
-import java.sql.DriverManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import platform.diagnostics.NoopDiagnostics;
 import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
+
+import java.nio.file.Path;
+import java.sql.DriverManager;
 
 final class SqliteDungeonIdentityAllocatorTest {
 
@@ -17,7 +19,11 @@ final class SqliteDungeonIdentityAllocatorTest {
     void reservesTypedContiguousRangesWithoutPlaceholderAuthoredRows(@TempDir Path directory) throws Exception {
         Path path = directory.resolve("identity-ranges.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            SqliteDungeonIdentityAllocator allocator = new SqliteDungeonIdentityAllocator(database);
+            SqliteDungeonIdentityAllocator allocator = new SqliteDungeonIdentityAllocator(
+                            TestFeatureStores.store(
+                                    database,
+                                    features.dungeon.adapter.sqlite.gateway.DungeonStoreDefinition
+                                            .create()));
 
             for (DungeonIdentityKind kind : DungeonIdentityKind.values()) {
                 DungeonIdentityRange first = allocator.reserve(kind, 3);

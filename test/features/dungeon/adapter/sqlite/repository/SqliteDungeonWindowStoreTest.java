@@ -3,12 +3,13 @@ package features.dungeon.adapter.sqlite.repository;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSeeder;
 import features.dungeon.adapter.sqlite.gateway.DungeonSqliteWindowGateway;
 import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
+import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.application.authored.command.CorridorChange;
 import features.dungeon.application.authored.DungeonCachedWindowStore;
 import features.dungeon.application.authored.command.DungeonPatch;
@@ -27,7 +28,6 @@ import features.dungeon.application.authored.port.DungeonWindowEntityFragment;
 import features.dungeon.application.authored.port.DungeonWindowIndex;
 import features.dungeon.application.authored.port.DungeonWindowRequest;
 import features.dungeon.application.authored.port.DungeonWindowStore;
-import features.dungeon.api.DungeonChunkKey;
 import features.dungeon.domain.core.component.CorridorAnchor;
 import features.dungeon.domain.core.component.CorridorAnchorRef;
 import features.dungeon.domain.core.component.CorridorWaypoint;
@@ -50,6 +50,12 @@ import features.dungeon.domain.core.structure.stair.StairShape;
 import features.dungeon.domain.core.structure.transition.Transition;
 import features.dungeon.domain.core.structure.transition.TransitionAnchor;
 import features.dungeon.domain.core.structure.transition.TransitionDestination;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.TestFeatureStores;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -61,10 +67,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import platform.diagnostics.NoopDiagnostics;
-import platform.persistence.SqliteDatabase;
 
 final class SqliteDungeonWindowStoreTest {
 
@@ -73,9 +75,8 @@ final class SqliteDungeonWindowStoreTest {
 
     @Test
     void cachedSingleChunkReadsReassembleTheExactSQLiteWindow(@TempDir Path tempDir) {
-        try (SqliteDatabase database = savedDatabase(tempDir.resolve("cached-window.db"))) {
-            DungeonCachedWindowStore cached = new DungeonCachedWindowStore(
-                    new SqliteDungeonWindowStore(database));
+        try (PreparedDatabase prepared = savedDatabase(tempDir.resolve("cached-window.db"))) {
+            DungeonWindowStore cached = cachedStore(prepared.fixture());
             DungeonWindowRequest request = new DungeonWindowRequest(
                     new DungeonMapIdentity(MAP_ID), 41L,
                     List.of(key(0, -1, -1), key(0, 0, -1), key(0, 1, 0), key(1, 0, 1)));
@@ -99,9 +100,10 @@ final class SqliteDungeonWindowStoreTest {
     void loadsExactNonRectangularWindowWithSixKindsStableHeadersAndContinuations(@TempDir Path tempDir)
             throws Exception {
         Path path = tempDir.resolve("window.db");
-        try (SqliteDatabase database = savedDatabase(path)) {
+        try (PreparedDatabase prepared = savedDatabase(path)) {
+            SqliteDatabase database = prepared.database();
             insertUnindexedMalformedTransition(path);
-            DungeonWindowStore store = cachedStore(database);
+            DungeonWindowStore store = cachedStore(prepared.fixture());
             DungeonWindow window = store.loadWindow(new DungeonWindowRequest(
                     new DungeonMapIdentity(MAP_ID),
                     42L,
@@ -165,16 +167,18 @@ final class SqliteDungeonWindowStoreTest {
     void manyEntitiesDoNotIncreaseWindowOrClosureStatementCount(@TempDir Path tempDir) throws Exception {
         int singleWindowStatements;
         int singleClosureStatements;
-        try (SqliteDatabase database = savedDatabase(tempDir.resolve("single-count.db"), 1)) {
-            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(database);
+        try (PreparedDatabase prepared = savedDatabase(tempDir.resolve("single-count.db"), 1)) {
+            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(
+                            prepared.fixture().store());
             loadWindow(gateway, markerWindow()).orElseThrow();
             singleWindowStatements = gateway.lastStatementCount();
             gateway.loadIdentityClosure(markerClosure(1));
             singleClosureStatements = gateway.lastStatementCount();
         }
 
-        try (SqliteDatabase database = savedDatabase(tempDir.resolve("many-count.db"), 25)) {
-            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(database);
+        try (PreparedDatabase prepared = savedDatabase(tempDir.resolve("many-count.db"), 25)) {
+            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(
+                            prepared.fixture().store());
             DungeonWindow window = loadWindow(gateway, markerWindow()).orElseThrow();
             assertEquals(25L, window.fragments().stream()
                     .filter(DungeonWindowEntityFragment.FeatureMarker.class::isInstance)
@@ -195,15 +199,17 @@ final class SqliteDungeonWindowStoreTest {
     void manyCorridorGraphsDoNotIncreaseWindowOrClosureStatementCount(@TempDir Path tempDir) throws Exception {
         int singleWindowStatements;
         int singleClosureStatements;
-        try (SqliteDatabase database = savedGraphDatabase(tempDir.resolve("single-graph.db"), 1)) {
-            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(database);
+        try (PreparedDatabase prepared = savedGraphDatabase(tempDir.resolve("single-graph.db"), 1)) {
+            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(
+                            prepared.fixture().store());
             loadWindow(gateway, corridorWindow()).orElseThrow();
             singleWindowStatements = gateway.lastStatementCount();
             gateway.loadIdentityClosure(corridorClosure(1));
             singleClosureStatements = gateway.lastStatementCount();
         }
-        try (SqliteDatabase database = savedGraphDatabase(tempDir.resolve("many-graphs.db"), 20)) {
-            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(database);
+        try (PreparedDatabase prepared = savedGraphDatabase(tempDir.resolve("many-graphs.db"), 20)) {
+            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(
+                            prepared.fixture().store());
             DungeonWindow window = loadWindow(gateway, corridorWindow()).orElseThrow();
             assertEquals(21L, window.fragments().stream()
                     .filter(DungeonWindowEntityFragment.Corridor.class::isInstance)
@@ -219,8 +225,8 @@ final class SqliteDungeonWindowStoreTest {
 
     @Test
     void corridorWindowPublishesCanonicalInteriorRouteWithoutOmittedControlPoints(@TempDir Path tempDir) {
-        try (SqliteDatabase database = savedGraphDatabase(tempDir.resolve("interior-route.db"), 2)) {
-            DungeonWindow window = cachedStore(database).loadWindow(new DungeonWindowRequest(
+        try (PreparedDatabase prepared = savedGraphDatabase(tempDir.resolve("interior-route.db"), 2)) {
+            DungeonWindow window = cachedStore(prepared.fixture()).loadWindow(new DungeonWindowRequest(
                     new DungeonMapIdentity(MAP_ID),
                     19L,
                     List.of(key(0, 0, -1), key(0, -3, 4))))
@@ -251,13 +257,14 @@ final class SqliteDungeonWindowStoreTest {
     void versionSixMigrationDiscardsPreDependencyDungeonRowsBeforeWindowRead(@TempDir Path tempDir)
             throws Exception {
         Path path = tempDir.resolve("populated-v4-route-upgrade.db");
-        try (SqliteDatabase ignored = savedGraphDatabase(path, 1)) {
+        try (PreparedDatabase ignored = savedGraphDatabase(path, 1)) {
             // Persist a populated canonical graph with its pre-upgrade derived chunk inventory.
         }
         corruptPreDependencySchemaVersion(path);
 
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            assertTrue(cachedStore(database).loadWindow(new DungeonWindowRequest(
+            var fixture = DungeonSqliteFixtureSeeder.prepare(database);
+            assertTrue(cachedStore(fixture).loadWindow(new DungeonWindowRequest(
                     new DungeonMapIdentity(MAP_ID),
                     23L,
                     List.of(key(0, 0, -1))))
@@ -265,7 +272,7 @@ final class SqliteDungeonWindowStoreTest {
                     "owner-approved v6 replacement must not publish pre-dependency Dungeon rows");
         }
         try (Connection connection = open(path)) {
-            assertEquals(6, scalarInt(connection,
+            assertEquals(7, scalarInt(connection,
                     "SELECT version FROM sm_schema_versions WHERE owner='dungeon'"));
             assertEquals(0, scalarInt(connection, "SELECT COUNT(*) FROM dungeon_maps"));
             assertEquals(0, scalarInt(connection,
@@ -283,12 +290,13 @@ final class SqliteDungeonWindowStoreTest {
                 List.of(new CorridorAnchor(anchorId, corridorId, new Cell(6, 5, 0))),
                 List.of(new CorridorAnchorRef(corridorId, anchorId))));
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            DungeonSqliteFixtureSeeder.insertHeader(database, MAP_ID, "Anchor-only corridor", REVISION - 1L);
-            DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(
+            var fixture = DungeonSqliteFixtureSeeder.prepare(database);
+            fixture.insertHeader(MAP_ID, "Anchor-only corridor", REVISION - 1L);
+            fixture.commit(DungeonPatch.of(
                     new DungeonMapIdentity(MAP_ID),
                     REVISION - 1L,
                     List.of(new CorridorChange(null, corridor, Set.of(key(0, 0, 0))))));
-            DungeonWindow window = cachedStore(database).loadWindow(new DungeonWindowRequest(
+            DungeonWindow window = cachedStore(fixture).loadWindow(new DungeonWindowRequest(
                     new DungeonMapIdentity(MAP_ID), 20L, List.of(key(0, 0, 0))))
                     .orElseThrow();
             DungeonWindowEntityFragment.Corridor fragment = fragment(
@@ -303,9 +311,9 @@ final class SqliteDungeonWindowStoreTest {
 
         try (Connection connection = open(path)) {
             assertEquals(1, scalarInt(connection,
-                    "SELECT COUNT(*) FROM dungeon_corridor_route_cells"
-                            + " WHERE dungeon_map_id=77 AND corridor_id=701"
-                            + " AND level_z=0 AND cell_x=6 AND cell_y=5 AND chunk_q=0 AND chunk_r=0"));
+                            "SELECT COUNT(*) FROM dungeon_corridor_route_cells WHERE"
+                                + " dungeon_map_id=77 AND corridor_id=701 AND level_z=0 AND"
+                                + " cell_x=6 AND cell_y=5 AND chunk_q=0 AND chunk_r=0"));
         }
     }
 
@@ -316,17 +324,19 @@ final class SqliteDungeonWindowStoreTest {
                 new DungeonMapIdentity(MAP_ID), 21L, List.of(key(0, 0, -1)));
         int baselineStatements;
         List<String> baselineSql;
-        try (SqliteDatabase database = savedGraphDatabase(tempDir.resolve("bounded-baseline.db"), 1)) {
-            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(database);
+        try (PreparedDatabase prepared = savedGraphDatabase(tempDir.resolve("bounded-baseline.db"), 1)) {
+            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(
+                            prepared.fixture().store());
             loadWindow(gateway, request).orElseThrow();
             baselineStatements = gateway.lastStatementCount();
             baselineSql = gateway.lastStatementSql();
         }
 
         Path path = tempDir.resolve("bounded-large-off-window.db");
-        try (SqliteDatabase database = savedGraphDatabase(path, 1)) {
-            insertLargeOffWindowRoomPopulation(database, 4_096);
-            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(database);
+        try (PreparedDatabase prepared = savedGraphDatabase(path, 1)) {
+            insertLargeOffWindowRoomPopulation(prepared.fixture(), 4_096);
+            DungeonSqliteWindowGateway gateway = new DungeonSqliteWindowGateway(
+                            prepared.fixture().store());
             DungeonWindow window = loadWindow(gateway, request).orElseThrow();
             DungeonWindowEntityFragment.Corridor corridor = fragment(
                     window, DungeonPatchEntityRef.corridor(302L),
@@ -359,8 +369,8 @@ final class SqliteDungeonWindowStoreTest {
     @Test
     void exactClosureCompletesAllSixFamiliesInStableOrder(@TempDir Path tempDir) throws Exception {
         Path path = tempDir.resolve("closure.db");
-        try (SqliteDatabase database = savedDatabase(path)) {
-            DungeonWindowStore store = cachedStore(database);
+        try (PreparedDatabase prepared = savedDatabase(path)) {
+            DungeonWindowStore store = cachedStore(prepared.fixture());
             DungeonIdentityClosureResult.Complete complete = assertInstanceOf(
                     DungeonIdentityClosureResult.Complete.class,
                     store.loadIdentityClosure(new DungeonIdentityClosureRequest(
@@ -396,7 +406,8 @@ final class SqliteDungeonWindowStoreTest {
                 new DungeonIdentityClosureRequest(
                         new DungeonMapIdentity(MAP_ID), REVISION, List.of(DungeonPatchEntityRef.featureMarker(601L))),
                 DungeonIdentityClosureResult.Reason.MALFORMED_ENTITY,
-                "UPDATE dungeon_feature_markers SET marker_kind='NOT_A_KIND' WHERE feature_marker_id=601");
+                "UPDATE dungeon_feature_markers SET marker_kind='NOT_A_KIND' WHERE"
+                    + " feature_marker_id=601");
         assertRejected(
                 tempDir.resolve("marker-null-description.db"),
                 new DungeonIdentityClosureRequest(
@@ -415,14 +426,16 @@ final class SqliteDungeonWindowStoreTest {
                         new DungeonMapIdentity(MAP_ID), REVISION,
                         List.of(DungeonPatchEntityRef.roomCluster(201L))),
                 DungeonIdentityClosureResult.Reason.INCOMPLETE_ENTITY,
-                "UPDATE dungeon_room_cluster_edges SET topology_element_id=NULL WHERE cluster_id=201");
+                "UPDATE dungeon_room_cluster_edges SET topology_element_id=NULL WHERE"
+                    + " cluster_id=201");
         assertRejected(
                 tempDir.resolve("corridor-topology.db"),
                 new DungeonIdentityClosureRequest(
                         new DungeonMapIdentity(MAP_ID), REVISION,
                         List.of(DungeonPatchEntityRef.corridor(302L))),
                 DungeonIdentityClosureResult.Reason.INCOMPLETE_ENTITY,
-                "UPDATE dungeon_corridor_anchors SET topology_element_id=NULL WHERE corridor_id=301");
+                "UPDATE dungeon_corridor_anchors SET topology_element_id=NULL WHERE"
+                    + " corridor_id=301");
         assertRejected(
                 tempDir.resolve("room-name.db"),
                 new DungeonIdentityClosureRequest(
@@ -492,12 +505,12 @@ final class SqliteDungeonWindowStoreTest {
     @Test
     void stairWindowValidatesGlobalRequiredFactsWhileKeepingOffWindowFactsClipped(@TempDir Path tempDir) {
         Path path = tempDir.resolve("window-stair-off-window-facts.db");
-        try (SqliteDatabase database = savedDatabase(path)) {
-            DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(
+        try (PreparedDatabase prepared = savedDatabase(path)) {
+            prepared.fixture().commit(DungeonPatch.of(
                     new DungeonMapIdentity(MAP_ID),
                     REVISION,
                     List.of(new StairChange(windowStair(null), windowStair(302L)))));
-            DungeonWindowStore store = cachedStore(database);
+            DungeonWindowStore store = cachedStore(prepared.fixture());
             DungeonWindowEntityFragment.Stair stair = fragment(
                     store.loadWindow(stairWindow()).orElseThrow(),
                     DungeonPatchEntityRef.stair(401L),
@@ -562,9 +575,9 @@ final class SqliteDungeonWindowStoreTest {
         assertRejected(
                 tempDir.resolve("corridor-door-direction.db"), corridorRequest,
                 DungeonIdentityClosureResult.Reason.MALFORMED_ENTITY,
-                "INSERT INTO dungeon_corridor_door_overrides"
-                        + "(corridor_id, room_id, cluster_id, relative_cell_x, relative_cell_y,"
-                        + " edge_direction, topology_element_id) VALUES(302,101,201,0,0,'UP',7001)");
+                "INSERT INTO dungeon_corridor_door_overrides(corridor_id, room_id, cluster_id,"
+                    + " relative_cell_x, relative_cell_y, edge_direction, topology_element_id)"
+                    + " VALUES(302,101,201,0,0,'UP',7001)");
     }
 
     @Test
@@ -585,10 +598,12 @@ final class SqliteDungeonWindowStoreTest {
     void windowRejectsMissingTopologyAndBlankAuthoredNamesWithoutRepair(@TempDir Path tempDir) throws Exception {
         assertWindowRejected(
                 tempDir.resolve("window-boundary-topology.db"),
-                "UPDATE dungeon_room_cluster_edges SET topology_element_id=NULL WHERE cluster_id=201");
+                "UPDATE dungeon_room_cluster_edges SET topology_element_id=NULL WHERE"
+                    + " cluster_id=201");
         assertWindowRejected(
                 tempDir.resolve("window-corridor-topology.db"),
-                "UPDATE dungeon_corridor_anchors SET topology_element_id=NULL WHERE corridor_id=301");
+                "UPDATE dungeon_corridor_anchors SET topology_element_id=NULL WHERE"
+                    + " corridor_id=301");
         assertWindowRejected(
                 tempDir.resolve("window-blank-name.db"),
                 "UPDATE dungeon_rooms SET name='' WHERE room_id=101");
@@ -630,11 +645,11 @@ final class SqliteDungeonWindowStoreTest {
             DungeonWindowRequest request,
             String corruptionSql
     ) throws Exception {
-        try (SqliteDatabase database = savedDatabase(path);
+        try (PreparedDatabase prepared = savedDatabase(path);
              Connection connection = open(path);
              Statement statement = connection.createStatement()) {
             applyTargetedCorruption(statement, corruptionSql);
-            DungeonWindowStore store = cachedStore(database);
+            DungeonWindowStore store = cachedStore(prepared.fixture());
             assertThrows(RuntimeException.class, () -> store.loadWindow(request));
         }
     }
@@ -645,13 +660,14 @@ final class SqliteDungeonWindowStoreTest {
             DungeonIdentityClosureResult.Reason expected,
             String corruptionSql
     ) throws Exception {
-        try (SqliteDatabase database = savedDatabase(path)) {
+        try (PreparedDatabase prepared = savedDatabase(path)) {
             if (corruptionSql != null) {
                 try (Connection connection = open(path); Statement statement = connection.createStatement()) {
                     applyTargetedCorruption(statement, corruptionSql);
                 }
             }
-            DungeonIdentityClosureResult result = new SqliteDungeonWindowStore(database)
+            DungeonIdentityClosureResult result = new SqliteDungeonWindowStore(
+                                    prepared.fixture().store())
                     .loadIdentityClosure(request);
             DungeonIdentityClosureResult.Rejected rejected = assertInstanceOf(
                     DungeonIdentityClosureResult.Rejected.class,
@@ -667,10 +683,10 @@ final class SqliteDungeonWindowStoreTest {
             boolean seedOtherMapCorridor,
             List<String> corruptionSql
     ) throws Exception {
-        try (SqliteDatabase database = savedDatabase(path)) {
+        try (PreparedDatabase prepared = savedDatabase(path)) {
             if (seedOtherMapCorridor) {
-                DungeonSqliteFixtureSeeder.insertHeader(database, 78L, "Other map", 1L);
-                DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(
+                prepared.fixture().insertHeader(78L, "Other map", 1L);
+                prepared.fixture().commit(DungeonPatch.of(
                         new DungeonMapIdentity(78L),
                         1L,
                         List.of(new CorridorChange(
@@ -686,7 +702,7 @@ final class SqliteDungeonWindowStoreTest {
                     applyTargetedCorruption(statement, statementSql);
                 }
             }
-            DungeonWindowStore store = cachedStore(database);
+            DungeonWindowStore store = cachedStore(prepared.fixture());
             assertThrows(RuntimeException.class, () -> store.loadWindow(stairWindow()));
             DungeonIdentityClosureResult.Rejected rejected = assertInstanceOf(
                     DungeonIdentityClosureResult.Rejected.class,
@@ -696,7 +712,7 @@ final class SqliteDungeonWindowStoreTest {
     }
 
     private static void assertTransitionLinkedIdRejected(Path path, long linkedTransitionId) throws Exception {
-        try (SqliteDatabase database = savedDatabase(path);
+        try (PreparedDatabase prepared = savedDatabase(path);
              Connection connection = open(path);
              Statement statement = connection.createStatement()) {
             removeTransitionLinkedIdForeignKeyForCorruption(statement);
@@ -704,7 +720,7 @@ final class SqliteDungeonWindowStoreTest {
                     "UPDATE dungeon_transitions SET linked_transition_id=" + linkedTransitionId
                             + " WHERE transition_id=501");
 
-            DungeonWindowStore store = cachedStore(database);
+            DungeonWindowStore store = cachedStore(prepared.fixture());
             assertThrows(RuntimeException.class, () -> store.loadWindow(transitionWindow()));
             DungeonIdentityClosureResult.Rejected rejected = assertInstanceOf(
                     DungeonIdentityClosureResult.Rejected.class,
@@ -714,22 +730,22 @@ final class SqliteDungeonWindowStoreTest {
     }
 
     private static void assertTransitionLinkedIdAccepted(Path path, Long linkedTransitionId) throws Exception {
-        try (SqliteDatabase database = savedDatabase(path)) {
+        try (PreparedDatabase prepared = savedDatabase(path)) {
             if (linkedTransitionId != null) {
                 Transition target = new Transition(
                         502L, MAP_ID, "Linked transition", TransitionAnchor.cell(new Cell(1, 1, 0)),
                         TransitionDestination.unlinkedEntrance(), null);
-                DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(
+                prepared.fixture().commit(DungeonPatch.of(
                         new DungeonMapIdentity(MAP_ID),
                         REVISION,
                         List.of(new TransitionChange(null, target))));
                 Transition before = windowTransition(null);
-                DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(
+                prepared.fixture().commit(DungeonPatch.of(
                         new DungeonMapIdentity(MAP_ID),
                         REVISION + 1L,
                         List.of(new TransitionChange(before, windowTransition(linkedTransitionId)))));
             }
-            DungeonWindowStore store = cachedStore(database);
+            DungeonWindowStore store = cachedStore(prepared.fixture());
             DungeonWindowEntityFragment.Transition transition = fragment(
                     store.loadWindow(transitionWindow()).orElseThrow(),
                     DungeonPatchEntityRef.transition(501L),
@@ -754,12 +770,12 @@ final class SqliteDungeonWindowStoreTest {
                 linkedTransitionId);
     }
 
-    private static SqliteDatabase savedDatabase(Path path) {
+    private static PreparedDatabase savedDatabase(Path path) {
         return savedDatabase(path, 1);
     }
 
-    private static DungeonWindowStore cachedStore(SqliteDatabase database) {
-        return new DungeonCachedWindowStore(new SqliteDungeonWindowStore(database));
+    private static DungeonWindowStore cachedStore(DungeonSqliteFixtureSeeder.Fixture fixture) {
+        return new DungeonCachedWindowStore(new SqliteDungeonWindowStore(fixture.store()));
     }
 
     private static java.util.Optional<DungeonWindow> loadWindow(
@@ -781,19 +797,19 @@ final class SqliteDungeonWindowStoreTest {
                 index.requestGeneration(), index.chunkHeaders()));
     }
 
-    private static SqliteDatabase savedDatabase(Path path, int markerCount) {
+    private static PreparedDatabase savedDatabase(Path path, int markerCount) {
         SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE);
-        seedAuthoredMap(database, markerCount, 1);
-        return database;
+        return new PreparedDatabase(database, seedAuthoredMap(database, markerCount, 1));
     }
 
-    private static SqliteDatabase savedGraphDatabase(Path path, int corridorCount) {
+    private static PreparedDatabase savedGraphDatabase(Path path, int corridorCount) {
         SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE);
-        seedAuthoredMap(database, 1, corridorCount);
-        return database;
+        return new PreparedDatabase(database, seedAuthoredMap(database, 1, corridorCount));
     }
 
-    private static void seedAuthoredMap(SqliteDatabase database, int markerCount, int corridorCount) {
+    private static DungeonSqliteFixtureSeeder.Fixture seedAuthoredMap(
+            SqliteDatabase database, int markerCount, int corridorCount) {
+        var fixture = DungeonSqliteFixtureSeeder.prepare(database);
         RoomRegion room = new RoomRegion(
                 101L, MAP_ID, 201L, "Window room",
                 Set.of(new Cell(-64, -64, 0), new Cell(10, 10, 0), new Cell(64, 0, 0)),
@@ -850,15 +866,26 @@ final class SqliteDungeonWindowStoreTest {
                 key(0, 2, 0),
                 key(1, 0, 1),
                 key(2, 0, 1));
-        DungeonSqliteFixtureSeeder.insertHeader(database, MAP_ID, "Window map", REVISION - 1L);
+        fixture.insertHeader(MAP_ID, "Window map", REVISION - 1L);
         DungeonPatch base = DungeonPatch.of(new DungeonMapIdentity(MAP_ID), REVISION - 1L, changes);
-        DungeonSqliteFixtureSeeder.commit(database, new DungeonPatch(
+        fixture.commit(new DungeonPatch(
                 base.mapId(),
                 base.expectedRevision(),
                 base.changes(),
                 touchedChunks,
                 new DungeonPatchResultFacts(base.resultFacts().affectedEntities()),
                 base.encodedBytes()));
+        return fixture;
+    }
+
+    private record PreparedDatabase(
+            SqliteDatabase database, DungeonSqliteFixtureSeeder.Fixture fixture)
+            implements AutoCloseable {
+
+        @Override
+        public void close() {
+            database.close();
+        }
     }
 
     private static Stair windowStair(Long corridorId) {
@@ -1024,8 +1051,9 @@ final class SqliteDungeonWindowStoreTest {
     private static void insertUnindexedMalformedTransition(Path path) throws SQLException {
         try (Connection connection = open(path);
              PreparedStatement statement = connection.prepareStatement(
-                     "INSERT INTO dungeon_transitions(transition_id, dungeon_map_id, description,"
-                             + " anchor_type, destination_type) VALUES(?,?,?,?,?)")) {
+                                "INSERT INTO dungeon_transitions(transition_id, dungeon_map_id,"
+                                    + " description, anchor_type, destination_type)"
+                                    + " VALUES(?,?,?,?,?)")) {
             statement.setLong(1, 999L);
             statement.setLong(2, MAP_ID);
             statement.setString(3, "must not hydrate");
@@ -1046,12 +1074,13 @@ final class SqliteDungeonWindowStoreTest {
 
     private static void removeStairCorridorForeignKeyForCorruption(Statement statement) throws SQLException {
         statement.execute("PRAGMA foreign_keys=OFF");
-        statement.execute("CREATE TABLE dungeon_stairs_without_corridor_fk ("
-                + "stair_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + "dungeon_map_id INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
-                + "name TEXT, shape TEXT NOT NULL DEFAULT 'LADDER',"
-                + "direction INTEGER NOT NULL DEFAULT 0, dimension1 INTEGER NOT NULL DEFAULT 0,"
-                + "dimension2 INTEGER NOT NULL DEFAULT 0, corridor_id INTEGER)");
+        statement.execute(
+                "CREATE TABLE dungeon_stairs_without_corridor_fk (stair_id INTEGER PRIMARY KEY"
+                    + " AUTOINCREMENT,dungeon_map_id INTEGER NOT NULL REFERENCES"
+                    + " dungeon_maps(dungeon_map_id) ON DELETE CASCADE,name TEXT, shape TEXT NOT"
+                    + " NULL DEFAULT 'LADDER',direction INTEGER NOT NULL DEFAULT 0, dimension1"
+                    + " INTEGER NOT NULL DEFAULT 0,dimension2 INTEGER NOT NULL DEFAULT 0,"
+                    + " corridor_id INTEGER)");
         statement.executeUpdate("INSERT INTO dungeon_stairs_without_corridor_fk SELECT * FROM dungeon_stairs");
         statement.execute("DROP TABLE dungeon_stairs");
         statement.execute("ALTER TABLE dungeon_stairs_without_corridor_fk RENAME TO dungeon_stairs");
@@ -1060,14 +1089,18 @@ final class SqliteDungeonWindowStoreTest {
 
     private static void removeTransitionLinkedIdForeignKeyForCorruption(Statement statement) throws SQLException {
         statement.execute("PRAGMA foreign_keys=OFF");
-        statement.execute("CREATE TABLE dungeon_transitions_without_linked_fk ("
-                + "transition_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + "dungeon_map_id INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
-                + "description TEXT, cell_x INTEGER, cell_y INTEGER, level_z INTEGER,"
-                + "anchor_type TEXT, anchor_edge_direction TEXT, destination_type TEXT NOT NULL,"
-                + "target_overworld_map_id INTEGER, target_overworld_tile_id INTEGER,"
-                + "target_dungeon_map_id INTEGER, target_transition_id INTEGER, linked_transition_id INTEGER)");
-        statement.executeUpdate("INSERT INTO dungeon_transitions_without_linked_fk SELECT * FROM dungeon_transitions");
+        statement.execute(
+                "CREATE TABLE dungeon_transitions_without_linked_fk (transition_id INTEGER PRIMARY"
+                    + " KEY AUTOINCREMENT,dungeon_map_id INTEGER NOT NULL REFERENCES"
+                    + " dungeon_maps(dungeon_map_id) ON DELETE CASCADE,description TEXT, cell_x"
+                    + " INTEGER, cell_y INTEGER, level_z INTEGER,anchor_type TEXT,"
+                    + " anchor_edge_direction TEXT, destination_type TEXT NOT"
+                    + " NULL,target_overworld_map_id INTEGER, target_overworld_tile_id"
+                    + " INTEGER,target_dungeon_map_id INTEGER, target_transition_id INTEGER,"
+                    + " linked_transition_id INTEGER)");
+        statement.executeUpdate(
+                "INSERT INTO dungeon_transitions_without_linked_fk SELECT * FROM"
+                    + " dungeon_transitions");
         statement.execute("DROP TABLE dungeon_transitions");
         statement.execute("ALTER TABLE dungeon_transitions_without_linked_fk RENAME TO dungeon_transitions");
         statement.execute("PRAGMA foreign_keys=ON");
@@ -1077,7 +1110,8 @@ final class SqliteDungeonWindowStoreTest {
         statement.executeUpdate(sql);
     }
 
-    private static void insertLargeOffWindowRoomPopulation(SqliteDatabase database, int cellCount) {
+    private static void insertLargeOffWindowRoomPopulation(
+            DungeonSqliteFixtureSeeder.Fixture fixture, int cellCount) {
         Set<Cell> cells = new java.util.LinkedHashSet<>();
         Set<DungeonChunkKey> chunks = new java.util.LinkedHashSet<>();
         for (int index = 0; index < cellCount; index++) {
@@ -1091,7 +1125,7 @@ final class SqliteDungeonWindowStoreTest {
                 999L, MAP_ID, "Off-window cluster", List.of());
         RoomRegion room = new RoomRegion(
                 999L, MAP_ID, 999L, "Off-window room", cells, DungeonRoomNarration.empty());
-        DungeonSqliteFixtureSeeder.commit(database, DungeonPatch.of(
+        fixture.commit(DungeonPatch.of(
                 new DungeonMapIdentity(MAP_ID),
                 REVISION,
                 List.of(

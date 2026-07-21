@@ -1,29 +1,34 @@
 package features.encounter.adapter.sqlite.repository;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import platform.persistence.SqliteDatabase;
 import features.encounter.adapter.sqlite.gateway.local.SqliteEncounterLocalGateway;
 import features.encounter.adapter.sqlite.mapper.EncounterPlanMapper;
 import features.encounter.adapter.sqlite.model.EncounterPlanCreatureRecord;
 import features.encounter.adapter.sqlite.model.EncounterPlanRecord;
 import features.encounter.adapter.sqlite.model.EncounterPlanSnapshotRecord;
 import features.encounter.domain.plan.EncounterPlan;
-import features.encounter.domain.plan.repository.EncounterPlanRepository;
 import features.encounter.domain.plan.EncounterPlanSummary;
+import features.encounter.domain.plan.repository.EncounterPlanRepository;
+
+import platform.persistence.FeatureStoreDefinition;
+import platform.persistence.FeatureStoreHandle;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 public final class SqliteEncounterPlanRepository
-        implements EncounterPlanRepository, features.encounter.application.GeneratedEncounterBatchRepository {
+        implements EncounterPlanRepository,
+        features.encounter.application.GeneratedEncounterBatchRepository,
+        features.encounter.application.SavedEncounterPlanSearchRepository {
 
     private final SqliteEncounterLocalGateway gateway;
 
-    public SqliteEncounterPlanRepository() {
-        this(new SqliteEncounterLocalGateway());
+    public static FeatureStoreDefinition storeDefinition() {
+        return SqliteEncounterLocalGateway.storeDefinition();
     }
 
-    public SqliteEncounterPlanRepository(SqliteDatabase database) {
-        this(new SqliteEncounterLocalGateway(database));
+    public SqliteEncounterPlanRepository(FeatureStoreHandle store) {
+        this(new SqliteEncounterLocalGateway(store));
     }
 
     SqliteEncounterPlanRepository(SqliteEncounterLocalGateway gateway) {
@@ -68,6 +73,24 @@ public final class SqliteEncounterPlanRepository
         return gateway.loadPlansByIds(planIds).stream()
                 .map(EncounterPlanMapper::toDomainPlan)
                 .toList();
+    }
+
+    @Override
+    public features.encounter.application.GeneratedEncounterBatchRepository.PlanRead loadPlansByIdsWithCount(
+            List<Long> planIds
+    ) {
+        var read = gateway.loadPlansByIdsWithCount(planIds);
+        return new features.encounter.application.GeneratedEncounterBatchRepository.PlanRead(
+                read.plans().stream().map(EncounterPlanMapper::toDomainPlan).toList(),
+                read.statementCount());
+    }
+
+    @Override
+    public features.encounter.application.SavedEncounterPlanSearchRepository.SearchRead searchSavedPlans(
+            String normalizedQuery,
+            int rootLimit
+    ) {
+        return gateway.searchSavedPlans(normalizedQuery, rootLimit);
     }
 
     private static List<EncounterPlanCreatureRecord> toRecords(EncounterPlan plan) {

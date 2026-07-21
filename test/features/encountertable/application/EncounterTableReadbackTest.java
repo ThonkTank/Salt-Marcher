@@ -1,6 +1,21 @@
 package features.encountertable.application;
 
 import features.encountertable.EncounterTableServiceAssembly;
+import features.encountertable.adapter.sqlite.model.EncounterTablePersistenceSchema;
+import features.encountertable.adapter.sqlite.query.SqliteEncounterTableCatalogAdapter;
+import features.encountertable.api.EncounterTableApi;
+import features.encountertable.api.EncounterTableCandidate;
+import features.encountertable.api.EncounterTableCandidatesModel;
+import features.encountertable.api.EncounterTableCandidatesResult;
+import features.encountertable.api.EncounterTableCatalogModel;
+import features.encountertable.api.EncounterTableCatalogResult;
+import features.encountertable.api.EncounterTableReadStatus;
+import features.encountertable.api.RefreshEncounterTableCandidatesCommand;
+import features.encountertable.api.RefreshEncounterTableCatalogCommand;
+
+import org.junit.jupiter.api.Test;
+
+import platform.persistence.TestFeatureStores;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -10,18 +25,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Objects;
-import features.encountertable.adapter.sqlite.query.SqliteEncounterTableCatalogAdapter;
-import features.encountertable.adapter.sqlite.model.EncounterTablePersistenceSchema;
-import features.encountertable.api.EncounterTableCandidate;
-import features.encountertable.api.EncounterTableCandidatesModel;
-import features.encountertable.api.EncounterTableCandidatesResult;
-import features.encountertable.api.EncounterTableCatalogModel;
-import features.encountertable.api.EncounterTableCatalogResult;
-import features.encountertable.api.EncounterTableReadStatus;
-import features.encountertable.api.EncounterTableApi;
-import features.encountertable.api.RefreshEncounterTableCandidatesCommand;
-import features.encountertable.api.RefreshEncounterTableCatalogCommand;
-import org.junit.jupiter.api.Test;
 
 public final class EncounterTableReadbackTest {
 
@@ -87,7 +90,9 @@ public final class EncounterTableReadbackTest {
 
     private static TestRuntime runtime() {
         EncounterTableServiceAssembly.Component services = EncounterTableServiceAssembly.create(
-                new SqliteEncounterTableCatalogAdapter());
+                new SqliteEncounterTableCatalogAdapter(
+                                TestFeatureStores.current().store(
+                                        SqliteEncounterTableCatalogAdapter.storeDefinition())));
         return new TestRuntime(
                 services.application(),
                 services.catalog(),
@@ -209,7 +214,8 @@ public final class EncounterTableReadbackTest {
     private static void insertTable(Connection connection, long tableId, String name, Long linkedLootTableId)
             throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO encounter_tables (table_id, name, description) VALUES (?, ?, ?)")) {
+                        "INSERT INTO encounter_tables (table_id, name, description) VALUES (?, ?,"
+                            + " ?)")) {
             statement.setLong(1, tableId);
             statement.setString(2, name);
             statement.setString(3, "Test authored table.");
@@ -217,7 +223,8 @@ public final class EncounterTableReadbackTest {
         }
         if (linkedLootTableId != null) {
             try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO encounter_table_loot_links (table_id, loot_table_id) VALUES (?, ?)")) {
+                            "INSERT INTO encounter_table_loot_links (table_id, loot_table_id)"
+                                + " VALUES (?, ?)")) {
                 statement.setLong(1, tableId);
                 statement.setLong(2, linkedLootTableId);
                 statement.executeUpdate();
@@ -228,7 +235,8 @@ public final class EncounterTableReadbackTest {
     private static void insertEntry(Connection connection, long tableId, long creatureId, int weight)
             throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO encounter_table_entries (table_id, creature_id, weight) VALUES (?, ?, ?)")) {
+                        "INSERT INTO encounter_table_entries (table_id, creature_id, weight) VALUES"
+                            + " (?, ?, ?)")) {
             statement.setLong(1, tableId);
             statement.setLong(2, creatureId);
             statement.setInt(3, weight);
