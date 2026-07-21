@@ -1714,6 +1714,54 @@ steht in den verlinkten Requirements.
 - Zustandsänderungen werden protokolliert und bleiben über Sitzung und Neustart
   bestehen, bis GM, Aktion oder Trigger sie wieder ändern.
 
+## Nachgelagerte Live-Campaign-Klarstellung 2026-07-22
+
+Diese Antworten wurden nach der fundamentalen T2/T3-Gegenprüfung bestätigt.
+Sie schärfen die cross-feature Live-Campaign-Bedürfnisse, ohne eine technische
+Root- oder Speicherentscheidung vorzugeben. Die kanonische englische
+Requirements-Wahrheit liegt in
+`docs/project/requirements/requirements-campaign-runtime.md`.
+
+### Wie bestätigt der GM die Folgen eines beendeten Encounters?
+
+**Bestätigte Antwort:** Ein Gesamtabschluss.
+
+Eine Bestätigung übernimmt Encounter-Ergebnis, XP und die ausgewählten
+NPC-Lifecycle- beziehungsweise endlichen Bestandsfolgen gemeinsam oder gar
+nicht. Die zugehörige laufende Scene bleibt bestehen. Loot-Persistenz gehört
+nicht zu diesem Abschluss.
+
+### Wie verhalten sich Scene und Encounter bei einem fehlgeschlagenen Abgleich?
+
+**Bestätigte Antwort:** Scene bleibt gespeichert und sichtbar pending.
+
+Eine gültige Scene-Änderung bleibt nutzbar. Der stale Encounter-Kontext darf
+nicht als synchronisiert erscheinen; Initialisierung, Refresh oder ein
+ausdrücklicher Retry setzen den gespeicherten Abgleich fort.
+
+### Wie wirken Party-Aktivierung, -Deaktivierung und -Löschung auf laufende
+Scenes und Encounter?
+
+**Bestätigte Antwort:** Party gilt sofort; nur betroffene laufende Kontexte
+gleichen sichtbar pending ab.
+
+Eine Aktivierung weist den Charakter keiner Scene automatisch zu. Nach
+Deaktivierung oder Löschung gilt der Charakter sofort nicht mehr als aktuelles
+Party-Mitglied. Alle laufenden Scenes, die ihn referenzieren, und die jeweils zu
+ihnen gehörenden Encounter gleichen sich an diese Party-Fassung an. Ein Fehler
+rollt die Party-Änderung nicht zurück. Nicht betroffene laufende Kontexte ändern
+sich nicht.
+
+### Welche historische Nachvollziehbarkeit braucht die Campaign?
+
+**Bestätigte Antwort:** Unveränderliches Journal bedeutsamer Weltfolgen.
+
+Zeit, Reise, Encounter-Abschluss, XP, NPC-/Bestandsfolgen, Mitgliedschaft und
+GM-Korrekturen bleiben chronologisch nachvollziehbar. Korrekturen ergänzen neue
+verknüpfte Einträge, statt alte umzuschreiben. Ein vollständiges historisches
+Live-Campaign-Snapshot, Replay oder Restore zu einem beliebigen früheren Punkt
+ist nicht benötigt.
+
 ## Abschlussbedingung für Ergebnis 1
 
 Die oben bestätigten Fähigkeiten sind langfristige Zielbedürfnisse, keine

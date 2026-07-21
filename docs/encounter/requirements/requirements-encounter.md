@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-18
+Last Reviewed: 2026-07-22
 Source of Truth: User-facing behavior and acceptance criteria for the
 encounter feature.
 
@@ -19,6 +19,8 @@ Provide a runtime encounter builder that:
 - can use selected encounter tables as curated generator sources
 - resolves one ordered group of Session Generation intents into concrete
   creature rosters and makes the complete group available as saved plans
+- confirms one completed runtime Encounter together with its calculated Party
+  XP and selected live World consequences
 
 ## Non-Goals
 
@@ -40,6 +42,8 @@ Provide a runtime encounter builder that:
 6. The user saves the current roster as an encounter plan, or opens a saved
    plan into the builder.
 7. The user starts initiative and combat from the current builder roster.
+8. At Resolution, the user selects applicable World consequences and confirms
+   the complete Encounter outcome once.
 
 Generated preparation is a separate Session Planner-driven flow:
 
@@ -80,6 +84,8 @@ Generated preparation is a separate Session Planner-driven flow:
   adjusted XP, and difficulty in every prepared roster summary
 - list and open generated rosters through the same saved-plan interaction as
   manually saved rosters
+- confirm Encounter completion, calculated Party XP, and selected named-NPC or
+  finite-stock consequences together or apply none of them
 
 ## Acceptance Criteria
 
@@ -106,6 +112,10 @@ Generated preparation is a separate Session Planner-driven flow:
   visible saved-plan set unchanged
 - retrying an identical completed preparation creates no visible duplicate
   plans
+- failed complete-outcome confirmation changes no Encounter, Party, World, or
+  campaign-history state and remains retryable
+- retrying a successfully completed outcome never duplicates XP, World
+  consequences, Encounter completion, or campaign history
 
 ## References
 
@@ -115,3 +125,4 @@ Generated preparation is a separate Session Planner-driven flow:
 - [Encounter Table Feature Spec](../../encountertable/requirements/requirements-encountertable.md) (line 1)
 - [Generated Preparation Contract](../contract/contract-encounter-generated-import.md)
 - [Architecture](../architecture/architecture-encounter.md)
+- [Live Campaign Runtime Requirements](../../project/requirements/requirements-campaign-runtime.md)

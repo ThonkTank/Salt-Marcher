@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-21
+Last Reviewed: 2026-07-22
 Source of Truth: Candidate Greenfield target architecture derived from the
 accepted Dungeon needs baseline. It becomes binding only after owner acceptance.
 
@@ -57,6 +57,13 @@ The following needs materially determine the architecture:
 - cell-precise travel, extensible perception, tracks, passive player output,
   and project-wide actor autonomy over the same committed spatial facts
 - atomic cross-Dungeon links, travel segments, and campaign-time autonomy steps
+- one normal Encounter-outcome confirmation that atomically completes the
+  Encounter, awards Party XP, applies selected World-runtime consequences, and
+  records the result
+- authoritative Party membership with visible retryable reconciliation into
+  affected running Scenes and their Encounters
+- an immutable explanatory campaign history without whole-campaign replay or
+  historical restore
 - portable authored packages that exclude runtime state and history
 - local adapter replacement and compile-time extensibility without a generic
   runtime plugin framework
@@ -84,6 +91,49 @@ The architecture uses four state classes and never merges their ownership:
 4. **Interaction state**: camera, hover, selection gestures, previews, and
    protected draft workspaces; transient until an explicit commit.
 
+### Cohesive Live Campaign Root
+
+One partitioned `LiveCampaignRoot` is the physical commit authority for the
+complete invariant closure of confirmed live-campaign operations. Semantic
+ownership remains with capabilities: each owner defines its partition state,
+invariants, reducer, query language, codec, migration, and factual history. The
+root owns only the manifest, monotonic campaign revision, touched-partition
+commit, operation index, receipts, snapshot leases, and atomic publication.
+
+The root contains exactly:
+
+- complete committed Dungeon Catalog, Authored World, and Dungeon Runtime truth
+  for every live-traversable Dungeon; Hex or a future CityMap joins under the
+  same rule while retaining its own identity and spatial semantics
+- Campaign Placement, Travel commit state, Campaign Clock, Perception and
+  Knowledge, Campaign Decisions, and Actor Autonomy
+- complete owner-typed Actor Condition, Resource, Possession, and World Runtime
+  partitions needed by confirmed Autonomy or Encounter consequences
+- `PartyCampaign`: character identity/profile, active/reserve membership,
+  XP/level/rest, combat profile, and GM-control state as one Party invariant
+  closure; current spatial position exists only in Campaign Placement
+- materialized Encounter Runtime, with every running Encounter keyed to exactly
+  one running Scene: builder, initiative, combatants, HP/round/turn, result,
+  applied Scene-context stamp, completion, and effect receipts
+- operation-correlated factual history and correction facts that must be
+  old-or-new with the initiating campaign operation
+
+The root explicitly excludes Running Scene truth, Session Planner and Session
+Generation state, prepared artifacts, saved Encounter plans/templates, Catalog
+reference corpora, Creatures, Items, Encounter Tables, authored World
+definitions, executable immutable rule artifacts, UI interaction state, and all
+rebuildable projections or caches. Restart relevance alone is not an admission
+rule. A new partition is admitted only when a confirmed user operation requires
+its complete invariant closure to change old-or-new with existing root truth;
+the former canonical write path is removed in the same migration.
+
+Scene remains an independent root because its accepted behavior deliberately
+allows a valid Scene or Party change to remain usable while Encounter context is
+visibly pending. Scene owns the desired context stamp and reconciliation intent;
+Encounter Runtime owns the applied stamp. Their composite read is synchronized
+only when those exact stamps match. This saga is specific to Scene and must not
+be generalized into the campaign commit model.
+
 ### Authority And Automation Boundary
 
 The GM is the only interface operator and the final owner of unrestricted
@@ -96,8 +146,9 @@ appearance, tags, or geometry.
 Actor Autonomy is the single bounded exception. It acts only for explicitly
 enabled NPCs or monsters, confirmed campaign time, configured jobs, and allowed
 consequences. Party involvement or another GM-owned decision stops preparation
-before mutation. An external capability may be changed only through an explicit
-operation prepared and validated by that owner.
+before mutation. A root partition may change only through its owner reducer; an
+external capability may change only through an explicit destination-owned
+command.
 
 ## Capability Context
 
@@ -108,34 +159,31 @@ business owners; the transaction mechanism owns no business state.
 Presentation and storage adapters are outside the ownership boxes.
 
 ```text
-Adapters --commands/queries--> [Catalog]
-Adapters --commands/queries--> [Authoring Workspace]
+Adapters --commands/queries--> [Semantic capabilities]
 Adapters --queries-----------> [Query Projections]
-Adapters --commands----------> [Exchange]
-Adapters --commands----------> [Recovery]
+Adapters --commands----------> [Exchange] + [Recovery]
 
-[Authoring Workspace] --commands--> [Authored World]
-[Query Projections] --reads-------> [Authored World]
-[Query Projections] --reads-------> [Dungeon Runtime]
-[Query Projections] --reads-------> [Campaign Placement]
-[Query Projections] --reads-------> [Perception And Knowledge]
-[Query Projections] --reads-------> [Party audience context]
-[Query Projections] --reads-------> [Travel active context]
-[Exchange] --prepares-------------> [Catalog] + [Authored World]
-[Recovery] --runs-----------------> owner-defined migrations
+[Authoring Workspace] --phase program--> [Live Campaign Root]
+[Travel] -------------> [Live Campaign Root]
+[Actor Autonomy] -----> [Live Campaign Root]
+[Encounter Runtime] --> [Live Campaign Root]
+[Party Campaign] -----> [Live Campaign Root]
 
-[Authored World] + [Dungeon Runtime] --publish--> [Spatial Context]
-[Travel] + [Perception] + [Actor Autonomy] --query--> [Spatial Context]
-[Travel] + [Authoring] + [Actor Autonomy] --prepare--> [Campaign Placement]
-[Travel] + [Actor Autonomy] --prepare--> [Decision Inbox]
-[Travel] + other time initiators --coordinate--> [Calendar] + [Actor Autonomy]
+[Live Campaign Root] --typed partitions--> [Dungeon Authored + Runtime]
+[Live Campaign Root] --typed partitions--> [Placement + Travel + Clock]
+[Live Campaign Root] --typed partitions--> [Perception + Decisions + Autonomy]
+[Live Campaign Root] --typed partitions--> [Party + Encounter + World Runtime]
+[Live Campaign Root] --snapshot/change set--> [Query Projections]
 
-Initiating capability --enlists--> [Campaign Transaction]
-[Campaign Transaction] --applies--> certified owner changes + receipt + outbox
+[Running Scene] --desired context/reconcile--> [Encounter Runtime]
+[Planning + Reference roots] --stamped immutable input--> [Semantic capabilities]
+[Recovery] --runs--> owner-defined partition migrations
 ```
 
-This diagram is logical. It does not prescribe source folders, processes, or
-storage tables.
+This diagram is logical. The root is a business commit authority, not a source
+folder or generic platform service. Capability owners remain visible in source
+and contracts even though their admitted live partitions share one durable root
+manifest.
 
 ## Capability Ownership
 
@@ -203,8 +251,8 @@ truth. Acceptance performs one normal authored commit; discard removes the
 entire draft independently of ordinary undo depth.
 
 Every successful undoable authored commit returns a `CampaignCommitReceipt`
-with the affected owner revisions and one opaque inverse token per undoable
-participant. The workspace stores receipts rather than owner snapshots and
+with the affected partition generations and one opaque inverse token per
+undoable owner partition. The workspace stores receipts rather than snapshots and
 never interprets an owner's token. Undo and redo submit those tokens through the
 same owner boundaries as the original change; a stale or conflicting inverse is
 rejected with repair choices and never partially applied. A new accepted commit
@@ -284,8 +332,8 @@ Produces revisioned, immutable projections for raster, graph, Dungeon Key,
 detail, diagnostics, document output, and player visibility. Projections that
 show movable actors join a bounded Campaign Placement projection with authored,
 runtime, and Perception facts. A query first captures one immutable
-`CampaignReadSnapshot` containing a monotonic campaign commit sequence and every
-owner revision needed for that query, then bulk-reads bounded owner slices
+`CampaignRootSnapshot` containing a monotonic campaign revision and every
+partition generation needed for that query, then bulk-reads bounded owner slices
 against that vector. A source-specific projection omits only owners it does not
 read. Reusable subprojections are keyed by owner revision and touched keys. Late
 work is coalesced toward the newest publishable vector and cannot replace a
@@ -299,7 +347,7 @@ Player display and visibility-filtered export consume only an audience-specific
 projection contract. `DungeonAudienceQuery` combines authored, runtime,
 Campaign Placement, Perception, a revisioned `PartyAudienceContext`, a
 revisioned `TravelActiveContext`, a revisioned presentation input, and an
-explicit audience profile with deny-by-default filtering. The Party capability
+explicit audience profile with deny-by-default filtering. `PartyCampaign`
 supplies the active Party identity and complete member set. Travel supplies the
 active exploration actor/group identity; the query validates that focus against
 current Party membership and Campaign Placement. Presentation state cannot
@@ -466,117 +514,186 @@ unreadable evidence produces a typed blocked/repair state, never substitution
 with current truth. Retained bytes, intervals, compaction, and expiry are bounded
 by the Autonomy contract.
 
-### Use-Case Coordination And Campaign Transactions
+### Party Campaign
 
-The capability that accepts an initiating command owns its stateless use-case
-coordination. It names the required participants and coordinates atomic changes
-whose invariants span capability owners:
+Party remains the semantic owner of character identity/profile, membership,
+progression, rest, combat profile, and GM-control rules. Those facts form one
+owner-typed `PartyCampaign` partition inside the Live Campaign Root because a
+normal confirmed Encounter outcome must update XP and completion atomically and
+Party progression validation depends on the complete Party invariant closure.
+Campaign Placement alone owns current spatial position and movement groups; no
+Party partition or adapter retains a second current travel location.
+
+An accepted Party activation, deactivation, or deletion commits Party truth,
+its campaign-history fact, and a non-mutating membership-change publication
+immediately. It never waits for or enumerates Scene inside the root commit. The
+Scene-owned reconciliation flow compares referenced members with the exact
+Party revision, persists retry intent only for affected running Scenes, and
+reconciles any Encounter belonging to them. Initialization and refresh perform
+the same comparison, so unavailable delivery cannot lose the work. Newly active
+characters remain unassigned. An inactive or deleted character is excluded
+immediately from audience, threshold, XP, and other current-Party reads even if
+Scene or Encounter reconciliation is pending.
+
+### Encounter Runtime And Outcome
+
+Encounter owns materialized runtime state inside the root, and every runtime is
+keyed to exactly one Running Scene. Saved plans, generated batches before
+materialization, and reference inputs stay outside under their independent
+planning/artifact lifecycles.
+
+`ConfirmEncounterOutcome` is one Encounter-owned phase program. It validates the
+current runtime result, eligible Party members, calculated XP, selected named-NPC
+and finite-stock consequences, and their exact source bindings. One root commit
+then marks that Encounter outcome completed, advances the complete Party
+progression, applies `WorldRuntime`, stores effect receipts, and appends the
+correlated campaign-history facts. Any rejection changes none of them. Retry of
+the same operation identity and intent fingerprint returns the stored terminal
+result; a different fingerprint conflicts. The associated Running Scene is not
+closed or mutated.
+
+### World Runtime And External Definitions
+
+`WorldRuntime` contains stable definition IDs, NPC lifecycle, actually consumed
+finite stock, and other confirmed live quantities that participate in Encounter
+or Autonomy operations. World Planner remains the semantic owner, but authored
+profiles, factions, locations, links, disposition, notes, and declared capacity
+stay in a versioned external definition root. Root operations bind the exact
+definition revision used as immutable input and never copy those definitions.
+
+### Running Scene Reconciliation
+
+Scene owns Running Scene identity, composition, focus, notes, semantic World
+location, provenance, desired Encounter-context stamp, and durable reconcile
+intent outside the Live Campaign Root. Encounter Runtime owns its applied stamp.
+
+Scene save is authoritative before Encounter synchronization. A technical or
+business reconciliation failure preserves the valid Scene, marks its exact
+desired revision `pending`, and retries initialization, refresh, or explicit
+retry. A Party membership change follows the same dependent-context rule: Party
+commits first, then only affected Scenes and Encounters reconcile. Stale context
+is never presented as synchronized or used as current Party truth.
+
+### Campaign History
+
+Each admitted partition emits owner-typed factual entries as part of the same
+root operation that creates the fact. The derived chronological view includes
+confirmed time, travel, Encounter outcome, XP, membership, World/runtime effects,
+and GM corrections. Entries retain operation identity, applicable campaign-time
+boundary, stable references, and historical display facts needed after rename or
+deletion. Corrections append linked facts; nothing rewrites history.
+
+The history is not the current-state write model and cannot reconstruct or
+restore an arbitrary historical whole-campaign snapshot. Technical diagnostics,
+editor undo, Scene notes, drafts, and UI interaction remain separate.
+
+### Use-Case Coordination And Campaign Root Commits
+
+The capability that accepts an initiating command owns a typed, stateless phase
+program for atomic changes whose invariants span root partitions:
 
 - live authoring plus required actor relocation and route invalidation
 - one completed travel segment plus position and campaign time
 - one autonomy time step plus needs, jobs, movement, reservations, effects,
   random conflict results, and events
+- one Encounter outcome plus completion, Party progression, World Runtime, and
+  campaign-history facts
 - paired cross-Dungeon Passage links
 
 Authoring coordinates live-edit and undo, Travel coordinates segments, Actor
-Autonomy coordinates autonomy steps, Catalog coordinates lifecycle changes, and
-Authored World coordinates paired links. There is no central coordinator that
-must change for every new operation family.
+Autonomy coordinates autonomy steps, Encounter coordinates outcome
+confirmation, Catalog coordinates lifecycle changes, and Authored World
+coordinates paired links. There is no central business switch or workflow
+registry that changes for every operation family.
 
-Every durable initiating command has a stable operation identity and an intent
-fingerprint. The initiating capability owns an acyclic preparation graph whose
-edges state which proposed owner result another owner must validate. A source
-owner prepares side-effect-free `ProspectiveFacts` and a
-`PreparationCertificate` bound to its immutable input revisions, read-set
-fingerprint, and proposed result. Dependent owners prepare only against those
-certified facts rather than guessing the future state or reading another
-owner's storage. A cycle or missing certificate rejects preparation before any
-mutation.
+Every durable initiating command has a stable operation identity and intent
+fingerprint. Its `CampaignPhaseProgram` declares a static `ReadSet`, `WriteSet`,
+`InvariantSet`, and optional `DeclassificationSet`. It reads one immutable root
+snapshot plus explicitly stamped external inputs, runs bounded pure phases, and
+folds owner-typed reducers over one private candidate root. A phase may consume
+typed prospective facts produced by an earlier phase, but cannot call storage,
+UI, an owner callback, or an external mutating API. Cyclic dependencies,
+undeclared reads, and a missing partition reject before mutation.
 
-Each `PreparedCampaignChange` carries its owner, base revisions, read-set
-fingerprint, certificate dependencies, encoded owner-defined write set,
-post-commit facts, and an optional opaque inverse token. `CampaignTransaction`
-then rechecks the operation fingerprint, all base revisions, read sets, and
-certificate dependencies inside one short local durable transaction. Every
-durable owner supplies a narrow application-composed
-`CampaignTransactionParticipant` facet that recognizes its stable owner
-identity, revalidates its own evidence, applies its own write set, and returns
-its result revision. The transaction dispatches through those facets and never
-decodes owner schema or business intent. It applies only the prepared owner
-write sets and commits all or none. Each owner aggregates a large operation into
-one bounded prepared participant change and uses partition-generation or other
-bulk revision evidence rather than one transaction participant or certificate
-per actor. Long-running
-calculation, routing, perception, projection, and dependency discovery never
-occurs while the write transaction is held.
+The prepared candidate carries the expected root revision, exact partition
+generations and range/negative-read evidence, touched keys, owner-typed factual
+entries, and optional owner-opaque inverse tokens. `CampaignRootCommit` rechecks
+the operation fingerprint and declared read evidence inside one short local
+transaction. It writes only touched owner partitions, a new root manifest and
+revision, terminal operation outcome, receipt, history batch, and outbox. It
+never hydrates every partition or decodes an uninvolved owner's bytes.
+Long-running routing, perception, simulation, projection, migration, backup,
+and dependency discovery never occurs while the writer frontier is held.
 
-The same commit stores a separate `CampaignCommitReceipt`, terminal operation
-outcome, and `OutboxBatch`. The receipt identifies the operation, participant
-owners, base and result revisions, and owner-opaque inverse tokens. The outbox
+The `CampaignCommitReceipt` identifies the operation, read/write partitions,
+base and result revisions, and owner-opaque inverse tokens. The outbox
 contains owner-defined facts and non-mutating notification/publication
 deliveries plus delivery state; it is not an undo receipt and cannot invoke a
 business-owner mutation. Any effectful integration must instead use the normal
-idempotent owner-command protocol. Repeating an operation identity with the same
-fingerprint returns its stored terminal outcome, while reuse with a different
-fingerprint is rejected. An unknown caller outcome is resolved before
-repreparation. No owner publishes before commit, and outbox delivery retries
-cannot duplicate their notification or publication. Cancellation is guaranteed
-until the operation crosses into
-the short commit section. A stale revision, owner rejection, or cancellation
-before that frontier applies no change.
+idempotent destination command after commit. Repeating an operation identity
+with the same fingerprint returns its stored terminal outcome; reuse with a
+different fingerprint conflicts. No projection publishes before commit.
+Cancellation is guaranteed until the short writer section; stale input,
+rejection, or cancellation before that frontier applies no change.
 
 Calendar is the only campaign-time owner. It first publishes a non-mutating
 `CalendarIntervalProposal`. Autonomy evaluates that exact interval and returns
-an `AutonomyCoverageCertificate` bound to the enabled-context-set revision,
-active context, and shared interval-evidence segments. `PreparedTimeAdvance`
-depends on that certificate, so Calendar rejects stale or incomplete coverage
+`AutonomyCoverageEvidence` bound to the enabled-context-set generation, active
+context, and shared interval-evidence segments. The time phase depends on that
+evidence, so Calendar rejects stale or incomplete coverage
 without enumerating or rewriting every inactive context on each advance. When
-Travel advances time, its preparation graph also includes the active-context
-Autonomy step. A separate Autonomy operation cannot advance the same boundary
-again. A non-Travel time command follows the same rule under its own initiating
-capability.
+Travel advances time, its phase program also folds the active-context Autonomy
+step. A separate operation cannot advance the same boundary again. A non-Travel
+time command follows the same rule under its own initiating capability.
 
 ## State Ownership And Consistency
 
 | State | Owner | Mutation path | Consistency boundary | Derived consumers |
 | --- | --- | --- | --- | --- |
-| Dungeon identity, name, and lifecycle eligibility | Dungeon Catalog | Catalog create, rename, or lifecycle intent | Catalog plus required Runtime or Authored prepared changes | Catalog, links, runtime entry |
-| Dungeon geometry and semantic content | Dungeon Authored World | Validated authored command | One command may cover one or several linked Dungeons | Raster, graph, key, route, export |
+| Root manifest, campaign revision, operation index, leases | Live Campaign Root | Root commit and bounded maintenance | One manifest publication over touched partitions | All root queries and commits |
+| Dungeon identity, name, and lifecycle eligibility | Dungeon Catalog partition | Catalog create, rename, or lifecycle phase program | Root commit with required Runtime or Authored partitions | Catalog, links, runtime entry |
+| Dungeon geometry and semantic content | Dungeon Authored World partitions | Validated authored phase program | One root commit may cover one or several linked Dungeons | Raster, graph, key, route, export |
 | Authored edit factual entries | Dungeon Authored World | Accepted authored change in the same operation | Owner-local append correlated by operation identity | Derived campaign timeline and diagnostics |
 | Portable external placement identity and start anchor | Dungeon Authored World | Validated placement authoring | Authored commit or activation with Campaign Placement | Export, duplication, resolved binding |
 | Authoring preview and graph draft | Dungeon Authoring Workspace | Tool or graph intent | One transient workspace at a base revision | Authoring adapters only |
-| Editor undo/redo | Dungeon Authoring Workspace | Commit receipt submitted as coordinated inverse intent | Current editor session plus every affected owner | Authoring controls |
+| Editor undo/redo | Dungeon Authoring Workspace | Commit receipt submitted as inverse phase program | Current editor session plus every touched root partition | Authoring controls |
 | Workspace memory/spill accounting | Dungeon Authoring Workspace | Admission, spill, eviction, and cleanup | One hard session envelope with protected minima | Authoring controls and diagnostics |
-| Environment and Dungeon-local exploration | Dungeon Runtime Context | Runtime command or prepared campaign change | One Dungeon transaction or initiating campaign operation | Travel, perception, player output |
+| Environment and Dungeon-local exploration | Dungeon Runtime partition | Runtime phase or initiating campaign operation | One root commit | Travel, perception, player output |
 | Physical tracks | Dungeon Runtime Context | Runtime track command or prepared movement result | Initiating Runtime, Travel, or autonomy operation | Perception search, pursuit, diagnostics |
-| Movable actor, group, or object position and heading | Campaign Placement | Owner command, activation, or prepared campaign change | Initiating campaign operation | Dungeon context, travel, perception, autonomy |
+| Movable actor, group, or object position and heading | Campaign Placement partition | Placement phase, activation, or initiating operation | One root commit | Dungeon context, travel, perception, autonomy |
 | Administrative placement factual entries | Campaign Placement | Accepted placement change in the same operation | Owner-local append correlated by operation identity | Derived campaign timeline and diagnostics |
 | Journey, route, pursuit, movement overrides | Project Travel | Travel intent | One completed route segment | Travel workspace and compact context |
 | Exploration-round and Travel session configuration | Project Travel | Revisioned Travel configuration command | One Travel session revision | Travel planning, timing, and controls |
 | Active exploration actor/group focus | Project Travel | Travel initiative/control command | Travel revision validated against Party membership and Placement | Player follow target and Travel controls |
 | Compact global travel context | Project Travel | Rebuild from Party, Placement, and approved-provider revisions | One monotonic Party-placement selection generation | Global command-free `Reise` contribution |
-| Campaign time | Calendar owner | Prepared time advance | Initiating operation with active Autonomy and coverage bound to the enabled-context-set revision | Travel, events, autonomy |
+| Campaign time | Campaign Clock partition | Time phase | One root commit with Autonomy coverage bound to the enabled-context-set generation | Travel, events, autonomy |
 | Directional knowledge and discovery | Perception And Knowledge | Perception evaluation or GM override | One perception/campaign step | GM context, autonomy, Fog |
 | Perception override factual entries | Perception And Knowledge | Accepted override or correction in the same operation | Owner-local append correlated by operation identity | Derived campaign timeline and diagnostics |
 | Pending GM decision, presentation acknowledgement, and continuation authority | Campaign Decision Inbox | Prepared decision, idempotent presentation, or explicit current GM resolution | Initiating operation plus durable outbox and one terminal consume | Travel, autonomy, GM controls, opened-prompt log view |
-| Needs, jobs, reservations, catch-up evidence, and checkpoints | Actor Autonomy | Confirmed campaign-time step or GM command | Initiating autonomy operation | Autonomy controls and summaries |
+| Needs, jobs, reservations, catch-up evidence, and checkpoints | Actor Autonomy partitions | Confirmed campaign-time phase program or GM command | One root commit | Autonomy controls and summaries |
 | Autonomy qualification envelope | Actor Autonomy | Owner-approved conformance configuration | One versioned workload class | Admission and qualification proof |
-| Encounter, Loot, actor, item, place truth | Owning external capability | Owner command only | Owner-defined or initiating operation | Stable references from Dungeon |
+| Party identity/profile, membership, progression, rest, combat profile, GM control | Party Campaign partition | Party command or Encounter-outcome phase program | One root commit; placement excluded | Party UI, Encounter, audience, Travel |
+| Materialized Encounter builder, combat, result, completion, applied Scene stamp | Encounter Runtime partition | Encounter command, Scene reconcile, or outcome phase program | One root commit; every runtime has exactly one Running Scene key | Encounter UI and Scene sync readback |
+| NPC lifecycle, consumed finite stock, other confirmed live World quantities | World Runtime partition | Encounter, Autonomy, or GM phase program | One root commit | Encounter sources, World views, campaign history |
+| Running Scene desired composition, focus, notes, location, reconcile intent | Scene external root | Scene command then specific reconcile saga | One Scene save; Encounter applied stamp may remain pending | Scene UI and Encounter context |
+| Saved plans, planning, reference corpora, authored World definitions, rule artifacts | Owning external root | Owner command or stamped immutable input | Owner-defined; never a root-commit mutation | Planning, generation, materialization |
+| Meaningful campaign factual entries and corrections | Owning root partition | Same phase program as the fact | Same root commit as current-state consequence | Chronological campaign history |
 | Import plan and untrusted staging | Dungeon Exchange | Package gate and GM mapping intent bound to staged content | One validated, single-consumption import operation | Import UI and prepared Catalog/Authored changes |
 | Export staging and destination authority | Dungeon Exchange | GM-authorized export operation | Private generation plus atomic publication | Export UI and destination adapter |
 | Backup, migration, and backup-restore operation | Dungeon Recovery | Recovery command against owner migrations | One recovery operation before writable publication | Recovery UI and diagnostics |
-| Viewports, graph, key, descriptions, diagnostics | Dungeon Query Projections | Rebuild from one campaign read snapshot | Immutable commit-sequence/owner-revision vector | GM UI and unrestricted exports |
-| Active Party identity and complete member set | Party capability | Party/exploration command | One revisioned Party audience context | `DungeonAudienceQuery`, player focus, union knowledge |
+| Viewports, graph, key, descriptions, diagnostics | Dungeon Query Projections | Rebuild from one campaign root snapshot | Immutable campaign-revision/partition-generation vector | GM UI and unrestricted exports |
+| Active Party identity and complete member set | Party Campaign partition | Party phase program | One root partition generation and audience context | `DungeonAudienceQuery`, player focus, union knowledge |
 | Player camera offset and temporary reveal/hide | Player presentation adapter | Presentation-session intent | One monotonic presentation revision, fail closed | `DungeonAudienceQuery` |
 | Audience-filtered player and export output | Dungeon Query Projections | Rebuild through `DungeonAudienceQuery` | One authorization generation over the complete source tuple | Player display and filtered export |
 | Progressive operation frontier and snapshot lease | Initiating capability | Start, resume, cancel, complete, or expire | One bounded operation and source revision vector | Progress UI and retained-revision cleanup |
-| Durable operation outcome and receipt | Initiating capability | Stable operation identity and intent fingerprint | Same transaction as all participant writes | Retry resolution, undo journal, diagnostics |
-| Outbox delivery state | Durable transaction mechanism | Atomic enqueue and idempotent delivery transition | Same transaction as the originating operation | Notification and publication adapters |
+| Durable operation outcome and receipt | Live Campaign Root | Stable operation identity and intent fingerprint | Same root commit as every touched partition | Retry resolution, undo journal, diagnostics |
+| Outbox delivery state | Live Campaign Root mechanism | Atomic enqueue and idempotent delivery transition | Same root commit as the originating operation | Notification and publication adapters |
 
-No API allows a consumer to update another capability's storage directly.
-Cross-owner invariants use owner-defined prospective facts, preparation
-certificates, initiator-owned coordination, and `CampaignTransaction`, not
-compensating writes, a central business coordinator, or shared mutable models.
+No API allows a consumer to update another capability's partition or external
+storage directly. Cross-owner root invariants use an initiator-owned typed phase
+program, declared dependency closure, and owner reducers over one candidate root;
+they never use compensating root writes, commit-time callbacks, generic payloads,
+or a central business coordinator.
 
 ## Public Capability Interfaces
 
@@ -592,9 +709,10 @@ contract specifications after this target is accepted.
 | `WorkspaceResourceEnvelope` | Dungeon Workspace and editor storage adapter | Enforce one aggregate memory/spill ceiling with protected-draft and minimum-undo reserves plus bounded cleanup. |
 | `DungeonQuery` | GM Dungeon views and GM-authorized full document export | Serve bounded immutable projections with stable identities and source revisions. |
 | `DungeonAudienceQuery` | Player display and visibility-filtered export | Produce deny-by-default audience DTOs from explicit authored, runtime, placement, perception, Party, Travel-focus, presentation, and audience revisions. |
-| `CampaignReadSnapshot` | Query projections | Capture one campaign commit sequence and immutable owner-revision vector for coherent bounded bulk reads. |
+| `CampaignRootSnapshot` | Phase programs and query projections | Capture one campaign revision plus immutable partition generations for coherent bounded reads. |
 | `AudienceAuthorizationGeneration` | Audience query and player sink | Invalidate all older audience DTOs synchronously whenever any authorization input revision changes. |
-| `PartyAudienceContext` | `DungeonAudienceQuery` and player presentation | Publish active Party identity and complete membership with a Party-owner revision; expose no presentation authority. |
+| `PartyCampaign` | Party UI, Encounter, Travel, audience query | Own Party commands and typed snapshots while reducing its complete invariant closure only through root commits. |
+| `PartyAudienceContext` | `DungeonAudienceQuery` and player presentation | Publish active Party identity and complete membership with a Party partition generation; expose no presentation authority. |
 | `DungeonSpatialContext` | Travel, perception, autonomy | Provide route, cost, arrival, visibility, environment, track, and local job-offer facts without foreign business decisions. |
 | `DungeonRuntime` | Travel, perception, GM controls, initiating coordinators | Read runtime context and prepare explicit environment, event, and physical-track mutations or overrides. |
 | `CampaignPlacement` | Authoring, Travel, spatial providers, perception, autonomy | Read and prepare changes to one cross-context position, heading, and applicable movement-group truth. |
@@ -606,24 +724,28 @@ contract specifications after this target is accepted.
 | `Perception` | Travel, autonomy, `DungeonAudienceQuery`, and GM views | Evaluate directional knowledge; prepare active-check, discovery, reevaluation, forced-knowledge, and track-knowledge changes. |
 | `CampaignDecisions` | Travel, autonomy, event sources, GM controls | Prepare, request delivery, record idempotent presentation, and consume current explicit GM resolution for exactly one continue or abort transition without owning the fictional outcome. |
 | `ActorAutonomy` | GM controls and initiating coordinator | Control enabled state and jobs; prepare bounded active or catch-up steps; expose cursors, explanations, Decision Inbox references, and committed outcomes. |
+| `EncounterRuntime` | Encounter UI and Scene reconciliation | Own materialized per-Scene Encounter runtime, applied Scene stamps, and the atomic complete-outcome phase program. |
+| `WorldRuntime` | Encounter, Autonomy, World Planner views | Own NPC lifecycle, consumed finite stock, and other confirmed live quantities while referencing external authored definitions. |
+| `SceneReconciliation` | Scene and Encounter Runtime | Correlate desired and applied context stamps, visible pending status, supersession, and retry without treating Scene as a root partition. |
+| `CampaignHistoryQuery` | GM campaign-history view | Merge immutable owner-typed factual entries and linked corrections without becoming a write owner or replay source. |
 | `DungeonFamilyBundle` and narrow family facets | Application composition only | Bind separately owned authored, workspace-tool, projection, durable-mapping, package-codec, and optional spatial contributions without becoming a business capability. |
 | `SpatialProviderBundle` and narrow provider facets | Application composition only | Bind separately owned Travel routing, Placement anchor, position-codec, and bounded-summary facets without exposing one cross-owner provider interface. |
 | `CampaignClock` | Travel, Autonomy, event and other time initiators | Publish an interval proposal and prepare the sole time advance only with complete Autonomy coverage evidence. |
-| `TravelEventSource` | Travel composition | Produce a bounded, versioned event plan declaring decision boundary, snapshot/certificate dependencies, and owner-operation requests without deciding fictional outcomes. |
+| `TravelEventSource` | Travel composition | Produce a bounded, versioned event plan declaring decision boundary, snapshot/phase dependencies, and typed owner-phase requests without deciding fictional outcomes. |
 | `AutonomyNeedFamily` | Actor Autonomy composition | Contribute typed need state transition, priority, explanation, and configuration without becoming a job family. |
 | `AutonomyJobFamily` and `AutonomyOfferSource` | Actor Autonomy composition | Contribute job evaluation or local offers and owner-operation requests without bypassing target or effect owners. |
-| `AutonomyQualificationEnvelope` | Autonomy preparation, admission, and conformance proof | Bound candidate, route, participant, DAG, evidence, encoded-write, and interval-evidence work for the 200-actor latency class. |
+| `AutonomyQualificationEnvelope` | Autonomy preparation, admission, and conformance proof | Bound candidate, route, touched-partition, phase, evidence, encoded-write, and interval-evidence work for the 200-actor latency class. |
 | `HeavyOperationToken` and `SnapshotLease` | Progressive spatial/query operations | Resume from a bounded traversal frontier while retaining source revisions only within explicit byte/time limits and typed expiry. |
-| `ProspectiveFacts` and `PreparationCertificate` | Initiating preparation graph and dependent owners | Publish typed proposed results bound to owner revisions and read-set fingerprints for dependent validation. |
-| `CalendarIntervalProposal`, `AutonomyCoverageCertificate`, and `PreparedTimeAdvance` | Calendar, Autonomy, and time initiators | Bind one interval to active work, enabled-context-set revision, and shared catch-up evidence before the sole time write. |
+| `ProspectiveFacts` | Earlier and later phases of one typed program | Publish owner-typed proposed results bound to partition generations and read evidence for dependent pure validation. |
+| `CalendarIntervalProposal` and `AutonomyCoverageEvidence` | Campaign Clock, Autonomy, and time initiators | Bind one interval to active work, enabled-context-set generation, and shared catch-up evidence before the sole time write. |
 | `CatchUpEvidenceSegment` and `CatchUpCheckpoint` | Actor Autonomy | Preserve deduplicated interval evidence and bounded per-context progress without reconstructing historical work from current truth. |
 | `ConflictResolutionFacts` | Autonomy and affected owners | Seal non-presented operation-scoped random inputs and resolved bounded-conflict facts during cancellable preparation for owner certification. |
-| `PreparedCampaignChange` | Initiating coordinators and `CampaignTransaction` | Carry owner write set, base/read-set evidence, certificate dependencies, result facts, and optional owner-opaque inverse token. |
-| `CampaignTransactionParticipant` | `CampaignTransaction` through application composition | Let one durable owner revalidate and apply its own prepared write set and return its result revision without exposing schema. |
-| `CampaignCommitReceipt` | Initiator, operation-status query, workspace journal | Report one terminal operation, participants, revisions, and owner-opaque inverse tokens independently of delivery. |
+| `CampaignPartitionDefinition<S>` | Live Campaign Root composition | Bind one concrete owner's typed state, reducer, codec, migration, query facet, and stable partition key without a generic business payload or dispatch switch. |
+| `CampaignPhaseProgram<R>` | Initiating capability | Declare read/write/invariant/declassification sets and fold typed owner reducers over one candidate root outside the writer frontier. |
+| `CampaignCommitReceipt` | Initiator, operation-status query, workspace journal | Report one terminal operation, touched partitions, revisions, and owner-opaque inverse tokens independently of delivery. |
 | `CampaignOperationStatus` | Initiating adapters, workspace, retry flows | Resolve pending or terminal outcome by operation identity and fingerprint before any retry or repair. |
 | `OutboxBatch` | Durable delivery adapters | Carry atomically enqueued owner facts and non-mutating notifications/publications with idempotent delivery state, never undo intent or owner commands. |
-| `CampaignTransaction` | Initiating coordinators | Revalidate operation, revisions, read sets, and certificates; atomically apply prepared owner changes and store outcome, receipt, and outbox. |
+| `CampaignRootCommit` | Initiating phase programs | Revalidate operation and read evidence; atomically publish touched partition generations, manifest, history, outcome, receipt, and outbox. |
 
 Interfaces use stable typed identities, explicit absence, typed rejection
 reasons, revisions, and cancellation tokens where work may be long. UI strings,
@@ -650,14 +772,13 @@ accept or discard.
    preserving passive selection. Rejection or stale revision preserves the
    intent or graph draft and exposes typed repair, reload, or discard actions.
 5. Commit assigns an operation identity and sends the command and expected
-   revision `R`. The Authoring coordinator builds the preparation graph. The
-   Authored World certifies proposed geometry and identity results before
-   Campaign Placement, Dungeon Runtime, or Travel prepare dependent relocation,
-   environment, and route changes.
-6. The operation enters the non-cancellable commit section only after every
-   participant and dependency certificate is prepared. `CampaignTransaction`
-   revalidates and commits all changes, the terminal outcome, one receipt, the
-   edit log entries, and any outbox batch atomically.
+   revision `R`. The Authoring phase program derives proposed geometry and
+   identity before folding dependent relocation, environment, and route changes
+   through Campaign Placement, Dungeon Runtime, and Travel reducers.
+6. The operation enters the non-cancellable commit section only after the
+   declared dependency closure and candidate root validate. `CampaignRootCommit`
+   revalidates and publishes all touched partitions, the terminal outcome, one
+   receipt, edit-history entries, and any outbox batch atomically.
 7. Accepted work records the receipt for undo. Touched facts invalidate derived
    generations. In-flight queries complete against their named revision; new
    owner queries can address the committed revision immediately, while derived
@@ -674,20 +795,16 @@ accept or discard.
    authored, runtime, and placement revision tuple.
 2. Perception and source-owned event plans are evaluated from the same tuple.
    Every event plan classifies a required decision as `PreIntervalDecision` or
-   `PostSegmentDecision` and declares its certificate and owner-operation
-   requests. A decision is prepared for the Decision Inbox rather than
+   `PostSegmentDecision` and declares its snapshot dependencies and typed phase
+   requests. A decision is reduced into the Decision Inbox rather than
    represented only as a UI action.
-3. Travel builds an acyclic preparation graph. Campaign Placement and Dungeon
-   Runtime certify prospective movement and track facts; a generic event
-   composer resolves event-plan requests through published owner preparation
-   ports, and Perception and effect owners prepare against the resulting facts.
-   Calendar publishes the interval proposal and prepares the sole time advance
-   only after Autonomy certifies complete context coverage. Actor Autonomy
-   prepares detailed work for the active context and shared catch-up evidence
-   bound to the enabled-context-set revision. Decision Inbox participates when a
-   prompt or Party-danger boundary is reached.
+3. Travel runs an acyclic typed phase sequence. Campaign Placement and Dungeon
+   Runtime derive prospective movement and track facts; Perception and concrete
+   effect-owner reducers consume those facts. Campaign Clock advances only after
+   Autonomy produces complete coverage evidence. Decision Inbox is touched only
+   when a prompt or Party-danger boundary is reached.
 4. The operation crosses the commit frontier only after preparation.
-   `CampaignTransaction` commits position, heading, elapsed time, tracks,
+   `CampaignRootCommit` commits position, heading, elapsed time, tracks,
    knowledge, active Autonomy results, catch-up evidence and coverage,
    interruption, a post-segment pending decision, environment state, and owner
    factual entries atomically. A pre-interval decision instead commits only the
@@ -707,8 +824,8 @@ accept or discard.
 ### Actor Autonomy Step
 
 1. The GM confirms a campaign-time boundary through an initiating time command.
-   If Travel initiated that interval, this runtime view is a participant of the
-   Travel preparation graph rather than a second time-advancing operation.
+   If Travel initiated that interval, this runtime view is one phase of the
+   Travel program rather than a second time-advancing operation.
 2. Autonomy enters cancellable `evaluating`. Active-context work reads one
    shared current revision tuple; inactive catch-up reads the immutable input
    facts referenced by its checkpoint. It obtains local offers and
@@ -729,13 +846,48 @@ accept or discard.
    protection-bounded outcome, before movement, resource, possession, actor, or
    other effect owners prepare their exact write sets. Rejection or cancellation
    persists neither roll nor effect.
-6. `CampaignTransaction` commits all need, job, group, reservation, movement,
-   time, applicable foreign-effect, random-result, event, applicable decision,
-   and log facts atomically.
+6. `CampaignRootCommit` commits all need, job, group, reservation, movement,
+   time, concrete owner-effect, random-result, event, applicable decision, and
+   history facts atomically.
 7. The final state is `committed`, `paused-for-decision`, `rejected`, or
    `cancelled`. Owner rejection identifies the owner and repairable cause while
    preserving the previous confirmed campaign-time boundary. Continue resumes
    the referenced cursor; abort preserves it as a resumable paused boundary.
+
+### Encounter Outcome Confirmation
+
+1. Encounter keeps the current Resolution selection and assigns one stable
+   operation identity plus a fingerprint covering result, eligible Party IDs,
+   calculated XP, selected World consequences, and source stamps.
+2. The Encounter-owned phase program reads the Encounter Runtime, PartyCampaign,
+   and WorldRuntime partitions plus immutable stamped definitions. It validates
+   the complete Party progression closure and every selected loss or stock fact.
+3. Any stale input, missing definition, unavailable required partition, or owner
+   rejection leaves all current state and the submitted selection unchanged.
+4. `CampaignRootCommit` marks the Encounter completed, applies Party XP and
+   WorldRuntime consequences, stores effect receipts, and appends one correlated
+   history outcome atomically. It does not mutate or close Running Scene.
+5. Commit-before-response retry resolves the stored outcome. The same intent can
+   never award XP, consume stock, defeat an NPC, complete the Encounter, or append
+   its history twice.
+
+### Party Membership Reconciliation
+
+1. Party validates and commits activation, deactivation, or deletion in its own
+   root phase program. The commit advances audience authorization and appends the
+   membership history fact immediately.
+2. Activation leaves the character unassigned. Deactivation or deletion makes
+   the character unavailable to all current-Party reads immediately.
+3. A non-mutating membership-change publication carries the accepted Party
+   revision without enumerating Scene. Scene compares that revision with its
+   running references, persists desired membership and a pending Encounter stamp
+   only when affected, and never repeats the Party command.
+4. Encounter Runtime applies the newest desired stamp idempotently while
+   preserving valid initiative, HP, round, and turn state where applicable.
+   Scene records synchronization only for that exact applied stamp.
+5. Failure at either dependent step leaves Party authoritative, keeps the Scene
+   usable and visibly pending, never presents stale Encounter context as
+   synchronized, and retries from initialization, refresh, or explicit retry.
 
 ### Perception And Track Control
 
@@ -749,22 +901,22 @@ accept or discard.
 3. Confirm discovery, force known or unknown, clear an active check, and request
    reevaluation are Perception commands. Their rejection or failure preserves
    previous committed knowledge and the submitted GM input for retry or edit.
-4. When detection involves the Party, Perception initiates or joins one
-   preparation graph that pauses the active Travel route and affected Autonomy
-   work while creating the pending Decision Inbox entry. No participant may
-   publish the detection or continue independently.
+4. When detection involves the Party, Perception runs one root phase program
+   that pauses the active Travel route and affected Autonomy work while creating
+   the pending Decision Inbox entry. No touched partition may publish or continue
+   independently.
 
 ### Dungeon Runtime Operation
 
 1. Dungeon Runtime initiates a manual environment correction, confirmed Trap
    charge/reset change, or named state action against explicit authored and
    runtime revisions while preserving the submitted GM input.
-2. For a local correction it prepares its owner change and factual entry. A
-   named action builds a preparation graph for every affected environment or
-   foreign owner; triggers supply facts but do not decide a free GM outcome.
-3. Work remains cancellable before the normal commit frontier. The transaction
-   stores all owner changes, factual entries, terminal outcome, receipt, and any
-   non-mutating notification atomically.
+2. For a local correction it reduces its partition change and factual entry. A
+   named action declares every affected environment or concrete effect-owner
+   partition; triggers supply facts but do not decide a free GM outcome.
+3. Work remains cancellable before the normal commit frontier. The root commit
+   stores all touched changes, factual entries, terminal outcome, receipt, and
+   any non-mutating notification atomically.
 4. Stale input or owner rejection changes nothing and offers reload, edit, or
    retry with the GM input intact. An unknown result is resolved by operation
    identity before another command is prepared.
@@ -795,7 +947,7 @@ accept or discard.
 
 ### Catalog, Exchange, And Recovery Operations
 
-- Catalog lifecycle commands expose the prepared participants, destructive
+- Catalog lifecycle commands expose the touched partitions, destructive
   boundary, progress, typed rejection, and final lifecycle state. Archive and
   Runtime pause are one transaction; cancellation before commit changes neither.
 - Catalog create commits its identity and required roots together. Rename and
@@ -901,8 +1053,8 @@ facet; the bundle owns no cross-capability behavior or state.
 `CampaignClock` is the preparation seam for the Calendar owner. Each
 `TravelEventSource` owns its bounded candidate rule and returns an event plan
 that classifies pre-interval versus post-segment decisions, declares input and
-certificate dependencies, and requests operations through published owner
-preparation ports. A generic Travel event composer resolves those requests
+phase dependencies, and requests typed owner phases. A Travel event composer
+resolves those requests
 without source-specific branches. The Decision Inbox owns only a resulting
 pending GM decision. A rule or provider change replaces or adds one narrow
 contribution plus its application-composition binding and conformance proof.
@@ -915,10 +1067,11 @@ Actor Autonomy composes separate typed `AutonomyNeedFamily`,
 their state transition, priority contribution, explanation, and configuration;
 job and offer facets may evaluate candidates and request operations. A target,
 reservation, spatial move, or foreign effect is prepared only through its owning
-public capability. Adding a need, job family, offer source, provider facet, or
-effect owner changes its narrow contribution, the application-only Autonomy
-bundle, and its conformance proof rather than the generic transaction mechanism
-or unrelated capabilities.
+typed root partition and reducer. Adding a need, job family, offer source,
+provider facet, or effect owner changes its narrow contribution, the affected
+phase programs, and its conformance proof rather than the root kernel or
+unrelated capabilities. An effect without a confirmed atomic campaign operation
+remains an external owner and has no root contribution.
 
 ### UI Or Persistence Adapter Replacement
 
@@ -933,13 +1086,12 @@ composition binding, adapter-local presentation-session binding, and focused
 conformance proof. Business capabilities, durable truth, and unrelated features
 remain unchanged.
 
-Replacing one owner adapter on the same durable substrate changes that owner
-adapter slice, its application-composition and transaction-participant binding,
-and its focused conformance proof. Replacing the persistence technology for all
-Dungeon capabilities necessarily changes every participating owner adapter, the
-common transaction adapter, Recovery integration, application composition, and
-their conformance proofs. It does not change business interfaces, UI contracts,
-portable package formats, or unrelated features.
+Replacing one root-partition adapter on the same durable substrate changes that
+owner's codec/migration slice, its application-composition binding, and focused
+conformance proof. Replacing the root persistence technology necessarily changes
+the manifest/commit adapter, all partition codecs, Recovery integration,
+composition, and their conformance proofs. It does not change owner reducers,
+business interfaces, UI contracts, or portable package formats.
 
 ## Quality Architecture
 
@@ -948,7 +1100,9 @@ portable package formats, or unrelated features.
 | Open a 100,000-cell sparse Dungeon | Indexed bounded viewport, progressive projection, no whole-Dungeon hydration | First usable viewport and context under 2 seconds p95 |
 | Pan or hover | Adapter-local input, bounded visible projection, replaceable work | 16 ms p95 |
 | Preview local edit | Bounded conservative admission estimate, continuous work ceilings, resumable heavy escalation, no persistence round trip after closure load | 50 ms p95 |
-| Commit ordinary edit | Exact touched closure, optimistic revision, prepared change and short atomic apply | 500 ms p95 |
+| Commit ordinary edit | Exact touched closure, immutable root snapshot, pure phase program and short touched-partition publish | 500 ms p95 |
+| Confirm Encounter outcome | One root commit across Encounter Runtime, PartyCampaign, WorldRuntime, receipt, and history | Wholly old or wholly new; retry produces no duplicate effect |
+| Reconcile Party membership | Party-authoritative commit plus affected-only Scene/Encounter desired/applied saga | Party available immediately; stale context never shown synchronized |
 | Run heavy route, graph, or batch preview | Background work with progress, cancellation, and independent query lanes | Progress within 100 ms; cancellable above 2 seconds |
 | Update passive player view | Deny-by-default authored/runtime/placement/perception/Party/Travel-focus join, one authorization generation, fail-closed invalidation | 100 ms p95 |
 | Advance 200 autonomous actors | Shared active snapshot, deduplicated inactive evidence, bulk local candidates, bounded routes, deterministic reservations, certified Calendar coverage | 2 seconds p95; progress within 100 ms |
@@ -958,14 +1112,14 @@ portable package formats, or unrelated features.
 
 The 200-actor latency class is qualified only inside an owner-approved
 `AutonomyQualificationEnvelope`. It places contract-defined maxima on locally
-reachable candidates per actor, route work, affected owner count, preparation
-graph nodes and edges, prepared/evidence bytes, encoded writes, and shared
+reachable candidates per actor, route work, affected partition count, phase
+nodes and edges, evidence bytes, encoded writes, and shared
 interval-evidence scope plus enabled-context-set size. Admission estimates those
 dimensions before expensive work. Crossing a preparation limit escalates to cancellable progress-capable
-work; crossing a commit-participant, evidence, or encoded-write ceiling rejects
+work; crossing a touched-partition, evidence, or encoded-write ceiling rejects
 before the commit frontier. Exact numeric maxima belong to the Autonomy
 conformance contract, but no qualification may omit a dimension. Proof uses 200
-actors plus concurrent viewport/player reads and records preparation bytes, DAG
+actors plus concurrent viewport/player reads and records preparation bytes, phase
 size, evidence checks, write duration, total p95, and read latency.
 
 Catch-up qualification also uses many enabled inactive contexts and a long
@@ -1011,28 +1165,36 @@ contract and are verified with a 100,000-cell protected draft, raster repair,
 
 ## Persistence, Versioning, And Recovery
 
-Each capability owns its durable logical schema and migrations. One local
-transaction mechanism supports atomic prepared changes across owners without
-letting one owner read or write another owner's records directly.
+Each root member owns its logical partition schema, reducer, codec, query API,
+and migrations. One physical Campaign store holds a two-level immutable
+manifest: a small root directory points to owner directories, which point to
+chunked or aggregate generations. A commit copies and writes only touched
+directories and nodes; work at constant touched scope cannot scale with all
+Dungeon cells, Encounters, actors, or installed partitions.
 
-The mechanism revalidates operation fingerprint, owner revisions, read-set
-fingerprints, and preparation-certificate dependencies inside the transaction,
-applies only owner-defined write sets, and stores the terminal outcome,
-`CampaignCommitReceipt`, one monotonic campaign commit sequence, result
-revisions, and `OutboxBatch` in the same commit. Query projection captures that
-sequence and its immutable owner-revision vector as `CampaignReadSnapshot`.
-It does not perform routing, perception, projection, package parsing, dependency
-discovery, or other unbounded work while the write transaction is held.
+`CampaignRootCommit` revalidates operation fingerprint, root and read
+generations, range/negative-read evidence, declared write set, and candidate
+invariants inside one short writer transaction. It publishes touched partition
+generations, new manifest and campaign revision, terminal outcome,
+`CampaignCommitReceipt`, factual history, and `OutboxBatch` together. Query
+projection captures the revision and exact partition generations as
+`CampaignRootSnapshot`. No full root object graph exists.
 
-The initiating capability owns operation identity, intent semantics, and the
-meaning of the terminal outcome. The durable transaction mechanism stores and
-returns that result atomically but owns no business state. Owner-defined outbox
-facts retain their source owner; the outbox mechanism owns only delivery state.
+Each command and query has a statically reviewable dependency closure. An
+unreadable unrelated partition is carried forward by identical opaque reference
+and its codec or migrator is never called. Owner code cannot receive another
+partition's bytes, a store handle, or a commit callback. Long work, backup,
+migration copy, GC, and projection stay outside the bounded writer frontier.
 
-Authored and runtime roots have independent versions. An authored package has a
-portable format version independent of internal storage version. Rule profiles,
-generated projections, and logs record the version needed to explain their
-result.
+The initiating capability owns operation identity, intent semantics, and
+terminal result meaning. The root mechanism owns publication but no semantic
+partition. Owner-defined outbox facts retain their source owner; the outbox owns
+only delivery state.
+
+Owner partitions have independent schema generations. Authored portable package
+versions remain independent of root storage versions. External rule profiles,
+definition snapshots, generated projections, and history retain the version or
+stamp needed to explain their result.
 
 Before migration, the recovery capability creates and restore-tests a backup.
 Migration builds and validates the new state before making it writable. Failure
@@ -1043,12 +1205,16 @@ than embedded in feature adapters.
 Each capability appends only its own factual entries: Authored World records
 authored edits, Campaign Placement records administrative relocation, Travel
 records travel, Autonomy records autonomy, Perception records knowledge
-override/correction, and Dungeon Runtime records environment/runtime events.
+override/correction, Dungeon Runtime records environment/runtime events, Party
+records membership and XP, Encounter records completion, and World Runtime
+records lifecycle or consumed-stock consequences.
 Entries share the initiating operation identity and applicable campaign-time
 boundary. A derived campaign timeline merges them and may join a Decision
 Inbox's semantic `presented` acknowledgement to report an opened prompt without
 becoming another log owner. Corrections append explicit overrides or correction
-facts; they do not rewrite historical results. Editor undo is a separate session
+facts; they do not rewrite historical results. Entries preserve stable identity
+and historical display facts needed after rename or deletion. The merged history
+is explanatory, not replay or restore input. Editor undo is a separate session
 facility and is not part of those logs or portable packages.
 
 ## Dependency Rules
@@ -1062,18 +1228,24 @@ facility and is not part of those logs or portable packages.
   taking ownership of Dungeon facts
 - projections that display movable objects read Campaign Placement only through
   its bounded revisioned projection; audience queries additionally accept the
-  Party-owned audience context, Travel-owned active focus, and adapter-owned
+  Party-owned root audience context, Travel-owned active focus, and adapter-owned
   presentation revision as inputs without taking ownership of them
-- an initiating capability's coordinator may depend on participating published
-  contracts and `CampaignTransaction`, but never feature-specific storage
-- `CampaignTransaction` depends only on prepared-change and durable transaction
-  participant contracts, never feature business types; it dispatches owner
-  write sets without decoding them
-- dependent preparation consumes only typed prospective facts and certificates;
-  it never reads another participant's proposed storage or mutable state
-- Calendar is the only time writer and requires an Autonomy coverage certificate
-  bound to the active context, enabled-context-set revision, and shared interval
-  evidence
+- an initiating capability's phase program may import only the concrete owner
+  reducers and published query contracts required by its declared closure
+- the root kernel depends only on manifest, generation, operation, receipt,
+  lease, and commit primitives; it contains no feature business type, owner
+  switch, generic effect payload, store callback, or workflow registry
+- dependent phases consume only typed prospective facts from earlier pure
+  phases; they never read another partition's encoded bytes or mutable state
+- Campaign Clock is the only time writer and requires Autonomy coverage evidence
+  bound to the active context, enabled-context-set generation, and shared
+  interval evidence
+- Scene remains external; only `SceneReconciliation` may join Scene desired
+  stamps with Encounter Runtime applied stamps, and pending is never represented
+  as a root-atomic Scene mutation
+- saved Encounter plans, World definitions, Creatures, Items, Encounter Tables,
+  Session Planning, generated artifacts, and rule archives enter root programs
+  only as immutable stamped inputs
 - player display and visibility-filtered export depend on
   `DungeonAudienceQuery`, never unrestricted `DungeonQuery`
 - compact `Reise` publication is keyed by active Party, selected Placement, and
@@ -1081,8 +1253,9 @@ facility and is not part of those logs or portable packages.
   Party-placement generation
 - Exchange may produce owner-prepared import changes only after its untrusted
   package gate succeeds; package data never selects Recovery artifacts
-- outbox delivery is non-mutating; business effects use an idempotent owner
-  command or participate in the originating transaction
+- outbox delivery is non-mutating; an admitted business effect is part of the
+  originating root phase program, while an external effect uses an explicit
+  idempotent destination command and visible saga semantics
 - derived projections depend on committed owner facts; owners never depend on
   projections
 - family, spatial-provider, event, and autonomy extension bundles exist only at
@@ -1099,6 +1272,30 @@ Chosen to support one operator, local data, low latency, and atomic multi-owner
 steps. Distributed services were rejected because no confirmed need offsets
 their partial-failure and synchronization cost.
 
+### Cohesive Live Campaign Root rather than external participants or Full Live
+
+Chosen because confirmed Dungeon edit/travel/autonomy operations already cross
+spatial owners, and every completed Encounter normally crosses Encounter
+Runtime, Party progression, World Runtime, and campaign history. Separate
+durable roots or a generic participant protocol would make cross-owner commit the
+normal path while hiding one physical authority behind callbacks and encoded
+write sets.
+
+PartyCampaign and Encounter Runtime therefore join the complete already-atomic
+campaign invariant closure. Running Scene does not: accepted behavior requires a
+valid Scene or Party change to survive an unavailable Encounter as visible
+`pending`. Planning, templates, reference corpora, authored World definitions,
+and independent live tools likewise remain external because immutable stamps or
+explicit sagas satisfy their confirmed flows.
+
+A Full Live Root was rejected as an admission rule. Restart relevance, a useful
+current read, or a possible future relationship does not justify common writer,
+migration, retention, restore, and removal governance. A new owner joins only
+for a confirmed old-or-new operation and only with its complete invariant
+closure and removal of the former write path. A Whole Application Root was
+rejected because Planning, artifacts, and references have different
+prepare/cancel/retention lifecycles.
+
 ### Partitioned authored world rather than one hydrated aggregate
 
 Chosen because correctness needs one logical Dungeon while performance requires
@@ -1106,26 +1303,25 @@ bounded work. A mandatory whole-Dungeon aggregate was rejected because local
 work would scale with all 100,000 cells. Independent region owners were rejected
 because cross-region identity and geometry would lose one consistency owner.
 
-### Prepared atomic changes rather than sagas
+### Pure phase programs and one root commit rather than sagas
 
 Chosen for travel, live editing, links, and autonomy because their requirements
 forbid partially committed owner state. Eventual compensation was rejected as
 observable corruption for position/time, geometry/relocation, or conflict
 effects.
 
-Preparation is side-effect-free and may be long-running. An initiator-owned DAG
-and typed prospective facts were chosen because dependent owners must validate
+Preparation is side-effect-free and may be long-running. An initiator-owned
+typed phase sequence and prospective facts were chosen because dependent owners must validate
 geometry, placement, perception, time, and effect results before any one of them
 exists as committed state. Independent preparation without those facts was
 rejected because it cannot prove the final combined invariant. Random conflict
-input is sealed during preparation and certified as prospective facts; creating
-it at the commit frontier or making the transaction choose an outcome branch
+input is sealed during preparation as prospective facts; creating it at the
+commit frontier or making the root kernel choose an outcome branch
 was rejected because affected owners could not validate their exact writes.
-Owner
-revalidation, apply, terminal outcome, receipt, and outbox insertion share one
-short durable transaction. A single central business coordinator was rejected
-because each new operation family would otherwise change that coordinator; the
-initiating capability owns orchestration instead.
+Read-evidence revalidation, touched-partition publication, terminal outcome,
+history, receipt, and outbox insertion share one short durable transaction. A
+single central business coordinator was rejected because each new operation
+family would otherwise change it; the initiating capability owns orchestration.
 
 ### Authoritative state plus audit journal rather than full event sourcing
 
@@ -1206,16 +1402,16 @@ this target requires:
 - every stateful area has one owner, explicit mutation path, consistency
   boundary, and derived consumers
 - authoring, Travel segment/session control, Dungeon Runtime operation,
-  perception/track control, autonomy, Catalog, import, export, and recovery
-  runtime views cover loading, progress, cancellation, commit frontier,
-  rejection, failure, repair, and preserved-state boundaries relevant to that
-  operation
-- every cross-owner operation names its initiating coordinator, acyclic
-  preparation dependencies, prospective facts, certificates, in-transaction
-  revalidation, terminal result, receipt, and outbox behavior
+  perception/track control, autonomy, Encounter outcome, Party reconciliation,
+  Catalog, import, export, and recovery runtime views cover loading, progress,
+  cancellation, commit frontier, rejection, failure, repair, and preserved-state
+  boundaries relevant to that operation
+- every root operation names its initiating phase program, static read/write/
+  invariant/declassification sets, typed prospective facts, read-evidence
+  revalidation, terminal result, receipt, history, and outbox behavior
 - every time-advancing operation has one Calendar change that depends on an
-  Autonomy coverage certificate for active work, the enabled-context-set
-  revision, and bounded shared evidence for the same interval
+  Autonomy coverage evidence for active work, the enabled-context-set
+  generation, and bounded shared evidence for the same interval
 - every roll-dependent owner change prepares against sealed certified conflict
   facts created before the commit frontier
 - live authoring and undo use the same atomic owner set, and one resolved spatial
@@ -1224,8 +1420,14 @@ this target requires:
   and unknown command outcomes are resolved by operation identity before retry
 - Decision continuation or abort consumes one current presented decision
   revision plus explicit GM authority and cannot be triggered by delivery state
-- player output captures one campaign read snapshot and joins Campaign
-  Placement, Party-owned audience context, Travel-owned active focus, and
+- Encounter outcome confirmation commits Encounter completion, Party XP,
+  selected World Runtime consequences, receipts, and history wholly old or new;
+  identical retry cannot duplicate any consequence
+- Party membership commits independently of Scene, and only affected Scenes and
+  Encounters may remain visibly pending without stale membership being presented
+  as synchronized
+- player output captures one campaign root snapshot and joins Campaign
+  Placement, Party-owned root audience context, Travel-owned active focus, and
   presentation input under one authorization generation; no source change can
   leave an older DTO visible
 - each measurable quality need maps to an architectural response and a future
@@ -1236,6 +1438,11 @@ this target requires:
 - authored families, spatial-provider facets, event sources, autonomy need/job
   families and offer sources, effect owners, and adapter replacements remain
   local by the dependency rules above
+- an unreadable unrelated partition is never decoded, migrated, or validated by
+  a command outside its declared closure; a new CityMap, Sense, concrete effect
+  owner, or independent Campaign Journal changes no root-kernel switch
+- campaign history records meaningful confirmed facts and linked corrections
+  but is neither replay nor whole-campaign restore authority
 - player output and filtered export cannot consume unrestricted Dungeon facts;
   malformed or oversized packages cannot reach domain or recovery mutation
 - no target decision relies only on a current class, package, adapter, storage
@@ -1255,4 +1462,7 @@ already implemented.
 - [Dungeon Travel State Requirements](../requirements/requirements-dungeon-travel-state.md)
 - [Actor Autonomy Requirements](../../autonomy/requirements/requirements-actor-autonomy.md)
 - [Shared Reise State Requirements](../../project/requirements/requirements-travel-state-tab.md)
+- [Live Campaign Runtime Requirements](../../project/requirements/requirements-campaign-runtime.md)
+- [Encounter Requirements](../../encounter/requirements/requirements-encounter.md)
+- [Runtime Scene Requirements](../../scene/requirements/requirements-scene.md)
 - [Accepted Dungeon Needs Interview](../../project/interviews/2026-07-20-dungeon-needs-interview.md)

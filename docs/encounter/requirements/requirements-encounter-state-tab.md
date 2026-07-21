@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-17
+Last Reviewed: 2026-07-22
 Source of Truth: Encounter runtime state-pane dialog composition,
 interactions, and visible states.
 
@@ -42,9 +42,10 @@ Current state:
   encounter creature.
 - `Combat` shows round status, combat cards, HP bars, AC and initiative badges,
   next-turn controls, and a two-step end-combat confirmation.
-- `Resolution` shows defeated-enemy selection, XP and loot summaries, reward
-  controls, and the action that returns to encounter planning. Its enemy list
-  is part of the page body, not a nested list window.
+- `Resolution` shows defeated-enemy selection, XP and loot summaries, the one
+  complete-outcome confirmation, and the action that returns to encounter
+  planning after success. Its enemy list is part of the page body, not a nested
+  list window.
 
 The state pane uses centralized encounter selector roles for difficulty labels,
 the difficulty meter, roster cards, role badges, initiative rows, combat card
@@ -91,9 +92,11 @@ the fixed footer while oversized page bodies scroll.
 - HP bars open a compact damage/heal popup.
 - Initiative badges open a compact set-initiative popup.
 - `Kampf beenden` requires a second confirmation before showing results.
-- `XP verteilen` awards the current per-player XP result to the active party.
-- `Zum Planer` closes the combat result screen and returns to encounter
-  planning.
+- `Encounter abschließen` confirms the result, calculated Party XP, selected
+  named-NPC lifecycle changes, and finite-stock consequences together. It does
+  not persist loot or close the running Scene.
+- `Zum Planer` is available after successful completion and returns to
+  encounter planning.
 
 ## Visible States
 
@@ -125,8 +128,12 @@ the fixed footer while oversized page bodies scroll.
   alive member, and mob initiative edits apply to every member in that mob
   card.
 - All enemies defeated: the end-combat button receives accent emphasis.
-- Results awarded: the XP action becomes disabled and the status line confirms
-  the party award.
+- Outcome ready: selected World consequences and calculated XP remain editable
+  until the complete outcome is confirmed.
+- Outcome failed: no result consequence is applied, the current selection stays
+  available, and the status line explains that the same intent can be retried.
+- Outcome completed: the completion action becomes disabled and the status line
+  confirms the Encounter, Party, and World outcome.
 
 ## Acceptance Criteria
 
@@ -144,10 +151,11 @@ the fixed footer while oversized page bodies scroll.
 - combat start is unavailable until a non-empty roster exists
 - live combat keeps per-member runtime state even when the UI aggregates
   matching monsters into mob cards for display
-- awarding XP disables the award action for the current result state and keeps
-  the return-to-planner action available
+- confirming an Encounter outcome follows the project-wide all-or-nothing and
+  retry behavior and keeps the associated running Scene open
 
 ## References
 
 - [Encounter Feature Spec](requirements-encounter.md)
 - [Encounter Domain Model](../domain/domain-encounter.md)
+- [Live Campaign Runtime Requirements](../../project/requirements/requirements-campaign-runtime.md)

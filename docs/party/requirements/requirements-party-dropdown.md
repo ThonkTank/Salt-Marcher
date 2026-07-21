@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-22
 Source of Truth: Party top-bar dropdown structure, interactions, and visible
 states.
 
@@ -47,8 +47,10 @@ summary, and mutation controls use the Party feature's public mutation API.
 - Character editor submission validates name, level, passive perception, and AC
   before submitting the change to the Party feature; failed validation does not
   close the editor or mutate the party.
-- After successful party mutations, updated Party state is available when
-  Encounter surfaces refresh party-derived thresholds and combat baselines.
+- After successful party mutations, updated Party state is authoritative
+  immediately. Newly activated characters remain unassigned. A deactivated or
+  deleted character stops counting as a current Party fact while affected
+  running Scenes and their Encounters reconcile visibly in the background.
 - The trigger supports the party mnemonic and can be opened from the top bar
   with `Alt+P` when focus is in the application.
 - Closing the dropdown leaves party domain state unchanged unless an explicit
@@ -63,6 +65,9 @@ summary, and mutation controls use the Party feature's public mutation API.
 - Storage error: the dropdown reports that party data could not be loaded.
 - Action feedback: a successful or warning-colored inline status explains the
   mutation result.
+- Dependent-context pending: the accepted Party mutation remains visible while
+  only affected running Scenes and Encounters report their incomplete
+  reconciliation.
 - Editor error: invalid editor input, missing characters, or failed storage
   writes are shown inside the editor while the entered values remain available
   for correction.
@@ -77,8 +82,11 @@ summary, and mutation controls use the Party feature's public mutation API.
   the Party feature's public mutation API
 - failed editor validation keeps the editor open, preserves entered values, and
   renders inline error feedback
-- after successful mutations, downstream Encounter refreshes observe the
-  updated party-derived thresholds and baselines
+- after successful activation, no running Scene receives an automatic
+  assignment
+- after successful deactivation or deletion, no current Party read or
+  downstream calculation treats the character as active, even while an
+  affected Scene or Encounter is pending
 - closing the dropdown without a completed mutation leaves party domain state
   unchanged
 
@@ -87,3 +95,4 @@ summary, and mutation controls use the Party feature's public mutation API.
 - [Adventuring Day Top-Bar UI](requirements-adventuring-day-dropdown.md)
 - [Party Domain Model](../domain/domain-party.md)
 - [Party Persistence](../contract/contract-party-persistence.md)
+- [Live Campaign Runtime Requirements](../../project/requirements/requirements-campaign-runtime.md)

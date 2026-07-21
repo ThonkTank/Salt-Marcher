@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-17
+Last Reviewed: 2026-07-22
 Source of Truth: User-facing behavior and acceptance criteria for the World
 Planner NPC, faction, location, and encounter-source workflows.
 
@@ -18,7 +18,8 @@ Inspector surfaces so the user can:
 - define locations and link them to factions and encounter tables
 - use factions and locations as encounter-generation source constraints
 - add NPCs to combat through the Encounter state tab
-- confirm combat losses manually and reactivate defeated NPCs later
+- select combat losses for the complete Encounter outcome and reactivate
+  defeated NPCs later
 - expose World Planner location choices for later Session Planner-owned
   integration
 
@@ -48,8 +49,9 @@ Inspector surfaces so the user can:
 8. The user chooses factions or a location in the Catalog to limit
    random encounter generation.
 9. The user adds NPCs to combat.
-10. At combat end, the Encounter state tab shows candidate losses and the user
-   confirms which losses should update World Planner state.
+10. At combat end, the Encounter state tab shows candidate losses. The user
+    selects the applicable losses and confirms them together with Encounter
+    completion and Party XP.
 11. Defeated NPCs stop counting as available until the user reactivates them.
 12. Later Session Planner-owned work can read World Planner location choices
    through a public boundary without World Planner defining session records.
@@ -83,8 +85,8 @@ Inspector surfaces so the user can:
   provider records
 - select factions and locations in encounter-generation controls
 - add an NPC to combat while preserving its World Planner identity
-- show a post-combat loss confirmation before durable NPC or inventory state
-  changes
+- show selectable post-combat loss consequences before the complete Encounter
+  outcome changes durable NPC or inventory state
 - reactivate a defeated named NPC
 - expose location choices through a public boundary for future
   Session Planner-owned integration
@@ -106,8 +108,9 @@ Inspector surfaces so the user can:
   statblock than the selected faction or location source owns.
 - Location-constrained generation uses only encounter tables available through
   the selected location.
-- Combat does not mutate durable World Planner state until the user confirms
-  the loss summary after combat.
+- Combat does not mutate durable World Planner state until the user confirms the
+  complete Encounter outcome; a failed confirmation changes neither lifecycle
+  nor finite stock.
 - Defeated named NPCs are unavailable for generation and selection until
   reactivated.
 - World Planner exposes location references without storing or defining
@@ -125,3 +128,4 @@ Inspector surfaces so the user can:
 - [World Planner Domain Model](../domain/domain-world-planner.md) (line 1)
 - [World Planner Architecture](../architecture/architecture-world-planner.md) (line 1)
 - [World Planner Persistence Contract](../contract/contract-world-planner-persistence.md) (line 1)
+- [Live Campaign Runtime Requirements](../../project/requirements/requirements-campaign-runtime.md)
