@@ -350,6 +350,85 @@ defined.
    keep, edit, or delete, or is a simpler manual correction interface enough?
    Whatever the GM chooses, what should remain visible in Campaign history?
 
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] Wird pro ort eingestellt, ob additiv oder
+> überschreibend gearbeitet wird.
+
+Each place defines whether its loot- and Encounter-generator factors add to the
+inherited factors or replace them.
+
+> [Owner, wörtlich zu 2] genau.
+
+If selected members of a Scene travel to another place, the travel action
+creates a new Scene for them. If the complete Scene travels together, the same
+Scene changes its place.
+
+> [Owner, wörtlich zu 3] Hmm... Die am weitesten fortgeschrittene Szene behällt
+> die Authorität.
+
+The Scene at the greatest in-world time retains authority over shared World
+state. An earlier Scene's travel undo cannot silently replace shared truth
+already established by that authoritative Scene. The precise user-visible undo
+result in that case remains to be clarified.
+
+> [Owner, wörtlich zu 4] Ja, es gibt ein redo zum undo und es gibt mehrere
+> tiefen von undo. Alle genannten.
+
+Travel provides multi-level undo and redo. Every adjacent move, selected route
+point, pause, and explicitly marked point establishes an undo point.
+
+> [Owner, wörtlich zu 5] Der GM kann sich dazu entscheiden dinge zu einem
+> Zeitpunkt zu entfernen, obwohl sie später schon history erzeigt haben. In
+> diesem Fall wird er gewarnt und muss, wenn er trotzdem weiter macht, alle
+> konflikte manuell resolven. Nicht sofort, aber entsprechende history einträge
+> werden als konfliktierend markiert.
+
+The GM may deliberately remove something at an earlier in-world time even when
+it already produced later history. SaltMarcher warns before the removal. If the
+GM proceeds, dependent later history entries are marked as conflicting and the
+GM resolves every conflict manually. Resolution need not be immediate. The
+original later history is not automatically recalculated or erased.
+
+### Literal Evidence So Far
+
+- Every place chooses additive or replacing inheritance for its loot- and
+  Encounter-generator factors.
+- Partial-group travel creates a new Scene; whole-Scene travel moves the
+  existing Scene to the destination place.
+- The Scene furthest ahead in in-world time is authoritative for shared World
+  state.
+- Travel has multi-level undo and redo across adjacent moves, route points,
+  pauses, and explicit points.
+- Earlier removal which contradicts later history requires a warning, marks
+  dependent history as conflicting, and leaves manual resolution to the GM
+  without blocking unrelated work or automatically rewriting history.
+
+## Fifth Breadth Block: Authoritative Time And Travel Interruptions
+
+1. Is the additive-versus-replacing generator setting one shared choice for all
+   loot and Encounter factors at a place, or may the GM choose independently
+   for loot, Encounter composition, faction appearance, and other factor
+   families? What default should a newly created place use?
+2. Scene A is authoritative at 12:00. Scene B at 11:00 undoes a travel segment
+   whose autonomous results contributed to A's World state. Should B's own
+   position, time, and local travel results still undo while the shared World
+   results remain as established by A, with a conflict marker? Or should the
+   undo be unavailable until the GM resolves the shared conflict?
+3. When an event, Trap, detected NPC, or relevant track pauses travel, has the
+   just-completed movement and elapsed time already taken effect? Which actions
+   must the GM have immediately: inspect, resolve or dismiss the interruption,
+   resume the route, choose a different route, or end travel at the current
+   point?
+4. Does a travel interruption appear as context inside the same Running Scene
+   and travel state, rather than creating another Scene? When an NPC is
+   perceived, does that NPC become visible in the Scene immediately while an
+   Encounter still requires separate GM confirmation?
+5. For a history entry marked as conflicting, what must manual resolution let
+   the GM do: keep it as an acknowledged inconsistency, edit its facts or time,
+   link a corrective entry, or delete it? When is the conflict marker removed,
+   and must the resolution itself remain visible in history?
+
 ## References
 
 - [Program Needs Interview Series](README.md)
