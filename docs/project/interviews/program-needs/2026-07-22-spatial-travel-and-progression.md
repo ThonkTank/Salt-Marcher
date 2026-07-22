@@ -267,6 +267,89 @@ remains to be clarified.
    changes only the World state from now on, or should SaltMarcher recalculate
    any part of the already established future?
 
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] Wetter wird auf hex-basis gemacht und an alle
+> sub-locations vererbt. Musik-relevante Tags werden vererbt, wenn der Sub-Ort
+> keine eigenen bereitstellt. Mit NPCs und fraktionen meine ich, dass Orte
+> definieren können, welche Fraktionen eine chance haben dort aufzutauchen, das
+> wird ebenfalls vererbt wenn es nicht explizit überschrieben ist.
+
+Weather is determined at Hex level and inherited by every subplace. Music tags
+use fallback inheritance: a subplace inherits them only when it supplies none
+of its own. Places do not inherit concrete NPCs or factions as Scene members.
+Instead, a place defines which factions have a chance to appear there; a
+subplace inherits those appearance factors unless it explicitly overrides
+them.
+
+> [Owner, wörtlich zu 2] Ja. Nein. Uerschiedliche Orte edeuten unterschiedliche
+> szenen.
+
+Creating or moving Party members into another Scene remains an explicit GM
+action. A Scene cannot contain Party members at different full places: different
+places imply different Scenes, while subplaces within the same place do not.
+
+> [Owner, wörtlich zu 3] Wäre cool wenn, muss aber nicht.
+
+Cross-map route planning is an optional future convenience, not a binding
+long-term target need.
+
+> [Owner, wörtlich zu 4] Ja. Nein.
+
+Travel undo reverses the listed results of the last segment, including triggered
+Traps or events, NPC discovery, weather changes, tracks, and autonomous World
+actions. The original segment and its undo do not remain visible in ordinary
+Campaign history. Travel undo is therefore an explicit, narrow exception to the
+otherwise immutable-history behavior. Its interaction with shared consequences
+observed by other Scenes still needs clarification.
+
+> [Owner, wörtlich zu 5] Das ist die Art von Zeitparadoxon, das ein GM im Spiel
+> sowieso vermeiden muss. Es sollte dafür explizite Tools geben um sowas zu
+> resolven wenn notwendig, aber die default annahme sollte sein, dass das
+> einfach nicht passiert weil der GM es vermeidet.
+
+The default product assumption is that the GM avoids introducing consequences
+at an earlier Scene time which contradict an already established future.
+SaltMarcher need not automatically rewrite that future. It must nevertheless
+provide explicit GM tools to resolve such a paradox when it occurs. The
+required detection, choices, and resulting history behavior remain to be
+defined.
+
+### Literal Evidence So Far
+
+- Hex weather always flows to subplaces. Music tags and faction-appearance
+  factors use fallback inheritance with explicit subplace replacement.
+- Concrete NPCs are not inherited as Scene members merely because a containing
+  place can generate appearances from their faction.
+- Different places require different Scenes; subplaces do not. Scene splitting
+  and character movement remain explicit GM actions.
+- Cross-map route planning is optional convenience rather than binding scope.
+- Route undo reverses every result of the latest segment and removes the segment
+  from ordinary history, creating a narrow exception to immutable history.
+- Earlier-time paradoxes are GM-avoided by default and resolved through explicit
+  tools rather than automatic future rewriting.
+
+## Fourth Breadth Block: Scene Movement, Shared Undo, And Paradox Repair
+
+1. How do loot- and Encounter-generator factors inherit across `Hex > place >
+   subplace`: does a child with its own factors replace the parent set entirely,
+   or may the GM combine selected parent and child factors?
+2. If only part of a Scene travels to another full place, does that travel
+   action itself create a new Scene for the selected characters? If every Party
+   member in the Scene travels together, does the same Scene simply change its
+   place?
+3. If undoing a travel segment would reverse autonomous actions or other World
+   changes that another Scene has already observed or depended on, should undo
+   still proceed, be blocked, or require the GM to resolve the conflict first?
+4. Can the GM press travel undo repeatedly to step back through several travel
+   points, and is there a corresponding redo? What establishes an undo point:
+   every adjacent move, every selected route point, every pause, or only points
+   the GM explicitly marks?
+5. What explicit paradox-resolution tools does the GM need? Should SaltMarcher
+   detect and flag likely contradictions, then let the GM choose which facts to
+   keep, edit, or delete, or is a simpler manual correction interface enough?
+   Whatever the GM chooses, what should remain visible in Campaign history?
+
 ## References
 
 - [Program Needs Interview Series](README.md)
