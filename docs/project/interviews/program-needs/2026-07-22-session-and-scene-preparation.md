@@ -351,6 +351,68 @@ explicit answer.
    content? Can each contained reward be edited independently before and after
    World placement?
 
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] Sogs werden lokal gespeichert und beim einpflegen vom
+> GM kategorisiert.
+
+Songs are stored locally. When the GM adds a song, the GM assigns its music
+categories. Whether those categories remain editable afterward is not yet
+explicitly answered.
+
+> [Owner, wörtlich zu 2] Der GM kann autoplay aktivieren oder deaktivieren.
+> Unterbrechungen an der Szene ändern die automatsch generierte Wateschlange und
+> songs faden langsam aus wenn sie nichtmehr zur aktuellen Situation passen.
+
+The GM can enable or disable autoplay. Scene changes update the automatically
+generated queue. A currently playing song that no longer fits the situation
+fades out gradually rather than stopping abruptly.
+
+> [Owner, wörtlich zu 3] Die aktuell vom GM fokussierte.
+
+When several Running Scenes exist, the Scene currently focused by the GM alone
+drives automatic music selection.
+
+> [Owner, wörtlich zu 4] ja.
+
+Notes for content present in a Running Scene are visible and editable there.
+The GM also has a searchable view across notes attached to every kind of
+object.
+
+> [Owner, wörtlich zu 5] Treasures können Items enthalten. Items können alles
+> von Handelswaren über Münzen bis magic items und equipment sein.
+
+A treasure may contain Items. The Item concept covers trade goods, coins,
+magic Items, equipment, and other kinds of possession. Independent editing of
+the Items inside a treasure remains unanswered.
+
+### Literal Evidence So Far
+
+- The music library and its audio files are local; the GM categorizes songs
+  when adding them.
+- Autoplay is optional. Scene changes recalculate its queue and obsolete music
+  fades out gradually.
+- Only the GM-focused Running Scene drives automatic music when Scenes are
+  split.
+- Object notes are editable in their Running Scene context and searchable
+  across object kinds.
+- A treasure is capable of containing Items, and Items encompass currency,
+  trade goods, magic Items, equipment, and other possessions.
+
+## Seventh Breadth Block: Manual Overrides And Treasure Editing
+
+1. Can the GM change a song's mood, intensity, vibe tags, and genre after
+   adding it to the local library?
+2. While autoplay is enabled, do manually selected, queued, or looped songs
+   take precedence until the GM's manual selection, queue, or loop ends, after
+   which automatic selection resumes?
+3. Can the GM add, remove, replace, and edit every Item within a treasure
+   independently both before and after placement? Can individual Items be moved
+   out of one placed treasure into another treasure or location?
+4. Can the GM create an empty current Session and manually build its timeline,
+   Encounters, treasures, and World placements without a planning Party,
+   Adventure Day, date, name, or any use of generation?
+
 No consolidated interpretation of this workflow is confirmed yet.
 
 ## References
