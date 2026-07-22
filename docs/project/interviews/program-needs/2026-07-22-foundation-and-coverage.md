@@ -204,7 +204,53 @@ The next owner-answer block must clarify:
 4. what happens when the GM deletes an object that current preparation, a
    Running Scene, or completed history still references
 
-No interpretation of these four questions is confirmed yet.
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] Hier sollten wir zwischen Roster und Party trennen.
+> Roster ist die gesammtheit aller PCs in der Kampagne, ob grade aktiv ode
+> rnicht. Party sind jene Charaktere, deren Spieler grade mit dem GM am
+> Spieltisch sitzen. Die party kann in mehrere Szenen aufgeteilt werden und
+> oswas, was halt im Spiel passieren kann, das Roster ist aber nur zum managen
+> da.
+
+This introduces two distinct user concepts. `Roster` is the complete managed
+set of Campaign PCs independent of current participation. `Party` is the subset
+whose players currently participate at the table. Splitting those characters
+across Running Scenes does not split the Roster.
+
+> [Owner, wörtlich zu 2] Ja und ja
+
+A Campaign-specific object may be copied to another Campaign and becomes an
+independent object there.
+
+> [Owner, wörtlich zu 3] Ja
+
+Campaign objects of the same kind may share a name.
+
+> [Owner, wörtlich zu 4] es wird aus diesen Dingen entfernt.
+
+This answer confirms removal from current preparation and Running Scene
+references. Its literal inclusion of completed history conflicts with the
+previously confirmed immutable-history rule, under which corrections append and
+past entries are not rewritten. Neither answer is reinterpreted until the owner
+resolves that concrete conflict.
+
+## Required Clarification Before Workflow Confirmation
+
+The next owner-answer block must resolve:
+
+1. whether each Campaign has exactly one Roster and at most one current Party
+   subset, with Scene groups being subdivisions of that Party rather than
+   separate Parties
+2. which PCs Session generation uses before the players physically sit at the
+   table: the whole Roster or an expected-attendance Party selected by the GM
+3. whether deleting an object from completed history means removing only its
+   live link while retaining the historical text/fact, or deleting the
+   historical entry itself despite the earlier immutable-history answer
+4. whether deleting an NPC, Item, or other object that is already used by a
+   Running Encounter removes it from that Encounter immediately
+
+No consolidated Campaign-foundation interpretation is confirmed yet.
 
 ## References
 
