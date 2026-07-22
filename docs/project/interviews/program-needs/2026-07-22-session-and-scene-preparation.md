@@ -87,7 +87,46 @@ shape rather than asking whether SaltMarcher should obstruct reuse.
    treasures enter the current Scene automatically, or do they become prepared
    options that the GM explicitly activates or awards?
 
-No interpretation of this workflow is confirmed yet.
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] split scenes sind zwei verschiedne. es gibt in dem
+> fall doch mehrere. szenen sind dennoch nuur resumable runtime zustand
+
+This corrects the earlier “one current Scene” statement. Ordinarily there is one
+Running Scene; a split Party creates several distinct Running Scenes. Every
+Scene is resumable runtime state, never a stored preparation workspace.
+
+> [Owner, wörtlich zu 2] er kann notizen enthalten
+
+A Session-timeline entry may contain its own notes. Its remaining relationship
+to location preparation is not yet interpreted.
+
+> [Owner, wörtlich zu 3] Platzierungen bleiben erhalten, die sind jetzt ja
+> einfach prsidtierter welt-zustand ohne weiteren panner-bezug.
+
+Encounter and treasure placements survive Session overwrite because accepted
+placement is persistent World state with no remaining Planner ownership.
+
+> [Owner, wörtlich zu 4] die stehen dann einfach in der szenen ui wo der GM
+> machen kann was er will.
+
+Entering a prepared location exposes its placed Encounters and treasures in the
+Running Scene UI. Nothing starts, resolves, or awards automatically; the GM
+decides what to do there.
+
+## Second Breadth Block: Timeline And Placement Lifecycle
+
+1. Does every Session-timeline entry reference exactly one location, or may an
+   entry have no location and may the same location appear several times?
+2. Can the GM add, remove, reorder, and annotate timeline entries manually at
+   any time, including after generation?
+3. Do generated Encounters and treasures remain adjustable draft suggestions
+   until the GM explicitly accepts their placement as persistent World state?
+4. When the Session Planner overwrites the current Session, does it replace the
+   timeline, its notes, and any unaccepted drafts while leaving every already
+   accepted World placement untouched?
+
+No consolidated interpretation of this workflow is confirmed yet.
 
 ## References
 
