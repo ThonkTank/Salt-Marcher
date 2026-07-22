@@ -200,16 +200,21 @@ across every kind of object.
 
 ### Runtime Clarification: Scene And Encounter
 
-The primary Running Scene always exists and cannot be paused, completed,
-closed, or discarded. It has zero or one current location. Changing location
+The primary Running Scene always exists and cannot be paused, completed, closed,
+or discarded. Empty Scenes are removed; a remaining populated Scene becomes
+primary. If the current Party is empty, all Scenes except one empty primary
+Scene are removed. A Scene has zero or one current location. Changing location
 changes the NPCs, Features, treasures, monster groups, and other location
 content shown in the Scene unless the GM explicitly makes content travel with
-the Party or pins it to the Scene.
+the Party or pins it to the Scene. Content that leaves the Scene remains at its
+location.
 
 An Encounter is not persistent World content. It is a temporary combat mask
 over a Running Scene that selects PCs and NPCs already present there and adds
-combat behavior such as HP tracking and initiative. Persistent preparation
-creates and places monster groups, not Encounters.
+combat behavior such as HP tracking and initiative. Chase and future mask types
+may provide other focused workflows. The Scene remains visible in the main
+panel while mask state remains available in its adjacent state panel. Persistent
+preparation creates and places monster groups, not Encounters.
 
 ## Confirmed Cross-Workflow Behavior
 
@@ -226,11 +231,11 @@ still-unconfirmed workflow.
 Party activation, deactivation, or deletion is authoritative immediately and is
 not rolled back by an unavailable Running Scene or Encounter. A later
 live-workflow answer supersedes the earlier allowance for an unassigned active
-character: every active Party character belongs to exactly one Running Scene.
-Inactive Roster characters belong to no Scene and retain their last location and
-other state. The destination Scene for a newly activated character remains
-under interview. Deactivated or deleted characters immediately stop counting as
-current Party members.
+character: every active Party character belongs to exactly one Running Scene,
+and activation assigns the character to the currently focused Scene. Inactive
+Roster characters belong to no Scene and retain their last location and other
+state. Deactivated or deleted characters immediately stop counting as current
+Party members.
 
 Only Running Scenes that reference the changed character and their Encounters
 reconcile. Until reconciliation succeeds, affected contexts are visibly pending

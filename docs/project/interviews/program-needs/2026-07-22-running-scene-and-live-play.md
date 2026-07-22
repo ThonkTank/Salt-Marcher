@@ -205,6 +205,75 @@ an Encounter mask with them.
    ends, does the GM return to the same continuously updated Scene with the
    mask's confirmed consequences applied?
 
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] Der fokussierten
+
+Activating a Roster character into the current Party assigns that character to
+the currently focused Running Scene.
+
+> [Owner, wörtlich zu 2] Wenn eine Szene leer ist, wird sie entfernt. Die
+> verbleibende Szene ist dann die primäre. Gibt es keine aktive Party werden alle
+> bis auf die primäre szene entfernt.
+
+An empty Scene is removed. When only one populated Scene remains, it becomes the
+primary Scene. If there is no active Party, every Scene except the primary Scene
+is removed and the empty primary Scene remains available.
+
+> [Owner, wörtlich zu 3] Charaktere könen nicht nur in neue, sondern auch in
+> bestehende szenen geschoben werden über das selbe ui element. Verbleibende
+> inhalte bleiben einfach an dem Ort.
+
+The same Scene action moves selected characters either into a new Scene or an
+existing Scene. When the source Scene becomes empty and is removed, its other
+content remains at that Scene's location.
+
+> [Owner, wörtlich zu 4] Der split gruppe, der sie hinzugefügt wurde. es kann
+> nur einer gruppe Folgen.
+
+Content travelling with the Party follows the one split group to which the GM
+assigned it. The same concrete content cannot follow several groups at once.
+
+> [Owner, wörtlich zu 5] Es kann mehrere masken geben, I guess. Der GM muss
+> nicht "zurückkehren," die Szene bleibt unverändet im main panel, die Masken
+> bleiben im state panel neben der Szene.
+
+Several masks may coexist beside one Scene. The Scene remains continuously
+visible and unchanged as the main panel while its masks remain available in the
+adjacent state panel. Ending a mask therefore does not navigate back to the
+Scene. Whether actors may participate in several masks and whether several masks
+of the same type may coexist remain unanswered.
+
+### Literal Evidence So Far
+
+- Party activation assigns the character to the GM-focused Scene.
+- Empty Scenes are removed and a remaining populated Scene becomes primary. If
+  the Party is empty, one empty primary Scene remains available.
+- The same character-move action creates splits and reunites groups. Content
+  from a removed Scene remains at its location.
+- Travelling content follows exactly one split group.
+- The Scene remains the main live workspace while several focused workflow
+  masks can remain beside it in the state panel.
+
+## Fourth Breadth Block: Mask Participation, Lookup, Time, And Weather
+
+1. May several Encounter masks, several Chase masks, and different mask types
+   coexist for one Scene? May the same PC, NPC, or monster participate in more
+   than one active mask at the same time?
+2. If a character moves to another Scene while participating in a mask, is the
+   character removed from that mask, does the mask move with the character, or
+   must the GM resolve the mask first?
+3. During play, what must the GM be able to find or create without leaving the
+   Scene: any Campaign object, reusable rules and definitions, local monster
+   groups and treasures, or something else? Which immediate actions should a
+   search result offer?
+4. How does campaign time advance during live play: does the GM enter an amount,
+   choose common actions or durations, run a clock, or use a combination? With
+   split Scenes, may their local times differ?
+5. When Scene time or location changes, does autonomous weather update
+   immediately for that Scene? May the GM override the calculated weather, and
+   if so, for how long or until what event?
+
 No consolidated interpretation of this workflow is confirmed yet.
 
 ## References
