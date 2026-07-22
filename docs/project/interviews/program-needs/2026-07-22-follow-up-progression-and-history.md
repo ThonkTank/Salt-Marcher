@@ -60,6 +60,79 @@ scope.
    history keeps the original plus a linked correction? What must happen when
    the corrected fact has already influenced later progression or history?
 
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] Gm verteilt items
+
+The GM, not SaltMarcher, chooses every Item recipient. No automatic recipient
+selection is required. Whether distribution may target only individual
+characters or also shared storage and locations remains to be clarified.
+
+> [Owner, wörtlich zu 2] XP wird immer gleichmäßig aufgeteilt. "Level Up" sind
+> einfach "Charakter hat XP Schwelle überschritten" der GM muss da nichts
+> bestätigen.
+
+Encounter XP is always divided equally among the applicable characters and is
+not individually adjusted. Crossing an XP threshold is itself the level-up
+state and requires no GM confirmation. The exact recipient set and handling of
+fractions remain to be clarified.
+
+> [Owner, wörtlich zu 3] HP und Tod. Alles andere ist GM sache.
+
+The direct Encounter-completion consequences for characters and NPCs are HP
+and death. Conditions, capture, location, consumed resources, possessions, and
+notes are ordinary GM-managed state rather than inferred or proposed
+completion consequences. Whether death is derived automatically or explicitly
+chosen by the GM remains to be clarified.
+
+> [Owner, wörtlich zu 4] Was? Wie? Warum?
+
+The abstract question did not describe a recognizable GM task and establishes
+no product behavior. It must be replaced with a concrete table-play scenario
+rather than interpreted.
+
+> [Owner, wörtlich zu 5] Ja. Wird sie nicht? Ich wüsste nicht wie.
+
+A later correction immediately updates current Campaign state while history
+keeps the original fact plus a linked correction. The owner did not recognize
+the proposed downstream-dependency case, so no automatic dependent-state
+reversal or conflict behavior is established here. Concrete examples are
+needed to determine whether any such case matters.
+
+### Literal Evidence So Far
+
+- The GM distributes Items; SaltMarcher does not choose recipients.
+- Encounter XP is always divided equally among its applicable recipients.
+- Crossing an XP threshold needs no separate GM confirmation.
+- Encounter completion directly carries HP and death; other consequences remain
+  ordinary GM work.
+- Corrections update current truth immediately and append linked history.
+- No behavior has yet been established for narrative World consequences or for
+  corrections which might affect later derived state.
+
+## Second Breadth Block: Concrete Recipients And Corrections
+
+1. Wohin genau darf der GM ein gefundenes Item verteilen: nur an einzelne
+   Charaktere, auch in ein gemeinsames Party-Inventar, oder zurück an einen
+   Treasure beziehungsweise Ort? Kann er einen Treasure teilweise verteilen
+   und den Rest dort lassen?
+2. Wer erhält den gleichmäßigen XP-Anteil: nur PCs, die am Encounter
+   teilgenommen haben, alle Charaktere der betroffenen Scene oder die gesamte
+   aktuelle Party einschließlich Charakteren in anderen Scenes? Wie werden
+   nicht glatt teilbare XP behandelt?
+3. Soll SaltMarcher HP aus dem laufenden Encounter beim Abschluss einfach
+   übernehmen und der GM markiert Tod ausdrücklich, oder darf das Programm Tod
+   aus den verfolgten Kampfregeln selbst ableiten?
+4. Konkretes Beispiel zur vorigen Frage 4: Nach dem Sieg über Banditen möchte
+   der GM die Quest `Banditenlager` als abgeschlossen markieren und das Ansehen
+   beim Dorf erhöhen. Soll der Encounter-Abschluss dafür direkte Felder oder
+   Aktionen anbieten, oder beendet der GM zuerst den Encounter und bearbeitet
+   Quest und Dorf danach ganz normal an ihren jeweiligen Stellen?
+5. Konkretes Korrekturbeispiel: Der GM korrigiert später die XP nach unten und
+   ein Charakter liegt dadurch wieder unter seiner letzten Level-Schwelle.
+   Soll sich der abgeleitete Level-Status sofort mitkorrigieren, während die
+   ursprüngliche Vergabe und Korrektur in der History bleiben?
+
 ## References
 
 - [Program Needs Interview Series](README.md)
