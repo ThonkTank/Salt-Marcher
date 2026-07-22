@@ -65,8 +65,8 @@ scope.
 > [Owner, wörtlich zu 1] Gm verteilt items
 
 The GM, not SaltMarcher, chooses every Item recipient. No automatic recipient
-selection is required. Whether distribution may target only individual
-characters or also shared storage and locations remains to be clarified.
+selection is required. Later answers below clarify partial distribution,
+character-specific ledger recipients, and Items left at Treasures or places.
 
 > [Owner, wörtlich zu 2] XP wird immer gleichmäßig aufgeteilt. "Level Up" sind
 > einfach "Charakter hat XP Schwelle überschritten" der GM muss da nichts
@@ -75,15 +75,14 @@ characters or also shared storage and locations remains to be clarified.
 Encounter XP is always divided equally among the applicable characters and is
 not individually adjusted. Crossing an XP threshold is itself the level-up
 state and requires no GM confirmation. The exact recipient set and handling of
-fractions remain to be clarified.
+fractions are clarified in later answers below.
 
 > [Owner, wörtlich zu 3] HP und Tod. Alles andere ist GM sache.
 
 The direct Encounter-completion consequences for characters and NPCs are HP
 and death. Conditions, capture, location, consumed resources, possessions, and
 notes are ordinary GM-managed state rather than inferred or proposed
-completion consequences. Whether death is derived automatically or explicitly
-chosen by the GM remains to be clarified.
+completion consequences. Later answers below establish rule-derived death.
 
 > [Owner, wörtlich zu 4] Was? Wie? Warum?
 
@@ -137,17 +136,18 @@ needed to determine whether any such case matters.
 
 > [Owner, wörtlich zu 1] ja.
 
-The GM may distribute part or all of a Treasure among individual characters, a
-shared Party inventory, another Treasure, or a place and leave any remainder
-undistributed. Item distribution remains entirely GM-chosen.
+The GM may distribute part or all of a Treasure among individual characters or
+leave Items with another Treasure or place. Item distribution remains entirely
+GM-chosen. Later answers clarify that the durable character view is a GM loot
+ledger rather than a shared or rules-complete inventory.
 
 > [Owner, wörtlich zu 2] Teilnehmende PCs, welche in der initiative order
 > waren. GM kann pcs hinzufügen oder entfernen.
 
 Encounter XP is divided equally among participating PCs represented in the
 initiative order. Before distribution, the GM may add or remove PCs from that
-recipient set; the equal shares are then recalculated. Handling of indivisible
-remainders remains open.
+recipient set; the equal shares are then recalculated. A later answer below
+establishes rounded-up shares for indivisible totals.
 
 > [Owner, wörtlich zu 3] ersteres.
 
@@ -319,8 +319,8 @@ inventory simulation.
 
 Structured narrative rewards are XP and Items. `Item` includes coins,
 equipment, trade goods, magic Items, and other concrete reward goods. The XP
-recipient default for a narrative reward remains to be clarified because no
-initiative order necessarily exists.
+recipient default for a narrative reward is later established through Quest
+contributors.
 
 > [Owner, wörtlich zu 5] Aktuelles inventar per charakter mit remindern zu
 > herkunft.
@@ -372,8 +372,8 @@ including without a Reward source. Provenance is optional for a manual entry.
 
 An Item marked as given away or sold remains visible in the character's
 inventory ledger with that reminder. The ledger therefore records awarded Item
-history rather than asserting current physical possession. Whether a
-counterparty is free text, a linked existing object, or both remains open.
+history rather than asserting current physical possession. Later answers below
+establish a structured counterparty link plus optional free text.
 
 > [Owner, wörtlich zu 3] Ja.
 
@@ -385,8 +385,8 @@ may split and merge.
 
 For a narrative XP reward, the GM chooses recipients and SaltMarcher divides
 XP equally and rounds each share up. Every Encounter participant is selected by
-default when an Encounter participant set is available. The default outside an
-Encounter context remains to be clarified.
+default when an Encounter participant set is available. Later answers establish
+Quest contributors as the default outside Encounter context.
 
 > [Owner, wörtlich zu 5] ja
 
@@ -457,8 +457,8 @@ notifies the GM the next time that character is activated.
 
 Loot sufficiency is evaluated during Session planning. SaltMarcher compares
 already received loot with the DMG-derived expected value and adjusts proposed
-new rewards to compensate. The comparison window and the GM's control over the
-adjustment remain to be clarified.
+new rewards to compensate. Later answers establish a cumulative comparison
+across all received XP and preserve ordinary editing of generated Rewards.
 
 > [Owner, wörtlich zu 5] Was meinst du mit "Zählt"? Bei was?
 
@@ -549,6 +549,87 @@ You previously added that when an inactive character receives XP, the GM is
 informed the next time that character is activated. Should this information be
 shown once and then clear automatically, or remain visible until the GM
 explicitly dismisses it?
+
+### Owner Answer 2026-07-23
+
+> [Owner, wörtlich] Ah, ich war verwirrt, ich dacht die beiden punkt 5 fragen
+> hätten irgend einen Zusammenhang. 5.1 ja. 5.2. ja
+
+The two questions were independent. A new Quest begins without contributors
+unless creation context supplies selected characters. An inactive character's
+XP information appears once on next activation and then clears automatically.
+No manual dismissal is required.
+
+## Proposed Consolidated Interpretation For Owner Confirmation
+
+This interpretation is not yet canonical program truth. It consolidates the
+complete follow-up, progression, reward, ledger, narrative-note, history, and
+correction workflow without selecting architecture, persistence, or transaction
+boundaries.
+
+1. Ending an Encounter carries forward its tracked HP, rule-derived deaths, and
+   XP consequences while the Running Scene continues. Conditions, capture,
+   location, resource use, notes, and other narrative consequences remain
+   ordinary GM-managed edits rather than inferred completion results.
+2. A dead PC or NPC remains as a dead character in the Roster or at its place,
+   may be revived by the GM, and is never automatically deleted.
+3. Encounter XP defaults to participating PCs in the initiative order. The GM
+   may add or remove recipients before distribution. SaltMarcher divides XP
+   equally and rounds each individual share up.
+4. Crossing an XP threshold immediately changes the character's derived level
+   state without GM confirmation. An XP correction immediately recalculates
+   that state while history retains the original award and linked correction.
+5. If an inactive character receives XP, the GM is informed once when that
+   character is next activated; the information then clears automatically.
+6. Encounter and manually resolved Quest rewards use one GM-facing distribution
+   dialog. Whether reward application shares a technical transaction with
+   Encounter completion is not a product requirement.
+7. A Treasure may be distributed partially or completely, and undistributed
+   Items may remain with the Treasure or at its place. The GM chooses every
+   Item recipient; SaltMarcher never chooses one automatically.
+8. Awarded Items are recorded in a searchable and filterable character-specific
+   loot ledger. This is a GM reminder and reward-accounting surface, not a
+   player-operated or rules-complete inventory simulation.
+9. The GM may manually add, remove, or correct ledger Items without a Reward
+   source. Coins, trade goods, and equivalent Items support quantity stacks
+   which may be split and merged.
+10. `Received`, `given away`, and `sold` are non-mechanical reminders. Sold or
+    given-away Items remain visible and continue to count as received loot.
+11. A sale or handoff records a structured counterparty link to an existing
+    NPC, place, or faction when available, plus optional free text. A sale also
+    records its actual price.
+12. The actual sale price becomes authoritative for final loot valuation of a
+    sold Item. A separate per-instance value override is not required.
+13. Item provenance records available Treasure, Encounter or Quest, Scene or
+    place, in-world time, and award time, with optional free-form provenance for
+    manual and exceptional cases.
+14. Quests, rumours, and similarly complex narrative concepts remain
+    lightweight records attached to places, factions, or NPCs. They contain an
+    open-or-closed state, free text, optional structured Rewards, and, for a
+    Quest, a structured contributor set.
+15. SaltMarcher does not model Quest completion conditions, NPC trigger graphs,
+    or automatic narrative resolution. The GM resolves the note manually. A
+    new Quest begins without contributors unless its creation context supplies
+    selected characters.
+16. Structured narrative Rewards are XP and Items, where Items include coins,
+    equipment, trade goods, magic Items, and other concrete goods. Quest
+    contributors default the XP recipient set, which remains GM-adjustable;
+    XP uses the same equal rounded-up distribution rule as Encounter XP.
+17. Later corrections immediately update current Item, XP, HP, death, or other
+    corrected truth while explanatory history retains the original fact and a
+    linked correction. Existing explicit-deletion and travel-undo exceptions
+    remain governed by their previously confirmed behavior.
+18. Expected loot derives from DMG guidance by character level through a
+    loot-per-XP value. Session planning compares cumulative received loot with
+    cumulative expected loot for all XP the characters have received so far.
+19. Session generation automatically adjusts proposed Rewards to compensate
+    for the cumulative loot surplus or deficit. The GM retains the previously
+    confirmed ability to inspect and edit each proposed Reward independently.
+
+If the owner confirms this interpretation, Workflow 5 can enter the draft
+Program Capability Requirements and the interview can continue with Workflow
+6: Campaign switching, restart, import, export, reference refresh, backup,
+restore, recovery, and local data lifecycle.
 
 ## References
 

@@ -1,6 +1,6 @@
 Status: Active
 Owner: Aaron
-Last Reviewed: 2026-07-22
+Last Reviewed: 2026-07-23
 Source of Truth: Routing, evidence boundary, and coverage order for the
 program-wide SaltMarcher needs interview.
 
@@ -47,7 +47,8 @@ The headings below are interview routes, not presumed feature boundaries.
 4. Dungeon, Hex, travel, position, events, perception, and optional Actor
    Autonomy during campaign-time progression -- confirmed 2026-07-22
 5. Encounter and session follow-up, awarded possessions, progression, World
-   consequences, history, and corrections -- in progress
+   consequences, history, and corrections -- consolidation awaiting owner
+   confirmation
 6. Campaign switching, restart, import, export, reference refresh, backup,
    restore, recovery, and other local data-lifecycle needs
 7. Cross-workflow completeness, failure semantics, scale, responsiveness,
