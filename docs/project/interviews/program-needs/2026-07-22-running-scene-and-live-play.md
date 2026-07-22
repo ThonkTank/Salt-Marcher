@@ -343,6 +343,81 @@ unanswered.
    handout, combat state, weather state, or other content be explicitly revealed
    by the GM so private notes can never appear automatically?
 
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] zur szene hinzufügen.
+
+A Scene search result offers the immediate action to add that content to the
+current Scene.
+
+> [Owner, wörtlich zu 2] zeit kann inkrementell vor oder urückggedreht werden.
+> automatisch berechnete reisezeiten können erstmals nicht überschrieben werden,
+> das wäre ein low priority qol feature. Encounter und chase runden sind immer 6
+> Sekunden. Exploration wird vom Gm gewählt.
+
+The GM can incrementally move Scene time forward or backward. Automatically
+calculated travel duration is initially binding; overriding it is only a
+low-priority quality-of-life extension. Encounter and Chase rounds always
+advance time by six seconds. The GM chooses the duration of exploration.
+
+> [Owner, wörtlich zu 3] Der Gm wählt resolved das manuell.
+
+The GM manually resolves differing Scene times when groups reunite. The exact
+effect of that resolution on the resulting time and already completed events
+still needs clarification.
+
+> [Owner, wörtlich zu 4] ja. override gillt, bis der Gm ihn abschaltet.
+
+Weather is calculated independently for each Scene from its local time and
+location. A manual override remains in force until the GM disables it, after
+which autonomous weather resumes.
+
+> [Owner, wörtlich zu 5] Die zweitanzeige zeigt die Karte beim reisen, sie kann
+> NPC illustrationen aneigen, wenn der Gm sie highlighted, oder hintergrund art
+> für Orte an denen sich die Charaktere befinden. Hintergrund und map werden
+> automatisch angezeigt, aber begrenzt auf das was Charaktere tatsächlich sehen
+> können (line of sight, licht, verstecktes etc.) illustrationen müssen vom GM
+> gehighlighted werden, im Kampf oder während Chases kann der Gm aber automatisch
+> das artwork des NPCs/PCs der grade dran ist anzeigen.
+
+During travel, the passive second display shows the map. At a location it shows
+background art. Both appear automatically but reveal only what the characters
+can actually perceive after line of sight, lighting, hidden-content, and similar
+visibility rules. NPC illustrations appear only when the GM highlights them.
+During an Encounter or Chase, the GM may enable automatic artwork for the NPC or
+PC whose turn is current. Whether the display follows the focused Scene and
+whether it exposes any mechanical text remain unanswered.
+
+### Literal Evidence So Far
+
+- Search results can be added directly to the current Scene.
+- The GM can increment Scene time forward or backward. Travel duration is
+  initially fixed, Encounter and Chase rounds last six seconds, and exploration
+  duration is chosen by the GM.
+- The GM manually resolves differing Scene times during reunification.
+- Weather is local to each Scene and a manual override persists until disabled.
+- The second display automatically presents visibility-filtered travel maps and
+  location art. Illustrations require a GM highlight, except for optional
+  automatic current-turn artwork in Encounters and Chases.
+
+## Sixth Breadth Block: Time Correction And Presentation Safety
+
+1. When the GM moves Scene time backward, does only the Scene clock and derived
+   state such as weather change, while completed travel, Encounter outcomes,
+   awarded Items, and Campaign history remain untouched?
+2. When the GM manually resolves different Scene times during reunification,
+   can the GM choose the resulting Scene time freely? Does this resolution avoid
+   rewriting either Scene's already completed events and history?
+3. Does the second display always follow the currently focused Scene and switch
+   immediately when the GM focuses another split Scene?
+4. If characters in the focused Scene have different perception, does the map
+   show the union of everything at least one of them can currently see, updating
+   immediately as position, line of sight, light, or hidden state changes?
+5. Can the GM blank, hide, or manually replace the automatic second-display
+   content at any time? Besides artwork and maps, may it show mechanical or
+   textual information such as names, weather, initiative, or HP, and must
+   private GM notes always be excluded?
+
 No consolidated interpretation of this workflow is confirmed yet.
 
 ## References
