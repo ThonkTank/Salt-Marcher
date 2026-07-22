@@ -47,10 +47,9 @@ The headings below are interview routes, not presumed feature boundaries.
 4. Dungeon, Hex, travel, position, events, perception, and optional Actor
    Autonomy during campaign-time progression -- confirmed 2026-07-22
 5. Encounter and session follow-up, awarded possessions, progression, World
-   consequences, history, and corrections -- consolidation awaiting owner
-   confirmation
+   consequences, history, and corrections -- confirmed 2026-07-23
 6. Campaign switching, restart, import, export, reference refresh, backup,
-   restore, recovery, and other local data-lifecycle needs
+   restore, recovery, and other local data-lifecycle needs -- in progress
 7. Cross-workflow completeness, failure semantics, scale, responsiveness,
    modular change, removal, replacement, and extension scenarios
 
@@ -61,6 +60,7 @@ The headings below are interview routes, not presumed feature boundaries.
 - [Running Scene And Live Play 2026-07-22](2026-07-22-running-scene-and-live-play.md)
 - [Spatial Travel And Progression 2026-07-22](2026-07-22-spatial-travel-and-progression.md)
 - [Follow-Up, Progression, And History 2026-07-22](2026-07-22-follow-up-progression-and-history.md)
+- [Local Data Lifecycle 2026-07-23](2026-07-23-local-data-lifecycle.md)
 - [Goal Interview 2026-07-10](../2026-07-10-goal-interview.md)
 - [Dungeon Needs Interview 2026-07-20](../2026-07-20-dungeon-needs-interview.md)
 

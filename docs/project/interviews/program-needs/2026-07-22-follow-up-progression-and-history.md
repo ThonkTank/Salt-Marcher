@@ -1,4 +1,4 @@
-Status: Active Evidence
+Status: Confirmed Evidence
 Owner: Aaron
 Last Reviewed: 2026-07-23
 Source of Truth: Verbatim owner answers and confirmed interpretations for
@@ -560,12 +560,11 @@ unless creation context supplies selected characters. An inactive character's
 XP information appears once on next activation and then clears automatically.
 No manual dismissal is required.
 
-## Proposed Consolidated Interpretation For Owner Confirmation
+## Confirmed Consolidated Interpretation
 
-This interpretation is not yet canonical program truth. It consolidates the
-complete follow-up, progression, reward, ledger, narrative-note, history, and
-correction workflow without selecting architecture, persistence, or transaction
-boundaries.
+The owner confirmed this complete interpretation on 2026-07-23. It is the
+evidence promoted into the draft Program Capability Requirements without
+selecting architecture, persistence, or transaction boundaries.
 
 1. Ending an Encounter carries forward its tracked HP, rule-derived deaths, and
    XP consequences while the Running Scene continues. Conditions, capture,
@@ -626,10 +625,9 @@ boundaries.
     for the cumulative loot surplus or deficit. The GM retains the previously
     confirmed ability to inspect and edit each proposed Reward independently.
 
-If the owner confirms this interpretation, Workflow 5 can enter the draft
-Program Capability Requirements and the interview can continue with Workflow
-6: Campaign switching, restart, import, export, reference refresh, backup,
-restore, recovery, and local data lifecycle.
+Workflow 5 is confirmed. The interview continues with Workflow 6: Campaign
+switching, restart, import, export, reference refresh, backup, restore,
+recovery, and local data lifecycle.
 
 ## References
 

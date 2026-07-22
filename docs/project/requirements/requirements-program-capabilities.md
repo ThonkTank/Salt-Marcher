@@ -1,6 +1,6 @@
 Status: Draft
 Owner: Aaron (Product Owner)
-Last Reviewed: 2026-07-22
+Last Reviewed: 2026-07-23
 Source of Truth: Owner-confirmed observable cross-workflow needs for the
 complete local SaltMarcher GM core. This draft is incomplete and is not yet an
 architecture input.
@@ -440,6 +440,105 @@ Scene's current place, weather, and time.
 - manual ambience additions and suppressions coexist with automatic selection
   and balancing until the GM releases them
 
+## Confirmed Workflow: Follow-Up, Progression, And Reward Ledger
+
+### Encounter Consequences And XP
+
+Ending an Encounter carries forward tracked HP, rule-derived deaths, and XP
+while the Running Scene continues. Conditions, capture, location, resource use,
+notes, and other narrative consequences remain ordinary GM edits rather than
+inferred completion results.
+
+A dead PC or NPC remains as a dead character in the Roster or at its place, may
+be revived by the GM, and is never automatically deleted.
+
+Encounter XP defaults to participating PCs in the initiative order. The GM may
+add or remove recipients before distribution. SaltMarcher divides XP equally
+and rounds each individual share up. Crossing an XP threshold immediately
+changes the character's derived level state without GM confirmation.
+
+An XP correction immediately recalculates derived level state while history
+retains the original award and linked correction. If an inactive character
+receives XP, the GM is informed once when that character is next activated;
+the information then clears automatically.
+
+### Rewards And Narrative Notes
+
+Encounter and manually resolved Quest rewards use one GM-facing distribution
+dialog. A Treasure may be distributed partially or completely, and
+undistributed Items may remain with the Treasure or at its place. The GM chooses
+every Item recipient; SaltMarcher does not choose one automatically.
+
+Quests, rumours, and similarly complex narrative concepts are lightweight
+records attached to places, factions, or NPCs. They contain open-or-closed
+state, free text, optional structured Rewards, and, for a Quest, a structured
+contributor set. A new Quest begins without contributors unless its creation
+context supplies selected characters.
+
+SaltMarcher does not model Quest completion conditions, NPC trigger graphs, or
+automatic narrative resolution. The GM resolves the note manually. Structured
+narrative Rewards are XP and Items, where Items include coins, equipment, trade
+goods, magic Items, and other concrete goods. Quest contributors default the
+XP recipient set, which remains GM-adjustable; XP follows the same equal
+rounded-up distribution rule as Encounter XP.
+
+### Character Loot Ledger
+
+Awarded Items appear in a searchable and filterable character-specific loot
+ledger. It is a GM reminder and Reward-accounting surface, not a player-operated
+or rules-complete inventory simulation. The GM may add, remove, or correct
+ledger Items manually without a Reward source. Coins, trade goods, and
+equivalent Items support quantity stacks which may be split and merged.
+
+`Received`, `given away`, and `sold` are non-mechanical reminders. Sold or
+given-away Items remain visible and continue to count as received loot. A sale
+or handoff records a structured counterparty link to an existing NPC, place, or
+faction when available, plus optional free text. A sale also records its actual
+price, which becomes authoritative for final loot valuation of that sold Item.
+A separate per-instance value override is not required.
+
+Item provenance records available Treasure, Encounter or Quest, Scene or
+place, in-world time, and award time, with optional free-form provenance for
+manual and exceptional cases.
+
+### Cumulative Loot Guidance
+
+Expected loot follows a versioned D&D 5e 2014 rule profile based on the owner's
+confirmed DMG guidance: character-level expectations produce a loot-per-XP
+value. Session planning compares cumulative received loot with cumulative
+expected loot for all XP the characters have received so far.
+
+Session generation automatically adjusts proposed Rewards to compensate for
+the cumulative loot surplus or deficit. The GM retains the previously confirmed
+ability to inspect and edit each proposed Reward independently. The exact
+published-rule derivation remains a later source-backed rule decision rather
+than an assumed formula in this requirements document.
+
+### Corrections And History
+
+A later correction immediately updates current Item, XP, HP, death, or other
+corrected truth while explanatory history retains the original fact and a
+linked correction. Existing explicit-deletion and travel-undo exceptions remain
+governed by their previously confirmed behavior.
+
+### Acceptance Criteria
+
+- Encounter completion preserves tracked HP, derives death, distributes XP to
+  a GM-adjustable participant set, and leaves the Running Scene active
+- equal XP shares round up, threshold-derived level state updates immediately,
+  and a correction retains its linked explanatory history
+- an inactive XP recipient produces one information message on next activation
+- Encounter and manually resolved Quest Rewards use the same distribution
+  interaction without automatic Item-recipient selection
+- Quests and rumours remain manually resolved note-first records without
+  completion-condition or NPC-trigger automation
+- the GM can search and filter each character's Item ledger, correct it
+  manually, and split or merge quantity stacks
+- sold and given-away Items remain visible as non-mechanical reminders and keep
+  their provenance, counterparty, and applicable sale information
+- Session generation compensates proposed Rewards for the cumulative difference
+  between expected loot for received XP and actual received loot
+
 ## Confirmed Cross-Workflow Behavior
 
 ### Complete Encounter Outcome
@@ -447,8 +546,9 @@ Scene's current place, weather, and time.
 The GM confirms one complete Encounter outcome. Encounter result and completion,
 calculated Party XP, selected named-NPC lifecycle effects, selected finite-stock
 effects become effective together or remain wholly unchanged.
-The associated Running Scene remains active. Loot persistence is a separate,
-still-unconfirmed workflow.
+The associated Running Scene remains active. Reward distribution, character
+loot ledger, progression, and correction behavior follow the confirmed
+follow-up workflow above.
 
 ### Authoritative Party With Dependent Running Contexts
 
@@ -494,7 +594,6 @@ history conflicts which the GM must later resolve.
 
 The following areas intentionally contain no normative behavior yet:
 
-- possessions, loot award, follow-up, and general correction workflows
 - import, export, reference refresh, backup, restore, and recovery
 - measurable program-wide responsiveness, scale, modular change, removal,
   replacement, and extension needs
@@ -513,5 +612,6 @@ behavior, and no unresolved product decision blocks technical-needs derivation.
 - [Session And Scene Preparation Interview](../interviews/program-needs/2026-07-22-session-and-scene-preparation.md)
 - [Running Scene And Live Play Interview](../interviews/program-needs/2026-07-22-running-scene-and-live-play.md)
 - [Spatial Travel And Progression Interview](../interviews/program-needs/2026-07-22-spatial-travel-and-progression.md)
+- [Follow-Up, Progression, And History Interview](../interviews/program-needs/2026-07-22-follow-up-progression-and-history.md)
 - [Project Vision](../vision.md)
 - [Documentation Standard](../documentation.md)
