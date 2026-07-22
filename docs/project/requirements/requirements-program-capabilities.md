@@ -253,8 +253,9 @@ the GM's manual player actions take precedence.
 
 Every Scene advances its own time through travel, exploration, and mask
 activity. Encounter and Chase rounds last six seconds. Travel duration is
-calculated and initially cannot be overridden; overriding it remains a
-low-priority quality-of-life extension. The GM chooses exploration duration.
+calculated from applicable factors. The GM may override any input factor, the
+final duration, or both; a final-duration override is authoritative while it
+remains active. The GM chooses exploration duration.
 
 The GM may increment Scene time forward or backward. When groups with different
 times reunite, the GM manually chooses their temporal resolution. Moving
@@ -271,9 +272,10 @@ autonomous weather resumes.
 
 The passive second display immediately follows the focused Scene. During travel
 it automatically shows the map; at a location it automatically shows background
-art. Map visibility is the union of what at least one character in the focused
-Scene can perceive and updates with position, line of sight, light, hidden
-state, and similar visibility changes.
+art. The map combines the durable map knowledge of all characters in the
+focused Scene. Current visibility is the union of what at least one of those
+characters can perceive and updates with position, line of sight, light,
+hidden state, weather, elevation, and similar visibility changes.
 
 NPC artwork appears only when highlighted by the GM. During an Encounter or
 Chase, the GM may enable automatic artwork for the current actor. The display
@@ -300,9 +302,135 @@ visual at any time.
   never deletes history or reverses confirmed World state
 - automatic weather follows each Scene independently and resumes when the GM
   releases a manual override
-- the passive second display switches with Scene focus, reveals only currently
-  perceivable map content, never exposes textual or mechanical state, and can
-  be blanked or replaced by the GM
+- the passive second display switches with Scene focus, distinguishes current
+  perception from remembered knowledge without revealing unknown or hidden
+  live details, never exposes textual or mechanical state, and can be blanked
+  or replaced by the GM
+
+## Confirmed Workflow: Spatial Travel And Campaign-Time Progression
+
+### Places, Subplaces, And Scene Continuity
+
+Travel is one live GM workflow for the focused Scene across ordinary places,
+Hex maps, and Dungeons. A full place is a Scene boundary. Subplaces, Dungeon
+navigation areas, and exact cells refine position within that Scene without
+creating another one. Characters at different full places require different
+Scenes.
+
+Moving only part of a Scene's Party subgroup to another full place creates or
+joins another Scene. Moving the complete subgroup changes the existing Scene's
+place. Places may be nested on Hex and Dungeon maps. The GM may assign an
+unmapped place administratively, but that action is not travel and advances no
+time automatically.
+
+Weather, music tags, ambience context, and loot-, Encounter-, and
+faction-appearance factors may flow from containing places into children. The
+GM chooses additive or replacing behavior separately for each factor family
+and place; additive behavior is the default.
+
+### Travel, Interruptions, And Overrides
+
+For adjacent movement the GM selects a destination. For a longer journey the
+GM selects travel points and uses a route within the current map. Cross-map
+route planning is optional future convenience rather than binding core scope.
+
+Travel advances position, Scene time, weather, tracks, perception, events, and
+applicable autonomous World behavior. The GM may pause, resume, reroute, end,
+or change the real-time presentation speed without changing in-world duration.
+Every route point and interruption is a committed checkpoint.
+
+Events, Traps, relevant tracks, and perceived NPCs stop further route progress
+at a checkpoint for GM inspection. Perceiving an NPC exposes it in the Scene
+but does not start an Encounter without explicit GM confirmation.
+
+The GM may override any travel-duration input, the calculated final duration,
+or both. While present, a final-duration override wins over all inputs. The GM
+may undo and redo several travel checkpoints. Undo removes the journey segment
+and every result introduced only by that segment, while preserving facts
+already established by a later authoritative Scene.
+
+### Independent Scene Time And World Progression
+
+Split Scenes advance independently. Autonomous World behavior for one
+in-world period occurs once and is reused when an earlier Scene reaches that
+period. The furthest-advanced Scene is authoritative for shared World facts.
+
+The target outcome is that the complete Campaign World progresses with
+GM-confirmed campaign time. Optional Actor Autonomy remains individually
+GM-enabled and bounded. Party involvement pauses before autonomous danger
+resolution; permitted non-Party behavior may continue. Computation strategy
+and scale handling remain later technical decisions rather than product-scope
+reductions.
+
+The GM normally avoids introducing an earlier-time contradiction. If a change
+would conflict with already dependent later history, SaltMarcher warns but
+allows it, marks the affected history as conflicting, and lets the GM resolve
+it manually. The marker remains until the GM explicitly confirms resolution.
+
+### Hex Maps, Knowledge, And Visibility
+
+SaltMarcher supports several continuous Hex maps. Each has no fixed authored
+extent and provides predetermined mouse-wheel zoom levels from local
+three-mile Hexes to world scale. Coarse facts supply finer defaults; detailed
+edits recalculate their coarse aggregate.
+
+The GM can author terrain, rivers, roads, cliffs, ravines, location markers,
+assets, and faction influence; import and export maps; and control Fog of War,
+unknown regions, and manual reveal. Weather and elevation influence sight
+distance. Procedural Hex generation and autonomous faction simulation are
+distant extensions.
+
+Map knowledge belongs to individual characters. The passive map for the
+focused Scene shows the union of its characters' knowledge. A general GM
+reveal action adds selected knowledge to relevant characters without requiring
+character-to-character transfer bookkeeping.
+
+### Climate, Weather, And Ambience
+
+A Hex map has a quick fallback climate plus paintable or otherwise modulatable
+regional climate zones. Seasonal baselines and coherent moving phenomena
+produce gradual, geographically sensible weather without unrelated random
+weather per Hex or burdensome meteorological setup. The GM may author weather
+events with an affected area, type, intensity, movement, time extent, notes,
+and mechanical effects and may pause, edit, or end them.
+
+Structured weather effects initially cover visibility, travel, perception,
+temperature, ambience, and music. Combat-facing effects may remain prominent
+notes for GM adjudication. A mechanically relevant weather change updates its
+effects and creates a Scene-associated notification which remains until the
+weather ends or the GM dismisses it; it does not itself stop travel. New
+influence families, such as creature preferences for weather or time of day,
+remain locally extensible needs.
+
+Music and ambience use locally managed and categorized files. Weather and
+environment layers combine automatically, and SaltMarcher balances the mix.
+The GM may add sounds to or suppress sounds from the automatic selection.
+Those choices persist until released, after which automation resumes from the
+Scene's current place, weather, and time.
+
+### Acceptance Criteria
+
+- the GM can move a complete or partial Scene subgroup through one travel
+  workflow without leaving the Scene workspace
+- adjacent movement and routed travel advance position and in-world time
+  together to explicit checkpoints
+- an event, Trap, relevant track, or perceived NPC stops further progress for
+  GM inspection without deciding its fictional outcome
+- the GM can override travel factors or final duration and can undo and redo
+  several checkpoints without erasing facts already established by a later
+  authoritative Scene
+- split Scenes reuse World behavior already processed for the same in-world
+  period and expose conflicts for manual resolution rather than silently
+  rewriting established history
+- coarse and fine Hex-map edits propagate across zoom levels while preserving
+  GM control over terrain, routes, locations, influence, visibility, and reveal
+- the focused Scene's passive map shows only the union of its characters'
+  knowledge and current perception
+- weather changes coherently across regions and time, applies its structured
+  effects, and keeps a dismissible notification visible while mechanically
+  relevant
+- manual ambience additions and suppressions coexist with automatic selection
+  and balancing until the GM releases them
 
 ## Confirmed Cross-Workflow Behavior
 
@@ -337,10 +465,10 @@ from the saved Scene change.
 
 ### Explanatory Campaign History
 
-The GM can inspect an immutable chronological history of meaningful confirmed
-Campaign consequences, including campaign-time progression, travel, Encounter
-completion, XP, Party membership, NPC or finite-stock effects, and GM
-corrections.
+The GM can inspect an ordinarily immutable chronological history of meaningful
+confirmed Campaign consequences, including campaign-time progression, travel,
+Encounter completion, XP, Party membership, NPC or finite-stock effects, and
+GM corrections.
 
 A correction appends a linked entry rather than rewriting prior history. The
 history is not required to replay the Campaign, reconstruct every intermediate
@@ -348,15 +476,16 @@ application state, or restore an arbitrary whole-Campaign snapshot.
 
 Moving a Scene's in-world time backward or manually resolving different Scene
 times never deletes history or reverses confirmed World consequences. A fact
-recorded later at the table may carry an earlier in-world time and is treated as
-having happened then. Only an explicit GM deletion operation may remove its
-selected target.
+recorded later at the table may carry an earlier in-world time and is treated
+as having happened then. Travel undo is the narrow exception described above:
+it removes the undone segment and results introduced only by it. An explicit
+GM deletion may remove its selected target even when that produces marked
+history conflicts which the GM must later resolve.
 
 ## Awaiting Workflow Confirmation
 
 The following areas intentionally contain no normative behavior yet:
 
-- spatial travel and campaign-time progression outside confirmed Dungeon needs
 - possessions, loot award, follow-up, and general correction workflows
 - import, export, reference refresh, backup, restore, and recovery
 - measurable program-wide responsiveness, scale, modular change, removal,
@@ -375,5 +504,6 @@ behavior, and no unresolved product decision blocks technical-needs derivation.
 - [Program Needs Foundation And Coverage](../interviews/program-needs/2026-07-22-foundation-and-coverage.md)
 - [Session And Scene Preparation Interview](../interviews/program-needs/2026-07-22-session-and-scene-preparation.md)
 - [Running Scene And Live Play Interview](../interviews/program-needs/2026-07-22-running-scene-and-live-play.md)
+- [Spatial Travel And Progression Interview](../interviews/program-needs/2026-07-22-spatial-travel-and-progression.md)
 - [Project Vision](../vision.md)
 - [Documentation Standard](../documentation.md)

@@ -1,4 +1,4 @@
-Status: Active Evidence
+Status: Confirmed Evidence
 Owner: Aaron
 Last Reviewed: 2026-07-22
 Source of Truth: Verbatim owner answers and confirmed interpretations for the
@@ -913,12 +913,12 @@ without replacing automation as a whole.
   and persist until released; automation then resumes from current Scene
   context.
 
-## Proposed Consolidated Interpretation For Owner Confirmation
+## Confirmed Consolidated Interpretation
 
-This interpretation is not yet canonical program truth. It consolidates the
-complete workflow for confirmation without choosing architecture, storage,
-simulation algorithms, or UI implementation beyond explicitly required GM
-interactions.
+The owner confirmed this complete interpretation on 2026-07-22. It is the
+evidence promoted into the draft Program Capability Requirements without
+choosing architecture, storage, simulation algorithms, or UI implementation
+beyond explicitly required GM interactions.
 
 1. `Travel` is one live GM workflow for the focused Scene across ordinary
    places, Hex maps, and Dungeons. The GM works from the Scene tab through the
@@ -996,10 +996,8 @@ interactions.
     those choices persist until released, then automation resumes from current
     Scene context.
 
-If the owner confirms this interpretation, Workflow 4 can enter the draft
-Program Capability Requirements and the interview can continue with Workflow
-5: follow-up, possessions, progression, World consequences, history, and
-corrections.
+Workflow 4 is confirmed. The interview continues with Workflow 5: follow-up,
+possessions, progression, World consequences, history, and corrections.
 
 ## References
 

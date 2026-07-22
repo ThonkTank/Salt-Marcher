@@ -45,10 +45,9 @@ The headings below are interview routes, not presumed feature boundaries.
 3. Running Scenes, combat, lookup, notes, time, weather, music, improvisation,
    and passive presentation during table play -- confirmed 2026-07-22
 4. Dungeon, Hex, travel, position, events, perception, and optional Actor
-   Autonomy during campaign-time progression -- consolidation awaiting owner
-   confirmation
+   Autonomy during campaign-time progression -- confirmed 2026-07-22
 5. Encounter and session follow-up, awarded possessions, progression, World
-   consequences, history, and corrections
+   consequences, history, and corrections -- in progress
 6. Campaign switching, restart, import, export, reference refresh, backup,
    restore, recovery, and other local data-lifecycle needs
 7. Cross-workflow completeness, failure semantics, scale, responsiveness,
@@ -60,6 +59,7 @@ The headings below are interview routes, not presumed feature boundaries.
 - [Session And Scene Preparation 2026-07-22](2026-07-22-session-and-scene-preparation.md)
 - [Running Scene And Live Play 2026-07-22](2026-07-22-running-scene-and-live-play.md)
 - [Spatial Travel And Progression 2026-07-22](2026-07-22-spatial-travel-and-progression.md)
+- [Follow-Up, Progression, And History 2026-07-22](2026-07-22-follow-up-progression-and-history.md)
 - [Goal Interview 2026-07-10](../2026-07-10-goal-interview.md)
 - [Dungeon Needs Interview 2026-07-20](../2026-07-20-dungeon-needs-interview.md)
 
