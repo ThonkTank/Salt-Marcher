@@ -217,6 +217,63 @@ generated Session as one indivisible plan.
    generated results, manual edits, accepted placements, and timeline changes
    remain unchanged?
 
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] Aus DMG kann abgeleitet werden, wieviel encounter, xp
+> budget und loot pro adventuring day für x charaktere mit y level eingeplant
+> werden müssten. Das wird für session generation verwendet um encounter und
+> loot zu erstellen.
+
+For the selected planning Party, the Adventure Day derives the expected
+Encounter amount, XP budget, and loot from the DMG guidance using character
+count and levels. Session generation uses that result to create Encounters and
+loot.
+
+> [Owner, wörtlich zu 2] anzahl.
+
+`Desired Scenes` specifies only how many Scenes the generated Session should
+suggest.
+
+> [Owner, wörtlich zu 3] Verbindliche Vorgaben. Sie müssen in den
+> vogeschlagenene Szenen vorkommen.
+
+Every location, faction, NPC, Item, or other context the GM supplies is a
+binding generation constraint and must occur in the suggested Scenes. Whether
+generation may additionally invent new Campaign content remains unanswered.
+
+> [Owner, wörtlich zu 4] ja.
+
+Regenerating one Encounter or treasure leaves every other generated result,
+manual edit, accepted placement, and timeline change untouched.
+
+### Literal Evidence So Far
+
+- Adventure Day generation derives Encounter amount, XP budget, and loot from
+  DMG guidance for the planning Party's character count and levels.
+- The optional desired-Scenes input is a count, not authored Scene content.
+- Every optional Campaign object supplied to generation is mandatory content
+  for the suggested Scenes, not an ignorable preference.
+- Individual regeneration is isolated from all other generated and manually
+  changed preparation.
+
+## Fifth Breadth Block: Additional Content, Weather, Music, And Notes
+
+1. May generation use additional existing Campaign content or create new NPCs,
+   Items, factions, or locations alongside the GM's binding selections? If the
+   selections cannot fit the Adventure Day budget, should generation return no
+   result, return a visibly warned best effort, or ask the GM to change them?
+2. Where does the GM prepare weather: as starting World weather, on individual
+   timeline entries, on locations, or in some combination? When its moment
+   arrives, does it become active automatically or appear as a suggestion for
+   the GM?
+3. What should music preparation provide: playable audio inside SaltMarcher,
+   references to tracks or playlists, or only written cues? What may music be
+   attached to, and does playback ever start automatically?
+4. Which prepared objects need free-form GM notes: the Session, timeline
+   entries, locations, Encounters, treasures, or all of them? When prepared
+   content appears in a Running Scene, should its notes appear there and remain
+   editable?
+
 No consolidated interpretation of this workflow is confirmed yet.
 
 ## References
