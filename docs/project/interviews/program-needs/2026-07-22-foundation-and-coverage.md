@@ -112,6 +112,52 @@ The next owner-answer block must clarify:
 4. how quickly the GM can create an intentionally incomplete NPC, place, item,
    faction, quest, rumour, or similar fact during play and complete it later
 
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] Ein name reicht. Sesions können auch ohne Party
+> vorbereitet, aber nicht generiert werden.
+
+> [Owner, wörtlich zu 2] korrekt
+
+This confirms the proposed split in the question: rules, general Creature data,
+and Item definitions are reusable across Campaigns; PCs, NPCs, places,
+factions, quests, rumours, possessions, and concrete Item instances belong to
+one Campaign.
+
+> [Owner, wörtlich zu 3] Ja, wechsel passiert über ein
+> optionen/einstellungen menü
+
+> [Owner, wörtlich zu 4] Ein Name, alles andere ist optional
+
+### Literal Evidence So Far
+
+- A Campaign requires only a name.
+- A Session may be authored without a Party. Session generation requires a
+  Party.
+- SaltMarcher keeps multiple Campaigns and exposes Campaign switching through
+  options or settings.
+- A spontaneous Campaign object requires only a name; every other property is
+  optional and may be completed later.
+
+These are evidence, not yet the confirmed interpretation of the complete
+Campaign-foundation workflow.
+
+## Second Breadth Block: Campaign Switching And Immediate Use
+
+The next owner-answer block must clarify:
+
+1. whether Running Scene, Encounter, and travel state in Campaign A remains
+   exactly preserved and resumes when the GM returns after switching to
+   Campaign B
+2. whether switching with running table state happens immediately, requires a
+   warning or confirmation, or is unavailable until that state is closed
+3. whether refreshing a reusable Creature, Item, or rule definition changes
+   Campaign-specific uses automatically or must preserve the version and
+   overrides already used in that Campaign
+4. whether a name-only NPC, place, item, quest, or rumour created from a Running
+   Scene is attached to that Scene immediately or is merely created for later
+   selection
+
 No interpretation of these four questions is confirmed yet.
 
 ## References
