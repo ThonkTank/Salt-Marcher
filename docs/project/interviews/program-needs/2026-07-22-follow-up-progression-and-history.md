@@ -346,8 +346,8 @@ established as a need.
 
 1. Enthält das Charakter-Inventar nur Rewards, die über SaltMarcher verteilt
    wurden, oder kann der GM dort jederzeit manuell ein Item hinzufügen,
-   entfernen oder korrigieren? Braucht ein manuell hinzugefügtes Item zwingend
-   eine Herkunft?
+   entfernen oder korrigieren, auch ohne Reward-Quelle? Ist eine Herkunft für
+   einen manuellen Eintrag optional?
 2. Wenn ein Item als `abgegeben` oder `verkauft` markiert wird, verschwindet es
    aus dem aktuellen Charakter-Inventar und bleibt nur in der History? Ist die
    Gegenpartei freier Text, ein Link auf einen vorhandenen NPC oder beides?
@@ -360,6 +360,69 @@ established as a need.
 5. Welche Herkunft soll SaltMarcher automatisch am Item festhalten: Treasure,
    Encounter oder Quest, Scene oder Ort, In-World-Zeit und Vergabezeit? Reicht
    zusätzlich ein freies Herkunfts-Notizfeld für manuelle Fälle?
+
+### Owner Answers 2026-07-23
+
+> [Owner, wörtlich zu 1] ja.
+
+The GM may add, remove, or correct an Item in a character's ledger manually,
+including without a Reward source. Provenance is optional for a manual entry.
+
+> [Owner, wörtlich zu 2] bleibt im inventar.
+
+An Item marked as given away or sold remains visible in the character's
+inventory ledger with that reminder. The ledger therefore records awarded Item
+history rather than asserting current physical possession. Whether a
+counterparty is free text, a linked existing object, or both remains open.
+
+> [Owner, wörtlich zu 3] Ja.
+
+Coins, trade goods, and equivalent Items support quantity stacks which the GM
+may split and merge.
+
+> [Owner, wörtlich zu 4] Ja. per default sind alle encounter teilnehmer
+> ausgewählt.
+
+For a narrative XP reward, the GM chooses recipients and SaltMarcher divides
+XP equally and rounds each share up. Every Encounter participant is selected by
+default when an Encounter participant set is available. The default outside an
+Encounter context remains to be clarified.
+
+> [Owner, wörtlich zu 5] ja
+
+SaltMarcher records available source Treasure, Encounter or Quest, Scene or
+place, in-world time, and actual award time as Item provenance. A free-form
+source note supports manual or exceptional cases.
+
+### Literal Evidence So Far
+
+- The GM may manually add, remove, and correct ledger Items; manual provenance
+  is optional.
+- Sold and given-away Items remain visible as marked historical awards rather
+  than disappearing from the character ledger.
+- Quantity stacks can be split and merged.
+- Narrative XP uses a GM-adjustable recipient set, equal rounded-up shares, and
+  defaults to all Encounter participants when that context exists.
+- Item provenance captures its available source and both fictional and award
+  timing, with a free-form fallback.
+
+## Final Gap Block: Ledger Presentation And Defaults
+
+1. Weil verkaufte und abgegebene Items im Charakter-Ledger bleiben: Soll die
+   Standardansicht alle Einträge gemeinsam zeigen, oder aktive, verkaufte und
+   abgegebene Einträge getrennt beziehungsweise filterbar darstellen?
+2. Soll die Gegenpartei bei Verkauf oder Abgabe freier Text, ein Link auf einen
+   vorhandenen NPC, Ort oder eine Fraktion, oder wahlweise beides sein?
+3. Welche XP-Empfänger sind bei einer Quest-Auflösung vorausgewählt, wenn kein
+   Encounter-Kontext existiert: die Charaktere der fokussierten Scene, die
+   gesamte aktive Party oder niemand, bis der GM auswählt?
+4. Wie ordnet SaltMarcher tatsächlich erhaltenen Loot einem Adventure Day für
+   den Soll/Ist-Vergleich zu: automatisch anhand In-World-Zeit, über den
+   aktuellen Plan oder durch eine ausdrückliche GM-Auswahl beziehungsweise
+   Korrektur?
+5. Welcher Wert zählt für Loot-Budget und Ledger: der Standardwert der
+   Item-Definition, ein pro konkretem Item überschreibbarer Wert und bei
+   Verkauf zusätzlich ein separater tatsächlicher Preis?
 
 ## References
 
