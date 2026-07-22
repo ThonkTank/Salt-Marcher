@@ -261,6 +261,12 @@ A correction appends a linked entry rather than rewriting prior history. The
 history is not required to replay the Campaign, reconstruct every intermediate
 application state, or restore an arbitrary whole-Campaign snapshot.
 
+Moving a Scene's in-world time backward or manually resolving different Scene
+times never deletes history or reverses confirmed World consequences. A fact
+recorded later at the table may carry an earlier in-world time and is treated as
+having happened then. Only an explicit GM deletion operation may remove its
+selected target.
+
 ## Awaiting Workflow Confirmation
 
 The following areas intentionally contain no normative behavior yet:

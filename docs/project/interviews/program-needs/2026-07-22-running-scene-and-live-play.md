@@ -483,7 +483,114 @@ visuals remains unanswered.
 5. Can the GM blank the second display or manually replace its automatic map or
    background visual at any time?
 
-No consolidated interpretation of this workflow is confirmed yet.
+### Owner Correction And Answer 2026-07-22
+
+> [Owner, wörtlich zu 1/2/3/4] Okay, nein, warte, das machen wir nicht.
+> Einträge werden nicht gelöscht, es kann ja auch einfach sein, dass wir nun
+> dinge verfolgen, die "schon passiert sind" (in spiel-logik) aber wir uns am
+> Tisch jetzt erst darauf fokussieren. Wenn wir uns in der Zeit zurück bewegen,
+> und dann andere Dinge passieren, tuen wir einfach so als wäre das schon
+> passiert gewesen. Das ist alles table-talk, wichtig is, es wird nichts
+> gelöscht oder rückgägig gemacht, außer der GM nutz explizit dafür
+> bereitgestellte Löschvoräge.
+
+The owner withdraws the preceding deletion model completely. Moving Scene time
+backward or choosing a past time while reuniting Scenes never deletes history,
+reverses World consequences, or rolls back any other Scene. An event recorded
+later at the table may have an earlier in-world time and is treated as having
+already happened then. Only a GM-invoked operation explicitly provided for
+deletion removes anything. The earlier proposed deletion warning therefore has
+no applicable deletion to warn about.
+
+This correction restores consistency with the confirmed immutable Campaign
+history: temporal focus may move backward, while recorded facts remain and new
+facts may be added at an earlier in-world time.
+
+> [Owner, wörtlich zu 5] ja
+
+The GM can blank the second display or manually replace its automatic map or
+background visual at any time.
+
+## Proposed Consolidated Interpretation For Confirmation
+
+### Continuous Scene State And Party Splits
+
+- The primary Scene is always present as mutable runtime state in the Scene tab;
+  the GM neither creates nor completes it. It may have zero or one location;
+  split Scenes need no name or label.
+- Every active Party character belongs to exactly one Scene. Activating a Roster
+  character assigns that character to the GM-focused Scene. Inactive Roster
+  characters belong to no Scene and retain their last location and other state.
+- The GM moves selected characters into a new or existing Scene through the
+  same action. Empty Scenes are removed and a remaining populated Scene becomes
+  primary. With no active Party, one empty primary Scene remains.
+- A location change replaces the Scene's location-derived content. Any
+  Scene-capable content may instead be pinned to the Scene or assigned to travel
+  with exactly one Party subgroup. Content that leaves or outlives a Scene
+  remains at its location and is never implicitly deleted.
+
+### Masks And Prepared Monster Groups
+
+- Persistent preparation creates editable monster groups at locations, not
+  Encounters. At the current Scene location, the GM selects individual monsters
+  or groups and Scene participants to start an Encounter.
+- Encounter, Chase, and possible future masks add focused runtime behavior over
+  the continuously visible Scene. The Scene remains in the main panel and mask
+  state remains in the adjacent state panel.
+- Several masks of the same or different types may coexist, and one PC, NPC, or
+  monster may participate in several masks. Moving a character to another Scene
+  removes that character from every mask without blocking the move.
+- The GM can end an Encounter through the already confirmed completion
+  workflow; its confirmed consequences apply while the Scene continues.
+
+### Live Search, Creation, Notes, And Music
+
+- The GM can search all content without leaving the Scene and add a result
+  directly to it.
+- The Scene can create lightweight, note-first Campaign content such as NPCs,
+  locations, and factions. Complete data records such as Items and monsters are
+  managed outside Scene-local creation.
+- Relevant object notes remain visible and editable in the Scene, while notes
+  across every object kind remain searchable.
+- The focused Scene drives optional music autoplay. Scene changes update the
+  queue, obsolete songs fade out, and the GM's manual player actions take
+  precedence.
+
+### Independent Time And Weather
+
+- Every Scene advances its own time through travel, exploration, and mask
+  activity. Encounter and Chase rounds last six seconds. Travel duration is
+  calculated and initially not overridable; the GM chooses exploration
+  duration.
+- The GM may increment Scene time forward or backward. When groups with
+  different times reunite, the GM manually chooses their temporal resolution.
+- Moving temporal focus backward never deletes history or reverses World state.
+  Facts entered later with an earlier in-world time are treated as having
+  happened then. Only explicit deletion operations remove anything.
+- Weather advances independently from each Scene's time, location, terrain, and
+  climate data. A GM override remains until the GM disables it, after which
+  autonomous weather resumes.
+
+### Passive Second Display
+
+- The second display immediately follows the focused Scene. During travel it
+  automatically shows the map; at a location it automatically shows background
+  art.
+- Map visibility is the union of what at least one character in the focused
+  Scene can perceive and updates with position, line of sight, light, hidden
+  state, and similar visibility changes.
+- NPC artwork appears only when highlighted by the GM. During Encounter or
+  Chase masks, the GM may enable automatic artwork for the current actor.
+- The display contains only maps and NPC or location artwork. It never exposes
+  mechanics, text, or private notes. The GM can blank it or manually replace its
+  automatic visual at any time.
+
+## Confirmation Requested
+
+This interpretation is ready for owner confirmation. Only after confirmation
+will the complete live-play workflow enter the draft Program Capability
+Requirements and the interview move to spatial travel and campaign-time
+progression.
 
 ## References
 
