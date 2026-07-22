@@ -845,6 +845,162 @@ terrain. The duration of manual ambience additions or removals remains open.
    ends, should automatic environment matching and mix balancing resume from
    the Scene's current location, weather, and time?
 
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] Ja. Je feinkörniger das System, desto besser, jedoch
+> ohne die user experience zu stark zu belasten.
+
+Every map may use a quick fallback climate preset plus regional climate zones
+which replace or modulate it. The resulting climate may be as fine-grained as
+the product can make useful without burdening the GM. Whether the technical
+model blends overlaps or resolves one effective zone is not itself a user
+decision; the required outcome is quick broad setup with optional precise local
+control.
+
+> [Owner, wörtlich zu 2] Bestimmte Kreaturen könnten bestimmte Wetter oder
+> Tageseiten oder so bevorzugen, aber ertmal reichen die vorgeschlagenen
+> Punkte. Es sollte allerdings nicht zu schwierig sein, weitere einflüsse
+> später hinzuzufügen.
+
+The initial structured weather effects cover view distance, travel duration or
+cost, perception, temperature, ambience, and music. Combat-facing consequences
+such as disadvantage on ranged attacks may remain prominent GM-facing notes
+rather than automatic adjudication. Creature preferences for weather or time
+of day are a credible later extension, and adding such influence families must
+not require redesigning unrelated weather behavior.
+
+> [Owner, wörtlich zu 3] Eine Pop-up benachrichtigun reicht. Sie sollte
+> bleiben, bis das Wetter wieder verschwindet oder der GM sie weg-klickt.
+
+Mechanically relevant weather updates its structured effects and produces a
+persistent pop-up associated with the affected Scene or Scenes. Travel need not
+pause merely because weather arrived. The notification remains until the
+weather no longer applies or the GM dismisses it; how notifications from
+several Scenes are grouped is a later interaction-design choice.
+
+> [Owner, wörtlich zu 4] Ja. Nein, das wäre zu kompliziert, ein allgemeines
+> "revealen" tool oder so wäre praktischer.
+
+The passive map for the focused Scene shows the union of map knowledge held by
+the characters currently in that Scene. SaltMarcher does not require a
+character-to-character knowledge-copy workflow. A general GM reveal tool is
+the simpler required interaction for adding selected map knowledge to relevant
+characters.
+
+> [Owner, wörtlich zu 5] Ja. Ja. Zusatz: Es ist nicht entweder automatisch
+> oder manuell, der GM kann der automatischen auswahl dinge hinzufügen oder
+> dinge aus ihr entfernen.
+
+Manual ambience changes persist until the GM releases them, after which
+automatic matching and balancing resume from the Scene's current place,
+weather, and time. Manual control is an additive and subtractive overlay on the
+automatic selection: the GM may add sounds to it and suppress sounds from it
+without replacing automation as a whole.
+
+### Literal Evidence So Far
+
+- Climate authoring combines a quick fallback with optionally fine-grained
+  regional control, bounded by low GM setup and operation cost.
+- Initial structured weather effects cover visibility, travel, perception,
+  temperature, ambience, and music. Combat rulings remain GM-facing, and new
+  influence families must remain easy to add later.
+- Mechanically relevant weather creates a persistent notification but does not
+  force travel to stop.
+- The focused Scene's passive map unions the knowledge of its current
+  characters. Knowledge changes use a general GM reveal interaction rather
+  than explicit character-to-character copying.
+- Manual ambience additions and suppressions coexist with automatic selection
+  and persist until released; automation then resumes from current Scene
+  context.
+
+## Proposed Consolidated Interpretation For Owner Confirmation
+
+This interpretation is not yet canonical program truth. It consolidates the
+complete workflow for confirmation without choosing architecture, storage,
+simulation algorithms, or UI implementation beyond explicitly required GM
+interactions.
+
+1. `Travel` is one live GM workflow for the focused Scene across ordinary
+   places, Hex maps, and Dungeons. The GM works from the Scene tab through the
+   travel state tab, optional mini-map, top bar, detail pane, and state pane;
+   live travel does not require opening a separate workspace.
+2. A direct move selects an adjacent destination. A longer journey uses travel
+   points and a route within the current map. Cross-map route planning is a
+   desirable optional convenience, not a binding core capability.
+3. Travel advances position, campaign time, weather, tracks, perception,
+   events, and applicable autonomous World behavior. The GM may pause, resume,
+   change presentation speed, reroute, end, or step through several travel
+   checkpoints with undo and redo. Presentation speed does not alter in-world
+   duration.
+4. The GM may override any factors used to calculate travel duration, the final
+   duration, or both. A final-duration override is authoritative while active.
+5. Events, Traps, relevant tracks, and perceived NPCs interrupt travel at a
+   committed checkpoint for GM inspection. Perception makes an NPC available
+   in the Scene; an Encounter begins only after explicit GM confirmation.
+6. Travel undo removes the selected journey segment and everything that
+   segment alone introduced, but preserves facts already established by a
+   later authoritative Scene. An interruption is itself a travel checkpoint.
+7. Full places are Scene boundaries. Subplaces, Dungeon navigation areas, and
+   exact cells refine location inside the same Scene. Different full places
+   imply different Scenes; moving only part of a group creates or joins another
+   Scene, while moving the complete group changes the existing Scene's place.
+8. Places form a nested hierarchy on Hex and Dungeon maps. Unmapped places are
+   valid administrative Scene locations, but choosing one is not travel and
+   advances no time automatically.
+9. Weather, music tags, ambience context, and configurable loot, Encounter,
+   and faction-appearance factors flow through place hierarchy according to
+   their confirmed rules. Factor families may be additive or replacing per
+   place, with additive behavior as the default.
+10. Split Scenes advance independently. World behavior for an in-world period
+    is processed once and reused when an earlier Scene reaches that period. The
+    furthest-advanced Scene remains authoritative for shared World facts.
+11. The GM normally avoids earlier-time contradictions. If the GM knowingly
+    removes or changes something that already has later dependent history,
+    SaltMarcher warns, permits the change, marks affected history as
+    conflicting, and provides manual resolution whose marker clears only when
+    the GM confirms resolution.
+12. The solution-independent ideal is that the complete Campaign World
+    progresses with confirmed campaign time. Optional Actor Autonomy remains
+    GM-enabled and bounded; Party involvement pauses before autonomous danger
+    resolution, while permitted non-Party behavior may proceed. Later
+    technical work must determine how to meet this outcome at practical scale.
+13. A Hex map is one continuous, unbounded authored map with predetermined
+    mouse-wheel zoom levels from local three-mile Hexes to world scale. Several
+    such maps may exist. Coarse facts provide finer defaults, while detailed
+    edits recalculate coarse aggregates.
+14. Hex authoring supports terrain, rivers, roads, cliffs, ravines, location
+    markers, assets, GM-authored faction influence, import and export, Fog of
+    War, unknown regions, visibility affected by weather and elevation, and
+    manual reveal. Procedural Hex generation and autonomous faction simulation
+    remain distant extensions.
+15. Character-specific map knowledge is durable. The Party view is the union
+    of the characters in the focused Scene, and a general GM reveal tool adds
+    selected knowledge without requiring character-to-character transfer
+    bookkeeping.
+16. Weather uses a quick fallback climate plus paintable or otherwise
+    modulatable regional climate zones. Seasonal baselines and coherent moving
+    phenomena produce gradual, geographically sensible weather without
+    per-Hex random discontinuities or burdensome meteorological setup.
+17. The GM may author weather events with type, affected area, intensity,
+    movement, time extent, notes, and mechanical effects, and may pause, edit,
+    or end them. Structured effects initially cover visibility, travel,
+    perception, temperature, ambience, and music. Other influence families can
+    be added without rewriting unrelated behavior.
+18. Mechanically relevant weather updates its effects and creates a persistent
+    Scene-associated notification until the weather ends or the GM dismisses
+    it. It does not by itself force a travel stop. Combat-facing rulings may
+    remain prominent notes for GM adjudication.
+19. Music and ambience use locally managed, categorized files. Weather and
+    environment layers combine automatically and SaltMarcher balances the mix.
+    The GM may add sounds to or suppress sounds from the automatic selection;
+    those choices persist until released, then automation resumes from current
+    Scene context.
+
+If the owner confirms this interpretation, Workflow 4 can enter the draft
+Program Capability Requirements and the interview can continue with Workflow
+5: follow-up, possessions, progression, World consequences, history, and
+corrections.
+
 ## References
 
 - [Program Needs Interview Series](README.md)

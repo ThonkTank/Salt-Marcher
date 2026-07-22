@@ -45,7 +45,8 @@ The headings below are interview routes, not presumed feature boundaries.
 3. Running Scenes, combat, lookup, notes, time, weather, music, improvisation,
    and passive presentation during table play -- confirmed 2026-07-22
 4. Dungeon, Hex, travel, position, events, perception, and optional Actor
-   Autonomy during campaign-time progression -- in progress
+   Autonomy during campaign-time progression -- consolidation awaiting owner
+   confirmation
 5. Encounter and session follow-up, awarded possessions, progression, World
    consequences, history, and corrections
 6. Campaign switching, restart, import, export, reference refresh, backup,
