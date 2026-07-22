@@ -709,9 +709,9 @@ each Hex. Evidence: `/home/aaron/Schreibtisch/projects/references/climate-weathe
 The product inference from these sources is deliberately simpler than a real
 forecasting model:
 
-- a new map starts with one map-wide climate preset
-- the GM may optionally paint broad climate regions and choose another preset
-  for each
+- a new map may start quickly with one map-wide fallback climate preset
+- a world-to-local map supports painted broad climate regions which replace or
+  modulate that fallback
 - a preset supplies seasonal expected temperature, precipitation or
   storminess, and prevailing weather movement without exposing raw scientific
   parameters
@@ -748,6 +748,102 @@ simulation are not justified user inputs unless later evidence requires them.
    role or context, such as weather, location, time of day, or general
    background? Should a manual addition or removal last until the GM releases
    the override, after which automatic selection and balancing resume?
+
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] Wenn eine Karte von weltkarte bis lokaler region
+> zoomen kann, dann reicht ein einziges Preset nicht aus, oder es muss mit
+> malbaren klima zonen ergänzt oder anders moduliert werden können.
+
+One map-wide climate preset alone is insufficient for a continuous world-to-
+local map. The GM must be able to paint climate zones or otherwise modulate the
+baseline regionally. A map-wide preset may remain a quick fallback, but regional
+climate variation is binding behavior rather than an optional exception.
+
+> [Owner, wörtlich zu 2] Wetterereignisse müssen auch Notzinen enthalten
+> können, wie z.b. "nachteil auf vernkampf angriffe" oder Reisezeit, sichtweiter
+> etc. beinflussen können. Wenn ein mechanisch relevantes Wetterereigniss
+> stattfindet muss der Gm informiert werden. Ich wüsste nicht, wie der GM ein
+> ereigniss verschieben können sollte. Pausieren, bearbeiten und beenden können
+> sollte er es aber schon.
+
+Weather events may carry free-form GM notes and mechanically relevant effects,
+including travel duration, view distance, or a note such as disadvantage on
+ranged attacks. SaltMarcher informs the GM when a mechanically relevant weather
+event occurs. The GM can pause, edit, or end an event. Direct manual relocation
+is not a required interaction; coherent automatic movement remains part of the
+weather behavior.
+
+> [Owner, wörtlich zu 3] Ja. Andersherum, wenn ein hex auf der Weltkarte berg
+> terrain hat und man hineinzoom sollte das Terrain entsprechend vererbt
+> werden. Wird es auf der regionalen Ebene geändert wird das globale hex aus
+> dem aggregat neu berechnet.
+
+The GM authors at the useful zoom level while SaltMarcher presents appropriate
+detail at other levels. Coarse facts propagate downward: a mountain Hex at
+world scale supplies corresponding terrain when zooming in. Fine changes
+propagate upward through aggregation: editing regional terrain recalculates the
+coarse world Hex from its detailed contents.
+
+> [Owner, wörtlich zu 4] Puh... Einerseits wäre es schon cool, wenn jeder
+> Charakter eigenes Karten Wissen hat, andererseits könnte das aber auch
+> anstrengend werden, wenn informationen geteilt werden oder charakter A im
+> roleplay charakter B eine Wegbeschreibung gibt... Ich schätze wen der GM
+> manuell teil der karte revealen und dem charakterwissen hinzufügen kann ist
+> charakter-spezifisches wissen aber cooler als generelles roster wissen. Die
+> Party sieht ja sowieso das aggregat aller charaktere.
+
+Map knowledge belongs to individual characters rather than to the Roster or
+Party as a single store. The GM can manually reveal map regions or content and
+add that knowledge to selected characters. The Party-facing view aggregates its
+characters' knowledge. The exact sharing workflow and the relationship to
+focused split Scenes still need confirmation.
+
+> [Owner, wörtlich zu 5] Ambiance wird nach der Art der umgebung kategorisiert.
+> Z.b. "Stadt" "Wald" "Hafen" "Menschenmenge" etc. Orte können entsprechend
+> getaggt werden (oder erhalten das per terrain)
+
+Ambience sounds are categorized by environment types such as city, forest,
+harbour, or crowd. Places carry matching tags explicitly or derive them from
+terrain. The duration of manual ambience additions or removals remains open.
+
+### Literal Evidence So Far
+
+- World-scale weather setup requires regionally paintable or otherwise
+  modulated climate zones; one undifferentiated map preset is insufficient.
+- Weather events carry notes and mechanical effects. The GM is notified of
+  mechanically relevant weather and may pause, edit, or end an event.
+- Multi-scale authored truth propagates both ways: coarse terrain supplies
+  finer defaults, while detailed edits recalculate coarse aggregates.
+- Map knowledge belongs to individual characters. Party presentation is an
+  aggregate, and the GM may add revealed knowledge to selected characters.
+- Ambience and places use environment tags which may be explicit or
+  terrain-derived.
+
+## Ninth Breadth Block: Weather Effects, Knowledge Sharing, And Overrides
+
+1. Is this climate setup sufficient: every map has a fallback climate preset,
+   while the GM may paint climate zones that replace or modify that baseline?
+   May zones overlap and blend, or should every map position resolve to exactly
+   one effective climate zone plus local terrain modifiers?
+2. Which weather effects should SaltMarcher apply automatically as structured
+   values: view distance, travel duration or cost, perception, temperature,
+   ambience, and music? Should combat-facing effects such as ranged-attack
+   disadvantage remain prominent GM notes rather than being adjudicated
+   automatically?
+3. When mechanically relevant weather reaches a Scene, should SaltMarcher only
+   notify the GM and update its effects, or must active travel pause at a new
+   travel point? Should the GM receive notifications for every affected Scene
+   or only the currently focused one?
+4. With character-specific map knowledge, does the focused Scene's passive map
+   show the union of only the characters currently in that Scene, preserving
+   the previously confirmed split-Scene behavior? Must the GM be able to copy
+   selected knowledge from one character to chosen others after an in-fiction
+   explanation or map exchange?
+5. When the GM manually adds or removes an ambience sound, does that override
+   remain until explicitly released, like weather and music overrides? When it
+   ends, should automatic environment matching and mix balancing resume from
+   the Scene's current location, weather, and time?
 
 ## References
 
