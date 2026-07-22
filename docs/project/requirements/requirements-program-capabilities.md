@@ -224,9 +224,13 @@ still-unconfirmed workflow.
 ### Authoritative Party With Dependent Running Contexts
 
 Party activation, deactivation, or deletion is authoritative immediately and is
-not rolled back by an unavailable Running Scene or Encounter. Activation creates
-no automatic Scene assignment. Deactivated or deleted characters immediately
-stop counting as current Party members.
+not rolled back by an unavailable Running Scene or Encounter. A later
+live-workflow answer supersedes the earlier allowance for an unassigned active
+character: every active Party character belongs to exactly one Running Scene.
+Inactive Roster characters belong to no Scene and retain their last location and
+other state. The destination Scene for a newly activated character remains
+under interview. Deactivated or deleted characters immediately stop counting as
+current Party members.
 
 Only Running Scenes that reference the changed character and their Encounters
 reconcile. Until reconciliation succeeds, affected contexts are visibly pending
