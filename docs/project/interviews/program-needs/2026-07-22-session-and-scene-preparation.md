@@ -413,7 +413,108 @@ the Items inside a treasure remains unanswered.
    Encounters, treasures, and World placements without a planning Party,
    Adventure Day, date, name, or any use of generation?
 
-No consolidated interpretation of this workflow is confirmed yet.
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] Der Gm kann songs nachträgich onch über die Dtenbasis
+> verwalten.
+
+After adding songs, the GM can continue managing their categories through the
+local data collection.
+
+> [Owner, wörtlich zu 2] Ja.
+
+Manual selection, queueing, and looping take precedence over autoplay until the
+manual choice ends. Automatic selection then resumes while autoplay remains
+enabled.
+
+> [Owner, wörtlich zu 3] Ja.
+
+The GM can add, remove, replace, and edit every Item inside a treasure before
+and after placement. Individual Items can move from a placed treasure into
+another treasure or location.
+
+> [Owner, wörtlich zu 4] Sessions haben, wie gesagt, keine Namen. Session ist
+> eine Planungsmaske, welche hilft effizient content vorzubereiten und als
+> persistierten Welt-zustand zu erstellen. Aber ja, content kann auch komplett
+> manuell aufgebaut werden.
+
+A Session is not a named content object. It is a planning workspace that helps
+the GM efficiently prepare content and create it as persistent World state. The
+GM can build the same content entirely manually without a planning Party,
+Adventure Day, date, name, or generation.
+
+## Proposed Consolidated Interpretation For Confirmation
+
+### Planning Workspace And Timeline
+
+- `Session` means the planning workspace, not a named or date-bound content
+  object. It exposes one current plan that the GM may reuse or overwrite.
+- The plan becomes an ordered timeline of expected Scene occurrences. Each
+  entry may have notes and zero or one location; one location may occur in
+  several entries. The GM may add, remove, reorder, and annotate entries at any
+  time.
+- Timeline entries are not saved Scene workspaces. A Scene exists only as
+  resumable runtime state. Ordinarily one Running Scene exists; splitting the
+  Party creates several distinct Running Scenes.
+- The GM may prepare every supported content type and World placement manually
+  without a planning Party, Adventure Day, name, date, or generation.
+
+### Assisted Generation
+
+- Generation uses an expected planning Party selected from the Roster without
+  changing the current table Party. It also requires an Adventure Day, from
+  which DMG guidance supplies an Encounter amount, XP budget, and loot budget
+  for the Party's character count and levels.
+- The desired Scene count and selected locations, factions, NPCs, Items, and
+  other Campaign content are optional inputs. Every supplied object is a
+  binding constraint and must occur in the suggested Scenes.
+- SaltMarcher may supplement those constraints with other existing or newly
+  created Campaign content. It validates the constraints before generation. If
+  they cannot fit the Adventure Day, it explains why and disables generation.
+- A generated result includes the timeline plus concrete Encounters and
+  treasures. The GM can independently edit, regenerate, reject, accept, and
+  place each generated Encounter or treasure. Regenerating one result preserves
+  every other result and all manual edits, placements, and timeline changes.
+
+### Persistent World Content And Treasures
+
+- Accepting an Encounter or treasure placement turns it into persistent World
+  state and ends Planner ownership. It remains editable and survives replacing
+  the current plan.
+- Replacing the plan discards its timeline, timeline notes, and unaccepted
+  drafts, but does not change accepted World placements.
+- Entering a prepared location exposes its placed Encounters and treasures in
+  the Running Scene UI. Nothing starts, resolves, or awards automatically; the
+  GM decides what happens.
+- A treasure may contain Items, including coins, trade goods, magic Items,
+  equipment, and other possessions. Each Item remains independently editable
+  before and after placement and may move between treasures and locations.
+
+### Weather, Music, And Notes
+
+- Weather is not prepared in the Session workspace. It develops autonomously
+  from location terrain and other climate data; its live behavior belongs to a
+  later workflow.
+- Songs are stored locally and remain manageable by the GM. The GM categorizes
+  them by mood, intensity, vibe tags, and genre when adding them and may change
+  that data later.
+- Scene sliders provide mood and intensity input; Scene content such as
+  locations, NPCs, factions, and monsters contributes vibe tags and genres.
+  The exact mood axes and categorization model remain subject to product
+  testing.
+- With autoplay enabled, the GM-focused Running Scene drives an automatically
+  generated queue. Scene changes update the queue, and songs that no longer fit
+  fade out gradually. Manual stop, skip, back, selection, queue, and loop
+  controls take precedence; automation resumes when the manual choice ends.
+- Every authored or generated object may carry free-form GM notes. Relevant
+  notes are visible and editable in the Running Scene, and the GM can search
+  notes across every kind of object.
+
+## Confirmation Requested
+
+This interpretation is ready for owner confirmation. Only after confirmation
+will it enter the draft Program Capability Requirements and let the interview
+move to the live table workflow.
 
 ## References
 
