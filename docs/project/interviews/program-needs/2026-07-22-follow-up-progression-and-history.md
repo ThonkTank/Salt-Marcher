@@ -424,6 +424,77 @@ source note supports manual or exceptional cases.
    Item-Definition, ein pro konkretem Item überschreibbarer Wert und bei
    Verkauf zusätzlich ein separater tatsächlicher Preis?
 
+### Owner Answers 2026-07-23
+
+> [Owner, wörtlich zu 1] inventar sollte durchsucht und gefiltert werden
+> können.
+
+The character loot ledger is searchable and filterable. The exact default
+grouping is an interaction-design choice as long as the GM can isolate active,
+sold, given-away, and other relevant entries.
+
+> [Owner, wörtlich zu 2] automatisch letzteres, mit verkaufswert, freitext ist
+> optional.
+
+A sale or handoff records a structured link to an existing NPC, place, or
+faction when available, its sale value where applicable, and optional free
+text. This provides both structured provenance and an escape hatch for an
+unmodelled or exceptional counterparty.
+
+> [Owner, wörtlich zu 3] Quests bekommen noch ein strukturiertes Datenfeld:
+> Mitwirkende. GM kann hier charaktere hinzufügen, welche an der quest
+> mitgewirkt haben. fyi: Wenn inaktive charaktere XP erhalten dann wird der GM
+> informiert wenn sie das nächste mal aktiviert werden.
+
+Quests have a structured contributor set to which the GM adds participating
+characters. Those contributors supply the default XP recipient set when the
+Quest is resolved, independent of Encounter context, and remain GM-adjustable
+in the shared reward dialog. If an inactive character receives XP, SaltMarcher
+notifies the GM the next time that character is activated.
+
+> [Owner, wörtlich zu 4] Beim session planing. erhaltenes loot wird mit dem
+> soll-wert verglichen und rewards werden entsprechend angepasst.
+
+Loot sufficiency is evaluated during Session planning. SaltMarcher compares
+already received loot with the DMG-derived expected value and adjusts proposed
+new rewards to compensate. The comparison window and the GM's control over the
+adjustment remain to be clarified.
+
+> [Owner, wörtlich zu 5] Was meinst du mit "Zählt"? Bei was?
+
+The value question was too abstract and establishes no behavior. It is replaced
+below with a concrete budget example.
+
+### Literal Evidence So Far
+
+- The character ledger can be searched and filtered by relevant reminder
+  state and content.
+- Sale and handoff history supports a structured counterparty link, applicable
+  sale value, and optional free text.
+- Quests keep structured contributors which default their XP recipients.
+- Inactive XP recipients produce a notification on their next activation.
+- Session planning compares received loot to the expected target and adjusts
+  proposed rewards to compensate.
+
+## Final Targeted Clarifications
+
+1. Konkretes Wertbeispiel: Ein Item hat laut Definition 100 GP Wert, der GM
+   überschreibt dieses konkrete Exemplar auf 80 GP und die Party verkauft es
+   später für 50 GP. Zählen für die Loot-Soll/Ist-Bilanz die 80 GP, während die
+   50 GP nur als tatsächlicher Verkaufspreis in der History stehen?
+2. Zählt ein einmal erhaltenes Item weiterhin vollständig als erhaltenes Loot,
+   nachdem es verkauft oder abgegeben wurde?
+3. Vergleicht die Session-Planung den gesamten bisher erwarteten Loot aus allen
+   von den Charakteren erhaltenen XP mit ihrem gesamten bisher erhaltenen Loot,
+   oder nur einen begrenzten Zeitraum seit der letzten Planung?
+4. Wenn die Party über oder unter dem Soll liegt: Passt die Generation die
+   vorgeschlagenen Rewards automatisch an, zeigt dem GM die Abweichung und
+   erlaubt ihm trotzdem, die Anpassung zu überschreiben?
+5. Beginnt eine neu erstellte Quest ohne Mitwirkende, außer sie wird aus einem
+   Kontext mit ausgewählten Charakteren erstellt? Soll die Aktivierungswarnung
+   für zwischenzeitlich erhaltene XP nach einmaligem Anzeigen als erledigt
+   gelten?
+
 ## References
 
 - [Program Needs Interview Series](README.md)
