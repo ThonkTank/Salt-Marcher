@@ -623,6 +623,132 @@ available through the top bar, detail pane, and state-pane tabs.
    remains non-editable, or should the GM now also be able to override the final
    duration directly?
 
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] Es handelt sich um eine Karte in die tatsächlih
+> einfach mit dem mausrad hineingezoomt werden kann. Es gibt eine
+> vorausbestimmte Menge an zo-stufen von einem lokal regionalen 3 meilen hex is
+> zur Weltkarte.
+
+The zoom levels are not separate linked maps. One continuous Hex map supports a
+predetermined set of mouse-wheel zoom levels, ranging from local or regional
+three-mile Hexes to a world-map scale. How authored detail appears or aggregates
+across those levels remains to be clarified.
+
+> [Owner, wörtlich zu 2] Erstmal wird er wir terrain vom GM gesetzt. Autonome
+> fraktions simulation ist ein weit-weit-weit entferntes feature. Ungefähr so
+> weit entfernt wie die vtt und spieler-facing funktionen.
+
+Faction influence is initially authored directly by the GM like terrain. An
+autonomous faction simulation is parked as a very distant extension, comparable
+to VTT and player-facing functionality, and does not constrain the local GM
+core.
+
+> [Owner, wörtlich zu 3] Ich weiß es nicht. Hier brauche ich deine Hilfe und
+> Recherche. Es muss für den GM simpel und schnell umzusetzen sein. Es sollte
+> kein unnötig großer Aufwandt sein eine wetter simulation auf der Karte
+> einzurichten.
+
+The exact climate inputs remain open and require source-backed assistance. The
+binding user need is that setting up useful map weather remains quick and
+simple for the GM and does not require unnecessary meteorological authoring.
+
+> [Owner, wörtlich zu 4] Ja, ambiance funktioniert wie Musik. nein, er muss
+> nicht jedes Layer unabhängig starten. Wetter ist ein layer und
+> location-basierte ambiance layert sich automatisch. Der GM kann eigene Sounds
+> hinzufügen oder automatische entfernen. Außerdem muss das Programm versuchen
+> sie bestmöglich zu balancen.
+
+Ambience uses locally managed and categorized audio like music. Weather sound
+forms one layer and location-based ambience layers automatically with it. The
+GM need not operate every layer independently, but can add a chosen sound or
+remove an automatically selected one. SaltMarcher automatically balances the
+combined layers as well as possible.
+
+> [Owner, wörtlich zu 5] Der GM kann die entgültige Reisedauer überschreiben
+> oder alle faktoren, aus denen sie sich ergibt. Er kann auch beides machen, nur
+> dann sind die faktoren irrelevant, weil das ergebnis bereits überschrieben
+> wurde.
+
+The GM may override the calculated journey duration, any of its input factors,
+or both. A direct duration override is authoritative, so input changes no
+longer affect that journey's duration while the override remains in force. This
+supersedes the earlier answer that calculated travel duration was initially
+non-editable.
+
+### Literal Evidence So Far
+
+- One continuous Hex map supports predetermined zoom levels from local
+  three-mile Hexes to world scale.
+- Faction influence is GM-authored for the local core; autonomous faction
+  simulation is parked as a distant extension.
+- Weather setup must be fast and simple and needs a source-backed minimal input
+  model rather than assumed meteorological complexity.
+- Ambience uses local categorized audio. Weather and location layers combine
+  automatically, the GM can add or remove sounds, and SaltMarcher balances the
+  mix.
+- The GM can override travel inputs, final calculated duration, or both; the
+  final-duration override wins.
+
+## Research Evidence For Minimal Climate Authoring
+
+The World Meteorological Organization describes climatological normals as both
+a benchmark and an indicator of conditions likely at a location. Its ordinary
+climate representation uses monthly means or totals. This supports a seasonal
+expected-condition baseline rather than requiring the GM to author daily
+weather. Evidence: `/home/aaron/Schreibtisch/projects/references/climate-weather/wmo-climatological-normals.md`
+([public source](https://wmo.int/wmo-climatological-normals)).
+
+NOAA explains that local weather results from large atmospheric patterns plus
+local geography, latitude, moisture, and solar input. Air masses and fronts
+cover large areas and move across the world. This supports coherent moving
+weather phenomena with local modifiers rather than unrelated random weather in
+each Hex. Evidence: `/home/aaron/Schreibtisch/projects/references/climate-weather/noaa-weather-systems-patterns.md`
+([public source](https://www.noaa.gov/education/resource-collections/weather-atmosphere/weather-systems-patterns)).
+
+The product inference from these sources is deliberately simpler than a real
+forecasting model:
+
+- a new map starts with one map-wide climate preset
+- the GM may optionally paint broad climate regions and choose another preset
+  for each
+- a preset supplies seasonal expected temperature, precipitation or
+  storminess, and prevailing weather movement without exposing raw scientific
+  parameters
+- terrain, elevation, water, time of day, and season provide automatic local
+  variation where their facts are available
+- a GM-authored weather event needs only a recognizable type, affected area,
+  intensity, movement, and time extent; SaltMarcher derives local transitions
+  and effects
+
+This is a research-informed proposal for owner confirmation, not yet confirmed
+product truth. Pressure fields, humidity curves, or detailed atmospheric
+simulation are not justified user inputs unless later evidence requires them.
+
+## Eighth Breadth Block: Minimal Weather Setup, Map Detail, And Knowledge
+
+1. Is the proposed default setup sufficient: choose one map-wide climate preset
+   and do nothing else, with optional painted climate regions for exceptions?
+   Should the preset expose only understandable seasonal summaries such as
+   temperature, wetness or storminess, and prevailing weather movement?
+2. Is this sufficient for authored weather events: choose a type such as rain,
+   snow, fog, storm, heat, cold, or strong wind; paint its starting area; set
+   intensity, movement direction and speed, start time, and duration; then let
+   SaltMarcher derive gradual local transitions? May the GM edit, move, pause,
+   or end the event at any time?
+3. On the one continuous multi-zoom map, does the GM author at whichever zoom
+   level is useful while SaltMarcher aggregates or reveals detail at the other
+   levels? For example, should a local road or location disappear at world
+   scale while regional terrain and faction influence remain summarized?
+4. Is Hex-map knowledge separate for each split Party subgroup, so one group
+   does not automatically reveal discoveries to another until the GM shares or
+   reunites their knowledge? Does a manual GM reveal change durable group
+   knowledge or only the passive display presentation?
+5. For automatic ambience, does the GM categorize each imported sound by its
+   role or context, such as weather, location, time of day, or general
+   background? Should a manual addition or removal last until the GM releases
+   the override, after which automatic selection and balancing resume?
+
 ## References
 
 - [Program Needs Interview Series](README.md)
@@ -631,3 +757,9 @@ available through the top bar, detail pane, and state-pane tabs.
 - [Dungeon Travel Requirements](../../../dungeon/requirements/requirements-dungeon-travel.md)
 - [Actor Autonomy Requirements](../../../autonomy/requirements/requirements-actor-autonomy.md)
 - [Program Capability Requirements](../../requirements/requirements-program-capabilities.md)
+- WMO climatological normals:
+  `/home/aaron/Schreibtisch/projects/references/climate-weather/wmo-climatological-normals.md`
+  ([public source](https://wmo.int/wmo-climatological-normals))
+- NOAA weather systems and patterns:
+  `/home/aaron/Schreibtisch/projects/references/climate-weather/noaa-weather-systems-patterns.md`
+  ([public source](https://www.noaa.gov/education/resource-collections/weather-atmosphere/weather-systems-patterns))
