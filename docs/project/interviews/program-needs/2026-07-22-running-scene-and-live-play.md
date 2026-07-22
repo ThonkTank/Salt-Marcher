@@ -418,6 +418,71 @@ whether it exposes any mechanical text remain unanswered.
    textual information such as names, weather, initiative, or HP, and must
    private GM notes always be excluded?
 
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] History wird entfernt
+
+Moving Scene time backward removes history. The exact history entries and
+whether their World consequences are also reversed remain unresolved. This
+conflicts with the earlier confirmed requirement that Campaign history is
+immutable and corrections only append linked entries.
+
+> [Owner, wörtlich zu 2] Kann vergangene Zeit wählen, wird aber informiert das
+> etwas gelöscht werden würde.
+
+When reuniting Scenes, the GM may choose a past resulting time. Before applying
+it, SaltMarcher informs the GM that doing so would delete something. What is
+deleted and whether the GM explicitly confirms or cancels still need
+clarification.
+
+> [Owner, wörtlich zu 3] ja.
+
+The second display follows the currently focused Scene and switches immediately
+when the GM focuses another Scene.
+
+> [Owner, wörtlich zu 4] ja.
+
+The second-display map shows the union of everything at least one character in
+the focused Scene can currently perceive and updates immediately when position,
+line of sight, lighting, or hidden state changes.
+
+> [Owner, wörtlich zu 5] Die Anzeitge enthält nur npc/location artwork und map
+> visuals.
+
+The second display contains only NPC or location artwork and map visuals. It
+never exposes mechanical or textual state such as names, weather, initiative,
+HP, or private GM notes. Whether the GM may blank or manually replace automatic
+visuals remains unanswered.
+
+### Literal Evidence So Far
+
+- Rewinding Scene time deletes history, but the deletion boundary and effect on
+  World state conflict with the earlier immutable-history requirement and are
+  not yet defined.
+- Reuniting Scenes at a past time warns the GM that content would be deleted.
+- The second display immediately follows the focused Scene.
+- Its map uses the union of the focused Scene's character visibility and updates
+  with visibility changes.
+- The display is visual-only: maps and NPC or location artwork, never mechanics,
+  text, or private notes.
+
+## Seventh Breadth Block: Rewind Deletion Boundary And Display Control
+
+1. When a Scene is rewound to time `T`, which history is deleted: every action
+   and event recorded by that Scene after `T`, or only time-progression entries?
+2. Are the deleted events' current World consequences also reversed—for example
+   travel location, Encounter results, XP, NPC death, consumed stock, awarded
+   Items, and possession changes—or does only their history disappear?
+3. If a deleted Scene event affected another Scene or shared Campaign content,
+   does rewind reverse that shared effect too, leave it untouched, or prevent
+   the rewind until the GM resolves the conflict?
+4. Is rewind an intentional exception to immutable Campaign history, so the
+   deleted events vanish even from the audit trail after a warning and explicit
+   confirmation? Or should the audit retain the deletion itself as a correction
+   while hiding the removed events from ordinary history?
+5. Can the GM blank the second display or manually replace its automatic map or
+   background visual at any time?
+
 No consolidated interpretation of this workflow is confirmed yet.
 
 ## References
