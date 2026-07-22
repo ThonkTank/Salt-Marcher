@@ -274,6 +274,75 @@ of the same type may coexist remain unanswered.
    immediately for that Scene? May the GM override the calculated weather, and
    if so, for how long or until what event?
 
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] ja
+
+Several Encounter masks, several Chase masks, and different mask types may
+coexist for one Scene. The same PC, NPC, or monster may participate in several
+active masks at the same time.
+
+> [Owner, wörtlich zu 2] wird aus der maske entfernt.
+
+Moving a character to another Scene removes that character from every mask the
+character participated in; the masks do not move with the character and do not
+block the Scene move.
+
+> [Owner, wörtlich zu 3] suchen: alle. erstellen: alles, was in erster linie
+> aus notizen besteht: npcs, orte, fraktionen und so. nicht aber komplee
+> datenträger wie items, monstrt o.ä.
+
+The GM can search all content without leaving the Scene. The GM can create
+lightweight, primarily note-based Campaign content there, including NPCs,
+locations, factions, and similar objects. Complete data records such as Items
+or monsters are not created through the Scene. The immediate actions offered by
+a search result remain unanswered.
+
+> [Owner, wörtlich zu 4] szenen können unabhängig voneinander fortschreiten.
+> zeit schreitet voran durch reisen, durch initiative runden in encounter,
+> combat, exploretion etc.
+
+Each Running Scene has an independently advancing time. Travel, initiative
+rounds, combat, exploration, and other time-consuming live actions advance that
+Scene's time. Manual time adjustment and reunification of Scenes with different
+times still need clarification.
+
+> [Owner, wörtlich zu 5] wetter chreitet mit zeit fort. der gm kann es wie
+> musik übersteuern.
+
+Weather advances with Scene time. The GM may override autonomous weather in the
+same manner as automatic music; the scope and release of that override remain
+unanswered.
+
+### Literal Evidence So Far
+
+- Multiple masks of the same or different types may coexist, and one actor may
+  participate in several. A Scene move removes that actor from every mask.
+- Live Scene search covers all content. Scene-local creation is limited to
+  lightweight, note-first Campaign content rather than complete Item or monster
+  records.
+- Split Scenes advance time independently through their actual live actions.
+- Autonomous weather follows Scene time and remains manually overridable.
+
+## Fifth Breadth Block: Search Actions, Time Reconciliation, And Presentation
+
+1. What immediate actions should a Scene search result offer: inspect details,
+   add the content to the Scene, make it travel with the Party, pin it to the
+   Scene, add it to a mask, or something else?
+2. Besides action-driven advancement, can the GM add an arbitrary duration or
+   set an exact Scene time? Are automatically calculated travel, round, combat,
+   and exploration durations editable before they advance time?
+3. When split groups reunite while their Scene times differ, does the earlier
+   group advance to the later time, does the GM choose a shared time, or may the
+   reunited Scene retain some other explicit result?
+4. Is weather calculated separately for every Scene from its local time and
+   location? Does a manual override remain until the GM releases it, after which
+   autonomous weather resumes like music autoplay?
+5. What may the passive second-monitor presentation show during live play, and
+   does it always follow the focused Scene? Must every displayed map, image,
+   handout, combat state, weather state, or other content be explicitly revealed
+   by the GM so private notes can never appear automatically?
+
 No consolidated interpretation of this workflow is confirmed yet.
 
 ## References
