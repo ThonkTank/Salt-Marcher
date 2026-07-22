@@ -53,6 +53,11 @@ concrete Item instances belong to one Campaign. A Campaign-specific object may
 be copied into another Campaign, where it becomes fully independent. Objects of
 the same kind may share a name.
 
+Quests, rumours, and similarly complex narrative concepts are lightweight,
+note-first GM records which may be attached to places, factions, or NPCs.
+SaltMarcher does not require encoded completion conditions, NPC trigger graphs,
+or automatic resolution; the GM resolves the record manually.
+
 Campaign content references reusable definitions rather than owning copies.
 Current and future play reads the current definition. Updating a definition does
 not retroactively recalculate completed Scenes or their historical facts.
@@ -93,6 +98,8 @@ that recoverable object.
   independently editable object
 - a changed reusable definition affects current and future reads without
   changing completed Scene facts
+- the GM can attach a note-first Quest or rumour to a place, faction, or NPC and
+  resolve it manually without authoring automated completion conditions
 - name-only creation from a Running Scene attaches there by default and exposes
   an opt-out before confirmation
 - explicit deletion removes current references and dependent Encounter runtime
@@ -241,8 +248,9 @@ confirmed consequences apply while the Running Scene continues.
 
 The GM can search all content without leaving the Scene and add a result
 directly to it. The GM can also create lightweight, note-first Campaign content
-there, including NPCs, locations, factions, and similar objects. Complete data
-records such as Items and monsters remain outside Scene-local creation.
+there, including NPCs, locations, factions, Quests, rumours, and similar
+objects. Complete data records such as Items and monsters remain outside
+Scene-local creation.
 
 Relevant object notes remain visible and editable in the Scene, while notes
 across every object kind remain searchable. The focused Scene drives optional

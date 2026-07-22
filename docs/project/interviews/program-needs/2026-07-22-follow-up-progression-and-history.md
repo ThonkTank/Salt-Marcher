@@ -133,6 +133,85 @@ needed to determine whether any such case matters.
    Soll sich der abgeleitete Level-Status sofort mitkorrigieren, während die
    ursprüngliche Vergabe und Korrektur in der History bleiben?
 
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] ja.
+
+The GM may distribute part or all of a Treasure among individual characters, a
+shared Party inventory, another Treasure, or a place and leave any remainder
+undistributed. Item distribution remains entirely GM-chosen.
+
+> [Owner, wörtlich zu 2] Teilnehmende PCs, welche in der initiative order
+> waren. GM kann pcs hinzufügen oder entfernen.
+
+Encounter XP is divided equally among participating PCs represented in the
+initiative order. Before distribution, the GM may add or remove PCs from that
+recipient set; the equal shares are then recalculated. Handling of indivisible
+remainders remains open.
+
+> [Owner, wörtlich zu 3] ersteres.
+
+Encounter completion carries forward tracked HP and derives death from the
+applicable tracked combat rules. The GM need not mark death separately.
+
+> [Owner, wörtlich zu 4] Seit wann modellieren wir quests in SaltMarcher? Wäre
+> mir neu.
+
+This rejects the question's assumed RPG-style Quest workflow. The owner then
+clarified the intended, much smaller capability:
+
+> [Owner, ergänzend wörtlich] Quests können erstellt werden, indem Sinne, dass
+> sie als reine text ontizen an ORte oder Fraktionen oder NPCs gehangen werden,
+> vielleicht mit strukturierten reward feldern. Aber der GM muss nicht wie in
+> einem RPG completion bedingungen mit bestimmten NPCs verknüpfen oder so einen
+> mist, er kann die quest einfach später manuell resolven. Gleiches gillt auch
+> für rumors und andere ähnlich komplexe nicht einfach mechanisierbare Konzepte.
+
+Quests, rumours, and comparable narrative concepts are note-first records
+attached to places, factions, or NPCs. They do not model completion conditions,
+NPC-linked triggers, or automatic resolution; the GM resolves them manually.
+Structured reward fields are still only a possibility to clarify. Encounter
+completion does not infer or apply narrative consequences.
+
+> [Owner, wörtlich zu 5] Ja.
+
+If an XP correction moves a character below a threshold, the derived level
+state updates immediately. History retains both the original award and its
+linked correction.
+
+### Literal Evidence So Far
+
+- A Treasure may be distributed partially or completely among characters,
+  shared Party inventory, other Treasures, and places.
+- Encounter XP is always shared equally among GM-adjustable participating PCs
+  from the initiative order.
+- Tracked HP and rule-derived death carry forward at Encounter completion.
+- Quests, rumours, and comparable narrative concepts remain lightweight notes
+  with manual resolution, not automated RPG workflows.
+- Corrected XP immediately corrects derived level state while preserving the
+  original award and linked correction in history.
+
+## Third Breadth Block: Inventory, Rewards, And Death Lifecycle
+
+1. Wenn Encounter-XP nicht glatt durch die Empfängerzahl teilbar ist: Werden
+   Bruchteile gespeichert, wird abgerundet und ein Rest verworfen, oder darf
+   der GM den Rest verteilen?
+2. Welche normalen Besitzaktionen braucht der GM nach der Verteilung: Items
+   zwischen Charakteren, Party-Inventar, Treasures und Orten verschieben;
+   ausrüsten oder ablegen; verbrauchen; sowie Mengenstapel teilen und
+   zusammenführen?
+3. Welche minimale Zustandsangabe brauchen Quests, Rumours und ähnliche
+   Notizen: nur frei editierbarer Text, oder zusätzlich beispielsweise `offen`,
+   `resolved` und `verworfen`? Soll das manuelle Resolven einer Quest ihre
+   strukturierten Rewards über denselben XP- und Item-Verteilungsdialog
+   anbieten?
+4. Was geschieht mit einem regelbasiert gestorbenen PC oder NPC: Bleibt er als
+   toter Charakter im Roster beziehungsweise am Ort, kann der GM ihn später
+   wiederbeleben, und darf Tod niemals den Datensatz automatisch löschen?
+5. Gehört Item-Verteilung zur selben atomaren Bestätigung wie Encounter-Ende,
+   HP, Tod und XP, oder bleibt das Awarden eines Treasures eine unabhängige
+   Aktion, die der GM vor oder nach dem Encounter-Abschluss ausführen kann?
+
 ## References
 
 - [Program Needs Interview Series](README.md)

@@ -315,6 +315,23 @@ the interpretation as one complete workflow.
 The proposed Campaign-foundation interpretation is confirmed in full on
 2026-07-22 and may enter the draft program requirements.
 
+## Later Owner Clarification: Narrative Notes
+
+> [Owner, wörtlich am 2026-07-22] Quests können erstellt werden, indem Sinne,
+> dass sie als reine text ontizen an ORte oder Fraktionen oder NPCs gehangen
+> werden, vielleicht mit strukturierten reward feldern. Aber der GM muss nicht
+> wie in einem RPG completion bedingungen mit bestimmten NPCs verknüpfen oder
+> so einen mist, er kann die quest einfach später manuell resolven. Gleiches
+> gillt auch für rumors und andere ähnlich komplexe nicht einfach
+> mechanisierbare Konzepte.
+
+This narrows the previously confirmed generic Campaign-object wording. Quests,
+rumours, and similarly complex narrative concepts are lightweight, note-first
+GM records attached to places, factions, or NPCs. SaltMarcher does not require
+authored completion conditions, NPC trigger graphs, or automatic resolution.
+The GM resolves these records manually. Structured reward fields remain a
+possibility to clarify rather than confirmed behavior.
+
 ## References
 
 - [Program Needs Interview Series](README.md)
