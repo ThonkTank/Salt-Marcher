@@ -1,6 +1,6 @@
 Status: Active Evidence
 Owner: Aaron
-Last Reviewed: 2026-07-22
+Last Reviewed: 2026-07-23
 Source of Truth: Verbatim owner answers and confirmed interpretations for
 post-Encounter follow-up, possessions, progression, World consequences,
 history, and correction needs.
@@ -181,8 +181,9 @@ linked correction.
 
 ### Literal Evidence So Far
 
-- A Treasure may be distributed partially or completely among characters,
-  shared Party inventory, other Treasures, and places.
+- A Treasure may be distributed partially or completely or left at its source;
+  later evidence below clarifies that distribution feeds GM loot accounting,
+  not durable player inventories.
 - Encounter XP is always shared equally among GM-adjustable participating PCs
   from the initiative order.
 - Tracked HP and rule-derived death carry forward at Encounter completion.
@@ -211,6 +212,80 @@ linked correction.
 5. Gehört Item-Verteilung zur selben atomaren Bestätigung wie Encounter-Ende,
    HP, Tod und XP, oder bleibt das Awarden eines Treasures eine unabhängige
    Aktion, die der GM vor oder nach dem Encounter-Abschluss ausführen kann?
+
+### Owner Answers 2026-07-23
+
+> [Owner, wörtlich zu 1] aufrunden
+
+Each participating PC's equal Encounter-XP share is rounded up when the total
+is not evenly divisible. SaltMarcher does not preserve fractions or require the
+GM to allocate a remainder.
+
+> [Owner, wörtlich zu 2] "erhalten" und "abgegeben." Wir nutzen das nicht um
+> für Spieler inventar zu tracken, sondern um als GM zu tracken, ob sie genug
+> loot erhalten haben, wieviel besagter loot wert war und ob er schon verkauft
+> wurde.
+
+SaltMarcher does not track player inventories, equipment, consumption, or
+transfers between PCs. The GM-facing need is loot accounting: whether loot was
+received or given away, its value, whether it was sold, and whether the Party
+has received enough loot. This supersedes the earlier interpretation of
+character and shared Party inventories as durable product-managed destinations.
+The precise accounting scope and sale-value behavior remain to be clarified.
+
+> [Owner, wörtlich zu 3] Offen oder nicht offen. Rest ist freitext und rewards.
+> Verteilung im selben verteilungsdialog wie encounter.
+
+A Quest, rumour, or comparable narrative note has only a Boolean open state,
+free text, and optional structured rewards. Manual resolution closes the note
+and offers those rewards through the same GM-facing distribution dialog used
+for Encounter rewards. No additional workflow states or completion mechanics
+are required.
+
+> [Owner, wörtlich zu 4] ja.
+
+A rule-derived dead PC or NPC remains as a dead character in the Roster or at
+its place, may later be revived by the GM, and is never automatically deleted.
+
+> [Owner, wörtlich zu 5] Das klingt nach technischem detail und interessiert
+> mich entsprechend nicht.
+
+Transaction composition is not an owner-level product decision. The observable
+need established here is that Encounter rewards and manually resolved narrative
+rewards use the same distribution dialog. Whether awarding shares a transaction
+with Encounter completion is deferred to technical-needs and architecture work.
+
+### Literal Evidence So Far
+
+- Uneven equal XP shares are rounded up per participating PC.
+- SaltMarcher tracks loot sufficiency, value, received or given-away state, and
+  sale state for the GM; it does not track player inventories.
+- Narrative notes have only open or closed state, free text, and optional
+  rewards distributed through the same interaction as Encounter rewards.
+- Dead characters persist, may be revived, and are never automatically deleted.
+- Encounter and narrative rewards use the same distribution dialog; its
+  transaction boundary remains a later technical decision.
+
+## Fourth Breadth Block: Loot Accounting And Reward Sources
+
+1. Gegen welches Ziel entscheidet SaltMarcher, ob die Party „genug Loot“
+   erhalten hat: gegen das für den Adventure Day berechnete DMG-Lootbudget,
+   gegen einen vom GM gewählten Zeitraum oder gegen etwas anderes? Welche
+   Zusammenfassung soll der GM sehen?
+2. Was unterscheiden `erhalten`, `abgegeben` und `verkauft` genau? Soll ein
+   Verkauf zusätzlich den tatsächlichen Verkaufspreis speichern, damit die
+   Bilanz Item-Wert und real erhaltenes Geld getrennt zeigt?
+3. Soll nach einer Verteilung dauerhaft gespeichert werden, welcher PC welchen
+   Gegenstand bekam, oder zählt SaltMarcher bewusst nur den aggregierten
+   Loot-Wert der Party und überlässt jede individuelle Zuordnung vollständig
+   dem Tisch?
+4. Welche strukturierten Rewards kann eine Quest oder ähnliche Notiz anbieten:
+   XP, vorhandene oder neu erstellte Items, Treasures, Münzwert und freie
+   Notizen? Werden XP daraus über denselben GM-anpassbaren Empfängerkreis
+   gleichmäßig verteilt wie Encounter-XP?
+5. Muss der GM Loot-Bilanz und Reward-History nach Zeitraum, Adventure Day,
+   Scene, Quelle und Empfänger filtern können, oder reicht zunächst eine
+   chronologische Gesamtliste mit aktuellem Soll/Ist-Vergleich?
 
 ## References
 
