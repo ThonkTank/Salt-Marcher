@@ -126,6 +126,46 @@ decides what to do there.
    timeline, its notes, and any unaccepted drafts while leaving every already
    accepted World placement untouched?
 
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] ja ja und ja
+
+The first two literal answers conflict: an entry cannot both require exactly one
+location and allow no location. Repeated use of the same location is confirmed;
+the per-entry location cardinality remains open.
+
+> [Owner, wörtlich zu 2] ja
+
+The GM may manually add, remove, reorder, and annotate timeline entries at any
+time, including after generation.
+
+> [Owner, wörtlich zu 3] Sie sind auch danach weiterhin bearbeitbar, aber ja.
+
+Generated Encounters and treasures remain adjustable before placement. Explicit
+placement accepts them as persistent World state, but acceptance does not make
+them immutable; the GM may continue editing them afterward.
+
+> [Owner, wörtlich zu 4] ja.
+
+Overwriting the current Session replaces its timeline, timeline notes, and
+unaccepted drafts. Accepted World placements remain untouched and independent
+of the new Session plan.
+
+## Third Breadth Block: Generation Result And Control
+
+1. Is the location rule `zero or one location per timeline entry`: an entry may
+   have no location, never several locations, and the same location may appear
+   in several entries?
+2. When the GM generates a Session, does the result contain the timeline plus
+   concrete Encounters and treasures, or does generation create only Encounters
+   and treasures for the GM to arrange into the timeline?
+3. Besides the planning Party, which generation inputs does the GM deliberately
+   choose: session duration or Encounter count, difficulty, locations,
+   factions, reward amount, or something else? Which of them are required?
+4. Can the GM edit, regenerate, accept, reject, and place each generated
+   Encounter or treasure independently, or is the generated result handled only
+   as one complete plan?
+
 No consolidated interpretation of this workflow is confirmed yet.
 
 ## References
