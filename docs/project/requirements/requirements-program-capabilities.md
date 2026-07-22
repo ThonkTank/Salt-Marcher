@@ -35,6 +35,70 @@ spans or precedes individual feature requirements.
   the owner has not confirmed as need
 - treating this incomplete draft as the baseline for architecture review
 
+## Confirmed Workflow: Campaign Foundation And Knowledge
+
+### Campaign Lifecycle
+
+The GM can create a Campaign with only a name and keep several Campaigns in
+SaltMarcher. Switching happens immediately through options or settings. Running
+Scene, Encounter, and travel state in the Campaign being left remains preserved
+and resumes when the GM returns; switching requires no warning, confirmation,
+or prior closure.
+
+### Reusable And Campaign-Specific Knowledge
+
+Rules, general Creature data, and Item definitions are reusable references
+across Campaigns. PCs, NPCs, places, factions, quests, rumours, possessions, and
+concrete Item instances belong to one Campaign. A Campaign-specific object may
+be copied into another Campaign, where it becomes fully independent. Objects of
+the same kind may share a name.
+
+Campaign content references reusable definitions rather than owning copies.
+Current and future play reads the current definition. Updating a definition does
+not retroactively recalculate completed Scenes or their historical facts.
+
+### Roster, Current Party, And Planning Party
+
+Each Campaign has one `Roster` containing every Campaign PC, whether currently
+participating or not. At most one current `Party` contains those Roster
+characters whose players currently participate at the table. Groups assigned
+to different Running Scenes are subdivisions of that Party, not separate
+Parties.
+
+A Session may be authored without a Party. Before generation, the GM selects a
+planning-only expected Party from the Roster. This selection enables planning
+calculations but neither is nor changes the current table Party.
+
+### Minimal Creation And Explicit Deletion
+
+A Campaign object requires only a name; every other property is optional and may
+be completed later. When the GM creates an object from a Running Scene, the
+creation dialog attaches it to that Scene by default and lets the GM opt out.
+
+Explicit deletion removes an object from preparation, Running Scenes, and
+Running Encounters, including runtime state that depends on it. Completed
+history retains the historical fact but displays the missing identity as
+`[UNKNOWN]`. If the object remains recoverable in trash, the history may link to
+that recoverable object.
+
+### Acceptance Criteria
+
+- the GM can create a usable empty Campaign by entering only a name
+- the GM can switch Campaigns immediately and later resume the exact Running
+  Scene, Encounter, and travel state left in each Campaign
+- a Session can be manually authored without selecting any Party
+- generation uses a Session-owned expected Party selected from the Roster and
+  does not change the current table Party
+- copying Campaign-specific content into another Campaign creates an
+  independently editable object
+- a changed reusable definition affects current and future reads without
+  changing completed Scene facts
+- name-only creation from a Running Scene attaches there by default and exposes
+  an opt-out before confirmation
+- explicit deletion removes current references and dependent Encounter runtime
+  while completed history keeps its fact with an unknown or recoverable-trash
+  reference
+
 ## Confirmed Cross-Workflow Behavior
 
 ### Complete Encounter Outcome
@@ -80,8 +144,6 @@ application state, or restore an arbitrary whole-Campaign snapshot.
 
 The following areas intentionally contain no normative behavior yet:
 
-- Campaign foundation, switching, reusable reference knowledge, and authored
-  Campaign knowledge
 - session and Scene preparation, Encounter and reward generation, planned
   weather, music, and notes
 - live table workflow outside the confirmed cross-workflow behavior above
@@ -102,5 +164,6 @@ behavior, and no unresolved product decision blocks technical-needs derivation.
 
 - [Program Needs Interview Series](../interviews/program-needs/README.md)
 - [Program Needs Foundation And Coverage](../interviews/program-needs/2026-07-22-foundation-and-coverage.md)
+- [Session And Scene Preparation Interview](../interviews/program-needs/2026-07-22-session-and-scene-preparation.md)
 - [Project Vision](../vision.md)
 - [Documentation Standard](../documentation.md)

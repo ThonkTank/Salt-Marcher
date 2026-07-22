@@ -39,8 +39,9 @@ contracts, persistence, source layout, or delivery order.
 The headings below are interview routes, not presumed feature boundaries.
 
 1. Campaign foundation, Party, reusable reference knowledge, and authored World
-   knowledge
-2. Session, Scene, Encounter, reward, weather, music, and note preparation
+   knowledge -- confirmed 2026-07-22
+2. Session, Scene, Encounter, reward, weather, music, and note preparation --
+   in progress
 3. Running Scenes, combat, lookup, notes, time, weather, music, improvisation,
    and passive presentation during table play
 4. Dungeon, Hex, travel, position, events, perception, and optional Actor
@@ -55,6 +56,7 @@ The headings below are interview routes, not presumed feature boundaries.
 ## Evidence
 
 - [Foundation And Coverage 2026-07-22](2026-07-22-foundation-and-coverage.md)
+- [Session And Scene Preparation 2026-07-22](2026-07-22-session-and-scene-preparation.md)
 - [Goal Interview 2026-07-10](../2026-07-10-goal-interview.md)
 - [Dungeon Needs Interview 2026-07-20](../2026-07-20-dungeon-needs-interview.md)
 

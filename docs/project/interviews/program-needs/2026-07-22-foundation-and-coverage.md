@@ -308,6 +308,13 @@ The following compact interpretation awaits explicit owner confirmation:
 None of these bullets enters the program requirements until the owner confirms
 the interpretation as one complete workflow.
 
+## Owner Confirmation
+
+> [Owner, wörtlich] passt
+
+The proposed Campaign-foundation interpretation is confirmed in full on
+2026-07-22 and may enter the draft program requirements.
+
 ## References
 
 - [Program Needs Interview Series](README.md)
