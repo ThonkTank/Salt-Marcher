@@ -250,7 +250,63 @@ The next owner-answer block must resolve:
 4. whether deleting an NPC, Item, or other object that is already used by a
    Running Encounter removes it from that Encounter immediately
 
-No consolidated Campaign-foundation interpretation is confirmed yet.
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] Ja
+
+> [Owner, wörtlich zu 2] Der GM kann eine angenommene Party in der Session aus
+> dem Roster auswählen. Das ist nicht die aktive Party, sie dient nur zur
+> Planung.
+
+The Session therefore owns a planning-only expected Party selection from the
+Roster. It enables generation without changing the current table Party.
+
+> [Owner, wörtlich zu 3] Nein, wenn ich aus irgend einem Grund Hans lösche,
+> dann traf ie Party [UNKOWN] ggf. mit einem link zum papierkorb falls Hans noch
+> dort liegt.
+
+The completed historical fact remains, resolving the contradiction. Its deleted
+object reference is shown as unknown rather than retaining the former live
+identity. If the deleted object is still recoverable from a trash surface, the
+history may link there.
+
+> [Owner, wörtlich zu 4] Ja, wenn ich das Ding löschen will (warum auch immer
+> ich das machen wollen sollte) dann sollte es gelöscht werden.
+
+Explicit deletion also removes the object from a Running Encounter and discards
+runtime state that depended on that object.
+
+## Proposed Campaign-Foundation Interpretation
+
+The following compact interpretation awaits explicit owner confirmation:
+
+- A new Campaign requires only a name. SaltMarcher stores several Campaigns;
+  the GM switches immediately through options or settings. Every Running Scene,
+  Encounter, and travel state in the previous Campaign remains preserved and
+  resumes when the GM returns.
+- Rules, general Creature data, and Item definitions are reusable references
+  across Campaigns. PCs, NPCs, places, factions, quests, rumours, possessions,
+  and concrete Item instances belong to one Campaign. A Campaign-specific object
+  may be copied to another Campaign as a fully independent object.
+- Current and future play reads the current referenced definition. Completed
+  Scenes and their historical facts are not retroactively recalculated when a
+  reusable definition changes.
+- Every Campaign has one `Roster` containing all of its PCs and at most one
+  current `Party` containing the PCs whose players currently participate. Scene
+  groups are subdivisions of that Party, not separate Parties.
+- A Session may be authored without any Party. For generation, the GM selects a
+  planning-only expected Party from the Roster; it neither is nor changes the
+  current table Party.
+- Any Campaign object may begin with only a name, every other property is
+  optional, and same-kind objects may share names. Creation from a Running Scene
+  attaches the object there by default, while the dialog lets the GM opt out.
+- Explicit deletion removes the object from preparation, Running Scenes, and
+  Running Encounters, including dependent runtime state. Completed history keeps
+  the historical fact but displays the missing identity as `[UNKNOWN]`, with a
+  link to the trash when the object remains recoverable there.
+
+None of these bullets enters the program requirements until the owner confirms
+the interpretation as one complete workflow.
 
 ## References
 
