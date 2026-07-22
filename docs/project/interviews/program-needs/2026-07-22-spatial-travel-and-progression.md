@@ -505,6 +505,124 @@ when the GM explicitly marks the conflict resolved.
    should selecting or enlarging the mini-map provide the complete mapped
    travel interaction while controls remain in the state tab?
 
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] additiv ist default
+
+Every newly created generator-factor family uses additive inheritance by
+default. The GM may change that family to replacing inheritance for the place.
+
+> [Owner, wörtlich zu 2] Mehrere Karten, wie Dungeons. Mehrere Karten sollten
+> möglich sein. karten sind unbounded. Hex-durchmasser kann eingetellt werden
+> beim erstellen der Karte. hex karten können nested sein bzw. mehrere "Zoom
+> Stufen" haben, wenn man einen Kontinen erstellen möchte und dann eine genauere
+> Karte einer spezifischen Region erstellen will. Felder haben Terrain,
+> weiterhin müssen Flüsse, Straßen, Klippen und Schluchten eingezeichnet werden
+> können, sowie location marker platziert werden können. Fraktionen können
+> Einfluss auf karten verbreiten, was begegnungschancen dort beeinflusst.
+> karten sollten ex- und importiet werden können, Es sollte möglich sein assets
+> hinzuzufügen. Hex-generatoren sind ein weit entferntes komfort feature.
+> Klimadaten sind eine eigene Ebene überterrain, aber ich habe noch keine Ahnung
+> wie komplex die wetter simulation sein soll oder wie die dazu benötigten
+> karten daten aussehen könnten. Was mir wichtig ist, ist dass der Gm kontrolle
+> über das Wetter hat, wetter ereignisse erstellen und dafür sorgen kann dass
+> verschidene regionen unterschiedliche Klimata haben, und die generation
+> wetter realistisch und sinnvoll graduell sich ändern lässt in reaktion auf
+> Tages und Jahreszeit, sodass plötzliche Umschwünge sinn machen und man nicht
+> in jedem Hex komplett anderes zufälliges Wetter hat, sondern wetterphänomene
+> sich sinnvoll über die map bewegen. ich habe übrigens vergessen zu erwähnen,
+> dass neben Musik auch mehrere Layer an ambiance sound möglich sein sollen,
+> die auf location, wetter und tageszeit basieren.
+
+A Campaign may have several Hex maps. A map has no authored extent limit, and
+the GM chooses its Hex diameter when creating it. Maps may be nested as several
+zoom levels, such as a continent map whose selected region links to a more
+detailed regional map.
+
+Hexes own terrain. The GM can also author rivers, roads, cliffs, ravines,
+location markers, and visual assets. Factions can spread influence across a
+map, which changes local Encounter chances. Hex maps can be exported and
+imported. Procedural Hex generation is only a distant convenience feature.
+
+Climate is a distinct authored layer over terrain. Different regions may have
+different climates. Automatic weather must change gradually and plausibly with
+time of day and season; sudden changes must arise meaningfully rather than from
+independent random weather per Hex. Weather phenomena move coherently across
+the map. The GM retains control and can author weather events. The exact model
+and required climate inputs remain open.
+
+In addition to music, live play supports several simultaneous ambience-sound
+layers selected from location, weather, and time of day. Their sourcing,
+categorization, mixing, and manual controls remain open.
+
+> [Owner, wörtlich zu 3] Ja, alle genannten. Alle genannten.
+
+Terrain, roads, weather, travel mode, Party movement rates, chosen pace, rests,
+carried load, and future applicable travel facts all contribute to Hex route
+and duration calculation. The GM may override every one of those inputs for a
+particular journey. Whether the calculated duration itself remains binding as
+previously confirmed still needs explicit reconciliation.
+
+> [Owner, wörtlich zu 4] Ja, auch hier gibt es fog of war, sichtweite (von
+> Wetter und terrain höhe beeinflusst) und unbekannte regionen und so weiter.
+> Der Gm kann manuell teile der Karte oder bestimmte hex inhalte revealen.
+
+Hex maps distinguish unknown and revealed space through Fog of War. Current
+view distance is affected by weather and terrain elevation. The GM may manually
+reveal map regions or specific Hex content. Whether knowledge belongs to each
+Party subgroup or is shared across the complete Party remains unanswered.
+
+> [Owner, wörtlich zu 5] reist state-tab und mini-map müssen reichen. Der GM
+> soll während einer Session das szenen tab nicht verlassen müssen.
+> Suplementäre informationen und Controls müssen über top bar, details pane und
+> state pane tabs verfügbar sein.
+
+The travel state tab and mini-map provide the complete live travel workflow; no
+separate full travel workspace is required. During a Session the GM does not
+need to leave the Scene tab. Supplementary information and controls remain
+available through the top bar, detail pane, and state-pane tabs.
+
+### Literal Evidence So Far
+
+- Generator-factor inheritance is additive by default and configurable per
+  factor family and place.
+- A Campaign supports several unbounded Hex maps with chosen Hex diameter,
+  nested zoom levels, terrain, linear map features, locations, visual assets,
+  faction influence, and import or export.
+- Climate is separate from terrain. Coherent weather changes with region, time,
+  and season, moves across the map, and remains under GM control.
+- Live audio includes several simultaneous ambience layers driven by location,
+  weather, and time alongside music.
+- All applicable travel inputs affect route and duration and may be overridden
+  for a particular journey.
+- Hex exploration has Fog of War, weather- and elevation-sensitive view range,
+  unknown regions, and manual GM reveal.
+- The GM controls complete live travel from the Scene tab through the travel
+  state, mini-map, top bar, detail pane, and state pane.
+
+## Seventh Breadth Block: Map Scale, Factions, Weather, And Ambience
+
+1. How do nested Hex-map zoom levels relate? Does a parent-map region or Hex
+   explicitly link to a child map, and are terrain, locations, travel position,
+   faction influence, or other facts synchronized automatically between those
+   levels, or authored independently at each scale?
+2. How does faction influence spread across a Hex map: only through direct GM
+   editing, automatically as campaign time advances, through faction actions,
+   or a combination? Besides Encounter chances, what must influence visibly
+   affect or expose to the GM?
+3. What minimum climate facts must the GM be able to author for a region, and
+   what controls are required for weather events: area or path, start time,
+   duration, intensity, movement, and manual start, change, or end? Which parts
+   may SaltMarcher derive automatically?
+4. Are ambience sounds local files managed and categorized like songs? Which
+   tags or roles distinguish simultaneous layers, and must the GM be able to
+   start, stop, replace, loop, and independently adjust each layer while
+   automatic selection continues for the others?
+5. To reconcile the two confirmed answers: may the GM override all inputs used
+   to calculate a journey while the resulting calculated duration itself
+   remains non-editable, or should the GM now also be able to override the final
+   duration directly?
+
 ## References
 
 - [Program Needs Interview Series](README.md)
