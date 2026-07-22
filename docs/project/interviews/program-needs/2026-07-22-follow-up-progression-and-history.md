@@ -495,6 +495,61 @@ below with a concrete budget example.
    für zwischenzeitlich erhaltene XP nach einmaligem Anzeigen als erledigt
    gelten?
 
+### Owner Answers 2026-07-23
+
+> [Owner, wörtlich zu 1] Verkaufspreis ist was am Ende zählt. Preis muss nicht
+> überschrieben werden können.
+
+The actual sale price is authoritative for the final loot-value accounting of
+a sold Item. A concrete Item does not need a separate value override. This
+keeps definition value and actual sale value distinct without introducing a
+third mutable valuation.
+
+> [Owner, wörtlich zu 2] ja.
+
+An Item continues to count as received loot after being sold or given away. Its
+reminder state and, for a sale, authoritative sale price change how it is
+described and valued, not whether the Party received it.
+
+> [Owner, wörtlich zu 3] gesammten erhaltenen loot für bisher erhaltene XP.
+
+Session planning compares total received loot with the total expected loot for
+all XP the characters have received so far. The comparison is cumulative rather
+than limited to the previous Session or planning interval.
+
+> [Owner, wörtlich zu 4] passt automatisch an.
+
+Session generation automatically adjusts proposed rewards to compensate for
+the cumulative loot surplus or deficit. Previously confirmed generation
+behavior still lets the GM inspect and edit each proposed reward independently.
+
+> [Owner, wörtlich zu 5] ja. XP-Aktivierungswarnung?
+
+A new Quest begins without contributors unless its creation context supplies
+selected characters. The second part was not understood. `XP activation
+notification` refers only to the owner's earlier statement that an inactive
+character who receives XP should notify the GM when next activated. Its
+dismissal lifetime remains the only open point in this workflow.
+
+### Literal Evidence So Far
+
+- Actual sale price is final for a sold Item's loot value; per-instance value
+  overrides are not required.
+- Sold or given-away Items continue to count as received loot.
+- Loot sufficiency compares cumulative received loot against expected loot for
+  all XP received so far.
+- Session generation automatically compensates proposed rewards for cumulative
+  loot surplus or deficit while preserving normal reward editing.
+- Quests begin without contributors unless creation context supplies selected
+  characters.
+
+## Remaining Clarification
+
+You previously added that when an inactive character receives XP, the GM is
+informed the next time that character is activated. Should this information be
+shown once and then clear automatically, or remain visible until the GM
+explicitly dismisses it?
+
 ## References
 
 - [Program Needs Interview Series](README.md)
