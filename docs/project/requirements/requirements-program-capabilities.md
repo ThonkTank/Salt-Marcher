@@ -198,23 +198,111 @@ across every kind of object.
 - the GM can edit relevant notes in a Running Scene and search notes across all
   object kinds
 
-### Runtime Clarification: Scene And Encounter
+## Confirmed Workflow: Live Table Play
 
-The primary Running Scene always exists and cannot be paused, completed, closed,
-or discarded. Empty Scenes are removed; a remaining populated Scene becomes
-primary. If the current Party is empty, all Scenes except one empty primary
-Scene are removed. A Scene has zero or one current location. Changing location
-changes the NPCs, Features, treasures, monster groups, and other location
-content shown in the Scene unless the GM explicitly makes content travel with
-the Party or pins it to the Scene. Content that leaves the Scene remains at its
-location.
+### Continuous Scene State And Party Splits
 
-An Encounter is not persistent World content. It is a temporary combat mask
-over a Running Scene that selects PCs and NPCs already present there and adds
-combat behavior such as HP tracking and initiative. Chase and future mask types
-may provide other focused workflows. The Scene remains visible in the main
-panel while mask state remains available in its adjacent state panel. Persistent
-preparation creates and places monster groups, not Encounters.
+The primary Running Scene is always available as mutable runtime state in the
+Scene workspace; the GM neither creates nor completes it. A Scene has zero or
+one current location. Split Scenes need no name or label.
+
+Every active Party character belongs to exactly one Running Scene. Activating a
+Roster character assigns that character to the GM-focused Scene. Inactive
+Roster characters belong to no Scene and retain their last location and other
+state.
+
+The GM uses the same action to move selected characters into a new or existing
+Scene. An empty Scene is removed and a remaining populated Scene becomes the
+primary Scene. If the current Party is empty, one empty primary Scene remains
+available.
+
+Changing a Scene's location replaces its location-derived NPCs, Features,
+treasures, monster groups, and other content. The GM may instead pin any
+Scene-capable content to that Scene or assign it to travel with exactly one
+Party subgroup. Content that leaves or outlives a Scene remains at its location
+and is never implicitly deleted.
+
+### Masks And Prepared Monster Groups
+
+Persistent preparation creates editable monster groups at locations, not
+Encounters. At a Scene's current location, the GM selects individual monsters
+or groups and Scene participants to start an Encounter.
+
+Encounter, Chase, and possible future masks add focused runtime behavior over
+the continuously visible Scene. Several masks of the same or different types
+may coexist, and one PC, NPC, or monster may participate in several masks.
+Moving a character to another Scene removes that character from every mask
+without blocking the move.
+
+The GM ends an Encounter through the confirmed completion workflow. Its
+confirmed consequences apply while the Running Scene continues.
+
+### Live Search, Creation, Notes, And Music
+
+The GM can search all content without leaving the Scene and add a result
+directly to it. The GM can also create lightweight, note-first Campaign content
+there, including NPCs, locations, factions, and similar objects. Complete data
+records such as Items and monsters remain outside Scene-local creation.
+
+Relevant object notes remain visible and editable in the Scene, while notes
+across every object kind remain searchable. The focused Scene drives optional
+music autoplay. Scene changes update the queue, obsolete songs fade out, and
+the GM's manual player actions take precedence.
+
+### Independent Time And Weather
+
+Every Scene advances its own time through travel, exploration, and mask
+activity. Encounter and Chase rounds last six seconds. Travel duration is
+calculated and initially cannot be overridden; overriding it remains a
+low-priority quality-of-life extension. The GM chooses exploration duration.
+
+The GM may increment Scene time forward or backward. When groups with different
+times reunite, the GM manually chooses their temporal resolution. Moving
+temporal focus backward never deletes history, reverses World state, or rolls
+back another Scene. A fact recorded later at the table may carry an earlier
+in-world time and is treated as having happened then. Only an explicit deletion
+operation removes its selected target.
+
+Weather advances independently from each Scene's time, location, terrain, and
+climate data. A GM override remains until the GM disables it, after which
+autonomous weather resumes.
+
+### Passive Second Display
+
+The passive second display immediately follows the focused Scene. During travel
+it automatically shows the map; at a location it automatically shows background
+art. Map visibility is the union of what at least one character in the focused
+Scene can perceive and updates with position, line of sight, light, hidden
+state, and similar visibility changes.
+
+NPC artwork appears only when highlighted by the GM. During an Encounter or
+Chase, the GM may enable automatic artwork for the current actor. The display
+contains only maps and NPC or location artwork; it never exposes mechanics,
+text, or private notes. The GM can blank it or manually replace the automatic
+visual at any time.
+
+### Acceptance Criteria
+
+- one empty primary Scene remains usable when no Party character is active
+- every active Party character appears in exactly one Scene, and activation
+  assigns that character to the focused Scene
+- the GM can split and reunite the Party through the same character-move action
+  without implicitly deleting content left at a location
+- entering a location makes its prepared monster groups available without
+  creating or starting a persistent Encounter
+- several masks and shared mask participants may coexist while the Scene
+  remains continuously usable
+- moving a character to another Scene removes that character from every mask
+  without blocking the move
+- the GM can search all content, add a result, and create note-first Campaign
+  content without leaving the Scene
+- split Scenes may advance to different times, and their later reunification
+  never deletes history or reverses confirmed World state
+- automatic weather follows each Scene independently and resumes when the GM
+  releases a manual override
+- the passive second display switches with Scene focus, reveals only currently
+  perceivable map content, never exposes textual or mechanical state, and can
+  be blanked or replaced by the GM
 
 ## Confirmed Cross-Workflow Behavior
 
@@ -230,12 +318,9 @@ still-unconfirmed workflow.
 
 Party activation, deactivation, or deletion is authoritative immediately and is
 not rolled back by an unavailable Running Scene or Encounter. A later
-live-workflow answer supersedes the earlier allowance for an unassigned active
-character: every active Party character belongs to exactly one Running Scene,
-and activation assigns the character to the currently focused Scene. Inactive
-Roster characters belong to no Scene and retain their last location and other
-state. Deactivated or deleted characters immediately stop counting as current
-Party members.
+live-workflow answer establishes the Scene assignment behavior above.
+Deactivated or deleted characters immediately stop counting as current Party
+members.
 
 Only Running Scenes that reference the changed character and their Encounters
 reconcile. Until reconciliation succeeds, affected contexts are visibly pending
@@ -271,7 +356,6 @@ selected target.
 
 The following areas intentionally contain no normative behavior yet:
 
-- live table workflow outside the confirmed cross-workflow behavior above
 - spatial travel and campaign-time progression outside confirmed Dungeon needs
 - possessions, loot award, follow-up, and general correction workflows
 - import, export, reference refresh, backup, restore, and recovery
@@ -290,5 +374,6 @@ behavior, and no unresolved product decision blocks technical-needs derivation.
 - [Program Needs Interview Series](../interviews/program-needs/README.md)
 - [Program Needs Foundation And Coverage](../interviews/program-needs/2026-07-22-foundation-and-coverage.md)
 - [Session And Scene Preparation Interview](../interviews/program-needs/2026-07-22-session-and-scene-preparation.md)
+- [Running Scene And Live Play Interview](../interviews/program-needs/2026-07-22-running-scene-and-live-play.md)
 - [Project Vision](../vision.md)
 - [Documentation Standard](../documentation.md)

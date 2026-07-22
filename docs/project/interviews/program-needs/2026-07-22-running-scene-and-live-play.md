@@ -1,4 +1,4 @@
-Status: Active Evidence
+Status: Confirmed Evidence
 Owner: Aaron
 Last Reviewed: 2026-07-22
 Source of Truth: Verbatim owner answers and confirmed interpretations for the
@@ -511,7 +511,7 @@ facts may be added at an earlier in-world time.
 The GM can blank the second display or manually replace its automatic map or
 background visual at any time.
 
-## Proposed Consolidated Interpretation For Confirmation
+## Confirmed Consolidated Interpretation
 
 ### Continuous Scene State And Party Splits
 
@@ -585,12 +585,14 @@ background visual at any time.
   mechanics, text, or private notes. The GM can blank it or manually replace its
   automatic visual at any time.
 
-## Confirmation Requested
+## Owner Confirmation
 
-This interpretation is ready for owner confirmation. Only after confirmation
-will the complete live-play workflow enter the draft Program Capability
-Requirements and the interview move to spatial travel and campaign-time
-progression.
+> [Owner, wörtlich] passt
+
+The owner confirmed the complete consolidated interpretation on 2026-07-22.
+The live-play workflow may therefore enter the draft Program Capability
+Requirements, and the program interview may continue with spatial travel and
+campaign-time progression.
 
 ## References
 
