@@ -131,6 +131,67 @@ cause meaningful data loss.
    alternativer Wiederherstellungspunkte zeigen, wenn Automatik nicht eindeutig
    sicher ist?
 
+### Owner Answers 2026-07-23
+
+> [Owner, wörtlich zu 1] ja.
+
+A complete Campaign export is self-contained enough to restore the same
+Campaign content, local assets, and resumable working state on another
+compatible SaltMarcher installation without access to the original computer.
+
+> [Owner, wörtlich zu 2] ja, aber monster/item und ähnliche nicht-primär custom
+> daten mit großen volumen werden zwischen campaigns geteilt.
+
+Existing Campaign-owned data remains unchanged when another Campaign is
+imported. Large reusable reference collections such as general Monster and Item
+data are deliberately installation-wide and shared between Campaigns rather
+than duplicated into every Campaign. Import collision behavior for differing
+versions of the same shared definition remains open.
+
+> [Owner, wörtlich zu 3] refresh?
+
+The term `refresh` was unclear and establishes no product behavior. The next
+question uses the concrete case of installing a newer shared Monster or Item
+data set.
+
+> [Owner, wörtlich zu 4] a
+>
+> [Owner, korrigierend zu 4] ja
+
+When local data is damaged, SaltMarcher automatically opens the newest
+unambiguously safe recoverable state, tells the GM what was recovered and what
+could not be preserved, and asks the GM to choose only when no single recovery
+choice is clearly safe.
+
+### Literal Evidence So Far
+
+- A complete export restores the same Campaign, local assets, and resumable
+  state on another compatible installation without the original computer.
+- Campaign-owned data is isolated, while high-volume reusable Monster, Item,
+  and similar reference collections are shared across Campaigns.
+- Import must not alter existing Campaign-owned data; handling conflicting
+  shared definitions is not yet decided.
+- Damaged local data recovers automatically to the newest uniquely safe state,
+  with visible disclosure of any loss and a choice only when safety is
+  ambiguous.
+
+## Third Breadth Block: Shared Data And Campaign Removal
+
+1. Eine importierte Campaign benötigt eine geteilte Monster- oder
+   Item-Definition. Wenn sie auf dem Zielrechner fehlt, soll SaltMarcher sie
+   automatisch zur dortigen geteilten Sammlung hinzufügen. Was soll passieren,
+   wenn dort bereits eine gleich bezeichnete Definition mit anderen Inhalten
+   existiert: beide Varianten behalten, die vorhandene verwenden oder den GM
+   beim Import entscheiden lassen?
+2. Mit `Refresh` war folgender konkrete Fall gemeint: Der GM installiert eine
+   neuere Ausgabe eines großen geteilten Monster-, Item- oder Regeldatensatzes.
+   Braucht SaltMarcher so eine Aktualisierung ganzer Datensätze überhaupt? Falls
+   ja, soll der GM vor der Übernahme die Änderungen sehen und einzelne
+   Definitionen überspringen können?
+3. Wenn der GM eine ganze Campaign löscht: Soll sie zunächst vollständig in
+   einem Papierkorb wiederherstellbar bleiben und erst durch eine zusätzliche
+   ausdrückliche Aktion endgültig gelöscht werden?
+
 ## References
 
 - [Program Needs Interview Series](README.md)
