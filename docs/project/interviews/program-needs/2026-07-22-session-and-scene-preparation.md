@@ -274,6 +274,83 @@ manual edit, accepted placement, and timeline change untouched.
    content appears in a Running Scene, should its notes appear there and remain
    editable?
 
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] Ja, wenn es nicht passt wird das vor dem generieren
+> gesagt und der generieren button gesperrt.
+
+Generation may supplement the GM's binding selections with additional existing
+or newly created Campaign content. SaltMarcher validates the binding selections
+against the Adventure Day before generation. If they cannot fit, it explains
+that before generation and disables the generate action; it does not produce a
+partial or best-effort result.
+
+> [Owner, wörtlich zu 2] Garnicht, wetter passiert autonom. Es entsteht
+> basierend auf location terrain und ggf. anderer klima daten.
+
+Weather is not Session or Scene preparation. It develops autonomously from the
+location's terrain and any other available climate data. Its live behavior will
+be clarified in the Running Scene and campaign-time workflows.
+
+> [Owner, wörtlich zu 3] Musik wird autonatisch ausgewählt. Musik wird
+> kategorisiert basierend auf: Mood, Intensität, vibe-tags und genre. Mood und
+> Intensität entstehen aus szene input (GM hat mehrere Slider wie komödie zu
+> tragödie, romanze oder so, das muss später noch getestet werden, wie das am
+> besten zu kategorisieren ist, intensität ist ein eigenen Slider) und Orten,
+> NPCs, Fraktionen, Monstern etc, welche ebenfalls vibe tags und genres
+> zugeordnet sind. Musikauswahl basiert dann also auf Szenen Inhalt, der GM kann
+> aber auch über ein player dropdown im topbar selbst musik stoppen,
+> überspringen, zurückspringen, auswählen, in die Warteschlange setzen oder
+> einen oder mehrere Songs loopen.
+
+SaltMarcher selects music automatically from Scene content. Songs are
+categorized by mood, intensity, vibe tags, and genre. Scene input supplies mood
+and intensity: the GM controls several mood-axis sliders and a separate
+intensity slider. Locations, NPCs, factions, monsters, and other Scene content
+also contribute assigned vibe tags and genres. The exact mood axes and best
+classification model require later product testing and are not fixed yet.
+
+A player dropdown in the top bar lets the GM override automation by stopping,
+skipping, going back, selecting, queueing, or looping one or several songs.
+
+> [Owner, wörtlich zu 4] Alles sollte erstmal potentiell Notizen tragen können,
+> für den Fall dass der GM das braucht.
+
+Every authored or generated object may carry free-form GM notes. Whether notes
+surface automatically and remain editable in Running Scenes still needs an
+explicit answer.
+
+### Literal Evidence So Far
+
+- Binding generation inputs are validated before generation. An impossible
+  combination is explained and disables generation.
+- Weather has no preparation lifecycle; it develops autonomously from terrain
+  and climate data.
+- Music selection is automatic and responds to Scene input and categorized
+  Scene content, while the GM retains the listed top-bar player controls.
+- The concrete mood-axis model is deliberately subject to later usability
+  testing rather than fixed by this interview.
+- Every object may carry GM notes.
+
+## Sixth Breadth Block: Music, Note, And Treasure Boundaries
+
+1. Where do playable songs come from: a GM-managed local music library,
+   external music providers, or both? Can the GM edit every song's mood,
+   intensity, vibe-tag, and genre classification?
+2. Does automatic selection also start playback automatically? When Scene
+   inputs or content change, may SaltMarcher interrupt the current song, or do
+   the new criteria affect only the next automatic selection?
+3. When the Party is split across several Running Scenes, which Scene controls
+   automatic music: the currently focused Scene, a combination of all active
+   Scenes, or a GM-selected Scene?
+4. When noted content appears in a Running Scene, should its notes be visible
+   and editable there automatically? Does the GM also need one searchable view
+   across notes on all kinds of objects?
+5. What does one prepared treasure contain from the GM's perspective: a bundle
+   of currency, valuables, and Items, some other structure, or arbitrary
+   content? Can each contained reward be edited independently before and after
+   World placement?
+
 No consolidated interpretation of this workflow is confirmed yet.
 
 ## References
