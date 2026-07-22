@@ -166,6 +166,57 @@ of the new Session plan.
    Encounter or treasure independently, or is the generated result handled only
    as one complete plan?
 
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] ja
+
+A timeline entry may reference zero or one location, never several. The same
+location may appear in several timeline entries.
+
+> [Owner, wörtlich zu 2] ersteres.
+
+Session generation produces a timeline containing concrete Encounters and
+treasures rather than only a collection for the GM to arrange afterward.
+
+> [Owner, wörtlich zu 3] adventure day, gewünschte Szenen, gewünschte Orte,
+> Fraktionen, NPCs, Items etc. Außer adventure day sind alle optional.
+
+The required generation input is the Adventure Day. The GM may additionally
+specify desired Scenes, locations, factions, NPCs, Items, and further optional
+context.
+
+> [Owner, wörtlich zu 4] ersteres.
+
+The GM controls every generated Encounter and treasure independently: each can
+be edited, regenerated, rejected, accepted, and placed without treating the
+generated Session as one indivisible plan.
+
+### Literal Evidence So Far
+
+- Each timeline entry may reference no location or exactly one location. A
+  location may occur in several entries.
+- Generation creates a Session timeline with concrete Encounters and treasures.
+- Adventure Day is the only required generation input. Desired Scenes,
+  locations, factions, NPCs, Items, and other context are optional inputs.
+- Each generated Encounter and treasure has an independent review, editing,
+  regeneration, acceptance, rejection, and placement lifecycle.
+
+## Fourth Breadth Block: Generation Semantics
+
+1. What does the required `Adventure Day` input tell SaltMarcher in observable
+   terms: a desired total challenge or resource budget, an amount of in-world
+   time, a predefined rules concept, or something else?
+2. What may the GM provide as `desired Scenes`: only a desired count, brief
+   descriptions or goals, already authored timeline entries, or any mixture of
+   these?
+3. Are optional locations, factions, NPCs, Items, and other context binding
+   constraints for generation, or preferences that the result may ignore? May
+   generation create new Campaign content when the supplied Campaign content
+   is insufficient?
+4. When the GM regenerates one generated Encounter or treasure, must all other
+   generated results, manual edits, accepted placements, and timeline changes
+   remain unchanged?
+
 No consolidated interpretation of this workflow is confirmed yet.
 
 ## References
