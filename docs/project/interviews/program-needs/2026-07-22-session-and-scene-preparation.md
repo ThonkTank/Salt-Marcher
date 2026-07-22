@@ -518,6 +518,17 @@ The owner confirmed the complete consolidated interpretation on 2026-07-22. It
 is therefore eligible to enter the draft Program Capability Requirements. This
 confirmation does not approve any architecture, technology, or delivery plan.
 
+## Later Terminology Clarification 2026-07-22
+
+The subsequent live-play interview clarified that an `Encounter` is a temporary
+combat mask over a Running Scene and is never persistent World content. Every
+reference above to a generated, accepted, or placed Encounter therefore means
+the editable monster group that preparation creates and places. The Encounter
+itself exists only when the GM applies combat tracking to selected Scene
+participants. The current
+[Program Capability Requirements](../../requirements/requirements-program-capabilities.md)
+use the corrected terms.
+
 ## References
 
 - [Program Needs Interview Series](README.md)

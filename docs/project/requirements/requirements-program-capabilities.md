@@ -111,19 +111,20 @@ may appear in several entries. The GM can add, remove, reorder, and annotate
 entries at any time.
 
 Timeline entries are not stored Scenes. A Scene exists only as resumable runtime
-state. Ordinarily there is one Running Scene; a split Party may create several
-distinct Running Scenes.
+state. The primary Running Scene is always available in the Scene tab and only
+changes its contents; the GM neither starts nor ends it. Splitting characters
+out of that Scene creates additional Running Scenes.
 
-The GM can prepare the complete timeline, Encounters, treasures, and location
-placements manually without a planning Party, Adventure Day, name, date, or
-generation.
+The GM can prepare the complete timeline, monster groups, treasures, and
+location placements manually without a planning Party, Adventure Day, name,
+date, or generation.
 
 ### Assisted Generation
 
 Generation uses a planning-only expected Party selected from the Roster and
 does not change the current table Party. It requires an Adventure Day. For the
 selected characters and levels, the Adventure Day provides the DMG-guided
-Encounter amount, XP budget, and loot budget used to create Encounters and
+Encounter amount, XP budget, and loot budget used to create monster groups and
 treasures.
 
 The GM may optionally provide a desired Scene count and select locations,
@@ -133,21 +134,21 @@ other existing or newly created Campaign content. Before generation it checks
 whether all constraints fit the Adventure Day. If not, it explains the conflict
 and disables generation instead of producing a partial result.
 
-Generation returns a timeline with concrete Encounters and treasures. The GM
-can edit, regenerate, reject, accept, and place each result independently.
+Generation returns a timeline with concrete monster groups and treasures. The
+GM can edit, regenerate, reject, accept, and place each result independently.
 Regenerating one result leaves every other result, manual edit, placement, and
 timeline change untouched.
 
 ### Accepted World Content And Treasures
 
-Placing an Encounter or treasure accepts it as persistent World content. It
+Placing a monster group or treasure accepts it as persistent World content. It
 remains editable and survives replacement of the current plan. Replacing the
 plan removes its timeline, timeline notes, and unaccepted drafts without
 changing any accepted placement.
 
-When the Party reaches a prepared location, its placed Encounters and treasures
-appear in the Running Scene UI. SaltMarcher does not start, resolve, or award
-them automatically; the GM decides what happens.
+When the Party reaches a prepared location, its placed monster groups and
+treasures appear in the Running Scene UI. SaltMarcher does not begin combat or
+award anything automatically; the GM decides what happens.
 
 A treasure may contain Items, including coins, trade goods, magic Items,
 equipment, and other possessions. The GM can independently add, remove,
@@ -186,7 +187,7 @@ across every kind of object.
   preserves all accepted World placements
 - generation remains unavailable with an explanation when its binding inputs
   cannot fit the selected Party's Adventure Day
-- a generated Encounter or treasure can be changed or regenerated without
+- a generated monster group or treasure can be changed or regenerated without
   changing any other generated or manual preparation
 - reaching a prepared location exposes placed content without starting or
   awarding it automatically
@@ -196,6 +197,19 @@ across every kind of object.
   controls take precedence
 - the GM can edit relevant notes in a Running Scene and search notes across all
   object kinds
+
+### Runtime Clarification: Scene And Encounter
+
+The primary Running Scene always exists and cannot be paused, completed,
+closed, or discarded. It has zero or one current location. Changing location
+changes the NPCs, Features, treasures, monster groups, and other location
+content shown in the Scene unless the GM explicitly makes content travel with
+the Party or pins it to the Scene.
+
+An Encounter is not persistent World content. It is a temporary combat mask
+over a Running Scene that selects PCs and NPCs already present there and adds
+combat behavior such as HP tracking and initiative. Persistent preparation
+creates and places monster groups, not Encounters.
 
 ## Confirmed Cross-Workflow Behavior
 
