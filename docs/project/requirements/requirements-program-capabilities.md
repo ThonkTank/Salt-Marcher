@@ -99,6 +99,104 @@ that recoverable object.
   while completed history keeps its fact with an unknown or recoverable-trash
   reference
 
+## Confirmed Workflow: Session Preparation And Supporting Content
+
+### Planning Workspace And Timeline
+
+`Session` is an unnamed, date-independent planning workspace rather than a
+Campaign content object. It holds one current plan that the GM may reuse or
+replace. The plan is an ordered timeline of expected Scene occurrences. Each
+entry may contain notes and reference zero or one location; the same location
+may appear in several entries. The GM can add, remove, reorder, and annotate
+entries at any time.
+
+Timeline entries are not stored Scenes. A Scene exists only as resumable runtime
+state. Ordinarily there is one Running Scene; a split Party may create several
+distinct Running Scenes.
+
+The GM can prepare the complete timeline, Encounters, treasures, and location
+placements manually without a planning Party, Adventure Day, name, date, or
+generation.
+
+### Assisted Generation
+
+Generation uses a planning-only expected Party selected from the Roster and
+does not change the current table Party. It requires an Adventure Day. For the
+selected characters and levels, the Adventure Day provides the DMG-guided
+Encounter amount, XP budget, and loot budget used to create Encounters and
+treasures.
+
+The GM may optionally provide a desired Scene count and select locations,
+factions, NPCs, Items, or other Campaign content. Every selected object is a
+binding constraint and must occur in the suggested Scenes. SaltMarcher may add
+other existing or newly created Campaign content. Before generation it checks
+whether all constraints fit the Adventure Day. If not, it explains the conflict
+and disables generation instead of producing a partial result.
+
+Generation returns a timeline with concrete Encounters and treasures. The GM
+can edit, regenerate, reject, accept, and place each result independently.
+Regenerating one result leaves every other result, manual edit, placement, and
+timeline change untouched.
+
+### Accepted World Content And Treasures
+
+Placing an Encounter or treasure accepts it as persistent World content. It
+remains editable and survives replacement of the current plan. Replacing the
+plan removes its timeline, timeline notes, and unaccepted drafts without
+changing any accepted placement.
+
+When the Party reaches a prepared location, its placed Encounters and treasures
+appear in the Running Scene UI. SaltMarcher does not start, resolve, or award
+them automatically; the GM decides what happens.
+
+A treasure may contain Items, including coins, trade goods, magic Items,
+equipment, and other possessions. The GM can independently add, remove,
+replace, and edit each Item before or after placement and move Items between
+treasures and locations.
+
+### Weather, Music, And Notes
+
+Weather is not Session preparation. It develops autonomously from location
+terrain and other available climate data; its live behavior remains part of a
+later workflow.
+
+Songs are stored locally. When adding a song, the GM assigns mood, intensity,
+vibe tags, and genre and can manage that data later. Scene sliders supply mood
+and intensity input; locations, NPCs, factions, monsters, and other Scene
+content contribute vibe tags and genres. The exact mood axes and categorization
+model remain subject to product testing.
+
+The GM may enable or disable autoplay. When enabled, the currently focused
+Running Scene drives the automatically generated music queue. Scene changes
+update that queue, and a song that no longer fits fades out gradually. Manual
+stop, skip, back, selection, queue, and loop actions take precedence until the
+manual choice ends, after which autoplay resumes if still enabled.
+
+Every authored or generated object may carry free-form GM notes. Notes relevant
+to a Running Scene are visible and editable there, and the GM can search notes
+across every kind of object.
+
+### Acceptance Criteria
+
+- the GM can build all preparation manually in an unnamed, undated planning
+  workspace without choosing a Party or using generation
+- the GM can freely edit and reorder a timeline whose entries each reference
+  zero or one location
+- replacing the current plan removes only its timeline and unaccepted work and
+  preserves all accepted World placements
+- generation remains unavailable with an explanation when its binding inputs
+  cannot fit the selected Party's Adventure Day
+- a generated Encounter or treasure can be changed or regenerated without
+  changing any other generated or manual preparation
+- reaching a prepared location exposes placed content without starting or
+  awarding it automatically
+- treasure Items remain individually editable and movable after placement
+- weather requires no Session preparation
+- the focused Running Scene drives optional autoplay while manual music
+  controls take precedence
+- the GM can edit relevant notes in a Running Scene and search notes across all
+  object kinds
+
 ## Confirmed Cross-Workflow Behavior
 
 ### Complete Encounter Outcome
@@ -144,8 +242,6 @@ application state, or restore an arbitrary whole-Campaign snapshot.
 
 The following areas intentionally contain no normative behavior yet:
 
-- session and Scene preparation, Encounter and reward generation, planned
-  weather, music, and notes
 - live table workflow outside the confirmed cross-workflow behavior above
 - spatial travel and campaign-time progression outside confirmed Dungeon needs
 - possessions, loot award, follow-up, and general correction workflows

@@ -41,9 +41,9 @@ The headings below are interview routes, not presumed feature boundaries.
 1. Campaign foundation, Party, reusable reference knowledge, and authored World
    knowledge -- confirmed 2026-07-22
 2. Session, Scene, Encounter, reward, weather, music, and note preparation --
-   in progress
+   confirmed 2026-07-22
 3. Running Scenes, combat, lookup, notes, time, weather, music, improvisation,
-   and passive presentation during table play
+   and passive presentation during table play -- in progress
 4. Dungeon, Hex, travel, position, events, perception, and optional Actor
    Autonomy during campaign-time progression
 5. Encounter and session follow-up, awarded possessions, progression, World
@@ -57,6 +57,7 @@ The headings below are interview routes, not presumed feature boundaries.
 
 - [Foundation And Coverage 2026-07-22](2026-07-22-foundation-and-coverage.md)
 - [Session And Scene Preparation 2026-07-22](2026-07-22-session-and-scene-preparation.md)
+- [Running Scene And Live Play 2026-07-22](2026-07-22-running-scene-and-live-play.md)
 - [Goal Interview 2026-07-10](../2026-07-10-goal-interview.md)
 - [Dungeon Needs Interview 2026-07-20](../2026-07-20-dungeon-needs-interview.md)
 

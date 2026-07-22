@@ -1,4 +1,4 @@
-Status: Active Evidence
+Status: Confirmed Evidence
 Owner: Aaron
 Last Reviewed: 2026-07-22
 Source of Truth: Verbatim owner answers and confirmed interpretations for the
@@ -443,7 +443,7 @@ the GM efficiently prepare content and create it as persistent World state. The
 GM can build the same content entirely manually without a planning Party,
 Adventure Day, date, name, or generation.
 
-## Proposed Consolidated Interpretation For Confirmation
+## Confirmed Consolidated Interpretation
 
 ### Planning Workspace And Timeline
 
@@ -510,11 +510,13 @@ Adventure Day, date, name, or generation.
   notes are visible and editable in the Running Scene, and the GM can search
   notes across every kind of object.
 
-## Confirmation Requested
+## Owner Confirmation
 
-This interpretation is ready for owner confirmation. Only after confirmation
-will it enter the draft Program Capability Requirements and let the interview
-move to the live table workflow.
+> [Owner, wörtlich] passt
+
+The owner confirmed the complete consolidated interpretation on 2026-07-22. It
+is therefore eligible to enter the draft Program Capability Requirements. This
+confirmation does not approve any architecture, technology, or delivery plan.
 
 ## References
 
