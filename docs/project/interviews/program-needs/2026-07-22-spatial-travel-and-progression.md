@@ -429,6 +429,82 @@ original later history is not automatically recalculated or erased.
    link a corrective entry, or delete it? When is the conflict marker removed,
    and must the resolution itself remain visible in history?
 
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] individuell
+
+The GM chooses additive or replacing inheritance independently for each factor
+family, including loot, Encounter composition, faction appearance, and future
+families. The default for a new place remains unanswered.
+
+> [Owner, wörtlich zu 2] Alles was Bs reise hinzugefügt hat wird zurückgesetzt.
+> Alles was A bereits etabliert hatte wird behalten.
+
+Undo removes everything introduced by Scene B's journey, including B's
+position, time, local results, and journey-owned World consequences. Anything
+already established by the authoritative later Scene A remains unchanged. Undo
+therefore respects the authority of the furthest-progressed Scene rather than
+rewriting its established truth.
+
+> [Owner, wörtlich zu 3] Ja. Eine Unterbrechung gilt als Reisepunkt, an dem die
+> Reise gestoppt und der Zwischenzustand festgehalten wird. Ja.
+
+Movement and elapsed time up to an interruption are already committed. Every
+interruption is a travel point: travel stops there and its intermediate state is
+preserved. The GM can inspect and resolve or dismiss the interruption, resume
+the route, choose another route, or end travel at that point.
+
+> [Owner, wörtlich zu 4] Ja.
+
+An interruption appears in the same Running Scene and travel state rather than
+creating another Scene. A perceived NPC becomes visible in the Scene
+immediately; starting an Encounter still requires explicit GM confirmation.
+
+> [Owner, wörtlich zu 5] Ja. Die markierung verschwindet, wenn der GM sie als
+> resolved markiert.
+
+Manual conflict resolution may keep an acknowledged inconsistency, edit its
+facts or time, link a corrective entry, or delete the conflicting entry. The
+resolution remains visible in Campaign history. Its conflict marker disappears
+when the GM explicitly marks the conflict resolved.
+
+### Literal Evidence So Far
+
+- Generator-factor inheritance mode is selected independently per factor
+  family.
+- Undo removes only what the earlier Scene's journey introduced and preserves
+  truth already established by the authoritative later Scene.
+- Every interruption commits a travel point and intermediate state before the
+  GM inspects, resolves, dismisses, reroutes, resumes, or ends travel.
+- Interruptions remain within the same Scene and travel state. Perceived NPCs
+  appear immediately, but Encounters still require GM confirmation.
+- Conflicting history supports acknowledgement, editing, correction, or
+  deletion. Resolution remains visible, and the GM explicitly clears the
+  marker by marking it resolved.
+
+## Sixth Breadth Block: Hex Maps And General Travel Controls
+
+1. What inheritance default should a newly created place use for each generator
+   factor family: additive, replacing, inherited from its parent, or explicitly
+   unset until the GM chooses?
+2. What must the GM be able to author for Hex maps: several maps per Campaign,
+   map name and scale, map extent, terrain per Hex, roads or other connections,
+   nested places, and links to other maps? Must maps begin empty, may the GM
+   import an image or data, and is procedural Hex generation a target need?
+3. When planning Hex travel, which facts determine the calculated route and
+   duration: terrain, roads, weather, travel mode, Party movement rates, chosen
+   pace, rests, carried load, or something else? Which of those may the GM
+   override for a particular journey?
+4. What does the GM and passive second display know about an unexplored Hex
+   map? Should Hexes distinguish unknown, previously explored, and currently
+   perceivable information, and should visibility belong to each Party subgroup
+   or be shared across the complete Party?
+5. You established the travel state tab as the GM's travel control surface,
+   optionally with a mini-map in the detail pane. Is a separate full Hex or
+   Dungeon travel workspace also required for route planning and inspection, or
+   should selecting or enlarging the mini-map provide the complete mapped
+   travel interaction while controls remain in the state tab?
+
 ## References
 
 - [Program Needs Interview Series](README.md)
