@@ -67,6 +67,117 @@ program-wide truth.
    What should happen when autonomous activity reaches the Party or requires a
    GM decision?
 
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] Ja. GM nutz das reisen state tab und ggf. eine
+> mini-map im detail pane. Je nach Fortbewegungsart kann er auf hex-karten oder
+> in dungeons routen planen oder direkt angrenzende Bereiche (locations auf dem
+> hex, benachbarte hexes, benachbarte naigationsbereiche im Dungeon etc)
+> auswählen. Für eine Route werden reisepunkte gewählt, und eine route von
+> punkte zu punkt erstellt. Für direkt angrenzende Reise muss nur die jeweilige
+> Loation als button gewählt werden. Routen können angehalten, vorgespult oder
+> verlangsamt werden. Es gibt eien rückgängig-button.
+
+Travel is one GM workflow in the travel state tab, optionally supported by a
+mini-map in the detail pane. Depending on the movement context, the GM either
+selects directly adjacent locations or navigation areas, or chooses travel
+points from which SaltMarcher constructs a route. The GM can pause, accelerate,
+slow, and undo route progress. The observable meaning of speed changes and undo
+still needs clarification.
+
+> [Owner, wörtlich zu 2] die "Szene" ist alles ,was grade am selben Ort wie
+> die Party ist. Wenn der Ort "Taverne Löwenzahn" vom GM angelegt wurde sich
+> dort zwei NPCs aufhalten, eine magisches Item, und die Party, dann ist das die
+> aktuelle Szene.
+
+A Scene consists of everything currently at the same place as its Party
+subgroup. For example, if two NPCs, a magic Item, and the Party are at the
+authored place `Taverne Löwenzahn`, they form the current Scene there. This
+clarifies Scene content as a view of current co-location rather than an
+independent collection. How nested places, exact actor positions, pinned
+content, and narrative splits affect co-location still needs clarification.
+
+> [Owner, wörtlich zu 3] "Normale Orte" existieren auf Karten. Hex nr. 34 ist
+> ein Ort, auf dem sich der Ort "Dorf langen Weiler" existieren kann, in dem
+> der Ort "Taverne Löwenzahn" existieren kann, in dem der Ort "Hinterzimmer"
+> existieren kann. Räume sind Orte auf Dungoen Karten. Es kann orte geben, die
+> nicht einer karte zugeordnet sind, und die kann der GM dann eifach als
+> location auswählen, das ist aber keine Reise. In dem Fall muss er Zeit
+> manuell vorschtellen um ggf. Reisezeit zu simulieren. Was soll das heißen
+> "Als dieselbe Reise erhalten bleiben?"
+
+Places form a nested spatial hierarchy on maps: a Hex is a place and may
+contain a village, which may contain a tavern, which may contain a back room.
+Dungeon Rooms are places on Dungeon maps. An authored place may also have no
+map assignment. The GM may select such an unmapped place as the Scene's
+location, but this is an administrative location change rather than travel and
+does not advance time automatically. The GM advances time manually if desired.
+Whether one planned route may cross map and hierarchy boundaries was not
+understood from the original wording and remains to be asked concretely.
+
+> [Owner, wörtlich zu 4] Korrekt. Pausieren müsen davon nur ereignisse,
+> Fallen, Spuren falls die Party nach ihnen ausschau hällt, Wahrnehmung wenn die
+> party NPCs wahrnimmt.
+
+Ordinary travel may immediately advance position, time, weather, perception,
+tracks, and applicable event evaluation. Travel pauses for events and Traps,
+for tracks when the Party is actively looking for them, and when Party
+perception detects NPCs. These pauses do not themselves decide a fictional
+outcome.
+
+> [Owner, wörtlich zu 5] Das ist eine technische Frage, die ich nicht
+> beantworten kann und hängt davon ab, wieviel wir auf einmal simulieren
+> können. Im idealfall sollte die gesammte Kampagnen Welt sich autonom mit der
+> Party "mitdrehen" wann immer die Zeit voranschreitet, aber das ist nicht
+> unbedingt praktikabel.
+
+The solution-independent target need is that the entire Campaign World advances
+autonomously with the Party whenever campaign time advances. The later
+technical-needs and architecture work must determine what computation strategy
+can satisfy that observable goal at the required scale. The product interview
+still needs to define the expected result when independently timed split Scenes
+advance through overlapping in-world periods.
+
+### Literal Evidence So Far
+
+- Travel is one GM workflow with direct adjacent movement and planned routes
+  across mapped spatial contexts.
+- A Scene presents the Party subgroup and everything co-located with it at an
+  authored place.
+- Places may be nested on Hex and Dungeon maps. Selecting an unmapped place is
+  an administrative location change, not travel, and advances no time.
+- Ordinary travel progression is automatic, while events, Traps, relevant
+  tracks, and detected NPCs pause further travel for GM attention.
+- The ideal target advances the complete autonomous Campaign World whenever
+  campaign time advances; technical practicality must not silently redefine
+  that user need.
+
+## Second Breadth Block: Co-Location, Route Boundaries, And Time Semantics
+
+1. Does a Scene automatically include every object at its most specific current
+   place, plus relevant content inherited from containing places? In the
+   example `Hex 34 > Langen Weiler > Taverne Löwenzahn > Hinterzimmer`, what
+   appears when the Party is in the back room: only back-room content, or also
+   selected content from the tavern, village, and Hex?
+2. May characters in one Scene occupy different exact cells or neighboring
+   navigation areas while still being considered at the same place? Does only
+   the GM decide when separation becomes a new Scene, or should entering a
+   different authored place split or move characters automatically?
+3. Concretely, may one planned route contain points across map boundaries—for
+   example `Hex 34 > Langen Weiler > Taverne Löwenzahn > Hinterzimmer` or from
+   one Hex map through a Dungeon entrance into a Dungeon Room—or does travel
+   stop at each boundary and require the GM to start the next leg?
+4. Do accelerate and slow change only how quickly SaltMarcher presents the same
+   calculated journey, without changing its in-world duration? What exactly
+   does `undo` reverse: only an uncommitted route choice, the last completed
+   segment's position and time, or also events and other consequences produced
+   during that segment?
+5. Suppose Scene A advances the World from 10:00 to 12:00 while Scene B remains
+   at 10:00, and Scene B later advances to 11:00. Should autonomous World actors
+   progress only once for the 10:00-to-11:00 period? What World state should the
+   GM see while focusing the earlier Scene B: the already current state from
+   12:00, a historical 11:00 view, or some other behavior?
+
 ## References
 
 - [Program Needs Interview Series](README.md)
