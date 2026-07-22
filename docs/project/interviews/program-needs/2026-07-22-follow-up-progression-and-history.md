@@ -182,8 +182,8 @@ linked correction.
 ### Literal Evidence So Far
 
 - A Treasure may be distributed partially or completely or left at its source;
-  later evidence below clarifies that distribution feeds GM loot accounting,
-  not durable player inventories.
+  later evidence below clarifies that distribution feeds a durable GM reminder
+  ledger rather than a rules-complete player inventory simulation.
 - Encounter XP is always shared equally among GM-adjustable participating PCs
   from the initiative order.
 - Tracked HP and rule-derived death carry forward at Encounter completion.
@@ -226,12 +226,14 @@ GM to allocate a remainder.
 > loot erhalten haben, wieviel besagter loot wert war und ob er schon verkauft
 > wurde.
 
-SaltMarcher does not track player inventories, equipment, consumption, or
-transfers between PCs. The GM-facing need is loot accounting: whether loot was
-received or given away, its value, whether it was sold, and whether the Party
-has received enough loot. This supersedes the earlier interpretation of
-character and shared Party inventories as durable product-managed destinations.
-The precise accounting scope and sale-value behavior remain to be clarified.
+SaltMarcher does not aim to simulate the players' complete rules-facing
+inventory, equipment, consumption, or table decisions. The GM-facing need is
+loot accounting: whether loot was received or given away, its value, whether it
+was sold, and whether the Party has received enough loot. Later evidence below
+clarifies that this accounting still includes a current Item list per character
+and therefore supersedes the earlier, overly absolute wording that no player
+inventory is tracked. The precise reminder and sale-value behavior remains to
+be clarified.
 
 > [Owner, wörtlich zu 3] Offen oder nicht offen. Rest ist freitext und rewards.
 > Verteilung im selben verteilungsdialog wie encounter.
@@ -259,7 +261,8 @@ with Encounter completion is deferred to technical-needs and architecture work.
 
 - Uneven equal XP shares are rounded up per participating PC.
 - SaltMarcher tracks loot sufficiency, value, received or given-away state, and
-  sale state for the GM; it does not track player inventories.
+  sale state for the GM; later evidence below confirms a lightweight current
+  inventory per character but no rules-complete inventory simulation.
 - Narrative notes have only open or closed state, free text, and optional
   rewards distributed through the same interaction as Encounter rewards.
 - Dead characters persist, may be revived, and are never automatically deleted.
@@ -286,6 +289,77 @@ with Encounter completion is deferred to technical-needs and architecture work.
 5. Muss der GM Loot-Bilanz und Reward-History nach Zeitraum, Adventure Day,
    Scene, Quelle und Empfänger filtern können, oder reicht zunächst eine
    chronologische Gesamtliste mit aktuellem Soll/Ist-Vergleich?
+
+### Owner Answers 2026-07-23
+
+> [Owner, wörtlich zu 1] DMG loot guidelines pro level, aus welchem sich pro XP
+> ableitet, aus welchem sich pro adventure day ableitet.
+
+Loot sufficiency is measured from DMG loot guidance by character level. That
+guidance yields a loot value per XP, which in turn yields the expected loot for
+one Adventure Day. The later rule work must establish the exact versioned
+derivation; this interview establishes the GM-visible comparison target.
+
+> [Owner, wörtlich zu 2] Nichts. Es sind lediglich reminder für den GM. Die
+> History kann gerne auch speichern, an wen sie verkauft oder abgegeben wurden.
+
+`Received`, `given away`, and `sold` are non-mechanical GM reminders. Changing
+one does not trigger rules or inferred consequences. History may record the
+person or other recipient to whom an Item was sold or given.
+
+> [Owner, wörtlich zu 3] Ersteres.
+
+SaltMarcher durably records which PC received each Item. Together with the
+later inventory answer, this provides a current Item list per character while
+remaining a GM reminder rather than a player-operated or rules-complete
+inventory simulation.
+
+> [Owner, wörtlich zu 4] XP und Items, wobei Items alles von Münzen über
+> equipment und handelswaren bis magic items sind.
+
+Structured narrative rewards are XP and Items. `Item` includes coins,
+equipment, trade goods, magic Items, and other concrete reward goods. The XP
+recipient default for a narrative reward remains to be clarified because no
+initiative order necessarily exists.
+
+> [Owner, wörtlich zu 5] Aktuelles inventar per charakter mit remindern zu
+> herkunft.
+
+The required follow-up view is the current Item inventory per character with
+reminders showing where each Item came from. Broad analytical filtering is not
+established as a need.
+
+### Literal Evidence So Far
+
+- The expected loot target for an Adventure Day derives from versioned DMG
+  level guidance through a loot-per-XP value.
+- Received, given-away, and sold states are reminders only; history may record
+  the receiving counterparty.
+- The GM can see each character's current Item inventory and the source of each
+  Item.
+- This inventory is a GM loot ledger, not a player-operated or rules-complete
+  inventory simulation.
+- Narrative rewards contain XP and Items, including coins, equipment, trade
+  goods, and magic Items.
+
+## Fifth Breadth Block: Ledger Boundaries And Narrative XP
+
+1. Enthält das Charakter-Inventar nur Rewards, die über SaltMarcher verteilt
+   wurden, oder kann der GM dort jederzeit manuell ein Item hinzufügen,
+   entfernen oder korrigieren? Braucht ein manuell hinzugefügtes Item zwingend
+   eine Herkunft?
+2. Wenn ein Item als `abgegeben` oder `verkauft` markiert wird, verschwindet es
+   aus dem aktuellen Charakter-Inventar und bleibt nur in der History? Ist die
+   Gegenpartei freier Text, ein Link auf einen vorhandenen NPC oder beides?
+3. Wie werden Mengen behandelt: Sind Münzen, Handelswaren und gleiche Items
+   Mengenstapel, die der GM teilen und zusammenführen kann, oder genügt je
+   Reward eine Menge plus Gesamtwert ohne weitere Bestandsoperationen?
+4. Wer erhält XP aus einer manuell aufgelösten Quest oder ähnlichen Notiz?
+   Wählt der GM einen Empfängerkreis aus dem Roster, worauf SaltMarcher die XP
+   gleichmäßig und aufgerundet verteilt?
+5. Welche Herkunft soll SaltMarcher automatisch am Item festhalten: Treasure,
+   Encounter oder Quest, Scene oder Ort, In-World-Zeit und Vergabezeit? Reicht
+   zusätzlich ein freies Herkunfts-Notizfeld für manuelle Fälle?
 
 ## References
 
