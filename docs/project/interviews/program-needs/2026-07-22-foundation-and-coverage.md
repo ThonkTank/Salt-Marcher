@@ -158,6 +158,52 @@ The next owner-answer block must clarify:
    Scene is attached to that Scene immediately or is merely created for later
    selection
 
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] Ja
+
+> [Owner, wörtlich zu 2] Sofort
+
+Together these answers confirm that switching Campaigns immediately preserves
+the complete Running Scene, Encounter, and travel state of the previous
+Campaign for direct continuation after switching back. No warning, confirmation,
+or prerequisite closure is needed.
+
+> [Owner, wörtlich zu 3] Diese Dinge "Verwenden" den Gegenstand nicht, sie
+> referenzieren ihn allerhöchstens. Wenn sie aus irgend einem Grund doch auf die
+> Inhalte des Gegenstands zugreifen müsssen (z.b. wieviel licht eine Laterne
+> während exploration spenden kann) muss dass nicht in bereits vergangenen
+> Szenen retroaktiv korrigiert werden, aber in jetzt laufenden und zukünftigen.
+
+This corrects the question's premise: Campaign content references reusable
+definitions rather than embedding or consuming copies of them. A changed
+definition affects facts read in current and future play. It does not
+retroactively rewrite already completed Scenes or their historical account.
+
+> [Owner, wörtlich zu 4] Wenn das scene feature mir die Option anbietet, direkt
+> dort Inhalte zu erstellen, sollte das der default sein, weil ich davon ausgehe
+> dass ich das für diese aktuelle Szene mache. Der Dialog sollte mir aber die
+> Option bieten, das selbst zu entscheiden.
+
+A name-only object created from a Running Scene is therefore attached to that
+Scene by default. The creation dialog lets the GM opt out before confirming.
+
+These are evidence, not yet the confirmed interpretation of the complete
+Campaign-foundation workflow.
+
+## Third Breadth Block: Party And Campaign-Object Lifecycle
+
+The next owner-answer block must clarify:
+
+1. whether one Campaign has exactly one Party with active and reserve characters
+   or may contain several separately selectable Parties
+2. whether a Campaign-specific NPC, place, faction, quest, rumour, or concrete
+   Item instance can be copied into another Campaign and, if so, whether the copy
+   becomes fully independent
+3. whether two Campaign objects of the same kind may have the same name
+4. what happens when the GM deletes an object that current preparation, a
+   Running Scene, or completed history still references
+
 No interpretation of these four questions is confirmed yet.
 
 ## References
