@@ -178,6 +178,95 @@ advance through overlapping in-world periods.
    GM see while focusing the earlier Scene B: the already current state from
    12:00, a historical 11:00 view, or some other behavior?
 
+### Owner Answers 2026-07-22
+
+> [Owner, wörtlich zu 1] Wetter, Musik, Faktoren für Loot und begegnungs
+> generatoren, NPCs, Fraktionen und weiteres können vererbt werden.
+
+Weather, music selection, factors used by loot and Encounter generation, NPCs,
+factions, and other relevant place content may be inherited from containing
+places by their subplaces. Which inheritance is automatic, configurable, or
+overridable remains to be clarified.
+
+> [Owner, wörtlich zu 2] Nein. Navigationsbereiche in einem Raum sind nicht
+> verschiedene Orte, sie sind der selbe ort. Das Hinterzimmer in der Taverne
+> ist ebenfalls eher ein Unterort. Wenn die Taverne zwei Zimmer hat und die
+> party sich verteilt, dann werden das nicht zwei verschiedene Szenen. Ich
+> schätze hier müssen wir wirklich zwischen Orten und unterorten unterscheiden.
+
+Exact cells and navigation areas inside one Room are not separate places. A
+back room or another internal part of a tavern is a `subplace`, not necessarily
+a separate place. Party members distributed across such subplaces remain in
+one Scene. The product therefore needs an explicit distinction between places,
+which provide the co-location boundary of a Scene, and subplaces, which refine
+position and content within that boundary without creating Scenes.
+
+> [Owner, wörtlich zu 3] Ich wüsste nicht, wie wir das in der UI umsetzen
+> könnten, also würde ich erstmal nein sagen. Wäre aber cool wenn.
+
+The initial product need does not require one planned route to cross map
+boundaries. The owner considers that behavior desirable, but its status as a
+long-term target need rather than an optional future extension remains open
+because the answer was based on present UI uncertainty.
+
+> [Owner, wörtlich zu 4] Verlangsamung der Darstellung, echtzeit-dauer.
+> Rückgängig setzt die Reise und ihre Resultate zum letzten Punkt zurück.
+
+Accelerating or slowing changes presentation speed only; it does not change the
+journey's calculated in-world duration. Undo returns the journey and its results
+to the preceding travel point. The exact consequence boundary and treatment of
+the immutable Campaign history still need clarification.
+
+> [Owner, wörtlich zu 5] Wenn Szene A von 10-12 läuft haben wir die autonomen
+> Handlungen für 11 ja schon simuliert. Wir können einfach auf diesen für szene
+> A vergangenen Stand zurückgreifen und ihn für Szene B zur Gegenwart machen.
+
+Autonomous World behavior for a given in-world period is simulated only once.
+When an earlier Scene reaches a time already processed through a later Scene,
+SaltMarcher reuses the corresponding earlier World state and presents it as the
+earlier Scene's current state. The observable behavior when that Scene adds a
+new fact or consequence which was not part of the already processed future
+remains to be clarified.
+
+### Literal Evidence So Far
+
+- Places provide Scene-level co-location. Subplaces, exact cells, and navigation
+  areas refine position inside that same Scene boundary.
+- Containing places may contribute weather, music, generator factors, NPCs,
+  factions, and other content to their subplaces.
+- Planned routes initially remain within one map. Cross-map planning is desired
+  but not yet classified as a binding long-term need.
+- Route speed controls presentation speed rather than in-world travel time.
+  Undo returns travel and its results to the prior travel point.
+- Independently timed Scenes reuse already processed autonomous World state for
+  the same in-world period rather than simulating it again.
+
+## Third Breadth Block: Inheritance, Undo, And Earlier-Time Changes
+
+1. Is inheritance chosen separately per kind of place content and per concrete
+   object? For example, can the GM inherit a tavern's music and weather into its
+   back room, include one tavern NPC there, exclude another, and override the
+   inherited Encounter-generator factors specifically for that back room?
+2. Does creating or moving Party members into a new Scene remain an explicit GM
+   action regardless of their places and subplaces? In other words, may one
+   Scene temporarily contain characters at different full places if the GM has
+   not split them yet, or must different full places always imply different
+   Scenes?
+3. Ignoring how the UI would achieve it: should cross-map route planning be a
+   binding long-term target capability, merely an optional later convenience,
+   or explicitly outside the intended product?
+4. If the GM presses undo after a travel segment triggered a Trap or event,
+   revealed an NPC, changed weather, created tracks, or caused autonomous World
+   actions, which of those results are reversed? Does Campaign history retain
+   the original journey and its undo as an explicit correction, or should the
+   undone segment disappear from ordinary history?
+5. Scene A has already established a World state at 12:00. Scene B then plays at
+   11:00 and creates a new consequence that would have affected that future—for
+   example, it kills or moves an NPC whom Scene A encountered at 12:00. Should
+   the 12:00 history remain exactly as experienced while the new consequence
+   changes only the World state from now on, or should SaltMarcher recalculate
+   any part of the already established future?
+
 ## References
 
 - [Program Needs Interview Series](README.md)
