@@ -16,8 +16,17 @@ module boundaries are the correct product decomposition.
 The German transcripts are evidence. Only explicitly confirmed interpretations
 may enter the English
 [Program Capability Requirements](../../requirements/requirements-program-capabilities.md).
-Neither the transcripts nor the draft requirements define architecture,
+Neither the transcripts nor the active requirements define architecture,
 contracts, persistence, source layout, or delivery order.
+
+## Completion State
+
+The interview series was completed and the whole baseline received final owner
+confirmation on 2026-07-23. The
+[Program Capability Requirements](../../requirements/requirements-program-capabilities.md)
+are therefore the `Active Target` and binding input to technical-needs
+derivation. Greenfield target architecture, comparison with the current system,
+and migration planning remain later phases.
 
 ## Confirmed Interview Rules
 
@@ -30,7 +39,7 @@ contracts, persistence, source layout, or delivery order.
   only gaps, conflicts, cross-capability operations, and quality-driving cases.
 - Each turn asks a small block of three to five concrete, related questions.
 - Each complete workflow receives a compact owner-confirmed interpretation
-  before it enters the draft program requirements.
+  before it enters the program requirements.
 - A final owner confirmation is required before the program requirements become
   `Active Target` or architecture work resumes.
 

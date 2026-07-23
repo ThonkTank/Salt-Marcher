@@ -1,9 +1,9 @@
-Status: Draft
+Status: Active Target
 Owner: Aaron (Product Owner)
 Last Reviewed: 2026-07-23
-Source of Truth: Owner-confirmed observable cross-workflow needs for the
-complete local SaltMarcher GM core. This complete candidate awaits final
-whole-baseline confirmation and is not yet an architecture input.
+Source of Truth: Final owner-confirmed observable cross-workflow needs for the
+complete local SaltMarcher GM core and the active input to technical-needs
+derivation.
 
 # SaltMarcher Program Capability Requirements
 
@@ -33,7 +33,15 @@ spans or precedes individual feature requirements.
   transaction mechanisms, frameworks, or other technologies
 - scheduling implementation or preserving current implementation behavior that
   the owner has not confirmed as need
-- treating this unconfirmed candidate as the baseline for architecture review
+
+## Derivation Boundary
+
+This Active Target is the binding product input to the next phase: deriving the
+technical needs implied by these observable capabilities. It does not choose an
+architecture, technology, contract, persistence model, source layout, or
+delivery sequence. Greenfield target architecture, comparison with the current
+system, and migration planning remain later phases and may begin only after the
+technical needs have been made explicit.
 
 ## Confirmed Workflow: Campaign Foundation And Knowledge
 
@@ -879,28 +887,29 @@ it removes the undone segment and results introduced only by it. An explicit
 GM deletion may remove its selected target even when that produces marked
 history conflicts which the GM must later resolve.
 
-## Whole-Baseline Confirmation State
+## Active Baseline State
 
 All seven interview workflows, the repository-inventory completeness audit,
 and the later structured Shop-inventory addition have owner-confirmed
 interpretations. The refreshed consistency review reconciled Shop purchases
 and counterparties with the character ledger and resolved owner deletion
 without orphaning or silently deleting the Shop. No unresolved product
-decision remains in the needs baseline.
+decision remains in the needs baseline. The owner confirmed this complete
+baseline on 2026-07-23.
 
 Exact responsiveness and scale budgets, the detailed weather model, the
 published-rule derivation, persistence and backup mechanisms, and extension
 technology remain deliberate technical-needs, source-backed rule, or product-
-testing work. They do not change the observable needs recorded here. Only final
-explicit owner confirmation remains before this document becomes the
-`Active Target` for technical-needs derivation.
+testing work. They do not change the observable needs recorded here and do not
+block technical-needs derivation.
 
-## Acceptance Of This Baseline
+## Baseline Acceptance
 
-This document may become `Active Target` only after every interview workflow has
-an explicitly confirmed interpretation, every known capability is included,
-excluded, or parked, all cross-workflow handoffs have observable desired
-behavior, and no unresolved product decision blocks technical-needs derivation.
+Every interview workflow has an explicitly confirmed interpretation, every
+known capability is included, excluded, or parked, all cross-workflow handoffs
+have observable desired behavior, and no unresolved product decision blocks
+technical-needs derivation. The owner's final whole-baseline confirmation on
+2026-07-23 satisfies the completion rule of the interview series.
 
 ## References
 
