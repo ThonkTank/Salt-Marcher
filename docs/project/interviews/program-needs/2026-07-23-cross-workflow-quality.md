@@ -563,6 +563,75 @@ current inventory without requiring per-run preview or confirmation.
    History-Eintrag erhalten bleiben? Braucht automatischer Restock zusätzlich
    eine Benachrichtigung, oder genügt der aktualisierte Bestand und die History?
 
+### Owner Answers 2026-07-23
+
+> [Owner, wörtlich zu 1] ja
+
+A Shop is a named Campaign record in addition to belonging to exactly one NPC
+or one place.
+
+> [Owner, wörtlich zu 2] genau. ersteres.
+
+An Item bought from a Shop appears in the selected character's ledger but does
+not count as received loot in cumulative loot guidance. SaltMarcher records the
+price paid but does not automatically deduct matching coins from the character
+ledger.
+
+> [Owner, wörtlich zu 3] ja.
+
+A Shop is available directly in the Running Scene when its owning NPC is
+present or its owning place is the Scene's current place. During purchase, the
+GM selects the receiving character.
+
+> [Owner, wörtlich zu 4] genau.
+
+Time-based restock executes once through authoritative Campaign time even when
+several Scenes later reach the same trigger. Manually added stock remains
+unchanged unless a restock rule explicitly manages it.
+
+> [Owner, wörtlich zu 5] ja. nein.
+
+Purchases, sales, and automatic restocks remain in explanatory Campaign
+history. Automatic restock does not create an additional notification; the
+current inventory and history are sufficient.
+
+## Proposed Consolidated Shop Addition For Confirmation
+
+This interpretation remains interview evidence until the owner confirms it.
+It extends the already confirmed workflows without choosing Shop persistence,
+scheduling, randomization, or transaction architecture.
+
+1. A Shop is a named Campaign record with one structured inventory and belongs
+   to exactly one NPC or exactly one place.
+2. A Shop inventory contains quantity stacks of reusable Item definitions and
+   individual concrete or unique Items. An entry records current quantity, the
+   price charged when the Party buys, the price paid when the Shop buys, and
+   optional notes.
+3. The GM may add, remove, and edit Shop stock manually at any time.
+4. When the owning NPC is present in a Running Scene or the owning place is the
+   Scene's current place, the Shop is available directly from that Scene.
+5. One trade interaction updates Shop stock and the character loot ledger
+   together. On purchase, the GM selects the receiving character, Shop stock
+   decreases, and the acquired Item enters that character's ledger.
+6. A purchased Item is marked as a purchase and does not count as received
+   loot in cumulative loot guidance. SaltMarcher records the paid price but
+   does not automatically deduct coins from the character ledger.
+7. When a character sells an Item to the Shop, Shop stock increases and the
+   character ledger records the sold state, actual price, and Shop or owning
+   NPC as counterparty according to the existing sale rules.
+8. The GM can restock manually and can define automatic rules triggered by
+   elapsed Campaign time or configured calendar events.
+9. A fixed restock rule may refill an entry to a target quantity or add a
+   configured quantity.
+10. Randomized restock uses GM-configured weighted Item tables or filters such
+    as type, rarity, value, and tags and may update stock automatically without
+    per-run preview or confirmation.
+11. Time-based restock runs once according to authoritative Campaign time even
+    when several Scenes reach the trigger. It leaves manually added stock
+    unchanged unless an explicit restock rule owns that stock.
+12. Purchases, sales, and automatic restocks remain in explanatory Campaign
+    history. Automatic restock creates no separate notification.
+
 ## References
 
 - [Program Needs Interview Series](README.md)
