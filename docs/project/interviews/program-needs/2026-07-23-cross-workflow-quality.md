@@ -276,6 +276,63 @@ devices, and small smartphone layouts are not core targets.
    wie explizite Löschung, lokale Datenkontrolle und unverfälschte History nicht
    unbemerkt umgehen?
 
+### Owner Answers 2026-07-23
+
+> [Owner, wörtlich zu 1-5] ja
+
+Every extension is explicitly installed by the GM and discloses its requested
+access to Campaign data, files, network functions, and other capabilities
+before activation.
+
+Extensions have no default network access or unrestricted file access.
+Additional permissions require explicit GM consent. A faulty, damaged,
+missing, or update-incompatible extension is disabled and clearly identified
+without preventing SaltMarcher or the Campaign from opening. Its data remains
+intact and an application update does not let it rewrite Campaign data merely
+because compatibility failed.
+
+Extensions may add content kinds, runtime masks, generators, importers, and
+presentations. They cannot silently bypass confirmed safety boundaries such as
+explicit deletion, local control of data, or truthful Campaign history.
+
+## Repository Inventory Completeness Audit
+
+The current vision, roadmap, and feature documentation were inspected only as
+discovery prompts. Campaign knowledge, Catalog lookup, Party, Session planning
+and generation, Running Scenes, Encounters, follow-up, Items, World records,
+Dungeon and Hex maps, travel, weather, music and ambience, and optional Actor
+Autonomy all map to confirmed interview behavior or an explicit parked scope.
+
+The inventory exposed four product gaps which the earlier workflow questions
+did not decide explicitly: calendar and scheduled-event behavior, whether
+Encounter Tables are a real user concept, whether SaltMarcher provides general
+dice rolling, and the intended boundary of a PC record. The following block
+closes those gaps rather than inheriting the current implementation.
+
+## Final Completeness Block: Calendar, Tables, Dice, And PCs
+
+1. Braucht jede Campaign einen konfigurierbaren Fantasy-Kalender mit eigenen
+   Monaten, Tageslängen, Wochentagen und Jahreszählung, oder reicht ein fester
+   realweltlicher Kalender plus frei verstellbare Uhrzeit?
+2. Soll der GM Ereignisse und Erinnerungen auf einen Campaign-Zeitpunkt legen
+   können, die sichtbar werden, sobald eine Running Scene diesen Zeitpunkt
+   erreicht? Sie würden den GM informieren oder vorbereitete Inhalte anbieten,
+   aber keine erzählerische Konsequenz ohne seine Entscheidung ausführen.
+3. Sind ausdrücklich benannte, vom GM bearbeitbare `Encounter Tables` mit
+   gewichteten Monster- oder Gruppeneinträgen ein gewünschtes Konzept, das an
+   Orte und Fraktionen gehängt und als Quelle für Generierung genutzt wird?
+   Oder sollen allein Tags, Terrain, Fraktionen und andere Faktoren den
+   Kandidatenpool bestimmen, ohne eigene Tabellenobjekte?
+4. Braucht SaltMarcher einen allgemeinen Würfelroller für den GM, oder würfelt
+   der GM weiterhin physisch und nur automatische Generatoren und Simulationen
+   verwenden intern Zufall?
+5. Soll ein PC-Datensatz neben Name und frei ergänzbaren Notizen als optionale
+   strukturierte Kerndaten mindestens Level, XP, aktuelle/maximale HP,
+   Bewegungsraten und relevante Sinne enthalten, weil Planung, Encounter,
+   Reisen und Sicht sie benötigen? Ein vollständiger Charakterbogen mit
+   Klassenfähigkeiten, Zaubern und regelvollständigem Equipment wäre weiterhin
+   kein Kernbedarf.
+
 ## References
 
 - [Program Needs Interview Series](README.md)
@@ -286,3 +343,5 @@ devices, and small smartphone layouts are not core targets.
 - [Confirmed Follow-Up, Progression, And History](2026-07-22-follow-up-progression-and-history.md)
 - [Confirmed Local Data Lifecycle](2026-07-23-local-data-lifecycle.md)
 - [Program Capability Requirements](../../requirements/requirements-program-capabilities.md)
+- [Project Vision](../../vision.md)
+- [Project Roadmap](../../roadmap.md)
