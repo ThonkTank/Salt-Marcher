@@ -192,6 +192,78 @@ choice is clearly safe.
    einem Papierkorb wiederherstellbar bleiben und erst durch eine zusätzliche
    ausdrückliche Aktion endgültig gelöscht werden?
 
+### Owner Answers 2026-07-23
+
+> [Owner, wörtlich zu 1] Der Gm entscheidet ob eine von beiden verworfen oder
+> beide getrennt behalten werden sollen.
+
+When an imported shared definition conflicts with an existing one, the GM
+chooses whether to discard either definition or retain both as separate
+definitions. SaltMarcher must make the effect of that choice visible: keeping
+both preserves both variants, discarding the imported variant makes the
+imported Campaign use the retained definition, and discarding the existing
+variant deliberately changes the shared definition available to existing
+Campaigns. Import never makes that choice silently.
+
+> [Owner, wörtlich zu 2] Monster/Item CRUD ist Spätes QOL feature.
+
+Monster and Item definition management, including bulk data-set refresh, is
+not a core workflow requirement. It is parked as a late quality-of-life
+capability. The already confirmed sharing semantics still govern any later
+definition change: current and future reads use the changed definition while
+completed history is not recalculated.
+
+> [Owner, wörtlich zu 3] Ja.
+
+Deleting a Campaign first moves the complete Campaign into recoverable trash.
+Permanent deletion requires a separate explicit action.
+
+## Proposed Consolidated Interpretation For Confirmation
+
+This interpretation remains interview evidence until the owner confirms it.
+It deliberately states observable outcomes without choosing storage,
+transaction, file-format, backup, or synchronization mechanisms.
+
+1. SaltMarcher preserves GM work automatically as soon as practical. Normal
+   use does not depend on a manual Save action, should almost never lose
+   confirmed work, and must not impose unnecessary user-visible load.
+2. After restart, SaltMarcher restores as much of the prior useful working
+   state as possible, including the active Campaign, focused Running Scene, and
+   live Encounter, Chase, and Travel contexts. Technical design may identify
+   effects which genuinely cannot resume, but there is no product-level list
+   of deliberately discarded runtime state.
+3. Backup schedules, retention, snapshot controls, restore granularity, and
+   persistence mechanisms are delegated technical decisions. The binding
+   product outcome is recovery of Campaign work and local assets without
+   requiring the GM to understand or operate backup internals.
+4. When local data is damaged, SaltMarcher automatically opens the newest
+   uniquely safe recoverable state, reports what it recovered and any
+   unavoidable loss, and asks the GM to choose only when no single recovery
+   choice is clearly safe.
+5. A complete Campaign export contains the Campaign data, maps, images, local
+   audio, required reusable Creature, Item, and rule definitions, and its
+   resumable working state. Partial Campaign export is not required.
+6. On another compatible SaltMarcher installation, that export restores the
+   same Campaign content, local assets, and resumable state without access to
+   the original computer.
+7. Import always creates a new independent Campaign and never merges Campaign
+   content into an existing Campaign.
+8. Campaign-owned data remains isolated between Campaigns. Large reusable
+   Monster, Item, rule, and similar reference collections are installation-wide
+   and shared between Campaigns rather than duplicated per Campaign.
+9. Missing shared definitions required by an imported Campaign join the shared
+   collection. When an imported definition conflicts with an existing one, the
+   GM explicitly chooses whether to discard either variant or retain both as
+   separate definitions. SaltMarcher does not silently choose, and it shows the
+   consequences for the imported and existing Campaigns before applying the
+   decision.
+10. Managing Monster and Item definitions, including whole-data-set refresh,
+    is a late quality-of-life feature rather than a core need. If definitions
+    are changed later, current and future reads use their current definition
+    while completed history remains unchanged.
+11. Deleting a Campaign moves its complete data into recoverable trash.
+    Permanent deletion requires a separate explicit GM action.
+
 ## References
 
 - [Program Needs Interview Series](README.md)
