@@ -512,6 +512,57 @@ before the whole needs baseline can become active.
    automatisch laufen, oder soll der GM das Ergebnis immer erst ansehen und
    bestätigen, bevor es den aktuellen Bestand verändert?
 
+### Owner Answers 2026-07-23
+
+> [Owner, wörtlich zu 1] einen NPC oder einen Ort.
+
+A Shop inventory belongs to exactly one NPC or exactly one place. It is not
+simultaneously attached to several owners. Whether the Shop also needs a name
+independent of its owner remains to be clarified.
+
+> [Owner, wörtlich zu 2] ja
+
+The inventory supports quantity stacks for ordinary Item definitions and
+individual concrete or unique Items. Entries carry current quantity, Shop
+purchase and sale prices, and optional notes.
+
+> [Owner, wörtlich zu 3] ja
+
+One trade interaction updates both sides. A Party purchase reduces Shop stock
+and adds the Item to the selected character's ledger. A sale to the Shop
+increases its stock and marks the character ledger entry with the actual price
+and Shop or owning NPC as counterparty.
+
+> [Owner, wörtlich zu 4] ja sowohl als auch
+
+The GM can restock manually or define time- and calendar-event-based restock.
+Each fixed rule may refill to a target quantity or add a configured quantity.
+
+> [Owner, wörtlich zu 5] ja, automatisch
+
+Randomized stock uses GM-configured weighted Item tables or filters such as
+type, rarity, value, and tags. A configured automatic restock may change the
+current inventory without requiring per-run preview or confirmation.
+
+## Targeted Shop Clarifications
+
+1. Braucht das Shop-Inventar zusätzlich zum besitzenden NPC oder Ort einen
+   eigenen Namen, oder reicht der Besitzer als Identität und Anzeige?
+2. Soll ein im Shop gekauftes Item zwar im Charakter-Ledger erscheinen, aber
+   nicht als erhaltenes Loot in die Soll/Ist-Bilanz eingehen? Soll SaltMarcher
+   den bezahlten Betrag nur dokumentieren oder passende Münzen automatisch aus
+   dem Charakter-Ledger abbuchen?
+3. Wenn der besitzende NPC in der Running Scene anwesend oder der Shop-Ort der
+   aktuelle Scene-Ort ist: Soll das Shop-Inventar automatisch in der Scene
+   erreichbar sein und der GM beim Kauf den empfangenden Charakter auswählen?
+4. Soll zeitbasierter Restock mit der bereits bestätigten autoritativen
+   Campaign-Zeit genau einmal ausgeführt werden, auch wenn mehrere Scenes den
+   Zeitpunkt nacheinander erreichen? Sollen manuell hinzugefügte Bestände dabei
+   unverändert bleiben, sofern keine Restock-Regel sie ausdrücklich verwaltet?
+5. Soll jeder Kauf, Verkauf und automatische Restock als erklärender
+   History-Eintrag erhalten bleiben? Braucht automatischer Restock zusätzlich
+   eine Benachrichtigung, oder genügt der aktualisierte Bestand und die History?
+
 ## References
 
 - [Program Needs Interview Series](README.md)
