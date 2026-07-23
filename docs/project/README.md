@@ -25,6 +25,9 @@ lives under `docs/<feature>/`; see [docs/README.md](../README.md).
 
 ## Architecture
 
+- [Program Technical Needs](architecture/program-technical-needs.md) --
+  solution-neutral obligations and measurable quality scenarios derived from
+  the confirmed complete local GM-core needs.
 - [Source Architecture](architecture/source-architecture.md) -- target source
   shape, boundaries, quality concerns, and migration relationship. Start here.
 - Patterns: [feature boundaries](architecture/patterns/feature-boundaries.md),
