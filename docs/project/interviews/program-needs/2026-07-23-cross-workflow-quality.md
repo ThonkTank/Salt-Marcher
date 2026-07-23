@@ -1,4 +1,4 @@
-Status: Active Evidence
+Status: Confirmed Evidence
 Owner: Aaron
 Last Reviewed: 2026-07-23
 Source of Truth: Verbatim owner answers and confirmed interpretations for
@@ -374,10 +374,11 @@ workflow may require its relevant optional statistics before it can run. This
 does not turn SaltMarcher into a complete character-sheet, spell, class-feature,
 or rules-complete equipment manager.
 
-## Proposed Consolidated Interpretation For Confirmation
+## Confirmed Consolidated Interpretation
 
-This interpretation remains interview evidence until the owner confirms it.
-It establishes program-wide observable qualities and product boundaries without
+The owner confirmed this complete interpretation on 2026-07-23. It is the
+evidence promoted into the draft Program Capability Requirements. It
+establishes program-wide observable qualities and product boundaries without
 choosing architecture, storage, frameworks, extension technology, or delivery
 order.
 
@@ -469,6 +470,12 @@ order.
     require its relevant optional statistics before running. SaltMarcher does
     not thereby become a complete character-sheet or rules-complete inventory
     manager.
+
+Workflow 7 and the repository-inventory completeness audit are confirmed. All
+seven interview workflows now have owner-confirmed interpretations. The draft
+Program Capability Requirements still require one final whole-baseline
+consistency review and owner confirmation before becoming the active target for
+technical-needs derivation.
 
 ## References
 

@@ -2,8 +2,8 @@ Status: Draft
 Owner: Aaron (Product Owner)
 Last Reviewed: 2026-07-23
 Source of Truth: Owner-confirmed observable cross-workflow needs for the
-complete local SaltMarcher GM core. This draft is incomplete and is not yet an
-architecture input.
+complete local SaltMarcher GM core. This complete candidate still awaits final
+whole-baseline owner confirmation and is not yet an architecture input.
 
 # SaltMarcher Program Capability Requirements
 
@@ -33,7 +33,7 @@ spans or precedes individual feature requirements.
   transaction mechanisms, frameworks, or other technologies
 - scheduling implementation or preserving current implementation behavior that
   the owner has not confirmed as need
-- treating this incomplete draft as the baseline for architecture review
+- treating this unconfirmed candidate as the baseline for architecture review
 
 ## Confirmed Workflow: Campaign Foundation And Knowledge
 
@@ -165,8 +165,8 @@ treasures and locations.
 ### Weather, Music, And Notes
 
 Weather is not Session preparation. It develops autonomously from location
-terrain and other available climate data; its live behavior remains part of a
-later workflow.
+terrain and other available climate data; its live behavior follows the
+confirmed Scene-time, climate, and override requirements below.
 
 Songs are stored locally. When adding a song, the GM assigns mood, intensity,
 vibe tags, and genre and can manage that data later. Scene sliders supply mood
@@ -610,24 +610,170 @@ deletion requires a separate explicit GM action.
 - Campaign deletion remains recoverable until the GM separately requests
   permanent deletion
 
+## Confirmed Program-Wide Quality And Product Boundaries
+
+### Offline Desktop Operation And Trust
+
+The complete local GM core works offline when its required rules, media, and
+Campaign data are present locally. Network use occurs only through explicit
+imports, downloads, GM-approved extension permissions, or future online
+capabilities.
+
+Linux, Windows, and macOS are supported desktop targets with portable Campaign
+behavior across them. The GM installs a self-contained application without
+separately administering a database server, web server, runtime, or other
+infrastructure. It runs fluidly on an ordinary current laptop without requiring
+a dedicated GPU or server hardware.
+
+One local GM is the sole Campaign writer in the confirmed core. The passive
+second display reads live state; concurrent multi-process, multi-computer, or
+multi-user Campaign editing is not required.
+
+Campaign data, notes, maps, images, audio, and usage data leave the computer
+only through a concrete, understandable GM action. There is no mandatory cloud
+dependency, hidden upload, or telemetry enabled by default.
+
+### Responsiveness, Scale, And Failure Isolation
+
+Ordinary live-play actions respond without perceptible delay. Longer
+generation, import, and simulation work is visible and cancellable and does not
+make the Running Scene unusable. Resource-intensive simulation adapts to
+available resources rather than blocking live play.
+
+SaltMarcher supports practically large, long-lived Campaigns without artificial
+content limits. Under exceptional load it degrades predictably instead of
+truncating data or failing unpredictably. Representative Campaign sizes and
+measurable response budgets are established during technical-needs derivation
+and verified with realistic scenarios rather than guessed by the GM.
+
+Failure of supporting music, weather, maps, generation, or World progression
+affects only that capability. Running Scenes, Encounters, manual editing, and
+preservation of confirmed work remain usable, with a clear error and retry for
+the affected function.
+
+Cancellation or failure of a long operation keeps only independently accepted
+results; unconfirmed partial results are discarded cleanly. If new work cannot
+be persisted safely, SaltMarcher reports that immediately and never presents it
+as stored. Safe reading, export, and retry remain available.
+
+Application updates preserve Campaigns and resumable runtime state. A failed
+data conversion leaves prior data untouched and usable with the prior
+application version. Damage to one record does not prevent the remaining
+Campaign from opening: SaltMarcher isolates and identifies the record and
+offers recovery or explicit deletion.
+
+Data belonging to a disabled, missing, or temporarily unavailable capability
+remains intact, stays in complete exports, and becomes usable again when the
+capability returns.
+
+### Modular Change And Third-Party Extensions
+
+Capability areas can be added, omitted, removed, or replaced without breaking
+unrelated workflows or Campaign data. New runtime masks, content kinds,
+influences, and supporting systems can integrate without rebuilding existing
+features.
+
+The GM can install third-party extensions, plugins, or scripts. Every extension
+is installed explicitly and discloses requested Campaign-data, file, network,
+and other access before activation. Extensions have no default network or
+unrestricted file access; additional permissions require explicit GM consent.
+
+A faulty, damaged, missing, or update-incompatible extension is disabled and
+identified without preventing SaltMarcher or the Campaign from opening. Its
+data remains intact, and application updates do not let an incompatible
+extension rewrite Campaign data.
+
+Extensions may add content kinds, runtime masks, generators, importers, and
+presentations. They cannot silently bypass explicit deletion, local data
+control, truthful history, or another confirmed safety boundary.
+
+### Rules, Localization, Accessibility, And Displays
+
+D&D 5e 2014 is the only binding core rules profile. Supporting several D&D
+versions or other game systems is parked as very late quality-of-life work and
+does not require a generic multi-system core now.
+
+The interface is localizable for additional languages. Campaign-authored text
+remains arbitrary user content independent of interface language.
+
+The complete core supports keyboard operation, scalable text and interface,
+sufficient contrast, and information which does not rely on color alone. These
+alternatives do not clutter the default interface or slow its low-friction
+workflows. The interface remains usable at common laptop resolutions, on
+high-density displays, and across multiple monitors. Touch, mobile, and
+smartphone layouts are not core targets.
+
+### Calendar, Encounter Tables, Dice, And PC Data
+
+Each Campaign has a configurable fantasy calendar with authored month lengths,
+day length, weekdays, and year counting. The GM can author calendar events such
+as holidays. Events may be bound to time, place, or both and become relevant
+according to each Running Scene's time and location without automatically
+deciding narrative consequences.
+
+Named, GM-editable Encounter Tables contain weighted Monster or group entries.
+Factions, places, and other context use them as foundational sources for
+Encounter candidate pools and generation, alongside applicable contextual
+influences.
+
+SaltMarcher has no general-purpose GM dice roller. Ordinary table dice stay
+physical; automatic generators and simulations may use internal randomness.
+
+A PC tracks every structured statistic required by enabled automatic systems.
+Only its name is universally required; an automatic workflow may require its
+relevant optional statistics before running. SaltMarcher does not thereby
+become a complete character-sheet, spell, class-feature, or rules-complete
+inventory manager.
+
+### Acceptance Criteria
+
+- ordinary core preparation and play remain usable without network access
+- the same complete Campaign can be used across supported desktop systems
+  without separately administered infrastructure
+- common live actions remain responsive while long operations expose progress,
+  cancellation, and non-blocking behavior
+- a supporting-capability failure leaves unrelated live and manual workflows
+  usable and retains confirmed work
+- cancelled work leaks no unaccepted partial result into Campaign truth
+- updates, damaged individual records, and missing capabilities preserve the
+  last safe unaffected Campaign data
+- an optional capability can be removed or replaced without breaking unrelated
+  workflows, and its retained data returns with the capability
+- an extension obtains network, file, or Campaign-data access only after
+  explicit disclosure and GM consent
+- an incompatible extension cannot block Campaign opening or silently bypass
+  deletion, privacy, or history boundaries
+- keyboard, scaling, contrast, and non-color alternatives preserve the same
+  efficient workflows across supported display configurations
+- Calendar events respond to applicable Scene time and place without executing
+  a narrative decision automatically
+- Encounter Tables can provide weighted candidates to factions, places, and
+  generation
+- ordinary dice rolling remains outside SaltMarcher while automatic systems may
+  randomize internally
+- an automatic PC workflow clearly requires its missing relevant statistics
+  without making unrelated optional character data mandatory
+
 ## Confirmed Cross-Workflow Behavior
 
 ### Complete Encounter Outcome
 
-The GM confirms one complete Encounter outcome. Encounter result and completion,
-calculated Party XP, selected named-NPC lifecycle effects, selected finite-stock
-effects become effective together or remain wholly unchanged.
-The associated Running Scene remains active. Reward distribution, character
-loot ledger, progression, and correction behavior follow the confirmed
-follow-up workflow above.
+The GM confirms one complete Encounter outcome. Encounter completion and the
+selected participant XP distribution become effective together or remain
+wholly unchanged. Tracked HP and rule-derived deaths carry forward; SaltMarcher
+does not infer named-NPC lifecycle, finite-stock, condition, capture, location,
+resource-use, or other narrative consequences from completion. The associated
+Running Scene remains active. Reward distribution, character loot ledger,
+progression, and correction behavior follow the confirmed follow-up workflow
+above.
 
 ### Authoritative Party With Dependent Running Contexts
 
 Party activation, deactivation, or deletion is authoritative immediately and is
-not rolled back by an unavailable Running Scene or Encounter. A later
-live-workflow answer establishes the Scene assignment behavior above.
-Deactivated or deleted characters immediately stop counting as current Party
-members.
+not rolled back by an unavailable Running Scene or Encounter. Activation
+assigns the character to the focused Running Scene; deactivated or deleted
+characters immediately stop counting as current Party members and leave their
+Running Scene and masks according to the confirmed live-play behavior above.
 
 Only Running Scenes that reference the changed character and their Encounters
 reconcile. Until reconciliation succeeds, affected contexts are visibly pending
@@ -646,8 +792,8 @@ from the saved Scene change.
 
 The GM can inspect an ordinarily immutable chronological history of meaningful
 confirmed Campaign consequences, including campaign-time progression, travel,
-Encounter completion, XP, Party membership, NPC or finite-stock effects, and
-GM corrections.
+Encounter completion, XP, Party membership, manually confirmed NPC or
+finite-stock effects, and GM corrections.
 
 A correction appends a linked entry rather than rewriting prior history. The
 history is not required to replay the Campaign, reconstruct every intermediate
@@ -661,12 +807,20 @@ it removes the undone segment and results introduced only by it. An explicit
 GM deletion may remove its selected target even when that produces marked
 history conflicts which the GM must later resolve.
 
-## Awaiting Workflow Confirmation
+## Whole-Baseline Confirmation State
 
-The following areas intentionally contain no normative behavior yet:
+All seven interview workflows and the repository-inventory completeness audit
+have owner-confirmed interpretations. The whole-document consistency review
+found no unresolved product decision: later clarifications govern earlier
+questions, and the cross-workflow Encounter outcome now excludes narrative
+effects which the GM manages separately.
 
-- measurable program-wide responsiveness, scale, modular change, removal,
-  replacement, and extension needs
+Exact responsiveness and scale budgets, the detailed weather model, the
+published-rule derivation, persistence and backup mechanisms, and extension
+technology remain deliberate technical-needs, source-backed rule, or product-
+testing work. They do not change the observable needs recorded here. Only one
+final explicit owner confirmation remains before this document becomes the
+`Active Target` for technical-needs derivation.
 
 ## Acceptance Of This Baseline
 
@@ -684,5 +838,6 @@ behavior, and no unresolved product decision blocks technical-needs derivation.
 - [Spatial Travel And Progression Interview](../interviews/program-needs/2026-07-22-spatial-travel-and-progression.md)
 - [Follow-Up, Progression, And History Interview](../interviews/program-needs/2026-07-22-follow-up-progression-and-history.md)
 - [Local Data Lifecycle Interview](../interviews/program-needs/2026-07-23-local-data-lifecycle.md)
+- [Cross-Workflow Quality Interview](../interviews/program-needs/2026-07-23-cross-workflow-quality.md)
 - [Project Vision](../vision.md)
 - [Documentation Standard](../documentation.md)

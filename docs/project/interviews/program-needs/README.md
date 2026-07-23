@@ -52,8 +52,8 @@ The headings below are interview routes, not presumed feature boundaries.
    restore, recovery, and other local data-lifecycle needs -- confirmed
    2026-07-23
 7. Cross-workflow completeness, failure semantics, scale, responsiveness,
-   modular change, removal, replacement, and extension scenarios -- in
-   progress
+   modular change, removal, replacement, and extension scenarios -- confirmed
+   2026-07-23
 
 ## Evidence
 
