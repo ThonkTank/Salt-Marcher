@@ -1,9 +1,9 @@
 Status: Draft
 Owner: Aaron (Product Owner)
 Last Reviewed: 2026-07-23
-Source of Truth: Owner-confirmed observable cross-workflow needs for the
-complete local SaltMarcher GM core. This complete candidate still awaits final
-whole-baseline owner confirmation and is not yet an architecture input.
+Source of Truth: Owner-confirmed observable cross-workflow needs for the local
+SaltMarcher GM core. The draft is reopened for the owner's later structured
+Shop-inventory addition and is not yet an architecture input.
 
 # SaltMarcher Program Capability Requirements
 
@@ -809,18 +809,20 @@ history conflicts which the GM must later resolve.
 
 ## Whole-Baseline Confirmation State
 
-All seven interview workflows and the repository-inventory completeness audit
-have owner-confirmed interpretations. The whole-document consistency review
-found no unresolved product decision: later clarifications govern earlier
-questions, and the cross-workflow Encounter outcome now excludes narrative
-effects which the GM manages separately.
+The seven original interview workflows and repository-inventory completeness
+audit have owner-confirmed interpretations. The whole-document consistency
+review resolved their internal conflicts. The owner's later addition of
+structured Shop inventories, restock, and optional randomization reopens the
+completeness workflow; its observable behavior is not yet confirmed and does
+not yet appear as normative behavior in this document.
 
 Exact responsiveness and scale budgets, the detailed weather model, the
 published-rule derivation, persistence and backup mechanisms, and extension
 technology remain deliberate technical-needs, source-backed rule, or product-
-testing work. They do not change the observable needs recorded here. Only one
-final explicit owner confirmation remains before this document becomes the
-`Active Target` for technical-needs derivation.
+testing work. They do not change the observable needs recorded here. Shop
+clarification, a refreshed consistency review, and final explicit owner
+confirmation remain before this document becomes the `Active Target` for
+technical-needs derivation.
 
 ## Acceptance Of This Baseline
 

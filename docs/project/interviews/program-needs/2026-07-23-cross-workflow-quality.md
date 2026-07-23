@@ -1,4 +1,4 @@
-Status: Confirmed Evidence
+Status: Active Evidence
 Owner: Aaron
 Last Reviewed: 2026-07-23
 Source of Truth: Verbatim owner answers and confirmed interpretations for
@@ -476,6 +476,41 @@ seven interview workflows now have owner-confirmed interpretations. The draft
 Program Capability Requirements still require one final whole-baseline
 consistency review and owner confirmation before becoming the active target for
 technical-needs derivation.
+
+## Later Owner Addition: Structured Shop Inventories
+
+> [Owner, wörtlich am 2026-07-23] noch ein zusatz: GMs brauchen strukturierte
+> shop inventare, die sie an NPCs und Orte hängen können. Shops brauchen
+> restock-mechaniken und ggf. randomisation optionen.
+
+This reopens the completeness workflow after its prior confirmation. Structured
+Shop inventories, their NPC and place relationships, restocking, randomization,
+and interaction with Items and the character loot ledger must be clarified
+before the whole needs baseline can become active.
+
+## Shop Breadth Block: Identity, Stock, Trade, And Restock
+
+1. Soll ein Shop ein eigener benannter Campaign-Datensatz mit genau einem
+   strukturierten Inventar sein, der gleichzeitig an einen Ort und einen oder
+   mehrere NPCs gehängt werden kann? Alle diese Verknüpfungen würden dann
+   denselben aktuellen Bestand zeigen.
+2. Soll ein Shop-Inventar sowohl Mengenstapel normaler Item-Definitionen als
+   auch einzelne konkrete oder einzigartige Items enthalten? Braucht jeder
+   Eintrag mindestens aktuellen Bestand, Kaufpreis, Verkaufspreis und optionale
+   Notizen?
+3. Soll ein Kauf durch die Party den Shop-Bestand verringern und das Item über
+   einen gemeinsamen Handelsdialog direkt in das charakterbezogene Loot-Ledger
+   eintragen? Soll ein Verkauf an den Shop umgekehrt den Shop-Bestand erhöhen
+   und den Ledger-Eintrag mit tatsächlichem Preis und Shop/NPC als Gegenpartei
+   markieren?
+4. Soll der GM einen Shop jederzeit manuell auffüllen können und zusätzlich
+   zeitbasierte Restock-Regeln festlegen, etwa alle sieben Campaign-Tage oder an
+   bestimmten Kalendereignissen? Werden feste Einträge dabei auf eine
+   Zielmenge aufgefüllt oder jeweils um eine festgelegte Menge ergänzt?
+5. Soll Randomisierung über vom GM konfigurierbare gewichtete Item-Tabellen oder
+   Filter wie Typ, Seltenheit, Wert und Tags erfolgen? Darf sie beim Restock
+   automatisch laufen, oder soll der GM das Ergebnis immer erst ansehen und
+   bestätigen, bevor es den aktuellen Bestand verändert?
 
 ## References
 
