@@ -124,6 +124,59 @@ types, and influences can be integrated without rebuilding existing features.
    erhalten und exportiert werden, auch wenn sie gerade nicht bearbeitet werden
    können, und nach Rückkehr der Funktion wieder verfügbar sein?
 
+### Owner Answers 2026-07-23
+
+> [Owner, wörtlich zu 1] ja
+>
+> [Owner, wörtlich zu 2] ja
+>
+> [Owner, wörtlich zu 3] ja
+>
+> [Owner, wörtlich zu 4] ja
+>
+> [Owner, wörtlich zu 5] ja
+
+Cancellation or failure of a long-running import, generation, or simulation
+keeps only results the GM has already accepted independently. Unconfirmed
+partial results are discarded cleanly rather than leaking into Campaign state.
+
+If SaltMarcher cannot safely persist new changes, it reports that state
+immediately and never presents affected work as safely stored. Reading,
+exporting, and retrying persistence remain available wherever they are safe.
+
+Application updates preserve every existing Campaign and resumable runtime
+state. If required data conversion fails, it leaves the prior data untouched
+and usable with the prior application version rather than producing a partial
+upgrade.
+
+Damage to one record does not prevent the rest of its Campaign from opening.
+SaltMarcher isolates and clearly identifies the affected record and offers
+recovery or explicit deletion.
+
+Data owned by a temporarily disabled or unavailable capability remains intact,
+is included in complete Campaign export, cannot be silently discarded, and
+becomes usable again when that capability returns.
+
+## Third Breadth Block: Platform, Resources, And Trust Boundary
+
+1. Welche Desktop-Betriebssysteme gehören zum Ziel des lokalen Kernprodukts:
+   Linux, Windows und macOS oder zunächst nur eine Teilmenge davon?
+2. Soll SaltMarcher auf einem gewöhnlichen aktuellen Laptop ohne dedizierte GPU
+   oder Server-Hardware flüssig nutzbar sein? Aufwendige Wetter- oder
+   World-Simulation müsste ihre Detailtiefe dann kontrolliert an verfügbare
+   Ressourcen anpassen, statt den Live-Betrieb zu blockieren.
+3. Soll die Installation für den GM eine eigenständige Desktop-Anwendung sein,
+   ohne dass er zusätzlich einen Datenbankserver, Webserver, eine Laufzeit oder
+   andere Infrastruktur installieren und administrieren muss?
+4. Ist die bestätigte Kernnutzung genau ein lokal bearbeitender GM pro Campaign?
+   Die passive Zweitanzeige darf denselben Zustand lesen, aber gleichzeitige
+   Bearbeitung derselben Campaign durch mehrere Prozesse, Rechner oder Nutzer
+   wäre kein Kernbedarf.
+5. Sollen Campaign-Daten, Notizen, Karten, Bilder, Audio und Nutzungsdaten den
+   Rechner niemals ohne eine konkrete, verständliche und vom GM ausgelöste
+   Aktion verlassen? Insbesondere gäbe es keine verpflichtende Cloud,
+   versteckten Uploads oder standardmäßig aktive Telemetrie.
+
 ## References
 
 - [Program Needs Interview Series](README.md)
