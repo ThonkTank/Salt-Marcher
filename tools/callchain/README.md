@@ -3,8 +3,8 @@
 This directory owns an ad-hoc developer tool for method-level callchain
 diagrams. It is not a Gradle gate and it does not define architecture truth.
 
-Agents must read `tools/quality/skills/callchain-tool/SKILL.md` before setup,
-indexing, rendering, interpreting, or citing this tool's output.
+Agents must read `tools/quality/skills/callchain-tool/SKILL.md` before indexing,
+rendering, interpreting, or citing this tool's output.
 
 ## Setup
 
@@ -40,11 +40,11 @@ Text-first outputs are written under `build/callchain/out/<selector>/`:
 - `candidates.tsv`
 - `summary.txt`
 
-Use `--depth <n>` to control transitive expansion, `--include-external` to keep
-non-project methods, and `--refresh` after source changes.
+Available render options are `--depth <n>`, `--include-external`, and
+`--refresh`.
 
 ## Agent Workflow
 
-Detailed agent workflow, selector guidance, refresh rules, evidence strength,
-and handoff templates live in
-`tools/quality/skills/callchain-tool/SKILL.md`.
+Agent-only selection, freshness, interpretation, and evidence rules live in
+`tools/quality/skills/callchain-tool/SKILL.md`. This README remains the sole
+owner of setup, index, render, option, and output-path instructions.

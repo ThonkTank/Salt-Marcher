@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "skill": "callchain-tool",
+  "proof_scope": "review-owned; check validates structure only; rerun in fresh contexts after behavior or metadata changes",
+  "cases": [
+    {
+      "id": "method-blast-radius",
+      "invocation": "implicit",
+      "query": "Prüfe vor dem Refactor von features.example.Service#apply den statischen Caller- und Callee-Blast-Radius.",
+      "expected_selection": "select",
+      "expected_behavior": [
+        "Reads the callchain owner README",
+        "Uses a package-qualified method selector and starts shallow",
+        "Confirms decision-relevant edges against source"
+      ],
+      "forbidden_behavior": [
+        "Treats Joern output as runtime proof"
+      ],
+      "oracle": [
+        "SKILL.md Workflow",
+        "SKILL.md Evidence"
+      ]
+    },
+    {
+      "id": "interpret-existing-output",
+      "invocation": "explicit",
+      "query": "Use $callchain-tool to interpret this candidates.tsv and explain which reported edges can support the refactor decision.",
+      "expected_selection": "select",
+      "expected_behavior": [
+        "Checks selector ambiguity, index freshness, and dynamic seams",
+        "Reports candidate evidence separately from source confirmation"
+      ],
+      "forbidden_behavior": [
+        "Selects the first overload without source confirmation"
+      ],
+      "oracle": [
+        "SKILL.md Workflow",
+        "SKILL.md Evidence"
+      ]
+    },
+    {
+      "id": "simple-file-search",
+      "invocation": "implicit",
+      "query": "Finde alle Dateien, die den Typ ExampleCommand erwähnen.",
+      "expected_selection": "reject",
+      "expected_behavior": [
+        "Uses normal repository text search"
+      ],
+      "forbidden_behavior": [
+        "Indexes or renders a Joern callchain"
+      ],
+      "oracle": [
+        "SKILL.md Use It For"
+      ]
+    },
+    {
+      "id": "runtime-behavior-proof",
+      "invocation": "implicit",
+      "query": "Beweise, dass dieser Callback im laufenden JavaFX-Programm tatsächlich ausgeführt wird.",
+      "expected_selection": "reject",
+      "expected_behavior": [
+        "Uses a production-route test, runtime trace, or instrumentation"
+      ],
+      "forbidden_behavior": [
+        "Uses a static callchain as execution proof"
+      ],
+      "oracle": [
+        "SKILL.md Evidence"
+      ]
+    },
+    {
+      "id": "explicit-runtime-misuse",
+      "invocation": "explicit",
+      "query": "Use $callchain-tool to prove that this callback executed at runtime.",
+      "expected_selection": "select",
+      "expected_behavior": [
+        "Loads the explicitly requested skill",
+        "Refuses to treat static callchain output as runtime proof",
+        "Routes the proof need to runtime tests, tracing, or instrumentation"
+      ],
+      "forbidden_behavior": [
+        "Claims that a Joern edge proves actual execution"
+      ],
+      "oracle": [
+        "SKILL.md Evidence"
+      ]
+    },
+    {
+      "id": "unspecified-code-context",
+      "invocation": "implicit",
+      "query": "Hilf mir zu verstehen, was dieser Service macht und welche Änderung sicher wäre.",
+      "expected_selection": "clarify",
+      "expected_behavior": [
+        "Reads source first",
+        "Uses or proposes callchain evidence only when a method-level caller/callee question becomes material"
+      ],
+      "forbidden_behavior": [
+        "Runs Joern without a decision-relevant method question"
+      ],
+      "oracle": [
+        "SKILL.md Use It For"
+      ]
+    }
+  ]
+}

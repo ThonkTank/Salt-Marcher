@@ -1,7 +1,0 @@
-interface:
-  display_name: "Code Exploration"
-  short_description: "Trace SaltMarcher behavior before planning or review"
-  default_prompt: "Use $code-exploration before SaltMarcher implementation planning, refactor planning, or implementation review when existing code behavior, workflow routing, build/check logic, or repo-local tool behavior affects the decision."
-
-policy:
-  allow_implicit_invocation: true

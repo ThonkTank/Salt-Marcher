@@ -1,0 +1,231 @@
+{
+  "schema_version": 1,
+  "skill": "architecture-planning",
+  "proof_scope": "review-owned; check validates structure only; rerun in fresh contexts after behavior or metadata changes",
+  "cases": [
+    {
+      "id": "greenfield-program-target",
+      "invocation": "implicit",
+      "query": "Entwirf aus der aktiven lösungsneutralen Needs-Baseline eine Greenfield-Zielarchitektur. Nutze getrennte Planung, adversarielle Fehlersuche und höchstens drei Revisionsrunden.",
+      "expected_selection": "select",
+      "expected_behavior": [
+        "Selects Greenfield mode and freezes only permitted inputs",
+        "Follows the needs owner's transitive binding-versus-readback classification",
+        "Runs Planner, context-isolated Verifiers, and Reviser",
+        "Produces traceable decisions and proportional quality-risk analysis"
+      ],
+      "forbidden_behavior": [
+        "Inspects current implementation or migration state",
+        "Claims that model agreement proves correctness"
+      ],
+      "oracle": [
+        "SKILL.md Greenfield exclusions",
+        "stage-contracts.md Planner Contract"
+      ]
+    },
+    {
+      "id": "evolution-refactor-target",
+      "invocation": "implicit",
+      "query": "Plane für diesen bestehenden Zustandsowner einen architekturrelevanten Refactor mit Alternativen, Fehlerprüfung und Replanning; Verhalten und Kompatibilität müssen erhalten bleiben.",
+      "expected_selection": "select",
+      "expected_behavior": [
+        "Selects Evolution mode",
+        "Separates opened owner decisions, unaffected binding owner decisions, and current implementation evidence",
+        "Treats current structure as evidence rather than target truth"
+      ],
+      "forbidden_behavior": [
+        "Applies Greenfield current-system exclusions",
+        "Preserves current structure without evaluation"
+      ],
+      "oracle": [
+        "SKILL.md Evolution mode",
+        "stage-contracts.md Evolution binding inputs"
+      ]
+    },
+    {
+      "id": "ordinary-implementation-plan",
+      "invocation": "implicit",
+      "query": "Plane die Implementierung dieses klar definierten kleinen Bugfixes mit Dateien, Tests und Done-Kriterien.",
+      "expected_selection": "reject",
+      "expected_behavior": [
+        "Uses a concise direct plan or Codex Plan Mode",
+        "Does not launch an architecture candidate loop"
+      ],
+      "forbidden_behavior": [
+        "Creates AD identifiers or three architecture candidate versions"
+      ],
+      "oracle": [
+        "SKILL.md description exclusion",
+        "agent-instructions.md Direct Execution"
+      ]
+    },
+    {
+      "id": "architecture-review-only",
+      "invocation": "implicit",
+      "query": "Reviewe diese vorhandene Architekturentscheidung adversarial und melde nur belegte Findings.",
+      "expected_selection": "reject",
+      "expected_behavior": [
+        "Routes to lens-adversarial-review-agent and a suitable global specialist lens",
+        "Remains review-only"
+      ],
+      "forbidden_behavior": [
+        "Generates or revises an architecture candidate"
+      ],
+      "oracle": [
+        "SKILL.md description exclusion",
+        "agent-instructions.md Proof And Review"
+      ]
+    },
+    {
+      "id": "migration-execution",
+      "invocation": "implicit",
+      "query": "Implementiere und migriere die bereits akzeptierte Zielarchitektur bis zum grünen Check.",
+      "expected_selection": "reject",
+      "expected_behavior": [
+        "Executes or plans delivery under normal repository rules",
+        "Treats the accepted architecture as an input"
+      ],
+      "forbidden_behavior": [
+        "Reopens architecture selection without a new architecture request"
+      ],
+      "oracle": [
+        "SKILL.md description exclusion",
+        "SKILL.md reviewed-candidate boundary"
+      ]
+    },
+    {
+      "id": "unclear-architecture-mode",
+      "invocation": "implicit",
+      "query": "Mach einen Architekturplan mit adversarieller Fehlersuche und Replanning; ob Greenfield oder Bestandsumbau ist noch offen.",
+      "expected_selection": "clarify",
+      "expected_behavior": [
+        "Inspects allowed request and owner evidence for mode",
+        "Asks for the unresolved Greenfield-versus-Evolution decision before candidate generation"
+      ],
+      "forbidden_behavior": [
+        "Guesses a mode and emits v1"
+      ],
+      "oracle": [
+        "SKILL.md Select The Mode"
+      ]
+    },
+    {
+      "id": "architecture-without-replanning",
+      "invocation": "implicit",
+      "query": "Erstelle einen Architekturentwurf für eine neue interne Komponente.",
+      "expected_selection": "reject",
+      "expected_behavior": [
+        "Uses ordinary design or planning without the bounded architecture-planning loop"
+      ],
+      "forbidden_behavior": [
+        "Selects architecture-planning without requested adversarial revision or replanning"
+      ],
+      "oracle": [
+        "SKILL.md description trigger boundary"
+      ]
+    },
+    {
+      "id": "greenfield-without-error-loop",
+      "invocation": "implicit",
+      "query": "Entwirf eine Greenfield-Zielarchitektur aus der aktiven Needs-Baseline.",
+      "expected_selection": "reject",
+      "expected_behavior": [
+        "Uses ordinary architecture design without the bounded architecture-planning loop"
+      ],
+      "forbidden_behavior": [
+        "Selects architecture-planning without requested adversarial error search and revision or replanning"
+      ],
+      "oracle": [
+        "SKILL.md description shared trigger boundary",
+        "agent-instructions.md Direct Execution"
+      ]
+    },
+    {
+      "id": "product-ambiguity-before-v1",
+      "invocation": "explicit",
+      "query": "Use $architecture-planning. Die Produktquelle lässt offen, ob Offline-Betrieb verbindlich ist; entwirf trotzdem die vollständige Architektur.",
+      "expected_selection": "select",
+      "expected_behavior": [
+        "Routes the product ambiguity to the requirements owner",
+        "Returns Blocked: binding input unresolved and stops before v1"
+      ],
+      "forbidden_behavior": [
+        "Invents an offline requirement or an online-only assumption"
+      ],
+      "oracle": [
+        "SKILL.md Non-Negotiable Rules",
+        "stage-contracts.md Main gate"
+      ]
+    },
+    {
+      "id": "model-only-major-closure",
+      "invocation": "explicit",
+      "query": "Use $architecture-planning. Alle Reviewer halten den schwer reversiblen Persistenzentscheid für richtig, aber es gibt weder Quelle, Messung, Rechnung noch Prototyp.",
+      "expected_selection": "select",
+      "expected_behavior": [
+        "Classifies agreement as model-only evidence",
+        "Routes evidence acquisition and refuses acceptance"
+      ],
+      "forbidden_behavior": [
+        "Closes the decision because several agents agree"
+      ],
+      "oracle": [
+        "stage-contracts.md Independent Anchor Contract",
+        "error-search.md Finding Contract"
+      ]
+    },
+    {
+      "id": "evidence-budget-exhausted",
+      "invocation": "explicit",
+      "query": "Use $architecture-planning. Eine zwingende technische Verifikationsgrundlage fehlt nach drei erfolglosen Beschaffungsversuchen weiterhin.",
+      "expected_selection": "select",
+      "expected_behavior": [
+        "Returns No verifiable architecture can be produced",
+        "Names the missing anchor and does not emit a candidate"
+      ],
+      "forbidden_behavior": [
+        "Starts another evidence attempt or emits a fallback architecture"
+      ],
+      "oracle": [
+        "stage-contracts.md Evidence budget",
+        "stage-contracts.md terminal results"
+      ]
+    },
+    {
+      "id": "program-risk-analysis",
+      "invocation": "explicit",
+      "query": "Use $architecture-planning for a program-wide candidate whose availability, integrity and modifiability goals conflict.",
+      "expected_selection": "select",
+      "expected_behavior": [
+        "Prioritizes quality scenarios",
+        "Records sensitivity points, tradeoff points, risks, anchored non-risks, and risk themes",
+        "Records decision-discriminating quality questions and anchored responses",
+        "Maps results to needs, decisions, scenarios, and verification"
+      ],
+      "forbidden_behavior": [
+        "Calls an unexamined area a non-risk",
+        "Chooses by reviewer vote"
+      ],
+      "oracle": [
+        "stage-contracts.md Quality And Risk Analysis",
+        "SEI ATAM mirror source"
+      ]
+    },
+    {
+      "id": "third-rejection-stops",
+      "invocation": "explicit",
+      "query": "Use $architecture-planning. v1 und v2 wurden verworfen; v3 hat weiterhin einen belegten Major-Fund.",
+      "expected_selection": "select",
+      "expected_behavior": [
+        "Returns No acceptable architecture found",
+        "Names the remaining finding and earliest invalid decision"
+      ],
+      "forbidden_behavior": [
+        "Produces v4, a fallback architecture, or an activation claim"
+      ],
+      "oracle": [
+        "stage-contracts.md Version And Stop Contract"
+      ]
+    }
+  ]
+}

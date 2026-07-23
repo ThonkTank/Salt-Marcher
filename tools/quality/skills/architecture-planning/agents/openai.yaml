@@ -1,4 +1,4 @@
 interface:
   display_name: "Architecture Planning"
-  short_description: "Plan and adversarially refine architectures"
-  default_prompt: "Use $architecture-planning to derive and adversarially refine a decision-complete architecture plan."
+  short_description: "Plan and adversarially verify architectures"
+  default_prompt: "Use $architecture-planning to derive, verify with independent anchors, and adversarially revise a decision-complete architecture candidate."

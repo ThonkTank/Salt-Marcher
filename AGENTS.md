@@ -48,10 +48,12 @@ secrets, paid services, or external data transmission.
 | Source architecture (`app/**`, `shell/**`, `platform/**`, `features/**`) | `docs/project/architecture/source-architecture.md` | - |
 | `features/dungeon/**`, `docs/dungeon/**` | `docs/dungeon/README.md` | - |
 | Documentation placement | `docs/project/documentation.md` | - |
-| Verification policy | `docs/project/verification/quality-platforms.md` | `verification` |
-| Agent instructions | `docs/project/architecture/agent-instructions.md` | `agent-instruction-engineering` |
-| External-source-backed decisions | `docs/project/verification/source-references.md` | `source-references` |
+| Verification policy | `docs/project/verification/quality-platforms.md` | global `spec-documentation` |
+| Agent instructions | `docs/project/architecture/agent-instructions.md` | global `agent-instruction-engineering` |
+| External-source-backed decisions | `docs/project/verification/source-references.md` | global `source-references` |
 | Resource policy | `docs/project/policies/resource-policy.md` | - |
 
-Repository skills live under `tools/quality/skills/`. Read a skill only when
-the requested surface names it.
+Repo-specific skills are canonical under `tools/quality/skills/` and linked
+from `.agents/skills/` for Codex discovery. Cross-project review,
+documentation, and evidence skills remain global; do not copy them into this
+repository.
