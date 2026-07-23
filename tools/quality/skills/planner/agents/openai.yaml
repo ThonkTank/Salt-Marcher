@@ -1,4 +1,0 @@
-interface:
-  display_name: "Planner"
-  short_description: "Produces short M-tier plans and L-tier journal design notes."
-  default_prompt: "Use $planner to write a concise implementation plan or L-tier journal design note with goal, write set, proof command, risks, and done-when facts."

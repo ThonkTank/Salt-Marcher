@@ -164,4 +164,3 @@ reference mirrors.
 - [Documentation Standard](../documentation.md)
 - [Feature Boundary Standard](../architecture/patterns/feature-boundaries.md)
 - [Agent Instruction Standard](../architecture/agent-instructions.md)
-- [Source References Skill](../../../tools/quality/skills/source-references/SKILL.md)

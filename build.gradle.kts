@@ -1,6 +1,7 @@
 import org.gradle.api.plugins.JavaApplication
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.JavaExec
+import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.application.tasks.CreateStartScripts
 import org.gradle.language.base.plugins.LifecycleBasePlugin
@@ -165,4 +166,17 @@ tasks.register<Test>("uiTest") {
         includeTags("ui")
     }
     environment("XDG_DATA_HOME", temporaryDir.resolve("xdg-data").absolutePath)
+}
+
+val validateAgentSkills = tasks.register<Exec>("validateAgentSkills") {
+    description = "Validate repo skill discovery, metadata, and review-fixture structure."
+    workingDir(layout.projectDirectory)
+    commandLine("python3", "tools/quality/validate_agent_skills.py")
+    inputs.file("tools/quality/validate_agent_skills.py")
+    inputs.files(fileTree(".agents/skills"))
+    inputs.files(fileTree("tools/quality/skills"))
+}
+
+tasks.named(LifecycleBasePlugin.CHECK_TASK_NAME) {
+    dependsOn(validateAgentSkills)
 }
