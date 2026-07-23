@@ -539,6 +539,77 @@ governed by their previously confirmed behavior.
 - Session generation compensates proposed Rewards for the cumulative difference
   between expected loot for received XP and actual received loot
 
+## Confirmed Workflow: Local Data Lifecycle
+
+### Continuous Preservation And Resume
+
+SaltMarcher preserves confirmed GM work automatically as soon as practical.
+Normal use does not depend on a manual Save action, should almost never lose
+confirmed work, and does not impose unnecessary user-visible load.
+
+After restart, SaltMarcher restores as much of the prior useful working state
+as possible, including the active Campaign, focused Running Scene, and live
+Encounter, Chase, and Travel contexts. There is no product-level list of
+runtime state which SaltMarcher deliberately discards on restart.
+
+Backup schedules, retention, snapshot controls, restore granularity, and
+persistence mechanisms remain technical decisions. The required outcome is
+recovery of Campaign work and local assets without requiring the GM to
+understand or operate backup internals.
+
+When local data is damaged, SaltMarcher automatically opens the newest uniquely
+safe recoverable state, tells the GM what it recovered and what could not be
+preserved, and asks the GM to choose only when no single recovery choice is
+clearly safe.
+
+### Complete Campaign Portability
+
+A complete Campaign export includes Campaign data, maps, images, local audio,
+required reusable Creature, Item, and rule definitions, and resumable working
+state. Partial Campaign export is not required.
+
+On another compatible SaltMarcher installation, that export restores the same
+Campaign content, local assets, and resumable state without access to the
+original computer. Import always creates a new independent Campaign and never
+merges Campaign content into an existing Campaign.
+
+Campaign-owned data remains isolated between Campaigns. Large reusable Monster,
+Item, rule, and similar reference collections are installation-wide and shared
+between Campaigns rather than duplicated per Campaign.
+
+If an imported Campaign requires a missing shared definition, the definition
+joins the shared collection. If an imported definition conflicts with an
+existing one, the GM explicitly chooses whether to discard either variant or
+retain both as separate definitions. SaltMarcher shows the consequences for
+the imported and existing Campaigns before applying that decision and never
+chooses silently.
+
+Managing Monster and Item definitions, including whole-data-set refresh, is a
+late quality-of-life feature rather than a core need. If definitions are
+changed later, current and future reads use their current definition while
+completed history remains unchanged.
+
+### Campaign Deletion
+
+Deleting a Campaign moves its complete data into recoverable trash. Permanent
+deletion requires a separate explicit GM action.
+
+### Acceptance Criteria
+
+- confirmed work persists without a manual Save action and survives normal
+  restart with the useful runtime state restored wherever possible
+- damaged local data automatically opens the newest uniquely safe recovery,
+  discloses any loss, and asks only when recovery is ambiguous
+- a complete export restores the same Campaign, assets, definitions, and
+  resumable state on another compatible installation without the source
+  computer
+- import creates a new Campaign without merging Campaign-owned data into an
+  existing Campaign
+- a shared-definition conflict requires an informed explicit GM decision and
+  may retain both definitions independently
+- Campaign deletion remains recoverable until the GM separately requests
+  permanent deletion
+
 ## Confirmed Cross-Workflow Behavior
 
 ### Complete Encounter Outcome
@@ -594,7 +665,6 @@ history conflicts which the GM must later resolve.
 
 The following areas intentionally contain no normative behavior yet:
 
-- import, export, reference refresh, backup, restore, and recovery
 - measurable program-wide responsiveness, scale, modular change, removal,
   replacement, and extension needs
 
@@ -613,5 +683,6 @@ behavior, and no unresolved product decision blocks technical-needs derivation.
 - [Running Scene And Live Play Interview](../interviews/program-needs/2026-07-22-running-scene-and-live-play.md)
 - [Spatial Travel And Progression Interview](../interviews/program-needs/2026-07-22-spatial-travel-and-progression.md)
 - [Follow-Up, Progression, And History Interview](../interviews/program-needs/2026-07-22-follow-up-progression-and-history.md)
+- [Local Data Lifecycle Interview](../interviews/program-needs/2026-07-23-local-data-lifecycle.md)
 - [Project Vision](../vision.md)
 - [Documentation Standard](../documentation.md)

@@ -1,4 +1,4 @@
-Status: Active Evidence
+Status: Confirmed Evidence
 Owner: Aaron
 Last Reviewed: 2026-07-23
 Source of Truth: Verbatim owner answers and confirmed interpretations for
@@ -218,11 +218,12 @@ completed history is not recalculated.
 Deleting a Campaign first moves the complete Campaign into recoverable trash.
 Permanent deletion requires a separate explicit action.
 
-## Proposed Consolidated Interpretation For Confirmation
+## Confirmed Consolidated Interpretation
 
-This interpretation remains interview evidence until the owner confirms it.
-It deliberately states observable outcomes without choosing storage,
-transaction, file-format, backup, or synchronization mechanisms.
+The owner confirmed this complete interpretation on 2026-07-23. It is the
+evidence promoted into the draft Program Capability Requirements. It
+deliberately states observable outcomes without choosing storage, transaction,
+file-format, backup, or synchronization mechanisms.
 
 1. SaltMarcher preserves GM work automatically as soon as practical. Normal
    use does not depend on a manual Save action, should almost never lose
@@ -263,6 +264,10 @@ transaction, file-format, backup, or synchronization mechanisms.
     while completed history remains unchanged.
 11. Deleting a Campaign moves its complete data into recoverable trash.
     Permanent deletion requires a separate explicit GM action.
+
+Workflow 6 is confirmed. The interview continues with Workflow 7:
+cross-workflow completeness, failure semantics, scale, responsiveness, and
+modular change, removal, replacement, and extension needs.
 
 ## References
 
