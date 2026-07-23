@@ -220,6 +220,62 @@ default.
    hochauflösenden und mehreren Monitoren vollständig nutzbar bleiben? Touch,
    Mobilgeräte und kleine Smartphone-Layouts wären dagegen kein Kernbedarf.
 
+### Owner Answers 2026-07-23
+
+> [Owner, wörtlich zu 1] erstmal nur 2014, mehrere Systeme wären sehr spätes
+> QOL.
+
+D&D 5e 2014 is the only binding rules profile for the core. Supporting several
+D&D versions or other game systems is parked as very late quality-of-life work
+and does not require a generic multi-system core now.
+
+> [Owner, wörtlich zu 2] Letzteres
+
+Modularity is both an internal change-quality need and a future user-facing
+extension capability: the GM can install third-party extensions, plugins, or
+scripts. Delivery timing and the concrete extension mechanism remain outside
+this needs interview.
+
+> [Owner, wörtlich zu 3] Grundsätzlich lokalisierbar.
+
+The complete interface is localizable for additional languages. Campaign-authored
+text remains arbitrary user content and is not coupled to interface language.
+
+> [Owner, wörtlich zu 4] ja, solange das die UI nicht unübersichtlicher macht
+> oder workflows verlangsamt.
+
+The complete core supports keyboard operation, scalable text and interface,
+sufficient contrast, and information which does not rely on color alone.
+Accessibility must not clutter the default interface or slow the confirmed
+low-friction workflows; alternative input and presentation paths preserve the
+same efficient actions.
+
+> [Owner, wörtlich zu 5] ja
+
+The desktop interface remains fully usable on common laptop resolutions,
+high-density displays, and multi-monitor arrangements. Touch devices, mobile
+devices, and small smartphone layouts are not core targets.
+
+## Final Targeted Clarifications: Third-Party Extensions
+
+1. Muss der GM jede Erweiterung ausdrücklich installieren und vor der
+   Aktivierung verständlich sehen, auf welche Campaign-Daten, Dateien,
+   Netzwerkfunktionen oder anderen Fähigkeiten sie zugreifen möchte?
+2. Soll eine Erweiterung standardmäßig weder Netzwerkzugriff noch Zugriff auf
+   Dateien außerhalb ihrer freigegebenen Daten erhalten und zusätzliche
+   Berechtigungen nur nach ausdrücklicher Zustimmung des GM nutzen dürfen?
+3. Wenn eine Erweiterung fehlerhaft, beschädigt oder nicht mehr vorhanden ist:
+   Müssen SaltMarcher und die Campaign ohne sie weiter starten, die Erweiterung
+   deaktiviert und verständlich markiert sowie ihre Daten unangetastet erhalten
+   werden?
+4. Wenn eine Erweiterung nach einem SaltMarcher-Update nicht kompatibel ist:
+   Soll nur die Erweiterung deaktiviert werden, ohne Update, Campaign oder
+   Kernfunktionen zu blockieren oder Daten umzuschreiben?
+5. Dürfen Erweiterungen neue Inhaltsarten, Runtime-Masken, Generatoren,
+   Importeure und Darstellungen ergänzen, aber bestätigte Sicherheitsgrenzen
+   wie explizite Löschung, lokale Datenkontrolle und unverfälschte History nicht
+   unbemerkt umgehen?
+
 ## References
 
 - [Program Needs Interview Series](README.md)
