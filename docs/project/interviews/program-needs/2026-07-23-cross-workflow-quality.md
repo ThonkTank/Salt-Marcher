@@ -333,6 +333,143 @@ closes those gaps rather than inheriting the current implementation.
    Klassenfähigkeiten, Zaubern und regelvollständigem Equipment wäre weiterhin
    kein Kernbedarf.
 
+### Owner Answers 2026-07-23
+
+> [Owner, wörtlich zu 1] ersteres
+
+Each Campaign has a configurable fantasy calendar with authored month lengths,
+day length, weekdays, and year counting rather than being limited to a
+real-world calendar.
+
+> [Owner, wörtlich zu 2] ja, events wie feiertage oder sowas sollten im
+> kallender angelegt werden können. Sie sollten zeit und ortsgebunden sein
+> können.
+
+The GM can author calendar events such as holidays. An event may be bound to a
+time, a place, or both and becomes relevant to a Running Scene according to that
+Scene's time and location. It informs the GM or offers prepared content without
+automatically deciding narrative consequences.
+
+> [Owner, wörtlich zu 3] ersteres. Sie sind die Grundlage für Fraktionen und
+> anderes.
+
+Named, GM-editable Encounter Tables with weighted Monster or group entries are
+a real Campaign concept. Factions, places, and other context reference those
+tables as a foundational source for Encounter candidate pools and generation;
+contextual tags and other factors may further influence selection.
+
+> [Owner, wörtlich zu 4] nein
+
+SaltMarcher does not provide a general-purpose GM dice roller. The GM continues
+to roll ordinary table dice physically; generators and simulations may use
+internal randomness for their own automatic behavior.
+
+> [Owner, wörtlich zu 5] ja, alle für automatische systeme relevanten stats
+> müssen getrackt werden.
+
+A PC record tracks every structured statistic required by enabled automatic
+systems, including applicable level, XP, current and maximum HP, movement, and
+senses. Only the name remains universally required; a specific automatic
+workflow may require its relevant optional statistics before it can run. This
+does not turn SaltMarcher into a complete character-sheet, spell, class-feature,
+or rules-complete equipment manager.
+
+## Proposed Consolidated Interpretation For Confirmation
+
+This interpretation remains interview evidence until the owner confirms it.
+It establishes program-wide observable qualities and product boundaries without
+choosing architecture, storage, frameworks, extension technology, or delivery
+order.
+
+1. The complete local GM core works offline when its required rules, media, and
+   Campaign data are present locally. Network use occurs only through explicit
+   imports, downloads, GM-approved extension permissions, or future online
+   capabilities.
+2. Ordinary live-play actions respond without perceptible delay. Longer
+   generation, import, and simulation work is visible, cancellable, and runs
+   without making the Running Scene unusable.
+3. Failure of supporting music, weather, maps, generation, or World progression
+   affects only that capability. Running Scenes, Encounters, manual editing,
+   and preservation of confirmed work remain usable, with a clear error and
+   retry for the affected function.
+4. SaltMarcher supports practically large, long-lived Campaigns without
+   artificial content limits. Under exceptional load it degrades predictably
+   instead of truncating data or failing unpredictably. Representative scale
+   and response budgets are derived later through realistic scenarios and
+   tests.
+5. Capability areas can be added, omitted, removed, or replaced without
+   breaking unrelated workflows or Campaign data. New runtime masks, content
+   kinds, influences, and supporting systems can integrate without rebuilding
+   existing features.
+6. Cancellation or failure of a long operation keeps only independently
+   accepted results. Unconfirmed partial results are discarded cleanly.
+7. If new work cannot be persisted safely, SaltMarcher reports that immediately
+   and never presents it as stored. Safe reading, export, and retry remain
+   available.
+8. Application updates preserve Campaigns and resumable runtime state. A failed
+   data conversion leaves prior data untouched and usable with the prior
+   application version.
+9. Damage to one record does not prevent the remaining Campaign from opening.
+   SaltMarcher isolates and identifies the record and offers recovery or
+   explicit deletion.
+10. Data belonging to a disabled, missing, or temporarily unavailable
+    capability remains intact, stays in complete exports, and becomes usable
+    again when the capability returns.
+11. Linux, Windows, and macOS are supported desktop targets with portable
+    Campaign behavior across them.
+12. SaltMarcher runs fluidly on an ordinary current laptop without a dedicated
+    GPU or server hardware. Resource-intensive simulation adapts to available
+    resources rather than blocking live play.
+13. The GM installs a self-contained desktop application without separately
+    administering a database server, web server, runtime, or other
+    infrastructure.
+14. One local GM is the sole Campaign writer in the confirmed core. The passive
+    second display reads live state; concurrent multi-process, multi-computer,
+    or multi-user Campaign editing is not required.
+15. Campaign data, notes, maps, images, audio, and usage data leave the computer
+    only through a concrete, understandable GM action. There is no mandatory
+    cloud dependency, hidden upload, or telemetry enabled by default.
+16. D&D 5e 2014 is the only binding core rules profile. Supporting several D&D
+    versions or other game systems is parked as very late quality-of-life work
+    and does not require a generic multi-system core now.
+17. The interface is localizable for additional languages. Campaign-authored
+    text remains arbitrary user content independent of interface language.
+18. The complete core supports keyboard operation, scalable text and
+    interface, sufficient contrast, and information which does not rely on
+    color alone. These alternatives do not clutter the default interface or
+    slow its low-friction workflows.
+19. The interface remains usable at common laptop resolutions, on high-density
+    displays, and across multiple monitors. Touch, mobile, and smartphone
+    layouts are not core targets.
+20. The GM can install third-party extensions, plugins, or scripts. Each is
+    installed explicitly and discloses requested Campaign-data, file, network,
+    and other access before activation.
+21. Extensions have no default network or unrestricted file access. Additional
+    permissions require explicit GM consent.
+22. A faulty, damaged, missing, or update-incompatible extension is disabled
+    and identified without preventing SaltMarcher or the Campaign from opening.
+    Its data remains intact and an application update does not let it rewrite
+    Campaign data because compatibility failed.
+23. Extensions may add content kinds, runtime masks, generators, importers, and
+    presentations. They cannot silently bypass explicit deletion, local data
+    control, truthful history, or other confirmed safety boundaries.
+24. Each Campaign has a configurable fantasy calendar with authored month
+    lengths, day length, weekdays, and year counting.
+25. The GM can author calendar events such as holidays. Events may be bound to
+    time, place, or both and become relevant according to each Running Scene's
+    time and location without automatically deciding narrative consequences.
+26. Named, GM-editable Encounter Tables contain weighted Monster or group
+    entries. Factions, places, and other context use them as foundational
+    sources for Encounter candidate pools and generation, alongside applicable
+    contextual influences.
+27. SaltMarcher has no general-purpose GM dice roller. Ordinary table dice stay
+    physical; automatic generators and simulations may use internal randomness.
+28. A PC tracks every structured statistic required by enabled automatic
+    systems. Only its name is universally required; an automatic workflow may
+    require its relevant optional statistics before running. SaltMarcher does
+    not thereby become a complete character-sheet or rules-complete inventory
+    manager.
+
 ## References
 
 - [Program Needs Interview Series](README.md)
