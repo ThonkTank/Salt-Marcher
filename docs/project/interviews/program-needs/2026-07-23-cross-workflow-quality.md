@@ -1,4 +1,4 @@
-Status: Active Evidence
+Status: Confirmed Evidence
 Owner: Aaron
 Last Reviewed: 2026-07-23
 Source of Truth: Verbatim owner answers and confirmed interpretations for
@@ -645,11 +645,24 @@ World progression, Scene access, explanatory history, and the non-mechanical
 character ledger after distinguishing purchased Items from received loot and
 allowing a Shop as a trade counterparty.
 
-One lifecycle decision remains open. If the Shop's only owning NPC or place is
-explicitly deleted, should SaltMarcher warn and offer reassignment, and move the
-Shop into recoverable trash together with the owner if the GM continues without
-reassigning it? Restoring the owner would then restore the Shop relationship;
-completed trade history would remain explanatory in every case.
+The review identified one lifecycle question. If the Shop's only owning NPC or
+place is explicitly deleted, should SaltMarcher warn and offer reassignment,
+and move the Shop into recoverable trash together with the owner if the GM
+continues without reassigning it? Restoring the owner would then restore the
+Shop relationship; completed trade history would remain explanatory in every
+case.
+
+### Owner Answer 2026-07-23
+
+> [Owner, wörtlich] ja
+
+Deleting a Shop's only owning NPC or place warns the GM and offers reassignment.
+If the GM continues without reassigning it, the Shop moves into recoverable
+trash with the owner. Restoring the owner restores the Shop relationship.
+Completed trade history remains explanatory regardless of deletion or restore.
+
+The refreshed Shop consistency review is complete. Workflow 7 is confirmed in
+full again, with no unresolved product decision inside the needs interview.
 
 ## References
 

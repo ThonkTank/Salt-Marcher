@@ -53,7 +53,7 @@ The headings below are interview routes, not presumed feature boundaries.
    2026-07-23
 7. Cross-workflow completeness, failure semantics, scale, responsiveness,
    modular change, removal, replacement, extension scenarios, and structured
-   Shop inventories -- one Shop owner-deletion decision remains open
+   Shop inventories -- confirmed 2026-07-23
 
 ## Evidence
 

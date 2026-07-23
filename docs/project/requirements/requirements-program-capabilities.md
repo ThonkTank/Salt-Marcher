@@ -2,8 +2,8 @@ Status: Draft
 Owner: Aaron (Product Owner)
 Last Reviewed: 2026-07-23
 Source of Truth: Owner-confirmed observable cross-workflow needs for the
-local SaltMarcher GM core. The draft still awaits one Shop owner-deletion
-decision and final confirmation and is not yet an architecture input.
+complete local SaltMarcher GM core. This complete candidate awaits final
+whole-baseline confirmation and is not yet an architecture input.
 
 # SaltMarcher Program Capability Requirements
 
@@ -556,6 +556,11 @@ The GM may add, remove, and edit Shop stock manually at any time. When the
 owning NPC is present in a Running Scene or the owning place is the Scene's
 current place, the Shop is available directly from that Scene.
 
+Deleting the Shop's owning NPC or place warns the GM and offers reassignment.
+If the GM proceeds without reassigning it, the Shop moves into recoverable trash
+with the owner. Restoring the owner restores the Shop relationship. Completed
+trade history remains explanatory regardless of deletion or restore.
+
 ### Trade And Character Ledger
 
 One trade interaction updates Shop stock and the character loot ledger
@@ -591,6 +596,8 @@ history. Automatic restock creates no separate notification.
 
 - a named Shop belongs to one NPC or one place and exposes stacks and unique
   Items with quantities, both trade prices, and optional notes
+- deleting the owning NPC or place offers Shop reassignment and otherwise moves
+  the Shop into recoverable trash with a restorable relationship
 - the Scene exposes a Shop when its owning NPC is present or its owning place
   is current
 - one purchase decreases Shop stock and records the selected character's
@@ -877,15 +884,16 @@ history conflicts which the GM must later resolve.
 All seven interview workflows, the repository-inventory completeness audit,
 and the later structured Shop-inventory addition have owner-confirmed
 interpretations. The refreshed consistency review reconciled Shop purchases
-and counterparties with the character ledger. One Shop lifecycle decision
-remains open: what happens when its only owning NPC or place is deleted.
+and counterparties with the character ledger and resolved owner deletion
+without orphaning or silently deleting the Shop. No unresolved product
+decision remains in the needs baseline.
 
 Exact responsiveness and scale budgets, the detailed weather model, the
 published-rule derivation, persistence and backup mechanisms, and extension
 technology remain deliberate technical-needs, source-backed rule, or product-
-testing work. They do not change the observable needs recorded here. The Shop
-owner-deletion decision and final explicit owner confirmation remain before
-this document becomes the `Active Target` for technical-needs derivation.
+testing work. They do not change the observable needs recorded here. Only final
+explicit owner confirmation remains before this document becomes the
+`Active Target` for technical-needs derivation.
 
 ## Acceptance Of This Baseline
 
