@@ -595,11 +595,12 @@ Purchases, sales, and automatic restocks remain in explanatory Campaign
 history. Automatic restock does not create an additional notification; the
 current inventory and history are sufficient.
 
-## Proposed Consolidated Shop Addition For Confirmation
+## Confirmed Consolidated Shop Addition
 
-This interpretation remains interview evidence until the owner confirms it.
-It extends the already confirmed workflows without choosing Shop persistence,
-scheduling, randomization, or transaction architecture.
+The owner confirmed this complete addition on 2026-07-23. It is the evidence
+promoted into the draft Program Capability Requirements and extends the already
+confirmed workflows without choosing Shop persistence, scheduling,
+randomization, or transaction architecture.
 
 1. A Shop is a named Campaign record with one structured inventory and belongs
    to exactly one NPC or exactly one place.
@@ -631,6 +632,24 @@ scheduling, randomization, or transaction architecture.
     unchanged unless an explicit restock rule owns that stock.
 12. Purchases, sales, and automatic restocks remain in explanatory Campaign
     history. Automatic restock creates no separate notification.
+
+Workflow 7 is re-confirmed with the structured Shop-inventory addition. The
+Program Capability Requirements require a refreshed whole-baseline consistency
+review and final owner confirmation before becoming the active target for
+technical-needs derivation.
+
+## Refreshed Shop Consistency Review
+
+The Shop addition is consistent with authoritative Campaign time, automatic
+World progression, Scene access, explanatory history, and the non-mechanical
+character ledger after distinguishing purchased Items from received loot and
+allowing a Shop as a trade counterparty.
+
+One lifecycle decision remains open. If the Shop's only owning NPC or place is
+explicitly deleted, should SaltMarcher warn and offer reassignment, and move the
+Shop into recoverable trash together with the owner if the GM continues without
+reassigning it? Restoring the owner would then restore the Shop relationship;
+completed trade history would remain explanatory in every case.
 
 ## References
 

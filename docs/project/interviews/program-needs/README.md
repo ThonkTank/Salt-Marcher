@@ -52,8 +52,8 @@ The headings below are interview routes, not presumed feature boundaries.
    restore, recovery, and other local data-lifecycle needs -- confirmed
    2026-07-23
 7. Cross-workflow completeness, failure semantics, scale, responsiveness,
-   modular change, removal, replacement, extension scenarios, and the later
-   Shop-inventory addition -- reopened 2026-07-23
+   modular change, removal, replacement, extension scenarios, and structured
+   Shop inventories -- one Shop owner-deletion decision remains open
 
 ## Evidence
 

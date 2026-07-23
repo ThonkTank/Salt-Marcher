@@ -1,9 +1,9 @@
 Status: Draft
 Owner: Aaron (Product Owner)
 Last Reviewed: 2026-07-23
-Source of Truth: Owner-confirmed observable cross-workflow needs for the local
-SaltMarcher GM core. The draft is reopened for the owner's later structured
-Shop-inventory addition and is not yet an architecture input.
+Source of Truth: Owner-confirmed observable cross-workflow needs for the
+local SaltMarcher GM core. The draft still awaits one Shop owner-deletion
+decision and final confirmation and is not yet an architecture input.
 
 # SaltMarcher Program Capability Requirements
 
@@ -484,18 +484,21 @@ rounded-up distribution rule as Encounter XP.
 
 ### Character Loot Ledger
 
-Awarded Items appear in a searchable and filterable character-specific loot
-ledger. It is a GM reminder and Reward-accounting surface, not a player-operated
-or rules-complete inventory simulation. The GM may add, remove, or correct
-ledger Items manually without a Reward source. Coins, trade goods, and
-equivalent Items support quantity stacks which may be split and merged.
+Awarded and purchased Items appear in a searchable and filterable
+character-specific loot ledger. It is a GM reminder and Reward-accounting
+surface, not a player-operated or rules-complete inventory simulation. Awarded
+Items count as received loot; purchased Items carry their purchase source but
+do not. The GM may add, remove, or correct ledger Items manually without a
+Reward source. Coins, trade goods, and equivalent Items support quantity stacks
+which may be split and merged.
 
 `Received`, `given away`, and `sold` are non-mechanical reminders. Sold or
-given-away Items remain visible and continue to count as received loot. A sale
-or handoff records a structured counterparty link to an existing NPC, place, or
-faction when available, plus optional free text. A sale also records its actual
-price, which becomes authoritative for final loot valuation of that sold Item.
-A separate per-instance value override is not required.
+given-away awarded Items remain visible and continue to count as received loot.
+A sale or handoff records a structured counterparty link to an existing Shop,
+NPC, place, or faction when available, plus optional free text. A sale also
+records its actual price, which becomes authoritative for final loot valuation
+when that Item counts as received loot. A separate per-instance value override
+is not required.
 
 Item provenance records available Treasure, Encounter or Quest, Scene or
 place, in-world time, and award time, with optional free-form provenance for
@@ -538,6 +541,68 @@ governed by their previously confirmed behavior.
   their provenance, counterparty, and applicable sale information
 - Session generation compensates proposed Rewards for the cumulative difference
   between expected loot for received XP and actual received loot
+
+## Confirmed Workflow: Shops And Trade
+
+### Shop Identity And Inventory
+
+A Shop is a named Campaign record with one structured inventory and belongs to
+exactly one NPC or exactly one place. Its inventory contains quantity stacks of
+reusable Item definitions and individual concrete or unique Items. An entry
+records its current quantity, the price charged when the Party buys, the price
+paid when the Shop buys, and optional notes.
+
+The GM may add, remove, and edit Shop stock manually at any time. When the
+owning NPC is present in a Running Scene or the owning place is the Scene's
+current place, the Shop is available directly from that Scene.
+
+### Trade And Character Ledger
+
+One trade interaction updates Shop stock and the character loot ledger
+together. On purchase, the GM selects the receiving character, Shop stock
+decreases, and the acquired Item enters that character's ledger.
+
+A purchased Item is marked as a purchase and does not count as received loot
+in cumulative loot guidance. SaltMarcher records the paid price but does not
+automatically deduct coins from the character ledger.
+
+When a character sells an Item to the Shop, Shop stock increases and the
+character ledger records the sold state, actual price, and Shop or owning NPC
+as counterparty according to the existing sale rules.
+
+### Restock And Randomized Stock
+
+The GM can restock manually and can define automatic rules triggered by elapsed
+Campaign time or configured calendar events. A fixed rule may refill an entry
+to a target quantity or add a configured quantity.
+
+Randomized restock uses GM-configured weighted Item tables or filters such as
+type, rarity, value, and tags. A configured automatic restock may update stock
+without per-run preview or confirmation.
+
+Time-based restock runs once according to authoritative Campaign time even when
+several Scenes reach the trigger. It leaves manually added stock unchanged
+unless an explicit restock rule manages that stock.
+
+Purchases, sales, and automatic restocks remain in explanatory Campaign
+history. Automatic restock creates no separate notification.
+
+### Acceptance Criteria
+
+- a named Shop belongs to one NPC or one place and exposes stacks and unique
+  Items with quantities, both trade prices, and optional notes
+- the Scene exposes a Shop when its owning NPC is present or its owning place
+  is current
+- one purchase decreases Shop stock and records the selected character's
+  acquisition without counting it as received loot or deducting coins
+- one sale increases Shop stock and records the character's actual sale price
+  and counterparty
+- the GM can restock manually and configure target-quantity, additive, and
+  randomized restock rules
+- a time-based rule runs once at authoritative Campaign time and does not alter
+  manually added stock outside its explicit scope
+- trade and restock remain visible in history without an additional automatic-
+  restock notification
 
 ## Confirmed Workflow: Local Data Lifecycle
 
@@ -809,20 +874,18 @@ history conflicts which the GM must later resolve.
 
 ## Whole-Baseline Confirmation State
 
-The seven original interview workflows and repository-inventory completeness
-audit have owner-confirmed interpretations. The whole-document consistency
-review resolved their internal conflicts. The owner's later addition of
-structured Shop inventories, restock, and optional randomization reopens the
-completeness workflow; its observable behavior is not yet confirmed and does
-not yet appear as normative behavior in this document.
+All seven interview workflows, the repository-inventory completeness audit,
+and the later structured Shop-inventory addition have owner-confirmed
+interpretations. The refreshed consistency review reconciled Shop purchases
+and counterparties with the character ledger. One Shop lifecycle decision
+remains open: what happens when its only owning NPC or place is deleted.
 
 Exact responsiveness and scale budgets, the detailed weather model, the
 published-rule derivation, persistence and backup mechanisms, and extension
 technology remain deliberate technical-needs, source-backed rule, or product-
-testing work. They do not change the observable needs recorded here. Shop
-clarification, a refreshed consistency review, and final explicit owner
-confirmation remain before this document becomes the `Active Target` for
-technical-needs derivation.
+testing work. They do not change the observable needs recorded here. The Shop
+owner-deletion decision and final explicit owner confirmation remain before
+this document becomes the `Active Target` for technical-needs derivation.
 
 ## Acceptance Of This Baseline
 
