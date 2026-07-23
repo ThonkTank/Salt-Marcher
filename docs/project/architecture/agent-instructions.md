@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-23
 Source of Truth: Minimal SaltMarcher agent execution and review rules.
 
 # Agent Instruction Standard
@@ -12,6 +12,12 @@ clear. Planning, design notes, role chains, model assignments, writer
 allocations, and phase artifacts are optional tools, never prerequisites.
 Use them only when they remove a concrete implementation risk or the user asks
 for them.
+
+Use the opt-in `architecture-planning` skill when the user explicitly requests
+greenfield target architecture or architecture-significant refactor design with
+independent error search and replanning. That skill produces a reviewed design,
+not implementation or migration sequencing; ordinary planning remains with the
+lightweight `planner` skill after architecture decisions are settled.
 
 For work spanning context compactions, one short delivery file may record the
 current tree, completed work, proof, and next action. It must not become a
