@@ -53,6 +53,7 @@ lives under `docs/<feature>/`; see [docs/README.md](../README.md).
 
 Behavior owned centrally rather than by one feature:
 [anchored popup](requirements/requirements-anchored-popup.md),
+[program capabilities](requirements/requirements-program-capabilities.md),
 [dialog surface](requirements/requirements-dialog-surface.md),
 [dropdown popup](requirements/requirements-dropdown-popup.md),
 [progress meter](requirements/requirements-progress-meter.md),
