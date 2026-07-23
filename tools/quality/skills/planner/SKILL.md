@@ -1,6 +1,6 @@
 ---
 name: planner
-description: Produces short M-tier implementation plans and L-tier journal design notes for SaltMarcher work. Use when a change needs implementation sequencing before editing.
+description: Produces short M-tier implementation plans and L-tier journal design notes for SaltMarcher work after architecture decisions are settled. Use when a change needs implementation sequencing before editing; use architecture-planning instead when the user explicitly requests greenfield or architecture-significant refactor design with independent error search and replanning.
 ---
 
 # Planner
@@ -19,8 +19,9 @@ Write 5-15 lines covering:
 
 ## L-Tier Design Note
 
-Append one page to `docs/project/journal/YYYY-MM.md` before implementation,
-unless the user waives it. Cover:
+When the user asks for a durable L-tier note or it removes a concrete
+implementation risk, append one page to `docs/project/journal/YYYY-MM.md` before
+implementation. Cover:
 
 - problem
 - target state
