@@ -177,6 +177,49 @@ becomes usable again when that capability returns.
    Aktion verlassen? Insbesondere gäbe es keine verpflichtende Cloud,
    versteckten Uploads oder standardmäßig aktive Telemetrie.
 
+### Owner Answers 2026-07-23
+
+> [Owner, wörtlich zu 1-5] ja
+
+The answer to question 1 is interpreted as including all three named desktop
+targets: Linux, Windows, and macOS. The complete core behavior and Campaign
+portability apply across those supported systems.
+
+SaltMarcher runs fluidly on an ordinary current laptop without requiring a
+dedicated GPU or server hardware. Resource-intensive simulation adapts its
+detail or pace to available resources rather than blocking live play.
+
+The GM installs a self-contained desktop application and does not separately
+install or administer a database server, web server, runtime, or other
+infrastructure.
+
+One local GM is the only writer for a Campaign in the confirmed core. The
+passive second display may read the live state, but concurrent editing of one
+Campaign by several processes, computers, or users is not required.
+
+Campaign data, notes, maps, images, audio, and usage data leave the computer
+only through a concrete, understandable action initiated by the GM. The core
+has no mandatory cloud dependency, hidden upload, or telemetry enabled by
+default.
+
+## Fourth Breadth Block: Rules, Extension Surface, And Accessibility
+
+1. Ist D&D 5e 2014 das einzige verbindliche Regelsystem des Kernprodukts, oder
+   soll dieselbe Installation später unterschiedliche D&D-Versionen oder ganz
+   andere Rollenspielsysteme pro Campaign unterstützen können?
+2. Bedeutet die bestätigte Modularität nur, dass wir SaltMarcher intern sauber
+   weiterentwickeln können, oder soll der GM später auch Erweiterungen, Plugins
+   oder Skripte von Dritten installieren können?
+3. Welche Oberflächensprachen gehören zum Ziel: zunächst nur Englisch, Deutsch
+   und Englisch, oder grundsätzlich eine lokalisierbare Oberfläche für weitere
+   Sprachen? Eigene Campaign-Inhalte bleiben davon unabhängig beliebiger Text.
+4. Soll der vollständige Kern mit Tastatur bedienbar sein sowie skalierbare
+   Schrift und Oberfläche, ausreichende Kontraste und Informationen bieten, die
+   nicht ausschließlich über Farbe vermittelt werden?
+5. Soll die Desktop-Oberfläche auf üblichen Laptop-Auflösungen ebenso wie auf
+   hochauflösenden und mehreren Monitoren vollständig nutzbar bleiben? Touch,
+   Mobilgeräte und kleine Smartphone-Layouts wären dagegen kein Kernbedarf.
+
 ## References
 
 - [Program Needs Interview Series](README.md)
