@@ -65,6 +65,65 @@ needs baseline are explicitly confirmed.
    Campaign-Daten brechen? Neue Masken, Inhaltsarten und Einflüsse sollen sich
    entsprechend ergänzen lassen, ohne bestehende Features neu bauen zu müssen.
 
+### Owner Answers 2026-07-23
+
+> [Owner, wörtlich zu 1] ja
+>
+> [Owner, wörtlich zu 2] ja
+>
+> [Owner, wörtlich zu 3] ja
+>
+> [Owner, wörtlich zu 4] ja
+>
+> [Owner, wörtlich zu 5] ja
+
+The complete local GM core works offline when its required rules, media, and
+Campaign data are present locally. Network use is limited to explicit imports,
+downloads, and future online capabilities rather than ordinary preparation or
+play.
+
+Ordinary live-play actions respond without perceptible delay. Long-running
+generation, import, and simulation work remains visible and cancellable in the
+background without making the Running Scene unusable.
+
+Failure of supporting music, weather, map, generation, or World-progression
+behavior does not disable Running Scenes, Encounters, manual editing, or
+preservation of confirmed work. Only the affected capability reports a clear
+failure and offers retry.
+
+SaltMarcher supports practically large, long-lived Campaigns without artificial
+content limits. Under exceptional load it degrades predictably rather than
+truncating data or failing unpredictably. Concrete supported scale and response
+budgets remain to be derived from representative scenarios and tests.
+
+Capability areas may be omitted, added, removed, or replaced without breaking
+unrelated workflows or existing Campaign data. New runtime masks, content
+types, and influences can be integrated without rebuilding existing features.
+
+## Second Breadth Block: Interrupted Work, Upgrades, And Missing Capabilities
+
+1. Wenn ein längerer Vorgang wie Import, Generierung oder Simulation abgebrochen
+   wird oder fehlschlägt: Sollen nur bereits einzeln bestätigte Ergebnisse
+   bestehen bleiben, während alle noch nicht bestätigten Teilergebnisse sauber
+   verworfen werden?
+2. Wenn SaltMarcher neue Änderungen gerade nicht sicher speichern kann, etwa
+   wegen vollem Datenträger oder fehlendem Zugriff: Soll es das sofort sichtbar
+   melden und Änderungen nicht fälschlich als gespeichert bestätigen? Lesen,
+   Exportieren und ein erneuter Speicherversuch sollen soweit sicher möglich
+   bleiben.
+3. Nach einem Programmupdate: Müssen alle bestehenden Campaigns und ihre
+   fortsetzbaren Zustände automatisch weiter nutzbar sein? Falls eine nötige
+   Umstellung fehlschlägt, soll der vorherige Datenstand unangetastet und mit
+   der vorherigen Programmversion wieder nutzbar bleiben?
+4. Wenn nur ein einzelner Datensatz beschädigt ist: Soll die restliche Campaign
+   trotzdem geöffnet werden, während SaltMarcher den betroffenen Datensatz
+   isoliert, verständlich markiert und Wiederherstellung oder ausdrückliches
+   Löschen anbietet?
+5. Wenn ein optionaler Funktionsbereich zeitweise nicht installiert oder
+   deaktiviert ist: Sollen seine vorhandenen Campaign-Daten unangetastet
+   erhalten und exportiert werden, auch wenn sie gerade nicht bearbeitet werden
+   können, und nach Rückkehr der Funktion wieder verfügbar sein?
+
 ## References
 
 - [Program Needs Interview Series](README.md)
