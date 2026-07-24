@@ -121,7 +121,7 @@ shared-output race nor any JUnit semantics ran. The four-invocation budget was
 exhausted and rollback removed the external lock and isolated worktree cleanly.
 `A-0.3.0` and this slice's pin therefore remain unchanged.
 
-### Queued Causal-Oracle Candidate
+### Adopted Causal-Oracle Candidate
 
 After the inconclusive concurrency trial, compare `A-0.3.0` with one candidate
 that adds exactly one checkpoint rule: the acceptance-deciding oracle receives
@@ -142,6 +142,29 @@ attributed regression; non-comparable execution is `inconclusive`. This is a
 reversible one-checkpoint canary. Aletheia B supplies the comparison but cannot
 evaluate or approve it; no process version or slice pin changes before an
 independent verdict.
+
+At `7895aa938`, the independent evaluator ran the frozen three-method Gradle
+replay in an isolated worktree:
+
+```shell
+./gradlew test \
+  --tests 'features.sessionplanner.qualification.SessionPreparationProductionRouteTest.causalControlNoOpInitializeCannotClaimResumedPublication' \
+  --tests 'features.sessionplanner.qualification.SessionPreparationProductionRouteTest.causalControlRawPartyHydrationExposesPrematureDrain' \
+  --tests 'features.sessionplanner.qualification.SessionPreparationProductionRouteTest.campaignFenceDrainsAcceptedRealPreparationCommitAndRejectsLaterRootThenResumes' \
+  --console=plain --no-daemon
+```
+
+It completed `BUILD SUCCESSFUL` in 1m 21s; the XML result was 3 tests, 0
+failures, 0 errors, and 0 skips in 4.793s, with SHA-256
+`a18507563b7a65605ef82f2b13625838e5730a06927371a2a86aa3f1f591e65b`.
+Both causal controls rejected their false proof and the unchanged repaired
+route passed. The evaluator reported no finding and restored the candidate
+checkpoint and clean tree through canary rollback, then returned `ADOPT`.
+Product Process `A-0.3.1` therefore applies at subsequent slice boundaries;
+this running slice retains its `A-0.3.0` pin. The disposable test patch,
+worktree, and transient report were removed by the required rollback, so no
+durable proof file remains for later byte-level reinspection; that limits
+auditability of the preserved report, not the evaluator's practical run.
 
 ## Frozen Exit Replay
 

@@ -3,7 +3,7 @@ Owner: Independent Aletheia Process Evaluator
 Last Reviewed: 2026-07-24
 Charter Version: C-0.2.0
 Evaluation Version: E-0.3.0
-Product Process Version: A-0.3.0
+Product Process Version: A-0.3.1
 Improvement Process Version: B-0.3.0
 Source of Truth: Independent qualification and adoption of temporary GM-Core process changes.
 

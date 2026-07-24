@@ -3,7 +3,7 @@ Owner: Aletheia B
 Last Reviewed: 2026-07-24
 Charter Version: C-0.2.0
 Process Version: B-0.3.0
-Observes Product Process: A-0.3.0
+Observes Product Process: A-0.3.1
 Evaluation Version: E-0.3.0
 Source of Truth: Current temporary proposal protocol for GM-Core process improvement.
 

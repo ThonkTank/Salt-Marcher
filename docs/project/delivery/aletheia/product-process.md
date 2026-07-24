@@ -2,7 +2,7 @@ Status: Active
 Owner: Aletheia A
 Last Reviewed: 2026-07-24
 Charter Version: C-0.2.0
-Process Version: A-0.3.0
+Process Version: A-0.3.1
 Evaluation Version: E-0.3.0
 Source of Truth: Current temporary execution rules for GM-Core product slices.
 
@@ -15,7 +15,7 @@ Charter](program-charter.md). This file controls execution, not product truth.
 
 Before product mutation, select one unmet interview-derived acceptance outcome
 through its canonical owner ID. In the slice's one short delivery owner, pin
-that ID, the candidate base commit, Product Process `A-0.3.0`, and the commit
+that ID, the candidate base commit, Product Process `A-0.3.1`, and the commit
 that contains this process version. Also name the intended production route and
 the command, probe, counterexample, measurement, or owner observation that can
 decide the outcome. Do not create generic role ledgers or structured evidence
@@ -42,6 +42,12 @@ counterevidence invalidates a premise, reopen the root decision before adding a
 bridge. Prior investment is not evidence for retaining a decision.
 
 ## Checkpoint
+
+Give each acceptance-deciding oracle one disposable causal negative control
+where practical. Remove or perturb the claimed cause while holding the relevant
+conditions stable; the control must make the same proof fail or become
+inconclusive. If no such control is practical, record why and the residual
+uncertainty without weakening the positive route or changing acceptance.
 
 Commit the candidate and run affected diagnostics plus the proof required by
 [Quality Platforms](../../verification/quality-platforms.md). A fresh agent or
