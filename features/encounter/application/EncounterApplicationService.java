@@ -207,6 +207,14 @@ public final class EncounterApplicationService implements features.encounter.api
         return savedPlanSearch.search(query);
     }
 
+    @Override
+    public java.util.concurrent.CompletionStage<features.encounter.api.DuplicateSavedEncounterPlanResult>
+            duplicateSavedPlan(features.encounter.api.DuplicateSavedEncounterPlanCommand command) {
+        CompletableFuture<features.encounter.api.DuplicateSavedEncounterPlanResult> result = new CompletableFuture<>();
+        executionLane.execute(() -> result.complete(commands.duplicateSavedPlan(command)));
+        return result;
+    }
+
     public EncounterRuntimeContextApi runtimeContexts() {
         return runtimeContexts;
     }
@@ -357,6 +365,14 @@ public final class EncounterApplicationService implements features.encounter.api
         }
 
         void refreshPlanBudget(RefreshEncounterPlanBudgetCommand command);
+
+        default features.encounter.api.DuplicateSavedEncounterPlanResult duplicateSavedPlan(
+                features.encounter.api.DuplicateSavedEncounterPlanCommand command
+        ) {
+            return new features.encounter.api.DuplicateSavedEncounterPlanResult(
+                    features.encounter.api.DuplicateSavedEncounterPlanResult.Status.STORAGE_FAILURE,
+                    0L, "Encounter duplication is unavailable.");
+        }
     }
 
     private static final class RuntimeCommandActions implements CommandActions {
@@ -508,6 +524,37 @@ public final class EncounterApplicationService implements features.encounter.api
                     OpenSavedEncounterPlanResult.Status.OPENED,
                     command.planId(),
                     "Encounter geöffnet.");
+        }
+
+        @Override
+        public features.encounter.api.DuplicateSavedEncounterPlanResult duplicateSavedPlan(
+                features.encounter.api.DuplicateSavedEncounterPlanCommand command
+        ) {
+            if (command == null || command.sourcePlanId() <= 0L) {
+                return new features.encounter.api.DuplicateSavedEncounterPlanResult(
+                        features.encounter.api.DuplicateSavedEncounterPlanResult.Status.INVALID,
+                        0L, "Encounter-Plan-ID fehlt.");
+            }
+            features.encounter.domain.session.PlanOutcome loaded = plans.loadPlan(command.sourcePlanId());
+            if (loaded.plan().isEmpty()) {
+                return new features.encounter.api.DuplicateSavedEncounterPlanResult(
+                        features.encounter.api.DuplicateSavedEncounterPlanResult.Status.NOT_FOUND,
+                        0L, loaded.message());
+            }
+            features.encounter.domain.plan.EncounterPlan source = loaded.plan().orElseThrow();
+            features.encounter.domain.session.PlanOutcome saved = plans.savePlan(
+                    new features.encounter.domain.plan.EncounterPlan(
+                            0L, source.name() + " · Session", "", source.creatures()));
+            if (saved.plan().isEmpty()) {
+                return new features.encounter.api.DuplicateSavedEncounterPlanResult(
+                        features.encounter.api.DuplicateSavedEncounterPlanResult.Status.STORAGE_FAILURE,
+                        0L, saved.message());
+            }
+            publishSavedPlans();
+            long duplicatedId = saved.plan().orElseThrow().id();
+            return new features.encounter.api.DuplicateSavedEncounterPlanResult(
+                    features.encounter.api.DuplicateSavedEncounterPlanResult.Status.DUPLICATED,
+                    duplicatedId, "Encounter für Session dupliziert.");
         }
 
         private EncounterRuntimeContextSyncResult synchronize(SynchronizeEncounterRuntimeContextsCommand command) {

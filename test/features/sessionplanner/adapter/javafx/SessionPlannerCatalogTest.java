@@ -357,10 +357,8 @@ public final class SessionPlannerCatalogTest {
 
         SessionPlannerViewModel viewModel = new SessionPlannerViewModel();
         SessionPlannerControlsView feedbackControls = new SessionPlannerControlsView();
-        SessionPlannerStateView feedbackState = new SessionPlannerStateView();
         SessionPlannerTimelineMainView feedbackTimeline = new SessionPlannerTimelineMainView();
         feedbackControls.bind(viewModel);
-        feedbackState.bind(viewModel);
         feedbackTimeline.bind(viewModel);
 
         SessionPlannerWorkspaceSnapshot withFeedback = workspaceFixture(
@@ -393,20 +391,12 @@ public final class SessionPlannerCatalogTest {
                 "workspace feedback remains separate from preparation status");
         assertTrue(hasLabel(feedbackControlsContent, "Vorbereitung fehlgeschlagen."),
                 "preparation status remains its own compact toolbar message");
-        Parent feedbackStateContent = (Parent) feedbackState.getContent();
-        assertTrue(hasLabel(feedbackStateContent, "Rastempfehlung wird noch ermittelt."),
-                "unavailable rest advice shows its summary instead of placeholder zero counts");
-        assertTrue(!hasLabelContaining(feedbackStateContent, "Empfohlen 0 kurz"),
-                "unavailable rest advice renders no numeric rest counts");
-
         viewModel.applyWorkspace(workspaceFixture(
                 21L,
                 new SessionPlannerSessionSnapshot.RestAdviceState(
                         true, 1, 2, 1, 0, ""), List.of()));
-        assertTrue(hasLabel(feedbackStateContent, "Empfohlen 1 kurz / 2 lang · platziert 1 kurz / 0 lang"),
-                "available rest advice keeps the compact numeric summary");
 
-        Parent timelineContent = (Parent) feedbackTimeline.getContent();
+        Parent timelineContent = feedbackTimeline;
         List<javafx.scene.layout.HBox> separators = descendants(timelineContent).stream()
                 .filter(javafx.scene.layout.HBox.class::isInstance)
                 .map(javafx.scene.layout.HBox.class::cast)
@@ -515,21 +505,17 @@ public final class SessionPlannerCatalogTest {
                 planner.application(), planner.workspaceModel(), ignored -> { }).bind();
         Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
         Parent main = slot(binding, ShellSlot.COCKPIT_MAIN, Parent.class);
-        Parent state = slot(binding, ShellSlot.COCKPIT_STATE, Parent.class);
         SessionPlannerWorkspaceModel workspace = planner.workspaceModel();
 
         Stage stage = new Stage();
-        HBox root = new HBox(controls, main, state);
+        HBox root = new HBox(controls, main);
         stage.setScene(new Scene(root, 1_260.0, 760.0));
         stage.show();
         layout(root);
 
         assertSetupLivesInControls(controls);
-        Parent stateContent = (Parent) ((javafx.scene.control.ScrollPane) state).getContent();
-        assertTrue(hasLabel(stateContent, "Keine Szene ausgewählt."),
-                "state slot renders a clear no-selection state instead of empty labels; labels="
-                        + descendants(stateContent).stream().filter(Label.class::isInstance)
-                                .map(Label.class::cast).map(Label::getText).toList());
+        assertTrue(!binding.slotContent().containsKey(ShellSlot.COCKPIT_STATE),
+                "Session Planner leaves the global state panel to Encounter and Travel contributions");
         assertSceneLootTargetsSceneCards();
         assertCatalogSize(workspace.current().catalog(), 0, "initial catalog is empty");
         assertTrue(!hasLabel(main, "Session #0"), "initial main does not show default Session #0");
@@ -665,7 +651,7 @@ public final class SessionPlannerCatalogTest {
         if (index >= toggles.size()) {
             throw new AssertionError("Scene toggle not found at index " + index);
         }
-        if (toggles.get(index).getText().startsWith("▶")) {
+        if (!toggles.get(index).isDisabled()) {
             toggles.get(index).fire();
         }
         layout(main);
@@ -783,12 +769,15 @@ public final class SessionPlannerCatalogTest {
         SessionPlannerSceneTimelineProjection afterAttach = workspace.current().sceneTimeline();
         assertEquals(Integer.valueOf(2), Integer.valueOf(afterAttach.sceneHeaders().size()),
                 "saved encounter attach in the inspectors keeps two authored scene cards");
-        assertEquals(Long.valueOf(SAVED_ENCOUNTER_PLAN_ID),
-                Long.valueOf(afterAttach.sceneHeaders().getFirst().linkedEncounterPlanId()),
-                "saved encounter attach publishes linked plan id");
+        long firstScenePlanId = afterAttach.sceneHeaders().getFirst().linkedEncounterPlanId();
+        long secondScenePlanId = afterAttach.sceneHeaders().get(1).linkedEncounterPlanId();
+        assertTrue(firstScenePlanId > 0L && firstScenePlanId != SAVED_ENCOUNTER_PLAN_ID,
+                "saved encounter attach publishes an independent scene-owned clone");
+        assertTrue(secondScenePlanId > 0L && secondScenePlanId != firstScenePlanId,
+                "attaching the same template to two scenes creates distinct encounter plans");
         expandScene(main, 0);
         assertTrue(hasLabel(main, "Ash Gate Ambush"), "expanded scene card renders linked plan name");
-        assertTrue(hasLabel(main, "2 × Ash guard"),
+        assertTrue(!buttons(main, "2 × Ash guard").isEmpty(),
                 "selected inspector renders the concrete typed Encounter roster");
         button(main, "Encounter lösen").fire();
         layout(main);
@@ -801,9 +790,9 @@ public final class SessionPlannerCatalogTest {
         reattachSearch.setText("Medium");
         button(main, "Verknüpfen").fire();
         layout(main);
-        assertEquals(Long.valueOf(SAVED_ENCOUNTER_PLAN_ID),
-                Long.valueOf(workspace.current().sceneTimeline().sceneHeaders().getFirst().linkedEncounterPlanId()),
-                "the same selected inspector can attach again after detach");
+        assertTrue(workspace.current().sceneTimeline().sceneHeaders().getFirst().linkedEncounterPlanId()
+                        != firstScenePlanId,
+                "the same selected inspector creates a fresh clone after detach");
 
         long firstScene = afterAttach.sceneHeaders().get(0).sceneToken();
         long secondScene = afterAttach.sceneHeaders().get(1).sceneToken();
@@ -938,22 +927,27 @@ public final class SessionPlannerCatalogTest {
         assertEquals(Long.valueOf(901L),
                 Long.valueOf(workspace.current().sceneTimeline().sceneHeaders().getFirst().linkedEncounterPlanId()),
                 "confirmed generation attaches imported Encounter plan");
-        assertEquals(SessionPlannerSelectedSceneSnapshot.Availability.AVAILABLE,
-                workspace.current().selectedScene().generatedRewards().getFirst().availability(),
-                "reopened reward keeps typed generated availability");
+        assertEquals("Generated cache",
+                workspace.current().selectedScene().treasures().getFirst().itemLines().getFirst().text(),
+                "reopened treasure keeps its materialized item content");
         expandScene(main, 0);
-        assertTrue(hasLabel(main, "Verfügbar · ENCOUNTER · NORMAL"),
-                "available reward renders availability, channel and stock class");
+        assertTrue(hasLabel(main, "ENCOUNTER · NORMAL"),
+                "materialized reward renders channel and stock class");
         assertTrue(hasLabel(main, "Thema Vault · Magie none · Ziel 100 cp"),
                 "available reward renders theme, magic type and target value");
         assertTrue(hasLabel(main, "Slots 1 nichtmagisch / 0 magisch"),
                 "available reward renders both typed slot counts");
-        assertTrue(hasLabel(main,
-                        "2 × Generated cache · 250 cp · USEFUL / cache · RARE · verflucht"
-                                + " · Kapazität 3.5 · Behälter chest, sack"),
+        assertTrue(descendants(main).stream().filter(Button.class::isInstance).map(Button.class::cast)
+                        .anyMatch(item -> item.getText().startsWith("2 × Generated cache   250 cp")),
                 "item row renders quantity, text, value, role, id, rarity, curse, capacity and allowed containers");
         assertTrue(hasLabel(main, "2 × chest · iron-chest · gültig"),
                 "packing row renders container type, count, id and validity");
+        int treasuresBeforeAdd = workspace.current().selectedScene().treasures().size();
+        button(main, "Schatz hinzufügen").fire();
+        layout(main);
+        assertEquals(Integer.valueOf(treasuresBeforeAdd + 1),
+                Integer.valueOf(workspace.current().selectedScene().treasures().size()),
+                "selected-scene treasure action creates a new independently editable snapshot");
     }
 
     private static void assertSelectedSceneReconciliation() {
@@ -1047,7 +1041,7 @@ public final class SessionPlannerCatalogTest {
                 features.sessionplanner.api.SessionPlannerParticipantsProjection.empty(), timeline,
                 searchSelected(1L, 999L, features.sessionplanner.api.SessionEncounterPlanSearchSnapshot.idle()),
                 SessionPreparationSnapshot.idle(), List.of()));
-        Parent content = (Parent) view.getContent();
+        Parent content = view;
 
         assertTrue(hasLabelContaining(content, "Ab 2 Zeichen"),
                 "empty selected-scene search renders only the search hint");
@@ -1129,16 +1123,16 @@ public final class SessionPlannerCatalogTest {
                 SessionPlannerSelectedSceneSnapshot.empty(), SessionPreparationSnapshot.idle(), List.of()));
         layout(view);
 
-        assertEquals(Integer.valueOf(0), Integer.valueOf((int) descendants(view).stream()
+        assertEquals(Integer.valueOf(1), Integer.valueOf((int) descendants(view).stream()
                 .filter(node -> node.getStyleClass().contains("session-planner-selected-scene-inspector")).count()),
-                "64 collapsed headers with no published selection materialize no inspector");
-        assertEquals(Integer.valueOf(0), Integer.valueOf((int) descendants(view).stream()
+                "the master-detail workspace retains exactly one reusable inspector");
+        assertEquals(Integer.valueOf(1), Integer.valueOf((int) descendants(view).stream()
                 .filter(javafx.scene.control.TextArea.class::isInstance).count()),
-                "64 collapsed headers materialize no detail editor subtree");
-        assertEquals(Integer.valueOf(0), Integer.valueOf((int) descendants(view).stream()
+                "the persistent detail pane owns one scene notes editor");
+        assertEquals(Integer.valueOf(1), Integer.valueOf((int) descendants(view).stream()
                 .filter(TextField.class::isInstance).map(TextField.class::cast)
                 .filter(field -> "Encounter suchen".equals(field.getPromptText())).count()),
-                "64 collapsed headers materialize no saved-plan search subtree");
+                "the persistent detail pane owns one bounded encounter picker");
         assertEquals(Integer.valueOf(0), Integer.valueOf((int) descendants(view).stream()
                 .filter(node -> node.getStyleClass().contains("session-planner-roster-line")
                         || node.getStyleClass().contains("session-planner-generated-reward")).count()),
@@ -1469,7 +1463,16 @@ public final class SessionPlannerCatalogTest {
 
     private static EncounterApi generatedEncounterApi() {
         EncounterApplicationService delegate = EncounterApplicationServiceFakes.noOp();
+        java.util.concurrent.atomic.AtomicLong nextDuplicateId = new java.util.concurrent.atomic.AtomicLong(1500L);
         return new EncounterApi() {
+            @Override
+            public java.util.concurrent.CompletionStage<features.encounter.api.DuplicateSavedEncounterPlanResult>
+                    duplicateSavedPlan(features.encounter.api.DuplicateSavedEncounterPlanCommand command) {
+                return CompletableFuture.completedFuture(new features.encounter.api.DuplicateSavedEncounterPlanResult(
+                        features.encounter.api.DuplicateSavedEncounterPlanResult.Status.DUPLICATED,
+                        nextDuplicateId.incrementAndGet(), "Encounter für Session dupliziert."));
+            }
+
             @Override
             public java.util.concurrent.CompletionStage<features.encounter.api.PreparedGeneratedEncounterBatchResult>
                     prepareGeneratedBatch(features.encounter.api.PrepareGeneratedEncounterBatchCommand command) {
@@ -1513,7 +1516,7 @@ public final class SessionPlannerCatalogTest {
                     loadGeneratedPlanSummaries(
                             features.encounter.api.GeneratedEncounterPlanSummaryBatchQuery query) {
                 var entries = query.planIds().stream().map(planId -> {
-                    boolean saved = planId == SAVED_ENCOUNTER_PLAN_ID;
+                    boolean saved = planId == SAVED_ENCOUNTER_PLAN_ID || planId >= 1501L;
                     var creature = new features.encounter.api.PreparedEncounterCreature(
                             saved ? 77L : 101L, saved ? 2 : 1,
                             saved ? "Ash guard" : "Generated creature");
@@ -1789,6 +1792,10 @@ public final class SessionPlannerCatalogTest {
 
     private static void collect(Node node, List<Node> result) {
         result.add(node);
+        if (node instanceof javafx.scene.control.ScrollPane scroll && scroll.getContent() != null) {
+            collect(scroll.getContent(), result);
+            return;
+        }
         if (node instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
                 collect(child, result);

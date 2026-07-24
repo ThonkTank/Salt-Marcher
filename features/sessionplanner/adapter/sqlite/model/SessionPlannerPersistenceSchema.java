@@ -12,6 +12,9 @@ public final class SessionPlannerPersistenceSchema {
     public static final String SESSION_RESTS_TABLE = "session_planner_rests";
     public static final String SESSION_MANUAL_LOOT_NOTES_TABLE = "session_planner_manual_loot_notes";
     public static final String SESSION_GENERATED_REWARDS_TABLE = "session_planner_generated_rewards";
+    public static final String SESSION_TREASURES_TABLE = "session_planner_treasures";
+    public static final String SESSION_TREASURE_ITEMS_TABLE = "session_planner_treasure_items";
+    public static final String SESSION_TREASURE_PACKING_TABLE = "session_planner_treasure_packing";
     public static final String SESSION_ENCOUNTER_SCENE_TITLE_COLUMN = "scene_title";
     public static final String SESSION_ENCOUNTER_SCENE_NOTES_COLUMN = "scene_notes";
     public static final String SESSION_ENCOUNTER_LOCATION_ID_COLUMN = "location_id";
@@ -87,6 +90,44 @@ public final class SessionPlannerPersistenceSchema {
                     + "(session_id, encounter_id) ON DELETE CASCADE"
                     + ")";
 
+    public static final String CREATE_SESSION_TREASURES_SQL =
+            CREATE_TABLE_IF_NOT_EXISTS + SESSION_TREASURES_TABLE + " ("
+                    + REQUIRED_SESSION_REFERENCE
+                    + "treasure_id INTEGER NOT NULL, "
+                    + "scene_id INTEGER NOT NULL, "
+                    + "title TEXT NOT NULL, note TEXT NOT NULL, "
+                    + "stock_class TEXT NOT NULL, channel TEXT NOT NULL, theme TEXT NOT NULL, magic_type TEXT NOT NULL, "
+                    + "target_cp INTEGER NOT NULL, non_magic_slots INTEGER NOT NULL, magic_slots INTEGER NOT NULL, "
+                    + SORT_ORDER_COLUMN_DECLARATION
+                    + "PRIMARY KEY(session_id, treasure_id), "
+                    + "FOREIGN KEY(session_id, scene_id) REFERENCES " + SESSION_ENCOUNTERS_TABLE
+                    + "(session_id, encounter_id) ON DELETE CASCADE"
+                    + ")";
+
+    public static final String CREATE_SESSION_TREASURE_ITEMS_SQL =
+            CREATE_TABLE_IF_NOT_EXISTS + SESSION_TREASURE_ITEMS_TABLE + " ("
+                    + REQUIRED_SESSION_REFERENCE
+                    + "treasure_id INTEGER NOT NULL, line_id INTEGER NOT NULL, role TEXT NOT NULL, "
+                    + "item_id TEXT NOT NULL, item_text TEXT NOT NULL, quantity INTEGER NOT NULL, "
+                    + "unit_cp INTEGER NOT NULL, actual_cp INTEGER NOT NULL, total_capacity TEXT NOT NULL, "
+                    + "allowed_containers TEXT NOT NULL, magic_rarity TEXT NOT NULL, cursed INTEGER NOT NULL, "
+                    + SORT_ORDER_COLUMN_DECLARATION
+                    + "PRIMARY KEY(session_id, treasure_id, line_id), "
+                    + "FOREIGN KEY(session_id, treasure_id) REFERENCES " + SESSION_TREASURES_TABLE
+                    + "(session_id, treasure_id) ON DELETE CASCADE"
+                    + ")";
+
+    public static final String CREATE_SESSION_TREASURE_PACKING_SQL =
+            CREATE_TABLE_IF_NOT_EXISTS + SESSION_TREASURE_PACKING_TABLE + " ("
+                    + REQUIRED_SESSION_REFERENCE
+                    + "treasure_id INTEGER NOT NULL, line_id INTEGER NOT NULL, container_type TEXT NOT NULL, "
+                    + "container_count INTEGER NOT NULL, container_id TEXT NOT NULL, valid INTEGER NOT NULL, "
+                    + SORT_ORDER_COLUMN_DECLARATION
+                    + "PRIMARY KEY(session_id, treasure_id, line_id), "
+                    + "FOREIGN KEY(session_id, treasure_id) REFERENCES " + SESSION_TREASURES_TABLE
+                    + "(session_id, treasure_id) ON DELETE CASCADE"
+                    + ")";
+
     public static final String CREATE_SESSION_MANUAL_LOOT_NOTES_SQL =
             CREATE_TABLE_IF_NOT_EXISTS + SESSION_MANUAL_LOOT_NOTES_TABLE + " ("
                     + REQUIRED_SESSION_REFERENCE
@@ -115,6 +156,18 @@ public final class SessionPlannerPersistenceSchema {
     public static final String CREATE_SESSION_GENERATED_REWARDS_ORDER_INDEX_SQL =
             "CREATE INDEX IF NOT EXISTS idx_session_planner_generated_rewards_order ON "
                     + SESSION_GENERATED_REWARDS_TABLE + SESSION_ORDER_INDEX_COLUMNS;
+
+    public static final String CREATE_SESSION_TREASURES_ORDER_INDEX_SQL =
+            "CREATE INDEX IF NOT EXISTS idx_session_planner_treasures_order ON "
+                    + SESSION_TREASURES_TABLE + SESSION_ORDER_INDEX_COLUMNS;
+
+    public static final String CREATE_SESSION_TREASURE_ITEMS_ORDER_INDEX_SQL =
+            "CREATE INDEX IF NOT EXISTS idx_session_planner_treasure_items_order ON "
+                    + SESSION_TREASURE_ITEMS_TABLE + "(session_id, treasure_id, sort_order)";
+
+    public static final String CREATE_SESSION_TREASURE_PACKING_ORDER_INDEX_SQL =
+            "CREATE INDEX IF NOT EXISTS idx_session_planner_treasure_packing_order ON "
+                    + SESSION_TREASURE_PACKING_TABLE + "(session_id, treasure_id, sort_order)";
 
     public static final String CREATE_SESSION_MANUAL_LOOT_NOTES_ORDER_INDEX_SQL =
             "CREATE INDEX IF NOT EXISTS idx_session_planner_manual_loot_notes_order ON "

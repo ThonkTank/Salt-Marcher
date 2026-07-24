@@ -37,7 +37,6 @@ import features.sessiongeneration.api.SessionGenerationApi;
 import features.sessionplanner.SessionPlannerServiceAssembly;
 import features.sessionplanner.adapter.javafx.SessionPlannerContribution;
 import features.sessionplanner.adapter.javafx.SessionPlannerControlsView;
-import features.sessionplanner.adapter.javafx.SessionPlannerStateView;
 import features.sessionplanner.adapter.javafx.SessionPlannerTimelineMainView;
 import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
 
@@ -134,7 +133,14 @@ public final class SessionPlannerShellLayoutTest {
                 descendant(controlsPanel, SessionPlannerControlsView.class);
         SessionPlannerTimelineMainView plannerMain =
                 descendant(workspace, SessionPlannerTimelineMainView.class);
-        SessionPlannerStateView plannerState = descendant(workspace, SessionPlannerStateView.class);
+        ScrollPane timelineScroll = descendants(plannerMain).stream()
+                .filter(ScrollPane.class::isInstance).map(ScrollPane.class::cast)
+                .filter(node -> node.getStyleClass().contains("session-planner-timeline-scroll"))
+                .findFirst().orElseThrow();
+        ScrollPane detailScroll = descendants(plannerMain).stream()
+                .filter(ScrollPane.class::isInstance).map(ScrollPane.class::cast)
+                .filter(node -> node.getStyleClass().contains("session-planner-detail-scroll"))
+                .findFirst().orElseThrow();
 
         assertTrue(VBox.getVgrow(controlsPanel) == javafx.scene.layout.Priority.ALWAYS,
                 "shell controls panel grows vertically");
@@ -148,9 +154,12 @@ public final class SessionPlannerShellLayoutTest {
                 "planner scroll controls stay inside the shell controls panel");
         assertTrue(plannerControls.getVbarPolicy() != ScrollPane.ScrollBarPolicy.NEVER,
                 "planner controls keep vertical scrolling available");
-        assertTrue(plannerMain.getVbarPolicy() != ScrollPane.ScrollBarPolicy.NEVER,
-                "planner main keeps vertical scrolling available");
-        assertTrue(plannerMain.isFitToWidth(), "planner main scroll content fits available width");
+        assertTrue(timelineScroll.getVbarPolicy() == ScrollPane.ScrollBarPolicy.AS_NEEDED,
+                "planner timeline keeps independent vertical scrolling available");
+        assertTrue(detailScroll.getVbarPolicy() == ScrollPane.ScrollBarPolicy.AS_NEEDED,
+                "planner detail keeps independent vertical scrolling available");
+        assertTrue(timelineScroll.isFitToWidth() && detailScroll.isFitToWidth(),
+                "both planner columns fit their available width");
         assertTrue(descendants(plannerMain).stream()
                         .filter(javafx.scene.control.Button.class::isInstance)
                         .map(javafx.scene.control.Button.class::cast)
@@ -164,11 +173,9 @@ public final class SessionPlannerShellLayoutTest {
                         .map(Label.class::cast)
                         .anyMatch(label -> "Encounter-Tage".equals(label.getText())),
                 "planner controls host the compact preparation toolbar");
-        assertTrue(descendants(plannerState).stream()
-                        .filter(Label.class::isInstance)
-                        .map(Label.class::cast)
-                        .anyMatch(label -> "Ausgewählte Szene".equals(label.getText())),
-                "planner state slot keeps selected-scene context without a participant duplicate");
+        assertTrue(descendants(workspace).stream().noneMatch(node ->
+                        node.getStyleClass().contains("session-planner-state")),
+                "Session Planner contributes no private state panel beside the global tabs");
 
         ScrollPane stateScroll = descendants(workspace).stream()
                 .filter(ScrollPane.class::isInstance)
@@ -185,15 +192,17 @@ public final class SessionPlannerShellLayoutTest {
         layout(workspace);
         assertTrue(plannerControls.getHbarPolicy() == ScrollPane.ScrollBarPolicy.NEVER,
                 "compact toolbar wraps without horizontal scrolling at narrow width");
-        assertTrue(plannerMain.getHbarPolicy() == ScrollPane.ScrollBarPolicy.NEVER,
+        assertTrue(timelineScroll.getHbarPolicy() == ScrollPane.ScrollBarPolicy.NEVER
+                        && detailScroll.getHbarPolicy() == ScrollPane.ScrollBarPolicy.NEVER,
                 "timeline and selected inspector do not expose horizontal scrolling at narrow width");
         assertTrue(plannerControls.getContent().getLayoutBounds().getWidth()
                         <= plannerControls.getViewportBounds().getWidth() + 1.0,
                 "compact controls content fits the narrow viewport");
-        assertTrue(plannerMain.getContent().getLayoutBounds().getWidth()
-                        <= plannerMain.getViewportBounds().getWidth() + 1.0,
+        assertTrue(timelineScroll.getContent().getLayoutBounds().getWidth()
+                        <= timelineScroll.getViewportBounds().getWidth() + 1.0,
                 "timeline content fits the narrow viewport");
-        assertTrue(selectedInspector.getBoundsInParent().getWidth() <= plannerMain.getViewportBounds().getWidth() + 1.0,
+        assertTrue(selectedInspector.getBoundsInParent().getWidth()
+                        <= detailScroll.getViewportBounds().getWidth() + 1.0,
                 "real selected-scene inspector fits the 820x500 shell without horizontal clipping");
 
         ShellNavigationSidebar sidebar = new ShellNavigationSidebar();
@@ -495,6 +504,10 @@ public final class SessionPlannerShellLayoutTest {
 
     private static void collect(Node node, List<Node> result) {
         result.add(node);
+        if (node instanceof ScrollPane scroll && scroll.getContent() != null) {
+            collect(scroll.getContent(), result);
+            return;
+        }
         if (node instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
                 collect(child, result);

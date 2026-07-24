@@ -83,6 +83,10 @@ final class ShellWorkspacePane extends SplitPane {
         return inspectorPane;
     }
 
+    StateTabPane stateTabPane() {
+        return stateTabPane;
+    }
+
     void registerStateTab(ContributionKey key, String label, int itemOrder, Node content) {
         stateTabPane.registerTab(key, label, itemOrder, content);
         refreshStatePanel();

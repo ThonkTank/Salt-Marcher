@@ -16,6 +16,7 @@ import features.sessiongeneration.api.GenerationRunId;
 import features.sessionplanner.domain.session.EncounterDays;
 import features.sessionplanner.domain.session.SessionPlan;
 import features.sessionplanner.domain.session.SessionRevision;
+import features.sessionplanner.domain.session.SessionTreasure;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.OptionalInt;
@@ -52,9 +53,9 @@ final class PreparedSessionDraftTest {
                 new GenerationDraft(validResult(), DRAFT_FINGERPRINT),
                 batch(IDENTITY_A));
 
-        assertEquals(1, prepared.rewards().size());
-        assertEquals(1L, prepared.rewards().getFirst().sceneId());
-        assertEquals(1L, prepared.rewards().getFirst().treasureId());
+        assertEquals(1, prepared.preparedTreasures().size());
+        assertEquals(1L, prepared.preparedTreasures().getFirst().sceneId());
+        assertEquals(1L, prepared.preparedTreasures().getFirst().treasureId());
     }
 
     @Test
@@ -150,8 +151,8 @@ final class PreparedSessionDraftTest {
                 List.of(),
                 1L,
                 List.of(),
-                List.of(new PreparedSessionPersistenceFingerprint.GeneratedRewardReference(
-                        1L, "run", 1L, "Reward")),
+                List.of(new SessionTreasure(
+                        1L, 1L, "Reward", "", "", "", "", "", 0L, 0, 0, List.of(), List.of())),
                 "run",
                 List.of(new PreparedSessionPersistenceFingerprint.EncounterPlanMapping(1, planId)));
     }

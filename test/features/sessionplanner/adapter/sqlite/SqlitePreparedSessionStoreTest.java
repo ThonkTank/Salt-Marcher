@@ -11,10 +11,10 @@ import features.sessionplanner.application.PreparedSessionPersistenceFingerprint
 import features.sessionplanner.domain.session.EncounterDays;
 import features.sessionplanner.domain.session.SessionEncounter;
 import features.sessionplanner.domain.session.SessionEncounterAllocation;
-import features.sessionplanner.domain.session.SessionGeneratedRewardReference;
 import features.sessionplanner.domain.session.SessionManualLootNote;
 import features.sessionplanner.domain.session.SessionPlan;
 import features.sessionplanner.domain.session.SessionRevision;
+import features.sessionplanner.domain.session.SessionTreasure;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -65,8 +65,7 @@ final class SqlitePreparedSessionStoreTest {
                     .map(SessionEncounter::encounterPlanId).toList());
             assertEquals(List.of(new SessionManualLootNote(1L, 1L, "Prepared note")),
                     committed.manualLootNotes());
-            assertEquals(List.of(new SessionGeneratedRewardReference(2L, "run", 1L, "Prepared reward")),
-                    committed.generatedRewards());
+            assertEquals("Prepared reward", committed.treasures().getFirst().title());
         }
     }
 
@@ -100,7 +99,7 @@ final class SqlitePreparedSessionStoreTest {
                         9L, 909L, SessionEncounterAllocation.hundred(), "Old scene", "Old notes", 4L)),
                 List.of(),
                 List.of(new SessionManualLootNote(5L, 9L, "Old note")),
-                List.of(new SessionGeneratedRewardReference(9L, "old-run", 4L, "Old reward")),
+                List.of(treasure(4L, 9L, "Old reward")),
                 9L,
                 "",
                 10L,
@@ -155,9 +154,7 @@ final class SqlitePreparedSessionStoreTest {
         List<CommitPreparedSessionCommand.Rest> rests = List.of();
         List<CommitPreparedSessionCommand.ManualLootNote> notes = List.of(
                 new CommitPreparedSessionCommand.ManualLootNote(1L, 1L, "Prepared note"));
-        List<CommitPreparedSessionCommand.GeneratedRewardReference> rewards = List.of(
-                new CommitPreparedSessionCommand.GeneratedRewardReference(
-                        2L, "run", 1L, "Prepared reward"));
+        List<SessionTreasure> rewards = List.of(treasure(1L, 2L, "Prepared reward"));
         List<CommitPreparedSessionCommand.EncounterPlanMapping> mappings = List.of(
                 new CommitPreparedSessionCommand.EncounterPlanMapping(1, 101L),
                 new CommitPreparedSessionCommand.EncounterPlanMapping(2, secondPlanId));
@@ -174,9 +171,7 @@ final class SqlitePreparedSessionStoreTest {
                 1L,
                 notes.stream().map(note -> new PreparedSessionPersistenceFingerprint.ManualLootNote(
                         note.noteId(), note.sceneId(), note.authoredText())).toList(),
-                rewards.stream().map(reward -> new PreparedSessionPersistenceFingerprint.GeneratedRewardReference(
-                        reward.sceneId(), reward.generationRunIdentity(), reward.treasureId(),
-                        reward.lastKnownLabel())).toList(),
+                rewards,
                 "run",
                 mappings.stream().map(mapping -> new PreparedSessionPersistenceFingerprint.EncounterPlanMapping(
                         mapping.encounterNumber(), mapping.planId())).toList());
@@ -207,13 +202,18 @@ final class SqlitePreparedSessionStoreTest {
                 source.rests(),
                 source.selectedSceneId(),
                 source.manualLootNotes(),
-                source.generatedRewardReferences(),
+                source.treasures(),
                 source.committedGenerationRunIdentity(),
                 source.encounterPlanMappings());
     }
 
     private static SessionEncounterAllocation allocation(String value) {
         return new SessionEncounterAllocation(new BigDecimal(value));
+    }
+
+    private static SessionTreasure treasure(long treasureId, long sceneId, String title) {
+        return new SessionTreasure(treasureId, sceneId, title, "", "", "", "", "",
+                0L, 0, 0, List.of(), List.of());
     }
 
     private record StoreFixture(

@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: Session Planner Feature
-Last Reviewed: 2026-07-19
+Last Reviewed: 2026-07-21
 Source of Truth: Session Planner stored truth, reference semantics, writes, and
 error behavior.
 
@@ -27,7 +27,7 @@ commitPreparedSession(CommitPreparedSessionCommand)
 - target `SessionPlanId` and `expectedRevision`
 - stable preparation identity and normalized prepared-content fingerprint
 - the complete replacement scene order, rests, selection, manual loot notes,
-  and generated reward references
+  and materialized treasure snapshots
 - already-committed generation-run identity and the complete ordered mapping of
   generated Encounter numbers to Encounter-plan identities
 
@@ -60,34 +60,31 @@ The normalized session record stores:
 - selected scene identity
 - rests between scenes
 - manual loot notes
-- ordered generated reward references with scene ID, typed generation-run ID,
-  treasure ID, and last-known display label
+- ordered treasures with scene ID, title, note, channel, stock, theme, magic
+  type, target value, slots, independently ordered item lines, and independently
+  ordered packing rows
 
 It MUST NOT store party membership or character detail, Encounter rosters,
-creature facts, copied World Planner detail, generated item lines, reward
-values, packing rows, audits, catalog rows, generation drafts, preparation
-fingerprints, or progress state.
+creature facts, copied World Planner detail, generation-run or source-treasure
+identity, audits, catalog rows, generation drafts, preparation fingerprints, or
+progress state.
 
 Saved-plan query text, request epochs, result identities, overflow state, and
 search failures are runtime publication state and are not persisted. The
 Session Planner store contains only the attached Encounter-plan reference; it
 does not cache or mirror the Encounter saved-plan catalog.
 
-`lastKnownLabel` is a display fallback for an unavailable foreign reward. It is
-not reward truth and MUST NOT replace a successful typed reward projection.
-
 ## Reference Rules
 
 - foreign identities are stored as typed stable references, not cross-feature
   SQLite foreign keys
-- every reward reference names an existing scene in the same session
+- every treasure names an existing scene in the same session
 - Encounter-channel rewards reference their generated encounter scene
 - quest and environment rewards reference encounter-free scenes
-- a missing foreign object remains visibly unavailable; Session Planner does
-  not recreate it from copied data
+- materialized treasure display and editing require no Session Generation read
 - deleting or editing a scene removes or changes only planner-owned references
-- attaching, replacing, and detaching an Encounter reference preserve generated
-  reward references; only deletion of their owning scene prunes them
+- attaching and replacing clone the selected Encounter template; only deletion
+  of a treasure's owning scene prunes that treasure
 - Session Planner never cascades deletion into Party, Encounter, World Planner,
   or Session Generation storage
 
@@ -122,14 +119,14 @@ workspace remains visible with a display-safe failure.
 
 `commitPreparedSession` is one replacement write. It preserves session
 identity, display name, participants, and adventure-day fraction while
-atomically replacing generated scenes, rests, manual loot notes, reward
-references, selection, and revision. The command accepts only already-persisted
-generation-run and Encounter-plan identities returned by their owning APIs.
+atomically replacing generated scenes, rests, manual loot notes, treasure
+snapshots, selection, and revision. The command accepts already-persisted
+Encounter-plan identities plus fully materialized treasure snapshots.
 
 Before any write, the adapter validates target identity and revision, the
 prepared-content fingerprint, exact decimals, contiguous ordering, positive
-foreign identities, unique scene and reward keys, valid rest gaps,
-scene-local reward references, a complete Encounter-number mapping, and all
+foreign identities, unique scene and treasure keys, valid rest gaps,
+scene-local treasures, a complete Encounter-number mapping, and all
 optional reference shapes. Partial child replacement is forbidden.
 
 ## Cross-Feature Retry
@@ -151,31 +148,28 @@ Feature migrations remain contiguous under the existing Session Planner owner
 key. New columns or child tables are added by a new migration and never by
 rewriting an applied migration.
 
-Existing canonical sessions remain readable throughout the replacement.
-Legacy manual loot-placeholder rows migrate losslessly to manual loot notes.
-Existing generated reward references retain their run and treasure identities.
-No migration copies foreign reward or roster detail into Session Planner.
+Migration 6 intentionally resets only Session Planner-owned tables before
+creating the editable treasure schema. This is an owner-authorized
+pre-production cutover; every other feature store remains untouched.
+No generation-run or source-treasure identity survives materialization.
 
-A fresh store reaches schema version 4 without creating the retired loot-
+A fresh store reaches schema version 6 without creating the retired loot-
 placeholder table or index. Opening version 2 copies every legacy row into the
 canonical manual-note table in the same transaction that retires the legacy
 table; a zero encounter anchor resolves to the first scene by stored scene
 order. Opening version 3 does not copy or reconcile legacy rows again because
 canonical manual notes may have been edited or deleted since version 3; it only
-retires the stale legacy table. These migrations preserve the Session revision,
-the next manual-note identity, generated reward references, and ordering. A
-failed retirement rolls back the schema version, table, index, and data changes
-together.
+retires the stale legacy table. Migration 6 supersedes that compatibility path
+with the scoped reset and creates the treasure and treasure-item tables.
 
-Real user data is never deleted or rewritten destructively without the
+Future real user data is never deleted or rewritten destructively without the
 owner-approved backup boundary.
 
 ## Error Contract
 
 Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
-The current owner target is v4. V4 idempotently repairs the structural indexes
-and tables promised by v1-v3 before signature validation; legacy placeholder
-content remains migrated exactly once by v3.
+The current owner target is v6. V6 validates the scoped reset plus the editable
+treasure schema; no legacy generated-reward table remains in the target.
 
 Validation errors identify the invalid command field or invariant without
 echoing authored content. Failure messages are display-safe and contain no SQL,

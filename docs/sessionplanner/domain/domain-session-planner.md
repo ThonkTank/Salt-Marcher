@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: Session Planner Feature
-Last Reviewed: 2026-07-18
+Last Reviewed: 2026-07-21
 Source of Truth: Session Planner language, authored truth, and invariants.
 
 # Session Planner Domain Model
@@ -13,8 +13,9 @@ Context Role: Authored Session Preparation Context
 
 Session Planner owns the editable preparation record for one session. Party,
 Encounter, Creatures, World Planner, and Session Generation retain their own
-truth. Session Planner records stable references to foreign truth without
-copying that truth into its model.
+truth. Encounter templates are cloned into independent Encounter-owned plans
+before a scene links them. Generated treasure output is materialized as
+Planner-owned editable truth.
 
 ## Published Language
 
@@ -42,11 +43,11 @@ owns:
 - selected scene identity
 - rests between scenes
 - manual loot notes
-- ordered generated reward references consisting of scene ID, generation-run
-  ID, treasure ID, and a last-known display fallback
+- ordered scene-owned treasures with title, note, channel, stock, theme, magic
+  type, target value, slots, item facts, packing facts, and ordering
 
 It does not embed party details, Encounter rosters, creature details, World
-Planner records, generated item lines, packing rows, audits, or engine metadata.
+Planner records, generation-run identity, audits, or engine metadata.
 Preparation work that has not replaced the aggregate is transient derived
 state, never a second write model or authored truth.
 
@@ -61,6 +62,8 @@ Mutation language covers:
 - change one linked-scene allocation
 - set or clear one rest in a scene gap
 - add, update, or remove one authored manual loot note within its owning scene
+- add, update, remove, and reorder one scene-owned treasure and its item or
+  packing rows
 - select one scene
 - replace prepared content as one complete authored mutation
 
@@ -73,14 +76,13 @@ Core invariants:
 - rests exist only between adjacent scenes
 - each scene references at most one Encounter plan and one World Planner
   location
-- generated reward references name an existing session scene and one positive
-  treasure identity in one non-blank generation run
+- treasure identities are positive and unique within a Session and name an
+  existing scene; they carry no generation-run identity
 - encounter-channel rewards reference their generated Encounter scene; quest
   and environment rewards reference encounter-free scenes
 - manual loot notes never masquerade as generated reward detail
-- attaching, replacing, or detaching a saved Encounter plan preserves every
-  generated reward reference; deleting a scene alone prunes the manual notes and
-  generated reward references owned by that scene
+- attaching or replacing a saved Encounter template first creates a distinct
+  Encounter plan; deleting a scene alone prunes its manual notes and treasures
 - a manual-note identity is session-local and every note mutation identifies
   both its owning scene and the exact Session revision it was authored from
 - every authored mutation and preparation request, including catalog rename,
@@ -90,8 +92,8 @@ Core invariants:
 - incomplete preparation never mutates `SessionPlan`
 - prepared-content replacement applies to the exact session identity and
   revision it read; concurrent authored edits reject the replacement
-- removing a scene removes its planner-owned reward references without deleting
-  foreign generated runs or saved Encounter plans
+- removing a scene removes its planner-owned treasures without deleting foreign
+  generation runs or Encounter templates
 
 ## Derived State
 
@@ -101,7 +103,7 @@ Session Planner derives, without creating another write model:
 - budget, planned XP, remaining or exceeded XP, and rest guidance
 - ordered scene summaries and selected-scene detail
 - linked and attachable Encounter summaries
-- hydrated generated rewards and manual loot-note presentation
+- scene-owned treasure snapshots and manual loot-note presentation
 - preparation lifecycle, stage, warnings, and retry availability
 
 All presentation sections for one published view describe the same source

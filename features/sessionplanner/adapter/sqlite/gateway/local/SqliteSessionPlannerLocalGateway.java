@@ -44,10 +44,22 @@ public final class SqliteSessionPlannerLocalGateway {
                         "session_id", "left_encounter_id", "right_encounter_id", "rest_kind", "sort_order")
                 .primaryKey(SessionPlannerPersistenceSchema.SESSION_RESTS_TABLE,
                         "session_id", "left_encounter_id", "right_encounter_id")
-                .table(SessionPlannerPersistenceSchema.SESSION_GENERATED_REWARDS_TABLE,
-                        "session_id", "scene_id", "generation_id", "treasure_id", "last_known_label", "sort_order")
-                .primaryKey(SessionPlannerPersistenceSchema.SESSION_GENERATED_REWARDS_TABLE,
-                        "session_id", "generation_id", "treasure_id")
+                .table(SessionPlannerPersistenceSchema.SESSION_TREASURES_TABLE,
+                        "session_id", "treasure_id", "scene_id", "title", "note", "stock_class", "channel",
+                        "theme", "magic_type", "target_cp", "non_magic_slots", "magic_slots", "sort_order")
+                .primaryKey(SessionPlannerPersistenceSchema.SESSION_TREASURES_TABLE,
+                        "session_id", "treasure_id")
+                .table(SessionPlannerPersistenceSchema.SESSION_TREASURE_ITEMS_TABLE,
+                        "session_id", "treasure_id", "line_id", "role", "item_id", "item_text", "quantity",
+                        "unit_cp", "actual_cp", "total_capacity", "allowed_containers", "magic_rarity", "cursed",
+                        "sort_order")
+                .primaryKey(SessionPlannerPersistenceSchema.SESSION_TREASURE_ITEMS_TABLE,
+                        "session_id", "treasure_id", "line_id")
+                .table(SessionPlannerPersistenceSchema.SESSION_TREASURE_PACKING_TABLE,
+                        "session_id", "treasure_id", "line_id", "container_type", "container_count",
+                        "container_id", "valid", "sort_order")
+                .primaryKey(SessionPlannerPersistenceSchema.SESSION_TREASURE_PACKING_TABLE,
+                        "session_id", "treasure_id", "line_id")
                 .table(SessionPlannerPersistenceSchema.SESSION_MANUAL_LOOT_NOTES_TABLE,
                         "session_id", "note_id", "scene_id", "note_text", "sort_order")
                 .primaryKey(SessionPlannerPersistenceSchema.SESSION_MANUAL_LOOT_NOTES_TABLE,
@@ -61,9 +73,15 @@ public final class SqliteSessionPlannerLocalGateway {
                 .index("idx_session_planner_rests_order",
                         SessionPlannerPersistenceSchema.SESSION_RESTS_TABLE,
                         false, "session_id", "sort_order")
-                .index("idx_session_planner_generated_rewards_order",
-                        SessionPlannerPersistenceSchema.SESSION_GENERATED_REWARDS_TABLE,
+                .index("idx_session_planner_treasures_order",
+                        SessionPlannerPersistenceSchema.SESSION_TREASURES_TABLE,
                         false, "session_id", "sort_order")
+                .index("idx_session_planner_treasure_items_order",
+                        SessionPlannerPersistenceSchema.SESSION_TREASURE_ITEMS_TABLE,
+                        false, "session_id", "treasure_id", "sort_order")
+                .index("idx_session_planner_treasure_packing_order",
+                        SessionPlannerPersistenceSchema.SESSION_TREASURE_PACKING_TABLE,
+                        false, "session_id", "treasure_id", "sort_order")
                 .index("idx_session_planner_manual_loot_notes_order",
                         SessionPlannerPersistenceSchema.SESSION_MANUAL_LOOT_NOTES_TABLE,
                         false, "session_id", "sort_order")
@@ -74,7 +92,8 @@ public final class SqliteSessionPlannerLocalGateway {
                 new SqliteMigration(2, schemaMigrator::addGeneratedRewards),
                 new SqliteMigration(3, schemaMigrator::addRevisionAndManualLootNotes),
                 new SqliteMigration(4, schemaMigrator::repairTargetSchema),
-                new SqliteMigration(5, schemaMigrator::retireLegacyManualLoot));
+                new SqliteMigration(5, schemaMigrator::retireLegacyManualLoot),
+                new SqliteMigration(6, schemaMigrator::resetForEditableTreasures));
     }
 
     public SqliteSessionPlannerLocalGateway(FeatureStoreHandle store) {
@@ -324,7 +343,8 @@ public final class SqliteSessionPlannerLocalGateway {
         writes.replaceEncounters(connection, sessionId, snapshot.encounters());
         writes.replaceRests(connection, sessionId, snapshot.rests());
         writes.replaceManualLootNotes(connection, sessionId, snapshot.manualLootNotes());
-        writes.replaceGeneratedRewards(connection, sessionId, snapshot.generatedRewards());
+        writes.replaceTreasures(connection, sessionId, snapshot.treasures(), snapshot.treasureItems(),
+                snapshot.treasurePacking());
     }
 
     private Optional<SessionPlanSnapshotRecord> requireSaved(Connection connection, long sessionId)

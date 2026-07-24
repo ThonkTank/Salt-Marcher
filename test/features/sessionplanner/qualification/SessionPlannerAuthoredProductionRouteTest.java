@@ -30,7 +30,7 @@ import features.sessionplanner.api.UpdateSessionManualLootNoteCommand;
 import features.sessionplanner.domain.session.EncounterDays;
 import features.sessionplanner.domain.session.SessionEncounter;
 import features.sessionplanner.domain.session.SessionEncounterAllocation;
-import features.sessionplanner.domain.session.SessionGeneratedRewardReference;
+import features.sessionplanner.domain.session.SessionTreasure;
 import features.sessionplanner.domain.session.SessionPlan;
 import java.math.BigDecimal;
 import java.nio.file.Path;
@@ -89,7 +89,7 @@ final class SessionPlannerAuthoredProductionRouteTest {
             route.planner.application().detachEncounter(new DetachSessionEncounterCommand(target(1L, 6L), 1L));
             route.awaitIdle();
             SessionPlan beforeSwitch = route.sessions.loadById(1L).orElseThrow();
-            assertEquals(1, beforeSwitch.generatedRewards().size(),
+            assertEquals(1, beforeSwitch.treasures().size(),
                     "attach and detach preserve generated reward references");
 
             route.planner.application().selectSession(new SessionPlannerCatalogCommand.SelectSessionCommand(
@@ -118,7 +118,7 @@ final class SessionPlannerAuthoredProductionRouteTest {
             assertEquals("Delayed source edit", source.encounters().getFirst().sceneTitle());
             assertEquals("still source only", source.encounters().getFirst().sceneNotes());
             assertEquals("Durable cache", source.manualLootNotes().getFirst().authoredText());
-            assertEquals(1, source.generatedRewards().size());
+            assertEquals(1, source.treasures().size());
             assertEquals("Target scene", target.encounters().getFirst().sceneTitle(),
                     "source edit was never copied into the target session");
             reopened.planner.application().initialize();
@@ -268,7 +268,8 @@ final class SessionPlannerAuthoredProductionRouteTest {
                 List.of(new SessionEncounter(1L, 0L, SessionEncounterAllocation.hundred(),
                         "Source scene", "", 0L)),
                 List.of(), List.of(),
-                List.of(new SessionGeneratedRewardReference(1L, "run-authored", 1L, "Reward")),
+                List.of(new SessionTreasure(1L, 1L, "Reward", "", "", "", "", "",
+                        0L, 0, 0, List.of(), List.of())),
                 1L, "", 2L, 1L);
     }
 
@@ -277,7 +278,8 @@ final class SessionPlannerAuthoredProductionRouteTest {
                 2L, null, "Target", List.of(), new EncounterDays(BigDecimal.ONE),
                 List.of(new SessionEncounter(1L, 0L, SessionEncounterAllocation.hundred(),
                         "Target scene", "", 0L)),
-                List.of(), List.of(), List.of(), 1L, "", 2L, 1L);
+                List.of(), List.of(), List.<features.sessionplanner.domain.session.SessionTreasure>of(),
+                1L, "", 2L, 1L);
     }
 
     private static final class ProductionRoute implements AutoCloseable {

@@ -7,7 +7,7 @@ import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanReposi
 import features.sessionplanner.domain.session.EncounterDays;
 import features.sessionplanner.domain.session.SessionEncounter;
 import features.sessionplanner.domain.session.SessionEncounterAllocation;
-import features.sessionplanner.domain.session.SessionGeneratedRewardReference;
+import features.sessionplanner.domain.session.SessionTreasure;
 import features.sessionplanner.domain.session.SessionManualLootNote;
 import features.sessionplanner.domain.session.SessionPlan;
 import features.sessionplanner.domain.session.SessionRestPlacement;
@@ -26,7 +26,7 @@ import platform.persistence.TestFeatureStores;
 
 final class SessionPlannerWorkspaceSqliteReadTest {
 
-    private static final int WORKSPACE_STATEMENT_FAMILIES = 7;
+    private static final int WORKSPACE_STATEMENT_FAMILIES = 9;
 
     @TempDir
     Path temporaryDirectory;
@@ -63,7 +63,7 @@ final class SessionPlannerWorkspaceSqliteReadTest {
             CountedRead counted = loadCounted(path);
 
             assertEquals(WORKSPACE_STATEMENT_FAMILIES, counted.statements(),
-                    "pointer, roots, participants, scenes, rests, notes, and generated rewards");
+                    "pointer, roots, participants, scenes, rests, notes, treasures, items, and packing");
             assertEquals(64L, counted.workspace().currentSessionId());
             assertEquals(64, counted.workspace().sessions().size());
             counted.workspace().sessions().forEach(snapshot -> {
@@ -71,7 +71,7 @@ final class SessionPlannerWorkspaceSqliteReadTest {
                 assertEquals(2, snapshot.encounters().size());
                 assertEquals(1, snapshot.rests().size());
                 assertEquals(1, snapshot.manualLootNotes().size());
-                assertEquals(1, snapshot.generatedRewards().size());
+                assertEquals(1, snapshot.treasures().size());
             });
         }
     }
@@ -87,7 +87,8 @@ final class SessionPlannerWorkspaceSqliteReadTest {
                 sessionId, null, "Session " + sessionId, List.of(1L, 2L), EncounterDays.one(), scenes,
                 List.of(SessionRestPlacement.shortRestBetween(firstSceneId, secondSceneId)),
                 List.of(new SessionManualLootNote(1L, firstSceneId, "Manual")),
-                List.of(new SessionGeneratedRewardReference(secondSceneId, runId, 1L, "Fallback")),
+                List.of(new SessionTreasure(1L, secondSceneId, "Fallback", "", "", "", "", "",
+                        0L, 0, 0, List.of(), List.of())),
                 firstSceneId, "", secondSceneId + 1L, 2L);
     }
 

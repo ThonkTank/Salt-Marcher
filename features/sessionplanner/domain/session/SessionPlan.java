@@ -18,7 +18,7 @@ public record SessionPlan(
         List<SessionEncounter> encounters,
         List<SessionRestPlacement> restPlacements,
         List<SessionManualLootNote> manualLootNotes,
-        List<SessionGeneratedRewardReference> generatedRewards,
+        List<SessionTreasure> treasures,
         long selectedEncounterId,
         String statusText,
         long nextEncounterId,
@@ -43,9 +43,9 @@ public record SessionPlan(
         encounters = encounters == null ? List.of() : List.copyOf(encounters);
         restPlacements = restPlacements == null ? List.of() : List.copyOf(restPlacements);
         manualLootNotes = manualLootNotes == null ? List.of() : List.copyOf(manualLootNotes);
-        generatedRewards = generatedRewards == null ? List.of() : List.copyOf(generatedRewards);
+        treasures = treasures == null ? List.of() : List.copyOf(treasures);
         validateManualLootNotes(encounters, manualLootNotes);
-        validateGeneratedRewards(encounters, generatedRewards);
+        validateTreasures(encounters, treasures);
         selectedEncounterId = Math.max(0L, selectedEncounterId);
         statusText = statusText == null ? "" : statusText;
         nextEncounterId = Math.max(1L, nextEncounterId);
@@ -66,7 +66,7 @@ public record SessionPlan(
                 List.of(),
                 List.of(),
                 List.of(),
-                List.of(),
+                List.<SessionTreasure>of(),
                 0L,
                 "",
                 1L,
@@ -80,7 +80,7 @@ public record SessionPlan(
                 encounters,
                 restPlacements,
                 manualLootNotes,
-                generatedRewards,
+                treasures,
                 selectedEncounterId,
                 "",
                 nextEncounterId,
@@ -94,7 +94,7 @@ public record SessionPlan(
                 encounters,
                 restPlacements,
                 manualLootNotes,
-                generatedRewards,
+                treasures,
                 selectedEncounterId,
                 statusText,
                 nextEncounterId,
@@ -111,7 +111,7 @@ public record SessionPlan(
                 encounters,
                 restPlacements,
                 manualLootNotes,
-                generatedRewards,
+                treasures,
                 selectedEncounterId,
                 "Session umbenannt.",
                 nextEncounterId,
@@ -127,7 +127,7 @@ public record SessionPlan(
         }
         List<Long> nextParticipants = new ArrayList<>(participantRefs);
         nextParticipants.add(characterId);
-        return copy(nextParticipants, encounterDays, encounters, restPlacements, manualLootNotes, generatedRewards, selectedEncounterId,
+        return copy(nextParticipants, encounterDays, encounters, restPlacements, manualLootNotes, treasures, selectedEncounterId,
                 "Charakter zur Session hinzugefuegt.", nextEncounterId, nextLootId);
     }
 
@@ -140,12 +140,12 @@ public record SessionPlan(
         if (!removed) {
             return this;
         }
-        return copy(nextParticipants, encounterDays, encounters, restPlacements, manualLootNotes, generatedRewards, selectedEncounterId,
+        return copy(nextParticipants, encounterDays, encounters, restPlacements, manualLootNotes, treasures, selectedEncounterId,
                 "Charakter aus der Session entfernt.", nextEncounterId, nextLootId);
     }
 
     public SessionPlan setEncounterDays(EncounterDays encounterDays) {
-        return copy(participantRefs, encounterDays == null ? EncounterDays.one() : encounterDays, encounters, restPlacements, manualLootNotes, generatedRewards,
+        return copy(participantRefs, encounterDays == null ? EncounterDays.one() : encounterDays, encounters, restPlacements, manualLootNotes, treasures,
                 selectedEncounterId, "Session-Tage aktualisiert.", nextEncounterId, nextLootId);
     }
 
@@ -155,7 +155,7 @@ public record SessionPlan(
         nextEncounters.add(new SessionEncounter(sceneId, UNRESOLVED_ID, SessionEncounterAllocation.zero()));
         List<SessionEncounter> rebalanced = rebalanceAllocationsEvenly(nextEncounters);
         long nextSelected = selectedEncounterId <= UNRESOLVED_ID ? sceneId : selectedEncounterId;
-        return copy(participantRefs, encounterDays, rebalanced, restPlacements, manualLootNotes, generatedRewards, nextSelected,
+        return copy(participantRefs, encounterDays, rebalanced, restPlacements, manualLootNotes, treasures, nextSelected,
                 "Szene hinzugefuegt.", nextEncounterId + 1, nextLootId);
     }
 
@@ -171,7 +171,7 @@ public record SessionPlan(
         List<SessionEncounter> nextEncounters = new ArrayList<>(encounters);
         nextEncounters.set(index, existing.withEncounterPlan(encounterPlanId));
         return copy(participantRefs, encounterDays, nextEncounters, restPlacements, manualLootNotes,
-                generatedRewards, selectedEncounterId,
+                treasures, selectedEncounterId,
                 existing.encounterPlanId() > UNRESOLVED_ID
                         ? "Encounter-Verknüpfung ersetzt." : "Encounter verknüpft.",
                 nextEncounterId, nextLootId);
@@ -186,7 +186,7 @@ public record SessionPlan(
         List<SessionEncounter> nextEncounters = new ArrayList<>(encounters);
         nextEncounters.set(index, encounters.get(index).withEncounterPlan(UNRESOLVED_ID));
         return copy(participantRefs, encounterDays, nextEncounters, restPlacements, manualLootNotes,
-                generatedRewards, selectedEncounterId, "Encounter-Verknüpfung entfernt.",
+                treasures, selectedEncounterId, "Encounter-Verknüpfung entfernt.",
                 nextEncounterId, nextLootId);
     }
 
@@ -211,7 +211,7 @@ public record SessionPlan(
                 normalized,
                 nextRestPlacements,
                 pruneManualLootNotes(encounterId),
-                pruneGeneratedRewards(encounterId),
+                pruneTreasures(encounterId),
                 nextSelected,
                 "Encounter entfernt.",
                 nextEncounterId,
@@ -236,7 +236,7 @@ public record SessionPlan(
                     List.of(encounters.get(0).withAllocation(SessionEncounterAllocation.hundred())),
                     restPlacements,
                     manualLootNotes,
-                    generatedRewards,
+                    treasures,
                     selectedEncounterId,
                     "Encounter-Budget aktualisiert.",
                     nextEncounterId,
@@ -262,7 +262,7 @@ public record SessionPlan(
             int index = otherIndexes.get(offset);
             nextEncounters.set(index, nextEncounters.get(index).withAllocation(new SessionEncounterAllocation(redistributed.get(offset))));
         }
-        return copy(participantRefs, encounterDays, nextEncounters, restPlacements, manualLootNotes, generatedRewards, selectedEncounterId,
+        return copy(participantRefs, encounterDays, nextEncounters, restPlacements, manualLootNotes, treasures, selectedEncounterId,
                 "Encounter-Budget aktualisiert.", nextEncounterId, nextLootId);
     }
 
@@ -278,14 +278,14 @@ public record SessionPlan(
         }
         List<SessionEncounter> nextEncounters = new ArrayList<>(encounters);
         nextEncounters.set(targetIndex, updated);
-        return copy(participantRefs, encounterDays, nextEncounters, restPlacements, manualLootNotes, generatedRewards, selectedEncounterId,
+        return copy(participantRefs, encounterDays, nextEncounters, restPlacements, manualLootNotes, treasures, selectedEncounterId,
                 "Szene aktualisiert.", nextEncounterId, nextLootId);
     }
 
     public SessionPlan selectEncounter(long encounterId) {
         return encounterIndex(encounters, encounterId) < 0
                 ? this
-                : copy(participantRefs, encounterDays, encounters, restPlacements, manualLootNotes, generatedRewards, encounterId,
+                : copy(participantRefs, encounterDays, encounters, restPlacements, manualLootNotes, treasures, encounterId,
                 "Encounter ausgewaehlt.", nextEncounterId, nextLootId);
     }
 
@@ -296,7 +296,7 @@ public record SessionPlan(
         SessionPlan cleared = clearRestPlacement(placement.leftEncounterId(), placement.rightEncounterId());
         List<SessionRestPlacement> nextRestPlacements = new ArrayList<>(cleared.restPlacements);
         nextRestPlacements.add(placement);
-        return cleared.copy(cleared.participantRefs, cleared.encounterDays, cleared.encounters, nextRestPlacements, cleared.manualLootNotes, cleared.generatedRewards,
+        return cleared.copy(cleared.participantRefs, cleared.encounterDays, cleared.encounters, nextRestPlacements, cleared.manualLootNotes, cleared.treasures,
                 cleared.selectedEncounterId, "Rast aktualisiert.", cleared.nextEncounterId, cleared.nextLootId);
     }
 
@@ -312,7 +312,7 @@ public record SessionPlan(
             }
         }
         return removed
-                ? copy(participantRefs, encounterDays, encounters, nextRestPlacements, manualLootNotes, generatedRewards, selectedEncounterId,
+                ? copy(participantRefs, encounterDays, encounters, nextRestPlacements, manualLootNotes, treasures, selectedEncounterId,
                 "Rast entfernt.", nextEncounterId, nextLootId)
                 : this;
     }
@@ -332,7 +332,7 @@ public record SessionPlan(
                 encounters,
                 restPlacements,
                 nextManualLootNotes,
-                generatedRewards,
+                treasures,
                 selectedEncounterId,
                 "Beutenotiz hinzugefuegt.",
                 nextEncounterId,
@@ -353,7 +353,7 @@ public record SessionPlan(
                 }
                 nextManualLootNotes.set(index, new SessionManualLootNote(noteId, sceneId, normalized));
                 return copy(participantRefs, encounterDays, encounters, restPlacements,
-                        nextManualLootNotes, generatedRewards, selectedEncounterId,
+                        nextManualLootNotes, treasures, selectedEncounterId,
                         "Beutenotiz aktualisiert.", nextEncounterId, nextLootId);
             }
         }
@@ -372,7 +372,7 @@ public record SessionPlan(
             }
         }
         return removed
-                ? copy(participantRefs, encounterDays, encounters, restPlacements, nextManualLootNotes, generatedRewards, selectedEncounterId,
+                ? copy(participantRefs, encounterDays, encounters, restPlacements, nextManualLootNotes, treasures, selectedEncounterId,
                 "Beutenotiz entfernt.", nextEncounterId, nextLootId)
                 : this;
     }
@@ -386,7 +386,7 @@ public record SessionPlan(
         List<SessionEncounter> nextEncounters = new ArrayList<>(encounters);
         Collections.swap(nextEncounters, index, nextIndex);
         List<SessionRestPlacement> nextRestPlacements = pruneRestPlacements(nextEncounters, restPlacements);
-        return copy(participantRefs, encounterDays, nextEncounters, nextRestPlacements, manualLootNotes, generatedRewards, selectedEncounterId,
+        return copy(participantRefs, encounterDays, nextEncounters, nextRestPlacements, manualLootNotes, treasures, selectedEncounterId,
                 "Encounter verschoben.", nextEncounterId, nextLootId);
     }
 
@@ -396,7 +396,7 @@ public record SessionPlan(
             List<SessionEncounter> encounters,
             List<SessionRestPlacement> restPlacements,
             List<SessionManualLootNote> manualLootNotes,
-            List<SessionGeneratedRewardReference> generatedRewards,
+            List<SessionTreasure> treasures,
             long selectedEncounterId,
             String statusText,
             long nextEncounterId,
@@ -411,7 +411,7 @@ public record SessionPlan(
                 encounters,
                 restPlacements,
                 manualLootNotes,
-                generatedRewards,
+                treasures,
                 selectedEncounterId,
                 statusText,
                 nextEncounterId,
@@ -425,22 +425,21 @@ public record SessionPlan(
         return name.trim();
     }
 
-    private static void validateGeneratedRewards(
+    private static void validateTreasures(
             List<SessionEncounter> scenes,
-            List<SessionGeneratedRewardReference> rewards
+            List<SessionTreasure> rewards
     ) {
         Set<Long> sceneIds = new HashSet<>();
         for (SessionEncounter scene : scenes) {
             sceneIds.add(scene.encounterId());
         }
-        Set<String> rewardKeys = new HashSet<>();
-        for (SessionGeneratedRewardReference reward : rewards) {
-            if (!sceneIds.contains(reward.sceneId())) {
-                throw new IllegalArgumentException("Generated reward references an unknown scene");
+        Set<Long> treasureIds = new HashSet<>();
+        for (SessionTreasure treasure : rewards) {
+            if (!sceneIds.contains(treasure.sceneId())) {
+                throw new IllegalArgumentException("Treasure references an unknown scene");
             }
-            String key = reward.generationId() + ":" + reward.treasureId();
-            if (!rewardKeys.add(key)) {
-                throw new IllegalArgumentException("Generated reward identity must be unique within a session");
+            if (!treasureIds.add(treasure.treasureId())) {
+                throw new IllegalArgumentException("Treasure identity must be unique within a session");
             }
         }
     }
@@ -505,18 +504,18 @@ public record SessionPlan(
         return nextManualLootNotes;
     }
 
-    private List<SessionGeneratedRewardReference> pruneGeneratedRewards(long sceneId) {
-        return generatedRewards.stream()
+    private List<SessionTreasure> pruneTreasures(long sceneId) {
+        return treasures.stream()
                 .filter(reward -> reward.sceneId() != sceneId)
                 .toList();
     }
 
     public SessionPlan replaceGeneratedContent(
             List<SessionEncounter> generatedScenes,
-            List<SessionGeneratedRewardReference> rewards
+            List<SessionTreasure> rewards
     ) {
         List<SessionEncounter> safeScenes = generatedScenes == null ? List.of() : List.copyOf(generatedScenes);
-        List<SessionGeneratedRewardReference> safeRewards = rewards == null ? List.of() : List.copyOf(rewards);
+        List<SessionTreasure> safeRewards = rewards == null ? List.of() : List.copyOf(rewards);
         long nextSceneId = safeScenes.stream().mapToLong(SessionEncounter::encounterId).max().orElse(0L) + 1L;
         long selectedSceneId = safeScenes.isEmpty() ? 0L : safeScenes.getFirst().encounterId();
         return new SessionPlan(
@@ -532,7 +531,59 @@ public record SessionPlan(
                 selectedSceneId,
                 "Generierte Session angewandt.",
                 Math.max(1L, nextSceneId),
-                1L);
+                Math.max(1L, safeRewards.stream().mapToLong(SessionTreasure::treasureId).max().orElse(0L) + 1L));
+    }
+
+    public SessionPlan addTreasure(long sceneId) {
+        if (encounterIndex(encounters, sceneId) < 0) {
+            return this;
+        }
+        long treasureId = nextAvailableTreasureId();
+        List<SessionTreasure> nextTreasures = new ArrayList<>(treasures);
+        nextTreasures.add(new SessionTreasure(
+                treasureId, sceneId, "Neuer Schatz", "", "", "", "", "", 0L, 0, 0,
+                List.of(), List.of()));
+        return copy(participantRefs, encounterDays, encounters, restPlacements, manualLootNotes,
+                nextTreasures, selectedEncounterId, "Schatz hinzugefügt.", nextEncounterId,
+                Math.max(nextLootId, treasureId + 1L));
+    }
+
+    private long nextAvailableTreasureId() {
+        long candidate = Math.max(1L, nextLootId);
+        Set<Long> used = treasures.stream().map(SessionTreasure::treasureId)
+                .collect(java.util.stream.Collectors.toSet());
+        while (used.contains(candidate)) {
+            candidate++;
+        }
+        return candidate;
+    }
+
+    public SessionPlan updateTreasure(long sceneId, SessionTreasure treasure) {
+        if (treasure == null || treasure.sceneId() != sceneId || encounterIndex(encounters, sceneId) < 0) {
+            return this;
+        }
+        List<SessionTreasure> nextTreasures = new ArrayList<>(treasures);
+        for (int index = 0; index < nextTreasures.size(); index++) {
+            if (nextTreasures.get(index).treasureId() == treasure.treasureId()) {
+                nextTreasures.set(index, treasure);
+                return copy(participantRefs, encounterDays, encounters, restPlacements, manualLootNotes,
+                        nextTreasures, selectedEncounterId, "Schatz aktualisiert.", nextEncounterId, nextLootId);
+            }
+        }
+        nextTreasures.add(treasure);
+        return copy(participantRefs, encounterDays, encounters, restPlacements, manualLootNotes,
+                nextTreasures, selectedEncounterId, "Schatz hinzugefügt.", nextEncounterId,
+                Math.max(nextLootId, treasure.treasureId() + 1L));
+    }
+
+    public SessionPlan removeTreasure(long sceneId, long treasureId) {
+        List<SessionTreasure> nextTreasures = new ArrayList<>(treasures);
+        boolean removed = nextTreasures.removeIf(treasure -> treasure.sceneId() == sceneId
+                && treasure.treasureId() == treasureId);
+        return removed
+                ? copy(participantRefs, encounterDays, encounters, restPlacements, manualLootNotes,
+                        nextTreasures, selectedEncounterId, "Schatz entfernt.", nextEncounterId, nextLootId)
+                : this;
     }
 
     private static List<SessionEncounter> rebalanceAllocationsEvenly(List<SessionEncounter> encounters) {

@@ -168,9 +168,9 @@ final class SessionPlannerJavaFxProductionQualificationTest {
         }
         var selected = snapshot.selectedScene();
         return count + 1 + selected.linkedEncounterRoster().size() + selected.manualLootNotes().size()
-                + selected.generatedRewards().size()
-                + selected.generatedRewards().stream().mapToInt(reward -> reward.itemLines().size()).sum()
-                + selected.generatedRewards().stream().mapToInt(reward -> reward.packing().size()).sum()
+                + selected.treasures().size()
+                + selected.treasures().stream().mapToInt(reward -> reward.itemLines().size()).sum()
+                + selected.treasures().stream().mapToInt(reward -> reward.packing().size()).sum()
                 + selected.encounterPlanSearch().results().size();
     }
 

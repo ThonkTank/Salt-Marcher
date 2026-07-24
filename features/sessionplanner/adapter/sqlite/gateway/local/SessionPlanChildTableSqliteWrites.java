@@ -5,7 +5,9 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 import features.sessionplanner.adapter.sqlite.model.SessionEncounterRecord;
-import features.sessionplanner.adapter.sqlite.model.SessionGeneratedRewardRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionTreasureRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionTreasureItemRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionTreasurePackingRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionManualLootNoteRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionParticipantRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionRestPlacementRecord;
@@ -114,27 +116,82 @@ final class SessionPlanChildTableSqliteWrites {
         }
     }
 
-    void replaceGeneratedRewards(
+    void replaceTreasures(
             Connection connection,
             long sessionId,
-            List<SessionGeneratedRewardRecord> generatedRewards
+            List<SessionTreasureRecord> treasures,
+            List<SessionTreasureItemRecord> items,
+            List<SessionTreasurePackingRecord> packing
     ) throws SQLException {
-        deleteGeneratedRewards(connection, sessionId);
-        if (generatedRewards == null || generatedRewards.isEmpty()) {
+        deleteTreasures(connection, sessionId);
+        if (treasures == null || treasures.isEmpty()) {
             return;
         }
         try (PreparedStatement insert = connection.prepareStatement(
                 INSERT_INTO
-                        + SessionPlannerPersistenceSchema.SESSION_GENERATED_REWARDS_TABLE
-                        + " (session_id, scene_id, generation_id, treasure_id, last_known_label, sort_order) "
-                        + "VALUES (?, ?, ?, ?, ?, ?)")) {
-            for (SessionGeneratedRewardRecord record : generatedRewards) {
+                        + SessionPlannerPersistenceSchema.SESSION_TREASURES_TABLE
+                        + " (session_id, treasure_id, scene_id, title, note, stock_class, channel, theme, magic_type, "
+                        + "target_cp, non_magic_slots, magic_slots, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+            for (SessionTreasureRecord record : treasures) {
                 insert.setLong(1, sessionId);
-                insert.setLong(2, record.sceneId());
-                insert.setString(3, record.generationId());
-                insert.setLong(4, record.treasureId());
-                insert.setString(5, record.lastKnownLabel());
-                insert.setInt(6, record.sortOrder());
+                insert.setLong(2, record.treasureId());
+                insert.setLong(3, record.sceneId());
+                insert.setString(4, record.title());
+                insert.setString(5, record.note());
+                insert.setString(6, record.stockClass());
+                insert.setString(7, record.channel());
+                insert.setString(8, record.theme());
+                insert.setString(9, record.magicType());
+                insert.setLong(10, record.targetCp());
+                insert.setInt(11, record.nonMagicSlots());
+                insert.setInt(12, record.magicSlots());
+                insert.setInt(13, record.sortOrder());
+                insert.addBatch();
+            }
+            insert.executeBatch();
+        }
+        if (items != null && !items.isEmpty()) {
+            try (PreparedStatement insert = connection.prepareStatement(
+                    INSERT_INTO + SessionPlannerPersistenceSchema.SESSION_TREASURE_ITEMS_TABLE
+                            + " (session_id, treasure_id, line_id, role, item_id, item_text, quantity, unit_cp, actual_cp, "
+                            + "total_capacity, allowed_containers, magic_rarity, cursed, sort_order) "
+                            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+                for (SessionTreasureItemRecord record : items) {
+                    insert.setLong(1, sessionId);
+                    insert.setLong(2, record.treasureId());
+                    insert.setLong(3, record.lineId());
+                    insert.setString(4, record.role());
+                    insert.setString(5, record.itemId());
+                    insert.setString(6, record.text());
+                    insert.setLong(7, record.quantity());
+                    insert.setLong(8, record.unitCp());
+                    insert.setLong(9, record.actualCp());
+                    insert.setString(10, record.totalCapacity());
+                    insert.setString(11, record.allowedContainers());
+                    insert.setString(12, record.magicRarity());
+                    insert.setInt(13, record.cursed() ? 1 : 0);
+                    insert.setInt(14, record.sortOrder());
+                    insert.addBatch();
+                }
+                insert.executeBatch();
+            }
+        }
+        if (packing == null || packing.isEmpty()) {
+            return;
+        }
+        try (PreparedStatement insert = connection.prepareStatement(
+                INSERT_INTO + SessionPlannerPersistenceSchema.SESSION_TREASURE_PACKING_TABLE
+                        + " (session_id, treasure_id, line_id, container_type, container_count, container_id, valid, "
+                        + "sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
+            for (SessionTreasurePackingRecord record : packing) {
+                insert.setLong(1, sessionId);
+                insert.setLong(2, record.treasureId());
+                insert.setLong(3, record.lineId());
+                insert.setString(4, record.containerType());
+                insert.setInt(5, record.containerCount());
+                insert.setString(6, record.containerId());
+                insert.setInt(7, record.valid() ? 1 : 0);
+                insert.setInt(8, record.sortOrder());
                 insert.addBatch();
             }
             insert.executeBatch();
@@ -173,9 +230,19 @@ final class SessionPlanChildTableSqliteWrites {
         }
     }
 
-    private static void deleteGeneratedRewards(Connection connection, long sessionId) throws SQLException {
+    private static void deleteTreasures(Connection connection, long sessionId) throws SQLException {
         try (PreparedStatement delete = connection.prepareStatement(
-                DELETE_FROM + SessionPlannerPersistenceSchema.SESSION_GENERATED_REWARDS_TABLE + WHERE_SESSION_ID)) {
+                DELETE_FROM + SessionPlannerPersistenceSchema.SESSION_TREASURE_PACKING_TABLE + WHERE_SESSION_ID)) {
+            delete.setLong(1, sessionId);
+            delete.executeUpdate();
+        }
+        try (PreparedStatement delete = connection.prepareStatement(
+                DELETE_FROM + SessionPlannerPersistenceSchema.SESSION_TREASURE_ITEMS_TABLE + WHERE_SESSION_ID)) {
+            delete.setLong(1, sessionId);
+            delete.executeUpdate();
+        }
+        try (PreparedStatement delete = connection.prepareStatement(
+                DELETE_FROM + SessionPlannerPersistenceSchema.SESSION_TREASURES_TABLE + WHERE_SESSION_ID)) {
             delete.setLong(1, sessionId);
             delete.executeUpdate();
         }

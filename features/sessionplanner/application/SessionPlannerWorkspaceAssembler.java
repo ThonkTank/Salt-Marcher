@@ -11,13 +11,6 @@ import features.party.api.PartyMemberSummary;
 import features.party.api.PartyPlanningFactsQuery;
 import features.party.api.PartyPlanningFactsResponse;
 import features.party.api.ReadStatus;
-import features.sessiongeneration.api.GenerationResult;
-import features.sessiongeneration.api.GenerationRewardBatchQuery;
-import features.sessiongeneration.api.GenerationRewardBatchResponse;
-import features.sessiongeneration.api.GenerationRewardReference;
-import features.sessiongeneration.api.GenerationRunId;
-import features.sessiongeneration.api.GenerationStatus;
-import features.sessiongeneration.api.SessionGenerationApi;
 import features.sessionplanner.api.PreparedSceneCatalogSnapshot;
 import features.sessionplanner.api.PreparedSceneSource;
 import features.sessionplanner.api.SessionPlannerCatalogSnapshot;
@@ -30,7 +23,7 @@ import features.sessionplanner.api.SessionPlannerSessionSnapshot;
 import features.sessionplanner.api.SessionPlannerWorkspaceSnapshot;
 import features.sessionplanner.api.SessionPreparationSnapshot;
 import features.sessionplanner.domain.session.SessionEncounter;
-import features.sessionplanner.domain.session.SessionGeneratedRewardReference;
+import features.sessionplanner.domain.session.SessionTreasure;
 import features.sessionplanner.domain.session.SessionManualLootNote;
 import features.sessionplanner.domain.session.SessionPlan;
 import features.sessionplanner.domain.session.SessionRestPlacement;
@@ -60,14 +53,12 @@ public final class SessionPlannerWorkspaceAssembler {
 
     private static final BigDecimal HUNDRED = new BigDecimal("100");
     private static final String ENCOUNTER_FAILURE = "Encounter-Details konnten nicht geladen werden.";
-    private static final String REWARD_FAILURE = "Generierte Belohnungen konnten nicht geladen werden.";
     private static final DiagnosticId WORKSPACE_ASSEMBLY =
             new DiagnosticId("sessionplanner.workspace.assembly");
 
     private final SessionPlannerWorkspaceSource source;
     private final PartyApi party;
     private final EncounterApi encounters;
-    private final SessionGenerationApi generation;
     private final @Nullable WorldPlannerSnapshotModel worldPlanner;
     private final ExecutionLane executionLane;
     private final Diagnostics diagnostics;
@@ -76,7 +67,6 @@ public final class SessionPlannerWorkspaceAssembler {
             SessionPlannerWorkspaceSource source,
             PartyApi party,
             EncounterApi encounters,
-            SessionGenerationApi generation,
             @Nullable WorldPlannerSnapshotModel worldPlanner,
             ExecutionLane executionLane,
             Diagnostics diagnostics
@@ -84,7 +74,6 @@ public final class SessionPlannerWorkspaceAssembler {
         this.source = Objects.requireNonNull(source, "source");
         this.party = Objects.requireNonNull(party, "party");
         this.encounters = Objects.requireNonNull(encounters, "encounters");
-        this.generation = Objects.requireNonNull(generation, "generation");
         this.worldPlanner = worldPlanner;
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
@@ -136,17 +125,13 @@ public final class SessionPlannerWorkspaceAssembler {
         }
 
         SessionPlan session = selected.orElseThrow();
-        SessionEncounter selectedScene = selectedScene(session);
         WorldCapture world = captureWorld();
         List<Long> planIds = encounterPlanIds(session);
-        List<RewardRef> rewardRefs = rewardReferences(session, selectedScene == null ? 0L : selectedScene.encounterId());
         CompletionStage<EncounterCapture> encounterStage = encounterCapture(planIds);
-        CompletionStage<RewardCapture> rewardStage = rewardCapture(rewardRefs);
         return encounterStage.thenCompose(encounterCapture -> {
             int plannedXp = plannedXp(session, encounterCapture.byId());
-            return partyCapture(session.participantRefs(), plannedXp).thenCombine(rewardStage, (partyCapture, rewards) -> assemble(
-                    capture, session, preparation, world, encounterCapture,
-                    partyCapture, rewards, prepared));
+            return partyCapture(session.participantRefs(), plannedXp).thenApply(partyCapture -> assemble(
+                    capture, session, preparation, world, encounterCapture, partyCapture, prepared));
         });
     }
 
@@ -175,21 +160,19 @@ public final class SessionPlannerWorkspaceAssembler {
             WorldCapture world,
             EncounterCapture encounter,
             PartyCapture partyCapture,
-            RewardCapture rewards,
             PreparedSceneCatalogSnapshot preparedScenes
     ) {
         List<SessionPlannerWorkspaceSnapshot.Issue> issues = new ArrayList<>();
         issues.addAll(world.issues());
         issues.addAll(encounter.issues());
         issues.addAll(partyCapture.issues());
-        issues.addAll(rewards.issues());
         SessionPlannerParticipantsProjection participants = participants(
                 session.participantRefs(), partyCapture.response());
         int scaledBudgetXp = scaledBudget(session, partyCapture.response());
         SessionPlannerSceneTimelineProjection timeline = timeline(
                 session, scaledBudgetXp, encounter.byId(), world.locations());
         SessionPlannerSelectedSceneSnapshot selectedScene = selectedScene(
-                session, scaledBudgetXp, encounter.byId(), rewards.byReference(), world.locations());
+                session, scaledBudgetXp, encounter.byId(), world.locations());
         SessionPlannerSessionSnapshot current = currentSession(
                 session, partyCapture.response(), participants, scaledBudgetXp,
                 encounter.byId());
@@ -298,133 +281,6 @@ public final class SessionPlannerWorkspaceAssembler {
         requested.forEach(id -> values.put(id, EncounterFact.unavailable(id, message)));
         return new EncounterCapture(Map.copyOf(values), List.of(issue(
                 SessionPlannerWorkspaceSnapshot.Owner.ENCOUNTER,
-                SessionPlannerWorkspaceSnapshot.Kind.MALFORMED_RESPONSE, "", message)));
-    }
-
-    private CompletionStage<RewardCapture> rewardCapture(List<RewardRef> requested) {
-        if (requested.isEmpty()) {
-            return CompletableFuture.completedFuture(new RewardCapture(Map.of(), List.of()));
-        }
-        List<GenerationRewardReference> queryRefs = requested.stream().map(RewardRef::apiReference).toList();
-        CompletionStage<GenerationRewardBatchResponse> stage;
-        try {
-            stage = generation.loadRewards(new GenerationRewardBatchQuery(queryRefs));
-        } catch (RuntimeException failure) {
-            return CompletableFuture.completedFuture(failedRewards(requested, REWARD_FAILURE));
-        }
-        if (stage == null) {
-            return CompletableFuture.completedFuture(failedRewards(requested, REWARD_FAILURE));
-        }
-        return stage.handle((response, failure) -> failure == null
-                ? validateRewards(requested, response)
-                : failedRewards(requested, REWARD_FAILURE));
-    }
-
-    private static RewardCapture validateRewards(
-            List<RewardRef> requested,
-            GenerationRewardBatchResponse response
-    ) {
-        if (response == null || response.status() != GenerationStatus.SUCCESS) {
-            return failedRewards(requested, REWARD_FAILURE);
-        }
-        Map<GenerationRewardReference, RewardRef> requestedByApi = new LinkedHashMap<>();
-        requested.forEach(ref -> requestedByApi.put(ref.apiReference(), ref));
-        Map<RewardRef, SessionPlannerSelectedSceneSnapshot.GeneratedReward> values = new LinkedHashMap<>();
-        Set<GenerationRewardReference> seen = new LinkedHashSet<>();
-        try {
-            for (GenerationRewardBatchResponse.ResolvedReward resolved : response.resolved()) {
-                RewardRef ref = requestedByApi.get(resolved.reference());
-                if (ref == null || !seen.add(resolved.reference()) || !validResolvedReward(resolved)) {
-                    return malformedRewards(requested);
-                }
-                values.put(ref, availableReward(ref, resolved));
-            }
-            for (GenerationRewardReference missing : response.missing()) {
-                RewardRef ref = requestedByApi.get(missing);
-                if (ref == null || !seen.add(missing)) {
-                    return malformedRewards(requested);
-                }
-                values.put(ref, unavailableReward(ref, "Generierte Belohnung fehlt."));
-            }
-        } catch (RuntimeException failure) {
-            return malformedRewards(requested);
-        }
-        if (!seen.equals(requestedByApi.keySet())) {
-            return malformedRewards(requested);
-        }
-        List<SessionPlannerWorkspaceSnapshot.Issue> issues = requested.stream()
-                .filter(ref -> values.get(ref).availability()
-                        == SessionPlannerSelectedSceneSnapshot.Availability.UNAVAILABLE)
-                .map(ref -> issue(SessionPlannerWorkspaceSnapshot.Owner.SESSION_GENERATION,
-                        SessionPlannerWorkspaceSnapshot.Kind.UNAVAILABLE, ref.stableReference(),
-                        "Generierte Belohnung fehlt."))
-                .toList();
-        return new RewardCapture(Map.copyOf(values), issues);
-    }
-
-    private static boolean validResolvedReward(GenerationRewardBatchResponse.ResolvedReward reward) {
-        GenerationResult.Treasure treasure = reward.treasure();
-        if (treasure.treasureId() != reward.reference().treasureId()) {
-            return false;
-        }
-        Set<Integer> lineIds = new LinkedHashSet<>();
-        for (GenerationResult.LootItem line : reward.lootItems()) {
-            if (line.treasureId() != treasure.treasureId() || line.lineId() <= 0 || !lineIds.add(line.lineId())) {
-                return false;
-            }
-        }
-        Set<Integer> packed = new LinkedHashSet<>();
-        for (GenerationResult.Packing packing : reward.packing()) {
-            if (packing.treasureId() != treasure.treasureId()
-                    || !lineIds.contains(packing.lineId()) || !packed.add(packing.lineId())) {
-                return false;
-            }
-        }
-        return packed.equals(lineIds);
-    }
-
-    private static SessionPlannerSelectedSceneSnapshot.GeneratedReward availableReward(
-            RewardRef ref,
-            GenerationRewardBatchResponse.ResolvedReward reward
-    ) {
-        GenerationResult.Treasure treasure = reward.treasure();
-        return new SessionPlannerSelectedSceneSnapshot.GeneratedReward(
-                ref.runId(), ref.treasureId(), SessionPlannerSelectedSceneSnapshot.Availability.AVAILABLE,
-                "", "", treasure.stockClass().name(), treasure.channel().name(),
-                treasure.anchorEncounterNumber(), treasure.theme(), treasure.magicType(), treasure.targetCp(),
-                treasure.nonMagicSlots(), treasure.magicSlots(),
-                reward.lootItems().stream().map(line -> new SessionPlannerSelectedSceneSnapshot.ItemLine(
-                        line.lineId(), line.role().name(), line.itemId(), line.text(), line.quantity(), line.unitCp(),
-                        line.actualCp(), line.totalCapacity(), line.allowedContainers(), line.magicRarity(),
-                        line.cursed())).toList(),
-                reward.packing().stream().map(packing -> new SessionPlannerSelectedSceneSnapshot.Packing(
-                        packing.lineId(), packing.containerType(), packing.containerCount(), packing.containerId(),
-                        packing.valid())).toList());
-    }
-
-    private static SessionPlannerSelectedSceneSnapshot.GeneratedReward unavailableReward(
-            RewardRef ref,
-            String message
-    ) {
-        return new SessionPlannerSelectedSceneSnapshot.GeneratedReward(
-                ref.runId(), ref.treasureId(), SessionPlannerSelectedSceneSnapshot.Availability.UNAVAILABLE,
-                message, ref.fallbackLabel(), "", "", 0, "", "", 0L, 0, 0, List.of(), List.of());
-    }
-
-    private static RewardCapture failedRewards(List<RewardRef> requested, String message) {
-        Map<RewardRef, SessionPlannerSelectedSceneSnapshot.GeneratedReward> values = new LinkedHashMap<>();
-        requested.forEach(ref -> values.put(ref, unavailableReward(ref, message)));
-        return new RewardCapture(Map.copyOf(values), List.of(issue(
-                SessionPlannerWorkspaceSnapshot.Owner.SESSION_GENERATION,
-                SessionPlannerWorkspaceSnapshot.Kind.OWNER_FAILURE, "", message)));
-    }
-
-    private static RewardCapture malformedRewards(List<RewardRef> requested) {
-        String message = "Generierte Belohnungen waren widersprüchlich und wurden verworfen.";
-        Map<RewardRef, SessionPlannerSelectedSceneSnapshot.GeneratedReward> values = new LinkedHashMap<>();
-        requested.forEach(ref -> values.put(ref, unavailableReward(ref, message)));
-        return new RewardCapture(Map.copyOf(values), List.of(issue(
-                SessionPlannerWorkspaceSnapshot.Owner.SESSION_GENERATION,
                 SessionPlannerWorkspaceSnapshot.Kind.MALFORMED_RESPONSE, "", message)));
     }
 
@@ -602,7 +458,6 @@ public final class SessionPlannerWorkspaceAssembler {
             SessionPlan session,
             int scaledBudget,
             Map<Long, EncounterFact> encounters,
-            Map<RewardRef, SessionPlannerSelectedSceneSnapshot.GeneratedReward> rewards,
             List<SessionPlannerSelectedSceneSnapshot.LocationChoice> locations
     ) {
         SessionEncounter selected = selectedScene(session);
@@ -619,10 +474,9 @@ public final class SessionPlannerWorkspaceAssembler {
                 .filter(note -> note.sceneId() == selected.encounterId())
                 .map(note -> new SessionPlannerSelectedSceneSnapshot.ManualLootNote(
                         note.noteId(), note.authoredText())).toList();
-        List<SessionPlannerSelectedSceneSnapshot.GeneratedReward> generated = session.generatedRewards().stream()
+        List<SessionPlannerSelectedSceneSnapshot.GeneratedReward> generated = session.treasures().stream()
                 .filter(reward -> reward.sceneId() == selected.encounterId())
-                .map(RewardRef::from)
-                .map(ref -> rewards.getOrDefault(ref, unavailableReward(ref, REWARD_FAILURE))).toList();
+                .map(SessionPlannerWorkspaceAssembler::treasureProjection).toList();
         return new SessionPlannerSelectedSceneSnapshot(
                 true, selected.encounterId(), selected.sceneTitle(), selected.sceneNotes(), selected.locationId(),
                 locationChoices(selected.locationId(), locations), selected.allocation().budgetPercentage(), targetXp,
@@ -681,13 +535,19 @@ public final class SessionPlannerWorkspaceAssembler {
         return List.copyOf(ids);
     }
 
-    private static List<RewardRef> rewardReferences(SessionPlan session, long selectedSceneToken) {
-        LinkedHashMap<String, RewardRef> unique = new LinkedHashMap<>();
-        session.generatedRewards().stream()
-                .filter(reward -> reward.sceneId() == selectedSceneToken)
-                .map(RewardRef::from)
-                .forEach(ref -> unique.putIfAbsent(ref.stableReference(), ref));
-        return List.copyOf(unique.values());
+    private static SessionPlannerSelectedSceneSnapshot.GeneratedReward treasureProjection(SessionTreasure treasure) {
+        return new SessionPlannerSelectedSceneSnapshot.GeneratedReward(
+                Math.toIntExact(treasure.treasureId()), treasure.title(), treasure.note(),
+                treasure.stockClass(), treasure.channel(),
+                treasure.theme(), treasure.magicType(), treasure.targetCp(), treasure.nonMagicSlots(),
+                treasure.magicSlots(), treasure.items().stream().map(item ->
+                        new SessionPlannerSelectedSceneSnapshot.ItemLine(
+                                Math.toIntExact(item.lineId()), item.role(), item.itemId(), item.text(), item.quantity(),
+                                item.unitCp(), item.actualCp(), item.totalCapacity(), item.allowedContainers(),
+                                item.magicRarity(), item.cursed())).toList(),
+                treasure.packing().stream().map(row -> new SessionPlannerSelectedSceneSnapshot.Packing(
+                        Math.toIntExact(row.lineId()), row.containerType(), row.containerCount(), row.containerId(),
+                        row.valid())).toList());
     }
 
     private static SessionPlannerRestKind restKind(
@@ -736,16 +596,6 @@ public final class SessionPlannerWorkspaceAssembler {
     ) {
         private EncounterCapture {
             byId = Map.copyOf(byId);
-            issues = List.copyOf(issues);
-        }
-    }
-
-    private record RewardCapture(
-            Map<RewardRef, SessionPlannerSelectedSceneSnapshot.GeneratedReward> byReference,
-            List<SessionPlannerWorkspaceSnapshot.Issue> issues
-    ) {
-        private RewardCapture {
-            byReference = Map.copyOf(byReference);
             issues = List.copyOf(issues);
         }
     }
@@ -800,22 +650,4 @@ public final class SessionPlannerWorkspaceAssembler {
         }
     }
 
-    private record RewardRef(
-            String runId,
-            int treasureId,
-            String fallbackLabel
-    ) {
-        private static RewardRef from(SessionGeneratedRewardReference reference) {
-            return new RewardRef(
-                    reference.generationId(), Math.toIntExact(reference.treasureId()), reference.lastKnownLabel());
-        }
-
-        private GenerationRewardReference apiReference() {
-            return new GenerationRewardReference(new GenerationRunId(runId), treasureId);
-        }
-
-        private String stableReference() {
-            return runId + ":" + treasureId;
-        }
-    }
 }

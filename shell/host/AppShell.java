@@ -13,6 +13,7 @@ import shell.api.ShellBinding;
 import shell.api.ShellStateTabSpec;
 import shell.api.ShellLeftBarTabSpec;
 import shell.api.ShellTopBarSpec;
+import shell.api.StateTabSink;
 
 /**
  * Main application shell: global top bar, left-bar tabs, shared inspector, and shared state tabs.
@@ -40,6 +41,10 @@ public final class AppShell extends BorderPane {
 
     public InspectorSink inspector() {
         return workspace.inspectorPane();
+    }
+
+    public StateTabSink stateTabs() {
+        return workspace.stateTabPane();
     }
 
     public void registerLeftBarTab(ShellLeftBarTabSpec registrationSpec, ShellBinding binding) {

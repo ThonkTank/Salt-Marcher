@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import features.sessionplanner.adapter.sqlite.model.SessionEncounterRecord;
-import features.sessionplanner.adapter.sqlite.model.SessionGeneratedRewardRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionTreasureRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionTreasureItemRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionTreasurePackingRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionManualLootNoteRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionParticipantRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionPlanRecord;
@@ -13,7 +15,7 @@ import features.sessionplanner.adapter.sqlite.model.SessionRestPlacementRecord;
 import features.sessionplanner.domain.session.EncounterDays;
 import features.sessionplanner.domain.session.SessionEncounter;
 import features.sessionplanner.domain.session.SessionEncounterAllocation;
-import features.sessionplanner.domain.session.SessionGeneratedRewardReference;
+import features.sessionplanner.domain.session.SessionTreasure;
 import features.sessionplanner.domain.session.SessionManualLootNote;
 import features.sessionplanner.domain.session.SessionPlan;
 import features.sessionplanner.domain.session.SessionRevision;
@@ -39,7 +41,9 @@ public final class SessionPlanMapper {
                 toEncounterRecords(plan),
                 toRestRecords(plan),
                 toManualLootNoteRecords(plan),
-                toGeneratedRewardRecords(plan));
+                toTreasureRecords(plan),
+                toTreasureItemRecords(plan),
+                toTreasurePackingRecords(plan));
     }
 
     public static SessionPlan toDomain(SessionPlanSnapshotRecord snapshot) {
@@ -69,13 +73,7 @@ public final class SessionPlanMapper {
                                 record.restKind()))
                         .toList(),
                 toDomainManualLootNotes(snapshot.manualLootNotes()),
-                snapshot.generatedRewards().stream()
-                        .map(record -> new SessionGeneratedRewardReference(
-                                record.sceneId(),
-                                record.generationId(),
-                                record.treasureId(),
-                                record.lastKnownLabel()))
-                        .toList(),
+                toDomainTreasures(snapshot.treasures(), snapshot.treasureItems(), snapshot.treasurePacking()),
                 plan.selectedEncounterId(),
                 plan.statusText(),
                 plan.nextEncounterId(),
@@ -115,13 +113,61 @@ public final class SessionPlanMapper {
                 index));
     }
 
-    private static List<SessionGeneratedRewardRecord> toGeneratedRewardRecords(SessionPlan plan) {
-        return mapIndexed(plan.generatedRewards(), (reward, index) -> new SessionGeneratedRewardRecord(
-                reward.sceneId(),
-                reward.generationId(),
-                reward.treasureId(),
-                reward.lastKnownLabel(),
-                index));
+    private static List<SessionTreasureRecord> toTreasureRecords(SessionPlan plan) {
+        return mapIndexed(plan.treasures(), (treasure, index) -> new SessionTreasureRecord(
+                treasure.treasureId(), treasure.sceneId(), treasure.title(), treasure.note(),
+                treasure.stockClass(), treasure.channel(), treasure.theme(), treasure.magicType(),
+                treasure.targetCp(), treasure.nonMagicSlots(), treasure.magicSlots(), index));
+    }
+
+    private static List<SessionTreasureItemRecord> toTreasureItemRecords(SessionPlan plan) {
+        List<SessionTreasureItemRecord> records = new ArrayList<>();
+        for (SessionTreasure treasure : plan.treasures()) {
+            for (int index = 0; index < treasure.items().size(); index++) {
+                SessionTreasure.Item item = treasure.items().get(index);
+                records.add(new SessionTreasureItemRecord(
+                        treasure.treasureId(), item.lineId(), item.role(), item.itemId(), item.text(), item.quantity(),
+                        item.unitCp(), item.actualCp(), item.totalCapacity().toPlainString(), item.allowedContainers(),
+                        item.magicRarity(), item.cursed(), index));
+            }
+        }
+        return List.copyOf(records);
+    }
+
+    private static List<SessionTreasurePackingRecord> toTreasurePackingRecords(SessionPlan plan) {
+        List<SessionTreasurePackingRecord> records = new ArrayList<>();
+        for (SessionTreasure treasure : plan.treasures()) {
+            for (int index = 0; index < treasure.packing().size(); index++) {
+                SessionTreasure.Packing row = treasure.packing().get(index);
+                records.add(new SessionTreasurePackingRecord(
+                        treasure.treasureId(), row.lineId(), row.containerType(), row.containerCount(),
+                        row.containerId(), row.valid(), index));
+            }
+        }
+        return List.copyOf(records);
+    }
+
+    private static List<SessionTreasure> toDomainTreasures(
+            List<SessionTreasureRecord> treasures,
+            List<SessionTreasureItemRecord> items,
+            List<SessionTreasurePackingRecord> packing
+    ) {
+        return treasures.stream().map(treasure -> {
+            List<SessionTreasureItemRecord> lines = items.stream()
+                    .filter(item -> item.treasureId() == treasure.treasureId()).toList();
+            return new SessionTreasure(
+                    treasure.treasureId(), treasure.sceneId(), treasure.title(), treasure.note(),
+                    treasure.stockClass(), treasure.channel(), treasure.theme(), treasure.magicType(),
+                    treasure.targetCp(), treasure.nonMagicSlots(), treasure.magicSlots(),
+                    lines.stream().map(item -> new SessionTreasure.Item(
+                            item.lineId(), item.role(), item.itemId(), item.text(), item.quantity(), item.unitCp(),
+                            item.actualCp(), parseDecimal(item.totalCapacity()), item.allowedContainers(),
+                            item.magicRarity(), item.cursed())).toList(),
+                    packing.stream().filter(row -> row.treasureId() == treasure.treasureId())
+                            .map(row -> new SessionTreasure.Packing(
+                                    row.lineId(), row.containerType(), row.containerCount(), row.containerId(),
+                                    row.valid())).toList());
+        }).toList();
     }
 
     private static List<SessionManualLootNote> toDomainManualLootNotes(

@@ -23,7 +23,7 @@ import features.sessionplanner.api.AttachSessionEncounterCommand;
 import features.sessionplanner.domain.session.EncounterDays;
 import features.sessionplanner.domain.session.SessionEncounter;
 import features.sessionplanner.domain.session.SessionEncounterAllocation;
-import features.sessionplanner.domain.session.SessionGeneratedRewardReference;
+import features.sessionplanner.domain.session.SessionTreasure;
 import features.sessionplanner.domain.session.SessionPlan;
 import java.math.BigDecimal;
 import java.nio.file.Path;
@@ -44,9 +44,8 @@ import platform.ui.DirectUiDispatcher;
 /** Production SQLite qualification for every variable-cardinality workspace owner. */
 final class SessionPlannerWorkspaceCardinalityProductionRouteTest {
 
-    private static final int WORKSPACE_STATEMENT_FAMILIES = 7;
+    private static final int WORKSPACE_STATEMENT_FAMILIES = 9;
     private static final int ENCOUNTER_SUMMARY_STATEMENTS = 6;
-    private static final int REWARD_STATEMENTS = 5;
 
     @TempDir
     Path temporaryDirectory;
@@ -61,7 +60,6 @@ final class SessionPlannerWorkspaceCardinalityProductionRouteTest {
                 workspacePlan(1L, 1, 1, 1), workspacePlan(2L, 1, 1, 401),
                 workspacePlan(3L, 1, 1, 800)));
         qualifySavedPlansAndRosterMembers();
-        qualifyGenerationRewards();
     }
 
     private void qualifyWorkspaceDimension(String dimension, List<SessionPlan> variants) {
@@ -78,7 +76,7 @@ final class SessionPlannerWorkspaceCardinalityProductionRouteTest {
                 Measurement assembly = diagnostics.last("sessionplanner.workspace.assembly");
                 assertEquals(WORKSPACE_STATEMENT_FAMILIES, assembly.queryCount(), dimension);
                 assertEquals(variant.sessionId(), route.planner.workspaceModel().current().sourceSessionId(), dimension);
-                assertWorkspaceOwnerFamilies(diagnostics, variant.generatedRewards().size());
+                assertWorkspaceOwnerFamilies(diagnostics);
                 if (dimension.equals("participants")) {
                     Measurement rosterRead = diagnostics.last("party.sqlite.roster-read");
                     assertEquals(partyCount, rosterRead.cardinality(), dimension);
@@ -147,32 +145,12 @@ final class SessionPlannerWorkspaceCardinalityProductionRouteTest {
         }
     }
 
-    private void qualifyGenerationRewards() {
-        for (int cardinality : List.of(1, 401, 800)) {
-            Path variantPath = temporaryDirectory.resolve("reward-cardinality-" + cardinality + ".sqlite");
-            RecordingDiagnostics variantDiagnostics = new RecordingDiagnostics();
-            try (ProductionRoute route = ProductionRoute.open(variantPath, variantDiagnostics, 1, 1)) {
-                variantDiagnostics.clear();
-                SessionPlan variant = workspacePlan(cardinality, 1, 1, cardinality);
-                route.sessions.insert(variant);
-                route.sessions.setCurrentSessionId(cardinality);
-                initializeDirect(route);
-                Measurement measurement = variantDiagnostics.last("sessiongeneration.reward.read");
-                assertEquals(cardinality, measurement.cardinality());
-                assertEquals(REWARD_STATEMENTS, measurement.queryCount(), "reward cardinality=" + cardinality);
-                assertWorkspaceOwnerFamilies(variantDiagnostics, cardinality);
-            }
-        }
-    }
-
-    private static void assertWorkspaceOwnerFamilies(RecordingDiagnostics diagnostics, int rewardCardinality) {
+    private static void assertWorkspaceOwnerFamilies(RecordingDiagnostics diagnostics) {
         assertEquals(WORKSPACE_STATEMENT_FAMILIES,
                 diagnostics.last("sessionplanner.workspace.assembly").queryCount());
         assertEquals(2, diagnostics.last("party.sqlite.roster-read").queryCount());
         assertEquals(0, diagnostics.last("party.planning-facts.read").queryCount());
-        Measurement rewardRead = diagnostics.last("sessiongeneration.reward.read");
-        assertEquals(rewardCardinality, rewardRead.cardinality());
-        assertEquals(REWARD_STATEMENTS, rewardRead.queryCount());
+        assertEquals(0, diagnostics.byId("sessiongeneration.reward.read").size());
         assertEquals(0, diagnostics.byId("encounter.saved-plan-search.read").size());
         assertEquals(0, diagnostics.byId("encounter.saved-plan-summary.read").size());
         assertEquals(0, diagnostics.byId("creatures.sqlite.facts-read").size());
@@ -195,9 +173,10 @@ final class SessionPlannerWorkspaceCardinalityProductionRouteTest {
             scenes.add(new SessionEncounter(scene, 0L, new SessionEncounterAllocation(BigDecimal.ZERO),
                     "Scene " + scene, "", 0L));
         }
-        List<SessionGeneratedRewardReference> rewards = new ArrayList<>(rewardCount);
+        List<SessionTreasure> rewards = new ArrayList<>(rewardCount);
         for (long reward = 1L; reward <= rewardCount; reward++) {
-            rewards.add(new SessionGeneratedRewardReference(1L, "run", reward, "Reward " + reward));
+            rewards.add(new SessionTreasure(reward, 1L, "Reward " + reward, "", "", "", "", "",
+                    0L, 0, 0, List.of(), List.of()));
         }
         return new SessionPlan(id, null, "Session " + id, participants, EncounterDays.one(), scenes,
                 List.of(), List.of(), rewards, 1L, "", sceneCount + 1L, 1L);

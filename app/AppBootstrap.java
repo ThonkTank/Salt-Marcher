@@ -19,6 +19,7 @@ import features.scene.SceneFeature;
 import features.sessiongeneration.SessionGenerationServiceAssembly;
 import features.sessiongeneration.api.SessionGenerationApi;
 import features.sessionplanner.SessionPlannerServiceAssembly;
+import features.sessionplanner.api.SessionPlannerRoutes;
 import features.travel.TravelFeature;
 import features.worldplanner.WorldPlannerServiceAssembly;
 
@@ -39,6 +40,7 @@ import shell.api.ShellContributionSpec;
 import shell.api.ShellLeftBarTabSpec;
 import shell.api.ShellStateTabSpec;
 import shell.api.ShellTopBarSpec;
+import shell.api.ContributionKey;
 import shell.host.AppShell;
 
 import java.util.ArrayList;
@@ -258,7 +260,57 @@ public final class AppBootstrap implements AutoCloseable {
                 dungeon.editorContribution(),
                 dungeon.travelContribution(),
                 hex.mapContribution(),
-                session.contribution(),
+                session.contribution(new SessionPlannerRoutes() {
+                    @Override
+                    public void editEncounter(long planId) {
+                        encounter.application().openSavedPlan(new OpenSavedEncounterPlanCommand(planId, false))
+                                .whenComplete((result, failure) -> uiDispatcher.dispatch(() -> {
+                                    if (failure == null && result != null
+                                            && result.status() == features.encounter.api.OpenSavedEncounterPlanResult.Status.CONFIRMATION_REQUIRED) {
+                                        javafx.scene.control.Alert confirmation = new javafx.scene.control.Alert(
+                                                javafx.scene.control.Alert.AlertType.CONFIRMATION,
+                                                result.message(), javafx.scene.control.ButtonType.OK,
+                                                javafx.scene.control.ButtonType.CANCEL);
+                                        confirmation.setHeaderText("Encounter wechseln");
+                                        if (confirmation.showAndWait().orElse(javafx.scene.control.ButtonType.CANCEL)
+                                                == javafx.scene.control.ButtonType.OK) {
+                                            encounter.application().openSavedPlan(
+                                                    new OpenSavedEncounterPlanCommand(planId, true));
+                                        }
+                                    }
+                                    shell.stateTabs().activate(new ContributionKey("encounter"));
+                                }));
+                    }
+
+                    @Override public void inspectCreature(long creatureId) {
+                        creatures.openInspector(inspector, creatureId);
+                    }
+
+                    @Override public void inspectItem(String itemId) {
+                        items.catalog().loadDetail(itemId).whenComplete((result, failure) -> {
+                            if (failure == null && result != null && result.detail() != null) {
+                                uiDispatcher.dispatch(() -> items.openInspector(inspector, result.detail()));
+                            }
+                        });
+                    }
+
+                    @Override public void inspectLocation(long locationId) {
+                        world.openLocationInspector(
+                                locationId, worldEncounter, creatures.referenceIndex(), tables.catalog(), inspector);
+                    }
+
+                    @Override
+                    public java.util.concurrent.CompletionStage<java.util.List<SessionPlannerRoutes.ItemChoice>>
+                            searchItems(String query) {
+                        return items.catalog().search(new features.items.api.ItemsCatalogApi.ItemQuery(
+                                query, null, null, null, null, null, null, null,
+                                features.items.api.ItemsCatalogApi.SortField.NAME, true, 12, 0))
+                                .thenApply(result -> result.rows().stream().map(row ->
+                                        new SessionPlannerRoutes.ItemChoice(
+                                                row.sourceKey(), row.name(), row.costCp() == null ? 0L : row.costCp(),
+                                                row.rarity())).toList());
+                    }
+                }),
                 scene.contribution(creatureId -> creatures.openInspector(inspector, creatureId)),
                 encounter.stateContribution(
                         creatures.application(), world.application(),

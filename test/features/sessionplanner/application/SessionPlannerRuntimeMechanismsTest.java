@@ -618,7 +618,7 @@ final class SessionPlannerRuntimeMechanismsTest {
             SessionPlan committed = new SessionPlan(
                     sessionPlan.sessionId(), sessionPlan.revision().next(), sessionPlan.displayName(),
                     sessionPlan.participantRefs(), sessionPlan.encounterDays(), sessionPlan.encounters(),
-                    sessionPlan.restPlacements(), sessionPlan.manualLootNotes(), sessionPlan.generatedRewards(),
+                    sessionPlan.restPlacements(), sessionPlan.manualLootNotes(), sessionPlan.treasures(),
                     sessionPlan.selectedEncounterId(), sessionPlan.statusText(), sessionPlan.nextEncounterId(),
                     sessionPlan.nextLootId());
             if (current != null && current.sessionId() == committed.sessionId()) {

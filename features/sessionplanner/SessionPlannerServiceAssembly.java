@@ -6,6 +6,7 @@ import features.party.api.PartyApi;
 import features.sessiongeneration.api.SessionGenerationApi;
 import features.sessionplanner.adapter.javafx.SessionPlannerContribution;
 import features.sessionplanner.adapter.javafx.SessionPlannerWorkspaceApplyObservation;
+import features.sessionplanner.api.SessionPlannerRoutes;
 import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
 import features.sessionplanner.api.PreparedSceneCatalogModel;
 import features.sessionplanner.api.SessionPlannerApi;
@@ -87,7 +88,7 @@ public final class SessionPlannerServiceAssembly {
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
                 Objects.requireNonNull(workspaceSource, "workspaceSource"), safeParty, safeEncounters,
-                Objects.requireNonNull(generation, "generation"), worldPlanner, ioLane, diagnostics);
+                worldPlanner, ioLane, diagnostics);
         SessionPlannerWorkspacePublicationCoordinator publication =
                 new SessionPlannerWorkspacePublicationCoordinator(
                         assembler, safeEncounters, Objects.requireNonNull(uiDispatcher, "uiDispatcher"),
@@ -104,7 +105,7 @@ public final class SessionPlannerServiceAssembly {
                 authoredLane,
                 diagnostics);
         SessionPlannerApplicationService application = new SessionPlannerApplicationService(
-                safeRepository, publication, preparation, authoredLane, diagnostics);
+                safeRepository, publication, preparation, safeEncounters, authoredLane, diagnostics);
         safeParty.activeParty().subscribe(ignored -> application.refreshPartyFacts());
         safeSavedPlans.subscribe(ignored -> application.refreshForeignFacts());
         if (worldPlanner != null) {
@@ -132,6 +133,17 @@ public final class SessionPlannerServiceAssembly {
     public ShellContribution contribution(
             java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> observer
     ) {
+        return contribution(observer, SessionPlannerRoutes.none());
+    }
+
+    public ShellContribution contribution(SessionPlannerRoutes routes) {
+        return contribution(ignored -> { }, routes);
+    }
+
+    public ShellContribution contribution(
+            java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> observer,
+            SessionPlannerRoutes routes
+    ) {
         java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> safeObserver =
                 Objects.requireNonNull(observer, "observer");
         return new SessionPlannerContribution(runtime.applicationService(), workspaceModel(), observation -> {
@@ -142,7 +154,7 @@ public final class SessionPlannerServiceAssembly {
                     observation.materializedUnitCount(),
                     0));
             safeObserver.accept(observation);
-        });
+        }, Objects.requireNonNull(routes, "routes"));
     }
 
     private record Runtime(

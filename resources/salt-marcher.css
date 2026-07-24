@@ -1556,6 +1556,31 @@
 .session-planner-main {
     -fx-background-color: transparent;
 }
+.session-planner-workspace {
+    -fx-padding: 10;
+    -fx-background-color: #12181c;
+}
+.session-planner-timeline-scroll,
+.session-planner-detail-scroll,
+.session-planner-timeline-scroll > .viewport,
+.session-planner-detail-scroll > .viewport {
+    -fx-background-color: #1a2025;
+}
+.session-planner-timeline-scroll,
+.session-planner-detail-scroll {
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+.session-planner-timeline-column,
+.session-planner-detail-column {
+    -fx-padding: 12;
+}
+.session-planner-column-kicker {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sm-muted;
+}
 .session-planner-status {
     -fx-padding: 0 0 4 0;
 }
@@ -1589,12 +1614,14 @@
     -fx-padding: 8 10 8 10;
 }
 .session-planner-selected-scene-inspector {
-    -fx-padding: 10 12 12 20;
-    -fx-background-color: rgba(30, 127, 212, 0.055);
-    -fx-border-color: derive(-sm-accent, -45%);
+    -fx-padding: 12;
+    -fx-background-color: #232b2f;
+    -fx-border-color: -sm-border-subtle;
 }
 .session-planner-scene-header {
-    -fx-padding: 6 10 6 10;
+    -fx-padding: 8 10 8 14;
+    -fx-border-width: 0 0 0 3;
+    -fx-border-color: -sm-accent;
 }
 .session-planner-encounter-header {
     -fx-cursor: hand;
@@ -1622,7 +1649,10 @@
     -fx-border-radius: 5;
 }
 .session-planner-roster-line {
-    -fx-padding: 1 0 1 10;
+    -fx-padding: 5 8 5 8;
+    -fx-alignment: center-left;
+    -fx-background-color: rgba(255, 255, 255, 0.045);
+    -fx-background-radius: 5;
 }
 .session-planner-generated-reward {
     -fx-padding: 8;
@@ -1631,8 +1661,12 @@
     -fx-border-color: derive(-sm-accent, -25%);
     -fx-border-radius: 6;
 }
-.session-planner-state-compact {
-    -fx-padding: 10;
+.session-planner-reward-item-row {
+    -fx-padding: 6 8 6 8;
+    -fx-alignment: center-left;
+    -fx-text-alignment: left;
+    -fx-background-color: rgba(255, 255, 255, 0.05);
+    -fx-background-radius: 5;
 }
 .world-planner-controls,
 .world-planner-main,

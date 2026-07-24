@@ -25,7 +25,7 @@ public record SessionPlannerSelectedSceneSnapshot(
         String linkedEncounterStatus,
         List<EncounterRosterLine> linkedEncounterRoster,
         List<ManualLootNote> manualLootNotes,
-        List<GeneratedReward> generatedRewards,
+        List<GeneratedReward> treasures,
         SessionEncounterPlanSearchSnapshot encounterPlanSearch
 ) {
     public SessionPlannerSelectedSceneSnapshot {
@@ -47,11 +47,11 @@ public record SessionPlannerSelectedSceneSnapshot(
         linkedEncounterStatus = text(linkedEncounterStatus);
         linkedEncounterRoster = copy(linkedEncounterRoster);
         manualLootNotes = copy(manualLootNotes);
-        generatedRewards = copy(generatedRewards);
+        treasures = copy(treasures);
         encounterPlanSearch = encounterPlanSearch == null
                 ? SessionEncounterPlanSearchSnapshot.idle() : encounterPlanSearch;
         if (!available && (sceneToken != 0L || !linkedEncounterRoster.isEmpty()
-                || !manualLootNotes.isEmpty() || !generatedRewards.isEmpty())) {
+                || !manualLootNotes.isEmpty() || !treasures.isEmpty())) {
             throw new IllegalArgumentException("unavailable selected scene cannot carry detail");
         }
     }
@@ -72,7 +72,7 @@ public record SessionPlannerSelectedSceneSnapshot(
                 linkedEncounterName, linkedEncounterGeneratedLabel, linkedEncounterCreatureCount,
                 linkedEncounterTotalBaseXp, linkedEncounterAdjustedXp, linkedEncounterXpMultiplier,
                 linkedEncounterDifficultyLabel, linkedEncounterStatus, linkedEncounterRoster,
-                manualLootNotes, generatedRewards, search);
+                manualLootNotes, treasures, search);
     }
 
     public record LocationChoice(long locationId, String displayName) {
@@ -99,31 +99,25 @@ public record SessionPlannerSelectedSceneSnapshot(
     }
 
     public record GeneratedReward(
-            String generationRunId,
             int treasureId,
-            Availability availability,
-            String statusText,
-            String fallbackLabel,
+            String title,
+            String note,
             String stockClass,
             String channel,
-            int anchorEncounterNumber,
             String theme,
             String magicType,
             long targetCp,
             int nonMagicSlots,
             int magicSlots,
             List<ItemLine> itemLines,
-            List<Packing> packing
+        List<Packing> packing
     ) {
         public GeneratedReward {
-            generationRunId = text(generationRunId);
             treasureId = Math.max(0, treasureId);
-            availability = availability == null ? Availability.UNAVAILABLE : availability;
-            statusText = text(statusText);
-            fallbackLabel = availability == Availability.AVAILABLE ? "" : text(fallbackLabel);
+            title = text(title);
+            note = text(note);
             stockClass = text(stockClass);
             channel = text(channel);
-            anchorEncounterNumber = Math.max(0, anchorEncounterNumber);
             theme = text(theme);
             magicType = text(magicType);
             targetCp = Math.max(0L, targetCp);
@@ -131,22 +125,20 @@ public record SessionPlannerSelectedSceneSnapshot(
             magicSlots = Math.max(0, magicSlots);
             itemLines = copy(itemLines);
             packing = copy(packing);
-            if (availability == Availability.AVAILABLE
-                    && (generationRunId.isBlank() || treasureId <= 0 || channel.isBlank())) {
-                throw new IllegalArgumentException("available generated reward is incomplete");
+            if (treasureId <= 0) {
+                throw new IllegalArgumentException("treasure is incomplete");
             }
         }
 
         public String displayLabel() {
-            if (availability == Availability.UNAVAILABLE) {
-                return fallbackLabel.isBlank() ? "Generierte Belohnung nicht verfügbar" : fallbackLabel;
+            if (!title.isBlank()) {
+                return title;
             }
-            String themed = theme.isBlank() ? "Generierte Belohnung" : theme;
+            String themed = theme.isBlank() ? "Schatz" : theme;
             return channel + " · " + themed + " · " + itemLines.size() + " Positionen";
         }
-    }
 
-    public enum Availability { AVAILABLE, UNAVAILABLE }
+    }
 
     public record ItemLine(
             int lineId, String role, String itemId, String text, long quantity,
