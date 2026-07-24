@@ -68,6 +68,19 @@ reported no blocker, major, or minor finding and confirmed unchanged candidate
 HEAD and tracked tree. Store separation, activation coordination, the visible
 journey, desktop acceptance, and merge qualification remain open.
 
+## Accepted Store-Lifetime Checkpoint
+
+Commit `df4d42071` separates the installation registry and reusable-definition
+stores from Campaign-owned stores and gives each Campaign fresh components,
+published state, UI dispatch, admitted lanes, and database ownership. The
+default compatibility route continues to read existing `game.db` definitions
+until migration receives its separate rehearsal and approval; the explicit
+two-path production seam proves physical separation without touching real
+data. Literal `./gradlew check` passed in 6m 46s. A fresh independent replay
+with build cache disabled executed 46 selected tests in 1m 20s with 0 failures,
+errors, or skips, unchanged HEAD/tree, and no blocker, major, or minor finding.
+Activation coordination and the visible switch journey remain open.
+
 ## Aletheia B Process Candidate
 
 Concurrent `clean test` invocations in this shared worktree demonstrably raced
@@ -107,6 +120,28 @@ The candidate lock intervals did not overlap, but neither the historical
 shared-output race nor any JUnit semantics ran. The four-invocation budget was
 exhausted and rollback removed the external lock and isolated worktree cleanly.
 `A-0.3.0` and this slice's pin therefore remain unchanged.
+
+### Queued Causal-Oracle Candidate
+
+After the inconclusive concurrency trial, compare `A-0.3.0` with one candidate
+that adds exactly one checkpoint rule: the acceptance-deciding oracle receives
+one disposable causal negative control, which must make that proof fail or
+become inconclusive before the unchanged positive route may pass. Freeze the
+historical Campaign-fence workload where a no-op `initialize()` and an
+unadmitted Party hydration tail could both appear green in isolation but the
+full suite timed out. The candidate substitutes the known no-op root and holds
+the transitive hydration tail separately, then replays the repaired
+`createSession("post-resume")` route with the production-equivalent admitted
+lane. Limit the trial to one additional focused invocation and 10 minutes in an
+isolated, Gradle-capable worktree.
+
+Adopt only if the negative controls reject both false proofs, the repaired
+positive route remains green, severe-finding detection and product acceptance
+are unchanged, and rollback is clean. Reject false rejection or candidate-
+attributed regression; non-comparable execution is `inconclusive`. This is a
+reversible one-checkpoint canary. Aletheia B supplies the comparison but cannot
+evaluate or approve it; no process version or slice pin changes before an
+independent verdict.
 
 ## Frozen Exit Replay
 
