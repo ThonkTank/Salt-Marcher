@@ -144,7 +144,7 @@ final class SceneContributionTest {
                 () -> world, ignored -> () -> { },
                 listener -> { listener.accept(world); return () -> { }; });
         PreparedSceneCatalogModel prepared = new PreparedSceneCatalogModel(
-                PreparedSceneCatalogSnapshot::empty, ignored -> { });
+                PreparedSceneCatalogSnapshot::empty, ignored -> () -> { });
         EncounterRuntimeContextApi encounters = command -> CompletableFuture.completedFuture(
                 new EncounterRuntimeContextSyncResult(
                         EncounterRuntimeContextSyncResult.Status.APPLIED,

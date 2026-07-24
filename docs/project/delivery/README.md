@@ -21,7 +21,9 @@ temporary process owners are:
 
 ## Active Migrations
 
-There are no active migration roadmaps.
+- [Campaign Runtime Slice](campaign-runtime/README.md) -- name-only Campaign
+  creation, isolated runtime ownership, immediate switching, and exact resume
+  for [#557](https://github.com/ThonkTank/Salt-Marcher/issues/557).
 
 Each delivery owner is temporary and is removed after its own finish criteria
 are met. Durable decisions remain in the linked product owner documents.

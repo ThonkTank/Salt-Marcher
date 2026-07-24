@@ -16,6 +16,8 @@ public final class SessionPlannerContribution implements ShellContribution {
 
     private final SessionPlannerApi planner;
     private final SessionPlannerWorkspaceModel workspace;
+    private final boolean generationAvailable;
+    private final String generationAvailabilityMessage;
     private final java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> workspaceApplied;
 
     public SessionPlannerContribution(
@@ -23,8 +25,20 @@ public final class SessionPlannerContribution implements ShellContribution {
             SessionPlannerWorkspaceModel workspace,
             java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> workspaceApplied
     ) {
+        this(planner, workspace, true, "", workspaceApplied);
+    }
+
+    public SessionPlannerContribution(
+            SessionPlannerApi planner,
+            SessionPlannerWorkspaceModel workspace,
+            boolean generationAvailable,
+            String generationAvailabilityMessage,
+            java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> workspaceApplied
+    ) {
         this.planner = Objects.requireNonNull(planner, "planner");
         this.workspace = Objects.requireNonNull(workspace, "workspace");
+        this.generationAvailable = generationAvailable;
+        this.generationAvailabilityMessage = Objects.requireNonNullElse(generationAvailabilityMessage, "");
         this.workspaceApplied = Objects.requireNonNull(workspaceApplied, "workspaceApplied");
     }
 
@@ -41,6 +55,7 @@ public final class SessionPlannerContribution implements ShellContribution {
 
     @Override
     public ShellBinding bind() {
-        return new SessionPlannerBinder(planner, workspace, workspaceApplied).bind();
+        return new SessionPlannerBinder(
+                planner, workspace, generationAvailable, generationAvailabilityMessage, workspaceApplied).bind();
     }
 }

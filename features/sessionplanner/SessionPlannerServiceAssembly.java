@@ -30,13 +30,19 @@ import shell.api.ShellContribution;
 
 import java.util.Objects;
 
-public final class SessionPlannerServiceAssembly {
+public final class SessionPlannerServiceAssembly implements AutoCloseable {
 
     private static final DiagnosticId JAVAFX_APPLY =
             new DiagnosticId("sessionplanner.javafx.workspace-apply");
+    private static final String GENERATION_UNAVAILABLE_MESSAGE =
+            "Automatische Generierung ist nicht verfügbar; manuelle Session-Planung bleibt möglich.";
 
     private final Runtime runtime;
     private final Diagnostics diagnostics;
+    private final SessionGenerationApi generation;
+    private final java.util.List<Runnable> foreignSubscriptions;
+    private final java.util.concurrent.atomic.AtomicBoolean closed =
+            new java.util.concurrent.atomic.AtomicBoolean();
 
     public static FeatureStoreDefinition storeDefinition() {
         return SqliteSessionPlanRepository.storeDefinition();
@@ -85,9 +91,10 @@ public final class SessionPlannerServiceAssembly {
         ExecutionLane cpuLane = Objects.requireNonNull(preparationCpuLane, "preparationCpuLane");
         ExecutionLane ioLane = Objects.requireNonNull(preparationIoLane, "preparationIoLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
+        this.generation = Objects.requireNonNull(generation, "generation");
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
                 Objects.requireNonNull(workspaceSource, "workspaceSource"), safeParty, safeEncounters,
-                Objects.requireNonNull(generation, "generation"), worldPlanner, ioLane, diagnostics);
+                this.generation, worldPlanner, ioLane, diagnostics);
         SessionPlannerWorkspacePublicationCoordinator publication =
                 new SessionPlannerWorkspacePublicationCoordinator(
                         assembler, safeEncounters, Objects.requireNonNull(uiDispatcher, "uiDispatcher"),
@@ -97,7 +104,7 @@ public final class SessionPlannerServiceAssembly {
                 Objects.requireNonNull(preparedSessions, "preparedSessions"),
                 safeParty,
                 publication,
-                generation,
+                this.generation,
                 safeEncounters,
                 cpuLane,
                 ioLane,
@@ -105,11 +112,16 @@ public final class SessionPlannerServiceAssembly {
                 diagnostics);
         SessionPlannerApplicationService application = new SessionPlannerApplicationService(
                 safeRepository, publication, preparation, authoredLane, diagnostics);
-        safeParty.activeParty().subscribe(ignored -> application.refreshPartyFacts());
-        safeSavedPlans.subscribe(ignored -> application.refreshForeignFacts());
+        java.util.ArrayList<Runnable> subscriptions = new java.util.ArrayList<>();
+        subscriptions.add(safeParty.activeParty().subscribe(
+                ignored -> runWhileOpen(application::refreshPartyFacts)));
+        subscriptions.add(safeSavedPlans.subscribe(
+                ignored -> runWhileOpen(application::refreshForeignFacts)));
         if (worldPlanner != null) {
-            worldPlanner.subscribe(ignored -> application.refreshForeignFacts());
+            subscriptions.add(worldPlanner.subscribe(
+                    ignored -> runWhileOpen(application::refreshForeignFacts)));
         }
+        foreignSubscriptions = java.util.List.copyOf(subscriptions);
         runtime = new Runtime(publication, application);
     }
 
@@ -134,7 +146,11 @@ public final class SessionPlannerServiceAssembly {
     ) {
         java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> safeObserver =
                 Objects.requireNonNull(observer, "observer");
-        return new SessionPlannerContribution(runtime.applicationService(), workspaceModel(), observation -> {
+        return new SessionPlannerContribution(
+                runtime.applicationService(), workspaceModel(),
+                generation.available(),
+                generation.available() ? "" : GENERATION_UNAVAILABLE_MESSAGE,
+                observation -> {
             diagnostics.measurement(new Measurement(
                     JAVAFX_APPLY,
                     observation.snapshot().preparation().attemptId(),
@@ -142,7 +158,21 @@ public final class SessionPlannerServiceAssembly {
                     observation.materializedUnitCount(),
                     0));
             safeObserver.accept(observation);
-        });
+                });
+    }
+
+    private void runWhileOpen(Runnable callback) {
+        if (!closed.get()) {
+            callback.run();
+        }
+    }
+
+    @Override
+    public void close() {
+        if (!closed.compareAndSet(false, true)) {
+            return;
+        }
+        foreignSubscriptions.forEach(Runnable::run);
     }
 
     private record Runtime(

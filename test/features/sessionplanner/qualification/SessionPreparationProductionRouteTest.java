@@ -3,6 +3,7 @@ package features.sessionplanner.qualification;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.creatures.CreaturesServiceAssembly;
@@ -55,6 +56,7 @@ import platform.diagnostics.Diagnostics;
 import platform.diagnostics.Measurement;
 import platform.execution.BoundedExecutionLane;
 import platform.execution.ExecutionLane;
+import platform.execution.WorkflowAdmissionController;
 import platform.execution.SerialExecutionLane;
 import platform.persistence.SqliteDatabase;
 import platform.persistence.TestFeatureStores;
@@ -258,6 +260,63 @@ final class SessionPreparationProductionRouteTest {
 
         assertEquals(committed, reopenCurrentSession(path, diagnostics),
                 "post-boundary Planner revision and prepared content survive close and reopen");
+    }
+
+    @Test
+    void campaignFenceDrainsAcceptedRealPreparationCommitAndRejectsLaterRootThenResumes() throws Exception {
+        RecordingDiagnostics diagnostics = new RecordingDiagnostics();
+        HoldingPreparedSessionStore heldStore = new HoldingPreparedSessionStore();
+        HoldingExecutionLane heldHydration = new HoldingExecutionLane();
+        WorkflowAdmissionController admission = new WorkflowAdmissionController();
+        Path path = temporaryDirectory.resolve("session-preparation-campaign-fence.sqlite");
+        try (ProductionFixture fixture = ProductionFixture.open(
+                path,
+                diagnostics,
+                UnaryOperator.identity(),
+                heldStore::wrap,
+                DirectUiDispatcher.INSTANCE,
+                UnaryOperator.identity(),
+                heldHydration::wrap,
+                lane -> admission.admit(lane))) {
+            long initialRevision = fixture.repository.loadCurrent().orElseThrow().revision().value();
+            fixture.planner.application().prepareSession(prepareCommand(fixture.planner, false));
+            assertTrue(heldStore.entered.await(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS));
+
+            var drained = admission.pauseAndDrain().toCompletableFuture();
+            assertFalse(drained.isDone(), "accepted final commit must remain tracked while held");
+            assertThrows(java.util.concurrent.RejectedExecutionException.class,
+                    () -> fixture.planner.application().createSession(
+                            new SessionPlannerCatalogCommand.CreateSessionCommand("post-fence")));
+
+            heldHydration.holdNext();
+            heldStore.release.countDown();
+            assertTrue(heldHydration.entered.await(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS),
+                    "accepted preparation did not reach its transitive hydration tail");
+            assertFalse(drained.isDone(),
+                    "campaign drain must include the accepted workflow's transitive hydration tail");
+            heldHydration.release.countDown();
+            drained.get(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+            SessionPlan committed = fixture.repository.loadCurrent().orElseThrow();
+            assertTrue(committed.revision().value() > initialRevision);
+            assertFalse(committed.encounters().isEmpty());
+            assertEquals(SessionPreparationStatus.READY,
+                    fixture.planner.workspaceModel().current().preparation().status(),
+                    "drain completion must mean the accepted preparation is semantically published");
+
+            admission.resume();
+            long publication = fixture.planner.workspaceModel().current().publicationRevision();
+            fixture.planner.application().createSession(
+                    new SessionPlannerCatalogCommand.CreateSessionCommand("post-resume"));
+            SessionPlannerWorkspaceSnapshot resumed = awaitWorkspace(
+                    fixture.planner.workspaceModel(), publication, workspace ->
+                            "post-resume".equals(workspace.currentSession().session().displayName()));
+            assertTrue(resumed.catalog().sessions().stream()
+                    .anyMatch(session -> "post-resume".equals(session.displayName())),
+                    "resumed admission must execute and publish a real production root command");
+            admission.revokeAndDrain().toCompletableFuture()
+                    .get(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+            admission.closeDelegatesAfterDrain();
+        }
     }
 
     @Test
@@ -687,14 +746,49 @@ final class SessionPreparationProductionRouteTest {
                 platform.ui.UiDispatcher uiDispatcher,
                 UnaryOperator<ExecutionLane> authoredLaneDecorator
         ) throws Exception {
+            return open(path, diagnostics, generationDecorator, preparedSessionStoreDecorator,
+                    uiDispatcher, authoredLaneDecorator, UnaryOperator.identity());
+        }
+
+        private static ProductionFixture open(
+                Path path,
+                RecordingDiagnostics diagnostics,
+                UnaryOperator<SessionGenerationApi> generationDecorator,
+                UnaryOperator<SessionPreparedSessionStore> preparedSessionStoreDecorator,
+                platform.ui.UiDispatcher uiDispatcher,
+                UnaryOperator<ExecutionLane> authoredLaneDecorator,
+                UnaryOperator<ExecutionLane> allLaneDecorator
+        ) throws Exception {
+            return open(path, diagnostics, generationDecorator, preparedSessionStoreDecorator,
+                    uiDispatcher, authoredLaneDecorator, UnaryOperator.identity(), allLaneDecorator);
+        }
+
+        private static ProductionFixture open(
+                Path path,
+                RecordingDiagnostics diagnostics,
+                UnaryOperator<SessionGenerationApi> generationDecorator,
+                UnaryOperator<SessionPreparedSessionStore> preparedSessionStoreDecorator,
+                platform.ui.UiDispatcher uiDispatcher,
+                UnaryOperator<ExecutionLane> authoredLaneDecorator,
+                UnaryOperator<ExecutionLane> preparationIoDecorator,
+                UnaryOperator<ExecutionLane> allLaneDecorator
+        ) throws Exception {
             SqliteDatabase database = new SqliteDatabase(path, diagnostics);
-            ExecutionLane authored = authoredLaneDecorator.apply(new SerialExecutionLane(diagnostics));
+            ExecutionLane authored = allLaneDecorator.apply(
+                    authoredLaneDecorator.apply(new SerialExecutionLane(diagnostics)));
             BoundedExecutionLane generationCpu = lane(diagnostics, "qualification-generation-cpu");
             BoundedExecutionLane generationIo = lane(diagnostics, "qualification-generation-io");
             BoundedExecutionLane encounterCpu = lane(diagnostics, "qualification-encounter-cpu");
             BoundedExecutionLane encounterIo = lane(diagnostics, "qualification-encounter-io");
             BoundedExecutionLane preparationCpu = lane(diagnostics, "session-preparation-cpu");
             BoundedExecutionLane preparationIo = lane(diagnostics, "session-preparation-io");
+            ExecutionLane admittedGenerationCpu = allLaneDecorator.apply(generationCpu);
+            ExecutionLane admittedGenerationIo = allLaneDecorator.apply(generationIo);
+            ExecutionLane admittedEncounterCpu = allLaneDecorator.apply(encounterCpu);
+            ExecutionLane admittedEncounterIo = allLaneDecorator.apply(encounterIo);
+            ExecutionLane admittedPreparationCpu = allLaneDecorator.apply(preparationCpu);
+            ExecutionLane admittedPreparationIo = allLaneDecorator.apply(
+                    preparationIoDecorator.apply(preparationIo));
             var generationDefinition = SessionGenerationServiceAssembly.storeDefinition();
             var creaturesDefinition = CreaturesServiceAssembly.storeDefinition();
             var tablesDefinition = EncounterTableServiceAssembly.storeDefinition();
@@ -712,31 +806,33 @@ final class SessionPreparationProductionRouteTest {
                     sessionDefinition);
             long coldStoreNanos = System.nanoTime() - coldStoreStarted;
             SessionGenerationApi generation = SessionGenerationServiceAssembly.create(
-                    stores.get(generationDefinition.owner()), generationCpu, generationIo);
+                    stores.get(generationDefinition.owner()), admittedGenerationCpu, admittedGenerationIo);
             long coldCatalogStarted = System.nanoTime();
             GenerationResult canonical = canonicalDraft(generation);
             long coldCatalogNanos = System.nanoTime() - coldCatalogStarted;
 
             CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(
-                    stores.get(creaturesDefinition.owner()), authored, preparationIo, uiDispatcher, diagnostics);
+                    stores.get(creaturesDefinition.owner()), authored, admittedPreparationIo,
+                    uiDispatcher, diagnostics);
             EncounterTableServiceAssembly.Component tables = EncounterTableServiceAssembly.create(
                     stores.get(tablesDefinition.owner()), authored, uiDispatcher, diagnostics);
             PartyServiceAssembly.Component party = PartyServiceAssembly.create(
-                    stores.get(partyDefinition.owner()), authored, preparationIo, uiDispatcher, diagnostics);
+                    stores.get(partyDefinition.owner()), authored, admittedPreparationIo,
+                    uiDispatcher, diagnostics);
             EncounterServiceAssembly.Component encounters = EncounterServiceAssembly.create(
                     stores.get(encounterDefinition.owner()),
                     creatures.application(), creatures.detail(), creatures.encounterCandidates(),
                     tables.application(), tables.candidates(), null,
                     party.application(), party.activeParty(), party.activeComposition(),
                     party.adventuringDaySummary(), party.mutation(),
-                    authored, encounterCpu, encounterIo, uiDispatcher, diagnostics);
+                    authored, admittedEncounterCpu, admittedEncounterIo, uiDispatcher, diagnostics);
             SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(
                     stores.get(sessionDefinition.owner()));
             SessionGenerationApi decoratedGeneration = generationDecorator.apply(generation);
             SessionPlannerServiceAssembly planner = new SessionPlannerServiceAssembly(
                     repository, repository, preparedSessionStoreDecorator.apply(repository),
                     party.application(), encounters.application(), encounters.savedPlans(), null,
-                    decoratedGeneration, authored, preparationCpu, preparationIo,
+                    decoratedGeneration, authored, admittedPreparationCpu, admittedPreparationIo,
                     uiDispatcher, diagnostics);
 
             seedCreatures(path, canonical);
@@ -886,6 +982,38 @@ final class SessionPreparationProductionRouteTest {
                 throw new IllegalStateException("interrupted while holding prepared-session store", exception);
             }
             return delegate.commitPreparedSession(command);
+        }
+    }
+
+    private static final class HoldingExecutionLane implements ExecutionLane {
+        private final AtomicBoolean holdNext = new AtomicBoolean();
+        private final CountDownLatch entered = new CountDownLatch(1);
+        private final CountDownLatch release = new CountDownLatch(1);
+        private ExecutionLane delegate;
+
+        private ExecutionLane wrap(ExecutionLane wrapped) {
+            delegate = wrapped;
+            return this;
+        }
+
+        private void holdNext() {
+            holdNext.set(true);
+        }
+
+        @Override
+        public void execute(Runnable work) {
+            delegate.execute(() -> {
+                if (holdNext.compareAndSet(true, false)) {
+                    entered.countDown();
+                    awaitLatch(release, "timed out waiting to release hydration tail");
+                }
+                work.run();
+            });
+        }
+
+        @Override
+        public void close() {
+            delegate.close();
         }
     }
 

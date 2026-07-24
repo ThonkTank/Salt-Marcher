@@ -40,7 +40,7 @@ public final class TravelFeature {
             TravelContextApi api,
             TravelContextModel model,
             ShellContribution contribution
-    ) {
+    ) implements AutoCloseable {
         public Component {
             api = Objects.requireNonNull(api, "api");
             model = Objects.requireNonNull(model, "model");
@@ -49,6 +49,11 @@ public final class TravelFeature {
 
         public void start() {
             ((TravelContextApplicationService) api).start();
+        }
+
+        @Override
+        public void close() {
+            ((TravelContextApplicationService) api).close();
         }
     }
 }

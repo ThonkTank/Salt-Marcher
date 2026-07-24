@@ -39,7 +39,7 @@ import platform.diagnostics.Diagnostics;
 import platform.execution.ExecutionLane;
 import platform.ui.UiDispatcher;
 
-public final class SceneApplicationService implements SceneApi {
+public final class SceneApplicationService implements SceneApi, AutoCloseable {
 
     private static final DiagnosticId STORAGE_FAILURE = new DiagnosticId("scene.storage-failure");
     private static final DiagnosticId SYNC_FAILURE = new DiagnosticId("scene.encounter-sync-failure");
@@ -56,6 +56,8 @@ public final class SceneApplicationService implements SceneApi {
     private final ScenePublishedState publishedState;
     private SceneWorkspace workspace;
     private boolean foreignSubscriptionsRegistered;
+    private volatile boolean closed;
+    private List<Runnable> foreignSubscriptions = List.of();
 
     public SceneApplicationService(
             SceneWorkspaceRepository repository,
@@ -85,6 +87,10 @@ public final class SceneApplicationService implements SceneApi {
 
     @Override
     public CompletionStage<SceneMutationResult> execute(SceneCommand command) {
+        if (closed) {
+            return CompletableFuture.completedFuture(result(
+                    SceneMutationResult.Status.STORAGE_ERROR, "Szenenlaufzeit ist geschlossen."));
+        }
         CompletableFuture<SceneMutationResult> completion = new CompletableFuture<>();
         try {
             executionLane.execute(() -> handle(command, completion));
@@ -418,6 +424,9 @@ public final class SceneApplicationService implements SceneApi {
     }
 
     private void scheduleProjectionRefresh() {
+        if (closed) {
+            return;
+        }
         try {
             executionLane.execute(this::publishCurrent);
         } catch (RuntimeException exception) {
@@ -425,15 +434,26 @@ public final class SceneApplicationService implements SceneApi {
         }
     }
 
-    private void registerForeignSubscriptions() {
-        if (foreignSubscriptionsRegistered) {
+    private synchronized void registerForeignSubscriptions() {
+        if (foreignSubscriptionsRegistered || closed) {
             return;
         }
         foreignSubscriptionsRegistered = true;
-        party.subscribe(ignored -> execute(new SceneCommand.Refresh()));
-        world.subscribe(ignored -> execute(new SceneCommand.Refresh()));
-        preparedScenes.subscribe(ignored -> scheduleProjectionRefresh());
-        creatureReferences.subscribe(ignored -> scheduleProjectionRefresh());
+        foreignSubscriptions = List.of(
+                party.subscribe(ignored -> execute(new SceneCommand.Refresh())),
+                world.subscribe(ignored -> execute(new SceneCommand.Refresh())),
+                preparedScenes.subscribe(ignored -> scheduleProjectionRefresh()),
+                creatureReferences.subscribe(ignored -> scheduleProjectionRefresh()));
+    }
+
+    @Override
+    public synchronized void close() {
+        if (closed) {
+            return;
+        }
+        closed = true;
+        foreignSubscriptions.forEach(Runnable::run);
+        foreignSubscriptions = List.of();
     }
 
     private static features.scene.domain.SceneParticipantKind domainKind(SceneParticipantKind kind) {

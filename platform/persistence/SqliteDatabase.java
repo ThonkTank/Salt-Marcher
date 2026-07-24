@@ -251,6 +251,46 @@ public final class SqliteDatabase implements AutoCloseable {
         prepared = true;
     }
 
+    /**
+     * Proves that the prepared lifecycle can acquire a write transaction without changing feature
+     * data, identities, or revisions. The probe table and row exist only inside a rolled-back
+     * transaction; a second read verifies that no schema artifact survived.
+     */
+    public synchronized void verifyTransactionalWriteRollback() throws SQLException {
+        requireOpen();
+        if (!prepared || !storesSealed) {
+            throw new SQLException("SQLite lifecycle must be fully prepared before write verification.");
+        }
+        try (Connection connection = openConfigured(databasePath)) {
+            connection.setAutoCommit(false);
+            try (Statement statement = connection.createStatement()) {
+                statement.execute("CREATE TABLE sm_runtime_write_probe (probe_value INTEGER NOT NULL)");
+                if (statement.executeUpdate(
+                        "INSERT INTO sm_runtime_write_probe(probe_value) VALUES (1)") != 1) {
+                    throw new SQLException("SQLite write probe did not insert exactly one transactional row.");
+                }
+                try (ResultSet result = statement.executeQuery(
+                        "SELECT probe_value FROM sm_runtime_write_probe")) {
+                    if (!result.next() || result.getInt(1) != 1 || result.next()) {
+                        throw new SQLException("SQLite write probe readback was not exact.");
+                    }
+                }
+            } finally {
+                connection.rollback();
+            }
+        }
+        try (Connection verification = openConfigured(databasePath);
+                var statement = verification.prepareStatement(
+                        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?")) {
+            statement.setString(1, "sm_runtime_write_probe");
+            try (ResultSet result = statement.executeQuery()) {
+                if (!result.next() || result.getInt(1) != 0) {
+                    throw new SQLException("SQLite write probe rollback left a schema artifact.");
+                }
+            }
+        }
+    }
+
     @Override
     public synchronized void close() {
         closed = true;

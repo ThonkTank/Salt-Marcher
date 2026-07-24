@@ -15,7 +15,7 @@ import features.travel.api.TravelContextSnapshot;
 import java.util.List;
 import java.util.Objects;
 
-public final class TravelContextApplicationService implements TravelContextApi {
+public final class TravelContextApplicationService implements TravelContextApi, AutoCloseable {
 
     private final PartyTravelPositionsModel partyPositions;
     private final DungeonTravelContextModel dungeonContexts;
@@ -28,6 +28,8 @@ public final class TravelContextApplicationService implements TravelContextApi {
     private long dungeonSourceRevision = -1L;
     private long hexSourceRevision = -1L;
     private boolean started;
+    private boolean closed;
+    private List<Runnable> subscriptions = List.of();
 
     public TravelContextApplicationService(
             PartyTravelPositionsModel partyPositions,
@@ -47,19 +49,33 @@ public final class TravelContextApplicationService implements TravelContextApi {
     }
 
     public synchronized void start() {
-        if (started) {
+        if (started || closed) {
             return;
         }
         started = true;
-        partyPositions.subscribe(this::acceptParty);
-        dungeonContexts.subscribe(this::acceptDungeon);
-        hexContexts.subscribe(this::acceptHex);
+        subscriptions = List.of(
+                partyPositions.subscribe(this::acceptParty),
+                dungeonContexts.subscribe(this::acceptDungeon),
+                hexContexts.subscribe(this::acceptHex));
         acceptParty(partyPositions.current());
         acceptDungeon(dungeonContexts.current());
         acceptHex(hexContexts.current());
     }
 
+    @Override
+    public synchronized void close() {
+        if (closed) {
+            return;
+        }
+        closed = true;
+        subscriptions.forEach(Runnable::run);
+        subscriptions = List.of();
+    }
+
     private synchronized void acceptParty(PartyTravelPositionsResult result) {
+        if (closed) {
+            return;
+        }
         PartyTravelPositionsResult safeResult = result == null ? failedParty() : result;
         if (safeResult.revision() <= partyRevision) {
             return;
@@ -70,6 +86,9 @@ public final class TravelContextApplicationService implements TravelContextApi {
     }
 
     private synchronized void acceptDungeon(DungeonTravelContextSnapshot snapshot) {
+        if (closed) {
+            return;
+        }
         DungeonTravelContextSnapshot safeSnapshot = snapshot == null
                 ? DungeonTravelContextSnapshot.empty(0L, 0L)
                 : snapshot;
@@ -82,6 +101,9 @@ public final class TravelContextApplicationService implements TravelContextApi {
     }
 
     private synchronized void acceptHex(HexTravelSnapshot snapshot) {
+        if (closed) {
+            return;
+        }
         HexTravelSnapshot safeSnapshot = snapshot == null
                 ? HexTravelSnapshot.empty(0L, "Kein Hex-Reisekontext")
                 : snapshot;

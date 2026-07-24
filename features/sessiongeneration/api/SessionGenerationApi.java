@@ -4,6 +4,10 @@ import java.util.concurrent.CompletionStage;
 
 public interface SessionGenerationApi {
 
+    default boolean available() {
+        return true;
+    }
+
     CompletionStage<GenerationDraftResponse> draft(GenerationRequest request);
 
     CompletionStage<GenerationRunResponse> commit(CommitGenerationRunCommand command);

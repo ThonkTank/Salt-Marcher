@@ -28,7 +28,7 @@ import shell.api.ShellContribution;
 
 import java.util.Objects;
 
-public final class HexServiceAssembly {
+public final class HexServiceAssembly implements AutoCloseable {
 
     private final HexEditorApplicationService editorApplicationService;
     private final HexTravelApplicationService travelApplicationService;
@@ -145,21 +145,34 @@ public final class HexServiceAssembly {
 
     private void registerTravelReadback(PartyTravelPositionsModel partyTravelPositions) {
         travelApplicationService.acceptPartyTravelPosition(partyTravelPositions.current());
-        partyTravelPositions.subscribe(travelApplicationService::acceptPartyTravelPosition);
+        travelSubscription = partyTravelPositions.subscribe(
+                travelApplicationService::acceptPartyTravelPosition);
     }
 
     private final PartyTravelPositionsModel partyTravelPositions;
     private boolean started;
+    private Runnable travelSubscription = () -> { };
+    private boolean closed;
 
     private synchronized void start() {
-        if (started) {
+        if (started || closed) {
             return;
         }
         started = true;
         registerTravelReadback(partyTravelPositions);
     }
 
-    public static final class Component {
+    @Override
+    public synchronized void close() {
+        if (closed) {
+            return;
+        }
+        closed = true;
+        travelSubscription.run();
+        travelSubscription = () -> { };
+    }
+
+    public static final class Component implements AutoCloseable {
 
         private final HexServiceAssembly assembly;
 
@@ -185,6 +198,11 @@ public final class HexServiceAssembly {
 
         public void start() {
             assembly.start();
+        }
+
+        @Override
+        public void close() {
+            assembly.close();
         }
 
         public ShellContribution mapContribution() {

@@ -41,6 +41,8 @@ final class SessionPlannerBinder {
 
     private final SessionPlannerApi planner;
     private final SessionPlannerWorkspaceModel workspace;
+    private final boolean generationAvailable;
+    private final String generationAvailabilityMessage;
     private final java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> workspaceApplied;
     private SessionPlannerAuthoredTarget replacementConfirmationTarget;
 
@@ -49,8 +51,20 @@ final class SessionPlannerBinder {
             SessionPlannerWorkspaceModel workspace,
             java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> workspaceApplied
     ) {
+        this(planner, workspace, true, "", workspaceApplied);
+    }
+
+    SessionPlannerBinder(
+            SessionPlannerApi planner,
+            SessionPlannerWorkspaceModel workspace,
+            boolean generationAvailable,
+            String generationAvailabilityMessage,
+            java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> workspaceApplied
+    ) {
         this.planner = Objects.requireNonNull(planner, "planner");
         this.workspace = Objects.requireNonNull(workspace, "workspace");
+        this.generationAvailable = generationAvailable;
+        this.generationAvailabilityMessage = Objects.requireNonNullElse(generationAvailabilityMessage, "");
         this.workspaceApplied = Objects.requireNonNull(workspaceApplied, "workspaceApplied");
     }
 
@@ -64,6 +78,7 @@ final class SessionPlannerBinder {
 
         catalogView.bind(catalogContentModel);
         controlsView.bind(viewModel);
+        controlsView.setGenerationAvailability(generationAvailable, generationAvailabilityMessage);
         timelineView.bind(viewModel);
         stateView.bind(viewModel);
 

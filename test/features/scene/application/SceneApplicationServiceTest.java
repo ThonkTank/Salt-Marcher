@@ -393,7 +393,10 @@ class SceneApplicationServiceTest {
     private static final class PreparedFacts {
         private final AtomicReference<PreparedSceneCatalogSnapshot> current = new AtomicReference<>();
         private final List<Consumer<PreparedSceneCatalogSnapshot>> listeners = new ArrayList<>();
-        private final PreparedSceneCatalogModel model = new PreparedSceneCatalogModel(current::get, listeners::add);
+        private final PreparedSceneCatalogModel model = new PreparedSceneCatalogModel(current::get, listener -> {
+            listeners.add(listener);
+            return () -> listeners.remove(listener);
+        });
         private long revision;
 
         private PreparedFacts(List<PreparedSceneSource> sources) {

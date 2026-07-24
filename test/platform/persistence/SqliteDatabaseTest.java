@@ -156,6 +156,93 @@ final class SqliteDatabaseTest {
     }
 
     @Test
+    void transactionalWriteRollbackProbePreservesSemanticDatabaseStateAcrossReopen()
+            throws Exception {
+        Path databasePath = temporaryDirectory.resolve("write-probe.db");
+        SqliteMigration migration = seedMigration();
+        DatabaseSemanticSnapshot before;
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            FeatureStoreHandle seed = TestFeatureStores.store(database, "seed", migration);
+            try (var connection = seed.openConnection()) {
+                connection.createStatement().execute(
+                        "INSERT INTO recovery_data(id, value) VALUES(1, 'kept')");
+                connection.createStatement().execute(
+                        "INSERT INTO recovery_data(id, value) VALUES(2, 'also-kept')");
+                before = semanticSnapshot(connection);
+                assertFalse(tableExists(connection, "sm_runtime_write_probe"));
+            }
+
+            database.verifyTransactionalWriteRollback();
+        }
+
+        try (SqliteDatabase reopened = new SqliteDatabase(databasePath, (id, type) -> { });
+                var connection = TestFeatureStores.store(reopened, "seed", migration)
+                        .openConnection()) {
+            assertEquals(before, semanticSnapshot(connection));
+            assertFalse(tableExists(connection, "sm_runtime_write_probe"));
+        }
+    }
+
+    @Test
+    void crashedWalWriteProbeLeavesSemanticStateIntactAndDatabaseWritable() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("crashed-write-probe.db");
+        Path walPath = databasePath.resolveSibling(databasePath.getFileName() + "-wal");
+        SqliteMigration migration = seedMigration();
+        DatabaseSemanticSnapshot before;
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { });
+                var connection = TestFeatureStores.store(database, "seed", migration)
+                        .openConnection()) {
+            connection.createStatement().execute(
+                    "INSERT INTO recovery_data(id, value) VALUES(1, 'kept')");
+            connection.createStatement().execute(
+                    "INSERT INTO recovery_data(id, value) VALUES(2, 'also-kept')");
+            before = semanticSnapshot(connection);
+        }
+        assertFalse(Files.exists(walPath));
+
+        Process probe = new ProcessBuilder(
+                Path.of(System.getProperty("java.home"), "bin", "java").toString(),
+                "-cp",
+                System.getProperty("java.class.path"),
+                WalWriteProbeCrashProcess.class.getName(),
+                databasePath.toString())
+                .redirectErrorStream(true)
+                .start();
+        String output = new String(probe.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        assertEquals(0, probe.waitFor(), output);
+        assertTrue(Files.isRegularFile(walPath));
+        assertTrue(Files.size(walPath) > 32L, "crashed probe did not write a WAL frame");
+
+        try (SqliteDatabase reopened = new SqliteDatabase(databasePath, (id, type) -> { });
+                var connection = TestFeatureStores.store(reopened, "seed", migration)
+                        .openConnection()) {
+            assertEquals(before, semanticSnapshot(connection));
+            assertFalse(tableExists(connection, "sm_runtime_write_probe"));
+            assertEquals("ok", pragmaText(connection, "PRAGMA integrity_check"));
+            connection.createStatement().execute(
+                    "INSERT INTO recovery_data(id, value) VALUES(3, 'after-crash')");
+        }
+
+        try (SqliteDatabase reopenedAgain = new SqliteDatabase(databasePath, (id, type) -> { });
+                var connection = TestFeatureStores.store(reopenedAgain, "seed", migration)
+                        .openConnection()) {
+            DatabaseSemanticSnapshot afterMutation = semanticSnapshot(connection);
+            assertEquals(before.schema(), afterMutation.schema());
+            assertEquals(before.schemaVersions(), afterMutation.schemaVersions());
+            assertEquals(before.userVersion(), afterMutation.userVersion());
+            assertEquals(
+                    List.of(
+                            new PayloadEntry(1, "kept"),
+                            new PayloadEntry(2, "also-kept"),
+                            new PayloadEntry(3, "after-crash")),
+                    afterMutation.payload());
+            assertFalse(tableExists(connection, "sm_runtime_write_probe"));
+        }
+    }
+
+    @Test
     void concurrentConnectionInitializationSerializesMigrationMetadataWithoutSerializingUse() throws Exception {
         Path databasePath = temporaryDirectory.resolve("concurrent-open.db");
         AtomicInteger migrations = new AtomicInteger();
@@ -1032,6 +1119,52 @@ final class SqliteDatabaseTest {
         }
     }
 
+    private static DatabaseSemanticSnapshot semanticSnapshot(java.sql.Connection connection)
+            throws SQLException {
+        List<SchemaEntry> schema = new ArrayList<>();
+        try (var result = connection.createStatement().executeQuery(
+                "SELECT type, name, tbl_name, COALESCE(sql, '') FROM sqlite_master"
+                        + " ORDER BY type, name, tbl_name")) {
+            while (result.next()) {
+                schema.add(new SchemaEntry(
+                        result.getString(1),
+                        result.getString(2),
+                        result.getString(3),
+                        result.getString(4)));
+            }
+        }
+        List<SchemaVersionEntry> schemaVersions = new ArrayList<>();
+        try (var result = connection.createStatement().executeQuery(
+                "SELECT owner, version FROM sm_schema_versions ORDER BY owner")) {
+            while (result.next()) {
+                schemaVersions.add(new SchemaVersionEntry(result.getString(1), result.getInt(2)));
+            }
+        }
+        List<PayloadEntry> payload = new ArrayList<>();
+        try (var result = connection.createStatement().executeQuery(
+                "SELECT id, value FROM recovery_data ORDER BY id")) {
+            while (result.next()) {
+                payload.add(new PayloadEntry(result.getInt(1), result.getString(2)));
+            }
+        }
+        return new DatabaseSemanticSnapshot(
+                List.copyOf(schema),
+                List.copyOf(schemaVersions),
+                pragmaInt(connection, "PRAGMA user_version"),
+                List.copyOf(payload));
+    }
+
+    private static boolean tableExists(java.sql.Connection connection, String tableName)
+            throws SQLException {
+        try (var statement = connection.prepareStatement(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?")) {
+            statement.setString(1, tableName);
+            try (var result = statement.executeQuery()) {
+                return result.next() && result.getInt(1) != 0;
+            }
+        }
+    }
+
     private static boolean contains(byte[] bytes, byte[] expected) {
         for (int start = 0; start <= bytes.length - expected.length; start++) {
             boolean matches = true;
@@ -1068,6 +1201,18 @@ final class SqliteDatabaseTest {
             ids.add(id.value());
         }
     }
+
+    private record DatabaseSemanticSnapshot(
+            List<SchemaEntry> schema,
+            List<SchemaVersionEntry> schemaVersions,
+            int userVersion,
+            List<PayloadEntry> payload) { }
+
+    private record SchemaEntry(String type, String name, String tableName, String sql) { }
+
+    private record SchemaVersionEntry(String owner, int version) { }
+
+    private record PayloadEntry(int id, String value) { }
 }
 
 final class HotRollbackJournalProcess {
@@ -1086,7 +1231,7 @@ final class HotRollbackJournalProcess {
         }
         try (var statement = connection.createStatement()) {
             statement.execute("PRAGMA cache_size = 5");
-            statement.execute("PRAGMA cache_spill = ON");
+            statement.execute("PRAGMA cache_spill = 1");
         }
         connection.setAutoCommit(false);
         try (var update = connection.prepareStatement(
@@ -1112,6 +1257,57 @@ final class HotRollbackJournalProcess {
             connection.rollback();
             connection.close();
             return;
+        }
+        Runtime.getRuntime().halt(0);
+    }
+}
+
+final class WalWriteProbeCrashProcess {
+
+    private WalWriteProbeCrashProcess() { }
+
+    public static void main(String[] arguments) throws Exception {
+        Class.forName("org.sqlite.JDBC");
+        Path databasePath = Path.of(arguments[0]);
+        var connection = DriverManager.getConnection(
+                "jdbc:sqlite:" + databasePath.toAbsolutePath().normalize());
+        try (var statement = connection.createStatement()) {
+            statement.execute("PRAGMA foreign_keys = ON");
+            statement.execute("PRAGMA busy_timeout = 5000");
+            try (var mode = statement.executeQuery("PRAGMA journal_mode = WAL")) {
+                if (!mode.next() || !"wal".equalsIgnoreCase(mode.getString(1))) {
+                    throw new SQLException("SQLite WAL mode is unavailable.");
+                }
+            }
+            statement.execute("PRAGMA synchronous = NORMAL");
+            statement.execute("PRAGMA cache_size = 1");
+            statement.execute("PRAGMA cache_spill = ON");
+        }
+        connection.setAutoCommit(false);
+        try (var statement = connection.createStatement()) {
+            statement.execute(
+                    "CREATE TABLE sm_runtime_write_probe (probe_value INTEGER NOT NULL)");
+            if (statement.executeUpdate(
+                    "INSERT INTO sm_runtime_write_probe(probe_value) VALUES (1)") != 1) {
+                throw new SQLException("SQLite write probe did not insert exactly one row.");
+            }
+            try (var result = statement.executeQuery(
+                    "SELECT probe_value FROM sm_runtime_write_probe")) {
+                if (!result.next() || result.getInt(1) != 1 || result.next()) {
+                    throw new SQLException("SQLite write probe readback was not exact.");
+                }
+            }
+        }
+        // The production probe normally rolls back before its tiny transaction needs a WAL frame.
+        // Add test-only rows after the exact readback so a hard halt exercises recovery from
+        // materially written, still-uncommitted frames in the same probe-table transaction.
+        try (var pressure = connection.prepareStatement(
+                "INSERT INTO sm_runtime_write_probe(probe_value) VALUES (?)")) {
+            for (int value = 2; value <= 8_192; value++) {
+                pressure.setInt(1, value);
+                pressure.addBatch();
+            }
+            pressure.executeBatch();
         }
         Runtime.getRuntime().halt(0);
     }
