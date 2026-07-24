@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.io.TempDir;
 import platform.diagnostics.NoopDiagnostics;
 import platform.execution.DirectExecutionLane;
@@ -32,6 +33,13 @@ final class CampaignRuntimeLifecycleTest {
 
     @TempDir
     Path temporaryDirectory;
+    private final java.util.List<InstallationRuntime> installations = new java.util.ArrayList<>();
+
+    @AfterEach
+    void closeInstallations() {
+        installations.forEach(InstallationRuntime::close);
+        installations.clear();
+    }
 
     @Test
     void foundationReadinessCoversProductionStoresAndUsablePrimaryScene() throws Exception {
@@ -146,15 +154,16 @@ final class CampaignRuntimeLifecycleTest {
                 () -> CampaignRuntime.open(
                         NoopDiagnostics.INSTANCE,
                         execution,
+                        supporting.get(6),
+                        supporting.get(7),
                         supporting.get(0),
                         supporting.get(1),
                         supporting.get(2),
                         supporting.get(3),
                         supporting.get(4),
                         supporting.get(5),
-                        supporting.get(6),
-                        supporting.get(7),
                         DirectUiDispatcher.INSTANCE,
+                        installationFor(databasePath).references(),
                         database));
 
         assertEquals(FeatureStoreReadiness.NEWER_SCHEMA, failure.readiness().get("scene"));
@@ -215,6 +224,7 @@ final class CampaignRuntimeLifecycleTest {
                 DirectExecutionLane.INSTANCE,
                 DirectExecutionLane.INSTANCE,
                 ui,
+                installationFor(databasePath).references(),
                 new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE));
         await(runtime.foundationReadiness());
 
@@ -234,7 +244,7 @@ final class CampaignRuntimeLifecycleTest {
         }
     }
 
-    private static CampaignRuntime open(Path databasePath, ExecutionLane mutationLane) {
+    private CampaignRuntime open(Path databasePath, ExecutionLane mutationLane) {
         return CampaignRuntime.open(
                 NoopDiagnostics.INSTANCE,
                 mutationLane,
@@ -247,17 +257,27 @@ final class CampaignRuntimeLifecycleTest {
                 DirectExecutionLane.INSTANCE,
                 DirectExecutionLane.INSTANCE,
                 DirectUiDispatcher.INSTANCE,
+                installationFor(databasePath).references(),
                 new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE));
+    }
+
+    private InstallationRuntime installationFor(Path campaignDatabasePath) {
+        InstallationRuntime installation = InstallationRuntime.open(
+                NoopDiagnostics.INSTANCE,
+                new SqliteDatabase(
+                        campaignDatabasePath.resolveSibling(
+                                campaignDatabasePath.getFileName() + ".installation.sqlite"),
+                        NoopDiagnostics.INSTANCE));
+        installations.add(installation);
+        return installation;
     }
 
     private static Set<String> expectedOwners() {
         return Set.of(
-                "creatures",
                 "dungeon",
                 "encounter",
                 "encounter-table",
                 "hex",
-                "items",
                 "party",
                 "scene",
                 "session-generation",

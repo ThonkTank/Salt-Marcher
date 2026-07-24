@@ -1,35 +1,29 @@
 package app;
 
-import features.creatures.CreaturesServiceAssembly;
 import features.dungeon.DungeonFeature;
 import features.encounter.EncounterServiceAssembly;
 import features.encountertable.EncounterTableServiceAssembly;
 import features.hex.HexServiceAssembly;
-import features.items.ItemsServiceAssembly;
 import features.party.PartyServiceAssembly;
 import features.scene.SceneFeature;
 import features.sessiongeneration.SessionGenerationServiceAssembly;
 import features.sessionplanner.SessionPlannerServiceAssembly;
 import features.worldplanner.WorldPlannerServiceAssembly;
-
-import platform.persistence.FeatureStoreHandle;
-import platform.persistence.SqliteDatabase;
-
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import platform.persistence.FeatureStoreHandle;
+import platform.persistence.SqliteDatabase;
 
-/** The complete, ordered production store manifest shared by startup and migration rehearsal. */
-final class FeatureStoreManifest {
+/** Complete Campaign-owned store manifest. */
+final class CampaignStoreManifest {
 
-    private FeatureStoreManifest() {}
+    private CampaignStoreManifest() { }
 
     static Stores register(SqliteDatabase database) {
         return new Stores(
-                database.featureStore(CreaturesServiceAssembly.storeDefinition()),
                 database.featureStore(EncounterTableServiceAssembly.storeDefinition()),
                 database.featureStore(PartyServiceAssembly.storeDefinition()),
-                database.featureStore(ItemsServiceAssembly.storeDefinition()),
                 database.featureStore(WorldPlannerServiceAssembly.storeDefinition()),
                 database.featureStore(EncounterServiceAssembly.storeDefinition()),
                 database.featureStore(DungeonFeature.storeDefinition()),
@@ -40,10 +34,8 @@ final class FeatureStoreManifest {
     }
 
     record Stores(
-            FeatureStoreHandle creatures,
             FeatureStoreHandle encounterTables,
             FeatureStoreHandle party,
-            FeatureStoreHandle items,
             FeatureStoreHandle worldPlanner,
             FeatureStoreHandle encounter,
             FeatureStoreHandle dungeon,
@@ -54,10 +46,8 @@ final class FeatureStoreManifest {
 
         List<FeatureStoreHandle> all() {
             return List.of(
-                    creatures,
                     encounterTables,
                     party,
-                    items,
                     worldPlanner,
                     encounter,
                     dungeon,

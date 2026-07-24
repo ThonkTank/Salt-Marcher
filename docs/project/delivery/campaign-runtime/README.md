@@ -57,6 +57,17 @@ not a selector, table-copy bridge, or partial `campaign_id` retrofit.
 4. Qualify isolation, switch/restart truth, failure boundaries, responsiveness,
    keyboard operation, and the representative next durable mutation.
 
+## Accepted Foundation Checkpoint
+
+Commit `1c570d287` establishes only the runtime, registry, admission, readiness,
+and close foundation. The local candidate ran literal `./gradlew check` green
+in 6m 47s. A fresh independent reviewer then replayed the selected production,
+lifecycle, rollback, crash-recovery, and concurrency routes in one Gradle
+invocation: 77 tests, 0 failures, 0 errors, and 0 skips in 1m 2s. The reviewer
+reported no blocker, major, or minor finding and confirmed unchanged candidate
+HEAD and tracked tree. Store separation, activation coordination, the visible
+journey, desktop acceptance, and merge qualification remain open.
+
 ## Aletheia B Process Candidate
 
 Concurrent `clean test` invocations in this shared worktree demonstrably raced
@@ -88,6 +99,14 @@ candidate is a reversible canary: cease owner/lock scheduling and remove only
 its disposable external state after preserving proof. The independent
 evaluator alone records the verdict; no process definition, version, or this
 slice's process pin changes before adoption.
+
+Independent evaluation at `1c570d287` was `inconclusive`. The overlapping
+baseline and serialized candidate pairs all failed before Gradle tasks because
+the isolated environment could not create its local lock-contention socket.
+The candidate lock intervals did not overlap, but neither the historical
+shared-output race nor any JUnit semantics ran. The four-invocation budget was
+exhausted and rollback removed the external lock and isolated worktree cleanly.
+`A-0.3.0` and this slice's pin therefore remain unchanged.
 
 ## Frozen Exit Replay
 

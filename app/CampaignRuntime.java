@@ -175,6 +175,7 @@ final class CampaignRuntime implements AutoCloseable {
             ExecutionLane sessionPreparationCpuLane,
             ExecutionLane sessionPreparationIoLane,
             UiDispatcher uiDispatcher,
+            InstallationRuntime.SharedReferences sharedReferences,
             SqliteDatabase database
     ) {
         Diagnostics safeDiagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
@@ -189,12 +190,14 @@ final class CampaignRuntime implements AutoCloseable {
                 Objects.requireNonNull(sessionPreparationCpuLane, "sessionPreparationCpuLane"),
                 Objects.requireNonNull(sessionPreparationIoLane, "sessionPreparationIoLane"));
         UiDispatcher safeUiDispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
+        InstallationRuntime.SharedReferences safeSharedReferences =
+                Objects.requireNonNull(sharedReferences, "sharedReferences");
         SqliteDatabase safeDatabase = Objects.requireNonNull(database, "database");
 
         CampaignRuntime runtime = null;
         WorkflowAdmissionController admission = null;
         try {
-            FeatureStoreManifest.Stores stores = FeatureStoreManifest.register(safeDatabase);
+            CampaignStoreManifest.Stores stores = CampaignStoreManifest.register(safeDatabase);
             Map<String, FeatureStoreReadiness> storeReadiness = safeDatabase.prepareRegisteredStores();
             Set<String> coreRequiredStores = requireReadyStores(stores, storeReadiness);
             admission = new WorkflowAdmissionController();
@@ -210,6 +213,7 @@ final class CampaignRuntime implements AutoCloseable {
             Components components = createComponents(
                     stores,
                     storeReadiness,
+                    safeSharedReferences,
                     safeDiagnostics,
                     admittedExecutionLane,
                     admittedCreatureReadLane,
@@ -260,7 +264,7 @@ final class CampaignRuntime implements AutoCloseable {
     }
 
     private static Set<String> requireReadyStores(
-            FeatureStoreManifest.Stores stores,
+            CampaignStoreManifest.Stores stores,
             Map<String, FeatureStoreReadiness> readiness
     ) {
         Map<String, FeatureStoreReadiness> safeReadiness = Map.copyOf(
@@ -561,19 +565,10 @@ final class CampaignRuntime implements AutoCloseable {
         return current;
     }
 
-    private static void rethrow(Throwable failure) {
-        if (failure instanceof RuntimeException runtimeFailure) {
-            throw runtimeFailure;
-        }
-        if (failure instanceof Error error) {
-            throw error;
-        }
-        throw new IllegalStateException("Campaign runtime close failed", failure);
-    }
-
     private static Components createComponents(
-            FeatureStoreManifest.Stores stores,
+            CampaignStoreManifest.Stores stores,
             Map<String, FeatureStoreReadiness> storeReadiness,
+            InstallationRuntime.SharedReferences sharedReferences,
             Diagnostics diagnostics,
             ExecutionLane executionLane,
             ExecutionLane creatureReadLane,
@@ -587,14 +582,14 @@ final class CampaignRuntime implements AutoCloseable {
             UiDispatcher uiDispatcher
     ) {
         CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(
-                stores.creatures(), executionLane, creatureReadLane, sessionPreparationIoLane,
-                uiDispatcher, diagnostics);
+                sharedReferences.creatures(), executionLane, creatureReadLane,
+                sessionPreparationIoLane, uiDispatcher, diagnostics);
         EncounterTableServiceAssembly.Component encounterTables = EncounterTableServiceAssembly.create(
                 stores.encounterTables(), executionLane, uiDispatcher, diagnostics);
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(
                 stores.party(), executionLane, sessionPreparationIoLane, uiDispatcher, diagnostics);
         ItemsServiceAssembly.CatalogComponent items = ItemsServiceAssembly.createCatalog(
-                stores.items(), itemReadLane, diagnostics);
+                sharedReferences.items(), itemReadLane, diagnostics);
         WorldPlannerServiceAssembly.Component world = WorldPlannerServiceAssembly.create(
                 stores.worldPlanner(), creatures.references(), encounterTables.references(),
                 executionLane, uiDispatcher, diagnostics);

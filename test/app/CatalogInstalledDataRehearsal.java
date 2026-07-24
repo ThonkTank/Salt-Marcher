@@ -29,9 +29,12 @@ public final class CatalogInstalledDataRehearsal {
                     "Rehearsal copy does not contain the installed database.");
         }
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            FeatureStoreManifest.Stores stores = FeatureStoreManifest.register(database);
+            InstallationStoreManifest.Stores installation = InstallationStoreManifest.register(database);
+            CampaignStoreManifest.Stores campaign = CampaignStoreManifest.register(database);
             Map<String, FeatureStoreReadiness> readiness = database.prepareRegisteredStores();
-            if (!readiness.keySet().equals(stores.owners())
+            java.util.Set<String> expectedOwners = new java.util.HashSet<>(installation.owners());
+            expectedOwners.addAll(campaign.owners());
+            if (!readiness.keySet().equals(expectedOwners)
                     || readiness.values().stream()
                             .anyMatch(value -> value != FeatureStoreReadiness.READY)) {
                 throw new IllegalStateException(
@@ -39,7 +42,7 @@ public final class CatalogInstalledDataRehearsal {
             }
 
             SqliteCreatureCatalogQueryAdapter creatures =
-                    new SqliteCreatureCatalogQueryAdapter(stores.creatures());
+                    new SqliteCreatureCatalogQueryAdapter(installation.creatures());
             var creaturePage =
                     creatures.searchCatalog(
                             new CatalogSearchSpec(
@@ -50,7 +53,7 @@ public final class CatalogInstalledDataRehearsal {
                 throw new IllegalStateException("Creature detail semantic readback failed.");
             }
 
-            SqliteItemCatalogAdapter items = new SqliteItemCatalogAdapter(stores.items());
+            SqliteItemCatalogAdapter items = new SqliteItemCatalogAdapter(installation.items());
             var itemPage =
                     items.search(
                             new ItemCatalogData.SearchSpec(
@@ -72,10 +75,10 @@ public final class CatalogInstalledDataRehearsal {
             }
 
             int savedEncounters =
-                    new SqliteEncounterPlanRepository(stores.encounter()).list().size();
-            var world = new SqliteWorldPlannerRepository(stores.worldPlanner()).load();
+                    new SqliteEncounterPlanRepository(campaign.encounter()).list().size();
+            var world = new SqliteWorldPlannerRepository(campaign.worldPlanner()).load();
             int encounterTables =
-                    new SqliteEncounterTableCatalogAdapter(stores.encounterTables())
+                    new SqliteEncounterTableCatalogAdapter(campaign.encounterTables())
                             .loadSummaries()
                             .size();
 

@@ -376,7 +376,7 @@ public final class SmokeStartupTest {
                 public void close() {
                 }
             };
-            try (AppBootstrap bootstrap = new AppBootstrap(
+            AppBootstrap bootstrap = new AppBootstrap(
                     NoopDiagnostics.INSTANCE,
                     new SerialExecutionLane(NoopDiagnostics.INSTANCE),
                     DirectExecutionLane.INSTANCE,
@@ -389,7 +389,11 @@ public final class SmokeStartupTest {
                     DirectExecutionLane.INSTANCE,
                     signalledProbeLane,
                     new JavaFxUiDispatcher(),
-                    new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE))) {
+                    new SqliteDatabase(
+                            temporaryDirectory.resolve("write-probe-installation.sqlite"),
+                            NoopDiagnostics.INSTANCE),
+                    new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE));
+            try {
                 java.util.concurrent.CompletableFuture<AppShell> shell = new java.util.concurrent.CompletableFuture<>();
                 runOnFx(() -> bootstrap.createShellAsync().whenComplete((value, failure) -> {
                     if (failure == null) {
@@ -409,6 +413,7 @@ public final class SmokeStartupTest {
                 assertThrows(IllegalStateException.class, bootstrap::campaignRuntimeForTesting);
             } finally {
                 lockStatement.execute("ROLLBACK");
+                bootstrap.close();
             }
         }
         try (CampaignRuntime reopened = openRuntime(databasePath)) {
@@ -795,7 +800,12 @@ public final class SmokeStartupTest {
     }
 
     private static CampaignRuntime openRuntime(Path databasePath) {
-        return CampaignRuntime.open(
+        InstallationRuntime installation = InstallationRuntime.open(
+                NoopDiagnostics.INSTANCE,
+                new SqliteDatabase(
+                        databasePath.resolveSibling(databasePath.getFileName() + ".installation.sqlite"),
+                        NoopDiagnostics.INSTANCE));
+        CampaignRuntime runtime = CampaignRuntime.open(
                 NoopDiagnostics.INSTANCE,
                 DirectExecutionLane.INSTANCE,
                 DirectExecutionLane.INSTANCE,
@@ -807,7 +817,10 @@ public final class SmokeStartupTest {
                 DirectExecutionLane.INSTANCE,
                 DirectExecutionLane.INSTANCE,
                 DirectUiDispatcher.INSTANCE,
+                installation.references(),
                 new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE));
+        runtime.quiescence().whenComplete((ignored, failure) -> installation.close());
+        return runtime;
     }
 
     private static <T> T await(java.util.concurrent.CompletionStage<T> stage) throws Exception {
@@ -953,6 +966,7 @@ public final class SmokeStartupTest {
     private static final class StoragePreparedLane implements ExecutionLane {
 
         private static final Set<String> EXPECTED_OWNERS = Set.of(
+                "campaign-registry",
                 "creatures",
                 "dungeon",
                 "encounter",

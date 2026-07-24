@@ -67,7 +67,10 @@ public final class AppBootstrap implements AutoCloseable {
     private final ExecutionLane sessionPreparationCpuLane;
     private final ExecutionLane sessionPreparationIoLane;
     private final UiDispatcher uiDispatcher;
+    private final SqliteDatabase installationDatabase;
     private final SqliteDatabase database;
+    private final java.util.concurrent.atomic.AtomicReference<InstallationRuntime> installationRuntime =
+            new java.util.concurrent.atomic.AtomicReference<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean shellCreationStarted = new AtomicBoolean();
     private final java.util.concurrent.ExecutorService closeExecutor =
@@ -107,6 +110,7 @@ public final class AppBootstrap implements AutoCloseable {
                 new BoundedExecutionLane(diagnostics, "session-preparation-cpu", 2),
                 new BoundedExecutionLane(diagnostics, "session-preparation-io", 2),
                 new JavaFxUiDispatcher(),
+                SqliteDatabase.defaultDatabase(SqliteDatabase.DEFAULT_DATABASE_FILE_NAME, diagnostics),
                 SqliteDatabase.defaultDatabase(SqliteDatabase.DEFAULT_DATABASE_FILE_NAME, diagnostics));
     }
 
@@ -123,6 +127,39 @@ public final class AppBootstrap implements AutoCloseable {
             ExecutionLane sessionPreparationCpuLane,
             ExecutionLane sessionPreparationIoLane,
             UiDispatcher uiDispatcher,
+            SqliteDatabase database
+    ) {
+        this(
+                diagnostics,
+                startupLane,
+                executionLane,
+                creatureReadLane,
+                itemReadLane,
+                sessionGenerationCpuLane,
+                sessionGenerationIoLane,
+                encounterGeneratedCpuLane,
+                encounterGeneratedIoLane,
+                sessionPreparationCpuLane,
+                sessionPreparationIoLane,
+                uiDispatcher,
+                installationDatabaseAtSamePath(database, diagnostics),
+                database);
+    }
+
+    AppBootstrap(
+            Diagnostics diagnostics,
+            ExecutionLane startupLane,
+            ExecutionLane executionLane,
+            ExecutionLane creatureReadLane,
+            ExecutionLane itemReadLane,
+            ExecutionLane sessionGenerationCpuLane,
+            ExecutionLane sessionGenerationIoLane,
+            ExecutionLane encounterGeneratedCpuLane,
+            ExecutionLane encounterGeneratedIoLane,
+            ExecutionLane sessionPreparationCpuLane,
+            ExecutionLane sessionPreparationIoLane,
+            UiDispatcher uiDispatcher,
+            SqliteDatabase installationDatabase,
             SqliteDatabase database
     ) {
         this.diagnostics = java.util.Objects.requireNonNull(diagnostics, "diagnostics");
@@ -143,7 +180,20 @@ public final class AppBootstrap implements AutoCloseable {
         this.sessionPreparationIoLane = java.util.Objects.requireNonNull(
                 sessionPreparationIoLane, "sessionPreparationIoLane");
         this.uiDispatcher = java.util.Objects.requireNonNull(uiDispatcher, "uiDispatcher");
+        this.installationDatabase = java.util.Objects.requireNonNull(
+                installationDatabase, "installationDatabase");
         this.database = java.util.Objects.requireNonNull(database, "database");
+    }
+
+    private static SqliteDatabase installationDatabaseAtSamePath(
+            SqliteDatabase campaignDatabase,
+            Diagnostics diagnostics) {
+        SqliteDatabase safeCampaignDatabase = java.util.Objects.requireNonNull(
+                campaignDatabase, "campaignDatabase");
+        java.nio.file.Path campaignPath = safeCampaignDatabase.databasePath();
+        return new SqliteDatabase(
+                campaignPath,
+                java.util.Objects.requireNonNull(diagnostics, "diagnostics"));
     }
 
     public CompletionStage<AppShell> createShellAsync() {
@@ -176,8 +226,16 @@ public final class AppBootstrap implements AutoCloseable {
             completion.completeExceptionally(new IllegalStateException("Application bootstrap is closed"));
             return;
         }
+        InstallationRuntime installation;
         CampaignRuntime runtime;
         try {
+            installation = InstallationRuntime.open(
+                    diagnostics,
+                    installationDatabase);
+            if (!installationRuntime.compareAndSet(null, installation)) {
+                installation.close();
+                throw new IllegalStateException("Installation runtime is already composed");
+            }
             runtime = CampaignRuntime.open(
                     diagnostics,
                     executionLane,
@@ -190,6 +248,7 @@ public final class AppBootstrap implements AutoCloseable {
                     sessionPreparationCpuLane,
                     sessionPreparationIoLane,
                     campaignUi,
+                    installation.references(),
                     database);
         } catch (RuntimeException | Error failure) {
             campaignUi.revokeAndDrain().whenComplete((ignored, uiFailure) -> {
@@ -803,6 +862,7 @@ public final class AppBootstrap implements AutoCloseable {
             }
             failure = awaitPreparationSettlement(claim, failure);
         }
+        failure = closeInstallationResources(failure);
         if (failure == null) {
             termination.complete(null);
         } else {
@@ -810,6 +870,25 @@ public final class AppBootstrap implements AutoCloseable {
             termination.completeExceptionally(failure);
         }
         closeExecutor.shutdown();
+    }
+
+    private Throwable closeInstallationResources(Throwable initialFailure) {
+        Throwable failure = initialFailure;
+        InstallationRuntime installation = installationRuntime.getAndSet(null);
+        if (installation != null) {
+            try {
+                installation.close();
+            } catch (RuntimeException | Error closeFailure) {
+                failure = accumulate(failure, closeFailure);
+            }
+            return failure;
+        }
+        try {
+            installationDatabase.close();
+        } catch (RuntimeException | Error closeFailure) {
+            failure = accumulate(failure, closeFailure);
+        }
+        return failure;
     }
 
     private static Throwable awaitPreparationSettlement(
