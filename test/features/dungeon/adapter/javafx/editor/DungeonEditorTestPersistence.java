@@ -17,7 +17,6 @@ import java.util.Objects;
 import java.util.Set;
 import features.dungeon.DungeonTestAssembly;
 import features.dungeon.adapter.sqlite.gateway.DungeonSqliteFixtureSeeder;
-import features.dungeon.adapter.sqlite.model.DungeonPersistenceSchema;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonCatalogStore;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonIdentityAllocator;
 import features.dungeon.adapter.sqlite.repository.SqliteDungeonUnitOfWork;
@@ -65,10 +64,8 @@ import features.dungeon.domain.core.structure.transition.Transition;
 import features.dungeon.domain.core.structure.transition.TransitionAnchor;
 import features.dungeon.domain.core.structure.transition.TransitionDestination;
 import features.party.PartyServiceAssembly;
-import features.party.adapter.sqlite.model.PartyPersistenceSchema;
 import features.party.domain.roster.PartyRoster;
 import features.party.domain.roster.repository.PartyRosterRepository;
-import platform.persistence.SqliteDatabase;
 import platform.persistence.TestFeatureStores;
 
 class DungeonEditorTestPersistence {
@@ -96,11 +93,7 @@ class DungeonEditorTestPersistence {
         static TestRuntime create() {
             DatabaseAssertions database = new DatabaseAssertions();
             database.clearDungeonData();
-            SqliteDatabase sqliteDatabase = new SqliteDatabase(
-                    database.databasePath,
-                    platform.diagnostics.NoopDiagnostics.INSTANCE);
-            var dungeonStore = TestFeatureStores.store(
-                    sqliteDatabase,
+            var dungeonStore = TestFeatureStores.current().store(
                     features.dungeon.adapter.sqlite.gateway.DungeonStoreDefinition.create());
             SqliteDungeonCatalogStore catalog = new SqliteDungeonCatalogStore(dungeonStore);
             DungeonTestAssembly.Component dungeon = createDungeonServices(
@@ -205,12 +198,11 @@ class DungeonEditorTestPersistence {
         }
 
         void clearDungeonData() {
+            TestFeatureStores.current().store(
+                    features.dungeon.adapter.sqlite.gateway.DungeonStoreDefinition.create());
             try (Connection connection = open();
                  Statement statement = connection.createStatement()) {
                 statement.execute("PRAGMA foreign_keys=ON");
-                for (String createTableSql : DungeonPersistenceSchema.CREATE_TABLE_SQL) {
-                    statement.execute(createTableSql);
-                }
                 statement.executeUpdate("DELETE FROM dungeon_maps");
             } catch (SQLException exception) {
                 throw new IllegalStateException("Failed to reset Dungeon Editor behavior DB.", exception);
@@ -218,11 +210,11 @@ class DungeonEditorTestPersistence {
         }
 
         void clearPartyData() {
+            TestFeatureStores.current().store(
+                    features.party.adapter.sqlite.repository.SqlitePartyRosterRepository
+                            .storeDefinition());
             try (Connection connection = open();
                  Statement statement = connection.createStatement()) {
-                statement.execute(PartyPersistenceSchema.CREATE_PLAYER_CHARACTERS_TABLE_SQL);
-                statement.execute(PartyPersistenceSchema.CREATE_PARTY_ROSTER_METADATA_TABLE_SQL);
-                statement.execute(PartyPersistenceSchema.INITIALIZE_METADATA_SQL);
                 statement.executeUpdate("DELETE FROM player_characters");
                 statement.executeUpdate(
                         "UPDATE party_roster_metadata SET next_character_id=1 WHERE"
@@ -233,10 +225,8 @@ class DungeonEditorTestPersistence {
         }
 
         long createPersistedMap(String mapName) {
-            SqliteDatabase database = sqliteDatabase();
             return new SqliteDungeonCatalogStore(
-                            TestFeatureStores.store(
-                                    database,
+                            TestFeatureStores.current().store(
                                     features.dungeon.adapter.sqlite.gateway.DungeonStoreDefinition
                                             .create())).create(mapName).mapId().value();
         }
@@ -1421,7 +1411,7 @@ class DungeonEditorTestPersistence {
             Transition sourceAfter = sourceBefore.withDestination(
                     TransitionDestination.dungeonMap(targetMapId, targetTransitionId));
             Transition targetAfter = targetBefore.withLinkedTransitionId(sourceTransitionId);
-            DungeonSqliteFixtureSeeder.commit(sqliteDatabase(), DungeonCompoundPatch.of(List.of(
+            dungeonFixture().commit(DungeonCompoundPatch.of(List.of(
                     DungeonPatch.of(
                             new DungeonMapIdentity(sourceMapId),
                             mapRevision(sourceMapId),
@@ -1911,7 +1901,7 @@ class DungeonEditorTestPersistence {
 
         private void commitChanges(long mapId, List<? extends DungeonPatchChange> changes) {
             long baselineRevision = mapRevision(mapId);
-            DungeonSqliteFixtureSeeder.commit(sqliteDatabase(), DungeonPatch.of(
+            dungeonFixture().commit(DungeonPatch.of(
                     new DungeonMapIdentity(mapId),
                     baselineRevision,
                     List.copyOf(changes)));
@@ -1935,10 +1925,15 @@ class DungeonEditorTestPersistence {
         }
 
         private SqliteDungeonIdentityAllocator identityAllocator() {
-            SqliteDatabase database = sqliteDatabase();
             return new SqliteDungeonIdentityAllocator(
-                    TestFeatureStores.store(
-                            database,
+                    TestFeatureStores.current().store(
+                            features.dungeon.adapter.sqlite.gateway.DungeonStoreDefinition
+                                    .create()));
+        }
+
+        private DungeonSqliteFixtureSeeder.Fixture dungeonFixture() {
+            return new DungeonSqliteFixtureSeeder.Fixture(
+                    TestFeatureStores.current().store(
                             features.dungeon.adapter.sqlite.gateway.DungeonStoreDefinition
                                     .create()));
         }
@@ -1974,10 +1969,6 @@ class DungeonEditorTestPersistence {
                     TransitionAnchor.cell(anchor),
                     TransitionDestination.unlinkedEntrance(),
                     null);
-        }
-
-        private SqliteDatabase sqliteDatabase() {
-            return new SqliteDatabase(databasePath, platform.diagnostics.NoopDiagnostics.INSTANCE);
         }
 
         private static Set<Cell> rectangleCells(RoomSeed seed) {

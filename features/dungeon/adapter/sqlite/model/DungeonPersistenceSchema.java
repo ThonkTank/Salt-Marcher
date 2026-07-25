@@ -30,20 +30,20 @@ public final class DungeonPersistenceSchema {
     public static final String IDENTITY_SEQUENCES_TABLE = "dungeon_identity_sequences";
 
     public static final String CREATE_DUNGEON_MAPS_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_maps ("
+            "CREATE TABLE dungeon_maps ("
                     + "dungeon_map_id INTEGER PRIMARY KEY AUTOINCREMENT,"
                     + "name           TEXT NOT NULL,"
                     + "revision       INTEGER NOT NULL DEFAULT 1"
                     + ")";
 
     public static final String CREATE_DUNGEON_IDENTITY_SEQUENCES_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_identity_sequences ("
+            "CREATE TABLE dungeon_identity_sequences ("
                     + "identity_kind TEXT PRIMARY KEY,"
                     + "next_id       INTEGER NOT NULL CHECK(next_id > 0)"
                     + ")";
 
     public static final String CREATE_DUNGEON_CHUNKS_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_chunks ("
+            "CREATE TABLE dungeon_chunks ("
                     + "dungeon_map_id INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                     + "level_z        INTEGER NOT NULL,"
                     + "chunk_q        INTEGER NOT NULL,"
@@ -53,7 +53,7 @@ public final class DungeonPersistenceSchema {
                     + ")";
 
     public static final String CREATE_DUNGEON_ENTITY_CHUNKS_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_entity_chunks ("
+            "CREATE TABLE dungeon_entity_chunks ("
                     + "dungeon_map_id INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                     + "entity_kind    TEXT NOT NULL,"
                     + "entity_id      INTEGER NOT NULL,"
@@ -74,20 +74,20 @@ public final class DungeonPersistenceSchema {
                     + ")";
 
     public static final String CREATE_DUNGEON_ENTITY_CHUNKS_LOOKUP_INDEX_SQL =
-            "CREATE INDEX IF NOT EXISTS idx_dungeon_entity_chunks_by_chunk "
+            "CREATE INDEX idx_dungeon_entity_chunks_by_chunk "
                     + "ON dungeon_entity_chunks(dungeon_map_id, level_z, chunk_q, chunk_r, entity_kind, entity_id)";
 
     public static final String CREATE_DUNGEON_ENTITY_CHUNKS_EXTREMA_INDEX_SQL =
-            "CREATE INDEX IF NOT EXISTS idx_dungeon_entity_chunks_level_extrema "
+            "CREATE INDEX idx_dungeon_entity_chunks_level_extrema "
                     + "ON dungeon_entity_chunks(dungeon_map_id, level_z, minimum_q, maximum_q, minimum_r, maximum_r)";
 
     public static final String CREATE_DUNGEON_ENTITY_CHUNKS_CONTINUATION_INDEX_SQL =
-            "CREATE INDEX IF NOT EXISTS idx_dungeon_entity_chunks_continuation "
+            "CREATE INDEX idx_dungeon_entity_chunks_continuation "
                     + "ON dungeon_entity_chunks("
                     + "dungeon_map_id, entity_kind, entity_id, level_z, chunk_r, chunk_q)";
 
     public static final String CREATE_DUNGEON_AUTHORED_LEVEL_BOUNDS_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_authored_level_bounds ("
+            "CREATE TABLE dungeon_authored_level_bounds ("
                     + "dungeon_map_id INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                     + "level_z        INTEGER NOT NULL,"
                     + "minimum_q      INTEGER NOT NULL,"
@@ -99,11 +99,11 @@ public final class DungeonPersistenceSchema {
                     + ")";
 
     public static final String CREATE_DUNGEON_CHUNKS_HORIZONTAL_LOOKUP_INDEX_SQL =
-            "CREATE INDEX IF NOT EXISTS idx_dungeon_chunks_by_horizontal_window "
+            "CREATE INDEX idx_dungeon_chunks_by_horizontal_window "
                     + "ON dungeon_chunks(dungeon_map_id, chunk_q, chunk_r, level_z)";
 
     public static final String CREATE_DUNGEON_CORRIDOR_ROUTE_CELLS_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_corridor_route_cells ("
+            "CREATE TABLE dungeon_corridor_route_cells ("
                     + "dungeon_map_id INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                     + "corridor_id    INTEGER NOT NULL,"
                     + "segment_order  INTEGER NOT NULL,"
@@ -120,12 +120,12 @@ public final class DungeonPersistenceSchema {
                     + ")";
 
     public static final String CREATE_DUNGEON_CORRIDOR_ROUTE_CELLS_LOOKUP_INDEX_SQL =
-            "CREATE INDEX IF NOT EXISTS idx_dungeon_corridor_route_cells_by_chunk "
+            "CREATE INDEX idx_dungeon_corridor_route_cells_by_chunk "
                     + "ON dungeon_corridor_route_cells("
                     + "dungeon_map_id, level_z, chunk_q, chunk_r, corridor_id, segment_order, cell_order)";
 
     public static final String CREATE_DUNGEON_CORRIDOR_ROUTE_DEPENDENCIES_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_corridor_route_dependencies ("
+            "CREATE TABLE dungeon_corridor_route_dependencies ("
                     + "dungeon_map_id INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                     + "corridor_id    INTEGER NOT NULL,"
                     + "level_z        INTEGER NOT NULL,"
@@ -135,23 +135,23 @@ public final class DungeonPersistenceSchema {
                     + ")";
 
     public static final String CREATE_DUNGEON_CORRIDOR_ROUTE_DEPENDENCIES_LOOKUP_INDEX_SQL =
-            "CREATE INDEX IF NOT EXISTS idx_dungeon_corridor_route_dependencies_by_cell "
+            "CREATE INDEX idx_dungeon_corridor_route_dependencies_by_cell "
                     + "ON dungeon_corridor_route_dependencies("
                     + "dungeon_map_id, level_z, cell_x, cell_y, corridor_id)";
 
     public static final String CREATE_DUNGEON_ROOMS_CLUSTER_LOOKUP_INDEX_SQL =
-            "CREATE INDEX IF NOT EXISTS idx_dungeon_rooms_by_cluster "
+            "CREATE INDEX idx_dungeon_rooms_by_cluster "
                     + "ON dungeon_rooms(cluster_id, room_id)";
 
     public static final String CREATE_DUNGEON_ROOM_CLUSTERS_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_room_clusters ("
+            "CREATE TABLE dungeon_room_clusters ("
                     + "cluster_id       INTEGER PRIMARY KEY AUTOINCREMENT,"
                     + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                     + "name             TEXT NOT NULL"
                     + ")";
 
     public static final String CREATE_DUNGEON_ROOMS_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_rooms ("
+            "CREATE TABLE dungeon_rooms ("
                     + "room_id            INTEGER PRIMARY KEY AUTOINCREMENT,"
                     + "dungeon_map_id     INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                     + "cluster_id         INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
@@ -160,7 +160,7 @@ public final class DungeonPersistenceSchema {
                     + ")";
 
     public static final String CREATE_DUNGEON_ROOM_CELLS_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_room_cells ("
+            "CREATE TABLE dungeon_room_cells ("
                     + "room_id INTEGER NOT NULL REFERENCES dungeon_rooms(room_id) ON DELETE CASCADE,"
                     + "level_z INTEGER NOT NULL,"
                     + "cell_x  INTEGER NOT NULL,"
@@ -169,14 +169,14 @@ public final class DungeonPersistenceSchema {
                     + ")";
 
     public static final String CREATE_DUNGEON_CORRIDORS_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_corridors ("
+            "CREATE TABLE dungeon_corridors ("
                     + "corridor_id     INTEGER PRIMARY KEY AUTOINCREMENT,"
                     + "dungeon_map_id  INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                     + "level_z         INTEGER NOT NULL DEFAULT 0"
                     + ")";
 
     public static final String CREATE_DUNGEON_CORRIDOR_MEMBERS_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_corridor_members ("
+            "CREATE TABLE dungeon_corridor_members ("
                     + "corridor_id  INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
                     + "room_id      INTEGER NOT NULL REFERENCES dungeon_rooms(room_id) ON DELETE CASCADE,"
                     + "member_order INTEGER NOT NULL DEFAULT 0,"
@@ -184,7 +184,7 @@ public final class DungeonPersistenceSchema {
                     + ")";
 
     public static final String CREATE_DUNGEON_ROOM_CLUSTER_EDGES_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_room_cluster_edges ("
+            "CREATE TABLE dungeon_room_cluster_edges ("
                     + "dungeon_map_id INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                     + "cluster_id     INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
                     + "level_z        INTEGER NOT NULL DEFAULT 0,"
@@ -197,7 +197,7 @@ public final class DungeonPersistenceSchema {
                     + ")";
 
     public static final String CREATE_DUNGEON_CORRIDOR_DOOR_OVERRIDES_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_corridor_door_overrides ("
+            "CREATE TABLE dungeon_corridor_door_overrides ("
                     + "corridor_id     INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
                     + "room_id         INTEGER NOT NULL REFERENCES dungeon_rooms(room_id) ON DELETE CASCADE,"
                     + "cluster_id      INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
@@ -211,7 +211,7 @@ public final class DungeonPersistenceSchema {
                     + ")";
 
     public static final String CREATE_DUNGEON_CORRIDOR_ANCHORS_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_corridor_anchors ("
+            "CREATE TABLE dungeon_corridor_anchors ("
                     + "corridor_id     INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
                     + "anchor_id       INTEGER NOT NULL,"
                     + "host_corridor_id INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
@@ -224,7 +224,7 @@ public final class DungeonPersistenceSchema {
                     + ")";
 
     public static final String CREATE_DUNGEON_CORRIDOR_ANCHOR_REFS_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_corridor_anchor_refs ("
+            "CREATE TABLE dungeon_corridor_anchor_refs ("
                     + "corridor_id      INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
                     + "host_corridor_id INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
                     + "topology_element_id INTEGER NOT NULL,"
@@ -233,7 +233,7 @@ public final class DungeonPersistenceSchema {
                     + ")";
 
     public static final String CREATE_DUNGEON_TOPOLOGY_ELEMENTS_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_topology_elements ("
+            "CREATE TABLE dungeon_topology_elements ("
                     + "dungeon_map_id INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                     + "element_kind   TEXT NOT NULL,"
                     + "element_id     INTEGER NOT NULL,"
@@ -245,7 +245,7 @@ public final class DungeonPersistenceSchema {
                     + ")";
 
     public static final String CREATE_DUNGEON_CORRIDOR_WAYPOINTS_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_corridor_waypoints ("
+            "CREATE TABLE dungeon_corridor_waypoints ("
                     + "corridor_id INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
                     + "sort_order  INTEGER NOT NULL,"
                     + "cluster_id  INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
@@ -256,7 +256,7 @@ public final class DungeonPersistenceSchema {
                     + ")";
 
     public static final String CREATE_DUNGEON_ROOM_EXIT_DESCRIPTIONS_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_room_exit_descriptions ("
+            "CREATE TABLE dungeon_room_exit_descriptions ("
                     + "room_id        INTEGER NOT NULL REFERENCES dungeon_rooms(room_id) ON DELETE CASCADE,"
                     + "level_z        INTEGER NOT NULL,"
                     + "cell_x         INTEGER NOT NULL,"
@@ -268,7 +268,7 @@ public final class DungeonPersistenceSchema {
                     + ")";
 
     public static final String CREATE_DUNGEON_STAIRS_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_stairs ("
+            "CREATE TABLE dungeon_stairs ("
                     + "stair_id       INTEGER PRIMARY KEY AUTOINCREMENT,"
                     + "dungeon_map_id INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                     + "name           TEXT,"
@@ -280,7 +280,7 @@ public final class DungeonPersistenceSchema {
                     + ")";
 
     public static final String CREATE_DUNGEON_STAIR_PATH_NODES_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_stair_path_nodes ("
+            "CREATE TABLE dungeon_stair_path_nodes ("
                     + "stair_id   INTEGER NOT NULL REFERENCES dungeon_stairs(stair_id) ON DELETE CASCADE,"
                     + "sort_order INTEGER NOT NULL,"
                     + "cell_x     INTEGER NOT NULL,"
@@ -290,7 +290,7 @@ public final class DungeonPersistenceSchema {
                     + ")";
 
     public static final String CREATE_DUNGEON_STAIR_EXITS_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_stair_exits ("
+            "CREATE TABLE dungeon_stair_exits ("
                     + "stair_exit_id INTEGER PRIMARY KEY AUTOINCREMENT,"
                     + "stair_id      INTEGER NOT NULL REFERENCES dungeon_stairs(stair_id) ON DELETE CASCADE,"
                     + "cell_x        INTEGER NOT NULL,"
@@ -300,7 +300,7 @@ public final class DungeonPersistenceSchema {
                     + ")";
 
     public static final String CREATE_DUNGEON_TRANSITIONS_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_transitions ("
+            "CREATE TABLE dungeon_transitions ("
                     + "transition_id            INTEGER PRIMARY KEY AUTOINCREMENT,"
                     + "dungeon_map_id           INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                     + "description              TEXT,"
@@ -318,7 +318,7 @@ public final class DungeonPersistenceSchema {
                     + ")";
 
     public static final String CREATE_DUNGEON_FEATURE_MARKERS_TABLE_SQL =
-            "CREATE TABLE IF NOT EXISTS dungeon_feature_markers ("
+            "CREATE TABLE dungeon_feature_markers ("
                     + "feature_marker_id INTEGER NOT NULL,"
                     + "dungeon_map_id     INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                     + "marker_kind        TEXT NOT NULL,"

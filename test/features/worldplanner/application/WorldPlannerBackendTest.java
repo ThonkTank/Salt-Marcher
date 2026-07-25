@@ -252,7 +252,7 @@ public final class WorldPlannerBackendTest {
             String label
     ) {
         resetDatabase();
-        createLegacyMalformedFiniteDatabase(finiteValueSql, quantityValueSql);
+        createMalformedFiniteDatabase(finiteValueSql, quantityValueSql);
 
         WorldPlannerSnapshotModel model = productionRuntime().snapshot();
 
@@ -562,7 +562,7 @@ public final class WorldPlannerBackendTest {
     ) {
     }
 
-    private static void createLegacyMalformedFiniteDatabase(String finiteValueSql, String quantityValueSql) {
+    private static void createMalformedFiniteDatabase(String finiteValueSql, String quantityValueSql) {
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath());
                 Statement statement = connection.createStatement()) {
             statement.execute(WorldPlannerPersistenceSchema.CREATE_NPCS_SQL);

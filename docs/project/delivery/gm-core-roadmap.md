@@ -67,11 +67,18 @@ the Product Process.
   that owner records final independent replay, required full `./gradlew check`,
   CI, installed-desktop proof, and owner acceptance, the candidate remains work
   in progress rather than an accepted milestone.
+- **Next-step verdict:** M2a remains the right next product slice because
+  `AC-F10` is independently useful and needs accepted Campaign isolation, but
+  starting it before M1 exits is premature. No broader content lifecycle,
+  current-Party/Scene transition, M2b knowledge record, or compatibility bridge
+  is an entry prerequisite. After M1 acceptance, revalidate M2a once more at
+  the actual boundary and open it as a separate production increment rather
+  than widening the current Campaign-runtime candidate.
 - No real users or legacy data exist before complete GM-Core feature
   completion. Consequently, no active or proposed pre-completion slice owes a
   legacy conversion, compatibility bridge, migration, fallback, or
-  migration-shaped architectural hedge. This binding owner premise expires at
-  the First-Real-User/Data Cutover Gate below.
+  migration-shaped architectural hedge. This binding owner premise expires
+  only when the Product Process compatibility covenant activates.
 
 ## Milestone Hypotheses
 
@@ -82,14 +89,19 @@ the Product Process.
 - **Dependency hypothesis:** whole-program work needs a truthful active-Campaign
   boundary before Campaign-owned capabilities can be integrated safely.
 - **Practical proof:** a production-composition replay creates Alpha and Beta,
-  seeds each through the Campaign-owned production services, then reads the
-  exact focused Scene, Encounter filter, and travel location from the current
-  production shell after switches and process restart before making another
-  durable mutation. Fault injection covers pre- and post-commit activation
-  failures. Separately, the installed application proves name-only creation
-  plus immediate keyboard-operated selection, switching, and exact restart
-  resume. This milestone does not claim that the still-later Party, map, or
-  travel-authoring UI is already available merely to seed the isolation proof.
+  proves each name-only Campaign opens with an immediately usable empty primary
+  Scene, seeds each through the Campaign-owned production services, then reads
+  the exact focused Scene, Running Encounter participant/HP/initiative/round,
+  and Party travel location from the current production shell after repeated
+  switches and process restart before making another durable mutation. The
+  current-profile warm-switch population must meet the `TN-16` readiness
+  budget with the representative next mutation; M13 retains normative
+  `RP-R`/`RP-L`, every-supported-OS, and fully integrated state qualification.
+  Fault injection covers pre- and post-commit activation failures. Separately,
+  the installed application proves name-only creation plus immediate
+  keyboard-operated selection, switching, and exact restart resume. This
+  milestone does not claim that the still-later Party, map, or travel-authoring
+  UI is already available merely to seed the isolation proof.
 - **Owner acceptance:** Aaron operates the selector and all switch/restart
   states by keyboard and confirms immediate, understandable behavior.
 - **Exit and reopen:** exit only after the active slice's frozen replay, full
@@ -100,9 +112,10 @@ the Product Process.
 
 ### M2a — Campaign Roster
 
-- **Outcome and needs:** the canonical one-Roster-per-Campaign behavior as a
-  directly usable prerequisite for later current-Party and Scene outcomes;
-  chiefly `TN-01`, `TN-02`, and `TN-28`. This slice does not claim final
+- **Outcome and needs:** `AC-F10`, the canonical one-Roster-per-Campaign
+  behavior as a directly usable outcome and prerequisite for later
+  current-Party and Scene outcomes; chiefly `TN-01`, `TN-02`, and `TN-07`.
+  This slice does not claim final
   qualification of `AC-Q14`, `AC-L02`, or `AC-C02`.
 - **Dependency hypothesis:** the first foundational assumption worth testing is
   whether the GM can manage all Campaign PCs independently from current table
@@ -130,15 +143,16 @@ the Product Process.
 
 After M2a, Next-Step Revalidation chooses between the complete M3 current-Party
 and Scene flow and a small M2b knowledge-record slice only if one concrete
-downstream workflow makes that record immediately useful. `AC-F05` is not
-scheduled until a complete source/target object flow can prove independent
-editing; `AC-F07` is not scheduled until a note-first record has a real
-production use. `AC-Q14` moves to the first automatic PC workflow that can
-prove both relevant missing-value blocking and unrelated workflow continuity.
+downstream workflow makes that record immediately useful. The guide currently
+places `AC-F07` in M3, where a note-first record has a real Running-Scene use;
+`AC-F05` in M5, where both source and copied target can traverse a complete
+object lifecycle; and `AC-Q14` in M4's first automatic PC workflow. Revalidation
+must move any of them rather than build a preparatory bridge if those deciding
+journeys are not yet possible.
 
 ### M3 — Current Party, Continuous Scenes, And Runtime Masks
 
-- **Outcome and needs:** `AC-F08`, `AC-L02` through `AC-L07`, `AC-C02`,
+- **Outcome and needs:** `AC-F07`, `AC-F08`, `AC-L02` through `AC-L07`, `AC-C02`,
   `AC-C03`; chiefly `TN-02`, `TN-03`, `TN-05`, `TN-07`, `TN-08`, `TN-10`,
   `TN-11`, `TN-15`, `TN-16`, `TN-21`, `TN-28`, `TN-31`, and `TN-34`.
 - **Dependency hypothesis:** authoritative Party/Scene membership and pending
@@ -146,9 +160,10 @@ prove both relevant missing-value blocking and unrelated workflow continuity.
   several live contexts.
 - **Practical proof:** activate and deactivate Roster PCs through the current
   Party, attach name-only creation to the focused Scene by default with opt-out,
-  then split, move, and reunite characters across several continuously usable
-  Scenes and coexisting masks; inject Scene/Encounter failures and restart
-  through visibly pending retry.
+  attach a note-first narrative record to a present place, faction, or NPC and
+  resolve it manually in that real Scene workflow, then split, move, and reunite
+  characters across several continuously usable Scenes and coexisting masks;
+  inject Scene/Encounter failures and restart through visibly pending retry.
 - **Owner acceptance:** Aaron runs the complete Scene, Party, Catalog-add,
   lightweight-create, and multi-mask flow without leaving the live workspace.
 - **Exit and reopen:** exit with exactly one Scene per active PC, no implicit
@@ -161,16 +176,18 @@ prove both relevant missing-value blocking and unrelated workflow continuity.
 ### M4 — Manual Session Planning And Assisted Preparation
 
 - **Outcome and needs:** `AC-F03`, `AC-F04`, `AC-P01` through `AC-P07`,
-  `AC-P10`, `AC-Q12`; chiefly `TN-01` through `TN-03`, `TN-07`, `TN-10`,
-  `TN-13`, `TN-15`, `TN-21`, `TN-22`, `TN-27`, `TN-28`, `TN-31`, `TN-32`,
-  `TN-36`, and `TN-37`.
+  `AC-P10`, `AC-Q12`, `AC-Q14`; chiefly `TN-01` through `TN-03`, `TN-07`,
+  `TN-10`, `TN-13`, `TN-15`, `TN-21`, `TN-22`, `TN-27`, `TN-28`, `TN-31`,
+  `TN-32`, `TN-36`, and `TN-37`.
 - **Dependency hypothesis:** planning becomes useful after Campaign content and
   live Scene handoffs are stable; manual preparation must work before optional
   generation can add value.
 - **Practical proof:** build and replace an unnamed plan without a Party,
   preserve accepted placements, then generate from a planning-only Party and
   Adventure Day; prove impossible constraints yield no partial result and one
-  regeneration leaves all other edits untouched.
+  regeneration leaves all other edits untouched. The automatic workflow blocks
+  on its missing relevant PC statistic while unrelated optional PC data remains
+  optional and unrelated Roster/manual-planning work stays usable.
 - **Owner acceptance:** Aaron prepares a real session manually and with
   assistance, edits the timeline, groups, treasures, Items, placements, notes,
   and weighted Encounter Table inputs, and reaches the placed content in play.
@@ -183,7 +200,7 @@ prove both relevant missing-value blocking and unrelated workflow continuity.
 
 ### M5 — Encounter Outcome, Rewards, Lifecycle, And History
 
-- **Outcome and needs:** `AC-F06`, `AC-F09`, `AC-R01` through `AC-R08`,
+- **Outcome and needs:** `AC-F05`, `AC-F06`, `AC-F09`, `AC-R01` through `AC-R08`,
   `AC-C01`, `AC-C04`; chiefly `TN-01` through `TN-06`, `TN-10`, `TN-12`,
   `TN-13`, `TN-21`, `TN-28`, `TN-33`, and `TN-35`.
 - **Dependency hypothesis:** the Scene/mask and preparation flows supply real
@@ -192,10 +209,11 @@ prove both relevant missing-value blocking and unrelated workflow continuity.
 - **Practical proof:** complete an Encounter with selected rounded XP, HP/death
   carry-forward, deferred notice, partial reward distribution, ledger stack
   edits, sale/give-away reminders, loot compensation, correction, backdating,
-  and restart; change a reusable definition and compare current versus frozen
-  completed facts, then delete/restore a referenced object while comparing
-  current dependents, runtime, trash, and `[UNKNOWN]` history. Fault each
-  coupled outcome and prove old-or-new truth.
+  and restart; copy a Campaign-owned object into the other Campaign and prove
+  both sides remain independently editable; change a reusable definition and
+  compare current versus frozen completed facts, then delete/restore a
+  referenced object while comparing current dependents, runtime, trash, and
+  `[UNKNOWN]` history. Fault each coupled outcome and prove old-or-new truth.
 - **Owner acceptance:** Aaron completes and corrects representative Encounter
   and Quest outcomes, distributes every Item explicitly, and judges ledger and
   explanatory history useful without losing the Running Scene.
@@ -318,7 +336,7 @@ prove both relevant missing-value blocking and unrelated workflow continuity.
 ### M11 — Recovery, Portability, And Campaign Deletion
 
 - **Outcome and needs:** `AC-D02` through `AC-D06`; chiefly `TN-01` through
-  `TN-05`, `TN-13`, `TN-17` through `TN-19`, `TN-22`, `TN-30`, and `TN-33`.
+  `TN-05`, `TN-13`, `TN-17`, `TN-19`, `TN-22`, `TN-30`, and `TN-33`.
 - **Dependency hypothesis:** the payload and asset families should be stable
   enough to prove complete manifests; safety mechanisms needed by earlier
   slices may land sooner and are not deferred by this ordering.
@@ -361,6 +379,9 @@ prove both relevant missing-value blocking and unrelated workflow continuity.
 
 - **Outcome and needs:** `AC-Q01` through `AC-Q06`, `AC-Q10`, `AC-Q13`, plus
   regression and traceability over every `AC-*` and `TN-01` through `TN-37`.
+  Qualification covers every obligation active before first-real-user/data
+  cutover; `TN-18` is traced as conditionally inactive until the Product Process
+  compatibility covenant freezes the initial released format.
 - **Dependency hypothesis:** cross-platform, scale, accessibility, failure,
   cancellation, and resource qualification is meaningful only against the
   integrated product, although each earlier slice must prove its affected
@@ -368,7 +389,7 @@ prove both relevant missing-value blocking and unrelated workflow continuity.
 - **Practical proof:** run every complete GM journey offline against the
   normative `RP-H`, `RP-R`, `RP-L`, and applicable `RP-X` profiles; exercise
   supported OS, display, keyboard, scaling, localization, privacy, fault,
-  cancel/retry, update, recovery, and long-operation survivor matrices.
+  cancel/retry, current-format recovery, and long-operation survivor matrices.
 - **Owner acceptance:** Aaron tests and approves every visible core function in
   the installed application; documentation-only surfaces use their canonical
   gate.
@@ -381,49 +402,32 @@ prove both relevant missing-value blocking and unrelated workflow continuity.
 - **Exclusions:** player-operated apps, remote play, touch/mobile layouts,
   general GM dice roller, generic game-system core, and other parked QoL.
 
-## First-Real-User/Data Cutover Gate
+## First-Real-User/Data Cutover Revalidation
 
-This gate runs only after M13 has exited and before the completed product is
-made available for its first real use or allowed to create its first real user
-data. It is a one-time boundary, not a fourteenth feature milestone and not a
-reason to add compatibility work before feature completion.
+After M13 exits and before first non-disposable use or distribution, revalidate
+the exact candidate against the normative
+[Product Process Compatibility Covenant](aletheia/product-process.md#compatibility-covenant).
+That covenant alone defines when compatibility obligations start. Persistence
+and export contracts own the resulting format semantics, and Process Evaluation
+owns any process-adoption verdict. This roadmap adds no trigger condition,
+waiver, format rule, or proof substitute.
 
-The gate passes only when all of the following are true:
-
-1. M13's feature-completion evidence and owner acceptance are recorded, and no
-   real user has yet received the release or created persistent data with it.
-2. The owning persistence/export contracts identify the exact completed
-   release as the initial durable compatibility baseline; this roadmap links
-   to that decision but does not define its format or semantics.
-3. On a clean supported installation of that exact release, a disposable but
-   representative Campaign is created through production routes, restarted,
-   recovered, exported, imported, and semantically read back successfully.
-   The release identity and resulting disposable fixture become the regression
-   oracle for the first future durable-format change.
-4. Literal local `./gradlew check`, required CI, installed-desktop proof, and
-   owner approval are green for the unchanged cutover candidate.
-5. The release record states that, after cutover, every durable-data change
-   must define and production-prove forward migration plus explicit handling
-   of data from older or newer supported versions before it may reach real
-   data. Any modification of real local data also remains subject to the
-   project's restore-tested-backup boundary.
-
-A failed gate reopens the owning M11, M13, contract, or architecture decision;
-it cannot be waived in this roadmap. Once the gate passes, the no-legacy-data
-premise is retired permanently and later work must treat the frozen baseline
-and real data as binding inputs.
+Treat any missing covenant evidence as a reason to reopen its canonical owner,
+not as a fourteenth feature milestone or as permission to add pre-completion
+compatibility work. Once the canonical covenant records activation, this guide
+may describe the boundary only as an established input to later revalidation.
 
 ## Coverage And Retirement
 
-The milestone assignment covers `AC-F01..F09`, `AC-P01..P10`, `AC-L01..L10`,
+The milestone assignment covers `AC-F01..F10`, `AC-P01..P10`, `AC-L01..L10`,
 `AC-T01..T09`, `AC-R01..R08`, `AC-S01..S08`, `AC-D01..D06`, `AC-Q01..Q14`, and
 `AC-C01..C04`. The canonical requirement and technical-needs owners decide
 their meaning; this list only guards delivery omission.
 
-After M13 exits and the First-Real-User/Data Cutover Gate passes, delete this
-roadmap and every finished slice delivery owner. Product behavior, technical
-obligations, architecture, contracts, tests, Git, CI, and release artifacts
-remain in their respective canonical surfaces.
+After M13 exits and the Product Process records compatibility-covenant
+activation, delete this roadmap and every finished slice delivery owner.
+Product behavior, technical obligations, architecture, contracts, tests, Git,
+CI, and release artifacts remain in their respective canonical surfaces.
 
 ## Canonical Inputs
 

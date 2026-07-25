@@ -3,11 +3,14 @@ package app;
 import features.creatures.CreaturesServiceAssembly;
 import features.creatures.api.RefreshCreatureReferenceIndexCommand;
 import features.dungeon.DungeonFeature;
+import features.encounter.api.EncounterApi;
+import features.encounter.api.SavedEncounterPlanListModel;
 import features.encounter.EncounterServiceAssembly;
 import features.encountertable.EncounterTableServiceAssembly;
 import features.hex.HexServiceAssembly;
 import features.items.ItemsServiceAssembly;
 import features.party.PartyServiceAssembly;
+import features.party.api.PartyApi;
 import features.scene.SceneFeature;
 import features.scene.api.SceneCommand;
 import features.scene.api.SceneMutationResult;
@@ -16,6 +19,7 @@ import features.sessiongeneration.api.SessionGenerationApi;
 import features.sessionplanner.SessionPlannerServiceAssembly;
 import features.travel.TravelFeature;
 import features.worldplanner.WorldPlannerServiceAssembly;
+import features.worldplanner.api.WorldPlannerSnapshotModel;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -27,15 +31,15 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import javafx.scene.Scene;
-import javafx.scene.control.ToggleButton;
-import javafx.scene.layout.Pane;
 import platform.diagnostics.Diagnostics;
 import platform.diagnostics.DiagnosticId;
 import platform.execution.ExecutionLane;
 import platform.execution.WorkflowAdmissionController;
 import platform.persistence.FeatureStoreReadiness;
+import platform.persistence.FeatureStoreHandle;
 import platform.persistence.SqliteDatabase;
 import platform.ui.UiDispatcher;
+import shell.api.ContributionKey;
 import shell.host.AppShell;
 
 /**
@@ -46,11 +50,16 @@ import shell.host.AppShell;
  */
 final class CampaignRuntime implements AutoCloseable {
 
+    static final ContributionKey REQUIRED_SCENE_JOURNEY =
+            new ContributionKey("runtime-scenes");
+
     enum State {
         STARTING,
         FOUNDATION_PREPARED,
         PREPARED,
         ACTIVE,
+        PARKING,
+        PARKED,
         FAILED,
         QUIESCING,
         CLOSED
@@ -123,19 +132,40 @@ final class CampaignRuntime implements AutoCloseable {
     record PreparedShellFacts(
             int navigationEntries,
             boolean requiredSceneJourneyPresent,
+            boolean focusedSceneJourneySelected,
             boolean attachedToScene,
-            boolean laidOut
+            boolean sceneSized
     ) {
         boolean ready() {
             return navigationEntries > 0
                     && requiredSceneJourneyPresent
+                    && focusedSceneJourneySelected
                     && attachedToScene
-                    && laidOut;
+                    && sceneSized;
         }
     }
 
     private static final Set<String> SUPPORTING_STORE_OWNERS =
             Set.of("dungeon", "hex", "session-generation");
+
+    @FunctionalInterface
+    interface SessionPlannerFactory {
+        SessionPlannerServiceAssembly create(SessionPlannerInputs inputs);
+    }
+
+    record SessionPlannerInputs(
+            FeatureStoreHandle store,
+            PartyApi party,
+            EncounterApi encounters,
+            SavedEncounterPlanListModel savedPlans,
+            WorldPlannerSnapshotModel worldPlanner,
+            SessionGenerationApi generation,
+            ExecutionLane authoredExecutionLane,
+            ExecutionLane preparationCpuLane,
+            ExecutionLane preparationIoLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics
+    ) { }
 
     private final WorkflowAdmissionController admission;
     private final UiDispatcher uiDispatcher;
@@ -148,7 +178,13 @@ final class CampaignRuntime implements AutoCloseable {
             new CompletableFuture<>();
     private final CompletableFuture<PreparedReadiness> preparedReadiness = new CompletableFuture<>();
     private volatile FoundationReadiness preparedFoundation;
-    private final CompletableFuture<Void> quiescence = new CompletableFuture<>();
+    private final Object closeMonitor = new Object();
+    private final Set<AutoCloseable> closedComponents =
+            Collections.newSetFromMap(new IdentityHashMap<>());
+    private volatile CompletableFuture<Void> quiescence;
+    private boolean readinessTerminated;
+    private boolean delegatesClosed;
+    private boolean databaseClosed;
     private final AtomicReference<State> state = new AtomicReference<>(State.STARTING);
 
     private CampaignRuntime(
@@ -186,6 +222,31 @@ final class CampaignRuntime implements AutoCloseable {
             InstallationRuntime.SharedReferences sharedReferences,
             SqliteDatabase database
     ) {
+        return open(
+                diagnostics, executionLane, creatureReadLane, itemReadLane,
+                sessionGenerationCpuLane, sessionGenerationIoLane,
+                encounterGeneratedCpuLane, encounterGeneratedIoLane,
+                sessionPreparationCpuLane, sessionPreparationIoLane,
+                uiDispatcher, sharedReferences, database,
+                CampaignRuntime::createSessionPlanner);
+    }
+
+    static CampaignRuntime open(
+            Diagnostics diagnostics,
+            ExecutionLane executionLane,
+            ExecutionLane creatureReadLane,
+            ExecutionLane itemReadLane,
+            ExecutionLane sessionGenerationCpuLane,
+            ExecutionLane sessionGenerationIoLane,
+            ExecutionLane encounterGeneratedCpuLane,
+            ExecutionLane encounterGeneratedIoLane,
+            ExecutionLane sessionPreparationCpuLane,
+            ExecutionLane sessionPreparationIoLane,
+            UiDispatcher uiDispatcher,
+            InstallationRuntime.SharedReferences sharedReferences,
+            SqliteDatabase database,
+            SessionPlannerFactory sessionPlannerFactory
+    ) {
         Diagnostics safeDiagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
         ExecutionLane safeExecutionLane = Objects.requireNonNull(executionLane, "executionLane");
         List<ExecutionLane> supportingLanes = List.of(
@@ -201,6 +262,8 @@ final class CampaignRuntime implements AutoCloseable {
         InstallationRuntime.SharedReferences safeSharedReferences =
                 Objects.requireNonNull(sharedReferences, "sharedReferences");
         SqliteDatabase safeDatabase = Objects.requireNonNull(database, "database");
+        SessionPlannerFactory safeSessionPlannerFactory =
+                Objects.requireNonNull(sessionPlannerFactory, "sessionPlannerFactory");
 
         CampaignRuntime runtime = null;
         WorkflowAdmissionController admission = null;
@@ -233,7 +296,8 @@ final class CampaignRuntime implements AutoCloseable {
                     admittedEncounterGeneratedIoLane,
                     admittedSessionPreparationCpuLane,
                     admittedSessionPreparationIoLane,
-                    admittedUiDispatcher);
+                    admittedUiDispatcher,
+                    safeSessionPlannerFactory);
             runtime = new CampaignRuntime(
                     admission,
                     admittedUiDispatcher,
@@ -403,21 +467,14 @@ final class CampaignRuntime implements AutoCloseable {
         }
         AppShell safeShell = Objects.requireNonNull(shell, "shell");
         Scene safeScene = Objects.requireNonNull(candidateScene, "candidateScene");
-        Pane navigation = safeShell.lookup(".nav-sidebar") instanceof Pane pane ? pane : null;
-        int navigationEntries = navigation == null ? 0 : (int) navigation.getChildrenUnmodifiable().stream()
-                .filter(ToggleButton.class::isInstance)
-                .count();
-        boolean sceneJourney = navigation != null && navigation.getChildrenUnmodifiable().stream()
-                .filter(ToggleButton.class::isInstance)
-                .map(ToggleButton.class::cast)
-                .anyMatch(button -> "Szenen".equals(button.getAccessibleText()));
         PreparedShellFacts facts = new PreparedShellFacts(
-                navigationEntries,
-                sceneJourney,
+                safeShell.leftBarTabCount(),
+                safeShell.hasLeftBarTab(REQUIRED_SCENE_JOURNEY),
+                safeShell.activeLeftBarTab()
+                        .map(REQUIRED_SCENE_JOURNEY::equals)
+                        .orElse(false),
                 safeShell.getScene() == safeScene && safeScene.getRoot() == safeShell,
-                safeScene.getWidth() > 0 && safeScene.getHeight() > 0
-                        && safeShell.getLayoutBounds().getWidth() > 0
-                        && safeShell.getLayoutBounds().getHeight() > 0);
+                safeScene.getWidth() > 0 && safeScene.getHeight() > 0);
         SemanticSurvivorFacts survivors = new SemanticSurvivorFacts(
                 components.scene().model().current().focusedSceneId() > 0L,
                 foundation.encounterInitialized(),
@@ -449,9 +506,15 @@ final class CampaignRuntime implements AutoCloseable {
                 || !safeShell.getScene().getWindow().isShowing()) {
             throw new IllegalStateException("Campaign shell was not visibly published from PREPARED state");
         }
+        State publicationState = state.get();
+        if (publicationState != State.PREPARED && publicationState != State.PARKED) {
+            throw new IllegalStateException(
+                    "Campaign shell was not prepared or parked: " + publicationState);
+        }
         admission.resumeWith(() -> {
-            if (!state.compareAndSet(State.PREPARED, State.ACTIVE)) {
-                throw new IllegalStateException("Campaign shell was not in PREPARED state");
+            if (!state.compareAndSet(publicationState, State.ACTIVE)) {
+                throw new IllegalStateException(
+                        "Campaign shell changed state during visible activation");
             }
             safeShell.setDisable(false);
             safeShell.setAccessibleHelp("");
@@ -462,7 +525,8 @@ final class CampaignRuntime implements AutoCloseable {
     }
 
     CompletionStage<Void> quiescence() {
-        return quiescence;
+        CompletableFuture<Void> current = quiescence;
+        return current == null ? CompletableFuture.completedFuture(null) : current;
     }
 
     void runWorkflowForTesting(Runnable workflow) {
@@ -501,50 +565,127 @@ final class CampaignRuntime implements AutoCloseable {
     }
 
     CompletionStage<Void> pauseAndDrain() {
-        return admission.pauseAndDrain();
+        if (!state.compareAndSet(State.ACTIVE, State.PARKING)) {
+            return CompletableFuture.failedFuture(
+                    new IllegalStateException("Only an ACTIVE Campaign can be parked"));
+        }
+        CompletionStage<Void> drain;
+        try {
+            drain = admission.pauseAndDrain();
+        } catch (RuntimeException | Error failure) {
+            state.compareAndSet(State.PARKING, State.FAILED);
+            throw failure;
+        }
+        return drain.whenComplete((ignored, failure) -> {
+            if (failure == null) {
+                state.compareAndSet(State.PARKING, State.PARKED);
+            } else {
+                state.compareAndSet(State.PARKING, State.FAILED);
+            }
+        });
     }
 
     void resumeAdmission() {
-        if (state.get() != State.ACTIVE) {
-            throw new IllegalStateException("Only an ACTIVE Campaign can resume after a reversible pause");
+        if (state.get() != State.PARKED) {
+            throw new IllegalStateException("Only a PARKED Campaign can resume after a reversible pause");
         }
-        admission.resume();
+        admission.resumeWith(() -> {
+            if (!state.compareAndSet(State.PARKED, State.ACTIVE)) {
+                throw new IllegalStateException("Campaign changed state during resume");
+            }
+        });
+    }
+
+    void captureParkedState() {
+        if (state.get() != State.PARKED) {
+            throw new IllegalStateException("Only a PARKED Campaign can capture its reuse token");
+        }
+        try {
+            database.capturePreparedParkedState();
+        } catch (java.sql.SQLException failure) {
+            throw new IllegalStateException("Parked Campaign token capture failed", failure);
+        }
+    }
+
+    boolean parkedStateStillValid() {
+        if (state.get() != State.PARKED) {
+            throw new IllegalStateException("Only a PARKED Campaign can be revalidated");
+        }
+        try {
+            return database.verifyPreparedParkedState();
+        } catch (java.sql.SQLException failure) {
+            throw new IllegalStateException("Parked Campaign integrity verification failed", failure);
+        }
     }
 
     CompletionStage<Void> quiesceAsync() {
-        State prior = state.getAndUpdate(current ->
-                current == State.CLOSED || current == State.QUIESCING ? current : State.QUIESCING);
-        if (prior == State.CLOSED || prior == State.QUIESCING) {
-            return quiescence;
+        CompletableFuture<Void> attempt;
+        synchronized (closeMonitor) {
+            if (state.get() == State.CLOSED) {
+                return CompletableFuture.completedFuture(null);
+            }
+            if (quiescence != null && !quiescence.isDone()) {
+                return quiescence;
+            }
+            state.set(State.QUIESCING);
+            attempt = new CompletableFuture<>();
+            quiescence = attempt;
+            if (!readinessTerminated) {
+                IllegalStateException closedBeforeReady =
+                        new IllegalStateException("Campaign runtime closed before readiness completed");
+                foundationReadiness.completeExceptionally(closedBeforeReady);
+                preparedReadiness.completeExceptionally(closedBeforeReady);
+                readinessTerminated = true;
+            }
         }
+        CompletionStage<Void> drain;
+        try {
+            drain = admission.revokeAndDrain();
+        } catch (RuntimeException | Error failure) {
+            attempt.completeExceptionally(failure);
+            return attempt;
+        }
+        drain.whenComplete((ignored, drainFailure) -> {
+            try {
+                closureExecutor.execute(() -> completeCloseAttempt(attempt, drainFailure));
+            } catch (RuntimeException | Error failure) {
+                attempt.completeExceptionally(accumulate(drainFailure, failure));
+            }
+        });
+        return attempt;
+    }
 
-        IllegalStateException closedBeforeReady =
-                new IllegalStateException("Campaign runtime closed before readiness completed");
-        foundationReadiness.completeExceptionally(closedBeforeReady);
-        preparedReadiness.completeExceptionally(closedBeforeReady);
-        admission.revokeAndDrain().whenComplete((ignored, drainFailure) ->
-                closureExecutor.execute(() -> {
-                    Throwable failure = drainFailure;
-                    failure = components.close(failure);
-                    try {
-                        admission.closeDelegatesAfterDrain();
-                    } catch (RuntimeException | Error closeFailure) {
-                        failure = accumulate(failure, closeFailure);
-                    }
-                    try {
-                        database.close();
-                    } catch (RuntimeException | Error databaseFailure) {
-                        failure = accumulate(failure, databaseFailure);
-                    }
-                    state.set(State.CLOSED);
-                    if (failure == null) {
-                        quiescence.complete(null);
-                    } else {
-                        quiescence.completeExceptionally(failure);
-                    }
-                    closureExecutor.shutdown();
-                }));
-        return quiescence;
+    private void completeCloseAttempt(CompletableFuture<Void> attempt, Throwable drainFailure) {
+        Throwable failure = components.close(drainFailure, closedComponents);
+        if (!delegatesClosed) {
+            try {
+                admission.closeDelegatesAfterDrain();
+                delegatesClosed = true;
+            } catch (RuntimeException | Error closeFailure) {
+                failure = accumulate(failure, closeFailure);
+            }
+        }
+        if (!databaseClosed) {
+            try {
+                database.close();
+                databaseClosed = true;
+            } catch (RuntimeException | Error databaseFailure) {
+                failure = accumulate(failure, databaseFailure);
+            }
+        }
+        if (failure == null
+                && components.allClosed(closedComponents)
+                && delegatesClosed
+                && databaseClosed) {
+            state.set(State.CLOSED);
+            attempt.complete(null);
+            closureExecutor.shutdown();
+        } else {
+            state.set(State.QUIESCING);
+            attempt.completeExceptionally(failure == null
+                    ? new IllegalStateException("Campaign runtime close remained incomplete")
+                    : failure);
+        }
     }
 
     void quiesce() {
@@ -614,7 +755,8 @@ final class CampaignRuntime implements AutoCloseable {
             ExecutionLane encounterGeneratedIoLane,
             ExecutionLane sessionPreparationCpuLane,
             ExecutionLane sessionPreparationIoLane,
-            UiDispatcher uiDispatcher
+            UiDispatcher uiDispatcher,
+            SessionPlannerFactory sessionPlannerFactory
     ) {
         CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(
                 sharedReferences.creatures(), executionLane, creatureReadLane,
@@ -665,18 +807,12 @@ final class CampaignRuntime implements AutoCloseable {
                                 stores.sessionGeneration(), sessionGenerationCpuLane,
                                 sessionGenerationIoLane, diagnostics)
                         : SessionGenerationServiceAssembly.unavailable();
-        SessionPlannerServiceAssembly session = SessionPlannerServiceAssembly.create(
-                stores.sessionPlanner(),
-                party.application(),
-                encounter.application(),
-                encounter.savedPlans(),
-                world.snapshot(),
-                generation,
-                executionLane,
-                sessionPreparationCpuLane,
-                sessionPreparationIoLane,
-                uiDispatcher,
-                diagnostics);
+        SessionPlannerServiceAssembly session = sessionPlannerFactory.create(
+                new SessionPlannerInputs(
+                        stores.sessionPlanner(), party.application(), encounter.application(),
+                        encounter.savedPlans(), world.snapshot(), generation, executionLane,
+                        sessionPreparationCpuLane, sessionPreparationIoLane, uiDispatcher,
+                        diagnostics));
         SceneFeature.Component scene = SceneFeature.create(
                 stores.scene(),
                 party.activeParty(),
@@ -709,6 +845,11 @@ final class CampaignRuntime implements AutoCloseable {
         private CompletionStage<StartupResult> start(
                 Map<String, FeatureStoreReadiness> storeReadiness
         ) {
+            try {
+                session.start();
+            } catch (RuntimeException | Error failure) {
+                return CompletableFuture.failedFuture(failure);
+            }
             creatures.application().refreshReferenceIndex(new RefreshCreatureReferenceIndexCommand());
             PartyServiceAssembly.start(party);
             world.start();
@@ -728,8 +869,32 @@ final class CampaignRuntime implements AutoCloseable {
                     sceneReady, (ignored, sceneResult) -> new StartupResult(true, sceneResult, false));
         }
 
-        private Throwable close(Throwable initialFailure) {
+        private Throwable close(
+                Throwable initialFailure,
+                Set<AutoCloseable> closedComponents
+        ) {
             Throwable failure = initialFailure;
+            for (AutoCloseable component : closeableComponents()) {
+                if (closedComponents.contains(component)) {
+                    continue;
+                }
+                try {
+                    component.close();
+                    closedComponents.add(component);
+                } catch (RuntimeException | Error closeFailure) {
+                    failure = accumulate(failure, closeFailure);
+                } catch (Exception closeFailure) {
+                    failure = accumulate(failure, closeFailure);
+                }
+            }
+            return failure;
+        }
+
+        private boolean allClosed(Set<AutoCloseable> closedComponents) {
+            return closedComponents.containsAll(closeableComponents());
+        }
+
+        private List<AutoCloseable> closeableComponents() {
             java.util.ArrayList<AutoCloseable> closeableComponents = new java.util.ArrayList<>();
             closeableComponents.add(scene);
             closeableComponents.add(session);
@@ -739,17 +904,16 @@ final class CampaignRuntime implements AutoCloseable {
             if (hex != null) {
                 closeableComponents.add(hex);
             }
-            for (AutoCloseable component : closeableComponents) {
-                try {
-                    component.close();
-                } catch (RuntimeException | Error closeFailure) {
-                    failure = accumulate(failure, closeFailure);
-                } catch (Exception closeFailure) {
-                    failure = accumulate(failure, closeFailure);
-                }
-            }
-            return failure;
+            return closeableComponents;
         }
+    }
+
+    private static SessionPlannerServiceAssembly createSessionPlanner(SessionPlannerInputs inputs) {
+        return SessionPlannerServiceAssembly.create(
+                inputs.store(), inputs.party(), inputs.encounters(), inputs.savedPlans(),
+                inputs.worldPlanner(), inputs.generation(), inputs.authoredExecutionLane(),
+                inputs.preparationCpuLane(), inputs.preparationIoLane(), inputs.uiDispatcher(),
+                inputs.diagnostics());
     }
 
     private record StartupResult(

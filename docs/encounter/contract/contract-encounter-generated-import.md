@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: Encounter Feature
-Last Reviewed: 2026-07-18
+Last Reviewed: 2026-07-25
 Source of Truth: Batched preparation and atomic commit of generated Encounter
 rosters.
 
@@ -88,22 +88,18 @@ Statuses are `SUCCESS`, `INVALID_REQUEST`, `UNRESOLVABLE`, `CONFLICT`, and
 catalog payloads, or creature detail. Non-success returns no applicable draft
 or committed mapping.
 
-## Persistence And Compatibility
+## Persistence And Current Format
 
 Saved plans retain optional generated origin, normalized roster fingerprint,
 declared batch cardinality, and order. Manual plans have no generated origin.
 Deleting or changing a Session Generation run does not cascade into Encounter.
 
-Existing canonical generated origins remain readable. Preparation commits
-retain preparation identity, engine version, generation-run identity, and a
-concrete roster fingerprint. When a canonical historical origin lacks the
-canonical identity fields, the owning adapter derives their stable compatibility
-meaning from the validated historical fields on read.
-
-Writes always use only the canonical generated-origin representation. Historical
-origin columns or carriers are never written alongside it, and read
-compatibility never authorizes a second writer, dual writes, or reinterpretation
-of an existing origin.
+Preparation commits and reads use one canonical generated-origin
+representation containing preparation identity, engine version,
+generation-run identity, and a concrete roster fingerprint. Missing canonical
+identity fields make an internal pre-completion record invalid; no historical
+origin derivation, second writer, dual write, or compatibility carrier is part
+of this contract.
 
 ## Performance Contract
 

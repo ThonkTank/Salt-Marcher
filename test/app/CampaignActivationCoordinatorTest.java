@@ -42,6 +42,268 @@ final class CampaignActivationCoordinatorTest {
     Path temporaryDirectory;
 
     @Test
+    void oneParkedRuntimeIsReusedAcrossAlternatingCampaignsWithFreshGenerations()
+            throws Exception {
+        FakeRegistry registry = new FakeRegistry();
+        List<ReusableFakeCandidate> candidates = new ArrayList<>();
+        AtomicInteger identity = new AtomicInteger(1);
+        CampaignActivationCoordinator coordinator = new CampaignActivationCoordinator(
+                NoopDiagnostics.INSTANCE,
+                registry,
+                temporaryDirectory.resolve("bounded-parked-reuse"),
+                (id, path, intent) -> {
+                    writeCandidateFile(path);
+                    ReusableFakeCandidate candidate = new ReusableFakeCandidate();
+                    candidates.add(candidate);
+                    return CompletableFuture.completedFuture(candidate);
+                },
+                new FakeHost(),
+                () -> new UUID(20L, identity.getAndIncrement()));
+
+        var alpha = await(coordinator.create("Alpha", 0L));
+        var beta = await(coordinator.create("Beta", 1L));
+        CampaignId alphaId = alpha.durableActivation().orElseThrow()
+                .campaign().orElseThrow().id();
+        CampaignId betaId = beta.durableActivation().orElseThrow()
+                .campaign().orElseThrow().id();
+
+        assertEquals(3L, await(coordinator.switchTo(alphaId, 2L))
+                .durableActivation().orElseThrow().generation());
+        assertEquals(4L, await(coordinator.switchTo(betaId, 3L))
+                .durableActivation().orElseThrow().generation());
+
+        assertEquals(2, candidates.size());
+        assertEquals(2, candidates.get(0).activationCount.get());
+        assertEquals(2, candidates.get(1).activationCount.get());
+        assertThrowsRejectedMutation(candidates.get(0));
+        assertEquals(1, candidates.get(1).acceptMutation());
+
+        coordinator.close();
+        assertEquals(1, candidates.get(0).closeAttempts.get());
+        assertEquals(1, candidates.get(1).closeAttempts.get());
+    }
+
+    @Test
+    void staleReuseReturnsTheLoanAndThirdTargetWaitsForSuccessfulEviction()
+            throws Exception {
+        FakeRegistry registry = new FakeRegistry();
+        List<ReusableFakeCandidate> candidates = new ArrayList<>();
+        AtomicInteger identity = new AtomicInteger(1);
+        CampaignActivationCoordinator coordinator = new CampaignActivationCoordinator(
+                NoopDiagnostics.INSTANCE,
+                registry,
+                temporaryDirectory.resolve("bounded-parked-eviction"),
+                (id, path, intent) -> {
+                    writeCandidateFile(path);
+                    ReusableFakeCandidate candidate = new ReusableFakeCandidate();
+                    candidates.add(candidate);
+                    return CompletableFuture.completedFuture(candidate);
+                },
+                new FakeHost(),
+                () -> new UUID(21L, identity.getAndIncrement()));
+
+        var alpha = await(coordinator.create("Alpha", 0L));
+        var beta = await(coordinator.create("Beta", 1L));
+        CampaignId alphaId = alpha.durableActivation().orElseThrow()
+                .campaign().orElseThrow().id();
+
+        assertEquals(CampaignActivationCoordinator.Status.STALE_GENERATION,
+                await(coordinator.switchTo(alphaId, 1L)).status());
+        assertEquals(2, candidates.size());
+        assertEquals(1, candidates.get(1).resumeCount.get());
+
+        assertEquals(CampaignActivationCoordinator.Status.ACTIVATED,
+                await(coordinator.switchTo(alphaId, 2L)).status());
+        candidates.get(1).failCloseAttempts.set(2);
+
+        assertEquals(CampaignActivationCoordinator.Status.PRE_COMMIT_FAILED,
+                await(coordinator.create("Gamma", 3L)).status());
+        assertEquals(2, candidates.size(), "third factory must wait for deterministic eviction");
+        assertEquals(1, candidates.get(1).closeAttempts.get());
+        assertEquals(1, candidates.get(0).acceptMutation());
+
+        assertEquals(CampaignActivationCoordinator.Status.PRE_COMMIT_FAILED,
+                await(coordinator.create("Delta", 3L)).status());
+        assertEquals(2, candidates.size(),
+                "an unresolved parked eviction must continue to occupy the bounded slot");
+        assertEquals(2, candidates.get(1).closeAttempts.get());
+
+        assertEquals(CampaignActivationCoordinator.Status.ACTIVATED,
+                await(coordinator.create("Epsilon", 3L)).status());
+        assertEquals(3, candidates.size(),
+                "the next factory may run only after the parked eviction has settled");
+
+        coordinator.close();
+    }
+
+    @Test
+    void changedButValidParkedStateClosesAggregateBeforeColdRetry() throws Exception {
+        FakeRegistry registry = new FakeRegistry();
+        List<ReusableFakeCandidate> candidates = new ArrayList<>();
+        AtomicInteger identity = new AtomicInteger(1);
+        try (CampaignActivationCoordinator coordinator = new CampaignActivationCoordinator(
+                NoopDiagnostics.INSTANCE,
+                registry,
+                temporaryDirectory.resolve("changed-parked-cold-retry"),
+                (id, path, intent) -> {
+                    writeCandidateFile(path);
+                    ReusableFakeCandidate candidate = new ReusableFakeCandidate();
+                    candidates.add(candidate);
+                    return CompletableFuture.completedFuture(candidate);
+                },
+                new FakeHost(),
+                () -> new UUID(23L, identity.getAndIncrement()))) {
+            var alpha = await(coordinator.create("Alpha", 0L));
+            await(coordinator.create("Beta", 1L));
+            ReusableFakeCandidate parkedAlpha = candidates.get(0);
+            parkedAlpha.parkedValid.set(false);
+
+            assertEquals(CampaignActivationCoordinator.Status.PRE_COMMIT_FAILED,
+                    await(coordinator.switchTo(
+                            alpha.durableActivation().orElseThrow().campaign().orElseThrow().id(),
+                            2L)).status());
+            assertEquals(1, parkedAlpha.closeAttempts.get());
+            assertEquals(2, candidates.size());
+
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED,
+                    await(coordinator.switchTo(
+                            alpha.durableActivation().orElseThrow().campaign().orElseThrow().id(),
+                            2L)).status());
+            assertEquals(3, candidates.size(),
+                    "retry must rebuild instead of republishing stale in-memory state");
+        }
+    }
+
+    @Test
+    void delayedPreCommitDrainReturnsBorrowedParkedRuntimeForLaterReuse() throws Exception {
+        FakeRegistry registry = new FakeRegistry();
+        List<ReusableFakeCandidate> candidates = new ArrayList<>();
+        AtomicInteger identity = new AtomicInteger(1);
+        try (CampaignActivationCoordinator coordinator = new CampaignActivationCoordinator(
+                NoopDiagnostics.INSTANCE, registry,
+                temporaryDirectory.resolve("delayed-drain-returns-parked"),
+                (id, path, intent) -> {
+                    writeCandidateFile(path);
+                    ReusableFakeCandidate candidate = new ReusableFakeCandidate();
+                    candidates.add(candidate);
+                    return CompletableFuture.completedFuture(candidate);
+                },
+                new FakeHost(),
+                () -> new UUID(24L, identity.getAndIncrement()),
+                java.time.Duration.ofMillis(100))) {
+            var alpha = await(coordinator.create("Alpha", 0L));
+            await(coordinator.create("Beta", 1L));
+            ReusableFakeCandidate alphaCandidate = candidates.get(0);
+            ReusableFakeCandidate betaCandidate = candidates.get(1);
+            CompletableFuture<Void> drain = new CompletableFuture<>();
+            betaCandidate.setPauseResult(drain);
+
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_UNAVAILABLE,
+                    await(coordinator.switchTo(
+                            alpha.durableActivation().orElseThrow().campaign().orElseThrow().id(),
+                            2L)).status());
+
+            drain.complete(null);
+            assertEquals(CampaignActivationCoordinator.Status.RESUMED,
+                    await(coordinator.recoverDurableActive()).status());
+            betaCandidate.setPauseResult(CompletableFuture.completedFuture(null));
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED,
+                    await(coordinator.switchTo(
+                            alpha.durableActivation().orElseThrow().campaign().orElseThrow().id(),
+                            2L)).status());
+            assertEquals(2, candidates.size(), "the returned PARKED runtime must be reused");
+            assertEquals(0, alphaCandidate.closeAttempts.get());
+            assertEquals(2, alphaCandidate.activationCount.get());
+        }
+    }
+
+    @Test
+    void delayedCommitWithConfirmedPriorReturnsBorrowedParkedRuntimeForLaterReuse()
+            throws Exception {
+        FakeRegistry registry = new FakeRegistry();
+        List<ReusableFakeCandidate> candidates = new ArrayList<>();
+        AtomicInteger identity = new AtomicInteger(1);
+        try (CampaignActivationCoordinator coordinator = new CampaignActivationCoordinator(
+                NoopDiagnostics.INSTANCE, registry,
+                temporaryDirectory.resolve("delayed-commit-returns-parked"),
+                (id, path, intent) -> {
+                    writeCandidateFile(path);
+                    ReusableFakeCandidate candidate = new ReusableFakeCandidate();
+                    candidates.add(candidate);
+                    return CompletableFuture.completedFuture(candidate);
+                },
+                new FakeHost(),
+                () -> new UUID(25L, identity.getAndIncrement()),
+                java.time.Duration.ofMillis(100))) {
+            var alpha = await(coordinator.create("Alpha", 0L));
+            await(coordinator.create("Beta", 1L));
+            ReusableFakeCandidate alphaCandidate = candidates.get(0);
+            registry.nextCommit = CommitBehavior.NEVER_COMPLETES;
+
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_UNAVAILABLE,
+                    await(coordinator.switchTo(
+                            alpha.durableActivation().orElseThrow().campaign().orElseThrow().id(),
+                            2L)).status());
+            registry.pendingCommit.complete(new CampaignPointerCommitResult(
+                    CampaignPointerCommitResult.Status.STORAGE_ERROR, Optional.empty()));
+
+            assertEquals(CampaignActivationCoordinator.Status.RESUMED,
+                    await(coordinator.recoverDurableActive()).status());
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED,
+                    await(coordinator.switchTo(
+                            alpha.durableActivation().orElseThrow().campaign().orElseThrow().id(),
+                            2L)).status());
+            assertEquals(2, candidates.size(), "the prior-confirmed loan must remain reusable");
+            assertEquals(0, alphaCandidate.closeAttempts.get());
+            assertEquals(2, alphaCandidate.activationCount.get());
+        }
+    }
+
+    @Test
+    void ambiguousCommittedTargetAndPostCommitFailureNeverCacheThePriorRuntime()
+            throws Exception {
+        FakeRegistry registry = new FakeRegistry();
+        List<ReusableFakeCandidate> candidates = new ArrayList<>();
+        FakeHost host = new FakeHost();
+        AtomicInteger identity = new AtomicInteger(1);
+        Path root = temporaryDirectory.resolve("recovery-does-not-cache-prior");
+        CampaignActivationCoordinator coordinator = new CampaignActivationCoordinator(
+                NoopDiagnostics.INSTANCE,
+                registry,
+                root,
+                (id, path, intent) -> {
+                    writeCandidateFile(path);
+                    ReusableFakeCandidate candidate = new ReusableFakeCandidate();
+                    candidates.add(candidate);
+                    return CompletableFuture.completedFuture(candidate);
+                },
+                host,
+                () -> new UUID(22L, identity.getAndIncrement()));
+
+        var alpha = await(coordinator.create("Alpha", 0L));
+        CampaignId alphaId = alpha.durableActivation().orElseThrow()
+                .campaign().orElseThrow().id();
+        registry.nextCommit = CommitBehavior.STORAGE_AFTER_TARGET;
+
+        assertEquals(CampaignActivationCoordinator.Status.ACTIVATED,
+                await(coordinator.create("Beta", 1L)).status());
+        assertEquals(1, candidates.get(0).closeAttempts.get(),
+                "ambiguous commit confirmation must retire rather than cache the prior");
+
+        assertEquals(CampaignActivationCoordinator.Status.ACTIVATED,
+                await(coordinator.switchTo(alphaId, 2L)).status());
+        assertEquals(3, candidates.size(), "retired prior must be prepared again");
+
+        host.failAfterRootSwap.set(true);
+        var failed = await(coordinator.create("Gamma", 3L));
+        assertEquals(CampaignActivationCoordinator.Status.RECOVERY_REQUIRED, failed.status());
+        assertEquals(1, candidates.get(2).closeAttempts.get(),
+                "post-commit publication failure must retire rather than cache the prior");
+
+        coordinator.close();
+    }
+
+    @Test
     void createCollisionNeverDeletesOrMutatesPreexistingOrphan() throws Exception {
         UUID collision = UUID.fromString("10000000-0000-0000-0000-000000000001");
         Path orphan = temporaryDirectory.resolve(collision.toString());
@@ -199,6 +461,155 @@ final class CampaignActivationCoordinatorTest {
     }
 
     @Test
+    void recoveryWithoutAggregateCanCommitHealthyAlternativeWithoutTouchingDurableBytes()
+            throws Exception {
+        Path root = temporaryDirectory.resolve("durable-only-recovery-alternative");
+        CampaignSnapshot damaged = registeredCampaign(
+                "22000000-0000-0000-0000-000000000001", "Damaged");
+        CampaignSnapshot healthy = registeredCampaign(
+                "22000000-0000-0000-0000-000000000002", "Healthy");
+        writeExistingCampaign(root, damaged);
+        writeExistingCampaign(root, healthy);
+        Path damagedPath = root.resolve(damaged.id().value().toString()).resolve("campaign.sqlite");
+        byte[] damagedBytes = Files.readAllBytes(damagedPath);
+        FakeRegistry registry = new FakeRegistry();
+        registry.campaigns.put(damaged.id(), damaged);
+        registry.campaigns.put(healthy.id(), healthy);
+        registry.active = new CampaignActivation(Optional.of(damaged), 1L);
+        List<FakeCandidate> candidates = new ArrayList<>();
+        FakeHost host = new FakeHost();
+        try (CampaignActivationCoordinator coordinator = new CampaignActivationCoordinator(
+                NoopDiagnostics.INSTANCE,
+                registry,
+                root,
+                (id, path, intent) -> {
+                    if (id.equals(damaged.id())) {
+                        return CompletableFuture.failedFuture(
+                                new IllegalStateException("injected inaccessible durable store"));
+                    }
+                    FakeCandidate candidate = new FakeCandidate();
+                    candidates.add(candidate);
+                    return CompletableFuture.completedFuture(candidate);
+                },
+                host)) {
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_REQUIRED,
+                    await(coordinator.resumeDurableActive()).status());
+            assertEquals(0, candidates.size(), "damaged durable truth owns no aggregate");
+
+            var switched = await(coordinator.switchFromRecovery(healthy.id(), 1L));
+
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED, switched.status());
+            assertEquals(healthy.id(), switched.durableActivation().orElseThrow()
+                    .campaign().orElseThrow().id());
+            assertEquals("Healthy", host.visibleRoot.get());
+            assertEquals(1, candidates.size());
+            assertArrayEquals(damagedBytes, Files.readAllBytes(damagedPath));
+        }
+        assertArrayEquals(damagedBytes, Files.readAllBytes(damagedPath));
+    }
+
+    @Test
+    void durableOnlyPreparationTimeoutRestoresDamagedTruthAndAllowsHealthyRetry()
+            throws Exception {
+        Path root = temporaryDirectory.resolve("durable-only-late-preparation");
+        CampaignSnapshot damaged = registeredCampaign(
+                "22000000-0000-0000-0000-000000000011", "Damaged");
+        CampaignSnapshot healthy = registeredCampaign(
+                "22000000-0000-0000-0000-000000000012", "Healthy");
+        writeExistingCampaign(root, damaged);
+        writeExistingCampaign(root, healthy);
+        Path damagedPath = root.resolve(damaged.id().value().toString()).resolve("campaign.sqlite");
+        byte[] damagedBytes = Files.readAllBytes(damagedPath);
+        FakeRegistry registry = new FakeRegistry();
+        registry.campaigns.put(damaged.id(), damaged);
+        registry.campaigns.put(healthy.id(), healthy);
+        registry.active = new CampaignActivation(Optional.of(damaged), 1L);
+        CompletableFuture<CampaignActivationCoordinator.Candidate> delayed =
+                new CompletableFuture<>();
+        AtomicInteger healthyPreparations = new AtomicInteger();
+        FakeCandidate lateCandidate = new FakeCandidate();
+        try (CampaignActivationCoordinator coordinator = timedCoordinator(
+                registry, root,
+                (id, path, intent) -> {
+                    if (id.equals(damaged.id())) {
+                        return CompletableFuture.failedFuture(
+                                new IllegalStateException("injected inaccessible durable store"));
+                    }
+                    return healthyPreparations.getAndIncrement() == 0
+                            ? delayed
+                            : CompletableFuture.completedFuture(new FakeCandidate());
+                },
+                new FakeHost())) {
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_REQUIRED,
+                    await(coordinator.resumeDurableActive()).status());
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_UNAVAILABLE,
+                    await(coordinator.switchFromRecovery(healthy.id(), 1L)).status());
+
+            delayed.complete(lateCandidate);
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_REQUIRED,
+                    await(coordinator.recoverDurableActive()).status());
+            assertEquals(damaged.id(), coordinator.snapshot().durableActivation().orElseThrow()
+                    .campaign().orElseThrow().id());
+            assertEquals(1, lateCandidate.closeAttempts.get());
+            assertArrayEquals(damagedBytes, Files.readAllBytes(damagedPath));
+
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED,
+                    await(coordinator.switchFromRecovery(healthy.id(), 1L)).status());
+            assertArrayEquals(damagedBytes, Files.readAllBytes(damagedPath));
+        }
+    }
+
+    @Test
+    void durableOnlyCommitTimeoutRestoresDamagedTruthAndAllowsHealthyRetry()
+            throws Exception {
+        Path root = temporaryDirectory.resolve("durable-only-late-commit");
+        CampaignSnapshot damaged = registeredCampaign(
+                "22000000-0000-0000-0000-000000000021", "Damaged");
+        CampaignSnapshot healthy = registeredCampaign(
+                "22000000-0000-0000-0000-000000000022", "Healthy");
+        writeExistingCampaign(root, damaged);
+        writeExistingCampaign(root, healthy);
+        Path damagedPath = root.resolve(damaged.id().value().toString()).resolve("campaign.sqlite");
+        byte[] damagedBytes = Files.readAllBytes(damagedPath);
+        FakeRegistry registry = new FakeRegistry();
+        registry.campaigns.put(damaged.id(), damaged);
+        registry.campaigns.put(healthy.id(), healthy);
+        registry.active = new CampaignActivation(Optional.of(damaged), 1L);
+        List<FakeCandidate> candidates = new ArrayList<>();
+        try (CampaignActivationCoordinator coordinator = timedCoordinator(
+                registry, root,
+                (id, path, intent) -> {
+                    if (id.equals(damaged.id())) {
+                        return CompletableFuture.failedFuture(
+                                new IllegalStateException("injected inaccessible durable store"));
+                    }
+                    FakeCandidate candidate = new FakeCandidate();
+                    candidates.add(candidate);
+                    return CompletableFuture.completedFuture(candidate);
+                },
+                new FakeHost())) {
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_REQUIRED,
+                    await(coordinator.resumeDurableActive()).status());
+            registry.nextCommit = CommitBehavior.NEVER_COMPLETES;
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_UNAVAILABLE,
+                    await(coordinator.switchFromRecovery(healthy.id(), 1L)).status());
+
+            registry.pendingCommit.complete(new CampaignPointerCommitResult(
+                    CampaignPointerCommitResult.Status.STORAGE_ERROR, Optional.empty()));
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_REQUIRED,
+                    await(coordinator.recoverDurableActive()).status());
+            assertEquals(1, candidates.get(0).closeAttempts.get());
+            assertEquals(damaged.id(), coordinator.snapshot().durableActivation().orElseThrow()
+                    .campaign().orElseThrow().id());
+            assertArrayEquals(damagedBytes, Files.readAllBytes(damagedPath));
+
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED,
+                    await(coordinator.switchFromRecovery(healthy.id(), 1L)).status());
+            assertArrayEquals(damagedBytes, Files.readAllBytes(damagedPath));
+        }
+    }
+
+    @Test
     void switchingToAlreadyActiveCampaignIsGenerationCheckedNoOp() throws Exception {
         FakeRegistry registry = new FakeRegistry();
         List<FakeCandidate> candidates = new ArrayList<>();
@@ -312,13 +723,14 @@ final class CampaignActivationCoordinatorTest {
                 new CompletableFuture<>();
         AtomicInteger factoryCalls = new AtomicInteger();
         FakeCandidate lateCandidate = new FakeCandidate();
+        FakeHost host = new FakeHost();
         try (CampaignActivationCoordinator coordinator = timedCoordinator(
                 registry,
                 temporaryDirectory.resolve("factory-timeout-open-prior"),
                 (id, path, intent) -> factoryCalls.getAndIncrement() == 0
                         ? CompletableFuture.completedFuture(prior)
                         : latePreparation,
-                new FakeHost())) {
+                host)) {
             assertEquals(CampaignActivationCoordinator.Status.ACTIVATED,
                     await(coordinator.create("Alpha", 0L)).status());
 
@@ -326,12 +738,29 @@ final class CampaignActivationCoordinatorTest {
                     await(coordinator.create("Late Beta", 1L)).status());
             assertEquals(0, prior.pauseCount.get());
             assertEquals(0, prior.resumeCount.get());
+            assertEquals(1, host.switchCount.get(),
+                    "the still-attached prior root must not be republished");
+            assertEquals(1, prior.activationCount.get());
+
+            CampaignSnapshot alternative = registeredCampaign(
+                    "00000000-0000-0000-0000-0000000000f1", "Alternative");
+            registry.campaigns.put(alternative.id(), alternative);
+            writeExistingCampaign(
+                    temporaryDirectory.resolve("factory-timeout-open-prior"), alternative);
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_UNAVAILABLE,
+                    await(coordinator.switchFromRecovery(alternative.id(), 1L)).status());
+            assertEquals(0, host.recoveryCount.get(),
+                    "a recovery action cannot detach the healthy prior while preparation runs");
+            assertEquals("Alpha", host.visibleRoot.get());
 
             latePreparation.complete(lateCandidate);
             assertEquals(CampaignActivationCoordinator.Status.RESUMED,
                     await(coordinator.recoverDurableActive()).status());
             assertEquals(0, prior.resumeCount.get());
             assertEquals(1, lateCandidate.closeAttempts.get());
+            assertEquals(1, host.switchCount.get(),
+                    "settlement must retain the already attached prior root");
+            assertEquals(1, prior.activationCount.get());
             assertEquals(1, prior.acceptMutation());
             assertEquals(CampaignActivationCoordinator.Phase.ACTIVE,
                     coordinator.snapshot().phase());
@@ -397,6 +826,60 @@ final class CampaignActivationCoordinatorTest {
         assertEquals("recovery", host.visibleRoot.get());
         assertEquals(0, candidate.activationCount.get());
         assertThrowsRejectedMutation(candidate);
+        coordinator.close();
+    }
+
+    @Test
+    void recoveryPublicationWaitsForOwnedReadinessCancellationSettlement()
+            throws Exception {
+        FakeCandidate candidate = new FakeCandidate();
+        CompletableFuture<Void> readiness = new CompletableFuture<>();
+        CompletableFuture<Void> cancellationSettlement = new CompletableFuture<>();
+        AtomicInteger cancellationCount = new AtomicInteger();
+        CampaignActivationCoordinator.PublishedRootReadinessAttempt attempt =
+                new CampaignActivationCoordinator.PublishedRootReadinessAttempt() {
+                    @Override
+                    public CompletionStage<Void> completion() {
+                        return readiness;
+                    }
+
+                    @Override
+                    public CompletionStage<Void> cancel() {
+                        cancellationCount.incrementAndGet();
+                        return cancellationSettlement;
+                    }
+                };
+        FakeHost host = new FakeHost() {
+            @Override
+            public CampaignActivationCoordinator.PublishedRootReadinessAttempt
+                    awaitPublishedRootReady(AppShell shell) {
+                return attempt;
+            }
+        };
+        CampaignActivationCoordinator coordinator = timedCoordinator(
+                new FakeRegistry(),
+                temporaryDirectory.resolve("readiness-cancel-before-recovery"),
+                (id, path, intent) -> CompletableFuture.completedFuture(candidate),
+                host);
+
+        var timedOut = await(coordinator.create("Cancelled readiness", 0L));
+
+        assertEquals(CampaignActivationCoordinator.Status.RECOVERY_UNAVAILABLE, timedOut.status());
+        assertEquals(1, cancellationCount.get());
+        assertEquals(0, host.recoveryCount.get(),
+                "the host cannot self-heal before the coordinator-owned cancellation settles");
+        assertEquals(0, candidate.activationCount.get());
+
+        cancellationSettlement.complete(null);
+        awaitCondition(() -> host.recoveryCount.get() == 1);
+        assertEquals("recovery", host.visibleRoot.get());
+        assertEquals(1, cancellationCount.get(), "readiness is cancelled exactly once");
+
+        readiness.complete(null);
+        assertEquals(0, candidate.activationCount.get(),
+                "late readiness cannot activate after publication authority was revoked");
+        assertEquals(1, host.recoveryCount.get(),
+                "the late callback shares the already-published recovery root");
         coordinator.close();
     }
 
@@ -584,6 +1067,46 @@ final class CampaignActivationCoordinatorTest {
     }
 
     @Test
+    void repeatedSubmissionsReuseOneNeverSettlingDetachedCloseInvocation() throws Exception {
+        List<FakeCandidate> candidates = new ArrayList<>();
+        CompletableFuture<Void> neverSettlingClose = new CompletableFuture<>();
+        CampaignActivationCoordinator coordinator = timedCoordinator(
+                new FakeRegistry(), temporaryDirectory.resolve("memoized-detached-close"),
+                (id, path, intent) -> {
+                    FakeCandidate candidate = new FakeCandidate();
+                    if (candidates.isEmpty()) {
+                        candidate.closeResult = neverSettlingClose;
+                    }
+                    candidates.add(candidate);
+                    return CompletableFuture.completedFuture(candidate);
+                }, new FakeHost());
+        try {
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED,
+                    await(coordinator.create("Alpha", 0L)).status());
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED_DEGRADED,
+                    await(coordinator.create("Beta", 1L)).status());
+
+            for (int attempt = 0; attempt < 12; attempt++) {
+                assertEquals(CampaignActivationCoordinator.Status.PRE_COMMIT_FAILED,
+                        await(coordinator.create("Blocked " + attempt, 2L)).status());
+            }
+
+            assertEquals(1, candidates.get(0).closeAttempts.get(),
+                    "a nonterminal close attempt must retain its one candidate invocation");
+            assertEquals(1, coordinator.pendingCloseAttemptsForTesting());
+            assertEquals(1, coordinator.trackedCloseObligationsForTesting());
+            assertTrue(coordinator.invocationWorkersForTesting() <= 4);
+
+            neverSettlingClose.complete(null);
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED,
+                    await(coordinator.create("Gamma", 2L)).status());
+        } finally {
+            neverSettlingClose.complete(null);
+            coordinator.close();
+        }
+    }
+
+    @Test
     void timedOutCommitRetainsPriorAndReservationUntilCommitIsTerminal() throws Exception {
         FakeRegistry registry = new FakeRegistry();
         List<FakeCandidate> candidates = new ArrayList<>();
@@ -647,6 +1170,7 @@ final class CampaignActivationCoordinatorTest {
             throws Exception {
         FakeRegistry registry = new FakeRegistry();
         List<FakeCandidate> candidates = new ArrayList<>();
+        FakeHost host = new FakeHost();
         try (CampaignActivationCoordinator coordinator = timedCoordinator(
                 registry,
                 temporaryDirectory.resolve("timed-prior-drain"),
@@ -655,7 +1179,7 @@ final class CampaignActivationCoordinatorTest {
                     candidates.add(candidate);
                     return CompletableFuture.completedFuture(candidate);
                 },
-                new FakeHost())) {
+                host)) {
             var alpha = await(coordinator.create("Alpha", 0L));
             FakeCandidate prior = candidates.get(0);
             CompletableFuture<Void> drain = new CompletableFuture<>();
@@ -675,9 +1199,132 @@ final class CampaignActivationCoordinatorTest {
                     await(coordinator.recoverDurableActive()).status());
             assertEquals(0, prior.closeAttempts.get());
             assertEquals(1, prior.resumeCount.get());
+            assertEquals(1, prior.activationCount.get(),
+                    "late successful drain resumes authority without republishing attached root");
+            assertEquals(1, host.switchCount.get());
             assertEquals(1, target.closeAttempts.get());
             assertFalse(Files.exists(betaReservation));
             assertEquals(alpha.durableActivation(), coordinator.snapshot().durableActivation());
+        }
+    }
+
+    @Test
+    void exceptionalPriorDrainClosesBothAggregatesAndColdRebuildsDurableTruth()
+            throws Exception {
+        FakeRegistry registry = new FakeRegistry();
+        List<FakeCandidate> candidates = new ArrayList<>();
+        AtomicInteger allocations = new AtomicInteger();
+        try (CampaignActivationCoordinator coordinator = timedCoordinator(
+                registry,
+                temporaryDirectory.resolve("exceptional-prior-drain"),
+                (id, path, intent) -> {
+                    writeCandidateFile(path);
+                    FakeCandidate candidate = allocations.getAndIncrement() == 0
+                            ? new FakeCandidate() {
+                                @Override
+                                public CompletionStage<Void> pauseAndDrain() {
+                                    pauseCount.incrementAndGet();
+                                    throw new IllegalStateException("injected immediate drain failure");
+                                }
+                            }
+                            : new FakeCandidate();
+                    candidates.add(candidate);
+                    return CompletableFuture.completedFuture(candidate);
+                },
+                new FakeHost())) {
+            var alpha = await(coordinator.create("Alpha", 0L));
+
+            var failed = await(coordinator.create("Beta", 1L));
+
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_REQUIRED, failed.status());
+            assertEquals(alpha.durableActivation(), failed.durableActivation());
+            assertEquals(1, candidates.get(0).closeAttempts.get());
+            assertEquals(0, candidates.get(0).resumeCount.get(),
+                    "an exceptional drain makes the prior aggregate unsafe to readmit");
+            assertEquals(1, candidates.get(1).closeAttempts.get(),
+                    "the uncommitted target candidate is released before recovery");
+
+            assertEquals(CampaignActivationCoordinator.Status.RESUMED,
+                    await(coordinator.recoverDurableActive()).status());
+            assertEquals(3, candidates.size(),
+                    "durable Alpha is rebuilt only after the unsafe aggregate closes");
+            assertEquals(1, candidates.get(2).activationCount.get());
+            assertEquals(1, candidates.get(0).activationCount.get(),
+                    "the unsafe Alpha aggregate is never republished");
+        }
+    }
+
+    @Test
+    void successfulActiveFallbackDrainResumesExactlyOnceAfterDefinitePrecommitRejection()
+            throws Exception {
+        FakeRegistry registry = new FakeRegistry();
+        List<FakeCandidate> candidates = new ArrayList<>();
+        try (CampaignActivationCoordinator coordinator = timedCoordinator(
+                registry,
+                temporaryDirectory.resolve("active-fallback-definite-rejection"),
+                (id, path, intent) -> {
+                    writeCandidateFile(path);
+                    FakeCandidate candidate = new FakeCandidate();
+                    candidates.add(candidate);
+                    return CompletableFuture.completedFuture(candidate);
+                },
+                new FakeHost())) {
+            var alpha = await(coordinator.create("Alpha", 0L));
+
+            var rejected = await(coordinator.create("Rejected", 0L));
+
+            assertEquals(CampaignActivationCoordinator.Status.STALE_GENERATION, rejected.status());
+            assertEquals(alpha.durableActivation(), rejected.durableActivation());
+            assertEquals(1, candidates.get(0).pauseCount.get());
+            assertEquals(1, candidates.get(0).resumeCount.get(),
+                    "successful drain transitions to PAUSED before rejection restoration");
+            assertEquals(1, candidates.get(0).activationCount.get(),
+                    "the still-published fallback is not republished");
+            assertEquals(1, candidates.get(1).closeAttempts.get());
+        }
+    }
+
+    @Test
+    void recoveryCannotAllocateWhileFailedPriorCloseRemainsOwned() throws Exception {
+        FakeRegistry registry = new FakeRegistry();
+        List<FakeCandidate> candidates = new ArrayList<>();
+        try (CampaignActivationCoordinator coordinator = timedCoordinator(
+                registry,
+                temporaryDirectory.resolve("recovery-close-allocation-gate"),
+                (id, path, intent) -> {
+                    writeCandidateFile(path);
+                    FakeCandidate candidate = new FakeCandidate();
+                    candidates.add(candidate);
+                    return CompletableFuture.completedFuture(candidate);
+                },
+                new FakeHost())) {
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED,
+                    await(coordinator.create("Alpha", 0L)).status());
+            FakeCandidate prior = candidates.get(0);
+            prior.failCloseAttempts.set(2);
+            CompletableFuture<Void> drain = new CompletableFuture<>();
+            prior.pauseResult = drain;
+
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_UNAVAILABLE,
+                    await(coordinator.create("Beta", 1L)).status());
+            drain.completeExceptionally(new IllegalStateException("injected drain failure"));
+
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_REQUIRED,
+                    await(coordinator.recoverDurableActive()).status());
+            assertEquals(2, candidates.size());
+            assertEquals(1, prior.closeAttempts.get());
+
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_REQUIRED,
+                    await(coordinator.recoverDurableActive()).status());
+            assertEquals(2, candidates.size(),
+                    "recovery must not allocate around an unresolved prior close");
+            assertEquals(2, prior.closeAttempts.get());
+
+            assertEquals(CampaignActivationCoordinator.Status.RESUMED,
+                    await(coordinator.recoverDurableActive()).status());
+            assertEquals(3, candidates.size(),
+                    "recovery may rebuild only after the retained prior close settles");
+            assertEquals(3, prior.closeAttempts.get());
         }
     }
 
@@ -836,6 +1483,443 @@ final class CampaignActivationCoordinatorTest {
     }
 
     @Test
+    void delayedAmbiguousTargetRecoveryRetiresPausedPriorExactlyOnce() throws Exception {
+        FakeRegistry registry = new FakeRegistry();
+        List<FakeCandidate> candidates = new ArrayList<>();
+        try (CampaignActivationCoordinator coordinator = coordinator(
+                registry, candidates, new FakeHost())) {
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED,
+                    await(coordinator.create("Alpha", 0L)).status());
+            FakeCandidate alphaCandidate = candidates.get(0);
+
+            registry.nextCommit = CommitBehavior.TARGET_UNREADABLE_ONCE;
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_REQUIRED,
+                    await(coordinator.create("Beta", 1L)).status());
+            assertEquals(0, alphaCandidate.closeAttempts.get());
+
+            assertEquals(CampaignActivationCoordinator.Status.RESUMED,
+                    await(coordinator.recoverDurableActive()).status());
+            assertEquals(1, alphaCandidate.closeAttempts.get(),
+                    "confirmed target recovery must retire the paused prior runtime");
+        }
+        assertEquals(1, candidates.get(0).closeAttempts.get(),
+                "terminal close must not reacquire or close the retired prior twice");
+    }
+
+    @Test
+    void recoverySwitchContainsDisplacedPriorBeforeAllocatingAnotherCandidate()
+            throws Exception {
+        FakeRegistry registry = new FakeRegistry();
+        Path root = temporaryDirectory.resolve("bounded-recovery-switch");
+        CampaignSnapshot alpha = registeredCampaign(
+                "00000000-0000-0000-0000-000000000101", "Alpha");
+        CampaignSnapshot gamma = registeredCampaign(
+                "00000000-0000-0000-0000-000000000103", "Gamma");
+        registry.campaigns.put(alpha.id(), alpha);
+        registry.campaigns.put(gamma.id(), gamma);
+        registry.active = new CampaignActivation(Optional.of(alpha), 1L);
+        writeExistingCampaign(root, alpha);
+        writeExistingCampaign(root, gamma);
+        AtomicInteger liveCandidates = new AtomicInteger();
+        AtomicInteger maximumLiveCandidates = new AtomicInteger();
+        AtomicInteger identity = new AtomicInteger(102);
+        List<Integer> liveBeforeAllocation = new ArrayList<>();
+        List<LiveTrackingCandidate> candidates = new ArrayList<>();
+
+        CampaignActivationCoordinator coordinator = new CampaignActivationCoordinator(
+                NoopDiagnostics.INSTANCE,
+                registry,
+                root,
+                (id, path, intent) -> {
+                    liveBeforeAllocation.add(liveCandidates.get());
+                    LiveTrackingCandidate candidate = new LiveTrackingCandidate(
+                            liveCandidates, maximumLiveCandidates);
+                    candidates.add(candidate);
+                    return CompletableFuture.completedFuture(candidate);
+                },
+                new FakeHost(),
+                () -> new UUID(0L, identity.getAndIncrement()));
+        try {
+            assertEquals(CampaignActivationCoordinator.Status.RESUMED,
+                    await(coordinator.resumeDurableActive()).status());
+            registry.nextCommit = CommitBehavior.TARGET_UNREADABLE_ONCE;
+            var ambiguous = await(coordinator.create("Beta", 1L));
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_REQUIRED,
+                    ambiguous.status());
+            Path committedBeta = ambiguous.campaignPath().orElseThrow().getParent();
+            candidates.get(0).failCloseAttempts.set(1);
+
+            var blocked = await(coordinator.switchFromRecovery(gamma.id(), 2L));
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_REQUIRED,
+                    blocked.status());
+            assertEquals(2, candidates.size(),
+                    "a failed displaced-prior close blocks Gamma allocation");
+            assertEquals(2, liveCandidates.get());
+
+            var switched = await(coordinator.switchFromRecovery(gamma.id(), 2L));
+
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED, switched.status());
+            assertEquals(3, candidates.size());
+            assertEquals(List.of(0, 1, 1), liveBeforeAllocation,
+                    "Gamma allocation begins only after displaced Alpha is closed");
+            assertEquals(2, maximumLiveCandidates.get(),
+                    "recovery switching never owns more than active-plus-one candidates");
+            assertEquals(2, candidates.get(0).closeAttempts.get());
+            assertEquals(1, candidates.get(1).closeAttempts.get(),
+                    "committed Beta remains the fallback until Gamma commits");
+            assertEquals(1, liveCandidates.get());
+            assertTrue(Files.exists(committedBeta),
+                    "the durably committed fallback Campaign remains reopenable");
+        } finally {
+            coordinator.close();
+        }
+    }
+
+    @Test
+    void recoverySwitchRetryDeletesFreshAbandonedReservationAfterConfirmedPrior()
+            throws Exception {
+        FakeRegistry registry = new FakeRegistry();
+        Path root = temporaryDirectory.resolve("abandoned-recovery-reservation");
+        CampaignSnapshot gamma = registeredCampaign(
+                "00000000-0000-0000-0000-000000000113", "Gamma");
+        registry.campaigns.put(gamma.id(), gamma);
+        writeExistingCampaign(root, gamma);
+        AtomicInteger identity = new AtomicInteger(111);
+        List<FakeCandidate> candidates = new ArrayList<>();
+        CampaignActivationCoordinator coordinator = new CampaignActivationCoordinator(
+                NoopDiagnostics.INSTANCE,
+                registry,
+                root,
+                (id, path, intent) -> {
+                    FakeCandidate candidate = new FakeCandidate();
+                    candidates.add(candidate);
+                    return CompletableFuture.completedFuture(candidate);
+                },
+                new FakeHost(),
+                () -> new UUID(0L, identity.getAndIncrement()));
+        try {
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED,
+                    await(coordinator.create("Alpha", 0L)).status());
+            registry.nextCommit = CommitBehavior.STORAGE_UNREADABLE_ONCE;
+            var ambiguous = await(coordinator.create("Beta", 1L));
+            Path betaReservation = ambiguous.campaignPath().orElseThrow().getParent();
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_REQUIRED,
+                    ambiguous.status());
+            assertTrue(Files.exists(betaReservation));
+            candidates.get(1).failCloseAttempts.set(2);
+
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_REQUIRED,
+                    await(coordinator.switchFromRecovery(gamma.id(), 1L)).status());
+            assertTrue(Files.exists(betaReservation),
+                    "failed close must retain the fresh reservation and its retry ownership");
+
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_REQUIRED,
+                    await(coordinator.switchFromRecovery(gamma.id(), 1L)).status());
+            assertTrue(Files.exists(betaReservation),
+                    "a second failed close must still retain the matching reservation");
+            assertEquals(2, candidates.size(),
+                    "no replacement allocation is allowed while close ownership is pending");
+
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED,
+                    await(coordinator.switchFromRecovery(gamma.id(), 1L)).status());
+            assertFalse(Files.exists(betaReservation),
+                    "successful close retry must delete the never-committed reservation");
+            assertEquals(3, candidates.get(1).closeAttempts.get());
+        } finally {
+            coordinator.close();
+        }
+    }
+
+    @Test
+    void recoveryReplacementPreparationFailureRepublishesExactDurablePriorAggregate()
+            throws Exception {
+        FakeRegistry registry = new FakeRegistry();
+        Path root = temporaryDirectory.resolve("replacement-prior-prepare-failure");
+        CampaignSnapshot gamma = registeredCampaign(
+                "00000000-0000-0000-0000-000000000123", "Gamma");
+        registry.campaigns.put(gamma.id(), gamma);
+        writeExistingCampaign(root, gamma);
+        List<FakeCandidate> candidates = new ArrayList<>();
+        FakeHost host = new FakeHost();
+        AtomicInteger identity = new AtomicInteger(121);
+        try (CampaignActivationCoordinator coordinator = new CampaignActivationCoordinator(
+                NoopDiagnostics.INSTANCE,
+                registry,
+                root,
+                (id, path, intent) -> {
+                    if (id.equals(gamma.id())) {
+                        return CompletableFuture.failedFuture(
+                                new IllegalStateException("injected replacement prepare failure"));
+                    }
+                    FakeCandidate candidate = new FakeCandidate();
+                    candidates.add(candidate);
+                    return CompletableFuture.completedFuture(candidate);
+                },
+                host,
+                () -> new UUID(0L, identity.getAndIncrement()))) {
+            var alpha = await(coordinator.create("Alpha", 0L));
+            FakeCandidate alphaCandidate = candidates.get(0);
+            registry.nextCommit = CommitBehavior.STORAGE_UNREADABLE_ONCE;
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_REQUIRED,
+                    await(coordinator.create("Beta", 1L)).status());
+            assertEquals("recovery", host.visibleRoot.get());
+
+            var rejected = await(coordinator.switchFromRecovery(gamma.id(), 1L));
+
+            assertEquals(CampaignActivationCoordinator.Status.PRE_COMMIT_FAILED,
+                    rejected.status());
+            assertEquals(CampaignActivationCoordinator.Phase.ACTIVE,
+                    coordinator.snapshot().phase());
+            assertEquals(alpha.durableActivation(), rejected.durableActivation());
+            assertEquals("Alpha", host.visibleRoot.get(),
+                    "the recovery-cleared host must receive the retained Alpha shell again");
+            assertEquals(2, alphaCandidate.activationCount.get(),
+                    "replacement rejection republishes the same aggregate, not a rebuilt one");
+            assertEquals(0, alphaCandidate.closeAttempts.get());
+            assertEquals(2, candidates.size(), "Gamma preparation must not create a candidate");
+        }
+    }
+
+    @Test
+    void activeRecoveryFallbackSuccessfulDrainResumesExactlyOnceOnDefiniteRejection()
+            throws Exception {
+        FakeRegistry registry = new FakeRegistry();
+        Path root = temporaryDirectory.resolve("active-recovery-fallback-rejection");
+        CampaignSnapshot gamma = registeredCampaign(
+                "00000000-0000-0000-0000-000000000143", "Gamma");
+        CampaignSnapshot delta = registeredCampaign(
+                "00000000-0000-0000-0000-000000000144", "Delta");
+        registry.campaigns.put(gamma.id(), gamma);
+        registry.campaigns.put(delta.id(), delta);
+        writeExistingCampaign(root, gamma);
+        writeExistingCampaign(root, delta);
+        List<FakeCandidate> candidates = new ArrayList<>();
+        FakeHost host = new FakeHost();
+        try (CampaignActivationCoordinator coordinator = timedCoordinator(
+                registry,
+                root,
+                (id, path, intent) -> {
+                    writeCandidateFile(path);
+                    FakeCandidate candidate = new FakeCandidate();
+                    candidates.add(candidate);
+                    return CompletableFuture.completedFuture(candidate);
+                },
+                host)) {
+            await(coordinator.create("Alpha", 0L));
+            FakeCandidate alpha = candidates.get(0);
+            registry.nextCommit = CommitBehavior.STORAGE_UNREADABLE_ONCE;
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_REQUIRED,
+                    await(coordinator.create("Beta", 1L)).status());
+            assertEquals(1, alpha.pauseCount.get());
+            assertEquals(0, alpha.resumeCount.get());
+
+            host.failAfterRootSwap.set(true);
+            registry.nextCommit = CommitBehavior.DEFINITE_STALE_ONCE;
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_REQUIRED,
+                    await(coordinator.switchFromRecovery(gamma.id(), 1L)).status());
+            assertEquals(1, alpha.resumeCount.get(),
+                    "the initially PAUSED fallback resumes before its failed republication");
+
+            registry.nextCommit = CommitBehavior.DEFINITE_STALE_ONCE;
+            var rejected = await(coordinator.switchFromRecovery(delta.id(), 1L));
+
+            assertEquals(CampaignActivationCoordinator.Status.STALE_GENERATION, rejected.status());
+            assertEquals(2, alpha.pauseCount.get(),
+                    "the now-ACTIVE fallback is drained once before replacement");
+            assertEquals(2, alpha.resumeCount.get(),
+                    "the successful ACTIVE drain is recorded as PAUSED and resumed exactly once");
+            assertEquals(2, alpha.activationCount.get(),
+                    "only the final successful fallback republication activates it again");
+        }
+    }
+
+    @Test
+    void committedTargetAggregateSurvivesReplacementCommitTimeoutAndIsRepublished()
+            throws Exception {
+        FakeRegistry registry = new FakeRegistry();
+        Path root = temporaryDirectory.resolve("replacement-committed-target-timeout");
+        CampaignSnapshot gamma = registeredCampaign(
+                "00000000-0000-0000-0000-000000000133", "Gamma");
+        registry.campaigns.put(gamma.id(), gamma);
+        writeExistingCampaign(root, gamma);
+        List<FakeCandidate> candidates = new ArrayList<>();
+        FakeHost host = new FakeHost();
+        try (CampaignActivationCoordinator coordinator = timedCoordinator(
+                registry,
+                root,
+                (id, path, intent) -> {
+                    FakeCandidate candidate = new FakeCandidate();
+                    candidates.add(candidate);
+                    return CompletableFuture.completedFuture(candidate);
+                },
+                host)) {
+            await(coordinator.create("Alpha", 0L));
+            registry.nextCommit = CommitBehavior.TARGET_UNREADABLE_ONCE;
+            var beta = await(coordinator.create("Beta", 1L));
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_REQUIRED, beta.status());
+            FakeCandidate alphaCandidate = candidates.get(0);
+            FakeCandidate betaCandidate = candidates.get(1);
+            registry.nextCommit = CommitBehavior.NEVER_COMPLETES;
+
+            var timedOut = await(coordinator.switchFromRecovery(gamma.id(), 2L));
+
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_UNAVAILABLE,
+                    timedOut.status());
+            assertEquals(1, alphaCandidate.closeAttempts.get(),
+                    "non-durable Alpha is contained before Gamma allocation");
+            assertEquals(0, betaCandidate.closeAttempts.get(),
+                    "durable Beta remains owned while Gamma commit is unresolved");
+            assertEquals(0, betaCandidate.pauseCount.get(),
+                    "a committed but not yet published fallback remains PREPARED, not ACTIVE");
+            CampaignActivation durableBeta = registry.active;
+            registry.pendingCommit.complete(new CampaignPointerCommitResult(
+                    CampaignPointerCommitResult.Status.STALE_GENERATION,
+                    Optional.of(durableBeta)));
+
+            var recovered = await(coordinator.recoverDurableActive());
+
+            assertEquals(CampaignActivationCoordinator.Status.RESUMED, recovered.status());
+            assertEquals(Optional.of(durableBeta), recovered.durableActivation());
+            assertEquals("Beta", host.visibleRoot.get());
+            assertEquals(1, betaCandidate.activationCount.get(),
+                    "the retained committed Beta aggregate is published exactly once");
+            assertEquals(0, betaCandidate.closeAttempts.get());
+            assertEquals(1, candidates.get(2).closeAttempts.get(),
+                    "the never-committed Gamma candidate is contained after timeout settles");
+        }
+    }
+
+    @Test
+    void confirmedPriorRecoveryReportsDegradedWhenTargetCloseRemainsOwned()
+            throws Exception {
+        FakeRegistry registry = new FakeRegistry();
+        List<FakeCandidate> candidates = new ArrayList<>();
+        Path root = temporaryDirectory.resolve("degraded-confirmed-prior-recovery");
+        AtomicReference<Path> betaReservation = new AtomicReference<>();
+        try (CampaignActivationCoordinator coordinator = timedCoordinator(
+                registry,
+                root,
+                (id, path, intent) -> {
+                    FakeCandidate candidate = new FakeCandidate();
+                    candidates.add(candidate);
+                    return CompletableFuture.completedFuture(candidate);
+                },
+                new FakeHost())) {
+            var alpha = await(coordinator.create("Alpha", 0L));
+            registry.nextCommit = CommitBehavior.STORAGE_UNREADABLE_ONCE;
+            var ambiguous = await(coordinator.create("Beta", 1L));
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_REQUIRED,
+                    ambiguous.status());
+            betaReservation.set(ambiguous.campaignPath().orElseThrow().getParent());
+            candidates.get(1).failCloseAttempts.set(1);
+
+            var recovered = await(coordinator.recoverDurableActive());
+
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED_DEGRADED,
+                    recovered.status());
+            assertEquals(CampaignActivationCoordinator.Phase.ACTIVE_DEGRADED,
+                    coordinator.snapshot().phase());
+            assertEquals(alpha.durableActivation(), recovered.durableActivation());
+            assertTrue(Files.exists(betaReservation.get()));
+            assertEquals(1, candidates.get(1).closeAttempts.get());
+        }
+        assertFalse(Files.exists(betaReservation.get()),
+                "terminal retry must close the target and delete its abandoned reservation");
+    }
+
+    @Test
+    void recoverySwitchReportsDegradedActivationWhenRetiringPausedPriorFails()
+            throws Exception {
+        FakeRegistry registry = new FakeRegistry();
+        Path root = temporaryDirectory.resolve("degraded-recovery-switch");
+        CampaignSnapshot alpha = registeredCampaign(
+                "00000000-0000-0000-0000-000000000201", "Alpha");
+        CampaignSnapshot gamma = registeredCampaign(
+                "00000000-0000-0000-0000-000000000203", "Gamma");
+        registry.campaigns.put(alpha.id(), alpha);
+        registry.campaigns.put(gamma.id(), gamma);
+        registry.active = new CampaignActivation(Optional.of(alpha), 1L);
+        writeExistingCampaign(root, alpha);
+        writeExistingCampaign(root, gamma);
+        AtomicInteger identity = new AtomicInteger(202);
+        List<FakeCandidate> candidates = new ArrayList<>();
+        CampaignActivationCoordinator coordinator = new CampaignActivationCoordinator(
+                NoopDiagnostics.INSTANCE,
+                registry,
+                root,
+                (id, path, intent) -> {
+                    FakeCandidate candidate = new FakeCandidate();
+                    candidates.add(candidate);
+                    return CompletableFuture.completedFuture(candidate);
+                },
+                new FakeHost(),
+                () -> new UUID(0L, identity.getAndIncrement()));
+        try {
+            assertEquals(CampaignActivationCoordinator.Status.RESUMED,
+                    await(coordinator.resumeDurableActive()).status());
+            registry.nextCommit = CommitBehavior.TARGET_UNREADABLE_ONCE;
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_REQUIRED,
+                    await(coordinator.create("Beta", 1L)).status());
+            candidates.get(1).failCloseAttempts.set(5);
+
+            var switched = await(coordinator.switchFromRecovery(gamma.id(), 2L));
+
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED_DEGRADED,
+                    switched.status());
+            assertEquals(CampaignActivationCoordinator.Phase.ACTIVE_DEGRADED,
+                    coordinator.snapshot().phase());
+            assertEquals(gamma.id(), coordinator.snapshot().durableActivation().orElseThrow()
+                    .campaign().orElseThrow().id());
+            assertEquals(3, candidates.size());
+            assertEquals(1, candidates.get(1).closeAttempts.get());
+            assertEquals(CampaignActivationCoordinator.Status.PRE_COMMIT_FAILED,
+                    await(coordinator.create("Delta", 3L)).status(),
+                    "the retained close obligation blocks another candidate allocation");
+            assertEquals(3, candidates.size());
+        } finally {
+            candidates.get(1).failCloseAttempts.set(candidates.get(1).closeAttempts.get());
+            coordinator.close();
+        }
+    }
+
+    @Test
+    void unresolvedDetachedCloseBlocksEveryFurtherCandidateAllocation() throws Exception {
+        FakeRegistry registry = new FakeRegistry();
+        List<FakeCandidate> candidates = new ArrayList<>();
+        try (CampaignActivationCoordinator coordinator = coordinator(
+                registry, candidates, new FakeHost())) {
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED,
+                    await(coordinator.create("Alpha", 0L)).status());
+            candidates.get(0).failCloseAttempts.set(5);
+
+            var beta = await(coordinator.create("Beta", 1L));
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED_DEGRADED, beta.status());
+            assertEquals(2, candidates.size());
+            CampaignId betaId = beta.durableActivation().orElseThrow()
+                    .campaign().orElseThrow().id();
+
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED_DEGRADED,
+                    await(coordinator.switchTo(betaId, 2L)).status(),
+                    "a same-active no-op allocates no candidate and retains its truthful status");
+            assertEquals(CampaignActivationCoordinator.Status.STALE_GENERATION,
+                    await(coordinator.switchTo(betaId, 1L)).status(),
+                    "generation validation precedes the candidate-allocation gate");
+
+            assertEquals(CampaignActivationCoordinator.Status.PRE_COMMIT_FAILED,
+                    await(coordinator.create("Gamma", 2L)).status());
+            assertEquals(CampaignActivationCoordinator.Status.PRE_COMMIT_FAILED,
+                    await(coordinator.create("Delta", 2L)).status());
+            assertEquals(2, candidates.size(),
+                    "an unresolved full-candidate close must cap runtime ownership");
+
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED,
+                    await(coordinator.create("Epsilon", 2L)).status());
+            assertEquals(3, candidates.size(),
+                    "allocation may continue only after the retained close obligation settles");
+        }
+    }
+
+    @Test
     void unreadableAmbiguousCommitBlocksAlreadyQueuedNormalTransition() throws Exception {
         FakeRegistry registry = new FakeRegistry();
         List<FakeCandidate> candidates = new ArrayList<>();
@@ -901,6 +1985,33 @@ final class CampaignActivationCoordinatorTest {
             assertEquals(
                     CampaignActivationCoordinator.Status.RECOVERY_UNAVAILABLE,
                     await(coordinator.create("Blocked", 2L)).status());
+        }
+    }
+
+    @Test
+    void failedRecoveryPublicationRetainsAttachedPriorPublicationTruth() throws Exception {
+        FakeRegistry registry = new FakeRegistry();
+        FakeHost host = new FakeHost();
+        List<FakeCandidate> candidates = new ArrayList<>();
+        try (CampaignActivationCoordinator coordinator = coordinator(registry, candidates, host)) {
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED,
+                    await(coordinator.create("Alpha", 0L)).status());
+            host.failRecoveryPublication.set(true);
+            registry.nextCommit = CommitBehavior.STORAGE_UNREADABLE_ONCE;
+
+            var failed = await(coordinator.create("Beta", 1L));
+
+            assertEquals(CampaignActivationCoordinator.Status.RECOVERY_UNAVAILABLE, failed.status());
+            assertEquals("Alpha", host.visibleRoot.get());
+            assertEquals(1, host.switchCount.get());
+            host.failRecoveryPublication.set(false);
+
+            assertEquals(CampaignActivationCoordinator.Status.RESUMED,
+                    await(coordinator.recoverDurableActive()).status());
+            assertEquals("Alpha", host.visibleRoot.get());
+            assertEquals(1, host.switchCount.get(),
+                    "failed recovery publication must not make the retained shell look detached");
+            assertEquals(1, candidates.getFirst().resumeCount.get());
         }
     }
 
@@ -1068,6 +2179,70 @@ final class CampaignActivationCoordinatorTest {
     }
 
     @Test
+    void repeatedCloseAndCleanupFailureBlocksReservationAndCandidateGrowth()
+            throws Exception {
+        FakeRegistry registry = new FakeRegistry();
+        List<FakeCandidate> candidates = new ArrayList<>();
+        AtomicInteger identities = new AtomicInteger(1);
+        AtomicBoolean failCleanup = new AtomicBoolean(true);
+        Path root = temporaryDirectory.resolve("close-cleanup-allocation-gate");
+        CampaignActivationCoordinator coordinator = new CampaignActivationCoordinator(
+                NoopDiagnostics.INSTANCE,
+                registry,
+                root,
+                (id, path, intent) -> {
+                    writeCandidateFile(path);
+                    FakeCandidate candidate = new FakeCandidate();
+                    if (candidates.size() == 1) {
+                        candidate.failCloseAttempts.set(2);
+                    }
+                    candidates.add(candidate);
+                    return CompletableFuture.completedFuture(candidate);
+                },
+                new FakeHost(),
+                () -> new UUID(4L, identities.getAndIncrement()),
+                java.time.Duration.ofMillis(100),
+                java.time.Duration.ofMillis(100),
+                () -> { },
+                directory -> {
+                    if (failCleanup.get()) {
+                        throw new IOException("injected reservation cleanup failure");
+                    }
+                    deleteTree(directory);
+                });
+        try {
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED,
+                    await(coordinator.create("Alpha", 0L)).status());
+            var rejectedResult = await(coordinator.create("Beta", 0L));
+            assertEquals(CampaignActivationCoordinator.Status.STALE_GENERATION,
+                    rejectedResult.status());
+            assertEquals(2, candidates.size());
+            assertEquals(3, identities.get());
+
+            assertEquals(CampaignActivationCoordinator.Status.PRE_COMMIT_FAILED,
+                    await(coordinator.create("Gamma", 1L)).status());
+            assertEquals(CampaignActivationCoordinator.Status.PRE_COMMIT_FAILED,
+                    await(coordinator.create("Gamma", 1L)).status());
+            assertEquals(2, candidates.size(),
+                    "close and cleanup obligations block every later factory allocation");
+            assertEquals(3, identities.get(),
+                    "no identity is consumed after the two initial reservations");
+            try (var directories = Files.list(root)) {
+                assertEquals(2L, directories.count(),
+                        "failed cleanup retains exactly its owned reservation without growth");
+            }
+
+            failCleanup.set(false);
+            assertEquals(CampaignActivationCoordinator.Status.ACTIVATED,
+                    await(coordinator.create("Gamma", 1L)).status());
+            assertEquals(3, candidates.size());
+        } finally {
+            failCleanup.set(false);
+            coordinator.close();
+        }
+    }
+
+    @Test
     void permanentCloseFailureNeverDropsOwnershipOrClaimsClosed() throws Exception {
         FakeRegistry registry = new FakeRegistry();
         List<FakeCandidate> candidates = new ArrayList<>();
@@ -1161,6 +2336,14 @@ final class CampaignActivationCoordinatorTest {
         Files.writeString(directory.resolve("campaign.sqlite"), "existing-campaign");
     }
 
+    private static void writeCandidateFile(Path path) {
+        try {
+            Files.writeString(path, "prepared-campaign");
+        } catch (IOException failure) {
+            throw new java.io.UncheckedIOException(failure);
+        }
+    }
+
     private static void deleteTree(Path directory) throws IOException {
         try (var paths = Files.walk(directory)) {
             paths.sorted(java.util.Comparator.reverseOrder()).forEach(path -> {
@@ -1208,6 +2391,8 @@ final class CampaignActivationCoordinatorTest {
     private enum CommitBehavior {
         NORMAL,
         STORAGE_AFTER_TARGET,
+        TARGET_UNREADABLE_ONCE,
+        DEFINITE_STALE_ONCE,
         EXCEPTION_WITH_PRIOR,
         BLOCK_THEN_STORAGE_UNREADABLE,
         STORAGE_UNREADABLE_ONCE,
@@ -1253,6 +2438,11 @@ final class CampaignActivationCoordinatorTest {
                 pendingCommit = new CompletableFuture<>();
                 return pendingCommit;
             }
+            if (behavior == CommitBehavior.DEFINITE_STALE_ONCE) {
+                return CompletableFuture.completedFuture(new CampaignPointerCommitResult(
+                        CampaignPointerCommitResult.Status.STALE_GENERATION,
+                        Optional.of(active)));
+            }
             if (active.generation() != expectedGeneration) {
                 return CompletableFuture.completedFuture(new CampaignPointerCommitResult(
                         CampaignPointerCommitResult.Status.STALE_GENERATION,
@@ -1260,6 +2450,10 @@ final class CampaignActivationCoordinatorTest {
             }
             campaigns.put(campaignId, target);
             active = new CampaignActivation(Optional.of(target), expectedGeneration + 1L);
+            if (behavior == CommitBehavior.TARGET_UNREADABLE_ONCE) {
+                activeUnreadableReads.set(1);
+                return CompletableFuture.completedFuture(storageError());
+            }
             if (behavior == CommitBehavior.STORAGE_AFTER_TARGET) {
                 return CompletableFuture.completedFuture(storageError());
             }
@@ -1318,8 +2512,8 @@ final class CampaignActivationCoordinatorTest {
         protected final AtomicInteger resumeCount = new AtomicInteger();
         protected final AtomicInteger activationCount = new AtomicInteger();
         protected final AtomicInteger closeAttempts = new AtomicInteger();
-        private final AtomicInteger failCloseAttempts = new AtomicInteger();
-        private final AtomicBoolean mutationAccepted = new AtomicBoolean();
+        protected final AtomicInteger failCloseAttempts = new AtomicInteger();
+        protected final AtomicBoolean mutationAccepted = new AtomicBoolean();
         private CompletionStage<Void> pauseResult = CompletableFuture.completedFuture(null);
         private CompletionStage<Void> publicationDrain = CompletableFuture.completedFuture(null);
         private @org.jspecify.annotations.Nullable CompletionStage<Void> closeResult;
@@ -1342,6 +2536,10 @@ final class CampaignActivationCoordinatorTest {
         @Override public CompletionStage<Void> pauseAndDrain() {
             pauseCount.incrementAndGet();
             return pauseResult;
+        }
+
+        protected void setPauseResult(CompletionStage<Void> result) {
+            pauseResult = java.util.Objects.requireNonNull(result, "result");
         }
 
         @Override public void resumeAdmission() { resumeCount.incrementAndGet(); }
@@ -1437,6 +2635,55 @@ final class CampaignActivationCoordinatorTest {
         }
     }
 
+    private static final class LiveTrackingCandidate extends FakeCandidate {
+        private final AtomicInteger liveCandidates;
+        private final AtomicBoolean live = new AtomicBoolean(true);
+
+        private LiveTrackingCandidate(
+                AtomicInteger liveCandidates,
+                AtomicInteger maximumLiveCandidates
+        ) {
+            this.liveCandidates = liveCandidates;
+            int current = liveCandidates.incrementAndGet();
+            maximumLiveCandidates.accumulateAndGet(current, Math::max);
+        }
+
+        @Override
+        public CompletionStage<Void> closeAsync() {
+            return super.closeAsync().thenRun(() -> {
+                if (live.compareAndSet(true, false)) {
+                    liveCandidates.decrementAndGet();
+                }
+            });
+        }
+    }
+
+    private static final class ReusableFakeCandidate extends FakeCandidate {
+        private final AtomicBoolean parkedValid = new AtomicBoolean(true);
+
+        @Override
+        public boolean reusableWhileParked() {
+            return true;
+        }
+
+        @Override
+        public boolean parkedStateStillValid() {
+            return parkedValid.get();
+        }
+
+        @Override
+        public CompletionStage<Void> pauseAndDrain() {
+            mutationAccepted.set(false);
+            return super.pauseAndDrain();
+        }
+
+        @Override
+        public void resumeAdmission() {
+            super.resumeAdmission();
+            mutationAccepted.set(true);
+        }
+    }
+
     private static final class AdmissionCandidate extends FakeCandidate {
         private final WorkflowAdmissionController admission;
         private final ExecutionLane admittedMutation;
@@ -1475,7 +2722,7 @@ final class CampaignActivationCoordinatorTest {
         }
     }
 
-    private static final class FakeHost implements CampaignActivationCoordinator.SwitchingHost {
+    private static class FakeHost implements CampaignActivationCoordinator.SwitchingHost {
         private final AtomicBoolean failAfterRootSwap = new AtomicBoolean();
         private final AtomicBoolean throwAfterRootSwap = new AtomicBoolean();
         private final AtomicBoolean failRecoveryPublication = new AtomicBoolean();

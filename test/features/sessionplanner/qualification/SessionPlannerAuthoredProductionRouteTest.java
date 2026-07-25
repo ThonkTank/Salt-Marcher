@@ -338,6 +338,7 @@ final class SessionPlannerAuthoredProductionRouteTest {
                     authored, DirectExecutionLane.INSTANCE,
                     DirectExecutionLane.INSTANCE, DirectUiDispatcher.INSTANCE,
                     NoopDiagnostics.INSTANCE);
+            planner.start();
             PartyServiceAssembly.start(party);
             encounters.start();
             ProductionRoute route = new ProductionRoute(database, sessions, planner, authored);

@@ -29,17 +29,6 @@ final class GenerationRunSqliteWriter {
         insertAudits(connection, run);
     }
 
-    void insertLegacyV1(Connection connection, GeneratedRun run) throws SQLException {
-        insertRunV1(connection, run);
-        insertParty(connection, run);
-        insertTargets(connection, run);
-        insertEncounters(connection, run);
-        insertTreasures(connection, run);
-        insertLoot(connection, run);
-        insertPacking(connection, run);
-        insertAudits(connection, run);
-    }
-
     private static void insertRun(Connection connection, GeneratedRun run, String contentFingerprint)
             throws SQLException {
         String sql = "INSERT INTO " + SessionGenerationSchema.RUNS + " ("
@@ -51,19 +40,6 @@ final class GenerationRunSqliteWriter {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             bindRun(statement, run);
             statement.setString(24, contentFingerprint);
-            statement.executeUpdate();
-        }
-    }
-
-    private static void insertRunV1(Connection connection, GeneratedRun run) throws SQLException {
-        String sql = "INSERT INTO " + SessionGenerationSchema.RUNS + " ("
-                + "run_id, owner, schema_version, engine_version, catalog_version, catalog_hash, seed, "
-                + "adventure_fraction, encounter_count, party_count, day_xp_budget, session_xp_target, average_level, "
-                + "normal_budget_cp, overstock_budget_cp, nonmagic_slots, normal_magic, overstock_magic, treasure_count, "
-                + "normal_actual_cp, overstock_actual_cp, magic_count, formatted_text) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            bindRun(statement, run);
             statement.executeUpdate();
         }
     }

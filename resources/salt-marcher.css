@@ -937,7 +937,7 @@
     -fx-border-width: 2;
 }
 .nav-separator {
-    -fx-background-color: -sm-border-subtle;
+    -fx-background-color: #333a3f;
     -fx-pref-width: 24;
     -fx-max-width: 24;
     -fx-pref-height: 1;

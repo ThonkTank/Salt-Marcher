@@ -1,5 +1,7 @@
 package features.worldplanner.adapter.sqlite.model;
 
+import java.util.List;
+
 public final class WorldPlannerPersistenceSchema {
 
     public static final String NPCS_TABLE = "world_planner_npcs";
@@ -11,10 +13,10 @@ public final class WorldPlannerPersistenceSchema {
     public static final String LOCATION_TABLES_TABLE = "world_planner_location_encounter_tables";
     public static final String NPC_DISPOSITION_COLUMN = "disposition_modifier";
     public static final String FACTION_DISPOSITION_COLUMN = "disposition";
-    private static final String CREATE_TABLE_IF_NOT_EXISTS = "CREATE TABLE IF NOT EXISTS ";
+    private static final String CREATE_TABLE = "CREATE TABLE ";
 
     public static final String CREATE_NPCS_SQL =
-            CREATE_TABLE_IF_NOT_EXISTS + NPCS_TABLE + " ("
+            CREATE_TABLE + NPCS_TABLE + " ("
                     + "npc_id INTEGER PRIMARY KEY, "
                     + "display_name TEXT NOT NULL, "
                     + "creature_statblock_id INTEGER NOT NULL, "
@@ -28,7 +30,7 @@ public final class WorldPlannerPersistenceSchema {
                     + ")";
 
     public static final String CREATE_FACTIONS_SQL =
-            CREATE_TABLE_IF_NOT_EXISTS + FACTIONS_TABLE + " ("
+            CREATE_TABLE + FACTIONS_TABLE + " ("
                     + "faction_id INTEGER PRIMARY KEY, "
                     + "display_name TEXT NOT NULL, "
                     + "notes TEXT NOT NULL, "
@@ -38,7 +40,7 @@ public final class WorldPlannerPersistenceSchema {
                     + ")";
 
     public static final String CREATE_FACTION_NPCS_SQL =
-            CREATE_TABLE_IF_NOT_EXISTS + FACTION_NPCS_TABLE + " ("
+            CREATE_TABLE + FACTION_NPCS_TABLE + " ("
                     + "faction_id INTEGER NOT NULL REFERENCES " + FACTIONS_TABLE + "(faction_id) ON DELETE CASCADE, "
                     + "npc_id INTEGER NOT NULL REFERENCES " + NPCS_TABLE + "(npc_id) ON DELETE CASCADE, "
                     + "sort_order INTEGER NOT NULL, "
@@ -46,17 +48,11 @@ public final class WorldPlannerPersistenceSchema {
                     + ")";
 
     public static final String CREATE_FACTION_NPC_UNIQUE_INDEX_SQL =
-            "CREATE UNIQUE INDEX IF NOT EXISTS idx_world_planner_npc_single_faction ON "
+            "CREATE UNIQUE INDEX idx_world_planner_npc_single_faction ON "
                     + FACTION_NPCS_TABLE + "(npc_id)";
 
-    public static final String KEEP_ONE_FACTION_PER_NPC_SQL =
-            "DELETE FROM " + FACTION_NPCS_TABLE + " "
-                    + "WHERE EXISTS (SELECT 1 FROM " + FACTION_NPCS_TABLE + " AS earlier "
-                    + "WHERE earlier.npc_id = " + FACTION_NPCS_TABLE + ".npc_id "
-                    + "AND earlier.faction_id < " + FACTION_NPCS_TABLE + ".faction_id)";
-
     public static final String CREATE_FACTION_LIMITS_SQL =
-            CREATE_TABLE_IF_NOT_EXISTS + FACTION_LIMITS_TABLE + " ("
+            CREATE_TABLE + FACTION_LIMITS_TABLE + " ("
                     + "faction_id INTEGER NOT NULL REFERENCES " + FACTIONS_TABLE + "(faction_id) ON DELETE CASCADE, "
                     + "creature_statblock_id INTEGER NOT NULL, "
                     + "finite INTEGER NOT NULL CHECK(finite IN (0, 1)), "
@@ -65,14 +61,14 @@ public final class WorldPlannerPersistenceSchema {
                     + ")";
 
     public static final String CREATE_LOCATIONS_SQL =
-            CREATE_TABLE_IF_NOT_EXISTS + LOCATIONS_TABLE + " ("
+            CREATE_TABLE + LOCATIONS_TABLE + " ("
                     + "location_id INTEGER PRIMARY KEY, "
                     + "display_name TEXT NOT NULL, "
                     + "notes TEXT NOT NULL"
                     + ")";
 
     public static final String CREATE_LOCATION_FACTIONS_SQL =
-            CREATE_TABLE_IF_NOT_EXISTS + LOCATION_FACTIONS_TABLE + " ("
+            CREATE_TABLE + LOCATION_FACTIONS_TABLE + " ("
                     + "location_id INTEGER NOT NULL REFERENCES " + LOCATIONS_TABLE + "(location_id) ON DELETE CASCADE, "
                     + "faction_id INTEGER NOT NULL REFERENCES " + FACTIONS_TABLE + "(faction_id) ON DELETE CASCADE, "
                     + "sort_order INTEGER NOT NULL, "
@@ -80,12 +76,24 @@ public final class WorldPlannerPersistenceSchema {
                     + ")";
 
     public static final String CREATE_LOCATION_TABLES_SQL =
-            CREATE_TABLE_IF_NOT_EXISTS + LOCATION_TABLES_TABLE + " ("
+            CREATE_TABLE + LOCATION_TABLES_TABLE + " ("
                     + "location_id INTEGER NOT NULL REFERENCES " + LOCATIONS_TABLE + "(location_id) ON DELETE CASCADE, "
                     + "encounter_table_id INTEGER NOT NULL, "
                     + "sort_order INTEGER NOT NULL, "
                     + "PRIMARY KEY(location_id, encounter_table_id)"
                     + ")";
+
+    public static final List<String> CREATE_TABLE_SQL = List.of(
+            CREATE_NPCS_SQL,
+            CREATE_FACTIONS_SQL,
+            CREATE_FACTION_NPCS_SQL,
+            CREATE_FACTION_LIMITS_SQL,
+            CREATE_LOCATIONS_SQL,
+            CREATE_LOCATION_FACTIONS_SQL,
+            CREATE_LOCATION_TABLES_SQL);
+
+    public static final List<String> CREATE_INDEX_SQL = List.of(
+            CREATE_FACTION_NPC_UNIQUE_INDEX_SQL);
 
     private WorldPlannerPersistenceSchema() {
     }

@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.jspecify.annotations.Nullable;
 
 final class GenerationRunSqliteReader {
 
@@ -62,7 +61,7 @@ final class GenerationRunSqliteReader {
         }
     }
 
-    record StoredGeneratedRun(GeneratedRun run, @Nullable String storedFingerprint) {
+    record StoredGeneratedRun(GeneratedRun run, String storedFingerprint) {
     }
 
     private static List<PartyLevel> loadParty(Connection connection, String runId) throws SQLException {

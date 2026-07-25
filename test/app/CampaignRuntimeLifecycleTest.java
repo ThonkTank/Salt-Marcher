@@ -7,6 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.scene.api.SceneCommand;
 import features.scene.api.SceneMutationResult;
+import features.encounter.api.SavedEncounterPlanListModel;
+import features.sessionplanner.SessionPlannerServiceAssembly;
+import features.worldplanner.api.WorldPlannerSnapshotModel;
 import java.nio.file.Path;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -14,7 +17,9 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.io.TempDir;
@@ -110,6 +115,47 @@ final class CampaignRuntimeLifecycleTest {
         await(terminated);
         assertEquals(CampaignRuntime.State.CLOSED, runtime.state());
         assertTrue(runtime.closureWorkerDaemonForTesting());
+    }
+
+    @Test
+    void boundedLaneTerminationTimeoutKeepsRuntimeRetryableUntilTaskReleases() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("bounded-retryable-close.sqlite");
+        BoundedExecutionLane mutationLane = new BoundedExecutionLane(
+                NoopDiagnostics.INSTANCE, "bounded-retry-proof", 1);
+        CampaignRuntime runtime = open(databasePath, mutationLane);
+        await(runtime.foundationReadiness());
+        java.util.concurrent.CountDownLatch entered = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch terminal = new java.util.concurrent.CountDownLatch(1);
+        mutationLane.execute(() -> {
+            entered.countDown();
+            try {
+                while (release.getCount() != 0L) {
+                    try {
+                        release.await();
+                    } catch (InterruptedException ignored) {
+                        // This deliberately models an internal task that cannot stop in 1 second.
+                    }
+                }
+            } finally {
+                terminal.countDown();
+            }
+        });
+        assertTrue(entered.await(5, TimeUnit.SECONDS));
+
+        CompletionStage<Void> firstAttempt = runtime.quiesceAsync();
+        assertThrows(java.util.concurrent.ExecutionException.class,
+                () -> firstAttempt.toCompletableFuture().get(5, TimeUnit.SECONDS));
+        assertEquals(CampaignRuntime.State.QUIESCING, runtime.state());
+
+        release.countDown();
+        assertTrue(terminal.await(5, TimeUnit.SECONDS));
+        CompletionStage<Void> retry = runtime.quiesceAsync();
+        assertFalse(firstAttempt == retry, "a terminal failure must permit a fresh close attempt");
+        await(retry);
+
+        assertEquals(CampaignRuntime.State.CLOSED, runtime.state());
+        assertThrows(IllegalStateException.class, runtime::components);
     }
 
     @Test
@@ -237,6 +283,81 @@ final class CampaignRuntimeLifecycleTest {
         await(closed);
 
         assertEquals(CampaignRuntime.State.CLOSED, runtime.state());
+    }
+
+    @Test
+    void partialSessionPlannerStartRemainsOwnedThroughRetryableRuntimeClose() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("session-planner-partial-start.sqlite");
+        AtomicInteger savedSubscriptions = new AtomicInteger();
+        AtomicInteger savedReleaseAttempts = new AtomicInteger();
+        AtomicInteger worldSubscriptionAttempts = new AtomicInteger();
+        CampaignRuntime runtime = CampaignRuntime.open(
+                NoopDiagnostics.INSTANCE,
+                DirectExecutionLane.INSTANCE,
+                DirectExecutionLane.INSTANCE,
+                DirectExecutionLane.INSTANCE,
+                DirectExecutionLane.INSTANCE,
+                DirectExecutionLane.INSTANCE,
+                DirectExecutionLane.INSTANCE,
+                DirectExecutionLane.INSTANCE,
+                DirectExecutionLane.INSTANCE,
+                DirectExecutionLane.INSTANCE,
+                DirectUiDispatcher.INSTANCE,
+                installationFor(databasePath).references(),
+                new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE),
+                inputs -> {
+                    SavedEncounterPlanListModel savedPlans = new SavedEncounterPlanListModel(
+                            inputs.savedPlans()::current,
+                            listener -> {
+                                savedSubscriptions.incrementAndGet();
+                                Runnable upstream = inputs.savedPlans().subscribe(listener);
+                                return () -> {
+                                    if (savedReleaseAttempts.incrementAndGet() == 1) {
+                                        throw new IllegalStateException("unsubscribe-once");
+                                    }
+                                    upstream.run();
+                                };
+                            },
+                            inputs.savedPlans()::observeLatest);
+                    WorldPlannerSnapshotModel worldPlanner = new WorldPlannerSnapshotModel(
+                            inputs.worldPlanner()::current,
+                            listener -> {
+                                worldSubscriptionAttempts.incrementAndGet();
+                                throw new IllegalStateException("subscribe-once");
+                            },
+                            inputs.worldPlanner()::observeLatest);
+                    return SessionPlannerServiceAssembly.create(
+                            inputs.store(), inputs.party(), inputs.encounters(), savedPlans,
+                            worldPlanner, inputs.generation(), inputs.authoredExecutionLane(),
+                            inputs.preparationCpuLane(), inputs.preparationIoLane(),
+                            inputs.uiDispatcher(), inputs.diagnostics());
+                });
+
+        java.util.concurrent.ExecutionException readinessFailure = assertThrows(
+                java.util.concurrent.ExecutionException.class,
+                () -> runtime.foundationReadiness().toCompletableFuture()
+                        .get(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
+        assertEquals("subscribe-once", readinessFailure.getCause().getMessage());
+        assertEquals(CampaignRuntime.State.FAILED, runtime.state());
+        assertEquals(1, savedSubscriptions.get());
+        assertEquals(1, worldSubscriptionAttempts.get());
+
+        CompletionStage<Void> firstClose = runtime.quiesceAsync();
+        java.util.concurrent.ExecutionException closeFailure = assertThrows(
+                java.util.concurrent.ExecutionException.class,
+                () -> firstClose.toCompletableFuture().get(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
+        assertEquals("unsubscribe-once", closeFailure.getCause().getMessage());
+        assertEquals(CampaignRuntime.State.QUIESCING, runtime.state());
+        assertEquals(1, savedReleaseAttempts.get());
+
+        CompletionStage<Void> retry = runtime.quiesceAsync();
+        assertFalse(firstClose == retry);
+        await(retry);
+        assertEquals(CampaignRuntime.State.CLOSED, runtime.state());
+        assertEquals(2, savedReleaseAttempts.get(),
+                "runtime close retry must retain and release the failed Session Planner handle");
+        assertEquals(1, savedSubscriptions.get(),
+                "runtime close must not reacquire handles after failed startup");
     }
 
     private static void setStoreVersion(Path databasePath, String owner, int version) throws Exception {

@@ -1,7 +1,6 @@
 package features.encounter.adapter.sqlite.gateway.local;
 
 import features.encounter.adapter.sqlite.model.EncounterPersistenceSchema;
-import features.encounter.adapter.sqlite.model.EncounterPlanCreatureRecord;
 import features.encounter.adapter.sqlite.model.GeneratedEncounterOriginRecord;
 import features.encounter.api.PreparedEncounterBatch;
 import features.encounter.api.PreparedEncounterRoster;
@@ -23,7 +22,7 @@ final class GeneratedEncounterBatchSqliteStore {
     private static final String FIND_BATCH = "SELECT generation_id, preparation_id, batch_fingerprint, "
             + "encounter_count FROM "
             + EncounterPersistenceSchema.GENERATED_ENCOUNTER_PLAN_BATCHES_TABLE_NAME
-            + " WHERE engine_version=? AND COALESCE(preparation_id, generation_id)=?";
+            + " WHERE engine_version=? AND preparation_id=?";
     private static final String FIND_ORIGINS = "SELECT o.encounter_number, o.batch_order, o.spec_fingerprint, "
             + "o.roster_fingerprint, o.plan_id, p.name display_name, p.generated_label, "
             + "COALESCE((SELECT GROUP_CONCAT(row_value, '') FROM "
@@ -42,7 +41,7 @@ final class GeneratedEncounterBatchSqliteStore {
             + " (engine_version, generation_id, encounter_number, batch_order, spec_fingerprint, "
             + "roster_fingerprint, plan_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
     private static final String FIND_ORIGIN_BY_PLAN = "SELECT b.engine_version, b.generation_id, "
-            + "COALESCE(b.preparation_id,b.generation_id) preparation_id, b.batch_fingerprint, "
+            + "b.preparation_id, b.batch_fingerprint, "
             + "b.encounter_count, o.batch_order, o.encounter_number, o.spec_fingerprint, "
             + "o.roster_fingerprint FROM generated_encounter_plan_origins o JOIN "
             + "generated_encounter_plan_batches b ON b.engine_version=o.engine_version "
@@ -52,7 +51,6 @@ final class GeneratedEncounterBatchSqliteStore {
         String storedRun;
         String storedFingerprint;
         int storedCount;
-        boolean canonicalRepresentation;
         try (PreparedStatement statement = connection.prepareStatement(FIND_BATCH)) {
             statement.setString(1, requested.source().engineVersion());
             statement.setString(2, requested.source().preparationIdentity());
@@ -61,13 +59,12 @@ final class GeneratedEncounterBatchSqliteStore {
                     return Optional.empty();
                 }
                 storedRun = rows.getString("generation_id");
-                canonicalRepresentation = rows.getString("preparation_id") != null;
                 storedFingerprint = rows.getString("batch_fingerprint");
                 storedCount = rows.getInt("encounter_count");
             }
         }
         return Optional.of(new StoredBatch(
-                storedRun, storedFingerprint, storedCount, canonicalRepresentation,
+                storedRun, storedFingerprint, storedCount,
                 loadOrigins(connection, requested.source().engineVersion(), storedRun)));
     }
 
@@ -106,8 +103,7 @@ final class GeneratedEncounterBatchSqliteStore {
 
     Optional<GeneratedEncounterOriginRecord> loadOrigin(
             Connection connection,
-            long planId,
-            List<EncounterPlanCreatureRecord> creatures
+            long planId
     ) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(FIND_ORIGIN_BY_PLAN)) {
             statement.setLong(1, planId);
@@ -117,13 +113,15 @@ final class GeneratedEncounterBatchSqliteStore {
                 }
                 String rosterFingerprint = rows.getString("roster_fingerprint");
                 if (rosterFingerprint == null || rosterFingerprint.isBlank()) {
-                    rosterFingerprint = fingerprint(creatures.stream()
-                            .map(creature -> "|" + creature.creatureId() + ':' + creature.quantity())
-                            .reduce("", String::concat));
+                    throw new SQLException("Generated Encounter origin lacks its canonical roster identity");
+                }
+                String preparationIdentity = rows.getString("preparation_id");
+                if (preparationIdentity == null || preparationIdentity.isBlank()) {
+                    throw new SQLException("Generated Encounter batch lacks its canonical preparation identity");
                 }
                 return Optional.of(new GeneratedEncounterOriginRecord(
                         rows.getString("engine_version"),
-                        rows.getString("preparation_id"),
+                        preparationIdentity,
                         rows.getString("generation_id"),
                         rows.getString("batch_fingerprint"),
                         rows.getInt("encounter_count"),
@@ -150,10 +148,7 @@ final class GeneratedEncounterBatchSqliteStore {
                     || !origin.generatedLabel().equals(roster.displayLabel())
                     || !origin.intentFingerprint().equals(roster.intentFingerprint())
                     || !origin.derivedRosterFingerprint().equals(roster.rosterFingerprint())
-                    || (stored.canonicalRepresentation()
-                            && !origin.rosterFingerprint().equals(roster.rosterFingerprint()))
-                    || (!stored.canonicalRepresentation() && !origin.rosterFingerprint().isBlank()
-                            && !origin.rosterFingerprint().equals(roster.rosterFingerprint()))) {
+                    || !origin.rosterFingerprint().equals(roster.rosterFingerprint())) {
                 return false;
             }
         }
@@ -197,7 +192,6 @@ final class GeneratedEncounterBatchSqliteStore {
             String generationRunIdentity,
             String batchFingerprint,
             int cardinality,
-            boolean canonicalRepresentation,
             List<StoredOrigin> origins
     ) {
         StoredBatch {

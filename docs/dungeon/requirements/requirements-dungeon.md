@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-21
+Last Reviewed: 2026-07-25
 Source of Truth: Confirmed solution-neutral user capabilities and quality needs
 for the Dungeon feature.
 
@@ -229,6 +229,13 @@ references without copying or taking ownership of the referenced object's
 truth.
 
 ## Durability And Safety
+
+Until feature completion, there are no users and therefore no legacy Dungeon
+data to preserve. Development database shapes are unsupported inputs and fail
+closed rather than being migrated by the product. The migration and backup
+outcomes below become applicable when users can first create durable data;
+current-format persistence, restart, integrity, and recovery obligations apply
+throughout development.
 
 - every completed, validated authoring action persists immediately
 - previews and canceled gestures remain transient

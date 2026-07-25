@@ -1,7 +1,7 @@
 package features.sessiongeneration.adapter.sqlite.persistence;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -18,7 +18,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 import platform.diagnostics.NoopDiagnostics;
 import platform.persistence.SqliteDatabase;
-import platform.persistence.SqliteMigration;
 import platform.persistence.TestFeatureStores;
 
 import java.lang.reflect.InvocationTargetException;
@@ -60,6 +59,17 @@ final class SqliteGenerationRunRepositoryTest {
             assertEquals("session-generation", rows.getString(1));
             assertEquals(1, rows.getInt(2));
             assertEquals(draft.contentFingerprint(), rows.getString(3));
+        }
+
+        try (SqliteDatabase reopened = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
+            assertEquals(draft, repository(reopened).load(draft.run().runId()).orElseThrow());
+        }
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+             var statement = connection.createStatement();
+             var rows = statement.executeQuery(
+                     "SELECT version FROM sm_schema_versions WHERE owner='session-generation'")) {
+            assertTrue(rows.next());
+            assertEquals(1, rows.getInt(1));
         }
     }
 
@@ -135,36 +145,82 @@ final class SqliteGenerationRunRepositoryTest {
     }
 
     @Test
-    void v1CanonicalRowsMigrateAndDeriveFingerprintWithoutReadRewrite() throws Exception {
-        java.nio.file.Path databasePath = temporaryDirectory.resolve("legacy-v1.sqlite");
-        GeneratedRun legacy = generate(179974L);
-        SessionGenerationSchema schema = new SessionGenerationSchema();
-        try (SqliteDatabase v1 = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE);
-                var connection =
-                        TestFeatureStores.store(
-                                        v1,
-                        SqliteGenerationRunRepository.OWNER,
-                        new SqliteMigration(1, schema::migrateV1)).openConnection()) {
-            new GenerationRunSqliteWriter().insertLegacyV1(connection, legacy);
-        }
-
-        GeneratedRunDraft loaded;
-        try (SqliteDatabase migrated = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            loaded = new SqliteGenerationRunRepository(
-                                    TestFeatureStores.store(
-                                            migrated,
-                                            SqliteGenerationRunRepository.storeDefinition())).load(legacy.runId()).orElseThrow();
-        }
-        assertEquals(legacy, loaded.run());
-
+    void predecessorVersionOneWithoutFingerprintFailsClosedUnchanged() throws Exception {
+        java.nio.file.Path databasePath = temporaryDirectory.resolve("predecessor-v1.sqlite");
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
-                var statement = connection.createStatement();
-                var rows = statement.executeQuery(
-                                "SELECT content_fingerprint FROM session_generation_runs WHERE"
-                                    + " run_id = '"
-                                        + legacy.runId() + "'")) {
-            assertTrue(rows.next());
-            assertNull(rows.getString(1));
+             var statement = connection.createStatement()) {
+            createVersionTable(statement, 1);
+            for (String sql : SessionGenerationSchema.CREATE_TABLE_SQL) {
+                statement.execute(sql.replace(", content_fingerprint TEXT NOT NULL", ""));
+            }
+            statement.execute("INSERT INTO session_generation_runs "
+                    + "(run_id, owner, schema_version, engine_version, catalog_version, catalog_hash, seed, "
+                    + "adventure_fraction, encounter_count, party_count, day_xp_budget, session_xp_target, "
+                    + "average_level, normal_budget_cp, overstock_budget_cp, nonmagic_slots, normal_magic, "
+                    + "overstock_magic, treasure_count, normal_actual_cp, overstock_actual_cp, magic_count, "
+                    + "formatted_text) VALUES "
+                    + "('predecessor', 'session-generation', 1, 'e', 'c', 'h', 1, '0.5', 1, 1, "
+                    + "100, 50, '1', 0, 0, 0, 0, 0, 0, 0, 0, 0, 'kept')");
+        }
+
+        assertUnavailable(databasePath);
+
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath)) {
+            assertEquals(1, featureVersion(connection));
+            assertEquals(0, columnCount(connection, SessionGenerationSchema.RUNS, "content_fingerprint"));
+            assertEquals("kept", scalarText(connection,
+                    "SELECT formatted_text FROM session_generation_runs WHERE run_id='predecessor'"));
+        }
+    }
+
+    @Test
+    void unversionedPartialAndNewerShapesFailClosedWithoutClaimOrMutation() throws Exception {
+        java.nio.file.Path partial = temporaryDirectory.resolve("unversioned-partial.sqlite");
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + partial);
+             var statement = connection.createStatement()) {
+            statement.execute("CREATE TABLE session_generation_runs(run_id TEXT PRIMARY KEY, marker TEXT NOT NULL)");
+            statement.execute("INSERT INTO session_generation_runs VALUES('partial', 'kept')");
+        }
+        assertUnavailable(partial);
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + partial)) {
+            assertEquals("kept", scalarText(connection,
+                    "SELECT marker FROM session_generation_runs WHERE run_id='partial'"));
+            assertFalse(ownerVersionExists(connection));
+            assertEquals(2, columnCount(connection, SessionGenerationSchema.RUNS, null));
+        }
+
+        java.nio.file.Path newer = temporaryDirectory.resolve("newer-v2.sqlite");
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + newer);
+             var statement = connection.createStatement()) {
+            createVersionTable(statement, 2);
+            statement.execute("CREATE TABLE session_generation_retired(payload TEXT NOT NULL)");
+            statement.execute("INSERT INTO session_generation_retired VALUES('newer')");
+        }
+        assertUnavailable(newer);
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + newer)) {
+            assertEquals(2, featureVersion(connection));
+            assertEquals("newer", scalarText(connection, "SELECT payload FROM session_generation_retired"));
+        }
+    }
+
+    @Test
+    void adjacentOwnerObjectAtCurrentVersionFailsClosedUnchanged() throws Exception {
+        java.nio.file.Path path = temporaryDirectory.resolve("adjacent-current.sqlite");
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + path);
+             var statement = connection.createStatement()) {
+            createVersionTable(statement, 1);
+            for (String sql : SessionGenerationSchema.CREATE_TABLE_SQL) {
+                statement.execute(sql);
+            }
+            statement.execute("CREATE TABLE session_generation_retired(payload TEXT NOT NULL)");
+            statement.execute("INSERT INTO session_generation_retired VALUES('kept')");
+        }
+
+        assertUnavailable(path);
+
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + path)) {
+            assertEquals(1, featureVersion(connection));
+            assertEquals("kept", scalarText(connection, "SELECT payload FROM session_generation_retired"));
         }
     }
 
@@ -373,6 +429,61 @@ final class SqliteGenerationRunRepositoryTest {
                         List.of(new GeneratedRun.PartyLevel(3, 2), new GeneratedRun.PartyLevel(4, 2)),
                         new BigDecimal("0.6"), OptionalInt.of(3), seed),
                 new TsvGenerationCatalog().load());
+    }
+
+    private static SqliteGenerationRunRepository repository(SqliteDatabase database) {
+        return new SqliteGenerationRunRepository(TestFeatureStores.store(
+                database, SqliteGenerationRunRepository.storeDefinition()));
+    }
+
+    private static void assertUnavailable(java.nio.file.Path path) {
+        try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
+            SqliteGenerationRunRepository repository = repository(database);
+            assertThrows(IllegalStateException.class, () -> repository.load("probe"));
+        }
+    }
+
+    private static void createVersionTable(java.sql.Statement statement, int version) throws Exception {
+        statement.execute("PRAGMA user_version = 1");
+        statement.execute("CREATE TABLE sm_schema_versions "
+                + "(owner TEXT PRIMARY KEY, version INTEGER NOT NULL CHECK(version >= 0))");
+        statement.execute("INSERT INTO sm_schema_versions(owner, version) "
+                + "VALUES ('session-generation', " + version + ")");
+    }
+
+    private static int featureVersion(java.sql.Connection connection) throws Exception {
+        return scalarInt(connection,
+                "SELECT version FROM sm_schema_versions WHERE owner='session-generation'");
+    }
+
+    private static boolean ownerVersionExists(java.sql.Connection connection) throws Exception {
+        if (scalarInt(connection,
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='sm_schema_versions'") == 0) {
+            return false;
+        }
+        return scalarInt(connection,
+                "SELECT COUNT(*) FROM sm_schema_versions WHERE owner='session-generation'") != 0;
+    }
+
+    private static int columnCount(
+            java.sql.Connection connection,
+            String table,
+            String column
+    ) throws Exception {
+        String where = column == null ? "" : " WHERE name='" + column + "'";
+        return scalarInt(connection, "SELECT COUNT(*) FROM pragma_table_info('" + table + "')" + where);
+    }
+
+    private static int scalarInt(java.sql.Connection connection, String sql) throws Exception {
+        try (var statement = connection.createStatement(); var result = statement.executeQuery(sql)) {
+            return result.next() ? result.getInt(1) : 0;
+        }
+    }
+
+    private static String scalarText(java.sql.Connection connection, String sql) throws Exception {
+        try (var statement = connection.createStatement(); var result = statement.executeQuery(sql)) {
+            return result.next() ? result.getString(1) : "";
+        }
     }
 
     private static java.sql.Connection countingConnection(

@@ -29,7 +29,7 @@ final class SqliteDungeonHexPlannerAdaptersTest {
     Path temporaryDirectory;
 
     @Test
-    void sharesOneDatabaseAcrossFeatureAdaptersWithPersistentVersionedMigrations() throws Exception {
+    void sharesOneDatabaseAcrossFeatureCurrentSchemaInitializers() throws Exception {
         try (SqliteDatabase database = new SqliteDatabase(
                 temporaryDirectory.resolve("dungeon-hex-planners.db"),
                 NoopDiagnostics.INSTANCE)) {
@@ -46,10 +46,10 @@ final class SqliteDungeonHexPlannerAdaptersTest {
             SqliteSessionPlanRepository sessions = new SqliteSessionPlanRepository(stores.get("session-planner"));
             SqliteWorldPlannerRepository world = new SqliteWorldPlannerRepository(stores.get("world-planner"));
             Map<String, Integer> expectedVersions = Map.of(
-                    "dungeon", 7,
-                    "hex", 2,
-                    "session-planner", 5,
-                    "world-planner", 2);
+                    "dungeon", 1,
+                    "hex", 1,
+                    "session-planner", 1,
+                    "world-planner", 1);
 
             assertTrue(dungeons.search("").isEmpty());
             assertTrue(hexMaps.listMaps().isEmpty());

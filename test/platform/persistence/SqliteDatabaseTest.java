@@ -32,6 +32,8 @@ final class SqliteDatabaseTest {
     };
     private static final byte[] UNCOMMITTED_MARKER =
             "UNCOMMITTED-ON-DISK-MARKER".getBytes(StandardCharsets.UTF_8);
+    private static final String SEED_TABLE_SQL =
+            "CREATE TABLE recovery_data(id INTEGER PRIMARY KEY, value TEXT NOT NULL)";
 
     @TempDir
     Path temporaryDirectory;
@@ -181,6 +183,87 @@ final class SqliteDatabaseTest {
                         .openConnection()) {
             assertEquals(before, semanticSnapshot(connection));
             assertFalse(tableExists(connection, "sm_runtime_write_probe"));
+        }
+    }
+
+    @Test
+    void unchangedParkedTokenSkipsFullValidationAndChangedValidStoreRunsIt()
+            throws Exception {
+        Path databasePath = temporaryDirectory.resolve("parked-token-fast-path.db");
+        AtomicInteger validations = new AtomicInteger();
+        FeatureStoreDefinition store = FeatureStoreDefinition.validated(
+                "seed",
+                connection -> {
+                    validations.incrementAndGet();
+                    try (var result = connection.createStatement().executeQuery(
+                            "SELECT COUNT(*) FROM recovery_data")) {
+                        result.next();
+                    }
+                },
+                seedMigration());
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            TestFeatureStores.store(database, store);
+            assertEquals(1, validations.get(), "open performs the owner validation");
+            database.capturePreparedParkedState();
+
+            assertTrue(database.verifyPreparedParkedState());
+            assertEquals(1, validations.get(),
+                    "unchanged PARKED ownership token must not repeat the full owner scan");
+
+            try (var external = DriverManager.getConnection("jdbc:sqlite:" + databasePath)) {
+                external.createStatement().execute(
+                        "INSERT INTO recovery_data(id, value) VALUES(1, 'external-but-valid')");
+            }
+
+            assertFalse(database.verifyPreparedParkedState(),
+                    "a valid external change still invalidates the in-memory aggregate");
+            assertEquals(2, validations.get(),
+                    "changed bytes must run physical, FK, and owner validation");
+        }
+    }
+
+    @Test
+    void parkedOwnerSchemaDamageFailsImmutableReadOnlyWithoutChangingBytesOrSidecars()
+            throws Exception {
+        Path databasePath = temporaryDirectory.resolve("parked-owner-damage.db");
+        Path walPath = databasePath.resolveSibling(databasePath.getFileName() + "-wal");
+        Path shmPath = databasePath.resolveSibling(databasePath.getFileName() + "-shm");
+        Path journalPath = databasePath.resolveSibling(databasePath.getFileName() + "-journal");
+        FeatureStoreDefinition store = FeatureStoreDefinition.validated(
+                "seed",
+                connection -> {
+                    try (var result = connection.createStatement().executeQuery(
+                            "SELECT COUNT(*) FROM sqlite_master"
+                                    + " WHERE type='table' AND name='recovery_data'")) {
+                        if (!result.next() || result.getInt(1) != 1 || result.next()) {
+                            throw new SQLException("current owner table is missing");
+                        }
+                    }
+                },
+                seedMigration());
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            TestFeatureStores.store(database, store);
+            database.capturePreparedParkedState();
+
+            try (var external = DriverManager.getConnection("jdbc:sqlite:" + databasePath)) {
+                external.createStatement().execute("DROP TABLE recovery_data");
+            }
+            byte[] damagedCurrentSqlite = Files.readAllBytes(databasePath);
+            assertTrue(damagedCurrentSqlite.length > 0, "damage fixture remains valid SQLite bytes");
+            assertFalse(Files.exists(walPath), "closed external writer left no WAL before validation");
+            assertFalse(Files.exists(shmPath), "closed external writer left no SHM before validation");
+            assertFalse(Files.exists(journalPath),
+                    "closed external writer left no rollback journal before validation");
+
+            assertThrows(SQLException.class, database::verifyPreparedParkedState);
+
+            assertArrayEquals(damagedCurrentSqlite, Files.readAllBytes(databasePath));
+            assertFalse(Files.exists(walPath), "read-only validation must not create a WAL");
+            assertFalse(Files.exists(shmPath), "read-only validation must not create SHM");
+            assertFalse(Files.exists(journalPath),
+                    "read-only validation must not create a rollback journal");
         }
     }
 
@@ -433,8 +516,8 @@ final class SqliteDatabaseTest {
     }
 
     @Test
-    void pendingPlatformMetadataUpgradeCreatesPreMigrationBackup() throws Exception {
-        Path databasePath = temporaryDirectory.resolve("platform-upgrade.db");
+    void unversionedNonemptyPlatformShapeFailsClosedWithoutMutationOrBackup() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("unsupported-platform-shape.db");
         Class.forName("org.sqlite.JDBC");
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath)) {
             connection.createStatement().execute(
@@ -442,17 +525,20 @@ final class SqliteDatabaseTest {
             connection.createStatement().execute(
                     "INSERT INTO legacy_rows(id, value) VALUES(1, 'preserved')");
         }
+        byte[] before = Files.readAllBytes(databasePath);
         Path backup = databasePath.resolveSibling(databasePath.getFileName() + ".backup-v0.sqlite");
 
-        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { });
-             var ignored = TestFeatureStores.store(
-                     database, FeatureStoreDefinition.of("metadata-owner")).openConnection()) {
-            assertTrue(Files.isRegularFile(backup));
-            assertEquals(1, pragmaInt(ignored, "PRAGMA user_version"));
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            database.featureStore(FeatureStoreDefinition.of("metadata-owner"));
+            assertEquals(
+                    FeatureStoreReadiness.CORRUPT,
+                    database.prepareRegisteredStores().get("metadata-owner"));
         }
 
-        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + backup)) {
-            assertEquals(0, pragmaInt(connection, "PRAGMA user_version"));
+        assertArrayEquals(before, Files.readAllBytes(databasePath));
+        assertFalse(Files.exists(backup));
+        assertDatabaseSidecarsAbsent(databasePath);
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath)) {
             try (var row = connection.createStatement().executeQuery(
                     "SELECT value FROM legacy_rows WHERE id=1")) {
                 assertTrue(row.next());
@@ -496,6 +582,113 @@ final class SqliteDatabaseTest {
             }
         }
         assertEquals(List.of("persistence.migration-failure"), diagnostics.ids);
+    }
+
+    @Test
+    void successfulOwnersReuseOneConfiguredPreparationConnection() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("owner-connection-reuse.db");
+        AtomicReference<java.sql.Connection> firstConnection = new AtomicReference<>();
+        AtomicReference<java.sql.Connection> secondConnection = new AtomicReference<>();
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            database.featureStore(FeatureStoreDefinition.validated(
+                    "first-owner", firstConnection::set));
+            database.featureStore(FeatureStoreDefinition.validated(
+                    "second-owner", secondConnection::set));
+
+            var readiness = database.prepareRegisteredStores();
+
+            assertEquals(FeatureStoreReadiness.READY, readiness.get("first-owner"));
+            assertEquals(FeatureStoreReadiness.READY, readiness.get("second-owner"));
+            assertTrue(firstConnection.get() == secondConnection.get(),
+                    "successful owner transactions must reuse one configured connection");
+            assertTrue(firstConnection.get().isClosed(),
+                    "the shared preparation connection must close after the owner batch");
+        }
+    }
+
+    @Test
+    void failedOwnerForcesAConfiguredConnectionReopenBeforeTheNextOwner() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("owner-connection-reopen-after-failure.db");
+        AtomicReference<java.sql.Connection> failedConnection = new AtomicReference<>();
+        AtomicReference<java.sql.Connection> healthyConnection = new AtomicReference<>();
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            database.featureStore(FeatureStoreDefinition.validated(
+                    "failed-owner",
+                    connection -> {
+                        failedConnection.set(connection);
+                        throw new SQLException("injected owner failure");
+                    }));
+            database.featureStore(FeatureStoreDefinition.validated(
+                    "healthy-owner", healthyConnection::set));
+
+            var readiness = database.prepareRegisteredStores();
+
+            assertEquals(FeatureStoreReadiness.MIGRATION_FAILED, readiness.get("failed-owner"));
+            assertEquals(FeatureStoreReadiness.READY, readiness.get("healthy-owner"));
+            assertFalse(failedConnection.get() == healthyConnection.get(),
+                    "an owner failure must discard its configured connection");
+            assertTrue(failedConnection.get().isClosed());
+            assertTrue(healthyConnection.get().isClosed());
+        }
+    }
+
+    @Test
+    void currentValidatorsShareOneReadOnlyQualificationConnectionAcrossNewerOwner() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("owner-connection-reopen-after-newer.db");
+        SqliteMigration versionOne = new SqliteMigration(
+                1, connection -> connection.createStatement().execute(
+                        "CREATE TABLE newer_owner_rows(id INTEGER PRIMARY KEY)"));
+        SqliteMigration versionTwo = new SqliteMigration(
+                2, connection -> connection.createStatement().execute(
+                        "ALTER TABLE newer_owner_rows ADD COLUMN label TEXT"));
+        try (SqliteDatabase newer = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            newer.featureStore(definition("newer-owner", versionOne, versionTwo));
+            assertEquals(
+                    FeatureStoreReadiness.READY,
+                    newer.prepareRegisteredStores().get("newer-owner"));
+        }
+
+        AtomicReference<java.sql.Connection> beforeConnection = new AtomicReference<>();
+        AtomicReference<java.sql.Connection> afterConnection = new AtomicReference<>();
+        try (SqliteDatabase current = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            current.featureStore(FeatureStoreDefinition.validated(
+                    "before-owner", beforeConnection::set));
+            current.featureStore(definition("newer-owner", versionOne));
+            current.featureStore(FeatureStoreDefinition.validated(
+                    "after-owner", afterConnection::set));
+
+            var readiness = current.prepareRegisteredStores();
+
+            assertEquals(FeatureStoreReadiness.READY, readiness.get("before-owner"));
+            assertEquals(FeatureStoreReadiness.NEWER_SCHEMA, readiness.get("newer-owner"));
+            assertEquals(FeatureStoreReadiness.READY, readiness.get("after-owner"));
+            assertTrue(beforeConnection.get() == afterConnection.get(),
+                    "current validators may share one read-only qualification connection");
+            assertTrue(beforeConnection.get().isClosed());
+            assertTrue(afterConnection.get().isClosed());
+        }
+    }
+
+    @Test
+    void ownerValidatorCannotMutateThePreparedDatabase() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("read-only-validator.db");
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            database.featureStore(FeatureStoreDefinition.validated(
+                    "read-only-validator",
+                    connection -> connection.createStatement().execute(
+                            "CREATE TABLE validator_side_effect(id INTEGER PRIMARY KEY)")));
+
+            assertEquals(
+                    FeatureStoreReadiness.MIGRATION_FAILED,
+                    database.prepareRegisteredStores().get("read-only-validator"));
+        }
+
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+                var result = connection.createStatement().executeQuery(
+                        "SELECT 1 FROM sqlite_master WHERE type='table'"
+                                + " AND name='validator_side_effect'")) {
+            assertFalse(result.next());
+        }
     }
 
     @Test
@@ -585,6 +778,404 @@ final class SqliteDatabaseTest {
     }
 
     @Test
+    void exactSchemaRejectsRecordedV1ConflictClauseWithoutTouchingSourceFamily() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("owner-conflict-clause.db");
+        String expectedTable = "CREATE TABLE ddl_owner_rows("
+                + "id TEXT PRIMARY KEY ON CONFLICT ABORT, value TEXT NOT NULL)";
+        String actualTable = expectedTable.replace("ON CONFLICT ABORT", "ON CONFLICT REPLACE");
+        String index = "CREATE INDEX ddl_owner_value_idx ON ddl_owner_rows(value)";
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+             var statement = connection.createStatement()) {
+            TestFeatureStores.createCurrentOwnerLedger(statement, "ddl-owner", 1);
+            statement.execute(actualTable);
+            statement.execute(index);
+        }
+        byte[] before = Files.readAllBytes(databasePath);
+        FeatureStoreDefinition definition = FeatureStoreDefinition.validated(
+                "ddl-owner",
+                SqliteSchemaValidator.exactSchema(
+                        List.of(expectedTable),
+                        List.of(index),
+                        List.of("ddl_owner_"),
+                        List.of()),
+                new SqliteMigration(1, connection -> {
+                    connection.createStatement().execute(expectedTable);
+                    connection.createStatement().execute(index);
+                }));
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            database.featureStore(definition);
+            assertEquals(
+                    FeatureStoreReadiness.MIGRATION_FAILED,
+                    database.prepareRegisteredStores().get("ddl-owner"));
+        }
+
+        assertArrayEquals(before, Files.readAllBytes(databasePath));
+        assertDatabaseSidecarsAbsent(databasePath);
+    }
+
+    @Test
+    void exactSchemaRejectsArbitrarilyNamedTriggerBoundToOwnerTable() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("owner-trigger.db");
+        String table = "CREATE TABLE trigger_owner_rows(id INTEGER PRIMARY KEY, value TEXT NOT NULL)";
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+             var statement = connection.createStatement()) {
+            TestFeatureStores.createCurrentOwnerLedger(statement, "trigger-owner", 1);
+            statement.execute(table);
+            statement.execute("CREATE TRIGGER unexpected_after_insert AFTER INSERT ON trigger_owner_rows "
+                    + "BEGIN SELECT NEW.id; END");
+        }
+        byte[] before = Files.readAllBytes(databasePath);
+        FeatureStoreDefinition definition = FeatureStoreDefinition.validated(
+                "trigger-owner",
+                SqliteSchemaValidator.exactSchema(
+                        List.of(table), List.of(), List.of("trigger_owner_"), List.of()),
+                new SqliteMigration(1, connection -> connection.createStatement().execute(table)));
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            database.featureStore(definition);
+            assertEquals(
+                    FeatureStoreReadiness.MIGRATION_FAILED,
+                    database.prepareRegisteredStores().get("trigger-owner"));
+        }
+
+        assertArrayEquals(before, Files.readAllBytes(databasePath));
+        assertDatabaseSidecarsAbsent(databasePath);
+    }
+
+    @Test
+    void exactSchemaInventoryMatchesOwnedPrefixesAndForbiddenNamesCaseInsensitively()
+            throws Exception {
+        Path databasePath = temporaryDirectory.resolve("case-insensitive-owner-inventory.db");
+        String table = "CREATE TABLE case_owner_rows(id INTEGER PRIMARY KEY)";
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+             var statement = connection.createStatement()) {
+            TestFeatureStores.createCurrentOwnerLedger(statement, "case-owner", 1);
+            statement.execute(table);
+            statement.execute("CREATE VIEW CASE_OWNER_FOREIGN AS SELECT 1 AS value");
+            statement.execute("CREATE VIEW RETIRED_CASE_OWNER AS SELECT 2 AS value");
+        }
+        byte[] before = Files.readAllBytes(databasePath);
+        FeatureStoreDefinition definition = FeatureStoreDefinition.validated(
+                "case-owner",
+                SqliteSchemaValidator.exactSchema(
+                        List.of(table),
+                        List.of(),
+                        List.of("case_owner_"),
+                        List.of("retired_case_owner")),
+                new SqliteMigration(1, connection -> connection.createStatement().execute(table)));
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            database.featureStore(definition);
+            assertEquals(
+                    FeatureStoreReadiness.MIGRATION_FAILED,
+                    database.prepareRegisteredStores().get("case-owner"));
+        }
+
+        assertArrayEquals(before, Files.readAllBytes(databasePath));
+        assertDatabaseSidecarsAbsent(databasePath);
+    }
+
+    @Test
+    void exactSchemaRejectsForeignTableWithInboundReferenceToOwnerTable() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("owner-inbound-reference.db");
+        String table = "CREATE TABLE referenced_owner_rows(id INTEGER PRIMARY KEY, value TEXT NOT NULL)";
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+             var statement = connection.createStatement()) {
+            TestFeatureStores.createCurrentOwnerLedger(statement, "referenced-owner", 1);
+            statement.execute(table);
+            statement.execute("CREATE TABLE unrelated_consumer(id INTEGER PRIMARY KEY, owner_id INTEGER "
+                    + "REFERENCES referenced_owner_rows(id))");
+        }
+        byte[] before = Files.readAllBytes(databasePath);
+        FeatureStoreDefinition definition = FeatureStoreDefinition.validated(
+                "referenced-owner",
+                SqliteSchemaValidator.exactSchema(
+                        List.of(table), List.of(), List.of("referenced_owner_"), List.of()),
+                new SqliteMigration(1, connection -> connection.createStatement().execute(table)));
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            database.featureStore(definition);
+            assertEquals(
+                    FeatureStoreReadiness.MIGRATION_FAILED,
+                    database.prepareRegisteredStores().get("referenced-owner"));
+        }
+
+        assertArrayEquals(before, Files.readAllBytes(databasePath));
+        assertDatabaseSidecarsAbsent(databasePath);
+    }
+
+    @Test
+    void platformSchemaRejectsForeignViewThatReadsVersionLedger() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("platform-ledger-view.db");
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+             var statement = connection.createStatement()) {
+            TestFeatureStores.createCurrentOwnerLedger(statement, "probe", 1);
+            statement.execute("CREATE VIEW unrelated_projection AS "
+                    + "SELECT owner, version FROM sm_schema_versions");
+        }
+        byte[] before = Files.readAllBytes(databasePath);
+        AtomicInteger ownerInspections = new AtomicInteger();
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            database.featureStore(FeatureStoreDefinition.validated(
+                    "probe", connection -> ownerInspections.incrementAndGet()));
+            assertEquals(
+                    FeatureStoreReadiness.CORRUPT,
+                    database.prepareRegisteredStores().get("probe"));
+        }
+
+        assertEquals(0, ownerInspections.get());
+        assertArrayEquals(before, Files.readAllBytes(databasePath));
+        assertDatabaseSidecarsAbsent(databasePath);
+    }
+
+    @Test
+    void platformSchemaRejectsSingleQuotedCaseVariantLedgerDependency() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("single-quoted-platform-ledger-view.db");
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+             var statement = connection.createStatement()) {
+            TestFeatureStores.createCurrentOwnerLedger(statement, "probe", 1);
+            statement.execute("CREATE VIEW unrelated_quoted_projection AS "
+                    + "SELECT owner, version FROM 'SM_SCHEMA_VERSIONS'");
+        }
+        byte[] before = Files.readAllBytes(databasePath);
+        AtomicInteger ownerInspections = new AtomicInteger();
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            database.featureStore(FeatureStoreDefinition.validated(
+                    "probe", connection -> ownerInspections.incrementAndGet()));
+            assertEquals(
+                    FeatureStoreReadiness.CORRUPT,
+                    database.prepareRegisteredStores().get("probe"));
+        }
+
+        assertEquals(0, ownerInspections.get());
+        assertArrayEquals(before, Files.readAllBytes(databasePath));
+        assertDatabaseSidecarsAbsent(databasePath);
+    }
+
+    @Test
+    void orphanSharedMemoryFamilyIsIncompatibleAndCannotRestoreValidBackup() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("orphan-shm.db");
+        SqliteMigration migration = seedMigration();
+        createSeedDatabase(databasePath, migration);
+        createPendingMigrationBackup(databasePath, migration);
+        Path backup = databasePath.resolveSibling(databasePath.getFileName() + ".backup-v1.sqlite");
+        Path shm = databasePath.resolveSibling(databasePath.getFileName() + "-shm");
+        byte[] orphanShm = "orphan-shm-must-remain-exact".getBytes(StandardCharsets.UTF_8);
+        Files.write(shm, orphanShm);
+        byte[] primaryBefore = Files.readAllBytes(databasePath);
+        byte[] backupBefore = Files.readAllBytes(backup);
+        RecordingDiagnostics diagnostics = new RecordingDiagnostics();
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, diagnostics)) {
+            FeatureStoreHandle handle = TestFeatureStores.store(database, "seed", migration);
+            FeatureStoreUnavailableException unavailable = assertThrows(
+                    FeatureStoreUnavailableException.class, handle::openConnection);
+            assertEquals(FeatureStoreReadiness.INCOMPATIBLE, unavailable.readiness());
+        }
+
+        assertArrayEquals(primaryBefore, Files.readAllBytes(databasePath));
+        assertArrayEquals(orphanShm, Files.readAllBytes(shm));
+        assertArrayEquals(backupBefore, Files.readAllBytes(backup));
+        assertFalse(Files.exists(databasePath.resolveSibling(databasePath.getFileName() + "-wal")));
+        assertFalse(Files.exists(databasePath.resolveSibling(databasePath.getFileName() + "-journal")));
+        assertNoQuarantine(databasePath);
+        assertEquals(List.of("persistence.family-incompatible"), diagnostics.ids);
+    }
+
+    @Test
+    void walWithoutSharedMemoryIsIncompatibleAndLeavesSourceAndBackupExact() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("wal-without-shm.db");
+        SqliteMigration migration = seedMigration();
+        createSeedDatabase(databasePath, migration);
+        createPendingMigrationBackup(databasePath, migration);
+        Path backup = databasePath.resolveSibling(databasePath.getFileName() + ".backup-v1.sqlite");
+        Process probe = new ProcessBuilder(
+                Path.of(System.getProperty("java.home"), "bin", "java").toString(),
+                "-cp",
+                System.getProperty("java.class.path"),
+                WalWriteProbeCrashProcess.class.getName(),
+                databasePath.toString())
+                .redirectErrorStream(true)
+                .start();
+        String output = new String(probe.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        assertEquals(0, probe.waitFor(), output);
+        Path wal = databasePath.resolveSibling(databasePath.getFileName() + "-wal");
+        Path shm = databasePath.resolveSibling(databasePath.getFileName() + "-shm");
+        assertTrue(Files.isRegularFile(wal));
+        assertTrue(Files.isRegularFile(shm));
+        Files.delete(shm);
+        byte[] primaryBefore = Files.readAllBytes(databasePath);
+        byte[] walBefore = Files.readAllBytes(wal);
+        byte[] backupBefore = Files.readAllBytes(backup);
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            FeatureStoreHandle handle = TestFeatureStores.store(database, "seed", migration);
+            FeatureStoreUnavailableException unavailable = assertThrows(
+                    FeatureStoreUnavailableException.class, handle::openConnection);
+            assertEquals(FeatureStoreReadiness.INCOMPATIBLE, unavailable.readiness());
+        }
+
+        assertArrayEquals(primaryBefore, Files.readAllBytes(databasePath));
+        assertArrayEquals(walBefore, Files.readAllBytes(wal));
+        assertFalse(Files.exists(shm));
+        assertArrayEquals(backupBefore, Files.readAllBytes(backup));
+        assertNoQuarantine(databasePath);
+    }
+
+    @Test
+    void coherentWalRejectionRunsOnlyOnIsolatedFamilyAndLeavesSourceByteExact() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("coherent-wal-rejection.db");
+        SqliteMigration migration = seedMigration();
+        createSeedDatabase(databasePath, migration);
+        String table = "CREATE TABLE recovery_data(id INTEGER PRIMARY KEY, value TEXT NOT NULL)";
+        FeatureStoreDefinition exactOwner = FeatureStoreDefinition.validated(
+                "seed",
+                SqliteSchemaValidator.exactSchema(
+                        List.of(table), List.of(), List.of("recovery_"), List.of()),
+                migration);
+
+        try (var writer = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+             var statement = writer.createStatement()) {
+            statement.execute("PRAGMA journal_mode = WAL");
+            statement.execute("PRAGMA wal_autocheckpoint = 0");
+            statement.execute("CREATE TRIGGER unrelated_rejection_trigger AFTER INSERT ON recovery_data "
+                    + "BEGIN SELECT NEW.id; END");
+            Path wal = databasePath.resolveSibling(databasePath.getFileName() + "-wal");
+            Path shm = databasePath.resolveSibling(databasePath.getFileName() + "-shm");
+            assertTrue(Files.size(wal) > 32L);
+            assertTrue(Files.size(shm) > 0L);
+            byte[] primaryBefore = Files.readAllBytes(databasePath);
+            byte[] walBefore = Files.readAllBytes(wal);
+            byte[] shmBefore = Files.readAllBytes(shm);
+
+            try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { })) {
+                database.featureStore(exactOwner);
+                assertEquals(
+                        FeatureStoreReadiness.MIGRATION_FAILED,
+                        database.prepareRegisteredStores().get("seed"));
+            }
+
+            assertArrayEquals(primaryBefore, Files.readAllBytes(databasePath));
+            assertArrayEquals(walBefore, Files.readAllBytes(wal));
+            assertArrayEquals(shmBefore, Files.readAllBytes(shm));
+        }
+    }
+
+    @Test
+    void malformedPlatformLedgerShapesFailBeforeOwnerInspectionAndRemainByteExact()
+            throws Exception {
+        List<PlatformLedgerDamage> damages = List.of(
+                new PlatformLedgerDamage(
+                        "missing-primary-key",
+                        "CREATE TABLE sm_schema_versions(owner TEXT, "
+                                + "version INTEGER NOT NULL CHECK(version >= 0))",
+                        List.of(
+                                "INSERT INTO sm_schema_versions VALUES('probe', 1)",
+                                "INSERT INTO sm_schema_versions VALUES('probe', 2)")),
+                new PlatformLedgerDamage(
+                        "missing-check",
+                        "CREATE TABLE sm_schema_versions(owner TEXT PRIMARY KEY, version INTEGER NOT NULL)",
+                        List.of("INSERT INTO sm_schema_versions VALUES('probe', 1)")),
+                new PlatformLedgerDamage(
+                        "extra-column",
+                        "CREATE TABLE sm_schema_versions(owner TEXT PRIMARY KEY, "
+                                + "version INTEGER NOT NULL CHECK(version >= 0), note TEXT)",
+                        List.of("INSERT INTO sm_schema_versions(owner, version) VALUES('probe', 1)")),
+                new PlatformLedgerDamage(
+                        "after-insert-trigger",
+                        "CREATE TABLE sm_schema_versions(owner TEXT PRIMARY KEY, "
+                                + "version INTEGER NOT NULL CHECK(version >= 0))",
+                        List.of(
+                                "INSERT INTO sm_schema_versions VALUES('probe', 1)",
+                                "CREATE TRIGGER arbitrary_ledger_trigger AFTER INSERT "
+                                        + "ON sm_schema_versions BEGIN SELECT NEW.owner; END")));
+
+        for (PlatformLedgerDamage damage : damages) {
+            Path databasePath = temporaryDirectory.resolve(damage.name() + ".db");
+            try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+                 var statement = connection.createStatement()) {
+                statement.execute("PRAGMA user_version = 1");
+                statement.execute(damage.createTableSql());
+                for (String sql : damage.seedSql()) {
+                    statement.execute(sql);
+                }
+            }
+            byte[] before = Files.readAllBytes(databasePath);
+            AtomicInteger ownerInspections = new AtomicInteger();
+            try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { })) {
+                database.featureStore(FeatureStoreDefinition.validated(
+                        "probe", connection -> ownerInspections.incrementAndGet()));
+                assertEquals(
+                        FeatureStoreReadiness.CORRUPT,
+                        database.prepareRegisteredStores().get("probe"),
+                        damage.name());
+            }
+            assertEquals(0, ownerInspections.get(), damage.name());
+            assertArrayEquals(before, Files.readAllBytes(databasePath), damage.name());
+            assertDatabaseSidecarsAbsent(databasePath);
+        }
+    }
+
+    @Test
+    void pendingPartialOwnerIsRejectedOnDisposableCopyBeforeAnySourceWrite() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("pending-partial-owner.db");
+        String targetTable = "CREATE TABLE partial_owner_rows("
+                + "id INTEGER PRIMARY KEY, value TEXT NOT NULL)";
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+             var statement = connection.createStatement()) {
+            TestFeatureStores.createCurrentPlatformLedger(statement);
+            statement.execute("CREATE TABLE partial_owner_rows(id INTEGER PRIMARY KEY)");
+            statement.execute("INSERT INTO partial_owner_rows VALUES(7)");
+        }
+        byte[] before = Files.readAllBytes(databasePath);
+        FeatureStoreDefinition definition = FeatureStoreDefinition.validated(
+                "partial-owner",
+                SqliteSchemaValidator.exactSchema(
+                        List.of(targetTable), List.of(), List.of("partial_owner_"), List.of()),
+                new SqliteMigration(1, connection -> connection.createStatement().execute(targetTable)));
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            database.featureStore(definition);
+            assertEquals(
+                    FeatureStoreReadiness.MIGRATION_FAILED,
+                    database.prepareRegisteredStores().get("partial-owner"));
+        }
+
+        assertArrayEquals(before, Files.readAllBytes(databasePath));
+        assertDatabaseSidecarsAbsent(databasePath);
+    }
+
+    @Test
+    void newerSingleOwnerIsRejectedReadOnlyWithoutSourceSideEffects() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("newer-single-owner.db");
+        String table = "CREATE TABLE newer_single_rows(id INTEGER PRIMARY KEY)";
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+             var statement = connection.createStatement()) {
+            TestFeatureStores.createCurrentOwnerLedger(statement, "newer-single", 2);
+            statement.execute(table);
+        }
+        byte[] before = Files.readAllBytes(databasePath);
+        FeatureStoreDefinition definition = FeatureStoreDefinition.validated(
+                "newer-single",
+                SqliteSchemaValidator.exactSchema(
+                        List.of(table), List.of(), List.of("newer_single_"), List.of()),
+                new SqliteMigration(1, connection -> connection.createStatement().execute(table)));
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            database.featureStore(definition);
+            assertEquals(
+                    FeatureStoreReadiness.NEWER_SCHEMA,
+                    database.prepareRegisteredStores().get("newer-single"));
+        }
+
+        assertArrayEquals(before, Files.readAllBytes(databasePath));
+        assertDatabaseSidecarsAbsent(databasePath);
+    }
+
+    @Test
     void migrationFailureRollsBackSchemaAndVersion() throws Exception {
         Path databasePath = temporaryDirectory.resolve("rollback.db");
         RecordingDiagnostics diagnostics = new RecordingDiagnostics();
@@ -635,54 +1226,29 @@ final class SqliteDatabaseTest {
     }
 
     @Test
-    void versionedBackupIncludesCommittedWalStateDuringConcurrentCheckpoint() throws Exception {
+    void versionedBackupIncludesCommittedWalStateFromQuiescentSourceFamily() throws Exception {
         Path databasePath = temporaryDirectory.resolve("wal.db");
         SqliteMigration migration = seedMigration();
         SqliteDatabase writerLifecycle = new SqliteDatabase(databasePath, (id, type) -> { });
         try (var writer =
                 TestFeatureStores.store(writerLifecycle, "seed", migration).openConnection()) {
+            writer.createStatement().execute("PRAGMA wal_autocheckpoint = 0");
             writer.createStatement().execute("INSERT INTO recovery_data(id, value) VALUES(1, 'from-wal')");
-        }
+            writer.createStatement().execute(
+                    "INSERT INTO recovery_data(id, value) VALUES(2, 'committed-in-wal')");
+            Path wal = databasePath.resolveSibling(databasePath.getFileName() + "-wal");
+            Path shm = databasePath.resolveSibling(databasePath.getFileName() + "-shm");
+            assertTrue(Files.size(wal) > 32L);
+            assertTrue(Files.size(shm) > 0L);
 
-        CountDownLatch firstConcurrentCommit = new CountDownLatch(1);
-        AtomicReference<Throwable> concurrentFailure = new AtomicReference<>();
-        Thread checkpointWriter = new Thread(() -> {
-            try (var concurrent = DriverManager.getConnection("jdbc:sqlite:" + databasePath)) {
-                try (var statement = concurrent.createStatement()) {
-                    statement.execute("PRAGMA busy_timeout = 5000");
-                }
-                for (int index = 0; index < 100; index++) {
-                    try (var statement = concurrent.createStatement()) {
-                        statement.execute(
-                                                "INSERT INTO recovery_data(id, value) VALUES(2,"
-                                                    + " 'checkpoint-"
-                                                        + index + "') ON CONFLICT(id) DO UPDATE SET"
-                                                        + " value=excluded.value");
-                    }
-                    firstConcurrentCommit.countDown();
-                    try (var statement = concurrent.createStatement()) {
-                        statement.execute("PRAGMA wal_checkpoint(PASSIVE)");
-                    }
-                }
-            } catch (Throwable failure) {
-                concurrentFailure.set(failure);
+            try (SqliteDatabase backupLifecycle = new SqliteDatabase(databasePath, (id, type) -> { });
+                 var reader = TestFeatureStores.stores(
+                         backupLifecycle,
+                         definition("seed", migration),
+                         backupTriggerDefinition()).get("seed").openConnection()) {
+                assertEquals("from-wal", storedValue(reader));
+                assertEquals("committed-in-wal", storedValue(reader, 2));
             }
-        });
-        checkpointWriter.start();
-        if (!firstConcurrentCommit.await(5, TimeUnit.SECONDS)) {
-            throw new AssertionError("concurrent WAL writer did not commit", concurrentFailure.get());
-        }
-        try (SqliteDatabase backupLifecycle = new SqliteDatabase(databasePath, (id, type) -> { });
-             var reader = TestFeatureStores.stores(
-                     backupLifecycle,
-                     definition("seed", migration),
-                     backupTriggerDefinition()).get("seed").openConnection()) {
-            assertEquals("from-wal", storedValue(reader));
-            assertTrue(storedValue(reader, 2).startsWith("checkpoint-"));
-        }
-        checkpointWriter.join();
-        if (concurrentFailure.get() != null) {
-            throw new AssertionError("concurrent WAL writer failed", concurrentFailure.get());
         }
         writerLifecycle.close();
 
@@ -691,7 +1257,7 @@ final class SqliteDatabaseTest {
              var connection =
                         TestFeatureStores.store(recovered, "seed", migration).openConnection()) {
             assertEquals("from-wal", storedValue(connection));
-            assertTrue(storedValue(connection, 2).startsWith("checkpoint-"));
+            assertEquals("committed-in-wal", storedValue(connection, 2));
         }
     }
 
@@ -749,35 +1315,20 @@ final class SqliteDatabaseTest {
     }
 
     @Test
-    void sidecarQuarantineMoveFailureRestoresEveryAlreadyMovedFile() throws Exception {
-        assertSidecarQuarantineMoveFailureRestoresFamily("-wal");
-        assertSidecarQuarantineMoveFailureRestoresFamily("-shm");
-        assertSidecarQuarantineMoveFailureRestoresFamily("-journal");
-    }
-
-    private void assertSidecarQuarantineMoveFailureRestoresFamily(String failingSuffix) throws Exception {
-        Path databasePath = temporaryDirectory.resolve("sidecar-move" + failingSuffix + ".db");
+    void rollbackJournalQuarantineMoveFailureRestoresEveryAlreadyMovedFile() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("rollback-journal-move.db");
         SqliteMigration migration = seedMigration();
         createSeedDatabase(databasePath, migration);
         Path backup = databasePath.resolveSibling(databasePath.getFileName() + ".backup-v1.sqlite");
         createPendingMigrationBackup(databasePath, migration);
         assertTrue(Files.isRegularFile(backup));
 
-        byte[] corruptPrimary = new byte[] {0x12, 0x34, 0x56, 0x78};
-        byte[] originalWal = new byte[] {0x01, 0x23, 0x45};
-        byte[] originalShm = new byte[] {0x67, 0x01, 0x23};
-        byte[] originalJournal = new byte[] {0x45, 0x67, 0x01};
-        Files.write(databasePath, corruptPrimary);
-        Path wal = databasePath.resolveSibling(databasePath.getFileName() + "-wal");
-        Path shm = databasePath.resolveSibling(databasePath.getFileName() + "-shm");
-        Path journal = databasePath.resolveSibling(databasePath.getFileName() + "-journal");
-        Files.write(wal, originalWal);
-        Files.write(shm, originalShm);
-        Files.write(journal, originalJournal);
-        Path failingSidecar = databasePath.resolveSibling(databasePath.getFileName() + failingSuffix);
+        Path journal = createHotRollbackJournal(databasePath);
+        byte[] originalJournal = Files.readAllBytes(journal);
+        byte[] corruptPrimary = corruptHeader(databasePath);
         RecordingDiagnostics diagnostics = new RecordingDiagnostics();
         SqliteDatabase database = new SqliteDatabase(databasePath, diagnostics, (source, target) -> {
-            if (source.equals(failingSidecar)) {
+            if (source.equals(journal)) {
                 throw new IOException("injected sidecar move failure");
             }
             Files.move(source, target);
@@ -787,8 +1338,6 @@ final class SqliteDatabaseTest {
                 () -> TestFeatureStores.store(database, "seed", migration).openConnection());
 
         assertArrayEquals(corruptPrimary, Files.readAllBytes(databasePath));
-        assertArrayEquals(originalWal, Files.readAllBytes(wal));
-        assertArrayEquals(originalShm, Files.readAllBytes(shm));
         assertArrayEquals(originalJournal, Files.readAllBytes(journal));
         try (var files = Files.list(temporaryDirectory)) {
             assertFalse(files.anyMatch(path -> path.getFileName().toString()
@@ -803,8 +1352,6 @@ final class SqliteDatabaseTest {
         assertThrows(SQLException.class,
                 () -> TestFeatureStores.store(retry, "seed", migration).openConnection());
         assertArrayEquals(corruptPrimary, Files.readAllBytes(databasePath));
-        assertArrayEquals(originalWal, Files.readAllBytes(wal));
-        assertArrayEquals(originalShm, Files.readAllBytes(shm));
         assertArrayEquals(originalJournal, Files.readAllBytes(journal));
     }
 
@@ -928,6 +1475,64 @@ final class SqliteDatabaseTest {
             assertFalse(files.anyMatch(path -> path.getFileName().toString()
                     .startsWith("mislabeled-backup.db.corrupt-")));
         }
+    }
+
+    @Test
+    void recoveryRejectsBackupWithMalformedPlatformManifestBeforeQuarantine() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("malformed-platform-backup.db");
+        SqliteMigration migration = seedMigration();
+        createSeedDatabase(databasePath, migration);
+        createPendingMigrationBackup(databasePath, migration);
+        Path backup = databasePath.resolveSibling(
+                databasePath.getFileName() + ".backup-v1.sqlite");
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + backup);
+             var statement = connection.createStatement()) {
+            statement.execute("CREATE TRIGGER unexpected_platform_backup "
+                    + "AFTER INSERT ON sm_schema_versions BEGIN SELECT NEW.version; END");
+        }
+        byte[] malformedBackup = Files.readAllBytes(backup);
+        byte[] corruptPrimary = corruptHeader(databasePath);
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            FeatureStoreHandle handle = TestFeatureStores.store(database, "seed", migration);
+            FeatureStoreUnavailableException unavailable = assertThrows(
+                    FeatureStoreUnavailableException.class, handle::openConnection);
+            assertEquals(FeatureStoreReadiness.CORRUPT, unavailable.readiness());
+        }
+
+        assertArrayEquals(corruptPrimary, Files.readAllBytes(databasePath));
+        assertArrayEquals(malformedBackup, Files.readAllBytes(backup));
+        assertDatabaseSidecarsAbsent(databasePath);
+        assertNoQuarantine(databasePath);
+    }
+
+    @Test
+    void recoveryRejectsBackupWithCurrentOwnerTriggerBeforeQuarantine() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("malformed-owner-backup.db");
+        SqliteMigration migration = seedMigration();
+        createSeedDatabase(databasePath, migration);
+        createPendingMigrationBackup(databasePath, migration);
+        Path backup = databasePath.resolveSibling(
+                databasePath.getFileName() + ".backup-v1.sqlite");
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + backup);
+             var statement = connection.createStatement()) {
+            statement.execute("CREATE TRIGGER unexpected_owner_backup "
+                    + "AFTER INSERT ON recovery_data BEGIN SELECT NEW.id; END");
+        }
+        byte[] malformedBackup = Files.readAllBytes(backup);
+        byte[] corruptPrimary = corruptHeader(databasePath);
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { })) {
+            FeatureStoreHandle handle = TestFeatureStores.store(database, exactSeedDefinition());
+            FeatureStoreUnavailableException unavailable = assertThrows(
+                    FeatureStoreUnavailableException.class, handle::openConnection);
+            assertEquals(FeatureStoreReadiness.CORRUPT, unavailable.readiness());
+        }
+
+        assertArrayEquals(corruptPrimary, Files.readAllBytes(databasePath));
+        assertArrayEquals(malformedBackup, Files.readAllBytes(backup));
+        assertDatabaseSidecarsAbsent(databasePath);
+        assertNoQuarantine(databasePath);
     }
 
     @Test
@@ -1195,9 +1800,18 @@ final class SqliteDatabaseTest {
 
     private static SqliteMigration seedMigration() {
         return new SqliteMigration(1, connection -> connection.createStatement()
-                .execute(
-                                        "CREATE TABLE recovery_data(id INTEGER PRIMARY KEY, value"
-                                            + " TEXT NOT NULL)"));
+                .execute(SEED_TABLE_SQL));
+    }
+
+    private static FeatureStoreDefinition exactSeedDefinition() {
+        return FeatureStoreDefinition.validated(
+                "seed",
+                SqliteSchemaValidator.exactSchema(
+                        List.of(SEED_TABLE_SQL),
+                        List.of(),
+                        List.of("recovery_"),
+                        List.of()),
+                seedMigration());
     }
 
     private static FeatureStoreDefinition definition(String owner, SqliteMigration... migrations) {
@@ -1267,6 +1881,19 @@ final class SqliteDatabaseTest {
         }
     }
 
+    private static void assertDatabaseSidecarsAbsent(Path databasePath) {
+        assertFalse(Files.exists(databasePath.resolveSibling(databasePath.getFileName() + "-wal")));
+        assertFalse(Files.exists(databasePath.resolveSibling(databasePath.getFileName() + "-shm")));
+        assertFalse(Files.exists(databasePath.resolveSibling(databasePath.getFileName() + "-journal")));
+    }
+
+    private void assertNoQuarantine(Path databasePath) throws IOException {
+        try (var files = Files.list(temporaryDirectory)) {
+            assertFalse(files.anyMatch(path -> path.getFileName().toString()
+                    .startsWith(databasePath.getFileName() + ".corrupt-")));
+        }
+    }
+
     private static boolean contains(byte[] bytes, byte[] expected) {
         for (int start = 0; start <= bytes.length - expected.length; start++) {
             boolean matches = true;
@@ -1315,6 +1942,12 @@ final class SqliteDatabaseTest {
     private record SchemaVersionEntry(String owner, int version) { }
 
     private record PayloadEntry(int id, String value) { }
+
+    private record PlatformLedgerDamage(
+            String name,
+            String createTableSql,
+            List<String> seedSql
+    ) { }
 }
 
 final class HotRollbackJournalProcess {

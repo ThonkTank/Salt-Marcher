@@ -38,25 +38,16 @@ public final class SqliteCreatureCatalogLocalGateway {
     private final Diagnostics diagnostics;
 
     public static FeatureStoreDefinition storeDefinition() {
-        CreaturesSchemaMigrator schemaMigrator = new CreaturesSchemaMigrator();
-        SqliteSchemaValidator targetSchema = SqliteSchemaValidator.builder()
-                .tableContaining(CreaturesPersistenceSchema.CREATURES)
-                .primaryKey("creatures", "id")
-                .tableContaining(CreaturesPersistenceSchema.CREATURE_BIOMES)
-                .tableContaining(CreaturesPersistenceSchema.CREATURE_SUBTYPES)
-                .tableContaining(CreaturesPersistenceSchema.CREATURE_ACTIONS)
-                .index("idx_creatures_type", "creatures", false, "creature_type")
-                .index("idx_creatures_alignment", "creatures", false, "alignment")
-                .index("idx_creatures_xp", "creatures", false, "xp")
-                .index("idx_creatures_name", "creatures", false, "name")
-                .index("idx_creature_biomes_biome", "creature_biomes", false, "biome")
-                .index("idx_creature_biomes_creature", "creature_biomes", false, "creature_id")
-                .index("idx_creature_subtypes_subtype", "creature_subtypes", false, "subtype")
-                .index("idx_creature_subtypes_creature", "creature_subtypes", false, "creature_id")
-                .index("idx_creature_actions_creature", "creature_actions", false, "creature_id")
-                .build();
+        CreaturesSchemaInitializer initializer = new CreaturesSchemaInitializer();
+        SqliteSchemaValidator targetSchema = SqliteSchemaValidator.exactSchema(
+                CreaturesPersistenceSchema.CREATE_TABLE_SQL,
+                CreaturesPersistenceSchema.CREATE_INDEX_SQL,
+                List.of("creatures", "creature_", "idx_creatures_", "idx_creature_"),
+                List.of());
         return FeatureStoreDefinition.validated(
-                "creatures", targetSchema, new SqliteMigration(1, schemaMigrator::ensureSchema));
+                "creatures",
+                targetSchema,
+                new SqliteMigration(1, initializer::initializeCurrentTarget));
     }
 
     public SqliteCreatureCatalogLocalGateway(FeatureStoreHandle store) {

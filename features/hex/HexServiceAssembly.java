@@ -14,6 +14,7 @@ import features.hex.application.HexTravelPublishedState;
 import features.hex.domain.map.repository.HexMapRepository;
 import features.party.api.PartyApi;
 import features.party.api.PartyTravelPositionsModel;
+import features.party.api.PartyTravelPositionsResult;
 
 import platform.diagnostics.Diagnostics;
 import platform.diagnostics.NoopDiagnostics;
@@ -145,17 +146,25 @@ public final class HexServiceAssembly implements AutoCloseable {
 
     private void registerTravelReadback(PartyTravelPositionsModel partyTravelPositions) {
         travelApplicationService.acceptPartyTravelPosition(partyTravelPositions.current());
-        travelSubscription = partyTravelPositions.subscribe(
-                travelApplicationService::acceptPartyTravelPosition);
+        travelSubscription = partyTravelPositions.subscribe(this::acceptPartyTravelPositionWhileOpen);
+    }
+
+    private synchronized void acceptPartyTravelPositionWhileOpen(
+            PartyTravelPositionsResult position
+    ) {
+        if (!closing && !closed) {
+            travelApplicationService.acceptPartyTravelPosition(position);
+        }
     }
 
     private final PartyTravelPositionsModel partyTravelPositions;
     private boolean started;
     private Runnable travelSubscription = () -> { };
+    private boolean closing;
     private boolean closed;
 
     private synchronized void start() {
-        if (started || closed) {
+        if (started || closing || closed) {
             return;
         }
         started = true;
@@ -167,9 +176,10 @@ public final class HexServiceAssembly implements AutoCloseable {
         if (closed) {
             return;
         }
-        closed = true;
+        closing = true;
         travelSubscription.run();
         travelSubscription = () -> { };
+        closed = true;
     }
 
     public static final class Component implements AutoCloseable {

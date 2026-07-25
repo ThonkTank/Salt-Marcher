@@ -6,6 +6,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** Test-only composition for owner-bound SQLite stores. */
@@ -48,6 +50,30 @@ public final class TestFeatureStores {
     public static FeatureStoreHandle store(
             SqliteDatabase database, String owner, SqliteMigration... migrations) {
         return store(database, FeatureStoreDefinition.validated(owner, connection -> { }, migrations));
+    }
+
+    /** Creates the production-shaped direct current-v1 platform ledger for raw owner fixtures. */
+    public static void createCurrentPlatformLedger(Statement statement) throws SQLException {
+        Statement safeStatement = Objects.requireNonNull(statement, "statement");
+        safeStatement.execute("PRAGMA user_version = 1");
+        safeStatement.execute(
+                "CREATE TABLE sm_schema_versions (owner TEXT PRIMARY KEY, "
+                        + "version INTEGER NOT NULL CHECK(version >= 0))");
+    }
+
+    /** Creates the current platform ledger and records one owner fixture version. */
+    public static void createCurrentOwnerLedger(
+            Statement statement,
+            String owner,
+            int version
+    ) throws SQLException {
+        createCurrentPlatformLedger(statement);
+        try (var insert = statement.getConnection().prepareStatement(
+                "INSERT INTO sm_schema_versions(owner, version) VALUES(?, ?)")) {
+            insert.setString(1, Objects.requireNonNull(owner, "owner"));
+            insert.setInt(2, version);
+            insert.executeUpdate();
+        }
     }
 
     /** Registers every requested owner before the test-owned lifecycle is prepared exactly once. */

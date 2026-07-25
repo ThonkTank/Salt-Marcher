@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: Encounter Feature
-Last Reviewed: 2026-07-18
+Last Reviewed: 2026-07-25
 Source of Truth: Encounter structure, generated-batch orchestration,
 publication, execution, and quality decisions.
 
@@ -51,6 +51,13 @@ Encounter may consume `PartyApi`, `CreaturesApi`, `EncounterTableApi`, and
 `WorldPlannerApi`. Session Planner consumes `EncounterApi`; Encounter never
 calls Session Planner or Session Generation and never reads a foreign
 repository or table directly.
+
+Creature catalog truth is installation-owned while Encounter saved plans are
+Campaign-owned. Encounter validates and refreshes Creature references through
+`CreaturesApi`, then stores only the positive identity and a last-known display
+name snapshot. A database foreign key cannot cross those stores and is not part
+of the Encounter schema; Campaign-local parent-child truth retains ordinary
+foreign keys.
 
 ## Generated-Batch Orchestration
 
@@ -127,8 +134,10 @@ Chosen decisions:
   deliberate roster diversity
 - one idempotent generated-batch commit is the publication boundary
 - manual and generated plans share `EncounterPlan` ownership and invariants
-- permanent historical-origin read compatibility coexists with one canonical
-  write representation
+- one canonical generated-origin representation is used for both read and
+  write; incomplete pre-completion origin shapes are invalid disposable state
+- one empty-namespace current-v1 initializer and an exact read-only schema
+  signature replace additive schema repair before feature completion
 
 Rejected alternatives:
 
@@ -141,6 +150,8 @@ Rejected alternatives:
   Encounter persistence
 - cross-feature database access, JavaFX orchestration, a shared workflow
   transaction, or compensating deletion
+- a Campaign-to-installation Creature foreign key or copied Creature catalog
+  table inside the Campaign store
 
 ## Enforcement And Proof
 

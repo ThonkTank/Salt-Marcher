@@ -10,6 +10,7 @@ public final class CatalogWorkspaceBinding implements AutoCloseable {
     private final Function<Consumer<CatalogWorkspaceState>, Runnable> observeLatest;
     private Runnable detach;
     private boolean attached;
+    private boolean closing;
     private boolean closed;
 
     public CatalogWorkspaceBinding(CatalogWorkspacePublication publication) {
@@ -21,7 +22,7 @@ public final class CatalogWorkspaceBinding implements AutoCloseable {
     }
 
     public synchronized void attach(Consumer<CatalogWorkspaceState> renderer) {
-        if (closed) {
+        if (closing || closed) {
             throw new IllegalStateException("Catalog workspace binding is closed.");
         }
         if (attached) {
@@ -35,10 +36,10 @@ public final class CatalogWorkspaceBinding implements AutoCloseable {
 
     public synchronized void detach() {
         Runnable current = detach;
-        detach = null;
-        attached = false;
         if (current != null) {
             current.run();
+            detach = null;
+            attached = false;
         }
     }
 
@@ -47,10 +48,8 @@ public final class CatalogWorkspaceBinding implements AutoCloseable {
         if (closed) {
             return;
         }
-        try {
-            detach();
-        } finally {
-            closed = true;
-        }
+        closing = true;
+        detach();
+        closed = true;
     }
 }

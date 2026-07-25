@@ -22,12 +22,14 @@ import platform.ui.TrackedUiDispatcher;
  */
 public final class WorkflowAdmissionController {
 
-    private enum State { OPEN, PAUSED, REVOKED, CLOSED }
+    private enum State { OPEN, PAUSED, REVOKED, CLOSING, CLOSED }
 
     private final Object monitor = new Object();
     private final ThreadLocal<Workflow> currentWorkflow = new ThreadLocal<>();
     private final Map<ExecutionLane, AdmittedLane> admitted = new IdentityHashMap<>();
     private final Map<UiDispatcher, AdmittedUiDispatcher> admittedUi = new IdentityHashMap<>();
+    private final java.util.Set<ExecutionLane> closedDelegates =
+            java.util.Collections.newSetFromMap(new IdentityHashMap<>());
     private State state = State.OPEN;
     private int activeWorkflows;
     private CompletableFuture<Void> drain = CompletableFuture.completedFuture(null);
@@ -35,7 +37,7 @@ public final class WorkflowAdmissionController {
     public ExecutionLane admit(ExecutionLane delegate) {
         ExecutionLane safeDelegate = Objects.requireNonNull(delegate, "delegate");
         synchronized (monitor) {
-            if (state == State.CLOSED) {
+            if (state != State.OPEN) {
                 throw new IllegalStateException("workflow admission controller is closed");
             }
             return admitted.computeIfAbsent(safeDelegate, AdmittedLane::new);
@@ -50,7 +52,7 @@ public final class WorkflowAdmissionController {
                     "Campaign UI admission requires terminal dispatch tracking");
         }
         synchronized (monitor) {
-            if (state == State.CLOSED) {
+            if (state != State.OPEN) {
                 throw new IllegalStateException("workflow admission controller is closed");
             }
             return admittedUi.computeIfAbsent(
@@ -60,7 +62,7 @@ public final class WorkflowAdmissionController {
 
     public CompletionStage<Void> pauseAndDrain() {
         synchronized (monitor) {
-            if (state == State.REVOKED || state == State.CLOSED) {
+            if (state == State.REVOKED || state == State.CLOSING || state == State.CLOSED) {
                 return CompletableFuture.failedFuture(
                         new IllegalStateException("terminal workflow admission cannot be paused"));
             }
@@ -111,7 +113,7 @@ public final class WorkflowAdmissionController {
 
     public CompletionStage<Void> revokeAndDrain() {
         synchronized (monitor) {
-            if (state != State.CLOSED) {
+            if (state == State.OPEN || state == State.PAUSED) {
                 state = State.REVOKED;
             }
             return currentDrain();
@@ -124,14 +126,19 @@ public final class WorkflowAdmissionController {
             if (state == State.CLOSED) {
                 return;
             }
-            if (state != State.REVOKED || activeWorkflows != 0) {
+            if ((state != State.REVOKED && state != State.CLOSING) || activeWorkflows != 0) {
                 throw new IllegalStateException("execution lanes can close only after terminal drain");
             }
-            state = State.CLOSED;
+            state = State.CLOSING;
             delegates = new ArrayList<>(admitted.keySet());
         }
         Throwable failure = null;
         for (ExecutionLane delegate : delegates) {
+            synchronized (monitor) {
+                if (closedDelegates.contains(delegate)) {
+                    continue;
+                }
+            }
             try {
                 if (delegate instanceof BoundedExecutionLane bounded) {
                     if (!bounded.terminateNow(java.time.Duration.ofSeconds(1))) {
@@ -140,6 +147,9 @@ public final class WorkflowAdmissionController {
                     }
                 } else {
                     delegate.close();
+                }
+                synchronized (monitor) {
+                    closedDelegates.add(delegate);
                 }
             } catch (RuntimeException | Error closeFailure) {
                 if (failure == null) {
@@ -154,6 +164,9 @@ public final class WorkflowAdmissionController {
         }
         if (failure instanceof Error error) {
             throw error;
+        }
+        synchronized (monitor) {
+            state = State.CLOSED;
         }
     }
 

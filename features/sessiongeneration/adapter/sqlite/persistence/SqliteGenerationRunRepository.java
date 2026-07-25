@@ -27,7 +27,7 @@ import platform.diagnostics.NoopDiagnostics;
 public final class SqliteGenerationRunRepository implements GenerationRunRepository {
 
     public static final String OWNER = "session-generation";
-    public static final int SCHEMA_VERSION = 2;
+    public static final int SCHEMA_VERSION = 1;
     static final int RUN_SCHEMA_VERSION = 1;
 
     private final ConnectionSource connections;
@@ -40,47 +40,14 @@ public final class SqliteGenerationRunRepository implements GenerationRunReposit
 
     public static FeatureStoreDefinition storeDefinition() {
         SessionGenerationSchema schema = new SessionGenerationSchema();
-        SqliteSchemaValidator targetSchema = SqliteSchemaValidator.builder()
-                .table(SessionGenerationSchema.RUNS,
-                        "run_id", "owner", "schema_version", "engine_version", "catalog_version", "catalog_hash",
-                        "seed", "adventure_fraction", "encounter_count", "party_count", "day_xp_budget",
-                        "session_xp_target", "average_level", "normal_budget_cp", "overstock_budget_cp",
-                        "nonmagic_slots", "normal_magic", "overstock_magic", "treasure_count", "normal_actual_cp",
-                        "overstock_actual_cp", "magic_count", "formatted_text", "created_at", "content_fingerprint")
-                .primaryKey(SessionGenerationSchema.RUNS, "run_id")
-                .table(SessionGenerationSchema.PARTY, "run_id", "level", "players", "sort_order")
-                .primaryKey(SessionGenerationSchema.PARTY, "run_id", "level")
-                .table(SessionGenerationSchema.TARGETS, "run_id", "encounter_no", "target_xp", "sort_order")
-                .primaryKey(SessionGenerationSchema.TARGETS, "run_id", "encounter_no")
-                .table(SessionGenerationSchema.ENCOUNTERS,
-                        "run_id", "encounter_no", "target_xp", "adjusted_xp", "difficulty", "candidate_id",
-                        "monster_summary", "monster_count", "multiplier", "max_challenge_code", "boss_score",
-                        "sort_order")
-                .primaryKey(SessionGenerationSchema.ENCOUNTERS, "run_id", "encounter_no")
-                .table(SessionGenerationSchema.ENCOUNTER_BLOCKS,
-                        "run_id", "encounter_no", "block_order", "block_id", "role", "challenge_code",
-                        "challenge_label", "unit_xp", "quantity")
-                .primaryKey(SessionGenerationSchema.ENCOUNTER_BLOCKS, "run_id", "encounter_no", "block_order")
-                .table(SessionGenerationSchema.TREASURES,
-                        "run_id", "treasure_id", "stock_class", "reward_channel", "anchor_encounter_no", "theme",
-                        "magic_type", "target_cp", "nonmagic_slots", "magic_slots", "sort_order")
-                .primaryKey(SessionGenerationSchema.TREASURES, "run_id", "treasure_id")
-                .table(SessionGenerationSchema.LOOT,
-                        "run_id", "line_id", "treasure_id", "role", "item_id", "display_text", "quantity",
-                        "unit_cp", "actual_cp", "total_capacity", "allowed_containers", "magic_rarity", "cursed",
-                        "sort_order")
-                .primaryKey(SessionGenerationSchema.LOOT, "run_id", "line_id")
-                .table(SessionGenerationSchema.PACKING,
-                        "run_id", "line_id", "treasure_id", "container_type", "container_count", "container_id",
-                        "valid", "sort_order")
-                .primaryKey(SessionGenerationSchema.PACKING, "run_id", "line_id")
-                .table(SessionGenerationSchema.AUDITS, "run_id", "audit_order", "code", "status", "detail")
-                .primaryKey(SessionGenerationSchema.AUDITS, "run_id", "audit_order")
-                .build();
+        SqliteSchemaValidator targetSchema = SqliteSchemaValidator.exactSchema(
+                SessionGenerationSchema.CREATE_TABLE_SQL,
+                SessionGenerationSchema.CREATE_INDEX_SQL,
+                List.of("session_generation_"),
+                List.of());
         return FeatureStoreDefinition.validated(
                 OWNER, targetSchema,
-                new SqliteMigration(1, schema::migrateV1),
-                new SqliteMigration(2, schema::migrateV2));
+                new SqliteMigration(SCHEMA_VERSION, schema::initializeCurrent));
     }
 
     public SqliteGenerationRunRepository(FeatureStoreHandle store) {
@@ -181,7 +148,7 @@ public final class SqliteGenerationRunRepository implements GenerationRunReposit
     private GeneratedRunDraft validatedDraft(StoredGeneratedRun stored) {
         validator.validate(stored.run());
         String derived = GenerationContentFingerprint.v1(stored.run());
-        if (stored.storedFingerprint() != null && !stored.storedFingerprint().equals(derived)) {
+        if (!stored.storedFingerprint().equals(derived)) {
             throw new IllegalStateException("stored generation content fingerprint does not match semantic rows");
         }
         return new GeneratedRunDraft(stored.run(), derived);

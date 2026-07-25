@@ -72,6 +72,7 @@ public record FeatureStoreDefinition(
 
     @FunctionalInterface
     public interface Validator {
+        /** Inspects the target schema without mutating database or connection-owned truth. */
         void validate(Connection connection) throws SQLException;
     }
 }

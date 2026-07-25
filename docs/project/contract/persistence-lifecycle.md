@@ -59,14 +59,29 @@ discovering a migration as a side effect of opening a connection is forbidden.
 Before feature services start, the coordinator:
 
 1. loads the driver and verifies the primary database or initializes an empty one
-2. reads platform and owner versions without mutation
-3. rejects a newer platform globally without replacement or downgrade
-4. creates and restore-tests one verified pre-migration snapshot when any
-   supported owner has pending work
-5. prepares owners in deterministic composition order, one transaction per owner
-6. validates the owner's declared target schema signature, full physical integrity,
-   and foreign keys before each commit
-7. returns immutable readiness for every owner
+2. validates the exact direct current-v1 platform ledger and its complete bound
+   object inventory through an immutable read-only connection before reading any
+   owner version when the source has no sidecar
+3. rejects a malformed or newer platform globally without replacement, downgrade,
+   WAL activation, or source transaction
+4. validates every already-current or newer owner immutable read-only; an existing
+   rollback-journal family is first materialized as one coherent disposable inspection,
+   while a complete WAL-plus-SHM family is byte-copied without opening the source and
+   materialized only from that copy; pending direct initialization prepares all owners
+   on a disposable copy before source access
+5. creates and restore-tests one verified pre-mutation snapshot only when at least
+   one pending owner qualified successfully on that copy
+6. prepares only those qualified pending owners against the source, in deterministic
+   composition order and one transaction per owner
+7. validates the owner's exact target DDL and complete bound object inventory,
+   physical integrity, and foreign keys before each commit
+8. returns immutable readiness for every owner
+
+Owner-table dependencies, owned prefixes, and forbidden object names are matched
+case-insensitively with locale-independent normalization. Because SQLite accepts
+single-quoted identifiers in identifier positions, a single-quoted owner table in
+stored view or trigger DDL is treated fail-closed as an owner dependency rather than
+ignored as a string literal.
 
 Readiness is:
 
@@ -75,12 +90,16 @@ Readiness is:
   global physical and foreign-key integrity succeeded
 - `MIGRATION_FAILED`: a supported migration or owner validation rolled back
 - `NEWER_SCHEMA`: stored owner version is newer than this application
+- `INCOMPATIBLE`: the sidecar family cannot be interpreted safely as one isolated
+  source state, including WAL without SHM, SHM without WAL, mixed journal families,
+  non-physical sidecars, or a family that changes while it is copied
 - `CORRUPT`: physical integrity prevents safe access
 
 `MIGRATION_FAILED` and `NEWER_SCHEMA` fail closed for that owner only. They do
 not prevent unrelated ready handles from opening connections. Physical database
-corruption and a newer platform version remain global because no safe shared
-file access exists.
+corruption, an incompatible sidecar family, and a newer platform version remain
+global because no safe shared file access exists. Incompatibility is not evidence
+of physical corruption and never authorizes recovery, quarantine, or replacement.
 
 A table declaration is exact by default. A read-only provider MAY instead
 declare a required column projection when additional provider-owned columns are
@@ -99,7 +118,12 @@ fail closed through their feature-owned error contract.
 ## Migration Contract
 
 `PRAGMA user_version` owns the platform format. `sm_schema_versions` maps one
-owner to its current feature version.
+owner to its current feature version. Platform version `1` has one direct
+canonical shape: `owner TEXT PRIMARY KEY` and `version INTEGER NOT NULL
+CHECK(version >= 0)`, with no additional column, index, view, or trigger bound
+to that ledger. A missing key/check, additional column, trigger, or otherwise
+duplicate-capable ledger is a global incompatible platform shape and is not
+repaired.
 
 Each future released-format migration:
 
@@ -110,13 +134,14 @@ Each future released-format migration:
 - aborts before destructive work when the stored signature is unknown
 - copies and validates replacement rows before dropping or renaming predecessor tables
 
-Before GM-Core feature completion there is no installed user population or
-non-disposable legacy data, so the current cut has no compatibility reader,
-mixed-store conversion, or predecessor-format migration obligation. Once a
-released version can create user data, `TN-18` governs update/conversion
-preservation and failure rollback, while `TN-19` governs versioned export/import
-compatibility. Those future translators must be explicit and qualified; they do
-not justify retaining an unused pre-release storage topology now.
+Compatibility obligations begin only after activation of the
+[Product Process Compatibility Covenant](../delivery/aletheia/product-process.md#compatibility-covenant).
+Until that activation, the current cut has no compatibility reader, mixed-store
+conversion, or predecessor-format migration obligation. After activation,
+`TN-18` governs update/conversion preservation and failure rollback, while
+`TN-19` governs versioned export/import compatibility. Those future translators
+must be explicit and qualified; they do not justify retaining an unused current
+development storage topology.
 
 The coordinator records the new owner version only after the migration action
 and final target-signature validator succeed. Failure rolls back schema, rows,
@@ -129,18 +154,30 @@ translator, not rewriting a released step.
 ## Backup And Recovery
 
 Before first mutation of an existing healthy database, platform persistence
-runs full `integrity_check` and `foreign_key_check`, creates a WAL-consistent
-snapshot with `VACUUM INTO`, verifies it, copies it to an isolated restore
-probe, verifies the probe, and only then permits owner migration.
+runs full `integrity_check` and `foreign_key_check`, creates one coherent
+snapshot, verifies it, copies it to an isolated restore probe, verifies the
+probe, and only then permits owner migration. A live WAL-plus-SHM family is copied
+under matching before/after family tokens and materialized with SQLite snapshot
+semantics only from that isolated copy; a sidecar-free quiescent main file is copied
+under matching before/after identity tokens. Qualification therefore cannot activate
+WAL, create SHM, checkpoint, or remove a sidecar on the source.
 
 The local backup name embeds the compatible platform version. Migration failure
 never replaces the primary with a backup and never deletes the verified backup.
 
-If the primary is physically corrupt, the lifecycle may restore the highest
-verified backup whose platform version is supported. It first preserves the
-complete corrupt database family under a local quarantine name, verifies the
-restored primary, and keeps the backup. Unknown newer versions are not
-corruption and never trigger recovery.
+If the primary is physically corrupt and its sidecar family was first classified as
+safe to interpret, the lifecycle may restore the highest
+verified backup whose platform version is supported. Before quarantine, it copies
+each candidate in newest-first order to an isolated recovery file, validates the exact
+platform manifest, prepares and validates every registered owner there, and requires
+all owner readiness to be current. A malformed ledger or owner manifest therefore
+leaves the complete primary family byte-for-byte authoritative and creates no
+quarantine. Only a fully qualified copy permits preservation of the corrupt family
+under a local quarantine name; the installed copy is validated again and the backup
+is kept. Unknown newer versions are not
+corruption and never trigger recovery. An orphan SHM, WAL without SHM, mixed
+journal family, or changing source family fails closed byte-for-byte even when a
+valid backup exists; those conditions never enter physical-corruption recovery.
 
 An explicit feature maintenance operation that replaces reference data requests
 a feature-named maintenance backup through its separately injected maintenance
@@ -174,6 +211,21 @@ Automated proof uses isolated synthetic databases and covers:
 - owner migration and validation rollback with byte-equivalent owned rows
 - a target-version owner with a missing or wrong table signature becoming
   `MIGRATION_FAILED` while an unrelated valid owner remains usable
+- recorded current owner DDL with a different conflict clause, an arbitrarily
+  named trigger bound to an owner table, and a foreign table with an inbound key to
+  an owner table, all rejected without changing the source database family
+- malformed platform-ledger primary key, check, columns, trigger, and foreign-view
+  dependencies, including case-variant single-quoted identifiers, rejected
+  before owner inspection with exact source main-file and sidecar preservation
+- recovery backups with a malformed platform manifest or current-owner trigger
+  rejected on an isolated qualification copy before quarantine, with exact primary
+  family preservation
+- orphan SHM and WAL-without-SHM families with a valid backup rejected as
+  `INCOMPATIBLE` without recovery or quarantine, plus a rejected coherent WAL family
+  inspected through an isolated copy with exact source main/WAL/SHM preservation
+- pending partial and newer single-owner fixtures qualified without opening a source
+  write transaction; a full Campaign manifest rejects the malformed candidate while
+  the prior Campaign remains authoritative
 - startup that cannot execute feature storage work before readiness
 - verified backup, restore probe, physical corruption recovery, quarantine, and
   no-compatible-backup fail-closed behavior

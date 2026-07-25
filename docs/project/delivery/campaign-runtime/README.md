@@ -16,13 +16,15 @@ Requirements](../../requirements/requirements-program-capabilities.md); this
 file owns only current delivery state.
 
 The frozen production-composition journey creates Campaigns Alpha and Beta,
-seeds each distinct Scene, Encounter, and Party travel state through the
-Campaign-owned production services, exercises repeated switching without
-closure or confirmation, and reads every exact value from the current
-production shell. Across the suite it covers `Alpha -> Beta -> Alpha -> Beta`,
-process restart, repeated semantic readback, and another durable mutation. It
+first proves each name-only Campaign exposes one usable empty primary Scene,
+then seeds each distinct focused Scene, running Encounter, and Party travel
+state through Campaign-owned production APIs. It exercises repeated switching
+without closure or confirmation and reads exact Scene, combatant HP and
+initiative, round, map, and route values from the current production shell.
+Across the suite it covers `Alpha -> Beta -> Alpha -> Beta`, process restart,
+repeated semantic readback, and another durable Encounter mutation. It
 qualifies state isolation and exact resume; it does not claim that the current
-installed UI authors every marker.
+installed UI authors every fixture or marker.
 The separate installed owner journey creates both Campaigns using only a name
 and qualifies keyboard-operated selection, immediate switching, restart resume,
 focus, and understandable visible state. Party, map, and travel-authoring UI
@@ -181,21 +183,90 @@ auditability of the preserved report, not the evaluator's practical run.
 The candidate must provide `app.CampaignRuntimeProductionJourneyTest`; an
 independent evaluator reruns it from the candidate commit with
 `./gradlew test --tests app.CampaignRuntimeProductionJourneyTest
---console=plain`. The test must exercise production composition and SQLite in a
-temporary data directory for the complete `Alpha -> Beta -> Alpha -> Beta`,
-process-restart, visible semantic readback from the active production shell,
-and next-mutation journey. A passing result is necessary but does not replace
-visible keyboard and desktop acceptance. Its Scene, Encounter, and travel
-markers are written through the Campaign-owned production services and read
-from the current JavaFX shell to decide `AC-F02` isolation and resume; they are
-not evidence that later visible authoring workflows already exist.
+--rerun-tasks --no-build-cache --console=plain`. The test must exercise
+production composition and SQLite in a temporary data directory for the
+complete `Alpha -> Beta -> Alpha -> Beta`, process-restart, visible semantic
+readback from the active production shell, and next-mutation journey. A passing
+result is necessary but does not replace visible keyboard and desktop
+acceptance. Its Scene, running-Encounter, and travel markers are written
+through Campaign-owned production APIs and read from the current JavaFX shell
+to decide `AC-F02` isolation and resume; they are not evidence that later
+visible authoring workflows already exist.
 
-The implementer ran one pre-commit causal control with the focused production
-method `campaignDeskCreatesListsAndImmediatelySwitchesWholeProductionCampaigns`.
-Removing only the active-shell re-enable from `CampaignRuntime` made the
-unchanged journey fail at its enabled-root oracle; restoring it made the same
-command green. This establishes the immediate cause locally, but does not
-replace the required independent replay of the final committed candidate.
+The candidate also includes a current-small-profile warm-switch
+prequalification: five unrecorded warmups followed by 100 recorded samples in
+each direction, with every switch bounded by the canonical hard timeout and
+p95 checked for visible target truth plus the following durable UI mutation.
+This is practical risk evidence for M1. It is not canonical `TN-16` acceptance:
+the normative `RP-R` and `RP-L` fixtures and the complete supported-OS matrix
+remain program qualification work once their required product data classes
+exist.
+
+The first honest whole-rebuild implementation did not retain robust margin: a
+literal current-profile run reached 1,058.515 ms p95 and falsified further
+micro-tuning as the best next step. The foundational lifetime decision was
+therefore reopened. The current candidate keeps at most one completely drained
+Campaign aggregate in a coordinator-owned `PARKED` slot. Only the focused Scene
+journey is eligible; third-target preparation waits for successful eviction,
+and ambiguous/post-commit recovery never caches the prior runtime. Coordinator
+tests cover A-B-A-B reuse with fresh generations, definite pre-commit return,
+repeated eviction failure, delayed ambiguous-target recovery, the global
+unresolved-close allocation gate, terminal close, and identity-deduplicated
+ownership. The production population additionally asserts that only the two
+real alternating runtime identities are observed and that named Campaign
+runtime workers remain below the derived active-plus-parked ceiling. A causal
+readiness test proves one positive JavaFX pulse cannot complete the two-
+consecutive-pulse publication gate and that a false/root-change pulse resets
+the sequence. The readiness attempt is an explicitly cancellable resource
+owned through the production host, activation coordinator, and candidate:
+timeout/revocation waits for timer cancellation before recovery publication,
+while root replacement, candidate/host close, and window disposal also stop
+the timer and release the detached `AppShell`. A production fault journey hides
+the just-published target until timeout, observes terminal timer/root release
+through recovery, delivers later JavaFX pulses without further work from that
+attempt, and then opens a healthy Campaign. That same production-candidate
+route captures candidate-stylesheet CSS conversion warnings; the navigation
+separator uses a directly convertible paint value. Parking captures an O(1)
+local-ownership token from physical file identity, size, high-resolution
+modification time, and absent WAL/SHM/journal sidecars. An unchanged token
+inherits the full validation already performed at
+open; detected main-file change triggers immutable read-only physical,
+foreign-key, and all-owner-schema validation, while sidecar appearance fails
+closed. A valid external change still invalidates and closes the aggregate so
+stale in-memory models are never republished; a retry takes the cold rebuild
+path. The production damage journey uses executable current SQLite with a
+removed owner table and proves failure before commit while the prior Campaign
+remains writable and the damaged main bytes plus absent sidecars remain exact.
+The oracle covers accidental local external change under SaltMarcher's single-
+process ownership, not privileged operating-system tampering capable of
+spoofing both file identity and timestamps.
+
+The exact `RP-R` and `RP-L` manifests are normatively specified, but the
+repository does not yet contain an executable complete-profile constructor:
+several data classes belong to later feature slices. Consequently this M1
+increment can retain the current-small-profile 5+100+100 production timing and
+the O(1) change-detection proof, but cannot honestly publish representative
+`RP-R`/`RP-L` measurements. That missing fixture is the exact qualification
+blocker; the 1 s p95 budget is unchanged and remains open for the program
+qualification slice.
+
+The latest integrated working-tree run completed all 17 production-journey
+tests, including all 210 warm switches and following durable mutations, with
+no failure, error, or skip. Its retained local XML records total
+p95 of 412.816 ms from Beta to Alpha and 414.521 ms from Alpha to Beta, visible
+p95 of 377.018 ms and 362.053 ms, handler p95 below 1.3 ms, and
+visible-to-durable-mutation p95 below 55 ms. This is a current working-tree XML
+observation, not a frozen candidate replay. It retains the wider M13
+qualification boundary and does not replace the committed independent replay
+required below.
+
+A local Aletheia-B probe suggested that the enabled-root oracle is sensitive to
+removing the active-shell re-enable and accessible-help reset from
+`CampaignRuntime`: the focused journey reportedly failed after that change and
+passed after restoration. No durable replay artifact or independently
+inspectable log was retained, so this remains an implementation-time
+observation rather than calibration or verdict evidence. It does not replace
+the required independent replay of the final committed candidate.
 
 ## Exit
 

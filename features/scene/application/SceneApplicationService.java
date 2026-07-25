@@ -29,6 +29,7 @@ import features.worldplanner.api.WorldNpcSummary;
 import features.worldplanner.api.WorldPlannerReadStatus;
 import features.worldplanner.api.WorldPlannerSnapshot;
 import features.worldplanner.api.WorldPlannerSnapshotModel;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -38,6 +39,7 @@ import java.util.concurrent.RejectedExecutionException;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
 import platform.execution.ExecutionLane;
+import platform.execution.RetryableRelease;
 import platform.ui.UiDispatcher;
 
 public final class SceneApplicationService implements SceneApi, AutoCloseable {
@@ -57,8 +59,9 @@ public final class SceneApplicationService implements SceneApi, AutoCloseable {
     private final ScenePublishedState publishedState;
     private SceneWorkspace workspace;
     private boolean foreignSubscriptionsRegistered;
-    private volatile boolean closed;
-    private List<Runnable> foreignSubscriptions = List.of();
+    private volatile boolean revoked;
+    private boolean closed;
+    private final List<Runnable> foreignSubscriptions = new ArrayList<>();
 
     public SceneApplicationService(
             SceneWorkspaceRepository repository,
@@ -88,7 +91,7 @@ public final class SceneApplicationService implements SceneApi, AutoCloseable {
 
     @Override
     public CompletionStage<SceneMutationResult> execute(SceneCommand command) {
-        if (closed) {
+        if (revoked) {
             return CompletableFuture.completedFuture(result(
                     SceneMutationResult.Status.STORAGE_ERROR, "Szenenlaufzeit ist geschlossen."));
         }
@@ -429,7 +432,7 @@ public final class SceneApplicationService implements SceneApi, AutoCloseable {
     }
 
     private void scheduleProjectionRefresh() {
-        if (closed) {
+        if (revoked) {
             return;
         }
         try {
@@ -440,15 +443,14 @@ public final class SceneApplicationService implements SceneApi, AutoCloseable {
     }
 
     private synchronized void registerForeignSubscriptions() {
-        if (foreignSubscriptionsRegistered || closed) {
+        if (foreignSubscriptionsRegistered || revoked) {
             return;
         }
         foreignSubscriptionsRegistered = true;
-        foreignSubscriptions = List.of(
-                party.subscribe(ignored -> execute(new SceneCommand.Refresh())),
-                world.subscribe(ignored -> execute(new SceneCommand.Refresh())),
-                preparedScenes.subscribe(ignored -> scheduleProjectionRefresh()),
-                creatureReferences.subscribe(ignored -> scheduleProjectionRefresh()));
+        foreignSubscriptions.add(party.subscribe(ignored -> execute(new SceneCommand.Refresh())));
+        foreignSubscriptions.add(world.subscribe(ignored -> execute(new SceneCommand.Refresh())));
+        foreignSubscriptions.add(preparedScenes.subscribe(ignored -> scheduleProjectionRefresh()));
+        foreignSubscriptions.add(creatureReferences.subscribe(ignored -> scheduleProjectionRefresh()));
     }
 
     @Override
@@ -456,9 +458,9 @@ public final class SceneApplicationService implements SceneApi, AutoCloseable {
         if (closed) {
             return;
         }
+        revoked = true;
+        RetryableRelease.releaseAll(foreignSubscriptions);
         closed = true;
-        foreignSubscriptions.forEach(Runnable::run);
-        foreignSubscriptions = List.of();
     }
 
     private static features.scene.domain.SceneParticipantKind domainKind(SceneParticipantKind kind) {

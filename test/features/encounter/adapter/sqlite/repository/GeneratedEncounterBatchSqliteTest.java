@@ -1,6 +1,8 @@
 package features.encounter.adapter.sqlite.repository;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -18,8 +20,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import platform.diagnostics.NoopDiagnostics;
 import platform.persistence.FeatureStoreHandle;
+import platform.persistence.FeatureStoreReadiness;
+import platform.persistence.FeatureStoreUnavailableException;
 import platform.persistence.SqliteDatabase;
 import platform.persistence.TestFeatureStores;
+import java.nio.file.Files;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -59,6 +64,32 @@ final class GeneratedEncounterBatchSqliteTest {
             assertEquals(fingerprint("|11:1"), origin.rosterFingerprint());
             assertEquals(2L, rowCount(path, "saved_encounter_plans"));
             assertEquals(2L, rowCount(path, "generated_encounter_plan_origins"));
+        }
+    }
+
+    @Test
+    void persistsAndReloadsExternalCreatureReferencesAcrossInstallationAndCampaignStores() throws Exception {
+        Path campaignPath = directory.resolve("separate-campaign.sqlite");
+        try (DatabaseFixture fixture = databaseWithCreatures(campaignPath, 11L)) {
+            SqliteEncounterPlanRepository repository = fixture.repository();
+
+            assertNotNull(fixture.creatures().loadCreatureDetail(11L),
+                    "the installation-owned reference must resolve before prepared Encounter persistence");
+            var saved = repository.save(new features.encounter.domain.plan.EncounterPlan(
+                    0L,
+                    "Separate stores",
+                    "",
+                    List.of(new features.encounter.domain.plan.EncounterPlanCreature(
+                            11L, 2, "Installation Guard"))));
+            var reloaded = repository.load(saved.id()).orElseThrow();
+
+            assertTrue(Files.exists(fixture.installationPath()));
+            assertTrue(Files.exists(fixture.campaignPath()));
+            assertEquals(1L, rowCount(fixture.installationPath(), "creatures"));
+            assertEquals(0L, schemaObjectCount(fixture.campaignPath(), "table", "creatures"));
+            assertEquals(11L, reloaded.creatures().getFirst().creatureId());
+            assertEquals(2, reloaded.creatures().getFirst().quantity());
+            assertEquals("Installation Guard", reloaded.creatures().getFirst().lastKnownDisplayName());
         }
     }
 
@@ -212,12 +243,19 @@ final class GeneratedEncounterBatchSqliteTest {
     }
 
     @Test
-    void rollsBackEveryRootChildBatchAndOriginWhenAnyCreatureIsMissing() throws Exception {
+    void rollsBackEveryRootChildBatchAndOriginWhenRosterViolatesCurrentConstraints() throws Exception {
         Path path = directory.resolve("rollback.sqlite");
         try (DatabaseFixture fixture = databaseWithCreatures(path, 11L)) {
             SqliteEncounterPlanRepository repository = fixture.repository();
-            PreparedEncounterBatch batch = batch("rollback-prep", "rollback-run", List.of(
-                    roster(1, 11L, "Guard"), roster(2, 999L, "Missing")));
+            PreparedEncounterCreature first = new PreparedEncounterCreature(11L, 1, "Guard");
+            PreparedEncounterCreature duplicate = new PreparedEncounterCreature(11L, 2, "Guard duplicate");
+            List<PreparedEncounterCreature> malformedRoster = List.of(first, duplicate);
+            PreparedEncounterRoster roster = new PreparedEncounterRoster(
+                    1, "Duplicate external reference", "intent", "roster", malformedRoster,
+                    new GeneratedEncounterPlanSummary(
+                            0L, "Duplicate external reference", malformedRoster, 3, 300L, 600L,
+                            GeneratedEncounterDifficulty.HARD, "duplicate"));
+            PreparedEncounterBatch batch = batch("rollback-prep", "rollback-run", List.of(roster));
 
             assertThrows(IllegalStateException.class, () -> repository.commit(batch));
             assertEquals(0L, rowCount(path, "saved_encounter_plans"));
@@ -228,53 +266,33 @@ final class GeneratedEncounterBatchSqliteTest {
     }
 
     @Test
-    void migratesV3AdditivelyAndDerivesHistoricalPreparationAndRosterIdentityOnRead() throws Exception {
-        Path path = directory.resolve("v3-to-v4.sqlite");
-        seedV3(path);
+    void rejectsIncompletePrecompletionOriginShapeInsteadOfDerivingCanonicalIdentity() throws Exception {
+        Path path = directory.resolve("discarded-precompletion-v3.sqlite");
+        seedIncompletePrecompletionShape(path);
+        byte[] originalBytes = Files.readAllBytes(path);
         try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            SqliteEncounterPlanRepository repository = new SqliteEncounterPlanRepository(
-                            TestFeatureStores.store(
-                                    database, SqliteEncounterPlanRepository.storeDefinition()));
-            PreparedEncounterCreature creature = new PreparedEncounterCreature(11L, 1, "Current Guard");
-            PreparedEncounterRoster roster = new PreparedEncounterRoster(
-                    1, "Legacy", "i1", sha256("|11:1"), List.of(creature),
-                    new GeneratedEncounterPlanSummary(
-                            0L, "Legacy", List.of(creature), 1, 100L, 100L,
-                            GeneratedEncounterDifficulty.EASY, "1x Current Guard"));
-            PreparedEncounterBatch retry = new PreparedEncounterBatch(
-                    new GeneratedEncounterSource("engine", "legacy-run", "legacy-run"),
-                    "legacy-batch", List.of(roster));
-
-            assertEquals(GeneratedEncounterBatchRepository.CommitOutcome.Status.EQUAL_RETRY,
-                    repository.commit(retry).status());
-            var historical = repository.load(1L).orElseThrow().origin().orElseThrow();
-            assertEquals("legacy-run", historical.preparationIdentity());
-            assertEquals("legacy-run", historical.generationRunIdentity());
-            assertEquals(sha256("|11:1"), historical.rosterFingerprint());
+            FeatureStoreHandle handle = TestFeatureStores.store(
+                    database, SqliteEncounterPlanRepository.storeDefinition());
+            FeatureStoreUnavailableException failure = assertThrows(
+                    FeatureStoreUnavailableException.class, handle::openConnection);
+            assertEquals(FeatureStoreReadiness.NEWER_SCHEMA, failure.readiness());
         }
-        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + path)) {
-            assertTrue(hasColumn(connection, "saved_encounter_plan_creatures", "last_known_display_name"));
-            assertTrue(hasColumn(connection, "generated_encounter_plan_batches", "preparation_id"));
-            assertTrue(hasColumn(connection, "generated_encounter_plan_origins", "roster_fingerprint"));
-            try (var rows = connection.createStatement().executeQuery(
-                                    "SELECT version FROM sm_schema_versions WHERE"
-                                        + " owner='encounter'")) {
-                assertTrue(rows.next());
-                assertEquals(5, rows.getInt(1));
-            }
-        }
+        assertArrayEquals(originalBytes, Files.readAllBytes(path));
+        assertEquals(1L, rowCount(path, "saved_encounter_plans"));
+        assertEquals("Discarded development row",
+                scalarText(path, "SELECT name FROM saved_encounter_plans WHERE plan_id=1"));
     }
 
     private static DatabaseFixture databaseWithCreatures(Path path, Long... ids) throws Exception {
-        SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE);
-        var stores =
-                TestFeatureStores.stores(
-                        database,
-                        SqliteCreatureCatalogQueryAdapter.storeDefinition(),
-                        SqliteEncounterPlanRepository.storeDefinition());
-        new SqliteCreatureCatalogQueryAdapter(stores.get("creatures")).loadFilterValues();
+        Path installationPath = path.resolveSibling(path.getFileName() + ".installation.sqlite");
+        SqliteDatabase installationDatabase = new SqliteDatabase(
+                installationPath, NoopDiagnostics.INSTANCE);
+        FeatureStoreHandle creaturesStore = TestFeatureStores.store(
+                installationDatabase, SqliteCreatureCatalogQueryAdapter.storeDefinition());
+        SqliteCreatureCatalogQueryAdapter creatures = new SqliteCreatureCatalogQueryAdapter(creaturesStore);
+        creatures.loadFilterValues();
         for (Long id : ids) {
-            try (var connection = DriverManager.getConnection("jdbc:sqlite:" + path);
+            try (var connection = DriverManager.getConnection("jdbc:sqlite:" + installationPath);
                     var statement = connection.prepareStatement(
                                     "INSERT INTO creatures"
                                         + " (id,name,size,creature_type,alignment,cr,xp,hp,ac)"
@@ -291,11 +309,21 @@ final class GeneratedEncounterBatchSqliteTest {
                 statement.executeUpdate();
             }
         }
-        return new DatabaseFixture(database, stores.get("encounter"));
+        SqliteDatabase campaignDatabase = new SqliteDatabase(path, NoopDiagnostics.INSTANCE);
+        FeatureStoreHandle encounterStore = TestFeatureStores.store(
+                campaignDatabase, SqliteEncounterPlanRepository.storeDefinition());
+        return new DatabaseFixture(
+                installationDatabase, campaignDatabase, installationPath, path, creatures, encounterStore);
     }
 
     private record DatabaseFixture(
-            SqliteDatabase database, FeatureStoreHandle encounterStore) implements AutoCloseable {
+            SqliteDatabase installationDatabase,
+            SqliteDatabase campaignDatabase,
+            Path installationPath,
+            Path campaignPath,
+            SqliteCreatureCatalogQueryAdapter creatures,
+            FeatureStoreHandle encounterStore
+    ) implements AutoCloseable {
 
         private SqliteEncounterPlanRepository repository() {
             return new SqliteEncounterPlanRepository(encounterStore);
@@ -303,7 +331,8 @@ final class GeneratedEncounterBatchSqliteTest {
 
         @Override
         public void close() {
-            database.close();
+            campaignDatabase.close();
+            installationDatabase.close();
         }
     }
 
@@ -380,6 +409,27 @@ final class GeneratedEncounterBatchSqliteTest {
         }
     }
 
+    private static long schemaObjectCount(Path path, String type, String name) throws Exception {
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + path);
+             var statement = connection.prepareStatement(
+                     "SELECT COUNT(*) FROM sqlite_master WHERE type=? AND name=?")) {
+            statement.setString(1, type);
+            statement.setString(2, name);
+            try (var rows = statement.executeQuery()) {
+                assertTrue(rows.next());
+                return rows.getLong(1);
+            }
+        }
+    }
+
+    private static String scalarText(Path path, String sql) throws Exception {
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + path);
+             var rows = connection.createStatement().executeQuery(sql)) {
+            assertTrue(rows.next());
+            return rows.getString(1);
+        }
+    }
+
     private static void execute(Path path, String sql) throws Exception {
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + path);
                 var statement = connection.createStatement()) {
@@ -387,14 +437,12 @@ final class GeneratedEncounterBatchSqliteTest {
         }
     }
 
-    private static void seedV3(Path path) throws Exception {
+    private static void seedIncompletePrecompletionShape(Path path) throws Exception {
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + path);
                 var statement = connection.createStatement()) {
-            statement.execute("PRAGMA user_version=1");
+            statement.execute("PRAGMA journal_mode=WAL");
             statement.execute("PRAGMA foreign_keys=ON");
-            statement.execute(
-                    "CREATE TABLE sm_schema_versions (owner TEXT PRIMARY KEY, version INTEGER NOT"
-                        + " NULL)");
+            platform.persistence.TestFeatureStores.createCurrentPlatformLedger(statement);
             statement.execute("INSERT INTO sm_schema_versions(owner,version) VALUES ('encounter',3)");
             statement.execute(
                     "CREATE TABLE creatures(id INTEGER PRIMARY KEY, name TEXT NOT NULL, xp INTEGER"
@@ -427,26 +475,15 @@ final class GeneratedEncounterBatchSqliteTest {
                         + " generated_encounter_plan_batches(engine_version,generation_id))");
             statement.execute(
                     "INSERT INTO saved_encounter_plans(plan_id,name,generated_label) VALUES"
-                            + " (1,'Legacy','Legacy')");
+                            + " (1,'Discarded development row','Discarded development row')");
             statement.execute(
                     "INSERT INTO"
                         + " saved_encounter_plan_creatures(plan_id,creature_id,quantity,sort_order)"
                         + " VALUES (1,11,1,0)");
             statement.execute("INSERT INTO generated_encounter_plan_batches VALUES "
-                    + "('engine','legacy-run','legacy-batch',1)");
+                    + "('engine','discarded-run','discarded-batch',1)");
             statement.execute("INSERT INTO generated_encounter_plan_origins VALUES "
-                    + "('engine','legacy-run',1,0,'i1',1)");
-        }
-    }
-
-    private static boolean hasColumn(java.sql.Connection connection, String table, String column) throws Exception {
-        try (var rows = connection.createStatement().executeQuery("PRAGMA table_info(" + table + ")")) {
-            while (rows.next()) {
-                if (column.equals(rows.getString("name"))) {
-                    return true;
-                }
-            }
-            return false;
+                    + "('engine','discarded-run',1,0,'i1',1)");
         }
     }
 

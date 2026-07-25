@@ -140,7 +140,8 @@ public final class SqliteItemImportStore implements ItemImportStore {
     ItemCatalogAccessException.Reason reason =
         exception instanceof FeatureStoreUnavailableException unavailable
                 && (unavailable.readiness() == FeatureStoreReadiness.MIGRATION_FAILED
-                    || unavailable.readiness() == FeatureStoreReadiness.NEWER_SCHEMA)
+                    || unavailable.readiness() == FeatureStoreReadiness.NEWER_SCHEMA
+                    || unavailable.readiness() == FeatureStoreReadiness.INCOMPATIBLE)
             ? ItemCatalogAccessException.Reason.INCOMPATIBLE
             : ItemCatalogAccessException.Reason.STORAGE;
     return new ItemCatalogAccessException(reason, exception);

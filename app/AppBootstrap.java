@@ -357,7 +357,8 @@ public final class AppBootstrap implements AutoCloseable {
                 }
                 PreparedShellCandidate candidate = preparation.value();
                 CampaignShell owner = new CampaignShell(
-                        candidate.shell(), candidate.catalog(), runtime, campaignUi, campaignCloseObserver);
+                        candidate.shell(), candidate.scene(), candidate.catalog(), runtime,
+                        campaignUi, campaignCloseObserver);
                 preparation.drained().whenComplete((ignored, drainFailure) -> {
                     if (drainFailure != null) {
                         failCampaignCandidate(owner, completion, drainFailure);
@@ -432,8 +433,6 @@ public final class AppBootstrap implements AutoCloseable {
             qualificationScene.getStylesheets().add(
                     SaltMarcherApp.class.getResource("/salt-marcher.css").toExternalForm());
             host.ifPresent(owner -> owner.installSelectorAccess(shell));
-            shell.applyCss();
-            shell.layout();
             return new PreparedShellCandidate(shell, qualificationScene, catalog);
         } catch (RuntimeException | Error failure) {
             if (catalog != null) {

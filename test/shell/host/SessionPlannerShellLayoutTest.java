@@ -282,6 +282,7 @@ public final class SessionPlannerShellLayoutTest {
                 encounter.application(), encounter.savedPlans(), null, unsupportedGeneration(),
                 DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE,
                 DirectUiDispatcher.INSTANCE, NoopDiagnostics.INSTANCE);
+        session.start();
         HexServiceAssembly hex = new HexServiceAssembly(
                 new SqliteHexMapRepository(
                                 TestFeatureStores.current().store(

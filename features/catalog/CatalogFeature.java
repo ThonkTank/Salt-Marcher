@@ -55,6 +55,9 @@ public final class CatalogFeature {
         private final CatalogWorkspaceController controller;
         private final CatalogWorkspaceBinding binding;
         private final features.catalog.adapter.javafx.CatalogContribution contribution;
+        private boolean bindingClosed;
+        private boolean contributionClosed;
+        private boolean controllerClosed;
         private boolean closed;
 
         private Component(
@@ -81,25 +84,31 @@ public final class CatalogFeature {
                 return;
             }
             Throwable failure = null;
-            try {
+            if (!bindingClosed) {
                 try {
                     binding.close();
+                    bindingClosed = true;
                 } catch (RuntimeException | Error bindingFailure) {
                     failure = accumulate(failure, bindingFailure);
                 }
+            }
+            if (!contributionClosed) {
                 try {
                     contribution.close();
+                    contributionClosed = true;
                 } catch (RuntimeException | Error contributionFailure) {
                     failure = accumulate(failure, contributionFailure);
                 }
+            }
+            if (!controllerClosed) {
                 try {
                     controller.close();
+                    controllerClosed = true;
                 } catch (RuntimeException | Error controllerFailure) {
                     failure = accumulate(failure, controllerFailure);
                 }
-            } finally {
-                closed = true;
             }
+            closed = bindingClosed && contributionClosed && controllerClosed;
             rethrow(failure);
         }
 

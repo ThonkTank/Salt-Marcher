@@ -1434,6 +1434,7 @@ public final class SessionPlannerCatalogTest {
                 platform.execution.DirectExecutionLane.INSTANCE,
                 platform.ui.DirectUiDispatcher.INSTANCE,
                 platform.diagnostics.NoopDiagnostics.INSTANCE);
+        planner.start();
         return new SessionPlannerTestServices(party, world, worldApplication, planner);
     }
 

@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-17
+Last Reviewed: 2026-07-25
 Source of Truth: Public builder-input read/write contract for encounter-facing
 catalog controls.
 
@@ -25,8 +25,9 @@ filters and Encounter-owned generation tuning.
 - Encounter state submits `UpdateEncounterTuningCommand`
 - the application merges either partial update with the current focused
   runtime context before persistence and publication
-- `UpdateEncounterBuilderInputsCommand` remains a compatibility route for
-  complete snapshots
+- `UpdateEncounterBuilderInputsCommand` is the application-internal atomic
+  replacement primitive used to persist one already merged complete snapshot;
+  workflow consumers submit the partial commands above
 
 ## Boundary Rules
 

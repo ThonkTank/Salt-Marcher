@@ -83,6 +83,14 @@ public final class CampaignDesk {
         view.showRecovery(message, available, damagedCampaign);
     }
 
+    public void showContainedTransition(
+            String message,
+            List<CampaignSnapshot> available,
+            Optional<CampaignSnapshot> retainedCampaign
+    ) {
+        view.showContainedTransition(message, available, retainedCampaign);
+    }
+
     public void confirmCreation() {
         view.confirmCreation();
     }

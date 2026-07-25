@@ -20,6 +20,9 @@ and uncertainty. Keep product truth, process evidence, and process hypotheses
 separate. A read-only finding is a hypothesis until a practical reproduction or
 binding owner source establishes it. Treat unrelated workspace interference as
 separate proof attribution; do not change it or count it as a candidate failure.
+When suspected pre-completion legacy work appears, the
+[legacy-work search heuristic](#pre-completion-legacy-work-search-heuristic)
+helps B gather evidence for the already authorized bridge-construction report.
 
 Propose a change only after one process failure has been demonstrated on a
 frozen historical or current slice. Change one process variable. Freeze the
@@ -171,10 +174,10 @@ adapter nor the repair verifies hashes, reruns baseline, candidate, controls,
 and rollback, and alone records the verdict under [Process
 Evaluation](process-evaluation.md). Rollback removes the disposable adapter,
 instrumentation, generated schedules, and worktree, then confirms the frozen A
-commit and main worktree were unchanged. Until an `ADOPTED` verdict, Product
-This scheduler proposal does not alter Product Process `A-0.3.2`, any running
-slice pin, or A behavior. B stops
-this research until a qualifying slice supplies the complete packet.
+commit and main worktree were unchanged. Until an `ADOPTED` verdict, this
+scheduler proposal does not alter Product Process `A-0.3.2`, any running slice
+pin, or A behavior. B stops this research until a qualifying slice supplies the
+complete packet.
 
 ## Prospective Visible-UI Qualification Hypothesis
 
@@ -294,64 +297,546 @@ Method evidence is preserved at
 `references/change-governance/google-cloud-approach-to-change.md` in the global
 mirror governed by [Source References](../../verification/source-references.md).
 
-## Adopted Compatibility-Baseline Trigger
+## Prospective Repeated-UI Latency Qualification Hypothesis
+
+Research verdict: `RESEARCH_SUPPORTED; Proposed only, not adopted`.
+
+The Campaign Runtime working slice is useful method evidence but not a frozen
+process evaluation. Its current-profile warm-switch test separates both switch
+directions, performs the binding five warm-ups plus 100 recorded runs per
+direction, selects the 95th sorted value, checks every 10-second timeout, and
+continues through a visible representative mutation. That is the correct shape
+for an early prequalification and repeated-switch soak. It is not `TN-16`
+qualification: the fixture is neither independently reproduced `RP-R` nor
+`RP-L`, no `RP-H` calibration or supported-OS matrix accompanies it, and its
+100-ms `Button.fire()` duration is only synchronous JavaFX-handler occupancy,
+not end-to-end interaction feedback.
+
+The current assertion additionally places the one-second threshold on the
+combined interval from Campaign action dispatch through the following durable
+mutation acknowledgement. The binding text does not currently make the status
+of that combined threshold unambiguous. `TN-16` and `QS-05` can be read as
+placing the one-second ready budget on the complete consequential path through
+the safely rendered and durably preserved next mutation. `TN-15` separately
+assigns one second from mutation dispatch to safe-state acknowledgement, which
+also supports reading switch latency and mutation acknowledgement as two
+separately budgeted operations joined by a zero-violation functional gate. The
+first reading prevents a roughly two-second continuation from passing; the
+second avoids silently narrowing two explicit budgets and identifies which
+obligation failed. Stopping at handler return or durable activation satisfies
+neither reading because it declares readiness before operability was proved.
+
+B cannot resolve that owner-semantic dependency through process research. The
+running A slice therefore retains its conservative combined one-second check.
+Before a later normative qualification, the technical-needs owner must state
+whether the combined interval is the `TN-16` latency verdict or only a stronger
+guard over separate `TN-16` and `TN-15` verdicts. Observer design can proceed
+without prejudging that decision only if it records every boundary needed to
+compute both interpretations from the same samples.
+
+One run stopped at `Latency Alpha sample 15` after ten seconds while the
+reported durable activation remained `Latency Beta`. The XML retained the
+terminal snapshot but no preceding sample values or milestone trace. The
+working source and report were not frozen together, so this is product-search
+evidence only: it neither identifies whether the product action was admitted
+nor demonstrates that a process delta would improve attribution. Do not
+average, retry away, or include such a timeout in a percentile; every
+correctness, durability, isolation, or timeout violation invalidates the whole
+population.
+
+For the first frozen slice that needs repeated visible latency qualification,
+evaluate one process variable: replace timed-region JavaFX polling with a
+bounded event recorder around the unchanged production route. OpenJFX warns
+that many queued `runLater` calls can make the application unresponsive, while
+the current polling helper repeatedly schedules work on the JavaFX Application
+Thread. A post-layout pulse is a useful milestone because it occurs after CSS
+and layout, but official OpenJFX documentation places it before rendering; it
+must not become the sole ready oracle. No microbenchmark or direct controller
+call may replace the production action, visible target truth, and durable next
+mutation.
+
+Freeze the exact candidate commit, clean-tree state, test and fixture hashes,
+manifest version, JDK and JavaFX builds, OS and architecture, locale and
+timezone, display backend and scale, power mode, background-work category, and
+literal command. Before each timed action, establish outside the interval that
+the source Campaign is exact, the target differs, the shown target control is
+present and enabled, no prior switch is pending, and the chosen environment and
+profile calibration still pass. Start at production action dispatch. Record at
+least action admission, coordinator phase and generation changes, durable
+target activation, exact root replacement, enabled target title and focused
+Scene, the first post-layout pulse for that root, representative mutation
+dispatch, durable revision, and visible stored acknowledgement. End only when
+the unchanged `TN-16` ready oracle passes. Buffer timestamps and states in
+memory and write the complete per-sample record after the timed action or in a
+failure-safe finalizer; diagnostic output inside the interval is forbidden.
+
+The recorder produces three non-substitutable intervals. Switch-to-render starts
+at production action dispatch and stops only after exact target truth, enabled
+controls, CSS/layout, and independently calibrated render/presentation evidence
+for the new root. The next mutation is then dispatched through its normal
+visible route; mutation-to-acknowledgement stops at the truthful visible stored
+acknowledgement, with independent durable readback performed after the timed
+interval. Switch-through-acknowledgement spans the complete consequential path.
+All three are retained per sample so correlated tail cost cannot disappear.
+
+Until the owner resolves the semantic dependency, the report applies the
+current conservative combined verdict of one-second p95 and ten seconds per
+sample, and separately reports the same thresholds against switch-to-render and
+mutation-to-acknowledgement without allowing either to replace the combined
+verdict. If the owner later selects the separated interpretation, successful
+durable mutation remains a zero-violation gate on the `TN-16` population and
+qualifies the earlier render milestone as genuinely ready; if the owner selects
+the consequential-path interpretation, the combined endpoint remains the
+`TN-16` endpoint. In either case, a crash/power-loss matrix remains necessary
+for the full `TN-15` loss verdict.
+
+Keep direction, profile, OS, warm state, and background-work category as
+separate populations. Use exactly five unrecorded warm-ups and 100 recorded
+runs per population and the canonical 95th sorted value; never add successful
+retries to replace a failed run. Preserve ordinal order in the raw record so a
+late slowdown or stuck transition remains visible even when p95 passes. A
+second unchanged run may test reproducibility, but its values remain a separate
+population. Repeated-switch correctness soak, handler-occupancy diagnostics,
+and normative latency qualification may share setup, but each keeps its own
+verdict and no weaker lane closes a stronger obligation.
+
+### Proposed Paired Optimization Evaluation
+
+Research verdict: `RESEARCH_SUPPORTED; Proposed only, not adopted`.
+
+Do not judge a JavaFX optimization by one before run and one after run. Managed
+JVM performance varies across VM invocations because of JIT, scheduling, GC,
+and system effects; the preserved Java study recommends warm iterations across
+multiple VM invocations and uncertainty-aware comparison. Chromium's production
+performance service likewise repeats base and patch arms on the same controlled
+device and retains each benchmark run. These sources support replicated matched
+arms, not treating one unusually fast or slow run as the effect.
+
+For a later frozen optimization candidate, use five adjacent baseline/candidate
+pairs in isolated worktrees. Each arm in each pair starts a new JVM and produces
+one complete population per direction: five unrecorded warm-ups and exactly 100
+recorded runs with the unchanged oracle, fixture manifest, observer, and
+thresholds. Pair the same manifest and environment but use disjoint fixture
+copies. Precommit a recorded random seed that counterbalances three `AB` and two
+`BA` pair orders; do not reorder after seeing a result. Freeze both commits,
+their complete diff, JDK/JavaFX and wrapper hashes, CPU/storage calibration,
+display backend, scale, locale, timezone, power mode, and background-work
+category. Run no concurrent build or deliberate workload. An environment or
+calibration mismatch invalidates the whole trial rather than only its
+inconvenient arm; restart later from a new freeze instead of replacing selected
+pairs.
+
+The predeclared comparison unit is the population-level p95, not the 100
+within-JVM samples as if they were independent process replications. Preserve
+both directions; make the primary value for the running slice the worse of the
+two combined-path p95 values, while retaining every directional and phase value
+for diagnosis. The five paired differences then admit a locally checkable
+one-sided sign rule. NIST defines the paired sign statistic as binomial with
+`p = 0.5` under no directional difference and excludes ties. Five strict
+candidate wins therefore have probability `1/2^5 = 0.03125` under that null.
+Only five strict wins support the narrow claim "this candidate repeatedly
+reduced the declared p95 statistic". A tie leaves at most four signs and is
+`INCONCLUSIVE`, as are mixed signs. Always publish the five baseline values,
+five candidate values, paired differences and ratios; the sign rule establishes
+directional consistency, not practical effect magnitude or canonical `TN-16`
+qualification.
+
+Use a reversible canary before spending the five-pair budget: replay the exact
+functional journey, observer controls, one matched warm population, and the
+current absolute threshold, but make no improvement claim from it. Stop and
+roll back the optimization immediately on any correctness, isolation,
+durability, stale-generation, listener-cleanup, or hard-timeout violation; a
+missed negative control; changed fixture/oracle; or a candidate absolute-budget
+failure when its matching baseline passes. If the baseline itself violates a
+hard product oracle, classify the comparison as invalid and route the candidate
+through separate repair proof rather than relabeling it as a performance win.
+
+After the canary, acceptance may occur only after all five precommitted pairs;
+there is no success peeking or optional extension. A first tie or baseline win
+may stop the run early as `INCONCLUSIVE` because the all-five success rule has
+already become impossible; early stopping can reject a claim but cannot accept
+one. Five baseline wins are symmetric evidence of a regression and trigger
+rollback. Mixed results retain the baseline for the performance decision unless
+A has an independently proved correctness reason to keep the candidate, in
+which case no optimization claim is recorded. Exceeding five pairs, 45 minutes,
+or the frozen resource envelope is `INCONCLUSIVE`, not permission to weaken the
+oracle or add retries.
+
+The canary baseline uses the frozen polling observer and the candidate changes
+only observation to one-shot or otherwise bounded listeners. The same injected
+slow-switch, slow-durability, stale-target, suppressed-admission, and
+suppressed-acknowledgement controls must respectively fail only the applicable
+budget or the shared zero-violation gate in both arms. The candidate observer
+must tag every event with the sampled Campaign and activation generation,
+register only bounded one-shot listeners, and remove them in a failure-safe
+finalizer. Adopt only if it preserves every control verdict, captures a complete
+failure trace, emits no unbounded JavaFX work, and an independent evaluator
+reproduces the literal results without product or fixture changes. A missed
+control, changed route, missing raw record, observer-dependent product verdict,
+profile or environment mismatch, or inability to remove all listeners and
+artifacts makes the trial `INCONCLUSIVE` and retains the existing process.
+
+This proposal changes no running A slice, `TN-16` threshold, qualification
+profile, product behavior, or required `check`. Its primary method evidence is
+the binding population and calibration contract in
+[Program Technical Needs](../../architecture/program-technical-needs.md), the
+production-route/timing distinction in
+[Quality Platforms](../../verification/quality-platforms.md), and the preserved
+OpenJFX `Platform` and `Scene` API sources at
+`references/quality-platforms/openjfx-platform-accessibility.md` and
+`references/quality-platforms/openjfx-scene-snapshot.md`. Replicated JVM and
+paired-comparison evidence is preserved in the global mirror at
+`references/testing-quality/georges-statistically-rigorous-java-performance-evaluation.md`,
+`references/testing-quality/chromium-perf-trybots.md`, and
+`references/testing-quality/nist-paired-sign-test.md`.
+
+## Foundation-Reopen Triage Method
+
+Research verdict: `METHOD NOTE; no process delta or adoption candidate`.
+
+Product Process `A-0.3.2` already requires A to reopen a root decision when
+counterevidence invalidates its premise. It does not operationally identify the
+premise shared by a succession of local repairs or say when another local
+hypothesis stops being the best next experiment. The current Campaign Runtime
+search exposed that gap: a theoretical visible-ready oracle was falsified; the
+replacement two-pulse production gate exposed an unstable one-second whole-root
+rebuild; and two reversible micro-canaries did not create robust margin before
+A reopened the runtime/render-host lifetime decision. Reopening did occur, but
+only after the process had supplied no explicit way to distinguish another
+local repair from an architectural re-evaluation.
+
+The working tree and intermediate canaries were not frozen as a comparable
+baseline/candidate process trial. This observation therefore supports only the
+refinable search method below. It does not establish that a different process
+would have reopened earlier, request evaluation under [Process
+Evaluation](process-evaluation.md), repin the running slice, or change A.
+
+For B's later observation and proposal research, group repair attempts by the
+unchanged acceptance scenario and the shared architectural decision on its
+causal path. Before each reversible micro-canary, name one local causal claim,
+its predicted movement in the unchanged oracle, the guard conditions, and the
+rollback. Afterwards classify only what the literal result supports:
+
+- a valid pass with declared guard margin supports the local claim;
+- no pass or no declared margin falsifies that local claim;
+- an observer, fixture, workload, or oracle change makes attribution
+  inconclusive; and
+- a practical trace that localizes the dominant failure or cost to a shared
+  lifetime, ownership boundary, consistency boundary, or deployment boundary
+  marks that decision as the leading architectural sensitivity hypothesis.
+
+Before spending another micro-canary, compare its new local causal claim with
+reopening that shared decision. Treat foundational exploration as the default
+search direction when one practical probe already attributes the failure to
+the shared decision, when two distinct valid local canaries leave the same
+oracle failed or without its declared margin, or when the next local repair
+would preserve the decision through a bridge, duplicate lifetime, or parallel
+truth. This selects the next uncertainty to test; it neither rejects the
+foundation nor authorizes a replacement. A may retain it if a direct practical
+comparison supplies a current product or quality reason.
+
+The count of two is a bounded search heuristic calibrated to this demonstrated
+sequence, not a statistical threshold or adopted Product Process rule. A later
+frozen trial would have to change only this triage variable and compare time to
+the same valid oracle, discarded work, severe-finding detection, and rollback
+cost. Until an independent evaluator qualifies such a candidate, B uses the
+method only to investigate delayed reopening and must not direct A, weaken an
+oracle, stack failed candidates, or turn prior investment into evidence.
+
+SEI's ATAM supplies the architectural part of the method: prioritized quality
+scenarios act as tests of architectural approaches and expose risks,
+sensitivity points, and tradeoff points. Google Cloud supplies the reversible
+change part: canary and control are compared against health signals, and a
+failed signal pauses or rolls back the running change instead of proving it.
+Google's small-change guidance supports one self-contained change because a
+wrong direction then wastes less work, but it does not imply that indefinitely
+many small changes make a wrong direction right. The preserved primary sources
+are `references/architecture-specification/sei-atam-collection.md`,
+`references/change-governance/google-cloud-approach-to-change.md`, and
+`references/continuous-refactoring/google-small-cls.md` in the global mirror.
+
+## Stateful Failure-Chain Preflight Research
+
+Research verdict: `NO DELTA; METHOD NOTE only`.
+
+B's current Campaign Runtime observation reports four distinct severe
+hypotheses exposed only in successive review waves: cleanup authority could be
+lost, read-side qualification could mutate its source, schema comparison could
+miss a semantically relevant dependency form, and a cleanup oracle could cancel
+the resource whose terminal release it was meant to observe. The repaired
+production routes and negative controls provide useful product-search evidence.
+They do not provide a frozen baseline/candidate process comparison: the running
+slice is pinned to Product Process `A-0.3.0`, the intermediate candidates and
+review conditions were not retained as one replayable workload, and no run
+shows that Product Process `A-0.3.2` would have escaped the same findings or
+that the method below would have found them earlier. B therefore proposes no
+Product Process edit, evaluation, adoption, or running-slice repin.
+
+The newest working-state evidence sharpens the prospective method without
+changing that verdict. The production publication route now distinguishes root
+swap authorization, visible-readiness observation, cancellation settlement,
+recovery publication, detached-root release, and a later healthy mutation. Its
+timeout scenario encodes the distinction between cancelling the readiness
+observer, proving the published root ready, and proving its resource released.
+The close routes separately exercise a synchronous invocation failure, an
+exceptional returned attempt, a withheld attempt that settles later, and a fresh
+retry after terminal failure while retaining the same cleanup obligation. The
+bounded caller result remains terminal even when its retained owner later
+finishes cleanup. These are inspectable current-slice calibration routes in
+`test/app/CampaignRuntimeProductionJourneyTest.java`,
+`test/app/CampaignRuntimeLifecycleTest.java`, and
+`test/app/CampaignActivationCoordinatorTest.java`; they are not a frozen
+baseline/candidate process comparison and therefore are not an Aletheia process
+verdict.
+
+The Session Planner constructor escape is a second calibration of the same
+method. The pre-repair source acquired several foreign subscription handles
+while constructing the assembly; a later acquisition could throw before the
+aggregate was returned, leaving earlier release obligations with no reachable
+aggregate owner. The working repair moves acquisition behind complete Campaign
+aggregate ownership, retains each returned release handle, resumes start at the
+first acquisition that returned no handle, and retains failed release handles
+for a later close attempt. Its focused candidate test injects one acquisition
+failure and one release failure and checks non-reacquisition plus eventual
+single release. The current retained XML is green for 14 Session Planner runtime
+mechanism tests, and the independently retained Campaign runtime lifecycle XML
+is green for 10 tests including the partial-start ownership route. Both reports
+postdate the production and focused-test edits they exercise.
+
+This still establishes no process comparison. There is no retained literal
+pre-repair probe output, frozen pre-repair candidate commit, or unchanged
+baseline/candidate workload; the candidate test executes only the repaired
+state. The source diff can explain the escape but cannot reconstruct the missing
+execution. Product Process `A-0.3.2` requires a causal negative control for each
+acceptance-deciding oracle where practical, but it does not specifically require
+failure after each partial acquisition before an aggregate ownership handoff.
+That is a candidate process variable, not proof of a current-process failure:
+the running slice is pinned to `A-0.3.0`, and neither `A-0.3.2` nor the candidate
+rule was replayed on the frozen escape. B therefore neither changes Product
+Process `A-0.3.2` nor requests an evaluation from this observation.
+
+For B's investigation of a later frozen stateful or persistence-heavy slice,
+use one bounded preflight around the unchanged acceptance route and oracle.
+Trace only its consequential chain: admission, resource acquisition, source
+inspection, mutation, commit, publication, cancellation or recovery, release,
+and restart/readback. At each applicable boundary name the authority that may
+advance it, the resource or durable state still owned, the externally visible
+postcondition, and the independent witness that can observe it. A phase label
+or returned future is not evidence that its transitive work, cleanup, or
+durable effect has settled.
+
+Treat construction or factory return as an ownership handoff, not as a harmless
+setup detail. If construction acquires more than one external handle, inject a
+failure after each successful acquisition where controllable. Every earlier
+obligation must already belong to a reachable owner or be released before the
+failed construction returns; no callback from the failed aggregate may remain
+observable. A candidate that merely retries construction may duplicate the
+earlier handles and does not satisfy this oracle.
+
+For each asynchronous boundary, distinguish the operation attempt from the
+obligation it is meant to discharge. The disposable trace records whether an
+attempt was never returned, in flight, successful, or exceptional; whether its
+resource obligation remains retained, was explicitly transferred, or was
+actually released; and whether an observer is attached, cancellation-requested,
+or cancellation-settled. Reusing one nonterminal attempt, starting a fresh
+attempt after exceptional settlement, and releasing the obligation are three
+different claims. Likewise, observer cancellation may stop observation without
+establishing either the observed postcondition or resource release. Do not
+collapse those states into one `done`, `closed`, or `cancelled` flag.
+
+Exercise every controllable consequential boundary first with a one-shot fault
+and then with a fault that remains active. After disabling injection, inspect
+the same external invariants: pre-authority source bytes and companions were
+not changed, the durable state is entirely old or entirely new as required,
+the prior usable state remains usable where the contract requires it, every
+acquired resource still has exactly one release authority, and restart/readback
+agrees with the terminal result. Add a compound fault only where recovery or
+cleanup handles an earlier fault; for example, withhold release while recovery
+is already active. This is fail-at-boundary exploration of the named product
+chain, not a demand to simulate SQLite internals or enumerate unrelated faults.
+
+Where the production abstraction can express them, the bounded fault packet
+uses three distinct terminal shapes at the same boundary: throw before an
+attempt is returned, complete the returned attempt exceptionally, and withhold
+it past the decision budget before releasing it to a declared late success or
+failure. The packet then repeats only the recovery or cleanup fault once and
+persistently. Applicable external oracles verify that a nonterminal attempt is
+not duplicated, an exceptional terminal attempt permits only the contractually
+allowed fresh retry, allocation remains blocked while ownership is unresolved,
+and success releases the retained obligation exactly once. If the owner
+contract deliberately returns a bounded failure while cleanup continues, late
+cleanup must not rewrite that caller result.
+
+Keep the oracle outside the injector, scheduler, and resource under test. The
+release authority remains live until release succeeds or an explicit terminal
+owner takes it over; timeout, cancellation, and recovery do not satisfy their
+own cleanup postcondition. Applicable controls suppress the terminal callback,
+make release fail once and persistently, and cancel the initiating observer
+before the resource settles. Each must leave the unchanged external oracle
+unsatisfied. If the observer's cancellation can itself manufacture the
+expected terminal observation, attribution is invalid rather than green.
+
+At parser, schema, manifest, or configuration boundaries, add a small pair of
+contract-derived input mutants per material semantic dimension: one different
+representation that the owner says is equivalent and one syntactically valid
+variant whose semantics the owner says must differ. Both run through the same
+production parser and external oracle. A normalized string, mutation score, or
+arbitrary text edit cannot decide semantic equivalence. Surviving productive
+mutants are concrete test goals; they neither prove that the correct algorithm
+was selected nor justify unbounded variant generation.
+
+Before the Compatibility Covenant activates, persistence mutants and
+restart/readback probes target only the current direct format and disposable
+synthetic state. This method creates no predecessor reader, migration chain, or
+legacy-preservation obligation. It also changes neither the process-neutral
+Program Charter nor the goal prompt derived from it; any later candidate rule
+must live in the separately versioned Product Process.
+
+FoundationDB's preserved primary documentation supports deterministic replay
+and intense injected component failures while retaining complementary live
+testing. Microsoft's P and Coyote sources support explicit event-state models,
+externally stated safety/liveness properties, controlled nondeterminism, and
+reproducible failing traces. The Google mutation-testing study supports using a
+small number of actionable change-local mutants as test goals and reports
+fault coupling for 70% of its studied high-priority bugs, while explicitly
+limiting the method for higher-level specification and protocol faults. These
+sources justify the search mechanisms, not their effectiveness on SaltMarcher.
+The attempt-versus-obligation split above is B's inference from the local
+publication and close routes; none of the external sources validates that
+taxonomy or its process benefit for this product.
+They are preserved under the global mirror at
+`references/agent-methods/foundationdb-simulation-and-testing.md`,
+`references/agent-methods/microsoft-p-safe-asynchronous-event-driven-programming.md`,
+`references/agent-methods/microsoft-coyote-systematic-testing.md`, and
+`references/testing-quality/mutation-testing-improve-testing-practices-2103.07189.md`,
+with the originals named in each extract.
+
+The first eligible process trial must freeze an actual pre-repair escape under
+the then-current Product Process and change only whether this preflight occurs
+before broad review. The candidate preflight uses the same consequential-chain
+trace, attempt-versus-obligation states, and bounded terminal-shape packet
+described above; when the escape crosses construction, its packet also fails
+after each acquired external handle and observes callback silence plus exact
+release cardinality. The baseline omits only that preflight. Both arms keep the
+same product commit, route, oracle, fault packet, review panel, and resource bound.
+The independent evaluator compares severe findings discovered before review,
+total severe escapes, valid-proof regressions, elapsed effort, and clean
+rollback. Until that comparison is replayable and independently adopted, this
+note changes no A checkpoint, product proof, review requirement, goal prompt,
+or acceptance rule.
+
+## Pre-Completion Legacy-Work Search Heuristic
+
+Research verdict: `METHOD NOTE; no process delta or adoption candidate`.
+
+The binding owner premise, Product Process, and roadmap already state that no
+user and no non-disposable legacy data exist before complete GM-Core feature
+completion. The existing B boundary already allows B to report bridge
+construction. The list below is only a search heuristic for gathering evidence
+under those rules. It adds no required checkpoint, classification, A action,
+product semantics, destructive authority, or running-slice repin.
+
+When B investigates suspected pre-completion legacy work, useful search leads
+include:
+
+- readers, writers, converters, migration chains, compatibility shims, dual
+  representations, fallback paths, or version histories whose only consumer is
+  an earlier development build, fixture, test database, or internal schema;
+- architecture or storage choices retained because changing them would require
+  adapting disposable development state;
+- tests whose only asserted value is that a newer pre-completion candidate can
+  consume state emitted by an older pre-completion candidate; or
+- a bridge around a falsified foundational decision when direct replacement
+  has not been reconsidered against the current canonical need and practical
+  evidence.
+
+A text match is not a finding. A useful report identifies the concrete
+consumer, durable baseline, canonical acceptance outcome allegedly requiring
+the work, affected slice, and exact bridge or compatibility cost. If the
+evidence shows only pre-completion disposable consumers, B reports that evidence
+and cites the existing Product Process or roadmap exclusion. A retains its own
+authority over the product response. Repetition after the existing rule was
+applied could become a demonstrated process failure eligible for a separately
+versioned, one-variable proposal under Process Evaluation. A hypothetical risk
+or vocabulary match is not such a failure.
+
+Current-format correctness remains in scope. Restart, crash recovery,
+transactional integrity, current-format import and export, and semantic
+readback are not legacy work merely because they use durable state. Conversely,
+calling an old representation a recovery format or future-proofing does not
+make its preservation necessary. If the consumer or data provenance is unknown,
+or any real/non-disposable data is discovered, B reports the contradiction and
+cites the existing owner-data boundary; this method note grants no authority to
+classify unknown data as disposable or to choose the response.
+
+Before the trigger, practical counterevidence may reopen any foundational
+decision. The re-evaluation compares direct replacement and any bridge against
+the current canonical outcomes, quality constraints, and production-route
+evidence; prior implementation, documentation, tests, commits, or adaptation
+cost carry no compatibility authority. A decision may still be retained for a
+current product or quality reason, but that reason must stand without legacy
+premises.
+
+The same search evidence changes meaning only after the literal cutover facts
+required by the Product Process exist: owner authorization, exact artifact,
+durable-surface baseline, and fresh-install create/restart/read proof. Before
+those facts, an older internal format is not a released-data baseline. After
+them, reports must treat real released data as an input to any reopened
+decision. The adopted Product Process, not this heuristic, requires
+preservation or a practically proved explicit upgrade path. Fundamental
+decisions remain reopenable in both states; reopening never makes released data
+disposable.
+
+The heuristic adds no new external premise. Semantic Versioning ties
+compatibility meaning to a declared public contract and makes a released
+version immutable;
+Room's official migration guidance ties migration to preserving user data that
+already exists on-device. These sources support the distinction between
+internal development and a released consumer but do not choose SaltMarcher's
+cutover. That boundary remains owner-given. The preserved sources are
+`references/release-engineering/semantic-versioning-2.0.0.md` and
+`references/android-platform/android-room-migrating-db-versions.md` in the
+global mirror.
+
+### First Applied Audit
+
+A read-only program audit applied the heuristic after the owner clarified the
+pre-user boundary. It found executable predecessor-shape work rather than mere
+vocabulary: fresh M1 startup still traversed historical Dungeon, Session
+Planner, Encounter, and Items schema chains, while later Party, World Planner,
+Session Generation, Hex, and Dungeon slices retained predecessor normalization
+or conversion fixtures. Aletheia A responded by replacing the M1 startup paths
+with direct current-schema construction and fail-closed handling of incomplete
+development shapes. The later findings remain evidence to revalidate when
+their owning slices open; they are not a compatibility roadmap or permission
+to change unrelated product behavior early.
+
+Observation: `no process delta proposed`. The audit found and routed concrete
+work while applying the existing Product Process covenant and this search
+heuristic. This first application is observational evidence for a later
+independent process evaluation; B neither certifies the method nor records an
+adoption verdict here.
+
+## Adopted Compatibility-Covenant Proposal
 
 Independent verdict: `ADOPTED` under Evaluation `E-0.3.1` for Product Process
 `A-0.3.2` and later slice starts. It does not repin any running slice; the
 Campaign Runtime slice retains its recorded `A-0.3.0` pin.
 
-The binding owner premise for this proposal is that no user-created or other
-non-disposable data exists before complete GM-Core feature completion and that
-there are no users before then. An internal schema, commit, test fixture, or
-development install therefore does not by itself create a legacy-compatibility
-obligation. Before the trigger below, A may replace persisted representations
-and recreate only data positively identified as disposable development or test
-state. This does not relax current product proof, import behavior, or the ban on
-modifying unknown or real data.
+The proposal addressed one demonstrated process failure: the prior Product
+Process did not distinguish disposable pre-user development state from data
+written for authorized non-disposable use. B proposed one monotonic covenant
+and a reversible synthetic-release canary. The independent evaluator adopted
+that delta and recorded its literal replay, negative controls, limitations, and
+rollback under [Process Evaluation](process-evaluation.md).
 
-Add one monotonic compatibility-covenant trigger. It fires only when all of the
-following are recorded together:
+The current executable rule now lives only in the
+[Product Process Compatibility Covenant](product-process.md#compatibility-covenant).
+This section records proposal provenance and verdict history; it MUST NOT be
+used as a second trigger definition, compatibility contract, or permission to
+modify unknown or real data.
 
-1. The Charter's complete GM-Core boundary and required owner acceptance have
-   passed for the exact candidate.
-2. The owner authorizes that candidate for first non-disposable user use or
-   distribution, and release evidence identifies the exact commit and artifact.
-3. A baseline inventories the candidate's externally durable data surfaces and
-   identifies their frozen version or equivalent reader/writer expectation,
-   without prescribing their implementation.
-4. A production-route fresh-install probe creates representative durable state,
-   closes, reopens, and reads it with the released artifact; the literal result
-   is retained with the baseline.
-
-Once fired, the trigger cannot be undone by renaming a release or reverting the
-process document. Every later change that may encounter data written by a
-supported released artifact must either prove the old data remains readable and
-preserved or supply and practically replay an explicit upgrade path from the
-oldest supported baseline. Destructive recreation then requires the same owner
-authority as real-data modification. The rule chooses no storage technology,
-schema, retention duration, or version-number syntax.
-
-The independent evaluator qualified the rule with a disposable synthetic
-release in an isolated worktree: freeze one candidate artifact and baseline,
-create data only through its production route, exercise one compatible and one
-deliberately incompatible successor, replay preservation and rollback, and
-delete the synthetic data. The evaluator must detect the incompatible successor
-and must
-also confirm that an earlier internal schema with no non-disposable consumer
-does not activate the covenant. Literal replay evidence and the adoption verdict
-are owned by [Process Evaluation](process-evaluation.md).
-
-Reopen or roll back the change if non-disposable data or a user already exists
-before the declared trigger, any trigger condition can be asserted without its
-literal evidence, the synthetic incompatible successor passes, or the canary
-cannot restore the frozen artifact and remove only its disposable data. On the
-first such finding, stop destructive work, preserve the bytes, and return the
-premise to the owner. Before a real trigger, rollback removes the canary and
-proposal. After first non-disposable use, rollback may restore software but may
-not declare released data disposable; the compatibility obligation is
-monotonic.
-
-This trigger is an inference from two independent primary sources. Semantic
+The proposal was informed by two independent primary sources. Semantic
 Versioning requires an explicit public contract, treats initial development as
 unstable, and makes a published version immutable. Android Room's official
 migration guidance ties preservation to existing on-device user data, retains

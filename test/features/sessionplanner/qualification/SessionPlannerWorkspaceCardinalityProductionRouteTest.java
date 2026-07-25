@@ -294,6 +294,7 @@ final class SessionPlannerWorkspaceCardinalityProductionRouteTest {
                                 DirectExecutionLane.INSTANCE, diagnostics),
                         DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE,
                         DirectUiDispatcher.INSTANCE, diagnostics);
+                planner.start();
                 PartyServiceAssembly.start(party);
                 encounters.start();
                 for (int character = 1; character <= partyCount; character++) {

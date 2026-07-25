@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-19
+Last Reviewed: 2026-07-25
 Source of Truth: Persistence path and schema ownership rules for the
 `encounter` feature.
 
@@ -31,17 +31,18 @@ persistence path.
   and timestamps.
 - `saved_encounter_plan_creatures` stores ordered creature identity, quantity,
   and the last-known display name captured when the plan was saved. Creature
-  identity references the creature catalog; the encounter feature does not
-  duplicate statblocks.
+  identity is a positive external reference validated through `CreaturesApi`
+  before it enters prepared Encounter truth; the Encounter row retains that ID
+  and display-name snapshot but does not duplicate statblocks.
 - `generated_encounter_plan_batches` stores the immutable source identity,
   normalized batch fingerprint, and declared encounter cardinality.
 - `generated_encounter_plan_origins` stores the stable batch order,
   encounter number, normalized spec fingerprint, and saved-plan reference.
 
-## Current Mapping
+## Saved-Plan Mapping
 
-Encounter persistence stores only saved encounter-plan roster truth. It does
-not persist:
+This contract governs only the saved-plan and generated-batch payload. That
+payload stores saved encounter-plan roster truth and does not contain:
 
 - generated-alternative lists
 - active generator filters
@@ -49,6 +50,11 @@ not persist:
 - combat HP or turn order
 - defeated-result state
 - loot or XP-award resolution
+
+Initiative, combat, and result state for a running Encounter are separate
+Encounter-owned runtime-context truth. They are persisted relationally under
+the [Encounter Runtime Context Contract](contract-encounter-runtime-contexts.md)
+and MUST NOT be copied into a saved-plan or generated-batch payload.
 
 Optional generated origin consists only of engine version, preparation and
 generation-run identities, normalized batch and roster fingerprints and
@@ -67,16 +73,28 @@ summary values are not persisted as historical truth.
 
 ## Validation And Error Behavior
 
-Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
-The current owner target is v5. V5 idempotently repairs any missing v1-v4 target
-tables, indexes, and generated-batch columns before signature validation; it does
-not reinterpret or discard persisted Encounter rows.
+Owner startup readiness validates the feature-declared current target schema
+signature exactly, including columns, declared types, nullability, defaults,
+primary and foreign keys, checks, table flags, and named or automatic indexes.
+Semantic row validation remains on typed provider read/write paths and fails
+closed through the feature contract. Compatibility obligations begin only after
+activation of the
+[Product Process Compatibility Covenant](../../project/delivery/aletheia/product-process.md#compatibility-covenant).
+Until that activation, the current owner target is v1; its one construction
+step requires an empty Encounter namespace, creates the complete fresh
+current-format schema, and carries no obligation to read, repair, convert, or
+preserve an earlier development format. An unversioned partial namespace, a
+different owner version, or a current-format store with an invalid target
+signature fails closed without schema or row repair.
 
 - encounter-plan writes MUST reject empty or malformed roster rows instead of
   silently persisting partial encounter truth
+- the Campaign database MUST NOT declare a foreign key from an Encounter row
+  to installation-owned Creature storage; only Encounter-owned parent-child
+  relationships are enforced within the Campaign transaction
 - generated alternatives, initiative state, combat HP, result state, and loot
-  state MUST be rejected from the persistence payload because they are explicit
-  non-persisted runtime state
+  state MUST be rejected from the saved-plan and generated-batch payload;
+  runtime-context persistence remains governed separately
 - schema-readiness and storage failures MUST surface through Encounter API
   result statuses rather than leaking SQLite exceptions to consumers
 - one generated batch MUST insert all plan roots, roster rows, and origin data
@@ -91,15 +109,27 @@ not reinterpret or discard persisted Encounter rows.
   encounter composition entry point.
 - Saved-plan storage remains encounter-owned even when generated plans are
   built from party, creatures, or encounter-table source data.
-- Generated-origin support extends the existing saved-plan schema through a
-  contiguous Encounter feature migration; it MUST NOT create a parallel
-  generated-plan store or rewrite manual plans.
+- Creature identity validation and current-fact refresh cross the public
+  `CreaturesApi`; neither Encounter schema initialization nor saved-plan reads
+  attach, query, or constrain the installation database.
+- The persistence adapter accepts the already-resolved reference and enforces
+  its positive identity, positive quantity, deterministic order, and snapshot
+  shape inside the Campaign transaction; it does not perform a second foreign
+  database lookup during that transaction.
+- Generated-origin and saved-plan truth share the one current-format
+  Encounter-owned schema; they MUST NOT create parallel stores or duplicate
+  mutable plan truth.
+- After Covenant activation, support for an earlier format belongs in an
+  explicit owning release contract and requires its declared production proof.
+  This contract grants no compatibility by itself.
 
 ## Verification Notes
 
 - This contract is currently `Review-Owned`.
-- Review must reject persisted fields for generated alternatives, initiative,
-  combat HP, result state, and loot state.
+- Review must reject generated alternatives, initiative, combat HP, result
+  state, and loot state in saved-plan or generated-batch payloads. It must not
+  reject the relational runtime-context persistence required by the dedicated
+  runtime-context contract.
 - Review must reject persistence types or internal collaborators crossing
   `EncounterApi`.
 
@@ -109,3 +139,5 @@ not reinterpret or discard persisted Encounter rows.
 - [Encounter Feature Spec](../requirements/requirements-encounter.md) (line 1)
 - [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)
 - [Generated Import Contract](contract-encounter-generated-import.md)
+- [Encounter Runtime Context Contract](contract-encounter-runtime-contexts.md)
+- [Product Process Compatibility Covenant](../../project/delivery/aletheia/product-process.md#compatibility-covenant)

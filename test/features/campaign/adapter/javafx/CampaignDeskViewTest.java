@@ -186,6 +186,21 @@ final class CampaignDeskViewTest {
                     .filter(row -> row.getAccessibleText().contains("Beta"))
                     .findFirst().orElseThrow().fire();
             assertEquals(1, selections.get());
+
+            surface.get().showContainedTransition(
+                    "Der Wechsel wird noch sicher beendet.",
+                    List.of(alpha, beta),
+                    Optional.of(alpha));
+            Button retained = rows(surface.get()).stream()
+                    .filter(row -> row.getAccessibleText().contains("Alpha"))
+                    .findFirst().orElseThrow();
+            assertFalse(retained.isDisabled());
+            assertFalse(retained.getStyleClass().contains("campaign-desk-row-damaged"));
+            assertTrue(retained.getAccessibleText().contains("Gesunde aktuelle Kampagne"));
+            assertEquals("Kampagnenwechsel erneut prüfen",
+                    button(surface.get(), "Kampagnenwechsel erneut prüfen").getText());
+            retained.fire();
+            assertEquals(2, recoveries.get());
             surface.get().confirmCreation();
             assertEquals("", nameField(surface.get()).getText());
             window.get().close();

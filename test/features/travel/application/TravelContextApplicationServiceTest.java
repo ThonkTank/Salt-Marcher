@@ -1,6 +1,7 @@
 package features.travel.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import features.dungeon.api.DungeonTravelContextModel;
 import features.dungeon.api.DungeonTravelContextSnapshot;
@@ -88,6 +89,36 @@ final class TravelContextApplicationServiceTest {
         assertEquals(5L, state.model().current().partyPositionRevision());
     }
 
+    @Test
+    void closeRevokesCallbacksAndRetriesOnlyTheSubscriptionThatFailedToRelease() {
+        MutableSource<PartyTravelPositionsResult> parties = new MutableSource<>(partyNone(1L));
+        MutableSource<DungeonTravelContextSnapshot> dungeons = new MutableSource<>(
+                DungeonTravelContextSnapshot.empty(0L, 0L));
+        MutableSource<HexTravelSnapshot> hexes = new MutableSource<>(
+                HexTravelSnapshot.empty(0L, "Kein Hex-Reisekontext"));
+        TravelContextPublishedState state = new TravelContextPublishedState(DirectUiDispatcher.INSTANCE);
+        TravelContextApplicationService service = new TravelContextApplicationService(
+                partyModel(parties), dungeonModel(dungeons), hexModel(hexes), state);
+        service.start();
+        parties.failNextRelease = true;
+
+        assertThrows(IllegalStateException.class, service::close);
+
+        assertEquals(1, parties.subscribers.size(), "the failed release remains owned for retry");
+        assertEquals(0, dungeons.subscribers.size());
+        assertEquals(0, hexes.subscribers.size());
+        parties.publish(partyOverworld(2L, 9L));
+        assertEquals(1L, state.model().current().partyPositionRevision(),
+                "callbacks are revoked from the first close request");
+
+        service.close();
+
+        assertEquals(0, parties.subscribers.size());
+        assertEquals(2, parties.releaseAttempts);
+        service.close();
+        assertEquals(2, parties.releaseAttempts);
+    }
+
     private static PartyTravelPositionsModel partyModel(MutableSource<PartyTravelPositionsResult> source) {
         return new PartyTravelPositionsModel(source::current, source::subscribe);
     }
@@ -167,6 +198,8 @@ final class TravelContextApplicationServiceTest {
 
         private final List<Consumer<T>> subscribers = new ArrayList<>();
         private T current;
+        private boolean failNextRelease;
+        private int releaseAttempts;
 
         private MutableSource(T initial) {
             current = initial;
@@ -178,7 +211,14 @@ final class TravelContextApplicationServiceTest {
 
         private Runnable subscribe(Consumer<T> subscriber) {
             subscribers.add(subscriber);
-            return () -> subscribers.remove(subscriber);
+            return () -> {
+                releaseAttempts++;
+                if (failNextRelease) {
+                    failNextRelease = false;
+                    throw new IllegalStateException("release failed");
+                }
+                subscribers.remove(subscriber);
+            };
         }
 
         private void publish(T value) {

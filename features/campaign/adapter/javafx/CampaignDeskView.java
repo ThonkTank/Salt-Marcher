@@ -49,6 +49,7 @@ public final class CampaignDeskView extends StackPane {
     private Optional<CampaignSnapshot> damaged = Optional.empty();
     private boolean busy;
     private boolean recoveryMode;
+    private boolean containedTransitionMode;
     private int nameHelpNotifications;
 
     public CampaignDeskView(Actions actions) {
@@ -151,6 +152,7 @@ public final class CampaignDeskView extends StackPane {
         active = Objects.requireNonNull(current, "current");
         damaged = Optional.empty();
         recoveryMode = false;
+        containedTransitionMode = false;
         busy = false;
         updateStatus(announcement == null ? "" : announcement, false);
         recover.setManaged(false);
@@ -183,6 +185,7 @@ public final class CampaignDeskView extends StackPane {
     public void showError(String message, boolean focusName) {
         busy = false;
         recoveryMode = false;
+        containedTransitionMode = false;
         damaged = Optional.empty();
         String reason = Objects.requireNonNull(message, "message");
         updateStatus(reason, true);
@@ -204,15 +207,42 @@ public final class CampaignDeskView extends StackPane {
         damaged = Objects.requireNonNull(damagedCampaign, "damagedCampaign");
         active = damaged;
         recoveryMode = true;
+        containedTransitionMode = false;
         busy = false;
         String reason = Objects.requireNonNull(message, "message");
         updateStatus(reason, true);
         recover.setManaged(true);
         recover.setVisible(true);
+        recover.setText("Aktuelle Kampagne erneut öffnen");
         reload.setManaged(true);
         reload.setVisible(true);
         recover.setAccessibleText(
                 "Aktuelle beschädigte Kampagne erneut öffnen. Grund: " + reason);
+        reload.setAccessibleText("Kampagnen neu laden. Grund: " + reason);
+        renderRows();
+        Platform.runLater(recover::requestFocus);
+    }
+
+    public void showContainedTransition(
+            String message,
+            List<CampaignSnapshot> available,
+            Optional<CampaignSnapshot> retainedCampaign
+    ) {
+        campaigns = List.copyOf(Objects.requireNonNull(available, "available"));
+        active = Objects.requireNonNull(retainedCampaign, "retainedCampaign");
+        damaged = Optional.empty();
+        recoveryMode = true;
+        containedTransitionMode = true;
+        busy = false;
+        String reason = Objects.requireNonNull(message, "message");
+        updateStatus(reason, false);
+        recover.setText("Kampagnenwechsel erneut prüfen");
+        recover.setManaged(true);
+        recover.setVisible(true);
+        reload.setManaged(true);
+        reload.setVisible(true);
+        recover.setAccessibleText(
+                "Sicheren Abschluss des Kampagnenwechsels erneut prüfen. Grund: " + reason);
         reload.setAccessibleText("Kampagnen neu laden. Grund: " + reason);
         renderRows();
         Platform.runLater(recover::requestFocus);
@@ -277,10 +307,17 @@ public final class CampaignDeskView extends StackPane {
                 .isPresent();
         Label rowName = new Label(campaign.name());
         rowName.getStyleClass().add("campaign-desk-row-name");
-        Label action = new Label(isDamaged
-                ? "Beschädigt · Daten bleiben unverändert"
-                : current ? "Aktuell · Fortsetzen"
-                : recoveryMode ? "Stattdessen öffnen" : "Sofort wechseln");
+        String actionText;
+        if (isDamaged) {
+            actionText = "Beschädigt · Daten bleiben unverändert";
+        } else if (containedTransitionMode && current) {
+            actionText = "Aktuell · Wechsel wird sicher beendet";
+        } else if (current) {
+            actionText = "Aktuell · Fortsetzen";
+        } else {
+            actionText = recoveryMode ? "Stattdessen öffnen" : "Sofort wechseln";
+        }
+        Label action = new Label(actionText);
         action.getStyleClass().add("campaign-desk-row-meta");
         VBox content = new VBox(rowName, action);
         content.getStyleClass().add("campaign-desk-row-content");
@@ -295,6 +332,9 @@ public final class CampaignDeskView extends StackPane {
             row.setAccessibleText("Beschädigte aktuelle Kampagne " + campaign.name()
                     + ". Nicht öffnen; Daten bleiben unverändert.");
             row.setDisable(true);
+        } else if (containedTransitionMode && current) {
+            row.setAccessibleText("Gesunde aktuelle Kampagne " + campaign.name()
+                    + ". Wechsel sicher beenden oder erneut prüfen");
         } else if (current) {
             row.setAccessibleText("Aktuelle Kampagne " + campaign.name() + ". Fortsetzen");
         } else {
@@ -302,7 +342,13 @@ public final class CampaignDeskView extends StackPane {
                     ? "Gesunde Kampagne stattdessen öffnen: "
                     : "Zur Kampagne wechseln: ") + campaign.name());
         }
-        row.setOnAction(ignored -> actions.select(campaign));
+        row.setOnAction(ignored -> {
+            if (containedTransitionMode && current) {
+                actions.recover();
+            } else {
+                actions.select(campaign);
+            }
+        });
         if (!isDamaged) {
             row.setDisable(busy);
         }

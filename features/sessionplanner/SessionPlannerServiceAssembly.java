@@ -23,6 +23,7 @@ import platform.diagnostics.Diagnostics;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Measurement;
 import platform.execution.ExecutionLane;
+import platform.execution.RetryableRelease;
 import platform.persistence.FeatureStoreDefinition;
 import platform.persistence.FeatureStoreHandle;
 import platform.ui.UiDispatcher;
@@ -40,9 +41,11 @@ public final class SessionPlannerServiceAssembly implements AutoCloseable {
     private final Runtime runtime;
     private final Diagnostics diagnostics;
     private final SessionGenerationApi generation;
-    private final java.util.List<Runnable> foreignSubscriptions;
-    private final java.util.concurrent.atomic.AtomicBoolean closed =
-            new java.util.concurrent.atomic.AtomicBoolean();
+    private final java.util.List<java.util.function.Supplier<Runnable>> foreignSubscriptionSources;
+    private final java.util.List<Runnable> foreignSubscriptions = new java.util.ArrayList<>();
+    private int nextForeignSubscription;
+    private volatile boolean closing;
+    private boolean closed;
 
     public static FeatureStoreDefinition storeDefinition() {
         return SqliteSessionPlanRepository.storeDefinition();
@@ -112,17 +115,35 @@ public final class SessionPlannerServiceAssembly implements AutoCloseable {
                 diagnostics);
         SessionPlannerApplicationService application = new SessionPlannerApplicationService(
                 safeRepository, publication, preparation, authoredLane, diagnostics);
-        java.util.ArrayList<Runnable> subscriptions = new java.util.ArrayList<>();
-        subscriptions.add(safeParty.activeParty().subscribe(
+        runtime = new Runtime(publication, application);
+        java.util.ArrayList<java.util.function.Supplier<Runnable>> subscriptionSources =
+                new java.util.ArrayList<>();
+        subscriptionSources.add(() -> safeParty.activeParty().subscribe(
                 ignored -> runWhileOpen(application::refreshPartyFacts)));
-        subscriptions.add(safeSavedPlans.subscribe(
+        subscriptionSources.add(() -> safeSavedPlans.subscribe(
                 ignored -> runWhileOpen(application::refreshForeignFacts)));
         if (worldPlanner != null) {
-            subscriptions.add(worldPlanner.subscribe(
+            subscriptionSources.add(() -> worldPlanner.subscribe(
                     ignored -> runWhileOpen(application::refreshForeignFacts)));
         }
-        foreignSubscriptions = java.util.List.copyOf(subscriptions);
-        runtime = new Runtime(publication, application);
+        foreignSubscriptionSources = java.util.List.copyOf(subscriptionSources);
+    }
+
+    /**
+     * Acquires foreign observation handles after the complete Campaign component graph owns this assembly.
+     * A retry resumes at the first acquisition that did not return a handle.
+     */
+    public synchronized void start() {
+        if (closing || closed) {
+            throw new IllegalStateException("Session Planner is closing or closed");
+        }
+        while (nextForeignSubscription < foreignSubscriptionSources.size()) {
+            Runnable release = Objects.requireNonNull(
+                    foreignSubscriptionSources.get(nextForeignSubscription).get(),
+                    "foreign subscription release");
+            foreignSubscriptions.add(release);
+            nextForeignSubscription++;
+        }
     }
 
     public SessionPlannerApi application() {
@@ -162,17 +183,19 @@ public final class SessionPlannerServiceAssembly implements AutoCloseable {
     }
 
     private void runWhileOpen(Runnable callback) {
-        if (!closed.get()) {
+        if (!closing && !closed) {
             callback.run();
         }
     }
 
     @Override
-    public void close() {
-        if (!closed.compareAndSet(false, true)) {
+    public synchronized void close() {
+        if (closed) {
             return;
         }
-        foreignSubscriptions.forEach(Runnable::run);
+        closing = true;
+        RetryableRelease.releaseAll(foreignSubscriptions);
+        closed = true;
     }
 
     private record Runtime(

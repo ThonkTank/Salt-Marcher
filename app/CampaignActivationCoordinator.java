@@ -18,6 +18,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -119,6 +120,20 @@ final class CampaignActivationCoordinator implements AutoCloseable {
     interface Candidate {
         AppShell shell();
 
+        default PublicationSurface publicationSurface() {
+            return new PublicationSurface(shell(), java.util.Map.of());
+        }
+
+        default boolean reusableWhileParked() {
+            return false;
+        }
+
+        default void prepareForParking() { }
+
+        default boolean parkedStateStillValid() {
+            return true;
+        }
+
         CampaignRuntime runtimeForTesting();
 
         CompletionStage<Void> pauseAndDrain();
@@ -128,13 +143,32 @@ final class CampaignActivationCoordinator implements AutoCloseable {
         CampaignRuntime.CandidatePreparation<Boolean> preparePublication(
                 Supplier<Boolean> publication);
 
+        default void ownPublishedRootReadiness(PublishedRootReadinessAttempt readiness) {
+            // Non-production candidates may have no retained publication resources.
+        }
+
         CompletionStage<Void> dispatchUiTracked(
                 Runnable work,
                 java.util.function.Consumer<Throwable> terminalHandler);
 
         void activateVisibleShell();
 
+        /**
+         * Releases this complete aggregate. Implementations must be idempotent: concurrent or
+         * later calls return the same in-flight attempt, or a completed result after release.
+         * A failed attempt may be retried without repeating already completed detach work.
+         */
         CompletionStage<Void> closeAsync();
+    }
+
+    record PublicationSurface(
+            @Nullable AppShell shell,
+            java.util.Map<javafx.scene.input.KeyCombination, Runnable> accelerators
+    ) {
+        PublicationSurface {
+            accelerators = java.util.Map.copyOf(
+                    Objects.requireNonNull(accelerators, "accelerators"));
+        }
     }
 
     @FunctionalInterface
@@ -164,12 +198,44 @@ final class CampaignActivationCoordinator implements AutoCloseable {
                 long generation,
                 AppShell shell);
 
+        default RootSwitchResult switchCampaign(
+                CampaignSnapshot campaign,
+                long generation,
+                PublicationSurface surface
+        ) {
+            return switchCampaign(campaign, generation, surface.shell());
+        }
+
+        default PublishedRootReadinessAttempt awaitPublishedRootReady(AppShell shell) {
+            return PublishedRootReadinessAttempt.completed();
+        }
+
         CompletionStage<Void> showRecovery(
                 Optional<CampaignActivation> durableActivation,
                 Class<? extends Throwable> failureType);
 
         default void installSelectorAccess(AppShell shell) {
             // Non-production hosts may intentionally omit installation-level navigation.
+        }
+    }
+
+    interface PublishedRootReadinessAttempt {
+        CompletionStage<Void> completion();
+
+        CompletionStage<Void> cancel();
+
+        static PublishedRootReadinessAttempt completed() {
+            return new PublishedRootReadinessAttempt() {
+                @Override
+                public CompletionStage<Void> completion() {
+                    return CompletableFuture.completedFuture(null);
+                }
+
+                @Override
+                public CompletionStage<Void> cancel() {
+                    return CompletableFuture.completedFuture(null);
+                }
+            };
         }
     }
 
@@ -188,8 +254,10 @@ final class CampaignActivationCoordinator implements AutoCloseable {
     private final AtomicReference<Thread> worker = new AtomicReference<>();
     private final ExecutorService transitions;
     private final ExecutorService invocations;
-    private final List<DetachedCandidate> pendingClose = new ArrayList<>();
+    private final java.util.Map<Candidate, DetachedCandidate> pendingClose =
+            new java.util.IdentityHashMap<>();
     private final List<CreateReservation> pendingCleanup = new ArrayList<>();
+    private @Nullable Set<Candidate> transitionCloseSettlements;
     private final CloseObligationTracker closeObligations = new CloseObligationTracker();
     private volatile boolean closeRequested;
     private volatile boolean terminalClosed;
@@ -197,7 +265,11 @@ final class CampaignActivationCoordinator implements AutoCloseable {
     private volatile Snapshot snapshot = Snapshot.idle();
     private volatile Runnable publicationSettlementGate = () -> { };
     private volatile Runnable publicationTimeoutGate = () -> { };
+    private volatile @Nullable CompletionStage<Void> nextPreparationSettlement;
+    private volatile @Nullable CompletionStage<Void> nextPriorDrainSettlement;
     private ActiveCampaign active;
+    private ParkedCampaign parked;
+    private Candidate parkedEvictionPending;
     private RecoveryCampaign recovery;
 
     CampaignActivationCoordinator(
@@ -414,14 +486,14 @@ final class CampaignActivationCoordinator implements AutoCloseable {
                     return result(recoveryStatus());
                 }
                 cleanupReservation(pending.reservation());
-                if (pending.prior() != null) {
-                    if (pending.priorPaused()) {
-                        pending.prior().candidate().resumeAdmission();
-                    }
-                    active = pending.prior();
+                ActivationContext originalContext = pending.activationContext();
+                if (originalContext.prior() != null
+                        || originalContext.durableFallback() != null) {
                     recovery = null;
-                    snapshot = activeSnapshot(active, degraded());
-                    return result(Status.RESUMED);
+                    return result(restoreConfirmedPrior(
+                            originalContext, preparationFailure)
+                            ? Status.RESUMED
+                            : recoveryStatus());
                 }
                 if (pending.durable().isEmpty()) {
                     recovery = null;
@@ -441,26 +513,22 @@ final class CampaignActivationCoordinator implements AutoCloseable {
                     return result(recoveryStatus());
                 }
                 Throwable drainFailure = terminalFailure(pending.pendingDrain());
-                if (!closeDetached(pending.candidate(), pending.reservation(),
-                        CleanupAuthority.DELETE_RESERVATION)) {
+                if (!containRecoveryCandidateBeforeCommit(pending)) {
                     keepContainedRecovery(pending, new IllegalStateException(
                             "Target Campaign candidate is not contained yet"));
                     return result(recoveryStatus());
                 }
                 cleanupReservation(pending.reservation());
-                if (drainFailure == null) {
-                    if (pending.priorPaused()) {
-                        pending.prior().candidate().resumeAdmission();
-                    }
-                    active = pending.prior();
-                    recovery = null;
-                    snapshot = activeSnapshot(active, degraded());
-                    return result(Status.RESUMED);
-                }
-                closeDetached(pending.prior().candidate(), null,
-                        CleanupAuthority.RETAIN_RESERVATION);
-                active = null;
                 ActiveCampaign prior = pending.prior();
+                if (drainFailure == null) {
+                    recovery = null;
+                    return result(restoreConfirmedPrior(
+                            pending.activationContext().withPriorPaused(), null)
+                            ? Status.RESUMED
+                            : recoveryStatus());
+                }
+                closeDetached(prior.candidate(), null, CleanupAuthority.RETAIN_RESERVATION);
+                active = null;
                 return result(enterRecovery(
                         Optional.of(prior.activation()),
                         prior.activation().campaign().orElseThrow(),
@@ -504,6 +572,8 @@ final class CampaignActivationCoordinator implements AutoCloseable {
                     return result(recoveryStatus());
                 }
                 pending = withoutPendingStages(pending, pending.candidate());
+                pending = withActivationContext(
+                        pending, pending.activationContext().withPublicationLost());
                 recovery = pending;
                 snapshot = new Snapshot(
                         Phase.RECOVERY_REQUIRED,
@@ -519,17 +589,29 @@ final class CampaignActivationCoordinator implements AutoCloseable {
             }
             CampaignActivation durable = read.activation().orElseThrow();
             if (pending.prior() != null && durable.equals(pending.prior().activation())) {
-                if (closeDetached(pending.candidate(), pending.reservation(),
-                        CleanupAuthority.DELETE_RESERVATION)) {
+                if (containRecoveryCandidateBeforeCommit(pending)) {
                     cleanupReservation(pending.reservation());
                 }
-                if (pending.priorPaused()) {
-                    pending.prior().candidate().resumeAdmission();
-                }
-                active = pending.prior();
                 recovery = null;
-                snapshot = activeSnapshot(active, degraded());
-                return result(Status.RESUMED);
+                if (!restoreConfirmedPrior(
+                        pending.activationContext(), null)) {
+                    return result(recoveryStatus());
+                }
+                return result(degraded() ? Status.ACTIVATED_DEGRADED : Status.RESUMED);
+            }
+            DurableFallbackTruth durableFallback =
+                    pending.activationContext().durableFallback();
+            if (durableFallback != null
+                    && durableFallback.durable().filter(durable::equals).isPresent()) {
+                if (!containRecoveryCandidateBeforeCommit(pending)) {
+                    keepContainedRecovery(pending, new IllegalStateException(
+                            "Replacement candidate is not contained yet"));
+                    return result(recoveryStatus());
+                }
+                cleanupReservation(pending.reservation());
+                recovery = null;
+                restoreConfirmedPrior(pending.activationContext(), null);
+                return result(recoveryStatus());
             }
             if (pending.target() == null || !pointsTo(durable, pending.target())) {
                 keepRecovery(pending, new IllegalStateException("durable pointer selects another Campaign"));
@@ -539,16 +621,23 @@ final class CampaignActivationCoordinator implements AutoCloseable {
             try {
                 Path path = pending.path();
                 if (candidate == null) {
+                    if (allocationBlocked()) {
+                        keepRecovery(pending, new IllegalStateException(
+                                "A retained Campaign close or cleanup obligation blocks recovery preparation"));
+                        return result(recoveryStatus());
+                    }
                     assertExistingCampaignPath(path);
                     candidate = prepare(pending.target().id(), path, OpenIntent.EXISTING_ONLY);
                 }
                 ActiveCampaign selected = new ActiveCampaign(durable, path, candidate);
                 recovery = new RecoveryCampaign(
                         Optional.of(durable), pending.target(), path, candidate,
-                        pending.prior(), pending.priorPaused(), pending.reservation(), false,
+                        pending.borrowedParkedCandidate(), pending.activationContext(),
+                        pending.reservation(), false,
                         null, null, null, null, null);
                 publishAndActivate(selected);
                 active = selected;
+                retirePriorAfterActivation(pending.prior(), false);
                 recovery = null;
                 snapshot = activeSnapshot(selected, degraded());
                 return result(degraded() ? Status.ACTIVATED_DEGRADED : Status.RESUMED);
@@ -599,6 +688,14 @@ final class CampaignActivationCoordinator implements AutoCloseable {
         publicationTimeoutGate = Objects.requireNonNull(gate, "gate");
     }
 
+    void installNextPreparationSettlementForTesting(CompletionStage<Void> settlement) {
+        nextPreparationSettlement = Objects.requireNonNull(settlement, "settlement");
+    }
+
+    void installNextPriorDrainSettlementForTesting(CompletionStage<Void> settlement) {
+        nextPriorDrainSettlement = Objects.requireNonNull(settlement, "settlement");
+    }
+
     void installTerminalCloseTimeoutForTesting(Duration timeout) {
         Duration safeTimeout = Objects.requireNonNull(timeout, "timeout");
         if (safeTimeout.isZero() || safeTimeout.isNegative()) {
@@ -611,7 +708,20 @@ final class CampaignActivationCoordinator implements AutoCloseable {
         return ((java.util.concurrent.ThreadPoolExecutor) invocations).getPoolSize();
     }
 
+    int pendingCloseAttemptsForTesting() {
+        return pendingClose.size();
+    }
+
+    int trackedCloseObligationsForTesting() {
+        return closeObligations.pendingCount();
+    }
+
     private Result createSerialized(String name, long expectedGeneration) {
+        if (allocationBlocked()) {
+            restoreActiveSnapshot(new IllegalStateException(
+                    "Incomplete Campaign close or cleanup blocks a new reservation"));
+            return result(Status.PRE_COMMIT_FAILED);
+        }
         CreateReservation reservation;
         try {
             reservation = reserveNewCampaign();
@@ -649,6 +759,11 @@ final class CampaignActivationCoordinator implements AutoCloseable {
                     "The damaged Campaign transition must settle before another Campaign opens"));
             return result(recoveryStatus());
         }
+        if (allocationBlocked()) {
+            keepRecovery(trapped, new IllegalStateException(
+                    "A retained Campaign close or cleanup obligation blocks recovery replacement"));
+            return result(recoveryStatus());
+        }
         if (trapped.target().id().equals(campaignId)) {
             return result(Status.INVALID_STATE);
         }
@@ -680,48 +795,166 @@ final class CampaignActivationCoordinator implements AutoCloseable {
             return result(Status.PRE_COMMIT_FAILED);
         }
 
-        ActiveCampaign trappedActive = active;
-        Snapshot trappedSnapshot = snapshot;
+        RecoveryReplacement replacement = recoveryReplacement(trapped, durable);
+        if (!containDisplacedRecovery(replacement)) {
+            keepRecovery(trapped, new IllegalStateException(
+                    "The displaced recovery aggregate is not contained yet"));
+            return result(recoveryStatus());
+        }
+
         recovery = null;
-        active = null;
-        Result outcome = activate(
+        active = replacement.fallback();
+        RecoveryReplacement preparedReplacement = prepareReplacementFallback(
+                replacement, target, targetPath);
+        if (preparedReplacement == null) {
+            return result(recoveryStatus());
+        }
+        return activate(
                 target,
                 expectedGeneration,
                 targetPath,
                 null,
-                OpenIntent.EXISTING_ONLY);
-        if (outcome.status() == Status.ACTIVATED
-                || outcome.status() == Status.ACTIVATED_DEGRADED
-                || recovery != null) {
-            retireAbandonedRecovery(trapped, trappedActive);
-            return outcome;
-        }
-
-        recovery = trapped;
-        active = trappedActive;
-        snapshot = trappedSnapshot;
-        return result(outcome.status());
+                OpenIntent.EXISTING_ONLY,
+                new ActivationContext(
+                        preparedReplacement.fallback(),
+                        drainOutcome(preparedReplacement.fallbackState()),
+                        replacementPublicationLost(preparedReplacement),
+                        preparedReplacement.fallbackState() == FallbackState.DURABLE_ONLY
+                                ? DurableFallbackTruth.from(trapped)
+                                : null));
     }
 
-    private void retireAbandonedRecovery(
+    private RecoveryReplacement recoveryReplacement(
             RecoveryCampaign trapped,
-            @Nullable ActiveCampaign trappedActive
+            CampaignActivation durable
     ) {
-        java.util.Set<Candidate> retired = java.util.Collections.newSetFromMap(
+        ActiveCampaign fallback = null;
+        ActiveCampaign prior = trapped.prior();
+        if (prior != null
+                && durable.equals(prior.activation())
+                && trapped.priorDrainOutcome() != DrainOutcome.UNSAFE) {
+            fallback = prior;
+        } else if (pointsTo(durable, trapped.target())
+                && trapped.candidate() != null
+                && (prior == null
+                        || trapped.candidate() != prior.candidate()
+                        || trapped.priorDrainOutcome() != DrainOutcome.UNSAFE)) {
+            fallback = new ActiveCampaign(durable, trapped.path(), trapped.candidate());
+        } else if (active != null
+                && durable.equals(active.activation())
+                && (prior == null
+                        || active.candidate() != prior.candidate()
+                        || trapped.priorDrainOutcome() != DrainOutcome.UNSAFE)) {
+            fallback = active;
+        }
+        FallbackState fallbackState;
+        if (fallback == null) {
+            fallbackState = FallbackState.DURABLE_ONLY;
+        } else if (prior != null && fallback.candidate() == prior.candidate()) {
+            fallbackState = trapped.priorDrainOutcome() == DrainOutcome.PAUSED
+                    ? FallbackState.PAUSED
+                    : FallbackState.ACTIVE;
+        } else if (fallback.candidate() == trapped.candidate()) {
+            fallbackState = FallbackState.PREPARED;
+        } else {
+            fallbackState = FallbackState.ACTIVE;
+        }
+        return new RecoveryReplacement(trapped, fallback, fallbackState);
+    }
+
+    private static DrainOutcome drainOutcome(FallbackState fallbackState) {
+        return switch (fallbackState) {
+            case ACTIVE -> DrainOutcome.NOT_STARTED;
+            case PAUSED -> DrainOutcome.PAUSED;
+            case PREPARED, DURABLE_ONLY -> DrainOutcome.NOT_REQUIRED;
+        };
+    }
+
+    private static boolean replacementPublicationLost(RecoveryReplacement replacement) {
+        return switch (replacement.fallbackState()) {
+            case ACTIVE, PAUSED ->
+                    replacement.displaced().activationContext().publicationLost();
+            case PREPARED -> true;
+            case DURABLE_ONLY -> false;
+        };
+    }
+
+    private @Nullable RecoveryReplacement prepareReplacementFallback(
+            RecoveryReplacement replacement,
+            CampaignSnapshot target,
+            Path targetPath
+    ) {
+        if (replacement.fallbackState() != FallbackState.ACTIVE) {
+            return replacement;
+        }
+        ActiveCampaign fallback = Objects.requireNonNull(replacement.fallback(), "fallback");
+        snapshot = switching(Optional.of(fallback.activation()), targetPath);
+        CompletionStage<Void> drain = null;
+        try {
+            drain = gateNextPriorDrain(invokeStage(fallback.candidate()::pauseAndDrain));
+            await(drain);
+            return replacement.withFallbackState(FallbackState.PAUSED);
+        } catch (StageTimeoutException timeout) {
+            enterContainedRecovery(
+                    Optional.of(fallback.activation()), target, targetPath, null, fallback,
+                    null, timeout, null, null, drain, null, false,
+                    new ActivationContext(
+                            fallback,
+                            DrainOutcome.UNSAFE,
+                            replacementPublicationLost(replacement),
+                            null));
+            return null;
+        } catch (RuntimeException | Error failure) {
+            active = null;
+            closeDetached(fallback.candidate(), null, CleanupAuthority.RETAIN_RESERVATION);
+            enterRecovery(
+                    Optional.of(fallback.activation()),
+                    fallback.activation().campaign().orElseThrow(), fallback.path(),
+                    null, null, null, failure, false);
+            return null;
+        }
+    }
+
+    private boolean containDisplacedRecovery(RecoveryReplacement replacement) {
+        RecoveryCampaign trapped = replacement.displaced();
+        ActiveCampaign fallbackOwner = replacement.fallback();
+        Candidate fallback = fallbackOwner == null ? null : fallbackOwner.candidate();
+        java.util.Set<Candidate> contained = java.util.Collections.newSetFromMap(
                 new java.util.IdentityHashMap<>());
-        if (trapped.candidate() != null && retired.add(trapped.candidate())) {
-            closeDetached(trapped.candidate(), null, CleanupAuthority.RETAIN_RESERVATION);
+        Candidate target = trapped.candidate();
+        if (target != null && target != fallback && contained.add(target)) {
+            if (!closeDetached(
+                    target,
+                    trapped.reservation(),
+                    CleanupAuthority.DELETE_RESERVATION)) {
+                return false;
+            }
+            cleanupReservation(trapped.reservation());
+        } else if (target == null && trapped.prior() == fallbackOwner) {
+            cleanupReservation(trapped.reservation());
         }
-        if (trapped.prior() != null && retired.add(trapped.prior().candidate())) {
-            closeDetached(
-                    trapped.prior().candidate(), null, CleanupAuthority.RETAIN_RESERVATION);
+        ActiveCampaign prior = trapped.prior();
+        if (prior != null && prior.candidate() != fallback && contained.add(prior.candidate())) {
+            if (!closeDetached(
+                    prior.candidate(), null, CleanupAuthority.RETAIN_RESERVATION)) {
+                return false;
+            }
         }
-        if (trappedActive != null && retired.add(trappedActive.candidate())) {
-            closeDetached(trappedActive.candidate(), null, CleanupAuthority.RETAIN_RESERVATION);
+        ActiveCampaign current = active;
+        if (current != null
+                && current.candidate() != fallback
+                && contained.add(current.candidate())
+                && !closeDetached(
+                        current.candidate(), null, CleanupAuthority.RETAIN_RESERVATION)) {
+            return false;
         }
+        return true;
     }
 
     private Result openDurable(CampaignActivation durable) {
+        if (allocationBlocked()) {
+            return result(Status.PRE_COMMIT_FAILED);
+        }
         CampaignSnapshot target = durable.campaign().orElseThrow();
         Path path = pathFor(target.id());
         snapshot = switching(Optional.of(durable), path);
@@ -756,59 +989,133 @@ final class CampaignActivationCoordinator implements AutoCloseable {
             @Nullable CreateReservation reservation,
             OpenIntent intent
     ) {
-        ActiveCampaign prior = active;
+        return activate(
+                target,
+                expectedGeneration,
+                targetPath,
+                reservation,
+                intent,
+                new ActivationContext(
+                        active,
+                        active == null ? DrainOutcome.NOT_REQUIRED : DrainOutcome.NOT_STARTED,
+                        false,
+                        null));
+    }
+
+    private Result activate(
+            CampaignSnapshot target,
+            long expectedGeneration,
+            Path targetPath,
+            @Nullable CreateReservation reservation,
+            OpenIntent intent,
+            ActivationContext context
+    ) {
+        if (allocationBlocked()) {
+            cleanupBeforeCommit(null, reservation);
+            Throwable failure = new IllegalStateException(
+                    "A retained Campaign close or cleanup obligation blocks candidate preparation");
+            return result(restoreConfirmedPrior(context, failure)
+                    ? Status.PRE_COMMIT_FAILED
+                    : recoveryStatus());
+        }
+        ActiveCampaign prior = context.prior();
         snapshot = switching(
                 prior == null ? Optional.empty() : Optional.of(prior.activation()), targetPath);
-        CompletionStage<? extends Candidate> preparation;
-        try {
-            preparation = invokeStage(() -> candidateFactory.prepare(
-                    target.id(), targetPath, intent));
-        } catch (RuntimeException | Error failure) {
-            if (intent == OpenIntent.EXISTING_ONLY) {
+        ParkedCampaign reusable = takeReusableParked(target.id(), targetPath, intent);
+        if (reusable != null) {
+            try {
+                if (!await(invokeValue(reusable.candidate()::parkedStateStillValid))) {
+                    throw new IllegalStateException("Parked Campaign state is no longer valid");
+                }
+            } catch (RuntimeException | Error failure) {
+                closeDetached(reusable.candidate(), null, CleanupAuthority.RETAIN_RESERVATION);
                 report(PRE_COMMIT_FAILURE, failure);
-                restoreActiveSnapshot(failure);
-                return result(Status.PRE_COMMIT_FAILED);
+                return result(restoreConfirmedPrior(context, failure)
+                        ? Status.PRE_COMMIT_FAILED
+                        : recoveryStatus());
             }
+        }
+        if (reusable == null && !evictParkedBeforePreparation()) {
             cleanupBeforeCommit(null, reservation);
-            report(PRE_COMMIT_FAILURE, failure);
-            restoreActiveSnapshot(failure);
-            return result(Status.PRE_COMMIT_FAILED);
+            Throwable failure = new IllegalStateException(
+                    "Parked Campaign could not be closed before another runtime was prepared");
+            return result(restoreConfirmedPrior(context, failure)
+                    ? Status.PRE_COMMIT_FAILED
+                    : recoveryStatus());
+        }
+        CompletionStage<? extends Candidate> preparation;
+        if (reusable != null) {
+            preparation = CompletableFuture.completedFuture(reusable.candidate());
+        } else {
+            try {
+                preparation = gateNextPreparation(invokeStage(
+                        () -> candidateFactory.prepare(target.id(), targetPath, intent)));
+            } catch (RuntimeException | Error failure) {
+                if (intent == OpenIntent.EXISTING_ONLY) {
+                    report(PRE_COMMIT_FAILURE, failure);
+                    return result(restoreConfirmedPrior(context, failure)
+                            ? Status.PRE_COMMIT_FAILED
+                            : recoveryStatus());
+                }
+                cleanupBeforeCommit(null, reservation);
+                report(PRE_COMMIT_FAILURE, failure);
+                return result(restoreConfirmedPrior(context, failure)
+                        ? Status.PRE_COMMIT_FAILED
+                        : recoveryStatus());
+            }
         }
         Candidate candidate;
         try {
             candidate = await(preparation);
         } catch (StageTimeoutException timeout) {
             return result(enterContainedRecovery(
-                    prior == null ? Optional.empty() : Optional.of(prior.activation()),
+                    context.knownDurableFallback(),
                     target, targetPath, null, prior, reservation, timeout,
-                    null, preparation, null, null));
+                    null, preparation, null, null, false, context));
         } catch (RuntimeException | Error failure) {
             if (intent == OpenIntent.EXISTING_ONLY) {
                 report(PRE_COMMIT_FAILURE, failure);
-                restoreActiveSnapshot(failure);
-                return result(Status.PRE_COMMIT_FAILED);
+                return result(restoreConfirmedPrior(context, failure)
+                        ? Status.PRE_COMMIT_FAILED
+                        : recoveryStatus());
             }
             cleanupBeforeCommit(null, reservation);
             report(PRE_COMMIT_FAILURE, failure);
-            restoreActiveSnapshot(failure);
-            return result(Status.PRE_COMMIT_FAILED);
+            return result(restoreConfirmedPrior(context, failure)
+                    ? Status.PRE_COMMIT_FAILED
+                    : recoveryStatus());
         }
+        CandidateLease lease = new CandidateLease(
+                candidate,
+                reusable == null ? CandidateOrigin.FRESH : CandidateOrigin.PARKED,
+                target.id(),
+                targetPath);
 
         CompletionStage<Void> priorDrain = null;
+        ActivationContext drainedContext = context;
         try {
-            if (prior != null) {
-                priorDrain = invokeStage(prior.candidate()::pauseAndDrain);
+            if (prior != null && context.priorDrainOutcome() == DrainOutcome.NOT_STARTED) {
+                priorDrain = gateNextPriorDrain(
+                        invokeStage(prior.candidate()::pauseAndDrain));
                 await(priorDrain);
+                drainedContext = context.withPriorPaused();
             }
         } catch (StageTimeoutException timeout) {
             return result(enterContainedRecovery(
                     Optional.of(prior.activation()), target, targetPath, candidate, prior,
-                    reservation, timeout, null, null, priorDrain, null));
+                    reservation, timeout, null, null, priorDrain, null,
+                    lease.origin() == CandidateOrigin.PARKED,
+                    new ActivationContext(
+                            prior, DrainOutcome.UNSAFE, context.publicationLost(),
+                            context.durableFallback())));
         } catch (RuntimeException | Error failure) {
-            cleanupBeforeCommit(candidate, reservation);
-            resumeConfirmedPrior(prior, failure);
-            report(PRE_COMMIT_FAILURE, failure);
-            return result(Status.PRE_COMMIT_FAILED);
+            releaseBeforeCommit(lease, reservation);
+            active = null;
+            closeDetached(prior.candidate(), null, CleanupAuthority.RETAIN_RESERVATION);
+            return result(enterRecovery(
+                    Optional.of(prior.activation()),
+                    prior.activation().campaign().orElseThrow(), prior.path(),
+                    null, null, null, failure, false));
         }
 
         CompletionStage<CampaignPointerCommitResult> commitStage;
@@ -819,7 +1126,8 @@ final class CampaignActivationCoordinator implements AutoCloseable {
                             target.id(), target.name(), expectedGeneration)
                     : registry.commitActivePointer(target.id(), expectedGeneration);
         } catch (RuntimeException | Error failure) {
-            return resolveAmbiguousCommit(target, targetPath, candidate, prior, reservation, failure);
+            return resolveAmbiguousCommit(
+                    target, targetPath, lease, prior, reservation, failure, drainedContext);
         }
         CampaignPointerCommitResult committed;
         try {
@@ -827,35 +1135,41 @@ final class CampaignActivationCoordinator implements AutoCloseable {
         } catch (StageTimeoutException timeout) {
             return result(enterContainedRecovery(
                     Optional.empty(), target, targetPath, candidate, prior, reservation,
-                    timeout, commitStage, null, null, null));
+                    timeout, commitStage, null, null, null,
+                    lease.origin() == CandidateOrigin.PARKED, drainedContext));
         } catch (RuntimeException | Error failure) {
-            return resolveAmbiguousCommit(target, targetPath, candidate, prior, reservation, failure);
+            return resolveAmbiguousCommit(
+                    target, targetPath, lease, prior, reservation, failure, drainedContext);
         }
         if (committed.status() == CampaignPointerCommitResult.Status.STORAGE_ERROR) {
             return resolveAmbiguousCommit(
                     target,
                     targetPath,
-                    candidate,
+                    lease,
                     prior,
                     reservation,
-                    new IllegalStateException("Campaign pointer commit outcome is ambiguous"));
+                    new IllegalStateException("Campaign pointer commit outcome is ambiguous"),
+                    drainedContext);
         }
         if (committed.status() != CampaignPointerCommitResult.Status.COMMITTED) {
-            cleanupBeforeCommit(candidate, reservation);
-            resumeConfirmedPrior(prior, null);
+            releaseBeforeCommit(lease, reservation);
+            if (!restoreConfirmedPrior(drainedContext, null)) {
+                return result(recoveryStatus());
+            }
             return result(pointerFailure(committed.status()));
         }
         return rollForward(
-                committed.activation().orElseThrow(), targetPath, candidate, prior, reservation);
+                committed.activation().orElseThrow(), targetPath, candidate, prior, reservation, true);
     }
 
     private Result resolveAmbiguousCommit(
             CampaignSnapshot target,
             Path targetPath,
-            Candidate candidate,
+            CandidateLease lease,
             @Nullable ActiveCampaign prior,
             @Nullable CreateReservation reservation,
-            Throwable failure
+            Throwable failure,
+            ActivationContext context
     ) {
         CampaignActiveResult read;
         try {
@@ -863,28 +1177,35 @@ final class CampaignActivationCoordinator implements AutoCloseable {
         } catch (RuntimeException | Error readFailure) {
             failure.addSuppressed(readFailure);
             return result(enterRecovery(
-                    Optional.empty(), target, targetPath, candidate, prior, reservation, failure, true));
+                    Optional.empty(), target, targetPath, lease.candidate(),
+                    prior, reservation, failure, true, null,
+                    lease.origin() == CandidateOrigin.PARKED, context));
         }
         if (read.status() != CampaignActiveResult.Status.SUCCESS) {
             return result(enterRecovery(
-                    Optional.empty(), target, targetPath, candidate, prior, reservation, failure, true));
+                    Optional.empty(), target, targetPath, lease.candidate(),
+                    prior, reservation, failure, true, null,
+                    lease.origin() == CandidateOrigin.PARKED, context));
         }
         CampaignActivation durable = read.activation().orElseThrow();
         if (prior != null && durable.equals(prior.activation())) {
-            cleanupBeforeCommit(candidate, reservation);
-            resumeConfirmedPrior(prior, failure);
-            return result(Status.PRE_COMMIT_FAILED);
+            releaseBeforeCommit(lease, reservation);
+            return result(restoreConfirmedPrior(context, failure)
+                    ? Status.PRE_COMMIT_FAILED
+                    : recoveryStatus());
         }
         if (prior == null && durable.campaign().isEmpty()) {
-            cleanupBeforeCommit(candidate, reservation);
+            releaseBeforeCommit(lease, reservation);
             snapshot = Snapshot.idle();
             return result(Status.PRE_COMMIT_FAILED);
         }
         if (pointsTo(durable, target)) {
-            return rollForward(durable, targetPath, candidate, prior, reservation);
+            return rollForward(durable, targetPath, lease.candidate(), prior, reservation, false);
         }
         return result(enterRecovery(
-                Optional.of(durable), target, targetPath, candidate, prior, reservation, failure, true));
+                Optional.of(durable), target, targetPath, lease.candidate(), prior,
+                reservation, failure, true, null,
+                lease.origin() == CandidateOrigin.PARKED, context));
     }
 
     private Result rollForward(
@@ -892,7 +1213,8 @@ final class CampaignActivationCoordinator implements AutoCloseable {
             Path targetPath,
             Candidate candidate,
             @Nullable ActiveCampaign prior,
-            @Nullable CreateReservation reservation
+            @Nullable CreateReservation reservation,
+            boolean mayParkPrior
     ) {
         ActiveCampaign selected = new ActiveCampaign(durable, targetPath, candidate);
         active = null;
@@ -900,8 +1222,7 @@ final class CampaignActivationCoordinator implements AutoCloseable {
         try {
             publishAndActivate(selected);
             active = selected;
-            closeDetached(prior == null ? null : prior.candidate(), null,
-                    CleanupAuthority.RETAIN_RESERVATION);
+            retirePriorAfterActivation(prior, mayParkPrior);
             snapshot = activeSnapshot(selected, degraded());
             return result(degraded() ? Status.ACTIVATED_DEGRADED : Status.ACTIVATED);
         } catch (PublicationTimeoutException timeout) {
@@ -924,6 +1245,24 @@ final class CampaignActivationCoordinator implements AutoCloseable {
         return await(invokeStage(() -> candidateFactory.prepare(campaignId, path, intent)));
     }
 
+    private CompletionStage<? extends Candidate> gateNextPreparation(
+            CompletionStage<? extends Candidate> preparation
+    ) {
+        CompletionStage<Void> settlement = nextPreparationSettlement;
+        nextPreparationSettlement = null;
+        return settlement == null
+                ? preparation
+                : preparation.thenCompose(candidate -> settlement.thenApply(ignored -> candidate));
+    }
+
+    private CompletionStage<Void> gateNextPriorDrain(CompletionStage<Void> drain) {
+        CompletionStage<Void> settlement = nextPriorDrainSettlement;
+        nextPriorDrainSettlement = null;
+        return settlement == null
+                ? drain
+                : drain.thenCompose(ignored -> settlement);
+    }
+
     private void publishAndActivate(ActiveCampaign selected) {
         CampaignSnapshot campaign = selected.activation().campaign().orElseThrow();
         CompletableFuture<Void> activated = new CompletableFuture<>();
@@ -935,20 +1274,29 @@ final class CampaignActivationCoordinator implements AutoCloseable {
         CompletionStage<Void> publicationDispatch = invokeStage(
                 () -> selected.candidate().dispatchUiTracked(() -> {
             CampaignRuntime.CandidatePreparation<Boolean> publication;
+            AtomicReference<PublishedRootReadinessAttempt> visibleReadiness =
+                    new AtomicReference<>();
             try {
                 attempt.requireAuthorized();
+                PublicationSurface surface = selected.candidate().publicationSurface();
                 publication = selected.candidate().preparePublication(() -> {
                     attempt.requireAuthorized();
                     attempt.markRootSwapMayHaveBegun();
                     RootSwitchResult switched = host.switchCampaign(
                             campaign,
                             selected.activation().generation(),
-                            selected.candidate().shell());
+                            surface);
                     attempt.requireAuthorized();
                     if (switched != RootSwitchResult.CAMPAIGN_ROOT_VISIBLE) {
                         throw new RecoveryVisibleException();
                     }
                     attempt.requireAuthorized();
+                    PublishedRootReadinessAttempt readiness = Objects.requireNonNull(
+                            host.awaitPublishedRootReady(surface.shell()),
+                            "visible-readiness attempt");
+                    selected.candidate().ownPublishedRootReadiness(readiness);
+                    attempt.trackPublishedRootReadiness(readiness);
+                    visibleReadiness.set(readiness);
                     return Boolean.TRUE;
                 });
             } catch (RuntimeException | Error failure) {
@@ -972,15 +1320,33 @@ final class CampaignActivationCoordinator implements AutoCloseable {
                     attempt.fail(stale);
                     return;
                 }
-                invokeStage(() -> selected.candidate().dispatchUiTracked(() -> { },
-                        activationFailure -> {
-                            if (activationFailure == null) {
-                                attempt.activateAndCommit(
-                                        selected.candidate()::activateVisibleShell);
-                            } else {
-                                attempt.fail(activationFailure);
-                            }
-                        }));
+                PublishedRootReadinessAttempt readiness = visibleReadiness.get();
+                if (readiness == null) {
+                    attempt.fail(new IllegalStateException(
+                            "Campaign publication did not create a visible-readiness gate"));
+                    return;
+                }
+                readiness.completion().whenComplete((ignoredReady, readinessFailure) -> {
+                    try {
+                        attempt.requireAuthorized();
+                    } catch (RuntimeException | Error stale) {
+                        attempt.fail(stale);
+                        return;
+                    }
+                    if (readinessFailure != null) {
+                        attempt.fail(readinessFailure);
+                        return;
+                    }
+                    invokeStage(() -> selected.candidate().dispatchUiTracked(() -> { },
+                            activationFailure -> {
+                                if (activationFailure == null) {
+                                    attempt.activateAndCommit(
+                                            selected.candidate()::activateVisibleShell);
+                                } else {
+                                    attempt.fail(activationFailure);
+                                }
+                            }));
+                });
             });
         }, failure -> {
             if (failure != null) {
@@ -1053,7 +1419,10 @@ final class CampaignActivationCoordinator implements AutoCloseable {
             recoveryPublication = null;
         }
         recovery = new RecoveryCampaign(
-                durable, target, path, candidate, null, false, reservation, true,
+                durable, target, path, candidate, false,
+                new ActivationContext(
+                        null, DrainOutcome.NOT_REQUIRED, recoveryVisible, null),
+                reservation, true,
                 null, null, null, timeout.publication(), recoveryPublication);
         Throwable root = unwrap(timeout);
         snapshot = new Snapshot(
@@ -1078,7 +1447,8 @@ final class CampaignActivationCoordinator implements AutoCloseable {
     ) {
         return enterRecovery(
                 durable, target, path, candidate, prior, reservation,
-                failure, ambiguousCommit, null);
+                failure, ambiguousCommit, null, false,
+                prior == null ? DrainOutcome.NOT_REQUIRED : DrainOutcome.PAUSED);
     }
 
     private Status enterRecovery(
@@ -1090,23 +1460,72 @@ final class CampaignActivationCoordinator implements AutoCloseable {
             @Nullable CreateReservation reservation,
             Throwable failure,
             boolean ambiguousCommit,
-            @Nullable CompletionStage<CampaignPointerCommitResult> pendingCommit
+            @Nullable CompletionStage<CampaignPointerCommitResult> pendingCommit,
+            boolean borrowedParkedCandidate
     ) {
-        recovery = new RecoveryCampaign(
-                durable, target, path, candidate, prior, prior != null, reservation, ambiguousCommit,
+        return enterRecovery(
+                durable, target, path, candidate, prior, reservation, failure,
+                ambiguousCommit, pendingCommit, borrowedParkedCandidate,
+                prior == null ? DrainOutcome.NOT_REQUIRED : DrainOutcome.PAUSED);
+    }
+
+    private Status enterRecovery(
+            Optional<CampaignActivation> durable,
+            CampaignSnapshot target,
+            Path path,
+            @Nullable Candidate candidate,
+            @Nullable ActiveCampaign prior,
+            @Nullable CreateReservation reservation,
+            Throwable failure,
+            boolean ambiguousCommit,
+            @Nullable CompletionStage<CampaignPointerCommitResult> pendingCommit,
+            boolean borrowedParkedCandidate,
+            DrainOutcome priorDrainOutcome
+    ) {
+        return enterRecovery(
+                durable, target, path, candidate, prior, reservation, failure,
+                ambiguousCommit, pendingCommit, borrowedParkedCandidate,
+                new ActivationContext(
+                        prior,
+                        prior == null ? DrainOutcome.NOT_REQUIRED : priorDrainOutcome,
+                        false,
+                        null));
+    }
+
+    private Status enterRecovery(
+            Optional<CampaignActivation> durable,
+            CampaignSnapshot target,
+            Path path,
+            @Nullable Candidate candidate,
+            @Nullable ActiveCampaign prior,
+            @Nullable CreateReservation reservation,
+            Throwable failure,
+            boolean ambiguousCommit,
+            @Nullable CompletionStage<CampaignPointerCommitResult> pendingCommit,
+            boolean borrowedParkedCandidate,
+            ActivationContext activationContext
+    ) {
+        RecoveryCampaign stagedRecovery = new RecoveryCampaign(
+                durable, target, path, candidate, borrowedParkedCandidate,
+                activationContext,
+                reservation, ambiguousCommit,
                 pendingCommit, null, null, null, null);
+        recovery = stagedRecovery;
         Throwable root = unwrap(failure);
         boolean published = true;
         CompletionStage<Void> recoveryPublication = null;
         try {
             recoveryPublication = invokeStage(() -> host.showRecovery(durable, root.getClass()));
             await(recoveryPublication);
+            recovery = withActivationContext(
+                    stagedRecovery, activationContext.withPublicationLost());
         } catch (RuntimeException | Error hostFailure) {
             root.addSuppressed(hostFailure);
             published = false;
             if (hostFailure instanceof StageTimeoutException && recoveryPublication != null) {
                 recovery = new RecoveryCampaign(
-                        durable, target, path, candidate, prior, prior != null,
+                        durable, target, path, candidate, borrowedParkedCandidate,
+                        activationContext,
                         reservation, ambiguousCommit,
                         pendingCommit, null, null, null, recoveryPublication);
             }
@@ -1134,9 +1553,68 @@ final class CampaignActivationCoordinator implements AutoCloseable {
             @Nullable CompletionStage<Void> pendingDrain,
             @Nullable CompletionStage<Void> pendingPublication
     ) {
+        return enterContainedRecovery(
+                durable, target, path, candidate, prior, reservation, failure,
+                pendingCommit, pendingPreparation, pendingDrain, pendingPublication, false,
+                new ActivationContext(
+                        prior,
+                        prior == null
+                                ? DrainOutcome.NOT_REQUIRED
+                                : pendingPreparation == null
+                                        ? DrainOutcome.PAUSED
+                                        : DrainOutcome.NOT_STARTED,
+                        false,
+                        null));
+    }
+
+    private Status enterContainedRecovery(
+            Optional<CampaignActivation> durable,
+            CampaignSnapshot target,
+            Path path,
+            @Nullable Candidate candidate,
+            @Nullable ActiveCampaign prior,
+            @Nullable CreateReservation reservation,
+            Throwable failure,
+            @Nullable CompletionStage<CampaignPointerCommitResult> pendingCommit,
+            @Nullable CompletionStage<? extends Candidate> pendingPreparation,
+            @Nullable CompletionStage<Void> pendingDrain,
+            @Nullable CompletionStage<Void> pendingPublication,
+            boolean borrowedParkedCandidate
+    ) {
+        return enterContainedRecovery(
+                durable, target, path, candidate, prior, reservation, failure,
+                pendingCommit, pendingPreparation, pendingDrain, pendingPublication,
+                borrowedParkedCandidate,
+                new ActivationContext(
+                        prior,
+                        prior == null
+                                ? DrainOutcome.NOT_REQUIRED
+                                : pendingPreparation == null
+                                        ? DrainOutcome.PAUSED
+                                        : DrainOutcome.NOT_STARTED,
+                        false,
+                        null));
+    }
+
+    private Status enterContainedRecovery(
+            Optional<CampaignActivation> durable,
+            CampaignSnapshot target,
+            Path path,
+            @Nullable Candidate candidate,
+            @Nullable ActiveCampaign prior,
+            @Nullable CreateReservation reservation,
+            Throwable failure,
+            @Nullable CompletionStage<CampaignPointerCommitResult> pendingCommit,
+            @Nullable CompletionStage<? extends Candidate> pendingPreparation,
+            @Nullable CompletionStage<Void> pendingDrain,
+            @Nullable CompletionStage<Void> pendingPublication,
+            boolean borrowedParkedCandidate,
+            ActivationContext activationContext
+    ) {
         recovery = new RecoveryCampaign(
-                durable, target, path, candidate, prior,
-                prior != null && pendingPreparation == null, reservation, true,
+                durable, target, path, candidate, borrowedParkedCandidate,
+                activationContext,
+                reservation, true,
                 pendingCommit, pendingPreparation, pendingDrain, pendingPublication, null);
         Throwable root = unwrap(failure);
         snapshot = new Snapshot(
@@ -1150,20 +1628,34 @@ final class CampaignActivationCoordinator implements AutoCloseable {
     }
 
     private void keepRecovery(RecoveryCampaign pending, Throwable failure) {
-        recovery = pending;
+        if (hasNonterminalContainedStage(pending)) {
+            keepContainedRecovery(pending, failure);
+            return;
+        }
+        RecoveryCampaign stagedRecovery = pending;
+        recovery = stagedRecovery;
         Throwable root = unwrap(failure);
         boolean published = true;
+        CompletionStage<Void> recoveryPublication = null;
         try {
-            await(invokeStage(() -> host.showRecovery(
-                    pending.durable(), root.getClass())));
+            recoveryPublication = invokeStage(() -> host.showRecovery(
+                    stagedRecovery.durable(), root.getClass()));
+            await(recoveryPublication);
+            pending = withActivationContext(
+                    stagedRecovery,
+                    stagedRecovery.activationContext().withPublicationLost());
+            recovery = pending;
         } catch (RuntimeException | Error hostFailure) {
             root.addSuppressed(hostFailure);
             published = false;
+            if (hostFailure instanceof StageTimeoutException && recoveryPublication != null) {
+                recovery = withPendingRecoveryPublication(stagedRecovery, recoveryPublication);
+            }
         }
         snapshot = new Snapshot(
                 published ? Phase.RECOVERY_REQUIRED : Phase.RECOVERY_UNPUBLISHED,
-                pending.durable(),
-                Optional.of(pending.path()),
+                stagedRecovery.durable(),
+                Optional.of(stagedRecovery.path()),
                 Optional.of(root.getClass()),
                 Optional.ofNullable(root.getMessage()));
         report(RECOVERY_REQUIRED, root);
@@ -1187,15 +1679,36 @@ final class CampaignActivationCoordinator implements AutoCloseable {
     ) {
         return new RecoveryCampaign(
                 pending.durable(), pending.target(), pending.path(), candidate,
-                pending.prior(), pending.priorPaused(), pending.reservation(),
+                pending.borrowedParkedCandidate(), pending.activationContext(),
+                pending.reservation(),
                 pending.ambiguousCommit(),
                 null, null, null, null, null);
+    }
+
+    private static RecoveryCampaign withoutCandidate(RecoveryCampaign pending) {
+        ActiveCampaign prior = pending.prior();
+        if (prior != null && prior.candidate() == pending.candidate()) {
+            prior = null;
+        }
+        return new RecoveryCampaign(
+                pending.durable(), pending.target(), pending.path(), null,
+                false,
+                new ActivationContext(
+                        prior,
+                        prior == null ? DrainOutcome.NOT_REQUIRED : pending.priorDrainOutcome(),
+                        pending.activationContext().publicationLost(),
+                        pending.activationContext().durableFallback()),
+                pending.reservation(),
+                pending.ambiguousCommit(), pending.pendingCommit(), pending.pendingPreparation(),
+                pending.pendingDrain(), pending.pendingPublication(),
+                pending.pendingRecoveryPublication());
     }
 
     private static RecoveryCampaign withoutPendingPublication(RecoveryCampaign pending) {
         return new RecoveryCampaign(
                 pending.durable(), pending.target(), pending.path(), pending.candidate(),
-                pending.prior(), pending.priorPaused(), pending.reservation(),
+                pending.borrowedParkedCandidate(), pending.activationContext(),
+                pending.reservation(),
                 pending.ambiguousCommit(), pending.pendingCommit(), pending.pendingPreparation(),
                 pending.pendingDrain(), null, pending.pendingRecoveryPublication());
     }
@@ -1203,9 +1716,35 @@ final class CampaignActivationCoordinator implements AutoCloseable {
     private static RecoveryCampaign withoutPendingRecoveryPublication(RecoveryCampaign pending) {
         return new RecoveryCampaign(
                 pending.durable(), pending.target(), pending.path(), pending.candidate(),
-                pending.prior(), pending.priorPaused(), pending.reservation(),
+                pending.borrowedParkedCandidate(), pending.activationContext(),
+                pending.reservation(),
                 pending.ambiguousCommit(), pending.pendingCommit(), pending.pendingPreparation(),
                 pending.pendingDrain(), pending.pendingPublication(), null);
+    }
+
+    private static RecoveryCampaign withPendingRecoveryPublication(
+            RecoveryCampaign pending,
+            CompletionStage<Void> recoveryPublication
+    ) {
+        return new RecoveryCampaign(
+                pending.durable(), pending.target(), pending.path(), pending.candidate(),
+                pending.borrowedParkedCandidate(), pending.activationContext(),
+                pending.reservation(),
+                pending.ambiguousCommit(), pending.pendingCommit(), pending.pendingPreparation(),
+                pending.pendingDrain(), pending.pendingPublication(), recoveryPublication);
+    }
+
+    private static RecoveryCampaign withActivationContext(
+            RecoveryCampaign pending,
+            ActivationContext activationContext
+    ) {
+        return new RecoveryCampaign(
+                pending.durable(), pending.target(), pending.path(), pending.candidate(),
+                pending.borrowedParkedCandidate(), activationContext,
+                pending.reservation(),
+                pending.ambiguousCommit(), pending.pendingCommit(), pending.pendingPreparation(),
+                pending.pendingDrain(), pending.pendingPublication(),
+                pending.pendingRecoveryPublication());
     }
 
     private static Throwable terminalFailure(CompletionStage<?> stage) {
@@ -1217,23 +1756,62 @@ final class CampaignActivationCoordinator implements AutoCloseable {
         }
     }
 
-    private void resumeConfirmedPrior(@Nullable ActiveCampaign prior, @Nullable Throwable failure) {
+    private boolean restoreConfirmedPrior(
+            ActivationContext context,
+            @Nullable Throwable failure
+    ) {
+        ActiveCampaign prior = context.prior();
         if (prior == null) {
-            snapshot = Snapshot.idle();
-            return;
-        }
-        try {
-            prior.candidate().resumeAdmission();
-            active = prior;
-            snapshot = activeSnapshot(prior, degraded());
-        } catch (RuntimeException | Error resumeFailure) {
-            if (failure != null && failure != resumeFailure) {
-                failure.addSuppressed(resumeFailure);
+            DurableFallbackTruth durableFallback = context.durableFallback();
+            if (durableFallback != null) {
+                Throwable recoveryFailure = failure == null
+                        ? new IllegalStateException(
+                                "Recovery replacement was rejected before pointer commit")
+                        : failure;
+                keepRecovery(durableFallback.restore(), recoveryFailure);
+                return false;
             }
+            if (failure == null) {
+                snapshot = Snapshot.idle();
+            } else {
+                restoreActiveSnapshot(failure);
+            }
+            return true;
+        }
+        if (context.priorDrainOutcome() == DrainOutcome.UNSAFE) {
+            active = null;
+            closeDetached(prior.candidate(), null, CleanupAuthority.RETAIN_RESERVATION);
             enterRecovery(
                     Optional.of(prior.activation()), prior.activation().campaign().orElseThrow(),
-                    prior.path(), prior.candidate(), prior,
-                    null, resumeFailure, false);
+                    prior.path(), null, null, null,
+                    failure == null
+                            ? new IllegalStateException("Unsafe prior Campaign cannot be restored")
+                            : failure,
+                    false);
+            return false;
+        }
+        DrainOutcome restorationOutcome = context.priorDrainOutcome();
+        try {
+            if (context.priorDrainOutcome() == DrainOutcome.PAUSED) {
+                prior.candidate().resumeAdmission();
+                restorationOutcome = DrainOutcome.NOT_STARTED;
+            }
+            if (context.publicationLost()) {
+                publishAndActivate(prior);
+            }
+            active = prior;
+            snapshot = activeSnapshot(prior, degraded());
+            return true;
+        } catch (RuntimeException | Error restorationFailure) {
+            if (failure != null && failure != restorationFailure) {
+                failure.addSuppressed(restorationFailure);
+            }
+            active = null;
+            enterRecovery(
+                    Optional.of(prior.activation()), prior.activation().campaign().orElseThrow(),
+                    prior.path(), null, prior,
+                    null, restorationFailure, false, null, false, restorationOutcome);
+            return false;
         }
     }
 
@@ -1264,6 +1842,88 @@ final class CampaignActivationCoordinator implements AutoCloseable {
         }
     }
 
+    private @Nullable ParkedCampaign takeReusableParked(
+            CampaignId campaignId,
+            Path path,
+            OpenIntent intent
+    ) {
+        ParkedCampaign candidate = parked;
+        if (intent != OpenIntent.EXISTING_ONLY
+                || candidate == null
+                || !candidate.campaignId().equals(campaignId)
+                || !candidate.path().equals(path)
+                || !candidate.candidate().reusableWhileParked()) {
+            return null;
+        }
+        parked = null;
+        return candidate;
+    }
+
+    private boolean evictParkedBeforePreparation() {
+        if (parkedEvictionPending != null) {
+            return false;
+        }
+        ParkedCampaign candidate = parked;
+        if (candidate == null) {
+            return true;
+        }
+        parked = null;
+        if (closeDetached(candidate.candidate(), null, CleanupAuthority.RETAIN_RESERVATION)) {
+            return true;
+        }
+        parkedEvictionPending = candidate.candidate();
+        return false;
+    }
+
+    private void releaseBeforeCommit(
+            CandidateLease lease,
+            @Nullable CreateReservation reservation
+    ) {
+        if (lease.origin() == CandidateOrigin.PARKED && parked == null) {
+            parked = new ParkedCampaign(
+                    lease.campaignId(), lease.path(), lease.candidate());
+            return;
+        }
+        cleanupBeforeCommit(lease.candidate(), reservation);
+    }
+
+    private boolean containRecoveryCandidateBeforeCommit(RecoveryCampaign pending) {
+        Candidate candidate = pending.candidate();
+        if (candidate == null) {
+            return true;
+        }
+        if (pending.borrowedParkedCandidate() && parked == null) {
+            parked = new ParkedCampaign(pending.target().id(), pending.path(), candidate);
+            return true;
+        }
+        return closeDetached(candidate, pending.reservation(), CleanupAuthority.DELETE_RESERVATION);
+    }
+
+    private void retirePriorAfterActivation(
+            @Nullable ActiveCampaign prior,
+            boolean mayParkPrior
+    ) {
+        if (prior == null) {
+            return;
+        }
+        if (mayParkPrior && parked == null && prior.candidate().reusableWhileParked()) {
+            try {
+                await(invokeValue(() -> {
+                    prior.candidate().prepareForParking();
+                    return true;
+                }));
+                parked = new ParkedCampaign(
+                        prior.activation().campaign().orElseThrow().id(),
+                        prior.path(),
+                        prior.candidate());
+                return;
+            } catch (RuntimeException | Error failure) {
+                report(DETACHED_CLOSE_FAILURE, failure);
+            }
+        }
+        closeDetached(prior.candidate(), null, CleanupAuthority.RETAIN_RESERVATION);
+    }
+
     private boolean closeDetached(
             @Nullable Candidate candidate,
             @Nullable CreateReservation reservation,
@@ -1272,24 +1932,40 @@ final class CampaignActivationCoordinator implements AutoCloseable {
         if (candidate == null) {
             return true;
         }
-        CompletionStage<Void> closeStage = null;
+        java.util.Set<Candidate> settledThisTransition = transitionCloseSettlements;
+        if (settledThisTransition != null && settledThisTransition.contains(candidate)) {
+            return true;
+        }
+        DetachedCandidate pendingAttempt = pendingClose.get(candidate);
+        CompletionStage<Void> closeStage = pendingAttempt == null
+                ? null
+                : pendingAttempt.attempt();
         try {
-            closeStage = invokeStage(candidate::closeAsync);
+            if (closeStage == null || closeStage.toCompletableFuture().isCompletedExceptionally()) {
+                closeStage = invokeStage(candidate::closeAsync);
+                pendingAttempt = new DetachedCandidate(
+                        candidate, reservation, cleanupAuthority, closeStage);
+                pendingClose.put(candidate, pendingAttempt);
+            }
+            observeTerminalSettlement(closeStage);
             await(closeStage, terminalCloseTimeoutNanos);
-            pendingClose.removeIf(detached -> detached.candidate() == candidate);
+            if (settledThisTransition != null) {
+                settledThisTransition.add(candidate);
+            }
+            pendingClose.remove(candidate);
+            if (parkedEvictionPending == candidate) {
+                parkedEvictionPending = null;
+            }
             return true;
         } catch (RuntimeException | Error failure) {
             observeTerminalSettlement(closeStage);
-            if (pendingClose.stream().noneMatch(detached -> detached.candidate() == candidate)) {
-                pendingClose.add(new DetachedCandidate(candidate, reservation, cleanupAuthority));
-            }
             report(DETACHED_CLOSE_FAILURE, failure);
             return false;
         }
     }
 
     private void retryDetachedClosures() {
-        for (DetachedCandidate detached : List.copyOf(pendingClose)) {
+        for (DetachedCandidate detached : List.copyOf(pendingClose.values())) {
             if (closeDetached(detached.candidate(), detached.reservation(),
                     detached.cleanupAuthority())) {
                 cleanupIfAuthorized(detached.reservation(), detached.cleanupAuthority());
@@ -1304,6 +1980,10 @@ final class CampaignActivationCoordinator implements AutoCloseable {
     }
 
     private boolean degraded() {
+        return allocationBlocked();
+    }
+
+    private boolean allocationBlocked() {
         return !pendingClose.isEmpty() || !pendingCleanup.isEmpty();
     }
 
@@ -1467,7 +2147,12 @@ final class CampaignActivationCoordinator implements AutoCloseable {
     }
 
     private CompletionStage<Result> submitRecovery(Supplier<Result> operation) {
-        return submit(operation);
+        return submit(() -> {
+            retryDetachedClosures();
+            retryCleanupObligations();
+            refreshActiveDegradationSnapshot();
+            return operation.get();
+        });
     }
 
     private CompletionStage<Result> submit(Supplier<Result> operation) {
@@ -1478,18 +2163,28 @@ final class CampaignActivationCoordinator implements AutoCloseable {
                 return completion;
             }
             try {
-                transitions.execute(() -> {
+                transitions.execute(() -> withTransitionCloseSettlements(() -> {
                     try {
                         completion.complete(operation.get());
                     } catch (RuntimeException | Error failure) {
                         completion.completeExceptionally(failure);
                     }
-                });
+                }));
             } catch (RejectedExecutionException rejected) {
                 completion.complete(result(Status.CLOSED));
             }
         }
         return completion;
+    }
+
+    private void withTransitionCloseSettlements(Runnable operation) {
+        transitionCloseSettlements = java.util.Collections.newSetFromMap(
+                new java.util.IdentityHashMap<>());
+        try {
+            operation.run();
+        } finally {
+            transitionCloseSettlements = null;
+        }
     }
 
     private Result result(Status status) {
@@ -1641,7 +2336,8 @@ final class CampaignActivationCoordinator implements AutoCloseable {
                 completion = new CompletableFuture<>();
                 closeAttempt = completion;
                 CompletableFuture<Void> ownedCompletion = completion;
-                transitions.execute(() -> attemptTerminalClose(ownedCompletion));
+                transitions.execute(() -> withTransitionCloseSettlements(
+                        () -> attemptTerminalClose(ownedCompletion)));
             }
         }
         if (Thread.currentThread() != worker.get()) {
@@ -1673,7 +2369,7 @@ final class CampaignActivationCoordinator implements AutoCloseable {
         resolveTerminalPendingForClose();
         java.util.Set<Candidate> attempted = java.util.Collections.newSetFromMap(
                 new java.util.IdentityHashMap<>());
-        for (DetachedCandidate detached : List.copyOf(pendingClose)) {
+        for (DetachedCandidate detached : List.copyOf(pendingClose.values())) {
             if (attempted.add(detached.candidate())
                     && closeDetached(detached.candidate(), detached.reservation(),
                             detached.cleanupAuthority())) {
@@ -1682,6 +2378,9 @@ final class CampaignActivationCoordinator implements AutoCloseable {
         }
         if (active != null && attempted.add(active.candidate())) {
             closeDetached(active.candidate(), null, CleanupAuthority.RETAIN_RESERVATION);
+        }
+        if (parked != null && attempted.add(parked.candidate())) {
+            closeDetached(parked.candidate(), null, CleanupAuthority.RETAIN_RESERVATION);
         }
         if (recovery != null) {
             if (recovery.candidate() != null && attempted.add(recovery.candidate())) {
@@ -1701,6 +2400,8 @@ final class CampaignActivationCoordinator implements AutoCloseable {
             return;
         }
         active = null;
+        parked = null;
+        parkedEvictionPending = null;
         recovery = null;
         snapshot = new Snapshot(
                 Phase.CLOSED,
@@ -1737,7 +2438,7 @@ final class CampaignActivationCoordinator implements AutoCloseable {
             }
             recovery = new RecoveryCampaign(
                     pending.durable(), pending.target(), pending.path(), null,
-                    pending.prior(), pending.priorPaused(), pending.reservation(),
+                    false, pending.activationContext(), pending.reservation(),
                     pending.ambiguousCommit(),
                     null, pending.pendingPreparation(), null, null, null);
             pending = recovery;
@@ -1751,7 +2452,7 @@ final class CampaignActivationCoordinator implements AutoCloseable {
             }
             recovery = new RecoveryCampaign(
                     pending.durable(), pending.target(), pending.path(), null,
-                    pending.prior(), pending.priorPaused(), pending.reservation(),
+                    false, pending.activationContext(), pending.reservation(),
                     pending.ambiguousCommit(),
                     null, null, null, null, null);
         }
@@ -1807,13 +2508,100 @@ final class CampaignActivationCoordinator implements AutoCloseable {
     private record ActiveCampaign(CampaignActivation activation, Path path, Candidate candidate) {
     }
 
+    private record ActivationContext(
+            @Nullable ActiveCampaign prior,
+            DrainOutcome priorDrainOutcome,
+            boolean publicationLost,
+            @Nullable DurableFallbackTruth durableFallback
+    ) {
+        private ActivationContext withPriorPaused() {
+            return prior == null || priorDrainOutcome == DrainOutcome.PAUSED
+                    ? this
+                    : new ActivationContext(
+                            prior, DrainOutcome.PAUSED, publicationLost, durableFallback);
+        }
+
+        private ActivationContext withPublicationLost() {
+            return publicationLost
+                    ? this
+                    : new ActivationContext(
+                            prior, priorDrainOutcome, true, durableFallback);
+        }
+
+        private Optional<CampaignActivation> knownDurableFallback() {
+            if (prior != null) {
+                return Optional.of(prior.activation());
+            }
+            return durableFallback == null
+                    ? Optional.empty()
+                    : durableFallback.durable();
+        }
+    }
+
+    /** Non-recursive durable truth retained while replacing a recovery with no live aggregate. */
+    private record DurableFallbackTruth(
+            Optional<CampaignActivation> durable,
+            CampaignSnapshot target,
+            Path path
+    ) {
+        private static DurableFallbackTruth from(RecoveryCampaign recovery) {
+            return new DurableFallbackTruth(
+                    recovery.durable(), recovery.target(), recovery.path());
+        }
+
+        private RecoveryCampaign restore() {
+            return new RecoveryCampaign(
+                    durable, target, path, null, false,
+                    new ActivationContext(null, DrainOutcome.NOT_REQUIRED, true, null),
+                    null, false, null, null, null, null, null);
+        }
+    }
+
+    private enum DrainOutcome { NOT_STARTED, PAUSED, UNSAFE, NOT_REQUIRED }
+
+    private enum FallbackState { ACTIVE, PAUSED, PREPARED, DURABLE_ONLY }
+
+    private record RecoveryReplacement(
+            RecoveryCampaign displaced,
+            @Nullable ActiveCampaign fallback,
+            FallbackState fallbackState
+    ) {
+        private RecoveryReplacement withFallbackState(FallbackState state) {
+            return new RecoveryReplacement(displaced, fallback, state);
+        }
+    }
+
+    private record ParkedCampaign(CampaignId campaignId, Path path, Candidate candidate) {
+        private ParkedCampaign {
+            campaignId = Objects.requireNonNull(campaignId, "campaignId");
+            path = Objects.requireNonNull(path, "path");
+            candidate = Objects.requireNonNull(candidate, "candidate");
+        }
+    }
+
+    private enum CandidateOrigin { FRESH, PARKED }
+
+    private record CandidateLease(
+            Candidate candidate,
+            CandidateOrigin origin,
+            CampaignId campaignId,
+            Path path
+    ) {
+        private CandidateLease {
+            candidate = Objects.requireNonNull(candidate, "candidate");
+            origin = Objects.requireNonNull(origin, "origin");
+            campaignId = Objects.requireNonNull(campaignId, "campaignId");
+            path = Objects.requireNonNull(path, "path");
+        }
+    }
+
     private record RecoveryCampaign(
             Optional<CampaignActivation> durable,
             CampaignSnapshot target,
             Path path,
             @Nullable Candidate candidate,
-            @Nullable ActiveCampaign prior,
-            boolean priorPaused,
+            boolean borrowedParkedCandidate,
+            ActivationContext activationContext,
             @Nullable CreateReservation reservation,
             boolean ambiguousCommit,
             @Nullable CompletionStage<CampaignPointerCommitResult> pendingCommit,
@@ -1822,6 +2610,13 @@ final class CampaignActivationCoordinator implements AutoCloseable {
             @Nullable CompletionStage<Void> pendingPublication,
             @Nullable CompletionStage<Void> pendingRecoveryPublication
     ) {
+        private @Nullable ActiveCampaign prior() {
+            return activationContext.prior();
+        }
+
+        private DrainOutcome priorDrainOutcome() {
+            return activationContext.priorDrainOutcome();
+        }
     }
 
     private static boolean hasNonterminalContainedStage(RecoveryCampaign pending) {
@@ -1853,7 +2648,13 @@ final class CampaignActivationCoordinator implements AutoCloseable {
     private record DetachedCandidate(
             Candidate candidate,
             @Nullable CreateReservation reservation,
-            CleanupAuthority cleanupAuthority) {
+            CleanupAuthority cleanupAuthority,
+            CompletionStage<Void> attempt) {
+        private DetachedCandidate {
+            candidate = Objects.requireNonNull(candidate, "candidate");
+            cleanupAuthority = Objects.requireNonNull(cleanupAuthority, "cleanupAuthority");
+            attempt = Objects.requireNonNull(attempt, "attempt");
+        }
     }
 
     private static final class RecoveryVisibleException extends IllegalStateException {
@@ -1883,6 +2684,8 @@ final class CampaignActivationCoordinator implements AutoCloseable {
                 new java.util.concurrent.atomic.AtomicBoolean();
         private final CompletableFuture<Void> rootSwapInvocationSettled = new CompletableFuture<>();
         private final Supplier<CompletionStage<Void>> recoveryPublisher;
+        private @Nullable PublishedRootReadinessAttempt publishedRootReadiness;
+        private @Nullable CompletionStage<Void> readinessCancellation;
         private @Nullable CompletionStage<Void> recoveryPublication;
 
         private PublicationAttempt(
@@ -1923,6 +2726,20 @@ final class CampaignActivationCoordinator implements AutoCloseable {
             invocation.whenComplete((ignored, failure) -> rootSwapInvocationSettled.complete(null));
         }
 
+        private void trackPublishedRootReadiness(PublishedRootReadinessAttempt readiness) {
+            Objects.requireNonNull(readiness, "published-root readiness");
+            boolean cancelImmediately;
+            synchronized (this) {
+                cancelImmediately = state.get() != State.IN_FLIGHT;
+                if (!cancelImmediately) {
+                    publishedRootReadiness = readiness;
+                }
+            }
+            if (cancelImmediately) {
+                cancel(readiness);
+            }
+        }
+
         private void activateAndCommit(Runnable activation) {
             Objects.requireNonNull(activation, "activation");
             boolean stale = false;
@@ -1953,6 +2770,7 @@ final class CampaignActivationCoordinator implements AutoCloseable {
                 return;
             }
             state.set(State.REVOKED);
+            cancelPublishedRootReadiness();
             publication.completeExceptionally(failure);
         }
 
@@ -1962,6 +2780,7 @@ final class CampaignActivationCoordinator implements AutoCloseable {
                 committed = state.get() == State.COMMITTED;
                 if (!committed) {
                     state.set(State.REVOKED);
+                    cancelPublishedRootReadiness();
                 }
             }
             return committed
@@ -1992,23 +2811,55 @@ final class CampaignActivationCoordinator implements AutoCloseable {
                 CompletableFuture<Void> ownedRecovery = new CompletableFuture<>();
                 recoveryPublication = ownedRecovery;
                 rootSwapInvocationSettled.whenComplete((ignoredInvocation, invocationFailure) -> {
-                    CompletionStage<Void> published;
-                    try {
-                        published = Objects.requireNonNull(
-                                recoveryPublisher.get(), "recovery publication stage");
-                    } catch (RuntimeException | Error failure) {
-                        ownedRecovery.completeExceptionally(failure);
-                        return;
-                    }
-                    published.whenComplete((ignoredRecovery, recoveryFailure) -> {
-                        if (recoveryFailure == null) {
-                            ownedRecovery.complete(null);
-                        } else {
-                            ownedRecovery.completeExceptionally(recoveryFailure);
+                    cancelPublishedRootReadiness().whenComplete((ignoredCancellation, cancelFailure) -> {
+                        CompletionStage<Void> published;
+                        try {
+                            published = Objects.requireNonNull(
+                                    recoveryPublisher.get(), "recovery publication stage");
+                        } catch (RuntimeException | Error failure) {
+                            if (cancelFailure != null) {
+                                failure.addSuppressed(cancelFailure);
+                            }
+                            ownedRecovery.completeExceptionally(failure);
+                            return;
                         }
+                        published.whenComplete((ignoredRecovery, recoveryFailure) -> {
+                            if (recoveryFailure == null && cancelFailure == null) {
+                                ownedRecovery.complete(null);
+                            } else {
+                                Throwable failure = recoveryFailure == null
+                                        ? cancelFailure
+                                        : recoveryFailure;
+                                if (recoveryFailure != null && cancelFailure != null
+                                        && recoveryFailure != cancelFailure) {
+                                    recoveryFailure.addSuppressed(cancelFailure);
+                                }
+                                ownedRecovery.completeExceptionally(failure);
+                            }
+                        });
                     });
                 });
                 return recoveryPublication;
+            }
+        }
+
+        private synchronized CompletionStage<Void> cancelPublishedRootReadiness() {
+            if (readinessCancellation != null) {
+                return readinessCancellation;
+            }
+            PublishedRootReadinessAttempt readiness = publishedRootReadiness;
+            publishedRootReadiness = null;
+            readinessCancellation = readiness == null
+                    ? CompletableFuture.completedFuture(null)
+                    : cancel(readiness);
+            return readinessCancellation;
+        }
+
+        private static CompletionStage<Void> cancel(PublishedRootReadinessAttempt readiness) {
+            try {
+                return Objects.requireNonNull(readiness.cancel(), "readiness cancellation");
+            } catch (RuntimeException | Error failure) {
+                return CompletableFuture.failedFuture(failure);
             }
         }
 
@@ -2050,6 +2901,10 @@ final class CampaignActivationCoordinator implements AutoCloseable {
 
         private synchronized @Nullable CompletionStage<Void> whenAllTerminal() {
             return pending.isEmpty() ? null : allTerminal;
+        }
+
+        private synchronized int pendingCount() {
+            return pending.size();
         }
     }
 

@@ -1,7 +1,6 @@
 package features.encounter.adapter.javafx.state;
 
 import features.creatures.CreaturesServiceAssembly;
-import features.creatures.adapter.sqlite.model.CreaturesPersistenceSchema;
 import features.creatures.domain.catalog.CreatureCatalogData;
 import features.creatures.domain.catalog.CreatureCatalogData.CreatureProfile;
 import features.creatures.domain.catalog.port.CreatureCatalogPort;
@@ -333,7 +332,6 @@ public final class EncounterStateTabTest {
                 try (Connection connection = DriverManager.getConnection(creatureDatabaseUrl())) {
                     try (Statement statement = connection.createStatement()) {
                         statement.execute("PRAGMA foreign_keys = ON");
-                        statement.execute(CreaturesPersistenceSchema.CREATE_CREATURES_TABLE_SQL);
                     }
                     try (PreparedStatement statement = connection.prepareStatement("""
                             INSERT OR IGNORE INTO creatures (

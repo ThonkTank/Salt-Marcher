@@ -254,33 +254,6 @@ final class SqliteDungeonWindowStoreTest {
     }
 
     @Test
-    void versionSixMigrationDiscardsPreDependencyDungeonRowsBeforeWindowRead(@TempDir Path tempDir)
-            throws Exception {
-        Path path = tempDir.resolve("populated-v4-route-upgrade.db");
-        try (PreparedDatabase ignored = savedGraphDatabase(path, 1)) {
-            // Persist a populated canonical graph with its pre-upgrade derived chunk inventory.
-        }
-        corruptPreDependencySchemaVersion(path);
-
-        try (SqliteDatabase database = new SqliteDatabase(path, NoopDiagnostics.INSTANCE)) {
-            var fixture = DungeonSqliteFixtureSeeder.prepare(database);
-            assertTrue(cachedStore(fixture).loadWindow(new DungeonWindowRequest(
-                    new DungeonMapIdentity(MAP_ID),
-                    23L,
-                    List.of(key(0, 0, -1))))
-                    .isEmpty(),
-                    "owner-approved v6 replacement must not publish pre-dependency Dungeon rows");
-        }
-        try (Connection connection = open(path)) {
-            assertEquals(7, scalarInt(connection,
-                    "SELECT version FROM sm_schema_versions WHERE owner='dungeon'"));
-            assertEquals(0, scalarInt(connection, "SELECT COUNT(*) FROM dungeon_maps"));
-            assertEquals(0, scalarInt(connection,
-                    "SELECT COUNT(*) FROM dungeon_corridor_route_dependencies"));
-        }
-    }
-
-    @Test
     void selfReferencedAnchorOnlyCorridorPublishesItsCanonicalBodyCell(@TempDir Path tempDir) throws Exception {
         Path path = tempDir.resolve("anchor-only-corridor.db");
         long corridorId = 701L;
@@ -1060,15 +1033,6 @@ final class SqliteDungeonWindowStoreTest {
             statement.setString(4, "BROKEN");
             statement.setString(5, "BROKEN");
             statement.executeUpdate();
-        }
-    }
-
-    private static void corruptPreDependencySchemaVersion(Path path) throws SQLException {
-        try (Connection connection = open(path); Statement statement = connection.createStatement()) {
-            statement.execute("DROP TABLE dungeon_corridor_route_cells");
-            applyTargetedCorruption(
-                    statement,
-                    "UPDATE sm_schema_versions SET version=4 WHERE owner='dungeon'");
         }
     }
 

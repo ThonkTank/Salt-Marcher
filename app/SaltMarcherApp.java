@@ -91,6 +91,9 @@ public final class SaltMarcherApp extends Application {
 
     @Override
     public void stop() {
+        if (campaignHost != null) {
+            campaignHost.close();
+        }
         if (bootstrap != null) {
             bootstrap.close();
         }

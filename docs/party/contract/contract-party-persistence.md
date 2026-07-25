@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-25
 Source of Truth: Persistence path and schema ownership rules for the `party`
 feature.
 
@@ -28,9 +28,10 @@ This document is normative for the `party` feature's persistence path.
   overworld locations plus the party-token attachment flag. These columns are
   part of character state, not a campaign-level travel table and not dungeon
   authored truth.
-- feature-owned migration steps derive table creation and additive column
-  migration from this schema artifact instead of spreading canonical
-  definitions across unrelated classes
+- owner startup creates the complete current schema directly as owner version
+  `1`, and only when the Party object namespace is empty
+- startup validates the exact table definitions and complete Party-owned object
+  inventory before the store becomes ready
 
 ## Current Mapping
 
@@ -60,6 +61,18 @@ Owner startup readiness validates the feature-declared target schema signature; 
   scalar location references rather than expanded into authored map truth
 - storage and schema failures MUST surface through Party API result statuses
   rather than leaking SQLite exceptions to consumers
+- the required singleton metadata row MUST be present; reads do not reconstruct
+  it from character rows
+
+## Current Schema Lifecycle
+
+Compatibility obligations begin only after activation of the
+[Product Process Compatibility Covenant](../../project/delivery/aletheia/product-process.md#compatibility-covenant).
+Until that activation, only the current direct version-`1` schema is accepted.
+Unversioned partial, superseded, structurally damaged, adjacent-owner-object,
+and newer shapes fail closed without `ALTER`, repair, backfill, copy, drop,
+normalization, or a version claim. They must be discarded and recreated from
+the current product.
 
 ## Stability Rules
 
@@ -76,9 +89,13 @@ Owner startup readiness validates the feature-declared target schema signature; 
   `PartyApi`.
 - Review must reject authored dungeon truth leaking into party-owned
   character-travel persistence.
+- Production-route tests cover direct version-`1` creation, current-format
+  save/restart/read, atomic save rollback, exact owner inventory,
+  missing-metadata failure, and unchanged rejection of unsupported shapes.
 
 ## References
 
 - [Party Domain Model](../domain/domain-party.md) (line 1)
 - [Party Dropdown UI](../requirements/requirements-party-dropdown.md) (line 1)
 - [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)
+- [Product Process Compatibility Covenant](../../project/delivery/aletheia/product-process.md#compatibility-covenant)

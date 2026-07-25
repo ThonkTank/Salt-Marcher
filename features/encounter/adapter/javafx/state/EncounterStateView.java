@@ -6,6 +6,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import features.encounter.api.EncounterStateSnapshot;
+import java.util.List;
 
 public final class EncounterStateView extends VBox {
 
@@ -61,12 +62,9 @@ public final class EncounterStateView extends VBox {
         ((EncounterContentStack) contentArea).showContent(contentIndex);
     }
 
-    private static void showNode(Node child, boolean selected) {
-        child.setVisible(selected);
-        child.setManaged(selected);
-    }
-
     private static final class EncounterContentStack extends StackPane {
+
+        private List<Node> content = List.of();
 
         void setContent(
                 Node builderContent,
@@ -74,13 +72,15 @@ public final class EncounterStateView extends VBox {
                 Node combatContent,
                 Node resultsContent
         ) {
-            getChildren().setAll(builderContent, initiativeContent, combatContent, resultsContent);
+            content = List.of(builderContent, initiativeContent, combatContent, resultsContent);
             showContent(-1);
         }
 
         void showContent(int contentIndex) {
-            for (int index = 0; index < getChildren().size(); index++) {
-                showNode(getChildren().get(index), index == contentIndex);
+            if (contentIndex < 0 || contentIndex >= content.size()) {
+                getChildren().clear();
+            } else {
+                getChildren().setAll(content.get(contentIndex));
             }
         }
     }

@@ -29,7 +29,6 @@ final class StateTabPane extends VBox {
     private final Label placeholder = new Label("Kein Zustand verfügbar");
     private final Node placeholderHost = ShellContentLayout.shellOwned(placeholder);
     private final Map<ContributionKey, StateTab> tabs = new LinkedHashMap<>();
-    private boolean manualSelectionMade;
 
     StateTabPane() {
         getStyleClass().add("surface-root");
@@ -63,12 +62,6 @@ final class StateTabPane extends VBox {
         }
         tabs.put(key, new StateTab(key, label, itemOrder, content));
         rebuildTabBar();
-        if (!manualSelectionMade) {
-            List<StateTab> sortedTabs = getSortedTabs();
-            if (!sortedTabs.isEmpty()) {
-                activateTab(sortedTabs.getFirst().key);
-            }
-        }
     }
 
     void activateTab(ContributionKey key) {
@@ -89,8 +82,8 @@ final class StateTabPane extends VBox {
         for (StateTab tab : getSortedTabs()) {
             tabBar.getChildren().add(tab.button);
         }
-        tabBar.setVisible(tabs.size() > 1);
-        tabBar.setManaged(tabs.size() > 1);
+        tabBar.setVisible(!tabs.isEmpty());
+        tabBar.setManaged(!tabs.isEmpty());
     }
 
     private List<StateTab> getSortedTabs() {
@@ -118,7 +111,6 @@ final class StateTabPane extends VBox {
             button.getStyleClass().add("scene-tab");
             button.setToggleGroup(tabGroup);
             button.setOnAction(event -> {
-                manualSelectionMade = true;
                 activateTab(key);
             });
         }

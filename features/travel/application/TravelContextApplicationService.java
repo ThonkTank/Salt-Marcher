@@ -12,8 +12,10 @@ import features.travel.api.TravelContextApi;
 import features.travel.api.TravelContextKind;
 import features.travel.api.TravelContextModel;
 import features.travel.api.TravelContextSnapshot;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import platform.execution.RetryableRelease;
 
 public final class TravelContextApplicationService implements TravelContextApi, AutoCloseable {
 
@@ -28,8 +30,9 @@ public final class TravelContextApplicationService implements TravelContextApi, 
     private long dungeonSourceRevision = -1L;
     private long hexSourceRevision = -1L;
     private boolean started;
+    private boolean closing;
     private boolean closed;
-    private List<Runnable> subscriptions = List.of();
+    private final List<Runnable> subscriptions = new ArrayList<>();
 
     public TravelContextApplicationService(
             PartyTravelPositionsModel partyPositions,
@@ -49,14 +52,13 @@ public final class TravelContextApplicationService implements TravelContextApi, 
     }
 
     public synchronized void start() {
-        if (started || closed) {
+        if (started || closing || closed) {
             return;
         }
         started = true;
-        subscriptions = List.of(
-                partyPositions.subscribe(this::acceptParty),
-                dungeonContexts.subscribe(this::acceptDungeon),
-                hexContexts.subscribe(this::acceptHex));
+        subscriptions.add(partyPositions.subscribe(this::acceptParty));
+        subscriptions.add(dungeonContexts.subscribe(this::acceptDungeon));
+        subscriptions.add(hexContexts.subscribe(this::acceptHex));
         acceptParty(partyPositions.current());
         acceptDungeon(dungeonContexts.current());
         acceptHex(hexContexts.current());
@@ -67,13 +69,13 @@ public final class TravelContextApplicationService implements TravelContextApi, 
         if (closed) {
             return;
         }
+        closing = true;
+        RetryableRelease.releaseAll(subscriptions);
         closed = true;
-        subscriptions.forEach(Runnable::run);
-        subscriptions = List.of();
     }
 
     private synchronized void acceptParty(PartyTravelPositionsResult result) {
-        if (closed) {
+        if (closing || closed) {
             return;
         }
         PartyTravelPositionsResult safeResult = result == null ? failedParty() : result;
@@ -86,7 +88,7 @@ public final class TravelContextApplicationService implements TravelContextApi, 
     }
 
     private synchronized void acceptDungeon(DungeonTravelContextSnapshot snapshot) {
-        if (closed) {
+        if (closing || closed) {
             return;
         }
         DungeonTravelContextSnapshot safeSnapshot = snapshot == null
@@ -101,7 +103,7 @@ public final class TravelContextApplicationService implements TravelContextApi, 
     }
 
     private synchronized void acceptHex(HexTravelSnapshot snapshot) {
-        if (closed) {
+        if (closing || closed) {
             return;
         }
         HexTravelSnapshot safeSnapshot = snapshot == null

@@ -3,12 +3,13 @@ package features.catalog;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import features.catalog.application.CatalogWorkspaceState;
 import features.catalog.application.CatalogActiveSection;
 import features.catalog.application.CatalogSectionBinding;
+import features.catalog.application.CatalogSectionState;
+import features.catalog.application.CatalogWorkspaceState;
 import features.catalog.application.ItemsCatalogQuery;
 import features.catalog.application.MonsterCatalogQuery;
 import features.creatures.api.CreatureCatalogPage;
@@ -146,6 +147,41 @@ final class CatalogFeatureLifecycleTest {
             assertActive(world, 0);
             assertActive(tables, 0);
         });
+    }
+
+    @Test
+    void componentCloseRetriesTheFailedProviderReleaseBeforeControllerReachesClosed() {
+        TrackingSubscription<EncounterBuilderInputs> builder = new TrackingSubscription<>(
+                EncounterBuilderInputs.empty(), null);
+        TrackingSubscription<SavedEncounterPlanListResult> saved = new TrackingSubscription<>(
+                new SavedEncounterPlanListResult(SavedEncounterPlanStatus.SUCCESS, List.of(), ""), null);
+        TrackingSubscription<CreatureReferenceIndexResult> creatures = new TrackingSubscription<>(
+                new CreatureReferenceIndexResult(CreatureReferenceIndexStatus.SUCCESS, 1L, List.of()), null);
+        TrackingSubscription<WorldPlannerSnapshot> world = new TrackingSubscription<>(emptyWorld(), null);
+        TrackingSubscription<EncounterTableCatalogResult> tables = new TrackingSubscription<>(
+                new EncounterTableCatalogResult(EncounterTableReadStatus.SUCCESS, List.of()), null);
+        CatalogFeature.Component component = create(
+                new ControllableCreatureQueries(), new ControllableItemsApi(), builder, saved,
+                creatures, world, tables, new RecordingItemRoute());
+        component.controller().activate();
+        builder.unsubscribeFailure = new IllegalStateException("release failed");
+
+        assertThrows(IllegalStateException.class, component::close);
+
+        assertEquals(1, builder.active.get(), "failed provider release remains owned by the component");
+        assertTrue(activeBinding(component.controller().publication().current()).state().lifecycle()
+                        != CatalogSectionState.Lifecycle.CLOSED,
+                "the aggregate must not publish CLOSED while a provider listener remains");
+        builder.unsubscribeFailure = null;
+
+        component.close();
+
+        assertEquals(0, builder.active.get());
+        assertEquals(2, builder.unsubscribeAttempts.get());
+        assertEquals(CatalogSectionState.Lifecycle.CLOSED,
+                activeBinding(component.controller().publication().current()).state().lifecycle());
+        component.close();
+        assertEquals(2, builder.unsubscribeAttempts.get());
     }
 
     @Test
@@ -497,6 +533,15 @@ final class CatalogFeatureLifecycleTest {
             }
             AtomicBoolean open = new AtomicBoolean(true);
             return () -> {
+                if (open.get()) {
+                    unsubscribeAttempts.incrementAndGet();
+                    if (unsubscribeFailure instanceof RuntimeException runtimeFailure) {
+                        throw runtimeFailure;
+                    }
+                    if (unsubscribeFailure instanceof Error error) {
+                        throw error;
+                    }
+                }
                 if (open.compareAndSet(true, false)) {
                     active.decrementAndGet();
                     this.listener = ignored -> { };
@@ -514,16 +559,18 @@ final class CatalogFeatureLifecycleTest {
             next.accept(synchronousPublication == null ? current : synchronousPublication);
             AtomicBoolean open = new AtomicBoolean(true);
             return () -> {
-                if (open.compareAndSet(true, false)) {
+                if (open.get()) {
                     unsubscribeAttempts.incrementAndGet();
-                    active.decrementAndGet();
-                    listener = ignored -> { };
                     if (unsubscribeFailure instanceof RuntimeException runtimeFailure) {
                         throw runtimeFailure;
                     }
                     if (unsubscribeFailure instanceof Error error) {
                         throw error;
                     }
+                }
+                if (open.compareAndSet(true, false)) {
+                    active.decrementAndGet();
+                    listener = ignored -> { };
                 }
             };
         }

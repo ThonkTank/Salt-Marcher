@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: Aaron (Product Owner)
-Last Reviewed: 2026-07-23
+Last Reviewed: 2026-07-25
 Source of Truth: Final owner-confirmed observable cross-workflow needs for the
 complete local SaltMarcher GM core and the active input to technical-needs
 derivation.
@@ -26,6 +26,12 @@ spans or precedes individual feature requirements.
   because it accepts no player input.
 - Current code, feature names, feature requirements, architecture, and storage
   are not target constraints.
+- No real users or legacy data exist before the complete GM core reaches
+  feature completion. Development data and pre-completion persisted formats are
+  disposable and create no compatibility, conversion, migration, or fallback
+  obligation. This premise ends only when the completed product is approved for
+  first real use and its initial durable data format is frozen. Current-format
+  restart, recovery, import, and export outcomes remain required before then.
 
 ## Non-Goals
 
@@ -113,6 +119,9 @@ that recoverable object.
 - explicit deletion removes current references and dependent Encounter runtime
   while completed history keeps its fact with an unknown or recoverable-trash
   reference
+- the GM can manage the Campaign's one Roster of independently identified PCs,
+  leave every optional statistic unset, and do so without silently adding a PC
+  to the current Party
 
 ## Confirmed Workflow: Session Preparation And Supporting Content
 
@@ -736,11 +745,14 @@ results; unconfirmed partial results are discarded cleanly. If new work cannot
 be persisted safely, SaltMarcher reports that immediately and never presents it
 as stored. Safe reading, export, and retry remain available.
 
-Application updates preserve Campaigns and resumable runtime state. A failed
-data conversion leaves prior data untouched and usable with the prior
-application version. Damage to one record does not prevent the remaining
-Campaign from opening: SaltMarcher isolates and identifies the record and
-offers recovery or explicit deletion.
+After the completed product's initial durable data format is frozen for first
+real use, application updates preserve Campaigns and resumable runtime state. A
+failed data conversion leaves prior data untouched and usable with the prior
+compatible application version. Before that cutover, development data and
+pre-completion formats create no update-compatibility or conversion obligation.
+Damage to one record does not prevent the remaining Campaign from opening:
+SaltMarcher isolates and identifies the record and offers recovery or explicit
+deletion.
 
 Data belonging to a disabled, missing, or temporarily unavailable capability
 remains intact, stays in complete exports, and becomes usable again when the
@@ -815,8 +827,9 @@ inventory manager.
 - a supporting-capability failure leaves unrelated live and manual workflows
   usable and retains confirmed work
 - cancelled work leaks no unaccepted partial result into Campaign truth
-- updates, damaged individual records, and missing capabilities preserve the
-  last safe unaffected Campaign data
+- after the initial real-use data-format cutover, updates preserve the last safe
+  prior Campaign data; damaged individual records and missing capabilities
+  preserve the last safe unaffected Campaign data at every stage
 - an optional capability can be removed or replaced without breaking unrelated
   workflows, and its retained data returns with the capability
 - an extension obtains network, file, or Campaign-data access only after
@@ -895,7 +908,8 @@ interpretations. The refreshed consistency review reconciled Shop purchases
 and counterparties with the character ledger and resolved owner deletion
 without orphaning or silently deleting the Shop. No unresolved product
 decision remains in the needs baseline. The owner confirmed this complete
-baseline on 2026-07-23.
+baseline on 2026-07-23 and clarified the no-real-user/data activation boundary
+on 2026-07-25.
 
 Exact responsiveness and scale budgets, the detailed weather model, the
 published-rule derivation, persistence and backup mechanisms, and extension
@@ -908,8 +922,9 @@ block technical-needs derivation.
 Every interview workflow has an explicitly confirmed interpretation, every
 known capability is included, excluded, or parked, all cross-workflow handoffs
 have observable desired behavior, and no unresolved product decision blocks
-technical-needs derivation. The owner's final whole-baseline confirmation on
-2026-07-23 satisfies the completion rule of the interview series.
+technical-needs derivation. The owner's whole-baseline confirmation on
+2026-07-23 and activation-boundary clarification on 2026-07-25 satisfy the
+completion rule of the interview series.
 
 ## References
 

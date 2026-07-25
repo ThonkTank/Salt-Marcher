@@ -2,6 +2,7 @@ package features.scene.adapter.javafx;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.creatures.api.CreatureCatalogRow;
@@ -131,6 +132,27 @@ final class SceneContributionTest {
             assertEquals("Ungespeicherte Notiz", textArea(main, "Szenennotizen").getText());
             assertEquals("Ungespeicherter Titel", application.model().current().scenes().getFirst().title());
             assertEquals("Noch nicht angelegt", textField(controls, "Neue Szene").getText());
+        });
+    }
+
+    @Test
+    void persistedNotesReadbackKeepsTheFocusedEditorNode() throws Exception {
+        runOnFxThread(() -> {
+            SceneApplicationService application = application();
+            ShellBinding binding = new SceneContribution(
+                    application, application.model(), statblockId -> { }).bind();
+            binding.onActivate();
+            Parent controls = (Parent) binding.slotContent().get(ShellSlot.COCKPIT_CONTROLS);
+            Parent main = (Parent) binding.slotContent().get(ShellSlot.COCKPIT_MAIN);
+            TextArea notes = textArea(main, "Szenennotizen");
+
+            notes.setText("Dauerhaft bestätigte Notiz");
+            button(main, "Szene speichern").fire();
+
+            assertSame(notes, textArea(main, "Szenennotizen"));
+            assertEquals("Dauerhaft bestätigte Notiz",
+                    application.model().current().scenes().getFirst().notes());
+            assertTrue(labels(controls).contains("Szene aktualisiert."));
         });
     }
 

@@ -18,12 +18,11 @@ public final class SqliteHexMapLocalGateway {
     private final FeatureStoreHandle connections;
 
     public static FeatureStoreDefinition storeDefinition() {
-        HexSqliteSchemaMigrator schemaMigrator = new HexSqliteSchemaMigrator();
+        HexCurrentSchemaInitializer schemaInitializer = new HexCurrentSchemaInitializer();
         return FeatureStoreDefinition.validated(
                 "hex",
                 HexSqliteTargetSchema.validator(),
-                new SqliteMigration(1, schemaMigrator::ensureSchema),
-                new SqliteMigration(2, new HexVersionTwoSchemaMigration()::repair));
+                new SqliteMigration(1, schemaInitializer::initializeCurrent));
     }
 
     public SqliteHexMapLocalGateway(FeatureStoreHandle store) {

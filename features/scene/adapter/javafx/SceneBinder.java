@@ -26,6 +26,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import org.jspecify.annotations.Nullable;
 import shell.api.ShellBinding;
 import shell.api.ShellSlot;
 
@@ -38,6 +39,9 @@ final class SceneBinder {
     private final BorderPane main = new BorderPane();
     private final Map<Long, SceneDraft> sceneDrafts = new HashMap<>();
     private SceneSnapshot latestSnapshot = SceneSnapshot.uninitialized();
+    private @Nullable Label controlsStatus;
+    private @Nullable TextArea focusedNotes;
+    private long renderedFocusedSceneId;
     private PendingCreate pendingCreate;
     private String newSceneDraft = "";
     private long pendingDeleteSceneId;
@@ -57,7 +61,12 @@ final class SceneBinder {
     }
 
     private void render(SceneSnapshot snapshot) {
+        SceneSnapshot previous = latestSnapshot;
         reconcileDrafts(snapshot);
+        if (applyDetailsOnlyReadback(previous, snapshot)) {
+            latestSnapshot = snapshot;
+            return;
+        }
         latestSnapshot = snapshot;
         renderControls(snapshot);
         renderMain(snapshot);
@@ -66,7 +75,8 @@ final class SceneBinder {
     private void renderControls(SceneSnapshot snapshot) {
         controls.getChildren().clear();
         controls.getChildren().add(title("Szenen"));
-        controls.getChildren().add(status(snapshot.statusText()));
+        controlsStatus = status(snapshot.statusText());
+        controls.getChildren().add(controlsStatus);
         for (SceneSnapshot.SceneEntry scene : snapshot.scenes()) {
             controls.getChildren().add(sceneNavigation(scene));
         }
@@ -154,6 +164,8 @@ final class SceneBinder {
         SceneDraft draft = sceneDrafts.get(scene.sceneId());
         TextField title = new TextField(draft == null ? scene.title() : draft.title());
         TextArea notes = new TextArea(draft == null ? scene.notes() : draft.notes());
+        focusedNotes = notes;
+        renderedFocusedSceneId = scene.sceneId();
         notes.setPromptText("Szenennotizen");
         notes.setPrefRowCount(3);
         title.textProperty().addListener((ignored, previous, value) ->
@@ -167,6 +179,73 @@ final class SceneBinder {
         }
         box.getChildren().addAll(title, notes, save);
         return box;
+    }
+
+    private boolean applyDetailsOnlyReadback(SceneSnapshot previous, SceneSnapshot next) {
+        if (controlsStatus == null
+                || focusedNotes == null
+                || renderedFocusedSceneId <= 0L
+                || previous.focusedSceneId() != renderedFocusedSceneId
+                || next.focusedSceneId() != renderedFocusedSceneId
+                || previous.defaultSceneId() != next.defaultSceneId()
+                || previous.initialized() != next.initialized()
+                || !previous.activePartyMembers().equals(next.activePartyMembers())
+                || !previous.availableNpcs().equals(next.availableNpcs())
+                || !previous.availableLocations().equals(next.availableLocations())
+                || !previous.availableCreatures().equals(next.availableCreatures())
+                || !previous.preparedScenes().equals(next.preparedScenes())
+                || previous.scenes().size() != next.scenes().size()) {
+            return false;
+        }
+        boolean focusedSceneFound = false;
+        for (int index = 0; index < previous.scenes().size(); index++) {
+            SceneSnapshot.SceneEntry before = previous.scenes().get(index);
+            SceneSnapshot.SceneEntry after = next.scenes().get(index);
+            if (before.sceneId() != renderedFocusedSceneId) {
+                if (!before.equals(after)) {
+                    return false;
+                }
+                continue;
+            }
+            if (!sameSceneExceptNotes(before, after)) {
+                return false;
+            }
+            focusedSceneFound = true;
+        }
+        if (!focusedSceneFound) {
+            return false;
+        }
+        if (!next.scenes().stream().anyMatch(scene -> scene.sceneId() == renderedFocusedSceneId)) {
+            return false;
+        }
+        SceneSnapshot.SceneEntry focused = next.scenes().stream()
+                .filter(scene -> scene.sceneId() == renderedFocusedSceneId)
+                .findFirst().orElseThrow();
+        SceneDraft draft = sceneDrafts.get(renderedFocusedSceneId);
+        String presentedNotes = draft == null ? focused.notes() : draft.notes();
+        if (!focusedNotes.getText().equals(presentedNotes)) {
+            focusedNotes.setText(presentedNotes);
+        }
+        controlsStatus.setText(next.statusText());
+        return true;
+    }
+
+    private static boolean sameSceneExceptNotes(
+            SceneSnapshot.SceneEntry before,
+            SceneSnapshot.SceneEntry after
+    ) {
+        return before.sceneId() == after.sceneId()
+                && before.title().equals(after.title())
+                && before.defaultScene() == after.defaultScene()
+                && before.focused() == after.focused()
+                && before.provenance().equals(after.provenance())
+                && before.initialEncounterPlanId() == after.initialEncounterPlanId()
+                && before.locationId() == after.locationId()
+                && before.locationName().equals(after.locationName())
+                && before.partyMembers().equals(after.partyMembers())
+                && before.npcs().equals(after.npcs())
+                && before.mobs().equals(after.mobs())
+                && before.participantStates().equals(after.participantStates());
     }
 
     private Node locationBanner(SceneSnapshot snapshot, SceneSnapshot.SceneEntry scene) {

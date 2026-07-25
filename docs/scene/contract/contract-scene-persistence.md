@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-16
+Last Reviewed: 2026-07-25
 Source of Truth: Runtime-scene SQLite storage and recovery semantics.
 
 # Runtime Scene Persistence Contract
@@ -21,6 +21,11 @@ payloads and lifecycle.
   location ID, and order
 - `scene_party_member`: ordered Party character foreign IDs
 - `scene_npc`: ordered World Planner NPC foreign IDs
+- `scene_mob`: ordered Scene-owned assignments of Creature catalog foreign IDs
+  and their positive group counts; Creature facts remain Creatures-owned
+- `scene_participant_state`: Scene-owned per-scene defeated state and quick
+  notes for an assigned PC, NPC, or mob, keyed by participant kind and the
+  corresponding foreign ID; it does not own that participant's source facts
 
 Party details, World Planner details, disposition, creature statblocks, and
 Encounter workflow state MUST NOT be stored in Scene tables.
@@ -51,17 +56,32 @@ MUST NOT overwrite a newer Scene revision.
 
 ## Compatibility And Migration
 
-The `scene` migration owner starts at version 1 in the shared
-`SqliteDatabase`. There is no legacy Scene schema import. Future migrations
-MUST remain additive or explicitly translate the complete workspace before
-raising the owner version. Missing World Planner records remain visible as
-unresolved stable references until the GM removes or replaces them; inactive
-Party members are removed during refresh.
+Until activation of the
+[Product Process Compatibility Covenant](../../project/delivery/aletheia/product-process.md#compatibility-covenant),
+`scene` supports exactly the complete current schema at owner version 1. One
+guarded initializer creates all six Scene tables in a fresh owner namespace.
+There is no additive v1-v3 build-up, predecessor repair, backfill, or workspace
+translation.
+
+The exact owner inventory covers every table, index, view, and trigger named
+with `scene_` or `idx_scene_`. An unversioned partial namespace, a recorded
+version-1 shape that differs from the exact current DDL, an adjacent retired
+Scene object, or a newer owner version MUST fail without mutating stored rows,
+schema objects, or ledger state. Initialization failure MUST NOT fabricate a
+ledger entry. Unsupported development databases are reinitialized rather than
+migrated until Covenant activation.
+
+Missing World Planner records remain visible as unresolved stable references
+until the GM removes or replaces them; inactive Party members are removed
+during refresh. These are current reference semantics, not schema-compatibility
+bridges. Foreign feature IDs remain logical values without cross-owner foreign
+keys or repair.
 
 ## Verification And References
 
-Transactional round trips, relational ownership, stable foreign IDs, and the
-absence of cross-owner foreign keys are executable acceptance targets of
+Transactional round trips, restart readback, relational ownership, stable
+foreign IDs, the absence of cross-owner foreign keys, exact-schema rejection,
+and unchanged unsupported fixtures are executable acceptance targets of
 `check`.
 
 - [Scene Domain](../domain/domain-scene.md)

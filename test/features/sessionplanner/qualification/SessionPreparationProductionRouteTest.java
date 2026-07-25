@@ -834,6 +834,7 @@ final class SessionPreparationProductionRouteTest {
                     party.application(), encounters.application(), encounters.savedPlans(), null,
                     decoratedGeneration, authored, admittedPreparationCpu, admittedPreparationIo,
                     uiDispatcher, diagnostics);
+            planner.start();
 
             seedCreatures(path, canonical);
             PartyServiceAssembly.start(party);

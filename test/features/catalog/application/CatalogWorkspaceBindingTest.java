@@ -36,11 +36,12 @@ final class CatalogWorkspaceBindingTest {
     }
 
     @Test
-    void closeCommitsClosedStateWhenDetachThrowsAndDoesNotRetry() {
+    void closeRetainsFailedDetachUntilAReleaseRetrySucceeds() {
         AtomicInteger detachAttempts = new AtomicInteger();
         CatalogWorkspaceBinding binding = new CatalogWorkspaceBinding(observer -> () -> {
-            detachAttempts.incrementAndGet();
-            throw new IllegalStateException("detach failed");
+            if (detachAttempts.incrementAndGet() == 1) {
+                throw new IllegalStateException("detach failed");
+            }
         });
         binding.attach(ignored -> { });
 
@@ -49,7 +50,9 @@ final class CatalogWorkspaceBindingTest {
         assertThrows(IllegalStateException.class, () -> binding.attach(ignored -> { }));
 
         binding.close();
-        assertEquals(1, detachAttempts.get(), "closed binding must not retry a failed detach");
+        assertEquals(2, detachAttempts.get(), "failed detach remains owned until a retry releases it");
+        binding.close();
+        assertEquals(2, detachAttempts.get());
     }
 
     private static CatalogWorkspaceState state(long revision) {

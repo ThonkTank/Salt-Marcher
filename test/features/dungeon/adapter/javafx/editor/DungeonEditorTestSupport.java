@@ -44,7 +44,6 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.Window;
-import platform.persistence.FeatureStoreDefinition;
 import platform.persistence.TestFeatureStores;
 import platform.ui.catalogcrud.CatalogCrudControlsView;
 import platform.ui.mapcanvas.MapCanvasPane;
@@ -1296,12 +1295,9 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
 
     static Set<String> persistedClusterCellsThroughRepository(long mapId, long clusterId, int level) {
         Set<String> cells = new LinkedHashSet<>();
-        try (platform.persistence.SqliteDatabase database = new platform.persistence.SqliteDatabase(
-                TestFeatureStores.testDatabasePath(), platform.diagnostics.NoopDiagnostics.INSTANCE);
-                var connection =
-                        TestFeatureStores.store(
-                                database,
-                                FeatureStoreDefinition.of("dungeon-test-inspection")).openConnection();
+        try (var connection = TestFeatureStores.current().store(
+                        features.dungeon.adapter.sqlite.gateway.DungeonStoreDefinition.create())
+                .openConnection();
                 var statement = connection.prepareStatement(
                         "SELECT c.cell_x,c.cell_y,c.level_z FROM " + DungeonPersistenceSchema.ROOM_CELLS_TABLE + " c"
                                 + " JOIN " + DungeonPersistenceSchema.ROOMS_TABLE + " r ON r.room_id=c.room_id WHERE r.dungeon_map_id=? AND"
