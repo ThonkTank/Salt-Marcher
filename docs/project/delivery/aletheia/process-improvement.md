@@ -1,6 +1,6 @@
 Status: Active
 Owner: Aletheia B
-Last Reviewed: 2026-07-24
+Last Reviewed: 2026-07-25
 Charter Version: C-0.2.0
 Process Version: B-0.3.1
 Observes Product Process: A-0.3.2
@@ -242,6 +242,57 @@ Method evidence is preserved in the global mirror at
 `references/quality-platforms/oracle-javafx-css-reference.md`,
 `references/quality-platforms/oracle-javafx-25-accessibility-conformance.md`,
 and `references/quality-platforms/testfx-readme.md`.
+
+## One-Question Architecture-Probe Research
+
+Research verdict: `METHODS_SUPPORTED; no process delta or adoption candidate`.
+
+Three mechanisms solve different parts of incremental architectural learning:
+
+1. A prioritized quality scenario names the stimulus, response, architectural
+   approach, sensitivity, and tradeoff to challenge. SEI's ATAM supports this
+   risk selection, but its scenario analysis is not practical product proof.
+2. One self-contained vertical change keeps the production route, its use, and
+   related test together. Google's small-change guidance supports narrower
+   review, lower rejected-work cost, vertical slicing, and simpler rollback;
+   smallness alone neither identifies the important uncertainty nor supplies a
+   valid oracle.
+3. A frozen candidate-versus-control comparison with an explicit verdict and
+   rollback isolates one changed variable. Google Cloud uses canary and control
+   groups, progressive exposure, synthetic workloads, automatic verdicts, and
+   rollback. SaltMarcher has no interchangeable production replicas or users
+   before feature completion, so only the controlled-comparison structure is
+   transferable; the canary must run on an isolated synthetic production route.
+
+M1 supplies a useful historical calibration case, not a timing comparison.
+Commit `77c97f27b` disabled the prepared Campaign shell in
+`app/AppBootstrap.java` before publication while the then-current production
+journey did not ask whether the active root was enabled. The current slice
+identifies a calibration to preserve: run its unchanged visible journey with
+only the shell re-enable cause removed, then with that cause restored. If an
+independent replay preserves the exact command, candidate commits, and literal
+results and observes fail then pass, it can qualify the acceptance-derived
+question "after Campaign activation, is the shown shell enabled and operable?"
+as an oracle for this one escape. It still cannot show that asking the question
+earlier would have reduced rework, because the historical comparison changes
+both oracle presence and product revision and cannot replay past timing.
+
+No evaluation under [Process Evaluation](process-evaluation.md) is therefore
+requested. Before B may propose any timing delta, it must find a prospectively
+selected uncertainty and freeze its canonical acceptance ID and owner, one
+implementation-neutral question, the same executable production route and
+oracle, the baseline and candidate timing rule, candidate state, resource cap,
+and rollback. The comparison must isolate timing rather than adding an oracle
+only to one arm. If that cannot be done without changing product work or
+withholding useful evidence from A, the timing proposal is not testable and
+must be abandoned. Product Process `A-0.3.2` already requires a decisive route
+and oracle at slice start, so research alone currently justifies no A change.
+
+Method evidence is preserved at
+`references/architecture-specification/sei-atam-collection.md`,
+`references/continuous-refactoring/google-small-cls.md`, and
+`references/change-governance/google-cloud-approach-to-change.md` in the global
+mirror governed by [Source References](../../verification/source-references.md).
 
 ## Adopted Compatibility-Baseline Trigger
 

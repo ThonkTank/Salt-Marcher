@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-24
+Last Reviewed: 2026-07-25
 Process Pin: A-0.3.0 at 25a3610b83b8959099cf84a8de5d309fb62cea91
 Candidate Base: 25a3610b83b8959099cf84a8de5d309fb62cea91
 Source of Truth: Temporary delivery state for Campaign runtime slice #557.
@@ -15,10 +15,18 @@ exact restart resume. Product behavior remains owned by the [Program Capability
 Requirements](../../requirements/requirements-program-capabilities.md); this
 file owns only current delivery state.
 
-The production journey creates Campaigns Alpha and Beta using only a name,
-gives each distinct Scene, Encounter, and Party travel state, switches
-`Alpha -> Beta -> Alpha -> Beta` without closure or confirmation, restarts the
-process, compares semantic state, and accepts another durable mutation.
+The frozen production-composition journey creates Campaigns Alpha and Beta,
+seeds each distinct Scene, Encounter, and Party travel state through the
+Campaign-owned production services, exercises repeated switching without
+closure or confirmation, and reads every exact value from the current
+production shell. Across the suite it covers `Alpha -> Beta -> Alpha -> Beta`,
+process restart, repeated semantic readback, and another durable mutation. It
+qualifies state isolation and exact resume; it does not claim that the current
+installed UI authors every marker.
+The separate installed owner journey creates both Campaigns using only a name
+and qualifies keyboard-operated selection, immediate switching, restart resume,
+focus, and understandable visible state. Party, map, and travel-authoring UI
+remains owned by later acceptance slices.
 
 ## Entry Evidence
 
@@ -175,8 +183,19 @@ independent evaluator reruns it from the candidate commit with
 `./gradlew test --tests app.CampaignRuntimeProductionJourneyTest
 --console=plain`. The test must exercise production composition and SQLite in a
 temporary data directory for the complete `Alpha -> Beta -> Alpha -> Beta`,
-process-restart, semantic-readback, and next-mutation journey. A passing result
-is necessary but does not replace visible keyboard and desktop acceptance.
+process-restart, visible semantic readback from the active production shell,
+and next-mutation journey. A passing result is necessary but does not replace
+visible keyboard and desktop acceptance. Its Scene, Encounter, and travel
+markers are written through the Campaign-owned production services and read
+from the current JavaFX shell to decide `AC-F02` isolation and resume; they are
+not evidence that later visible authoring workflows already exist.
+
+The implementer ran one pre-commit causal control with the focused production
+method `campaignDeskCreatesListsAndImmediatelySwitchesWholeProductionCampaigns`.
+Removing only the active-shell re-enable from `CampaignRuntime` made the
+unchanged journey fail at its enabled-root oracle; restoring it made the same
+command green. This establishes the immediate cause locally, but does not
+replace the required independent replay of the final committed candidate.
 
 ## Exit
 

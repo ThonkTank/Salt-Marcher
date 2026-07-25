@@ -4,11 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.campaign.api.CampaignId;
 import features.encounter.api.EncounterPoolFilters;
 import features.encounter.api.UpdateEncounterPoolFiltersCommand;
+import features.hex.api.CreateHexMapCommand;
+import features.hex.api.MoveHexPartyTokenCommand;
 import features.party.api.CharacterDraft;
 import features.party.api.CreateCharacterCommand;
 import features.party.api.MembershipState;
@@ -129,6 +132,8 @@ public final class CampaignRuntimeProductionJourneyTest {
         Path installationPath = caseRoot.resolve("installation.sqlite");
         Path campaignRoot = caseRoot.resolve("campaigns");
         CampaignId alphaId;
+        VisibleCampaignTruth alphaTruth;
+        VisibleCampaignTruth betaTruth;
 
         ProductionHostHarness host = new ProductionHostHarness();
         try (AppBootstrap bootstrap = bootstrapAt(installationPath)) {
@@ -144,6 +149,10 @@ public final class CampaignRuntimeProductionJourneyTest {
             alphaId = coordinator.snapshot().durableActivation().orElseThrow()
                     .campaign().orElseThrow().id();
             mutateAndAssert(coordinator.activeRuntimeForTesting(), "Alpha desk", 31L, 301L);
+            alphaTruth = seedVisibleCampaignTruth(
+                    coordinator.activeRuntimeForTesting(), "Alpha desk", 1, -1);
+            assertVisibleCampaignTruth(host.window(), alphaTruth, null);
+            javafx.scene.Parent alphaRoot = currentRoot(host.window());
 
             openCampaignDeskWithKeyboard(host.window(), host.production);
             awaitFxCondition(() -> campaignNameField(host.window()) != null
@@ -156,6 +165,11 @@ public final class CampaignRuntimeProductionJourneyTest {
                     && coordinator.snapshot().durableActivation().orElseThrow()
                             .campaign().orElseThrow().name().equals("Beta"));
             mutateAndAssert(coordinator.activeRuntimeForTesting(), "Beta desk", 32L, 302L);
+            betaTruth = seedVisibleCampaignTruth(
+                    coordinator.activeRuntimeForTesting(), "Beta desk", -1, 1);
+            assertRootReplaced(host.window(), alphaRoot);
+            assertVisibleCampaignTruth(host.window(), betaTruth, alphaTruth);
+            javafx.scene.Parent betaRoot = currentRoot(host.window());
 
             openCampaignDeskWithKeyboard(host.window(), host.production);
             awaitFxCondition(() -> campaignRow(host.window(), "Alpha") != null
@@ -165,11 +179,19 @@ public final class CampaignRuntimeProductionJourneyTest {
                     == CampaignActivationCoordinator.Phase.ACTIVE
                     && coordinator.snapshot().durableActivation().orElseThrow()
                             .campaign().orElseThrow().id().equals(alphaId));
-            assertCampaignState(coordinator.activeRuntimeForTesting(), "Alpha desk", 31L, 301L);
+            assertRootReplaced(host.window(), betaRoot);
+            assertVisibleCampaignTruth(host.window(), alphaTruth, betaTruth);
             assertEquals(
                     SceneMutationResult.Status.SUCCESS,
                     await(coordinator.activeRuntimeForTesting().components().scene().application()
                             .execute(new SceneCommand.Create("Alpha desk next mutation"))).status());
+            alphaTruth = alphaTruth.withSceneTitle("Alpha desk next mutation");
+            coordinator.activeRuntimeForTesting().components().encounter().application().updatePoolFilters(
+                    new UpdateEncounterPoolFiltersCommand(filters(alphaTruth.encounterFilter())));
+            VisibleCampaignTruth expectedAlpha = alphaTruth;
+            awaitCondition(() -> expectedAlpha.encounterFilter().equals(
+                    coordinator.activeRuntimeForTesting().components().encounter()
+                            .poolFilters().current().nameQuery()));
         }
         host.closeWindow();
 
@@ -182,7 +204,14 @@ public final class CampaignRuntimeProductionJourneyTest {
                     && campaignRow(restartedHost.window(), "Beta") != null);
             runOnFx(() -> campaignRow(restartedHost.window(), "Alpha").fire());
             awaitCondition(() -> coordinator.snapshot().phase()
-                    == CampaignActivationCoordinator.Phase.ACTIVE);
+                    == CampaignActivationCoordinator.Phase.ACTIVE
+                    && coordinator.snapshot().durableActivation().orElseThrow()
+                            .campaign().orElseThrow().id().equals(alphaId));
+            assertEquals(
+                    alphaTruth.encounterFilter(),
+                    coordinator.activeRuntimeForTesting().components().encounter()
+                            .poolFilters().current().nameQuery());
+            assertVisibleCampaignTruth(restartedHost.window(), alphaTruth, betaTruth);
             assertTrue(coordinator.activeRuntimeForTesting().components().scene().model().current()
                     .scenes().stream().anyMatch(scene ->
                             "Alpha desk next mutation".equals(scene.title())));
@@ -212,6 +241,9 @@ public final class CampaignRuntimeProductionJourneyTest {
         submitCampaignName(firstWindow, "Auto resume");
         awaitActiveRuntime(firstBootstrap);
         mutateAndAssert(firstBootstrap.campaignRuntimeForTesting(), "Auto resume", 41L, 401L);
+        VisibleCampaignTruth visibleTruth = seedVisibleCampaignTruth(
+                firstBootstrap.campaignRuntimeForTesting(), "Auto resume", 2, -1);
+        assertVisibleCampaignTruth(firstWindow, visibleTruth, null);
         stopApplication(firstApplication, firstBootstrap, firstWindow);
 
         AppBootstrap restartedBootstrap = bootstrapAt(installationPath);
@@ -223,8 +255,7 @@ public final class CampaignRuntimeProductionJourneyTest {
 
         assertEquals(1, restartedApplication.campaignHostForTesting()
                 .startupResumeAttemptsForTesting());
-        assertCampaignState(
-                restartedBootstrap.campaignRuntimeForTesting(), "Auto resume", 41L, 401L);
+        assertVisibleCampaignTruth(restartedWindow, visibleTruth, null);
         assertEquals(
                 SceneMutationResult.Status.SUCCESS,
                 await(restartedBootstrap.campaignRuntimeForTesting().components().scene()
@@ -802,6 +833,189 @@ public final class CampaignRuntimeProductionJourneyTest {
         return new EncounterPoolFilters(
                 marker, "", "", List.of(), List.of(), List.of(), List.of(), List.of(),
                 List.of(), List.of(), 0L);
+    }
+
+    private static VisibleCampaignTruth seedVisibleCampaignTruth(
+            CampaignRuntime runtime,
+            String marker,
+            int q,
+            int r
+    ) throws Exception {
+        String sceneTitle = marker + " visible Scene";
+        String encounterFilter = marker + " visible Encounter";
+        String routeName = marker + " visible Route";
+        assertEquals(
+                SceneMutationResult.Status.SUCCESS,
+                await(runtime.components().scene().application().execute(
+                        new SceneCommand.Create(sceneTitle))).status());
+
+        runtime.components().encounter().application().updatePoolFilters(
+                new UpdateEncounterPoolFiltersCommand(filters(encounterFilter)));
+        awaitCondition(() -> encounterFilter.equals(
+                runtime.components().encounter().poolFilters().current().nameQuery()));
+
+        runtime.components().hex().editor().createMap(new CreateHexMapCommand(routeName, 4));
+        awaitCondition(() -> runtime.components().hex().editorModel().current().selectedMap()
+                .filter(map -> routeName.equals(map.displayName()))
+                .isPresent());
+        long mapId = runtime.components().hex().editorModel().current().selectedMap()
+                .orElseThrow().mapId().value();
+        awaitCondition(() -> !runtime.components().party().activeParty().current().members().isEmpty());
+        long memberId = runtime.components().party().activeParty().current().members().getFirst().id();
+        runtime.components().hex().travel().movePartyToken(
+                new MoveHexPartyTokenCommand(mapId, q, r, List.of(memberId)));
+        String visibleRoute = routeName + " " + q + "," + r;
+        awaitCondition(() -> {
+            var context = runtime.components().travel().model().current();
+            return visibleRoute.equals(context.mapName())
+                    && "Hex-Reise".equals(contextLabel(context.kind()));
+        });
+        return new VisibleCampaignTruth(sceneTitle, encounterFilter, visibleRoute);
+    }
+
+    private static String contextLabel(features.travel.api.TravelContextKind kind) {
+        return kind == features.travel.api.TravelContextKind.HEX ? "Hex-Reise" : "";
+    }
+
+    private static void assertVisibleCampaignTruth(
+            Stage stage,
+            VisibleCampaignTruth expected,
+            VisibleCampaignTruth forbidden
+    ) throws Exception {
+        awaitFxCondition(() -> !stage.getScene().getRoot().isDisabled());
+        runOnFx(() -> assertFalse(stage.getScene().getRoot().isDisabled(),
+                "the committed Campaign shell must be keyboard-operable"));
+        fireNavigation(stage, "Szenen");
+        awaitFxCondition(() -> presentedTextFieldWithValue(stage, expected.sceneTitle()) != null);
+        runOnFx(() -> {
+            assertTrue(presentedTextFieldWithValue(stage, expected.sceneTitle()) != null);
+            if (forbidden != null) {
+                assertFalse(presentedText(stage, forbidden.sceneTitle()));
+            }
+        });
+
+        fireStateTab(stage, "Reise");
+        awaitFxCondition(() -> presentedText(stage, expected.visibleRoute())
+                && presentedText(stage, "Hex-Reise"));
+        runOnFx(() -> {
+            assertTrue(presentedText(stage, expected.visibleRoute()));
+            assertTrue(presentedText(stage, "Hex-Reise"));
+            if (forbidden != null) {
+                assertFalse(presentedText(stage, forbidden.visibleRoute()));
+            }
+        });
+
+        fireNavigation(stage, "Katalog");
+        awaitFxCondition(() -> {
+            javafx.scene.control.TextField field = presentedTextField(stage, "Monster suchen");
+            return field != null && expected.encounterFilter().equals(field.getText());
+        });
+        runOnFx(() -> {
+            javafx.scene.control.TextField field = presentedTextField(stage, "Monster suchen");
+            assertTrue(field != null);
+            assertEquals(expected.encounterFilter(), field.getText());
+            if (forbidden != null) {
+                assertNotEquals(forbidden.encounterFilter(), field.getText());
+                assertFalse(presentedText(stage, forbidden.encounterFilter()));
+            }
+        });
+    }
+
+    private static void fireNavigation(Stage stage, String accessibleText) throws Exception {
+        awaitFxCondition(() -> presentedToggle(stage, ".nav-btn", accessibleText, null) != null);
+        runOnFx(() -> presentedToggle(stage, ".nav-btn", accessibleText, null).fire());
+    }
+
+    private static void fireStateTab(Stage stage, String text) throws Exception {
+        awaitFxCondition(() -> presentedToggle(stage, ".scene-tab", null, text) != null);
+        runOnFx(() -> presentedToggle(stage, ".scene-tab", null, text).fire());
+        awaitFxCondition(() -> presented(stage, stage.getScene().lookup(".travel-pane")));
+    }
+
+    private static javafx.scene.control.ToggleButton presentedToggle(
+            Stage stage,
+            String selector,
+            String accessibleText,
+            String text
+    ) {
+        return stage.getScene().getRoot().lookupAll(selector).stream()
+                .filter(javafx.scene.control.ToggleButton.class::isInstance)
+                .map(javafx.scene.control.ToggleButton.class::cast)
+                .filter(button -> accessibleText == null
+                        || accessibleText.equals(button.getAccessibleText()))
+                .filter(button -> text == null || text.equals(button.getText()))
+                .filter(button -> !button.isDisabled())
+                .filter(button -> presented(stage, button))
+                .findFirst().orElse(null);
+    }
+
+    private static javafx.scene.control.TextField presentedTextField(
+            Stage stage,
+            String accessibleText
+    ) {
+        return stage.getScene().getRoot().lookupAll(".text-field").stream()
+                .filter(javafx.scene.control.TextField.class::isInstance)
+                .map(javafx.scene.control.TextField.class::cast)
+                .filter(field -> accessibleText.equals(field.getAccessibleText()))
+                .filter(field -> presented(stage, field))
+                .findFirst().orElse(null);
+    }
+
+    private static javafx.scene.control.TextField presentedTextFieldWithValue(
+            Stage stage,
+            String value
+    ) {
+        return stage.getScene().getRoot().lookupAll(".text-field").stream()
+                .filter(javafx.scene.control.TextField.class::isInstance)
+                .map(javafx.scene.control.TextField.class::cast)
+                .filter(field -> value.equals(field.getText()))
+                .filter(field -> presented(stage, field))
+                .findFirst().orElse(null);
+    }
+
+    private static boolean presentedText(Stage stage, String text) {
+        return stage.getScene().getRoot().lookupAll(".label").stream()
+                .filter(javafx.scene.control.Label.class::isInstance)
+                .map(javafx.scene.control.Label.class::cast)
+                .anyMatch(label -> text.equals(label.getText()) && presented(stage, label));
+    }
+
+    private static boolean presented(Stage stage, javafx.scene.Node node) {
+        if (node == null || node.getScene() != stage.getScene()) {
+            return false;
+        }
+        for (javafx.scene.Node current = node; current != null; current = current.getParent()) {
+            if (!current.isVisible()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static javafx.scene.Parent currentRoot(Stage stage) throws Exception {
+        AtomicReference<javafx.scene.Parent> root = new AtomicReference<>();
+        runOnFx(() -> root.set(stage.getScene().getRoot()));
+        return root.get();
+    }
+
+    private static void assertRootReplaced(Stage stage, javafx.scene.Parent previousRoot)
+            throws Exception {
+        runOnFx(() -> {
+            assertNotSame(previousRoot, stage.getScene().getRoot());
+            assertTrue(previousRoot.getScene() == null
+                            || previousRoot.getScene().getWindow() == null,
+                    "the prior Campaign root must be detached from the active Stage");
+        });
+    }
+
+    private record VisibleCampaignTruth(
+            String sceneTitle,
+            String encounterFilter,
+            String visibleRoute
+    ) {
+        private VisibleCampaignTruth withSceneTitle(String nextSceneTitle) {
+            return new VisibleCampaignTruth(nextSceneTitle, encounterFilter, visibleRoute);
+        }
     }
 
     private static <T> T await(CompletionStage<T> stage) throws Exception {

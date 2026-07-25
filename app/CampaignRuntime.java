@@ -453,6 +453,8 @@ final class CampaignRuntime implements AutoCloseable {
             if (!state.compareAndSet(State.PREPARED, State.ACTIVE)) {
                 throw new IllegalStateException("Campaign shell was not in PREPARED state");
             }
+            safeShell.setDisable(false);
+            safeShell.setAccessibleHelp("");
         });
     }
 

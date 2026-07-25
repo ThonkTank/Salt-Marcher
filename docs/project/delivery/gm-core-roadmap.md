@@ -1,6 +1,6 @@
 Status: Active
 Owner: Aletheia A
-Last Reviewed: 2026-07-24
+Last Reviewed: 2026-07-25
 Source of Truth: Revisable program-wide sequencing and completion guidance for
 the interview-derived local GM core.
 
@@ -61,12 +61,12 @@ the Product Process.
   audited every other capability against every canonical acceptance outcome;
   all other milestone completion remains unassessed until live,
   requirement-by-requirement Next-Step Revalidation.
-- The live main worktree currently contains an uncommitted activation,
-  whole-shell switching, and Campaign-selector candidate. Its live evidence
+- The active Campaign branch contains the activation, whole-shell switching,
+  Campaign selector, and visible exact-resume candidate. Its live evidence
   belongs in the [Campaign Runtime Slice](campaign-runtime/README.md); until
-  that owner records accepted commit, independent replay, required full
-  `./gradlew check`, CI, installed-desktop proof, and owner acceptance, the
-  candidate remains work in progress rather than an accepted milestone.
+  that owner records final independent replay, required full `./gradlew check`,
+  CI, installed-desktop proof, and owner acceptance, the candidate remains work
+  in progress rather than an accepted milestone.
 - No real users or legacy data exist before complete GM-Core feature
   completion. Consequently, no active or proposed pre-completion slice owes a
   legacy conversion, compatibility bridge, migration, fallback, or
@@ -81,10 +81,15 @@ the Product Process.
   `TN-01`, `TN-02`, `TN-07`, `TN-15`, `TN-16`, and `TN-21`.
 - **Dependency hypothesis:** whole-program work needs a truthful active-Campaign
   boundary before Campaign-owned capabilities can be integrated safely.
-- **Practical proof:** from the installed application create Alpha and Beta by
-  name, give each distinct Scene, Encounter, and travel truth, switch
-  `Alpha -> Beta -> Alpha -> Beta`, restart, compare semantic state, and make
-  another durable mutation; inject pre- and post-commit activation failures.
+- **Practical proof:** a production-composition replay creates Alpha and Beta,
+  seeds each through the Campaign-owned production services, then reads the
+  exact focused Scene, Encounter filter, and travel location from the current
+  production shell after switches and process restart before making another
+  durable mutation. Fault injection covers pre- and post-commit activation
+  failures. Separately, the installed application proves name-only creation
+  plus immediate keyboard-operated selection, switching, and exact restart
+  resume. This milestone does not claim that the still-later Party, map, or
+  travel-authoring UI is already available merely to seed the isolation proof.
 - **Owner acceptance:** Aaron operates the selector and all switch/restart
   states by keyboard and confirms immediate, understandable behavior.
 - **Exit and reopen:** exit only after the active slice's frozen replay, full
@@ -93,37 +98,57 @@ the Product Process.
   switching.
 - **Exclusions:** Campaign copy, import/export/deletion and every later workflow.
 
-### M2 — Campaign Knowledge, Roster, And Object Lifecycle
+### M2a — Campaign Roster
 
-- **Outcome and needs:** `AC-F05` through `AC-F09`, `AC-Q14`; chiefly
-  `TN-01` through `TN-06`, `TN-10`, `TN-13`, `TN-28`, `TN-33`, and `TN-34`.
-- **Dependency hypothesis:** stable identity, reusable definitions,
-  Campaign-owned records, Roster data, note-first content, copying, and explicit
-  deletion must be trustworthy before richer workflows depend on them.
-- **Practical proof:** create namesakes and minimum-data records, copy a
-  reference closure across Campaigns, change a shared definition, attach and
-  opt out from Scene creation, then delete/restore while comparing live,
-  dependent, trash, and completed-fact projections across restart.
-- **Owner acceptance:** Aaron creates and edits Roster PCs and lightweight
-  NPC/place/faction/Quest/rumour records from ordinary and Scene contexts, then
-  judges copy, deletion, unknown-history, and recovery interactions.
-- **Exit and reopen:** exit when every target changes only its declared scope
-  and current versus completed facts remain intelligible. Reopen identity,
-  ownership, or lifecycle if any bridge or copied mutable truth appears.
-- **Exclusions:** automated narrative resolution, full character sheets, and
-  late Monster/Item definition-management QoL.
+- **Outcome and needs:** the canonical one-Roster-per-Campaign behavior as a
+  directly usable prerequisite for later current-Party and Scene outcomes;
+  chiefly `TN-01`, `TN-02`, and `TN-28`. This slice does not claim final
+  qualification of `AC-Q14`, `AC-L02`, or `AC-C02`.
+- **Dependency hypothesis:** the first foundational assumption worth testing is
+  whether the GM can manage all Campaign PCs independently from current table
+  participation. Broader Campaign-object lifecycle and Party/Scene transitions
+  are not prerequisites for this usable vertical slice.
+- **Practical proof:** from the production UI create a PC with only a name,
+  create two same-named PCs with distinct identity, edit or omit every optional
+  statistic, switch Campaigns, restart, and visibly compare exact Roster truth.
+  Creation must not silently enroll a PC in the current Party. A causal
+  counterexample must show the current mandatory-statistics or
+  automatic-membership behavior failing the same journey.
+- **Owner acceptance:** Aaron creates, corrects, and distinguishes
+  representative PCs entirely through the installed application and judges the
+  Campaign Roster understandable without relying on current-Party controls.
+- **Exit and reopen:** exit only when missing optional statistics never block
+  Roster management, same-named PCs retain distinct identity, Roster creation
+  leaves Party and Scene membership unchanged, and the other Campaign remains
+  unchanged. Reopen identity, Roster ownership, or navigation if namesakes
+  merge or the visible flow needs a bridge around the chosen model.
+- **Exclusions:** current-Party participation and every Party/Scene transition;
+  `AC-Q14`; Campaign copy; NPC/place/faction/Quest/rumour records; definition
+  refresh; Scene attachment; completed history; generic object
+  deletion/trash/restore; and compatibility work for disposable development
+  data.
 
-### M3 — Continuous Scenes, Party Splits, And Runtime Masks
+After M2a, Next-Step Revalidation chooses between the complete M3 current-Party
+and Scene flow and a small M2b knowledge-record slice only if one concrete
+downstream workflow makes that record immediately useful. `AC-F05` is not
+scheduled until a complete source/target object flow can prove independent
+editing; `AC-F07` is not scheduled until a note-first record has a real
+production use. `AC-Q14` moves to the first automatic PC workflow that can
+prove both relevant missing-value blocking and unrelated workflow continuity.
 
-- **Outcome and needs:** `AC-L02` through `AC-L07`, `AC-C02`, `AC-C03`; chiefly
-  `TN-02`, `TN-03`, `TN-05`, `TN-07`, `TN-08`, `TN-11`, `TN-15`, `TN-16`,
-  `TN-21`, `TN-28`, and `TN-31`.
+### M3 — Current Party, Continuous Scenes, And Runtime Masks
+
+- **Outcome and needs:** `AC-F08`, `AC-L02` through `AC-L07`, `AC-C02`,
+  `AC-C03`; chiefly `TN-02`, `TN-03`, `TN-05`, `TN-07`, `TN-08`, `TN-10`,
+  `TN-11`, `TN-15`, `TN-16`, `TN-21`, `TN-28`, `TN-31`, and `TN-34`.
 - **Dependency hypothesis:** authoritative Party/Scene membership and pending
   reconciliation must precede planning, travel, and outcome work that spans
   several live contexts.
-- **Practical proof:** activate, split, move, reunite, and deactivate
-  characters across several continuously usable Scenes and coexisting masks;
-  inject Scene/Encounter failures and restart through visibly pending retry.
+- **Practical proof:** activate and deactivate Roster PCs through the current
+  Party, attach name-only creation to the focused Scene by default with opt-out,
+  then split, move, and reunite characters across several continuously usable
+  Scenes and coexisting masks; inject Scene/Encounter failures and restart
+  through visibly pending retry.
 - **Owner acceptance:** Aaron runs the complete Scene, Party, Catalog-add,
   lightweight-create, and multi-mask flow without leaving the live workspace.
 - **Exit and reopen:** exit with exactly one Scene per active PC, no implicit
@@ -156,18 +181,21 @@ the Product Process.
 - **Exclusions:** weather preparation, automatic combat start, automatic award,
   and general-purpose dice rolling.
 
-### M5 — Encounter Outcome, Rewards, Ledger, And History
+### M5 — Encounter Outcome, Rewards, Lifecycle, And History
 
-- **Outcome and needs:** `AC-R01` through `AC-R08`, `AC-C01`, `AC-C04`; chiefly
-  `TN-01`, `TN-02`, `TN-04`, `TN-06`, `TN-10`, `TN-12`, `TN-13`, `TN-21`,
-  `TN-28`, `TN-33`, and `TN-35`.
+- **Outcome and needs:** `AC-F06`, `AC-F09`, `AC-R01` through `AC-R08`,
+  `AC-C01`, `AC-C04`; chiefly `TN-01` through `TN-06`, `TN-10`, `TN-12`,
+  `TN-13`, `TN-21`, `TN-28`, `TN-33`, and `TN-35`.
 - **Dependency hypothesis:** the Scene/mask and preparation flows supply real
   participants, groups, treasures, provenance, and authoritative contexts for
   a useful follow-up slice.
 - **Practical proof:** complete an Encounter with selected rounded XP, HP/death
   carry-forward, deferred notice, partial reward distribution, ledger stack
   edits, sale/give-away reminders, loot compensation, correction, backdating,
-  and restart; fault each coupled outcome and prove old-or-new truth.
+  and restart; change a reusable definition and compare current versus frozen
+  completed facts, then delete/restore a referenced object while comparing
+  current dependents, runtime, trash, and `[UNKNOWN]` history. Fault each
+  coupled outcome and prove old-or-new truth.
 - **Owner acceptance:** Aaron completes and corrects representative Encounter
   and Quest outcomes, distributes every Item explicitly, and judges ledger and
   explanatory history useful without losing the Running Scene.
