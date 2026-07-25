@@ -1944,6 +1944,8 @@ public final class CampaignRuntimeProductionJourneyTest {
             fireKey(stage.getScene().getRoot(), javafx.scene.input.KeyCode.K, true);
         });
         awaitFxCondition(campaignHost::deskVisibleForTesting);
+        awaitFxCondition(() -> campaignNameField(stage) != null
+                && !campaignNameField(stage).isDisabled());
     }
 
     private static void fireKey(
