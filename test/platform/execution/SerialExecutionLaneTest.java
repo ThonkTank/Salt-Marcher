@@ -126,6 +126,61 @@ final class SerialExecutionLaneTest {
         lane.close();
     }
 
+    @Test
+    void terminalShutdownInterruptsRunningWorkAndCancelsQueuedWorkWithinBudget() throws Exception {
+        SerialExecutionLane lane = new SerialExecutionLane(noopDiagnostics());
+        CountDownLatch running = new CountDownLatch(1);
+        CountDownLatch interrupted = new CountDownLatch(1);
+        AtomicBoolean queuedRan = new AtomicBoolean();
+        lane.execute(() -> {
+            running.countDown();
+            try {
+                new CountDownLatch(1).await();
+            } catch (InterruptedException expected) {
+                interrupted.countDown();
+                Thread.currentThread().interrupt();
+            }
+        });
+        lane.execute(() -> queuedRan.set(true));
+        assertTrue(running.await(5L, TimeUnit.SECONDS));
+
+        assertEquals(
+                SerialExecutionLane.TerminationResult.TERMINATED,
+                lane.terminateNow(java.time.Duration.ofSeconds(1)));
+        assertTrue(interrupted.await(1L, TimeUnit.SECONDS));
+        assertFalse(queuedRan.get());
+    }
+
+    @Test
+    void terminalShutdownTimesOutHonestlyAndCanBeRetriedAfterNoncooperativeWorkEnds()
+            throws Exception {
+        SerialExecutionLane lane = new SerialExecutionLane(noopDiagnostics());
+        CountDownLatch running = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        lane.execute(() -> {
+            running.countDown();
+            boolean done = false;
+            while (!done) {
+                try {
+                    release.await();
+                    done = true;
+                } catch (InterruptedException ignored) {
+                    // Synthetic non-cooperative dependency.
+                }
+            }
+        });
+        assertTrue(running.await(5L, TimeUnit.SECONDS));
+
+        assertEquals(
+                SerialExecutionLane.TerminationResult.TIMED_OUT,
+                lane.terminateNow(java.time.Duration.ofMillis(50)));
+        assertFalse(lane.terminated());
+        release.countDown();
+        assertEquals(
+                SerialExecutionLane.TerminationResult.TERMINATED,
+                lane.terminateNow(java.time.Duration.ofSeconds(1)));
+    }
+
     private static Diagnostics noopDiagnostics() {
         return (id, type) -> { };
     }

@@ -13,6 +13,8 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
@@ -29,6 +31,9 @@ public final class CampaignRegistryApplicationService implements CampaignRegistr
     private final Diagnostics diagnostics;
     private final ExecutionLane executionLane;
     private final CampaignRegistryStore store;
+    private final java.util.Set<PendingOperation<?>> pending = ConcurrentHashMap.newKeySet();
+    private final Object admission = new Object();
+    private volatile boolean stopping;
 
     public CampaignRegistryApplicationService(
             Diagnostics diagnostics,
@@ -140,24 +145,72 @@ public final class CampaignRegistryApplicationService implements CampaignRegistr
     private <T> CompletionStage<T> submit(
             StoreSupplier<T> operation,
             Supplier<T> failureResult) {
-        CompletableFuture<T> result = new CompletableFuture<>();
-        try {
-            executionLane.execute(() -> {
-                try {
-                    result.complete(operation.get());
-                } catch (CampaignRegistryStoreFailure failure) {
-                    diagnostics.failure(STORAGE_FAILURE, failure.getClass());
-                    result.complete(failureResult.get());
-                } catch (RuntimeException unexpectedFailure) {
-                    result.completeExceptionally(unexpectedFailure);
-                    throw unexpectedFailure;
-                }
-            });
-        } catch (RejectedExecutionException rejected) {
-            diagnostics.failure(EXECUTION_REJECTED, rejected.getClass());
-            result.complete(failureResult.get());
+        PendingOperation<T> pendingOperation = new PendingOperation<>(failureResult);
+        synchronized (admission) {
+            if (stopping) {
+                return CompletableFuture.completedFuture(failureResult.get());
+            }
+            pending.add(pendingOperation);
+            try {
+                executionLane.execute(() -> runPending(pendingOperation, operation));
+            } catch (RejectedExecutionException rejected) {
+                diagnostics.failure(EXECUTION_REJECTED, rejected.getClass());
+                pending.remove(pendingOperation);
+                pendingOperation.started.set(true);
+                pendingOperation.result.complete(failureResult.get());
+            }
         }
-        return result;
+        return pendingOperation.result;
+    }
+
+    private <T> void runPending(PendingOperation<T> pendingOperation, StoreSupplier<T> operation) {
+        synchronized (admission) {
+            if (!pendingOperation.started.compareAndSet(false, true)) {
+                return;
+            }
+        }
+        try {
+            pendingOperation.result.complete(operation.get());
+        } catch (CampaignRegistryStoreFailure failure) {
+            diagnostics.failure(STORAGE_FAILURE, failure.getClass());
+            pendingOperation.result.complete(pendingOperation.failureResult.get());
+        } catch (RuntimeException | Error unexpectedFailure) {
+            pendingOperation.result.completeExceptionally(unexpectedFailure);
+            throw unexpectedFailure;
+        } finally {
+            pending.remove(pendingOperation);
+        }
+    }
+
+    public void requestTerminalShutdown() {
+        synchronized (admission) {
+            stopping = true;
+            for (PendingOperation<?> operation : pending) {
+                operation.cancelIfQueued();
+            }
+        }
+        store.requestTerminalShutdown();
+    }
+
+    public boolean operationActive() {
+        return store.operationActive();
+    }
+
+    private final class PendingOperation<T> {
+        private final CompletableFuture<T> result = new CompletableFuture<>();
+        private final AtomicBoolean started = new AtomicBoolean();
+        private final Supplier<T> failureResult;
+
+        private PendingOperation(Supplier<T> failureResult) {
+            this.failureResult = failureResult;
+        }
+
+        private void cancelIfQueued() {
+            if (started.compareAndSet(false, true)) {
+                pending.remove(this);
+                result.complete(failureResult.get());
+            }
+        }
     }
 
     @FunctionalInterface

@@ -34,6 +34,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.RejectedExecutionException;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
 import platform.execution.ExecutionLane;
@@ -94,6 +95,10 @@ public final class SceneApplicationService implements SceneApi, AutoCloseable {
         CompletableFuture<SceneMutationResult> completion = new CompletableFuture<>();
         try {
             executionLane.execute(() -> handle(command, completion));
+        } catch (RejectedExecutionException exception) {
+            diagnostics.failure(STORAGE_FAILURE, exception.getClass());
+            completion.complete(result(
+                    SceneMutationResult.Status.STORAGE_ERROR, "Szenen konnten nicht gespeichert werden."));
         } catch (RuntimeException exception) {
             completion.complete(storageError(exception));
         }

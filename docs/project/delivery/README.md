@@ -14,6 +14,8 @@ The GM-Core program uses two coupled Aletheia workstreams. Their current,
 temporary process owners are:
 
 - [Program umbrella issue](https://github.com/ThonkTank/Salt-Marcher/issues/555)
+- [Product Completion Roadmap](gm-core-roadmap.md) -- revisable Product-A
+  sequencing and completion guidance for the whole interview-derived GM core.
 - [Program Charter](aletheia/program-charter.md)
 - [Product Process](aletheia/product-process.md)
 - [Process Improvement](aletheia/process-improvement.md)

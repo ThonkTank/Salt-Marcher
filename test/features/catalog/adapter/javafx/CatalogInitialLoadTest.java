@@ -435,12 +435,7 @@ public final class CatalogInitialLoadTest {
     }
 
     private static void seedCreatureCatalog() throws Exception {
-        String xdgDataHome = System.getenv("XDG_DATA_HOME");
-        if (xdgDataHome == null || xdgDataHome.isBlank()) {
-            throw new IllegalStateException("XDG_DATA_HOME must isolate the Catalog initial-load DB.");
-        }
-        Path dataHome = Path.of(xdgDataHome);
-        Path database = dataHome.resolve("salt-marcher").resolve(CreaturesPersistenceSchema.DATABASE_FILE_NAME);
+        Path database = TestFeatureStores.testDatabasePath();
         Files.createDirectories(database.getParent());
         Files.deleteIfExists(database);
         try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + database);

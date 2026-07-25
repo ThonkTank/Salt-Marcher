@@ -90,6 +90,127 @@
     -fx-font-size: 12px;
 }
 
+.campaign-desk-root {
+    -fx-padding: 18 24 18 24;
+}
+.campaign-desk-card {
+    -fx-min-width: 480;
+    -fx-pref-width: 680;
+    -fx-max-width: 760;
+    -fx-max-height: Infinity;
+    -fx-padding: 18 24 18 24;
+    -fx-spacing: 14;
+}
+.campaign-desk-card .startup-title {
+    -fx-font-size: 1.692em;
+}
+.campaign-desk-card .startup-subtitle {
+    -fx-font-size: 0.923em;
+}
+.campaign-desk-card .button,
+.campaign-desk-card .text-field {
+    -fx-font-size: 1em;
+}
+.campaign-desk-header {
+    -fx-spacing: 5;
+}
+.campaign-desk-eyebrow {
+    -fx-text-fill: -sm-accent-hover;
+    -fx-font-size: 0.769em;
+    -fx-font-weight: bold;
+}
+.campaign-desk-creation,
+.campaign-desk-section,
+.campaign-desk-feedback {
+    -fx-spacing: 8;
+}
+.campaign-desk-section {
+    -fx-padding: 12 0 0 0;
+    -fx-border-color: -sm-border-subtle transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+.campaign-desk-section-title {
+    -fx-font-size: 0.846em;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sm-text-secondary;
+}
+.campaign-desk-create-row {
+    -fx-spacing: 8;
+    -fx-alignment: center-left;
+}
+.campaign-desk-status-actions {
+    -fx-hgap: 0.615em;
+    -fx-vgap: 0.5em;
+    -fx-alignment: center-left;
+}
+.campaign-desk-name {
+    -fx-pref-width: 360;
+    -fx-max-width: Infinity;
+    -fx-min-height: 32;
+}
+.campaign-desk-name-validation {
+    -fx-font-size: 0.846em;
+}
+.campaign-desk-sections {
+    -fx-spacing: 10;
+    -fx-padding: 0 10 8 0;
+}
+.campaign-desk-list-scroll {
+    -fx-background-color: transparent;
+    -fx-min-height: 72;
+    -fx-pref-height: 260;
+}
+.campaign-desk-list-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+.campaign-desk-list {
+    -fx-spacing: 7;
+}
+.campaign-desk-row {
+    -fx-max-width: Infinity;
+    -fx-alignment: center-left;
+    -fx-content-display: graphic-only;
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-width: 1;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+    -fx-padding: 9 12 9 12;
+}
+.campaign-desk-row:hover {
+    -fx-background-color: derive(-sm-bg-card, 10%);
+}
+.campaign-desk-row-current {
+    -fx-background-color: derive(-sm-accent, -72%);
+    -fx-border-color: -sm-accent -sm-accent -sm-accent -sm-accent-hover;
+    -fx-border-width: 1 1 1 4;
+    -fx-padding: 9 12 9 9;
+}
+.campaign-desk-row-damaged {
+    -fx-opacity: 0.78;
+    -fx-border-color: -sm-warning;
+}
+.campaign-desk-row-content {
+    -fx-spacing: 2;
+    -fx-alignment: center-left;
+}
+.campaign-desk-row-name {
+    -fx-font-size: 1.077em;
+    -fx-font-weight: bold;
+}
+.campaign-desk-row-meta {
+    -fx-font-size: 0.846em;
+    -fx-text-fill: -sm-text-muted;
+}
+.campaign-desk-card .campaign-desk-empty {
+    -fx-padding: 8 0 2 0;
+    -fx-font-size: 0.846em;
+}
+.campaign-desk-card .campaign-desk-status {
+    -fx-min-height: 18;
+    -fx-font-size: 0.846em;
+}
+
 .split-pane {
     -fx-background-color: -sm-bg-darkest;
     -fx-padding: 0;

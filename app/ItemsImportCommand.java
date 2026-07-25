@@ -17,7 +17,7 @@ public final class ItemsImportCommand {
     public static void main(String[] arguments) {
         try (SqliteDatabase database =
                         SqliteDatabase.defaultDatabase(
-                                SqliteDatabase.DEFAULT_DATABASE_FILE_NAME,
+                                AppBootstrap.INSTALLATION_DATABASE_FILE_NAME,
                                 NoopDiagnostics.INSTANCE);
                 SerialExecutionLane lane = new SerialExecutionLane(NoopDiagnostics.INSTANCE)) {
             var store = database.featureStore(ItemsServiceAssembly.storeDefinition());

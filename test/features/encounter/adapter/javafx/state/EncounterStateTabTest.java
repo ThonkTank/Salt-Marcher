@@ -394,13 +394,7 @@ public final class EncounterStateTabTest {
         }
 
         private static String creatureDatabaseUrl() {
-            String dataHome = System.getenv("XDG_DATA_HOME");
-            if (dataHome == null || dataHome.isBlank()) {
-                throw new IllegalStateException("XDG_DATA_HOME must isolate the Encounter state-tab DB.");
-            }
-            Path database = Path.of(dataHome, "salt-marcher", CreaturesPersistenceSchema.DATABASE_FILE_NAME)
-                    .toAbsolutePath()
-                    .normalize();
+            Path database = TestFeatureStores.testDatabasePath();
             return "jdbc:sqlite:" + database;
         }
     }

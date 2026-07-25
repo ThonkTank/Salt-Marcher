@@ -4,20 +4,20 @@ import features.catalog.CatalogFeature;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import shell.host.AppShell;
 
 /** Closeable ownership aggregate for one prepared or active Campaign presentation. */
-final class CampaignShell {
+final class CampaignShell implements CampaignActivationCoordinator.Candidate {
 
     private final AppShell shell;
     private final CatalogFeature.Component catalog;
     private final CampaignRuntime runtime;
     private final RevocableUiDispatcher uiDispatcher;
     private final Consumer<String> closeObserver;
-    private final AtomicBoolean closed = new AtomicBoolean();
-    private final CompletableFuture<Void> closeCompletion = new CompletableFuture<>();
+    private final Object closeMonitor = new Object();
+    private boolean closed;
+    private CompletableFuture<Void> closeAttempt;
 
     CampaignShell(
             AppShell shell,
@@ -33,25 +33,62 @@ final class CampaignShell {
         this.closeObserver = Objects.requireNonNull(closeObserver, "closeObserver");
     }
 
-    AppShell shell() {
+    @Override
+    public AppShell shell() {
         return shell;
+    }
+
+    @Override
+    public CampaignRuntime runtimeForTesting() {
+        return runtime;
     }
 
     CampaignRuntime runtime() {
         return runtime;
     }
 
-    void activateVisibleShell() {
+    @Override
+    public CompletionStage<Void> pauseAndDrain() {
+        return runtime.pauseAndDrain();
+    }
+
+    @Override
+    public void resumeAdmission() {
+        runtime.resumeAdmission();
+    }
+
+    @Override
+    public void activateVisibleShell() {
         runtime.activatePublishedShell(shell);
     }
 
-    CompletionStage<Void> dispatchUiTracked(Runnable work, Consumer<Throwable> terminalHandler) {
+    @Override
+    public CampaignRuntime.CandidatePreparation<Boolean> preparePublication(
+            java.util.function.Supplier<Boolean> publication
+    ) {
+        return runtime.prepareCandidate(publication);
+    }
+
+    @Override
+    public CompletionStage<Void> dispatchUiTracked(
+            Runnable work,
+            Consumer<Throwable> terminalHandler
+    ) {
         return uiDispatcher.dispatchTracked(work, terminalHandler);
     }
 
-    CompletionStage<Void> closeAsync() {
-        if (!closed.compareAndSet(false, true)) {
-            return closeCompletion;
+    @Override
+    public CompletionStage<Void> closeAsync() {
+        CompletableFuture<Void> completion;
+        synchronized (closeMonitor) {
+            if (closed) {
+                return CompletableFuture.completedFuture(null);
+            }
+            if (closeAttempt != null) {
+                return closeAttempt;
+            }
+            completion = new CompletableFuture<>();
+            closeAttempt = completion;
         }
         uiDispatcher.revokeAndDrain().whenComplete((ignoredUi, uiFailure) -> {
             Throwable detachFailure = uiFailure;
@@ -80,14 +117,20 @@ final class CampaignShell {
             Throwable finalDetachFailure = detachFailure;
             runtimeClose.whenComplete((ignoredRuntime, runtimeFailure) -> {
                 Throwable failure = accumulate(finalDetachFailure, runtimeFailure);
+                synchronized (closeMonitor) {
+                    if (failure == null) {
+                        closed = true;
+                    }
+                    closeAttempt = null;
+                }
                 if (failure == null) {
-                    closeCompletion.complete(null);
+                    completion.complete(null);
                 } else {
-                    closeCompletion.completeExceptionally(failure);
+                    completion.completeExceptionally(failure);
                 }
             });
         });
-        return closeCompletion;
+        return completion;
     }
 
     private static Throwable accumulate(Throwable current, Throwable next) {

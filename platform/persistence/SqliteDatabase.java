@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
@@ -34,7 +35,11 @@ import java.util.regex.Pattern;
 
 public final class SqliteDatabase implements AutoCloseable {
 
-    public static final String DEFAULT_DATABASE_FILE_NAME = "game.db";
+    public enum OpenMode {
+        CREATE_OR_OPEN,
+        RESERVED_NEW,
+        EXISTING_ONLY
+    }
 
     private static final int PLATFORM_SCHEMA_VERSION = 1;
     private static final int BUSY_TIMEOUT_MILLIS = 5_000;
@@ -52,18 +57,51 @@ public final class SqliteDatabase implements AutoCloseable {
     private final Path databasePath;
     private final Diagnostics diagnostics;
     private final FileMover fileMover;
+    private final OpenMode openMode;
+    private final Path ownershipRoot;
     private final Map<String, StoreHandle> stores = new LinkedHashMap<>();
     private boolean prepared;
     private boolean storesSealed;
     private boolean closed;
 
     public SqliteDatabase(Path databasePath, Diagnostics diagnostics) {
-        this(databasePath, diagnostics, SqliteDatabase::moveReplacing);
+        this(databasePath, diagnostics, OpenMode.CREATE_OR_OPEN);
+    }
+
+    public SqliteDatabase(Path databasePath, Diagnostics diagnostics, OpenMode openMode) {
+        this(databasePath, diagnostics, openMode, defaultOwnershipRoot(databasePath));
+    }
+
+    public SqliteDatabase(
+            Path databasePath,
+            Diagnostics diagnostics,
+            OpenMode openMode,
+            Path ownershipRoot
+    ) {
+        this(databasePath, diagnostics, openMode, ownershipRoot, SqliteDatabase::moveReplacing);
     }
 
     SqliteDatabase(Path databasePath, Diagnostics diagnostics, FileMover fileMover) {
+        this(
+                databasePath,
+                diagnostics,
+                OpenMode.CREATE_OR_OPEN,
+                defaultOwnershipRoot(databasePath),
+                fileMover);
+    }
+
+    private SqliteDatabase(
+            Path databasePath,
+            Diagnostics diagnostics,
+            OpenMode openMode,
+            Path ownershipRoot,
+            FileMover fileMover
+    ) {
         this.databasePath = Objects.requireNonNull(databasePath, "databasePath").toAbsolutePath().normalize();
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
+        this.openMode = Objects.requireNonNull(openMode, "openMode");
+        this.ownershipRoot = Objects.requireNonNull(ownershipRoot, "ownershipRoot")
+                .toAbsolutePath().normalize();
         this.fileMover = Objects.requireNonNull(fileMover, "fileMover");
     }
 
@@ -244,9 +282,16 @@ public final class SqliteDatabase implements AutoCloseable {
             return;
         }
         loadDriver();
-        createParentDirectory();
-        if (Files.isRegularFile(databasePath) && fileSize(databasePath) > 0L) {
-            prepareExistingDatabase();
+        if (openMode == OpenMode.EXISTING_ONLY) {
+            assertExistingOnlyCandidate();
+            prepareExistingDatabase(false);
+        } else if (openMode == OpenMode.RESERVED_NEW) {
+            assertReservedNewCandidate();
+        } else {
+            createParentDirectory();
+            if (Files.isRegularFile(databasePath) && fileSize(databasePath) > 0L) {
+                prepareExistingDatabase(true);
+            }
         }
         prepared = true;
     }
@@ -321,7 +366,7 @@ public final class SqliteDatabase implements AutoCloseable {
         }
     }
 
-    private void prepareExistingDatabase() throws SQLException {
+    private void prepareExistingDatabase(boolean recoveryAllowed) throws SQLException {
         Path inspection = databasePath;
         Path snapshot = null;
         try {
@@ -334,8 +379,11 @@ public final class SqliteDatabase implements AutoCloseable {
                 throw exception;
             } catch (SQLException exception) {
                 diagnostics.failure(INTEGRITY_FAILURE, exception.getClass());
-                recoverFromLatestBackup(exception);
-                return;
+                if (recoveryAllowed) {
+                    recoverFromLatestBackup(exception);
+                    return;
+                }
+                throw exception;
             }
             int version = platformVersion(inspection);
             if (version > PLATFORM_SCHEMA_VERSION) {
@@ -785,6 +833,55 @@ public final class SqliteDatabase implements AutoCloseable {
         } catch (IOException exception) {
             throw new SQLException("Could not inspect SQLite header.", exception);
         }
+    }
+
+    private void assertExistingOnlyCandidate() throws SQLException {
+        assertPhysicalOwnershipPath();
+        if (Files.isSymbolicLink(databasePath)
+                || !Files.isRegularFile(databasePath, LinkOption.NOFOLLOW_LINKS)
+                || fileSize(databasePath) == 0L) {
+            throw new SQLException("Existing-only SQLite file is missing, empty, or symbolic.");
+        }
+        assertSQLiteHeader(databasePath);
+        assertIntegrity(databasePath);
+    }
+
+    private void assertReservedNewCandidate() throws SQLException {
+        assertPhysicalOwnershipPath();
+        if (Files.isSymbolicLink(databasePath)
+                || !Files.isRegularFile(databasePath, LinkOption.NOFOLLOW_LINKS)
+                || fileSize(databasePath) != 0L) {
+            throw new SQLException("Reserved-new SQLite file is not an owned empty reservation.");
+        }
+    }
+
+    private void assertPhysicalOwnershipPath() throws SQLException {
+        if (!databasePath.startsWith(ownershipRoot)) {
+            throw new SQLException("SQLite file escapes its physical ownership root.");
+        }
+        try {
+            if (Files.isSymbolicLink(ownershipRoot)
+                    || !Files.isDirectory(ownershipRoot, LinkOption.NOFOLLOW_LINKS)
+                    || !ownershipRoot.toRealPath().equals(ownershipRoot)) {
+                throw new IOException("SQLite ownership root is symbolic or non-physical.");
+            }
+            Path current = ownershipRoot;
+            for (Path segment : ownershipRoot.relativize(databasePath)) {
+                current = current.resolve(segment);
+                if (Files.exists(current, LinkOption.NOFOLLOW_LINKS)
+                        && Files.isSymbolicLink(current)) {
+                    throw new IOException("SQLite ownership path contains a symbolic link.");
+                }
+            }
+        } catch (IOException failure) {
+            throw new SQLException("Could not validate physical SQLite ownership path.", failure);
+        }
+    }
+
+    private static Path defaultOwnershipRoot(Path databasePath) {
+        Path normalized = Objects.requireNonNull(databasePath, "databasePath")
+                .toAbsolutePath().normalize();
+        return normalized.getParent() == null ? normalized : normalized.getParent();
     }
 
     private static void deletePreflightSnapshot(Path snapshot) {

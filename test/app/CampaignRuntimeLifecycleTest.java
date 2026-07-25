@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
@@ -26,6 +27,7 @@ import platform.persistence.FeatureStoreReadiness;
 import platform.persistence.SqliteDatabase;
 import platform.ui.DirectUiDispatcher;
 import platform.ui.UiDispatcher;
+import platform.ui.TrackedUiDispatcher;
 
 final class CampaignRuntimeLifecycleTest {
 
@@ -107,6 +109,7 @@ final class CampaignRuntimeLifecycleTest {
 
         await(terminated);
         assertEquals(CampaignRuntime.State.CLOSED, runtime.state());
+        assertTrue(runtime.closureWorkerDaemonForTesting());
     }
 
     @Test
@@ -226,10 +229,12 @@ final class CampaignRuntimeLifecycleTest {
                 ui,
                 installationFor(databasePath).references(),
                 new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE));
+        ui.flushUntil(runtime.foundationReadiness());
         await(runtime.foundationReadiness());
 
-        runtime.close();
-        ui.flush();
+        var closed = runtime.quiesceAsync();
+        ui.flushUntil(closed);
+        await(closed);
 
         assertEquals(CampaignRuntime.State.CLOSED, runtime.state());
     }
@@ -314,27 +319,67 @@ final class CampaignRuntimeLifecycleTest {
         }
     }
 
-    private static final class QueuedUiDispatcher implements UiDispatcher {
+    private static final class QueuedUiDispatcher implements TrackedUiDispatcher {
 
-        private final java.util.ArrayDeque<Runnable> updates = new java.util.ArrayDeque<>();
+        private final java.util.ArrayDeque<TrackedUpdate> updates = new java.util.ArrayDeque<>();
+        private final java.util.concurrent.Semaphore accepted = new java.util.concurrent.Semaphore(0);
 
         @Override
         public synchronized void dispatch(Runnable update) {
-            updates.addLast(update);
+            dispatchTracked(update);
         }
 
-        private void flush() {
-            while (true) {
-                Runnable update;
+        @Override
+        public synchronized java.util.concurrent.CompletionStage<Void> dispatchTracked(Runnable update) {
+            return dispatchTracked(update, failure -> { });
+        }
+
+        @Override
+        public synchronized java.util.concurrent.CompletionStage<Void> dispatchTracked(
+                Runnable update,
+                java.util.function.Consumer<Throwable> terminalHandler
+        ) {
+            CompletableFuture<Void> completion = new CompletableFuture<>();
+            updates.addLast(new TrackedUpdate(update, terminalHandler, completion));
+            accepted.release();
+            return completion;
+        }
+
+        private void flushUntil(java.util.concurrent.CompletionStage<?> stage) {
+            stage.whenComplete((ignored, failure) -> accepted.release());
+            while (!stage.toCompletableFuture().isDone()) {
+                try {
+                    if (!accepted.tryAcquire(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)) {
+                        throw new AssertionError("tracked UI did not reach a terminal callback");
+                    }
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw new AssertionError(interrupted);
+                }
+                TrackedUpdate update;
                 synchronized (this) {
                     update = updates.pollFirst();
                 }
                 if (update == null) {
-                    return;
+                    continue;
                 }
-                update.run();
+                try {
+                    update.update().run();
+                    update.terminalHandler().accept(null);
+                    update.completion().complete(null);
+                } catch (RuntimeException | Error failure) {
+                    update.terminalHandler().accept(failure);
+                    update.completion().completeExceptionally(failure);
+                    throw failure;
+                }
             }
         }
+
+        private record TrackedUpdate(
+                Runnable update,
+                java.util.function.Consumer<Throwable> terminalHandler,
+                CompletableFuture<Void> completion
+        ) { }
     }
 
     private static final class ManualExecutionLane implements ExecutionLane {

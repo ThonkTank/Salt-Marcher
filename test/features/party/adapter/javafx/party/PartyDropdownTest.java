@@ -1,7 +1,6 @@
 package features.party.adapter.javafx.party;
 
 import features.party.PartyServiceAssembly;
-import features.party.adapter.sqlite.model.PartyPersistenceSchema;
 import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
 import features.party.api.ActivePartyCompositionModel;
 import features.party.api.ActivePartyModel;
@@ -380,13 +379,7 @@ public final class PartyDropdownTest {
     }
 
     private static Path databasePath() {
-        String dataHome = System.getenv("XDG_DATA_HOME");
-        if (dataHome == null || dataHome.isBlank()) {
-            throw new IllegalStateException("XDG_DATA_HOME must isolate the Party dropdown DB.");
-        }
-        return Path.of(dataHome, "salt-marcher", PartyPersistenceSchema.DATABASE_FILE_NAME)
-                .toAbsolutePath()
-                .normalize();
+        return TestFeatureStores.testDatabasePath();
     }
 
     private static void startFx() throws Exception {

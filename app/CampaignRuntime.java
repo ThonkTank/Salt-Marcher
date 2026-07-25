@@ -138,8 +138,10 @@ final class CampaignRuntime implements AutoCloseable {
             Set.of("dungeon", "hex", "session-generation");
 
     private final WorkflowAdmissionController admission;
+    private final UiDispatcher uiDispatcher;
     private final ExecutionLane persistenceProbeLane;
     private final java.util.concurrent.ExecutorService closureExecutor;
+    private final AtomicReference<Thread> closureWorker = new AtomicReference<>();
     private final SqliteDatabase database;
     private final Components components;
     private final CompletableFuture<FoundationReadiness> foundationReadiness =
@@ -151,14 +153,20 @@ final class CampaignRuntime implements AutoCloseable {
 
     private CampaignRuntime(
             WorkflowAdmissionController admission,
+            UiDispatcher uiDispatcher,
             ExecutionLane persistenceProbeLane,
             SqliteDatabase database,
             Components components
     ) {
         this.admission = Objects.requireNonNull(admission, "admission");
+        this.uiDispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
         this.persistenceProbeLane = Objects.requireNonNull(persistenceProbeLane, "persistenceProbeLane");
-        closureExecutor = java.util.concurrent.Executors.newSingleThreadExecutor(task ->
-                new Thread(task, "salt-marcher-campaign-closure"));
+        closureExecutor = java.util.concurrent.Executors.newSingleThreadExecutor(task -> {
+            Thread thread = new Thread(task, "salt-marcher-campaign-closure");
+            thread.setDaemon(true);
+            closureWorker.set(thread);
+            return thread;
+        });
         this.database = Objects.requireNonNull(database, "database");
         this.components = Objects.requireNonNull(components, "components");
     }
@@ -210,6 +218,7 @@ final class CampaignRuntime implements AutoCloseable {
             ExecutionLane admittedEncounterGeneratedIoLane = admission.admit(encounterGeneratedIoLane);
             ExecutionLane admittedSessionPreparationCpuLane = admission.admit(sessionPreparationCpuLane);
             ExecutionLane admittedSessionPreparationIoLane = admission.admit(sessionPreparationIoLane);
+            UiDispatcher admittedUiDispatcher = admission.admit(safeUiDispatcher);
             Components components = createComponents(
                     stores,
                     storeReadiness,
@@ -224,9 +233,13 @@ final class CampaignRuntime implements AutoCloseable {
                     admittedEncounterGeneratedIoLane,
                     admittedSessionPreparationCpuLane,
                     admittedSessionPreparationIoLane,
-                    safeUiDispatcher);
+                    admittedUiDispatcher);
             runtime = new CampaignRuntime(
-                    admission, admittedSessionPreparationIoLane, safeDatabase, components);
+                    admission,
+                    admittedUiDispatcher,
+                    admittedSessionPreparationIoLane,
+                    safeDatabase,
+                    components);
             runtime.start(storeReadiness, coreRequiredStores, safeDiagnostics);
             return runtime;
         } catch (RuntimeException | Error failure) {
@@ -450,6 +463,15 @@ final class CampaignRuntime implements AutoCloseable {
         return quiescence;
     }
 
+    void runWorkflowForTesting(Runnable workflow) {
+        persistenceProbeLane.execute(Objects.requireNonNull(workflow, "workflow"));
+    }
+
+    boolean closureWorkerDaemonForTesting() {
+        Thread worker = closureWorker.get();
+        return worker != null && worker.isDaemon();
+    }
+
     State state() {
         return state.get();
     }
@@ -463,6 +485,17 @@ final class CampaignRuntime implements AutoCloseable {
                     "Campaign runtime components are not foundation-ready: " + current);
         }
         return components;
+    }
+
+    UiDispatcher uiDispatcher() {
+        State current = state.get();
+        if (current != State.FOUNDATION_PREPARED
+                && current != State.PREPARED
+                && current != State.ACTIVE) {
+            throw new IllegalStateException(
+                    "Campaign UI dispatcher is not foundation-ready: " + current);
+        }
+        return uiDispatcher;
     }
 
     CompletionStage<Void> pauseAndDrain() {

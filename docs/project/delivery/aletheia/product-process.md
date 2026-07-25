@@ -2,8 +2,8 @@ Status: Active
 Owner: Aletheia A
 Last Reviewed: 2026-07-24
 Charter Version: C-0.2.0
-Process Version: A-0.3.1
-Evaluation Version: E-0.3.0
+Process Version: A-0.3.2
+Evaluation Version: E-0.3.1
 Source of Truth: Current temporary execution rules for GM-Core product slices.
 
 # GM-Core Product Process
@@ -15,7 +15,7 @@ Charter](program-charter.md). This file controls execution, not product truth.
 
 Before product mutation, select one unmet interview-derived acceptance outcome
 through its canonical owner ID. In the slice's one short delivery owner, pin
-that ID, the candidate base commit, Product Process `A-0.3.1`, and the commit
+that ID, the candidate base commit, Product Process `A-0.3.2`, and the commit
 that contains this process version. Also name the intended production route and
 the command, probe, counterexample, measurement, or owner observation that can
 decide the outcome. Do not create generic role ledgers or structured evidence
@@ -68,6 +68,32 @@ A failure caused solely by unrelated or untracked workspace state is neither a
 product regression nor a green gate. Preserve that state and replay the exact
 candidate in an isolated clean worktree or after its owner resolves the
 interference.
+
+## Compatibility Covenant
+
+Before complete GM-Core owner acceptance and authorization for first
+non-disposable use or distribution, an internal schema, commit, test fixture,
+or development install creates no legacy-compatibility obligation. A may
+replace persisted representations and recreate only state positively identified
+as disposable development or test data. Unknown or real data remains protected
+by the owner-data rules.
+
+The covenant starts only when one record contains all of the following literal
+evidence for the exact candidate:
+
+1. Complete GM-Core acceptance required by the Charter.
+2. Owner authorization for first non-disposable use or distribution, with the
+   exact commit and artifact.
+3. An inventory of externally durable data surfaces and their frozen version or
+   equivalent reader/writer expectation.
+4. A production-route fresh-install probe that creates representative durable
+   state, closes, reopens, and reads it with that artifact.
+
+After that first trigger, every later change that can encounter data from a
+supported released artifact must practically prove preservation or replay an
+explicit upgrade path from the oldest supported baseline. Renaming or reverting
+the process cannot make released data disposable. Destructive recreation then
+requires the same owner authority as any other real-data modification.
 
 ## Product Owners
 

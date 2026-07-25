@@ -1,17 +1,20 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-19
-Source of Truth: Shared SQLite location, owner-scoped readiness, connection,
+Last Reviewed: 2026-07-24
+Source of Truth: Installation and Campaign SQLite locations, owner-scoped readiness, connection,
 migration, integrity, backup, and recovery semantics.
 
 # Persistence Lifecycle
 
 ## Purpose And Boundary
 
-SaltMarcher uses one local SQLite database. Platform persistence owns physical
-file safety, connection configuration, the feature-version ledger, owner-scoped
-preparation, backup, and recovery. Feature SQLite adapters own their stored
-truth, target schema signatures, semantic row validation, and migration bodies.
+SaltMarcher uses one installation-owned SQLite database plus one physically
+separate SQLite database per Campaign. Platform persistence owns physical file
+safety, connection configuration, each file's feature-version ledger,
+owner-scoped preparation, backup, and recovery. Feature SQLite adapters own
+their stored truth, target schema signatures, semantic row validation, and
+migration bodies. Installation-owned registry and reusable definitions never
+share a database with Campaign-owned truth.
 
 `app` composes immutable `FeatureStoreDefinition` values before it constructs
 feature services. Preparation returns one `FeatureStoreReadiness` per owner.
@@ -27,10 +30,15 @@ database files, or migration types.
 
 ## Location And Connection
 
-The database remains `game.db` below:
+The installation store is `installation.sqlite` below:
 
 - `$XDG_DATA_HOME/salt-marcher/` when `XDG_DATA_HOME` is non-blank;
 - `${user.home}/.local/share/salt-marcher/` otherwise.
+
+Campaign stores live below the sibling `campaigns/` directory, one reserved
+SQLite file per stable Campaign identity. Desktop startup opens only the
+installation store and the durably selected Campaign store. It never opens the
+former mixed-store filename `game.db`.
 
 Every writable connection enables and verifies WAL mode, enables foreign keys,
 uses a 5000 ms busy timeout, and uses SQLite `NORMAL` synchronous mode.
@@ -93,7 +101,7 @@ fail closed through their feature-owned error contract.
 `PRAGMA user_version` owns the platform format. `sm_schema_versions` maps one
 owner to its current feature version.
 
-Each migration:
+Each future released-format migration:
 
 - runs once inside the coordinator-owned owner transaction
 - is idempotent but never changes auto-commit, commits, or updates the ledger itself
@@ -102,16 +110,13 @@ Each migration:
 - aborts before destructive work when the stored signature is unknown
 - copies and validates replacement rows before dropping or renaming predecessor tables
 
-One narrow legacy-compatibility case is permitted: renaming an owner table may
-let SQLite retarget inbound foreign keys from documented, code-ownerless legacy
-tables to an immutable archive of that table. Before any mutation, the migration
-MUST inventory every inbound foreign key plus every view and trigger definition
-that a rename could rewrite, match the complete legacy table signatures and
-complete foreign-key sets, and reject every unknown, additional, or
-registered-owner reference. The transaction MUST retain
-all referenced rows and payloads, keep global foreign-key integrity, and leave the
-archives outside current provider APIs. This exception does not permit writing a
-registered feature owner's schema or interpreting its domain truth.
+Before GM-Core feature completion there is no installed user population or
+non-disposable legacy data, so the current cut has no compatibility reader,
+mixed-store conversion, or predecessor-format migration obligation. Once a
+released version can create user data, `TN-18` governs update/conversion
+preservation and failure rollback, while `TN-19` governs versioned export/import
+compatibility. Those future translators must be explicit and qualified; they do
+not justify retaining an unused pre-release storage topology now.
 
 The coordinator records the new owner version only after the migration action
 and final target-signature validator succeed. Failure rolls back schema, rows,

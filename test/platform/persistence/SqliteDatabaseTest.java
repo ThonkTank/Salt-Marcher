@@ -39,11 +39,11 @@ final class SqliteDatabaseTest {
     @Test
     void preservesXdgAndFallbackDatabaseLocations() {
         assertEquals(
-                Path.of("/tmp/xdg", "salt-marcher", "game.db"),
-                SqliteDatabase.resolveDatabasePath("game.db", "/tmp/xdg", "/home/test"));
+                Path.of("/tmp/xdg", "salt-marcher", "database.sqlite"),
+                SqliteDatabase.resolveDatabasePath("database.sqlite", "/tmp/xdg", "/home/test"));
         assertEquals(
-                Path.of("/home/test", ".local", "share", "salt-marcher", "game.db"),
-                SqliteDatabase.resolveDatabasePath("game.db", "", "/home/test"));
+                Path.of("/home/test", ".local", "share", "salt-marcher", "database.sqlite"),
+                SqliteDatabase.resolveDatabasePath("database.sqlite", "", "/home/test"));
     }
 
     @Test
@@ -128,7 +128,7 @@ final class SqliteDatabaseTest {
 
     @Test
     void configuresConnectionsAndRunsVersionedMigrationExactlyOnce() throws Exception {
-        Path databasePath = temporaryDirectory.resolve("game.db");
+        Path databasePath = temporaryDirectory.resolve("database.sqlite");
         RecordingDiagnostics diagnostics = new RecordingDiagnostics();
         AtomicInteger migrations = new AtomicInteger();
         SqliteMigration migration = new SqliteMigration(1, connection -> {
@@ -1089,6 +1089,108 @@ final class SqliteDatabaseTest {
         corrupt[0] = 0;
         Files.write(databasePath, corrupt);
         return corrupt;
+    }
+
+    @Test
+    void existingOnlyRejectsMissingEmptyDamagedAndSymbolicFilesWithoutMutation() throws Exception {
+        Path missing = temporaryDirectory.resolve("missing.sqlite");
+        assertEquals(
+                FeatureStoreReadiness.CORRUPT,
+                readiness(missing, SqliteDatabase.OpenMode.EXISTING_ONLY));
+        assertFalse(Files.exists(missing));
+
+        Path empty = temporaryDirectory.resolve("empty.sqlite");
+        Files.createFile(empty);
+        assertEquals(
+                FeatureStoreReadiness.CORRUPT,
+                readiness(empty, SqliteDatabase.OpenMode.EXISTING_ONLY));
+        assertEquals(0L, Files.size(empty));
+
+        Path damaged = temporaryDirectory.resolve("damaged.sqlite");
+        byte[] damagedBytes = "not-a-sqlite-campaign".getBytes(StandardCharsets.UTF_8);
+        Files.write(damaged, damagedBytes);
+        assertEquals(
+                FeatureStoreReadiness.CORRUPT,
+                readiness(damaged, SqliteDatabase.OpenMode.EXISTING_ONLY));
+        assertArrayEquals(damagedBytes, Files.readAllBytes(damaged));
+
+        Path target = temporaryDirectory.resolve("target.sqlite");
+        Files.write(target, damagedBytes);
+        Path symbolic = temporaryDirectory.resolve("symbolic.sqlite");
+        Files.createSymbolicLink(symbolic, target.getFileName());
+        assertEquals(
+                FeatureStoreReadiness.CORRUPT,
+                readiness(symbolic, SqliteDatabase.OpenMode.EXISTING_ONLY));
+        assertTrue(Files.isSymbolicLink(symbolic));
+        assertArrayEquals(damagedBytes, Files.readAllBytes(target));
+    }
+
+    @Test
+    void reservedNewRequiresAnOwnedEmptyFileAndExistingOnlyReopensItsResult() throws Exception {
+        Path reserved = temporaryDirectory.resolve("reserved.sqlite");
+        Files.createFile(reserved);
+        assertEquals(
+                FeatureStoreReadiness.READY,
+                readiness(reserved, SqliteDatabase.OpenMode.RESERVED_NEW));
+        byte[] created = Files.readAllBytes(reserved);
+        assertTrue(created.length > 0);
+
+        assertEquals(
+                FeatureStoreReadiness.READY,
+                readiness(reserved, SqliteDatabase.OpenMode.EXISTING_ONLY));
+        assertTrue(Files.size(reserved) >= created.length);
+    }
+
+    @Test
+    void ownedOpenModesRejectSymbolicRootAndIntermediateAncestorWithoutTouchingTarget()
+            throws Exception {
+        Path physicalRoot = temporaryDirectory.resolve("physical-root");
+        Path outside = temporaryDirectory.resolve("outside");
+        Files.createDirectories(physicalRoot);
+        Files.createDirectories(outside);
+        Path physicalDatabase = outside.resolve("campaign.sqlite");
+        Files.createFile(physicalDatabase);
+        assertEquals(
+                FeatureStoreReadiness.READY,
+                readiness(
+                        physicalDatabase,
+                        SqliteDatabase.OpenMode.RESERVED_NEW,
+                        outside));
+        byte[] original = Files.readAllBytes(physicalDatabase);
+
+        Path symbolicRoot = temporaryDirectory.resolve("symbolic-root");
+        Files.createSymbolicLink(symbolicRoot, physicalRoot);
+        Path rootedPath = symbolicRoot.resolve("campaign.sqlite");
+        assertEquals(
+                FeatureStoreReadiness.CORRUPT,
+                readiness(rootedPath, SqliteDatabase.OpenMode.EXISTING_ONLY, symbolicRoot));
+        assertFalse(Files.exists(rootedPath, java.nio.file.LinkOption.NOFOLLOW_LINKS));
+
+        Path symbolicCampaign = physicalRoot.resolve("campaign-id");
+        Files.createSymbolicLink(symbolicCampaign, outside);
+        Path throughAncestor = symbolicCampaign.resolve("campaign.sqlite");
+        assertEquals(
+                FeatureStoreReadiness.CORRUPT,
+                readiness(throughAncestor, SqliteDatabase.OpenMode.EXISTING_ONLY, physicalRoot));
+        assertArrayEquals(original, Files.readAllBytes(physicalDatabase));
+    }
+
+    private static FeatureStoreReadiness readiness(Path path, SqliteDatabase.OpenMode mode) {
+        return readiness(path, mode, path.toAbsolutePath().normalize().getParent());
+    }
+
+    private static FeatureStoreReadiness readiness(
+            Path path,
+            SqliteDatabase.OpenMode mode,
+            Path ownershipRoot
+    ) {
+        try (SqliteDatabase database = new SqliteDatabase(
+                path, (id, type) -> { }, mode, ownershipRoot)) {
+            database.featureStore(definition("open-mode", new SqliteMigration(
+                    1, connection -> connection.createStatement().execute(
+                            "CREATE TABLE open_mode_probe(value INTEGER NOT NULL)"))));
+            return database.prepareRegisteredStores().get("open-mode");
+        }
     }
 
     private static SqliteMigration seedMigration() {

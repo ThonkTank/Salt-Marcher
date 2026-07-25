@@ -9,9 +9,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import platform.ui.UiDispatcher;
+import platform.ui.TrackedUiDispatcher;
 
 /** Campaign UI dispatcher whose accepted work can be cancelled or drained deterministically. */
-final class RevocableUiDispatcher implements UiDispatcher {
+final class RevocableUiDispatcher implements TrackedUiDispatcher {
 
     private enum TaskState { QUEUED, RUNNING, SETTLING, DONE }
 
@@ -32,11 +33,13 @@ final class RevocableUiDispatcher implements UiDispatcher {
         submit(update, true, ignored -> { });
     }
 
-    CompletionStage<Void> dispatchTracked(Runnable update) {
+    @Override
+    public CompletionStage<Void> dispatchTracked(Runnable update) {
         return dispatchTracked(update, ignored -> { });
     }
 
-    CompletionStage<Void> dispatchTracked(Runnable update, Consumer<Throwable> terminalHandler) {
+    @Override
+    public CompletionStage<Void> dispatchTracked(Runnable update, Consumer<Throwable> terminalHandler) {
         return submit(update, false, terminalHandler);
     }
 
@@ -67,7 +70,22 @@ final class RevocableUiDispatcher implements UiDispatcher {
             return task.completion;
         }
         try {
-            delegate.dispatch(() -> execute(task));
+            if (!propagateCallbackFailure && delegate instanceof TrackedUiDispatcher trackedDelegate) {
+                CompletionStage<Void> delegateTerminal = trackedDelegate.dispatchTracked(
+                        () -> execute(task),
+                        failure -> {
+                            if (failure != null) {
+                                rejectQueuedTask(task, failure);
+                            }
+                        });
+                delegateTerminal.whenComplete((ignored, failure) -> {
+                    if (failure != null) {
+                        rejectQueuedTask(task, failure);
+                    }
+                });
+            } else {
+                delegate.dispatch(() -> execute(task));
+            }
         } catch (RuntimeException | Error failure) {
             rejectQueuedTask(task, failure);
             if (propagateCallbackFailure) {
@@ -163,12 +181,8 @@ final class RevocableUiDispatcher implements UiDispatcher {
     }
 
     private void finishTerminal(TrackedTask task, Throwable failure, boolean wasRunning) {
-        Throwable terminalFailure = failure;
-        try {
-            task.terminalHandler.accept(failure);
-        } catch (RuntimeException | Error handlerFailure) {
-            terminalFailure = accumulate(terminalFailure, handlerFailure);
-        }
+        Throwable terminalFailure = TrackedUiDispatcher.notifyTerminal(
+                task.terminalHandler, failure);
         CompletableFuture<Void> drainToComplete;
         synchronized (this) {
             settling--;

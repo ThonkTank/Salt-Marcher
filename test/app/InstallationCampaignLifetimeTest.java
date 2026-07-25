@@ -6,8 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import features.campaign.api.CampaignListResult;
+import features.campaign.api.CampaignId;
+import features.campaign.api.CampaignPointerCommitResult;
 import features.creatures.api.CreatureLookupStatus;
 import features.items.adapter.sqlite.SqliteItemCatalogAdapter;
 import java.nio.file.Files;
@@ -92,6 +95,85 @@ final class InstallationCampaignLifetimeTest {
         }
     }
 
+    @Test
+    void terminalShutdownTimesOutInStoppingAndRetryClosesAfterRegistryWorkSettles()
+            throws Exception {
+        SqliteDatabase database = new SqliteDatabase(
+                temporaryDirectory.resolve("bounded-installation-close.sqlite"),
+                NoopDiagnostics.INSTANCE);
+        InstallationRuntime installation = InstallationRuntime.open(
+                NoopDiagnostics.INSTANCE, database, Duration.ofMillis(50));
+        java.util.concurrent.CountDownLatch running = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+        installation.runRegistryTaskForTesting(() -> {
+            running.countDown();
+            boolean done = false;
+            while (!done) {
+                try {
+                    release.await();
+                    done = true;
+                } catch (InterruptedException ignored) {
+                    // Synthetic native dependency that ignores Java interruption.
+                }
+            }
+        });
+        assertTrue(running.await(5, TimeUnit.SECONDS));
+
+        assertThrows(IllegalStateException.class, installation::close);
+        assertTrue(installation.stoppingForTesting());
+        assertThrows(IllegalStateException.class, installation::campaigns);
+
+        release.countDown();
+        installation.close();
+        assertThrows(java.sql.SQLException.class, database::prepare);
+    }
+
+    @Test
+    void realLockedRegistryCommitIsInterruptedOrTimesOutBoundedlyAndRestartIsCoherent()
+            throws Exception {
+        Path databasePath = temporaryDirectory.resolve("locked-registry-close.sqlite");
+        InstallationRuntime installation = InstallationRuntime.open(
+                NoopDiagnostics.INSTANCE,
+                new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE),
+                Duration.ofMillis(250));
+        CampaignId target = new CampaignId(
+                java.util.UUID.fromString("33000000-0000-0000-0000-000000000001"));
+        CompletionStage<CampaignPointerCommitResult> commit;
+        boolean firstCloseSucceeded = false;
+        try (var lock = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+                var statement = lock.createStatement()) {
+            statement.execute("BEGIN EXCLUSIVE");
+            commit = installation.campaigns().registerAndCommitActivePointer(
+                    target, "Locked target", 0L);
+            awaitRegistryOperation(installation);
+
+            long started = System.nanoTime();
+            try {
+                installation.close();
+                firstCloseSucceeded = true;
+            } catch (IllegalStateException boundedTimeout) {
+                assertTrue(installation.stoppingForTesting());
+            }
+            assertTrue(System.nanoTime() - started < TimeUnit.SECONDS.toNanos(2),
+                    "terminal installation close must remain bounded");
+            statement.execute("ROLLBACK");
+        }
+
+        CampaignPointerCommitResult result = await(commit);
+        assertEquals(CampaignPointerCommitResult.Status.STORAGE_ERROR, result.status());
+        if (!firstCloseSucceeded) {
+            installation.close();
+        }
+
+        try (InstallationRuntime restarted = InstallationRuntime.open(
+                NoopDiagnostics.INSTANCE,
+                new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE))) {
+            var durable = await(restarted.campaigns().active()).activation().orElseThrow();
+            assertTrue(durable.campaign().isEmpty()
+                    || durable.campaign().orElseThrow().id().equals(target));
+        }
+    }
+
     private static CampaignRuntime open(
             Path campaignPath,
             InstallationRuntime.SharedReferences references) {
@@ -141,5 +223,16 @@ final class InstallationCampaignLifetimeTest {
 
     private static <T> T await(CompletionStage<T> stage) throws Exception {
         return stage.toCompletableFuture().get(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
+    }
+
+    private static void awaitRegistryOperation(InstallationRuntime installation) {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < deadline) {
+            if (installation.registryOperationActiveForTesting()) {
+                return;
+            }
+            Thread.onSpinWait();
+        }
+        throw new AssertionError("registry operation did not reach SQLite");
     }
 }

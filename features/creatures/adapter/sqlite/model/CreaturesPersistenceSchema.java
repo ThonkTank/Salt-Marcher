@@ -10,8 +10,6 @@ import static platform.persistence.SqliteTableSpec.table;
  */
 public final class CreaturesPersistenceSchema {
 
-    public static final String DATABASE_FILE_NAME = "game.db";
-
     private static final String INTEGER_TYPE = "INTEGER";
     private static final String INTEGER_ZERO_DEFAULT = "INTEGER NOT NULL DEFAULT 0";
     private static final String INTEGER_TEN_DEFAULT = "INTEGER NOT NULL DEFAULT 10";

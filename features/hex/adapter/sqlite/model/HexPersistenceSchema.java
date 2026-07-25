@@ -2,7 +2,6 @@ package features.hex.adapter.sqlite.model;
 
 public final class HexPersistenceSchema {
 
-    public static final String DATABASE_FILE_NAME = String.valueOf("game.db");
     public static final String MAPS_TABLE = "hex_maps";
     public static final String CURRENT_MAP_TABLE = "hex_current_map";
     public static final String TILES_TABLE = "hex_tiles";

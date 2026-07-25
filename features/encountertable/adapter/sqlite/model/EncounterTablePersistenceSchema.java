@@ -7,7 +7,6 @@ import static platform.persistence.SqliteTableSpec.table;
 
 public final class EncounterTablePersistenceSchema {
 
-    public static final String DATABASE_FILE_NAME = "game.db";
     public static final String REFERENCED_CREATURES_TABLE_NAME = "creatures";
     public static final String ENCOUNTER_TABLES_TABLE = "encounter_tables";
     public static final String ENCOUNTER_TABLE_ENTRIES_TABLE = "encounter_table_entries";

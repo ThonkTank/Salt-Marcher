@@ -32,7 +32,7 @@ class SqliteItemCatalogAdapterTest {
 
     @Test
     void usesSharedLifecycleForQueriesBackupAndAtomicTableReplacement() {
-        Path databasePath = temporaryDirectory.resolve("game.db");
+        Path databasePath = temporaryDirectory.resolve("items.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
             var store = TestFeatureStores.store(database, SqliteItemCatalogAdapter.storeDefinition());
             SqliteItemCatalogAdapter adapter = new SqliteItemCatalogAdapter(store);

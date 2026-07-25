@@ -5,13 +5,11 @@ umask 077
 REPO_URL="${SALTMARCHER_REPO_URL:-https://github.com/ThonkTank/Salt-Marcher.git}"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/saltmarcher"
 CLONE_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/saltmarcher-repo"
-APP_DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/salt-marcher"
 STATUS_FILE="$STATE_DIR/status.json"
 LOG_DIR="$STATE_DIR/logs"
-BACKUP_DIR="$STATE_DIR/backups"
 LOCK_FILE="$STATE_DIR/update.lock"
 
-mkdir -p "$STATE_DIR" "$LOG_DIR" "$BACKUP_DIR"
+mkdir -p "$STATE_DIR" "$LOG_DIR"
 exec 9>"$LOCK_FILE"
 flock -n 9 || exit 0
 
@@ -66,16 +64,14 @@ PY
 fi
 
 previous_revision="$(git rev-parse --verify HEAD)"
-backup=""
-
 block_update() {
     local result="$1"
     git checkout "$previous_revision" || true
-    python3 - "$STATUS_FILE" "$newest_tag" "$backup" "$result" <<'PY'
+    python3 - "$STATUS_FILE" "$newest_tag" "$result" <<'PY'
 import json, sys, time
-path, tag, backup, result = sys.argv[1:5]
+path, tag, result = sys.argv[1:4]
 state = json.load(open(path)) if __import__("os").path.exists(path) else {}
-state.update({"blocked_tag": tag, "last_result": result, "last_backup": backup, "last_update": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+state.update({"blocked_tag": tag, "last_result": result, "last_update": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
 json.dump(state, open(path, "w"), indent=2)
 PY
     command -v notify-send >/dev/null 2>&1 && notify-send "SaltMarcher Update fehlgeschlagen" "$newest_tag blockiert" || true
@@ -87,47 +83,15 @@ if ! ./gradlew check --console=plain; then
     block_update "qualification_failed"
 fi
 
-tmp_root="$(mktemp -d)"
-trap 'rm -rf "$tmp_root"' EXIT
-if [[ -f "$APP_DATA_DIR/game.db" ]]; then
-    snapshot_dir="$tmp_root/snapshot/salt-marcher"
-    rehearsal_dir="$tmp_root/rehearsal"
-    rehearsal_copy="$rehearsal_dir/salt-marcher/game.db"
-    mkdir -p "$snapshot_dir" "$rehearsal_dir"
-    backup="$BACKUP_DIR/data-${newest_tag}-$(date -u +%Y%m%dT%H%M%SZ).tar.gz"
-    if ! tools/gradle/run-observable-gradle.sh snapshotCatalogData -- \
-        "-PcatalogSnapshotSource=$APP_DATA_DIR/game.db" \
-        "-PcatalogSnapshotTarget=$snapshot_dir/game.db"; then
-        block_update "snapshot_failed"
-    fi
-    if ! tar -czf "$backup" -C "$tmp_root/snapshot" salt-marcher \
-        || ! chmod 600 "$backup" \
-        || ! tar -tzf "$backup" >/dev/null \
-        || ! tar -xzf "$backup" -C "$rehearsal_dir" \
-        || [[ ! -f "$rehearsal_copy" ]]; then
-        block_update "backup_restore_failed"
-    fi
-    if ! tools/gradle/run-observable-gradle.sh rehearseCatalogData -- \
-        "-PcatalogRehearsalDatabase=$rehearsal_copy"; then
-        block_update "rehearsal_failed"
-    fi
-    if ! find "$BACKUP_DIR" -name 'data-*.tar.gz' -type f \
-        | sort \
-        | head -n -5 \
-        | xargs -r rm -f; then
-        echo "Warning: old backup archives could not be pruned; continuing with the restore-tested backup."
-    fi
-fi
-
 if ! ./gradlew installDesktopApp --console=plain; then
     block_update "install_failed"
 fi
 
-python3 - "$STATUS_FILE" "$newest_tag" "$backup" <<'PY'
+python3 - "$STATUS_FILE" "$newest_tag" <<'PY'
 import json, sys, time
-path, tag, backup = sys.argv[1:4]
+path, tag = sys.argv[1:3]
 state = json.load(open(path)) if __import__("os").path.exists(path) else {}
-state.update({"installed_tag": tag, "last_result": "ok", "last_backup": backup, "last_update": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+state.update({"installed_tag": tag, "last_result": "ok", "last_update": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
 json.dump(state, open(path, "w"), indent=2)
 PY
 command -v notify-send >/dev/null 2>&1 && notify-send "SaltMarcher aktualisiert auf $newest_tag" || true

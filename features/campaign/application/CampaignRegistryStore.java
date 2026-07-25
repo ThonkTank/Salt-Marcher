@@ -10,6 +10,13 @@ import java.util.Optional;
 /** Installation-store port owned by Campaign registry application orchestration. */
 public interface CampaignRegistryStore {
 
+    default void requestTerminalShutdown() {
+    }
+
+    default boolean operationActive() {
+        return false;
+    }
+
     List<CampaignSnapshot> list();
 
     Optional<CampaignSnapshot> read(CampaignId campaignId);

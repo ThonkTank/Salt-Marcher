@@ -2,12 +2,8 @@ package app;
 
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.application.Preloader;
-import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
-import shell.host.AppShell;
+import platform.persistence.SqliteDatabase;
 
 /**
  * Desktop entrypoint for the new SaltMarcher shell.
@@ -15,12 +11,20 @@ import shell.host.AppShell;
 public final class SaltMarcherApp extends Application {
 
     private AppBootstrap bootstrap;
+    private java.nio.file.Path campaignRoot;
+    private CampaignDeskHost campaignHost;
 
     public SaltMarcherApp() {
     }
 
     SaltMarcherApp(AppBootstrap bootstrap) {
+        this(bootstrap, defaultCampaignRoot());
+    }
+
+    SaltMarcherApp(AppBootstrap bootstrap, java.nio.file.Path campaignRoot) {
         this.bootstrap = java.util.Objects.requireNonNull(bootstrap, "bootstrap");
+        this.campaignRoot = java.util.Objects.requireNonNull(campaignRoot, "campaignRoot")
+                .toAbsolutePath().normalize();
     }
 
     @Override
@@ -30,36 +34,38 @@ public final class SaltMarcherApp extends Application {
         if (bootstrap == null) {
             bootstrap = new AppBootstrap();
         }
-        Label loading = new Label("SaltMarcher wird vorbereitet …");
-        loading.setAccessibleText("SaltMarcher wird vorbereitet");
-        Scene scene = new Scene(new StackPane(loading), 1150, 700);
-        scene.getStylesheets().add(SaltMarcherApp.class.getResource("/salt-marcher.css").toExternalForm());
-
         primaryStage.setTitle("SaltMarcher");
         DesktopWindowIcons.applyTo(primaryStage);
-        primaryStage.setScene(scene);
         primaryStage.setMinWidth(900);
         primaryStage.setMinHeight(500);
+        campaignHost = new CampaignDeskHost(primaryStage);
+        campaignHost.showInitialLoading();
         primaryStage.show();
-        bootstrap.createShellAsync().whenComplete((shell, failure) -> {
+        if (campaignRoot == null) {
+            campaignRoot = defaultCampaignRoot();
+        }
+        bootstrap.openCampaignActivationAsync(campaignRoot, campaignHost)
+                .whenComplete((coordinator, failure) -> {
             Runnable publication = () -> {
                 if (failure != null) {
-                    loading.setText("SaltMarcher konnte nicht gestartet werden.");
-                    loading.setAccessibleText("SaltMarcher Start fehlgeschlagen");
+                    campaignHost.showStartupFailure();
                     return;
                 }
-                bootstrap.publishAndActivateShell(shell, () -> {
-                    primaryStage.setScene(java.util.Objects.requireNonNull(
-                            shell.getScene(), "Prepared shell must retain its qualified Scene"));
-                    shell.applyCss();
-                    shell.layout();
-                }).whenComplete((ignored, activationFailure) -> {
-                    if (activationFailure != null) {
-                        throw new IllegalStateException("Prepared shell activation failed", activationFailure);
+                campaignHost.attachAndResume(coordinator).whenComplete((ignored, resumeFailure) -> {
+                    Runnable ready = () -> {
+                        if (resumeFailure != null) {
+                            campaignHost.showStartupFailure();
+                            return;
+                        }
+                        notifyPreloader(new SaltMarcherPreloader.AppReadyNotification());
+                        notifyPreloader(new javafx.application.Preloader.StateChangeNotification(
+                                javafx.application.Preloader.StateChangeNotification.Type.BEFORE_START));
+                    };
+                    if (Platform.isFxApplicationThread()) {
+                        ready.run();
+                    } else {
+                        Platform.runLater(ready);
                     }
-                    notifyPreloader(new SaltMarcherPreloader.AppReadyNotification());
-                    notifyPreloader(new Preloader.StateChangeNotification(
-                            Preloader.StateChangeNotification.Type.BEFORE_START));
                 });
             };
             if (Platform.isFxApplicationThread()) {
@@ -72,6 +78,15 @@ public final class SaltMarcherApp extends Application {
 
     public static void main(String[] args) {
         launch(args);
+    }
+
+    private static java.nio.file.Path defaultCampaignRoot() {
+        return SqliteDatabase.resolveDatabasePath(AppBootstrap.INSTALLATION_DATABASE_FILE_NAME)
+                .resolveSibling("campaigns");
+    }
+
+    CampaignDeskHost campaignHostForTesting() {
+        return java.util.Objects.requireNonNull(campaignHost, "Application has not started");
     }
 
     @Override

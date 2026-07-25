@@ -100,13 +100,7 @@ public final class EncounterTableReadbackTest {
     }
 
     private static Path databasePath() throws Exception {
-        String dataHome = System.getenv("XDG_DATA_HOME");
-        if (dataHome == null || dataHome.isBlank()) {
-            throw new IllegalStateException("XDG_DATA_HOME must be set for EncounterTableReadbackTest.");
-        }
-        Path database = Path.of(dataHome, "salt-marcher", EncounterTablePersistenceSchema.DATABASE_FILE_NAME)
-                .toAbsolutePath()
-                .normalize();
+        Path database = TestFeatureStores.testDatabasePath();
         Files.createDirectories(database.getParent());
         return database;
     }

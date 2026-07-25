@@ -186,11 +186,7 @@ class DungeonEditorTestPersistence {
         final Path databasePath;
 
         DatabaseAssertions() {
-            String xdgDataHome = System.getenv("XDG_DATA_HOME");
-            if (xdgDataHome == null || xdgDataHome.isBlank()) {
-                throw new IllegalStateException("XDG_DATA_HOME must isolate the Dungeon Editor behavior DB.");
-            }
-            databasePath = Path.of(xdgDataHome, "salt-marcher", DungeonPersistenceSchema.DATABASE_FILE_NAME);
+            databasePath = TestFeatureStores.testDatabasePath();
         }
 
         long countMapsNamed(String mapName) {

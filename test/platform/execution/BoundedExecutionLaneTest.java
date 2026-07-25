@@ -1,6 +1,7 @@
 package platform.execution;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -51,5 +52,36 @@ final class BoundedExecutionLaneTest {
         lane.close();
 
         assertThrows(RejectedExecutionException.class, () -> lane.execute(() -> { }));
+    }
+
+    @Test
+    void terminalCloseIsBoundedForNoncooperativeDaemonWorkAndCanFinishAfterRelease()
+            throws Exception {
+        BoundedExecutionLane lane = new BoundedExecutionLane(
+                NoopDiagnostics.INSTANCE, "bounded-terminal-proof", 1);
+        CountDownLatch entered = new CountDownLatch(1);
+        java.util.concurrent.atomic.AtomicBoolean release =
+                new java.util.concurrent.atomic.AtomicBoolean();
+        java.util.concurrent.atomic.AtomicBoolean daemon =
+                new java.util.concurrent.atomic.AtomicBoolean();
+        lane.execute(() -> {
+            daemon.set(Thread.currentThread().isDaemon());
+            entered.countDown();
+            while (!release.get()) {
+                java.util.concurrent.locks.LockSupport.parkNanos(
+                        TimeUnit.MILLISECONDS.toNanos(5));
+                Thread.interrupted();
+            }
+        });
+        assertTrue(entered.await(5, TimeUnit.SECONDS));
+
+        long started = System.nanoTime();
+        assertFalse(lane.terminateNow(java.time.Duration.ofMillis(50)));
+        assertTrue(System.nanoTime() - started < TimeUnit.SECONDS.toNanos(1));
+        assertTrue(daemon.get());
+        assertThrows(RejectedExecutionException.class, () -> lane.execute(() -> { }));
+
+        release.set(true);
+        assertTrue(lane.terminateNow(java.time.Duration.ofSeconds(1)));
     }
 }

@@ -1296,9 +1296,8 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
 
     static Set<String> persistedClusterCellsThroughRepository(long mapId, long clusterId, int level) {
         Set<String> cells = new LinkedHashSet<>();
-        try (platform.persistence.SqliteDatabase database = platform.persistence.SqliteDatabase.defaultDatabase(
-                DungeonPersistenceSchema.DATABASE_FILE_NAME,
-                platform.diagnostics.NoopDiagnostics.INSTANCE);
+        try (platform.persistence.SqliteDatabase database = new platform.persistence.SqliteDatabase(
+                TestFeatureStores.testDatabasePath(), platform.diagnostics.NoopDiagnostics.INSTANCE);
                 var connection =
                         TestFeatureStores.store(
                                 database,

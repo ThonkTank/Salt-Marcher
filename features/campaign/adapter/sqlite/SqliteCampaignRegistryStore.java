@@ -14,12 +14,17 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import org.sqlite.SQLiteConnection;
 import platform.persistence.FeatureStoreHandle;
 
 /** SQLite persistence for the installation-owned Campaign registry. */
 public final class SqliteCampaignRegistryStore implements CampaignRegistryStore {
 
     private final FeatureStoreHandle store;
+    private final AtomicBoolean shutdownRequested = new AtomicBoolean();
+    private final AtomicReference<Connection> activeConnection = new AtomicReference<>();
 
     public SqliteCampaignRegistryStore(FeatureStoreHandle store) {
         this.store = FeatureStoreHandle.requireOwner(store, CampaignRegistrySchema.OWNER);
@@ -39,7 +44,8 @@ public final class SqliteCampaignRegistryStore implements CampaignRegistryStore 
             long expectedGeneration) throws SQLException {
         CampaignId safeCampaignId = Objects.requireNonNull(campaignId, "campaignId");
         CampaignName safeName = Objects.requireNonNull(name, "name");
-        try (Connection connection = store.openConnection()) {
+        Connection connection = openTrackedConnection();
+        try (connection) {
             boolean previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {
@@ -56,6 +62,7 @@ public final class SqliteCampaignRegistryStore implements CampaignRegistryStore 
                         safeCampaignId,
                         expectedGeneration);
                 if (attempt.status() == PointerCommitAttempt.Status.COMMITTED) {
+                    requireCommitAllowed();
                     connection.commit();
                 } else {
                     connection.rollback();
@@ -67,6 +74,8 @@ public final class SqliteCampaignRegistryStore implements CampaignRegistryStore 
             } finally {
                 connection.setAutoCommit(previousAutoCommit);
             }
+        } finally {
+            activeConnection.compareAndSet(connection, null);
         }
     }
 
@@ -76,7 +85,8 @@ public final class SqliteCampaignRegistryStore implements CampaignRegistryStore 
     }
 
     private List<CampaignSnapshot> listSql() throws SQLException {
-        try (Connection connection = store.openConnection();
+        Connection connection = openTrackedConnection();
+        try (connection;
                 var statement = connection.prepareStatement("""
                         SELECT campaign_id, name
                         FROM campaign_registry_campaigns
@@ -88,6 +98,8 @@ public final class SqliteCampaignRegistryStore implements CampaignRegistryStore 
                 campaigns.add(toCampaign(result));
             }
             return List.copyOf(campaigns);
+        } finally {
+            activeConnection.compareAndSet(connection, null);
         }
     }
 
@@ -98,8 +110,11 @@ public final class SqliteCampaignRegistryStore implements CampaignRegistryStore 
 
     private Optional<CampaignSnapshot> readSql(CampaignId campaignId) throws SQLException {
         Objects.requireNonNull(campaignId, "campaignId");
-        try (Connection connection = store.openConnection()) {
+        Connection connection = openTrackedConnection();
+        try (connection) {
             return read(connection, campaignId);
+        } finally {
+            activeConnection.compareAndSet(connection, null);
         }
     }
 
@@ -109,8 +124,11 @@ public final class SqliteCampaignRegistryStore implements CampaignRegistryStore 
     }
 
     private CampaignActivation activeSql() throws SQLException {
-        try (Connection connection = store.openConnection()) {
+        Connection connection = openTrackedConnection();
+        try (connection) {
             return readActivation(connection);
+        } finally {
+            activeConnection.compareAndSet(connection, null);
         }
     }
 
@@ -126,7 +144,8 @@ public final class SqliteCampaignRegistryStore implements CampaignRegistryStore 
             long expectedGeneration)
             throws SQLException {
         Objects.requireNonNull(campaignId, "campaignId");
-        try (Connection connection = store.openConnection()) {
+        Connection connection = openTrackedConnection();
+        try (connection) {
             boolean previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {
@@ -134,6 +153,7 @@ public final class SqliteCampaignRegistryStore implements CampaignRegistryStore 
                         connection,
                         campaignId,
                         expectedGeneration);
+                requireCommitAllowed();
                 connection.commit();
                 return attempt;
             } catch (SQLException | RuntimeException failure) {
@@ -145,6 +165,47 @@ public final class SqliteCampaignRegistryStore implements CampaignRegistryStore 
             } finally {
                 connection.setAutoCommit(previousAutoCommit);
             }
+        } finally {
+            activeConnection.compareAndSet(connection, null);
+        }
+    }
+
+    @Override
+    public void requestTerminalShutdown() {
+        shutdownRequested.set(true);
+        Connection connection = activeConnection.get();
+        if (connection instanceof SQLiteConnection sqliteConnection) {
+            try {
+                sqliteConnection.getDatabase().interrupt();
+            } catch (SQLException ignored) {
+                // The bounded lane termination remains authoritative if native interruption fails.
+            }
+        }
+    }
+
+    @Override
+    public boolean operationActive() {
+        return activeConnection.get() != null;
+    }
+
+    private Connection openTrackedConnection() throws SQLException {
+        requireCommitAllowed();
+        Connection connection = store.openConnection();
+        if (!activeConnection.compareAndSet(null, connection)) {
+            connection.close();
+            throw new SQLException("Campaign registry connection ownership overlapped");
+        }
+        if (shutdownRequested.get()) {
+            activeConnection.compareAndSet(connection, null);
+            connection.close();
+            throw new SQLException("Campaign registry is stopping");
+        }
+        return connection;
+    }
+
+    private void requireCommitAllowed() throws SQLException {
+        if (shutdownRequested.get()) {
+            throw new SQLException("Campaign registry is stopping");
         }
     }
 

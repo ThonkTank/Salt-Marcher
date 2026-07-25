@@ -2,7 +2,6 @@ package features.sessionplanner.adapter.sqlite.model;
 
 public final class SessionPlannerPersistenceSchema {
 
-    public static final String DATABASE_FILE_NAME = String.valueOf("game.db");
     public static final String SESSION_PLANS_TABLE = "session_planner_sessions";
     public static final String CURRENT_SESSION_TABLE = "session_planner_current_session";
     public static final String SESSION_PARTICIPANTS_TABLE = "session_planner_participants";

@@ -1,6 +1,7 @@
 package app;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -32,6 +33,22 @@ final class RevocableUiDispatcherTest {
 
         assertTrue(dispatcher.dispatchTracked(() -> { })
                 .toCompletableFuture().isCompletedExceptionally());
+    }
+
+    @Test
+    void terminalHandlerFailureIsPrimaryAndPreservesCallbackFailure() {
+        RevocableUiDispatcher dispatcher = new RevocableUiDispatcher(DirectUiDispatcher.INSTANCE);
+        IllegalStateException callback = new IllegalStateException("callback");
+        IllegalArgumentException handler = new IllegalArgumentException("handler");
+
+        java.util.concurrent.CompletionException terminal = assertThrows(
+                java.util.concurrent.CompletionException.class,
+                () -> dispatcher.dispatchTracked(
+                        () -> { throw callback; },
+                        ignored -> { throw handler; }).toCompletableFuture().join());
+
+        assertEquals(handler, terminal.getCause());
+        assertEquals(java.util.List.of(callback), java.util.List.of(handler.getSuppressed()));
     }
 
     @Test
@@ -85,6 +102,22 @@ final class RevocableUiDispatcherTest {
         delegate.acceptedUpdate.run();
     }
 
+    @Test
+    void acceptedDelegateWithoutExecutionOrTerminalSignalRemainsInconclusiveUntilRevocation() {
+        SilentTrackedDispatcher delegate = new SilentTrackedDispatcher();
+        RevocableUiDispatcher dispatcher = new RevocableUiDispatcher(delegate);
+
+        var terminal = dispatcher.dispatchTracked(() -> {
+            throw new AssertionError("unexecuted callback ran");
+        }).toCompletableFuture();
+
+        assertFalse(terminal.isDone(),
+                "acceptance without execution or terminal signal must not be reported as success");
+        dispatcher.revokeAndDrain().toCompletableFuture().join();
+        assertTrue(terminal.isCompletedExceptionally());
+        assertFalse(delegate.terminal.toCompletableFuture().isDone());
+    }
+
     private static void await(CountDownLatch latch) {
         try {
             latch.await();
@@ -117,6 +150,24 @@ final class RevocableUiDispatcherTest {
             acceptedUpdate = update;
             accepted.countDown();
             await(releaseReturn);
+        }
+    }
+
+    private static final class SilentTrackedDispatcher implements platform.ui.TrackedUiDispatcher {
+        private final java.util.concurrent.CompletableFuture<Void> terminal =
+                new java.util.concurrent.CompletableFuture<>();
+
+        @Override
+        public void dispatch(Runnable update) {
+            throw new AssertionError("plain dispatch is not expected");
+        }
+
+        @Override
+        public java.util.concurrent.CompletionStage<Void> dispatchTracked(
+                Runnable update,
+                java.util.function.Consumer<Throwable> terminalHandler
+        ) {
+            return terminal;
         }
     }
 }

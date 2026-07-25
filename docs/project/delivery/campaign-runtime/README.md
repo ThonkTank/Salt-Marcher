@@ -39,8 +39,10 @@ not a selector, table-copy bridge, or partial `campaign_id` retrofit.
 ## Safety And Exclusions
 
 - Do not modify real Campaign data during development or automated proof.
-- Legacy-store conversion requires a restore-tested backup, isolated rehearsal,
-  semantic readback, and separate owner approval before real-data cutover.
+- Before GM-Core completion there are no users or non-disposable legacy data,
+  so this slice has no legacy-store compatibility or conversion obligation.
+  Future released-format updates remain governed by `TN-18` and export/import
+  compatibility by `TN-19`.
 - Campaign copy/import/export/deletion, new travel semantics, Encounter
   completion, weather, music, history, and multi-OS qualification remain later
   acceptance slices.
@@ -73,10 +75,10 @@ journey, desktop acceptance, and merge qualification remain open.
 Commit `df4d42071` separates the installation registry and reusable-definition
 stores from Campaign-owned stores and gives each Campaign fresh components,
 published state, UI dispatch, admitted lanes, and database ownership. The
-default compatibility route continues to read existing `game.db` definitions
-until migration receives its separate rehearsal and approval; the explicit
-two-path production seam proves physical separation without touching real
-data. Literal `./gradlew check` passed in 6m 46s. A fresh independent replay
+production route uses `installation.sqlite` only for installation-owned truth
+and a separate SQLite file for each Campaign; the removed mixed `game.db`
+startup topology is neither opened nor converted. Literal `./gradlew check`
+passed in 6m 46s. A fresh independent replay
 with build cache disabled executed 46 selected tests in 1m 20s with 0 failures,
 errors, or skips, unchanged HEAD/tree, and no blocker, major, or minor finding.
 Activation coordination and the visible switch journey remain open.

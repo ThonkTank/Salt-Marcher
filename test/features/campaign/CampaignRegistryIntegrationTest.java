@@ -3,6 +3,7 @@ package features.campaign;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.campaign.api.CampaignActiveResult;
@@ -23,6 +24,9 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import platform.diagnostics.NoopDiagnostics;
@@ -163,6 +167,100 @@ final class CampaignRegistryIntegrationTest {
             lane.close();
             database.close();
         }
+    }
+
+    @Test
+    void terminalShutdownLinearizesWithAcceptedSubmitAndSettlesItsQueuedStage() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("shutdown-submit-race.sqlite");
+        SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE);
+        var store = database.featureStore(CampaignFeature.storeDefinition());
+        assertEquals(FeatureStoreReadiness.READY,
+                database.prepareRegisteredStores().get(store.owner()));
+        BlockingSubmitLane lane = new BlockingSubmitLane();
+        CampaignFeature.Component component = CampaignFeature.compose(
+                NoopDiagnostics.INSTANCE, lane, store);
+        AtomicReference<CompletionStage<CampaignListResult>> submitted = new AtomicReference<>();
+        Thread submitter = new Thread(
+                () -> submitted.set(component.registry().list()),
+                "campaign-registry-submit-race");
+        submitter.start();
+        assertTrue(lane.accepted.await(5, TimeUnit.SECONDS));
+        Thread shutdown = new Thread(
+                component::requestTerminalShutdown,
+                "campaign-registry-shutdown-race");
+        shutdown.start();
+
+        assertTrue(shutdown.isAlive(), "shutdown waits for the accepted submit linearization");
+        lane.releaseReturn.countDown();
+        submitter.join(TimeUnit.SECONDS.toMillis(5));
+        shutdown.join(TimeUnit.SECONDS.toMillis(5));
+
+        assertFalse(submitter.isAlive());
+        assertFalse(shutdown.isAlive());
+        assertEquals(CampaignListResult.Status.STORAGE_ERROR,
+                await(submitted.get()).status());
+        lane.runAcceptedWork();
+        assertEquals(CampaignListResult.Status.STORAGE_ERROR,
+                await(submitted.get()).status());
+        database.close();
+    }
+
+    @Test
+    void acceptedStoreErrorSettlesStageBeforeRethrowAndDoesNotBlockShutdown() {
+        QueuedLane lane = new QueuedLane();
+        AssertionError injected = new AssertionError("injected registry error");
+        AtomicBoolean shutdownRequested = new AtomicBoolean();
+        features.campaign.application.CampaignRegistryStore store =
+                new features.campaign.application.CampaignRegistryStore() {
+                    @Override
+                    public void requestTerminalShutdown() {
+                        shutdownRequested.set(true);
+                    }
+
+                    @Override
+                    public List<CampaignSnapshot> list() {
+                        throw injected;
+                    }
+
+                    @Override
+                    public java.util.Optional<CampaignSnapshot> read(CampaignId campaignId) {
+                        return java.util.Optional.empty();
+                    }
+
+                    @Override
+                    public features.campaign.api.CampaignActivation active() {
+                        return features.campaign.api.CampaignActivation.none();
+                    }
+
+                    @Override
+                    public PointerCommitAttempt registerAndCommitActivePointer(
+                            CampaignId campaignId,
+                            features.campaign.domain.CampaignName name,
+                            long expectedGeneration
+                    ) {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
+                    public PointerCommitAttempt commitActivePointer(
+                            CampaignId campaignId,
+                            long expectedGeneration
+                    ) {
+                        throw new UnsupportedOperationException();
+                    }
+                };
+        var service = new features.campaign.application.CampaignRegistryApplicationService(
+                NoopDiagnostics.INSTANCE, lane, store);
+        CompletionStage<CampaignListResult> accepted = service.list();
+
+        assertEquals(injected, assertThrows(AssertionError.class, lane::runAcceptedWork));
+        assertTrue(accepted.toCompletableFuture().isCompletedExceptionally());
+        java.util.concurrent.CompletionException reported = assertThrows(
+                java.util.concurrent.CompletionException.class,
+                accepted.toCompletableFuture()::join);
+        assertEquals(injected, reported.getCause());
+        service.requestTerminalShutdown();
+        assertTrue(shutdownRequested.get());
     }
 
     @Test
@@ -340,6 +438,32 @@ final class CampaignRegistryIntegrationTest {
         @Override
         public void close() {
             closed = true;
+        }
+    }
+
+    private static final class BlockingSubmitLane implements ExecutionLane {
+        private final CountDownLatch accepted = new CountDownLatch(1);
+        private final CountDownLatch releaseReturn = new CountDownLatch(1);
+        private Runnable work;
+
+        @Override
+        public void execute(Runnable acceptedWork) {
+            work = acceptedWork;
+            accepted.countDown();
+            try {
+                assertTrue(releaseReturn.await(5, TimeUnit.SECONDS));
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(interrupted);
+            }
+        }
+
+        private void runAcceptedWork() {
+            work.run();
+        }
+
+        @Override
+        public void close() {
         }
     }
 

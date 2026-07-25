@@ -28,13 +28,24 @@ public final class CampaignFeature {
                 diagnostics,
                 executionLane,
                 persistence);
-        return new Component(application);
+        return new Component(application, application);
     }
 
-    public record Component(CampaignRegistryApi registry) {
+    public record Component(
+            CampaignRegistryApi registry,
+            CampaignRegistryApplicationService lifecycle) {
 
         public Component {
             registry = Objects.requireNonNull(registry, "registry");
+            lifecycle = Objects.requireNonNull(lifecycle, "lifecycle");
+        }
+
+        public void requestTerminalShutdown() {
+            lifecycle.requestTerminalShutdown();
+        }
+
+        public boolean operationActive() {
+            return lifecycle.operationActive();
         }
     }
 }

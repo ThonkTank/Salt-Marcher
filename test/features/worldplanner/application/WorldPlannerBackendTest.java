@@ -603,11 +603,7 @@ public final class WorldPlannerBackendTest {
     }
 
     private static Path databasePath() {
-        String xdgDataHome = System.getenv("XDG_DATA_HOME");
-        if (xdgDataHome == null || xdgDataHome.isBlank()) {
-            throw new AssertionError("XDG_DATA_HOME must be set for WorldPlannerBackendTest");
-        }
-        return Path.of(xdgDataHome, "salt-marcher", WorldPlannerPersistenceSchema.databaseFileName());
+        return TestFeatureStores.testDatabasePath();
     }
 
     private static void assertEquals(Object expected, Object actual, String label) {

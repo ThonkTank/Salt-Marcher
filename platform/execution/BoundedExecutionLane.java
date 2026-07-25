@@ -1,6 +1,7 @@
 package platform.execution;
 
 import java.util.Objects;
+import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -67,5 +68,29 @@ public final class BoundedExecutionLane implements ExecutionLane {
         if (interrupted) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    public boolean terminateNow(Duration timeout) {
+        Duration safeTimeout = Objects.requireNonNull(timeout, "timeout");
+        if (safeTimeout.isNegative()) {
+            throw new IllegalArgumentException("timeout must not be negative");
+        }
+        closed.set(true);
+        executor.shutdownNow();
+        long remaining = safeTimeout.toNanos();
+        long started = System.nanoTime();
+        boolean interrupted = false;
+        while (!executor.isTerminated() && remaining > 0L) {
+            try {
+                executor.awaitTermination(remaining, TimeUnit.NANOSECONDS);
+            } catch (InterruptedException exception) {
+                interrupted = true;
+            }
+            remaining = safeTimeout.toNanos() - (System.nanoTime() - started);
+        }
+        if (interrupted) {
+            Thread.currentThread().interrupt();
+        }
+        return executor.isTerminated();
     }
 }

@@ -5,6 +5,8 @@ import features.campaign.api.CampaignRegistryApi;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.time.Duration;
+import java.util.concurrent.CompletionStage;
 import platform.diagnostics.Diagnostics;
 import platform.execution.SerialExecutionLane;
 import platform.persistence.FeatureStoreHandle;
@@ -19,40 +21,61 @@ import platform.persistence.SqliteDatabase;
  */
 final class InstallationRuntime implements AutoCloseable {
 
+    private enum State { OPEN, STOPPING, CLOSED }
+
+    private static final Duration DEFAULT_SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
+
     private final SerialExecutionLane registryLane;
     private final SqliteDatabase database;
     private final CampaignRegistryApi campaigns;
+    private final CampaignFeature.Component campaignFeature;
     private final SharedReferences references;
-    private volatile boolean closed;
+    private final Duration shutdownTimeout;
+    private volatile State state = State.OPEN;
 
     private InstallationRuntime(
             SerialExecutionLane registryLane,
             SqliteDatabase database,
-            CampaignRegistryApi campaigns,
-            SharedReferences references) {
+            CampaignFeature.Component campaignFeature,
+            SharedReferences references,
+            Duration shutdownTimeout) {
         this.registryLane = registryLane;
         this.database = database;
-        this.campaigns = campaigns;
+        this.campaignFeature = campaignFeature;
+        this.campaigns = campaignFeature.registry();
         this.references = references;
+        this.shutdownTimeout = shutdownTimeout;
     }
 
     static InstallationRuntime open(
             Diagnostics diagnostics,
             SqliteDatabase database) {
+        return open(diagnostics, database, DEFAULT_SHUTDOWN_TIMEOUT);
+    }
+
+    static InstallationRuntime open(
+            Diagnostics diagnostics,
+            SqliteDatabase database,
+            Duration shutdownTimeout) {
         Diagnostics safeDiagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
         SqliteDatabase safeDatabase = Objects.requireNonNull(database, "database");
+        Duration safeShutdownTimeout = Objects.requireNonNull(shutdownTimeout, "shutdownTimeout");
+        if (safeShutdownTimeout.isNegative()) {
+            throw new IllegalArgumentException("shutdownTimeout must not be negative");
+        }
         SerialExecutionLane registryLane = new SerialExecutionLane(safeDiagnostics);
         try {
             InstallationStoreManifest.Stores stores = InstallationStoreManifest.register(safeDatabase);
             Map<String, FeatureStoreReadiness> readiness = safeDatabase.prepareRegisteredStores();
             requireReady(stores.owners(), readiness);
-            CampaignRegistryApi campaigns = CampaignFeature.compose(
-                    safeDiagnostics, registryLane, stores.campaignRegistry()).registry();
+            CampaignFeature.Component campaignFeature = CampaignFeature.compose(
+                    safeDiagnostics, registryLane, stores.campaignRegistry());
             InstallationRuntime runtime = new InstallationRuntime(
                     registryLane,
                     safeDatabase,
-                    campaigns,
-                    new SharedReferences(stores.creatures(), stores.items()));
+                    campaignFeature,
+                    new SharedReferences(stores.creatures(), stores.items()),
+                    safeShutdownTimeout);
             return runtime;
         } catch (RuntimeException | Error failure) {
             Throwable cleanup = CampaignRuntime.closeOwnedResources(
@@ -86,26 +109,60 @@ final class InstallationRuntime implements AutoCloseable {
         return references;
     }
 
+    void runRegistryTaskForTesting(Runnable task) {
+        requireOpen();
+        registryLane.execute(Objects.requireNonNull(task, "task"));
+    }
+
+    boolean stoppingForTesting() {
+        return state == State.STOPPING;
+    }
+
+    boolean registryOperationActiveForTesting() {
+        return campaignFeature.operationActive();
+    }
+
+    CompletionStage<Void> shutdownSettlement() {
+        return registryLane.termination();
+    }
+
     private void requireOpen() {
-        if (closed) {
+        if (state != State.OPEN) {
             throw new IllegalStateException("Installation runtime is closed");
         }
     }
 
     @Override
     public synchronized void close() {
-        if (closed) {
+        if (state == State.CLOSED) {
             return;
         }
-        closed = true;
-        Throwable failure = CampaignRuntime.closeOwnedResources(
-                registryLane,
-                java.util.List.of(),
-                database,
-                null);
+        state = State.STOPPING;
+        campaignFeature.requestTerminalShutdown();
+        SerialExecutionLane.TerminationResult termination =
+                registryLane.terminateNow(shutdownTimeout);
+        if (termination != SerialExecutionLane.TerminationResult.TERMINATED) {
+            throw new IllegalStateException(
+                    "Installation registry termination was " + termination);
+        }
+        Throwable failure = null;
+        try {
+            database.close();
+        } catch (RuntimeException | Error databaseFailure) {
+            failure = accumulate(failure, databaseFailure);
+        }
         if (failure != null) {
             rethrow(failure);
         }
+        state = State.CLOSED;
+    }
+
+    private static Throwable accumulate(Throwable current, Throwable next) {
+        if (current == null) {
+            return next;
+        }
+        current.addSuppressed(next);
+        return current;
     }
 
     private static void rethrow(Throwable failure) {

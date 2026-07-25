@@ -10,8 +10,6 @@ import static platform.persistence.SqliteTableSpec.table;
  */
 public final class PartyPersistenceSchema {
 
-    public static final String DATABASE_FILE_NAME = "game.db";
-
     private static final String TEXT = "TEXT";
     private static final String INTEGER = "INTEGER";
     private static final String INTEGER_ZERO_DEFAULT = "INTEGER NOT NULL DEFAULT 0";

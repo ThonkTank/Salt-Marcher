@@ -3,6 +3,7 @@ package app;
 import features.catalog.CatalogFeature;
 import features.catalog.CatalogProviders;
 import features.catalog.CatalogRoutes;
+import features.campaign.api.CampaignId;
 import features.creatures.CreaturesServiceAssembly;
 import features.dungeon.DungeonFeature;
 import features.encounter.EncounterServiceAssembly;
@@ -43,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -54,37 +56,65 @@ import platform.persistence.FeatureStoreReadiness;
 public final class AppBootstrap implements AutoCloseable {
 
     private static final DiagnosticId CLOSE_FAILURE = new DiagnosticId("campaign-shell.close-failure");
+    private static final int COORDINATOR_CLOSE_ATTEMPTS = 3;
+    static final String INSTALLATION_DATABASE_FILE_NAME = "installation.sqlite";
+
+    record InstallationOwnershipSnapshot(boolean runtimeRetained, boolean resourcesClosed) {
+    }
+
+    private enum InstallationOwnershipState {
+        EMPTY_OPEN,
+        RUNTIME_OWNED,
+        RAW_CLOSE_CLAIMED,
+        CLOSED
+    }
+
+    private record InstallationOwnership(
+            InstallationOwnershipState state,
+            @Nullable InstallationRuntime runtime
+    ) {
+    }
 
     private final Diagnostics diagnostics;
     private final ExecutionLane startupLane;
-    private final ExecutionLane executionLane;
-    private final ExecutionLane creatureReadLane;
-    private final ExecutionLane itemReadLane;
-    private final ExecutionLane sessionGenerationCpuLane;
-    private final ExecutionLane sessionGenerationIoLane;
-    private final ExecutionLane encounterGeneratedCpuLane;
-    private final ExecutionLane encounterGeneratedIoLane;
-    private final ExecutionLane sessionPreparationCpuLane;
-    private final ExecutionLane sessionPreparationIoLane;
     private final UiDispatcher uiDispatcher;
     private final SqliteDatabase installationDatabase;
-    private final SqliteDatabase database;
-    private final java.util.concurrent.atomic.AtomicReference<InstallationRuntime> installationRuntime =
-            new java.util.concurrent.atomic.AtomicReference<>();
+    private final java.util.concurrent.atomic.AtomicReference<InstallationOwnership>
+            installationOwnership = new java.util.concurrent.atomic.AtomicReference<>(
+                    new InstallationOwnership(InstallationOwnershipState.EMPTY_OPEN, null));
+    private final java.util.concurrent.atomic.AtomicReference<CampaignActivationCoordinator>
+            campaignActivationCoordinator = new java.util.concurrent.atomic.AtomicReference<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean shellCreationStarted = new AtomicBoolean();
+    private final AtomicBoolean startupClosed = new AtomicBoolean();
+    private final AtomicBoolean installationRetryRegistered = new AtomicBoolean();
+    private final AtomicBoolean coordinatorRetryRegistered = new AtomicBoolean();
+    private final java.util.concurrent.atomic.AtomicInteger installationRuntimeCloseClaims =
+            new java.util.concurrent.atomic.AtomicInteger();
     private final java.util.concurrent.ExecutorService closeExecutor =
-            java.util.concurrent.Executors.newSingleThreadExecutor(task ->
-                    new Thread(task, "salt-marcher-application-closure"));
+            java.util.concurrent.Executors.newSingleThreadExecutor(task -> {
+                Thread thread = new Thread(task, "salt-marcher-application-closure");
+                thread.setDaemon(true);
+                return thread;
+            });
+    private final java.util.Set<CompletableFuture<?>> pendingStartupCompletions =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final CompletableFuture<Void> termination = new CompletableFuture<>();
-    private final LifecycleOwnerSlot ownership = new LifecycleOwnerSlot();
+    private final Object closeMonitor = new Object();
+    private final Object startupHandoffMonitor = new Object();
+    private CompletableFuture<Void> closeAttempt;
     private volatile java.util.function.Consumer<String> campaignCloseObserver = ignored -> { };
-    private volatile java.util.function.Consumer<CompletionStage<Void>> activationStageObserver = ignored -> { };
-    private volatile java.util.function.Consumer<Runnable> postDrainScheduler = Runnable::run;
-    private volatile Runnable preStageGate = () -> { };
-    private volatile Runnable preComposeGate = () -> { };
-    private volatile Runnable shellHandoffGate = () -> { };
-    private volatile Runnable prePublishGate = () -> { };
+    private volatile Runnable campaignStartupGate = () -> { };
+    private volatile java.time.Duration campaignActivationPhaseTimeout =
+            java.time.Duration.ofSeconds(10);
+    private volatile java.time.Duration campaignCommitTimeout = java.time.Duration.ofSeconds(10);
+    private volatile java.time.Duration startupShutdownTimeout = java.time.Duration.ofSeconds(10);
+    private volatile java.time.Duration installationShutdownTimeout = java.time.Duration.ofSeconds(10);
+    private volatile Runnable campaignPreCommitGate = () -> { };
+    private volatile Runnable campaignCoordinatorHandoffGate = () -> { };
+    private volatile Runnable installationRawCloseClaimGate = () -> { };
+    private volatile Runnable preInstallationAcquireGate = () -> { };
+    private volatile Runnable postInstallationAcquireGate = () -> { };
 
     public AppBootstrap() {
         this(new SystemLoggerDiagnostics());
@@ -94,333 +124,301 @@ public final class AppBootstrap implements AutoCloseable {
         this(
                 diagnostics,
                 new SerialExecutionLane(diagnostics),
-                new SerialExecutionLane(diagnostics),
-                new BoundedExecutionLane(diagnostics, "creatures-read", 2),
-                new BoundedExecutionLane(diagnostics, "items-read", 2),
-                new BoundedExecutionLane(
-                        diagnostics,
-                        "session-generation-cpu",
-                        Math.max(2, Runtime.getRuntime().availableProcessors() - 1)),
-                new BoundedExecutionLane(diagnostics, "session-generation-io", 2),
-                new BoundedExecutionLane(
-                        diagnostics,
-                        "encounter-generated-cpu",
-                        Math.max(2, Runtime.getRuntime().availableProcessors() - 1)),
-                new BoundedExecutionLane(diagnostics, "encounter-generated-io", 2),
-                new BoundedExecutionLane(diagnostics, "session-preparation-cpu", 2),
-                new BoundedExecutionLane(diagnostics, "session-preparation-io", 2),
                 new JavaFxUiDispatcher(),
-                SqliteDatabase.defaultDatabase(SqliteDatabase.DEFAULT_DATABASE_FILE_NAME, diagnostics),
-                SqliteDatabase.defaultDatabase(SqliteDatabase.DEFAULT_DATABASE_FILE_NAME, diagnostics));
+                SqliteDatabase.defaultDatabase(INSTALLATION_DATABASE_FILE_NAME, diagnostics));
     }
 
     AppBootstrap(
             Diagnostics diagnostics,
             ExecutionLane startupLane,
-            ExecutionLane executionLane,
-            ExecutionLane creatureReadLane,
-            ExecutionLane itemReadLane,
-            ExecutionLane sessionGenerationCpuLane,
-            ExecutionLane sessionGenerationIoLane,
-            ExecutionLane encounterGeneratedCpuLane,
-            ExecutionLane encounterGeneratedIoLane,
-            ExecutionLane sessionPreparationCpuLane,
-            ExecutionLane sessionPreparationIoLane,
             UiDispatcher uiDispatcher,
-            SqliteDatabase database
-    ) {
-        this(
-                diagnostics,
-                startupLane,
-                executionLane,
-                creatureReadLane,
-                itemReadLane,
-                sessionGenerationCpuLane,
-                sessionGenerationIoLane,
-                encounterGeneratedCpuLane,
-                encounterGeneratedIoLane,
-                sessionPreparationCpuLane,
-                sessionPreparationIoLane,
-                uiDispatcher,
-                installationDatabaseAtSamePath(database, diagnostics),
-                database);
-    }
-
-    AppBootstrap(
-            Diagnostics diagnostics,
-            ExecutionLane startupLane,
-            ExecutionLane executionLane,
-            ExecutionLane creatureReadLane,
-            ExecutionLane itemReadLane,
-            ExecutionLane sessionGenerationCpuLane,
-            ExecutionLane sessionGenerationIoLane,
-            ExecutionLane encounterGeneratedCpuLane,
-            ExecutionLane encounterGeneratedIoLane,
-            ExecutionLane sessionPreparationCpuLane,
-            ExecutionLane sessionPreparationIoLane,
-            UiDispatcher uiDispatcher,
-            SqliteDatabase installationDatabase,
-            SqliteDatabase database
+            SqliteDatabase installationDatabase
     ) {
         this.diagnostics = java.util.Objects.requireNonNull(diagnostics, "diagnostics");
         this.startupLane = java.util.Objects.requireNonNull(startupLane, "startupLane");
-        this.executionLane = java.util.Objects.requireNonNull(executionLane, "executionLane");
-        this.creatureReadLane = java.util.Objects.requireNonNull(creatureReadLane, "creatureReadLane");
-        this.itemReadLane = java.util.Objects.requireNonNull(itemReadLane, "itemReadLane");
-        this.sessionGenerationCpuLane = java.util.Objects.requireNonNull(
-                sessionGenerationCpuLane, "sessionGenerationCpuLane");
-        this.sessionGenerationIoLane = java.util.Objects.requireNonNull(
-                sessionGenerationIoLane, "sessionGenerationIoLane");
-        this.encounterGeneratedCpuLane = java.util.Objects.requireNonNull(
-                encounterGeneratedCpuLane, "encounterGeneratedCpuLane");
-        this.encounterGeneratedIoLane = java.util.Objects.requireNonNull(
-                encounterGeneratedIoLane, "encounterGeneratedIoLane");
-        this.sessionPreparationCpuLane = java.util.Objects.requireNonNull(
-                sessionPreparationCpuLane, "sessionPreparationCpuLane");
-        this.sessionPreparationIoLane = java.util.Objects.requireNonNull(
-                sessionPreparationIoLane, "sessionPreparationIoLane");
         this.uiDispatcher = java.util.Objects.requireNonNull(uiDispatcher, "uiDispatcher");
         this.installationDatabase = java.util.Objects.requireNonNull(
                 installationDatabase, "installationDatabase");
-        this.database = java.util.Objects.requireNonNull(database, "database");
     }
 
-    private static SqliteDatabase installationDatabaseAtSamePath(
-            SqliteDatabase campaignDatabase,
-            Diagnostics diagnostics) {
-        SqliteDatabase safeCampaignDatabase = java.util.Objects.requireNonNull(
-                campaignDatabase, "campaignDatabase");
-        java.nio.file.Path campaignPath = safeCampaignDatabase.databasePath();
-        return new SqliteDatabase(
-                campaignPath,
-                java.util.Objects.requireNonNull(diagnostics, "diagnostics"));
+    private boolean acquireInstallation(InstallationRuntime installation) {
+        InstallationRuntime safeInstallation = java.util.Objects.requireNonNull(
+                installation, "installation");
+        while (true) {
+            InstallationOwnership current = installationOwnership.get();
+            if (current.state() != InstallationOwnershipState.EMPTY_OPEN) {
+                return false;
+            }
+            if (installationOwnership.compareAndSet(
+                    current,
+                    new InstallationOwnership(
+                            InstallationOwnershipState.RUNTIME_OWNED,
+                            safeInstallation))) {
+                return true;
+            }
+        }
     }
 
-    public CompletionStage<AppShell> createShellAsync() {
-        CompletableFuture<AppShell> completion = new CompletableFuture<>();
-        if (closed.get()) {
-            return CompletableFuture.failedFuture(
+    /** Opens the single production Campaign-activation composition route. */
+    CompletionStage<CampaignActivationCoordinator> openCampaignActivationAsync(
+            java.nio.file.Path campaignRoot,
+            CampaignActivationCoordinator.SwitchingHost host
+    ) {
+        CompletableFuture<CampaignActivationCoordinator> completion = new CompletableFuture<>();
+        if (!registerStartupCompletion(completion)) {
+            completion.completeExceptionally(
                     new IllegalStateException("Application bootstrap is closed"));
+            return completion;
         }
         if (!shellCreationStarted.compareAndSet(false, true)) {
-            return CompletableFuture.failedFuture(
-                    new IllegalStateException("Application shell is already composed"));
+            completion.completeExceptionally(
+                    new IllegalStateException("Application shell composition is already owned"));
+            return completion;
         }
         try {
-            startupLane.execute(() -> prepareRuntime(completion));
+            startupLane.execute(() -> {
+                InstallationRuntime installation = null;
+                CampaignActivationCoordinator coordinator = null;
+                try {
+                    if (closed.get()) {
+                        completion.completeExceptionally(
+                                new IllegalStateException("Application bootstrap is closed"));
+                        return;
+                    }
+                    campaignStartupGate.run();
+                    synchronized (startupHandoffMonitor) {
+                        if (closed.get()) {
+                            completion.completeExceptionally(
+                                    new IllegalStateException("Application bootstrap is closed"));
+                            return;
+                        }
+                    }
+                    installation = InstallationRuntime.open(
+                            diagnostics, installationDatabase, installationShutdownTimeout);
+                    preInstallationAcquireGate.run();
+                    if (!acquireInstallation(installation)) {
+                        installation.close();
+                        throw new IllegalStateException("Installation runtime is already composed");
+                    }
+                    postInstallationAcquireGate.run();
+                    boolean rejectedAfterInstallation;
+                    synchronized (startupHandoffMonitor) {
+                        rejectedAfterInstallation = closed.get();
+                    }
+                    if (rejectedAfterInstallation) {
+                        Throwable cleanupFailure = closeClaimedInstallation(installation);
+                        IllegalStateException handoffFailure = new IllegalStateException(
+                                "Application bootstrap closed during installation handoff");
+                        if (cleanupFailure != null) {
+                            handoffFailure.addSuppressed(cleanupFailure);
+                        }
+                        completion.completeExceptionally(handoffFailure);
+                        return;
+                    }
+                    coordinator = new CampaignActivationCoordinator(
+                            diagnostics,
+                            installation.campaigns(),
+                            campaignRoot,
+                            (campaignId, campaignPath, intent) -> prepareCampaignCandidate(
+                                    campaignId, campaignPath, intent, campaignRoot, host),
+                            host,
+                            java.util.UUID::randomUUID,
+                            campaignActivationPhaseTimeout,
+                            campaignCommitTimeout,
+                            campaignPreCommitGate);
+                    campaignCoordinatorHandoffGate.run();
+                    boolean rejectedByClose;
+                    synchronized (startupHandoffMonitor) {
+                        rejectedByClose = closed.get();
+                        if (!rejectedByClose
+                                && campaignActivationCoordinator.compareAndSet(null, coordinator)) {
+                            completion.complete(coordinator);
+                            return;
+                        }
+                    }
+                    Throwable cleanupFailure = closeLocalCampaignActivation(
+                            coordinator, installation);
+                    IllegalStateException handoffFailure = new IllegalStateException(
+                            rejectedByClose
+                                    ? "Application bootstrap is closed"
+                                    : "Campaign activation is already composed");
+                    if (cleanupFailure != null) {
+                        handoffFailure.addSuppressed(cleanupFailure);
+                    }
+                    completion.completeExceptionally(handoffFailure);
+                } catch (RuntimeException | Error failure) {
+                    Throwable cleanupFailure = coordinator != null
+                            ? closeLocalCampaignActivation(coordinator, installation)
+                            : installation == null ? null : closeClaimedInstallation(installation);
+                    completion.completeExceptionally(accumulate(failure, cleanupFailure));
+                }
+            });
         } catch (RuntimeException | Error failure) {
             completion.completeExceptionally(failure);
         }
         return completion;
     }
 
-    private void prepareRuntime(CompletableFuture<AppShell> completion) {
+    private boolean registerStartupCompletion(CompletableFuture<?> completion) {
+        synchronized (startupHandoffMonitor) {
+            if (closed.get()) {
+                return false;
+            }
+            pendingStartupCompletions.add(completion);
+        }
+        completion.whenComplete((ignored, failure) -> pendingStartupCompletions.remove(completion));
+        return true;
+    }
+
+    private Throwable closeLocalCampaignActivation(
+            CampaignActivationCoordinator coordinator,
+            InstallationRuntime installation
+    ) {
+        Throwable failure = null;
+        try {
+            coordinator.close();
+        } catch (RuntimeException | Error closeFailure) {
+            failure = closeFailure;
+        }
+        return accumulate(failure, closeClaimedInstallation(installation));
+    }
+
+    private Throwable closeClaimedInstallation(InstallationRuntime installation) {
+        if (installationOwnership.get().runtime() != installation) {
+            return null;
+        }
+        return attemptInstallationClose(installation, true);
+    }
+
+    private CompletionStage<CampaignShell> prepareCampaignCandidate(
+            CampaignId campaignId,
+            java.nio.file.Path campaignPath,
+            CampaignActivationCoordinator.OpenIntent intent,
+            java.nio.file.Path campaignRoot,
+            CampaignActivationCoordinator.SwitchingHost host
+    ) {
+        java.util.Objects.requireNonNull(campaignId, "campaignId");
+        java.nio.file.Path safePath = java.util.Objects.requireNonNull(
+                campaignPath, "campaignPath").toAbsolutePath().normalize();
+        InstallationRuntime installation = installationOwnership.get().runtime();
+        if (installation == null || closed.get()) {
+            return CompletableFuture.failedFuture(
+                    new IllegalStateException("Installation runtime is not available"));
+        }
+
         RevocableUiDispatcher campaignUi = new RevocableUiDispatcher(uiDispatcher);
-        if (closed.get()) {
-            campaignUi.revoke();
-            completion.completeExceptionally(new IllegalStateException("Application bootstrap is closed"));
-            return;
-        }
-        if (!ownership.beginPreparation(campaignUi)) {
-            campaignUi.revoke();
-            completion.completeExceptionally(new IllegalStateException("Application bootstrap is closed"));
-            return;
-        }
-        InstallationRuntime installation;
         CampaignRuntime runtime;
         try {
-            installation = InstallationRuntime.open(
-                    diagnostics,
-                    installationDatabase);
-            if (!installationRuntime.compareAndSet(null, installation)) {
-                installation.close();
-                throw new IllegalStateException("Installation runtime is already composed");
-            }
             runtime = CampaignRuntime.open(
                     diagnostics,
-                    executionLane,
-                    creatureReadLane,
-                    itemReadLane,
-                    sessionGenerationCpuLane,
-                    sessionGenerationIoLane,
-                    encounterGeneratedCpuLane,
-                    encounterGeneratedIoLane,
-                    sessionPreparationCpuLane,
-                    sessionPreparationIoLane,
+                    new SerialExecutionLane(diagnostics),
+                    new BoundedExecutionLane(diagnostics, "campaign-creatures-read", 2),
+                    new BoundedExecutionLane(diagnostics, "campaign-items-read", 2),
+                    new BoundedExecutionLane(
+                            diagnostics,
+                            "campaign-session-generation-cpu",
+                            Math.max(2, Runtime.getRuntime().availableProcessors() - 1)),
+                    new BoundedExecutionLane(diagnostics, "campaign-session-generation-io", 2),
+                    new BoundedExecutionLane(
+                            diagnostics,
+                            "campaign-encounter-generated-cpu",
+                            Math.max(2, Runtime.getRuntime().availableProcessors() - 1)),
+                    new BoundedExecutionLane(diagnostics, "campaign-encounter-generated-io", 2),
+                    new BoundedExecutionLane(diagnostics, "campaign-session-preparation-cpu", 2),
+                    new BoundedExecutionLane(diagnostics, "campaign-session-preparation-io", 2),
                     campaignUi,
                     installation.references(),
-                    database);
+                    new SqliteDatabase(
+                            safePath,
+                            diagnostics,
+                            intent == CampaignActivationCoordinator.OpenIntent.EXISTING_ONLY
+                                    ? SqliteDatabase.OpenMode.EXISTING_ONLY
+                                    : SqliteDatabase.OpenMode.RESERVED_NEW,
+                            campaignRoot));
         } catch (RuntimeException | Error failure) {
-            campaignUi.revokeAndDrain().whenComplete((ignored, uiFailure) -> {
-                ownership.openFailedAndReleasedResources();
-                completion.completeExceptionally(accumulate(failure, uiFailure));
-                ownership.settlePreparation(uiFailure);
-            });
-            return;
+            campaignUi.revoke();
+            return CompletableFuture.failedFuture(failure);
         }
-        if (!ownership.acquireRuntime(runtime)) {
-            failRuntime(
-                    runtime,
-                    campaignUi,
-                    completion,
-                    new IllegalStateException("Application bootstrap is closed"));
-            return;
-        }
-        runtime.foundationReadiness().whenComplete((readiness, failure) -> {
-            if (failure != null) {
-                failRuntime(runtime, campaignUi, completion, failure);
+
+        CompletableFuture<CampaignShell> completion = new CompletableFuture<>();
+        runtime.foundationReadiness().whenComplete((readiness, foundationFailure) -> {
+            if (foundationFailure != null) {
+                failCampaignCandidate(runtime, campaignUi, completion, foundationFailure);
                 return;
             }
-            campaignUi.dispatchTracked(
-                    () -> composePreparedShell(runtime, readiness, campaignUi, completion),
-                    dispatchFailure -> {
+            campaignUi.dispatchTracked(() -> {
+                CampaignRuntime.CandidatePreparation<PreparedShellCandidate> preparation;
+                try {
+                    preparation = runtime.prepareCandidate(
+                            () -> buildPreparedCandidate(runtime, readiness, Optional.of(host)));
+                } catch (RuntimeException | Error failure) {
+                    failCampaignCandidate(runtime, campaignUi, completion, failure);
+                    return;
+                }
+                PreparedShellCandidate candidate = preparation.value();
+                CampaignShell owner = new CampaignShell(
+                        candidate.shell(), candidate.catalog(), runtime, campaignUi, campaignCloseObserver);
+                preparation.drained().whenComplete((ignored, drainFailure) -> {
+                    if (drainFailure != null) {
+                        failCampaignCandidate(owner, completion, drainFailure);
+                        return;
+                    }
+                    campaignUi.dispatchTracked(() -> {
+                        try {
+                            runtime.prepareBoundShell(candidate.shell(), candidate.scene());
+                            candidate.shell().setDisable(true);
+                            candidate.shell().setAccessibleHelp(
+                                    "Campaign ist vorbereitet und wartet auf sichtbare Aktivierung.");
+                            completion.complete(owner);
+                        } catch (RuntimeException | Error failure) {
+                            failCampaignCandidate(owner, completion, failure);
+                        }
+                    }, dispatchFailure -> {
                         if (dispatchFailure != null) {
-                            failRuntime(runtime, campaignUi, completion, dispatchFailure);
+                            failCampaignCandidate(owner, completion, dispatchFailure);
                         }
                     });
+                });
+            }, dispatchFailure -> {
+                if (dispatchFailure != null) {
+                    failCampaignCandidate(runtime, campaignUi, completion, dispatchFailure);
+                }
+            });
         });
+        return completion;
     }
 
-    private void composePreparedShell(
-            CampaignRuntime runtime,
-            CampaignRuntime.FoundationReadiness readiness,
-            RevocableUiDispatcher campaignUi,
-            CompletableFuture<AppShell> completion
-    ) {
-        preComposeGate.run();
-        if (closed.get()) {
-            failRuntime(
-                    runtime,
-                    campaignUi,
-                    completion,
-                    new IllegalStateException("Application bootstrap is closed"));
-            return;
-        }
-        CampaignRuntime.CandidatePreparation<PreparedShellCandidate> preparation;
-        try {
-            preparation = runtime.prepareCandidate(() ->
-                    buildPreparedCandidate(runtime, readiness, campaignUi));
-        } catch (RuntimeException | Error failure) {
-            failRuntime(runtime, campaignUi, completion, failure);
-            return;
-        }
-        PreparedShellCandidate candidate = preparation.value();
-        CampaignShell owner = new CampaignShell(
-                candidate.shell(), candidate.catalog(), runtime, campaignUi, campaignCloseObserver);
-        preStageGate.run();
-        if (!ownership.stageShell(runtime, owner)) {
-            failOwner(
-                    owner,
-                    completion,
-                    new IllegalStateException("Application bootstrap closed before candidate handoff"));
-            return;
-        }
-        preparation.drained().whenComplete((ignored, drainFailure) -> {
-            postDrainScheduler.accept(() -> campaignUi.dispatchTracked(
-                    () -> finishPreparedCandidate(
-                            candidate, owner, runtime, completion, drainFailure),
-                    dispatchFailure -> {
-                        if (dispatchFailure != null) {
-                            failOwner(owner, completion, dispatchFailure);
-                        }
-                    }));
-        });
-    }
-
-    private void finishPreparedCandidate(
-            PreparedShellCandidate candidate,
+    private static void failCampaignCandidate(
             CampaignShell owner,
-            CampaignRuntime runtime,
-            CompletableFuture<AppShell> completion,
-            @Nullable Throwable drainFailure
+            CompletableFuture<CampaignShell> completion,
+            Throwable failure
     ) {
-        if (drainFailure != null || closed.get()) {
-            Throwable rejection = drainFailure == null
-                    ? new IllegalStateException("Application bootstrap is closed") : drainFailure;
-            failOwner(owner, completion, rejection);
-            return;
-        }
-        try {
-            runtime.prepareBoundShell(candidate.shell(), candidate.scene());
-            candidate.shell().setDisable(true);
-            candidate.shell().setAccessibleHelp(
-                    "Campaign ist vorbereitet und wartet auf sichtbare Aktivierung.");
-            shellHandoffGate.run();
-            if (closed.get()) {
-                failOwner(
-                        owner,
-                        completion,
-                        new IllegalStateException("Application bootstrap closed during shell handoff"));
-                return;
-            }
-            prePublishGate.run();
-            if (ownership.publishShell(runtime, owner)) {
-                completion.complete(candidate.shell());
-            } else {
-                failOwner(
-                        owner,
-                        completion,
-                        new IllegalStateException("Application bootstrap closed during shell handoff"));
-            }
-        } catch (RuntimeException | Error failure) {
-            failOwner(owner, completion, failure);
-        }
+        owner.closeAsync().whenComplete((ignored, closeFailure) ->
+                completion.completeExceptionally(accumulate(failure, closeFailure)));
     }
 
-    private void failOwner(
-            CampaignShell owner,
-            CompletableFuture<AppShell> completion,
-            Throwable initialFailure
-    ) {
-        owner.closeAsync().whenComplete((ignored, closeFailure) -> {
-            completion.completeExceptionally(accumulate(initialFailure, closeFailure));
-            ownership.settlePreparation(closeFailure);
-        });
-    }
-
-    private void failRuntime(
+    private static void failCampaignCandidate(
             CampaignRuntime runtime,
             RevocableUiDispatcher campaignUi,
-            CompletableFuture<AppShell> completion,
-            Throwable initialFailure
+            CompletableFuture<CampaignShell> completion,
+            Throwable failure
     ) {
-        campaignUi.revokeAndDrain().whenComplete((ignored, uiFailure) -> {
-            finishRuntimeFailure(runtime, completion, initialFailure, uiFailure);
-        });
-    }
-
-    private void finishRuntimeFailure(
-            CampaignRuntime runtime,
-            CompletableFuture<AppShell> completion,
-            Throwable initialFailure,
-            @Nullable Throwable priorCleanupFailure
-    ) {
-        CompletionStage<Void> runtimeClose;
-        Throwable cleanupFailure = priorCleanupFailure;
-        try {
-            runtimeClose = runtime.quiesceAsync();
-        } catch (RuntimeException | Error closeFailure) {
-            cleanupFailure = accumulate(cleanupFailure, closeFailure);
-            runtimeClose = CompletableFuture.completedFuture(null);
-        }
-        Throwable cleanupBeforeRuntime = cleanupFailure;
-        runtimeClose.whenComplete((ignoredRuntime, runtimeFailure) -> {
-            Throwable completedCleanupFailure = accumulate(cleanupBeforeRuntime, runtimeFailure);
-            completion.completeExceptionally(accumulate(initialFailure, completedCleanupFailure));
-            ownership.settlePreparation(completedCleanupFailure);
-        });
+        campaignUi.revokeAndDrain().whenComplete((ignored, uiFailure) ->
+                runtime.quiesceAsync().whenComplete((ignoredRuntime, runtimeFailure) ->
+                        completion.completeExceptionally(accumulate(
+                                failure, accumulate(uiFailure, runtimeFailure)))));
     }
 
     private PreparedShellCandidate buildPreparedCandidate(
             CampaignRuntime runtime,
             CampaignRuntime.FoundationReadiness readiness,
-            RevocableUiDispatcher campaignUi
+            Optional<CampaignActivationCoordinator.SwitchingHost> host
     ) {
         AppShell shell = new AppShell(diagnostics);
         CatalogFeature.Component catalog = null;
         try {
             BoundContributions bound = bindContributions(
-                    shell, runtime.components(), readiness.stores(), campaignUi);
+                    shell, runtime.components(), readiness.stores(), runtime.uiDispatcher());
             catalog = bound.catalog();
             List<ResolvedContribution> contributions = bound.contributions();
             contributions.stream()
@@ -433,6 +431,7 @@ public final class AppBootstrap implements AutoCloseable {
             Scene qualificationScene = new Scene(shell, 1_150, 700);
             qualificationScene.getStylesheets().add(
                     SaltMarcherApp.class.getResource("/salt-marcher.css").toExternalForm());
+            host.ifPresent(owner -> owner.installSelectorAccess(shell));
             shell.applyCss();
             shell.layout();
             return new PreparedShellCandidate(shell, qualificationScene, catalog);
@@ -719,54 +718,39 @@ public final class AppBootstrap implements AutoCloseable {
     }
 
     CampaignRuntime campaignRuntimeForTesting() {
-        CampaignShell owner = ownership.shell();
-        if (owner == null) {
-            throw new IllegalStateException("Campaign runtime is not published");
+        CampaignActivationCoordinator coordinator = campaignActivationCoordinator.get();
+        if (coordinator != null) {
+            return coordinator.activeRuntimeForTesting();
         }
-        return owner.runtime();
-    }
-
-    CompletionStage<Void> publishAndActivateShell(AppShell shell, Runnable visiblePublication) {
-        CampaignShell owner = ownership.shell();
-        if (owner == null || owner.shell() != shell) {
-            throw new IllegalStateException("Published shell is not the prepared Campaign shell");
-        }
-        CampaignRuntime.CandidatePreparation<AppShell> publication = owner.runtime().prepareCandidate(() -> {
-            shell.setDisable(true);
-            shell.setAccessibleHelp("Campaign wird aktiviert.");
-            visiblePublication.run();
-            return shell;
-        });
-        CompletableFuture<Void> activated = new CompletableFuture<>();
-        activationStageObserver.accept(activated);
-        publication.drained().whenComplete((ignored, failure) -> {
-            if (failure != null) {
-                activated.completeExceptionally(failure);
-                return;
-            }
-            owner.dispatchUiTracked(() -> {
-                owner.activateVisibleShell();
-                shell.setDisable(false);
-                shell.setAccessibleHelp("Campaign ist aktiv.");
-            }, dispatchFailure -> {
-                if (dispatchFailure == null) {
-                    activated.complete(null);
-                } else {
-                    activated.completeExceptionally(dispatchFailure);
-                }
-            });
-        });
-        return activated;
+        throw new IllegalStateException("Campaign runtime is not published");
     }
 
     @Override
     public void close() {
-        if (closed.compareAndSet(false, true)) {
-            ownership.requestClose();
-            closeExecutor.execute(this::performClose);
+        java.util.List<CompletableFuture<?>> startupToReject = java.util.List.of();
+        synchronized (startupHandoffMonitor) {
+            if (closed.compareAndSet(false, true)) {
+                startupToReject = java.util.List.copyOf(pendingStartupCompletions);
+            }
+        }
+        IllegalStateException closedFailure =
+                new IllegalStateException("Application bootstrap is closed");
+        startupToReject.forEach(completion -> completion.completeExceptionally(closedFailure));
+        CompletableFuture<Void> attempt;
+        synchronized (closeMonitor) {
+            if (termination.isDone()) {
+                attempt = termination;
+            } else if (closeAttempt != null) {
+                attempt = closeAttempt;
+            } else {
+                attempt = new CompletableFuture<>();
+                closeAttempt = attempt;
+                CompletableFuture<Void> ownedAttempt = attempt;
+                closeExecutor.execute(() -> performClose(ownedAttempt));
+            }
         }
         if (!Platform.isFxApplicationThread()) {
-            termination.join();
+            attempt.join();
         }
     }
 
@@ -774,133 +758,316 @@ public final class AppBootstrap implements AutoCloseable {
         return termination;
     }
 
-    void installShellHandoffGateForTesting(Runnable gate) {
-        shellHandoffGate = java.util.Objects.requireNonNull(gate, "gate");
-    }
-
-    void installPreComposeGateForTesting(Runnable gate) {
-        preComposeGate = java.util.Objects.requireNonNull(gate, "gate");
-    }
-
     void installCampaignCloseObserverForTesting(java.util.function.Consumer<String> observer) {
         campaignCloseObserver = java.util.Objects.requireNonNull(observer, "observer");
     }
 
-    void installActivationStageObserverForTesting(
-            java.util.function.Consumer<CompletionStage<Void>> observer
-    ) {
-        activationStageObserver = java.util.Objects.requireNonNull(observer, "observer");
+    void installCampaignStartupGateForTesting(Runnable gate) {
+        campaignStartupGate = java.util.Objects.requireNonNull(gate, "gate");
     }
 
-    void installPostDrainSchedulerForTesting(java.util.function.Consumer<Runnable> scheduler) {
-        postDrainScheduler = java.util.Objects.requireNonNull(scheduler, "scheduler");
+    void installCampaignActivationPhaseTimeoutForTesting(java.time.Duration timeout) {
+        campaignActivationPhaseTimeout = java.util.Objects.requireNonNull(timeout, "timeout");
     }
 
-    void installPreStageGateForTesting(Runnable gate) {
-        preStageGate = java.util.Objects.requireNonNull(gate, "gate");
+    void installCampaignPreCommitGateForTesting(Runnable gate) {
+        campaignPreCommitGate = java.util.Objects.requireNonNull(gate, "gate");
     }
 
-    void installPrePublishGateForTesting(Runnable gate) {
-        prePublishGate = java.util.Objects.requireNonNull(gate, "gate");
+    void installCampaignCommitTimeoutForTesting(java.time.Duration timeout) {
+        campaignCommitTimeout = java.util.Objects.requireNonNull(timeout, "timeout");
     }
 
-    boolean closeClaimedForTesting() {
-        return ownership.closeClaimed();
+    void installStartupShutdownTimeoutForTesting(java.time.Duration timeout) {
+        java.time.Duration safeTimeout = java.util.Objects.requireNonNull(timeout, "timeout");
+        if (safeTimeout.isNegative() || safeTimeout.isZero()) {
+            throw new IllegalArgumentException("timeout must be positive");
+        }
+        startupShutdownTimeout = safeTimeout;
     }
 
-    boolean preparatoryUiRevokedForTesting() {
-        RevocableUiDispatcher preparatoryUi = ownership.preparatoryUi();
-        return preparatoryUi == null || preparatoryUi.revokedForTesting();
+    void installInstallationShutdownTimeoutForTesting(java.time.Duration timeout) {
+        java.time.Duration safeTimeout = java.util.Objects.requireNonNull(timeout, "timeout");
+        if (safeTimeout.isNegative()) {
+            throw new IllegalArgumentException("timeout must not be negative");
+        }
+        installationShutdownTimeout = safeTimeout;
     }
 
-    private void performClose() {
+    void installCampaignCoordinatorHandoffGateForTesting(Runnable gate) {
+        campaignCoordinatorHandoffGate = java.util.Objects.requireNonNull(gate, "gate");
+    }
+
+    void installInstallationRawCloseClaimGateForTesting(Runnable gate) {
+        installationRawCloseClaimGate = java.util.Objects.requireNonNull(gate, "gate");
+    }
+
+    void installPreInstallationAcquireGateForTesting(Runnable gate) {
+        preInstallationAcquireGate = java.util.Objects.requireNonNull(gate, "gate");
+    }
+
+    void installPostInstallationAcquireGateForTesting(Runnable gate) {
+        postInstallationAcquireGate = java.util.Objects.requireNonNull(gate, "gate");
+    }
+
+    boolean closeRequestedForTesting() {
+        return closed.get();
+    }
+
+    boolean campaignActivationRetainedForTesting() {
+        return campaignActivationCoordinator.get() != null;
+    }
+
+    boolean installationRuntimeRetainedForTesting() {
+        return installationOwnership.get().runtime() != null;
+    }
+
+    boolean installationResourcesClosedForTesting() {
+        return installationOwnership.get().state() == InstallationOwnershipState.CLOSED;
+    }
+
+    InstallationOwnershipSnapshot installationOwnershipForTesting() {
+        InstallationOwnership ownership = installationOwnership.get();
+        return new InstallationOwnershipSnapshot(
+                ownership.runtime() != null,
+                ownership.state() == InstallationOwnershipState.CLOSED);
+    }
+
+    void runInstallationRegistryTaskForTesting(Runnable task) {
+        InstallationRuntime installation = installationOwnership.get().runtime();
+        if (installation == null) {
+            throw new IllegalStateException("Installation runtime is not available");
+        }
+        installation.runRegistryTaskForTesting(task);
+    }
+
+    boolean closeExecutorShutdownForTesting() {
+        return closeExecutor.isShutdown();
+    }
+
+    boolean closeExecutorTerminatedForTesting() {
+        return closeExecutor.isTerminated();
+    }
+
+    boolean installationRegistryOperationActiveForTesting() {
+        InstallationRuntime installation = installationOwnership.get().runtime();
+        return installation != null && installation.registryOperationActiveForTesting();
+    }
+
+    int installationRuntimeCloseClaimsForTesting() {
+        return installationRuntimeCloseClaims.get();
+    }
+
+    private void performClose(CompletableFuture<Void> attempt) {
         Throwable failure = null;
-        try {
-            startupLane.close();
-        } catch (RuntimeException | Error startupFailure) {
-            failure = startupFailure;
+        CampaignActivationCoordinator coordinatorNeedingRetry = null;
+        Throwable coordinatorFailure = null;
+        if (startupClosed.compareAndSet(false, true)) {
+            failure = terminateStartupOwner();
         }
-        RevocableUiDispatcher preparatoryUi = ownership.preparatoryUi();
-        if (preparatoryUi != null) {
-            try {
-                preparatoryUi.revokeAndDrain().toCompletableFuture().join();
-            } catch (RuntimeException uiFailure) {
-                failure = accumulate(failure, uiFailure);
-            }
-        }
-        LifecycleOwnerSlot.CloseClaim claim = ownership.claimForClose();
-        CampaignShell owner = claim.shell();
-        if (owner != null) {
-            failure = awaitPreparationSettlement(claim, failure);
-            try {
-                owner.closeAsync().toCompletableFuture().join();
-            } catch (RuntimeException closeFailure) {
-                failure = accumulate(failure, closeFailure);
-            }
-        } else {
-            CampaignRuntime runtime = claim.runtime();
-            if (runtime != null) {
+        CampaignActivationCoordinator coordinator = campaignActivationCoordinator.get();
+        if (coordinator != null) {
+            Throwable lastCoordinatorFailure = null;
+            for (int closeAttemptNumber = 0;
+                    closeAttemptNumber < COORDINATOR_CLOSE_ATTEMPTS;
+                    closeAttemptNumber++) {
                 try {
-                    runtime.quiesceAsync().toCompletableFuture().join();
-                } catch (RuntimeException closeFailure) {
-                    failure = accumulate(failure, closeFailure);
+                    coordinator.close();
+                    campaignActivationCoordinator.compareAndSet(coordinator, null);
+                    lastCoordinatorFailure = null;
+                    break;
+                } catch (RuntimeException | Error closeFailure) {
+                    lastCoordinatorFailure = closeFailure;
+                    diagnostics.failure(CLOSE_FAILURE, closeFailure.getClass());
                 }
-            } else if (claim.closeRawResources()) {
-                failure = CampaignRuntime.closeOwnedResources(
-                        executionLane,
-                        java.util.List.of(
-                                creatureReadLane,
-                                itemReadLane,
-                                sessionGenerationCpuLane,
-                                sessionGenerationIoLane,
-                                encounterGeneratedCpuLane,
-                                encounterGeneratedIoLane,
-                                sessionPreparationCpuLane,
-                                sessionPreparationIoLane),
-                        database,
-                        failure);
             }
-            failure = awaitPreparationSettlement(claim, failure);
+            if (lastCoordinatorFailure != null) {
+                coordinatorNeedingRetry = coordinator;
+                coordinatorFailure = lastCoordinatorFailure;
+            }
         }
         failure = closeInstallationResources(failure);
+        if (coordinatorNeedingRetry != null) {
+            CampaignActivationCoordinator retained = coordinatorNeedingRetry;
+            if (campaignActivationCoordinator.get() == retained) {
+                try {
+                    retained.close();
+                    campaignActivationCoordinator.compareAndSet(retained, null);
+                    coordinatorFailure = null;
+                } catch (RuntimeException | Error terminalCoordinatorFailure) {
+                    coordinatorFailure = terminalCoordinatorFailure;
+                    diagnostics.failure(CLOSE_FAILURE, terminalCoordinatorFailure.getClass());
+                }
+            } else {
+                coordinatorFailure = null;
+            }
+            failure = accumulate(failure, coordinatorFailure);
+            if (coordinatorFailure != null) {
+                registerCoordinatorRetry(retained);
+            }
+        }
+        closeExecutor.shutdown();
         if (failure == null) {
             termination.complete(null);
+            attempt.complete(null);
         } else {
             diagnostics.failure(CLOSE_FAILURE, failure.getClass());
             termination.completeExceptionally(failure);
+            attempt.completeExceptionally(failure);
         }
-        closeExecutor.shutdown();
+        synchronized (closeMonitor) {
+            closeAttempt = null;
+        }
     }
 
-    private Throwable closeInstallationResources(Throwable initialFailure) {
+    private synchronized Throwable closeInstallationResources(Throwable initialFailure) {
         Throwable failure = initialFailure;
-        InstallationRuntime installation = installationRuntime.getAndSet(null);
-        if (installation != null) {
+        while (true) {
+            InstallationOwnership ownership = installationOwnership.get();
+            if (ownership.state() == InstallationOwnershipState.RUNTIME_OWNED) {
+                return accumulate(
+                        failure,
+                        attemptInstallationClose(
+                                java.util.Objects.requireNonNull(ownership.runtime()), true));
+            }
+            if (ownership.state() == InstallationOwnershipState.CLOSED
+                    || ownership.state() == InstallationOwnershipState.RAW_CLOSE_CLAIMED) {
+                return failure;
+            }
+            installationRawCloseClaimGate.run();
+            InstallationOwnership claimed = new InstallationOwnership(
+                    InstallationOwnershipState.RAW_CLOSE_CLAIMED, null);
+            if (!installationOwnership.compareAndSet(ownership, claimed)) {
+                continue;
+            }
             try {
-                installation.close();
+                installationDatabase.close();
+                installationOwnership.compareAndSet(
+                        claimed,
+                        new InstallationOwnership(InstallationOwnershipState.CLOSED, null));
             } catch (RuntimeException | Error closeFailure) {
                 failure = accumulate(failure, closeFailure);
             }
             return failure;
         }
-        try {
-            installationDatabase.close();
-        } catch (RuntimeException | Error closeFailure) {
-            failure = accumulate(failure, closeFailure);
-        }
-        return failure;
     }
 
-    private static Throwable awaitPreparationSettlement(
-            LifecycleOwnerSlot.CloseClaim claim,
-            Throwable currentFailure
+    private Throwable attemptInstallationClose(
+            InstallationRuntime installation,
+            boolean registerLateRetry
     ) {
+        installationRuntimeCloseClaims.incrementAndGet();
         try {
-            claim.preparationSettled().toCompletableFuture().join();
-        } catch (RuntimeException preparationFailure) {
-            return accumulate(currentFailure, preparationFailure);
+            installation.close();
+        } catch (RuntimeException | Error closeFailure) {
+            if (registerLateRetry) {
+                registerInstallationRetry(installation);
+            }
+            return closeFailure;
         }
-        return currentFailure;
+        clearClosedInstallation(installation);
+        return null;
+    }
+
+    private void clearClosedInstallation(InstallationRuntime installation) {
+        while (true) {
+            InstallationOwnership current = installationOwnership.get();
+            if (current.runtime() != installation) {
+                return;
+            }
+            if (installationOwnership.compareAndSet(
+                    current,
+                    new InstallationOwnership(InstallationOwnershipState.CLOSED, null))) {
+                return;
+            }
+        }
+    }
+
+    private void registerInstallationRetry(InstallationRuntime installation) {
+        if (!installationRetryRegistered.compareAndSet(false, true)) {
+            return;
+        }
+        installation.shutdownSettlement().whenComplete((ignored, settlementFailure) -> {
+            if (installationOwnership.get().runtime() != installation) {
+                return;
+            }
+            Throwable retryFailure = settlementFailure;
+            if (retryFailure == null) {
+                retryFailure = attemptInstallationClose(installation, false);
+            }
+            if (retryFailure != null) {
+                diagnostics.failure(CLOSE_FAILURE, retryFailure.getClass());
+            }
+        });
+    }
+
+    private void registerCoordinatorRetry(CampaignActivationCoordinator coordinator) {
+        if (!coordinatorRetryRegistered.compareAndSet(false, true)) {
+            return;
+        }
+        runDaemonLateCleanup("salt-marcher-coordinator-late-cleanup", () -> {
+            long backoffNanos = java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(10);
+            long maximumBackoffNanos = java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(250);
+            while (campaignActivationCoordinator.get() == coordinator) {
+                CompletionStage<Void> settlement = coordinator.terminalCloseSettlement();
+                try {
+                    if (settlement != null) {
+                        settlement.toCompletableFuture().join();
+                    }
+                    coordinator.close();
+                    campaignActivationCoordinator.compareAndSet(coordinator, null);
+                    return;
+                } catch (RuntimeException | Error closeFailure) {
+                    diagnostics.failure(CLOSE_FAILURE, closeFailure.getClass());
+                }
+                java.util.concurrent.locks.LockSupport.parkNanos(backoffNanos);
+                backoffNanos = Math.min(maximumBackoffNanos, backoffNanos * 2L);
+            }
+        });
+    }
+
+    private static void runDaemonLateCleanup(String name, Runnable cleanup) {
+        Thread owner = new Thread(cleanup, name);
+        owner.setDaemon(true);
+        owner.start();
+    }
+
+    private Throwable terminateStartupOwner() {
+        java.time.Duration timeout = startupShutdownTimeout;
+        if (startupLane instanceof SerialExecutionLane serialLane) {
+            SerialExecutionLane.TerminationResult result = serialLane.terminateNow(timeout);
+            if (result == SerialExecutionLane.TerminationResult.TERMINATED) {
+                return null;
+            }
+            return new IllegalStateException(
+                    "Startup execution lane did not terminate within its close budget: " + result);
+        }
+        CompletableFuture<Void> stopped = new CompletableFuture<>();
+        Thread terminator = new Thread(() -> {
+            try {
+                startupLane.close();
+                stopped.complete(null);
+            } catch (RuntimeException | Error failure) {
+                stopped.completeExceptionally(failure);
+            }
+        }, "salt-marcher-startup-termination");
+        terminator.setDaemon(true);
+        terminator.start();
+        try {
+            stopped.get(timeout.toNanos(), java.util.concurrent.TimeUnit.NANOSECONDS);
+            return null;
+        } catch (java.util.concurrent.TimeoutException timeoutFailure) {
+            terminator.interrupt();
+            return new IllegalStateException(
+                    "Startup execution lane did not terminate within its close budget",
+                    timeoutFailure);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            terminator.interrupt();
+            return new IllegalStateException("Interrupted while terminating startup execution", interrupted);
+        } catch (java.util.concurrent.ExecutionException failure) {
+            return failure.getCause();
+        }
     }
 
     private static Throwable accumulate(Throwable current, Throwable next) {
@@ -912,118 +1079,6 @@ public final class AppBootstrap implements AutoCloseable {
         }
         current.addSuppressed(next);
         return current;
-    }
-
-    private static final class LifecycleOwnerSlot {
-        private enum State { RAW, OPENING, PREPARING, SHELL, RELEASED, CLOSE_CLAIMED }
-
-        private State state = State.RAW;
-        private CampaignRuntime runtime;
-        private CampaignShell shell;
-        private RevocableUiDispatcher uiDispatcher;
-        private boolean closeRequested;
-        private CompletableFuture<Void> preparationSettled = CompletableFuture.completedFuture(null);
-
-        synchronized boolean beginPreparation(RevocableUiDispatcher preparatoryUi) {
-            if (closeRequested || state != State.RAW) {
-                return false;
-            }
-            uiDispatcher = java.util.Objects.requireNonNull(preparatoryUi, "preparatoryUi");
-            preparationSettled = new CompletableFuture<>();
-            state = State.OPENING;
-            return true;
-        }
-
-        synchronized boolean acquireRuntime(CampaignRuntime acquired) {
-            if (closeRequested || state != State.OPENING) {
-                return false;
-            }
-            runtime = java.util.Objects.requireNonNull(acquired, "acquired");
-            state = State.PREPARING;
-            return true;
-        }
-
-        synchronized void openFailedAndReleasedResources() {
-            if (state == State.OPENING) {
-                state = State.RELEASED;
-            }
-        }
-
-        synchronized boolean stageShell(CampaignRuntime expected, CampaignShell staged) {
-            if (state != State.PREPARING || runtime != expected || shell != null) {
-                return false;
-            }
-            shell = java.util.Objects.requireNonNull(staged, "staged");
-            return true;
-        }
-
-        synchronized boolean publishShell(CampaignRuntime expected, CampaignShell published) {
-            if (closeRequested || state != State.PREPARING
-                    || runtime != expected || shell != published) {
-                return false;
-            }
-            runtime = null;
-            state = State.SHELL;
-            preparationSettled.complete(null);
-            return true;
-        }
-
-        synchronized void settlePreparation() {
-            preparationSettled.complete(null);
-        }
-
-        synchronized void settlePreparation(@Nullable Throwable failure) {
-            if (failure == null) {
-                preparationSettled.complete(null);
-            } else {
-                preparationSettled.completeExceptionally(failure);
-            }
-        }
-
-        synchronized CampaignShell shell() {
-            return !closeRequested && state == State.SHELL ? shell : null;
-        }
-
-        synchronized void requestClose() {
-            closeRequested = true;
-        }
-
-        synchronized RevocableUiDispatcher preparatoryUi() {
-            return uiDispatcher;
-        }
-
-        synchronized CloseClaim claimForClose() {
-            CloseClaim claim = switch (state) {
-                case RAW -> new CloseClaim(true, null, null);
-                case OPENING -> new CloseClaim(false, null, null);
-                case PREPARING -> shell == null
-                        ? new CloseClaim(false, runtime, null)
-                        : new CloseClaim(false, null, shell);
-                case SHELL -> new CloseClaim(false, null, shell);
-                case RELEASED, CLOSE_CLAIMED -> new CloseClaim(false, null, null);
-            };
-            runtime = null;
-            shell = null;
-            uiDispatcher = null;
-            state = State.CLOSE_CLAIMED;
-            return new CloseClaim(
-                    claim.closeRawResources(), claim.runtime(), claim.shell(), preparationSettled);
-        }
-
-        synchronized boolean closeClaimed() {
-            return state == State.CLOSE_CLAIMED;
-        }
-
-        private record CloseClaim(
-                boolean closeRawResources,
-                CampaignRuntime runtime,
-                CampaignShell shell,
-                CompletionStage<Void> preparationSettled
-        ) {
-            private CloseClaim(boolean closeRawResources, CampaignRuntime runtime, CampaignShell shell) {
-                this(closeRawResources, runtime, shell, CompletableFuture.completedFuture(null));
-            }
-        }
     }
 
 }

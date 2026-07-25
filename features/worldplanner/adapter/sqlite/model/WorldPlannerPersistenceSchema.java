@@ -2,7 +2,6 @@ package features.worldplanner.adapter.sqlite.model;
 
 public final class WorldPlannerPersistenceSchema {
 
-    private static final String DATABASE_FILE_NAME = "game.db";
     public static final String NPCS_TABLE = "world_planner_npcs";
     public static final String FACTIONS_TABLE = "world_planner_factions";
     public static final String FACTION_NPCS_TABLE = "world_planner_faction_npcs";
@@ -87,10 +86,6 @@ public final class WorldPlannerPersistenceSchema {
                     + "sort_order INTEGER NOT NULL, "
                     + "PRIMARY KEY(location_id, encounter_table_id)"
                     + ")";
-
-    public static String databaseFileName() {
-        return DATABASE_FILE_NAME;
-    }
 
     private WorldPlannerPersistenceSchema() {
     }

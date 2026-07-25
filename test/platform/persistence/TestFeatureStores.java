@@ -11,11 +11,12 @@ import java.util.concurrent.atomic.AtomicReference;
 /** Test-only composition for owner-bound SQLite stores. */
 public final class TestFeatureStores {
 
+    private static final String TEST_DATABASE_FILE_NAME = "test-stores.sqlite";
     private static final AtomicReference<TestResource> CURRENT = new AtomicReference<>();
 
     private TestFeatureStores() {}
 
-    /** Opens the single default-database resource owned by the current test method. */
+    /** Opens the single test-database resource owned by the current test method. */
     public static TestResource openTestResource(List<FeatureStoreDefinition> definitions) {
         TestResource resource = new TestResource(definitions);
         if (!CURRENT.compareAndSet(null, resource)) {
@@ -31,6 +32,11 @@ public final class TestFeatureStores {
             throw new IllegalStateException("no test feature-store resource is active");
         }
         return resource;
+    }
+
+    /** Returns the isolated path used by raw test-fixture setup and assertions. */
+    public static java.nio.file.Path testDatabasePath() {
+        return SqliteDatabase.resolveDatabasePath(TEST_DATABASE_FILE_NAME);
     }
 
     public static FeatureStoreHandle store(
@@ -99,7 +105,7 @@ public final class TestFeatureStores {
                 return;
             }
             SqliteDatabase created = SqliteDatabase.defaultDatabase(
-                    SqliteDatabase.DEFAULT_DATABASE_FILE_NAME, NoopDiagnostics.INSTANCE);
+                    TEST_DATABASE_FILE_NAME, NoopDiagnostics.INSTANCE);
             try {
                 Map<String, FeatureStoreHandle> registered = register(created, definitions);
                 created.prepareRegisteredStores();

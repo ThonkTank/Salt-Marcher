@@ -8,7 +8,10 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
+import platform.ui.UiDispatcher;
+import platform.ui.TrackedUiDispatcher;
 
 /**
  * Campaign-wide admission fence for work that can cross multiple execution lanes.
@@ -24,6 +27,7 @@ public final class WorkflowAdmissionController {
     private final Object monitor = new Object();
     private final ThreadLocal<Workflow> currentWorkflow = new ThreadLocal<>();
     private final Map<ExecutionLane, AdmittedLane> admitted = new IdentityHashMap<>();
+    private final Map<UiDispatcher, AdmittedUiDispatcher> admittedUi = new IdentityHashMap<>();
     private State state = State.OPEN;
     private int activeWorkflows;
     private CompletableFuture<Void> drain = CompletableFuture.completedFuture(null);
@@ -35,6 +39,22 @@ public final class WorkflowAdmissionController {
                 throw new IllegalStateException("workflow admission controller is closed");
             }
             return admitted.computeIfAbsent(safeDelegate, AdmittedLane::new);
+        }
+    }
+
+    /** Preserves workflow admission across an asynchronous UI publication hop. */
+    public UiDispatcher admit(UiDispatcher delegate) {
+        UiDispatcher safeDelegate = Objects.requireNonNull(delegate, "delegate");
+        if (!(safeDelegate instanceof TrackedUiDispatcher trackedDelegate)) {
+            throw new IllegalArgumentException(
+                    "Campaign UI admission requires terminal dispatch tracking");
+        }
+        synchronized (monitor) {
+            if (state == State.CLOSED) {
+                throw new IllegalStateException("workflow admission controller is closed");
+            }
+            return admittedUi.computeIfAbsent(
+                    safeDelegate, ignored -> new AdmittedUiDispatcher(trackedDelegate));
         }
     }
 
@@ -113,7 +133,14 @@ public final class WorkflowAdmissionController {
         Throwable failure = null;
         for (ExecutionLane delegate : delegates) {
             try {
-                delegate.close();
+                if (delegate instanceof BoundedExecutionLane bounded) {
+                    if (!bounded.terminateNow(java.time.Duration.ofSeconds(1))) {
+                        throw new IllegalStateException(
+                                "bounded execution lane did not terminate within close budget");
+                    }
+                } else {
+                    delegate.close();
+                }
             } catch (RuntimeException | Error closeFailure) {
                 if (failure == null) {
                     failure = closeFailure;
@@ -156,15 +183,66 @@ public final class WorkflowAdmissionController {
             }
             workflow.tasks++;
         }
+        AtomicBoolean finished = new AtomicBoolean();
         try {
-            delegate.execute(() -> run(workflow, work));
+            delegate.execute(() -> run(workflow, work, finished));
         } catch (RuntimeException | Error failure) {
-            taskFinished(workflow);
+            finishOnce(workflow, finished);
             throw failure;
         }
     }
 
-    private void run(Workflow workflow, Runnable work) {
+    private CompletionStage<Void> submit(
+            TrackedUiDispatcher delegate,
+            Runnable work,
+            java.util.function.Consumer<Throwable> terminalHandler
+    ) {
+        Objects.requireNonNull(work, "work");
+        Objects.requireNonNull(terminalHandler, "terminalHandler");
+        Workflow workflow;
+        synchronized (monitor) {
+            Workflow inherited = currentWorkflow.get();
+            if (inherited == null) {
+                if (state != State.OPEN) {
+                    RejectedExecutionException rejection = new RejectedExecutionException(
+                            "Campaign workflow admission is " + state);
+                    return CompletableFuture.failedFuture(
+                            TrackedUiDispatcher.notifyTerminal(terminalHandler, rejection));
+                }
+                workflow = new Workflow();
+                activeWorkflows++;
+            } else {
+                workflow = inherited;
+            }
+            workflow.tasks++;
+        }
+        Workflow accepted = workflow;
+        AtomicBoolean finished = new AtomicBoolean();
+        CompletableFuture<Void> observedTerminal = new CompletableFuture<>();
+        AtomicBoolean terminalObserved = new AtomicBoolean();
+        java.util.function.Consumer<Throwable> observe = failure -> {
+            if (!terminalObserved.compareAndSet(false, true)) {
+                return;
+            }
+            finishOnce(accepted, finished);
+            Throwable terminalFailure = TrackedUiDispatcher.notifyTerminal(terminalHandler, failure);
+            if (terminalFailure == null) {
+                observedTerminal.complete(null);
+            } else {
+                observedTerminal.completeExceptionally(terminalFailure);
+            }
+        };
+        try {
+            CompletionStage<Void> terminal = delegate.dispatchTracked(
+                    () -> run(accepted, work, finished), observe);
+            terminal.whenComplete((ignored, failure) -> observe.accept(failure));
+        } catch (RuntimeException | Error failure) {
+            observe.accept(failure);
+        }
+        return observedTerminal;
+    }
+
+    private void run(Workflow workflow, Runnable work, AtomicBoolean finished) {
         Workflow previous = currentWorkflow.get();
         currentWorkflow.set(workflow);
         try {
@@ -175,6 +253,12 @@ public final class WorkflowAdmissionController {
             } else {
                 currentWorkflow.set(previous);
             }
+            finishOnce(workflow, finished);
+        }
+    }
+
+    private void finishOnce(Workflow workflow, AtomicBoolean finished) {
+        if (finished.compareAndSet(false, true)) {
             taskFinished(workflow);
         }
     }
@@ -217,6 +301,43 @@ public final class WorkflowAdmissionController {
         /** Lane lifetime belongs to the controller so shared delegates close exactly once. */
         @Override
         public void close() {
+        }
+    }
+
+    private final class AdmittedUiDispatcher implements TrackedUiDispatcher {
+
+        private final TrackedUiDispatcher delegate;
+
+        private AdmittedUiDispatcher(TrackedUiDispatcher delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void dispatch(Runnable update) {
+            CompletionStage<Void> terminal = dispatchTracked(update);
+            CompletableFuture<Void> future = terminal.toCompletableFuture();
+            if (future.isDone()) {
+                try {
+                    future.join();
+                } catch (java.util.concurrent.CompletionException failure) {
+                    Throwable cause = failure.getCause();
+                    if (cause instanceof RuntimeException runtimeFailure) {
+                        throw runtimeFailure;
+                    }
+                    if (cause instanceof Error error) {
+                        throw error;
+                    }
+                    throw failure;
+                }
+            }
+        }
+
+        @Override
+        public CompletionStage<Void> dispatchTracked(
+                Runnable update,
+                java.util.function.Consumer<Throwable> terminalHandler
+        ) {
+            return submit(delegate, update, terminalHandler);
         }
     }
 }
