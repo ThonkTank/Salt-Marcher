@@ -6,16 +6,19 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** Test-only composition for owner-bound SQLite stores. */
 public final class TestFeatureStores {
 
+    private static final String TEST_DATABASE_FILE_NAME = "test-stores.sqlite";
     private static final AtomicReference<TestResource> CURRENT = new AtomicReference<>();
 
     private TestFeatureStores() {}
 
-    /** Opens the single default-database resource owned by the current test method. */
+    /** Opens the single test-database resource owned by the current test method. */
     public static TestResource openTestResource(List<FeatureStoreDefinition> definitions) {
         TestResource resource = new TestResource(definitions);
         if (!CURRENT.compareAndSet(null, resource)) {
@@ -33,6 +36,11 @@ public final class TestFeatureStores {
         return resource;
     }
 
+    /** Returns the isolated path used by raw test-fixture setup and assertions. */
+    public static java.nio.file.Path testDatabasePath() {
+        return SqliteDatabase.resolveDatabasePath(TEST_DATABASE_FILE_NAME);
+    }
+
     public static FeatureStoreHandle store(
             SqliteDatabase database, FeatureStoreDefinition definition) {
         return stores(database, definition).get(definition.owner());
@@ -42,6 +50,30 @@ public final class TestFeatureStores {
     public static FeatureStoreHandle store(
             SqliteDatabase database, String owner, SqliteMigration... migrations) {
         return store(database, FeatureStoreDefinition.validated(owner, connection -> { }, migrations));
+    }
+
+    /** Creates the production-shaped direct current-v1 platform ledger for raw owner fixtures. */
+    public static void createCurrentPlatformLedger(Statement statement) throws SQLException {
+        Statement safeStatement = Objects.requireNonNull(statement, "statement");
+        safeStatement.execute("PRAGMA user_version = 1");
+        safeStatement.execute(
+                "CREATE TABLE sm_schema_versions (owner TEXT PRIMARY KEY, "
+                        + "version INTEGER NOT NULL CHECK(version >= 0))");
+    }
+
+    /** Creates the current platform ledger and records one owner fixture version. */
+    public static void createCurrentOwnerLedger(
+            Statement statement,
+            String owner,
+            int version
+    ) throws SQLException {
+        createCurrentPlatformLedger(statement);
+        try (var insert = statement.getConnection().prepareStatement(
+                "INSERT INTO sm_schema_versions(owner, version) VALUES(?, ?)")) {
+            insert.setString(1, Objects.requireNonNull(owner, "owner"));
+            insert.setInt(2, version);
+            insert.executeUpdate();
+        }
     }
 
     /** Registers every requested owner before the test-owned lifecycle is prepared exactly once. */
@@ -99,7 +131,7 @@ public final class TestFeatureStores {
                 return;
             }
             SqliteDatabase created = SqliteDatabase.defaultDatabase(
-                    SqliteDatabase.DEFAULT_DATABASE_FILE_NAME, NoopDiagnostics.INSTANCE);
+                    TEST_DATABASE_FILE_NAME, NoopDiagnostics.INSTANCE);
             try {
                 Map<String, FeatureStoreHandle> registered = register(created, definitions);
                 created.prepareRegisteredStores();

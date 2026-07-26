@@ -46,7 +46,7 @@ final class SqliteFeatureAdaptersTest {
             SqliteEncounterPlanRepository encounters = new SqliteEncounterPlanRepository(stores.get("encounter"));
             Map<String, Integer> expectedVersions = Map.of(
                     "creatures", 1,
-                    "encounter", 5,
+                    "encounter", 1,
                     "encounter-table", 1,
                     "party", 1);
 

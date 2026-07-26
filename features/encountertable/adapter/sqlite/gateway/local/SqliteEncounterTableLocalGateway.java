@@ -19,22 +19,16 @@ public final class SqliteEncounterTableLocalGateway {
     private final EncounterTableSqliteStore store = new EncounterTableSqliteStore();
 
     public static FeatureStoreDefinition storeDefinition() {
-        EncounterTableSchemaMigrator schemaMigrator = new EncounterTableSchemaMigrator();
-        SqliteSchemaValidator targetSchema = SqliteSchemaValidator.builder()
-                .table(EncounterTablePersistenceSchema.ENCOUNTER_TABLES)
-                .primaryKey(EncounterTablePersistenceSchema.ENCOUNTER_TABLES_TABLE, "table_id")
-                .table(EncounterTablePersistenceSchema.ENCOUNTER_TABLE_ENTRIES)
-                .primaryKey(EncounterTablePersistenceSchema.ENCOUNTER_TABLE_ENTRIES_TABLE,
-                        "table_id", "creature_id")
-                .table(EncounterTablePersistenceSchema.ENCOUNTER_TABLE_LOOT_LINKS)
-                .primaryKey(EncounterTablePersistenceSchema.ENCOUNTER_TABLE_LOOT_LINKS_TABLE, "table_id")
-                .index("idx_encounter_table_entries_table",
-                        EncounterTablePersistenceSchema.ENCOUNTER_TABLE_ENTRIES_TABLE, false, "table_id")
-                .index("idx_encounter_table_entries_creature",
-                        EncounterTablePersistenceSchema.ENCOUNTER_TABLE_ENTRIES_TABLE, false, "creature_id")
-                .build();
+        EncounterTableCurrentSchemaInitializer schemaInitializer =
+                new EncounterTableCurrentSchemaInitializer();
+        SqliteSchemaValidator targetSchema = SqliteSchemaValidator.exactSchema(
+                EncounterTablePersistenceSchema.CREATE_TABLE_SQL,
+                EncounterTablePersistenceSchema.CREATE_INDEX_SQL,
+                List.of("encounter_table", "idx_encounter_table"),
+                List.of());
         return FeatureStoreDefinition.validated(
-                "encounter-table", targetSchema, new SqliteMigration(1, schemaMigrator::ensureSchema));
+                "encounter-table", targetSchema,
+                new SqliteMigration(1, schemaInitializer::initializeCurrent));
     }
 
     public SqliteEncounterTableLocalGateway(FeatureStoreHandle store) {

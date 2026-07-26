@@ -16,7 +16,7 @@ final class SystemLoggerDiagnosticsTest {
         List<String> messages = new ArrayList<>();
         List<String> measurements = new ArrayList<>();
         SystemLoggerDiagnostics diagnostics = new SystemLoggerDiagnostics(messages::add, measurements::add);
-        String sensitive = "/home/user/game.db secret authored SQL";
+        String sensitive = "/home/user/private.sqlite secret authored SQL";
 
         diagnostics.failure(new DiagnosticId("worldplanner.load-failure"),
                 new IllegalStateException(sensitive).getClass());

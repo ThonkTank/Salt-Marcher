@@ -245,8 +245,8 @@ public final class EncounterServiceAssembly {
             features.encounter.api.EncounterPlanBudgetModel planBudget
     ) {
 
-        public void start() {
-            ((EncounterApplicationService) application).initialize();
+        public java.util.concurrent.CompletionStage<Void> start() {
+            return ((EncounterApplicationService) application).initialize();
         }
 
         public ShellContribution stateContribution(

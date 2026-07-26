@@ -71,8 +71,8 @@ public final class EncounterTableReadbackTest {
     @Test
     void ENCOUNTER_TABLE_005() throws Exception {
         Path database = databasePath();
-        seedDatabase(database);
         TestRuntime runtime = runtime();
+        seedDatabase(database);
         runtime.service.refreshCandidates(new RefreshEncounterTableCandidatesCommand(
                 List.of(ASH_AMBUSH_ID, CINDER_PATROL_ID),
                 0));
@@ -84,8 +84,9 @@ public final class EncounterTableReadbackTest {
 
     private static TestRuntime setupRuntime() throws Exception {
         Path database = databasePath();
+        TestRuntime runtime = runtime();
         seedDatabase(database);
-        return runtime();
+        return runtime;
     }
 
     private static TestRuntime runtime() {
@@ -100,13 +101,7 @@ public final class EncounterTableReadbackTest {
     }
 
     private static Path databasePath() throws Exception {
-        String dataHome = System.getenv("XDG_DATA_HOME");
-        if (dataHome == null || dataHome.isBlank()) {
-            throw new IllegalStateException("XDG_DATA_HOME must be set for EncounterTableReadbackTest.");
-        }
-        Path database = Path.of(dataHome, "salt-marcher", EncounterTablePersistenceSchema.DATABASE_FILE_NAME)
-                .toAbsolutePath()
-                .normalize();
+        Path database = TestFeatureStores.testDatabasePath();
         Files.createDirectories(database.getParent());
         return database;
     }
@@ -133,28 +128,7 @@ public final class EncounterTableReadbackTest {
     }
 
     private static void createSchema(Statement statement) throws SQLException {
-        statement.execute("""
-                CREATE TABLE IF NOT EXISTS creatures (
-                    id INTEGER PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    creature_type TEXT,
-                    cr TEXT,
-                    xp INTEGER NOT NULL DEFAULT 0,
-                    hp INTEGER NOT NULL DEFAULT 0,
-                    hit_dice_count INTEGER,
-                    hit_dice_sides INTEGER,
-                    hit_dice_modifier INTEGER,
-                    ac INTEGER NOT NULL DEFAULT 0,
-                    initiative_bonus INTEGER NOT NULL DEFAULT 0,
-                    legendary_action_count INTEGER NOT NULL DEFAULT 0
-                )
-                """);
         statement.execute("CREATE TABLE IF NOT EXISTS loot_tables (loot_table_id INTEGER PRIMARY KEY)");
-        statement.execute(EncounterTablePersistenceSchema.CREATE_ENCOUNTER_TABLES_SQL);
-        statement.execute(EncounterTablePersistenceSchema.CREATE_ENCOUNTER_TABLE_ENTRIES_SQL);
-        statement.execute(EncounterTablePersistenceSchema.CREATE_ENCOUNTER_TABLE_LOOT_LINKS_SQL);
-        statement.execute(EncounterTablePersistenceSchema.CREATE_ENCOUNTER_TABLE_ENTRIES_TABLE_INDEX_SQL);
-        statement.execute(EncounterTablePersistenceSchema.CREATE_ENCOUNTER_TABLE_ENTRIES_CREATURE_INDEX_SQL);
     }
 
     private static void clearTables(Statement statement) throws SQLException {

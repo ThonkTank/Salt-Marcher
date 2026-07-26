@@ -1,7 +1,7 @@
 Status: Active Target
 Owner: Session Generation Feature
-Last Reviewed: 2026-07-18
-Source of Truth: Session Generation API, persistence, compatibility, and error
+Last Reviewed: 2026-07-25
+Source of Truth: Session Generation API, current persistence, and error
 semantics.
 
 # Session Generation API And Persistence Contract
@@ -98,21 +98,24 @@ cross-references before one immutable snapshot is cached.
 Runs pin catalog version and content hash. Source URL and source-file hash are
 provenance and do not replace runtime artifact identity.
 
-## Compatibility And Migration
+## Precompletion Schema Lifecycle
 
-Migrations remain contiguous and monotonic under the existing owner key. An
-applied migration is never rewritten. A newer database version fails closed.
+Before full feature completion there is no released Session Generation data to
+preserve. Owner startup creates the complete normalized schema directly as
+owner version `1`, only on an empty `session_generation_*` namespace, and
+validates the exact table, relationship, constraint, implicit-index, and
+owner-object inventory.
 
-Existing canonical runs remain loadable with their recorded engine and catalog
-meaning. Canonical migrations may add content fingerprints and indexes but MUST
-NOT reinterpret existing rows. When a canonical run lacks a stored fingerprint,
-the adapter derives it from its validated typed rows for comparison without
-rewriting the run.
+Every current run stores a non-null content fingerprint. Reads validate that
+fingerprint against reconstructed typed rows; no predecessor row without the
+fingerprint is accepted and no fingerprint is derived as a compatibility
+fallback.
 
-Unadopted proof-of-concept schemas, files, JSON shapes, Java carriers, and
-tables have no compatibility status and are never accepted as canonical input.
-Only the normalized contract in this document and canonical migrations under
-the `session-generation` owner key are durable.
+Unversioned partial, predecessor, structurally damaged,
+adjacent-owner-object, and newer shapes fail closed unchanged. Startup performs
+no `ALTER`, repair, backfill, copy, drop, legacy write, or version claim. Such
+precompletion databases, proof-of-concept schemas, files, JSON shapes, Java
+carriers, and tables are discarded and recreated from the current product.
 
 ## Diagnostics And Errors
 
@@ -125,8 +128,9 @@ Public messages are display-safe.
 
 Production-route proof covers async completion, deterministic draft equality,
 idempotent and conflicting commit, normalized round-trip, atomic rollback,
-batch reward ordering, catalog failure, empty canonical migration, and load of
-existing canonical runs. Architecture enforcement owns the absence of JavaFX,
+batch reward ordering, catalog failure, direct current version-`1` creation,
+restart readback, and unchanged rejection of unsupported shapes. Architecture
+enforcement owns the absence of JavaFX,
 foreign implementation imports, and opaque aggregate storage.
 
 ## Sources

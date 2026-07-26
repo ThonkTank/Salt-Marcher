@@ -26,7 +26,6 @@ public final class DungeonSqliteIdentityGateway {
             throw new IllegalArgumentException("count must be positive");
         }
         try (Connection connection = connectionSupport.openReadyConnection()) {
-            DungeonSqliteSchemaManager.ensureIdentitySequences(connection);
             boolean previousAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             try {

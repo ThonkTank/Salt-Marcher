@@ -1,7 +1,7 @@
 Status: Active
 Owner: Encounter Feature
 Consumers: Scene Feature, Encounter State Tab
-Last Reviewed: 2026-07-16
+Last Reviewed: 2026-07-25
 Source of Truth: Runtime-context synchronization and persistence boundary.
 
 # Encounter Runtime Context Contract
@@ -33,28 +33,36 @@ and neutral facts remain outside combat. The first synchronization of a new
 context MAY open its initial saved plan; later synchronizations MUST NOT reset
 the runtime to that plan.
 
-## Persistence And Compatibility
+## Persistence And Current-Format Integrity
 
-Encounter migration owner `encounter` version `3` owns the context root,
-foreign-fact children, builder values, roster and tags, initiative entries,
-combatants, and result enemies. Collections are stored in named relational
-tables; opaque payloads and text codecs are not compatible storage formats.
-Cross-feature identifiers are stable values and MUST NOT use cross-owner
-foreign keys.
+Encounter's current declared schema target owns the context root, foreign-fact
+children, builder values, roster and tags, initiative entries, combatants, and
+result enemies. Until activation of the
+[Product Process Compatibility Covenant](../../project/delivery/aletheia/product-process.md#compatibility-covenant),
+its internal version and construction steps identify only this current target
+and create no obligation to consume or preserve an earlier development format.
+Collections are stored in named relational tables; opaque payloads and text
+codecs are not current-format storage. Cross-feature identifiers are stable
+values and MUST NOT use cross-owner foreign keys.
 
 Replacing the complete context set and all changed runtime rows occurs in one
-SQLite transaction. Existing saved-plan migrations remain compatible. A newer
-Encounter feature schema fails closed under the shared persistence lifecycle.
+SQLite transaction. Saved-plan and runtime-context truth remain distinct in the
+same current Encounter format. A store outside the declared target fails closed
+under the shared persistence lifecycle. After Covenant activation, any older
+released-format handling must be defined and proved by its owning release
+contract.
 
 ## Verification
 
-Mechanical proof covers migration, relational round-trip, focus and revision
-readback, and absence of opaque payload columns. Scene behavior tests cover
-save-then-sync failure and retry. User-visible multi-scene state retention
-remains part of owner acceptance.
+Mechanical proof covers fresh current-format construction, relational
+round-trip, focus and revision readback, target-signature failure, and absence
+of opaque payload columns. Scene behavior tests cover save-then-sync failure and
+retry. User-visible multi-scene state retention remains part of owner
+acceptance.
 
 ## References
 
 - [Encounter Requirements](../requirements/requirements-encounter.md)
 - [Scene Requirements](../../scene/requirements/requirements-scene.md)
 - [Persistence Lifecycle](../../project/contract/persistence-lifecycle.md)
+- [Product Process Compatibility Covenant](../../project/delivery/aletheia/product-process.md#compatibility-covenant)

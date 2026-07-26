@@ -51,7 +51,7 @@ public final class SceneFeature {
         return new Component(application, application.model());
     }
 
-    public record Component(SceneApi application, SceneModel model) {
+    public record Component(SceneApi application, SceneModel model) implements AutoCloseable {
 
         public Component {
             application = Objects.requireNonNull(application, "application");
@@ -60,6 +60,11 @@ public final class SceneFeature {
 
         public ShellContribution contribution(java.util.function.LongConsumer openStatblock) {
             return new SceneContribution(application, model, openStatblock);
+        }
+
+        @Override
+        public void close() {
+            ((SceneApplicationService) application).close();
         }
     }
 }

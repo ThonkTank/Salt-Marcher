@@ -493,6 +493,7 @@ final class SessionPreparationCoordinatorTest {
                 ioLane,
                 DirectUiDispatcher.INSTANCE,
                 NoopDiagnostics.INSTANCE);
+        planner.start();
         planner.application().initialize();
         return new Fixture(database, repository, preparedSessions, generation, encounters, party, planner);
     }

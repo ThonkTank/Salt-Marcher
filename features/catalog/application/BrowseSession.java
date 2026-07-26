@@ -24,6 +24,7 @@ public final class BrowseSession<Q, R, K> implements CatalogLifecycle {
     private CatalogSectionState<Q, R, K> state;
     private Runnable unsubscribe;
     private ScheduledFuture<?> pendingCommit;
+    private boolean closing;
 
     public BrowseSession(
             CatalogSectionDefinition<Q, R, K> definition,
@@ -62,7 +63,7 @@ public final class BrowseSession<Q, R, K> implements CatalogLifecycle {
     }
 
     public void editDraft(Q draft) {
-        if (state.lifecycle() == CatalogSectionState.Lifecycle.CLOSED) {
+        if (closing || state.lifecycle() == CatalogSectionState.Lifecycle.CLOSED) {
             return;
         }
         Q next = Objects.requireNonNull(draft, "draft");
@@ -139,7 +140,7 @@ public final class BrowseSession<Q, R, K> implements CatalogLifecycle {
     }
 
     public void select(K key) {
-        if (state.lifecycle() == CatalogSectionState.Lifecycle.CLOSED) {
+        if (closing || state.lifecycle() == CatalogSectionState.Lifecycle.CLOSED) {
             return;
         }
         Optional<K> selected = Optional.ofNullable(key)
@@ -158,7 +159,7 @@ public final class BrowseSession<Q, R, K> implements CatalogLifecycle {
 
     @Override
     public void activate() {
-        if (state.lifecycle() != CatalogSectionState.Lifecycle.INACTIVE) {
+        if (closing || state.lifecycle() != CatalogSectionState.Lifecycle.INACTIVE) {
             return;
         }
         Q reconciled = Objects.requireNonNull(
@@ -180,11 +181,12 @@ public final class BrowseSession<Q, R, K> implements CatalogLifecycle {
             }
         } catch (RuntimeException | Error failure) {
             Runnable acquired = unsubscribe;
-            unsubscribe = null;
             if (acquired != null) {
                 try {
                     acquired.run();
+                    unsubscribe = null;
                 } catch (RuntimeException | Error cleanupFailure) {
+                    closing = true;
                     failure.addSuppressed(cleanupFailure);
                 }
             }
@@ -196,17 +198,16 @@ public final class BrowseSession<Q, R, K> implements CatalogLifecycle {
 
     @Override
     public void deactivate() {
-        if (!isActive()) {
+        if (state.lifecycle() != CatalogSectionState.Lifecycle.ACTIVE && unsubscribe == null) {
             return;
         }
         cancelPendingCommit();
         Runnable acquired = unsubscribe;
-        unsubscribe = null;
-        try {
-            if (acquired != null) {
-                acquired.run();
-            }
-        } finally {
+        if (acquired != null) {
+            acquired.run();
+            unsubscribe = null;
+        }
+        if (state.lifecycle() == CatalogSectionState.Lifecycle.ACTIVE) {
             state = copy(CatalogSectionState.Lifecycle.INACTIVE, state.requestEpoch() + 1L, true, state.result());
             changed.run();
         }
@@ -217,6 +218,7 @@ public final class BrowseSession<Q, R, K> implements CatalogLifecycle {
         if (state.lifecycle() == CatalogSectionState.Lifecycle.CLOSED) {
             return;
         }
+        closing = true;
         deactivate();
         cancelPendingCommit();
         state = copy(CatalogSectionState.Lifecycle.CLOSED, state.requestEpoch() + 1L, state.stale(), state.result());
@@ -298,7 +300,7 @@ public final class BrowseSession<Q, R, K> implements CatalogLifecycle {
     }
 
     private boolean isActive() {
-        return state.lifecycle() == CatalogSectionState.Lifecycle.ACTIVE;
+        return !closing && state.lifecycle() == CatalogSectionState.Lifecycle.ACTIVE;
     }
 
     private CatalogSectionState<Q, R, K> copy(

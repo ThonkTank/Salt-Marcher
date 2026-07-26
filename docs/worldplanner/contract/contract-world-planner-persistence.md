@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-17
+Last Reviewed: 2026-07-25
 Source of Truth: Persistence boundary, stored truth, reference rules, and
 error behavior for World Planner authored state.
 
@@ -83,26 +83,36 @@ Owner startup readiness validates the feature-declared target schema signature; 
 - Failed writes must leave the last stable revisioned World Planner API state
   visible.
 
-## Compatibility And Migration
+## Current Schema Lifecycle
 
 World Planner is a feature-owned persistence surface. It does not migrate
 existing Session Planner, Encounter, EncounterTable, Creatures, Party, Dungeon,
 or Hex tables in the current backend slice.
 
-World Planner schema version `2` adds the faction disposition and NPC modifier
-columns with a stored default of `0`. Existing membership rows are normalized
-deterministically to the lowest faction identity per NPC before the unique
-single-faction index is installed; no foreign record is rewritten.
+Compatibility obligations begin only after activation of the
+[Product Process Compatibility Covenant](../../project/delivery/aletheia/product-process.md#compatibility-covenant).
+Until that activation, owner startup creates the complete current schema
+directly as owner version `1`, only on an empty World Planner namespace, and
+validates its exact table, relationship, constraint, index, and owner-object
+inventory.
 
-Later migrations may add Session Planner-owned references to World Planner
-locations, but those changes belong to the Session Planner persistence
-contract.
+Unversioned partial, superseded, structurally damaged, adjacent-owner-object,
+and newer shapes fail closed unchanged. Startup performs no `ALTER`, repair,
+membership normalization, copy, drop, or version claim. Until activation,
+unsupported development databases are discarded and recreated from the current
+product.
+
+Later Session Planner-owned references to World Planner locations belong to the
+Session Planner persistence contract and do not change this owner boundary.
 
 ## Verification Notes
 
 The current backend behavior tests prove:
 
 - NPC, faction, and location persistence round trips
+- direct current version-`1` creation and restart readback
+- atomic whole-snapshot rollback on failed current-format save
+- unchanged fail-closed handling for unsupported or damaged owner shapes
 - finite and unlimited faction inventory semantics
 - defeated NPC reactivation
 - rejection of copied foreign truth
@@ -117,3 +127,4 @@ or pending confirmation workflows.
 - [World Planner Domain Model](../domain/domain-world-planner.md) (line 1)
 - [World Planner Architecture](../architecture/architecture-world-planner.md) (line 1)
 - [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)
+- [Product Process Compatibility Covenant](../../project/delivery/aletheia/product-process.md#compatibility-covenant)

@@ -2,6 +2,7 @@ package features.scene.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.creatures.api.CreatureCatalogRow;
@@ -219,6 +220,33 @@ class SceneApplicationServiceTest {
         assertEquals("catalog-only", catalogResult.page().rows().getFirst().name());
     }
 
+    @Test
+    void closeRevokesCommandsAndRetriesAForeignListenerThatFailedToRelease() {
+        PartyFacts party = party(1L);
+        PreparedFacts prepared = prepared(new PreparedSceneSource[0]);
+        SceneApplicationService service = service(
+                new MemoryRepository(), party, world(), prepared.model(), new CapturingEncounters());
+        await(service.execute(new SceneCommand.Initialize()));
+        assertEquals(1, party.listeners.size());
+        assertEquals(1, prepared.listeners.size());
+        party.failNextRelease = true;
+
+        assertThrows(IllegalStateException.class, service::close);
+
+        assertEquals(1, party.listeners.size(), "the failed release remains owned for retry");
+        assertEquals(0, prepared.listeners.size(), "independent releases still complete");
+        assertEquals(SceneMutationResult.Status.STORAGE_ERROR,
+                await(service.execute(new SceneCommand.Refresh())).status(),
+                "new work is revoked from the first close request");
+
+        service.close();
+
+        assertEquals(0, party.listeners.size());
+        assertEquals(2, party.releaseAttempts);
+        service.close();
+        assertEquals(2, party.releaseAttempts);
+    }
+
     private static SceneApplicationService service(
             MemoryRepository repository,
             PartyFacts party,
@@ -365,6 +393,8 @@ class SceneApplicationServiceTest {
         private final AtomicReference<ActivePartyResult> current = new AtomicReference<>();
         private final List<Consumer<ActivePartyResult>> listeners = new ArrayList<>();
         private final ActivePartyModel model = new ActivePartyModel(current::get, this::subscribe);
+        private boolean failNextRelease;
+        private int releaseAttempts;
 
         private PartyFacts(long... ids) {
             publish(ids);
@@ -386,14 +416,24 @@ class SceneApplicationServiceTest {
 
         private Runnable subscribe(Consumer<ActivePartyResult> listener) {
             listeners.add(listener);
-            return () -> listeners.remove(listener);
+            return () -> {
+                releaseAttempts++;
+                if (failNextRelease) {
+                    failNextRelease = false;
+                    throw new IllegalStateException("release failed");
+                }
+                listeners.remove(listener);
+            };
         }
     }
 
     private static final class PreparedFacts {
         private final AtomicReference<PreparedSceneCatalogSnapshot> current = new AtomicReference<>();
         private final List<Consumer<PreparedSceneCatalogSnapshot>> listeners = new ArrayList<>();
-        private final PreparedSceneCatalogModel model = new PreparedSceneCatalogModel(current::get, listeners::add);
+        private final PreparedSceneCatalogModel model = new PreparedSceneCatalogModel(current::get, listener -> {
+            listeners.add(listener);
+            return () -> listeners.remove(listener);
+        });
         private long revision;
 
         private PreparedFacts(List<PreparedSceneSource> sources) {

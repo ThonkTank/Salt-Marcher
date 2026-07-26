@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-25
 Source of Truth: Persistence path and schema ownership rules for the
 `encountertable` feature.
 
@@ -25,6 +25,10 @@ This document is normative for the `encountertable` feature's persistence path.
   - `encounter_tables`
   - `encounter_table_entries`
   - `encounter_table_loot_links`
+
+Creature and loot-table identifiers are logical references. The Encounter
+Table schema MUST use foreign keys only between its own tables; it MUST NOT bind
+startup, deletion, or repair to a Creatures- or Loot-owned table.
 
 ## Read Path Responsibilities
 
@@ -55,15 +59,37 @@ Owner startup readiness validates the feature-declared target schema signature; 
 - Optional loot links are warning context only and do not block encounter
   generation.
 
+## Compatibility And Migration
+
+Compatibility obligations begin only after activation of the
+[Product Process Compatibility Covenant](../../project/delivery/aletheia/product-process.md#compatibility-covenant).
+Until that activation, Encounter Table supports exactly the current schema at
+owner version 1. One guarded initializer creates the complete target in an
+empty owner namespace. There is no predecessor import, partial-schema repair,
+copy/drop conversion, backfill, or cross-owner repair.
+
+The exact owner inventory covers every table, index, view, and trigger named
+with `encounter_table` or `idx_encounter_table`. An unversioned partial
+namespace, a recorded version-1 shape that differs from the exact current DDL,
+an adjacent retired owner object, or a newer owner version MUST fail without
+mutating rows, schema objects, or ledger state. Initialization failure MUST NOT
+fabricate a ledger entry. Until activation, unsupported development databases
+are reinitialized rather than migrated.
+
 ## Verification Notes
 
 - Review must reject persistence types or internal collaborators crossing
   `EncounterTableApi`.
 - Review must reject cross-feature SQL reads or joins into Creatures-owned
   tables.
+- Persistence proof must cover fresh version-1 initialization, restart
+  readback, logical cross-owner IDs without foreign keys, exact-schema and
+  owner-inventory rejection, newer-version rejection, and unchanged unsupported
+  fixtures.
 
 ## References
 
 - [Encounter Table Domain Model](../domain/domain-encountertable.md) (line 1)
+- [Product Process Compatibility Covenant](../../project/delivery/aletheia/product-process.md#compatibility-covenant)
 - [Encounter Table Feature Spec](../requirements/requirements-encountertable.md) (line 1)
 - [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)

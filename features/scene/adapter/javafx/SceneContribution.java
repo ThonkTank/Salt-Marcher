@@ -31,7 +31,7 @@ public final class SceneContribution implements ShellContribution {
                 new ContributionKey("runtime-scenes"),
                 new NavigationGroupSpec("play", "Spielbetrieb", 5),
                 10,
-                false,
+                true,
                 NavigationGraphicResource.of("/view/leftbartabs/scene/navigation-icon.svg"),
                 ShellLeftBarTabMode.RUNTIME);
     }

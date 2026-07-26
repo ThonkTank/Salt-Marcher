@@ -3,6 +3,7 @@ package features.sessiongeneration;
 import features.sessiongeneration.adapter.resource.TsvGenerationCatalog;
 import features.sessiongeneration.adapter.sqlite.persistence.SqliteGenerationRunRepository;
 import features.sessiongeneration.api.SessionGenerationApi;
+import features.sessiongeneration.application.UnavailableSessionGenerationApi;
 import features.sessiongeneration.application.SessionGenerationService;
 import features.sessiongeneration.domain.generation.SessionGenerationEngine;
 import platform.diagnostics.Diagnostics;
@@ -16,6 +17,11 @@ import java.util.Objects;
 public final class SessionGenerationServiceAssembly {
 
     private SessionGenerationServiceAssembly() {
+    }
+
+    /** Explicit degraded capability exposed without leaking its application adapter to composition callers. */
+    public static SessionGenerationApi unavailable() {
+        return new UnavailableSessionGenerationApi();
     }
 
     public static FeatureStoreDefinition storeDefinition() {

@@ -46,6 +46,8 @@ public final class SessionPlannerControlsView extends ScrollPane {
     private final Button cancel = button("Abbrechen", FLAT);
     private final ProgressBar progress = new ProgressBar();
     private final Label preparationStatus = label("", SECONDARY);
+    private final Label generationAvailability =
+            label("", "session-planner-generation-status", SECONDARY);
     private final Label workspaceStatus = label("", SECONDARY, "session-planner-workspace-status");
     private final VBox replacementConfirmation = new VBox(6);
 
@@ -56,6 +58,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
     private Runnable cancelHandler = () -> { };
     private boolean participantDetailOpen;
     private boolean sessionDisabled = true;
+    private boolean generationAvailable = true;
     private long latestPublicationRevision;
     private long clearEncounterDaysErrorAfterRevision = Long.MAX_VALUE;
 
@@ -107,7 +110,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
 
         progress.setMaxWidth(Double.MAX_VALUE);
         progress.getStyleClass().add("session-planner-preparation-progress");
-        VBox content = new VBox(8, authoredStatus, toolbar, participantDetail,
+        VBox content = new VBox(8, authoredStatus, toolbar, participantDetail, generationAvailability,
                 replacementConfirmation, preparationStatus, progress);
         content.setPadding(new Insets(2));
         content.getStyleClass().add("session-planner-controls");
@@ -120,6 +123,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         show(progress, false);
         show(encounterDaysError, false);
         show(workspaceStatus, false);
+        show(generationAvailability, false);
     }
 
     public void onAddParticipant(LongConsumer handler) {
@@ -140,6 +144,15 @@ public final class SessionPlannerControlsView extends ScrollPane {
 
     public void onCancel(Runnable handler) {
         cancelHandler = handler == null ? () -> { } : handler;
+    }
+
+    public void setGenerationAvailability(boolean available, String message) {
+        generationAvailable = available;
+        String safeMessage = available ? "" : (message == null ? "" : message.trim());
+        generationAvailability.setText(safeMessage);
+        generationAvailability.setAccessibleText(safeMessage);
+        show(generationAvailability, !safeMessage.isBlank());
+        generate.setDisable(!generationAvailable || generate.isDisabled());
     }
 
     void bind(SessionPlannerViewModel viewModel) {
@@ -260,7 +273,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         show(cancel, safe.cancelEnabled());
         show(progress, busy);
         progress.setProgress(busy ? ProgressBar.INDETERMINATE_PROGRESS : 0);
-        generate.setDisable(sessionDisabled || busy || confirming);
+        generate.setDisable(!generationAvailable || sessionDisabled || busy || confirming);
     }
 
     private void dispatchPreparation(boolean confirmed) {

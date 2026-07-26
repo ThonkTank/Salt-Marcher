@@ -1,6 +1,7 @@
 package features.worldplanner.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import features.worldplanner.WorldPlannerServiceAssembly;
 import features.worldplanner.adapter.sqlite.repository.SqliteWorldPlannerRepository;
@@ -70,27 +71,31 @@ final class WorldDispositionTest {
     }
 
     @Test
-    void versionTwoMigrationDefaultsExistingRowsAndNormalizesMembership() throws Exception {
+    void supersededDevelopmentVersionOneFailsClosedWithoutNormalization() throws Exception {
         Path databasePath = temporaryDirectory.resolve("world-v1.db");
-        createLegacyVersionOneDatabase(databasePath);
+        createPredecessorVersionOneDatabase(databasePath);
 
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            WorldPlannerState migrated = new SqliteWorldPlannerRepository(
-                                    TestFeatureStores.store(
-                                            database,
-                                            SqliteWorldPlannerRepository.storeDefinition())).load();
-
-            assertEquals(0, migrated.npcs().getFirst().dispositionModifier());
-            assertEquals(0, migrated.factions().getFirst().disposition());
-            assertEquals(List.of(1L), migrated.factions().get(0).npcIds());
-            assertEquals(List.of(), migrated.factions().get(1).npcIds());
+            SqliteWorldPlannerRepository repository = new SqliteWorldPlannerRepository(
+                    TestFeatureStores.store(database, SqliteWorldPlannerRepository.storeDefinition()));
+            assertThrows(IllegalStateException.class, repository::load);
         }
 
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
-                var statement = connection.prepareStatement(
-                                "SELECT version FROM sm_schema_versions WHERE owner ="
-                                    + " 'world-planner'")) {
-            try (var result = statement.executeQuery()) {
+                var statement = connection.createStatement()) {
+            try (var result = statement.executeQuery(
+                    "SELECT version FROM sm_schema_versions WHERE owner = 'world-planner'")) {
+                assertEquals(true, result.next());
+                assertEquals(1, result.getInt(1));
+            }
+            try (var result = statement.executeQuery(
+                    "SELECT COUNT(*) FROM pragma_table_info('world_planner_npcs') "
+                            + "WHERE name='disposition_modifier'")) {
+                assertEquals(true, result.next());
+                assertEquals(0, result.getInt(1));
+            }
+            try (var result = statement.executeQuery(
+                    "SELECT COUNT(*) FROM world_planner_faction_npcs WHERE npc_id=1")) {
                 assertEquals(true, result.next());
                 assertEquals(2, result.getInt(1));
             }
@@ -120,14 +125,11 @@ final class WorldDispositionTest {
         };
     }
 
-    private static void createLegacyVersionOneDatabase(Path path) throws Exception {
+    private static void createPredecessorVersionOneDatabase(Path path) throws Exception {
         Class.forName("org.sqlite.JDBC");
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + path);
                 var statement = connection.createStatement()) {
-            statement.execute("PRAGMA user_version = 1");
-            statement.execute(
-                    "CREATE TABLE sm_schema_versions (owner TEXT PRIMARY KEY, version INTEGER NOT"
-                        + " NULL)");
+            platform.persistence.TestFeatureStores.createCurrentPlatformLedger(statement);
             statement.execute("INSERT INTO sm_schema_versions(owner, version) VALUES ('world-planner', 1)");
             statement.execute(
                     "CREATE TABLE world_planner_npcs (npc_id INTEGER PRIMARY KEY, display_name TEXT"

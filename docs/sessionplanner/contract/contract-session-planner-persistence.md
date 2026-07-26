@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: Session Planner Feature
-Last Reviewed: 2026-07-19
+Last Reviewed: 2026-07-25
 Source of Truth: Session Planner stored truth, reference semantics, writes, and
 error behavior.
 
@@ -147,35 +147,41 @@ again; idempotency makes that retry safe.
 
 ## Migration And Compatibility
 
-Feature migrations remain contiguous under the existing Session Planner owner
-key. New columns or child tables are added by a new migration and never by
-rewriting an applied migration.
+Compatibility obligations begin only after activation of the
+[Product Process Compatibility Covenant](../../project/delivery/aletheia/product-process.md#compatibility-covenant).
+Until that activation, the Session Planner owner's only supported schema is the
+current target at owner version 1. One direct initializer creates every current
+table and index, including manual loot notes and generated reward references.
+It never creates, reads, copies, repairs, or drops a loot-placeholder table or
+another development-only predecessor shape.
 
-Existing canonical sessions remain readable throughout the replacement.
-Legacy manual loot-placeholder rows migrate losslessly to manual loot notes.
-Existing generated reward references retain their run and treasure identities.
-No migration copies foreign reward or roster detail into Session Planner.
+An empty store initializes transactionally and reaches the exact current target.
+Any pre-existing incomplete or superseded development shape fails closed without
+schema repair, data conversion, destructive cleanup, or owner-version rewrite.
+The exact target includes the complete owner object inventory, column types,
+nullability and defaults, primary and unique constraints, checks, indexes, and
+all Session-Planner-internal cascading relationships. An adjacent retired owner
+object at recorded version 1 is therefore incompatible rather than ignored.
+Initializer or final-signature failure rolls back every table, index, row, and
+owner-version change made by that attempt. Current-format sessions, manual notes,
+and generated reward references remain readable across ordinary restart and the
+platform-owned backup/recovery lifecycle.
 
-A fresh store reaches schema version 4 without creating the retired loot-
-placeholder table or index. Opening version 2 copies every legacy row into the
-canonical manual-note table in the same transaction that retires the legacy
-table; a zero encounter anchor resolves to the first scene by stored scene
-order. Opening version 3 does not copy or reconcile legacy rows again because
-canonical manual notes may have been edited or deleted since version 3; it only
-retires the stale legacy table. These migrations preserve the Session revision,
-the next manual-note identity, generated reward references, and ordering. A
-failed retirement rolls back the schema version, table, index, and data changes
-together.
+After activation, subsequent owner versions become immutable predecessor
+contracts. A future migration must then preserve every supported shape through
+the shared backup, validation, rollback, and recovery boundary; it must not
+rewrite version 1.
 
 Real user data is never deleted or rewritten destructively without the
 owner-approved backup boundary.
 
 ## Error Contract
 
-Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
-The current owner target is v4. V4 idempotently repairs the structural indexes
-and tables promised by v1-v3 before signature validation; legacy placeholder
-content remains migrated exactly once by v3.
+Owner startup readiness validates the exact feature-declared version-1 target
+signature through a separate non-mutating reference schema. It does not repair
+a mismatched structure. Semantic row validation
+remains on typed provider read/write paths and fails closed through the feature
+contract.
 
 Validation errors identify the invalid command field or invariant without
 echoing authored content. Failure messages are display-safe and contain no SQL,

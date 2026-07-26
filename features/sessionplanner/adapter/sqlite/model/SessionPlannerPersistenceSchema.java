@@ -1,13 +1,13 @@
 package features.sessionplanner.adapter.sqlite.model;
 
+import java.util.List;
+
 public final class SessionPlannerPersistenceSchema {
 
-    public static final String DATABASE_FILE_NAME = String.valueOf("game.db");
     public static final String SESSION_PLANS_TABLE = "session_planner_sessions";
     public static final String CURRENT_SESSION_TABLE = "session_planner_current_session";
     public static final String SESSION_PARTICIPANTS_TABLE = "session_planner_participants";
-    // Persisted compatibility identifiers retain encounter wording. Rename
-    // them only through an explicit data-safe schema migration.
+    // The current target retains encounter wording for the scene-bearing rows.
     public static final String SESSION_ENCOUNTERS_TABLE = "session_planner_encounters";
     public static final String SESSION_RESTS_TABLE = "session_planner_rests";
     public static final String SESSION_MANUAL_LOOT_NOTES_TABLE = "session_planner_manual_loot_notes";
@@ -15,7 +15,7 @@ public final class SessionPlannerPersistenceSchema {
     public static final String SESSION_ENCOUNTER_SCENE_TITLE_COLUMN = "scene_title";
     public static final String SESSION_ENCOUNTER_SCENE_NOTES_COLUMN = "scene_notes";
     public static final String SESSION_ENCOUNTER_LOCATION_ID_COLUMN = "location_id";
-    private static final String CREATE_TABLE_IF_NOT_EXISTS = "CREATE TABLE IF NOT EXISTS ";
+    private static final String CREATE_TABLE_IF_NOT_EXISTS = "CREATE TABLE ";
     private static final String REQUIRED_SESSION_REFERENCE =
             "session_id INTEGER NOT NULL REFERENCES "
                     + SESSION_PLANS_TABLE
@@ -101,24 +101,40 @@ public final class SessionPlannerPersistenceSchema {
                     + ")";
 
     public static final String CREATE_SESSION_PARTICIPANTS_ORDER_INDEX_SQL =
-            "CREATE INDEX IF NOT EXISTS idx_session_planner_participants_order ON "
+            "CREATE INDEX idx_session_planner_participants_order ON "
                     + SESSION_PARTICIPANTS_TABLE + SESSION_ORDER_INDEX_COLUMNS;
 
     public static final String CREATE_SESSION_ENCOUNTERS_ORDER_INDEX_SQL =
-            "CREATE INDEX IF NOT EXISTS idx_session_planner_encounters_order ON "
+            "CREATE INDEX idx_session_planner_encounters_order ON "
                     + SESSION_ENCOUNTERS_TABLE + SESSION_ORDER_INDEX_COLUMNS;
 
     public static final String CREATE_SESSION_RESTS_ORDER_INDEX_SQL =
-            "CREATE INDEX IF NOT EXISTS idx_session_planner_rests_order ON "
+            "CREATE INDEX idx_session_planner_rests_order ON "
                     + SESSION_RESTS_TABLE + SESSION_ORDER_INDEX_COLUMNS;
 
     public static final String CREATE_SESSION_GENERATED_REWARDS_ORDER_INDEX_SQL =
-            "CREATE INDEX IF NOT EXISTS idx_session_planner_generated_rewards_order ON "
+            "CREATE INDEX idx_session_planner_generated_rewards_order ON "
                     + SESSION_GENERATED_REWARDS_TABLE + SESSION_ORDER_INDEX_COLUMNS;
 
     public static final String CREATE_SESSION_MANUAL_LOOT_NOTES_ORDER_INDEX_SQL =
-            "CREATE INDEX IF NOT EXISTS idx_session_planner_manual_loot_notes_order ON "
+            "CREATE INDEX idx_session_planner_manual_loot_notes_order ON "
                     + SESSION_MANUAL_LOOT_NOTES_TABLE + SESSION_ORDER_INDEX_COLUMNS;
+
+    public static final List<String> CREATE_TABLE_SQL = List.of(
+            CREATE_SESSION_PLANS_SQL,
+            CREATE_CURRENT_SESSION_SQL,
+            CREATE_SESSION_PARTICIPANTS_SQL,
+            CREATE_SESSION_ENCOUNTERS_SQL,
+            CREATE_SESSION_RESTS_SQL,
+            CREATE_SESSION_GENERATED_REWARDS_SQL,
+            CREATE_SESSION_MANUAL_LOOT_NOTES_SQL);
+
+    public static final List<String> CREATE_INDEX_SQL = List.of(
+            CREATE_SESSION_PARTICIPANTS_ORDER_INDEX_SQL,
+            CREATE_SESSION_ENCOUNTERS_ORDER_INDEX_SQL,
+            CREATE_SESSION_RESTS_ORDER_INDEX_SQL,
+            CREATE_SESSION_GENERATED_REWARDS_ORDER_INDEX_SQL,
+            CREATE_SESSION_MANUAL_LOOT_NOTES_ORDER_INDEX_SQL);
 
     private SessionPlannerPersistenceSchema() {
     }

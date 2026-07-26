@@ -2,6 +2,7 @@ package features.catalog.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
@@ -146,6 +147,33 @@ final class BrowseSessionTest {
         assertEquals("", session.state().committedQuery());
     }
 
+    @Test
+    void closeRevokesWorkImmediatelyAndRetriesAProviderReleaseBeforePublishingClosed() {
+        Definition definition = new Definition(CatalogSectionId.MONSTERS);
+        BrowseSession<String, Row, Long> session = session(definition, Duration.ZERO);
+        session.activate();
+        definition.results.getFirst().complete(result("", 1L));
+        definition.failNextUnsubscribe = true;
+
+        assertThrows(IllegalStateException.class, session::close);
+
+        assertEquals(CatalogSectionState.Lifecycle.ACTIVE, session.state().lifecycle(),
+                "a failed provider release must not publish CLOSED");
+        assertEquals(1, definition.subscriptions);
+        int requestsAfterCloseRequest = definition.requests.size();
+        definition.emitInvalidation();
+        session.editDraft("revoked");
+        session.submit();
+        assertEquals(requestsAfterCloseRequest, definition.requests.size(),
+                "the first close request revokes provider callbacks and new commands");
+
+        session.close();
+
+        assertEquals(CatalogSectionState.Lifecycle.CLOSED, session.state().lifecycle());
+        assertEquals(0, definition.subscriptions);
+        assertEquals(2, definition.unsubscribeAttempts);
+    }
+
     private BrowseSession<String, Row, Long> session(Definition definition, Duration debounce) {
         return new BrowseSession<>(
                 definition, DirectUiDispatcher.INSTANCE, scheduler, debounce, () -> { });
@@ -173,6 +201,8 @@ final class BrowseSessionTest {
         private final List<CompletableFuture<CatalogBrowseResult<String, Row>>> results = new ArrayList<>();
         private Consumer<CatalogProviderChange<String>> listener = ignored -> { };
         private int subscriptions;
+        private int unsubscribeAttempts;
+        private boolean failNextUnsubscribe;
 
         private Definition(CatalogSectionId id) {
             this(id, CatalogSortMode.PROVIDER);
@@ -207,6 +237,11 @@ final class BrowseSessionTest {
             subscriptions++;
             listener = next;
             return () -> {
+                unsubscribeAttempts++;
+                if (failNextUnsubscribe) {
+                    failNextUnsubscribe = false;
+                    throw new IllegalStateException("unsubscribe failed");
+                }
                 subscriptions--;
                 listener = ignored -> { };
             };

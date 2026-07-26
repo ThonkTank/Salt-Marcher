@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-19
+Last Reviewed: 2026-07-25
 Source of Truth: Persistence path and schema ownership rules for the `creatures`
 feature.
 
@@ -20,17 +20,19 @@ This document is normative for the `creatures` feature's persistence path.
 ## Mandatory Schema
 
 - The feature-owned persistence schema declaration is the canonical in-code
-  owner of the columns required by the Creatures read projection.
-- The required projection currently covers:
+  owner of the complete current schema. It contains exactly:
   - `creatures`
   - `creature_biomes`
   - `creature_subtypes`
   - `creature_actions`
-- Imported provider tables MAY contain additional columns beyond that projection.
-  Those columns remain provider truth and MUST NOT be removed or rewritten merely
-  because the current application does not read them.
-- Feature-owned migration steps derive base-table creation, missing required-column
-  additions, and index creation from the required projection.
+- The declaration also owns the complete current column, key, relationship,
+  constraint, and index signatures for those tables. Persistent tables,
+  indexes, views, or triggers in the `creatures*`, `creature_*`,
+  `idx_creatures_*`, or `idx_creature_*` namespaces are invalid unless they
+  occur in that declaration.
+- Provider-native fields are mapped into this current schema before they become
+  live installation truth. A provider's wider native table is not a compatible
+  Creatures store and is never adopted or repaired in place.
 
 ## Read Path Responsibilities
 
@@ -45,15 +47,15 @@ This document is normative for the `creatures` feature's persistence path.
 
 ## Validation And Error Behavior
 
-Owner startup readiness validates the feature-declared required projection,
-primary key, and query indexes. Additional imported provider columns are compatible;
-a missing required column is not. Semantic row validation remains on typed provider
-read paths and fails closed through the feature contract.
+Owner startup readiness validates the exact feature-declared schema and owner
+object inventory against a separately derived SQLite reference schema.
+Validation is read-only. Semantic row validation remains on typed provider read
+paths and fails closed through the feature contract.
 
 - feature-local schema readiness MUST be verified before the catalog exposes a
   successful lookup result
-- compatibility validation MUST preserve a wider provider schema without advancing
-  its owner version or mutating its rows
+- a malformed current schema MUST fail without changing its schema, rows, or
+  recorded owner version
 - malformed or incomplete source rows MUST be rejected or mapped to a clear
   storage-failure result instead of silently fabricating creature truth
 - storage and schema failures MUST surface through Creatures API result status
@@ -69,6 +71,22 @@ read paths and fails closed through the feature contract.
 - Creature persistence helpers may be refactored internally while one
   feature-owned read port remains the application-to-SQLite boundary.
 
+## Compatibility And Initialization
+
+Compatibility obligations begin only after activation of the
+[Product Process Compatibility Covenant](../../project/delivery/aletheia/product-process.md#compatibility-covenant).
+Until that activation, Creatures has one disposable current format: owner
+version `1`. Its single initializer runs only when the complete Creatures owner
+namespace is empty, then creates the current tables and indexes directly. It
+does not inspect predecessor columns, add missing columns, copy rows, or repair
+partial tables.
+
+An unversioned partial owner namespace and a malformed recorded version `1`
+fail as unavailable without ledger fabrication or mutation. A recorded owner
+version above `1` fails as newer and is neither downgraded nor rewritten. Until
+activation there is no compatibility reader or migration chain. After
+activation, later format changes are governed by `TN-18` and `TN-19`.
+
 ## Verification Notes
 
 - This contract is currently `Review-Owned`.
@@ -80,3 +98,4 @@ read paths and fails closed through the feature contract.
 - [Creatures Domain Model](../domain/domain-creatures.md) (line 1)
 - [Catalog Tab UI](../requirements/requirements-creatures-catalog.md) (line 1)
 - [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)
+- [Product Process Compatibility Covenant](../../project/delivery/aletheia/product-process.md#compatibility-covenant)

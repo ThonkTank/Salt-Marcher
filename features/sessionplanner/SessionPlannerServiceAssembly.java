@@ -23,6 +23,7 @@ import platform.diagnostics.Diagnostics;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Measurement;
 import platform.execution.ExecutionLane;
+import platform.execution.RetryableRelease;
 import platform.persistence.FeatureStoreDefinition;
 import platform.persistence.FeatureStoreHandle;
 import platform.ui.UiDispatcher;
@@ -30,13 +31,21 @@ import shell.api.ShellContribution;
 
 import java.util.Objects;
 
-public final class SessionPlannerServiceAssembly {
+public final class SessionPlannerServiceAssembly implements AutoCloseable {
 
     private static final DiagnosticId JAVAFX_APPLY =
             new DiagnosticId("sessionplanner.javafx.workspace-apply");
+    private static final String GENERATION_UNAVAILABLE_MESSAGE =
+            "Automatische Generierung ist nicht verfügbar; manuelle Session-Planung bleibt möglich.";
 
     private final Runtime runtime;
     private final Diagnostics diagnostics;
+    private final SessionGenerationApi generation;
+    private final java.util.List<java.util.function.Supplier<Runnable>> foreignSubscriptionSources;
+    private final java.util.List<Runnable> foreignSubscriptions = new java.util.ArrayList<>();
+    private int nextForeignSubscription;
+    private volatile boolean closing;
+    private boolean closed;
 
     public static FeatureStoreDefinition storeDefinition() {
         return SqliteSessionPlanRepository.storeDefinition();
@@ -85,9 +94,10 @@ public final class SessionPlannerServiceAssembly {
         ExecutionLane cpuLane = Objects.requireNonNull(preparationCpuLane, "preparationCpuLane");
         ExecutionLane ioLane = Objects.requireNonNull(preparationIoLane, "preparationIoLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
+        this.generation = Objects.requireNonNull(generation, "generation");
         SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
                 Objects.requireNonNull(workspaceSource, "workspaceSource"), safeParty, safeEncounters,
-                Objects.requireNonNull(generation, "generation"), worldPlanner, ioLane, diagnostics);
+                this.generation, worldPlanner, ioLane, diagnostics);
         SessionPlannerWorkspacePublicationCoordinator publication =
                 new SessionPlannerWorkspacePublicationCoordinator(
                         assembler, safeEncounters, Objects.requireNonNull(uiDispatcher, "uiDispatcher"),
@@ -97,7 +107,7 @@ public final class SessionPlannerServiceAssembly {
                 Objects.requireNonNull(preparedSessions, "preparedSessions"),
                 safeParty,
                 publication,
-                generation,
+                this.generation,
                 safeEncounters,
                 cpuLane,
                 ioLane,
@@ -105,12 +115,35 @@ public final class SessionPlannerServiceAssembly {
                 diagnostics);
         SessionPlannerApplicationService application = new SessionPlannerApplicationService(
                 safeRepository, publication, preparation, authoredLane, diagnostics);
-        safeParty.activeParty().subscribe(ignored -> application.refreshPartyFacts());
-        safeSavedPlans.subscribe(ignored -> application.refreshForeignFacts());
-        if (worldPlanner != null) {
-            worldPlanner.subscribe(ignored -> application.refreshForeignFacts());
-        }
         runtime = new Runtime(publication, application);
+        java.util.ArrayList<java.util.function.Supplier<Runnable>> subscriptionSources =
+                new java.util.ArrayList<>();
+        subscriptionSources.add(() -> safeParty.activeParty().subscribe(
+                ignored -> runWhileOpen(application::refreshPartyFacts)));
+        subscriptionSources.add(() -> safeSavedPlans.subscribe(
+                ignored -> runWhileOpen(application::refreshForeignFacts)));
+        if (worldPlanner != null) {
+            subscriptionSources.add(() -> worldPlanner.subscribe(
+                    ignored -> runWhileOpen(application::refreshForeignFacts)));
+        }
+        foreignSubscriptionSources = java.util.List.copyOf(subscriptionSources);
+    }
+
+    /**
+     * Acquires foreign observation handles after the complete Campaign component graph owns this assembly.
+     * A retry resumes at the first acquisition that did not return a handle.
+     */
+    public synchronized void start() {
+        if (closing || closed) {
+            throw new IllegalStateException("Session Planner is closing or closed");
+        }
+        while (nextForeignSubscription < foreignSubscriptionSources.size()) {
+            Runnable release = Objects.requireNonNull(
+                    foreignSubscriptionSources.get(nextForeignSubscription).get(),
+                    "foreign subscription release");
+            foreignSubscriptions.add(release);
+            nextForeignSubscription++;
+        }
     }
 
     public SessionPlannerApi application() {
@@ -134,7 +167,11 @@ public final class SessionPlannerServiceAssembly {
     ) {
         java.util.function.Consumer<SessionPlannerWorkspaceApplyObservation> safeObserver =
                 Objects.requireNonNull(observer, "observer");
-        return new SessionPlannerContribution(runtime.applicationService(), workspaceModel(), observation -> {
+        return new SessionPlannerContribution(
+                runtime.applicationService(), workspaceModel(),
+                generation.available(),
+                generation.available() ? "" : GENERATION_UNAVAILABLE_MESSAGE,
+                observation -> {
             diagnostics.measurement(new Measurement(
                     JAVAFX_APPLY,
                     observation.snapshot().preparation().attemptId(),
@@ -142,7 +179,23 @@ public final class SessionPlannerServiceAssembly {
                     observation.materializedUnitCount(),
                     0));
             safeObserver.accept(observation);
-        });
+                });
+    }
+
+    private void runWhileOpen(Runnable callback) {
+        if (!closing && !closed) {
+            callback.run();
+        }
+    }
+
+    @Override
+    public synchronized void close() {
+        if (closed) {
+            return;
+        }
+        closing = true;
+        RetryableRelease.releaseAll(foreignSubscriptions);
+        closed = true;
     }
 
     private record Runtime(

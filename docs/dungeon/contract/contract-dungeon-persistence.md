@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-19
+Last Reviewed: 2026-07-25
 Source of Truth: Dungeon persistence boundary, stored truth, adapter mapping
 rules, and schema ownership.
 
@@ -67,12 +67,28 @@ Persisted authored truth includes:
 - detail tables remain source-local storage and correlation detail, not
   alternate semantic owners
 
-The current owner target is schema v7. Canonical v6 remains the destructive
-replacement boundary. V7 repairs the previously recorded empty v6 signature to
-the complete indexed-bounds target. A populated old-v6 signature is
-`MIGRATION_FAILED` without deleting rows or advancing the owner ledger; the
-application does not guess how to reconstruct exact derived bounds from an
-unsupported persisted shape.
+The current owner target has one direct schema initializer and owner-ledger
+version `1`. The version identifies only this current target; it does not imply
+a supported predecessor chain.
+
+Compatibility obligations begin only after activation of the
+[Product Process Compatibility Covenant](../../project/delivery/aletheia/product-process.md#compatibility-covenant).
+Until that activation, the initializer runs only when no Dungeon-owned table or
+view exists. Any pre-existing development shape, incomplete current-target
+signature, or different nonzero owner-ledger version fails closed. The
+application MUST NOT add columns, drop tables, delete rows, advance the owner
+ledger, or otherwise convert such a database. A developer may discard and
+recreate a development database outside the product, but that is not a runtime
+migration contract.
+
+After initialization, every startup validates the exact Dungeon object inventory,
+declared column types, nullability and defaults, primary and unique constraints,
+checks, complete map/chunk/bounds/route and other foreign-key signatures, table
+flags, and named indexes before the Dungeon store becomes ready. An adjacent
+retired Dungeon object at owner version 1 fails closed rather than being ignored.
+Current-format authored rows survive restart unchanged. Physical integrity,
+foreign-key integrity, transaction rollback, snapshot, and recovery guarantees
+remain owned by the shared persistence lifecycle.
 
 `dungeon_maps.revision` stores the last committed authored revision. Adapters
 MUST read and write that value; they MUST NOT replace it with a constant
@@ -277,7 +293,9 @@ behavior.
 
 ## Validation And Error Behavior
 
-Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
+Owner startup readiness validates the feature-declared target schema signature
+against a separate non-mutating reference schema; semantic row validation remains
+on typed provider read/write paths and fails closed through the feature contract.
 
 - authored persistence writes MUST reject incomplete identity, topology, or
   semantic-binding payloads instead of synthesizing replacement authored truth
@@ -297,6 +315,12 @@ Owner startup readiness validates the feature-declared target schema signature; 
 
 - new fields belong in source-local records first, then map into domain-owned
   values
+- until feature completion, a changed target schema replaces the development
+  initializer directly; the runtime does not acquire a compatibility step for
+  a database shape that users cannot yet have created
+- once feature completion permits user-created durable data, any future schema
+  change requires a separately owned compatibility and migration decision
+  before the current-target initializer may change
 - the canonical schema uses the room-cell, boundary, entity-membership,
   chunk-revision, and patch representations defined by this contract; alternate
   whole-record, fixed-bounds, or enum-compatibility representations are not

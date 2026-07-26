@@ -48,6 +48,7 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
     private long revision;
     private boolean active;
     private boolean transitioning;
+    private boolean closing;
     private boolean closed;
 
     public CatalogWorkspaceController(
@@ -117,7 +118,7 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
 
     public void selectSection(CatalogSectionId section) {
         CatalogSectionId next = Objects.requireNonNull(section, "section");
-        if (closed || next == activeSection) {
+        if (closing || closed || next == activeSection) {
             return;
         }
         CatalogSectionId previous = activeSection;
@@ -148,7 +149,7 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
 
     @Override
     public void activate() {
-        if (active || closed) {
+        if (active || closing || closed) {
             return;
         }
         transitioning = true;
@@ -163,7 +164,7 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
 
     @Override
     public void deactivate() {
-        if (!active) {
+        if (!active || closing) {
             return;
         }
         transitioning = true;
@@ -181,14 +182,10 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
         if (closed) {
             return;
         }
+        closing = true;
         Throwable failure = null;
         transitioning = true;
         try {
-            try {
-                deactivate();
-            } catch (RuntimeException | Error deactivateFailure) {
-                failure = deactivateFailure;
-            }
             for (CatalogLifecycle session : sections.values()) {
                 try {
                     session.close();
@@ -203,7 +200,7 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
         } finally {
             debounceScheduler.shutdownNow();
             active = false;
-            closed = true;
+            closed = failure == null;
             transitioning = false;
             publish();
         }
@@ -399,7 +396,7 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
     }
 
     private boolean isActive(CatalogSectionId section) {
-        return active && !closed && activeSection == section;
+        return active && !closing && !closed && activeSection == section;
     }
 
     private <Q, R, K> BrowseSession<Q, R, K> session(CatalogSectionDefinition<Q, R, K> definition) {

@@ -25,7 +25,7 @@ public final class DungeonEditorContribution implements ShellContribution {
                 new ContributionKey("dungeon-editor"),
                 new NavigationGroupSpec("world", "World", 20),
                 10,
-                true,
+                false,
                 NavigationGraphicResource.of("/view/leftbartabs/dungeoneditor/navigation-icon.svg"),
                 ShellLeftBarTabMode.EDITOR);
     }

@@ -2,7 +2,6 @@ package features.catalog.adapter.javafx;
 
 import features.catalog.CatalogRoutes;
 import features.catalog.application.CatalogSectionId;
-import features.creatures.adapter.sqlite.model.CreaturesPersistenceSchema;
 import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
 import features.creatures.api.CreatureCatalogRow;
 import features.encounter.api.EncounterBuilderInputsModel;
@@ -43,10 +42,7 @@ import shell.api.InspectorSink;
 import shell.api.ShellBinding;
 import shell.api.ShellSlot;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -435,20 +431,8 @@ public final class CatalogInitialLoadTest {
     }
 
     private static void seedCreatureCatalog() throws Exception {
-        String xdgDataHome = System.getenv("XDG_DATA_HOME");
-        if (xdgDataHome == null || xdgDataHome.isBlank()) {
-            throw new IllegalStateException("XDG_DATA_HOME must isolate the Catalog initial-load DB.");
-        }
-        Path dataHome = Path.of(xdgDataHome);
-        Path database = dataHome.resolve("salt-marcher").resolve(CreaturesPersistenceSchema.DATABASE_FILE_NAME);
-        Files.createDirectories(database.getParent());
-        Files.deleteIfExists(database);
-        try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + database);
+        try (Connection connection = creatureStore().openConnection();
                 Statement statement = connection.createStatement()) {
-            statement.execute(CreaturesPersistenceSchema.CREATE_CREATURES_TABLE_SQL);
-            statement.execute(CreaturesPersistenceSchema.CREATE_CREATURE_BIOMES_TABLE_SQL);
-            statement.execute(CreaturesPersistenceSchema.CREATE_CREATURE_SUBTYPES_TABLE_SQL);
-            statement.execute(CreaturesPersistenceSchema.CREATE_CREATURE_ACTIONS_TABLE_SQL);
             statement.execute(
                     "INSERT INTO creatures (id, name, size, creature_type, alignment, cr, xp, hp,"
                         + " ac) VALUES (1, 'Aboleth', 'Large', 'Aberration', 'Lawful Evil', '10',"

@@ -5,6 +5,8 @@ import org.jspecify.annotations.Nullable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import javafx.application.Platform;
 import platform.diagnostics.Diagnostics;
 import platform.diagnostics.NoopDiagnostics;
 import shell.api.ContributionKey;
@@ -40,6 +42,26 @@ public final class AppShell extends BorderPane {
 
     public InspectorSink inspector() {
         return workspace.inspectorPane();
+    }
+
+    public Optional<ContributionKey> activeLeftBarTab() {
+        return Optional.ofNullable(activeTabKey);
+    }
+
+    public int leftBarTabCount() {
+        return leftBarTabs.size();
+    }
+
+    public boolean hasLeftBarTab(ContributionKey key) {
+        return leftBarTabs.containsKey(Objects.requireNonNull(key, "key"));
+    }
+
+    /** Focuses the selected navigation entry, or the first entry when none is selected. */
+    public void requestMeaningfulNavigationFocus() {
+        navigationSidebar.meaningfulFocusTarget().ifPresent(selected -> {
+            selected.requestFocus();
+            Platform.runLater(selected::requestFocus);
+        });
     }
 
     public void registerLeftBarTab(ShellLeftBarTabSpec registrationSpec, ShellBinding binding) {

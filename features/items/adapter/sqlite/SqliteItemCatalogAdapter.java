@@ -25,7 +25,7 @@ import java.util.Objects;
 public final class SqliteItemCatalogAdapter implements ItemCatalogPort {
 
     public static final String OWNER = "items";
-    public static final int SCHEMA_VERSION = 2;
+    public static final int SCHEMA_VERSION = 1;
 
     private static final String FILTERS = " WHERE "
             + "(? IS NULL OR LOWER(name) LIKE LOWER(?)) "
@@ -41,29 +41,18 @@ public final class SqliteItemCatalogAdapter implements ItemCatalogPort {
 
     public static FeatureStoreDefinition storeDefinition() {
         ItemsSchema schema = new ItemsSchema();
-        SqliteSchemaValidator targetSchema = SqliteSchemaValidator.builder()
-                .table(ItemsSchema.ENTRIES_TABLE,
-                        "source_key", "legacy_id", "name", "category", "subcategory", "magic", "rarity",
-                        "attunement", "attunement_condition", "cost_cp", "cost_display", "weight", "damage",
-                        "armor_class", "description", "source_version", "source_url", "source_properties_text",
-                        "source_tags_text")
-                .primaryKey(ItemsSchema.ENTRIES_TABLE, "source_key")
-                .table(ItemsSchema.TAGS_TABLE, "item_source_key", "tag")
-                .primaryKey(ItemsSchema.TAGS_TABLE, "item_source_key", "tag")
-                .foreignKey(ItemsSchema.TAGS_TABLE, ItemsSchema.ENTRIES_TABLE, "CASCADE",
-                        SqliteSchemaValidator.reference("item_source_key", "source_key"))
-                .index("idx_items_catalog_name", ItemsSchema.ENTRIES_TABLE, false, "name")
-                .index("idx_items_catalog_category", ItemsSchema.ENTRIES_TABLE,
-                        false, "category", "subcategory")
-                .index("idx_items_catalog_rarity", ItemsSchema.ENTRIES_TABLE, false, "rarity")
-                .index("idx_items_catalog_cost", ItemsSchema.ENTRIES_TABLE, false, "cost_cp")
-                .index("idx_items_catalog_tag", ItemsSchema.TAGS_TABLE, false, "tag")
-                .build();
+        SqliteSchemaValidator targetSchema = SqliteSchemaValidator.exactSchema(
+                ItemsSchema.CREATE_TABLE_SQL,
+                ItemsSchema.CREATE_INDEX_SQL,
+                List.of("items_catalog_", "idx_items_"),
+                List.of("items", "item_tags"));
         return FeatureStoreDefinition.validated(
                 OWNER,
-                targetSchema,
-                new SqliteMigration(1, schema::migrateV1),
-                new SqliteMigration(SCHEMA_VERSION, schema::migrateV2));
+                connection -> {
+                    schema.rejectRetiredDevelopmentTables(connection);
+                    targetSchema.validate(connection);
+                },
+                new SqliteMigration(SCHEMA_VERSION, schema::initializeCurrent));
     }
 
     public SqliteItemCatalogAdapter(FeatureStoreHandle store) {
@@ -279,7 +268,8 @@ public final class SqliteItemCatalogAdapter implements ItemCatalogPort {
     private static IllegalStateException failure(String action, SQLException exception) {
         ItemCatalogAccessException.Reason reason = exception instanceof FeatureStoreUnavailableException unavailable
                 && (unavailable.readiness() == FeatureStoreReadiness.MIGRATION_FAILED
-                    || unavailable.readiness() == FeatureStoreReadiness.NEWER_SCHEMA)
+                    || unavailable.readiness() == FeatureStoreReadiness.NEWER_SCHEMA
+                    || unavailable.readiness() == FeatureStoreReadiness.INCOMPATIBLE)
                 ? ItemCatalogAccessException.Reason.INCOMPATIBLE
                 : ItemCatalogAccessException.Reason.STORAGE;
         return new ItemCatalogAccessException(reason, exception);

@@ -80,7 +80,7 @@ public final class DungeonEditorControlsView extends VBox {
         private final Slider overlayOpacitySlider = new Slider(10, 90, 35);
         private final Label overlayOpacityLabel = mutedLabel("35%");
         private final TextField selectedLevelsField = new TextField();
-        private final ContextMenu overlayMenu = new ContextMenu();
+        private @Nullable ContextMenu overlayMenu;
         private final Spinner<Integer> popupOverlayRangeSpinner = new Spinner<>(1, 6, 2);
         private final Slider popupOverlayOpacitySlider = new Slider(10, 90, 35);
         private final Label popupOverlayOpacityLabel = mutedLabel("35%");
@@ -233,6 +233,7 @@ public final class DungeonEditorControlsView extends VBox {
         }
 
         private void showOverlayPopup() {
+            ContextMenu menu = overlayMenu();
             HBox popupContent = styled(
                     row(
                             popupOverlayModeRow,
@@ -242,9 +243,22 @@ public final class DungeonEditorControlsView extends VBox {
                     "dropdown-window",
                     "dropdown-form",
                     "dungeon-editor-popup");
-            popupContent.setOnMouseExited(event -> overlayMenu.hide());
-            overlayMenu.getItems().setAll(new CustomMenuItem(popupContent, false));
-            overlayMenu.show(overlayTrigger, Side.BOTTOM, 0.0, 2.0);
+            popupContent.setOnMouseExited(event -> hideOverlayMenu());
+            menu.getItems().setAll(new CustomMenuItem(popupContent, false));
+            menu.show(overlayTrigger, Side.BOTTOM, 0.0, 2.0);
+        }
+
+        private ContextMenu overlayMenu() {
+            if (overlayMenu == null) {
+                overlayMenu = new ContextMenu();
+            }
+            return overlayMenu;
+        }
+
+        private void hideOverlayMenu() {
+            if (overlayMenu != null) {
+                overlayMenu.hide();
+            }
         }
 
         private void replacePopupOverlayModeButtons(
@@ -290,7 +304,7 @@ public final class DungeonEditorControlsView extends VBox {
 
     private final class ToolSection extends HBox {
 
-        private final ContextMenu optionMenu = new ContextMenu();
+        private @Nullable ContextMenu optionMenu;
         private final ToggleButton selectButton;
         private final Button roomButton;
         private final Button wallButton;
@@ -309,7 +323,6 @@ public final class DungeonEditorControlsView extends VBox {
             featureButton = toolButton(toolControls.feature().label());
             stairButton = toolButton(toolControls.stair().label());
             transitionButton = toolButton(toolControls.transition().label());
-            optionMenu.setAutoHide(true);
             styled(this, controlRowStyle(), "dungeon-control-tool-row");
             setAlignment(Pos.CENTER_LEFT);
             setMaxWidth(Double.MAX_VALUE);
@@ -361,7 +374,7 @@ public final class DungeonEditorControlsView extends VBox {
             if (family.hasSecondaryOptions()) {
                 showFamilyOptions(anchor, family, selectedOption.selection(), selectTool);
             } else {
-                optionMenu.hide();
+                hideOptionMenu();
             }
         }
 
@@ -371,22 +384,23 @@ public final class DungeonEditorControlsView extends VBox {
                 DungeonEditorToolSelection selectedOption,
                 DungeonEditorToolSelection selectTool
         ) {
+            ContextMenu menu = optionMenu();
             HBox options = row();
             for (DungeonEditorControlsPanelModel.ToolButton option : family.options()) {
                 options.getChildren().add(optionButton(option, selectedOption));
             }
             options.getStyleClass().addAll("dropdown-window", "dropdown-form", "dungeon-editor-popup");
-            options.setOnMouseExited(event -> optionMenu.hide());
+            options.setOnMouseExited(event -> hideOptionMenu());
             options.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
                 if (event.getCode() == KeyCode.ESCAPE) {
                     emitToolSelection(selectTool);
-                    optionMenu.hide();
+                    hideOptionMenu();
                     event.consume();
                 }
             });
             CustomMenuItem item = new CustomMenuItem(options, false);
-            optionMenu.getItems().setAll(item);
-            optionMenu.show(anchor, Side.BOTTOM, 0.0, 2.0);
+            menu.getItems().setAll(item);
+            menu.show(anchor, Side.BOTTOM, 0.0, 2.0);
             requestOptionFocus(options);
         }
 
@@ -403,7 +417,7 @@ public final class DungeonEditorControlsView extends VBox {
             if (option.enabled()) {
                 button.setOnAction(event -> {
                     emitToolSelection(option.selection());
-                    optionMenu.hide();
+                    hideOptionMenu();
                 });
             }
             return button;
@@ -436,7 +450,7 @@ public final class DungeonEditorControlsView extends VBox {
                     projection == null ? toolControls : projection.toolControls();
             selectButton.setSelected(selection.equals(DungeonEditorToolSelection.select()));
             if (selection.equals(DungeonEditorToolSelection.select())) {
-                optionMenu.hide();
+                hideOptionMenu();
             }
             DungeonEditorToolSelection selectTool = currentToolControls.select().selection();
             bindFamilyButton(roomButton, selection, currentToolControls.room(), selectTool);
@@ -446,6 +460,20 @@ public final class DungeonEditorControlsView extends VBox {
             bindFamilyButton(featureButton, selection, currentToolControls.feature(), selectTool);
             bindFamilyButton(stairButton, selection, currentToolControls.stair(), selectTool);
             bindFamilyButton(transitionButton, selection, currentToolControls.transition(), selectTool);
+        }
+
+        private ContextMenu optionMenu() {
+            if (optionMenu == null) {
+                optionMenu = new ContextMenu();
+                optionMenu.setAutoHide(true);
+            }
+            return optionMenu;
+        }
+
+        private void hideOptionMenu() {
+            if (optionMenu != null) {
+                optionMenu.hide();
+            }
         }
 
         private void bindFamilyButton(

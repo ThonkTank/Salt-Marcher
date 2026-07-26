@@ -23,6 +23,7 @@ import platform.persistence.TestFeatureStores;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.util.ArrayList;
 import java.util.List;
 
 class SqliteItemCatalogAdapterTest {
@@ -31,8 +32,8 @@ class SqliteItemCatalogAdapterTest {
     Path temporaryDirectory;
 
     @Test
-    void usesSharedLifecycleForQueriesBackupAndAtomicTableReplacement() {
-        Path databasePath = temporaryDirectory.resolve("game.db");
+    void usesSharedLifecycleForQueriesBackupAndAtomicTableReplacement() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("items.sqlite");
         try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
             var store = TestFeatureStores.store(database, SqliteItemCatalogAdapter.storeDefinition());
             SqliteItemCatalogAdapter adapter = new SqliteItemCatalogAdapter(store);
@@ -61,91 +62,25 @@ class SqliteItemCatalogAdapterTest {
                     null, null, null, null, null, null, null, null,
                     ItemCatalogData.SortField.NAME, true, 50, 0)).totalCount());
         }
-    }
-
-    @Test
-    void migratesLegacyNumericShapeAndRetainsIdentityDetailsTagsAndProvenance() throws Exception {
-        Path databasePath = temporaryDirectory.resolve("legacy.db");
-        seedLegacy(databasePath);
-
-        try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            SqliteItemCatalogAdapter adapter = preparedAdapter(database);
-            assertEquals(FeatureStoreReadiness.READY, database.prepareRegisteredStores().get("items"));
-
-            ItemCatalogData.Detail detail = adapter.loadDetail("legacy:moon-blade");
-            assertNotNull(detail);
-            assertEquals("Moon Blade", detail.row().name());
-            assertTrue(detail.row().magic());
-            assertEquals("25 gp", detail.row().costDisplay());
-            assertEquals(List.of("Finesse", "Silvered"), detail.properties());
-            assertEquals("Legacy SRD", detail.sourceVersion());
-            assertEquals("", detail.sourceUrl());
-            ItemCatalogData.Detail unattributed = adapter.loadDetail("legacy:plain-rope");
-            assertNotNull(unattributed);
-            assertEquals("", unattributed.sourceVersion());
-            assertEquals("", unattributed.sourceUrl());
-        }
-
         try (Connection connection = open(databasePath)) {
-            assertFalse(tableExists(connection, "items"));
-            assertFalse(tableExists(connection, "item_tags"));
-            assertTrue(tableExists(connection, ItemsSchema.ENTRIES_TABLE));
-            assertEquals(2, ownerVersion(connection));
-            try (var result = connection.createStatement().executeQuery("""
-                    SELECT legacy_id, attunement_condition, source_properties_text, source_tags_text
-                    FROM items_catalog_entries WHERE source_key='legacy:moon-blade'
-                    """)) {
-                assertTrue(result.next());
-                assertEquals(7L, result.getLong("legacy_id"));
-                assertEquals("by a good creature", result.getString("attunement_condition"));
-                assertEquals("Finesse, Silvered", result.getString("source_properties_text"));
-                assertEquals("legacy-tag-text", result.getString("source_tags_text"));
-            }
+            assertEquals(1, ownerVersion(connection));
+            assertEquals(List.of(
+                            "source_key", "name", "category", "subcategory", "magic", "rarity",
+                            "attunement", "cost_cp", "cost_display", "weight", "damage",
+                            "armor_class", "description", "source_version", "source_url"),
+                    columns(connection, ItemsSchema.ENTRIES_TABLE));
         }
-
         try (SqliteDatabase reopened = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
             SqliteItemCatalogAdapter adapter = preparedAdapter(reopened);
-            assertEquals("Moon Blade", adapter.loadDetail("legacy:moon-blade").row().name());
-        }
-        try (Connection connection = open(databasePath)) {
-            assertEquals(2, ownerVersion(connection));
-            assertEquals(2, count(connection, "SELECT COUNT(*) FROM items_catalog_entries"));
-            assertEquals(2, count(connection, "SELECT COUNT(*) FROM items_catalog_tags"));
+            assertTrue(adapter.isAvailable());
+            assertEquals("Club", adapter.loadDetail("equipment:club").row().name());
         }
     }
 
     @Test
-    void migratesIntermediateSourceKeyShapeExactlyOnce() throws Exception {
-        Path databasePath = temporaryDirectory.resolve("intermediate.db");
-        seedIntermediate(databasePath);
-
-        try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            SqliteItemCatalogAdapter adapter = preparedAdapter(database);
-            ItemCatalogData.Detail detail = adapter.loadDetail("equipment:shield");
-            assertNotNull(detail);
-            assertEquals("Shield", detail.row().name());
-            assertEquals(List.of("Armor"), detail.properties());
-            assertEquals("2014 SRD", detail.sourceVersion());
-            assertEquals("https://example.invalid/shield", detail.sourceUrl());
-        }
-
-        try (SqliteDatabase reopened = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
-            SqliteItemCatalogAdapter adapter = preparedAdapter(reopened);
-            assertEquals(1, adapter.search(new ItemCatalogData.SearchSpec(
-                    null, null, null, null, null, null, null, null,
-                    ItemCatalogData.SortField.NAME, true, 50, 0)).totalCount());
-        }
-        try (Connection connection = open(databasePath)) {
-            assertEquals(2, ownerVersion(connection));
-            assertFalse(tableExists(connection, "items"));
-            assertEquals(1, count(connection, "SELECT COUNT(*) FROM items_catalog_entries"));
-        }
-    }
-
-    @Test
-    void unknownSignatureRollsBackAndDoesNotBlockCreatureProvider() throws Exception {
-        Path databasePath = temporaryDirectory.resolve("unknown.db");
-        seedUnknown(databasePath);
+    void olderDevelopmentShapeFailsClosedAndDoesNotBlockCreatureProvider() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("older-development.db");
+        seedOlderDevelopmentShape(databasePath);
         String beforeSchema;
         try (Connection connection = open(databasePath)) {
             beforeSchema = tableSql(connection, "items");
@@ -190,6 +125,144 @@ class SqliteItemCatalogAdapterTest {
         }
     }
 
+    @Test
+    void incompleteCurrentDevelopmentShapeFailsClosedWithoutMutation() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("incomplete-current.db");
+        seedIncompleteCurrentShape(databasePath);
+        String beforeSchema;
+        try (Connection connection = open(databasePath)) {
+            beforeSchema = tableSql(connection, ItemsSchema.ENTRIES_TABLE);
+        }
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
+            database.featureStore(SqliteItemCatalogAdapter.storeDefinition());
+            assertEquals(
+                    FeatureStoreReadiness.MIGRATION_FAILED,
+                    database.prepareRegisteredStores().get("items"));
+        }
+
+        try (Connection connection = open(databasePath)) {
+            assertEquals(beforeSchema, tableSql(connection, ItemsSchema.ENTRIES_TABLE));
+            assertFalse(tableExists(connection, ItemsSchema.TAGS_TABLE));
+            assertEquals(1, ownerVersion(connection));
+        }
+    }
+
+    @Test
+    void recordedCurrentShapeWithWeakenedCheckFailsClosedWithoutMutation() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("weakened-current-check.db");
+        seedCurrentShape(databasePath, sql -> sql.replace(
+                "magic INTEGER NOT NULL CHECK (magic IN (0, 1))",
+                "magic INTEGER NOT NULL"));
+        String beforeSchema;
+        try (Connection connection = open(databasePath)) {
+            beforeSchema = tableSql(connection, ItemsSchema.ENTRIES_TABLE);
+        }
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
+            database.featureStore(SqliteItemCatalogAdapter.storeDefinition());
+            assertEquals(
+                    FeatureStoreReadiness.MIGRATION_FAILED,
+                    database.prepareRegisteredStores().get("items"));
+        }
+
+        try (Connection connection = open(databasePath)) {
+            assertEquals(beforeSchema, tableSql(connection, ItemsSchema.ENTRIES_TABLE));
+            assertEquals(1, ownerVersion(connection));
+        }
+    }
+
+    @Test
+    void recordedCurrentShapeWithAdjacentOwnerTableFailsClosed() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("current-plus-adjacent-owner.db");
+        seedCurrentShape(databasePath, java.util.function.UnaryOperator.identity());
+        try (Connection connection = open(databasePath); var statement = connection.createStatement()) {
+            statement.execute("CREATE TABLE items_catalog_retired(payload TEXT NOT NULL)");
+            statement.execute("INSERT INTO items_catalog_retired VALUES('kept')");
+        }
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
+            database.featureStore(SqliteItemCatalogAdapter.storeDefinition());
+            assertEquals(
+                    FeatureStoreReadiness.MIGRATION_FAILED,
+                    database.prepareRegisteredStores().get("items"));
+        }
+
+        try (Connection connection = open(databasePath);
+             var result = connection.createStatement()
+                     .executeQuery("SELECT payload FROM items_catalog_retired")) {
+            assertTrue(result.next());
+            assertEquals("kept", result.getString(1));
+            assertEquals(1, ownerVersion(connection));
+        }
+    }
+
+    @Test
+    void newerOwnerVersionReturnsIncompatibleThroughApplicationAndPreservesStoreExactly()
+            throws Exception {
+        Path databasePath = temporaryDirectory.resolve("items-owner-v2.db");
+        seedCurrentShape(databasePath, java.util.function.UnaryOperator.identity());
+        try (Connection connection = open(databasePath); var statement = connection.createStatement()) {
+            statement.execute("UPDATE sm_schema_versions SET version=2 WHERE owner='items'");
+            statement.execute("INSERT INTO items_catalog_entries("
+                    + "source_key,name,category,subcategory,magic,rarity,attunement,cost_cp,"
+                    + "cost_display,weight,damage,armor_class,description,source_version,source_url) "
+                    + "VALUES('kept:item','Kept','Gear','',0,'',0,NULL,'',NULL,'','',"
+                    + "'preserved','current','https://example.invalid/kept')");
+        }
+        byte[] before = java.nio.file.Files.readAllBytes(databasePath);
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
+            var store = database.featureStore(SqliteItemCatalogAdapter.storeDefinition());
+            SqliteItemCatalogAdapter adapter = new SqliteItemCatalogAdapter(store);
+            assertEquals(
+                    FeatureStoreReadiness.NEWER_SCHEMA,
+                    database.prepareRegisteredStores().get("items"));
+
+            ItemsApplicationService application = new ItemsApplicationService(
+                    adapter, DirectExecutionLane.INSTANCE, NoopDiagnostics.INSTANCE);
+            assertEquals(
+                    ItemsCatalogApi.CatalogStatus.INCOMPATIBLE,
+                    application.search(ItemsCatalogApi.ItemQuery.firstPage())
+                            .toCompletableFuture().join().status());
+        }
+
+        assertEquals(2, readOwnerVersionWithoutLifecycle(databasePath));
+        assertTrue(rowExists(databasePath, "kept:item"));
+        assertEquals(before.length, java.nio.file.Files.readAllBytes(databasePath).length);
+        org.junit.jupiter.api.Assertions.assertArrayEquals(
+                before, java.nio.file.Files.readAllBytes(databasePath));
+        assertFalse(java.nio.file.Files.exists(
+                databasePath.resolveSibling(databasePath.getFileName() + "-wal")));
+        assertFalse(java.nio.file.Files.exists(
+                databasePath.resolveSibling(databasePath.getFileName() + "-shm")));
+        assertFalse(java.nio.file.Files.exists(
+                databasePath.resolveSibling(databasePath.getFileName() + "-journal")));
+    }
+
+    @Test
+    void unversionedPartialOwnerNamespaceFailsWithoutCreatingTablesOrLedgerEntry() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("unversioned-partial-namespace.db");
+        try (Connection connection = open(databasePath); var statement = connection.createStatement()) {
+            TestFeatureStores.createCurrentPlatformLedger(statement);
+            statement.execute("CREATE VIEW items_catalog_unfinished AS SELECT 'kept' AS payload");
+        }
+
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, NoopDiagnostics.INSTANCE)) {
+            database.featureStore(SqliteItemCatalogAdapter.storeDefinition());
+            assertEquals(
+                    FeatureStoreReadiness.MIGRATION_FAILED,
+                    database.prepareRegisteredStores().get("items"));
+        }
+
+        try (Connection connection = open(databasePath)) {
+            assertTrue(schemaObjectExists(connection, "view", "items_catalog_unfinished"));
+            assertFalse(tableExists(connection, ItemsSchema.ENTRIES_TABLE));
+            assertFalse(tableExists(connection, ItemsSchema.TAGS_TABLE));
+            assertEquals(0, ownerVersion(connection));
+        }
+    }
+
     private static ItemImportBatch validBatch(List<String> equipmentProperties) {
         return new ItemImportBatch(List.of(
                 new ImportedItem(
@@ -209,67 +282,7 @@ class SqliteItemCatalogAdapterTest {
         return new SqliteItemCatalogAdapter(store);
     }
 
-    private static void seedLegacy(Path databasePath) throws Exception {
-        try (Connection connection = open(databasePath); var statement = connection.createStatement()) {
-            createLedger(statement);
-            statement.execute("""
-                    CREATE TABLE items (
-                        id INTEGER PRIMARY KEY, name TEXT NOT NULL, slug TEXT, category TEXT,
-                        subcategory TEXT, is_magic INTEGER DEFAULT 0, rarity TEXT,
-                        requires_attunement INTEGER DEFAULT 0, attunement_condition TEXT,
-                        cost TEXT, cost_cp INTEGER DEFAULT 0, weight REAL DEFAULT 0.0,
-                        damage TEXT, properties TEXT, armor_class TEXT, description TEXT,
-                        source TEXT, tags TEXT DEFAULT '')
-                    """);
-            statement.execute("""
-                    CREATE TABLE item_tags (
-                        item_id INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
-                        tag TEXT NOT NULL, PRIMARY KEY (item_id, tag))
-                    """);
-            statement.execute("""
-                    INSERT INTO items VALUES(
-                        7, 'Moon Blade', 'moon-blade', 'Weapon', 'Sword', 1, 'Rare', 1,
-                        'by a good creature', '25 gp', 2500, 3.0, '1d8', 'Finesse, Silvered', '',
-                        'A pale blade.', 'Legacy SRD', 'legacy-tag-text')
-                    """);
-            statement.execute("""
-                    INSERT INTO items VALUES(
-                        8, 'Plain Rope', 'plain-rope', 'Gear', NULL, 0, NULL, 0,
-                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)
-                    """);
-            statement.execute("INSERT INTO item_tags VALUES(7, 'Finesse')");
-            statement.execute("INSERT INTO item_tags VALUES(7, 'Silvered')");
-        }
-    }
-
-    private static void seedIntermediate(Path databasePath) throws Exception {
-        try (Connection connection = open(databasePath); var statement = connection.createStatement()) {
-            createLedger(statement);
-            statement.execute("""
-                    CREATE TABLE items (
-                        source_key TEXT PRIMARY KEY, name TEXT NOT NULL, category TEXT NOT NULL,
-                        subcategory TEXT NOT NULL DEFAULT '', magic INTEGER NOT NULL,
-                        rarity TEXT NOT NULL DEFAULT '', attunement INTEGER NOT NULL, cost_cp INTEGER,
-                        cost_display TEXT NOT NULL DEFAULT '', weight REAL, damage TEXT NOT NULL DEFAULT '',
-                        armor_class TEXT NOT NULL DEFAULT '', description TEXT NOT NULL DEFAULT '',
-                        source_version TEXT NOT NULL, source_url TEXT NOT NULL)
-                    """);
-            statement.execute("""
-                    CREATE TABLE item_tags (
-                        item_source_key TEXT NOT NULL REFERENCES items(source_key) ON DELETE CASCADE,
-                        tag TEXT NOT NULL, PRIMARY KEY (item_source_key, tag))
-                    """);
-            statement.execute("""
-                    INSERT INTO items VALUES(
-                        'equipment:shield', 'Shield', 'Armor', 'Shield', 0, '', 0, 1000,
-                        '10 gp', 6.0, '', 'AC 2', 'A shield.', '2014 SRD',
-                        'https://example.invalid/shield')
-                    """);
-            statement.execute("INSERT INTO item_tags VALUES('equipment:shield', 'Armor')");
-        }
-    }
-
-    private static void seedUnknown(Path databasePath) throws Exception {
+    private static void seedOlderDevelopmentShape(Path databasePath) throws Exception {
         try (Connection connection = open(databasePath); var statement = connection.createStatement()) {
             createLedger(statement);
             statement.execute("CREATE TABLE items(id INTEGER PRIMARY KEY, note TEXT NOT NULL)");
@@ -278,11 +291,35 @@ class SqliteItemCatalogAdapterTest {
         }
     }
 
+    private static void seedIncompleteCurrentShape(Path databasePath) throws Exception {
+        try (Connection connection = open(databasePath); var statement = connection.createStatement()) {
+            createLedger(statement);
+            statement.execute("""
+                    CREATE TABLE items_catalog_entries (
+                        source_key TEXT PRIMARY KEY,
+                        name TEXT NOT NULL
+                    )
+                    """);
+        }
+    }
+
+    private static void seedCurrentShape(
+            Path databasePath,
+            java.util.function.UnaryOperator<String> tableSqlTransform
+    ) throws Exception {
+        try (Connection connection = open(databasePath); var statement = connection.createStatement()) {
+            createLedger(statement);
+            for (String sql : ItemsSchema.CREATE_TABLE_SQL) {
+                statement.execute(tableSqlTransform.apply(sql));
+            }
+            for (String sql : ItemsSchema.CREATE_INDEX_SQL) {
+                statement.execute(sql);
+            }
+        }
+    }
+
     private static void createLedger(java.sql.Statement statement) throws Exception {
-        statement.execute("PRAGMA user_version=1");
-        statement.execute(
-                "CREATE TABLE sm_schema_versions(owner TEXT PRIMARY KEY, version INTEGER NOT"
-                    + " NULL)");
+        TestFeatureStores.createCurrentPlatformLedger(statement);
         statement.execute("INSERT INTO sm_schema_versions VALUES('items', 1)");
     }
 
@@ -303,6 +340,17 @@ class SqliteItemCatalogAdapterTest {
         }
     }
 
+    private static boolean schemaObjectExists(Connection connection, String type, String name) throws Exception {
+        try (var statement = connection.prepareStatement(
+                "SELECT 1 FROM sqlite_master WHERE type=? AND name=?")) {
+            statement.setString(1, type);
+            statement.setString(2, name);
+            try (var result = statement.executeQuery()) {
+                return result.next();
+            }
+        }
+    }
+
     private static String tableSql(Connection connection, String table) throws Exception {
         try (var statement = connection.prepareStatement(
                 "SELECT sql FROM sqlite_master WHERE type='table' AND name=?")) {
@@ -314,15 +362,39 @@ class SqliteItemCatalogAdapterTest {
     }
 
     private static int ownerVersion(Connection connection) throws Exception {
+        if (!tableExists(connection, "sm_schema_versions")) {
+            return 0;
+        }
         try (var result = connection.createStatement().executeQuery(
                 "SELECT version FROM sm_schema_versions WHERE owner='items'")) {
             return result.next() ? result.getInt(1) : 0;
         }
     }
 
-    private static int count(Connection connection, String sql) throws Exception {
-        try (var result = connection.createStatement().executeQuery(sql)) {
-            return result.next() ? result.getInt(1) : 0;
+    private static int readOwnerVersionWithoutLifecycle(Path databasePath) throws Exception {
+        try (Connection connection = open(databasePath)) {
+            return ownerVersion(connection);
         }
+    }
+
+    private static boolean rowExists(Path databasePath, String sourceKey) throws Exception {
+        try (Connection connection = open(databasePath);
+             var statement = connection.prepareStatement(
+                     "SELECT 1 FROM items_catalog_entries WHERE source_key=?")) {
+            statement.setString(1, sourceKey);
+            try (var result = statement.executeQuery()) {
+                return result.next();
+            }
+        }
+    }
+
+    private static List<String> columns(Connection connection, String table) throws Exception {
+        List<String> names = new ArrayList<>();
+        try (var result = connection.createStatement().executeQuery("PRAGMA table_info(" + table + ")")) {
+            while (result.next()) {
+                names.add(result.getString("name"));
+            }
+        }
+        return List.copyOf(names);
     }
 }

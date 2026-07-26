@@ -252,7 +252,7 @@ public final class WorldPlannerBackendTest {
             String label
     ) {
         resetDatabase();
-        createLegacyMalformedFiniteDatabase(finiteValueSql, quantityValueSql);
+        createMalformedFiniteDatabase(finiteValueSql, quantityValueSql);
 
         WorldPlannerSnapshotModel model = productionRuntime().snapshot();
 
@@ -562,7 +562,7 @@ public final class WorldPlannerBackendTest {
     ) {
     }
 
-    private static void createLegacyMalformedFiniteDatabase(String finiteValueSql, String quantityValueSql) {
+    private static void createMalformedFiniteDatabase(String finiteValueSql, String quantityValueSql) {
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath());
                 Statement statement = connection.createStatement()) {
             statement.execute(WorldPlannerPersistenceSchema.CREATE_NPCS_SQL);
@@ -603,11 +603,7 @@ public final class WorldPlannerBackendTest {
     }
 
     private static Path databasePath() {
-        String xdgDataHome = System.getenv("XDG_DATA_HOME");
-        if (xdgDataHome == null || xdgDataHome.isBlank()) {
-            throw new AssertionError("XDG_DATA_HOME must be set for WorldPlannerBackendTest");
-        }
-        return Path.of(xdgDataHome, "salt-marcher", WorldPlannerPersistenceSchema.databaseFileName());
+        return TestFeatureStores.testDatabasePath();
     }
 
     private static void assertEquals(Object expected, Object actual, String label) {

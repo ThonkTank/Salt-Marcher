@@ -32,6 +32,8 @@ by the [Documentation Standard](project/documentation.md).
 
 - [Actor Autonomy](autonomy/README.md): GM-authorized NPC and monster needs,
   jobs, catch-up, and bounded non-party conflict resolution.
+- [Campaign](campaign/README.md): installation-wide Campaign registry and
+  active-Campaign pointer persistence.
 - [Creatures](creatures/README.md): creature catalog, detail, and
   encounter-candidate reference behavior.
 - [Dungeon](dungeon/README.md): dungeon authoring, editing, travel, and domain

@@ -14,6 +14,7 @@ import features.hex.application.HexTravelPublishedState;
 import features.hex.domain.map.repository.HexMapRepository;
 import features.party.api.PartyApi;
 import features.party.api.PartyTravelPositionsModel;
+import features.party.api.PartyTravelPositionsResult;
 
 import platform.diagnostics.Diagnostics;
 import platform.diagnostics.NoopDiagnostics;
@@ -28,7 +29,7 @@ import shell.api.ShellContribution;
 
 import java.util.Objects;
 
-public final class HexServiceAssembly {
+public final class HexServiceAssembly implements AutoCloseable {
 
     private final HexEditorApplicationService editorApplicationService;
     private final HexTravelApplicationService travelApplicationService;
@@ -145,21 +146,43 @@ public final class HexServiceAssembly {
 
     private void registerTravelReadback(PartyTravelPositionsModel partyTravelPositions) {
         travelApplicationService.acceptPartyTravelPosition(partyTravelPositions.current());
-        partyTravelPositions.subscribe(travelApplicationService::acceptPartyTravelPosition);
+        travelSubscription = partyTravelPositions.subscribe(this::acceptPartyTravelPositionWhileOpen);
+    }
+
+    private synchronized void acceptPartyTravelPositionWhileOpen(
+            PartyTravelPositionsResult position
+    ) {
+        if (!closing && !closed) {
+            travelApplicationService.acceptPartyTravelPosition(position);
+        }
     }
 
     private final PartyTravelPositionsModel partyTravelPositions;
     private boolean started;
+    private Runnable travelSubscription = () -> { };
+    private boolean closing;
+    private boolean closed;
 
     private synchronized void start() {
-        if (started) {
+        if (started || closing || closed) {
             return;
         }
         started = true;
         registerTravelReadback(partyTravelPositions);
     }
 
-    public static final class Component {
+    @Override
+    public synchronized void close() {
+        if (closed) {
+            return;
+        }
+        closing = true;
+        travelSubscription.run();
+        travelSubscription = () -> { };
+        closed = true;
+    }
+
+    public static final class Component implements AutoCloseable {
 
         private final HexServiceAssembly assembly;
 
@@ -185,6 +208,11 @@ public final class HexServiceAssembly {
 
         public void start() {
             assembly.start();
+        }
+
+        @Override
+        public void close() {
+            assembly.close();
         }
 
         public ShellContribution mapContribution() {

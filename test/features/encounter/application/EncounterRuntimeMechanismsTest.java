@@ -23,11 +23,13 @@ final class EncounterRuntimeMechanismsTest {
         RecordingLane lane = new RecordingLane();
         RecordingActions actions = new RecordingActions();
         EncounterApplicationService application = new EncounterApplicationService(actions, lane);
-        application.initialize();
+        var initialization = application.initialize().toCompletableFuture();
 
         assertEquals(1, lane.pending());
+        assertTrue(!initialization.isDone());
         assertTrue(actions.calls.isEmpty());
         lane.runNext();
+        assertTrue(initialization.isDone() && !initialization.isCompletedExceptionally());
         assertEquals(List.of("initialize"), actions.calls);
 
         application.applyState(ApplyEncounterStateCommand.action(ApplyEncounterStateCommand.Action.REFRESH));
@@ -53,6 +55,23 @@ final class EncounterRuntimeMechanismsTest {
     }
 
     @Test
+    void initializationStageFailsWhenProductionInitializationMechanismThrows() {
+        RecordingLane lane = new RecordingLane();
+        EncounterApplicationService application = new EncounterApplicationService(
+                new RecordingActions() {
+                    @Override
+                    public void initialize() {
+                        throw new IllegalStateException("injected encounter load failure");
+                    }
+                }, lane);
+
+        var initialization = application.initialize().toCompletableFuture();
+        assertTrue(!initialization.isDone());
+        lane.runNext();
+        assertTrue(initialization.isCompletedExceptionally());
+    }
+
+    @Test
     void savedPlanCallbackUsesSuppliedUiDispatcher() {
         RecordingDispatcher dispatcher = new RecordingDispatcher();
         EncounterPublishedState publishedState = new EncounterPublishedState(dispatcher);
@@ -68,7 +87,7 @@ final class EncounterRuntimeMechanismsTest {
         assertEquals(List.of(true), observed);
     }
 
-    private static final class RecordingActions implements EncounterApplicationService.CommandActions {
+    private static class RecordingActions implements EncounterApplicationService.CommandActions {
 
         private final List<String> calls = new ArrayList<>();
 

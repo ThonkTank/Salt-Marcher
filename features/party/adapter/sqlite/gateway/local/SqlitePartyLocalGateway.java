@@ -14,6 +14,7 @@ import platform.persistence.SqliteMigration;
 import platform.persistence.SqliteSchemaValidator;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Objects;
 
 /** SQLite-backed local gateway for the party roster. */
@@ -26,15 +27,14 @@ public final class SqlitePartyLocalGateway {
     private final Diagnostics diagnostics;
 
     public static FeatureStoreDefinition storeDefinition() {
-        PartyRosterSchemaMigrator schemaMigrator = new PartyRosterSchemaMigrator();
-        SqliteSchemaValidator targetSchema = SqliteSchemaValidator.builder()
-                .table(PartyPersistenceSchema.PLAYER_CHARACTERS)
-                .primaryKey("player_characters", "id")
-                .table(PartyPersistenceSchema.PARTY_ROSTER_METADATA)
-                .primaryKey("party_roster_metadata", "singleton_id")
-                .build();
+        PartySchemaInitializer schemaInitializer = new PartySchemaInitializer();
+        SqliteSchemaValidator targetSchema = SqliteSchemaValidator.exactSchema(
+                PartyPersistenceSchema.CREATE_TABLE_SQL,
+                PartyPersistenceSchema.CREATE_INDEX_SQL,
+                List.of("player_characters", "party_roster_metadata"),
+                List.of());
         return FeatureStoreDefinition.validated(
-                "party", targetSchema, new SqliteMigration(1, schemaMigrator::ensureSchema));
+                "party", targetSchema, new SqliteMigration(1, schemaInitializer::initializeCurrent));
     }
 
     public SqlitePartyLocalGateway(FeatureStoreHandle store) {

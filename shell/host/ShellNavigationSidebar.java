@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import shell.api.ContributionKey;
 import shell.api.ShellBinding;
@@ -47,6 +48,18 @@ final class ShellNavigationSidebar extends VBox {
         if (item != null) {
             item.button().setSelected(true);
         }
+    }
+
+    Optional<Node> meaningfulFocusTarget() {
+        return items.values().stream()
+                .map(NavigationItem::button)
+                .filter(ToggleButton::isSelected)
+                .map(Node.class::cast)
+                .findFirst()
+                .or(() -> items.values().stream()
+                        .map(NavigationItem::button)
+                        .map(Node.class::cast)
+                        .findFirst());
     }
 
     private ToggleButton createButton(

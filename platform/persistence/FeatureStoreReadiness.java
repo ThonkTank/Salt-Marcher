@@ -5,5 +5,6 @@ public enum FeatureStoreReadiness {
     READY,
     MIGRATION_FAILED,
     NEWER_SCHEMA,
+    INCOMPATIBLE,
     CORRUPT
 }

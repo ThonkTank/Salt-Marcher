@@ -1736,14 +1736,7 @@ public final class HexMapEditorBehaviorTest {
         private final Path databasePath;
 
         DatabaseAssertions() {
-            String xdgDataHome = System.getenv("XDG_DATA_HOME");
-            if (xdgDataHome == null || xdgDataHome.isBlank()) {
-                throw new IllegalStateException("XDG_DATA_HOME must isolate the Hex Map editor behavior DB.");
-            }
-            databasePath = Path.of(
-                    xdgDataHome,
-                    "salt-marcher",
-                    HexPersistenceSchema.DATABASE_FILE_NAME);
+            databasePath = TestFeatureStores.testDatabasePath();
         }
 
         long terrainOverrideCount(long mapId) {

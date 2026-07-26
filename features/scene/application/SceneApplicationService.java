@@ -29,17 +29,20 @@ import features.worldplanner.api.WorldNpcSummary;
 import features.worldplanner.api.WorldPlannerReadStatus;
 import features.worldplanner.api.WorldPlannerSnapshot;
 import features.worldplanner.api.WorldPlannerSnapshotModel;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.RejectedExecutionException;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
 import platform.execution.ExecutionLane;
+import platform.execution.RetryableRelease;
 import platform.ui.UiDispatcher;
 
-public final class SceneApplicationService implements SceneApi {
+public final class SceneApplicationService implements SceneApi, AutoCloseable {
 
     private static final DiagnosticId STORAGE_FAILURE = new DiagnosticId("scene.storage-failure");
     private static final DiagnosticId SYNC_FAILURE = new DiagnosticId("scene.encounter-sync-failure");
@@ -56,6 +59,9 @@ public final class SceneApplicationService implements SceneApi {
     private final ScenePublishedState publishedState;
     private SceneWorkspace workspace;
     private boolean foreignSubscriptionsRegistered;
+    private volatile boolean revoked;
+    private boolean closed;
+    private final List<Runnable> foreignSubscriptions = new ArrayList<>();
 
     public SceneApplicationService(
             SceneWorkspaceRepository repository,
@@ -85,9 +91,17 @@ public final class SceneApplicationService implements SceneApi {
 
     @Override
     public CompletionStage<SceneMutationResult> execute(SceneCommand command) {
+        if (revoked) {
+            return CompletableFuture.completedFuture(result(
+                    SceneMutationResult.Status.STORAGE_ERROR, "Szenenlaufzeit ist geschlossen."));
+        }
         CompletableFuture<SceneMutationResult> completion = new CompletableFuture<>();
         try {
             executionLane.execute(() -> handle(command, completion));
+        } catch (RejectedExecutionException exception) {
+            diagnostics.failure(STORAGE_FAILURE, exception.getClass());
+            completion.complete(result(
+                    SceneMutationResult.Status.STORAGE_ERROR, "Szenen konnten nicht gespeichert werden."));
         } catch (RuntimeException exception) {
             completion.complete(storageError(exception));
         }
@@ -418,6 +432,9 @@ public final class SceneApplicationService implements SceneApi {
     }
 
     private void scheduleProjectionRefresh() {
+        if (revoked) {
+            return;
+        }
         try {
             executionLane.execute(this::publishCurrent);
         } catch (RuntimeException exception) {
@@ -425,15 +442,25 @@ public final class SceneApplicationService implements SceneApi {
         }
     }
 
-    private void registerForeignSubscriptions() {
-        if (foreignSubscriptionsRegistered) {
+    private synchronized void registerForeignSubscriptions() {
+        if (foreignSubscriptionsRegistered || revoked) {
             return;
         }
         foreignSubscriptionsRegistered = true;
-        party.subscribe(ignored -> execute(new SceneCommand.Refresh()));
-        world.subscribe(ignored -> execute(new SceneCommand.Refresh()));
-        preparedScenes.subscribe(ignored -> scheduleProjectionRefresh());
-        creatureReferences.subscribe(ignored -> scheduleProjectionRefresh());
+        foreignSubscriptions.add(party.subscribe(ignored -> execute(new SceneCommand.Refresh())));
+        foreignSubscriptions.add(world.subscribe(ignored -> execute(new SceneCommand.Refresh())));
+        foreignSubscriptions.add(preparedScenes.subscribe(ignored -> scheduleProjectionRefresh()));
+        foreignSubscriptions.add(creatureReferences.subscribe(ignored -> scheduleProjectionRefresh()));
+    }
+
+    @Override
+    public synchronized void close() {
+        if (closed) {
+            return;
+        }
+        revoked = true;
+        RetryableRelease.releaseAll(foreignSubscriptions);
+        closed = true;
     }
 
     private static features.scene.domain.SceneParticipantKind domainKind(SceneParticipantKind kind) {

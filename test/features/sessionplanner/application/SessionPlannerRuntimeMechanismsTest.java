@@ -2,15 +2,21 @@ package features.sessionplanner.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.sessionplanner.SessionPlannerServiceAssembly;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
@@ -26,6 +32,9 @@ import features.party.domain.roster.repository.PartyRosterRepository;
 import features.party.api.CharacterDraft;
 import features.party.api.CreateCharacterCommand;
 import features.party.api.MembershipState;
+import features.party.api.ActivePartyModel;
+import features.party.api.ActivePartyResult;
+import features.party.api.PartyApi;
 import features.sessionplanner.domain.session.EncounterDays;
 import features.sessionplanner.domain.session.SessionPlan;
 import features.sessionplanner.domain.session.SessionPlanSummary;
@@ -48,8 +57,271 @@ import features.sessiongeneration.api.GenerationRunId;
 import features.sessiongeneration.api.GenerationRunResponse;
 import features.sessiongeneration.api.GenerationStatus;
 import features.sessiongeneration.api.SessionGenerationApi;
+import features.worldplanner.api.WorldPlannerReadStatus;
+import features.worldplanner.api.WorldPlannerSnapshot;
+import features.worldplanner.api.WorldPlannerSnapshotModel;
 
 final class SessionPlannerRuntimeMechanismsTest {
+
+    @Test
+    void secondSubscriptionAcquisitionFailureRetainsFirstHandleWithoutReacquisition() {
+        ReentrantRecordingLane lane = new ReentrantRecordingLane();
+        RecordingDispatcher dispatcher = new RecordingDispatcher();
+        PartyServiceAssembly.Component party = createParty(lane, dispatcher);
+        AtomicInteger partySubscriptions = new AtomicInteger();
+        AtomicInteger partyReleases = new AtomicInteger();
+        PartyApi trackedParty = withTrackedActiveParty(
+                party.application(), partySubscriptions, partyReleases, new AtomicReference<>());
+        RecordingSessionRepository repository = new RecordingSessionRepository(
+                SessionPlan.seeded(1L, List.of(1L), EncounterDays.one()));
+        AtomicInteger savedSubscriptionAttempts = new AtomicInteger();
+        AtomicInteger savedReleases = new AtomicInteger();
+        SavedEncounterPlanListResult savedResult = new SavedEncounterPlanListResult(
+                SavedEncounterPlanStatus.SUCCESS, List.of(), "");
+        SavedEncounterPlanListModel savedPlans = new SavedEncounterPlanListModel(
+                () -> savedResult,
+                listener -> {
+                    if (savedSubscriptionAttempts.incrementAndGet() == 1) {
+                        throw new IllegalStateException("second-subscribe-once");
+                    }
+                    return savedReleases::incrementAndGet;
+                },
+                listener -> () -> { });
+        AtomicInteger worldSubscriptions = new AtomicInteger();
+        AtomicInteger worldReleases = new AtomicInteger();
+        WorldPlannerSnapshot worldSnapshot = emptyWorldSnapshot();
+        WorldPlannerSnapshotModel world = new WorldPlannerSnapshotModel(
+                () -> worldSnapshot,
+                listener -> {
+                    worldSubscriptions.incrementAndGet();
+                    return worldReleases::incrementAndGet;
+                },
+                listener -> () -> { });
+        SessionPlannerServiceAssembly planner = new SessionPlannerServiceAssembly(
+                repository,
+                repository,
+                repository,
+                trackedParty,
+                EncounterApplicationServiceFakes.noOp(),
+                savedPlans,
+                world,
+                unavailableGeneration(),
+                lane,
+                lane,
+                lane,
+                dispatcher,
+                (id, type) -> { });
+
+        IllegalStateException subscribeFailure = assertThrows(
+                IllegalStateException.class, planner::start);
+        assertEquals("second-subscribe-once", subscribeFailure.getMessage());
+        assertEquals(1, partySubscriptions.get());
+        assertEquals(1, savedSubscriptionAttempts.get());
+        assertEquals(0, worldSubscriptions.get(),
+                "a later source cannot be acquired after the second source fails");
+
+        planner.start();
+
+        assertEquals(1, partySubscriptions.get(),
+                "retry resumes at source two instead of reacquiring source one");
+        assertEquals(2, savedSubscriptionAttempts.get());
+        assertEquals(1, worldSubscriptions.get());
+        planner.close();
+        assertEquals(1, partyReleases.get());
+        assertEquals(1, savedReleases.get());
+        assertEquals(1, worldReleases.get());
+    }
+
+    @Test
+    void thirdSubscriptionAcquisitionFailureRetainsEarlierHandlesAcrossStartAndCloseRetries() {
+        ReentrantRecordingLane lane = new ReentrantRecordingLane();
+        RecordingDispatcher dispatcher = new RecordingDispatcher();
+        PartyServiceAssembly.Component party = createParty(lane, dispatcher);
+        AtomicInteger partySubscriptions = new AtomicInteger();
+        AtomicInteger partyReleases = new AtomicInteger();
+        PartyApi trackedParty = withTrackedActiveParty(
+                party.application(), partySubscriptions, partyReleases, new AtomicReference<>());
+        RecordingSessionRepository repository = new RecordingSessionRepository(
+                SessionPlan.seeded(1L, List.of(1L), EncounterDays.one()));
+        AtomicInteger savedSubscriptions = new AtomicInteger();
+        AtomicInteger savedReleaseAttempts = new AtomicInteger();
+        SavedEncounterPlanListModel savedPlans = new SavedEncounterPlanListModel(
+                () -> new SavedEncounterPlanListResult(
+                        SavedEncounterPlanStatus.SUCCESS, List.of(), ""),
+                listener -> {
+                    savedSubscriptions.incrementAndGet();
+                    return () -> {
+                        if (savedReleaseAttempts.incrementAndGet() == 1) {
+                            throw new IllegalStateException("unsubscribe-once");
+                        }
+                    };
+                },
+                listener -> () -> { });
+        AtomicInteger worldSubscriptionAttempts = new AtomicInteger();
+        AtomicInteger worldReleases = new AtomicInteger();
+        WorldPlannerSnapshotModel world = new WorldPlannerSnapshotModel(
+                () -> {
+                    throw new AssertionError("current world state is not part of subscription acquisition");
+                },
+                listener -> {
+                    if (worldSubscriptionAttempts.incrementAndGet() == 1) {
+                        throw new IllegalStateException("subscribe-once");
+                    }
+                    return worldReleases::incrementAndGet;
+                },
+                listener -> () -> { });
+        SessionPlannerServiceAssembly planner = new SessionPlannerServiceAssembly(
+                repository,
+                repository,
+                repository,
+                trackedParty,
+                EncounterApplicationServiceFakes.noOp(),
+                savedPlans,
+                world,
+                unavailableGeneration(),
+                lane,
+                lane,
+                lane,
+                dispatcher,
+                (id, type) -> { });
+
+        assertEquals(0, savedSubscriptions.get(),
+                "construction must not acquire foreign handles before aggregate ownership exists");
+        IllegalStateException subscribeFailure = assertThrows(
+                IllegalStateException.class, planner::start);
+        assertEquals("subscribe-once", subscribeFailure.getMessage());
+        assertEquals(1, partySubscriptions.get());
+        assertEquals(1, savedSubscriptions.get());
+        assertEquals(1, worldSubscriptionAttempts.get());
+
+        planner.start();
+        assertEquals(1, partySubscriptions.get(),
+                "a source-three retry must not reacquire source one");
+        assertEquals(1, savedSubscriptions.get(),
+                "a start retry must retain rather than reacquire earlier handles");
+        assertEquals(2, worldSubscriptionAttempts.get());
+
+        IllegalStateException releaseFailure = assertThrows(
+                IllegalStateException.class, planner::close);
+        assertEquals("unsubscribe-once", releaseFailure.getMessage());
+        assertEquals(1, partyReleases.get());
+        assertEquals(1, savedReleaseAttempts.get());
+        assertEquals(1, worldReleases.get(),
+                "one failed release must not prevent independent handles from releasing");
+
+        planner.close();
+        assertEquals(2, savedReleaseAttempts.get(),
+                "close retry must release only the retained failed handle");
+        assertEquals(1, partyReleases.get());
+        assertEquals(1, worldReleases.get());
+        assertThrows(IllegalStateException.class, planner::start,
+                "a released aggregate cannot allocate subscriptions again");
+    }
+
+    @Test
+    void failedCloseSilencesRetainedCallbacksAndRetriesOnlyFailedReleases() {
+        ReentrantRecordingLane lane = new ReentrantRecordingLane();
+        RecordingDispatcher dispatcher = new RecordingDispatcher();
+        PartyServiceAssembly.Component party = createParty(lane, dispatcher);
+        AtomicInteger partySubscriptions = new AtomicInteger();
+        AtomicInteger partyReleases = new AtomicInteger();
+        AtomicReference<Consumer<ActivePartyResult>> partyListener = new AtomicReference<>();
+        PartyApi trackedParty = withTrackedActiveParty(
+                party.application(), partySubscriptions, partyReleases, partyListener);
+        RecordingSessionRepository repository = new RecordingSessionRepository(
+                SessionPlan.seeded(1L, List.of(1L), EncounterDays.one()));
+        SavedEncounterPlanListResult savedResult = new SavedEncounterPlanListResult(
+                SavedEncounterPlanStatus.SUCCESS, List.of(), "");
+        AtomicInteger savedSubscriptions = new AtomicInteger();
+        AtomicInteger savedReleaseAttempts = new AtomicInteger();
+        AtomicReference<Consumer<SavedEncounterPlanListResult>> savedListener = new AtomicReference<>();
+        SavedEncounterPlanListModel savedPlans = new SavedEncounterPlanListModel(
+                () -> savedResult,
+                listener -> {
+                    savedSubscriptions.incrementAndGet();
+                    savedListener.set(listener);
+                    return () -> {
+                        if (savedReleaseAttempts.incrementAndGet() == 1) {
+                            throw new IllegalStateException("saved-release-once");
+                        }
+                    };
+                },
+                listener -> () -> { });
+        WorldPlannerSnapshot worldSnapshot = emptyWorldSnapshot();
+        AtomicInteger worldSubscriptions = new AtomicInteger();
+        AtomicInteger worldReleaseAttempts = new AtomicInteger();
+        AtomicReference<Consumer<WorldPlannerSnapshot>> worldListener = new AtomicReference<>();
+        WorldPlannerSnapshotModel world = new WorldPlannerSnapshotModel(
+                () -> worldSnapshot,
+                listener -> {
+                    worldSubscriptions.incrementAndGet();
+                    worldListener.set(listener);
+                    return () -> {
+                        if (worldReleaseAttempts.incrementAndGet() == 1) {
+                            throw new IllegalStateException("world-release-once");
+                        }
+                    };
+                },
+                listener -> () -> { });
+        SessionPlannerServiceAssembly planner = new SessionPlannerServiceAssembly(
+                repository,
+                repository,
+                repository,
+                trackedParty,
+                EncounterApplicationServiceFakes.noOp(),
+                savedPlans,
+                world,
+                unavailableGeneration(),
+                lane,
+                lane,
+                lane,
+                dispatcher,
+                (id, type) -> { });
+        planner.start();
+        planner.application().initialize();
+        lane.runAll();
+        dispatcher.runAll();
+        int workspaceReadsBeforeClose = repository.workspaceReads;
+        var snapshotBeforeClose = planner.workspaceModel().current();
+
+        IllegalStateException releaseFailure = assertThrows(
+                IllegalStateException.class, planner::close);
+
+        assertEquals("saved-release-once", releaseFailure.getMessage());
+        assertEquals(1, releaseFailure.getSuppressed().length,
+                "both release failures remain observable from the first close attempt");
+        assertEquals("world-release-once", releaseFailure.getSuppressed()[0].getMessage());
+        assertEquals(1, partyReleases.get(),
+                "the successful first handle is removed during the first close attempt");
+        assertEquals(1, savedReleaseAttempts.get());
+        assertEquals(1, worldReleaseAttempts.get());
+
+        savedListener.get().accept(savedResult);
+        worldListener.get().accept(worldSnapshot);
+
+        assertEquals(0, lane.pending(),
+                "retained provider callbacks cannot schedule refresh work while closing");
+        assertEquals(workspaceReadsBeforeClose, repository.workspaceReads);
+        assertEquals(snapshotBeforeClose, planner.workspaceModel().current(),
+                "retained callbacks cannot alter the last published workspace while closing");
+
+        planner.close();
+
+        assertEquals(1, partyReleases.get(),
+                "a release already proven successful is not retried");
+        assertEquals(2, savedReleaseAttempts.get());
+        assertEquals(2, worldReleaseAttempts.get());
+        assertEquals(1, partySubscriptions.get());
+        assertEquals(1, savedSubscriptions.get());
+        assertEquals(1, worldSubscriptions.get(),
+                "close retries never reacquire foreign subscriptions");
+
+        planner.close();
+        assertEquals(1, partyReleases.get());
+        assertEquals(2, savedReleaseAttempts.get());
+        assertEquals(2, worldReleaseAttempts.get(),
+                "a completed close is idempotent");
+    }
 
     @Test
     void currentIsIoFreeAndExplicitInitializationPublishesAfterSubscription() {
@@ -422,6 +694,44 @@ final class SessionPlannerRuntimeMechanismsTest {
         assertEquals(7L, planner.workspaceModel().current().sourceSessionId());
     }
 
+    private static PartyApi withTrackedActiveParty(
+            PartyApi delegate,
+            AtomicInteger subscriptions,
+            AtomicInteger releases,
+            AtomicReference<Consumer<ActivePartyResult>> listenerReference
+    ) {
+        ActivePartyModel delegateModel = delegate.activeParty();
+        ActivePartyModel trackedModel = new ActivePartyModel(
+                delegateModel::current,
+                listener -> {
+                    subscriptions.incrementAndGet();
+                    listenerReference.set(listener);
+                    Runnable delegateRelease = delegateModel.subscribe(listener);
+                    return () -> {
+                        releases.incrementAndGet();
+                        delegateRelease.run();
+                    };
+                });
+        return (PartyApi) Proxy.newProxyInstance(
+                PartyApi.class.getClassLoader(),
+                new Class<?>[] {PartyApi.class},
+                (proxy, method, arguments) -> {
+                    if (method.getName().equals("activeParty") && method.getParameterCount() == 0) {
+                        return trackedModel;
+                    }
+                    try {
+                        return method.invoke(delegate, arguments);
+                    } catch (InvocationTargetException failure) {
+                        throw failure.getCause();
+                    }
+                });
+    }
+
+    private static WorldPlannerSnapshot emptyWorldSnapshot() {
+        return new WorldPlannerSnapshot(
+                WorldPlannerReadStatus.SUCCESS, List.of(), List.of(), List.of(), "");
+    }
+
     private static PartyServiceAssembly.Component createParty(
             ReentrantRecordingLane lane,
             RecordingDispatcher dispatcher
@@ -450,7 +760,7 @@ final class SessionPlannerRuntimeMechanismsTest {
                             SavedEncounterPlanStatus.SUCCESS, List.of(), ""));
                     return () -> { };
                 });
-        return new SessionPlannerServiceAssembly(
+        SessionPlannerServiceAssembly planner = new SessionPlannerServiceAssembly(
                 repository,
                 (SessionPlannerWorkspaceSource) repository,
                 (SessionPreparedSessionStore) repository,
@@ -464,6 +774,8 @@ final class SessionPlannerRuntimeMechanismsTest {
                 lane,
                 dispatcher,
                 diagnostics);
+        planner.start();
+        return planner;
     }
 
     private static SessionGenerationApi unavailableGeneration() {

@@ -78,6 +78,7 @@ public final class EncounterApplicationService implements features.encounter.api
     private final GeneratedEncounterBatchService generatedBatches;
     private final SavedEncounterPlanSearchService savedPlanSearch;
     private final AtomicBoolean initializationRequested = new AtomicBoolean();
+    private final CompletableFuture<Void> initialization = new CompletableFuture<>();
 
     public EncounterApplicationService(
             EncounterSessionRuntimeAccess runtimeAccess,
@@ -156,10 +157,22 @@ public final class EncounterApplicationService implements features.encounter.api
         this.savedPlanSearch = savedPlanSearch;
     }
 
-    public void initialize() {
+    public java.util.concurrent.CompletionStage<Void> initialize() {
         if (initializationRequested.compareAndSet(false, true)) {
-            executionLane.execute(commands::initialize);
+            try {
+                executionLane.execute(() -> {
+                    try {
+                        commands.initialize();
+                        initialization.complete(null);
+                    } catch (RuntimeException | Error failure) {
+                        initialization.completeExceptionally(failure);
+                    }
+                });
+            } catch (RuntimeException | Error failure) {
+                initialization.completeExceptionally(failure);
+            }
         }
+        return initialization;
     }
 
     @Override

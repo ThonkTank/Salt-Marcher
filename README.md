@@ -22,8 +22,9 @@ Install the desktop app after a green check:
 SaltMarcher stores SQLite data below the XDG data directory. If
 `XDG_DATA_HOME` is set, data lives in `$XDG_DATA_HOME/salt-marcher/`; otherwise
 it lives in `~/.local/share/salt-marcher/`. The current database file is
-`game.db`; the resolving rule is owned by
-[`platform.persistence`](docs/project/contract/persistence-lifecycle.md).
+`installation.sqlite`; Campaign data is stored separately under
+`campaigns/<id>/campaign.sqlite`. Location and lifecycle rules are owned by the
+[Persistence Lifecycle contract](docs/project/contract/persistence-lifecycle.md).
 
 ## Bugs And Requests
 

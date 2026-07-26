@@ -2,6 +2,7 @@ package features.scene.adapter.javafx;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.creatures.api.CreatureCatalogRow;
@@ -134,6 +135,27 @@ final class SceneContributionTest {
         });
     }
 
+    @Test
+    void persistedNotesReadbackKeepsTheFocusedEditorNode() throws Exception {
+        runOnFxThread(() -> {
+            SceneApplicationService application = application();
+            ShellBinding binding = new SceneContribution(
+                    application, application.model(), statblockId -> { }).bind();
+            binding.onActivate();
+            Parent controls = (Parent) binding.slotContent().get(ShellSlot.COCKPIT_CONTROLS);
+            Parent main = (Parent) binding.slotContent().get(ShellSlot.COCKPIT_MAIN);
+            TextArea notes = textArea(main, "Szenennotizen");
+
+            notes.setText("Dauerhaft bestätigte Notiz");
+            button(main, "Szene speichern").fire();
+
+            assertSame(notes, textArea(main, "Szenennotizen"));
+            assertEquals("Dauerhaft bestätigte Notiz",
+                    application.model().current().scenes().getFirst().notes());
+            assertTrue(labels(controls).contains("Szene aktualisiert."));
+        });
+    }
+
     private static SceneApplicationService application() {
         ActivePartyResult party = new ActivePartyResult(
                 ReadStatus.SUCCESS, List.of(new PartyMemberSummary(1L, "PC 1", 3)));
@@ -144,7 +166,7 @@ final class SceneContributionTest {
                 () -> world, ignored -> () -> { },
                 listener -> { listener.accept(world); return () -> { }; });
         PreparedSceneCatalogModel prepared = new PreparedSceneCatalogModel(
-                PreparedSceneCatalogSnapshot::empty, ignored -> { });
+                PreparedSceneCatalogSnapshot::empty, ignored -> () -> { });
         EncounterRuntimeContextApi encounters = command -> CompletableFuture.completedFuture(
                 new EncounterRuntimeContextSyncResult(
                         EncounterRuntimeContextSyncResult.Status.APPLIED,
