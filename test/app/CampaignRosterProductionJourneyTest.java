@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.campaign.api.CampaignId;
@@ -131,6 +132,8 @@ public final class CampaignRosterProductionJourneyTest {
         assertVisibleRoster(firstWindow, alphaTruth.members());
         assertRosterOnly(firstBootstrap, alphaTruth.members().size(),
                 "Alpha causal control after optional-fact round trip");
+        assertRosterOnlyRejectsExplicitActivePartyEnrollment(
+                firstWindow, firstBootstrap, firstEcho.id(), alphaTruth);
 
         assertFailedProductionCreateKeepsRosterTruth(
                 firstWindow, firstBootstrap, campaignRoot, alphaId, alphaTruth);
@@ -359,6 +362,40 @@ public final class CampaignRosterProductionJourneyTest {
         }
         assertEquals(durableBefore, durableRosterTruth(campaignPath),
                 "failed production create leaves every durable Roster fact unchanged");
+    }
+
+    private static void assertRosterOnlyRejectsExplicitActivePartyEnrollment(
+            Stage stage,
+            AppBootstrap bootstrap,
+            long rosterId,
+            RosterTruth expected
+    ) throws Exception {
+        Parent popup = openPartyPanel(stage);
+        runOnFx(() -> buttonByAccessibleText(popup,
+                "Roster-ID " + rosterId + ", zur aktiven Party hinzufuegen: Echo").fire());
+        awaitFxCondition(() -> bootstrap.campaignRuntimeForTesting().components().party()
+                .snapshot().current().snapshot().activeMembers().stream()
+                .anyMatch(member -> member.id() == rosterId));
+
+        try {
+            assertThrows(AssertionError.class,
+                    () -> assertRosterOnly(bootstrap, expected.members().size(),
+                            "explicit active-Party enrollment must fail the reserve-only oracle"));
+        } finally {
+            runOnFx(() -> buttonByAccessibleText(popup,
+                    "Roster-ID " + rosterId + ", aus aktiver Party entfernen: Echo").fire());
+            awaitFxCondition(() -> {
+                PartySnapshotResult current = bootstrap.campaignRuntimeForTesting().components()
+                        .party().snapshot().current();
+                return current.snapshot().activeMembers().stream()
+                                .noneMatch(member -> member.id() == rosterId)
+                        && current.snapshot().reserveMembers().size() == expected.members().size();
+            });
+        }
+        assertExactRoster(bootstrap, expected,
+                "explicit active-Party counterexample restores exact reserve-only Roster truth");
+        assertRosterOnly(bootstrap, expected.members().size(),
+                "explicit active-Party counterexample restores reserve-only truth");
     }
 
     private static int scalarInt(java.sql.Statement statement, String sql) throws Exception {
