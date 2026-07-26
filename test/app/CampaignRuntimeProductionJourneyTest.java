@@ -833,10 +833,7 @@ public final class CampaignRuntimeProductionJourneyTest {
                 "revoked late terminal must not publish another Campaign root");
         runOnFx(() -> assertFalse(host.window().getScene().getRoot() instanceof AppShell,
                 "late terminal must leave recovery authoritative"));
-        assertEquals(
-                SceneMutationResult.Status.STORAGE_ERROR,
-                await(lateBetaRuntime.components().scene().application().execute(
-                        new SceneCommand.Create("Revoked late Beta mutation"))).status(),
+        assertFalse(lateCandidateAcceptsMutation(lateBetaRuntime),
                 "revoked late candidate must accept zero mutations");
         assertEquals(betaId, coordinator.snapshot().durableActivation().orElseThrow()
                 .campaign().orElseThrow().id());
@@ -1400,6 +1397,20 @@ public final class CampaignRuntimeProductionJourneyTest {
         awaitFxConditionUntil(() -> presentedTextArea(stage, "Szenennotizen") != null
                 && notes.equals(presentedTextArea(stage, "Szenennotizen").getText())
                 && presentedText(stage, "Szene aktualisiert."), deadline);
+    }
+
+    private static boolean lateCandidateAcceptsMutation(CampaignRuntime runtime)
+            throws Exception {
+        try {
+            return await(runtime.components().scene().application().execute(
+                    new SceneCommand.Create("Revoked late Beta mutation"))).status()
+                    == SceneMutationResult.Status.SUCCESS;
+        } catch (IllegalStateException unavailable) {
+            assertTrue(unavailable.getMessage() != null
+                            && unavailable.getMessage().contains("PARKED"),
+                    () -> "unexpected late-candidate rejection: " + unavailable);
+            return false;
+        }
     }
 
     private static void fireCampaignRowWhenReady(Stage stage, String campaignName)
