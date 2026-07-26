@@ -100,28 +100,28 @@ the Product Process.
   `Preliminary`: it can support the next slice, but later integration evidence
   may reopen and replace its internal design. It cannot become `Final` before
   every remaining integration dependency that may change it is exhausted.
-- **Current merge candidate:** M2a/`AC-F10`, based on `fb229a119`, contains
-  product commits `830d12f82` and `4a55c3855` and the delivery checkpoint
-  `3640721bb` under Product Process `A-0.9.0` at `bbd5988b4`. It supplies one
-  Campaign-owned Roster with name-only creation, nullable authored facts,
-  stable namesake identity, explicit Party membership, strict current-v1
-  persistence, and coherent Party publication. The namesake repair makes the
-  exact stable identity visible in the edit context and identifies the saved
-  record and optional facts in visible feedback; a fresh evaluation qualifies
-  it without changing Party, Scene, or persistence semantics. A fresh isolated
-  replay and independent evaluation also pass the M1 TN-16 current-profile
-  warm-switch oracle; the earlier concurrent-worker failures do not establish
-  a product regression. M2a now returns to its exact-candidate full `check`,
-  installation, target serialization, CI, and merge gates.
+- M2a/`AC-F10` merged as [PR #559](https://github.com/ThonkTank/Salt-Marcher/pull/559)
+  at `69d026440`, based on `fb229a119`. Its product commits `830d12f82`,
+  `4a55c3855`, `98bc6fefc`, and `079353cf4` supply one Campaign-owned Roster
+  with name-only creation, nullable authored facts, stable namesake identity,
+  explicit Party membership, strict current-v1 persistence, and coherent Party
+  publication. Fresh independent replays qualified the namesake title and
+  feedback repairs, including the stale-status repair; exact-candidate local
+  `check`, installation, JAR identity, and required CI are green. The first
+  final CI attempt had an unrelated Session Planner diagnostic assertion, but
+  the exact CI rerun and an isolated 20-apply replay passed; no Session Planner
+  product regression is established.
 - M2a is `Preliminary`: practical proof and severe-finding repair show no
   implementation inadequacy requiring immediate rewrite, while later waves may
   still reopen or replace its design. It is not a mandatory architectural
   foundation and cannot be `Final` while later Party, Scene, Encounter, travel,
   or tutorial slices may change it.
-- The confirmed 2026-07-26 tutorial requirement does not change M2a's Roster
-  semantics. It fixes M2t as the next revalidation candidate before M3 so the
-  tutorial boundary is proven with the already delivered Campaign and Roster
-  capabilities before more capability work accumulates.
+- M1 is reopened before M2t. B3's independently evaluated switch-cycle handoff
+  on the former M1 baseline confirms a linear post-full-GC resident-memory leak
+  across warm Campaign switches. Its root is not yet established, so the next
+  A slice first proves the retaining path and then repairs the owning
+  presentation-retirement seam with a causal heap control. M2t remains the next
+  feature revalidation candidate only after that M1 repair.
 - This roadmap has not audited every other capability against every canonical
   acceptance outcome; all later milestone completion remains unassessed until
   live, requirement-by-requirement revalidation.
