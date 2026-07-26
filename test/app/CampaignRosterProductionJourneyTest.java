@@ -385,9 +385,11 @@ public final class CampaignRosterProductionJourneyTest {
         Parent popup = openPartyPanel(stage);
         runOnFx(() -> buttonByAccessibleText(popup,
                 "Roster-ID " + rosterId + ", zur aktiven Party hinzufuegen: Echo").fire());
-        awaitFxCondition(() -> bootstrap.campaignRuntimeForTesting().components().party()
-                .snapshot().current().snapshot().activeMembers().stream()
-                .anyMatch(member -> member.id() == rosterId));
+        awaitFxCondition(() -> activePartyAndSceneProjectionMatches(bootstrap, List.of(rosterId)));
+        assertEquals(List.of(rosterId), activePartyMemberIds(bootstrap),
+                "explicit active-Party enrollment publishes the selected Roster ID");
+        assertTrue(sceneProjectionMatches(bootstrap, List.of(rosterId)),
+                "explicit active-Party enrollment projects the selected Roster ID into Scene");
 
         try {
             assertThrows(AssertionError.class,
@@ -401,7 +403,8 @@ public final class CampaignRosterProductionJourneyTest {
                         .party().snapshot().current();
                 return current.snapshot().activeMembers().stream()
                                 .noneMatch(member -> member.id() == rosterId)
-                        && current.snapshot().reserveMembers().size() == expected.members().size();
+                        && current.snapshot().reserveMembers().size() == expected.members().size()
+                        && sceneProjectionMatches(bootstrap, List.of());
             });
         }
         assertExactRoster(bootstrap, expected,
@@ -657,7 +660,7 @@ public final class CampaignRosterProductionJourneyTest {
             AppBootstrap bootstrap,
             int expectedReserveCount,
             String label
-    ) {
+    ) throws Exception {
         CampaignRuntime runtime = bootstrap.campaignRuntimeForTesting();
         PartySnapshotResult result = runtime.components().party().snapshot().current();
         assertEquals(ReadStatus.SUCCESS, result.status(), label + " snapshot status");
@@ -672,11 +675,37 @@ public final class CampaignRosterProductionJourneyTest {
         assertEquals(List.of(), runtime.components().party().travelPositions().current()
                         .partyTokenCharacterIds(),
                 label + " Party travel token remains empty");
+        awaitFxCondition(() -> sceneProjectionMatches(bootstrap, List.of()));
         assertEquals(List.of(), runtime.components().scene().model().current().activePartyMembers(),
                 label + " Scene chooser has no active Party members");
         assertTrue(runtime.components().scene().model().current().scenes().stream()
                         .allMatch(scene -> scene.partyMembers().isEmpty()),
                 label + " no created PC is attached to a Scene");
+    }
+
+    private static boolean activePartyAndSceneProjectionMatches(
+            AppBootstrap bootstrap,
+            List<Long> expectedMemberIds
+    ) {
+        return activePartyMemberIds(bootstrap).equals(expectedMemberIds)
+                && sceneProjectionMatches(bootstrap, expectedMemberIds);
+    }
+
+    private static List<Long> activePartyMemberIds(AppBootstrap bootstrap) {
+        return bootstrap.campaignRuntimeForTesting().components().party().snapshot().current()
+                .snapshot().activeMembers().stream()
+                .map(PartyMemberDetails::id)
+                .toList();
+    }
+
+    private static boolean sceneProjectionMatches(
+            AppBootstrap bootstrap,
+            List<Long> expectedMemberIds
+    ) {
+        var scene = bootstrap.campaignRuntimeForTesting().components().scene().model().current();
+        return scene.activePartyMembers().stream()
+                        .map(member -> member.id())
+                        .toList().equals(expectedMemberIds);
     }
 
     private static void assertExactRoster(
