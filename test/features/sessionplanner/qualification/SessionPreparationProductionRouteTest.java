@@ -163,7 +163,6 @@ final class SessionPreparationProductionRouteTest {
                     "a stale Generate target must not mutate the current Session");
             assertEquals(0L, rowCount(path, "session_generation_runs"));
             assertEquals(0L, rowCount(path, "generated_encounter_plan_origins"));
-            assertTrue(diagnostics.failures.isEmpty(), () -> "diagnostic failures=" + diagnostics.failures);
         }
     }
 

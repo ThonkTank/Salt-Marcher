@@ -215,6 +215,7 @@ public final class PartyDropdownTest {
             createButton.requestFocus();
             pressKey(createButton, KeyCode.SPACE);
         });
+        awaitFxCondition(() -> editorNameFocused(fixtureRef.get()));
 
         runOnFxThread(() -> {
             PartyDropdownFixture fixture = fixtureRef.get();
@@ -233,7 +234,7 @@ public final class PartyDropdownTest {
             assertTrue(cancelButton.isFocused(), "keyboard traversal can focus editor cancel action");
             pressKey(cancelButton, KeyCode.SPACE);
         });
-        drainFocusRestoration();
+        awaitFxCondition(() -> rosterInvokerFocused(fixtureRef.get(), "+ Roster-Charakter", null));
 
         runOnFxThread(() -> {
             PartyDropdownFixture fixture = fixtureRef.get();
@@ -245,6 +246,7 @@ public final class PartyDropdownTest {
 
             pressKey(createButton, KeyCode.SPACE);
         });
+        awaitFxCondition(() -> editorNameFocused(fixtureRef.get()));
 
         runOnFxThread(() -> {
             PartyDropdownFixture fixture = fixtureRef.get();
@@ -255,7 +257,7 @@ public final class PartyDropdownTest {
             typeText(nameField, "Aster");
             pressKey(nameField, KeyCode.ENTER);
         });
-        drainFocusRestoration();
+        awaitFxCondition(() -> rosterInvokerFocused(fixtureRef.get(), "+ Roster-Charakter", null));
 
         runOnFxThread(() -> {
             PartyDropdownFixture fixture = fixtureRef.get();
@@ -279,6 +281,7 @@ public final class PartyDropdownTest {
             assertTrue(editButton.isFocused(), "keyboard traversal can focus stable-ID edit action");
             pressKey(editButton, KeyCode.SPACE);
         });
+        awaitFxCondition(() -> editorNameFocused(fixtureRef.get()));
 
         runOnFxThread(() -> {
             PartyDropdownFixture fixture = fixtureRef.get();
@@ -287,7 +290,8 @@ public final class PartyDropdownTest {
             typeText(nameField, "Aster Prime");
             pressKey(nameField, KeyCode.ENTER);
         });
-        drainFocusRestoration();
+        awaitFxCondition(() -> rosterInvokerFocused(
+                fixtureRef.get(), null, "Charakter bearbeiten: Aster Prime"));
 
         runOnFxThread(() -> {
             PartyDropdownFixture fixture = fixtureRef.get();
@@ -635,9 +639,53 @@ public final class PartyDropdownTest {
         return true;
     }
 
-    private static void drainFocusRestoration() throws Exception {
-        runOnFxThread(() -> { });
-        runOnFxThread(() -> { });
+    private static boolean editorNameFocused(PartyDropdownFixture fixture) {
+        TextField name = visibleTextField(fixture.popup(), "Charaktername");
+        PartyRosterTopBarView roster = descendant(fixture.popup(), PartyRosterTopBarView.class);
+        return name != null && name.isFocused() && roster.isDisabled();
+    }
+
+    private static boolean rosterInvokerFocused(
+            PartyDropdownFixture fixture,
+            String buttonText,
+            String accessibleTextSuffix
+    ) {
+        PartyRosterTopBarView roster = descendant(fixture.popup(), PartyRosterTopBarView.class);
+        boolean editorClosed = visibleTextField(fixture.popup(), "Charaktername") == null;
+        boolean invokerFocused = descendants(fixture.popup()).stream()
+                .filter(Button.class::isInstance)
+                .map(Button.class::cast)
+                .filter(PartyDropdownTest::isTreeVisible)
+                .filter(button -> buttonText == null || buttonText.equals(button.getText()))
+                .filter(button -> accessibleTextSuffix == null
+                        || button.getAccessibleText() != null
+                        && button.getAccessibleText().endsWith(accessibleTextSuffix))
+                .anyMatch(Button::isFocused);
+        return editorClosed && !roster.isDisabled() && invokerFocused;
+    }
+
+    private static TextField visibleTextField(Parent parent, String promptText) {
+        return descendants(parent).stream()
+                .filter(TextField.class::isInstance)
+                .map(TextField.class::cast)
+                .filter(field -> promptText.equals(field.getPromptText()))
+                .filter(PartyDropdownTest::isTreeVisible)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static void awaitFxCondition(java.util.function.BooleanSupplier condition)
+            throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(AWAIT_SECONDS);
+        while (System.nanoTime() < deadline) {
+            AtomicBoolean satisfied = new AtomicBoolean();
+            runOnFxThread(() -> satisfied.set(condition.getAsBoolean()));
+            if (satisfied.get()) {
+                return;
+            }
+            java.util.concurrent.locks.LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(5));
+        }
+        throw new AssertionError("Timed out waiting for JavaFX editor state");
     }
 
     private static void typeText(TextField target, String text) {
