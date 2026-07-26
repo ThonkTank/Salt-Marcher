@@ -114,3 +114,46 @@ run scratch directory, and restores current uncoordinated behavior. This is
 C-only non-production tooling and changes no shipped source, resource,
 dependency, packaging, build, product contract, or `check` input. The test
 agent does not evaluate, adopt, merge, publish, or assign maturity.
+
+## Literal retained test result
+
+The frozen candidate is
+`ccce150ec5cf783d67794a75324555cc40b234c9`. The exact command above ran once
+and exited `0`: **literal PASS**. It retained 217 raw rows: 31 warm-up and 186
+recorded. Every recorded row and all 19 aggregate verdicts passed; there was no
+candidate change, threshold change, discard, or rerun after this result.
+
+- Candidate supervisor-death custody, watchdog-death custody, and normal
+  leader-exit group quiescence each passed `6/6`. No contender workload began
+  and no non-A admission occurred before old-group disappearance. Every
+  observed surviving-controller custody sample held both applicable locks.
+- The exact known-bad C4 control failed causally in `6/6`: a contender began
+  before its old TERM-resistant group disappeared every time; one repetition
+  also admitted non-A early.
+- All inherited cleanup, topology, security, FD, contamination, recovery, and
+  pairwise interoperability controls passed. Three-contender median A-wait
+  reduction was `67.046%`; recovery remained `6/6` below `1400 ms`.
+- Paired runtime-start overhead nearest-rank p95 was `5.350 ms` for A and
+  `10.934 ms` for non-A, below the separate `50 ms` ceilings.
+- Total registered cost was `131.513 s` wall, `36.414 s` CPU, `348099` retained
+  raw-plus-summary bytes, `$0`, and zero egress. Both compilations took
+  `1.877 s` wall. Standard error was empty.
+- Rollback found no remaining run scratch directory and no live generated C5
+  or known-bad C4 executable. The harness had already proved both run-specific
+  locks independently acquirable before removing the scratch tree.
+
+Exact tested-input and retained-output SHA-256 values:
+
+```text
+e75616755dec9203cdc954b95f1703525a2d307145bdc2e6020916dc749b6a71  host-lease-native.c
+99096a2979ddc04eedba61513592ee97814e76f8768d9b694e45a26ca99bc52e  generated host-lease-native
+b73e4dcb0d88d2ae32fffc9459dd6e5f3919f801b8e6e406605cb782e03ea2e1  canary.py
+03fcc3999460fc4c505f5511097ef1e2958c15379847967844702b8682f801f3  synthetic-worker
+e635dff8e7077c3803041e8aa4f68a57ececfb1e7ff4c01eeeeebac05f9cd0d1  generated known-bad-c4
+b6299cac880367492b8ac674c02626f122db6de4de105a48ddda89828de8aeb0  results/raw.jsonl
+a89d9b6bd940e82e16d33a79a7ce3a79d85882eb1944d600425e82147eda09bd  results/summary.json
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  results/run-stderr.txt
+```
+
+These are test-agent facts only. Maturity, qualification, and any bounded use
+remain for a fresh independent evaluator and the Product Owner respectively.
