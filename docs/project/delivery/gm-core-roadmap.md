@@ -64,22 +64,19 @@ the Product Process.
 ## Current Program State
 
 - M1's Campaign activation, whole-shell switching, selector, exact resume,
-  isolation, failure boundaries, and warm-switch prequalification are frozen at
-  `f94c373d4`. Independent no-build-cache replay passed all 17 production
-  journey tests with no failure, error, or skip; literal local `./gradlew check`,
-  required PR CI, and installed-desktop identity are green. The compact retained
-  evidence is in [PR #558](https://github.com/ThonkTank/Salt-Marcher/pull/558).
-- The owner has moved personal product testing to the fully integrated M13
-  candidate. M1 therefore has no remaining intermediate owner gate and is ready
-  to exit through PR #558. This roadmap has not audited every other capability
-  against every canonical acceptance outcome; all other milestone completion
-  remains unassessed until live, requirement-by-requirement revalidation.
-- **Next-step verdict:** M2a remains the right next product slice because
-  `AC-F10` is independently useful and needs accepted Campaign isolation. Start
-  it only after PR #558 is actually merged, then revalidate it once more at the
-  merge boundary and open it as a separate production increment. No broader
+  isolation, failure boundaries, and warm-switch prequalification merged as
+  [PR #558](https://github.com/ThonkTank/Salt-Marcher/pull/558) at
+  `fb229a119`. Its independent replay, literal local check, required CI, and
+  installed-artifact identity are green; its personal interaction scenarios
+  remain accumulated for M13's integrated owner test.
+- **Active next slice:** merge-boundary revalidation confirms M2a/`AC-F10` as
+  the smallest independently useful next value. The [Campaign Roster
+  Slice](campaign-roster/README.md) owns its live delivery state. No broader
   content lifecycle, current-Party/Scene transition, M2b knowledge record, or
   compatibility bridge is an entry prerequisite.
+- This roadmap has not audited every other capability against every canonical
+  acceptance outcome; all later milestone completion remains unassessed until
+  live, requirement-by-requirement revalidation.
 - No real users or legacy data exist before complete GM-Core feature
   completion. Consequently, no active or proposed pre-completion slice owes a
   legacy conversion, compatibility bridge, migration, fallback, or
