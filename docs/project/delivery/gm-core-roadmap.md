@@ -100,13 +100,20 @@ the Product Process.
   `Preliminary`: it can support the next slice, but later integration evidence
   may reopen and replace its internal design. It cannot become `Final` before
   every remaining integration dependency that may change it is exhausted.
-- **Current merge candidate:** M2a/`AC-F10` supplies one Campaign-owned Roster
-  with name-only creation, nullable authored facts, stable namesake identity,
-  explicit Party membership, strict current-v1 persistence, and coherent Party
-  publication. Its production UI/failure journey, focused diagnostics, full
-  local `./gradlew check`, and independent severe-finding closure are green;
-  its product payload is locally installed; required PR CI and merge remain
-  before activation.
+- **Current repair checkpoint:** M2a/`AC-F10`, based on `fb229a119`, is pinned
+  to candidate `830d12f82` under Product Process `A-0.9.0` at `bbd5988b4`.
+  It supplies one Campaign-owned Roster with name-only creation, nullable
+  authored facts, stable namesake identity, explicit Party membership, strict
+  current-v1 persistence, and coherent Party publication. The production
+  Roster journey and focused diagnostics remain green, but this exact candidate
+  is not publication-ready: two exact-candidate full-check results fail the M1 TN-16
+  warm-switch p95 oracle. Later focused replays were contaminated by concurrent
+  B1 or C test workers and establish neither a source regression nor a repair.
+  Before any implementation change or publication, reserve a worker-free host
+  window and replay the exact candidate and `fb229a119` sequentially with the
+  same production benchmark. Only a reproduced isolated failure may select a
+  measured localized repair; an isolated pass returns M2a to its full-check,
+  installation, CI, and merge gates.
 - M2a is `Preliminary`: practical proof and severe-finding repair show no
   implementation inadequacy requiring immediate rewrite, while later waves may
   still reopen or replace its design. It is not a mandatory architectural
