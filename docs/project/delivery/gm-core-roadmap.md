@@ -23,9 +23,10 @@ real production route rather than only a structural foundation.
 B1, B2, or B3 may return an independently evaluated roadmap instruction with
 its evidence, maturity, guards, and reopen trigger, including a scoped roadmap
 patch authored only in that reviewer's worktree. A remains this roadmap's owner
-and sole integrator, revalidates every instruction before accepting it, and
-controls sequencing. No reviewer instruction creates product, architecture, or
-contract truth. C returns process instructions only and cannot add product work.
+and controls sequencing. A reviewer coordinator may merge an evaluated scoped
+roadmap patch, but A revalidates it before implementation and may revise or
+remove it. No reviewer instruction creates product, architecture, or contract
+truth. C returns process instructions only and cannot add product work.
 
 Aaron performs personal product acceptance only at the fully integrated and
 installed GM-core boundary at M13, repeated after repairs when necessary.
@@ -79,7 +80,10 @@ built milestone, revalidate:
    the next wave should extend it or reopen its root design; and
 8. whether confirmed B1 behavior, B2 UX, or B3 structural findings, or adopted
    C process instructions alter priority, scope, proof, or the safest next
-   boundary.
+   boundary; and
+9. whether the deciding research, tools, and evaluation methods are available,
+   calibrated against known-good and known-bad cases, and sufficient to measure
+   the proposed slice rather than merely reason about it.
 
 Record only the resulting slice and compact delivery state in its one short
 delivery owner. Do not turn this roadmap into a progress ledger or duplicate
@@ -464,6 +468,8 @@ journeys are not yet possible.
   normative `RP-H`, `RP-R`, `RP-L`, and applicable `RP-X` profiles; exercise
   supported OS, display, keyboard, scaling, localization, privacy, fault,
   cancel/retry, current-format recovery, and long-operation survivor matrices.
+  B1, B2, B3, and C each post the Charter-required independently evaluated
+  closure result against the exact M13 candidate even when no finding remains.
 - **Final owner acceptance:** Aaron tests and approves every visible core function in
   the installed application; documentation-only surfaces use their canonical
   gate.
@@ -486,8 +492,9 @@ the exact candidate against the normative
 [Product Process Compatibility Covenant](aletheia/product-process.md#compatibility-covenant).
 That covenant alone defines when compatibility obligations start. Persistence
 and export contracts own the resulting format semantics. Process Evaluation
-qualifies a process proposal; its named canonical owner alone decides adoption,
-and A alone implements it productively. This roadmap adds no trigger condition,
+qualifies a process proposal; its named canonical owner alone decides adoption.
+The owning role may integrate SaltMarcher-local non-production changes, while
+only A implements shipped application changes. This roadmap adds no trigger condition,
 waiver, format rule, or proof substitute.
 
 Treat any missing covenant evidence as a reason to reopen its canonical owner,

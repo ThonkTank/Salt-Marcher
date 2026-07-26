@@ -1,9 +1,9 @@
 Status: Active
 Owner: Aletheia A
 Last Reviewed: 2026-07-26
-Charter Version: C-0.6.0
-Process Version: A-0.7.0
-Evaluation Version: E-0.6.0
+Charter Version: C-0.7.0
+Process Version: A-0.8.0
+Evaluation Version: E-0.7.0
 Source of Truth: Current temporary execution rules for GM-Core product slices.
 
 # GM-Core Product Process
@@ -15,7 +15,7 @@ Charter](program-charter.md). This file controls execution, not product truth.
 
 Before product mutation, select one unmet interview-derived acceptance outcome
 through its canonical owner ID. In the slice's one short delivery owner, pin
-that ID, the candidate base commit, Product Process `A-0.7.0`, and the commit
+that ID, the candidate base commit, Product Process `A-0.8.0`, and the commit
 that contains this process version. Also name the intended production route and
 the command, probe, counterexample, measurement, or owner observation that can
 decide the outcome. Do not create generic role ledgers or structured evidence
@@ -59,6 +59,15 @@ disposable experiment when they can decide a consequential uncertainty. When
 counterevidence invalidates a premise, reopen the root decision before adding a
 bridge. Prior investment is not evidence for retaining a decision.
 
+For consequential interpretation or implementation choices, the concept agent
+researches applicable professional solutions, standards, and maintained tools
+and preserves used external evidence under [Source
+References](../../verification/source-references.md). The implementation agent
+then tests the choice locally through a production-relevant route. No important
+choice is accepted from reasoning alone. Prefer a calibrated existing tool over
+building a new one, subject to the Charter's provenance, safety, resource, and
+negative-control rules.
+
 ## Independent Reviewer Inputs
 
 A remains the only product implementer and canonical roadmap owner. A consumes:
@@ -73,10 +82,12 @@ A remains the only product implementer and canonical roadmap owner. A consumes:
 
 Every input must be discoverable without cross-conversation context through an
 exact commit and canonical evidence, roadmap, PR, or process-owner location.
-Only A works in the canonical `projects/SaltMarcher` checkout and changes
-production code. Incoming work is a scoped, committed test handoff or precise
-instruction from a separate synchronized worktree. A inspects it and performs
-all productive implementation and integration through its exclusive writer.
+Only A works directly in the canonical `projects/SaltMarcher` checkout and
+changes shipped application code, resources, or product contracts. Reviewer
+inputs may arrive as already merged, green tests or non-production tools, or as
+a scoped committed handoff or precise instruction from a separate synchronized
+worktree. A inspects every input and performs all productive implementation and
+integration through its exclusive writer.
 
 Inputs do not bypass next-step revalidation. A may split, reorder, reopen, or
 reject a proposed roadmap step when current practical evidence shows a better
@@ -85,14 +96,16 @@ and does not approve its own process proposals.
 
 ## Implementation Maturity And Waves
 
-Advance every feature in implementation waves. At slice start, after a decisive
-proof or severe finding, and at the slice checkpoint, apply exactly one maturity
-using the canonical definitions in the [Program Charter](program-charter.md).
-A may assign `Rejected`, `Proof of Concept`, or `Preliminary` from current
-evidence. `Final` additionally requires an independent qualification under
-[Process Evaluation](process-evaluation.md) covering implementation form,
-credible alternatives, plausible requirement changes, and the complete
-remaining dependency horizon.
+Advance every feature in implementation waves. At slice start, record the
+existing implementation's current maturity; the new candidate remains
+`unevaluated` until its evaluation phase. After a decisive proof or severe
+finding and at the slice checkpoint, the fresh evaluator assigns exactly one
+maturity using the canonical definitions in the [Program
+Charter](program-charter.md). The A coordinator or implementation agent may
+propose but never award its own classification. `Final` additionally requires
+the expanded audit under [Process Evaluation](process-evaluation.md) covering
+implementation form, credible alternatives, plausible requirement changes, and
+the complete remaining dependency horizon.
 
 Before planning the next wave, decide whether the current maturity permits
 extension or calls for reopening the root implementation. Do not build a bridge
@@ -109,6 +122,10 @@ Read the current candidate PR and the
 for artifact-complete urgent handoffs. Repeat this read immediately before
 merge. A alone decides whether severe evidence requires pausing, reopening, or
 continuing the slice.
+
+At M13, also require the exact-candidate closure results from B1, B2, B3, and C
+defined by the Charter. Missing, stale, or inconclusive closure evidence blocks
+program completion even when no urgent finding is posted.
 
 Give each acceptance-deciding oracle one disposable causal negative control
 where practical. Remove or perturb the claimed cause while holding the relevant
@@ -210,3 +227,4 @@ requires the same owner authority as any other real-data modification.
 - [B2 UX Assurance](ux-assurance.md)
 - [B3 Structural Assurance](structure-assurance.md)
 - [C Process Optimization](process-optimization.md)
+- [Source References](../../verification/source-references.md)

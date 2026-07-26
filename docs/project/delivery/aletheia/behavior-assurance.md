@@ -1,9 +1,9 @@
 Status: Active
 Owner: Aletheia B1
 Last Reviewed: 2026-07-26
-Charter Version: C-0.6.0
-Process Version: B1-1.0.0
-Evaluation Version: E-0.6.0
+Charter Version: C-0.7.0
+Process Version: B1-1.1.0
+Evaluation Version: E-0.7.0
 Source of Truth: Temporary protocol for antagonistic GM-Core behavior and product-fit assurance.
 
 # B1 — Behavior Assurance
@@ -34,8 +34,10 @@ requirement or intermediate owner gate.
 
 ## Practical Cycle
 
-The coordinator freezes the exact stable A commit, affected owner IDs, and
-budget. A fresh concept subagent defines one falsifiable product question,
+The coordinator freezes the exact stable product baseline, affected owner IDs, and
+budget, inventories available behavior and scenario tools, and closes any
+measurement gap through researched maintained tools before custom construction.
+A fresh concept subagent defines one falsifiable product question,
 credible interpretations, production journey, oracle, counterexample, and
 negative control. A separate test subagent implements the smallest production-
 route test, scenario harness, failure injection, or probe in B1's own worktree
@@ -49,13 +51,18 @@ route and discriminate a deliberately broken cause.
 
 ## Handoff
 
-B1 never repairs product code. It returns only a finished evaluated test or a
-precise behavior instruction naming the product and test commits, affected
-owner IDs, reproducer, literal result, interpretation analysis, severity,
-uncertainty, and reopen condition. A integrates a durable regression test with
-its repair so the product branch is not intentionally red. Urgent findings use
-the Charter inbox. After every merge, B1 synchronizes or recreates its worktree
-at the newest stable product-slice commit.
+B1 never repairs product code. Its coordinator may merge a finished evaluated,
+green behavior test or non-production test tool through a scoped PR. A defect-
+demonstrating test that would leave the target red stays on its handoff branch
+until A integrates it with the repair. Every handoff names product and test
+commits, affected owner IDs, reproducer, literal result, interpretation
+analysis, severity, uncertainty, and reopen condition. Urgent findings use the
+Charter inbox. After every merge, B1 synchronizes or recreates its worktree at
+the newest stable product baseline.
+
+At M13, B1 posts a closure result for the exact candidate even when it finds no
+defect. It contains journey and risk coverage, budget, commands and commits,
+fresh evaluator result, unresolved uncertainty, and remaining handoffs.
 
 ## References
 
@@ -64,3 +71,4 @@ at the newest stable product-slice commit.
 - [Shared Evaluation](process-evaluation.md)
 - [Interview Baseline](../../interviews/program-needs/README.md)
 - [Program Capabilities](../../requirements/requirements-program-capabilities.md)
+- [Source References](../../verification/source-references.md)

@@ -68,11 +68,21 @@ global coordinator. Every role coordinator launches separate concept, test,
 and fresh evaluation subagents; it does not perform all phases itself. Their
 canonical [Charter](../delivery/aletheia/program-charter.md#role-coordinators-conversations-and-worktrees)
 defines agent families, artifact-complete handoffs, and exclusive writers. Only
-the A process works in the canonical `projects/SaltMarcher` checkout or changes
-production code. B1, B2, B3, C, and their evaluators use separate Git worktrees
-and may return only handoff-ready tests or precise instructions for A. After
-every merge, each non-A worktree synchronizes to the exact latest stable
-product-slice commit.
+the A process works directly in the canonical `projects/SaltMarcher` checkout
+or changes shipped application code, resources, or product contracts. B1, B2,
+B3, C, and their evaluators use separate Git worktrees. Their coordinators may
+merge evaluated, green tests, non-production tools, and instructions through a
+scoped PR, but never productive code. After every merge, each non-A worktree
+synchronizes to the exact latest stable product baseline and restarts any
+affected frozen candidate under the Charter.
+
+Aletheia phase agents may and should research professional methods, standards,
+and maintained tools online when they can improve a consequential decision.
+Purely theoretical reasoning is insufficient. Follow [Source
+References](../verification/source-references.md) for external evidence and the
+[Resource Policy](../policies/resource-policy.md) for downloads, services,
+secrets, costs, and data egress. Calibrate sourced and custom tools before using
+their output as evidence.
 
 ## Instruction Surfaces
 

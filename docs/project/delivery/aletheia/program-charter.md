@@ -1,7 +1,7 @@
 Status: Active
 Owner: SaltMarcher Product Owner
 Last Reviewed: 2026-07-26
-Charter Version: C-0.6.0
+Charter Version: C-0.7.0
 Source of Truth: User-given authority, workstream boundaries, agent assignment, maturity semantics, and completion boundary for the GM-Core program.
 
 # GM-Core Aletheia Program Charter
@@ -16,7 +16,8 @@ process premise.
 ## Five Independent Role Processes
 
 - **A — Product Delivery (Codex coordinator and Codex phase agents)** owns the
-  canonical roadmap and is the only process that changes production code. A
+  canonical roadmap and is the only process that changes shipped runtime code,
+  production resources, or product contracts. A
   implements one independently usable slice at a time until the whole GM core
   is complete.
 - **B1 — Behavior Assurance (Codex coordinator and Codex phase agents)**
@@ -47,6 +48,41 @@ precise instructions to A. C changes no product requirement or product code and
 cannot approve its own proposal. All five processes continue beside one another
 without becoming intermediate owner gates.
 
+## Research, Evidence, And Tooling
+
+Every role coordinator must give its phase agents access to online research and
+the practical tools needed to decide their assigned problem. Important product,
+design, architecture, finding, maturity, and process decisions must combine
+local practical evidence with applicable professional knowledge; purely
+theoretical reasoning, intuition, or model consensus is insufficient.
+
+Research starts with primary standards, authoritative documentation, original
+research, and maintained professional tools. External evidence follows [Source
+References](../../verification/source-references.md): preserve an auditable
+original and readable extract in the global mirror before relying on it. Online
+research may inform interpretation, methods, thresholds, and alternatives but
+cannot create SaltMarcher product scope. All acquisition and use remains inside
+the [Resource Policy](../../policies/resource-policy.md): do not upload repository
+source or real data, expose secrets, or enable paid or unapproved services.
+
+B1, B2, B3, and C begin each candidate by checking whether their role worktree
+has tools that can quantify the relevant baseline and discriminate the proposed
+change. Prefer an established out-of-the-box tool over custom construction when
+it fits the use case. Before trusting it, record source, version, license,
+configuration, reproducible command, resource cost, and calibration against at
+least one known-good and one known-bad case. Isolate newly sourced executables
+and dependencies until provenance, safety, and utility are established. Build a
+custom tool only when no suitable tool exists or it cannot be sourced, and test
+the custom oracle with the same controls.
+
+Experimental tools stay in the role worktree. Once independently evaluated, a
+role may merge a handoff-ready test or non-production tool under the boundary
+below. Any tool change that affects shipped application behavior returns as an
+instruction and is implemented only by A. C treats tool selection, setup latency, measurement validity,
+evaluation methods, false-positive and false-negative behavior, repeatability,
+maintenance, tokens, compute, and total cost as process variables subject to
+the same Aletheia cycle.
+
 ## Role Coordinators, Conversations, And Worktrees
 
 Each process runs through its own role coordinator in its own persistent
@@ -65,21 +101,28 @@ current truth from canonical owners, exact commits, PR/CI state, executable
 evidence, and retained measurements; another role conversation's memory or
 summary is never authority.
 
-Only A works in the canonical `projects/SaltMarcher` checkout. B1, B2, B3, C,
-and every evaluator use separate Git worktrees rooted at the exact latest
-stable product-slice commit. A stable product slice is an exact A-owned commit
-whose required local check and CI are green and whose checkpoint is complete.
-Non-A processes never edit A's working tree or use uncommitted A state as
-evidence.
+Only A works directly in the canonical `projects/SaltMarcher` checkout. B1, B2,
+B3, C, and every evaluator use separate Git worktrees rooted at the exact latest
+stable product baseline. That baseline is the green target-branch tip containing
+the newest checkpoint-complete A slice plus every accepted non-production
+handoff merged since it. Non-A processes never edit A's working tree or use
+uncommitted A state as evidence.
 
-Non-A role work may return only as handoff-ready tests or precise instructions for
-A, including evaluated roadmap and process instructions. Experimental product,
-structure, governance, or tooling implementations remain in their origin
-worktree; A independently implements every accepted productive change. A alone
-integrates product-tree changes. After every merge into A's branch or `main`,
-all non-A processes fetch and synchronize or recreate their worktrees at the
-exact newest stable product-slice commit before further work. If the new base
-invalidates a premise, oracle, or workload, the candidate restarts.
+Non-A role work may return only as handoff-ready tests, verification or analysis
+tools, or precise instructions for A, including evaluated roadmap and process
+instructions. A role coordinator may merge its own evaluated, scoped work
+through the repository's normal branch, PR, green-check, and owner rules when it
+does not change shipped application behavior, runtime code or resources, or a
+product contract. A alone implements and integrates every productive change.
+Experimental product or structural prototypes remain in their origin worktree.
+A defect-demonstrating test that would leave the target red remains a handoff
+until A integrates it atomically with the repair. After every merge into A's
+branch or `main`, all non-A processes fetch and synchronize or recreate their
+worktrees at the exact newest stable product baseline before further work. If
+an evaluation was in flight, its frozen old-commit result remains historical
+evidence and the phase stops; any still-relevant question becomes a new
+committed candidate with a fresh evaluator on the new baseline. If the new base
+invalidates a premise, oracle, or workload, the candidate restarts from concept.
 
 Every handoff names the producer and product commits, executable evidence or
 measurement location, evaluation and maturity state, uncertainty, and next
@@ -103,6 +146,13 @@ highest-value process variable. Program closure uses one bounded integrated B1,
 B2, and B3 sweep against the interview journeys and unresolved risks. C closes
 when no evaluated required proposal remains and its final budget exposes no new
 severe evidence.
+
+For M13, every B1, B2, B3, and C role coordinator posts an artifact-complete
+closure result against the exact candidate to the M13 PR, or to the umbrella
+issue when no PR exists. It names covered risks and journeys, budget, exact
+commits and commands, independent evaluator result, unresolved uncertainty, and
+whether any required handoff remains. A cannot complete M13 until all four
+closure results are present and consistent with the candidate.
 
 ## Aletheia Cycle For B1, B2, B3, And C
 

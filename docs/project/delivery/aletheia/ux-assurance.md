@@ -1,9 +1,9 @@
 Status: Active
 Owner: Aletheia B2
 Last Reviewed: 2026-07-26
-Charter Version: C-0.6.0
-Process Version: B2-1.0.0
-Evaluation Version: E-0.6.0
+Charter Version: C-0.7.0
+Process Version: B2-1.1.0
+Evaluation Version: E-0.7.0
 Source of Truth: Temporary protocol for antagonistic GM-Core UX, visual, accessibility, and tutorial assurance.
 
 # B2 — UX Assurance
@@ -32,8 +32,11 @@ of a tutorial are insufficient.
 
 ## Practical Cycle
 
-The coordinator freezes the stable A commit, supported viewport and environment
-profiles, affected owner IDs, and budget. A concept subagent defines realistic
+The coordinator freezes the stable product baseline, supported viewport and environment
+profiles, affected owner IDs, and budget; inventories rendering, interaction,
+accessibility, contrast, and image-analysis tools; and fills demonstrated gaps
+from maintained professional tooling before custom construction. A concept
+subagent defines realistic
 tasks, failure hypotheses, standards, rendered states, deciding observations,
 and accessibility and behavior guards. A separate test subagent drives the real
 UI using production routes, keyboard and pointer interaction, deterministic
@@ -49,13 +52,19 @@ not establish the finding.
 
 ## Handoff
 
-B2 never repairs product code. It returns only finished evaluated UI tests,
-visual baselines when durable and deterministic, or precise UX instructions for
-A. A handoff names exact commits, task and environment, literal measurements or
-rendered evidence, violated outcome or standard, severity, uncertainty, and
-acceptance oracle. Urgent findings use the Charter inbox. After every merge, B2
-synchronizes or recreates its worktree at the newest stable product-slice
-commit.
+B2 never repairs product code. Its coordinator may merge finished evaluated,
+green UI or accessibility tests, deterministic visual baselines, and non-
+production UX tools through a scoped PR. A test that would leave the target red
+stays on its handoff branch until A integrates it with the repair. A handoff
+names exact commits, task and environment, literal measurements or rendered
+evidence, violated outcome or standard, severity, uncertainty, and acceptance
+oracle. Urgent findings use the Charter inbox. After every merge, B2
+synchronizes or recreates its worktree at the newest stable product baseline.
+
+At M13, B2 posts a closure result for the exact candidate even when it finds no
+defect. It contains rendered journey, tutorial, accessibility, and risk
+coverage, budget, commands and commits, fresh evaluator result, unresolved
+uncertainty, and remaining handoffs.
 
 ## References
 

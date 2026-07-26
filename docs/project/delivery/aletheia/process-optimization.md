@@ -1,9 +1,9 @@
 Status: Active
 Owner: Aletheia C
 Last Reviewed: 2026-07-26
-Charter Version: C-0.6.0
-Process Version: C-2.0.0
-Evaluation Version: E-0.6.0
+Charter Version: C-0.7.0
+Process Version: C-2.1.0
+Evaluation Version: E-0.7.0
 Source of Truth: Temporary protocol for measured GM-Core work-process optimization.
 
 # C — Process Optimization
@@ -18,6 +18,12 @@ C observes A and B1-B3 only through live repository history, exact artifacts,
 metrics, PR/CI state, and canonical owners. It does not coordinate their
 conversations, change product requirements or product code, or use chat
 summaries as evidence.
+
+C's scope explicitly includes the tools and evaluation methods used by every
+role: availability, setup and feedback latency, calibration, discrimination,
+coverage, reproducibility, false positives and negatives, maintenance burden,
+security, resource use, token cost, and whether a maintained professional
+alternative outperforms custom tooling.
 
 ## Optimization Boundary
 
@@ -39,8 +45,9 @@ product acceptance to manufacture speed or savings.
 
 ## Practical Cycle
 
-The coordinator selects one evidenced process failure or opportunity and
-freezes a stable product commit and budget. A concept subagent researches
+The coordinator selects one evidenced process failure or opportunity, verifies
+that C has tools capable of measuring all three dimensions, and freezes a
+stable product baseline and budget. A concept subagent researches
 primary standards and comparable methods, changes one process variable, and
 defines prediction, metrics, negative controls, rollback, and owner boundary. A
 separate test subagent implements the smallest reversible instruction, skill,
@@ -58,17 +65,24 @@ consensus, or an unmeasured shorter prompt is not proof.
 ## Adoption And Handoff
 
 Evaluation qualifies a proposal; it never adopts it. The named canonical owner
-alone adopts a qualified process change. C keeps research, canaries, and
-evaluation artifacts in its own worktree and returns only a handoff-ready
-process instruction for A; experimental tooling is not merged. A implements
-the adopted instruction productively at the evaluated boundary. A running
+alone adopts a qualified process change. C keeps research and unevaluated
+canaries in its own worktree. After adoption, C's coordinator may merge a scoped
+process document, skill, workflow, test, or non-production tool through a green
+PR for a SaltMarcher-owned surface. Global or cross-project instructions go to
+their actual owning maintainer; A only consumes an externally adopted version
+and never copies a global skill into this repository. If an instruction
+requires shipped application changes, only A implements that part. A running
 slice repins only when the canary specifically proves that safe; otherwise the
 change starts at the next slice boundary.
 
 The handoff records exact commits, literal measurements, all three tradeoffs,
 maturity, owner decision, rollback, and reopen trigger. After every merge, C
-synchronizes or recreates its worktree at the newest stable product-slice
-commit.
+synchronizes or recreates its worktree at the newest stable product baseline.
+
+At M13, C posts a closure result for the exact candidate even when it has no
+proposal. It contains process surfaces and history sampled, speed-quality-cost
+budget and measurements, commands and commits, fresh evaluator result,
+unresolved uncertainty, and remaining required handoffs.
 
 ## Current Candidates
 

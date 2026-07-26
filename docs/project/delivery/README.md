@@ -30,10 +30,12 @@ concept, test, and evaluation subagents. Committed owner documents and exact
 artifact links carry every cross-role handoff.
 
 Only A works in the canonical `projects/SaltMarcher` checkout and changes
-production code. B1, B2, B3, C, and their evaluators use separate worktrees and
-return only handoff-ready tests or precise instructions for A. The A process
-performs every productive implementation and integration. After each merge, every
-non-A worktree synchronizes to the exact latest stable product-slice commit.
+shipped application code, resources, or product contracts. B1, B2, B3, C, and
+their evaluators use separate worktrees. Their coordinators may merge evaluated
+green tests, non-production tools, and instructions through scoped PRs. The A
+process performs every productive implementation and integration. After each
+merge, every non-A worktree synchronizes to the exact latest stable product
+baseline.
 
 Each delivery owner is temporary and is removed after its own finish criteria
 are met. Durable decisions remain in the linked product owner documents.

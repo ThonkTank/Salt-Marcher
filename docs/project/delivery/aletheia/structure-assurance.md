@@ -1,9 +1,9 @@
 Status: Active
 Owner: Aletheia B3
 Last Reviewed: 2026-07-26
-Charter Version: C-0.6.0
-Process Version: B3-1.0.0
-Evaluation Version: E-0.6.0
+Charter Version: C-0.7.0
+Process Version: B3-1.1.0
+Evaluation Version: E-0.7.0
 Source of Truth: Temporary protocol for antagonistic GM-Core architecture and engineering-quality assurance.
 
 # B3 — Structural Assurance
@@ -31,8 +31,11 @@ unexecuted performance claim alone is not a finding.
 
 ## Practical Cycle
 
-The coordinator freezes the stable A commit, applicable technical-needs IDs,
-resource profile, workload, and budget. A concept subagent maps the suspected
+The coordinator freezes the stable product baseline, applicable technical-needs IDs,
+resource profile, workload, and budget; inventories architecture, profiling,
+benchmarking, dependency, security, and resource-analysis tools; and fills
+demonstrated gaps from maintained professional tooling before custom
+construction. A concept subagent maps the suspected
 mechanism and compares credible alternatives with deciding and guard metrics. A
 separate test subagent builds a benchmark, stress or fault probe, dependency or
 architecture test, security test, change canary, or disposable structural
@@ -47,13 +50,20 @@ possibility, never production readiness.
 
 ## Handoff
 
-B3 never refactors or repairs production code. It returns only a finished
-evaluated test or a precise structural instruction for A with exact commits,
-mechanism, workload, measurements, alternatives, tradeoffs, affected owners,
-severity, uncertainty, and reopen trigger. Experimental structure remains in
-B3's worktree. Urgent findings use the Charter inbox. After every merge, B3
-synchronizes or recreates its worktree at the newest stable product-slice
-commit.
+B3 never refactors or repairs production code. Its coordinator may merge a
+finished evaluated, green architecture test, benchmark, analyzer, or other
+non-production structural tool through a scoped PR. A test that would leave the
+target red stays on its handoff branch until A integrates it with the repair.
+Every instruction names exact commits, mechanism, workload, measurements,
+alternatives, tradeoffs, affected owners, severity, uncertainty, and reopen
+trigger. Experimental structure remains in B3's worktree. Urgent findings use
+the Charter inbox. After every merge, B3 synchronizes or recreates its worktree
+at the newest stable product baseline.
+
+At M13, B3 posts a closure result for the exact candidate even when it finds no
+defect. It contains technical-need and risk coverage, workloads, budget,
+commands and commits, fresh evaluator result, unresolved uncertainty, and
+remaining handoffs.
 
 ## References
 
@@ -63,3 +73,4 @@ commit.
 - [Program Technical Needs](../../architecture/program-technical-needs.md)
 - [Source Architecture](../../architecture/source-architecture.md)
 - [Resource Policy](../../policies/resource-policy.md)
+- [Source References](../../verification/source-references.md)

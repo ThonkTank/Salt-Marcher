@@ -1,8 +1,8 @@
 Status: Active
 Owner: Independent Aletheia Evaluation
 Last Reviewed: 2026-07-26
-Charter Version: C-0.6.0
-Evaluation Version: E-0.6.0
+Charter Version: C-0.7.0
+Evaluation Version: E-0.7.0
 Source of Truth: Independent qualification of A, B1, B2, B3, and C candidates.
 
 # Shared Aletheia Evaluation
@@ -10,8 +10,8 @@ Source of Truth: Independent qualification of A, B1, B2, B3, and C candidates.
 Every role coordinator delegates evaluation to a fresh phase subagent who did
 not author the concept, candidate, test, metrics, or success conditions. This
 contract evaluates B1 behavior tests and findings, B2 UX tests and findings, B3
-structural tests and findings, C process candidates, and every A product
-candidate proposed for `Final`. It does not replace product acceptance,
+structural tests and findings, C process candidates, and every A product slice.
+It does not replace product acceptance,
 canonical owners, or [Quality Platforms](../../verification/quality-platforms.md).
 
 ## Independence And Isolation
@@ -20,10 +20,12 @@ The coordinator supplies an artifact-complete frozen brief and may answer
 factual questions, but cannot choose the verdict, change thresholds after
 results, or reinterpret missing evidence as success. The evaluator receives no
 conversation history and works from exact commits and retained artifacts in a
-fresh isolated worktree. It may add evaluation-local tests and experiments but
-returns only handoff-ready tests or precise instructions. It never changes
-production code, merges a candidate, coordinates another role, or adopts a
-proposal.
+fresh isolated worktree. It may add disposable evaluation-local probes and
+experiments, but those remain evidence and cannot be merged or handed off as a
+qualified test. Any useful durable test or instruction discovered during
+evaluation returns to a fresh test phase and then a fresh evaluator. The
+evaluator never changes production code, merges a candidate, coordinates
+another role, or adopts a proposal.
 
 ## Frozen Evaluation
 
@@ -42,6 +44,9 @@ The evaluator must:
 5. Compare every claimed benefit and guard. Missing runtime detail stays
    unknown and makes the affected claim inconclusive.
 6. Exercise rollback and prove restoration without residue.
+7. Audit every deciding tool's provenance, version, configuration, calibration,
+   known-good and known-bad discrimination, repeatability, and resource cost;
+   verify that cited external standards are preserved through Source References.
 
 For B1, also test plausible interview interpretations against complete user
 journeys and adjacent needs. For B2, replay rendered tasks, tutorial context,
@@ -75,9 +80,11 @@ whole-program completion.
 
 The compact result belongs in the owning PR, roadmap entry, or process owner and
 names exact commits, executable evidence, uncertainty, maturity, repair or
-restart decision, proposed adoption boundary, and next owner action. After any
-merge, an evaluator still active on other work synchronizes or recreates its
-worktree at the newest stable product-slice commit and revalidates its baseline.
+restart decision, proposed adoption boundary, and next owner action. A merge
+never mutates an in-flight frozen evaluation: preserve its old-commit result as
+historical evidence, stop that phase, synchronize the worktree to the newest
+stable product baseline, and rebuild any still-relevant question as a new
+committed candidate with a fresh evaluator.
 
 ## References
 
@@ -88,3 +95,4 @@ worktree at the newest stable product-slice commit and revalidates its baseline.
 - [C Process Optimization](process-optimization.md)
 - [Documentation](../../documentation.md)
 - [Quality Platforms](../../verification/quality-platforms.md)
+- [Source References](../../verification/source-references.md)
