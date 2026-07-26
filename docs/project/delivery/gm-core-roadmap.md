@@ -101,14 +101,17 @@ the Product Process.
   may reopen and replace its internal design. It cannot become `Final` before
   every remaining integration dependency that may change it is exhausted.
 - **Current merge candidate:** M2a/`AC-F10`, based on `fb229a119`, contains
-  product commit `830d12f82` and the delivery checkpoint `6cea6e35d` under
-  Product Process `A-0.9.0` at `bbd5988b4`. It supplies one Campaign-owned
-  Roster with name-only creation, nullable authored facts, stable namesake
-  identity, explicit Party membership, strict current-v1 persistence, and
-  coherent Party publication. A fresh isolated replay and independent
-  evaluation both pass the M1 TN-16 current-profile warm-switch oracle; the
-  earlier concurrent-worker failures do not establish a product regression or
-  justify a repair. M2a now returns to its exact-candidate full `check`,
+  product commits `830d12f82` and `4a55c3855` and the delivery checkpoint
+  `3640721bb` under Product Process `A-0.9.0` at `bbd5988b4`. It supplies one
+  Campaign-owned Roster with name-only creation, nullable authored facts,
+  stable namesake identity, explicit Party membership, strict current-v1
+  persistence, and coherent Party publication. The namesake repair makes the
+  exact stable identity visible in the edit context and identifies the saved
+  record and optional facts in visible feedback; a fresh evaluation qualifies
+  it without changing Party, Scene, or persistence semantics. A fresh isolated
+  replay and independent evaluation also pass the M1 TN-16 current-profile
+  warm-switch oracle; the earlier concurrent-worker failures do not establish
+  a product regression. M2a now returns to its exact-candidate full `check`,
   installation, target serialization, CI, and merge gates.
 - M2a is `Preliminary`: practical proof and severe-finding repair show no
   implementation inadequacy requiring immediate rewrite, while later waves may
