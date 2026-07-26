@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.campaign.api.CampaignId;
+import features.party.adapter.javafx.party.PartyEditorTopBarView;
 import features.party.adapter.javafx.party.PartyTopBarView;
 import features.party.api.MembershipState;
 import features.party.api.MutationStatus;
@@ -108,12 +109,12 @@ public final class CampaignRosterProductionJourneyTest {
                 "name-only creation is not Party, travel-token, or Scene attachment");
 
         editCharacter(firstWindow, firstBootstrap, firstEcho.id(), "Echo",
-                "Mira", "7", "15", "18");
+                "Mira", "7", "15", "17");
         PartyMemberDetails populated = member(firstBootstrap, firstEcho.id());
         assertEquals("Mira", populated.playerName());
         assertEquals(7, populated.level());
         assertEquals(15, populated.passivePerception());
-        assertEquals(18, populated.armorClass());
+        assertEquals(17, populated.armorClass());
         assertRosterOnly(firstBootstrap, reserveMembers(firstBootstrap).size(),
                 "setting optional facts does not imply Party composition");
 
@@ -128,6 +129,17 @@ public final class CampaignRosterProductionJourneyTest {
                 "editing and clearing targets stable Roster identity rather than duplicate name");
         assertNull(member(firstBootstrap, secondEcho.id()).playerName(),
                 "editing one duplicate cannot alter the other duplicate");
+        assertVisibleEditContext(firstWindow, firstEcho.id(), "Echo", "", "", "", "");
+        assertVisibleEditContext(firstWindow, secondEcho.id(), "Echo", "", "", "", "");
+
+        editCharacter(firstWindow, firstBootstrap, secondEcho.id(), "Echo",
+                "", "", "", "18");
+        PartyMemberDetails savedSecondEcho = member(firstBootstrap, secondEcho.id());
+        assertNull(member(firstBootstrap, firstEcho.id()).armorClass(),
+                "fact-cleared namesake A remains without AC when namesake B is edited");
+        assertEquals(18, savedSecondEcho.armorClass(),
+                "only namesake B receives the visible saved AC");
+        assertVisibleEditContext(firstWindow, secondEcho.id(), "Echo", "", "", "", "18");
         alphaTruth = truth(reserveMembers(firstBootstrap));
         assertVisibleRoster(firstWindow, alphaTruth.members());
         assertRosterOnly(firstBootstrap, alphaTruth.members().size(),
@@ -464,6 +476,59 @@ public final class CampaignRosterProductionJourneyTest {
                             expectedInteger(passivePerception), current.passivePerception())
                     && java.util.Objects.equals(expectedInteger(armorClass), current.armorClass());
         });
+        String feedback = "Roster-ID " + rosterId + " (" + name + ") wurde gespeichert.";
+        awaitFxCondition(() -> visibleText(popup, feedback)
+                && visibleText(popup, "AC: " + optionalFeedback(armorClass) + "."));
+    }
+
+    private static void assertVisibleEditContext(
+            Stage stage,
+            long rosterId,
+            String name,
+            String player,
+            String level,
+            String passivePerception,
+            String armorClass
+    ) throws Exception {
+        Parent popup = openPartyPanel(stage);
+        runOnFx(() -> buttonByAccessibleText(
+                popup,
+                "Roster-ID " + rosterId + ", Charakter bearbeiten: " + name).fire());
+        awaitFxCondition(() -> textField(popup, "Charaktername") != null);
+        runOnFx(() -> {
+            Label editorTitle = editorTitleLabel(popup);
+            assertTrue(editorTitle.isVisible(), "editor identity remains visibly rendered");
+            assertEquals("Roster-Charakter bearbeiten · Roster-ID " + rosterId, editorTitle.getText(),
+                    "editor identifies the exact namesake by its stable Roster ID");
+            assertEquals(name, textField(popup, "Charaktername").getText(),
+                    "editor reloads the correct namesake name");
+            assertEquals(player, textField(popup, "Spielername").getText(),
+                    "editor shows whether the saved player fact is absent");
+            assertEquals(level, textField(popup, "Level").getText(),
+                    "editor shows whether the saved level fact is absent");
+            assertEquals(passivePerception, textField(popup, "Passive Perception").getText(),
+                    "editor shows whether the saved passive-perception fact is absent");
+            assertEquals(armorClass, textField(popup, "AC").getText(),
+                    "editor reloads the saved AC for the exact namesake");
+            button(popup, "Abbrechen").fire();
+        });
+        awaitFxCondition(() -> !editorView(popup).isVisible());
+    }
+
+    private static PartyEditorTopBarView editorView(Parent parent) {
+        return descendants(parent).stream()
+                .filter(PartyEditorTopBarView.class::isInstance)
+                .map(PartyEditorTopBarView.class::cast)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Rendered editor not found"));
+    }
+
+    private static Label editorTitleLabel(Parent parent) {
+        return editorView(parent).getChildrenUnmodifiable().stream()
+                .filter(Label.class::isInstance)
+                .map(Label.class::cast)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Rendered editor title not found"));
     }
 
     private static String expected(String value) {
@@ -472,6 +537,10 @@ public final class CampaignRosterProductionJourneyTest {
 
     private static Integer expectedInteger(String value) {
         return value.isBlank() ? null : Integer.valueOf(value);
+    }
+
+    private static String optionalFeedback(String value) {
+        return value.isBlank() ? "—" : value;
     }
 
     private static void switchCampaign(

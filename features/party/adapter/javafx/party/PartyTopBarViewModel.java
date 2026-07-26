@@ -256,7 +256,13 @@ final class PartyTopBarViewModel {
             return Optional.empty();
         }
         String name = safe(parsedDraft.name);
-        String successMessage = displayName(name) + " wurde gespeichert.";
+        String successMessage = PartyTopBarVocabulary.savedRosterCharacter(
+                memberId,
+                name,
+                parsedDraft.playerName,
+                parsedDraft.level,
+                parsedDraft.passivePerception,
+                parsedDraft.armorClass);
         if (!beginMutation(successMessage, true)) {
             return Optional.empty();
         }

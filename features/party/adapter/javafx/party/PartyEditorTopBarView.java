@@ -117,17 +117,23 @@ public final class PartyEditorTopBarView extends VBox {
         boolean visible = content != null && content.visible();
         boolean editingExisting = content != null && content.editingExisting();
         boolean actionsDisabled = content != null && content.actionsDisabled();
-        updateEditorFrame(visible, editingExisting);
+        updateEditorFrame(content, visible, editingExisting);
         draftBinder.updateDraftFields(content);
         updateDeleteConfirmation(content, visible);
         draftBinder.updateEditorDisabled(actionsDisabled);
     }
 
-    private void updateEditorFrame(boolean visible, boolean editingExisting) {
+    private void updateEditorFrame(
+            PartyTopBarViewModel.EditorPanelModel content,
+            boolean visible,
+            boolean editingExisting
+    ) {
         setDisable(!visible);
         setVisible(visible);
         setManaged(visible);
-        titleLabel.setText(editingExisting ? "Roster-Charakter bearbeiten" : "Neuer Roster-Charakter");
+        titleLabel.setText(PartyTopBarVocabulary.editorTitle(
+                editingExisting,
+                editingExisting && content != null ? content.memberId() : 0L));
         submitButton.setText(editingExisting ? "Speichern" : "Erstellen");
         revealDeleteButton.setVisible(visible && editingExisting);
         revealDeleteButton.setManaged(visible && editingExisting);

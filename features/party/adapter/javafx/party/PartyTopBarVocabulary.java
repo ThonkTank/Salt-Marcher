@@ -37,7 +37,41 @@ final class PartyTopBarVocabulary {
         return "\"" + safe(targetName).trim() + "\" wirklich dauerhaft loeschen?";
     }
 
+    static String rosterId(long memberId) {
+        return "Roster-ID " + Math.max(0L, memberId);
+    }
+
+    static String editorTitle(boolean editingExisting, long memberId) {
+        return editingExisting
+                ? "Roster-Charakter bearbeiten · " + rosterId(memberId)
+                : "Neuer Roster-Charakter";
+    }
+
+    static String savedRosterCharacter(
+            long memberId,
+            String name,
+            String playerName,
+            Integer level,
+            Integer passivePerception,
+            Integer armorClass
+    ) {
+        return rosterId(memberId) + " (" + safe(name).trim() + ") wurde gespeichert. "
+                + "Spieler: " + optionalText(playerName) + " · "
+                + "Level: " + optionalText(level) + " · "
+                + "PP: " + optionalText(passivePerception) + " · "
+                + "AC: " + optionalText(armorClass) + ".";
+    }
+
     static String safe(String value) {
         return value == null ? "" : value;
+    }
+
+    private static String optionalText(String value) {
+        String safeValue = safe(value).trim();
+        return safeValue.isBlank() ? "—" : safeValue;
+    }
+
+    private static String optionalText(Integer value) {
+        return value == null ? "—" : Integer.toString(value);
     }
 }
