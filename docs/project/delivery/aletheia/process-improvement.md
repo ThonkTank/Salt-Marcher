@@ -2,7 +2,7 @@ Status: Active
 Owner: Aletheia B
 Last Reviewed: 2026-07-26
 Charter Version: C-0.3.0
-Process Version: B-0.3.3
+Process Version: B-0.3.4
 Observes Product Process: A-0.4.0
 Evaluation Version: E-0.3.1
 Source of Truth: Current temporary proposal protocol for GM-Core process improvement.
@@ -80,9 +80,128 @@ Git/CI state under [Process Evaluation](process-evaluation.md). If comparable
 conditions or evidence meaning cannot be established, the trial is
 inconclusive. No demonstrated failure requires no process change.
 
-## Independent Verdicts
+## CI Async-Oracle Incident And Candidate Deltas
 
-Both async-boundary proposals are `INCONCLUSIVE` and not adopted.
+Research verdict: `DEMONSTRATED PROCESS FAILURE; two isolated proposals, not
+adopted; Product Process A-0.4.0 unchanged`.
+
+Required CI run `30198497562` failed candidate commit `8c3e87369` after the
+same commit had passed both the implementing agent's local proof and an
+independent frozen replay. The subsequent test-only repair identified two
+invalid proof assumptions exposed by a different event schedule:
+
+- `PartyDropdownTest` sent a key through a JavaFX `Robot`, then treated two
+  empty JavaFX-queue submissions as proof that native key delivery, editor
+  transition, rerender, and focus restoration had all settled. The native
+  event queue had no causal completion relationship with that fixed queue
+  drain. Commit `a695027af` instead waits for the exact visible terminal state:
+  the editor name field owns focus while the roster is inert, or the editor is
+  closed and the exact create/edit invoker owns focus.
+- `SessionPreparationProductionRouteTest` already proved stale-target rejection
+  through unchanged publication revision, unchanged selected Session, and zero
+  generation rows. It additionally required a fixture-wide diagnostics list to
+  be empty without binding each entry or its settlement window to the stale
+  intent. That absence was neither a causal result of the tested operation nor
+  necessary for its acceptance claim. Commit `a695027af` removed only that
+  non-causal assertion.
+
+Required CI run `30199633707` then failed the test-only repair commit
+`a695027af` at `CampaignRuntimeProductionJourneyTest` line 968. That route
+asserted a retained cleanup obligation immediately after bounded `close()`
+failure, while an automatic daemon cleanup was legitimately free to complete
+and clear the retained state before the assertion. The next test-only repair
+gates the fifth real late-cleanup attempt with latches, proves retained
+ownership while that attempt is causally blocked, releases it in a `finally`
+block, and then proves eventual cleanup and the unchanged bounded caller
+result. It changes neither product code nor the tested lifecycle behavior.
+
+The two repairs change tests and no product source. This is practical failure
+and repair evidence across two independent CI schedules, not a read-only
+prediction. The second incident materially strengthens the first: even after
+fixed queue draining and a non-causal global absence assertion were removed, a
+third test still sampled a legitimate transient state without holding its
+cause. The sequence demonstrates that A-0.4.0's general demand for a concrete
+oracle and causal negative control does not by itself prevent an asynchronous
+test from substituting queue draining, fixture-wide absence, or an ungated
+transient sample for operation completion.
+
+The failed workflow retained the run, head SHA, failed test names, and source
+locations, but its only proof step is the Gradle command; it has no failure-only
+JUnit-result upload. The literal assertion details were therefore unavailable
+after the runner ended. That absence must remain recorded as missing evidence;
+source inspection may explain the implicated assertion but cannot reconstruct
+the lost runtime value.
+
+### Candidate 1: Operation-Scoped Async Terminal Oracle
+
+Research verdict: `PROPOSAL JUSTIFIED; independently evaluate before adoption`.
+
+The one changed process variable is the checkpoint rule for an
+acceptance-deciding route that crosses a native-event, UI, executor, callback,
+or publication boundary. The candidate requires one operation-scoped terminal
+predicate named before execution. The proof waits with an explicit deadline
+until that predicate is observed through the production route. A fixed sleep,
+fixed count of queue drains or pulses, future completion that does not own the
+claimed transitive work, or absence from a fixture-wide diagnostics collector
+cannot substitute for that predicate. A shared diagnostics collector is an
+oracle only when every admitted producer is bounded to the tested operation
+and the route proves that its observation window has settled; otherwise assert
+the operation's specific externally visible state and treat unrelated
+diagnostics separately.
+
+Evaluate this variable on the frozen `8c3e87369` and `a695027af` routes without
+changing product code, fixtures, actions, or acceptance outcomes. The baseline
+retains each historical wait and oracle; the candidate changes only terminal-
+oracle selection. Run both across the same local headless route and fresh CI
+jobs. Applicable negative controls suppress exact focus restoration, restore
+focus to the wrong invoker, allow stale-target publication, add an unrelated
+fixture diagnostic, release late cleanup before retained ownership is sampled,
+and keep that cleanup causally blocked until after the retained-state sample.
+The focus and stale-publication controls must fail only their owning operation
+oracle; the unrelated diagnostic must not falsify stale-target rejection. An
+already released cleanup attempt must not prove retained ownership, while the
+causally blocked real attempt must prove retention and must clean up after
+release.
+Candidate qualification requires the original valid routes to pass, every
+applicable control to be discriminated, no product finding to be hidden, and
+no unbounded wait. The baseline must also reproduce at least one historical
+invalid verdict under the frozen schedule search; otherwise the comparison is
+inconclusive rather than evidence for adoption. Different product commits,
+missed controls, or changed actions likewise make the comparison inconclusive.
+Rollback restores the historical test-only state. Only the independent
+evaluator may adopt a later Product Process version.
+
+### Candidate 2: Failure-Only CI Result Retention
+
+Research verdict: `PROPOSAL JUSTIFIED; evaluate separately from Candidate 1`.
+
+The one changed process variable is retention of the already-produced JUnit
+XML and relevant test logs when required remote `check` fails. The candidate
+does not add a test, reviewer, retry, proof lane, or new acceptance oracle. It
+retains failure output with the exact head SHA, command, job environment, and
+run identity long enough for independent diagnosis; successful runs need not
+upload it. Missing runtime detail remains `unknown` rather than being inferred
+from current source.
+
+Compare baseline and candidate workflow runs on one frozen synthetic failing
+assertion and one green control under the same commit and job configuration.
+The candidate qualifies only if a fresh evaluator can retrieve the literal
+failing suite, case, assertion output, and environment from the failed run,
+the green verdict and required `check` semantics remain unchanged, retention
+is bounded, and rollback removes only the retention step. A retry that replaces
+the first failure, an artifact not tied to the exact head, exposure of secrets
+or real user data, or any changed test verdict rejects the candidate. This
+proposal must not be bundled with Candidate 1 in one evaluation because oracle
+validity and diagnostic availability are independent variables.
+
+Neither proposal changes product maturity. In particular, a green rerun or a
+better retained report cannot promote `Proof of Concept` or `Preliminary` work
+to `Final`; the Charter's best-form, future-change, superior-alternative, and
+dependency-horizon conditions remain fully binding.
+
+## Historical Async-Boundary Verdicts
+
+Both earlier scheduler-preflight proposals are `INCONCLUSIVE` and not adopted.
 
 - **v1:** `/tmp/aletheia-boundary-probe/BoundaryMatrixProbe.java`, SHA-256
   `1361a913b0034cbaa6507ec3327cfdd6527ed8e383c966eb6764165980306816`.
