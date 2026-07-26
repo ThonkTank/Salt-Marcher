@@ -1295,8 +1295,12 @@ public final class CampaignRuntimeProductionJourneyTest {
 
         openCampaignDeskWithKeyboard(host.window(), host.production);
         fireCampaignRowWhenReady(host.window(), "Positive Alpha");
-        awaitCondition(() -> coordinator.snapshot().durableActivation().orElseThrow().campaign()
-                .map(campaign -> alphaId.equals(campaign.id())).orElse(false));
+        awaitCondition(() -> coordinator.snapshot().phase()
+                == CampaignActivationCoordinator.Phase.ACTIVE
+                && coordinator.snapshot().durableActivation().orElseThrow().campaign()
+                        .map(campaign -> alphaId.equals(campaign.id())).orElse(false));
+        assertFocusedSceneNotes(
+                host.window(), "Positive Alpha marker", betaMarker);
         openCampaignDeskWithKeyboard(host.window(), host.production);
         fireCampaignRowWhenReady(host.window(), "Positive Beta");
         awaitCondition(() -> coordinator.snapshot().phase()
