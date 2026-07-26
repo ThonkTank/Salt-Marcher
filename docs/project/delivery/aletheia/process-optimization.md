@@ -1,8 +1,8 @@
 Status: Active
 Owner: Aletheia C
 Last Reviewed: 2026-07-26
-Charter Version: C-0.7.0
-Process Version: C-2.1.0
+Charter Version: C-0.9.0
+Process Version: C-2.2.0
 Evaluation Version: E-0.7.0
 Source of Truth: Temporary protocol for measured GM-Core work-process optimization.
 
@@ -64,8 +64,10 @@ consensus, or an unmeasured shorter prompt is not proof.
 
 ## Adoption And Handoff
 
-Evaluation qualifies a proposal; it never adopts it. The named canonical owner
-alone adopts a qualified process change. C keeps research and unevaluated
+Evaluation qualifies a proposal; it never adopts it. Under the Product Owner's
+standing delegation in the Program Charter, the named role coordinator adopts
+an exact qualified reversible non-production process change automatically when
+all frozen guards pass. C keeps research and unevaluated
 canaries in its own worktree. After adoption, C's coordinator may merge a scoped
 process document, skill, workflow, test, or non-production tool through a green
 PR for a SaltMarcher-owned surface. Global or cross-project instructions go to
@@ -86,6 +88,19 @@ unresolved uncertainty, and remaining required handoffs.
 
 ## Current Candidates
 
+- **Crash-safe cooperative host admission — adopted, Preliminary:** C5 at
+  candidate `ccce150ec5` passed its complete retained matrix and fresh replay.
+  It preserves A intent priority, serializes finite non-A batches, and retains
+  lease custody through independent loss of either supervisor or watchdog until
+  the old command group is gone. New heavy local role-worker batches use
+  `tools/quality/aletheia-c5/host-lease-native`; non-A exit `75` means wait and
+  retry, never terminate the role goal. Do not interrupt an already-running
+  worker merely to wrap it. The bounded claim is cooperative same-user local
+  scheduling with independent loss of at most one controller—not hostile
+  isolation, correlated controller loss, or host-failure safety. Reopen on any
+  overlap, premature admission/release, material overhead regression, threat-
+  boundary expansion, or operational maintenance burden.
+
 - **Operation-scoped asynchronous terminal oracles — unevaluated:** required CI
   exposed three oracles sampling queue drains, fixture-wide absence, or an
   ungated transient state instead of their causal terminal condition. Evidence:
@@ -100,8 +115,11 @@ unresolved uncertainty, and remaining required handoffs.
   literal JUnit assertion details. A bounded canary must measure diagnostic
   value, security, storage, and workflow cost before adoption.
 
-Neither candidate changes A's process until a fresh evaluator qualifies a
-concrete instruction and its named canonical owner adopts it.
+The async-oracle and CI-retention candidates do not change A's process until a
+fresh evaluator qualifies their concrete instruction. A qualified bounded
+instruction is then adopted under the Charter without an intermediate owner
+prompt and begins at the next slice boundary unless its canary explicitly
+proves an in-flight repin safe.
 
 ## References
 
